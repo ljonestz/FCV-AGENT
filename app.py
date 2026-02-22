@@ -10,6 +10,28 @@ try:
 except ImportError:
     PdfReader = None
 
+# Max chars to send per document (~140k chars ≈ 35k tokens, leaves headroom for prompts)
+MAX_DOC_CHARS = 140_000
+
+def extract_pdf_text(b64_data, name):
+    """Extract text from a base64 PDF, truncating if needed."""
+    try:
+        pdf_bytes = base64.standard_b64decode(b64_data)
+        reader = PdfReader(io.BytesIO(pdf_bytes))
+        pages_text = []
+        for page in reader.pages:
+            try:
+                pages_text.append(page.extract_text() or '')
+            except Exception:
+                pages_text.append('')
+        full_text = '\n\n'.join(pages_text)
+        page_count = len(reader.pages)
+        if len(full_text) > MAX_DOC_CHARS:
+            full_text = full_text[:MAX_DOC_CHARS] + f'\n\n[Document truncated — showing first ~{MAX_DOC_CHARS//1000}k characters of {page_count} pages. The most analytical sections are typically in the early pages.]'
+        return full_text, page_count
+    except Exception as e:
+        return f'[Could not extract text from {name}: {str(e)}]', 0
+
 app = Flask(__name__, static_folder='static')
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB upload limit
 
@@ -310,20 +332,13 @@ def run_stage():
                     if file_type == 'pdf':
                         try:
                             pdf_bytes = base64.standard_b64decode(doc_content)
-                            reader = PdfReader(io.BytesIO(pdf_bytes)) if PdfReader else None
-                            page_count = len(reader.pages) if reader else 0
+                            tmp_reader = PdfReader(io.BytesIO(pdf_bytes)) if PdfReader else None
+                            page_count = len(tmp_reader.pages) if tmp_reader else 0
                         except Exception:
                             page_count = 0
-                        if reader and page_count > 95:
-                            try:
-                                pages_text = []
-                                for page in reader.pages:
-                                    try: pages_text.append(page.extract_text() or '')
-                                    except: pages_text.append('')
-                                extracted = '\n\n'.join(pages_text)
-                                content_parts.append({"type": "text", "text": f"=== CONTEXT DOCUMENT: {name} (extracted from {page_count}-page PDF) ===\n\n{extracted}"})
-                            except Exception as e:
-                                content_parts.append({"type": "text", "text": f"[Could not extract {name}: {str(e)}]"})
+                        if page_count > 50:
+                            extracted, page_count = extract_pdf_text(doc_content, name)
+                            content_parts.append({"type": "text", "text": f"=== CONTEXT DOCUMENT: {name} (text extracted from {page_count}-page PDF) ===\n\n{extracted}"})
                         else:
                             content_parts.append({"type": "document", "source": {"type": "base64", "media_type": "application/pdf", "data": doc_content}})
                     else:
