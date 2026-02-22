@@ -289,60 +289,26 @@ def run_stage():
             project_docs = [d for d in documents if not d.get('isContext')]
             context_docs = [d for d in documents if d.get('isContext')]
 
-            # Add project documents first
-            for doc in project_docs:
+            def add_doc(doc, label):
                 name = doc.get('name', 'document')
                 file_type = doc.get('type', 'text')
                 doc_content = doc.get('content', '')
                 if file_type == 'pdf':
-                    # Check page count — Anthropic API limit is 100 pages
-                    # If over limit, extract text instead of sending as base64
-                    try:
-                        pdf_bytes = base64.standard_b64decode(doc_content)
-                        reader = PdfReader(io.BytesIO(pdf_bytes)) if PdfReader else None
-                        page_count = len(reader.pages) if reader else 0
-                    except Exception:
-                        page_count = 0
-
-                    if reader and page_count > 95:
-                        # Extract text from all pages
-                        try:
-                            pages_text = []
-                            for i, page in enumerate(reader.pages):
-                                try:
-                                    pages_text.append(page.extract_text() or '')
-                                except Exception:
-                                    pages_text.append('')
-                            extracted = '\n\n'.join(pages_text)
-                            content_parts.append({"type": "text", "text": f"=== PROJECT DOCUMENT: {name} (extracted from {page_count}-page PDF) ===\n\n{extracted}"})
-                        except Exception as e:
-                            content_parts.append({"type": "text", "text": f"[Could not extract text from {name}: {str(e)}]"})
-                    else:
-                        content_parts.append({"type": "document", "source": {"type": "base64", "media_type": "application/pdf", "data": doc_content}})
+                    # Always extract text — avoids the ~1700 tokens/page native PDF cost
+                    extracted, page_count = extract_pdf_text(doc_content, name)
+                    content_parts.append({"type": "text", "text": f"=== {label}: {name} ({page_count} pages, text extracted) ===\n\n{extracted}"})
                 else:
-                    content_parts.append({"type": "text", "text": f"=== PROJECT DOCUMENT: {name} ===\n\n{doc_content}"})
+                    # Truncate text docs too
+                    text = doc_content[:MAX_DOC_CHARS] + ('\n\n[Truncated]' if len(doc_content) > MAX_DOC_CHARS else '')
+                    content_parts.append({"type": "text", "text": f"=== {label}: {name} ===\n\n{text}"})
 
-            # Add context documents with a separator
+            for doc in project_docs:
+                add_doc(doc, 'PROJECT DOCUMENT')
+
             if context_docs:
-                content_parts.append({"type": "text", "text": "\n\n--- CONTEXTUAL / BACKGROUND DOCUMENTS ---\nThe following documents provide country and risk context. Use them to inform the FCV analysis.\n"})
+                content_parts.append({"type": "text", "text": "\n\n--- CONTEXTUAL / BACKGROUND DOCUMENTS ---\n"})
                 for doc in context_docs:
-                    name = doc.get('name', 'document')
-                    file_type = doc.get('type', 'text')
-                    doc_content = doc.get('content', '')
-                    if file_type == 'pdf':
-                        try:
-                            pdf_bytes = base64.standard_b64decode(doc_content)
-                            tmp_reader = PdfReader(io.BytesIO(pdf_bytes)) if PdfReader else None
-                            page_count = len(tmp_reader.pages) if tmp_reader else 0
-                        except Exception:
-                            page_count = 0
-                        if page_count > 50:
-                            extracted, page_count = extract_pdf_text(doc_content, name)
-                            content_parts.append({"type": "text", "text": f"=== CONTEXT DOCUMENT: {name} (text extracted from {page_count}-page PDF) ===\n\n{extracted}"})
-                        else:
-                            content_parts.append({"type": "document", "source": {"type": "base64", "media_type": "application/pdf", "data": doc_content}})
-                    else:
-                        content_parts.append({"type": "text", "text": f"=== CONTEXT DOCUMENT: {name} ===\n\n{doc_content}"})
+                    add_doc(doc, 'CONTEXT DOCUMENT')
 
             # Always inject the WBG FCV guidance document
             content_parts.append({"type": "text", "text": (
