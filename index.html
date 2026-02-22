@@ -556,6 +556,7 @@
     </div>
 
     <div class="chips" id="chips" aria-live="polite"></div>
+    <div id="debug-log" style="margin:0 32px 8px;font-size:11px;color:#666;min-height:16px"></div>
 
     <div class="builtin-notice">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
@@ -628,13 +629,26 @@
       addFiles(Array.from(e.dataTransfer.files), arr, type);
     });
 
-    // File input change — use a fresh listener each time
-    inp.addEventListener('change', function() {
+    // File input change
+    inp.addEventListener('change', function(e) {
+      const log = document.getElementById('debug-log');
+      log.textContent = 'change event fired on ' + inputId;
+      console.log('change event', inputId, this.files);
+      if (this.files && this.files.length > 0) {
+        log.textContent = 'Files detected: ' + Array.from(this.files).map(f=>f.name).join(', ');
+        addFiles(Array.from(this.files), arr, type);
+      } else {
+        log.textContent = 'change fired but files was empty or null (files=' + this.files + ')';
+      }
+      setTimeout(() => { this.value = ''; }, 100);
+    });
+    // Also try input event as fallback
+    inp.addEventListener('input', function(e) {
+      const log = document.getElementById('debug-log');
+      log.textContent = 'input event fired on ' + inputId;
       if (this.files && this.files.length > 0) {
         addFiles(Array.from(this.files), arr, type);
       }
-      // Reset via setTimeout so browser doesn't block re-selection of same file
-      setTimeout(() => { this.value = ''; }, 100);
     });
   }
 
