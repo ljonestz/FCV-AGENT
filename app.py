@@ -4,6 +4,11 @@ import base64
 from flask import Flask, request, jsonify, send_from_directory, Response, stream_with_context
 import anthropic
 from background_docs import FCV_GUIDE
+import io
+try:
+    from pypdf import PdfReader
+except ImportError:
+    PdfReader = None
 
 app = Flask(__name__, static_folder='static')
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB upload limit
@@ -268,7 +273,30 @@ def run_stage():
                 file_type = doc.get('type', 'text')
                 doc_content = doc.get('content', '')
                 if file_type == 'pdf':
-                    content_parts.append({"type": "document", "source": {"type": "base64", "media_type": "application/pdf", "data": doc_content}})
+                    # Check page count — Anthropic API limit is 100 pages
+                    # If over limit, extract text instead of sending as base64
+                    try:
+                        pdf_bytes = base64.standard_b64decode(doc_content)
+                        reader = PdfReader(io.BytesIO(pdf_bytes)) if PdfReader else None
+                        page_count = len(reader.pages) if reader else 0
+                    except Exception:
+                        page_count = 0
+
+                    if reader and page_count > 95:
+                        # Extract text from all pages
+                        try:
+                            pages_text = []
+                            for i, page in enumerate(reader.pages):
+                                try:
+                                    pages_text.append(page.extract_text() or '')
+                                except Exception:
+                                    pages_text.append('')
+                            extracted = '\n\n'.join(pages_text)
+                            content_parts.append({"type": "text", "text": f"=== PROJECT DOCUMENT: {name} (extracted from {page_count}-page PDF) ===\n\n{extracted}"})
+                        except Exception as e:
+                            content_parts.append({"type": "text", "text": f"[Could not extract text from {name}: {str(e)}]"})
+                    else:
+                        content_parts.append({"type": "document", "source": {"type": "base64", "media_type": "application/pdf", "data": doc_content}})
                 else:
                     content_parts.append({"type": "text", "text": f"=== PROJECT DOCUMENT: {name} ===\n\n{doc_content}"})
 
@@ -280,7 +308,24 @@ def run_stage():
                     file_type = doc.get('type', 'text')
                     doc_content = doc.get('content', '')
                     if file_type == 'pdf':
-                        content_parts.append({"type": "document", "source": {"type": "base64", "media_type": "application/pdf", "data": doc_content}})
+                        try:
+                            pdf_bytes = base64.standard_b64decode(doc_content)
+                            reader = PdfReader(io.BytesIO(pdf_bytes)) if PdfReader else None
+                            page_count = len(reader.pages) if reader else 0
+                        except Exception:
+                            page_count = 0
+                        if reader and page_count > 95:
+                            try:
+                                pages_text = []
+                                for page in reader.pages:
+                                    try: pages_text.append(page.extract_text() or '')
+                                    except: pages_text.append('')
+                                extracted = '\n\n'.join(pages_text)
+                                content_parts.append({"type": "text", "text": f"=== CONTEXT DOCUMENT: {name} (extracted from {page_count}-page PDF) ===\n\n{extracted}"})
+                            except Exception as e:
+                                content_parts.append({"type": "text", "text": f"[Could not extract {name}: {str(e)}]"})
+                        else:
+                            content_parts.append({"type": "document", "source": {"type": "base64", "media_type": "application/pdf", "data": doc_content}})
                     else:
                         content_parts.append({"type": "text", "text": f"=== CONTEXT DOCUMENT: {name} ===\n\n{doc_content}"})
 
