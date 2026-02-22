@@ -503,10 +503,10 @@
 <div class="stepper-wrap">
   <nav class="stepper" aria-label="Analysis stages">
     <div class="step" id="step-0"><div class="step-num">↑</div>Upload</div>
-    <div class="step" id="step-1"><div class="step-num">1</div>Risk ID</div>
-    <div class="step" id="step-2"><div class="step-num">2</div>Dimensions</div>
+    <div class="step" id="step-1"><div class="step-num">1</div>FCV Risks</div>
+    <div class="step" id="step-2"><div class="step-num">2</div>Screening</div>
     <div class="step" id="step-3"><div class="step-num">3</div>Gaps</div>
-    <div class="step" id="step-4"><div class="step-num">4</div>Support Note</div>
+    <div class="step" id="step-4"><div class="step-num">4</div>Rec. Note</div>
   </nav>
 </div>
 
@@ -563,7 +563,7 @@
 
     <div class="builtin-notice">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
-      <span><strong>Pre-loaded:</strong> WBG FCV Sensitivity &amp; Responsiveness Guide · Honduras Risk Summary — no upload needed</span>
+      <span><strong>Pre-loaded:</strong> WBG FCV Sensitivity &amp; Responsiveness Guide — no upload needed. Country-specific risk documents (e.g. RRA, risk summaries) should be uploaded separately per project.</span>
     </div>
     <div class="confidential-notice">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2.5" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
@@ -603,20 +603,20 @@
 <script>
   let pF=[],cF=[],hist=[],curS=0,busy=false;
 
-  const NAMES={1:'Stage 1: FCV Risk Identification',2:'Stage 2: Six-Dimension Analysis',3:'Stage 3: Gaps & Mitigation Measures',4:'Stage 4: FCV Support Note'};
-  const SHORT={1:'Risk ID',2:'Dimensions',3:'Gaps',4:'Support Note'};
+  const NAMES={1:'Identifying FCV Risks',2:'FCV-Sensitivity Screening',3:'Identifying Project Gaps',4:'Recommendations Note'};
+  const SHORT={1:'Identifying FCV Risks',2:'FCV-Sensitivity Screening',3:'Identifying Project Gaps',4:'Recommendations Note'};
   const SUBS={1:'Extracting all FCV-relevant information from your documents',2:'Assessing risks across six FCV dimensions',3:'Identifying gaps and recommending mitigations',4:'Generating the final TTL support note'};
   const COL={1:'s1',2:'s2',3:'s3',4:'s4'};
 
   const CALLS={
-    1:{t:'Preliminary extraction — review before continuing',
-       b:'This is the AI\'s initial scan of your documents, surfacing all FCV-relevant information it has identified. The WBG FCV guidance and risk context documents have also been considered. Review what\'s here — if anything is missing or you want to add local knowledge, use the <strong>Refine</strong> box below before moving to Stage 2.'},
-    2:{t:'Six-dimension risk analysis — review the ratings',
-       b:'The AI has assessed the project across six FCV dimensions, rating risks both <em>to</em> and <em>from</em> the project. Check the risk matrix at the bottom. If a rating seems off or you want more depth on a specific dimension, use the Refine box before proceeding to Stage 3.'},
-    3:{t:'Gaps, mitigations and do-no-harm checklist — refine before the Support Note',
-       b:'This stage identifies analytical and design gaps, proposes mitigations, and checks do-no-harm principles. The content here feeds directly into the Stage 4 Support Note — worth refining if any recommendations seem impractical or if you want to add context before the final output.'},
-    4:{t:'FCV Support Note — ready to copy into your Word document',
-       b:'This is the final collegial memo for the TTL, structured as a professional peer-review note. You can still refine specific sections. When satisfied, click <strong>Copy all</strong> and paste directly into your Word document.'}
+    1:{t:'Stage 1 of 4 · Identifying FCV Risks',
+       b:'<strong>What you are reading:</strong> This is a summary of what the LLM is identifying and considering as it maps FCV-relevant risks in your project documents. It reflects the AI's thinking and analytical judgement at this stage — not a final output. Read through to check that it is on the right track and has not missed any important information. If anything is absent or needs correcting, use the query box below to steer the analysis before proceeding.'},
+    2:{t:'Stage 2 of 4 · FCV-Sensitivity Screening',
+       b:'<strong>What you are reading:</strong> This is the LLM's structured assessment of the project's FCV sensitivity and responsiveness across key dimensions. It shows how the AI is weighing the evidence and forming its judgements. Review the ratings and reasoning carefully — if a dimension seems underweighted, overweighted, or is missing important context, use the query box below to adjust before moving on.'},
+    3:{t:'Stage 3 of 4 · Identifying Project Gaps',
+       b:'<strong>What you are reading:</strong> This is the LLM's analysis of gaps in FCV sensitivity and responsiveness, along with proposed mitigations and a do-no-harm check. This content feeds directly into the final Recommendations Note, so it is worth taking time here to refine any gaps that seem inaccurate or add local knowledge the AI may not have captured.'},
+    4:{t:'Stage 4 of 4 · Recommendations Note — ready to copy',
+       b:'<strong>What you are reading:</strong> This is the LLM-generated Recommendations Note for the Task Team Leader, drawing on the analysis from the previous three stages. Review it carefully before use — the AI's output should be treated as a well-informed draft, not a final expert assessment. You can still refine specific sections using the query box. When satisfied, click <strong>Copy all</strong> and paste into your Word document.'}
   };
 
   function setupZone(zId,iId,arr,t){

@@ -3,7 +3,7 @@ import json
 import base64
 from flask import Flask, request, jsonify, send_from_directory, Response, stream_with_context
 import anthropic
-from background_docs import RISK_SUMMARY, FCV_GUIDE
+from background_docs import FCV_GUIDE
 
 app = Flask(__name__, static_folder='static')
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB upload limit
@@ -284,13 +284,12 @@ def run_stage():
                     else:
                         content_parts.append({"type": "text", "text": f"=== CONTEXT DOCUMENT: {name} ===\n\n{doc_content}"})
 
-            # Always inject the two embedded background documents
+            # Always inject the WBG FCV guidance document
             content_parts.append({"type": "text", "text": (
-                "\n\n--- WBG BACKGROUND REFERENCE DOCUMENTS (always included) ---\n"
-                "The following two documents are standard reference material for all FCV assessments. "
-                "Use them to inform your analysis.\n\n"
-                "=== DOCUMENT: LLM Risk Summary (Honduras Context) ===\n" + RISK_SUMMARY +
-                "\n\n=== DOCUMENT: WBG FCV Sensitivity and Responsiveness Guide ===\n" + FCV_GUIDE
+                "\n\n--- WBG BACKGROUND REFERENCE DOCUMENT (always included) ---\n"
+                "The following document is standard reference material for all FCV assessments. "
+                "Use it to inform your analysis.\n\n"
+                "=== DOCUMENT: WBG FCV Sensitivity and Responsiveness Guide ===\n" + FCV_GUIDE
             )})
             content_parts.append({"type": "text", "text": get_prompt_for_stage(1)})
             messages.append({"role": "user", "content": content_parts})
