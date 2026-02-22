@@ -219,25 +219,36 @@ def run_stage():
         conversation_history = data.get('history', [])
         user_message = data.get('user_message', '').strip()
 
-        # Trim history to avoid rate limits — keep only last 6 messages
-        # For stages 3+, we only need the most recent assistant output as context
-        messages = list(conversation_history)
-        if len(messages) > 6:
-            # Keep system context: summarise older turns into a single message
-            older = messages[:-6]
-            recent = messages[-6:]
-            summary_parts = []
-            for m in older:
-                if m['role'] == 'assistant':
-                    # Truncate long assistant outputs to first 2000 chars
-                    c = m['content'] if isinstance(m['content'], str) else str(m['content'])
-                    summary_parts.append(c[:2000] + ('...[truncated]' if len(c) > 2000 else ''))
-            if summary_parts:
-                summary_msg = {"role": "user", "content": "For context, here are summaries of earlier analysis stages:\n\n" + "\n\n---\n\n".join(summary_parts)}
-                summary_reply = {"role": "assistant", "content": "Understood, I have the context from the earlier stages."}
-                messages = [summary_msg, summary_reply] + recent
-            else:
-                messages = recent
+        # Build a lean message history to stay within rate limits.
+        # We never send the raw documents again after stage 1.
+        # Each prior assistant output is truncated to 4000 chars max.
+        MAX_ASSISTANT_CHARS = 4000
+
+        def trim_message(m):
+            if m['role'] != 'assistant':
+                return None  # drop user messages (prompts + docs) from history
+            c = m['content'] if isinstance(m['content'], str) else ''
+            if len(c) > MAX_ASSISTANT_CHARS:
+                c = c[:MAX_ASSISTANT_CHARS] + '\n...[truncated for brevity]'
+            return {"role": "assistant", "content": c}
+
+        # Rebuild messages: inject trimmed prior outputs as a clean context block
+        prior_outputs = []
+        for m in conversation_history:
+            trimmed = trim_message(m)
+            if trimmed:
+                prior_outputs.append(trimmed['content'])
+
+        if prior_outputs:
+            context = "\n\n---\n\n".join(
+                f"Stage {i+1} output:\n{o}" for i, o in enumerate(prior_outputs)
+            )
+            messages = [
+                {"role": "user", "content": f"Here is the prior FCV analysis context (truncated):\n\n{context}\n\nPlease use this as the basis for the next stage."},
+                {"role": "assistant", "content": "Understood. I have reviewed the prior analysis and will build on it for the next stage."}
+            ]
+        else:
+            messages = []
 
         if stage == 1:
             documents = data.get('documents', [])
