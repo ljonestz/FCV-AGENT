@@ -564,17 +564,13 @@
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2.5" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
       <div><strong>Confidentiality reminder:</strong> Do not upload classified, confidential, or otherwise restricted documents. Only upload materials approved for use with external AI processing systems.</div>
     </div>
-    <div class="confidential-warning">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-      <span><strong>Important:</strong> Do not upload confidential, classified, or restricted documents. Only upload materials that are cleared for use with external processing systems.</span>
-    </div>
 
     <div class="upload-foot">
       <p class="upload-hint">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
         At least one project document required to begin
       </p>
-      <button class="btn btn-primary" id="start-btn" onclick="startAnalysis()" data-disabled="true" aria-disabled="true" style="opacity:.4;cursor:not-allowed">
+      <button class="btn btn-primary" id="start-btn" onclick="startAnalysis()">
         Begin FCV Analysis
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
       </button>
@@ -685,36 +681,11 @@
     });
     document.getElementById('dp').classList.toggle('has', pF.length > 0);
     document.getElementById('dc').classList.toggle('has', cF.length > 0);
-    setStartBtn(pF.length > 0);
+    // button always enabled; startAnalysis guards internally
   }
 
   // Fallback: enable Begin button when native input shows files, even if change event was blocked
-  function setStartBtn(enabled) {
-    const btn = document.getElementById('start-btn');
-    if (enabled) {
-      btn.removeAttribute('disabled');
-      btn.removeAttribute('data-disabled');
-      btn.removeAttribute('aria-disabled');
-      btn.style.opacity = '';
-      btn.style.cursor = '';
-    } else {
-      btn.setAttribute('data-disabled', 'true');
-      btn.setAttribute('aria-disabled', 'true');
-      btn.style.opacity = '0.4';
-      btn.style.cursor = 'not-allowed';
-    }
-  }
-
-  function checkNativeInputs() {
-    const ip = document.getElementById('ip');
-    const hasFiles = ip && ip.files && ip.files.length > 0;
-    setStartBtn(hasFiles || pF.length > 0);
-    if (hasFiles) {
-      const log = document.getElementById('debug-log');
-      if (log) log.textContent = '';
-    }
-  }
-  setInterval(checkNativeInputs, 500);
+  // Button is always enabled — startAnalysis() checks for files
 
   async function startAnalysis(){
     if(busy)return;
@@ -723,8 +694,15 @@
     const icEl = document.getElementById('ic');
     if (ipEl && ipEl.files) Array.from(ipEl.files).forEach(f=>{ if(!pF.find(x=>x.name===f.name)) pF.push(f); });
     if (icEl && icEl.files) Array.from(icEl.files).forEach(f=>{ if(!cF.find(x=>x.name===f.name)) cF.push(f); });
-    if(!pF.length && !(document.getElementById('ip').files && document.getElementById('ip').files.length > 0)){
-      document.getElementById('debug-log').textContent = 'Please select a project document first.';
+    // Collect any files from the native inputs directly (works even if change event was blocked)
+    const ipEl = document.getElementById('ip');
+    const icEl = document.getElementById('ic');
+    if (ipEl && ipEl.files) Array.from(ipEl.files).forEach(f=>{ if(!pF.find(x=>x.name===f.name)) pF.push(f); });
+    if (icEl && icEl.files) Array.from(icEl.files).forEach(f=>{ if(!cF.find(x=>x.name===f.name)) cF.push(f); });
+
+    if (!pF.length) {
+      const log = document.getElementById('debug-log');
+      if (log) { log.style.color='#b91c1c'; log.textContent = '⚠ Please select a project document before beginning.'; }
       return;
     }
     document.getElementById('upload-panel').style.display='none';
@@ -921,7 +899,7 @@
     document.getElementById('upload-panel').style.display='block';
     document.getElementById('analysis-panel').style.display='none';
     document.getElementById('chips').innerHTML='';
-    setStartBtn(false);
+    // button stays enabled for next use
     document.getElementById('dp').classList.remove('has');
     document.getElementById('dc').classList.remove('has');
     clearUI();document.getElementById('stage-disp').innerHTML='';
