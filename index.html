@@ -444,6 +444,37 @@
       font-size: 12.5px; color: #78350f; line-height: 1.55;
     }
     .confidential-notice svg { flex-shrink: 0; margin-top: 1px; }
+
+    /* ── Onboarding modal ── */
+    .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .2s ease}
+    .modal{background:#fff;border-radius:10px;max-width:620px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.25);overflow:hidden}
+    .modal-hdr{background:var(--wbg-navy);padding:22px 28px;position:relative}
+    .modal-hdr h2{font-family:'Source Serif 4',serif;font-weight:300;font-size:22px;color:#fff;margin-bottom:4px}
+    .modal-hdr p{font-size:13px;color:rgba(255,255,255,.65)}
+    .modal-body{padding:24px 28px}
+    .modal-stages{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}
+    .modal-stage{border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px}
+    .modal-stage-num{width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;margin-bottom:6px}
+    .modal-stage-title{font-size:13px;font-weight:700;margin-bottom:3px;color:var(--text)}
+    .modal-stage-desc{font-size:12px;color:var(--muted);line-height:1.5}
+    .modal-note{font-size:12px;color:var(--muted);background:var(--off-white);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:20px;line-height:1.55}
+    .modal-foot{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .modal-foot label{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);cursor:pointer}
+
+    /* ── Session persistence bar ── */
+    .session-bar{display:flex;align-items:center;gap:8px;padding:10px 32px;background:#f0f4f8;border-bottom:1px solid var(--border);font-size:12px;color:var(--muted)}
+    .session-bar svg{flex-shrink:0}
+    .session-bar-btns{margin-left:auto;display:flex;gap:6px}
+
+    /* ── Clarifying questions ── */
+    .questions-card{background:#fffbeb;border:1px solid #fbbf24;border-radius:var(--radius);padding:16px 20px;margin-bottom:16px;animation:slideUp .28s ease}
+    .questions-hdr{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#78350f;margin-bottom:12px}
+    .question-item{background:#fff;border:1px solid #fcd34d;border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:8px}
+    .question-item:last-child{margin-bottom:0}
+    .question-text{font-size:13px;color:#1a2a3a;margin-bottom:8px;line-height:1.5;font-weight:600}
+    .question-input{width:100%;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:7px 11px;font-family:inherit;font-size:13px;color:var(--text);background:var(--off-white);resize:none}
+    .question-input:focus{outline:none;border-color:#fbbf24}
+    .questions-send{margin-top:10px;display:flex;justify-content:flex-end;gap:8px}
   </style>
 </head>
 <body>
@@ -496,6 +527,58 @@
         Refineable at each stage
       </span>
     </div>
+  </div>
+</div>
+
+<!-- Onboarding modal -->
+<div id="onboarding-modal" class="modal-bg" style="display:none" role="dialog" aria-modal="true" aria-label="How this tool works">
+  <div class="modal">
+    <div class="modal-hdr">
+      <h2>Welcome to the FCV Sensitivity Project Screener</h2>
+      <p>A quick overview of how the tool works</p>
+    </div>
+    <div class="modal-body">
+      <div class="modal-stages">
+        <div class="modal-stage">
+          <div class="modal-stage-num s1">1</div>
+          <div class="modal-stage-title">Identifying FCV Risks</div>
+          <div class="modal-stage-desc">The AI extracts all FCV-relevant information from your uploaded documents and draws on its knowledge of the country context.</div>
+        </div>
+        <div class="modal-stage">
+          <div class="modal-stage-num s2">2</div>
+          <div class="modal-stage-title">FCV-Sensitivity Screening</div>
+          <div class="modal-stage-desc">The AI assesses the project across six FCV dimensions, rating risks both to and from the project, with a summary risk matrix.</div>
+        </div>
+        <div class="modal-stage">
+          <div class="modal-stage-num s3">3</div>
+          <div class="modal-stage-title">Identifying Project Gaps</div>
+          <div class="modal-stage-desc">The AI identifies analytical and design gaps, proposes mitigations, and runs a do-no-harm checklist.</div>
+        </div>
+        <div class="modal-stage">
+          <div class="modal-stage-num s4">4</div>
+          <div class="modal-stage-title">Recommendations Note</div>
+          <div class="modal-stage-desc">A collegial support note for the TTL, ready to copy into Word. Includes a mandatory AI disclaimer.</div>
+        </div>
+      </div>
+      <div class="modal-note">
+        At each stage, review the AI output carefully before proceeding. Use the <strong>Refine</strong> box to correct mistakes or add context. The AI may also ask you 1–2 clarifying questions where it needs more information — answering these improves the final output. You can save your session at any point and resume later.
+      </div>
+      <div class="modal-foot">
+        <label><input type="checkbox" id="dont-show-again"> Don't show this again</label>
+        <button class="btn btn-primary" onclick="closeOnboarding()">Get Started →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Session bar -->
+<div class="session-bar" id="session-bar">
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+  <span id="session-status">No active session</span>
+  <div class="session-bar-btns">
+    <button class="btn btn-ghost btn-sm" onclick="saveSession()" id="save-session-btn" style="display:none">Save session</button>
+    <button class="btn btn-ghost btn-sm" onclick="document.getElementById('load-session-inp').click()">Load session</button>
+    <input type="file" id="load-session-inp" accept=".json" style="display:none" onchange="loadSession(this)">
   </div>
 </div>
 
@@ -581,6 +664,7 @@
   <div id="analysis-panel" style="display:none">
     <div id="err-area" aria-live="assertive"></div>
     <div id="stage-disp"></div>
+    <div id="questions-area"></div>
     <div id="refine-area"></div>
     <div id="act-area"></div>
   </div>
@@ -592,7 +676,103 @@
 </footer>
 
 <script>
+  // ── State ──────────────────────────────────────────────────────────────────
   let pF=[],cF=[],hist=[],curS=0,busy=false;
+  let sessionName='';
+
+  // ── Onboarding ──────────────────────────────────────────────────────────────
+  function initOnboarding(){
+    try {
+      if(!localStorage.getItem('fcv-onboarding-done')){
+        document.getElementById('onboarding-modal').style.display='flex';
+      }
+    } catch(e) {
+      // localStorage may be blocked in some corporate environments — ignore
+    }
+  }
+  function closeOnboarding(){
+    try {
+      if(document.getElementById('dont-show-again').checked){
+        localStorage.setItem('fcv-onboarding-done','1');
+      }
+    } catch(e) {}
+    document.getElementById('onboarding-modal').style.display='none';
+  }
+  initOnboarding();
+
+  // ── Session persistence ─────────────────────────────────────────────────────
+  function saveSession(){
+    const state = {
+      version: 1,
+      savedAt: new Date().toISOString(),
+      currentStage: curS,
+      history: hist,
+      fileNames: { project: pF.map(f=>f.name), context: cF.map(f=>f.name) }
+    };
+    const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'fcv-session-' + new Date().toISOString().slice(0,10) + '.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    document.getElementById('session-status').textContent = 'Session saved at ' + new Date().toLocaleTimeString();
+  }
+
+  function loadSession(input){
+    const file = input.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const state = JSON.parse(e.target.result);
+        if(!state.version || !state.history){
+          alert('This does not appear to be a valid FCV session file.');
+          return;
+        }
+        hist = state.history;
+        curS = state.currentStage || 0;
+        sessionName = file.name;
+        document.getElementById('upload-panel').style.display='none';
+        document.getElementById('analysis-panel').style.display='block';
+        document.getElementById('save-session-btn').style.display='';
+        const savedAt = new Date(state.savedAt).toLocaleString();
+        document.getElementById('session-status').textContent =
+          'Resumed: ' + file.name + ' (saved ' + savedAt + ') — Stage ' + curS + ' complete';
+        setStepper(curS+1, 'active');
+        // Show resume prompt in stage-disp
+        const nextStage = curS < 4 ? curS + 1 : 4;
+        document.getElementById('stage-disp').innerHTML = `
+          <div class="callout info ani">
+            <div class="callout-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+            <div class="callout-body"><strong>Session resumed</strong>Analysis through Stage ${curS} has been loaded.
+            ${state.fileNames.project.length ? '<br>Original files: ' + [...state.fileNames.project,...state.fileNames.context].join(', ') : ''}
+            <br>Note: you will need to re-upload your documents if you want to run Stage 1 again.</div>
+          </div>`;
+        document.getElementById('act-area').innerHTML = curS < 4 ? `
+          <div class="act-bar ani">
+            <button class="btn btn-blue" onclick="runStage(${nextStage})">
+              Continue from Stage ${nextStage}
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </button>
+            <div class="sep"></div>
+            <button class="btn btn-ghost" onclick="reset()">Start over</button>
+          </div>` : '';
+      } catch(err) {
+        alert('Could not load session: ' + err.message);
+      }
+      input.value='';
+    };
+    reader.readAsText(file);
+  }
+
+  function updateSessionBar(){
+    if(curS > 0){
+      document.getElementById('save-session-btn').style.display='';
+      document.getElementById('session-status').textContent =
+        'Stage ' + curS + ' of 4 complete' + (sessionName ? ' · ' + sessionName : '');
+    }
+  }
 
   const NAMES={1:'Identifying FCV Risks',2:'FCV-Sensitivity Screening',3:'Identifying Project Gaps',4:'Recommendations Note'};
   const SHORT={1:'Identifying FCV Risks',2:'FCV-Sensitivity Screening',3:'Identifying Project Gaps',4:'Recommendations Note'};
@@ -776,7 +956,7 @@
             const p=JSON.parse(line.slice(6));
             if(p.error)throw new Error(p.error);
             if(p.chunk){streamed+=p.chunk;const el=document.getElementById('s-out');if(el)el.innerHTML=md(streamed)}
-            if(p.done){hist=p.history||hist;renderOut(stage,p.result,followOn);setStepper(stage,'done')}
+            if(p.done){hist=p.history||hist;curS=stage;updateSessionBar();renderOut(stage,p.result,followOn);setStepper(stage,'done')}
           }catch(e){if(e.message!=='Unexpected end of JSON input')throw e}
         }
       }
@@ -807,6 +987,7 @@
         <div class="out-body" id="out-txt">${md(result)}</div>
       </div>`;
 
+    renderQuestions(result);
     document.getElementById('refine-area').innerHTML=`
       <div class="refine-card ani">
         <div class="refine-lbl">
@@ -842,6 +1023,67 @@
     document.getElementById('stage-disp').scrollIntoView({behavior:'smooth',block:'start'});
   }
 
+
+  function renderQuestions(text){
+    // Look for a "Questions for the User" section in the output
+    const qMatch = text.match(/##\s*Questions for the User\s*\n([\s\S]*?)(?=\n##|$)/i);
+    if(!qMatch) return;
+    const qBlock = qMatch[1].trim();
+    // Parse individual questions (numbered or bulleted)
+    const lines = qBlock.split('\n').filter(l=>l.trim());
+    const questions = [];
+    let current = '';
+    for(const line of lines){
+      const stripped = line.replace(/^[\d]+\.\s*/,'').replace(/^[-*]\s*/,'').trim();
+      if(stripped) {
+        if(current && stripped.match(/^[A-Z]/)) { questions.push(current); current = stripped; }
+        else { current = current ? current + ' ' + stripped : stripped; }
+      }
+    }
+    if(current) questions.push(current);
+    if(!questions.length) return;
+
+    const el = document.getElementById('questions-area');
+    const inputs = questions.map((q,i)=>`
+      <div class="question-item">
+        <div class="question-text">${q}</div>
+        <textarea class="question-input" id="qa-${i}" rows="2" placeholder="Your answer (optional)..."></textarea>
+      </div>`).join('');
+
+    el.innerHTML = `
+      <div class="questions-card ani">
+        <div class="questions-hdr">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          The AI has questions before you proceed
+        </div>
+        ${inputs}
+        <div class="questions-send">
+          <button class="btn btn-ghost btn-sm" onclick="skipQuestions()">Skip</button>
+          <button class="btn btn-blue btn-sm" onclick="answerQuestions(${questions.length})">
+            Send answers &amp; continue
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </button>
+        </div>
+      </div>`;
+  }
+
+  function skipQuestions(){
+    document.getElementById('questions-area').innerHTML='';
+  }
+
+  function answerQuestions(count){
+    const answers = [];
+    for(let i=0;i<count;i++){
+      const el=document.getElementById('qa-'+i);
+      if(el&&el.value.trim()) answers.push(el.value.trim());
+    }
+    if(!answers.length){ skipQuestions(); return; }
+    document.getElementById('questions-area').innerHTML='';
+    const rfn = document.getElementById('rfn');
+    if(rfn) rfn.value = 'Additional context from user: ' + answers.join(' | ');
+    doRefine();
+  }
+
   function showErr(msg,stage){
     setStepper(stage,'err');
     document.getElementById('err-area').innerHTML=`
@@ -865,7 +1107,7 @@
   }
 
   function retry(s){document.getElementById('err-area').innerHTML='';busy=false;runStage(s)}
-  function clearUI(){['err-area','refine-area','act-area'].forEach(id=>document.getElementById(id).innerHTML='')}
+  function clearUI(){['err-area','questions-area','refine-area','act-area'].forEach(id=>document.getElementById(id).innerHTML='')}
 
   function copyOut(){
     const el=document.getElementById('out-txt');if(!el)return;
