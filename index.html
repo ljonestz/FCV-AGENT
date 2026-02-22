@@ -659,24 +659,44 @@
     `;
 
     try {
-      const formData = new FormData();
-      formData.append('stage', stage);
-      formData.append('history', JSON.stringify(conversationHistory));
-
-      if (followOnMessage) {
-        formData.append('user_message', followOnMessage);
-      }
+      // Read files in browser first, then send as JSON to avoid Render's multipart size limit
+      const payload = {
+        stage: stage,
+        history: conversationHistory,
+        user_message: followOnMessage || ''
+      };
 
       if (stage === 1) {
-        selectedFiles.forEach(f => formData.append('documents', f));
+        const readFile = (file) => new Promise((resolve, reject) => {
+          const isPdf = file.name.toLowerCase().endsWith('.pdf');
+          const reader = new FileReader();
+          if (isPdf) {
+            reader.onload = e => resolve({
+              name: file.name,
+              type: 'pdf',
+              content: e.target.result.split(',')[1]  // base64 only
+            });
+            reader.readAsDataURL(file);
+          } else {
+            reader.onload = e => resolve({
+              name: file.name,
+              type: 'text',
+              content: e.target.result
+            });
+            reader.readAsText(file);
+          }
+          reader.onerror = () => reject(new Error('Could not read ' + file.name));
+        });
+
+        payload.documents = await Promise.all(selectedFiles.map(readFile));
       }
 
-      // Use streaming fetch to avoid 30-second timeout on Render free tier
       let res;
       try {
         res = await fetch('/api/run-stage', {
           method: 'POST',
-          body: formData
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
         });
       } catch (fetchErr) {
         throw new Error('Network error — could not reach server. Details: ' + fetchErr.message);

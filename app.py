@@ -209,47 +209,36 @@ def health():
 
 @app.route('/api/run-stage', methods=['POST'])
 def run_stage():
-    """Run a stage with streaming to avoid timeout on free Render tier."""
+    """Run a stage with streaming. Accepts JSON to avoid Render's multipart size limits."""
     try:
-        stage = int(request.form.get('stage', 1))
-        conversation_history = json.loads(request.form.get('history', '[]'))
-        user_message = request.form.get('user_message', '').strip()
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'Invalid request — expected JSON.'}), 400
+
+        stage = int(data.get('stage', 1))
+        conversation_history = data.get('history', [])
+        user_message = data.get('user_message', '').strip()
 
         messages = list(conversation_history)
 
         if stage == 1:
-            files = request.files.getlist('documents')
-            if not files or all(f.filename == '' for f in files):
+            documents = data.get('documents', [])
+            if not documents:
                 return jsonify({'error': 'Please upload at least one project document.'}), 400
 
             content_parts = []
-            for f in files:
-                if f.filename == '':
-                    continue
-                file_bytes = f.read()
-                filename = f.filename.lower()
+            for doc in documents:
+                name = doc.get('name', 'document')
+                file_type = doc.get('type', 'text')
+                content = doc.get('content', '')
 
-                if filename.endswith('.pdf'):
-                    b64 = base64.standard_b64encode(file_bytes).decode('utf-8')
+                if file_type == 'pdf':
                     content_parts.append({
                         "type": "document",
-                        "source": {"type": "base64", "media_type": "application/pdf", "data": b64}
+                        "source": {"type": "base64", "media_type": "application/pdf", "data": content}
                     })
-                elif filename.endswith('.docx'):
-                    try:
-                        import io
-                        from docx import Document
-                        doc = Document(io.BytesIO(file_bytes))
-                        text = '\n'.join(p.text for p in doc.paragraphs if p.text.strip())
-                        content_parts.append({"type": "text", "text": f"--- Document: {f.filename} ---\n\n{text}"})
-                    except Exception:
-                        content_parts.append({"type": "text", "text": f"[Could not parse {f.filename}]"})
                 else:
-                    try:
-                        text = file_bytes.decode('utf-8')
-                    except UnicodeDecodeError:
-                        text = file_bytes.decode('latin-1', errors='replace')
-                    content_parts.append({"type": "text", "text": f"--- Document: {f.filename} ---\n\n{text}"})
+                    content_parts.append({"type": "text", "text": f"--- Document: {name} ---\n\n{content}"})
 
             content_parts.append({"type": "text", "text": get_prompt_for_stage(1)})
             messages.append({"role": "user", "content": content_parts})
