@@ -5,6 +5,7 @@ from flask import Flask, request, jsonify, send_from_directory, Response, stream
 import anthropic
 
 app = Flask(__name__, static_folder='static')
+app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB upload limit
 
 client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
 
