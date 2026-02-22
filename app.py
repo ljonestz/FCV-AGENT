@@ -219,7 +219,25 @@ def run_stage():
         conversation_history = data.get('history', [])
         user_message = data.get('user_message', '').strip()
 
+        # Trim history to avoid rate limits — keep only last 6 messages
+        # For stages 3+, we only need the most recent assistant output as context
         messages = list(conversation_history)
+        if len(messages) > 6:
+            # Keep system context: summarise older turns into a single message
+            older = messages[:-6]
+            recent = messages[-6:]
+            summary_parts = []
+            for m in older:
+                if m['role'] == 'assistant':
+                    # Truncate long assistant outputs to first 2000 chars
+                    c = m['content'] if isinstance(m['content'], str) else str(m['content'])
+                    summary_parts.append(c[:2000] + ('...[truncated]' if len(c) > 2000 else ''))
+            if summary_parts:
+                summary_msg = {"role": "user", "content": "For context, here are summaries of earlier analysis stages:\n\n" + "\n\n---\n\n".join(summary_parts)}
+                summary_reply = {"role": "assistant", "content": "Understood, I have the context from the earlier stages."}
+                messages = [summary_msg, summary_reply] + recent
+            else:
+                messages = recent
 
         if stage == 1:
             documents = data.get('documents', [])
