@@ -601,13 +601,13 @@
 
   const CALLS={
     1:{t:'Stage 1 of 4 · Identifying FCV Risks',
-       b:'<strong>What you are reading:</strong> This is a summary of what the LLM is identifying and considering as it maps FCV-relevant risks in your project documents. It reflects the AI's thinking and analytical judgement at this stage — not a final output. Read through to check that it is on the right track and has not missed any important information. If anything is absent or needs correcting, use the query box below to steer the analysis before proceeding.'},
+       b:'<strong>What you are reading:</strong> This is a summary of what the LLM is identifying and considering as it maps FCV-relevant risks in your project documents. It reflects the AI thinking and analytical judgement at this stage — not a final output. Read through to check that it is on the right track and has not missed any important information. If anything is absent or needs correcting, use the query box below to steer the analysis before proceeding.'},
     2:{t:'Stage 2 of 4 · FCV-Sensitivity Screening',
-       b:'<strong>What you are reading:</strong> This is the LLM's structured assessment of the project's FCV sensitivity and responsiveness across key dimensions. It shows how the AI is weighing the evidence and forming its judgements. Review the ratings and reasoning carefully — if a dimension seems underweighted, overweighted, or is missing important context, use the query box below to adjust before moving on.'},
+       b:'<strong>What you are reading:</strong> This is the LLM structured assessment of the project FCV sensitivity and responsiveness across key dimensions. It shows how the AI is weighing the evidence and forming its judgements. Review the ratings and reasoning carefully — if a dimension seems underweighted, overweighted, or is missing important context, use the query box below to adjust before moving on.'},
     3:{t:'Stage 3 of 4 · Identifying Project Gaps',
-       b:'<strong>What you are reading:</strong> This is the LLM's analysis of gaps in FCV sensitivity and responsiveness, along with proposed mitigations and a do-no-harm check. This content feeds directly into the final Recommendations Note, so it is worth taking time here to refine any gaps that seem inaccurate or add local knowledge the AI may not have captured.'},
+       b:'<strong>What you are reading:</strong> This is the LLM analysis of gaps in FCV sensitivity and responsiveness, along with proposed mitigations and a do-no-harm check. This content feeds directly into the final Recommendations Note, so it is worth taking time here to refine any gaps that seem inaccurate or to add local knowledge the AI may not have captured.'},
     4:{t:'Stage 4 of 4 · Recommendations Note — ready to copy',
-       b:'<strong>What you are reading:</strong> This is the LLM-generated Recommendations Note for the Task Team Leader, drawing on the analysis from the previous three stages. Review it carefully before use — the AI's output should be treated as a well-informed draft, not a final expert assessment. You can still refine specific sections using the query box. When satisfied, click <strong>Copy all</strong> and paste into your Word document.'}
+       b:'<strong>What you are reading:</strong> This is the LLM-generated Recommendations Note for the Task Team Leader, drawing on the analysis from the previous three stages. Review it carefully before use — treat it as a well-informed draft, not a final expert assessment. You can still refine specific sections using the query box. When satisfied, click <strong>Copy all</strong> and paste into your Word document.'}
   };
 
   function setupZone(zoneId, inputId, arr, type) {
@@ -688,25 +688,23 @@
   // Button is always enabled — startAnalysis() checks for files
 
   async function startAnalysis(){
-    if(busy)return;
-    // Read files directly from inputs at click time — works even if change event was blocked
+    if(busy) return;
+    // Collect files directly from inputs at click time (works even if change event was blocked by corporate policy)
     const ipEl = document.getElementById('ip');
     const icEl = document.getElementById('ic');
-    if (ipEl && ipEl.files) Array.from(ipEl.files).forEach(f=>{ if(!pF.find(x=>x.name===f.name)) pF.push(f); });
-    if (icEl && icEl.files) Array.from(icEl.files).forEach(f=>{ if(!cF.find(x=>x.name===f.name)) cF.push(f); });
-    // Collect any files from the native inputs directly (works even if change event was blocked)
-    const ipEl = document.getElementById('ip');
-    const icEl = document.getElementById('ic');
-    if (ipEl && ipEl.files) Array.from(ipEl.files).forEach(f=>{ if(!pF.find(x=>x.name===f.name)) pF.push(f); });
-    if (icEl && icEl.files) Array.from(icEl.files).forEach(f=>{ if(!cF.find(x=>x.name===f.name)) cF.push(f); });
-
+    if (ipEl && ipEl.files) {
+      Array.from(ipEl.files).forEach(f => { if (!pF.find(x => x.name === f.name)) pF.push(f); });
+    }
+    if (icEl && icEl.files) {
+      Array.from(icEl.files).forEach(f => { if (!cF.find(x => x.name === f.name)) cF.push(f); });
+    }
     if (!pF.length) {
       const log = document.getElementById('debug-log');
       if (log) { log.style.color='#b91c1c'; log.textContent = '⚠ Please select a project document before beginning.'; }
       return;
     }
-    document.getElementById('upload-panel').style.display='none';
-    document.getElementById('analysis-panel').style.display='block';
+    document.getElementById('upload-panel').style.display = 'none';
+    document.getElementById('analysis-panel').style.display = 'block';
     await runStage(1);
   }
 
