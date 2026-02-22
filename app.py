@@ -3,6 +3,7 @@ import json
 import base64
 from flask import Flask, request, jsonify, send_from_directory, Response, stream_with_context
 import anthropic
+from background_docs import RISK_SUMMARY, FCV_GUIDE
 
 app = Flask(__name__, static_folder='static')
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB upload limit
@@ -93,7 +94,9 @@ Organize your findings using this structure:
 - **Neutrality:** Present information objectively without premature analysis
 - **Transparency:** Note when information is ambiguous or contradictory
 
-Now analyze the uploaded project document(s) and produce this structured extraction."""
+Now analyze the uploaded project document(s) and produce this structured extraction.
+
+IMPORTANT: You may also draw on your broader knowledge of the country, region, and sector to supplement the document analysis — for example, known conflict dynamics, governance challenges, or regional risks not explicitly mentioned in the documents. Clearly distinguish when you are drawing on general knowledge vs. document content. Do NOT speculate about the specific project beyond what the documents contain."""
 
 PROMPT_2 = """# Role
 You are an FCV specialist conducting systematic screening analysis for World Bank projects using the FCV Lens framework.
@@ -256,19 +259,39 @@ def run_stage():
                 return jsonify({'error': 'Please upload at least one project document.'}), 400
 
             content_parts = []
-            for doc in documents:
+            project_docs = [d for d in documents if not d.get('isContext')]
+            context_docs = [d for d in documents if d.get('isContext')]
+
+            # Add project documents first
+            for doc in project_docs:
                 name = doc.get('name', 'document')
                 file_type = doc.get('type', 'text')
-                content = doc.get('content', '')
-
+                doc_content = doc.get('content', '')
                 if file_type == 'pdf':
-                    content_parts.append({
-                        "type": "document",
-                        "source": {"type": "base64", "media_type": "application/pdf", "data": content}
-                    })
+                    content_parts.append({"type": "document", "source": {"type": "base64", "media_type": "application/pdf", "data": doc_content}})
                 else:
-                    content_parts.append({"type": "text", "text": f"--- Document: {name} ---\n\n{content}"})
+                    content_parts.append({"type": "text", "text": f"=== PROJECT DOCUMENT: {name} ===\n\n{doc_content}"})
 
+            # Add context documents with a separator
+            if context_docs:
+                content_parts.append({"type": "text", "text": "\n\n--- CONTEXTUAL / BACKGROUND DOCUMENTS ---\nThe following documents provide country and risk context. Use them to inform the FCV analysis.\n"})
+                for doc in context_docs:
+                    name = doc.get('name', 'document')
+                    file_type = doc.get('type', 'text')
+                    doc_content = doc.get('content', '')
+                    if file_type == 'pdf':
+                        content_parts.append({"type": "document", "source": {"type": "base64", "media_type": "application/pdf", "data": doc_content}})
+                    else:
+                        content_parts.append({"type": "text", "text": f"=== CONTEXT DOCUMENT: {name} ===\n\n{doc_content}"})
+
+            # Always inject the two embedded background documents
+            content_parts.append({"type": "text", "text": (
+                "\n\n--- WBG BACKGROUND REFERENCE DOCUMENTS (always included) ---\n"
+                "The following two documents are standard reference material for all FCV assessments. "
+                "Use them to inform your analysis.\n\n"
+                "=== DOCUMENT: LLM Risk Summary (Honduras Context) ===\n" + RISK_SUMMARY +
+                "\n\n=== DOCUMENT: WBG FCV Sensitivity and Responsiveness Guide ===\n" + FCV_GUIDE
+            )})
             content_parts.append({"type": "text", "text": get_prompt_for_stage(1)})
             messages.append({"role": "user", "content": content_parts})
 
