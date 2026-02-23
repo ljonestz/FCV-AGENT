@@ -1042,7 +1042,7 @@
         </div>
       </div>`;
 
-    if(!isLast) renderQuestions(result);
+    if(!isLast) renderQuestions(result, stage);
     document.getElementById('act-area').innerHTML=isLast?`
       <div class="act-bar ani">
         <button class="btn btn-ghost" onclick="reset()">
@@ -1063,7 +1063,7 @@
   }
 
 
-  function renderQuestions(text){
+  function renderQuestions(text, stage){
     // Strip markdown formatting, find the Questions section
     const cleanText = text.replace(/\*\*/g,'').replace(/\*/g,'');
     const qMatch = cleanText.match(/##\s*Questions for the User[^\n]*\n([\s\S]*?)(?=\n##|\n---|$)/i);
@@ -1120,8 +1120,8 @@
         <p class="questions-intro">Your answers will be carried into the next stage to sharpen the analysis. You can skip if you prefer.</p>
         ${inputs}
         <div class="questions-send">
-          <button class="btn btn-ghost btn-sm" onclick="skipQuestions()">Skip</button>
-          <button class="btn btn-blue btn-sm" onclick="collectAnswers(${JSON.stringify(parsed)})">
+          <button class="btn btn-ghost btn-sm" onclick="skipQuestions(); runStage(${stage+1})">Skip &amp; continue</button>
+          <button class="btn btn-blue btn-sm" onclick="collectAnswers(${JSON.stringify(parsed)}, ${stage+1})">
             Save &amp; continue
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
           </button>
@@ -1134,7 +1134,7 @@
     pendingContext = '';
   }
 
-  function collectAnswers(parsed){
+  function collectAnswers(parsed, nextStage){
     const parts = [];
     parsed.forEach((q,i) => {
       let answer = '';
@@ -1154,13 +1154,9 @@
 
     if(parts.length){
       pendingContext = parts.join(' | ');
-      // Show a subtle confirmation that answers were saved
-      const qa = document.getElementById('questions-area');
-      if(qa){
-        qa.innerHTML = '<div class="callout ok ani" style="margin-bottom:12px"><div class="callout-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div><div class="callout-body">Answers saved — they will inform the next stage of analysis.</div></div>';
-        setTimeout(()=>{ if(qa) qa.innerHTML=''; }, 3500);
-      }
     }
+    // Always proceed to next stage
+    runStage(nextStage);
   }
 
   function showErr(msg,stage){
