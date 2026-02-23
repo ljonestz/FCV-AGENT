@@ -1063,6 +1063,10 @@
   }
 
 
+  // Store pending questions state so onclick handlers don't need to pass data through HTML attributes
+  let _pendingParsed = [];
+  let _pendingNextStage = 0;
+
   function renderQuestions(text, stage){
     // Strip markdown formatting, find the Questions section
     const cleanText = text.replace(/\*\*/g,'').replace(/\*/g,'');
@@ -1071,14 +1075,13 @@
 
     // Parse each question — detect CHOICE: format for multiple choice
     const rawLines = qMatch[1].split('\n');
-    const parsed = []; // {type:'text'|'choice', question, options?}
+    const parsed = [];
 
     for(const line of rawLines){
       const l = line.replace(/^[\d]+\.\s*/,'').replace(/^[-*]\s*/,'').trim();
       if(!l) continue;
 
       if(l.startsWith('CHOICE:')){
-        // Format: CHOICE: Question text? | Option A | Option B | Option C
         const parts = l.slice(7).split('|').map(s=>s.trim());
         const question = parts[0];
         const options = parts.slice(1).filter(Boolean);
@@ -1087,16 +1090,19 @@
           continue;
         }
       }
-      // Plain open-ended question
       if(l.length > 10) parsed.push({type:'text', question:l});
     }
 
     if(!parsed.length) return;
 
+    // Store in module-level vars — no data in onclick attributes
+    _pendingParsed = parsed;
+    _pendingNextStage = stage + 1;
+
     const inputs = parsed.map((q,i) => {
       if(q.type === 'choice'){
-        const radios = q.options.map((opt,j) =>
-          `<label class="choice-opt"><input type="radio" name="qr-${i}" value="${opt.replace(/"/g,'&quot;')}"> ${opt}</label>`
+        const radios = q.options.map(opt =>
+          `<label class="choice-opt"><input type="radio" name="qr-${i}" value="${opt.replace(/&/g,'&amp;').replace(/"/g,'&quot;')}"> ${opt}</label>`
         ).join('');
         return `<div class="question-item">
           <div class="question-text">${q.question}</div>
@@ -1120,13 +1126,22 @@
         <p class="questions-intro">Your answers will be carried into the next stage to sharpen the analysis. You can skip if you prefer.</p>
         ${inputs}
         <div class="questions-send">
-          <button class="btn btn-ghost btn-sm" onclick="skipQuestions(); runStage(${stage+1})">Skip &amp; continue</button>
-          <button class="btn btn-blue btn-sm" onclick="collectAnswers(${JSON.stringify(parsed)}, ${stage+1})">
+          <button class="btn btn-ghost btn-sm" id="q-skip-btn">Skip &amp; continue</button>
+          <button class="btn btn-blue btn-sm" id="q-save-btn">
             Save &amp; continue
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
           </button>
         </div>
       </div>`;
+
+    // Attach handlers via JS — no inline onclick, no HTML attribute encoding issues
+    document.getElementById('q-skip-btn').addEventListener('click', function(){
+      skipQuestions();
+      runStage(_pendingNextStage);
+    });
+    document.getElementById('q-save-btn').addEventListener('click', function(){
+      collectAnswers();
+    });
   }
 
   function skipQuestions(){
@@ -1134,9 +1149,9 @@
     pendingContext = '';
   }
 
-  function collectAnswers(parsed, nextStage){
+  function collectAnswers(){
     const parts = [];
-    parsed.forEach((q,i) => {
+    _pendingParsed.forEach((q,i) => {
       let answer = '';
       if(q.type === 'choice'){
         const checked = document.querySelector('input[name="qr-'+i+'"]:checked');
@@ -1152,11 +1167,8 @@
 
     document.getElementById('questions-area').innerHTML = '';
 
-    if(parts.length){
-      pendingContext = parts.join(' | ');
-    }
-    // Always proceed to next stage
-    runStage(nextStage);
+    if(parts.length) pendingContext = parts.join(' | ');
+    runStage(_pendingNextStage);
   }
 
   function showErr(msg,stage){
