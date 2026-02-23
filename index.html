@@ -532,41 +532,67 @@
 
 <!-- Onboarding modal -->
 <div id="onboarding-modal" class="modal-bg" style="display:none" role="dialog" aria-modal="true" aria-label="How this tool works">
-  <div class="modal">
-    <div class="modal-hdr">
-      <h2>Welcome to the FCV Sensitivity Project Screener</h2>
-      <p>A quick overview of how the tool works</p>
+  <div class="modal" style="max-width:680px">
+    <div class="modal-hdr" style="padding:24px 32px 20px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:var(--wbg-cyan);margin-bottom:8px;display:flex;align-items:center;gap:8px"><span style="display:inline-block;width:16px;height:2px;background:var(--wbg-cyan)"></span>WBG FCV Analytics Unit</div>
+      <h2 style="font-size:24px;margin-bottom:6px">FCV Sensitivity Project Screener</h2>
+      <p style="font-size:14px;font-style:italic;color:rgba(255,255,255,.6)">A tool for screening WBG projects for recommendations to strengthen FCV sensitivity and responsiveness</p>
     </div>
-    <div class="modal-body">
-      <div class="modal-stages">
-        <div class="modal-stage">
-          <div class="modal-stage-num s1">1</div>
-          <div class="modal-stage-title">Identifying FCV Risks</div>
-          <div class="modal-stage-desc">The AI extracts all FCV-relevant information from your uploaded documents and draws on its knowledge of the country context.</div>
-        </div>
-        <div class="modal-stage">
-          <div class="modal-stage-num s2">2</div>
-          <div class="modal-stage-title">FCV-Sensitivity Screening</div>
-          <div class="modal-stage-desc">The AI assesses the project across six FCV dimensions, rating risks both to and from the project, with a summary risk matrix.</div>
-        </div>
-        <div class="modal-stage">
-          <div class="modal-stage-num s3">3</div>
-          <div class="modal-stage-title">Identifying Project Gaps</div>
-          <div class="modal-stage-desc">The AI identifies analytical and design gaps, proposes mitigations, and runs a do-no-harm checklist.</div>
-        </div>
-        <div class="modal-stage">
-          <div class="modal-stage-num s4">4</div>
-          <div class="modal-stage-title">Recommendations Note</div>
-          <div class="modal-stage-desc">A collegial support note for the TTL, ready to copy into Word. Includes a mandatory AI disclaimer.</div>
+    <div class="modal-body" style="padding:0;max-height:72vh;overflow-y:auto">
+
+      <div style="padding:20px 32px;border-bottom:1px solid var(--border)">
+        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:10px">What this tool does</div>
+        <p style="font-size:14px;line-height:1.65;color:var(--text)">This tool uses an AI language model (LLM) to screen draft WBG project documents — such as PCNs and PADs — for FCV dynamics. It generates structured recommendations on how to strengthen FCV sensitivity and responsiveness, drawing on the uploaded documents, the WBG FCV Sensitivity &amp; Responsiveness Guide, and the AI's broader knowledge of the country and sector context.</p>
+        <p style="font-size:14px;line-height:1.65;color:var(--text);margin-top:10px">The tool is designed to support — not replace — expert FCV analysis. It works best as a starting point for peer review conversations between FCV specialists and Task Team Leaders.</p>
+      </div>
+
+      <div style="padding:20px 32px;border-bottom:1px solid var(--border)">
+        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:14px">How to use it — four stages</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div style="border:1px solid var(--border);border-radius:6px;padding:12px 14px;border-top:3px solid var(--s1)">
+            <div style="font-size:11px;font-weight:700;color:var(--s1);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Stage 1 · Identifying FCV Risks</div>
+            <p style="font-size:12.5px;color:var(--text);line-height:1.55">Upload your PCN or PAD. The AI extracts all FCV-relevant content from the document and flags information from its own knowledge of the country context. Review what it finds and correct anything that is wrong or missing before proceeding.</p>
+          </div>
+          <div style="border:1px solid var(--border);border-radius:6px;padding:12px 14px;border-top:3px solid var(--s2)">
+            <div style="font-size:11px;font-weight:700;color:var(--s2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Stage 2 · FCV-Sensitivity Screening</div>
+            <p style="font-size:12.5px;color:var(--text);line-height:1.55">The AI assesses the project across six FCV dimensions, rating risks both <em>to</em> the project (how the FCV context threatens success) and <em>from</em> the project (how it could inadvertently worsen fragility). A risk matrix summarises the findings.</p>
+          </div>
+          <div style="border:1px solid var(--border);border-radius:6px;padding:12px 14px;border-top:3px solid var(--s3)">
+            <div style="font-size:11px;font-weight:700;color:var(--s3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Stage 3 · Identifying Project Gaps</div>
+            <p style="font-size:12.5px;color:var(--text);line-height:1.55">The AI identifies gaps in FCV sensitivity and design, proposes mitigations for high-risk dimensions, and runs a do-no-harm checklist. This content feeds directly into the final Recommendations Note — review it carefully before proceeding.</p>
+          </div>
+          <div style="border:1px solid var(--border);border-radius:6px;padding:12px 14px;border-top:3px solid var(--s4)">
+            <div style="font-size:11px;font-weight:700;color:var(--s4);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Stage 4 · Recommendations Note</div>
+            <p style="font-size:12.5px;color:var(--text);line-height:1.55">A collegial peer-review memo addressed to the TTL. It summarises FCV strengths and gaps, sets out strategic priorities, and includes a technical annex. The output includes a mandatory AI disclaimer and can be copied directly into Word.</p>
+          </div>
         </div>
       </div>
-      <div class="modal-note">
-        At each stage, review the AI output carefully before proceeding. Use the <strong>Refine</strong> box to correct mistakes or add context. The AI may also ask you 1–2 clarifying questions where it needs more information — answering these improves the final output. You can save your session at any point and resume later.
+
+      <div style="padding:20px 32px;border-bottom:1px solid var(--border)">
+        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:10px">Refining the analysis</div>
+        <p style="font-size:13.5px;line-height:1.65;color:var(--text)">After each stage, the AI will ask you 1–2 clarifying questions about things it is uncertain about. Answering these improves the quality of subsequent stages. You can also use the <strong>Refine</strong> box at any point to correct the AI, add local knowledge, or redirect its focus. The AI's reasoning is visible throughout — you are in control of the analysis.</p>
       </div>
-      <div class="modal-foot">
-        <label><input type="checkbox" id="dont-show-again"> Don't show this again</label>
-        <button class="btn btn-primary" onclick="closeOnboarding()">Get Started →</button>
+
+      <div style="padding:20px 32px;background:#fff8f8;border-bottom:1px solid #fca5a5">
+        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#991b1b;margin-bottom:10px;display:flex;align-items:center;gap:6px">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          Important — use with care
+        </div>
+        <ul style="font-size:13px;line-height:1.7;color:#7f1d1d;padding-left:18px">
+          <li>Outputs are generated by an AI and <strong>may contain errors, omissions, or misjudgements</strong>. They should not be treated as definitive expert analysis.</li>
+          <li>The AI draws on general knowledge of the country context, which may be <strong>outdated or incomplete</strong>. Always verify against current, authoritative sources.</li>
+          <li>The Recommendations Note should be <strong>reviewed, adapted, and validated</strong> by an FCV specialist before any operational use.</li>
+          <li><strong>Do not upload classified, confidential, or otherwise restricted documents.</strong> Only use materials cleared for use with external AI processing systems.</li>
+        </ul>
       </div>
+
+      <div style="padding:18px 32px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+        <label style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);cursor:pointer"><input type="checkbox" id="dont-show-again"> Don't show this again</label>
+        <button class="btn btn-primary" onclick="closeOnboarding()" style="padding:11px 28px">
+          Begin screening →
+        </button>
+      </div>
+
     </div>
   </div>
 </div>
@@ -664,8 +690,8 @@
   <div id="analysis-panel" style="display:none">
     <div id="err-area" aria-live="assertive"></div>
     <div id="stage-disp"></div>
-    <div id="questions-area"></div>
     <div id="refine-area"></div>
+    <div id="questions-area"></div>
     <div id="act-area"></div>
   </div>
 
@@ -987,7 +1013,6 @@
         <div class="out-body" id="out-txt">${md(result)}</div>
       </div>`;
 
-    renderQuestions(result);
     document.getElementById('refine-area').innerHTML=`
       <div class="refine-card ani">
         <div class="refine-lbl">
@@ -1004,6 +1029,7 @@
         </div>
       </div>`;
 
+    if(!isLast) renderQuestions(result);
     document.getElementById('act-area').innerHTML=isLast?`
       <div class="act-bar ani">
         <button class="btn btn-ghost" onclick="reset()">
@@ -1026,7 +1052,9 @@
 
   function renderQuestions(text){
     // Look for a "Questions for the User" section in the output
-    const qMatch = text.match(/##\s*Questions for the User\s*\n([\s\S]*?)(?=\n##|$)/i);
+    // Robust: strip any markdown bold/italic, match the section header flexibly
+    const cleanText = text.replace(/\*\*/g,'').replace(/\*/g,'');
+    const qMatch = cleanText.match(/##\s*Questions for the User[^\n]*\n([\s\S]*?)(?=\n##|\n---|\n\*\*\*|$)/i);
     if(!qMatch) return;
     const qBlock = qMatch[1].trim();
     // Parse individual questions (numbered or bulleted)
@@ -1107,7 +1135,7 @@
   }
 
   function retry(s){document.getElementById('err-area').innerHTML='';busy=false;runStage(s)}
-  function clearUI(){['err-area','questions-area','refine-area','act-area'].forEach(id=>document.getElementById(id).innerHTML='')}
+  function clearUI(){['err-area','stage-disp','questions-area','refine-area','act-area'].forEach(id=>{const e=document.getElementById(id);if(e)e.innerHTML=''})}
 
   function copyOut(){
     const el=document.getElementById('out-txt');if(!el)return;
