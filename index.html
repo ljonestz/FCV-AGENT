@@ -467,14 +467,20 @@
     .session-bar-btns{margin-left:auto;display:flex;gap:6px}
 
     /* ── Clarifying questions ── */
-    .questions-card{background:#fffbeb;border:1px solid #fbbf24;border-radius:var(--radius);padding:16px 20px;margin-bottom:16px;animation:slideUp .28s ease}
-    .questions-hdr{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#78350f;margin-bottom:12px}
-    .question-item{background:#fff;border:1px solid #fcd34d;border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:8px}
+    .questions-card{background:#fffbeb;border:1px solid #fbbf24;border-radius:var(--radius);padding:18px 22px;margin-bottom:16px;animation:slideUp .28s ease}
+    .questions-hdr{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#78350f;margin-bottom:5px}
+    .questions-intro{font-size:12.5px;color:#92400e;margin-bottom:14px;line-height:1.5}
+    .question-item{background:#fff;border:1px solid #fcd34d;border-radius:var(--radius-sm);padding:14px 16px;margin-bottom:10px}
     .question-item:last-child{margin-bottom:0}
-    .question-text{font-size:13px;color:#1a2a3a;margin-bottom:8px;line-height:1.5;font-weight:600}
-    .question-input{width:100%;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:7px 11px;font-family:inherit;font-size:13px;color:var(--text);background:var(--off-white);resize:none}
-    .question-input:focus{outline:none;border-color:#fbbf24}
-    .questions-send{margin-top:10px;display:flex;justify-content:flex-end;gap:8px}
+    .question-text{font-size:13.5px;color:#1a2a3a;margin-bottom:10px;line-height:1.55;font-weight:600}
+    .question-input{width:100%;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:8px 12px;font-family:inherit;font-size:13px;color:var(--text);background:var(--off-white);resize:none}
+    .question-input:focus{outline:none;border-color:#fbbf24;background:#fff}
+    .choice-group{display:flex;flex-direction:column;gap:7px;margin-bottom:4px}
+    .choice-opt{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--text);cursor:pointer;padding:7px 10px;border-radius:var(--radius-sm);border:1.5px solid var(--border);background:var(--off-white);transition:all .15s}
+    .choice-opt:hover{border-color:#fbbf24;background:#fffbeb}
+    .choice-opt input[type=radio]{accent-color:#009FDA;width:15px;height:15px;flex-shrink:0}
+    .choice-opt:has(input:checked){border-color:#009FDA;background:#f0f9ff}
+    .questions-send{margin-top:14px;display:flex;justify-content:flex-end;gap:8px}
   </style>
 </head>
 <body>
@@ -705,6 +711,7 @@
   // ── State ──────────────────────────────────────────────────────────────────
   let pF=[],cF=[],hist=[],curS=0,busy=false;
   let sessionName='';
+  let pendingContext=''; // answers from questions, injected into next stage
 
   // ── Onboarding ──────────────────────────────────────────────────────────────
   function initOnboarding(){
@@ -932,7 +939,13 @@
       </div>`;
 
     try{
-      const payload={stage,history:hist,user_message:followOn||''};
+      // Attach any pending user context from previous stage questions
+      let contextPrefix = '';
+      if(pendingContext && !followOn){
+        contextPrefix = pendingContext;
+        pendingContext = '';
+      }
+      const payload={stage,history:hist,user_message:followOn||(contextPrefix?'User context for this stage: '+contextPrefix:'')};
 
       if(stage===1){
         const readF=(file,isCtx)=>new Promise((res,rej)=>{
@@ -1051,44 +1064,65 @@
 
 
   function renderQuestions(text){
-    // Look for a "Questions for the User" section in the output
-    // Robust: strip any markdown bold/italic, match the section header flexibly
+    // Strip markdown formatting, find the Questions section
     const cleanText = text.replace(/\*\*/g,'').replace(/\*/g,'');
-    const qMatch = cleanText.match(/##\s*Questions for the User[^\n]*\n([\s\S]*?)(?=\n##|\n---|\n\*\*\*|$)/i);
+    const qMatch = cleanText.match(/##\s*Questions for the User[^\n]*\n([\s\S]*?)(?=\n##|\n---|$)/i);
     if(!qMatch) return;
-    const qBlock = qMatch[1].trim();
-    // Parse individual questions (numbered or bulleted)
-    const lines = qBlock.split('\n').filter(l=>l.trim());
-    const questions = [];
-    let current = '';
-    for(const line of lines){
-      const stripped = line.replace(/^[\d]+\.\s*/,'').replace(/^[-*]\s*/,'').trim();
-      if(stripped) {
-        if(current && stripped.match(/^[A-Z]/)) { questions.push(current); current = stripped; }
-        else { current = current ? current + ' ' + stripped : stripped; }
+
+    // Parse each question — detect CHOICE: format for multiple choice
+    const rawLines = qMatch[1].split('\n');
+    const parsed = []; // {type:'text'|'choice', question, options?}
+
+    for(const line of rawLines){
+      const l = line.replace(/^[\d]+\.\s*/,'').replace(/^[-*]\s*/,'').trim();
+      if(!l) continue;
+
+      if(l.startsWith('CHOICE:')){
+        // Format: CHOICE: Question text? | Option A | Option B | Option C
+        const parts = l.slice(7).split('|').map(s=>s.trim());
+        const question = parts[0];
+        const options = parts.slice(1).filter(Boolean);
+        if(question && options.length) {
+          parsed.push({type:'choice', question, options});
+          continue;
+        }
       }
+      // Plain open-ended question
+      if(l.length > 10) parsed.push({type:'text', question:l});
     }
-    if(current) questions.push(current);
-    if(!questions.length) return;
 
-    const el = document.getElementById('questions-area');
-    const inputs = questions.map((q,i)=>`
-      <div class="question-item">
-        <div class="question-text">${q}</div>
-        <textarea class="question-input" id="qa-${i}" rows="2" placeholder="Your answer (optional)..."></textarea>
-      </div>`).join('');
+    if(!parsed.length) return;
 
-    el.innerHTML = `
+    const inputs = parsed.map((q,i) => {
+      if(q.type === 'choice'){
+        const radios = q.options.map((opt,j) =>
+          `<label class="choice-opt"><input type="radio" name="qr-${i}" value="${opt.replace(/"/g,'&quot;')}"> ${opt}</label>`
+        ).join('');
+        return `<div class="question-item">
+          <div class="question-text">${q.question}</div>
+          <div class="choice-group">${radios}</div>
+          <input type="text" class="question-input" id="qa-${i}-other" placeholder="Or add your own comment (optional)..." style="margin-top:8px">
+        </div>`;
+      } else {
+        return `<div class="question-item">
+          <div class="question-text">${q.question}</div>
+          <textarea class="question-input" id="qa-${i}" rows="2" placeholder="Your answer (optional)..."></textarea>
+        </div>`;
+      }
+    }).join('');
+
+    document.getElementById('questions-area').innerHTML = `
       <div class="questions-card ani">
         <div class="questions-hdr">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          The AI has questions before you proceed
+          Before you proceed — a question from the AI
         </div>
+        <p class="questions-intro">Your answers will be carried into the next stage to sharpen the analysis. You can skip if you prefer.</p>
         ${inputs}
         <div class="questions-send">
           <button class="btn btn-ghost btn-sm" onclick="skipQuestions()">Skip</button>
-          <button class="btn btn-blue btn-sm" onclick="answerQuestions(${questions.length})">
-            Send answers &amp; continue
+          <button class="btn btn-blue btn-sm" onclick="collectAnswers(${JSON.stringify(parsed)})">
+            Save &amp; continue
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
           </button>
         </div>
@@ -1097,19 +1131,36 @@
 
   function skipQuestions(){
     document.getElementById('questions-area').innerHTML='';
+    pendingContext = '';
   }
 
-  function answerQuestions(count){
-    const answers = [];
-    for(let i=0;i<count;i++){
-      const el=document.getElementById('qa-'+i);
-      if(el&&el.value.trim()) answers.push(el.value.trim());
+  function collectAnswers(parsed){
+    const parts = [];
+    parsed.forEach((q,i) => {
+      let answer = '';
+      if(q.type === 'choice'){
+        const checked = document.querySelector('input[name="qr-'+i+'"]:checked');
+        const other = document.getElementById('qa-'+i+'-other');
+        if(checked) answer = checked.value;
+        if(other && other.value.trim()) answer = (answer ? answer + '; ' : '') + other.value.trim();
+      } else {
+        const el = document.getElementById('qa-'+i);
+        if(el) answer = el.value.trim();
+      }
+      if(answer) parts.push(q.question + ' ' + answer);
+    });
+
+    document.getElementById('questions-area').innerHTML = '';
+
+    if(parts.length){
+      pendingContext = parts.join(' | ');
+      // Show a subtle confirmation that answers were saved
+      const qa = document.getElementById('questions-area');
+      if(qa){
+        qa.innerHTML = '<div class="callout ok ani" style="margin-bottom:12px"><div class="callout-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div><div class="callout-body">Answers saved — they will inform the next stage of analysis.</div></div>';
+        setTimeout(()=>{ if(qa) qa.innerHTML=''; }, 3500);
+      }
     }
-    if(!answers.length){ skipQuestions(); return; }
-    document.getElementById('questions-area').innerHTML='';
-    const rfn = document.getElementById('rfn');
-    if(rfn) rfn.value = 'Additional context from user: ' + answers.join(' | ');
-    doRefine();
   }
 
   function showErr(msg,stage){
