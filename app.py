@@ -116,6 +116,12 @@ def health():
 
 # ── Admin routes ─────────────────────────────────────────────────────────────
 
+@app.route('/how-it-works')
+def how_it_works():
+    base = os.path.dirname(os.path.abspath(__file__))
+    return send_from_directory(os.path.join(base, 'static'), 'architecture.html')
+
+
 @app.route('/admin')
 def admin():
     base = os.path.dirname(os.path.abspath(__file__))
