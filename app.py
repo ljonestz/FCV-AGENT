@@ -235,7 +235,7 @@ def run_stage():
                 yield f"data: {json.dumps({'ping': True})}\n\n"
 
                 with client.messages.stream(
-                    model="claude-haiku-4-5-20251001",
+                    model="claude-sonnet-4-20250514",
                     max_tokens=8192,
                     messages=messages
                 ) as stream:
