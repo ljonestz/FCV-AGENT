@@ -466,6 +466,36 @@
     .session-bar svg{flex-shrink:0}
     .session-bar-btns{margin-left:auto;display:flex;gap:6px}
 
+    /* ── Prompt viewer modal ── */
+    .prompt-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .2s ease}
+    .prompt-modal{background:#fff;border-radius:10px;width:100%;max-width:780px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden}
+    .prompt-modal-hdr{background:var(--wbg-navy);padding:18px 26px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+    .prompt-modal-hdr h2{font-family:'Source Serif 4',serif;font-weight:300;font-size:19px;color:#fff}
+    .prompt-modal-hdr p{font-size:12px;color:rgba(255,255,255,.55);margin-top:2px}
+    .prompt-modal-close{background:none;border:none;color:rgba(255,255,255,.6);cursor:pointer;font-size:22px;line-height:1;padding:2px 6px;border-radius:4px}
+    .prompt-modal-close:hover{color:#fff;background:rgba(255,255,255,.1)}
+    .prompt-modal-tabs{display:flex;gap:2px;padding:12px 16px 0;background:#f5f7fa;border-bottom:2px solid var(--border);flex-shrink:0}
+    .prompt-tab{padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;border-radius:5px 5px 0 0;color:var(--muted);border:none;background:none;text-transform:uppercase;letter-spacing:.05em;transition:all .15s;display:flex;align-items:center;gap:6px}
+    .prompt-tab.active{background:var(--wbg-navy);color:#fff}
+    .prompt-tab:hover:not(.active){background:#e8edf2;color:var(--text)}
+    .prompt-modified-dot{width:7px;height:7px;border-radius:50%;background:#f59e0b;flex-shrink:0}
+    .prompt-modal-body{flex:1;overflow-y:auto;padding:20px 24px}
+    .prompt-info{font-size:12.5px;color:var(--muted);background:#f5f7fa;border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:14px;line-height:1.55}
+    .prompt-modified-banner{font-size:12px;background:#fffbeb;border:1px solid #fcd34d;color:#78350f;border-radius:var(--radius-sm);padding:8px 12px;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+    textarea.prompt-edit{width:100%;min-height:400px;padding:14px 16px;font-family:'Source Code Pro',monospace;font-size:12px;line-height:1.65;color:var(--text);border:1.5px solid var(--border);border-radius:var(--radius-sm);resize:vertical;background:#fafbfc}
+    textarea.prompt-edit:focus{outline:none;border-color:var(--wbg-blue);background:#fff}
+    textarea.prompt-edit.modified{border-color:#f59e0b;background:#fffef8}
+    .prompt-modal-foot{padding:14px 24px;background:#f5f7fa;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+    .prompt-modal-foot-left{font-size:12px;color:var(--muted)}
+    /* View prompt link on stage header */
+    .view-prompt-link{font-size:11px;color:var(--wbg-blue);cursor:pointer;background:none;border:none;padding:2px 6px;border-radius:3px;font-family:inherit;font-weight:600;letter-spacing:.03em;opacity:.8;text-decoration:underline;text-underline-offset:2px}
+    .view-prompt-link:hover{opacity:1}
+    .view-prompt-link.modified{color:#d97706}
+    /* Top bar prompt button */
+    .topbar-prompt-btn{font-size:11px;padding:4px 12px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:4px;color:rgba(255,255,255,.75);cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.04em;transition:all .15s}
+    .topbar-prompt-btn:hover{background:rgba(255,255,255,.2);color:#fff}
+    .topbar-prompt-btn.has-modified{border-color:rgba(245,158,11,.6);color:#fbbf24}
+
   </style>
 </head>
 <body>
@@ -488,6 +518,7 @@
     <span class="top-bar-unit">Project Screener</span>
   </div>
   <span class="top-bar-badge">Internal Tool · Pilot</span>
+  <button class="topbar-prompt-btn" id="topbar-prompt-btn" onclick="openPromptModal()" style="margin-left:12px">View / Edit Prompts</button>
 </div>
 
 <!-- ══ HERO ══ -->
@@ -517,6 +548,43 @@
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
         Refineable at each stage
       </span>
+    </div>
+  </div>
+</div>
+
+<!-- Prompt viewer/editor modal -->
+<div id="prompt-modal" class="prompt-modal-bg" style="display:none" role="dialog" aria-modal="true" aria-label="View and edit analysis prompts">
+  <div class="prompt-modal">
+    <div class="prompt-modal-hdr">
+      <div>
+        <h2>Analysis Prompts</h2>
+        <p>View and optionally edit the prompts used at each stage. Edits apply to this session only — prompts reset to defaults on page reload.</p>
+      </div>
+      <button class="prompt-modal-close" onclick="closePromptModal()" aria-label="Close">×</button>
+    </div>
+    <div class="prompt-modal-tabs" id="prompt-tabs">
+      <button class="prompt-tab active" id="ptab-1" onclick="showPromptTab(1)">Stage 1 · FCV Risks</button>
+      <button class="prompt-tab" id="ptab-2" onclick="showPromptTab(2)">Stage 2 · Screening</button>
+      <button class="prompt-tab" id="ptab-3" onclick="showPromptTab(3)">Stage 3 · Gaps</button>
+      <button class="prompt-tab" id="ptab-4" onclick="showPromptTab(4)">Stage 4 · Rec. Note</button>
+    </div>
+    <div class="prompt-modal-body">
+      <div class="prompt-info">
+        These are the instructions sent to the AI at each stage of the analysis. Editing a prompt here will affect only your current session — the defaults reload automatically next time someone opens the tool. Modified prompts are flagged with an amber indicator.
+      </div>
+      <div id="prompt-modified-banner" class="prompt-modified-banner" style="display:none">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        This prompt has been modified for this session.
+      </div>
+      <textarea class="prompt-edit" id="prompt-edit-area" rows="20" oninput="onPromptEdit()"></textarea>
+    </div>
+    <div class="prompt-modal-foot">
+      <span class="prompt-modal-foot-left" id="prompt-foot-status"></span>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost btn-sm" onclick="resetCurrentPrompt()">Reset to default</button>
+        <button class="btn btn-blue btn-sm" onclick="saveCurrentPrompt()">Apply to this session</button>
+        <button class="btn btn-ghost btn-sm" onclick="closePromptModal()">Close</button>
+      </div>
     </div>
   </div>
 </div>
@@ -923,6 +991,10 @@
 
     try{
       const payload={stage,history:hist,user_message:followOn||''};
+      // Attach session prompt override if user has edited this stage's prompt
+      if(sessionPrompts[stage]){
+        payload.prompt_override = sessionPrompts[stage];
+      }
 
       if(stage===1){
         const readF=(file,isCtx)=>new Promise((res,rej)=>{
@@ -986,7 +1058,15 @@
     document.getElementById('stage-disp').innerHTML=`
       <div class="stage-hdr ani">
         <div class="stage-badge ${COL[stage]}">${stage}</div>
-        <div><div class="stage-title">${NAMES[stage]}</div><div class="stage-sub">${isFollowOn?'Updated based on your input':SUBS[stage]}</div></div>
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div class="stage-title">${NAMES[stage]}</div>
+            <button class="view-prompt-link ${sessionPrompts[stage]?'modified':''}" onclick="openPromptModal(${stage})" title="${sessionPrompts[stage]?'Prompt modified for this session':'View the prompt used for this stage'}">
+              ${sessionPrompts[stage]?'⚑ prompt (modified)':'view prompt'}
+            </button>
+          </div>
+          <div class="stage-sub">${isFollowOn?'Updated based on your input':SUBS[stage]}</div>
+        </div>
       </div>
       <div class="callout ${isLast?'ok':'info'} ani">
         <div class="callout-icon">${isLast
@@ -1126,6 +1206,97 @@
     });
     return h.replace(/<p>\s*<\/p>/g,'');
   }
+
+  // ── Prompt viewer/editor ────────────────────────────────────────────────────
+  // Session-only overrides — reset on page reload
+  let sessionPrompts = {}; // {1: 'custom text', ...} — only populated when user edits
+  let defaultPrompts = {}; // loaded from server once
+  let promptModalActiveTab = 1;
+
+  async function ensureDefaultPromptsLoaded(){
+    if(Object.keys(defaultPrompts).length) return;
+    try {
+      const r = await fetch('/api/default-prompts');
+      defaultPrompts = await r.json();
+    } catch(e) {
+      defaultPrompts = {};
+    }
+  }
+
+  async function openPromptModal(stage){
+    await ensureDefaultPromptsLoaded();
+    document.getElementById('prompt-modal').style.display = 'flex';
+    showPromptTab(stage || promptModalActiveTab || 1);
+  }
+
+  function closePromptModal(){
+    document.getElementById('prompt-modal').style.display = 'none';
+  }
+
+  function showPromptTab(n){
+    promptModalActiveTab = n;
+    // Update tab styles
+    for(let i=1;i<=4;i++){
+      const tab = document.getElementById('ptab-'+i);
+      if(!tab) continue;
+      tab.className = 'prompt-tab' + (i===n?' active':'');
+      // Show modified dot if session override exists
+      const dot = tab.querySelector('.prompt-modified-dot');
+      if(sessionPrompts[i]){
+        if(!dot){ const d=document.createElement('span'); d.className='prompt-modified-dot'; tab.appendChild(d); }
+      } else {
+        if(dot) dot.remove();
+      }
+    }
+    // Load text into editor
+    const text = sessionPrompts[n] || defaultPrompts[String(n)] || '';
+    const editor = document.getElementById('prompt-edit-area');
+    editor.value = text;
+    editor.className = 'prompt-edit' + (sessionPrompts[n] ? ' modified' : '');
+    // Show/hide modified banner
+    document.getElementById('prompt-modified-banner').style.display = sessionPrompts[n] ? 'flex' : 'none';
+    document.getElementById('prompt-foot-status').textContent = sessionPrompts[n] ? 'Modified for this session' : 'Default prompt';
+  }
+
+  function onPromptEdit(){
+    const editor = document.getElementById('prompt-edit-area');
+    const isDefault = editor.value === (defaultPrompts[String(promptModalActiveTab)] || '');
+    editor.className = 'prompt-edit' + (isDefault ? '' : ' modified');
+  }
+
+  function saveCurrentPrompt(){
+    const editor = document.getElementById('prompt-edit-area');
+    const val = editor.value.trim();
+    const def = (defaultPrompts[String(promptModalActiveTab)] || '').trim();
+    if(val === def){
+      delete sessionPrompts[promptModalActiveTab];
+    } else {
+      sessionPrompts[promptModalActiveTab] = val;
+    }
+    showPromptTab(promptModalActiveTab);
+    updateTopbarPromptBtn();
+    document.getElementById('prompt-foot-status').textContent = 'Applied to this session ✓';
+    setTimeout(()=>{ document.getElementById('prompt-foot-status').textContent = sessionPrompts[promptModalActiveTab] ? 'Modified for this session' : 'Default prompt'; }, 2000);
+  }
+
+  function resetCurrentPrompt(){
+    delete sessionPrompts[promptModalActiveTab];
+    showPromptTab(promptModalActiveTab);
+    updateTopbarPromptBtn();
+  }
+
+  function updateTopbarPromptBtn(){
+    const btn = document.getElementById('topbar-prompt-btn');
+    if(!btn) return;
+    const hasAny = Object.keys(sessionPrompts).length > 0;
+    btn.className = 'topbar-prompt-btn' + (hasAny ? ' has-modified' : '');
+    btn.textContent = hasAny ? '⚑ Prompts (modified)' : 'View / Edit Prompts';
+  }
+
+  // Override getPromptForStage to use session overrides when present
+  // Session prompt overrides are sent to the backend as prompt_override in the payload.
+  // The backend uses the override in place of its DEFAULT_PROMPTS for that stage run.
+
 </script>
 </body>
 </html>

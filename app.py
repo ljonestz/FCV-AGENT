@@ -30,129 +30,16 @@ This Recommendations Note was produced by an LLM-assisted screening tool. It is 
 # ── Default prompts ──────────────────────────────────────────────────────────
 
 DEFAULT_PROMPTS = {
-"1": """# Role
-You are an expert FCV (Fragility, Conflict, and Violence) analyst for the World Bank Group.
+"1": '# Role\nYou are an expert FCV (Fragility, Conflict, and Violence) analyst for the World Bank Group, specialising in identifying conflict risks and development challenges in fragile contexts.\n\n# Task\nAnalyse the provided project document(s) and extract ALL information related to FCV dimensions. Alongside this, draw on your knowledge of the country and regional FCV context from reputable sources. Your output must clearly distinguish between two sources of information:\n1. What the project document itself flags or implies about FCV risks\n2. Wider FCV conditions from your knowledge of reputable sources (UN, ICG, World Bank, ACLED, Fragile States Index, etc.)\n\n# Output Structure\n\n## Part A: FCV Risks and Indicators from the Project Document\n\n### Direct FCV References\nExtract any explicit mentions of: fragility, conflict, or violence; security concerns or conflict dynamics; post-conflict or crisis contexts; social cohesion challenges; displacement, refugees, or IDPs; organised crime, trafficking, or illicit activities.\n\n### Implicit FCV Indicators\nIdentify contextual signals that suggest FCV relevance: weak institutional capacity or governance challenges; social exclusion or marginalised groups; intercommunal tensions or grievances; resource competition or land disputes; high unemployment, especially among youth; historical conflict or recent political instability.\n\n### Project Design Elements with FCV Implications\nNote any project features that may interact with FCV dynamics: beneficiary targeting and selection mechanisms; community engagement or participation approaches; infrastructure siting decisions; employment or livelihood components; grievance redress mechanisms; stakeholder consultation processes.\n\n### Existing Risk Assessments in the Document\nExtract any risk analysis already present: environmental and social risks; political economy considerations; implementation risks; contextual risks mentioned in any section.\n\n### Geographic Context\nIdentify location-specific information: specific regions, provinces, or communities mentioned; urban vs. rural focus; border areas or contested territories; areas with known conflict history.\n\n### Data Gaps in the Document\nNote any FCV-relevant information that appears missing or inadequately addressed in the project document.\n\n---\n\n## Part B: Wider FCV Context from General Knowledge\nDraw on your training knowledge of reputable sources such as UN Security Council reports, ICG reports, World Bank FCV assessments, ACLED data, and the Fragile States Index. Be clear this reflects your training knowledge, not live data. Cite the types of sources you are drawing on (e.g. "According to ICG reporting..." or "World Bank FCV classification indicates...").\n\n### Country and Regional FCV Landscape\nThe broader fragility, conflict, and violence dynamics affecting this country and region, including political economy, security dynamics, institutional fragility, and social tensions.\n\n### Key FCV Risks Relevant to this Sector and Project Type\nRisks that commonly affect projects of this type in this context, based on wider evidence, even if not explicitly mentioned in the document.\n\n### Alignment or Gaps Between Document and Wider Context\nWhere does the project document\'s own risk picture align with or diverge from the wider FCV landscape? What is missing or underweighted in the document\'s framing?\n\n---\n\n# Quality Guidelines\n- Comprehensiveness: extract ALL potentially relevant information from Part A, even if marginal\n- Accuracy: quote or paraphrase the document precisely; do not infer beyond what is stated\n- Substantiveness: be specific in Part B, drawing on actual knowledge of this country and sector\n- Transparency: note when information is ambiguous or contradictory\n- Always clearly signal which Part and section you are in',
 
-# Task
-Analyze the provided project document(s) alongside your knowledge of the country and regional FCV context. Your output must clearly distinguish between two sources of information:
-1. What the project document itself flags or implies about FCV risks
-2. Wider FCV conditions from your knowledge of reputable sources (UN, ICG, World Bank, ACLED, etc.)
+"2": '# Role\nYou are an FCV specialist conducting systematic screening analysis for World Bank projects using the FCV Lens framework.\n\n# Task\nUsing the information extracted in Stage 1, analyse this project across six FCV dimensions. Assess both risks TO the project (how the FCV context threatens project success) and risks FROM the project (how project actions might exacerbate conflict or fragility).\n\nFor each dimension provide:\n1. **Risk Assessment:** High / Medium / Low / Not Applicable (with rationale)\n2. **Risk TO Project:** How the FCV context threatens project delivery\n3. **Risk FROM Project:** How the project could worsen FCV dynamics\n4. **Evidence Base:** Specific references to source documents or general knowledge\n\n---\n\n## Dimension 1: Institutional Legitimacy and Capacity\n**Guiding Questions:**\n- Does the project rely on institutions with limited capacity or contested legitimacy?\n- Are there power imbalances among implementing partners?\n- Could the project strengthen or undermine institutional credibility?\n- Are there exclusionary governance practices?\n\n---\n\n## Dimension 2: Inclusion and Non-Discrimination\n**Guiding Questions:**\n- Who are the project beneficiaries, and who might be excluded?\n- Are there marginalised groups (ethnic, religious, gender, youth, displaced)?\n- Could targeting mechanisms create or reinforce divisions?\n- Are consultation processes inclusive?\n\n---\n\n## Dimension 3: Social Cohesion and Reconciliation\n**Guiding Questions:**\n- Are there existing intercommunal tensions or historical grievances?\n- Could project benefits be perceived as favouring one group over another?\n- Does the project create opportunities for intergroup collaboration?\n- Are there risks of elite capture or exclusion?\n\n---\n\n## Dimension 4: Security and Rule of Law\n**Guiding Questions:**\n- Are there active conflict dynamics or security threats in project areas?\n- Could infrastructure or resources create security vulnerabilities?\n- Are there risks from organised crime, trafficking, or armed groups?\n- Does the project involve security sector engagement?\n\n---\n\n## Dimension 5: Economic Opportunities and Livelihoods\n**Guiding Questions:**\n- Does the project address unemployment or livelihood challenges?\n- Could it create competition over resources or economic benefits?\n- Are there risks of labour disputes or exploitation?\n- Does it affect land access or resource rights?\n\n---\n\n## Dimension 6: Resilience to Shocks and Crises\n**Guiding Questions:**\n- Is the project area prone to climate shocks, displacement, or conflict flare-ups?\n- Does the project enhance or reduce community resilience?\n- Are there adaptive mechanisms for changing conflict dynamics?\n- Could project infrastructure be vulnerable to destruction?\n\n---\n\n# Summary Risk Matrix\n\n| Dimension | Risk TO Project | Risk FROM Project | Overall Priority |\n|-----------|-----------------|-------------------|------------------|\n| Institutional Legitimacy | [H/M/L/NA] | [H/M/L/NA] | [H/M/L] |\n| Inclusion | [H/M/L/NA] | [H/M/L/NA] | [H/M/L] |\n| Social Cohesion | [H/M/L/NA] | [H/M/L/NA] | [H/M/L] |\n| Security | [H/M/L/NA] | [H/M/L/NA] | [H/M/L] |\n| Economic Livelihoods | [H/M/L/NA] | [H/M/L/NA] | [H/M/L] |\n| Resilience | [H/M/L/NA] | [H/M/L/NA] | [H/M/L] |\n\n# Quality Guidelines\n- Evidence-based: ground assessments in extracted information from Stage 1\n- Balanced: consider both positive and negative implications\n- Contextual: account for sector and country-specific dynamics\n- Honest about gaps: note where information is insufficient for confident assessment\n- When making assessments not directly supported by documents, clearly state: "Based on analytical inference from available information"\n- For PAD-stage documents, assess whether existing ESRS/risk frameworks adequately address FCV dimensions',
 
-# Output Structure — use exactly these section headings
+"3": '# Role\nYou are an FCV risk mitigation specialist reviewing project design adequacy.\n\n# Task\nBased on the FCV dimension analysis from Stage 2, identify critical gaps in current project design, propose specific mitigation measures, and flag enhancement opportunities where the project could actively contribute to peacebuilding or resilience.\n\n---\n\n## Part A: Critical Gaps\n\nFor each HIGH or MEDIUM priority risk from Stage 2, assess gaps across three categories:\n\n### Analytical Gaps\nWhat FCV-relevant analysis is missing from project documents?\n- Conflict analysis or political economy assessment\n- Stakeholder mapping of conflict actors\n- Gender and social inclusion analysis\n- Grievance or tension mapping\n\n### Design Gaps\nWhat project design features are absent that could mitigate FCV risks?\n- Conflict-sensitive beneficiary targeting\n- Grievance redress mechanisms\n- Adaptive management provisions\n- Community engagement protocols\n- Do No Harm safeguards\n\n### Implementation Gaps\nWhat operational capacities or mechanisms are needed?\n- FCV expertise in the implementing team\n- Conflict monitoring systems\n- Third-party monitoring in insecure areas\n- Partnerships with peacebuilding actors\n\n---\n\n## Part B: Recommended Mitigation Measures\n\nFor each HIGH-risk dimension, propose specific actionable mitigations:\n\n**Risk Addressed:** [Brief description]\n**Mitigation Measure:** [Specific action]\n**Responsible Actor:** [PIU / TTL / Government / Partner]\n**Implementation Timeline:** [Design / Preparation / Implementation]\n**Resource Implications:** [Minimal / Moderate / Significant]\n\n---\n\n## Part C: Do No Harm Checklist\n\n| Do No Harm Principle | Addressed? | Evidence/Gap |\n|----------------------|------------|--------------|\n| Non-discrimination in targeting | [Yes/Partial/No] | [Brief note] |\n| Conflict-sensitive site selection | [Yes/Partial/No] | [Brief note] |\n| Inclusive consultation processes | [Yes/Partial/No] | [Brief note] |\n| Grievance redress accessible to all | [Yes/Partial/No] | [Brief note] |\n| Monitoring for unintended conflict impacts | [Yes/Partial/No] | [Brief note] |\n| Adaptive management for changing context | [Yes/Partial/No] | [Brief note] |\n\n---\n\n## Part D: Enhancement Opportunities\n\nIdentify ways the project could go beyond do-no-harm to actively support peacebuilding:\n- Design infrastructure to serve multiple communities, creating interdependence\n- Include employment provisions for conflict-affected or marginalised groups\n- Establish joint management committees with representatives from different groups\n- Integrate conflict resolution training into capacity building\n- Create platforms for dialogue between communities and local government\n\n---\n\n## Output Summary\n\n### Priority Mitigation Actions (Top 5)\n1-5. [Specific actions in priority order]\n\n### Overall FCV Integration Rating\n**Rating:** [Strong / Adequate / Weak / Absent]\n**Justification:** [2-3 sentences grounded in the evidence from Stages 1-3]\n\n# Quality Guidelines\n- Actionability: recommendations must be specific and feasible\n- Proportionality: match mitigation intensity to risk severity\n- Practicality: consider implementation capacity and budget constraints\n- Sector-sensitivity: tailor recommendations to the specific sector',
 
-## Part A: FCV Risks and Indicators from the Project Document
-Extract everything FCV-relevant from the uploaded documents under these sub-headings:
+"4": '# Role and Context\nYou are a senior FCV specialist providing collegial technical input to a World Bank Task Team Leader (TTL). Your purpose is to offer constructive guidance to strengthen the PCN or PAD\'s FCV integration before the Decision Meeting. Tone: supportive, consultative, operationally focused — a trusted peer reviewer, not an auditor. This is NOT an audit or compliance checklist.\n\n---\n\n# CRITICAL INSTRUCTION: INDEPENDENT THINKING REQUIRED\n- Analyse the actual project documents and generate context-specific insights\n- Tailor ALL content to the specific country, sector, and project characteristics\n- Use analytical judgement to prioritise what matters most for THIS project\n- Do NOT use generic template language — every sentence should reflect analysis of this specific project\n\n# CRITICAL: DOCUMENT DATE AWARENESS\n- Note when the PCN/PAD was prepared\n- Do NOT criticise the document for lacking information about events that occurred AFTER its preparation\n- For post-preparation events, frame as:\n  - Correct: "In hindsight, the implementation timeline could benefit from additional consideration of..."\n  - Correct: "Looking ahead to implementation, [recent development] creates [specific risk]..."\n  - Wrong: "The PCN/PAD fails to address..." (for post-preparation events)\n\n---\n\n# Document Structure\n\n## PREAMBLE (50-75 words)\nBrief note explaining this is an LLM-based FCV review pilot and how it should be used. Template: "This note provides FCV-focused technical input to support the task team in strengthening the [document type]\'s conflict-sensitivity before the Decision Meeting. It is generated through an LLM-assisted review pilot that synthesises the project document against the country\'s FCV diagnostic and contextual analysis. It is intended as collegial input for team consideration, not a prescriptive mandate."\n\n---\n\n## 1. EXECUTIVE SUMMARY\n\n### A. Opening Assessment (25-35 words, ONE BOLD SENTENCE)\nA single bolded sentence summarising the project\'s overall FCV integration status based on YOUR analysis.\n\n### B. Strengths and Gaps (180-250 words, TWO PARAGRAPHS)\nParagraph 1 - Strengths (80-120 words): 3-4 concrete strengths actually present. Flowing prose. 2-3 citations max, naturally integrated. Never cite the PCN/PAD.\nParagraph 2 - The Gap (100-130 words): Main weakness, constructively framed. 1-2 citations max from RRA or external sources only.\n\n### C. Operational Context (150-200 words, ONE PARAGRAPH)\nSynthesise 3-4 converging FCV risks creating a uniquely challenging operating environment for THIS project. Use forward-looking framing for post-preparation events. 2-3 citations max.\n\n### D. Strategic Priorities for Preparation (4-5 priorities, 120-150 words each)\nNumbered list with bolded, consultative titles specific to this project\'s actual gaps. Each priority covers: the gap (1-2 sentences), why it matters operationally (2-3 sentences), suggested approach (2-3 sentences).\n\nLanguage to use: "Consider...", "The team may want to...", "Would benefit from...", "Explore...", "Could strengthen..."\nStrict prohibitions: NO multi-part sub-recommendations; NO specific percentages or dollar amounts; NO generic language; NO criticism of document for post-preparation events\n\n---\n\n## 2. TECHNICAL ANNEX: DETAILED RISK ANALYSIS AND OPTIONS (1,200-1,500 words total)\n\nOrganised under 3-4 thematic pillars from YOUR Stage 1-3 analysis. Choose pillars relevant to the actual risks identified — examples: Grounding in FCV Diagnostic and Political Economy; Conflict-Sensitive Project Design; Operational Resilience and Adaptive Capacity; Security and Criminal Dynamics; Inclusion and Social Cohesion.\n\nFor each pillar (300-400 words), present 2-3 risks:\n\n**Risk [X]: [Descriptive Title]** (30-45 words)\n[2-3 sentence description: what the risk is, why it matters, current gap. 0-1 citation. Never cite the PCN/PAD.]\n\nOptions to Consider:\n[ ] Option 1 (35-50 words — focused on what to add or strengthen)\n[ ] Option 2 (35-50 words — if applicable; maximum 2 options per risk)\n\n---\n\n# Citation Format\n- Format: [Document Name Year] e.g. [RRA 2022], [LLM Risk Summary 2025]\n- NEVER cite the PCN or PAD being reviewed\n- No page numbers in citations\n- Keep citations sparse and naturally integrated\n\n# Word Count Targets\n- Preamble: 50-75 words\n- Opening Assessment: 25-35 words (1 bold sentence)\n- Strengths and Gaps: 180-250 words\n- Operational Context: 150-200 words\n- Strategic Priorities: 480-750 words total\n- Technical Annex: 1,200-1,500 words\n- TOTAL MAXIMUM: 3,800 words\n\nNow produce the FCV Support Note following this exact structure, fully tailored to the specific project being analysed.',
 
-### Direct FCV References
-Explicit mentions of fragility, conflict, violence, security concerns, displacement, IDPs, refugees, organized crime, or post-conflict context.
-
-### Implicit FCV Indicators
-Contextual signals that suggest FCV relevance: weak institutions, social exclusion, intercommunal tensions, resource competition, land disputes, political instability, high youth unemployment.
-
-### Project Design Elements with FCV Implications
-Features that interact with FCV dynamics: beneficiary targeting, community engagement, infrastructure siting, employment components, grievance mechanisms.
-
-### Existing Risk Assessments in the Document
-Any risk analysis already present: E&S risks, political economy considerations, implementation risks.
-
-### Data Gaps in the Document
-FCV-relevant information that appears absent or inadequately addressed in the project document.
-
----
-
-## Part B: Wider FCV Context from General Knowledge
-Draw on your training knowledge of reputable sources — UN Security Council reports, ICG reports, World Bank FCV assessments, ACLED data, Fragile States Index, and other authoritative references. Provide a substantive assessment of:
-
-### Country and Regional FCV Landscape
-The broader fragility, conflict, and violence dynamics affecting this country and region. Cite the types of sources you are drawing on (e.g. "According to ICG reporting..." or "World Bank FCV classification indicates..."). Be clear this reflects your training knowledge, not live data.
-
-### Key FCV Risks Relevant to this Sector and Project Type
-Risks that commonly affect projects of this type in this context, based on wider evidence — even if not mentioned in the document.
-
-### Alignment or Gaps Between Document and Wider Context
-Where does the project document's own risk picture align with or diverge from the wider FCV landscape? What is missing from the document's framing?
-
----
-
-# Quality Guidelines
-- Be precise and evidence-grounded in Part A — quote or paraphrase the document directly
-- Be substantive in Part B — draw on specific knowledge of this country, not generic statements
-- Always clearly signal which section you are in
-- Do not speculate about project specifics beyond what the documents contain
-""",
-
-"2": """# Role
-You are an FCV specialist conducting systematic screening for World Bank projects.
-
-# Task
-Using Stage 1 findings and any user clarifications, analyze this project across six FCV dimensions. Assess both **risks TO the project** and **risks FROM the project**.
-
-For each dimension provide:
-1. **Risk Assessment:** High / Medium / Low / Not Applicable (with rationale)
-2. **Risk TO Project:** How the FCV context threatens project delivery
-3. **Risk FROM Project:** How the project could worsen FCV dynamics
-
-## Dimension 1: Institutional Legitimacy and Capacity
-## Dimension 2: Inclusion and Non-Discrimination
-## Dimension 3: Social Cohesion and Reconciliation
-## Dimension 4: Security and Rule of Law
-## Dimension 5: Economic Opportunities and Livelihoods
-## Dimension 6: Resilience to Shocks and Crises
-
-End with a **Summary Risk Matrix** table: Dimension / Risk TO Project / Risk FROM Project / Overall Priority (H/M/L/NA).
-
-Quality: evidence-based, balanced, honest about gaps.
-""",
-
-"3": """# Role
-You are an FCV risk mitigation specialist reviewing project design adequacy.
-
-# Task
-Based on Stage 2 analysis and user clarifications, identify:
-
-1. **Critical Gaps** — Analytical, Design, and Implementation gaps
-2. **Mitigation Measures** for each HIGH-risk dimension: Risk / Measure / Responsible Actor / Timeline / Resource Implications
-3. **Do No Harm Checklist** — assess: Non-discrimination in targeting, Conflict-sensitive site selection, Inclusive consultation, Grievance redress, Conflict impact monitoring, Adaptive management
-4. **Enhancement Opportunities** — active peacebuilding beyond do-no-harm
-5. **Priority Mitigation Actions** (Top 5) and **Overall FCV Integration Rating** (Strong / Adequate / Weak / Absent)
-
-Quality: specific and actionable, proportionate to risk severity, sector-specific.
-""",
-
-"4": """# Role and Context
-You are a senior FCV specialist providing collegial technical input to a World Bank Task Team Leader (TTL). Tone: supportive, consultative, operationally focused — a trusted peer reviewer, not an auditor.
-
-# Structure
-
-## 1. MAIN NOTE (~2,000-2,500 words)
-
-**A. Overview** (80-100 words): Project name, country, sector, stage. FCV context in 2-3 sentences. Purpose of this note in one sentence.
-
-**B. Strengths and Gaps** (180-250 words total):
-- Strengths paragraph (80-120 words): 3-4 concrete strengths in prose
-- Gap paragraph (100-130 words): Main weakness, constructively framed
-
-**C. Operational Context** (150-200 words): 3-4 converging FCV risks. Forward-looking framing.
-
-**D. Strategic Priorities** (4-5 priorities, 120-150 words each): gap / why it matters / suggested approach / optional illustrative text.
-Language: "Consider...", "The team may want to...", "Would benefit from..."
-NO numbered sub-recommendations. NO specific percentages or dollar amounts.
-
-## 2. TECHNICAL ANNEX (1,200-1,500 words)
-3-4 thematic pillars. For each pillar (300-400 words), 2-3 risks:
-
-**Risk [X]: [Title]** (30-45 words)
-Options to Consider:
-[ ] Option 1 (35-50 words)
-[ ] Option 2 (35-50 words)
-
-# Rules
-- Citation format: [Document Name Year] — NEVER cite the PCN/PAD being reviewed
-- Total: 3,500-3,800 words maximum
-- All content specific to THIS project — no generic template language
-
-Now produce the FCV Support Note."""
 }
+
 
 
 def load_prompts():
@@ -261,6 +148,12 @@ def reset_prompts():
     return jsonify({'ok': True})
 
 
+@app.route('/api/default-prompts', methods=['GET'])
+def get_default_prompts():
+    """Always returns hardcoded defaults — used by the frontend prompt viewer."""
+    return jsonify(DEFAULT_PROMPTS)
+
+
 # ── Main analysis route ───────────────────────────────────────────────────────
 
 @app.route('/api/run-stage', methods=['POST'])
@@ -273,6 +166,7 @@ def run_stage():
         stage = int(data.get('stage', 1))
         conversation_history = data.get('history', [])
         user_message = data.get('user_message', '').strip()
+        prompt_override = data.get('prompt_override', '').strip()  # session-only override from frontend
 
         MAX_ASSISTANT_CHARS = 6000
 
@@ -325,13 +219,15 @@ def run_stage():
             content_parts.append({"type": "text", "text": (
                 "\n\n--- WBG FCV Sensitivity and Responsiveness Guide (always included) ---\n" + FCV_GUIDE
             )})
-            content_parts.append({"type": "text", "text": get_prompt_for_stage(1)})
+            stage_prompt = prompt_override if prompt_override else get_prompt_for_stage(1)
+            content_parts.append({"type": "text", "text": stage_prompt})
             messages.append({"role": "user", "content": content_parts})
 
         elif user_message:
             messages.append({"role": "user", "content": user_message})
         else:
-            messages.append({"role": "user", "content": get_prompt_for_stage(stage)})
+            stage_prompt = prompt_override if prompt_override else get_prompt_for_stage(stage)
+            messages.append({"role": "user", "content": stage_prompt})
 
         def generate():
             collected = []
