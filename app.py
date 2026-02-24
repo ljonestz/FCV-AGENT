@@ -12,7 +12,7 @@ except ImportError:
 
 # ── Constants ────────────────────────────────────────────────────────────────
 
-MAX_DOC_CHARS = 140_000
+MAX_DOC_CHARS = 800_000
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "fcv-admin-2024")
 PROMPTS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'prompts.json')
 
@@ -174,7 +174,7 @@ def run_stage():
         user_message = data.get('user_message', '').strip()
         prompt_override = data.get('prompt_override', '').strip()  # session-only override from frontend
 
-        MAX_ASSISTANT_CHARS = 6000
+        MAX_ASSISTANT_CHARS = 40000
 
         prior_outputs = []
         for m in conversation_history:
@@ -203,6 +203,7 @@ def run_stage():
             content_parts = []
             project_docs = [d for d in documents if not d.get('isContext')]
             context_docs = [d for d in documents if d.get('isContext')]
+            truncation_warnings = []  # collect any truncated docs
 
             def add_doc(doc, label):
                 name = doc.get('name', 'document')
@@ -210,9 +211,22 @@ def run_stage():
                 doc_content = doc.get('content', '')
                 if file_type == 'pdf':
                     extracted, page_count = extract_pdf_text(doc_content, name)
+                    # extract_pdf_text already handles truncation and appends a note
+                    was_truncated = '[Document truncated' in extracted
+                    if was_truncated:
+                        truncation_warnings.append(
+                            f"⚠ **{name}** was truncated at {MAX_DOC_CHARS//1000}k characters "
+                            f"({page_count} pages total). Content beyond this point was not analysed."
+                        )
                     content_parts.append({"type": "text", "text": f"=== {label}: {name} ({page_count} pages) ===\n\n{extracted}"})
                 else:
-                    text = doc_content[:MAX_DOC_CHARS] + ('\n\n[Truncated]' if len(doc_content) > MAX_DOC_CHARS else '')
+                    was_truncated = len(doc_content) > MAX_DOC_CHARS
+                    text = doc_content[:MAX_DOC_CHARS] + ('\n\n[Truncated]' if was_truncated else '')
+                    if was_truncated:
+                        truncation_warnings.append(
+                            f"⚠ **{name}** was truncated at {MAX_DOC_CHARS//1000}k characters. "
+                            f"Content beyond this point was not analysed."
+                        )
                     content_parts.append({"type": "text", "text": f"=== {label}: {name} ===\n\n{text}"})
 
             for doc in project_docs:
@@ -240,9 +254,13 @@ def run_stage():
             try:
                 yield f"data: {json.dumps({'ping': True})}\n\n"
 
+                # Emit any truncation warnings before streaming begins
+                if stage == 1 and truncation_warnings:
+                    yield f"data: {json.dumps({'truncation_warnings': truncation_warnings})}\n\n"
+
                 with client.messages.stream(
                     model="claude-sonnet-4-20250514",
-                    max_tokens=8192,
+                    max_tokens=16000,
                     messages=messages
                 ) as stream:
                     for text_chunk in stream.text_stream:
