@@ -1052,6 +1052,10 @@
           <div class="stage-badge ${COL[stage]}">${stage}</div>
           <div><div class="stage-title">${NAMES[stage]}</div><div class="stage-sub">Generating…</div></div>
         </div>
+        <div class="callout info ani">
+          <div class="callout-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+          <div class="callout-body"><strong>${CALLS[stage].t}</strong>${CALLS[stage].b}</div>
+        </div>
         <div class="out-card">
           <div class="out-hdr"><div class="out-hdr-l"><span class="dot live"></span>Generating output</div></div>
           <div class="out-body" id="s-out" aria-live="polite"></div>
@@ -1146,10 +1150,12 @@
 
     document.getElementById('act-area').innerHTML=isLast?`
       <div class="act-bar ani">
-        <button class="btn btn-ghost" onclick="reset()">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
-          Start new analysis
+        <button class="btn btn-ghost" onclick="goBack(${stage})">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+          Go back to Stage ${stage-1}
         </button>
+        <div class="sep"></div>
+        <button class="btn btn-ghost" onclick="reset()">Start new analysis</button>
       </div>`:`
       <div class="act-bar ani">
         <button class="btn btn-blue" onclick="runStage(${stage+1})">
@@ -1157,6 +1163,10 @@
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
         </button>
         <div class="sep"></div>
+        ${stage>1?`<button class="btn btn-ghost" onclick="goBack(${stage})">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+          Go back to Stage ${stage-1}
+        </button><div class="sep"></div>`:''}
         <button class="btn btn-ghost" onclick="reset()">Start over</button>
       </div>`;
 
@@ -1188,6 +1198,28 @@
   }
 
   function retry(s){document.getElementById('err-area').innerHTML='';busy=false;runStage(s)}
+
+  function goBack(currentStage){
+    if(currentStage<=1)return;
+    const prevStage = currentStage-1;
+    // Trim history back to after the previous stage's assistant turn.
+    // History is an array of {role,content} messages. Each stage adds 1 user + 1 assistant msg.
+    // Stage 1: messages 0(user) 1(assistant)
+    // Stage 2: messages 2(user) 3(assistant)  etc.
+    // We want to keep everything up to and including prevStage's assistant reply.
+    // That's prevStage*2 messages (0-indexed).
+    const keepCount = prevStage * 2;
+    hist = hist.slice(0, keepCount);
+    curS = prevStage;
+    busy = false;
+    setStepper(prevStage, 'done');
+    // Re-render the previous stage output from the last assistant message in trimmed history
+    const lastAssistant = hist[hist.length-1];
+    const prevResult = lastAssistant ? (typeof lastAssistant.content==='string' ? lastAssistant.content : '') : '';
+    clearUI();
+    renderOut(prevStage, prevResult, false);
+    updateSessionBar();
+  }
   function clearUI(){['err-area','stage-disp','refine-area','act-area'].forEach(id=>{const e=document.getElementById(id);if(e)e.innerHTML=''});window._truncWarnings=null;}
 
   function copyOut(){
