@@ -1,4 +1,5 @@
 import os
+import re
 import json
 import base64
 from flask import Flask, request, jsonify, send_from_directory, Response, stream_with_context
@@ -91,10 +92,253 @@ Where does the project document's own risk picture align with or diverge from th
 
 "3": '# Role\nYou are an FCV risk mitigation specialist reviewing project design adequacy.\n\n# Task\nBased on the FCV dimension analysis from Stage 2, identify critical gaps in current project design, propose specific mitigation measures, and flag enhancement opportunities where the project could actively contribute to peacebuilding or resilience.\n\n---\n\n## Part A: Critical Gaps\n\nFor each HIGH or MEDIUM priority risk from Stage 2, assess gaps across three categories:\n\n### Analytical Gaps\nWhat FCV-relevant analysis is missing from project documents?\n- Conflict analysis or political economy assessment\n- Stakeholder mapping of conflict actors\n- Gender and social inclusion analysis\n- Grievance or tension mapping\n\n### Design Gaps\nWhat project design features are absent that could mitigate FCV risks?\n- Conflict-sensitive beneficiary targeting\n- Grievance redress mechanisms\n- Adaptive management provisions\n- Community engagement protocols\n- Do No Harm safeguards\n\n### Implementation Gaps\nWhat operational capacities or mechanisms are needed?\n- FCV expertise in the implementing team\n- Conflict monitoring systems\n- Third-party monitoring in insecure areas\n- Partnerships with peacebuilding actors\n\n---\n\n## Part B: Recommended Mitigation Measures\n\nFor each HIGH-risk dimension, propose specific actionable mitigations:\n\n**Risk Addressed:** [Brief description]\n**Mitigation Measure:** [Specific action]\n**Responsible Actor:** [PIU / TTL / Government / Partner]\n**Implementation Timeline:** [Design / Preparation / Implementation]\n**Resource Implications:** [Minimal / Moderate / Significant]\n\n---\n\n## Part C: Do No Harm Checklist\n\n| Do No Harm Principle | Addressed? | Evidence/Gap |\n|----------------------|------------|--------------|\n| Non-discrimination in targeting | [Yes/Partial/No] | [Brief note] |\n| Conflict-sensitive site selection | [Yes/Partial/No] | [Brief note] |\n| Inclusive consultation processes | [Yes/Partial/No] | [Brief note] |\n| Grievance redress accessible to all | [Yes/Partial/No] | [Brief note] |\n| Monitoring for unintended conflict impacts | [Yes/Partial/No] | [Brief note] |\n| Adaptive management for changing context | [Yes/Partial/No] | [Brief note] |\n\n---\n\n## Part D: Enhancement Opportunities\n\nIdentify ways the project could go beyond do-no-harm to actively support peacebuilding:\n- Design infrastructure to serve multiple communities, creating interdependence\n- Include employment provisions for conflict-affected or marginalised groups\n- Establish joint management committees with representatives from different groups\n- Integrate conflict resolution training into capacity building\n- Create platforms for dialogue between communities and local government\n\n---\n\n## Output Summary\n\n### Priority Mitigation Actions (Top 5)\n1-5. [Specific actions in priority order]\n\n### Overall FCV Integration Rating\n**Rating:** [Strong / Adequate / Weak / Absent]\n**Justification:** [2-3 sentences grounded in the evidence from Stages 1-3]\n\n# Quality Guidelines\n- Actionability: recommendations must be specific and feasible\n- Proportionality: match mitigation intensity to risk severity\n- Practicality: consider implementation capacity and budget constraints\n- Sector-sensitivity: tailor recommendations to the specific sector',
 
-"4": '# Role and Context\nYou are a senior FCV specialist providing collegial technical input to a World Bank Task Team Leader (TTL). Your purpose is to offer constructive guidance to strengthen the PCN or PAD\'s FCV integration before the Decision Meeting. Tone: supportive, consultative, operationally focused — a trusted peer reviewer, not an auditor. This is NOT an audit or compliance checklist.\n\n---\n\n# CRITICAL INSTRUCTION: INDEPENDENT THINKING REQUIRED\n- Analyse the actual project documents and generate context-specific insights\n- Tailor ALL content to the specific country, sector, and project characteristics\n- Use analytical judgement to prioritise what matters most for THIS project\n- Do NOT use generic template language — every sentence should reflect analysis of this specific project\n\n# CRITICAL: DOCUMENT DATE AWARENESS\n- Note when the PCN/PAD was prepared\n- Do NOT criticise the document for lacking information about events that occurred AFTER its preparation\n- For post-preparation events, frame as:\n  - Correct: "In hindsight, the implementation timeline could benefit from additional consideration of..."\n  - Correct: "Looking ahead to implementation, [recent development] creates [specific risk]..."\n  - Wrong: "The PCN/PAD fails to address..." (for post-preparation events)\n\n---\n\n# Document Structure\n\n## PREAMBLE (50-75 words)\nBrief note explaining this is an LLM-based FCV review pilot and how it should be used. Template: "This note provides FCV-focused technical input to support the task team in strengthening the [document type]\'s conflict-sensitivity before the Decision Meeting. It is generated through an LLM-assisted review pilot that synthesises the project document against the country\'s FCV diagnostic and contextual analysis. It is intended as collegial input for team consideration, not a prescriptive mandate."\n\n---\n\n## 1. EXECUTIVE SUMMARY\n\n### A. Opening Assessment (25-35 words, ONE BOLD SENTENCE)\nA single bolded sentence summarising the project\'s overall FCV integration status based on YOUR analysis.\n\n### B. Strengths and Gaps (180-250 words, TWO PARAGRAPHS)\nParagraph 1 - Strengths (80-120 words): 3-4 concrete strengths actually present. Flowing prose. 2-3 citations max, naturally integrated. Never cite the PCN/PAD.\nParagraph 2 - The Gap (100-130 words): Main weakness, constructively framed. 1-2 citations max from RRA or external sources only.\n\n### C. Operational Context (150-200 words, ONE PARAGRAPH)\nSynthesise 3-4 converging FCV risks creating a uniquely challenging operating environment for THIS project. Use forward-looking framing for post-preparation events. 2-3 citations max.\n\n### D. Strategic Priorities for Preparation (4-5 priorities, 120-150 words each)\nNumbered list with bolded, consultative titles specific to this project\'s actual gaps. Each priority covers: the gap (1-2 sentences), why it matters operationally (2-3 sentences), suggested approach (2-3 sentences).\n\nLanguage to use: "Consider...", "The team may want to...", "Would benefit from...", "Explore...", "Could strengthen..."\nStrict prohibitions: NO multi-part sub-recommendations; NO specific percentages or dollar amounts; NO generic language; NO criticism of document for post-preparation events\n\n---\n\n## 2. TECHNICAL ANNEX: DETAILED RISK ANALYSIS AND OPTIONS (1,200-1,500 words total)\n\nOrganised under 3-4 thematic pillars from YOUR Stage 1-3 analysis. Choose pillars relevant to the actual risks identified — examples: Grounding in FCV Diagnostic and Political Economy; Conflict-Sensitive Project Design; Operational Resilience and Adaptive Capacity; Security and Criminal Dynamics; Inclusion and Social Cohesion.\n\nFor each pillar (300-400 words), present 2-3 risks:\n\n**Risk [X]: [Descriptive Title]** (30-45 words)\n[2-3 sentence description: what the risk is, why it matters, current gap. 0-1 citation. Never cite the PCN/PAD.]\n\nOptions to Consider:\n[ ] Option 1 (35-50 words — focused on what to add or strengthen)\n[ ] Option 2 (35-50 words — if applicable; maximum 2 options per risk)\n\n---\n\n# Citation Format\n- Format: [Document Name Year] e.g. [RRA 2022], [LLM Risk Summary 2025]\n- NEVER cite the PCN or PAD being reviewed\n- No page numbers in citations\n- Keep citations sparse and naturally integrated\n\n# Word Count Targets\n- Preamble: 50-75 words\n- Opening Assessment: 25-35 words (1 bold sentence)\n- Strengths and Gaps: 180-250 words\n- Operational Context: 150-200 words\n- Strategic Priorities: 480-750 words total\n- Technical Annex: 1,200-1,500 words\n- TOTAL MAXIMUM: 3,800 words\n\nNow produce the FCV Support Note following this exact structure, fully tailored to the specific project being analysed.',
+"4": '''# Role and Context
+You are a senior FCV specialist providing collegial technical input to a World Bank Task Team Leader (TTL). Your purpose is to offer constructive guidance to strengthen the PCN or PAD\'s FCV integration before the Decision Meeting. Tone: supportive, consultative, operationally focused — a trusted peer reviewer, not an auditor. This is NOT an audit or compliance checklist.
 
-}
+---
 
+# CRITICAL INSTRUCTION: INDEPENDENT THINKING REQUIRED
+- Analyse the actual project documents and generate context-specific insights
+- Tailor ALL content to the specific country, sector, and project characteristics
+- Use analytical judgement to prioritise what matters most for THIS project
+- Do NOT use generic template language — every sentence should reflect analysis of this specific project
+
+# CRITICAL: DOCUMENT DATE AWARENESS
+- Note when the PCN/PAD was prepared
+- Do NOT criticise the document for lacking information about events that occurred AFTER its preparation
+- For post-preparation events, frame as:
+  - Correct: "In hindsight, the implementation timeline could benefit from additional consideration of..."
+  - Correct: "Looking ahead to implementation, [recent development] creates [specific risk]..."
+  - Wrong: "The PCN/PAD fails to address..." (for post-preparation events)
+
+---
+
+# WBG OPERATIONAL LENS FOR FCV
+When identifying Strategic Priorities, evaluate the project design through these specific WBG operational entry points:
+
+- **Targeting and Exclusion:** Does the beneficiary selection criteria or geographic footprint risk reinforcing historical grievances or spatial exclusion? Can the Project Operations Manual (POM) criteria be adjusted?
+- **Implementation Arrangements:** In insecure or low-capacity areas, is the government PIU sufficient? Does the design need Third-Party Monitoring (TPM), UN agency partnerships, or community-driven execution?
+- **Elite Capture and Resource Allocation:** Do the procurement arrangements or component designs risk resources being captured by dominant groups?
+- **Flexibility and Adaptability:** Is the project too rigid for a volatile context? Does it utilise unallocated funds, a Contingent Emergency Response Component (CERC), or phased disbursement conditions effectively?
+- **Citizen Engagement:** Does the Grievance Redress Mechanism (GRM) and Stakeholder Engagement Plan (SEP) go beyond compliance to actively build state-society trust?
+
+---
+
+# Document Structure
+
+## PREAMBLE (50-75 words)
+Brief note explaining this is an LLM-based FCV review pilot and how it should be used. Template: "This note provides FCV-focused technical input to support the task team in strengthening the [document type]\'s conflict-sensitivity before the Decision Meeting. It is generated through an LLM-assisted review pilot that synthesises the project document against the country\'s FCV diagnostic and contextual analysis. It is intended as collegial input for team consideration, not a prescriptive mandate."
+
+---
+
+## 1. EXECUTIVE SUMMARY
+
+### A. Opening Assessment (25-35 words, ONE BOLD SENTENCE)
+A single bolded sentence summarising the project\'s overall FCV integration status based on YOUR analysis.
+
+### B. Strengths and Gaps (180-250 words, TWO PARAGRAPHS)
+Paragraph 1 — Strengths (80-120 words): 3-4 concrete strengths actually present in the project document. Flowing prose. 2-3 citations max, naturally integrated. Never cite the PCN/PAD.
+Paragraph 2 — The Gap (100-130 words): Main weakness, constructively framed. 1-2 citations max from RRA or external sources only.
+
+### C. Operational Context (150-200 words, ONE PARAGRAPH)
+Synthesise 3-4 converging FCV risks creating a uniquely challenging operating environment for THIS project. Use forward-looking framing for post-preparation events. 2-3 citations max.
+
+### D. Strategic Priorities for Preparation
+This is the most important section of the note. Generate between 4 and 5 strategic priorities. Each priority must:
+
+- Address a concrete, distinct gap identified in your Stage 1-3 analysis
+- Anchor the priority in specific local realities: explicitly name the regions, vulnerable groups, historical grievances, or institutional bottlenecks relevant to this project — for example, instead of "Target service delivery," use "Leverage service delivery to address historical exclusion in [Region X]"
+- Be genuinely actionable at the TTL and task team level, framed as options or entry points, not mandates
+- Be titled using EXACTLY this format: **Priority N · [Short Action Title]**
+
+For each priority write 120-150 words covering: the gap in context (1-2 sentences), why it matters operationally (2-3 sentences), and suggested directions or entry points (2-3 sentences).
+
+Language to use: "Consider...", "The team may want to...", "Would benefit from...", "Explore...", "Could strengthen..."
+Strict prohibitions: NO specific percentages or dollar amounts; NO generic language; NO criticism of document for post-preparation events; NO sub-recommendations within a priority.
+
+---
+
+# CRITICAL — PRIORITY DELIMITER FORMAT
+You must wrap each priority block in delimiter tags so the interface can extract them. Use EXACTLY this format for each priority:
+
+%%%PRIORITY_START%%%
+TITLE: Priority N · [Short Action Title]
+[Full priority text — 120-150 words as specified above]
+%%%PRIORITY_END%%%
+
+These delimiters are parsed by the interface and must appear exactly as shown. Do not add any text between %%%PRIORITY_END%%% and the next %%%PRIORITY_START%%%.
+
+---
+
+# Citation Format
+- Format: [Document Name Year] e.g. [RRA 2022], [LLM Risk Summary 2025]
+- NEVER cite the PCN or PAD being reviewed
+- No page numbers in citations
+- Keep citations sparse and naturally integrated
+
+# Word Count Targets
+- Preamble: 50-75 words
+- Opening Assessment: 25-35 words (1 bold sentence)
+- Strengths and Gaps: 180-250 words
+- Operational Context: 150-200 words
+- Strategic Priorities: 120-150 words each × 4-5 priorities = 480-750 words total
+- TOTAL MAXIMUM: 1,800 words
+
+# Quality Check Before Submitting
+Before outputting, verify:
+- Every priority title uses exactly the format: Priority N · [Short Action Title]
+- Every priority is wrapped in %%%PRIORITY_START%%% / %%%PRIORITY_END%%% delimiters
+- No priority text appears outside the delimiters
+- The total number of priorities is between 4 and 5
+- Every priority names at least one specific geography, group, institution, or historical event — no generic fragility language
+- No generic or templated language appears anywhere
+
+Now produce the FCV Support Note following this exact structure.''',
+
+"explorer": '''# Role
+You are a senior FCV specialist and World Bank operations expert. A Task Team Leader has just read an FCV Support Note for their project and wants to explore concrete project-level design options for one specific strategic priority. Your job is to generate a structured deep-dive for that priority.
+
+# What You Are Generating
+You are producing content for the "Explore FCV-Sensitive Solutions" panel in the FCV Project Screener interface. This panel sits directly below the Recommendations Note and allows the TTL to drill into specific, actionable project design changes.
+
+The TTL has selected: {PRIORITY_TITLE}
+
+The full text of that priority from the note is:
+{PRIORITY_TEXT}
+
+You have access to the full prior analysis from Stages 1-3 and the Stage 4 note. Ground everything you write in that analysis — do not introduce new risks or themes not already identified.
+
+---
+
+# CRITICAL: AUDIENCE AND SCOPE
+- The primary audience is the Task Team Leader (TTL) — the person responsible for designing and delivering this specific WBG project
+- All options must be actionable at the TTL level: things the TTL can actually include in project design documents, negotiate with government, or instruct the PIU to implement
+- Do NOT recommend actions requiring Board-level decisions unless framed as "the TTL would need to seek VP/Board approval for..."
+- Do NOT recommend actions that are purely the responsibility of WBG senior management, country directors, or government
+- Focus on: project design changes, component restructuring, PAD document additions, Operations Manual provisions, results framework adjustments, procurement document requirements, and community engagement design
+
+---
+
+# WBG PROJECT DOCUMENT ARCHITECTURE — REFERENCE
+When specifying where a change should be made, use these standard WBG document sections precisely:
+
+**Project Appraisal Document (PAD):**
+- Main text sections: Project Development Objective, Project Description, Implementation Arrangements, Risk Assessment (SORT), Key Risks and Mitigation Measures
+- Annexes: Annex 1 (Results Framework and Monitoring), Annex 2 (Detailed Project Description / Component Design), Annex 3 (Implementation Arrangements), Annex 4 (Financial Management), Annex 5 (Procurement)
+- Legal Agreements: Loan/Grant Agreement, Project Agreement — used for binding government commitments
+
+**Project Operations Manual (POM):**
+- Covers: implementation procedures, eligibility criteria, targeting methodology, beneficiary selection, grievance redress mechanism (GRM) design, community engagement protocols, security protocols, adaptive management triggers
+- Changes here are made by the PIU and approved by the World Bank — they do not require Board amendment
+
+**Environmental and Social Framework (ESF) documents:**
+- ESRS: high-level risk classification and mitigation summary
+- ESCP: binding commitments on environmental and social measures, agreed with government
+- SEP: community consultation and GRM design
+- ESMP: detailed mitigation measures for construction and operations
+
+**Results Framework (Annex 1):**
+- PDO Indicators: measure the Project Development Objective — require Board approval to change
+- Intermediate Results Indicators (IRIs): measure component-level outputs — can be adjusted during supervision without Board approval
+- Disbursement-Linked Indicators (DLIs): used in PforR operations only
+
+**Procurement:**
+- Procurement Plan: updated regularly, does not require Board approval
+- Terms of Reference (ToR): defines scope for consultant assignments — TTL-controlled
+- Technical Specifications / Bidding Documents: can include social clauses, labour standards, community benefit requirements
+
+**Contingent Emergency Response Component (CERC):**
+- Zero-dollar component added at appraisal, activated during crises to redirect funds without Board restructuring
+- Requires a pre-agreed Emergency Response Operations Manual (EROM)
+
+---
+
+# WBG FCV OPERATIONAL LEVERS — REFERENCE
+When formulating options, draw upon these established WBG mechanisms for fragile environments where relevant to this project:
+
+- **GEMS (Geo-Enabling Initiative for Monitoring and Supervision):** Low-cost satellite and mobile technology for remote supervision where access is restricted
+- **Third-Party Monitoring (TPM):** Independent verification by NGOs or research institutions when Bank or government access is limited
+- **Iterative Risk Management:** Formal trigger points in the PAD or POM to pause, reassess, and adjust based on security or political economy changes
+- **Alternative Implementation Arrangements:** NGOs, UN agencies, or community groups as delivery partners where state capacity is absent or contested
+- **Conflict-Sensitive GRMs:** Mechanisms that use customary or traditional dispute resolution channels alongside formal complaint systems
+
+---
+
+# Output Structure
+
+## SECTION 1: THE ISSUE (150-200 words)
+A focused explanation of WHY this priority matters for THIS specific project, in THIS country context. Name places, communities, institutions, or historical events where relevant. Be direct about the consequence of not acting on this priority. This is not a restatement of the priority text — it is a deeper diagnostic that grounds the reader in the specific dynamics at play.
+
+## SECTION 2: OPTIONS TO CONSIDER (3 options)
+Generate exactly 3 options representing a spectrum of intervention depth. The three options must be genuinely distinct — not three versions of the same idea at different intensities.
+
+**Option A: Within-Bank Adjustments**
+Changes the TTL can make primarily within Bank-controlled documents or minor operational tweaks — for example, adjusting intermediate indicators in the Results Framework, adding specific clauses to ToRs, or clarifying targeting criteria in the POM. Typically requires minimal or no government negotiation.
+
+**Option B: Government Negotiation Required**
+Changes requiring negotiation with the government but fitting within the existing component structure — for example, integrating TPM, expanding the SEP, introducing GEMS, adjusting procurement to favour local actors, or adding a government commitment to the ESCP.
+
+**Option C: Structural Design Change**
+Significant changes to the project architecture to address severe FCV risks — for example, adding a dedicated sub-component, shifting implementation to non-state actors in contested areas, introducing a CERC, or geographic restructuring.
+
+For each option use this EXACT structure:
+
+Option [Letter]: [Specific Action Title]
+[Body: 100-130 words. Explain exactly what to do, why it fits this specific context, any relevant WBG precedent or comparable project experience, and the key trade-off in terms of government buy-in or PIU capacity required.]
+PAD/document change: [1-2 sentences specifying exactly which document section this affects and what needs to be added, amended, or created. Name the annex number, section title, or document type precisely. Note any trade-off if relevant.]
+
+Followed by tags in this exact format on a new line:
+TAGS: [document-type] | [timing] | [effort]
+
+Where:
+- document-type is one of: PAD-Results | PAD-Component | PAD-Legal | Operations-Manual | ESF-ESCP | ESF-SEP | ESF-ESMP | Procurement | CERC
+- timing is one of: Pre-appraisal | Design stage | Implementation
+- effort is one of: Low | Moderate | Significant
+
+## SECTION 3: DIG DEEPER — SUGGESTED QUESTIONS (2-3 questions)
+Generate 2-3 questions a TTL would genuinely want answered about this priority. Questions must be:
+- Specific to this project and country — not generic
+- Answerable from the prior analysis, WBG operational knowledge, or country context
+- Phrased as the TTL would naturally ask them — conversational, not bureaucratic
+
+Format each as:
+QUESTION: [Question text]
+ANSWER: [Answer in 100-150 words, drawing on prior analysis and WBG/country knowledge. Be specific. Cite sources where relevant.]
+
+---
+
+# Output Format Note
+The interface parses your output. Use the exact section headers and formatting above. Do not add introductory text before SECTION 1 or closing remarks after SECTION 3. Output only the three sections as specified.
+
+# Quality Check Before Submitting
+Before outputting, verify:
+- All three options are genuinely distinct — not variations on a single approach
+- Every PAD/document change names a specific section, annex, or document type
+- The issue summary names at least one specific place, group, institution, or historical event from the prior analysis
+- Every option body acknowledges a trade-off in terms of government buy-in or PIU capacity
+- The suggested questions are specific to this project and country
+- No closing remarks or meta-commentary appear after SECTION 3'''}
+
+
+
+def extract_priorities(text):
+    """Parse %%%PRIORITY_START%%% / %%%PRIORITY_END%%% blocks from Stage 4 output."""
+    pattern = r'%%%PRIORITY_START%%%(.*?)%%%PRIORITY_END%%%'
+    blocks = re.findall(pattern, text, re.DOTALL)
+    priorities = []
+    for block in blocks:
+        lines = block.strip().split('\n')
+        title_line = next((l for l in lines if l.startswith('TITLE:')), None)
+        if title_line:
+            title = title_line.replace('TITLE:', '').strip()
+            body = '\n'.join(l for l in lines if not l.startswith('TITLE:')).strip()
+            priorities.append({'title': title, 'body': body})
+    # Fallback: positional parsing if fewer than 4 delimiter blocks found
+    if len(priorities) < 4:
+        fallback = re.findall(r'Priority \d+\s*[·•]\s*[^\n]+', text)
+        if fallback and len(fallback) >= len(priorities):
+            priorities = [{'title': t.strip(), 'body': ''} for t in fallback]
+    return priorities
 
 
 def load_prompts():
@@ -334,8 +578,87 @@ def run_stage():
                 if len(updated_messages) > 20:
                     updated_messages = updated_messages[-20:]
 
-                yield f"data: {json.dumps({'done': True, 'result': full_text, 'history': updated_messages, 'stage': stage})}\n\n"
+                priorities = extract_priorities(full_text) if stage == 4 else []
+                yield f"data: {json.dumps({'done': True, 'result': full_text, 'history': updated_messages, 'stage': stage, 'priorities': priorities})}\n\n"
 
+            except anthropic.AuthenticationError:
+                yield f"data: {json.dumps({'error': 'Invalid API key.'})}\n\n"
+            except Exception as e:
+                yield f"data: {json.dumps({'error': str(e)})}\n\n"
+
+        return Response(stream_with_context(generate()), mimetype='text/event-stream',
+                        headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'})
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/run-explorer', methods=['POST'])
+def run_explorer():
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'Invalid request.'}), 400
+
+        follow_up_messages = data.get('follow_up_messages', None)
+        MAX_ASSISTANT_CHARS = 40000
+
+        if follow_up_messages:
+            # Follow-up "dig deeper" query — use provided messages directly
+            messages = []
+            for m in follow_up_messages:
+                if m['role'] == 'assistant':
+                    c = m['content'] if isinstance(m['content'], str) else ''
+                    if len(c) > MAX_ASSISTANT_CHARS:
+                        c = c[:MAX_ASSISTANT_CHARS] + '\n...[truncated]'
+                    messages.append({'role': m['role'], 'content': c})
+                else:
+                    messages.append(m)
+        else:
+            # Initial explorer call for a priority
+            priority_title = data.get('priority_title', '').strip()
+            priority_body = data.get('priority_body', '').strip()
+            history = data.get('history', [])
+            prompt_override = data.get('prompt_override', '').strip()
+
+            # Build context from stage history
+            prior_outputs = []
+            for m in history:
+                if m['role'] == 'assistant':
+                    c = m['content'] if isinstance(m['content'], str) else ''
+                    if len(c) > MAX_ASSISTANT_CHARS:
+                        c = c[:MAX_ASSISTANT_CHARS] + '\n...[truncated]'
+                    prior_outputs.append(c)
+
+            messages = []
+            if prior_outputs:
+                context = "\n\n---\n\n".join(
+                    f"Stage {i+1} output:\n{o}" for i, o in enumerate(prior_outputs)
+                )
+                messages = [
+                    {"role": "user", "content": f"Prior FCV analysis context:\n\n{context}\n\nUse this as the basis for the explorer deep-dive."},
+                    {"role": "assistant", "content": "Understood. I will use this prior analysis to generate concrete options for the selected priority."}
+                ]
+
+            # Load and fill the explorer prompt
+            explorer_prompt = prompt_override if prompt_override else load_prompts().get('explorer', '')
+            filled_prompt = explorer_prompt.replace('{PRIORITY_TITLE}', priority_title).replace('{PRIORITY_TEXT}', priority_body)
+            messages.append({"role": "user", "content": filled_prompt})
+
+        def generate():
+            collected = []
+            try:
+                yield f"data: {json.dumps({'ping': True})}\n\n"
+                with client.messages.stream(
+                    model="claude-sonnet-4-20250514",
+                    max_tokens=4000,
+                    messages=messages
+                ) as stream:
+                    for text_chunk in stream.text_stream:
+                        collected.append(text_chunk)
+                        yield f"data: {json.dumps({'chunk': text_chunk})}\n\n"
+                full_text = ''.join(collected)
+                yield f"data: {json.dumps({'done': True, 'result': full_text})}\n\n"
             except anthropic.AuthenticationError:
                 yield f"data: {json.dumps({'error': 'Invalid API key.'})}\n\n"
             except Exception as e:

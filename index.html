@@ -503,6 +503,148 @@
     .topbar-prompt-btn:hover{background:rgba(255,255,255,.2);color:#fff}
     .topbar-prompt-btn.has-modified{border-color:rgba(245,158,11,.6);color:#fbbf24}
 
+    /* ══════════════════════════════════════════
+       EXPLORER PANEL
+    ══════════════════════════════════════════ */
+    .explorer-panel{
+      background:#fff;border:1px solid var(--border);border-top:3px solid var(--s4);
+      border-radius:var(--radius);box-shadow:var(--shadow-sm);margin-top:20px;overflow:hidden;
+    }
+    .explorer-hdr{
+      padding:18px 24px 16px;border-bottom:1px solid var(--border);
+      display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
+      background:linear-gradient(135deg,#f0faf4,#e8f7ef);
+    }
+    .explorer-title-group{display:flex;align-items:center;gap:10px}
+    .explorer-title{
+      font-family:'Source Serif 4',serif;font-weight:400;font-size:17px;color:#1a4a30;
+    }
+    .explorer-badge{
+      font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;
+      padding:3px 8px;background:rgba(26,122,74,.12);border:1px solid rgba(26,122,74,.2);
+      border-radius:20px;color:#1a7a4a;
+    }
+    .explorer-select{
+      font-family:'Source Sans 3',Arial,sans-serif;font-size:13px;font-weight:600;
+      padding:8px 32px 8px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);
+      background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235a6a7e' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") no-repeat right 10px center;
+      -webkit-appearance:none;appearance:none;cursor:pointer;color:var(--text);min-width:220px;max-width:400px;
+    }
+    .explorer-select:focus{outline:none;border-color:var(--s4);box-shadow:0 0 0 3px rgba(26,122,74,.12)}
+    .explorer-body{padding:24px}
+    .explorer-loading{
+      display:flex;align-items:center;gap:14px;padding:32px 0;justify-content:center;color:var(--muted);font-size:14px;
+    }
+    .explorer-loading .spinner{width:20px;height:20px;flex-shrink:0}
+    .explorer-section-title{
+      font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;
+      color:var(--muted);margin:0 0 14px;display:flex;align-items:center;gap:8px;
+    }
+    .explorer-section-title::after{content:'';flex:1;height:1px;background:var(--border)}
+    .explorer-issue{
+      font-size:14px;line-height:1.7;color:var(--text);margin-bottom:24px;
+      padding:16px;background:#f8fbfd;border-radius:var(--radius-sm);border-left:3px solid var(--s4);
+    }
+    /* Option cards */
+    .options-grid{display:flex;flex-direction:column;gap:14px;margin-bottom:24px}
+    .option-card{
+      border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;
+      transition:box-shadow .18s;
+    }
+    .option-card:hover{box-shadow:var(--shadow-md)}
+    .option-card-hdr{
+      display:flex;align-items:flex-start;gap:14px;padding:16px;
+      border-bottom:1px solid var(--border);
+    }
+    .option-letter{
+      width:32px;height:32px;flex-shrink:0;border-radius:50%;
+      display:flex;align-items:center;justify-content:center;
+      font-weight:700;font-size:13px;color:#fff;
+    }
+    .option-letter.a{background:#1a7a4a}
+    .option-letter.b{background:#0072BB}
+    .option-letter.c{background:#6b21a8}
+    .option-card-title{font-weight:600;font-size:14px;color:var(--text);line-height:1.4;padding-top:5px}
+    .option-card-body{padding:14px 16px;font-size:13.5px;line-height:1.65;color:var(--text)}
+    .option-doc-change{
+      margin:12px 0 0;padding:10px 12px;background:#eff8ff;border-left:3px solid #0072BB;
+      border-radius:0 4px 4px 0;font-size:13px;color:#004080;line-height:1.55;
+    }
+    .option-doc-change strong{color:#003060}
+    .option-card-foot{
+      padding:10px 16px;border-top:1px solid var(--border);background:#fafbfc;
+      display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;
+    }
+    .option-tags{display:flex;flex-wrap:wrap;gap:6px}
+    .tag{
+      display:inline-flex;align-items:center;font-size:11px;font-weight:600;
+      padding:3px 9px;border-radius:20px;letter-spacing:.03em;
+    }
+    /* doc-type tags */
+    .tag.pad{background:#e8f5ee;color:#1a5c34}
+    .tag.ops{background:#e8f0f8;color:#003d73}
+    .tag.esf{background:#fff3e0;color:#7a4a00}
+    .tag.proc{background:#f3e8ff;color:#5b1fa1}
+    .tag.cerc{background:#fee2e2;color:#991b1b}
+    /* timing tags */
+    .tag.pre-appraisal{background:#fef9c3;color:#7a6000}
+    .tag.design{background:#e0f7fa;color:#006064}
+    .tag.implementation{background:#f0f0f0;color:#404040}
+    /* effort tags */
+    .tag.low{background:#d1fae5;color:#065f46}
+    .tag.moderate{background:#fef3c7;color:#78350f}
+    .tag.significant{background:#fee2e2;color:#991b1b}
+    .option-ask-btn{
+      font-size:12px;font-weight:600;padding:5px 12px;
+      background:#fff;border:1px solid var(--s4);color:var(--s4);border-radius:var(--radius-sm);
+      cursor:pointer;white-space:nowrap;transition:all .15s;font-family:inherit;
+    }
+    .option-ask-btn:hover{background:var(--s4);color:#fff}
+    /* Dig deeper section */
+    .digdeeper-section{margin-top:4px}
+    .digdeeper-qa{
+      border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:10px;overflow:hidden;
+    }
+    .digdeeper-q{
+      padding:12px 16px;font-size:13.5px;font-weight:600;color:var(--text);
+      cursor:pointer;display:flex;justify-content:space-between;align-items:center;
+      background:#fafbfc;transition:background .15s;user-select:none;
+    }
+    .digdeeper-q:hover{background:#f0f4f8}
+    .digdeeper-q .dq-arrow{font-size:12px;color:var(--muted);transition:transform .2s;flex-shrink:0}
+    .digdeeper-q.open .dq-arrow{transform:rotate(180deg)}
+    .digdeeper-a{
+      padding:14px 16px;font-size:13.5px;line-height:1.7;color:var(--text);
+      border-top:1px solid var(--border);background:#fff;display:none;
+    }
+    .digdeeper-a.open{display:block}
+    /* Follow-up / freetext area */
+    .explorer-followup{padding:0 24px 24px;border-top:1px solid var(--border);margin-top:8px}
+    .explorer-followup-label{
+      font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;
+      color:var(--muted);margin:16px 0 10px;display:flex;align-items:center;gap:8px;
+    }
+    .explorer-followup-label::after{content:'';flex:1;height:1px;background:var(--border)}
+    .explorer-followup-row{display:flex;gap:10px;align-items:flex-start}
+    .explorer-followup-input{
+      flex:1;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);
+      font-family:'Source Sans 3',Arial,sans-serif;font-size:13.5px;resize:vertical;min-height:60px;
+      color:var(--text);line-height:1.5;
+    }
+    .explorer-followup-input:focus{outline:none;border-color:var(--s4);box-shadow:0 0 0 3px rgba(26,122,74,.1)}
+    .explorer-followup-send{
+      padding:10px 16px;background:var(--s4);color:#fff;border:none;border-radius:var(--radius-sm);
+      font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;
+      display:flex;align-items:center;gap:6px;transition:opacity .15s;
+    }
+    .explorer-followup-send:hover{opacity:.88}
+    .explorer-followup-answer{
+      margin-top:14px;padding:14px 16px;background:#f8fbfd;border-radius:var(--radius-sm);
+      border-left:3px solid var(--s4);font-size:13.5px;line-height:1.7;color:var(--text);
+      display:none;
+    }
+    .explorer-followup-answer.visible{display:block}
+
   </style>
 </head>
 <body>
@@ -580,6 +722,7 @@
       <button class="prompt-tab" id="ptab-2" onclick="showPromptTab(2)">Stage 2 · Screening</button>
       <button class="prompt-tab" id="ptab-3" onclick="showPromptTab(3)">Stage 3 · Gaps</button>
       <button class="prompt-tab" id="ptab-4" onclick="showPromptTab(4)">Stage 4 · Rec. Note</button>
+      <button class="prompt-tab" id="ptab-explorer" onclick="showPromptTab('explorer')">Explorer</button>
     </div>
     <div class="prompt-modal-body">
       <div class="prompt-info">
@@ -786,6 +929,9 @@
   // ── State ──────────────────────────────────────────────────────────────────
   let pF=[],cF=[],hist=[],curS=0,busy=false;
   let sessionName='';
+  let stageFourPriorities=[];
+  let explorerCache={};   // {priorityTitle: rawExplorerText}
+  let explorerHistory=[]; // messages for follow-up "dig deeper" queries
 
   // ── Onboarding ──────────────────────────────────────────────────────────────
   function initOnboarding(){
@@ -1076,6 +1222,15 @@
             }
             if(p.chunk){streamed+=p.chunk;const el=document.getElementById('s-out');if(el)el.innerHTML=md(streamed)}
             if(p.done){hist=p.history||hist;curS=stage;updateSessionBar();renderOut(stage,p.result,followOn);setStepper(stage,'done');
+              // Explorer panel for Stage 4
+              if(stage===4 && p.priorities && p.priorities.length){
+                stageFourPriorities=p.priorities;
+                // Preserve cache entries whose title still exists in new priorities
+                const newTitles=new Set(p.priorities.map(pr=>pr.title));
+                for(const t of Object.keys(explorerCache)){if(!newTitles.has(t))delete explorerCache[t];}
+                explorerHistory=[];
+                populateExplorerDropdown(p.priorities);
+              }
               // Inject truncation warning banner if any
               if(window._truncWarnings && window._truncWarnings.length){
                 const warnHtml = window._truncWarnings.map(w=>`<div class="trunc-warn-item">${md(w)}</div>`).join('');
@@ -1130,7 +1285,40 @@
           <button class="copy-btn" id="copy-btn" onclick="copyOut()">Copy all</button>
         </div>
         <div class="out-body" id="out-txt">${md(result)}</div>
-      </div>`;
+      </div>
+      ${isLast?`
+      <div class="explorer-panel ani" id="explorer-panel">
+        <div class="explorer-hdr">
+          <div class="explorer-title-group">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a7a4a" stroke-width="2" aria-hidden="true"><path d="M12 22V12M12 12C12 12 7 9 7 4a5 5 0 0 1 10 0c0 5-5 8-5 8z"/><path d="M9 17c-2 1-3 2-3 3"/><path d="M15 17c2 1 3 2 3 3"/></svg>
+            <span class="explorer-title">Explore FCV-Sensitive Solutions</span>
+            <span class="explorer-badge">On demand</span>
+          </div>
+          <select class="explorer-select" id="explorer-select" onchange="loadExplorerPriority(this.value)" aria-label="Select a Strategic Priority to explore">
+            <option value="">Loading priorities…</option>
+          </select>
+        </div>
+        <div class="explorer-body" id="explorer-body">
+          <div class="explorer-loading">
+            <svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite"><circle cx="12" cy="12" r="10" stroke-opacity=".25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-opacity="1"/></svg>
+            Preparing explorer…
+          </div>
+        </div>
+        <div class="explorer-followup" id="explorer-followup" style="display:none">
+          <div class="explorer-followup-label">Dig deeper</div>
+          <div class="explorer-followup-row">
+            <textarea class="explorer-followup-input" id="explorer-freetext" rows="2"
+              placeholder="Ask a follow-up question, or click 'Ask about this option' above to pre-fill…"
+              onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();submitExplorerFollowup()}"></textarea>
+            <button class="explorer-followup-send" onclick="submitExplorerFollowup()">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+              Send
+            </button>
+          </div>
+          <div class="explorer-followup-answer" id="explorer-followup-answer"></div>
+        </div>
+      </div>`:''}
+      `;
 
     document.getElementById('refine-area').innerHTML=`
       <div class="refine-card ani">
@@ -1312,19 +1500,20 @@
 
   function showPromptTab(n){
     promptModalActiveTab = n;
-    // Update tab styles
-    for(let i=1;i<=4;i++){
-      const tab = document.getElementById('ptab-'+i);
-      if(!tab) continue;
-      tab.className = 'prompt-tab' + (i===n?' active':'');
+    // Update tab styles for all tabs (1-4 and 'explorer')
+    const allTabIds = [1, 2, 3, 4, 'explorer'];
+    allTabIds.forEach(id=>{
+      const tab = document.getElementById('ptab-'+id);
+      if(!tab) return;
+      tab.className = 'prompt-tab' + (id===n?' active':'');
       // Show modified dot if session override exists
       const dot = tab.querySelector('.prompt-modified-dot');
-      if(sessionPrompts[i]){
+      if(sessionPrompts[id]){
         if(!dot){ const d=document.createElement('span'); d.className='prompt-modified-dot'; tab.appendChild(d); }
       } else {
         if(dot) dot.remove();
       }
-    }
+    });
     // Load text into editor
     const text = sessionPrompts[n] || defaultPrompts[String(n)] || '';
     const editor = document.getElementById('prompt-edit-area');
@@ -1380,6 +1569,290 @@
   // Override getPromptForStage to use session overrides when present
   // Session prompt overrides are sent to the backend as prompt_override in the payload.
   // The backend uses the override in place of its DEFAULT_PROMPTS for that stage run.
+
+  // ── Explorer panel ──────────────────────────────────────────────────────────
+
+  function populateExplorerDropdown(priorities){
+    const sel=document.getElementById('explorer-select');
+    if(!sel) return;
+    sel.innerHTML='';
+    priorities.forEach((pr,i)=>{
+      const opt=document.createElement('option');
+      opt.value=pr.title;
+      opt.textContent=pr.title;
+      sel.appendChild(opt);
+    });
+    if(priorities.length) loadExplorerPriority(priorities[0].title);
+  }
+
+  async function loadExplorerPriority(priorityTitle){
+    if(!priorityTitle) return;
+    const bodyEl=document.getElementById('explorer-body');
+    const followupEl=document.getElementById('explorer-followup');
+    if(!bodyEl) return;
+
+    // If already cached, render immediately
+    if(explorerCache[priorityTitle]){
+      renderExplorerContent(parseExplorerText(explorerCache[priorityTitle]), priorityTitle);
+      if(followupEl) followupEl.style.display='';
+      return;
+    }
+
+    // Find priority object
+    const pr=stageFourPriorities.find(p=>p.title===priorityTitle);
+    if(!pr) return;
+
+    // Show loading state
+    bodyEl.innerHTML=`
+      <div class="explorer-loading">
+        <svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite;flex-shrink:0"><circle cx="12" cy="12" r="10" stroke-opacity=".25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-opacity="1"/></svg>
+        Generating solutions for <em>${esc(pr.title)}</em>…
+      </div>`;
+    if(followupEl) followupEl.style.display='none';
+    // Reset follow-up
+    const ftEl=document.getElementById('explorer-freetext');
+    const ansEl=document.getElementById('explorer-followup-answer');
+    if(ftEl) ftEl.value='';
+    if(ansEl){ansEl.innerHTML='';ansEl.className='explorer-followup-answer';}
+    explorerHistory=[];
+
+    // Build prompt override if user has edited explorer prompt
+    const promptOverride=sessionPrompts['explorer']||'';
+
+    try{
+      const payload={
+        priority_title:pr.title,
+        priority_body:pr.body,
+        history:hist
+      };
+      if(promptOverride) payload.prompt_override=promptOverride;
+
+      const res=await fetch('/api/run-explorer',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(payload)
+      });
+      if(!res.ok) throw new Error('Server error '+res.status);
+
+      const reader=res.body.getReader(),dec=new TextDecoder();
+      let buf='',streamed='';
+
+      while(true){
+        const{done,value}=await reader.read();if(done)break;
+        buf+=dec.decode(value,{stream:true});
+        const lines=buf.split('\n');buf=lines.pop();
+        for(const line of lines){
+          if(!line.startsWith('data: '))continue;
+          try{
+            const p=JSON.parse(line.slice(6));
+            if(p.error) throw new Error(p.error);
+            if(p.chunk){
+              streamed+=p.chunk;
+              bodyEl.innerHTML=`<div style="padding:16px;font-size:13px;color:var(--muted);white-space:pre-wrap">${esc(streamed)}</div>`;
+            }
+            if(p.done){
+              explorerCache[priorityTitle]=p.result;
+              // Store initial explorer exchange for follow-ups
+              explorerHistory=[
+                {role:'user',content:'[Explorer request for: '+pr.title+']'},
+                {role:'assistant',content:p.result}
+              ];
+              renderExplorerContent(parseExplorerText(p.result), priorityTitle);
+              if(followupEl) followupEl.style.display='';
+            }
+          }catch(e){if(e.message!=='Unexpected end of JSON input') bodyEl.innerHTML=`<div style="padding:16px;color:#b91c1c">Error: ${esc(e.message)}</div>`;}
+        }
+      }
+    }catch(e){
+      bodyEl.innerHTML=`<div style="padding:16px;color:#b91c1c">Could not generate solutions: ${esc(e.message)}</div>`;
+    }
+  }
+
+  function parseExplorerText(text){
+    // Split into 3 sections
+    const sec1Match=text.match(/SECTION\s*1[:\s]*THE ISSUE[\s\S]*?(?=SECTION\s*2|$)/i);
+    const sec2Match=text.match(/SECTION\s*2[:\s]*OPTIONS TO CONSIDER[\s\S]*?(?=SECTION\s*3|$)/i);
+    const sec3Match=text.match(/SECTION\s*3[:\s]*DIG DEEPER[\s\S]*/i);
+
+    const sec1=sec1Match?sec1Match[0].replace(/^SECTION\s*1[:\s]*THE ISSUE\s*/i,'').trim():'';
+    const sec2Raw=sec2Match?sec2Match[0].replace(/^SECTION\s*2[:\s]*OPTIONS TO CONSIDER\s*/i,'').trim():'';
+    const sec3Raw=sec3Match?sec3Match[0].replace(/^SECTION\s*3[:\s]*DIG DEEPER[\s\S]*?(?=QUESTION:|$)/i,'').trim():'';
+
+    // Parse options from section 2
+    const optionBlocks=sec2Raw.split(/(?=^Option [A-C]:)/m).filter(b=>b.trim());
+    const options=optionBlocks.map(block=>{
+      const titleMatch=block.match(/^Option ([A-C]):\s*(.+)/m);
+      const letter=titleMatch?titleMatch[1]:'?';
+      const title=titleMatch?titleMatch[2].trim():'';
+      // Extract PAD/document change line
+      const docMatch=block.match(/PAD\/document change:\s*([\s\S]*?)(?=TAGS:|$)/i);
+      const docChange=docMatch?docMatch[1].trim():'';
+      // Extract TAGS line
+      const tagsMatch=block.match(/TAGS:\s*(.+)/i);
+      const tagsRaw=tagsMatch?tagsMatch[1].trim():'';
+      // Body is everything between title line and PAD/doc change
+      let body=block
+        .replace(/^Option [A-C]:.+\n?/m,'')
+        .replace(/PAD\/document change:[\s\S]*$/i,'')
+        .replace(/TAGS:.*/i,'')
+        .trim();
+      return{letter,title,body,docChange,tagsRaw};
+    });
+
+    // Parse Q&A from section 3
+    const qaPairs=[];
+    const qaRaw=text.match(/QUESTION:[\s\S]*/i);
+    if(qaRaw){
+      const qaText=qaRaw[0];
+      const pairs=qaText.split(/(?=^QUESTION:)/m).filter(b=>b.trim());
+      pairs.forEach(pair=>{
+        const qMatch=pair.match(/QUESTION:\s*(.+?)(?=ANSWER:|$)/is);
+        const aMatch=pair.match(/ANSWER:\s*([\s\S]+)/i);
+        if(qMatch&&aMatch){
+          qaPairs.push({q:qMatch[1].trim(),a:aMatch[1].trim()});
+        }
+      });
+    }
+
+    return{issue:sec1,options,qaPairs};
+  }
+
+  function renderExplorerContent(parsed, priorityTitle){
+    const bodyEl=document.getElementById('explorer-body');
+    if(!bodyEl) return;
+
+    const tagsHtml=(tagsRaw)=>{
+      if(!tagsRaw) return '';
+      return tagsRaw.split('|').map(t=>{
+        const v=t.trim().toLowerCase().replace(/[^a-z0-9-]/g,'-');
+        const label=t.trim();
+        let cls='tag ';
+        if(/pad-results|pad-component|pad-legal/.test(v)) cls+='pad';
+        else if(/operations-manual/.test(v)) cls+='ops';
+        else if(/esf/.test(v)) cls+='esf';
+        else if(/procurement/.test(v)) cls+='proc';
+        else if(/cerc/.test(v)) cls+='cerc';
+        else if(/pre-appraisal/.test(v)) cls+='pre-appraisal';
+        else if(/design/.test(v)) cls+='design';
+        else if(/implementation/.test(v)) cls+='implementation';
+        else if(/^low/.test(v)) cls+='low';
+        else if(/moderate/.test(v)) cls+='moderate';
+        else if(/significant/.test(v)) cls+='significant';
+        else cls+='pad';
+        return `<span class="${cls}">${esc(label)}</span>`;
+      }).join('');
+    };
+
+    const letterClass={A:'a',B:'b',C:'c'};
+
+    const optionsHtml=parsed.options.map(opt=>`
+      <div class="option-card">
+        <div class="option-card-hdr">
+          <div class="option-letter ${letterClass[opt.letter]||'a'}">${esc(opt.letter)}</div>
+          <div class="option-card-title">${esc(opt.title)}</div>
+        </div>
+        <div class="option-card-body">
+          ${md(opt.body)}
+          ${opt.docChange?`<div class="option-doc-change"><strong>PAD/document change:</strong> ${md(opt.docChange)}</div>`:''}
+        </div>
+        <div class="option-card-foot">
+          <div class="option-tags">${tagsHtml(opt.tagsRaw)}</div>
+          <button class="option-ask-btn" onclick="preloadOption('${esc(opt.letter)}','${opt.title.replace(/'/g,"\\'")}')">
+            Ask about this option
+          </button>
+        </div>
+      </div>`).join('');
+
+    const qaHtml=parsed.qaPairs.map((qa,i)=>`
+      <div class="digdeeper-qa">
+        <div class="digdeeper-q" onclick="toggleDQ(this)" role="button" tabindex="0" onkeydown="if(event.key==='Enter')toggleDQ(this)">
+          <span>${esc(qa.q)}</span>
+          <span class="dq-arrow">▾</span>
+        </div>
+        <div class="digdeeper-a">${md(qa.a)}</div>
+      </div>`).join('');
+
+    bodyEl.innerHTML=`
+      <div class="explorer-body" style="padding:24px">
+        <div class="explorer-section-title">The Issue</div>
+        <div class="explorer-issue">${md(parsed.issue)}</div>
+        <div class="explorer-section-title">Options to Consider</div>
+        <div class="options-grid">${optionsHtml}</div>
+        ${parsed.qaPairs.length?`
+        <div class="digdeeper-section">
+          <div class="explorer-section-title">Suggested Questions</div>
+          ${qaHtml}
+        </div>`:''}
+      </div>`;
+  }
+
+  function toggleDQ(el){
+    el.classList.toggle('open');
+    const a=el.nextElementSibling;
+    if(a) a.classList.toggle('open');
+  }
+
+  function preloadOption(letter,title){
+    const ft=document.getElementById('explorer-freetext');
+    if(ft){
+      ft.value=`Tell me more about Option ${letter}: ${title}`;
+      ft.focus();
+      ft.scrollIntoView({behavior:'smooth',block:'nearest'});
+    }
+  }
+
+  async function submitExplorerFollowup(){
+    const ft=document.getElementById('explorer-freetext');
+    const ansEl=document.getElementById('explorer-followup-answer');
+    if(!ft||!ansEl) return;
+    const msg=ft.value.trim();
+    if(!msg) return;
+    ft.value='';
+
+    // Append user message to explorer history
+    const newMessages=[...explorerHistory,{role:'user',content:msg}];
+
+    ansEl.className='explorer-followup-answer visible';
+    ansEl.innerHTML='<em style="color:var(--muted)">Generating…</em>';
+
+    try{
+      const payload={follow_up_messages:newMessages};
+      const res=await fetch('/api/run-explorer',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(payload)
+      });
+      if(!res.ok) throw new Error('Server error '+res.status);
+
+      const reader=res.body.getReader(),dec=new TextDecoder();
+      let buf='',streamed='';
+
+      while(true){
+        const{done,value}=await reader.read();if(done)break;
+        buf+=dec.decode(value,{stream:true});
+        const lines=buf.split('\n');buf=lines.pop();
+        for(const line of lines){
+          if(!line.startsWith('data: '))continue;
+          try{
+            const p=JSON.parse(line.slice(6));
+            if(p.error) throw new Error(p.error);
+            if(p.chunk){streamed+=p.chunk;ansEl.innerHTML=md(streamed);}
+            if(p.done){
+              // Update explorer history with this exchange
+              explorerHistory=[...newMessages,{role:'assistant',content:p.result}];
+            }
+          }catch(e){if(e.message!=='Unexpected end of JSON input')throw e;}
+        }
+      }
+    }catch(e){
+      ansEl.innerHTML=`<span style="color:#b91c1c">Error: ${esc(e.message)}</span>`;
+    }
+  }
+
+  function esc(s){
+    if(!s)return'';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
 
 </script>
 </body>
