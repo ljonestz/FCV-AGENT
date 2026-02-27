@@ -566,6 +566,17 @@
     .option-letter.c{background:#6b21a8}
     .option-card-title{font-weight:600;font-size:14px;color:var(--text);line-height:1.4;padding-top:5px}
     .option-card-body{padding:14px 16px;font-size:13.5px;line-height:1.65;color:var(--text)}
+    .option-context{
+      font-size:13.5px;line-height:1.65;color:var(--muted);margin-bottom:12px;font-style:italic;
+    }
+    .option-bullets{
+      margin:0;padding-left:20px;
+    }
+    .option-bullets li{
+      font-size:13.5px;line-height:1.65;color:var(--text);margin-bottom:7px;
+    }
+    .option-bullets li:last-child{margin-bottom:0}
+    /* Legacy — kept in case old cached content still references it */
     .option-doc-change{
       margin:12px 0 0;padding:10px 12px;background:#eff8ff;border-left:3px solid #0072BB;
       border-radius:0 4px 4px 0;font-size:13px;color:#004080;line-height:1.55;
@@ -1684,19 +1695,28 @@
       const titleMatch=block.match(/^Option ([A-C]):\s*(.+)/m);
       const letter=titleMatch?titleMatch[1]:'?';
       const title=titleMatch?titleMatch[2].trim():'';
-      // Extract PAD/document change line
-      const docMatch=block.match(/PAD\/document change:\s*([\s\S]*?)(?=TAGS:|$)/i);
-      const docChange=docMatch?docMatch[1].trim():'';
       // Extract TAGS line
       const tagsMatch=block.match(/TAGS:\s*(.+)/i);
       const tagsRaw=tagsMatch?tagsMatch[1].trim():'';
-      // Body is everything between title line and PAD/doc change
-      let body=block
+      // Strip title and TAGS lines, then separate context sentences from bullets
+      const blockBody=block
         .replace(/^Option [A-C]:.+\n?/m,'')
-        .replace(/PAD\/document change:[\s\S]*$/i,'')
         .replace(/TAGS:.*/i,'')
         .trim();
-      return{letter,title,body,docChange,tagsRaw};
+      const allLines=blockBody.split('\n');
+      const contextLines=[];
+      const bulletLines=[];
+      let inBullets=false;
+      for(const line of allLines){
+        const trimmed=line.trim();
+        if(trimmed.startsWith('•')||trimmed.startsWith('-')){
+          inBullets=true;
+          bulletLines.push(trimmed.replace(/^[•\-]\s*/,''));
+        }else if(!inBullets&&trimmed){
+          contextLines.push(trimmed);
+        }
+      }
+      return{letter,title,context:contextLines.join(' '),bullets:bulletLines,tagsRaw};
     });
 
     // Parse Q&A from section 3
@@ -1752,8 +1772,8 @@
           <div class="option-card-title">${esc(opt.title)}</div>
         </div>
         <div class="option-card-body">
-          ${md(opt.body)}
-          ${opt.docChange?`<div class="option-doc-change"><strong>PAD/document change:</strong> ${md(opt.docChange)}</div>`:''}
+          ${opt.context?`<div class="option-context">${esc(opt.context)}</div>`:''}
+          ${opt.bullets&&opt.bullets.length?`<ul class="option-bullets">${opt.bullets.map(b=>`<li>${md(b)}</li>`).join('')}</ul>`:''}
         </div>
         <div class="option-card-foot">
           <div class="option-tags">${tagsHtml(opt.tagsRaw)}</div>

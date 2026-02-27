@@ -284,10 +284,11 @@ Significant changes to the project architecture to address severe FCV risks — 
 For each option use this EXACT structure:
 
 Option [Letter]: [Specific Action Title]
-[Body: 100-130 words. Explain exactly what to do, why it fits this specific context, any relevant WBG precedent or comparable project experience, and the key trade-off in terms of government buy-in or PIU capacity required.]
-PAD/document change: [1-2 sentences specifying exactly which document section this affects and what needs to be added, amended, or created. Name the annex number, section title, or document type precisely. Note any trade-off if relevant.]
+[Context: 1-2 sentences. Why this option is appropriate for this specific country and project context. Reference any WBG precedent from a comparable project if available.]
+• [Specific action — always name the exact WBG document section inline, e.g. "In the POM targeting criteria, add...", "In Annex 2 (Component Design), restructure...", "In Annex 1 (Results Framework), add an IRI tracking..."]
+• [Second specific action with document reference]
+• [Third action or trade-off: what government buy-in or PIU capacity this requires, and how to address it in project design]
 
-Followed by tags in this exact format on a new line:
 TAGS: [document-type] | [timing] | [effort]
 
 Where:
@@ -313,12 +314,27 @@ The interface parses your output. Use the exact section headers and formatting a
 # Quality Check Before Submitting
 Before outputting, verify:
 - All three options are genuinely distinct — not variations on a single approach
-- Every PAD/document change names a specific section, annex, or document type
+- Every bullet point in each option names the specific WBG document section where the change should be made
 - The issue summary names at least one specific place, group, institution, or historical event from the prior analysis
-- Every option body acknowledges a trade-off in terms of government buy-in or PIU capacity
+- The third bullet of each option addresses trade-offs in government buy-in or PIU capacity
 - The suggested questions are specific to this project and country
 - No closing remarks or meta-commentary appear after SECTION 3'''}
 
+
+
+def clean_stage4_output(text):
+    """Strip %%%PRIORITY_START/END%%% delimiters; format titles as bold with icon for display."""
+    def replace_block(m):
+        block = m.group(1).strip()
+        lines = block.split('\n')
+        title_line = next((l for l in lines if l.startswith('TITLE:')), None)
+        if title_line:
+            title = title_line.replace('TITLE:', '').strip()
+            body_lines = [l for l in lines if not l.startswith('TITLE:')]
+            body = '\n'.join(body_lines).strip()
+            return f'**▸ {title}**\n\n{body}'
+        return block
+    return re.sub(r'%%%PRIORITY_START%%%(.*?)%%%PRIORITY_END%%%', replace_block, text, flags=re.DOTALL)
 
 
 def extract_priorities(text):
@@ -568,8 +584,11 @@ def run_stage():
 
                 full_text = ''.join(collected)
 
-                # Prepend do-no-harm disclaimer to Stage 4
+                # Stage 4: extract priorities from raw delimited text, then clean for display
+                priorities = []
                 if stage == 4:
+                    priorities = extract_priorities(full_text)
+                    full_text = clean_stage4_output(full_text)
                     from datetime import date
                     header = DO_NO_HARM_HEADER.format(date=date.today().strftime('%d %B %Y'))
                     full_text = header + full_text
@@ -578,7 +597,6 @@ def run_stage():
                 if len(updated_messages) > 20:
                     updated_messages = updated_messages[-20:]
 
-                priorities = extract_priorities(full_text) if stage == 4 else []
                 yield f"data: {json.dumps({'done': True, 'result': full_text, 'history': updated_messages, 'stage': stage, 'priorities': priorities})}\n\n"
 
             except anthropic.AuthenticationError:
