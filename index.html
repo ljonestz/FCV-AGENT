@@ -512,9 +512,10 @@
     }
     .explorer-hdr{
       padding:18px 24px 16px;border-bottom:1px solid var(--border);
-      display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
       background:linear-gradient(135deg,#f0faf4,#e8f7ef);
     }
+    .explorer-hdr-top{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:10px;}
+    .explorer-subtitle{font-size:13px;line-height:1.6;color:var(--muted);margin:0;font-style:italic;}
     .explorer-title-group{display:flex;align-items:center;gap:10px}
     .explorer-title{
       font-family:'Source Serif 4',serif;font-weight:400;font-size:17px;color:#1a4a30;
@@ -564,7 +565,7 @@
     .option-letter.a{background:#1a7a4a}
     .option-letter.b{background:#0072BB}
     .option-letter.c{background:#6b21a8}
-    .option-card-title{font-weight:600;font-size:14px;color:var(--text);line-height:1.4;padding-top:5px}
+    .option-card-title{font-weight:700;font-size:14px;color:#111;line-height:1.4;padding-top:5px}
     .option-card-body{padding:14px 16px;font-size:13.5px;line-height:1.65;color:var(--text)}
     .option-context{
       font-size:13.5px;line-height:1.65;color:var(--muted);margin-bottom:12px;font-style:italic;
@@ -576,6 +577,9 @@
       font-size:13.5px;line-height:1.65;color:var(--text);margin-bottom:7px;
     }
     .option-bullets li:last-child{margin-bottom:0}
+    .option-group{margin-bottom:14px;}
+    .option-group:last-child{margin-bottom:0;}
+    .option-group-label{font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);margin-bottom:5px;}
     /* Legacy — kept in case old cached content still references it */
     .option-doc-change{
       margin:12px 0 0;padding:10px 12px;background:#eff8ff;border-left:3px solid #0072BB;
@@ -1300,14 +1304,17 @@
       ${isLast?`
       <div class="explorer-panel ani" id="explorer-panel">
         <div class="explorer-hdr">
-          <div class="explorer-title-group">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a7a4a" stroke-width="2" aria-hidden="true"><path d="M12 22V12M12 12C12 12 7 9 7 4a5 5 0 0 1 10 0c0 5-5 8-5 8z"/><path d="M9 17c-2 1-3 2-3 3"/><path d="M15 17c2 1 3 2 3 3"/></svg>
-            <span class="explorer-title">Explore FCV-Sensitive Solutions</span>
-            <span class="explorer-badge">On demand</span>
+          <div class="explorer-hdr-top">
+            <div class="explorer-title-group">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a7a4a" stroke-width="2" aria-hidden="true"><path d="M12 22V12M12 12C12 12 7 9 7 4a5 5 0 0 1 10 0c0 5-5 8-5 8z"/><path d="M9 17c-2 1-3 2-3 3"/><path d="M15 17c2 1 3 2 3 3"/></svg>
+              <span class="explorer-title">Delving into Priorities for FCV-Sensitive Solutions</span>
+              <span class="explorer-badge">On demand</span>
+            </div>
+            <select class="explorer-select" id="explorer-select" onchange="loadExplorerPriority(this.value)" aria-label="Select a Strategic Priority to explore">
+              <option value="">Loading priorities…</option>
+            </select>
           </div>
-          <select class="explorer-select" id="explorer-select" onchange="loadExplorerPriority(this.value)" aria-label="Select a Strategic Priority to explore">
-            <option value="">Loading priorities…</option>
-          </select>
+          <p class="explorer-subtitle">This section elaborates on the priority areas identified in the recommendations above. Use the dropdown to switch between priorities. Once a priority has loaded, use the query box at the bottom to ask follow-up questions about any of the options.</p>
         </div>
         <div class="explorer-body" id="explorer-body">
           <div class="explorer-loading">
@@ -1698,25 +1705,33 @@
       // Extract TAGS line
       const tagsMatch=block.match(/TAGS:\s*(.+)/i);
       const tagsRaw=tagsMatch?tagsMatch[1].trim():'';
-      // Strip title and TAGS lines, then separate context sentences from bullets
+      // Strip title and TAGS lines, then separate context from grouped bullets
       const blockBody=block
         .replace(/^Option [A-C]:.+\n?/m,'')
         .replace(/TAGS:.*/i,'')
         .trim();
       const allLines=blockBody.split('\n');
       const contextLines=[];
-      const bulletLines=[];
-      let inBullets=false;
+      const items=[];  // {type:'group',label} or {type:'bullet',text}
+      let pastContext=false;
       for(const line of allLines){
         const trimmed=line.trim();
+        if(!trimmed) continue;
         if(trimmed.startsWith('•')||trimmed.startsWith('-')){
-          inBullets=true;
-          bulletLines.push(trimmed.replace(/^[•\-]\s*/,''));
-        }else if(!inBullets&&trimmed){
-          contextLines.push(trimmed);
+          pastContext=true;
+          items.push({type:'bullet',text:trimmed.replace(/^[•\-]\s*/,'')});
+        }else if(/^\*\*[^*]+\*\*:?\s*$/.test(trimmed)||/^\*\*[^*]+:\*\*\s*$/.test(trimmed)){
+          pastContext=true;
+          const label=trimmed.replace(/^\*\*/,'').replace(/\*\*:?\s*$/,'').replace(/:$/,'').trim();
+          items.push({type:'group',label});
+        }else if(!pastContext){
+          // Context text — strip echoed bold option title if present
+          if(!/^\*\*Option [A-C]:/.test(trimmed)){
+            contextLines.push(trimmed);
+          }
         }
       }
-      return{letter,title,context:contextLines.join(' '),bullets:bulletLines,tagsRaw};
+      return{letter,title,context:contextLines.join(' '),items,tagsRaw};
     });
 
     // Parse Q&A from section 3
@@ -1765,6 +1780,28 @@
 
     const letterClass={A:'a',B:'b',C:'c'};
 
+    const buildGroupsHtml=(items)=>{
+      if(!items||!items.length) return '';
+      let html='';
+      let curBullets=[];
+      let curLabel='';
+      const flush=()=>{
+        if(!curBullets.length) return;
+        html+=`<div class="option-group">`;
+        if(curLabel) html+=`<div class="option-group-label">${esc(curLabel)}</div>`;
+        html+=`<ul class="option-bullets">${curBullets.map(b=>`<li>${md(b)}</li>`).join('')}</ul>`;
+        html+=`</div>`;
+        curBullets=[];
+        curLabel='';
+      };
+      for(const item of items){
+        if(item.type==='group'){flush();curLabel=item.label;}
+        else{curBullets.push(item.text);}
+      }
+      flush();
+      return html;
+    };
+
     const optionsHtml=parsed.options.map(opt=>`
       <div class="option-card">
         <div class="option-card-hdr">
@@ -1773,7 +1810,7 @@
         </div>
         <div class="option-card-body">
           ${opt.context?`<div class="option-context">${esc(opt.context)}</div>`:''}
-          ${opt.bullets&&opt.bullets.length?`<ul class="option-bullets">${opt.bullets.map(b=>`<li>${md(b)}</li>`).join('')}</ul>`:''}
+          ${buildGroupsHtml(opt.items)}
         </div>
         <div class="option-card-foot">
           <div class="option-tags">${tagsHtml(opt.tagsRaw)}</div>

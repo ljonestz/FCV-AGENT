@@ -284,10 +284,14 @@ Significant changes to the project architecture to address severe FCV risks — 
 For each option use this EXACT structure:
 
 Option [Letter]: [Specific Action Title]
-[Context: 1-2 sentences. Why this option is appropriate for this specific country and project context. Reference any WBG precedent from a comparable project if available.]
+[Context: 1-2 sentences. Why this option fits this specific country/project context. Do NOT repeat the option title here. Reference any WBG precedent from a comparable project if available.]
+
+**[Thematic Group Label e.g. "Results Framework", "Targeting Criteria", "Implementation Arrangements"]:**
 • [Specific action — always name the exact WBG document section inline, e.g. "In the POM targeting criteria, add...", "In Annex 2 (Component Design), restructure...", "In Annex 1 (Results Framework), add an IRI tracking..."]
-• [Second specific action with document reference]
-• [Third action or trade-off: what government buy-in or PIU capacity this requires, and how to address it in project design]
+• [Second specific action in the same theme]
+
+**[Second Group Label e.g. "Safeguards", "Procurement", "Government Commitments"]:**
+• [Third action or trade-off: government buy-in or PIU capacity required, and how to address it in project design]
 
 TAGS: [document-type] | [timing] | [effort]
 
