@@ -577,9 +577,14 @@
       font-size:13.5px;line-height:1.65;color:var(--text);margin-bottom:7px;
     }
     .option-bullets li:last-child{margin-bottom:0}
-    .option-group{margin-bottom:14px;}
-    .option-group:last-child{margin-bottom:0;}
-    .option-group-label{font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);margin-bottom:5px;}
+    .option-divider{border:none;border-top:1px dashed var(--border);margin:10px 0 12px;}
+    .option-body-md{font-size:13.5px;line-height:1.65;color:var(--text);}
+    .option-body-md strong{color:#1a3a25;font-weight:700;}
+    .option-body-md ul,.option-body-md ol{margin:4px 0 10px;padding-left:20px;}
+    .option-body-md li{margin-bottom:6px;}
+    .option-body-md li:last-child{margin-bottom:0;}
+    .option-body-md p{margin:0 0 10px;}
+    .option-body-md p:last-child{margin-bottom:0;}
     /* Legacy — kept in case old cached content still references it */
     .option-doc-change{
       margin:12px 0 0;padding:10px 12px;background:#eff8ff;border-left:3px solid #0072BB;
@@ -1705,33 +1710,30 @@
       // Extract TAGS line
       const tagsMatch=block.match(/TAGS:\s*(.+)/i);
       const tagsRaw=tagsMatch?tagsMatch[1].trim():'';
-      // Strip title and TAGS lines, then separate context from grouped bullets
+      // Strip title and TAGS lines, then split into context (italic) + raw body (passed to md())
       const blockBody=block
         .replace(/^Option [A-C]:.+\n?/m,'')
         .replace(/TAGS:.*/i,'')
         .trim();
       const allLines=blockBody.split('\n');
       const contextLines=[];
-      const items=[];  // {type:'group',label} or {type:'bullet',text}
-      let pastContext=false;
-      for(const line of allLines){
-        const trimmed=line.trim();
+      let bodyStartIdx=-1;
+      for(let i=0;i<allLines.length;i++){
+        const trimmed=allLines[i].trim();
         if(!trimmed) continue;
-        if(trimmed.startsWith('•')||trimmed.startsWith('-')){
-          pastContext=true;
-          items.push({type:'bullet',text:trimmed.replace(/^[•\-]\s*/,'')});
-        }else if(/^\*\*[^*]+\*\*:?\s*$/.test(trimmed)||/^\*\*[^*]+:\*\*\s*$/.test(trimmed)){
-          pastContext=true;
-          const label=trimmed.replace(/^\*\*/,'').replace(/\*\*:?\s*$/,'').replace(/:$/,'').trim();
-          items.push({type:'group',label});
-        }else if(!pastContext){
-          // Context text — strip echoed bold option title if present
-          if(!/^\*\*Option [A-C]:/.test(trimmed)){
-            contextLines.push(trimmed);
-          }
+        // First bullet or bold group-label line signals start of body
+        if(trimmed.startsWith('•')||trimmed.startsWith('-')||
+           /^\*\*[^*]+\*\*:?\s*$/.test(trimmed)||/^\*\*[^*]+:\*\*\s*$/.test(trimmed)){
+          bodyStartIdx=i;
+          break;
+        }
+        // Context line — strip echoed bold option title if LLM repeats it
+        if(!/^\*\*Option [A-C]:/.test(trimmed)){
+          contextLines.push(trimmed);
         }
       }
-      return{letter,title,context:contextLines.join(' '),items,tagsRaw};
+      const bodyRaw=bodyStartIdx>=0?allLines.slice(bodyStartIdx).join('\n').trim():'';
+      return{letter,title,context:contextLines.join(' '),bodyRaw,tagsRaw};
     });
 
     // Parse Q&A from section 3
@@ -1780,28 +1782,6 @@
 
     const letterClass={A:'a',B:'b',C:'c'};
 
-    const buildGroupsHtml=(items)=>{
-      if(!items||!items.length) return '';
-      let html='';
-      let curBullets=[];
-      let curLabel='';
-      const flush=()=>{
-        if(!curBullets.length) return;
-        html+=`<div class="option-group">`;
-        if(curLabel) html+=`<div class="option-group-label">${esc(curLabel)}</div>`;
-        html+=`<ul class="option-bullets">${curBullets.map(b=>`<li>${md(b)}</li>`).join('')}</ul>`;
-        html+=`</div>`;
-        curBullets=[];
-        curLabel='';
-      };
-      for(const item of items){
-        if(item.type==='group'){flush();curLabel=item.label;}
-        else{curBullets.push(item.text);}
-      }
-      flush();
-      return html;
-    };
-
     const optionsHtml=parsed.options.map(opt=>`
       <div class="option-card">
         <div class="option-card-hdr">
@@ -1809,8 +1789,8 @@
           <div class="option-card-title">${esc(opt.title)}</div>
         </div>
         <div class="option-card-body">
-          ${opt.context?`<div class="option-context">${esc(opt.context)}</div>`:''}
-          ${buildGroupsHtml(opt.items)}
+          ${opt.context?`<div class="option-context">${esc(opt.context)}</div><hr class="option-divider">`:''}
+          ${opt.bodyRaw?`<div class="option-body-md">${md(opt.bodyRaw)}</div>`:''}
         </div>
         <div class="option-card-foot">
           <div class="option-tags">${tagsHtml(opt.tagsRaw)}</div>
