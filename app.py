@@ -314,20 +314,8 @@ Where:
 - timing is one of: Pre-appraisal | Design stage | Implementation
 - effort is one of: Low | Moderate | Significant
 
-## SECTION 3: DIG DEEPER — SUGGESTED QUESTIONS (2-3 questions)
-Generate 2-3 questions a TTL would genuinely want answered about this priority. Questions must be:
-- Specific to this project and country — not generic
-- Answerable from the prior analysis, WBG operational knowledge, or country context
-- Phrased as the TTL would naturally ask them — conversational, not bureaucratic
-
-Format each as:
-QUESTION: [Question text]
-ANSWER: [Answer in 100-150 words, drawing on prior analysis and WBG/country knowledge. Be specific. Cite sources where relevant.]
-
----
-
 # Output Format Note
-The interface parses your output. Use the exact section headers and formatting above. Do not add introductory text before SECTION 1 or closing remarks after SECTION 3. Output only the three sections as specified.
+The interface parses your output. Use the exact section headers and formatting above. Do not add introductory text before SECTION 1 or closing remarks after SECTION 2. Output only the two sections as specified.
 
 # Quality Check Before Submitting
 Before outputting, verify:
@@ -337,13 +325,13 @@ Before outputting, verify:
 - Section 1 (The Issue) explicitly references at least one finding from Stage 1, 2, or 3
 - Each option connects to a specific gap or risk from the prior analysis, not generic best practice
 - The third bullet of each option addresses trade-offs in government buy-in or PIU capacity
-- The suggested questions are specific to this project and country
-- No closing remarks or meta-commentary appear after SECTION 3'''}
+- No closing remarks or meta-commentary appear after SECTION 2'''}
 
 
 
 def clean_stage4_output(text):
     """Strip %%%PRIORITY_START/END%%% and %%%FCV_RATING:...%%% delimiters; format priority titles."""
+    explorer_link = '\n\n*→ For detailed implementation options for this priority, see the Priority Explorer below.*'
     def replace_block(m):
         block = m.group(1).strip()
         lines = block.split('\n')
@@ -352,7 +340,7 @@ def clean_stage4_output(text):
             title = title_line.replace('TITLE:', '').strip()
             body_lines = [l for l in lines if not l.startswith('TITLE:')]
             body = '\n'.join(body_lines).strip()
-            return f'**▸ {title}**\n\n{body}'
+            return f'**▸ {title}**\n\n{body}{explorer_link}'
         return block
     text = re.sub(r'%%%PRIORITY_START%%%(.*?)%%%PRIORITY_END%%%', replace_block, text, flags=re.DOTALL)
     text = re.sub(r'%%%FCV_RATING:[^%]*%%%\n?', '', text)

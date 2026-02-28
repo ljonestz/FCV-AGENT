@@ -553,19 +553,7 @@
       transition:box-shadow .18s;
     }
     .option-card:hover{box-shadow:var(--shadow-md)}
-    .option-card-hdr{
-      display:flex;align-items:flex-start;gap:14px;padding:16px;
-      border-bottom:1px solid var(--border);
-    }
-    .option-letter{
-      width:32px;height:32px;flex-shrink:0;border-radius:50%;
-      display:flex;align-items:center;justify-content:center;
-      font-weight:700;font-size:13px;color:#fff;
-    }
-    .option-letter.a{background:#1a7a4a}
-    .option-letter.b{background:#0072BB}
-    .option-letter.c{background:#6b21a8}
-    .option-card-title{font-weight:700;font-size:14px;color:#111;line-height:1.4;padding-top:5px}
+    .option-card-title{font-weight:700;font-size:14px;color:#111;line-height:1.4;}
     .option-card-body{padding:14px 16px;font-size:13.5px;line-height:1.65;color:var(--text)}
     .option-context{
       font-size:13.5px;line-height:1.65;color:var(--muted);margin-bottom:12px;font-style:italic;
@@ -669,35 +657,59 @@
     .stage4-layout{display:flex;gap:20px;align-items:flex-start;}
     .stage4-main{flex:1;min-width:0;}
     .fcv-sidebar{
-      width:196px;flex-shrink:0;
+      width:200px;flex-shrink:0;
       position:sticky;top:24px;
       display:flex;flex-direction:column;gap:12px;
     }
     .sidebar-widget{
       background:#fff;border:1px solid var(--border);border-radius:var(--radius);
-      padding:14px 16px;box-shadow:var(--shadow-sm);
+      box-shadow:var(--shadow-sm);overflow:hidden;
     }
+    .sidebar-widget-fcv{padding:14px 16px 16px;}
     .sidebar-widget-label{
       font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;
-      color:var(--muted);margin-bottom:10px;
+      color:var(--muted);margin-bottom:8px;
     }
-    .fcv-dots{display:flex;gap:6px;margin-bottom:8px;}
-    .fcv-dot{width:14px;height:14px;border-radius:50%;background:#e2e8f0;transition:background .3s;}
-    .fcv-rating-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;transition:color .3s;}
-    .sidebar-stat-number{
-      font-family:'Source Serif 4',serif;font-size:36px;font-weight:400;
-      color:#1a4a30;line-height:1;margin-bottom:4px;
+    .fcv-rating-label{
+      font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;
+      transition:color .3s;margin-bottom:3px;
     }
-    .sidebar-stat-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);}
-    .fcv-tag-bars{display:flex;flex-direction:column;gap:7px;}
-    .fcv-tag-row{display:flex;align-items:center;gap:6px;}
-    .fcv-tag-name{
-      font-size:10.5px;font-weight:600;color:var(--muted);
-      width:50px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    .fcv-need-label{
+      font-size:10.5px;color:var(--muted);font-style:italic;line-height:1.4;
     }
-    .fcv-tag-bar-track{flex:1;height:6px;background:#f0f4f0;border-radius:3px;overflow:hidden;}
-    .fcv-tag-bar-fill{height:100%;border-radius:3px;background:#1a7a4a;transition:width .4s ease;}
-    .fcv-tag-pct{font-size:10px;color:var(--muted);width:16px;text-align:right;flex-shrink:0;}
+    .sidebar-ring-widget{padding:16px 8px 12px;text-align:center;}
+    .sidebar-ring-label{
+      font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);
+    }
+    /* ── Explorer priority bridge ─────────────────────────────────────── */
+    .explorer-body-inner{padding:24px;}
+    .explorer-priority-bridge{
+      background:#f6faf7;border:1px solid var(--border);border-left:3px solid var(--s4);
+      border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:20px;
+    }
+    .explorer-bridge-label{
+      font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;
+      color:var(--s4);margin-bottom:7px;
+    }
+    .explorer-bridge-quote{
+      margin:0;font-size:13px;line-height:1.65;color:var(--text);font-style:italic;
+      border:none;padding:0;
+    }
+    /* ── Option card tier banners ─────────────────────────────────────── */
+    .option-tier-banner{
+      display:flex;align-items:center;gap:10px;
+      padding:9px 16px;
+    }
+    .option-tier-letter{
+      width:26px;height:26px;border-radius:50%;flex-shrink:0;
+      display:flex;align-items:center;justify-content:center;
+      font-weight:700;font-size:12px;color:#fff;
+      background:rgba(255,255,255,0.25);
+    }
+    .option-tier-text{
+      font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#fff;
+    }
+    .option-title-row{padding:0;}
 
   </style>
 </head>
@@ -1639,77 +1651,99 @@
 
   // ── Sidebar infographics ─────────────────────────────────────────────────────
 
+  // Arc semicircle length: π × r where r=45 → 141.37
+  const ARC_LEN=141.37;
+  // Ring circumference: 2π × r where r=34 → 213.63
+  const RING_C=213.63;
+  const LEVELS=['Extremely Low','Very Low','Low','Adequate','Well Embedded','Very Well Embedded'];
+  const LEVEL_COLORS=['','#dc2626','#f97316','#f59e0b','#6d8a3a','#22c55e','#15803d'];
+  const NEED_LABELS={
+    'Extremely Low':'Major redesign required',
+    'Very Low':'Significant changes needed',
+    'Low':'Moderate improvements suggested',
+    'Adequate':'Targeted enhancements possible',
+    'Well Embedded':'Minor refinements available',
+    'Very Well Embedded':'Strong foundation — sustain'
+  };
+
   function sidebarHtml(){
     return `
-      <div class="sidebar-widget">
-        <div class="sidebar-widget-label">FCV Sensitivity</div>
-        <div class="fcv-dots" id="fcv-dots">${Array.from({length:6},()=>`<div class="fcv-dot"></div>`).join('')}</div>
-        <div class="fcv-rating-label" id="fcv-rating-label" style="color:var(--muted)">Analysing…</div>
+      <!-- FCV Sensitivity: arc gauge with shield icon -->
+      <div class="sidebar-widget sidebar-widget-fcv">
+        <div class="sidebar-widget-label">Current FCV Sensitivity</div>
+        <svg viewBox="0 0 120 80" width="120" height="80" style="display:block;margin:0 auto -4px">
+          <!-- background arc -->
+          <path d="M15 70 A45 45 0 0 1 105 70" fill="none" stroke="#e8edf2" stroke-width="11" stroke-linecap="round"/>
+          <!-- foreground arc, updated by updateSidebar() -->
+          <path id="fcv-arc-fill" d="M15 70 A45 45 0 0 1 105 70" fill="none" stroke="#e8edf2" stroke-width="11" stroke-linecap="round" stroke-dasharray="0 141.37"/>
+          <!-- shield icon centred above arc midpoint -->
+          <g transform="translate(60,47)">
+            <path id="fcv-shield-path" d="M0-14L-9-10v9c0 7 5 12.5 9 14.5 4-2 9-7.5 9-14.5v-9L0-14z" fill="#c8d8c8"/>
+          </g>
+        </svg>
+        <div class="fcv-rating-label" id="fcv-rating-label" style="color:var(--muted);text-align:center">Analysing…</div>
+        <div class="fcv-need-label" id="fcv-need-label"></div>
       </div>
-      <div class="sidebar-widget">
-        <div class="sidebar-stat-number" id="sidebar-priority-count">—</div>
-        <div class="sidebar-stat-label">Priority Areas</div>
+      <!-- Priority Areas: SVG ring counter -->
+      <div class="sidebar-widget sidebar-ring-widget">
+        <svg viewBox="0 0 90 90" width="90" height="90" style="display:block;margin:0 auto 6px">
+          <circle cx="45" cy="45" r="34" fill="none" stroke="#e8edf2" stroke-width="7"/>
+          <circle id="priority-ring" cx="45" cy="45" r="34" fill="none" stroke="#1a7a4a" stroke-width="7"
+            stroke-dasharray="0 213.63" stroke-linecap="round" transform="rotate(-90 45 45)"/>
+          <text id="priority-ring-num" x="45" y="53" text-anchor="middle"
+            font-family="'Source Serif 4',serif" font-size="26" fill="#1a4a30">—</text>
+        </svg>
+        <div class="sidebar-ring-label">Priority Areas</div>
       </div>
-      <div class="sidebar-widget">
-        <div class="sidebar-stat-number" id="sidebar-options-count">—</div>
-        <div class="sidebar-stat-label">Entry Points</div>
-      </div>
-      <div class="sidebar-widget">
-        <div class="sidebar-widget-label">FCV Tag Profile</div>
-        <div id="sidebar-tag-note" style="font-size:11.5px;color:var(--muted);font-style:italic">Explore a priority to see</div>
-        <div class="fcv-tag-bars" id="fcv-tag-bars"></div>
+      <!-- Entry Points: SVG ring counter -->
+      <div class="sidebar-widget sidebar-ring-widget">
+        <svg viewBox="0 0 90 90" width="90" height="90" style="display:block;margin:0 auto 6px">
+          <circle cx="45" cy="45" r="34" fill="none" stroke="#e8edf2" stroke-width="7"/>
+          <circle id="options-ring" cx="45" cy="45" r="34" fill="none" stroke="#0072BB" stroke-width="7"
+            stroke-dasharray="0 213.63" stroke-linecap="round" transform="rotate(-90 45 45)"/>
+          <text id="options-ring-num" x="45" y="53" text-anchor="middle"
+            font-family="'Source Serif 4',serif" font-size="26" fill="#003d73">—</text>
+        </svg>
+        <div class="sidebar-ring-label">Entry Points</div>
       </div>`;
   }
 
   function updateSidebar(){
-    // Priority and entry point counts
-    const pcEl=document.getElementById('sidebar-priority-count');
-    const ocEl=document.getElementById('sidebar-options-count');
-    if(pcEl) pcEl.textContent=stageFourPriorities.length||'—';
-    if(ocEl) ocEl.textContent=stageFourPriorities.length?stageFourPriorities.length*3:'—';
+    const n=stageFourPriorities.length;
+    const level=LEVELS.findIndex(l=>l.toLowerCase()===(fcvRating||'').toLowerCase())+1;
+    const color=LEVEL_COLORS[level]||'#e8edf2';
 
-    // FCV rating dots
-    const levels=['Extremely Low','Very Low','Low','Adequate','Well Embedded','Very Well Embedded'];
-    const level=levels.findIndex(l=>l.toLowerCase()===(fcvRating||'').toLowerCase())+1;
-    const dotsEl=document.getElementById('fcv-dots');
+    // Arc gauge
+    const arcFill=document.getElementById('fcv-arc-fill');
+    const shieldPath=document.getElementById('fcv-shield-path');
     const labelEl=document.getElementById('fcv-rating-label');
-    if(dotsEl&&level>0){
-      const colors=['','#dc2626','#f97316','#f59e0b','#84cc16','#22c55e','#15803d'];
-      dotsEl.innerHTML=Array.from({length:6},(_,i)=>
-        `<div class="fcv-dot" style="${i<level?'background:'+colors[level]:''}"></div>`
-      ).join('');
+    const needEl=document.getElementById('fcv-need-label');
+    if(arcFill){
+      const filled=level>0?(level/6)*ARC_LEN:0;
+      arcFill.setAttribute('stroke-dasharray',`${filled} ${ARC_LEN}`);
+      arcFill.setAttribute('stroke',color);
     }
-    if(labelEl){
-      const rc={'Extremely Low':'#dc2626','Very Low':'#f97316','Low':'#f59e0b',
-        'Adequate':'#6d8a3a','Well Embedded':'#22c55e','Very Well Embedded':'#15803d'};
-      labelEl.textContent=fcvRating||'—';
-      labelEl.style.color=rc[fcvRating]||'var(--muted)';
-    }
+    if(shieldPath) shieldPath.setAttribute('fill',level>0?color:'#c8d8c8');
+    if(labelEl){labelEl.textContent=fcvRating||'—';labelEl.style.color=level>0?color:'var(--muted)';}
+    if(needEl) needEl.textContent=NEED_LABELS[fcvRating]||'';
 
-    // Tag profile bar chart (doc-type tags only)
-    const timingEffort=new Set(['pre-appraisal','design stage','implementation','low','moderate','significant']);
-    const docTags=Object.entries(explorerTagProfile)
-      .filter(([tag])=>!timingEffort.has(tag.toLowerCase()))
-      .sort((a,b)=>b[1]-a[1]).slice(0,6);
-    const noteEl=document.getElementById('sidebar-tag-note');
-    const barsEl=document.getElementById('fcv-tag-bars');
-    if(!barsEl) return;
-    if(docTags.length===0){
-      if(noteEl) noteEl.style.display='';
-      barsEl.innerHTML='';
-      return;
+    // Priority ring (max 5)
+    const prRing=document.getElementById('priority-ring');
+    const prNum=document.getElementById('priority-ring-num');
+    if(prRing){
+      const pf=n?Math.min(n,5)/5*RING_C:0;
+      prRing.setAttribute('stroke-dasharray',`${pf} ${RING_C}`);
     }
-    if(noteEl) noteEl.style.display='none';
-    const maxCount=docTags[0][1];
-    barsEl.innerHTML=docTags.map(([tag,count])=>{
-      const pct=Math.round(count/maxCount*100);
-      const short=tag.replace(/^PAD-/,'').replace(/^ESF-/,'').replace('Operations-Manual','Ops');
-      return `<div class="fcv-tag-row">
-        <div class="fcv-tag-name" title="${esc(tag)}">${esc(short)}</div>
-        <div class="fcv-tag-bar-track"><div class="fcv-tag-bar-fill" style="width:${pct}%"></div></div>
-        <div class="fcv-tag-pct">${count}</div>
-      </div>`;
-    }).join('');
+    if(prNum) prNum.textContent=n||'—';
+
+    // Entry points ring (max 15)
+    const optRing=document.getElementById('options-ring');
+    const optNum=document.getElementById('options-ring-num');
+    if(optRing){
+      const of_=n?Math.min(n*3,15)/15*RING_C:0;
+      optRing.setAttribute('stroke-dasharray',`${of_} ${RING_C}`);
+    }
+    if(optNum) optNum.textContent=n?n*3:'—';
   }
 
   // ── Explorer panel ──────────────────────────────────────────────────────────
@@ -1863,22 +1897,7 @@
       return{letter,title,context:contextLines.join(' '),bodyRaw,tagsRaw};
     });
 
-    // Parse Q&A from section 3
-    const qaPairs=[];
-    const qaRaw=text.match(/QUESTION:[\s\S]*/i);
-    if(qaRaw){
-      const qaText=qaRaw[0];
-      const pairs=qaText.split(/(?=^QUESTION:)/m).filter(b=>b.trim());
-      pairs.forEach(pair=>{
-        const qMatch=pair.match(/QUESTION:\s*(.+?)(?=ANSWER:|$)/is);
-        const aMatch=pair.match(/ANSWER:\s*([\s\S]+)/i);
-        if(qMatch&&aMatch){
-          qaPairs.push({q:qMatch[1].trim(),a:aMatch[1].trim()});
-        }
-      });
-    }
-
-    return{issue:sec1,options,qaPairs};
+    return{issue:sec1,options};
   }
 
   function renderExplorerContent(parsed, priorityTitle){
@@ -1907,12 +1926,16 @@
       }).join('');
     };
 
-    const letterClass={A:'a',B:'b',C:'c'};
+    const tierNames={A:'Within-Bank Adjustment',B:'Government Negotiation',C:'Structural Change'};
+    const tierColors={A:'#1a7a4a',B:'#0072BB',C:'#6b21a8'};
 
     const optionsHtml=parsed.options.map(opt=>`
       <div class="option-card">
-        <div class="option-card-hdr">
-          <div class="option-letter ${letterClass[opt.letter]||'a'}">${esc(opt.letter)}</div>
+        <div class="option-tier-banner" style="background:${tierColors[opt.letter]||'#1a7a4a'}">
+          <div class="option-tier-letter">${esc(opt.letter)}</div>
+          <div class="option-tier-text">Option ${esc(opt.letter)} — ${tierNames[opt.letter]||''}</div>
+        </div>
+        <div class="option-title-row">
           <div class="option-card-title">${esc(opt.title)}</div>
         </div>
         <div class="option-card-body">
@@ -1927,26 +1950,21 @@
         </div>
       </div>`).join('');
 
-    const qaHtml=parsed.qaPairs.map((qa,i)=>`
-      <div class="digdeeper-qa">
-        <div class="digdeeper-q" onclick="toggleDQ(this)" role="button" tabindex="0" onkeydown="if(event.key==='Enter')toggleDQ(this)">
-          <span>${esc(qa.q)}</span>
-          <span class="dq-arrow">▾</span>
-        </div>
-        <div class="digdeeper-a">${md(qa.a)}</div>
-      </div>`).join('');
+    // Blockquote bridge: find the Stage 4 priority text and show it above Section 1
+    const pr=stageFourPriorities.find(p=>p.title===priorityTitle);
+    const bridgeHtml=pr&&pr.body?`
+      <div class="explorer-priority-bridge">
+        <div class="explorer-bridge-label">From the Recommendations Note</div>
+        <blockquote class="explorer-bridge-quote">${md(pr.body)}</blockquote>
+      </div>`:'' ;
 
     bodyEl.innerHTML=`
-      <div class="explorer-body" style="padding:24px">
-        <div class="explorer-section-title">The Issue</div>
+      <div class="explorer-body-inner">
+        ${bridgeHtml}
+        <div class="explorer-section-title">Deeper Analysis</div>
         <div class="explorer-issue">${md(parsed.issue)}</div>
-        <div class="explorer-section-title">Options to Consider</div>
+        <div class="explorer-section-title" style="margin-top:20px">Options to Consider</div>
         <div class="options-grid">${optionsHtml}</div>
-        ${parsed.qaPairs.length?`
-        <div class="digdeeper-section">
-          <div class="explorer-section-title">Suggested Questions</div>
-          ${qaHtml}
-        </div>`:''}
       </div>`;
   }
 
