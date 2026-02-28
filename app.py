@@ -174,7 +174,7 @@ Base this on the project's CURRENT state of FCV integration as presented in the 
 You must wrap each priority block in delimiter tags so the interface can extract them. Use EXACTLY this format for each priority:
 
 %%%PRIORITY_START%%%
-TITLE: Priority N · [Short Action Title]
+TITLE: Priority N · [Actionable verb phrase — must start with a strong verb and read as a standalone instruction, e.g. "Develop and embed a conflict-sensitive site selection framework" or "Strengthen community feedback mechanisms across all project components"]
 [Full priority text — 120-150 words as specified above]
 %%%PRIORITY_END%%%
 
@@ -198,7 +198,7 @@ These delimiters are parsed by the interface and must appear exactly as shown. D
 
 # Quality Check Before Submitting
 Before outputting, verify:
-- Every priority title uses exactly the format: Priority N · [Short Action Title]
+- Every priority title uses exactly the format: Priority N · [Actionable verb phrase] — the action phrase must start with a strong verb (e.g. Develop, Strengthen, Integrate, Redesign) and read as a clear standalone instruction
 - Every priority is wrapped in %%%PRIORITY_START%%% / %%%PRIORITY_END%%% delimiters
 - No priority text appears outside the delimiters
 - The total number of priorities is between 4 and 5
