@@ -999,7 +999,6 @@
   let explorerCache={};        // {priorityTitle: rawExplorerText}
   let explorerHistory=[];      // messages for follow-up "dig deeper" queries
   let fcvRating='';            // LLM-assigned FCV sensitivity rating
-  let explorerTagProfile={};   // {tagName: count} aggregated from cached explorer results
 
   // ── Onboarding ──────────────────────────────────────────────────────────────
   function initOnboarding(){
@@ -1297,7 +1296,6 @@
                 const newTitles=new Set(p.priorities.map(pr=>pr.title));
                 for(const t of Object.keys(explorerCache)){if(!newTitles.has(t))delete explorerCache[t];}
                 explorerHistory=[];
-                explorerTagProfile={};
                 if(p.fcv_rating) fcvRating=p.fcv_rating;
                 updateSidebar();
                 populateExplorerDropdown(p.priorities);
@@ -1828,13 +1826,6 @@
             }
             if(p.done){
               explorerCache[priorityTitle]=p.result;
-              // Aggregate doc-type tags from this priority's options into sidebar profile
-              const tagLines=p.result.match(/^TAGS:\s*(.+)/gm)||[];
-              for(const line of tagLines){
-                for(const tag of line.replace(/^TAGS:\s*/i,'').split('|').map(t=>t.trim())){
-                  if(tag) explorerTagProfile[tag]=(explorerTagProfile[tag]||0)+1;
-                }
-              }
               updateSidebar();
               // Store initial explorer exchange for follow-ups
               explorerHistory=[
