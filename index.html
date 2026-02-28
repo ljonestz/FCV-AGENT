@@ -665,6 +665,40 @@
     }
     .explorer-followup-answer.visible{display:block}
 
+    /* ── Stage 4 sidebar layout ───────────────────────────────────────── */
+    .stage4-layout{display:flex;gap:20px;align-items:flex-start;}
+    .stage4-main{flex:1;min-width:0;}
+    .fcv-sidebar{
+      width:196px;flex-shrink:0;
+      position:sticky;top:24px;
+      display:flex;flex-direction:column;gap:12px;
+    }
+    .sidebar-widget{
+      background:#fff;border:1px solid var(--border);border-radius:var(--radius);
+      padding:14px 16px;box-shadow:var(--shadow-sm);
+    }
+    .sidebar-widget-label{
+      font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;
+      color:var(--muted);margin-bottom:10px;
+    }
+    .fcv-dots{display:flex;gap:6px;margin-bottom:8px;}
+    .fcv-dot{width:14px;height:14px;border-radius:50%;background:#e2e8f0;transition:background .3s;}
+    .fcv-rating-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;transition:color .3s;}
+    .sidebar-stat-number{
+      font-family:'Source Serif 4',serif;font-size:36px;font-weight:400;
+      color:#1a4a30;line-height:1;margin-bottom:4px;
+    }
+    .sidebar-stat-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);}
+    .fcv-tag-bars{display:flex;flex-direction:column;gap:7px;}
+    .fcv-tag-row{display:flex;align-items:center;gap:6px;}
+    .fcv-tag-name{
+      font-size:10.5px;font-weight:600;color:var(--muted);
+      width:50px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    }
+    .fcv-tag-bar-track{flex:1;height:6px;background:#f0f4f0;border-radius:3px;overflow:hidden;}
+    .fcv-tag-bar-fill{height:100%;border-radius:3px;background:#1a7a4a;transition:width .4s ease;}
+    .fcv-tag-pct{font-size:10px;color:var(--muted);width:16px;text-align:right;flex-shrink:0;}
+
   </style>
 </head>
 <body>
@@ -950,8 +984,10 @@
   let pF=[],cF=[],hist=[],curS=0,busy=false;
   let sessionName='';
   let stageFourPriorities=[];
-  let explorerCache={};   // {priorityTitle: rawExplorerText}
-  let explorerHistory=[]; // messages for follow-up "dig deeper" queries
+  let explorerCache={};        // {priorityTitle: rawExplorerText}
+  let explorerHistory=[];      // messages for follow-up "dig deeper" queries
+  let fcvRating='';            // LLM-assigned FCV sensitivity rating
+  let explorerTagProfile={};   // {tagName: count} aggregated from cached explorer results
 
   // ── Onboarding ──────────────────────────────────────────────────────────────
   function initOnboarding(){
@@ -1242,13 +1278,16 @@
             }
             if(p.chunk){streamed+=p.chunk;const el=document.getElementById('s-out');if(el)el.innerHTML=md(streamed)}
             if(p.done){hist=p.history||hist;curS=stage;updateSessionBar();renderOut(stage,p.result,followOn);setStepper(stage,'done');
-              // Explorer panel for Stage 4
+              // Explorer panel + sidebar for Stage 4
               if(stage===4 && p.priorities && p.priorities.length){
                 stageFourPriorities=p.priorities;
                 // Preserve cache entries whose title still exists in new priorities
                 const newTitles=new Set(p.priorities.map(pr=>pr.title));
                 for(const t of Object.keys(explorerCache)){if(!newTitles.has(t))delete explorerCache[t];}
                 explorerHistory=[];
+                explorerTagProfile={};
+                if(p.fcv_rating) fcvRating=p.fcv_rating;
+                updateSidebar();
                 populateExplorerDropdown(p.priorities);
               }
               // Inject truncation warning banner if any
@@ -1299,48 +1338,53 @@
         }</div>
         <div class="callout-body"><strong>${c.t}</strong>${c.b}</div>
       </div>
-      <div class="out-card ani">
-        <div class="out-hdr">
-          <div class="out-hdr-l"><span class="dot done"></span>${NAMES[stage]}</div>
-          <button class="copy-btn" id="copy-btn" onclick="copyOut()">Copy all</button>
-        </div>
-        <div class="out-body" id="out-txt">${md(result)}</div>
-      </div>
-      ${isLast?`
-      <div class="explorer-panel ani" id="explorer-panel">
-        <div class="explorer-hdr">
-          <div class="explorer-hdr-top">
-            <div class="explorer-title-group">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a7a4a" stroke-width="2" aria-hidden="true"><path d="M12 22V12M12 12C12 12 7 9 7 4a5 5 0 0 1 10 0c0 5-5 8-5 8z"/><path d="M9 17c-2 1-3 2-3 3"/><path d="M15 17c2 1 3 2 3 3"/></svg>
-              <span class="explorer-title">Delving into Priorities for FCV-Sensitive Solutions</span>
-              <span class="explorer-badge">On demand</span>
+      <div class="${isLast?'stage4-layout':''}">
+        <div class="${isLast?'stage4-main':''}">
+          <div class="out-card ani">
+            <div class="out-hdr">
+              <div class="out-hdr-l"><span class="dot done"></span>${NAMES[stage]}</div>
+              <button class="copy-btn" id="copy-btn" onclick="copyOut()">Copy all</button>
             </div>
-            <select class="explorer-select" id="explorer-select" onchange="loadExplorerPriority(this.value)" aria-label="Select a Strategic Priority to explore">
-              <option value="">Loading priorities…</option>
-            </select>
+            <div class="out-body" id="out-txt">${md(result)}</div>
           </div>
-          <p class="explorer-subtitle">This section elaborates on the priority areas identified in the recommendations above. Use the dropdown to switch between priorities. Once a priority has loaded, use the query box at the bottom to ask follow-up questions about any of the options.</p>
+          ${isLast?`
+          <div class="explorer-panel ani" id="explorer-panel">
+            <div class="explorer-hdr">
+              <div class="explorer-hdr-top">
+                <div class="explorer-title-group">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a7a4a" stroke-width="2" aria-hidden="true"><path d="M12 22V12M12 12C12 12 7 9 7 4a5 5 0 0 1 10 0c0 5-5 8-5 8z"/><path d="M9 17c-2 1-3 2-3 3"/><path d="M15 17c2 1 3 2 3 3"/></svg>
+                  <span class="explorer-title">Delving into Priorities for FCV-Sensitive Solutions</span>
+                  <span class="explorer-badge">On demand</span>
+                </div>
+                <select class="explorer-select" id="explorer-select" onchange="loadExplorerPriority(this.value)" aria-label="Select a Strategic Priority to explore">
+                  <option value="">Loading priorities…</option>
+                </select>
+              </div>
+              <p class="explorer-subtitle">This section elaborates on the priority areas identified in the recommendations above. Use the dropdown to switch between priorities. Once a priority has loaded, use the query box at the bottom to ask follow-up questions about any of the options.</p>
+            </div>
+            <div class="explorer-body" id="explorer-body">
+              <div class="explorer-loading">
+                <svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite"><circle cx="12" cy="12" r="10" stroke-opacity=".25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-opacity="1"/></svg>
+                Preparing explorer…
+              </div>
+            </div>
+            <div class="explorer-followup" id="explorer-followup" style="display:none">
+              <div class="explorer-followup-label">Dig deeper</div>
+              <div class="explorer-followup-row">
+                <textarea class="explorer-followup-input" id="explorer-freetext" rows="2"
+                  placeholder="Ask a follow-up question, or click 'Ask about this option' above to pre-fill…"
+                  onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();submitExplorerFollowup()}"></textarea>
+                <button class="explorer-followup-send" onclick="submitExplorerFollowup()">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                  Send
+                </button>
+              </div>
+              <div class="explorer-followup-answer" id="explorer-followup-answer"></div>
+            </div>
+          </div>`:''}
         </div>
-        <div class="explorer-body" id="explorer-body">
-          <div class="explorer-loading">
-            <svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite"><circle cx="12" cy="12" r="10" stroke-opacity=".25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-opacity="1"/></svg>
-            Preparing explorer…
-          </div>
-        </div>
-        <div class="explorer-followup" id="explorer-followup" style="display:none">
-          <div class="explorer-followup-label">Dig deeper</div>
-          <div class="explorer-followup-row">
-            <textarea class="explorer-followup-input" id="explorer-freetext" rows="2"
-              placeholder="Ask a follow-up question, or click 'Ask about this option' above to pre-fill…"
-              onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();submitExplorerFollowup()}"></textarea>
-            <button class="explorer-followup-send" onclick="submitExplorerFollowup()">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-              Send
-            </button>
-          </div>
-          <div class="explorer-followup-answer" id="explorer-followup-answer"></div>
-        </div>
-      </div>`:''}
+        ${isLast?`<aside class="fcv-sidebar" id="fcv-sidebar">${sidebarHtml()}</aside>`:''}
+      </div>
       `;
 
     document.getElementById('refine-area').innerHTML=`
@@ -1593,6 +1637,81 @@
   // Session prompt overrides are sent to the backend as prompt_override in the payload.
   // The backend uses the override in place of its DEFAULT_PROMPTS for that stage run.
 
+  // ── Sidebar infographics ─────────────────────────────────────────────────────
+
+  function sidebarHtml(){
+    return `
+      <div class="sidebar-widget">
+        <div class="sidebar-widget-label">FCV Sensitivity</div>
+        <div class="fcv-dots" id="fcv-dots">${Array.from({length:6},()=>`<div class="fcv-dot"></div>`).join('')}</div>
+        <div class="fcv-rating-label" id="fcv-rating-label" style="color:var(--muted)">Analysing…</div>
+      </div>
+      <div class="sidebar-widget">
+        <div class="sidebar-stat-number" id="sidebar-priority-count">—</div>
+        <div class="sidebar-stat-label">Priority Areas</div>
+      </div>
+      <div class="sidebar-widget">
+        <div class="sidebar-stat-number" id="sidebar-options-count">—</div>
+        <div class="sidebar-stat-label">Entry Points</div>
+      </div>
+      <div class="sidebar-widget">
+        <div class="sidebar-widget-label">FCV Tag Profile</div>
+        <div id="sidebar-tag-note" style="font-size:11.5px;color:var(--muted);font-style:italic">Explore a priority to see</div>
+        <div class="fcv-tag-bars" id="fcv-tag-bars"></div>
+      </div>`;
+  }
+
+  function updateSidebar(){
+    // Priority and entry point counts
+    const pcEl=document.getElementById('sidebar-priority-count');
+    const ocEl=document.getElementById('sidebar-options-count');
+    if(pcEl) pcEl.textContent=stageFourPriorities.length||'—';
+    if(ocEl) ocEl.textContent=stageFourPriorities.length?stageFourPriorities.length*3:'—';
+
+    // FCV rating dots
+    const levels=['Extremely Low','Very Low','Low','Adequate','Well Embedded','Very Well Embedded'];
+    const level=levels.findIndex(l=>l.toLowerCase()===(fcvRating||'').toLowerCase())+1;
+    const dotsEl=document.getElementById('fcv-dots');
+    const labelEl=document.getElementById('fcv-rating-label');
+    if(dotsEl&&level>0){
+      const colors=['','#dc2626','#f97316','#f59e0b','#84cc16','#22c55e','#15803d'];
+      dotsEl.innerHTML=Array.from({length:6},(_,i)=>
+        `<div class="fcv-dot" style="${i<level?'background:'+colors[level]:''}"></div>`
+      ).join('');
+    }
+    if(labelEl){
+      const rc={'Extremely Low':'#dc2626','Very Low':'#f97316','Low':'#f59e0b',
+        'Adequate':'#6d8a3a','Well Embedded':'#22c55e','Very Well Embedded':'#15803d'};
+      labelEl.textContent=fcvRating||'—';
+      labelEl.style.color=rc[fcvRating]||'var(--muted)';
+    }
+
+    // Tag profile bar chart (doc-type tags only)
+    const timingEffort=new Set(['pre-appraisal','design stage','implementation','low','moderate','significant']);
+    const docTags=Object.entries(explorerTagProfile)
+      .filter(([tag])=>!timingEffort.has(tag.toLowerCase()))
+      .sort((a,b)=>b[1]-a[1]).slice(0,6);
+    const noteEl=document.getElementById('sidebar-tag-note');
+    const barsEl=document.getElementById('fcv-tag-bars');
+    if(!barsEl) return;
+    if(docTags.length===0){
+      if(noteEl) noteEl.style.display='';
+      barsEl.innerHTML='';
+      return;
+    }
+    if(noteEl) noteEl.style.display='none';
+    const maxCount=docTags[0][1];
+    barsEl.innerHTML=docTags.map(([tag,count])=>{
+      const pct=Math.round(count/maxCount*100);
+      const short=tag.replace(/^PAD-/,'').replace(/^ESF-/,'').replace('Operations-Manual','Ops');
+      return `<div class="fcv-tag-row">
+        <div class="fcv-tag-name" title="${esc(tag)}">${esc(short)}</div>
+        <div class="fcv-tag-bar-track"><div class="fcv-tag-bar-fill" style="width:${pct}%"></div></div>
+        <div class="fcv-tag-pct">${count}</div>
+      </div>`;
+    }).join('');
+  }
+
   // ── Explorer panel ──────────────────────────────────────────────────────────
 
   function populateExplorerDropdown(priorities){
@@ -1675,6 +1794,14 @@
             }
             if(p.done){
               explorerCache[priorityTitle]=p.result;
+              // Aggregate doc-type tags from this priority's options into sidebar profile
+              const tagLines=p.result.match(/^TAGS:\s*(.+)/gm)||[];
+              for(const line of tagLines){
+                for(const tag of line.replace(/^TAGS:\s*/i,'').split('|').map(t=>t.trim())){
+                  if(tag) explorerTagProfile[tag]=(explorerTagProfile[tag]||0)+1;
+                }
+              }
+              updateSidebar();
               // Store initial explorer exchange for follow-ups
               explorerHistory=[
                 {role:'user',content:'[Explorer request for: '+pr.title+']'},

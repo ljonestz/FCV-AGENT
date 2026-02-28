@@ -147,6 +147,7 @@ Synthesise 3-4 converging FCV risks creating a uniquely challenging operating en
 This is the most important section of the note. Generate between 4 and 5 strategic priorities. Each priority must:
 
 - Address a concrete, distinct gap identified in your Stage 1-3 analysis
+- Explicitly connect this priority to the specific gap, risk, or vulnerability identified in Stage 1, 2, or 3 of this conversation. Do NOT introduce new FCV themes that were not raised in the prior stages.
 - Anchor the priority in specific local realities: explicitly name the regions, vulnerable groups, historical grievances, or institutional bottlenecks relevant to this project — for example, instead of "Target service delivery," use "Leverage service delivery to address historical exclusion in [Region X]"
 - Be genuinely actionable at the TTL and task team level, framed as options or entry points, not mandates
 - Be titled using EXACTLY this format: **Priority N · [Short Action Title]**
@@ -155,6 +156,17 @@ For each priority write 120-150 words covering: the gap in context (1-2 sentence
 
 Language to use: "Consider...", "The team may want to...", "Would benefit from...", "Explore...", "Could strengthen..."
 Strict prohibitions: NO specific percentages or dollar amounts; NO generic language; NO criticism of document for post-preparation events; NO sub-recommendations within a priority.
+
+---
+
+# CRITICAL — FCV SENSITIVITY RATING
+Before the first priority delimiter, output a single rating line:
+
+%%%FCV_RATING: [level]%%%
+
+Where [level] is EXACTLY one of: Extremely Low | Very Low | Low | Adequate | Well Embedded | Very Well Embedded
+
+Base this on the project's CURRENT state of FCV integration as presented in the document — not the ideal state after applying these priorities. This is your holistic assessment of how conflict-sensitively the project is currently designed.
 
 ---
 
@@ -206,7 +218,9 @@ The TTL has selected: {PRIORITY_TITLE}
 The full text of that priority from the note is:
 {PRIORITY_TEXT}
 
-You have access to the full prior analysis from Stages 1-3 and the Stage 4 note. Ground everything you write in that analysis — do not introduce new risks or themes not already identified.
+You have access to the full prior conversation including Stage 1 (document summary and FCV context), Stage 2 (FCV risk and sensitivity analysis), Stage 3 (safeguards and operational gap assessment), and Stage 4 (the recommendations note). Ground everything you write in that analysis — do not introduce new risks or themes not already identified.
+
+In SECTION 1 (The Issue), explicitly anchor your diagnosis to specific findings from Stages 1-3, using language such as "As identified in the earlier analysis..." or "Building on the Stage 3 gap assessment...". In SECTION 2, ensure each option flows directly from gaps flagged in the prior stages — naming the specific project element, risk, or operational weakness that makes this option relevant.
 
 ---
 
@@ -320,6 +334,8 @@ Before outputting, verify:
 - All three options are genuinely distinct — not variations on a single approach
 - Every bullet point in each option names the specific WBG document section where the change should be made
 - The issue summary names at least one specific place, group, institution, or historical event from the prior analysis
+- Section 1 (The Issue) explicitly references at least one finding from Stage 1, 2, or 3
+- Each option connects to a specific gap or risk from the prior analysis, not generic best practice
 - The third bullet of each option addresses trade-offs in government buy-in or PIU capacity
 - The suggested questions are specific to this project and country
 - No closing remarks or meta-commentary appear after SECTION 3'''}
@@ -327,7 +343,7 @@ Before outputting, verify:
 
 
 def clean_stage4_output(text):
-    """Strip %%%PRIORITY_START/END%%% delimiters; format titles as bold with icon for display."""
+    """Strip %%%PRIORITY_START/END%%% and %%%FCV_RATING:...%%% delimiters; format priority titles."""
     def replace_block(m):
         block = m.group(1).strip()
         lines = block.split('\n')
@@ -338,7 +354,17 @@ def clean_stage4_output(text):
             body = '\n'.join(body_lines).strip()
             return f'**▸ {title}**\n\n{body}'
         return block
-    return re.sub(r'%%%PRIORITY_START%%%(.*?)%%%PRIORITY_END%%%', replace_block, text, flags=re.DOTALL)
+    text = re.sub(r'%%%PRIORITY_START%%%(.*?)%%%PRIORITY_END%%%', replace_block, text, flags=re.DOTALL)
+    text = re.sub(r'%%%FCV_RATING:[^%]*%%%\n?', '', text)
+    return text
+
+
+def extract_fcv_rating(text):
+    """Parse %%%FCV_RATING: [level]%%% from Stage 4 output."""
+    m = re.search(r'%%%FCV_RATING:\s*([^%\n]+)%%%', text)
+    if m:
+        return m.group(1).strip()
+    return ''
 
 
 def extract_priorities(text):
@@ -588,10 +614,12 @@ def run_stage():
 
                 full_text = ''.join(collected)
 
-                # Stage 4: extract priorities from raw delimited text, then clean for display
+                # Stage 4: extract priorities + rating from raw delimited text, then clean for display
                 priorities = []
+                fcv_rating = ''
                 if stage == 4:
                     priorities = extract_priorities(full_text)
+                    fcv_rating = extract_fcv_rating(full_text)
                     full_text = clean_stage4_output(full_text)
                     from datetime import date
                     header = DO_NO_HARM_HEADER.format(date=date.today().strftime('%d %B %Y'))
@@ -601,7 +629,7 @@ def run_stage():
                 if len(updated_messages) > 20:
                     updated_messages = updated_messages[-20:]
 
-                yield f"data: {json.dumps({'done': True, 'result': full_text, 'history': updated_messages, 'stage': stage, 'priorities': priorities})}\n\n"
+                yield f"data: {json.dumps({'done': True, 'result': full_text, 'history': updated_messages, 'stage': stage, 'priorities': priorities, 'fcv_rating': fcv_rating})}\n\n"
 
             except anthropic.AuthenticationError:
                 yield f"data: {json.dumps({'error': 'Invalid API key.'})}\n\n"
