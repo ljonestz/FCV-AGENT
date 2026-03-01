@@ -1178,10 +1178,13 @@
       if (this.files && this.files.length > 0) {
         log.textContent = 'Files detected: ' + Array.from(this.files).map(f=>f.name).join(', ');
         addFiles(Array.from(this.files), arr, type);
+        // Reset input ONLY after successfully reading files, so the startAnalysis fallback
+        // still works if this event fired but provided empty files (some corporate browsers)
+        setTimeout(() => { this.value = ''; }, 100);
       } else {
         log.textContent = 'change fired but files was empty or null (files=' + this.files + ')';
+        // Do NOT reset input — startAnalysis() will read ipEl.files directly at click time
       }
-      setTimeout(() => { this.value = ''; }, 100);
     });
     // Also try input event as fallback
     inp.addEventListener('input', function(e) {
@@ -1239,12 +1242,15 @@
     // Collect files directly from inputs at click time (works even if change event was blocked by corporate policy)
     const ipEl = document.getElementById('ip');
     const icEl = document.getElementById('ic');
+    let fallbackAdded = 0;
     if (ipEl && ipEl.files) {
-      Array.from(ipEl.files).forEach(f => { if (!pF.find(x => x.name === f.name)) pF.push(f); });
+      Array.from(ipEl.files).forEach(f => { if (!pF.find(x => x.name === f.name)) { pF.push(f); fallbackAdded++; } });
     }
     if (icEl && icEl.files) {
-      Array.from(icEl.files).forEach(f => { if (!cF.find(x => x.name === f.name)) cF.push(f); });
+      Array.from(icEl.files).forEach(f => { if (!cF.find(x => x.name === f.name)) { cF.push(f); fallbackAdded++; } });
     }
+    // Show chips for any files picked up via fallback (change event may have been blocked)
+    if (fallbackAdded > 0) renderChips();
     if (!pF.length) {
       const log = document.getElementById('debug-log');
       if (log) { log.style.color='#b91c1c'; log.textContent = '⚠ Please select a project document before beginning.'; }
