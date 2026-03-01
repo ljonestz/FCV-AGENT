@@ -504,140 +504,16 @@
     .topbar-prompt-btn.has-modified{border-color:rgba(245,158,11,.6);color:#fbbf24}
 
     /* ══════════════════════════════════════════
-       EXPLORER PANEL
+       STAGE 4 — PRIORITY CARD SYSTEM
     ══════════════════════════════════════════ */
-    .explorer-panel{
-      background:#fff;border:1px solid var(--border);border-top:3px solid var(--s4);
-      border-radius:var(--radius);box-shadow:var(--shadow-sm);margin-top:20px;overflow:hidden;
-    }
-    .explorer-hdr{
-      padding:18px 24px 16px;border-bottom:1px solid var(--border);
-      background:linear-gradient(135deg,#f0faf4,#e8f7ef);
-    }
-    .explorer-hdr-top{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:10px;}
-    .explorer-subtitle{font-size:13px;line-height:1.6;color:var(--muted);margin:0;font-style:italic;}
-    .explorer-title-group{display:flex;align-items:center;gap:10px}
-    .explorer-title{
-      font-family:'Source Serif 4',serif;font-weight:400;font-size:17px;color:#1a4a30;
-    }
-    .explorer-badge{
-      font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;
-      padding:3px 8px;background:rgba(26,122,74,.12);border:1px solid rgba(26,122,74,.2);
-      border-radius:20px;color:#1a7a4a;
-    }
-    .explorer-select{
-      font-family:'Source Sans 3',Arial,sans-serif;font-size:13px;font-weight:600;
-      padding:8px 32px 8px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);
-      background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235a6a7e' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") no-repeat right 10px center;
-      -webkit-appearance:none;appearance:none;cursor:pointer;color:var(--text);min-width:220px;max-width:400px;
-    }
-    .explorer-select:focus{outline:none;border-color:var(--s4);box-shadow:0 0 0 3px rgba(26,122,74,.12)}
-    .explorer-body{padding:24px}
-    .explorer-loading{
-      display:flex;align-items:center;gap:14px;padding:32px 0;justify-content:center;color:var(--muted);font-size:14px;
-    }
-    .explorer-loading .spinner{width:20px;height:20px;flex-shrink:0}
-    .explorer-section-title{
-      font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;
-      color:var(--muted);margin:0 0 14px;display:flex;align-items:center;gap:8px;
-    }
-    .explorer-section-title::after{content:'';flex:1;height:1px;background:var(--border)}
-    .explorer-issue{
-      font-size:14px;line-height:1.7;color:var(--text);margin-bottom:24px;
-      padding:16px;background:#f8fbfd;border-radius:var(--radius-sm);border-left:3px solid var(--s4);
-    }
-    /* Option cards */
-    .options-grid{display:flex;flex-direction:column;gap:14px;margin-bottom:24px}
-    .option-card{
-      border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;
-      transition:box-shadow .18s;
-    }
-    .option-card:hover{box-shadow:var(--shadow-md)}
-    .option-card-body{padding:14px 16px;font-size:13.5px;line-height:1.65;color:var(--text)}
-    .option-context{
-      font-size:13.5px;line-height:1.65;color:var(--muted);margin-bottom:12px;font-style:italic;
-    }
-    .option-bullets{
-      margin:0;padding-left:20px;
-    }
-    .option-bullets li{
-      font-size:13.5px;line-height:1.65;color:var(--text);margin-bottom:7px;
-    }
-    .option-bullets li:last-child{margin-bottom:0}
-    .option-divider{border:none;border-top:1px dashed var(--border);margin:10px 0 12px;}
-    .option-body-md{font-size:13.5px;line-height:1.65;color:var(--text);}
-    .option-body-md strong{color:#1a3a25;font-weight:700;}
-    .option-body-md ul,.option-body-md ol{margin:4px 0 10px;padding-left:20px;}
-    .option-body-md li{margin-bottom:6px;}
-    .option-body-md li:last-child{margin-bottom:0;}
-    .option-body-md p{margin:0 0 10px;}
-    .option-body-md p:last-child{margin-bottom:0;}
-    /* Legacy — kept in case old cached content still references it */
-    .option-doc-change{
-      margin:12px 0 0;padding:10px 12px;background:#eff8ff;border-left:3px solid #0072BB;
-      border-radius:0 4px 4px 0;font-size:13px;color:#004080;line-height:1.55;
-    }
-    .option-doc-change strong{color:#003060}
-    .option-card-foot{
-      padding:10px 16px;border-top:1px solid var(--border);background:#fafbfc;
-      display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;
-    }
-    .option-ask-btn{
-      font-size:12px;font-weight:600;padding:5px 12px;
-      background:#fff;border:1px solid var(--s4);color:var(--s4);border-radius:var(--radius-sm);
-      cursor:pointer;white-space:nowrap;transition:all .15s;font-family:inherit;
-    }
-    .option-ask-btn:hover{background:var(--s4);color:#fff}
-    /* Dig deeper section */
-    .digdeeper-section{margin-top:4px}
-    .digdeeper-qa{
-      border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:10px;overflow:hidden;
-    }
-    .digdeeper-q{
-      padding:12px 16px;font-size:13.5px;font-weight:600;color:var(--text);
-      cursor:pointer;display:flex;justify-content:space-between;align-items:center;
-      background:#fafbfc;transition:background .15s;user-select:none;
-    }
-    .digdeeper-q:hover{background:#f0f4f8}
-    .digdeeper-q .dq-arrow{font-size:12px;color:var(--muted);transition:transform .2s;flex-shrink:0}
-    .digdeeper-q.open .dq-arrow{transform:rotate(180deg)}
-    .digdeeper-a{
-      padding:14px 16px;font-size:13.5px;line-height:1.7;color:var(--text);
-      border-top:1px solid var(--border);background:#fff;display:none;
-    }
-    .digdeeper-a.open{display:block}
-    /* Follow-up / freetext area */
-    .explorer-followup{padding:0 24px 24px;border-top:1px solid var(--border);margin-top:8px}
-    .explorer-followup-label{
-      font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;
-      color:var(--muted);margin:16px 0 10px;display:flex;align-items:center;gap:8px;
-    }
-    .explorer-followup-label::after{content:'';flex:1;height:1px;background:var(--border)}
-    .explorer-followup-row{display:flex;gap:10px;align-items:flex-start}
-    .explorer-followup-input{
-      flex:1;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);
-      font-family:'Source Sans 3',Arial,sans-serif;font-size:13.5px;resize:vertical;min-height:60px;
-      color:var(--text);line-height:1.5;
-    }
-    .explorer-followup-input:focus{outline:none;border-color:var(--s4);box-shadow:0 0 0 3px rgba(26,122,74,.1)}
-    .explorer-followup-send{
-      padding:10px 16px;background:var(--s4);color:#fff;border:none;border-radius:var(--radius-sm);
-      font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;
-      display:flex;align-items:center;gap:6px;transition:opacity .15s;
-    }
-    .explorer-followup-send:hover{opacity:.88}
-    .explorer-followup-answer{
-      margin-top:14px;padding:14px 16px;background:#f8fbfd;border-radius:var(--radius-sm);
-      border-left:3px solid var(--s4);font-size:13.5px;line-height:1.7;color:var(--text);
-      display:none;
-    }
-    .explorer-followup-answer.visible{display:block}
 
-    /* ── Stage 4 sidebar layout ───────────────────────────────────────── */
+    /* Overall Stage 4 layout */
     .stage4-layout{display:flex;gap:20px;align-items:flex-start;}
     .stage4-main{flex:1;min-width:0;}
+
+    /* Sidebar */
     .fcv-sidebar{
-      width:200px;flex-shrink:0;
+      width:210px;flex-shrink:0;
       position:sticky;top:24px;
       display:flex;flex-direction:column;gap:12px;
     }
@@ -652,70 +528,238 @@
     }
     .fcv-rating-label{
       font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;
-      transition:color .3s;margin-bottom:3px;
+      transition:color .3s;margin-bottom:3px;text-align:center;
     }
-    .fcv-need-label{
-      font-size:10.5px;color:var(--muted);font-style:italic;line-height:1.4;
+    .fcv-need-label{font-size:10.5px;color:var(--muted);font-style:italic;line-height:1.4;text-align:center;}
+
+    /* Sidebar risk matrix */
+    .risk-matrix-widget{padding:12px 14px;}
+    .risk-matrix-row{display:flex;align-items:center;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border);}
+    .risk-matrix-row:last-child{border-bottom:none;}
+    .risk-matrix-dim{font-size:10.5px;color:var(--text);flex:1;}
+    .risk-pills{display:flex;gap:3px;}
+    .rpill{font-size:9px;font-weight:700;padding:2px 5px;border-radius:3px;letter-spacing:.03em;}
+    .rpill-h{background:#fee2e2;color:#991b1b;}
+    .rpill-m{background:#fef3c7;color:#92400e;}
+    .rpill-l{background:#d1fae5;color:#065f46;}
+    .rpill-na{background:#f3f4f6;color:#9ca3af;}
+    .risk-matrix-legend{font-size:9px;color:var(--muted);margin-top:6px;text-align:right;}
+
+    /* Sidebar priority nav */
+    .pnav-widget{padding:12px 14px;}
+    .pnav-item-sb{
+      display:flex;align-items:flex-start;gap:7px;
+      padding:5px 6px;border-radius:5px;cursor:pointer;
+      transition:background .14s;margin-bottom:2px;
     }
-    /* ── Sidebar icon widgets ─────────────────────────────────────────── */
-    .sidebar-icon-widget{padding:14px 16px 12px;}
+    .pnav-item-sb:hover{background:rgba(0,159,218,.06);}
+    .pnav-item-sb.active{background:rgba(0,34,68,.06);}
+    .pnav-num-sb{
+      width:18px;height:18px;border-radius:50%;background:var(--border);
+      display:flex;align-items:center;justify-content:center;
+      font-size:9px;font-weight:700;color:var(--muted);flex-shrink:0;margin-top:1px;
+      transition:all .14s;
+    }
+    .pnav-item-sb.active .pnav-num-sb{background:var(--wbg-navy);color:#fff;}
+    .pnav-item-sb.done .pnav-num-sb{background:var(--s4);color:#fff;}
+    .pnav-text-sb{font-size:10.5px;color:var(--text);line-height:1.4;}
+    .pnav-item-sb.active .pnav-text-sb{font-weight:600;color:var(--wbg-navy);}
+
+    /* Sidebar action tracker */
+    .action-tracker-widget{padding:12px 14px;background:#f0f9f4;border-top:2px solid var(--s4);}
+    .action-tracker-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--s4);margin-bottom:7px;}
+    .action-tracker-progress{font-size:11px;color:var(--muted);margin-top:6px;}
+
+    /* Priority step indicator bar */
+    .priority-stepper{
+      display:flex;background:#fff;border:1px solid var(--border);
+      border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow-sm);
+      margin-bottom:16px;
+    }
+    .ps-step{
+      flex:1;padding:9px 6px;text-align:center;cursor:pointer;
+      border-right:1px solid var(--border);transition:all .15s;
+    }
+    .ps-step:last-child{border-right:none;}
+    .ps-num{
+      width:20px;height:20px;border-radius:50%;background:var(--border);
+      display:flex;align-items:center;justify-content:center;
+      font-size:10px;font-weight:700;color:var(--muted);margin:0 auto 3px;transition:all .15s;
+    }
+    .ps-label{font-size:9.5px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.03em;line-height:1.3;}
+    .ps-step.active{background:var(--wbg-navy);}
+    .ps-step.active .ps-num{background:var(--wbg-blue);color:#fff;}
+    .ps-step.active .ps-label{color:rgba(255,255,255,.8);}
+    .ps-step.done .ps-num{background:var(--s4);color:#fff;font-size:9px;}
+    .ps-step.done .ps-label{color:var(--s4);}
+
+    /* Priority card */
+    .priority-card{
+      background:#fff;border:1px solid var(--border);
+      border-radius:var(--radius);overflow:hidden;
+      box-shadow:var(--shadow-md);margin-bottom:14px;
+    }
+    .priority-card-hdr{
+      background:var(--wbg-navy);padding:16px 22px;
+      display:flex;align-items:flex-start;gap:14px;
+    }
+    .pc-num-badge{
+      width:38px;height:38px;border-radius:50%;
+      background:rgba(255,255,255,.12);border:2px solid rgba(255,255,255,.22);
+      display:flex;align-items:center;justify-content:center;
+      font-family:'Source Serif 4',serif;font-size:17px;color:#fff;
+      font-weight:400;flex-shrink:0;
+    }
+    .pc-hdr-eyebrow{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--wbg-cyan);margin-bottom:3px;}
+    .pc-hdr-title{font-family:'Source Serif 4',serif;font-weight:300;font-size:17px;color:#fff;line-height:1.3;}
+    .pc-hdr-title strong{font-weight:600;}
+    .pc-hdr-chips{display:flex;gap:7px;margin-top:8px;flex-wrap:wrap;}
+    .pc-chip{font-size:10px;padding:2px 8px;border-radius:20px;border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.65);font-weight:600;}
+    .pc-chip-risk-h{color:#fca5a5;border-color:rgba(252,165,165,.4);}
+    .pc-chip-risk-m{color:#fcd34d;border-color:rgba(252,211,77,.4);}
+    .pc-chip-risk-l{color:#86efac;border-color:rgba(134,239,172,.4);}
+
+    /* Priority zones */
+    .pc-zone{padding:16px 22px;border-bottom:1px solid var(--border);}
+    .pc-zone:last-of-type{border-bottom:none;}
+    .pc-zone-title{
+      display:flex;align-items:center;gap:7px;
+      font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;
+      margin-bottom:8px;
+    }
+    .pc-zone-icon{width:22px;height:22px;border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+    .pc-zone-body{font-size:13px;color:var(--text);line-height:1.75;}
+
+    /* Zone colour themes */
+    .pc-zone.zone-gap{background:#fffdf8;}
+    .pc-zone.zone-gap .pc-zone-title{color:var(--s3);}
+    .pc-zone.zone-gap .pc-zone-icon{background:#fff3e0;}
+    .pc-zone.zone-why{background:#fff;}
+    .pc-zone.zone-why .pc-zone-title{color:var(--muted);}
+    .pc-zone.zone-why .pc-zone-icon{background:var(--off-white);}
+    .pc-zone.zone-act{background:#f8fffe;}
+    .pc-zone.zone-act .pc-zone-title{color:var(--s4);}
+    .pc-zone.zone-act .pc-zone-icon{background:#e8f7ef;}
+
+    /* Explorer options inside action zone */
+    .explorer-options{display:flex;flex-direction:column;gap:10px;margin-top:10px;}
+    .exp-option{
+      border:1.5px solid var(--border);border-radius:var(--radius-sm);
+      overflow:hidden;transition:box-shadow .15s;
+    }
+    .exp-option:hover{box-shadow:var(--shadow-sm);}
+    .exp-option-hdr{
+      display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;
+      transition:background .14s;
+    }
+    .exp-option-hdr:hover{background:var(--off-white);}
+    .exp-option-letter{
+      width:24px;height:24px;border-radius:50%;
+      display:flex;align-items:center;justify-content:center;
+      font-size:11px;font-weight:700;color:#fff;flex-shrink:0;
+    }
+    .exp-option-title{font-size:12.5px;font-weight:700;color:var(--text);flex:1;}
+    .exp-option-tier{font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;letter-spacing:.04em;white-space:nowrap;}
+    .exp-option-arrow{font-size:11px;color:var(--muted);transition:transform .18s;flex-shrink:0;}
+    .exp-option.open .exp-option-arrow{transform:rotate(180deg);}
+    .exp-option-body{
+      padding:12px 14px 14px 48px;border-top:1px solid var(--border);
+      font-size:13px;color:var(--text);line-height:1.7;display:none;
+    }
+    .exp-option.open .exp-option-body{display:block;}
+    .exp-option-body strong{color:#1a3a25;font-weight:700;}
+    .exp-option-body ul{margin:4px 0 8px;padding-left:18px;}
+    .exp-option-body li{margin-bottom:5px;}
+    .exp-option-context{font-size:12.5px;color:var(--muted);font-style:italic;margin-bottom:10px;line-height:1.6;}
+    .exp-option-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;padding-top:8px;border-top:1px dashed var(--border);}
+    .exp-tag{font-size:10px;padding:2px 8px;border-radius:3px;font-weight:700;letter-spacing:.04em;background:var(--off-white);border:1px solid var(--border);color:var(--muted);}
+    .exp-ask-btn{
+      font-size:11px;font-weight:600;padding:3px 10px;margin-left:auto;
+      background:#fff;border:1px solid var(--s4);color:var(--s4);
+      border-radius:var(--radius-sm);cursor:pointer;white-space:nowrap;
+      transition:all .14s;font-family:inherit;
+    }
+    .exp-ask-btn:hover{background:var(--s4);color:#fff;}
+
+    /* Explorer loading inside card */
+    .exp-loading{
+      display:flex;align-items:center;gap:12px;padding:20px 0;
+      justify-content:center;color:var(--muted);font-size:13px;
+    }
+
+    /* Follow-up zone */
+    .pc-followup{
+      padding:12px 22px 14px;background:var(--off-white);border-top:1px solid var(--border);
+      display:flex;align-items:center;gap:9px;
+    }
+    .pc-followup-label{font-size:11px;color:var(--muted);font-weight:600;white-space:nowrap;}
+    .pc-followup-input{
+      flex:1;border:1.5px solid var(--border);border-radius:var(--radius-sm);
+      padding:7px 10px;font-family:inherit;font-size:13px;color:var(--text);
+      background:#fff;transition:border-color .15s;
+    }
+    .pc-followup-input:focus{outline:none;border-color:var(--wbg-blue);}
+    .pc-followup-input::placeholder{color:#9aabb8;}
+    .pc-followup-btn{
+      padding:7px 14px;background:var(--wbg-navy);color:#fff;border:none;
+      border-radius:var(--radius-sm);font-family:inherit;font-size:12px;
+      font-weight:600;cursor:pointer;white-space:nowrap;transition:background .15s;
+    }
+    .pc-followup-btn:hover{background:#003366;}
+    .pc-followup-answer{
+      display:none;padding:12px 22px 14px;
+      background:#fff;border-top:1px solid var(--border);
+      font-size:13px;line-height:1.7;color:var(--text);
+    }
+    .pc-followup-answer.visible{display:block;}
+
+    /* Priority nav prev/next */
+    .pc-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;}
+    .pc-nav-counter{font-size:12px;color:var(--muted);}
+
+    /* Consolidated action summary */
+    .action-summary{
+      background:#fff;border:1.5px solid var(--s4);border-radius:var(--radius);
+      padding:18px 22px;box-shadow:var(--shadow-sm);
+    }
+    .action-summary-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;gap:12px;}
+    .action-summary-title{font-family:'Source Serif 4',serif;font-weight:400;font-size:16px;color:var(--wbg-navy);}
+    .action-summary-sub{font-size:11.5px;color:var(--muted);margin-top:2px;}
+    .action-copy-btn{
+      padding:6px 14px;background:var(--s4);color:#fff;border:none;
+      border-radius:var(--radius-sm);font-size:12px;font-weight:600;cursor:pointer;
+      font-family:inherit;display:flex;align-items:center;gap:5px;white-space:nowrap;flex-shrink:0;
+    }
+    .action-copy-btn:hover{background:#145f38;}
+    .action-table{width:100%;border-collapse:collapse;}
+    .action-table th{
+      text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;
+      letter-spacing:.07em;color:var(--muted);padding:6px 10px;border-bottom:2px solid var(--border);
+    }
+    .action-table td{padding:8px 10px;border-bottom:1px solid var(--border);font-size:12px;vertical-align:top;}
+    .action-table tr:last-child td{border-bottom:none;}
+    .action-table tr:hover td{background:var(--off-white);}
+    .at-ptag{display:inline-block;padding:2px 7px;border-radius:3px;font-size:10px;font-weight:700;background:var(--wbg-navy);color:#fff;}
+    .at-who{display:inline-block;padding:2px 7px;border-radius:3px;font-size:10px;font-weight:700;background:#e8f4fd;color:#004e7c;}
+    .at-when{font-size:11px;color:var(--muted);}
+
+    /* Section divider */
+    .section-divider{display:flex;align-items:center;gap:12px;margin:24px 0 20px;}
+    .section-divider-line{flex:1;height:1px;background:var(--border);}
+    .section-divider-lbl{font-size:10.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);white-space:nowrap;}
+
+    /* Priority icon row in sidebar */
     .priority-icon-row{display:flex;gap:3px;justify-content:center;margin:8px 0 6px;}
     .p-icon{cursor:default;}
     .p-icon svg{display:block;fill:none;stroke:#d1dbe8;transition:stroke .25s,fill .25s;}
     .p-icon.active svg{fill:#1a7a4a;stroke:#1a7a4a;}
-    /* Priority list under flags */
-    .priority-list-sb{display:flex;flex-direction:column;gap:4px;}
-    .pr-list-item{
-      display:flex;align-items:flex-start;gap:6px;cursor:pointer;
-      padding:3px 4px;border-radius:4px;transition:background .15s;
+
+    @media(max-width:860px){
+      .stage4-layout{flex-direction:column;}
+      .fcv-sidebar{width:100%;position:static;}
+      .priority-stepper{overflow-x:auto;}
     }
-    .pr-list-item:hover{background:#f0faf4;}
-    .pr-list-num{
-      font-size:9px;font-weight:800;color:#1a7a4a;text-transform:uppercase;
-      flex-shrink:0;padding-top:1px;min-width:18px;
-    }
-    .pr-list-label{
-      font-size:9.5px;line-height:1.4;color:var(--text);
-      overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
-    }
-    /* ── Explorer select hint ─────────────────────────────────────────── */
-    .explorer-select-wrap{display:flex;flex-direction:column;gap:4px;align-items:flex-end;}
-    .explorer-select-hint{
-      font-size:10.5px;font-weight:600;color:#1a7a4a;
-      display:flex;align-items:center;gap:4px;
-      animation:hint-pulse 2.5s ease-in-out 3;
-    }
-    @keyframes hint-pulse{0%,100%{opacity:1}50%{opacity:.45}}
-    /* ── Explorer body ────────────────────────────────────────────────── */
-    .explorer-body-inner{padding:24px;}
-    /* ── Option card tier banners ─────────────────────────────────────── */
-    .option-tier-banner{
-      display:flex;align-items:center;gap:10px;
-      padding:9px 16px;
-    }
-    .option-tier-letter{
-      width:26px;height:26px;border-radius:50%;flex-shrink:0;
-      display:flex;align-items:center;justify-content:center;
-      font-weight:700;font-size:12px;color:#fff;
-      background:rgba(255,255,255,0.25);
-    }
-    .option-tier-text{
-      display:flex;align-items:center;gap:6px;flex:1;min-width:0;
-      font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#fff;
-      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-    }
-    .option-ep-badge{
-      margin-left:auto;font-size:10px;font-weight:700;
-      background:rgba(255,255,255,0.22);border-radius:10px;
-      padding:2px 8px;color:#fff;letter-spacing:.04em;white-space:nowrap;
-    }
-    /* ── Option tier footer pill ──────────────────────────────────────── */
-    .option-tier-pill{
-      font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;
-      padding:2px 10px;border-radius:20px;border:1px solid transparent;
-    }
-    .option-body-md ul{padding-left:20px;margin:6px 0;}
-    .option-body-md li{margin:4px 0;}
+
 
   </style>
 </head>
@@ -1001,10 +1045,7 @@
   // ── State ──────────────────────────────────────────────────────────────────
   let pF=[],cF=[],hist=[],curS=0,busy=false;
   let sessionName='';
-  let stageFourPriorities=[];
-  let explorerCache={};        // {priorityTitle: rawExplorerText}
-  let explorerHistory=[];      // messages for follow-up "dig deeper" queries
-  let fcvRating='';            // LLM-assigned FCV sensitivity rating
+  // Stage 4 state is declared in the Stage 4 section below
 
   // ── Onboarding ──────────────────────────────────────────────────────────────
   function initOnboarding(){
@@ -1364,46 +1405,38 @@
             <div class="out-body" id="out-txt">${md(result)}</div>
           </div>
           ${isLast?`
-          <div class="explorer-panel ani" id="explorer-panel">
-            <div class="explorer-hdr">
-              <div class="explorer-hdr-top">
-                <div class="explorer-title-group">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a7a4a" stroke-width="2" aria-hidden="true"><path d="M12 22V12M12 12C12 12 7 9 7 4a5 5 0 0 1 10 0c0 5-5 8-5 8z"/><path d="M9 17c-2 1-3 2-3 3"/><path d="M15 17c2 1 3 2 3 3"/></svg>
-                  <span class="explorer-title">Delving into Priorities for FCV-Sensitive Solutions</span>
-                  <span class="explorer-badge">On demand</span>
-                </div>
-                <div class="explorer-select-wrap">
-                  <div class="explorer-select-hint">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
-                    Toggle here for different priority areas
-                  </div>
-                  <select class="explorer-select" id="explorer-select" onchange="loadExplorerPriority(this.value)" aria-label="Select a Strategic Priority to explore">
-                    <option value="">Loading priorities…</option>
-                  </select>
-                </div>
-              </div>
-              <p class="explorer-subtitle">This section elaborates on the priority areas identified in the recommendations above. Use the dropdown to switch between priorities. Once a priority has loaded, use the query box at the bottom to ask follow-up questions about any of the options.</p>
+          <!-- ── PRIORITY STEPPER ── -->
+          <div class="priority-stepper" id="priority-stepper"></div>
+          <!-- ── PRIORITY CARD ── -->
+          <div id="priority-card-area"></div>
+          <!-- ── PRIORITY NAV ── -->
+          <div class="pc-nav" id="pc-nav" style="display:none">
+            <button class="btn btn-ghost btn-sm" id="pc-prev-btn" onclick="prevPriority()">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+              Previous
+            </button>
+            <span class="pc-nav-counter" id="pc-nav-counter"></span>
+            <button class="btn btn-blue btn-sm" id="pc-next-btn" onclick="nextPriority()">
+              Next
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </button>
+          </div>
+          <!-- ── ACTION SUMMARY ── -->
+          <div class="section-divider"><div class="section-divider-line"></div><div class="section-divider-lbl">Consolidated Action Summary</div><div class="section-divider-line"></div></div>
+          <div class="action-summary" id="action-summary">
+            <div class="action-summary-hdr">
+              <div><div class="action-summary-title">Actions for the Task Team</div><div class="action-summary-sub">Consolidated from all priorities — for use before the Decision Meeting</div></div>
+              <button class="action-copy-btn" onclick="copyActionSummary()">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                Copy
+              </button>
             </div>
-            <div class="explorer-body" id="explorer-body">
-              <div class="explorer-loading">
-                <svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite"><circle cx="12" cy="12" r="10" stroke-opacity=".25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-opacity="1"/></svg>
-                Preparing explorer…
-              </div>
-            </div>
-            <div class="explorer-followup" id="explorer-followup" style="display:none">
-              <div class="explorer-followup-label">Dig deeper</div>
-              <div class="explorer-followup-row">
-                <textarea class="explorer-followup-input" id="explorer-freetext" rows="2"
-                  placeholder="Ask a follow-up question, or click 'Ask about this option' above to pre-fill…"
-                  onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();submitExplorerFollowup()}"></textarea>
-                <button class="explorer-followup-send" onclick="submitExplorerFollowup()">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-                  Send
-                </button>
-              </div>
-              <div class="explorer-followup-answer" id="explorer-followup-answer"></div>
-            </div>
-          </div>`:''}
+            <table class="action-table" id="action-table">
+              <thead><tr><th style="width:52px">Priority</th><th>Recommended action</th><th style="width:100px">When</th></tr></thead>
+              <tbody id="action-table-body"><tr><td colspan="3" style="color:var(--muted);font-size:12px;padding:14px 10px">Work through each priority above to build the action summary.</td></tr></tbody>
+            </table>
+          </div>
+          `:''}
         </div>
         ${isLast?`<aside class="fcv-sidebar" id="fcv-sidebar">${sidebarHtml()}</aside>`:''}
       </div>
@@ -1674,336 +1707,472 @@
     'Very Well Embedded':'Strong foundation — sustain'
   };
 
+  // ── Stage 4 state ──────────────────────────────────────────────────────────
+  let stageFourPriorities = [];
+  let currentPriority = 0;  // 0-indexed
+  let explorerCache = {};   // {priorityTitle: parsedExplorerData}
+  let explorerHistory = []; // for follow-up queries
+  let fcvRating = '';
+  let actionSummaryRows = {}; // {idx: {title, directions}}
+
+  const LEVELS = ['Extremely Low','Very Low','Low','Adequate','Well Embedded','Very Well Embedded'];
+  const LEVEL_COLORS = {1:'#C0392B',2:'#E07B00',3:'#D97706',4:'#0072BB',5:'#1A7A4A',6:'#0d5c36'};
+  const ARC_LEN = 141.37;
+  const NEED_LABELS = {
+    'Extremely Low':'Critical redesign needed',
+    'Very Low':'Significant changes needed',
+    'Low':'Moderate improvements needed',
+    'Adequate':'Targeted enhancements possible',
+    'Well Embedded':'Minor refinements available',
+    'Very Well Embedded':'Strong foundation — sustain'
+  };
+
+  // Risk matrix data populated from Stage 2 parsing (best effort)
+  let riskMatrixData = [];
+
+  // ── Sidebar ─────────────────────────────────────────────────────────────────
+
   function sidebarHtml(){
     return `
-      <!-- FCV Sensitivity: arc gauge with shield icon -->
-      <div class="sidebar-widget sidebar-widget-fcv">
-        <div class="sidebar-widget-label">Current FCV Sensitivity</div>
-        <svg viewBox="0 0 120 80" width="120" height="80" style="display:block;margin:0 auto -4px">
-          <!-- background arc -->
-          <path d="M15 70 A45 45 0 0 1 105 70" fill="none" stroke="#e8edf2" stroke-width="11" stroke-linecap="round"/>
-          <!-- foreground arc, updated by updateSidebar() -->
-          <path id="fcv-arc-fill" d="M15 70 A45 45 0 0 1 105 70" fill="none" stroke="#e8edf2" stroke-width="11" stroke-linecap="round" stroke-dasharray="0 141.37"/>
-          <!-- shield icon centred above arc midpoint -->
-          <g transform="translate(60,47)">
-            <path id="fcv-shield-path" d="M0-14L-9-10v9c0 7 5 12.5 9 14.5 4-2 9-7.5 9-14.5v-9L0-14z" fill="#c8d8c8"/>
-          </g>
-        </svg>
-        <div class="fcv-rating-label" id="fcv-rating-label" style="color:var(--muted);text-align:center">Analysing…</div>
-        <div class="fcv-need-label" id="fcv-need-label"></div>
-      </div>
-      <!-- Priority Areas: flag icons + clickable list -->
-      <div class="sidebar-widget sidebar-icon-widget">
-        <div class="sidebar-widget-label">Priority Areas</div>
-        <div class="priority-icon-row" id="priority-icon-row">
-          ${Array.from({length:5},(_,i)=>`<div class="p-icon" id="pi-${i}" title=""><svg viewBox="0 0 20 20" width="24" height="24" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h11l-2 4 2 4H3V3z" stroke-width="1.5"/><line x1="3" y1="3" x2="3" y2="17" stroke-width="1.5"/></svg></div>`).join('')}
+      <!-- Gauge -->
+      <div class="sidebar-widget">
+        <div class="sidebar-widget-fcv">
+          <div class="sidebar-widget-label">Current FCV Sensitivity</div>
+          <svg viewBox="0 0 120 80" width="120" height="80" style="display:block;margin:0 auto -4px">
+            <path d="M15 70 A45 45 0 0 1 105 70" fill="none" stroke="#e8edf2" stroke-width="11" stroke-linecap="round"/>
+            <path id="fcv-arc-fill" d="M15 70 A45 45 0 0 1 105 70" fill="none" stroke="#e8edf2" stroke-width="11" stroke-linecap="round" stroke-dasharray="0 141.37"/>
+            <g transform="translate(60,47)">
+              <path id="fcv-shield-path" d="M0-14L-9-10v9c0 7 5 12.5 9 14.5 4-2 9-7.5 9-14.5v-9L0-14z" fill="#c8d8c8"/>
+            </g>
+          </svg>
+          <div class="fcv-rating-label" id="fcv-rating-label" style="color:var(--muted)">Analysing…</div>
+          <div class="fcv-need-label" id="fcv-need-label"></div>
         </div>
-        <div class="priority-list-sb" id="priority-list-sb"></div>
+      </div>
+      <!-- Risk matrix -->
+      <div class="sidebar-widget">
+        <div class="risk-matrix-widget">
+          <div class="sidebar-widget-label">Risk Overview</div>
+          <div id="risk-matrix-sb">
+            ${['Institutional','Inclusion','Social Cohesion','Security','Livelihoods','Resilience'].map(d=>`
+              <div class="risk-matrix-row">
+                <span class="risk-matrix-dim">${d}</span>
+                <div class="risk-pills"><span class="rpill rpill-na">—</span><span class="rpill rpill-na">—</span></div>
+              </div>`).join('')}
+          </div>
+          <div class="risk-matrix-legend">← TO · FROM →</div>
+        </div>
+      </div>
+      <!-- Priority nav -->
+      <div class="sidebar-widget">
+        <div class="pnav-widget">
+          <div class="sidebar-widget-label">Priority Areas</div>
+          <div id="pnav-sb"></div>
+        </div>
+      </div>
+      <!-- Action tracker -->
+      <div class="sidebar-widget">
+        <div class="action-tracker-widget">
+          <div class="action-tracker-label">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline;vertical-align:middle;margin-right:4px"><polyline points="20 6 9 17 4 12"/></svg>
+            Actions noted
+          </div>
+          <div id="action-tracker-items" style="font-size:11px;color:var(--muted)">Work through priorities to build action list.</div>
+          <div class="action-tracker-progress" id="action-tracker-progress"></div>
+        </div>
       </div>`;
   }
 
   function updateSidebar(){
-    const n=stageFourPriorities.length;
-    const level=LEVELS.findIndex(l=>l.toLowerCase()===(fcvRating||'').toLowerCase())+1;
-    const color=LEVEL_COLORS[level]||'#e8edf2';
+    const n = stageFourPriorities.length;
+    const level = LEVELS.findIndex(l => l.toLowerCase() === (fcvRating||'').toLowerCase()) + 1;
+    const color = LEVEL_COLORS[level] || '#e8edf2';
 
-    // Arc gauge
-    const arcFill=document.getElementById('fcv-arc-fill');
-    const shieldPath=document.getElementById('fcv-shield-path');
-    const labelEl=document.getElementById('fcv-rating-label');
-    const needEl=document.getElementById('fcv-need-label');
-    if(arcFill){
-      const filled=level>0?(level/6)*ARC_LEN:0;
-      arcFill.setAttribute('stroke-dasharray',`${filled} ${ARC_LEN}`);
-      arcFill.setAttribute('stroke',color);
-    }
-    if(shieldPath) shieldPath.setAttribute('fill',level>0?color:'#c8d8c8');
-    if(labelEl){labelEl.textContent=fcvRating?`${fcvRating} Sensitivity`:'—';labelEl.style.color=level>0?color:'var(--muted)';}
-    if(needEl) needEl.textContent=NEED_LABELS[fcvRating]||'';
+    // Gauge
+    const arcFill = document.getElementById('fcv-arc-fill');
+    const shieldPath = document.getElementById('fcv-shield-path');
+    const labelEl = document.getElementById('fcv-rating-label');
+    const needEl = document.getElementById('fcv-need-label');
+    if(arcFill){ const filled = level > 0 ? (level/6)*ARC_LEN : 0; arcFill.setAttribute('stroke-dasharray',`${filled} ${ARC_LEN}`); arcFill.setAttribute('stroke',color); }
+    if(shieldPath) shieldPath.setAttribute('fill', level > 0 ? color : '#c8d8c8');
+    if(labelEl){ labelEl.textContent = fcvRating ? `${fcvRating} Sensitivity` : '—'; labelEl.style.color = level > 0 ? color : 'var(--muted)'; }
+    if(needEl) needEl.textContent = NEED_LABELS[fcvRating] || '';
 
-    // Priority flag icons
-    for(let i=0;i<5;i++){
-      const el=document.getElementById(`pi-${i}`);
-      if(!el) continue;
-      el.classList.toggle('active',i<n);
-      el.title=i<n&&stageFourPriorities[i]?stageFourPriorities[i].title:'';
+    // Priority nav in sidebar
+    const pnavEl = document.getElementById('pnav-sb');
+    if(pnavEl && n){
+      pnavEl.innerHTML = stageFourPriorities.map((pr, i) => {
+        const label = pr.title.replace(/^Priority\s+\d+\s*[·•]\s*/i,'');
+        const isDone = i < currentPriority;
+        const isActive = i === currentPriority;
+        return `<div class="pnav-item-sb ${isDone?'done':''} ${isActive?'active':''}" onclick="showPriority(${i})">
+          <div class="pnav-num-sb">${isDone?'✓':i+1}</div>
+          <div class="pnav-text-sb">${esc(label)}</div>
+        </div>`;
+      }).join('');
     }
 
-    // Priority list under flags — clickable, strips "Priority N ·" prefix
-    const listEl=document.getElementById('priority-list-sb');
-    if(listEl){
-      if(!n){
-        listEl.innerHTML='';
-      } else {
-        listEl.innerHTML=stageFourPriorities.slice(0,n).map((pr,i)=>{
-          const label=pr.title.replace(/^Priority\s+\d+\s*[·•]\s*/i,'');
-          return `<div class="pr-list-item" title="${esc(pr.title)}" onclick="selectPrioritySb('${pr.title.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}')">
-            <span class="pr-list-num">P${i+1}</span>
-            <span class="pr-list-label">${esc(label)}</span>
-          </div>`;
-        }).join('');
-      }
+    // Action tracker
+    const trackerEl = document.getElementById('action-tracker-items');
+    const progressEl = document.getElementById('action-tracker-progress');
+    const doneCount = Object.keys(actionSummaryRows).length;
+    if(trackerEl && doneCount > 0){
+      trackerEl.innerHTML = Object.values(actionSummaryRows).slice(0,3).map(r =>
+        `<div style="display:flex;align-items:flex-start;gap:5px;margin-bottom:4px">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#1a7a4a" stroke-width="2.5" style="flex-shrink:0;margin-top:2px"><polyline points="20 6 9 17 4 12"/></svg>
+          <span>${esc(r.short)}</span>
+        </div>`).join('');
+      if(doneCount > 3) trackerEl.innerHTML += `<div style="font-size:10px;color:var(--muted)">+${doneCount-3} more below</div>`;
     }
+    if(progressEl) progressEl.textContent = doneCount > 0 ? `${doneCount} of ${n} priorities reviewed` : '';
   }
 
-  // ── Explorer panel ──────────────────────────────────────────────────────────
+  // ── Priority stepper & card rendering ────────────────────────────────────
 
-  function populateExplorerDropdown(priorities){
-    const sel=document.getElementById('explorer-select');
-    if(!sel) return;
-    sel.innerHTML='';
-    priorities.forEach((pr,i)=>{
-      const opt=document.createElement('option');
-      opt.value=pr.title;
-      opt.textContent=pr.title;
-      sel.appendChild(opt);
-    });
-    if(priorities.length) loadExplorerPriority(priorities[0].title);
+  function initStage4UI(){
+    if(!stageFourPriorities.length) return;
+    currentPriority = 0;
+    renderPriorityStepper();
+    showPriority(0);
+    renderActionTable();
+    updateSidebar();
   }
 
-  function selectPrioritySb(title){
-    const sel=document.getElementById('explorer-select');
-    if(sel) sel.value=title;
-    loadExplorerPriority(title);
-  }
-
-  async function loadExplorerPriority(priorityTitle){
-    if(!priorityTitle) return;
-    const bodyEl=document.getElementById('explorer-body');
-    const followupEl=document.getElementById('explorer-followup');
-    if(!bodyEl) return;
-
-    // If already cached, render immediately
-    if(explorerCache[priorityTitle]){
-      renderExplorerContent(parseExplorerText(explorerCache[priorityTitle]), priorityTitle);
-      if(followupEl) followupEl.style.display='';
-      return;
-    }
-
-    // Find priority object
-    const pr=stageFourPriorities.find(p=>p.title===priorityTitle);
-    if(!pr) return;
-
-    // Show loading state
-    bodyEl.innerHTML=`
-      <div class="explorer-loading">
-        <svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite;flex-shrink:0"><circle cx="12" cy="12" r="10" stroke-opacity=".25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-opacity="1"/></svg>
-        Generating solutions for <em>${esc(pr.title)}</em>…
+  function renderPriorityStepper(){
+    const el = document.getElementById('priority-stepper');
+    if(!el) return;
+    el.innerHTML = stageFourPriorities.map((pr, i) => {
+      const shortTitle = pr.title.replace(/^Priority\s+\d+\s*[·•]\s*/i,'').slice(0,20) + (pr.title.replace(/^Priority\s+\d+\s*[·•]\s*/i,'').length > 20 ? '…' : '');
+      return `<div class="ps-step ${i===currentPriority?'active':''}" id="ps-${i}" onclick="showPriority(${i})" title="${esc(pr.title)}">
+        <div class="ps-num">${i+1}</div>
+        <div class="ps-label">P${i+1} · ${esc(shortTitle)}</div>
       </div>`;
-    if(followupEl) followupEl.style.display='none';
-    // Reset follow-up
-    const ftEl=document.getElementById('explorer-freetext');
-    const ansEl=document.getElementById('explorer-followup-answer');
-    if(ftEl) ftEl.value='';
-    if(ansEl){ansEl.innerHTML='';ansEl.className='explorer-followup-answer';}
-    explorerHistory=[];
+    }).join('');
+  }
 
-    // Build prompt override if user has edited explorer prompt
-    const promptOverride=sessionPrompts['explorer']||'';
+  function showPriority(idx){
+    const pr = stageFourPriorities[idx];
+    if(!pr) return;
+    currentPriority = idx;
+    const n = stageFourPriorities.length;
 
-    try{
-      const payload={
-        priority_title:pr.title,
-        priority_body:pr.body,
-        history:hist
-      };
-      if(promptOverride) payload.prompt_override=promptOverride;
+    // Update stepper
+    stageFourPriorities.forEach((_, i) => {
+      const el = document.getElementById(`ps-${i}`);
+      if(el) el.className = `ps-step ${i < idx ? 'done' : i === idx ? 'active' : ''}`;
+      const numEl = el ? el.querySelector('.ps-num') : null;
+      if(numEl){ if(i < idx){ numEl.textContent = '✓'; } else { numEl.textContent = String(i+1); } }
+    });
 
-      const res=await fetch('/api/run-explorer',{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify(payload)
-      });
+    // Update nav
+    const navEl = document.getElementById('pc-nav');
+    const counterEl = document.getElementById('pc-nav-counter');
+    const prevBtn = document.getElementById('pc-prev-btn');
+    const nextBtn = document.getElementById('pc-next-btn');
+    if(navEl) navEl.style.display = 'flex';
+    if(counterEl) counterEl.textContent = `Priority ${idx+1} of ${n}`;
+    if(prevBtn) prevBtn.disabled = idx === 0;
+    if(nextBtn){
+      if(idx === n-1){ nextBtn.textContent = 'Done'; nextBtn.onclick = () => document.getElementById('action-summary').scrollIntoView({behavior:'smooth'}); }
+      else { nextBtn.innerHTML = 'Next <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>'; nextBtn.onclick = nextPriority; }
+    }
+
+    // Determine risk chip class
+    const riskClass = pr.risk_level === 'High' ? 'pc-chip-risk-h' : pr.risk_level === 'Medium' ? 'pc-chip-risk-m' : 'pc-chip-risk-l';
+
+    // Render card
+    const cardArea = document.getElementById('priority-card-area');
+    if(!cardArea) return;
+
+    cardArea.innerHTML = `
+      <div class="priority-card ani">
+        <div class="priority-card-hdr">
+          <div class="pc-num-badge">${idx+1}</div>
+          <div>
+            <div class="pc-hdr-eyebrow">Priority ${idx+1} of ${n} · ${esc(pr.dimension||'')}</div>
+            <div class="pc-hdr-title">${md(pr.title.replace(/^Priority\s+\d+\s*[·•]\s*/i,''))}</div>
+            <div class="pc-hdr-chips">
+              <span class="pc-chip ${riskClass}">Risk: ${esc(pr.risk_level||'—')}</span>
+              ${pr.dimension ? `<span class="pc-chip">${esc(pr.dimension)}</span>` : ''}
+            </div>
+          </div>
+        </div>
+        <!-- Zone 1: The Gap -->
+        <div class="pc-zone zone-gap">
+          <div class="pc-zone-title">
+            <div class="pc-zone-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+            The Gap
+          </div>
+          <div class="pc-zone-body">${esc(pr.the_gap||pr.body||'')}</div>
+        </div>
+        <!-- Zone 2: Why it matters -->
+        <div class="pc-zone zone-why">
+          <div class="pc-zone-title">
+            <div class="pc-zone-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/></svg></div>
+            Why it matters operationally
+          </div>
+          <div class="pc-zone-body">${esc(pr.why_it_matters||'')}</div>
+        </div>
+        <!-- Zone 3: Options (loaded on demand) -->
+        <div class="pc-zone zone-act" id="zone-act-${idx}">
+          <div class="pc-zone-title">
+            <div class="pc-zone-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
+            Options to consider
+          </div>
+          <div class="pc-zone-body" style="color:var(--muted);font-style:italic;margin-bottom:8px">${esc(pr.suggested_directions||'')}</div>
+          <div id="explorer-options-${idx}">
+            ${explorerCache[pr.title] ? renderOptionsHtml(explorerCache[pr.title], idx) : `
+            <div class="exp-loading" id="exp-loading-${idx}">
+              <svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;animation:spin 1s linear infinite;flex-shrink:0"><circle cx="12" cy="12" r="10" stroke-opacity=".25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-opacity="1"/></svg>
+              Loading detailed options…
+            </div>`}
+          </div>
+        </div>
+        <!-- Follow-up -->
+        <div class="pc-followup">
+          <span class="pc-followup-label">Explore further:</span>
+          <input class="pc-followup-input" type="text" id="pc-followup-input-${idx}"
+            placeholder="e.g. 'Which organisations could lead the conflict mapping?' or 'How does this affect the PAD risk section?'"
+            onkeydown="if(event.key==='Enter'){submitPriorityFollowup(${idx})}"/>
+          <button class="pc-followup-btn" onclick="submitPriorityFollowup(${idx})">Ask →</button>
+        </div>
+        <div class="pc-followup-answer" id="pc-followup-answer-${idx}"></div>
+      </div>`;
+
+    // Load explorer if not cached
+    if(!explorerCache[pr.title]){
+      loadExplorerForPriority(idx);
+    }
+
+    updateSidebar();
+    cardArea.scrollIntoView({behavior:'smooth', block:'nearest'});
+  }
+
+  function nextPriority(){ if(currentPriority < stageFourPriorities.length-1) showPriority(currentPriority+1); }
+  function prevPriority(){ if(currentPriority > 0) showPriority(currentPriority-1); }
+
+  // ── Explorer loading & rendering ─────────────────────────────────────────
+
+  async function loadExplorerForPriority(idx){
+    const pr = stageFourPriorities[idx];
+    if(!pr || explorerCache[pr.title]) return;
+
+    const promptOverride = sessionPrompts['explorer'] || '';
+    try {
+      const payload = { priority_title: pr.title, priority_body: pr.body, history: hist };
+      if(promptOverride) payload.prompt_override = promptOverride;
+
+      const res = await fetch('/api/run-explorer', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
       if(!res.ok) throw new Error('Server error '+res.status);
 
-      const reader=res.body.getReader(),dec=new TextDecoder();
-      let buf='',streamed='';
+      const reader = res.body.getReader(), dec = new TextDecoder();
+      let buf = '', streamed = '';
 
       while(true){
-        const{done,value}=await reader.read();if(done)break;
-        buf+=dec.decode(value,{stream:true});
-        const lines=buf.split('\n');buf=lines.pop();
+        const {done, value} = await reader.read(); if(done) break;
+        buf += dec.decode(value, {stream:true});
+        const lines = buf.split('\n'); buf = lines.pop();
         for(const line of lines){
-          if(!line.startsWith('data: '))continue;
+          if(!line.startsWith('data: ')) continue;
           try{
-            const p=JSON.parse(line.slice(6));
+            const p = JSON.parse(line.slice(6));
             if(p.error) throw new Error(p.error);
-            if(p.chunk){
-              streamed+=p.chunk;
-              bodyEl.innerHTML=`<div style="padding:16px;font-size:13px;color:var(--muted);white-space:pre-wrap">${esc(streamed)}</div>`;
-            }
             if(p.done){
-              explorerCache[priorityTitle]=p.result;
-              updateSidebar();
-              // Store initial explorer exchange for follow-ups
-              explorerHistory=[
-                {role:'user',content:'[Explorer request for: '+pr.title+']'},
-                {role:'assistant',content:p.result}
+              const parsed = parseExplorerText(p.result);
+              explorerCache[pr.title] = parsed;
+              explorerHistory = [
+                {role:'user', content:'[Explorer: '+pr.title+']'},
+                {role:'assistant', content:p.result}
               ];
-              renderExplorerContent(parseExplorerText(p.result), priorityTitle);
-              if(followupEl) followupEl.style.display='';
+              // If this priority is still showing, update the options zone
+              if(currentPriority === idx){
+                const optArea = document.getElementById(`explorer-options-${idx}`);
+                if(optArea) optArea.innerHTML = renderOptionsHtml(parsed, idx);
+              }
+              // Update action summary row
+              actionSummaryRows[idx] = {
+                title: pr.title,
+                short: pr.title.replace(/^Priority\s+\d+\s*[·•]\s*/i,'').slice(0,60),
+                directions: pr.suggested_directions || pr.body
+              };
+              renderActionTable();
+              updateSidebar();
             }
-          }catch(e){if(e.message!=='Unexpected end of JSON input') bodyEl.innerHTML=`<div style="padding:16px;color:#b91c1c">Error: ${esc(e.message)}</div>`;}
+          } catch(e){ if(e.message!=='Unexpected end of JSON input'){
+            const loadEl = document.getElementById(`exp-loading-${idx}`);
+            if(loadEl) loadEl.textContent = 'Could not load options: '+e.message;
+          }}
         }
       }
-    }catch(e){
-      bodyEl.innerHTML=`<div style="padding:16px;color:#b91c1c">Could not generate solutions: ${esc(e.message)}</div>`;
+    } catch(e){
+      const loadEl = document.getElementById(`exp-loading-${idx}`);
+      if(loadEl) loadEl.textContent = 'Error: '+e.message;
     }
   }
 
   function parseExplorerText(text){
-    // Split into 3 sections
-    const sec1Match=text.match(/SECTION\s*1[:\s]*THE ISSUE[\s\S]*?(?=SECTION\s*2|$)/i);
-    const sec2Match=text.match(/SECTION\s*2[:\s]*OPTIONS TO CONSIDER[\s\S]*?(?=SECTION\s*3|$)/i);
-    const sec3Match=text.match(/SECTION\s*3[:\s]*DIG DEEPER[\s\S]*/i);
-
-    const sec1=sec1Match?sec1Match[0].replace(/^SECTION\s*1[:\s]*THE ISSUE\s*/i,'').trim():'';
-    const sec2Raw=sec2Match?sec2Match[0].replace(/^SECTION\s*2[:\s]*OPTIONS TO CONSIDER\s*/i,'').trim():'';
-    const sec3Raw=sec3Match?sec3Match[0].replace(/^SECTION\s*3[:\s]*DIG DEEPER[\s\S]*?(?=QUESTION:|$)/i,'').trim():'';
-
-    // Parse options from section 2 — tolerant of bold markers e.g. **Option A: Title**
-    const optionBlocks=sec2Raw.split(/(?=^\*{0,2}Option [A-C][*:—\s])/m).filter(b=>b.trim());
-    const options=optionBlocks.map(block=>{
-      const titleMatch=block.match(/^\*{0,2}Option ([A-C])\*{0,2}[:\s—]+\*{0,2}\s*(.+?)[\*]*$/m);
-      const letter=titleMatch?titleMatch[1]:'?';
-      const title=titleMatch?titleMatch[2].replace(/\*/g,'').trim():'';
-      // Extract TAGS line
-      const tagsMatch=block.match(/TAGS:\s*(.+)/i);
-      const tagsRaw=tagsMatch?tagsMatch[1].trim():'';
-      // Strip title and TAGS lines, then split into context (italic) + raw body (passed to md())
-      const blockBody=block
-        .replace(/^\*{0,2}Option [A-C]\*{0,2}[:\s—].+\n?/m,'')
-        .replace(/TAGS:.*/i,'')
-        .trim();
-      const allLines=blockBody.split('\n');
-      const contextLines=[];
-      let bodyStartIdx=-1;
+    const sec1Match = text.match(/SECTION\s*1[:\s]*THE ISSUE[\s\S]*?(?=SECTION\s*2|$)/i);
+    const sec2Match = text.match(/SECTION\s*2[:\s]*OPTIONS TO CONSIDER[\s\S]*/i);
+    const sec1 = sec1Match ? sec1Match[0].replace(/^SECTION\s*1[:\s]*THE ISSUE\s*/i,'').trim() : '';
+    const sec2Raw = sec2Match ? sec2Match[0].replace(/^SECTION\s*2[:\s]*OPTIONS TO CONSIDER\s*/i,'').trim() : '';
+    const optionBlocks = sec2Raw.split(/(?=^\*{0,2}Option [A-C][*:—\s])/m).filter(b=>b.trim());
+    const options = optionBlocks.map(block => {
+      const titleMatch = block.match(/^\*{0,2}Option ([A-C])\*{0,2}[:\s—]+\*{0,2}\s*(.+?)[\*]*$/m);
+      const letter = titleMatch ? titleMatch[1] : '?';
+      const title = titleMatch ? titleMatch[2].replace(/\*/g,'').trim() : '';
+      const tagsMatch = block.match(/TAGS:\s*(.+)/i);
+      const tagsRaw = tagsMatch ? tagsMatch[1].trim() : '';
+      const blockBody = block.replace(/^\*{0,2}Option [A-C]\*{0,2}[:\s—].+\n?/m,'').replace(/TAGS:.*/i,'').trim();
+      const allLines = blockBody.split('\n');
+      const contextLines = [];
+      let bodyStartIdx = -1;
       for(let i=0;i<allLines.length;i++){
-        const trimmed=allLines[i].trim();
+        const trimmed = allLines[i].trim();
         if(!trimmed) continue;
-        // First bullet or bold group-label line signals start of body
-        if(trimmed.startsWith('•')||trimmed.startsWith('-')||
-           /^\*\*[^*]+\*\*:?\s*$/.test(trimmed)||/^\*\*[^*]+:\*\*\s*$/.test(trimmed)){
-          bodyStartIdx=i;
-          break;
-        }
-        // Context line — strip echoed bold option title if LLM repeats it
-        if(!/^\*\*Option [A-C]:/.test(trimmed)){
-          contextLines.push(trimmed);
-        }
+        if(trimmed.startsWith('•')||trimmed.startsWith('-')||/^\*\*[^*]+\*\*:?\s*$/.test(trimmed)||/^\*\*[^*]+:\*\*\s*$/.test(trimmed)){ bodyStartIdx=i; break; }
+        if(!/^\*\*Option [A-C]:/.test(trimmed)) contextLines.push(trimmed);
       }
-      const bodyRaw=bodyStartIdx>=0?allLines.slice(bodyStartIdx).join('\n').trim():'';
-      return{letter,title,context:contextLines.join(' '),bodyRaw,tagsRaw};
+      const bodyRaw = bodyStartIdx >= 0 ? allLines.slice(bodyStartIdx).join('\n').trim() : '';
+      return { letter, title, context: contextLines.join(' '), bodyRaw, tagsRaw };
     });
-
-    return{issue:sec1,options};
+    return { issue: sec1, options };
   }
 
-  function renderExplorerContent(parsed, priorityTitle){
-    const bodyEl=document.getElementById('explorer-body');
-    if(!bodyEl) return;
+  function renderOptionsHtml(parsed, idx){
+    if(!parsed || !parsed.options || !parsed.options.length){
+      return '<div style="font-size:12px;color:var(--muted);padding:8px 0">No options available.</div>';
+    }
+    const tierNames = {A:'Within-Bank Adjustment', B:'Government Negotiation', C:'Structural Change'};
+    const tierColors = {A:'#1a7a4a', B:'#0072BB', C:'#6b21a8'};
 
-    const tierNames={A:'Within-Bank Adjustment',B:'Government Negotiation',C:'Structural Change'};
-    const tierColors={A:'#1a7a4a',B:'#0072BB',C:'#6b21a8'};
-    const tierIcons={
-      A:`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`,
-      B:`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
-      C:`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>`
-    };
+    const issueHtml = parsed.issue ? `
+      <div style="font-size:12.5px;color:var(--muted);font-style:italic;border-left:3px solid var(--s4);padding:8px 12px;margin-bottom:12px;background:#f8fffe;border-radius:0 4px 4px 0;line-height:1.6">
+        ${md(parsed.issue)}
+      </div>` : '';
 
-    const prIdx=stageFourPriorities.findIndex(p=>p.title===priorityTitle);
-    const epOffset=prIdx>=0?prIdx*3:0;
-
-    const optionsHtml=parsed.options.map((opt,i)=>`
-      <div class="option-card">
-        <div class="option-tier-banner" style="background:${tierColors[opt.letter]||'#1a7a4a'}">
-          <div class="option-tier-letter">${esc(opt.letter)}</div>
-          <div class="option-tier-text">${tierIcons[opt.letter]||''}Consideration ${esc(opt.letter)} — ${esc(opt.title)}</div>
-          <div class="option-ep-badge">EP ${epOffset+i+1}</div>
+    const optionsHtml = parsed.options.map((opt, i) => `
+      <div class="exp-option" id="exp-opt-${idx}-${i}">
+        <div class="exp-option-hdr" onclick="toggleExpOption('exp-opt-${idx}-${i}')">
+          <div class="exp-option-letter" style="background:${tierColors[opt.letter]||'#1a7a4a'}">${esc(opt.letter)}</div>
+          <div class="exp-option-title">${esc(opt.title)}</div>
+          <span class="exp-option-tier" style="background:${tierColors[opt.letter]||'#1a7a4a'}1a;color:${tierColors[opt.letter]||'#1a7a4a'};border:1px solid ${tierColors[opt.letter]||'#1a7a4a'}40">${esc(tierNames[opt.letter]||'')}</span>
+          <span class="exp-option-arrow">▾</span>
         </div>
-        <div class="option-card-body">
-          ${opt.context?`<div class="option-context">${esc(opt.context)}</div><hr class="option-divider">`:''}
-          ${opt.bodyRaw?`<div class="option-body-md">${md(opt.bodyRaw)}</div>`:''}
-        </div>
-        <div class="option-card-foot">
-          <span class="option-tier-pill" style="background:${tierColors[opt.letter]||'#1a7a4a'}1a;color:${tierColors[opt.letter]||'#1a7a4a'};border-color:${tierColors[opt.letter]||'#1a7a4a'}40">${esc(tierNames[opt.letter]||'')}</span>
-          <button class="option-ask-btn" onclick="preloadOption('${esc(opt.letter)}','${opt.title.replace(/'/g,"\\'")}')">
-            Ask about this option
-          </button>
+        <div class="exp-option-body">
+          ${opt.context ? `<div class="exp-option-context">${esc(opt.context)}</div>` : ''}
+          ${opt.bodyRaw ? `<div>${md(opt.bodyRaw)}</div>` : ''}
+          ${opt.tagsRaw ? `<div class="exp-option-tags">${opt.tagsRaw.split('|').map(t=>`<span class="exp-tag">${esc(t.trim())}</span>`).join('')}<button class="exp-ask-btn" onclick="prefillFollowup(${idx},'Option ${esc(opt.letter)}: ${esc(opt.title)}')">Ask about this →</button></div>` : ''}
         </div>
       </div>`).join('');
 
-    bodyEl.innerHTML=`
-      <div class="explorer-body-inner">
-        <div class="explorer-section-title">Why This Priority Matters</div>
-        <div class="explorer-issue">${md(parsed.issue)}</div>
-        <div class="explorer-section-title" style="margin-top:20px">Entry Points</div>
-        <div class="options-grid">${optionsHtml}</div>
-      </div>`;
+    return issueHtml + `<div class="explorer-options">${optionsHtml}</div>`;
   }
 
-  function toggleDQ(el){
-    el.classList.toggle('open');
-    const a=el.nextElementSibling;
-    if(a) a.classList.toggle('open');
+  function toggleExpOption(id){
+    const el = document.getElementById(id);
+    if(el) el.classList.toggle('open');
   }
 
-  function preloadOption(letter,title){
-    const ft=document.getElementById('explorer-freetext');
-    if(ft){
-      ft.value=`Tell me more about Option ${letter}: ${title}`;
-      ft.focus();
-      ft.scrollIntoView({behavior:'smooth',block:'nearest'});
-    }
+  function prefillFollowup(idx, text){
+    const inp = document.getElementById(`pc-followup-input-${idx}`);
+    if(inp){ inp.value = `Tell me more about ${text}`; inp.focus(); inp.scrollIntoView({behavior:'smooth',block:'nearest'}); }
   }
 
-  async function submitExplorerFollowup(){
-    const ft=document.getElementById('explorer-freetext');
-    const ansEl=document.getElementById('explorer-followup-answer');
-    if(!ft||!ansEl) return;
-    const msg=ft.value.trim();
+  // ── Follow-up queries ─────────────────────────────────────────────────────
+
+  async function submitPriorityFollowup(idx){
+    const inp = document.getElementById(`pc-followup-input-${idx}`);
+    const ansEl = document.getElementById(`pc-followup-answer-${idx}`);
+    if(!inp || !ansEl) return;
+    const msg = inp.value.trim();
     if(!msg) return;
-    ft.value='';
+    inp.value = '';
 
-    // Append user message to explorer history
-    const newMessages=[...explorerHistory,{role:'user',content:msg}];
+    const pr = stageFourPriorities[idx];
+    // Build messages: use explorer history if available, otherwise build from stage history
+    let messages;
+    if(explorerHistory.length){
+      messages = [...explorerHistory, {role:'user', content:msg}];
+    } else {
+      const context = hist.filter(m=>m.role==='assistant').map((m,i)=>`Stage ${i+1} output:\n${m.content}`).join('\n\n---\n\n');
+      messages = [
+        {role:'user', content:`Context from prior FCV analysis:\n\n${context}\n\nNow answer the following question about the priority "${pr.title}":`},
+        {role:'assistant', content:'Understood. I will answer based on the prior FCV analysis.'},
+        {role:'user', content:msg}
+      ];
+    }
 
-    ansEl.className='explorer-followup-answer visible';
-    ansEl.innerHTML='<em style="color:var(--muted)">Generating…</em>';
+    ansEl.className = 'pc-followup-answer visible';
+    ansEl.innerHTML = '<em style="color:var(--muted)">Generating…</em>';
 
-    try{
-      const payload={follow_up_messages:newMessages};
-      const res=await fetch('/api/run-explorer',{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify(payload)
-      });
+    try {
+      const res = await fetch('/api/run-explorer', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({follow_up_messages: messages}) });
       if(!res.ok) throw new Error('Server error '+res.status);
-
-      const reader=res.body.getReader(),dec=new TextDecoder();
-      let buf='',streamed='';
-
+      const reader = res.body.getReader(), dec = new TextDecoder();
+      let buf = '', streamed = '';
       while(true){
-        const{done,value}=await reader.read();if(done)break;
-        buf+=dec.decode(value,{stream:true});
-        const lines=buf.split('\n');buf=lines.pop();
+        const {done,value} = await reader.read(); if(done) break;
+        buf += dec.decode(value,{stream:true});
+        const lines = buf.split('\n'); buf = lines.pop();
         for(const line of lines){
-          if(!line.startsWith('data: '))continue;
+          if(!line.startsWith('data: ')) continue;
           try{
-            const p=JSON.parse(line.slice(6));
+            const p = JSON.parse(line.slice(6));
             if(p.error) throw new Error(p.error);
-            if(p.chunk){streamed+=p.chunk;ansEl.innerHTML=md(streamed);}
+            if(p.chunk){ streamed += p.chunk; ansEl.innerHTML = md(streamed); }
             if(p.done){
-              // Update explorer history with this exchange
-              explorerHistory=[...newMessages,{role:'assistant',content:p.result}];
+              explorerHistory = [...messages, {role:'assistant', content:p.result}];
             }
-          }catch(e){if(e.message!=='Unexpected end of JSON input')throw e;}
+          } catch(e){ if(e.message!=='Unexpected end of JSON input') ansEl.innerHTML=`<span style="color:#b91c1c">Error: ${esc(e.message)}</span>`; }
         }
       }
-    }catch(e){
-      ansEl.innerHTML=`<span style="color:#b91c1c">Error: ${esc(e.message)}</span>`;
-    }
+    } catch(e){ ansEl.innerHTML = `<span style="color:#b91c1c">Error: ${esc(e.message)}</span>`; }
   }
+
+  // ── Action summary table ──────────────────────────────────────────────────
+
+  function renderActionTable(){
+    const tbody = document.getElementById('action-table-body');
+    if(!tbody) return;
+    const n = stageFourPriorities.length;
+    if(!n){ tbody.innerHTML = '<tr><td colspan="3" style="color:var(--muted);font-size:12px;padding:14px 10px">Work through each priority above to build the action summary.</td></tr>'; return; }
+    tbody.innerHTML = stageFourPriorities.map((pr, i) => {
+      const directions = pr.suggested_directions || '';
+      const shortDir = directions.slice(0,120) + (directions.length > 120 ? '…' : '');
+      return `<tr>
+        <td><span class="at-ptag">P${i+1}</span></td>
+        <td style="font-size:12px">${esc(shortDir || pr.title.replace(/^Priority\s+\d+\s*[·•]\s*/i,''))}</td>
+        <td><span class="at-when">Design / Prep</span></td>
+      </tr>`;
+    }).join('');
+  }
+
+  function copyActionSummary(){
+    const rows = stageFourPriorities.map((pr, i) =>
+      `P${i+1}\t${(pr.suggested_directions || pr.title).replace(/^Priority\s+\d+\s*[·•]\s*/i,'').slice(0,150)}\tDesign / Prep`
+    ).join('\n');
+    const text = 'Priority\tRecommended Action\tWhen\n' + rows;
+    navigator.clipboard.writeText(text).catch(()=>{
+      const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+    });
+    const btn = document.querySelector('.action-copy-btn');
+    if(btn){ btn.textContent='Copied ✓'; setTimeout(()=>{ btn.innerHTML='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy'; },2000); }
+  }
+
+  // ── Populate priorities when Stage 4 completes ────────────────────────────
+
+  function populateExplorerDropdown(priorities){
+    // Kept for compatibility — now calls initStage4UI instead
+    stageFourPriorities = priorities;
+    initStage4UI();
+  }
+
+  function selectPrioritySb(title){
+    const idx = stageFourPriorities.findIndex(p=>p.title===title);
+    if(idx >= 0) showPriority(idx);
+  }
+
+
 
   function esc(s){
     if(!s)return'';

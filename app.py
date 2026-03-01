@@ -93,7 +93,7 @@ Where does the project document's own risk picture align with or diverge from th
 "3": '# Role\nYou are an FCV risk mitigation specialist reviewing project design adequacy.\n\n# Task\nBased on the FCV dimension analysis from Stage 2, identify critical gaps in current project design, propose specific mitigation measures, and flag enhancement opportunities where the project could actively contribute to peacebuilding or resilience.\n\n---\n\n## Part A: Critical Gaps\n\nFor each HIGH or MEDIUM priority risk from Stage 2, assess gaps across three categories:\n\n### Analytical Gaps\nWhat FCV-relevant analysis is missing from project documents?\n- Conflict analysis or political economy assessment\n- Stakeholder mapping of conflict actors\n- Gender and social inclusion analysis\n- Grievance or tension mapping\n\n### Design Gaps\nWhat project design features are absent that could mitigate FCV risks?\n- Conflict-sensitive beneficiary targeting\n- Grievance redress mechanisms\n- Adaptive management provisions\n- Community engagement protocols\n- Do No Harm safeguards\n\n### Implementation Gaps\nWhat operational capacities or mechanisms are needed?\n- FCV expertise in the implementing team\n- Conflict monitoring systems\n- Third-party monitoring in insecure areas\n- Partnerships with peacebuilding actors\n\n---\n\n## Part B: Recommended Mitigation Measures\n\nFor each HIGH-risk dimension, propose specific actionable mitigations:\n\n**Risk Addressed:** [Brief description]\n**Mitigation Measure:** [Specific action]\n**Responsible Actor:** [PIU / TTL / Government / Partner]\n**Implementation Timeline:** [Design / Preparation / Implementation]\n**Resource Implications:** [Minimal / Moderate / Significant]\n\n---\n\n## Part C: Do No Harm Checklist\n\n| Do No Harm Principle | Addressed? | Evidence/Gap |\n|----------------------|------------|--------------|\n| Non-discrimination in targeting | [Yes/Partial/No] | [Brief note] |\n| Conflict-sensitive site selection | [Yes/Partial/No] | [Brief note] |\n| Inclusive consultation processes | [Yes/Partial/No] | [Brief note] |\n| Grievance redress accessible to all | [Yes/Partial/No] | [Brief note] |\n| Monitoring for unintended conflict impacts | [Yes/Partial/No] | [Brief note] |\n| Adaptive management for changing context | [Yes/Partial/No] | [Brief note] |\n\n---\n\n## Part D: Enhancement Opportunities\n\nIdentify ways the project could go beyond do-no-harm to actively support peacebuilding:\n- Design infrastructure to serve multiple communities, creating interdependence\n- Include employment provisions for conflict-affected or marginalised groups\n- Establish joint management committees with representatives from different groups\n- Integrate conflict resolution training into capacity building\n- Create platforms for dialogue between communities and local government\n\n---\n\n## Output Summary\n\n### Priority Mitigation Actions (Top 5)\n1-5. [Specific actions in priority order]\n\n### Overall FCV Integration Rating\n**Rating:** [Strong / Adequate / Weak / Absent]\n**Justification:** [2-3 sentences grounded in the evidence from Stages 1-3]\n\n# Quality Guidelines\n- Actionability: recommendations must be specific and feasible\n- Proportionality: match mitigation intensity to risk severity\n- Practicality: consider implementation capacity and budget constraints\n- Sector-sensitivity: tailor recommendations to the specific sector',
 
 "4": '''# Role and Context
-You are a senior FCV specialist providing collegial technical input to a World Bank Task Team Leader (TTL). Your purpose is to offer constructive guidance to strengthen the PCN or PAD\'s FCV integration before the Decision Meeting. Tone: supportive, consultative, operationally focused — a trusted peer reviewer, not an auditor. This is NOT an audit or compliance checklist.
+You are a senior FCV specialist providing collegial technical input to a World Bank Task Team Leader (TTL). Your purpose is to offer constructive guidance to strengthen the PCN or PAD's FCV integration before the Decision Meeting. Tone: supportive, consultative, operationally focused — a trusted peer reviewer, not an auditor. This is NOT an audit or compliance checklist.
 
 ---
 
@@ -124,38 +124,50 @@ When identifying Strategic Priorities, evaluate the project design through these
 
 ---
 
-# Document Structure
+# Output Structure
 
 ## PREAMBLE (50-75 words)
-Brief note explaining this is an LLM-based FCV review pilot and how it should be used. Template: "This note provides FCV-focused technical input to support the task team in strengthening the [document type]\'s conflict-sensitivity before the Decision Meeting. It is generated through an LLM-assisted review pilot that synthesises the project document against the country\'s FCV diagnostic and contextual analysis. It is intended as collegial input for team consideration, not a prescriptive mandate."
+Brief note explaining this is an LLM-based FCV review pilot and how it should be used. Template: "This note provides FCV-focused technical input to support the task team in strengthening the [document type]'s conflict-sensitivity before the Decision Meeting. It is generated through an LLM-assisted review pilot that synthesises the project document against the country's FCV diagnostic and contextual analysis. It is intended as collegial input for team consideration, not a prescriptive mandate."
 
 ---
 
-## 1. EXECUTIVE SUMMARY
+## EXECUTIVE SUMMARY
 
-### A. Opening Assessment (25-35 words, ONE BOLD SENTENCE)
-A single bolded sentence summarising the project\'s overall FCV integration status based on YOUR analysis.
+### Opening Assessment (ONE BOLD SENTENCE, 25-35 words)
+A single bolded sentence summarising the project's overall FCV integration status.
 
-### B. Strengths and Gaps (180-250 words, TWO PARAGRAPHS)
-Paragraph 1 — Strengths (80-120 words): 3-4 concrete strengths actually present in the project document. Flowing prose. 2-3 citations max, naturally integrated. Never cite the PCN/PAD.
-Paragraph 2 — The Gap (100-130 words): Main weakness, constructively framed. 1-2 citations max from RRA or external sources only.
+### Strengths (80-120 words, prose)
+3-4 concrete strengths actually present in the project document. Flowing prose. 2-3 citations max. Never cite the PCN/PAD itself.
 
-### C. Operational Context (150-200 words, ONE PARAGRAPH)
-Synthesise 3-4 converging FCV risks creating a uniquely challenging operating environment for THIS project. Use forward-looking framing for post-preparation events. 2-3 citations max.
+### Gaps (100-130 words, prose)
+The main weakness or cluster of weaknesses, constructively framed. 1-2 citations from RRA or external sources only.
 
-### D. Strategic Priorities for Preparation
-This is the most important section of the note. Generate between 4 and 5 strategic priorities. Each priority must:
+### Operational Context (150-200 words, ONE PARAGRAPH)
+Synthesise 3-4 converging FCV risks creating a uniquely challenging operating environment for THIS project. Forward-looking framing for post-preparation events. 2-3 citations max.
 
-- Address a concrete, distinct gap identified in your Stage 1-3 analysis
-- Explicitly connect this priority to the specific gap, risk, or vulnerability identified in Stage 1, 2, or 3 of this conversation. Do NOT introduce new FCV themes that were not raised in the prior stages.
-- Anchor the priority in specific local realities: explicitly name the regions, vulnerable groups, historical grievances, or institutional bottlenecks relevant to this project — for example, instead of "Target service delivery," use "Leverage service delivery to address historical exclusion in [Region X]"
-- Be genuinely actionable at the TTL and task team level, framed as options or entry points, not mandates
-- Be titled using EXACTLY this format: **Priority N · [Short Action Title]**
+---
 
-For each priority write 120-150 words covering: the gap in context (1-2 sentences), why it matters operationally (2-3 sentences), and suggested directions or entry points (2-3 sentences).
+## STRATEGIC PRIORITIES
+
+This is the most important section. Generate between 4 and 5 strategic priorities.
+
+Each priority MUST:
+- Address a concrete, distinct gap from your Stage 1-3 analysis
+- Name specific local realities: regions, groups, institutions, or historical grievances
+- Be actionable at TTL level, framed as options not mandates
+- Be titled: **Priority N · [Strong verb phrase]**
+
+For EACH priority, you will output structured fields (see delimiter format below). Each field must contain:
+
+TITLE: Priority N · [Actionable verb phrase starting with a strong verb]
+FCV_DIMENSION: [One of: Institutional Legitimacy | Inclusion | Social Cohesion | Security | Economic Livelihoods | Resilience]
+RISK_LEVEL: [One of: High | Medium | Low]
+THE_GAP: 2-3 sentences on what is missing or inadequate in the current project design, specifically for this country and sector. Name the document section or component that is absent or insufficient.
+WHY_IT_MATTERS: 2-3 sentences on the specific operational consequence of not addressing this gap. Reference comparable project experience or country dynamics. Be direct about risk to delivery.
+SUGGESTED_DIRECTIONS: 2-3 sentences of entry points for the TTL. Use language like "Consider...", "The team may want to...", "Explore...". No bullet lists — write as flowing prose suggestions.
 
 Language to use: "Consider...", "The team may want to...", "Would benefit from...", "Explore...", "Could strengthen..."
-Strict prohibitions: NO specific percentages or dollar amounts; NO generic language; NO criticism of document for post-preparation events; NO sub-recommendations within a priority.
+Strict prohibitions: NO specific percentages or dollar amounts; NO generic language; NO sub-bullet lists within a priority; NO criticism for post-preparation events.
 
 ---
 
@@ -166,44 +178,46 @@ Before the first priority delimiter, output a single rating line:
 
 Where [level] is EXACTLY one of: Extremely Low | Very Low | Low | Adequate | Well Embedded | Very Well Embedded
 
-Base this on the project's CURRENT state of FCV integration as presented in the document — not the ideal state after applying these priorities. This is your holistic assessment of how conflict-sensitively the project is currently designed.
+Base this on the project's CURRENT state of FCV integration — not the ideal state after applying these priorities.
 
 ---
 
 # CRITICAL — PRIORITY DELIMITER FORMAT
-You must wrap each priority block in delimiter tags so the interface can extract them. Use EXACTLY this format for each priority:
+Wrap each priority block in delimiter tags. Use EXACTLY this format — every field on its own line with no extra blank lines between fields:
 
 %%%PRIORITY_START%%%
-TITLE: Priority N · [Actionable verb phrase — must start with a strong verb and read as a standalone instruction, e.g. "Develop and embed a conflict-sensitive site selection framework" or "Strengthen community feedback mechanisms across all project components"]
-[Full priority text — 120-150 words as specified above]
+TITLE: Priority N · [Actionable verb phrase]
+FCV_DIMENSION: [dimension]
+RISK_LEVEL: [level]
+THE_GAP: [2-3 sentences]
+WHY_IT_MATTERS: [2-3 sentences]
+SUGGESTED_DIRECTIONS: [2-3 sentences]
 %%%PRIORITY_END%%%
 
-These delimiters are parsed by the interface and must appear exactly as shown. Do not add any text between %%%PRIORITY_END%%% and the next %%%PRIORITY_START%%%.
+These delimiters are parsed by the interface. Do not add text between %%%PRIORITY_END%%% and the next %%%PRIORITY_START%%%.
 
 ---
 
 # Citation Format
 - Format: [Document Name Year] e.g. [RRA 2022], [LLM Risk Summary 2025]
 - NEVER cite the PCN or PAD being reviewed
-- No page numbers in citations
-- Keep citations sparse and naturally integrated
+- No page numbers; keep citations sparse and naturally integrated
 
 # Word Count Targets
 - Preamble: 50-75 words
-- Opening Assessment: 25-35 words (1 bold sentence)
-- Strengths and Gaps: 180-250 words
+- Opening Assessment: 25-35 words
+- Strengths: 80-120 words
+- Gaps: 100-130 words
 - Operational Context: 150-200 words
-- Strategic Priorities: 120-150 words each × 4-5 priorities = 480-750 words total
+- Each priority (all fields combined): 120-160 words
 - TOTAL MAXIMUM: 1,800 words
 
 # Quality Check Before Submitting
-Before outputting, verify:
-- Every priority title uses exactly the format: Priority N · [Actionable verb phrase] — the action phrase must start with a strong verb (e.g. Develop, Strengthen, Integrate, Redesign) and read as a clear standalone instruction
-- Every priority is wrapped in %%%PRIORITY_START%%% / %%%PRIORITY_END%%% delimiters
-- No priority text appears outside the delimiters
-- The total number of priorities is between 4 and 5
-- Every priority names at least one specific geography, group, institution, or historical event — no generic fragility language
-- No generic or templated language appears anywhere
+- Every priority wrapped in %%%PRIORITY_START%%% / %%%PRIORITY_END%%% delimiters
+- Every priority has all 6 fields: TITLE, FCV_DIMENSION, RISK_LEVEL, THE_GAP, WHY_IT_MATTERS, SUGGESTED_DIRECTIONS
+- 4-5 priorities total
+- Every priority names at least one specific geography, group, institution, or historical event
+- No generic or templated language anywhere
 
 Now produce the FCV Support Note following this exact structure.''',
 
@@ -330,20 +344,16 @@ Before outputting, verify:
 
 
 def clean_stage4_output(text):
-    """Strip %%%PRIORITY_START/END%%% and %%%FCV_RATING:...%%% delimiters; format priority titles."""
-    explorer_link = '\n\n*→ For detailed implementation options for this priority, see the Priority Explorer below.*'
-    def replace_block(m):
-        block = m.group(1).strip()
-        lines = block.split('\n')
-        title_line = next((l for l in lines if l.startswith('TITLE:')), None)
-        if title_line:
-            title = title_line.replace('TITLE:', '').strip()
-            body_lines = [l for l in lines if not l.startswith('TITLE:')]
-            body = '\n'.join(body_lines).strip()
-            return f'**▸ {title}**\n\n{body}{explorer_link}'
-        return block
-    text = re.sub(r'%%%PRIORITY_START%%%(.*?)%%%PRIORITY_END%%%', replace_block, text, flags=re.DOTALL)
+    """Strip %%%PRIORITY_START/END%%% blocks and %%%FCV_RATING:...%%% delimiters.
+    Priority content is now rendered by the card UI, so we remove all delimiter
+    blocks from the display text entirely — only preamble + executive summary remain.
+    """
+    # Remove all priority blocks — UI renders them via card system
+    text = re.sub(r'%%%PRIORITY_START%%%.*?%%%PRIORITY_END%%%', '', text, flags=re.DOTALL)
+    # Remove FCV rating line
     text = re.sub(r'%%%FCV_RATING:[^%]*%%%\n?', '', text)
+    # Clean up extra blank lines left by removal
+    text = re.sub(r'\n{3,}', '\n\n', text).strip()
     return text
 
 
@@ -356,22 +366,45 @@ def extract_fcv_rating(text):
 
 
 def extract_priorities(text):
-    """Parse %%%PRIORITY_START%%% / %%%PRIORITY_END%%% blocks from Stage 4 output."""
+    """Parse %%%PRIORITY_START%%% / %%%PRIORITY_END%%% blocks from Stage 4 output.
+    Supports new structured-field format: TITLE, FCV_DIMENSION, RISK_LEVEL,
+    THE_GAP, WHY_IT_MATTERS, SUGGESTED_DIRECTIONS.
+    """
     pattern = r'%%%PRIORITY_START%%%(.*?)%%%PRIORITY_END%%%'
     blocks = re.findall(pattern, text, re.DOTALL)
     priorities = []
     for block in blocks:
         lines = block.strip().split('\n')
-        title_line = next((l for l in lines if l.startswith('TITLE:')), None)
-        if title_line:
-            title = title_line.replace('TITLE:', '').strip()
-            body = '\n'.join(l for l in lines if not l.startswith('TITLE:')).strip()
-            priorities.append({'title': title, 'body': body})
+        def get_field(fname, lns=lines):
+            for l in lns:
+                if l.startswith(fname + ':'):
+                    return l[len(fname)+1:].strip()
+            return ''
+        title = get_field('TITLE')
+        if not title:
+            continue
+        dimension = get_field('FCV_DIMENSION')
+        risk_level = get_field('RISK_LEVEL')
+        the_gap = get_field('THE_GAP')
+        why_it_matters = get_field('WHY_IT_MATTERS')
+        suggested_directions = get_field('SUGGESTED_DIRECTIONS')
+        body = '\n\n'.join(filter(None, [the_gap, why_it_matters, suggested_directions]))
+        priorities.append({
+            'title': title,
+            'body': body,
+            'dimension': dimension,
+            'risk_level': risk_level,
+            'the_gap': the_gap,
+            'why_it_matters': why_it_matters,
+            'suggested_directions': suggested_directions,
+        })
     # Fallback: positional parsing if fewer than 4 delimiter blocks found
     if len(priorities) < 4:
         fallback = re.findall(r'Priority \d+\s*[·•]\s*[^\n]+', text)
         if fallback and len(fallback) >= len(priorities):
-            priorities = [{'title': t.strip(), 'body': ''} for t in fallback]
+            priorities = [{'title': t.strip(), 'body': '', 'dimension': '',
+                           'risk_level': '', 'the_gap': '', 'why_it_matters': '',
+                           'suggested_directions': ''} for t in fallback]
     return priorities
 
 
