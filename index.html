@@ -1717,21 +1717,6 @@
   // Session prompt overrides are sent to the backend as prompt_override in the payload.
   // The backend uses the override in place of its DEFAULT_PROMPTS for that stage run.
 
-  // ── Sidebar infographics ─────────────────────────────────────────────────────
-
-  // Arc semicircle length: π × r where r=45 → 141.37
-  const ARC_LEN=141.37;
-  const LEVELS=['Extremely Low','Very Low','Low','Adequate','Well Embedded','Very Well Embedded'];
-  const LEVEL_COLORS=['','#dc2626','#f97316','#f59e0b','#6d8a3a','#22c55e','#15803d'];
-  const NEED_LABELS={
-    'Extremely Low':'Major redesign required',
-    'Very Low':'Significant changes needed',
-    'Low':'Moderate improvements suggested',
-    'Adequate':'Targeted enhancements possible',
-    'Well Embedded':'Minor refinements available',
-    'Very Well Embedded':'Strong foundation — sustain'
-  };
-
   // ── Stage 4 state ──────────────────────────────────────────────────────────
   let stageFourPriorities = [];
   let currentPriority = 0;  // 0-indexed
