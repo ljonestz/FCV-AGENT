@@ -546,30 +546,6 @@
     .risk-matrix-legend{font-size:9px;color:var(--muted);margin-top:6px;text-align:right;}
 
     /* Sidebar priority nav */
-    .pnav-widget{padding:12px 14px;}
-    .pnav-item-sb{
-      display:flex;align-items:flex-start;gap:7px;
-      padding:5px 6px;border-radius:5px;cursor:pointer;
-      transition:background .14s;margin-bottom:2px;
-    }
-    .pnav-item-sb:hover{background:rgba(0,159,218,.06);}
-    .pnav-item-sb.active{background:rgba(0,34,68,.06);}
-    .pnav-num-sb{
-      width:18px;height:18px;border-radius:50%;background:var(--border);
-      display:flex;align-items:center;justify-content:center;
-      font-size:9px;font-weight:700;color:var(--muted);flex-shrink:0;margin-top:1px;
-      transition:all .14s;
-    }
-    .pnav-item-sb.active .pnav-num-sb{background:var(--wbg-navy);color:#fff;}
-    .pnav-item-sb.done .pnav-num-sb{background:var(--s4);color:#fff;}
-    .pnav-text-sb{font-size:10.5px;color:var(--text);line-height:1.4;}
-    .pnav-item-sb.active .pnav-text-sb{font-weight:600;color:var(--wbg-navy);}
-
-    /* Sidebar action tracker */
-    .action-tracker-widget{padding:12px 14px;background:#f0f9f4;border-top:2px solid var(--s4);}
-    .action-tracker-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--s4);margin-bottom:7px;}
-    .action-tracker-progress{font-size:11px;color:var(--muted);margin-top:6px;}
-
     /* Priority step indicator bar */
     .priority-stepper{
       display:flex;background:#fff;border:1px solid var(--border);
@@ -592,6 +568,14 @@
     .ps-step.active .ps-label{color:rgba(255,255,255,.8);}
     .ps-step.done .ps-num{background:var(--s4);color:#fff;font-size:9px;}
     .ps-step.done .ps-label{color:var(--s4);}
+    .ps-risk{font-size:8px;font-weight:700;border-radius:3px;padding:1px 4px;margin:3px auto 0;display:inline-block;letter-spacing:.03em;}
+    .ps-risk-h{background:#fee2e2;color:#b91c1c;}
+    .ps-risk-m{background:#dbeafe;color:#1d4ed8;}
+    .ps-risk-l{background:#d1fae5;color:#065f46;}
+    .ps-step.active .ps-risk{opacity:.85;}
+    .ps-step.active .ps-risk-h{background:#fca5a540;color:#fca5a5;}
+    .ps-step.active .ps-risk-m{background:#93c5fd40;color:#93c5fd;}
+    .ps-step.active .ps-risk-l{background:#6ee7b740;color:#6ee7b7;}
 
     /* Priority card */
     .priority-card{
@@ -637,9 +621,6 @@
     .pc-zone.zone-why{background:#fff;}
     .pc-zone.zone-why .pc-zone-title{color:var(--muted);}
     .pc-zone.zone-why .pc-zone-icon{background:var(--off-white);}
-    .pc-zone.zone-fcv{background:#f5f3ff;}
-    .pc-zone.zone-fcv .pc-zone-title{color:#6d28d9;}
-    .pc-zone.zone-fcv .pc-zone-icon{background:#ede9fe;}
     .pc-zone.zone-act{background:#f8fffe;}
     .pc-zone.zone-act .pc-zone-title{color:var(--s4);}
     .pc-zone.zone-act .pc-zone-icon{background:#e8f7ef;}
@@ -671,8 +652,6 @@
     .exp-group{border:1.5px solid var(--border);border-radius:var(--radius);overflow:hidden;}
     .exp-group-hdr{padding:10px 14px;display:flex;flex-direction:column;gap:4px;}
     .exp-group-name{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;}
-    .exp-group-rationale{font-size:12px;line-height:1.55;opacity:.85;}
-    .exp-bridge{font-size:13px;color:var(--text);padding:9px 12px;background:var(--off-white);border-radius:var(--radius-sm);margin-bottom:12px;line-height:1.6;border-left:3px solid var(--wbg-blue);}
     .exp-stage3-link{display:inline-block;font-size:10.5px;font-weight:600;color:var(--muted);margin-bottom:9px;padding:2px 7px;background:var(--off-white);border-radius:3px;border:1px solid var(--border);}
     .exp-where{font-size:10.5px;color:var(--muted);margin-top:9px;font-style:italic;}
 
@@ -751,32 +730,6 @@
     /* Priority nav prev/next */
     .pc-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;}
     .pc-nav-counter{font-size:12px;color:var(--muted);}
-
-    /* Consolidated action summary */
-    .action-summary{
-      background:#fff;border:1.5px solid var(--s4);border-radius:var(--radius);
-      padding:18px 22px;box-shadow:var(--shadow-sm);
-    }
-    .action-summary-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;gap:12px;}
-    .action-summary-title{font-family:'Source Serif 4',serif;font-weight:400;font-size:16px;color:var(--wbg-navy);}
-    .action-summary-sub{font-size:11.5px;color:var(--muted);margin-top:2px;}
-    .action-copy-btn{
-      padding:6px 14px;background:var(--s4);color:#fff;border:none;
-      border-radius:var(--radius-sm);font-size:12px;font-weight:600;cursor:pointer;
-      font-family:inherit;display:flex;align-items:center;gap:5px;white-space:nowrap;flex-shrink:0;
-    }
-    .action-copy-btn:hover{background:#145f38;}
-    .action-table{width:100%;border-collapse:collapse;}
-    .action-table th{
-      text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;
-      letter-spacing:.07em;color:var(--muted);padding:6px 10px;border-bottom:2px solid var(--border);
-    }
-    .action-table td{padding:8px 10px;border-bottom:1px solid var(--border);font-size:12px;vertical-align:top;}
-    .action-table tr:last-child td{border-bottom:none;}
-    .action-table tr:hover td{background:var(--off-white);}
-    .at-ptag{display:inline-block;padding:2px 7px;border-radius:3px;font-size:10px;font-weight:700;background:var(--wbg-navy);color:#fff;}
-    .at-who{display:inline-block;padding:2px 7px;border-radius:3px;font-size:10px;font-weight:700;background:#e8f4fd;color:#004e7c;}
-    .at-when{font-size:11px;color:var(--muted);}
 
     /* Section divider */
     .section-divider{display:flex;align-items:center;gap:12px;margin:24px 0 20px;}
@@ -1493,21 +1446,6 @@
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
             </button>
           </div>
-          <!-- ── ACTION SUMMARY ── -->
-          <div class="section-divider"><div class="section-divider-line"></div><div class="section-divider-lbl">Consolidated Action Summary</div><div class="section-divider-line"></div></div>
-          <div class="action-summary" id="action-summary">
-            <div class="action-summary-hdr">
-              <div><div class="action-summary-title">Actions for the Task Team</div><div class="action-summary-sub">Consolidated from all priorities — for use before the Decision Meeting</div></div>
-              <button class="action-copy-btn" onclick="copyActionSummary()">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                Copy
-              </button>
-            </div>
-            <table class="action-table" id="action-table">
-              <thead><tr><th style="width:52px">Priority</th><th>Recommended action</th><th style="width:100px">When</th></tr></thead>
-              <tbody id="action-table-body"><tr><td colspan="3" style="color:var(--muted);font-size:12px;padding:14px 10px">Work through each priority above to build the action summary.</td></tr></tbody>
-            </table>
-          </div>
           `:''}
         </div>
         ${isLast?`<aside class="fcv-sidebar" id="fcv-sidebar">${sidebarHtml()}</aside>`:''}
@@ -1846,7 +1784,6 @@ ${md(execSummary)}`;
   let explorerCache = {};   // {priorityTitle: parsedExplorerData}
   let explorerHistory = []; // for follow-up queries
   let fcvRating = '';
-  let actionSummaryRows = {}; // {idx: {title, directions}}
 
   const LEVELS = ['Extremely Low','Very Low','Low','Adequate','Well Embedded','Very Well Embedded'];
   const LEVEL_COLORS = {1:'#C0392B',2:'#E07B00',3:'#D97706',4:'#0072BB',5:'#1A7A4A',6:'#0d5c36'};
@@ -1889,24 +1826,7 @@ ${md(execSummary)}`;
           <div id="pov-sb"><div style="font-size:11px;color:var(--muted)">Loading priorities…</div></div>
         </div>
       </div>
-      <!-- Priority nav -->
-      <div class="sidebar-widget">
-        <div class="pnav-widget">
-          <div class="sidebar-widget-label">Priority Areas</div>
-          <div id="pnav-sb"></div>
-        </div>
-      </div>
-      <!-- Action tracker -->
-      <div class="sidebar-widget">
-        <div class="action-tracker-widget">
-          <div class="action-tracker-label">
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline;vertical-align:middle;margin-right:4px"><polyline points="20 6 9 17 4 12"/></svg>
-            Actions noted
-          </div>
-          <div id="action-tracker-items" style="font-size:11px;color:var(--muted)">Work through priorities to build action list.</div>
-          <div class="action-tracker-progress" id="action-tracker-progress"></div>
-        </div>
-      </div>`;
+      `;
   }
 
   function updateSidebar(){
@@ -1940,33 +1860,6 @@ ${md(execSummary)}`;
       }).join('');
     }
 
-    // Priority nav in sidebar
-    const pnavEl = document.getElementById('pnav-sb');
-    if(pnavEl && n){
-      pnavEl.innerHTML = stageFourPriorities.map((pr, i) => {
-        const label = pr.title.replace(/^Priority\s+\d+\s*[·•]\s*/i,'');
-        const isDone = i < currentPriority;
-        const isActive = i === currentPriority;
-        return `<div class="pnav-item-sb ${isDone?'done':''} ${isActive?'active':''}" onclick="showPriority(${i})">
-          <div class="pnav-num-sb">${isDone?'✓':i+1}</div>
-          <div class="pnav-text-sb">${esc(label)}</div>
-        </div>`;
-      }).join('');
-    }
-
-    // Action tracker
-    const trackerEl = document.getElementById('action-tracker-items');
-    const progressEl = document.getElementById('action-tracker-progress');
-    const doneCount = Object.keys(actionSummaryRows).length;
-    if(trackerEl && doneCount > 0){
-      trackerEl.innerHTML = Object.values(actionSummaryRows).slice(0,3).map(r =>
-        `<div style="display:flex;align-items:flex-start;gap:5px;margin-bottom:4px">
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#1a7a4a" stroke-width="2.5" style="flex-shrink:0;margin-top:2px"><polyline points="20 6 9 17 4 12"/></svg>
-          <span>${esc(r.short)}</span>
-        </div>`).join('');
-      if(doneCount > 3) trackerEl.innerHTML += `<div style="font-size:10px;color:var(--muted)">+${doneCount-3} more below</div>`;
-    }
-    if(progressEl) progressEl.textContent = doneCount > 0 ? `${doneCount} of ${n} priorities reviewed` : '';
   }
 
   // ── Priority stepper & card rendering ────────────────────────────────────
@@ -1976,7 +1869,6 @@ ${md(execSummary)}`;
     currentPriority = 0;
     renderPriorityStepper();
     showPriority(0);
-    renderActionTable();
     updateSidebar();
   }
 
@@ -1985,9 +1877,12 @@ ${md(execSummary)}`;
     if(!el) return;
     el.innerHTML = stageFourPriorities.map((pr, i) => {
       const fullTitle = pr.title.replace(/^Priority\s+\d+\s*[·•]\s*/i,'');
+      const riskCls = pr.risk_level==='High'?'ps-risk-h':pr.risk_level==='Medium'?'ps-risk-m':'ps-risk-l';
+      const riskLbl = pr.risk_level==='High'?'HIGH':pr.risk_level==='Medium'?'MED':pr.risk_level==='Low'?'LOW':'';
       return `<div class="ps-step ${i===currentPriority?'active':''}" id="ps-${i}" onclick="showPriority(${i})" title="${esc(pr.title)}">
         <div class="ps-num">${i+1}</div>
         <div class="ps-label">${esc(fullTitle)}</div>
+        ${riskLbl?`<div class="ps-risk ${riskCls}">${riskLbl}</div>`:''}
       </div>`;
     }).join('');
   }
@@ -1999,7 +1894,7 @@ ${md(execSummary)}`;
     const n = stageFourPriorities.length;
 
     // Update stepper
-    stageFourPriorities.forEach((_, i) => {
+    stageFourPriorities.forEach((p2, i) => {
       const el = document.getElementById(`ps-${i}`);
       if(el) el.className = `ps-step ${i < idx ? 'done' : i === idx ? 'active' : ''}`;
       const numEl = el ? el.querySelector('.ps-num') : null;
@@ -2015,7 +1910,7 @@ ${md(execSummary)}`;
     if(counterEl) counterEl.textContent = `Priority ${idx+1} of ${n}`;
     if(prevBtn) prevBtn.disabled = idx === 0;
     if(nextBtn){
-      if(idx === n-1){ nextBtn.textContent = 'Done'; nextBtn.onclick = () => document.getElementById('action-summary').scrollIntoView({behavior:'smooth'}); }
+      if(idx === n-1){ nextBtn.textContent = 'Done'; nextBtn.onclick = () => {}; nextBtn.disabled = true; }
       else { nextBtn.innerHTML = 'Next <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>'; nextBtn.onclick = nextPriority; }
     }
 
@@ -2047,21 +1942,13 @@ ${md(execSummary)}`;
           </div>
           <div class="pc-zone-body">${esc(pr.the_gap||pr.body||'')}</div>
         </div>
-        <!-- Zone 2: Why it matters operationally -->
+        <!-- Zone 2: Why it matters -->
         <div class="pc-zone zone-why">
           <div class="pc-zone-title">
             <div class="pc-zone-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/></svg></div>
-            Why it matters operationally
+            Why it matters
           </div>
-          <div class="pc-zone-body">${esc(pr.why_it_matters||'')}</div>
-        </div>
-        <!-- Zone 2b: Why it matters for FCV -->
-        <div class="pc-zone zone-fcv">
-          <div class="pc-zone-title">
-            <div class="pc-zone-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L3 7v5c0 5.25 3.75 10.15 9 11.35C17.25 22.15 21 17.25 21 12V7L12 2z"/></svg></div>
-            Why it matters for addressing FCV
-          </div>
-          <div class="pc-zone-body">${esc(pr.why_fcv_matters||'')}</div>
+          <div class="pc-zone-body">${esc((pr.why_it_matters||'') + (pr.why_fcv_matters ? ' ' + pr.why_fcv_matters : ''))}</div>
         </div>
         <!-- Zone 3: Options (loaded on demand) -->
         <div class="pc-zone zone-act" id="zone-act-${idx}">
@@ -2138,13 +2025,6 @@ ${md(execSummary)}`;
                 const optArea = document.getElementById(`explorer-options-${idx}`);
                 if(optArea) optArea.innerHTML = renderOptionsHtml(parsed, idx);
               }
-              // Update action summary row
-              actionSummaryRows[idx] = {
-                title: pr.title,
-                short: pr.title.replace(/^Priority\s+\d+\s*[·•]\s*/i,'').slice(0,60),
-                directions: pr.suggested_directions || pr.body
-              };
-              renderActionTable();
               updateSidebar();
             }
           } catch(e){ if(e.message!=='Unexpected end of JSON input'){
@@ -2247,18 +2127,16 @@ ${md(execSummary)}`;
     }
 
     // New group-based format
-    const groupConfig = {
-      'Crucial Enhancements':      {color:'#b91c1c', bg:'#fff1f1', border:'#fca5a540'},
-      'Important Considerations':  {color:'#0072BB', bg:'#eff6ff', border:'#93c5fd40'},
-      'Above and Beyond':          {color:'#7c3aed', bg:'#f5f3ff', border:'#c4b5fd40'},
-    };
-
-    const bridgeHtml = parsed.bridge
-      ? `<div class="exp-bridge">${esc(parsed.bridge)}</div>`
-      : `<div class="exp-bridge" style="color:var(--muted);font-style:italic">The following is a list of key options the TTL can consider to address this priority.</div>`;
+    function getGroupCfg(groupName){
+      const n = (groupName||'').toLowerCase();
+      if(n.includes('crucial'))   return {color:'#b91c1c', bg:'#fff1f1', border:'#fca5a540'};
+      if(n.includes('important')) return {color:'#0072BB', bg:'#eff6ff', border:'#93c5fd40'};
+      if(n.includes('above')||n.includes('optional')) return {color:'#7c3aed', bg:'#f5f3ff', border:'#c4b5fd40'};
+      return {color:'#6b7280', bg:'#f9fafb', border:'#e5e7eb'};
+    }
 
     const groupsHtml = (parsed.groups || []).map(group => {
-      const cfg = groupConfig[group.groupName] || {color:'#6b7280', bg:'#f9fafb', border:'#e5e7eb'};
+      const cfg = getGroupCfg(group.groupName);
       const optHtml = group.options.map(opt => `
         <div class="exp-option" id="exp-opt-${idx}-${esc(opt.letter)}">
           <div class="exp-option-hdr" onclick="toggleExpOption('exp-opt-${idx}-${esc(opt.letter)}')">
@@ -2280,13 +2158,12 @@ ${md(execSummary)}`;
         <div class="exp-group">
           <div class="exp-group-hdr" style="background:${cfg.bg};border-bottom:1.5px solid ${cfg.border}">
             <div class="exp-group-name" style="color:${cfg.color}">${esc(group.groupName)}</div>
-            ${group.rationale ? `<div class="exp-group-rationale" style="color:${cfg.color}">${esc(group.rationale)}</div>` : ''}
           </div>
           <div class="explorer-options" style="padding:10px 14px;">${optHtml}</div>
         </div>`;
     }).join('');
 
-    return bridgeHtml + `<div class="exp-groups">${groupsHtml}</div>`;
+    return `<div class="exp-groups">${groupsHtml}</div>`;
   }
 
   function toggleExpOption(id){
@@ -2348,36 +2225,6 @@ ${md(execSummary)}`;
         }
       }
     } catch(e){ ansEl.innerHTML = `<span style="color:#b91c1c">Error: ${esc(e.message)}</span>`; }
-  }
-
-  // ── Action summary table ──────────────────────────────────────────────────
-
-  function renderActionTable(){
-    const tbody = document.getElementById('action-table-body');
-    if(!tbody) return;
-    const n = stageFourPriorities.length;
-    if(!n){ tbody.innerHTML = '<tr><td colspan="3" style="color:var(--muted);font-size:12px;padding:14px 10px">Work through each priority above to build the action summary.</td></tr>'; return; }
-    tbody.innerHTML = stageFourPriorities.map((pr, i) => {
-      const directions = pr.suggested_directions || '';
-      const shortDir = directions.slice(0,120) + (directions.length > 120 ? '…' : '');
-      return `<tr>
-        <td><span class="at-ptag">P${i+1}</span></td>
-        <td style="font-size:12px">${esc(shortDir || pr.title.replace(/^Priority\s+\d+\s*[·•]\s*/i,''))}</td>
-        <td><span class="at-when">Design / Prep</span></td>
-      </tr>`;
-    }).join('');
-  }
-
-  function copyActionSummary(){
-    const rows = stageFourPriorities.map((pr, i) =>
-      `P${i+1}\t${(pr.suggested_directions || pr.title).replace(/^Priority\s+\d+\s*[·•]\s*/i,'').slice(0,150)}\tDesign / Prep`
-    ).join('\n');
-    const text = 'Priority\tRecommended Action\tWhen\n' + rows;
-    navigator.clipboard.writeText(text).catch(()=>{
-      const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
-    });
-    const btn = document.querySelector('.action-copy-btn');
-    if(btn){ btn.textContent='Copied ✓'; setTimeout(()=>{ btn.innerHTML='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy'; },2000); }
   }
 
   // ── Populate priorities when Stage 4 completes ────────────────────────────

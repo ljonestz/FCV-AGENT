@@ -164,8 +164,7 @@ TITLE: Priority N · [Actionable verb phrase starting with a strong verb]
 FCV_DIMENSION: [One of: Institutional Legitimacy | Inclusion | Social Cohesion | Security | Economic Livelihoods | Resilience]
 RISK_LEVEL: [One of: High | Medium | Low]
 THE_GAP: 2-3 sentences on what is missing or inadequate in the current project design, specifically for this country and sector. Name the document section or component that is absent or insufficient.
-WHY_IT_MATTERS: 2-3 sentences on the specific operational consequence of not addressing this gap. Reference comparable project experience or country dynamics. Be direct about risk to delivery.
-WHY_FCV_MATTERS: 2-3 sentences on why this gap matters specifically through an FCV lens — how it relates to conflict dynamics, fragility drivers, or violence risks in this context. Explain the FCV mechanism at stake (e.g. exclusion fuelling grievance, weak institutions enabling spoilers, displacement disrupting community cohesion).
+WHY_IT_MATTERS: 2-3 sentences covering both the operational consequence of not addressing this gap AND its significance through an FCV lens. Name the specific delivery risk, then explain the FCV mechanism at stake (e.g. exclusion fuelling grievance, weak institutions enabling spoilers, displacement disrupting community cohesion). Be concise — cover both dimensions in the same passage.
 SUGGESTED_DIRECTIONS: 2-3 sentences of entry points for the TTL. Use language like "Consider...", "The team may want to...", "Explore...". No bullet lists — write as flowing prose suggestions.
 
 Language to use: "Consider...", "The team may want to...", "Would benefit from...", "Explore...", "Could strengthen..."
@@ -192,8 +191,7 @@ TITLE: Priority N · [Actionable verb phrase]
 FCV_DIMENSION: [dimension]
 RISK_LEVEL: [level]
 THE_GAP: [2-3 sentences]
-WHY_IT_MATTERS: [2-3 sentences]
-WHY_FCV_MATTERS: [2-3 sentences]
+WHY_IT_MATTERS: [2-3 sentences — operational + FCV dimensions combined]
 SUGGESTED_DIRECTIONS: [2-3 sentences]
 %%%PRIORITY_END%%%
 
@@ -217,7 +215,7 @@ These delimiters are parsed by the interface. Do not add text between %%%PRIORIT
 
 # Quality Check Before Submitting
 - Every priority wrapped in %%%PRIORITY_START%%% / %%%PRIORITY_END%%% delimiters
-- Every priority has all 7 fields: TITLE, FCV_DIMENSION, RISK_LEVEL, THE_GAP, WHY_IT_MATTERS, WHY_FCV_MATTERS, SUGGESTED_DIRECTIONS
+- Every priority has all 6 fields: TITLE, FCV_DIMENSION, RISK_LEVEL, THE_GAP, WHY_IT_MATTERS, SUGGESTED_DIRECTIONS
 - 4-5 priorities total
 - Every priority names at least one specific geography, group, institution, or historical event
 - No generic or templated language anywhere
@@ -286,22 +284,15 @@ Every group must have at least 1 option. Total: 3–5 options across all groups.
 
 ---
 
-# BRIDGE STATEMENT
-After the section header, write a BRIDGE field: 1–2 plain-language sentences that tell the TTL exactly what action area they need to focus on. Write as a colleague briefing a decision-maker. No academic language. No quotes from prior analysis. Do not repeat "The Issue" content.
-
----
-
 # Output Format
 
 ## SECTION 1: THE ISSUE (100–150 words)
 Explain why this priority matters for THIS project in THIS country context. Anchor directly and explicitly to Stage 3 findings — name the specific gaps, risks, or mitigations Stage 3 identified. Name at least one specific place, community, institution, or historical event. Be direct about what happens if this is not addressed. Do not restate the priority text.
 
 ## SECTION 2: OPTIONS TO CONSIDER
-BRIDGE: [1–2 plain sentences]
 
 %%%GROUP_START%%%
-GROUP_NAME: [Crucial Enhancements | Important Considerations | Above and Beyond]
-GROUP_RATIONALE: [One sentence explaining what unites the options in this group and their urgency level]
+GROUP_NAME: [Crucial Enhancements for Strengthening FCV-Sensitivity | Important Considerations to Further Improve FCV Elements | Optional Efforts That Go Above and Beyond]
 
 %%%OPTION_START%%%
 OPTION_TITLE: [Specific, verb-led action title — e.g. "Establish an Independent Project Oversight Board"]
@@ -326,14 +317,12 @@ TAGS: [document-type] | [timing] | [effort]
 - WHAT_TO_DO bullets must begin directly with the action. NEVER start with "This approach...", "This option...", "This leverages...", "This intervention...", or any framing sentence. Start with the verb.
 - Every WHAT_TO_DO bullet must name the WBG document section inline
 - STAGE3_LINK must reference a specific item from Stage 3, not a generic risk category
-- BRIDGE must be plain language — direct, collegial, no analysis quotes
 - Do not add introductory text before SECTION 1 or closing remarks after the final %%%GROUP_END%%%
 
 # Quality Check Before Submitting
 - Every option traces to a named Stage 3 gap or mitigation — no generic best practice
 - No HIGH PRIORITY Stage 3 item related to this priority has been omitted
 - Every WHAT_TO_DO bullet names the specific WBG document section
-- BRIDGE is 1–2 sentences, plain language, directly actionable
 - All three groups are present, each with ≥1 option
 - No bullet begins with a framing sentence ("This approach...", etc.)
 - No closing remarks after the final %%%GROUP_END%%%'''}
