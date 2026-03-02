@@ -13,7 +13,7 @@ except ImportError:
 
 # ── Constants ────────────────────────────────────────────────────────────────
 
-MAX_DOC_CHARS = 800_000
+MAX_DOC_CHARS = 150_000
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "fcv-admin-2024")
 PROMPTS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'prompts.json')
 
