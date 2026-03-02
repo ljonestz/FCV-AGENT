@@ -981,6 +981,7 @@
       </div>
     </div>
 
+    <form id="upload-form" onsubmit="return false">
     <div class="upload-zones">
       <div class="zone-wrap">
         <div class="zone-lbl"><span class="zone-dot p"></span>Project Document</div>
@@ -988,7 +989,7 @@
         <div class="drop-zone" id="dp">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--border)" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
           <p style="margin-bottom:8px">Drag &amp; drop, or select below</p>
-          <input type="file" id="ip" multiple accept=".pdf,.txt,.docx,.doc,.md" style="display:block;font-size:13px;color:var(--text);cursor:pointer;max-width:130px;">
+          <input type="file" id="ip" name="project_doc" multiple accept=".pdf,.txt,.docx,.doc,.md" style="display:block;font-size:13px;color:var(--text);cursor:pointer;max-width:130px;">
         </div>
       </div>
 
@@ -998,10 +999,11 @@
         <div class="drop-zone" id="dc">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--border)" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
           <p style="margin-bottom:8px">Drag &amp; drop, or select below</p>
-          <input type="file" id="ic" multiple accept=".pdf,.txt,.docx,.doc,.md" style="display:block;font-size:13px;color:var(--text);cursor:pointer;max-width:130px;">
+          <input type="file" id="ic" name="context_doc" multiple accept=".pdf,.txt,.docx,.doc,.md" style="display:block;font-size:13px;color:var(--text);cursor:pointer;max-width:130px;">
         </div>
       </div>
     </div>
+    </form>
 
     <div class="chips" id="chips" aria-live="polite"></div>
     <div id="debug-log" style="margin:0 32px 8px;font-size:11px;color:#666;min-height:16px"></div>
@@ -1170,29 +1172,17 @@
       addFiles(Array.from(e.dataTransfer.files), arr, type);
     });
 
-    // File input change
-    inp.addEventListener('change', function(e) {
-      const log = document.getElementById('debug-log');
-      log.textContent = 'change event fired on ' + inputId;
-      console.log('change event', inputId, this.files);
-      if (this.files && this.files.length > 0) {
-        log.textContent = 'Files detected: ' + Array.from(this.files).map(f=>f.name).join(', ');
+    // File input change / input events
+    inp.addEventListener('change', function() {
+      if(this.files && this.files.length > 0){
         addFiles(Array.from(this.files), arr, type);
-        // Reset input ONLY after successfully reading files, so the startAnalysis fallback
-        // still works if this event fired but provided empty files (some corporate browsers)
+        // Only reset input after files were successfully read, so startAnalysis()
+        // fallback can still read ipEl.files if this event fires with empty files
         setTimeout(() => { this.value = ''; }, 100);
-      } else {
-        log.textContent = 'change fired but files was empty or null (files=' + this.files + ')';
-        // Do NOT reset input — startAnalysis() will read ipEl.files directly at click time
       }
     });
-    // Also try input event as fallback
-    inp.addEventListener('input', function(e) {
-      const log = document.getElementById('debug-log');
-      log.textContent = 'input event fired on ' + inputId;
-      if (this.files && this.files.length > 0) {
-        addFiles(Array.from(this.files), arr, type);
-      }
+    inp.addEventListener('input', function() {
+      if(this.files && this.files.length > 0) addFiles(Array.from(this.files), arr, type);
     });
   }
 
@@ -1253,26 +1243,36 @@
     }
   }
 
-  // Fallback: enable Begin button when native input shows files, even if change event was blocked
-  // Button is always enabled — startAnalysis() checks for files
-
   async function startAnalysis(){
     if(busy) return;
-    // Collect files directly from inputs at click time (works even if change event was blocked by corporate policy)
+    let fallbackAdded = 0;
+
+    // PRIMARY: try FormData (uses browser's internal form API — works even when the
+    // files property is restricted by enterprise security/DLP software)
+    try {
+      const uploadForm = document.getElementById('upload-form');
+      if(uploadForm){
+        const fd = new FormData(uploadForm);
+        fd.getAll('project_doc').forEach(f=>{ if(f && f.size>0 && !pF.find(x=>x.name===f.name)){pF.push(f);fallbackAdded++;} });
+        fd.getAll('context_doc').forEach(f=>{ if(f && f.size>0 && !cF.find(x=>x.name===f.name)){cF.push(f);fallbackAdded++;} });
+      }
+    } catch(e) { /* FormData unavailable — fall through to direct files access */ }
+
+    // FALLBACK: read files property directly at click time
     const ipEl = document.getElementById('ip');
     const icEl = document.getElementById('ic');
-    let fallbackAdded = 0;
-    if (ipEl && ipEl.files) {
-      Array.from(ipEl.files).forEach(f => { if (!pF.find(x => x.name === f.name)) { pF.push(f); fallbackAdded++; } });
+    if(ipEl && ipEl.files){
+      Array.from(ipEl.files).forEach(f=>{ if(!pF.find(x=>x.name===f.name)){pF.push(f);fallbackAdded++;} });
     }
-    if (icEl && icEl.files) {
-      Array.from(icEl.files).forEach(f => { if (!cF.find(x => x.name === f.name)) { cF.push(f); fallbackAdded++; } });
+    if(icEl && icEl.files){
+      Array.from(icEl.files).forEach(f=>{ if(!cF.find(x=>x.name===f.name)){cF.push(f);fallbackAdded++;} });
     }
-    // Show chips for any files picked up via fallback (change event may have been blocked)
-    if (fallbackAdded > 0) renderChips();
-    if (!pF.length) {
+
+    if(fallbackAdded > 0) renderChips();
+
+    if(!pF.length){
       const log = document.getElementById('debug-log');
-      if (log) { log.style.color='#b91c1c'; log.textContent = '⚠ Please select a project document before beginning.'; }
+      if(log){ log.style.color='#b91c1c'; log.textContent='⚠ Please select a project document before beginning.'; }
       return;
     }
     document.getElementById('upload-panel').style.display = 'none';

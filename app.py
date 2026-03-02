@@ -471,8 +471,12 @@ def index():
     base = os.path.dirname(os.path.abspath(__file__))
     static_path = os.path.join(base, 'static')
     if os.path.exists(os.path.join(static_path, 'index.html')):
-        return send_from_directory(static_path, 'index.html')
-    return send_from_directory(base, 'index.html')
+        resp = send_from_directory(static_path, 'index.html')
+    else:
+        resp = send_from_directory(base, 'index.html')
+    resp.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    resp.headers['Pragma'] = 'no-cache'
+    return resp
 
 
 @app.route('/health')
