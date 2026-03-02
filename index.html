@@ -1199,6 +1199,22 @@
   setupZone('dp', 'ip', pF, 'p');
   setupZone('dc', 'ic', cF, 'c');
 
+  // Polling fallback: detect files even if the browser suppresses change/input events
+  // (common in corporate environments with DLP or security software).
+  // Runs every 600ms and syncs whatever the native file inputs currently hold.
+  setInterval(function(){
+    let changed = false;
+    const ip = document.getElementById('ip');
+    const ic = document.getElementById('ic');
+    if(ip && ip.files && ip.files.length > 0){
+      Array.from(ip.files).forEach(f=>{ if(!pF.find(x=>x.name===f.name)){pF.push(f);changed=true;} });
+    }
+    if(ic && ic.files && ic.files.length > 0){
+      Array.from(ic.files).forEach(f=>{ if(!cF.find(x=>x.name===f.name)){cF.push(f);changed=true;} });
+    }
+    if(changed) renderChips();
+  }, 600);
+
   function addFiles(files, arr, type) {
     let added = 0;
     files.forEach(f => {
@@ -1224,14 +1240,17 @@
       const chip = document.createElement('div');
       chip.className = `chip ${t}`;
       const icon = t === 'p' ? '📄' : '📋';
-      // Escape filename for safe use in onclick
       const safeName = f.name.replace(/'/g, "\'");
       chip.innerHTML = `<span title="${f.name}">${icon} ${f.name}</span><button onclick="removeF('${safeName}','${t}')" aria-label="Remove ${f.name}">×</button>`;
       el.appendChild(chip);
     });
     document.getElementById('dp').classList.toggle('has', pF.length > 0);
     document.getElementById('dc').classList.toggle('has', cF.length > 0);
-    // button always enabled; startAnalysis guards internally
+    // Clear any debug/error text once files are confirmed present
+    if(all.length > 0){
+      const log = document.getElementById('debug-log');
+      if(log && log.style.color !== '#b91c1c') log.textContent = '';
+    }
   }
 
   // Fallback: enable Begin button when native input shows files, even if change event was blocked
