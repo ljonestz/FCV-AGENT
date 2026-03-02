@@ -13,7 +13,8 @@ except ImportError:
 
 # ── Constants ────────────────────────────────────────────────────────────────
 
-MAX_DOC_CHARS = 150_000
+MAX_DOC_CHARS = 500_000       # Max chars extracted from any single document
+EXTRACT_THRESHOLD = 150_000  # Documents larger than this are condensed via LLM before analysis
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "fcv-admin-2024")
 PROMPTS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'prompts.json')
 
@@ -164,6 +165,7 @@ FCV_DIMENSION: [One of: Institutional Legitimacy | Inclusion | Social Cohesion |
 RISK_LEVEL: [One of: High | Medium | Low]
 THE_GAP: 2-3 sentences on what is missing or inadequate in the current project design, specifically for this country and sector. Name the document section or component that is absent or insufficient.
 WHY_IT_MATTERS: 2-3 sentences on the specific operational consequence of not addressing this gap. Reference comparable project experience or country dynamics. Be direct about risk to delivery.
+WHY_FCV_MATTERS: 2-3 sentences on why this gap matters specifically through an FCV lens — how it relates to conflict dynamics, fragility drivers, or violence risks in this context. Explain the FCV mechanism at stake (e.g. exclusion fuelling grievance, weak institutions enabling spoilers, displacement disrupting community cohesion).
 SUGGESTED_DIRECTIONS: 2-3 sentences of entry points for the TTL. Use language like "Consider...", "The team may want to...", "Explore...". No bullet lists — write as flowing prose suggestions.
 
 Language to use: "Consider...", "The team may want to...", "Would benefit from...", "Explore...", "Could strengthen..."
@@ -191,6 +193,7 @@ FCV_DIMENSION: [dimension]
 RISK_LEVEL: [level]
 THE_GAP: [2-3 sentences]
 WHY_IT_MATTERS: [2-3 sentences]
+WHY_FCV_MATTERS: [2-3 sentences]
 SUGGESTED_DIRECTIONS: [2-3 sentences]
 %%%PRIORITY_END%%%
 
@@ -214,7 +217,7 @@ These delimiters are parsed by the interface. Do not add text between %%%PRIORIT
 
 # Quality Check Before Submitting
 - Every priority wrapped in %%%PRIORITY_START%%% / %%%PRIORITY_END%%% delimiters
-- Every priority has all 6 fields: TITLE, FCV_DIMENSION, RISK_LEVEL, THE_GAP, WHY_IT_MATTERS, SUGGESTED_DIRECTIONS
+- Every priority has all 7 fields: TITLE, FCV_DIMENSION, RISK_LEVEL, THE_GAP, WHY_IT_MATTERS, WHY_FCV_MATTERS, SUGGESTED_DIRECTIONS
 - 4-5 priorities total
 - Every priority names at least one specific geography, group, institution, or historical event
 - No generic or templated language anywhere
@@ -367,8 +370,8 @@ def extract_fcv_rating(text):
 
 def extract_priorities(text):
     """Parse %%%PRIORITY_START%%% / %%%PRIORITY_END%%% blocks from Stage 4 output.
-    Supports new structured-field format: TITLE, FCV_DIMENSION, RISK_LEVEL,
-    THE_GAP, WHY_IT_MATTERS, SUGGESTED_DIRECTIONS.
+    Supports structured-field format: TITLE, FCV_DIMENSION, RISK_LEVEL,
+    THE_GAP, WHY_IT_MATTERS, WHY_FCV_MATTERS, SUGGESTED_DIRECTIONS.
     """
     pattern = r'%%%PRIORITY_START%%%(.*?)%%%PRIORITY_END%%%'
     blocks = re.findall(pattern, text, re.DOTALL)
@@ -387,8 +390,9 @@ def extract_priorities(text):
         risk_level = get_field('RISK_LEVEL')
         the_gap = get_field('THE_GAP')
         why_it_matters = get_field('WHY_IT_MATTERS')
+        why_fcv_matters = get_field('WHY_FCV_MATTERS')
         suggested_directions = get_field('SUGGESTED_DIRECTIONS')
-        body = '\n\n'.join(filter(None, [the_gap, why_it_matters, suggested_directions]))
+        body = '\n\n'.join(filter(None, [the_gap, why_it_matters, why_fcv_matters, suggested_directions]))
         priorities.append({
             'title': title,
             'body': body,
@@ -396,6 +400,7 @@ def extract_priorities(text):
             'risk_level': risk_level,
             'the_gap': the_gap,
             'why_it_matters': why_it_matters,
+            'why_fcv_matters': why_fcv_matters,
             'suggested_directions': suggested_directions,
         })
     # Fallback: positional parsing if fewer than 4 delimiter blocks found
@@ -404,7 +409,7 @@ def extract_priorities(text):
         if fallback and len(fallback) >= len(priorities):
             priorities = [{'title': t.strip(), 'body': '', 'dimension': '',
                            'risk_level': '', 'the_gap': '', 'why_it_matters': '',
-                           'suggested_directions': ''} for t in fallback]
+                           'why_fcv_matters': '', 'suggested_directions': ''} for t in fallback]
     return priorities
 
 
@@ -452,11 +457,49 @@ def extract_pdf_text(b64_data, name):
         page_count = len(reader.pages)
         if len(full_text) > MAX_DOC_CHARS:
             full_text = full_text[:MAX_DOC_CHARS] + (
-                f'\n\n[Document truncated at {MAX_DOC_CHARS//1000}k chars of {page_count} pages.]'
+                f'\n\n[PDF read limit reached at {MAX_DOC_CHARS//1000}k chars of {page_count} pages.]'
             )
         return full_text, page_count
     except Exception as e:
         return f'[Could not extract text from {name}: {str(e)}]', 0
+
+
+FCV_EXTRACT_PROMPT = """You are extracting content relevant to FCV (Fragility, Conflict, Violence) analysis from a World Bank project document. The extracted content will be used by an FCV specialist to assess the project's sensitivity to conflict, fragility, and violence.
+
+Extract and preserve ALL information relevant to:
+- Active conflict, security threats, and violence dynamics
+- Governance failures, institutional fragility, and accountability gaps
+- Social exclusion, discrimination, and marginalized groups
+- Displacement, migration, and refugee/IDP dynamics
+- Economic vulnerability and livelihoods under conflict stress
+- Political economy, power dynamics, and elite capture risks
+- Gender-based violence and women's exclusion
+- Cross-border dynamics and regional instability
+- Environmental and climate-conflict linkages
+- Any fragility classifications, risk ratings, SORT assessments, or diagnostic findings
+- Project-specific design risks related to FCV context
+
+Preserve key passages close to verbatim. Include section headers, quantitative data, and geographic specifics. Omit routine procurement tables, standard safeguard checklists, and financial management sections unless they have direct FCV relevance.
+
+Produce a thorough extraction that a senior FCV analyst can work from directly."""
+
+
+def extract_fcv_content(text, doc_name, api_client):
+    """Use Claude to extract FCV-relevant content from a large document."""
+    try:
+        response = api_client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=8192,
+            messages=[{
+                "role": "user",
+                "content": f"{FCV_EXTRACT_PROMPT}\n\n=== DOCUMENT: {doc_name} ===\n\n{text}"
+            }]
+        )
+        extracted = response.content[0].text
+        return f"[FCV-relevant content extracted from {doc_name} — full document was {len(text)//1000}k characters]\n\n{extracted}"
+    except Exception as e:
+        # Fallback: return first EXTRACT_THRESHOLD chars if extraction fails
+        return text[:EXTRACT_THRESHOLD] + f"\n\n[Extraction failed ({str(e)}); showing first {EXTRACT_THRESHOLD//1000}k characters only.]"
 
 
 # ── Flask app ────────────────────────────────────────────────────────────────
@@ -570,48 +613,38 @@ def run_stage():
             if not documents:
                 return jsonify({'error': 'Please upload at least one project document.'}), 400
 
-            content_parts = []
             project_docs = [d for d in documents if not d.get('isContext')]
             context_docs = [d for d in documents if d.get('isContext')]
-            truncation_warnings = []  # collect any truncated docs
 
-            def add_doc(doc, label):
+            # Pre-extract raw text for all docs; store metadata for generate() to process
+            doc_parts = []  # list of dicts: {label, name, raw_text, page_count, needs_extraction}
+            for doc in project_docs:
                 name = doc.get('name', 'document')
                 file_type = doc.get('type', 'text')
-                doc_content = doc.get('content', '')
+                raw = doc.get('content', '')
                 if file_type == 'pdf':
-                    extracted, page_count = extract_pdf_text(doc_content, name)
-                    # extract_pdf_text already handles truncation and appends a note
-                    was_truncated = '[Document truncated' in extracted
-                    if was_truncated:
-                        truncation_warnings.append(
-                            f"⚠ **{name}** was truncated at {MAX_DOC_CHARS//1000}k characters "
-                            f"({page_count} pages total). Content beyond this point was not analysed."
-                        )
-                    content_parts.append({"type": "text", "text": f"=== {label}: {name} ({page_count} pages) ===\n\n{extracted}"})
+                    text, page_count = extract_pdf_text(raw, name)
                 else:
-                    was_truncated = len(doc_content) > MAX_DOC_CHARS
-                    text = doc_content[:MAX_DOC_CHARS] + ('\n\n[Truncated]' if was_truncated else '')
-                    if was_truncated:
-                        truncation_warnings.append(
-                            f"⚠ **{name}** was truncated at {MAX_DOC_CHARS//1000}k characters. "
-                            f"Content beyond this point was not analysed."
-                        )
-                    content_parts.append({"type": "text", "text": f"=== {label}: {name} ===\n\n{text}"})
+                    text = raw[:MAX_DOC_CHARS]
+                    page_count = 0
+                doc_parts.append({'label': 'PROJECT DOCUMENT', 'name': name,
+                                  'raw_text': text, 'page_count': page_count,
+                                  'needs_extraction': len(text) > EXTRACT_THRESHOLD})
+            for doc in context_docs:
+                name = doc.get('name', 'document')
+                file_type = doc.get('type', 'text')
+                raw = doc.get('content', '')
+                if file_type == 'pdf':
+                    text, page_count = extract_pdf_text(raw, name)
+                else:
+                    text = raw[:MAX_DOC_CHARS]
+                    page_count = 0
+                doc_parts.append({'label': 'CONTEXT DOCUMENT', 'name': name,
+                                  'raw_text': text, 'page_count': page_count,
+                                  'needs_extraction': len(text) > EXTRACT_THRESHOLD})
 
-            for doc in project_docs:
-                add_doc(doc, 'PROJECT DOCUMENT')
-            if context_docs:
-                content_parts.append({"type": "text", "text": "\n\n--- CONTEXTUAL DOCUMENTS ---\n"})
-                for doc in context_docs:
-                    add_doc(doc, 'CONTEXT DOCUMENT')
-
-            content_parts.append({"type": "text", "text": (
-                "\n\n--- WBG FCV Sensitivity and Responsiveness Guide (always included) ---\n" + FCV_GUIDE
-            )})
             stage_prompt = prompt_override if prompt_override else get_prompt_for_stage(1)
-            content_parts.append({"type": "text", "text": stage_prompt})
-            messages.append({"role": "user", "content": content_parts})
+            # messages will be fully built inside generate() for stage 1
 
         elif user_message:
             messages.append({"role": "user", "content": user_message})
@@ -624,9 +657,34 @@ def run_stage():
             try:
                 yield f"data: {json.dumps({'ping': True})}\n\n"
 
-                # Emit any truncation warnings before streaming begins
-                if stage == 1 and truncation_warnings:
-                    yield f"data: {json.dumps({'truncation_warnings': truncation_warnings})}\n\n"
+                # ── Stage 1: build content_parts, extracting large docs via LLM ──
+                if stage == 1:
+                    large_docs = [d for d in doc_parts if d['needs_extraction']]
+                    n_large = len(large_docs)
+                    content_parts = []
+                    has_context = any(d['label'] == 'CONTEXT DOCUMENT' for d in doc_parts)
+                    context_sep_added = False
+
+                    for dp in doc_parts:
+                        if dp['label'] == 'CONTEXT DOCUMENT' and not context_sep_added:
+                            content_parts.append({"type": "text", "text": "\n\n--- CONTEXTUAL DOCUMENTS ---\n"})
+                            context_sep_added = True
+
+                        if dp['needs_extraction']:
+                            large_idx = large_docs.index(dp) + 1
+                            yield f"data: {json.dumps({'preprocess': f'Reading {dp[\"name\"]} — extracting FCV-relevant content ({large_idx} of {n_large})…'})}\n\n"
+                            final_text = extract_fcv_content(dp['raw_text'], dp['name'], client)
+                        else:
+                            final_text = dp['raw_text']
+
+                        suffix = f" ({dp['page_count']} pages)" if dp['page_count'] else ""
+                        content_parts.append({"type": "text", "text": f"=== {dp['label']}: {dp['name']}{suffix} ===\n\n{final_text}"})
+
+                    content_parts.append({"type": "text", "text": (
+                        "\n\n--- WBG FCV Sensitivity and Responsiveness Guide (always included) ---\n" + FCV_GUIDE
+                    )})
+                    content_parts.append({"type": "text", "text": stage_prompt})
+                    messages.append({"role": "user", "content": content_parts})
 
                 with client.messages.stream(
                     model="claude-sonnet-4-20250514",

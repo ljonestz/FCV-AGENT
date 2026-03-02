@@ -586,7 +586,7 @@
       display:flex;align-items:center;justify-content:center;
       font-size:10px;font-weight:700;color:var(--muted);margin:0 auto 3px;transition:all .15s;
     }
-    .ps-label{font-size:9.5px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.03em;line-height:1.3;}
+    .ps-label{font-size:9px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.02em;line-height:1.35;word-break:break-word;white-space:normal;}
     .ps-step.active{background:var(--wbg-navy);}
     .ps-step.active .ps-num{background:var(--wbg-blue);color:#fff;}
     .ps-step.active .ps-label{color:rgba(255,255,255,.8);}
@@ -637,9 +637,34 @@
     .pc-zone.zone-why{background:#fff;}
     .pc-zone.zone-why .pc-zone-title{color:var(--muted);}
     .pc-zone.zone-why .pc-zone-icon{background:var(--off-white);}
+    .pc-zone.zone-fcv{background:#f5f3ff;}
+    .pc-zone.zone-fcv .pc-zone-title{color:#6d28d9;}
+    .pc-zone.zone-fcv .pc-zone-icon{background:#ede9fe;}
     .pc-zone.zone-act{background:#f8fffe;}
     .pc-zone.zone-act .pc-zone-title{color:var(--s4);}
     .pc-zone.zone-act .pc-zone-icon{background:#e8f7ef;}
+
+    /* Executive summary nav hint */
+    .exec-nav-hint{
+      display:flex;align-items:center;gap:10px;
+      background:#f0f4ff;border:1px solid #c7d7f7;border-radius:var(--radius);
+      padding:12px 16px;margin-top:2px;margin-bottom:14px;font-size:13px;color:#2d4a8a;line-height:1.5;
+    }
+    .exec-nav-hint svg{flex-shrink:0;opacity:.7;}
+
+    /* Priority overview widget (replaces Risk Overview) */
+    .pov-widget{padding:12px 14px;}
+    .pov-row{display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--border);cursor:pointer;}
+    .pov-row:last-child{border-bottom:none;}
+    .pov-row:hover{background:var(--off-white);margin:-0px -2px;padding-left:2px;padding-right:2px;}
+    .pov-num{width:18px;height:18px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:var(--muted);flex-shrink:0;}
+    .pov-num.active{background:var(--wbg-navy);color:#fff;}
+    .pov-num.done{background:var(--s4);color:#fff;}
+    .pov-label{font-size:10px;color:var(--text);flex:1;line-height:1.3;}
+    .pov-risk{font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;flex-shrink:0;}
+    .pov-risk-h{background:#fee2e2;color:#991b1b;}
+    .pov-risk-m{background:#fef3c7;color:#92400e;}
+    .pov-risk-l{background:#d1fae5;color:#065f46;}
 
     /* Explorer options inside action zone */
     .explorer-options{display:flex;flex-direction:column;gap:10px;margin-top:10px;}
@@ -1143,7 +1168,7 @@
     }
   }
 
-  const NAMES={1:'Identifying FCV Risks',2:'FCV-Sensitivity Screening',3:'Identifying Project Gaps',4:'Recommendations Note'};
+  const NAMES={1:'Identifying FCV Risks',2:'FCV-Sensitivity Screening',3:'Identifying Project Gaps',4:'Executive Summary · Project-Wide Considerations'};
   const SHORT={1:'Identifying FCV Risks',2:'FCV-Sensitivity Screening',3:'Identifying Project Gaps',4:'Recommendations Note'};
   const SUBS={1:'Extracting all FCV-relevant information from your documents',2:'Assessing risks across six FCV dimensions',3:'Identifying gaps and recommending mitigations',4:'Generating the final TTL support note'};
   const COL={1:'s1',2:'s2',3:'s3',4:'s4'};
@@ -1359,8 +1384,9 @@
               // Store warnings to render after renderOut fires
               window._truncWarnings = p.truncation_warnings;
             }
+            if(p.preprocess){const el=document.getElementById('s-out');if(el)el.innerHTML=`<div style="display:flex;align-items:center;gap:10px;color:var(--muted);font-style:italic;padding:12px 0"><svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;animation:spin 1s linear infinite;flex-shrink:0"><circle cx="12" cy="12" r="10" stroke-opacity=".25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-opacity="1"/></svg>${esc(p.preprocess)}</div>`}
             if(p.chunk){streamed+=p.chunk;const el=document.getElementById('s-out');if(el)el.innerHTML=md(streamed)}
-            if(p.done){hist=p.history||hist;curS=stage;updateSessionBar();renderOut(stage,p.result,followOn);setStepper(stage,'done');
+            if(p.done){hist=p.history||hist;curS=stage;stageOutputs[stage]=p.result;stageHists[stage]=hist.slice();updateSessionBar();renderOut(stage,p.result,followOn);setStepper(stage,'done');
               // Explorer panel + sidebar for Stage 4
               if(stage===4 && p.priorities && p.priorities.length){
                 stageFourPriorities=p.priorities;
@@ -1425,11 +1451,22 @@
           <div class="out-card ani">
             <div class="out-hdr">
               <div class="out-hdr-l"><span class="dot done"></span>${NAMES[stage]}</div>
-              <button class="copy-btn" id="copy-btn" onclick="copyOut()">Copy all</button>
+              <div style="display:flex;gap:8px;align-items:center">
+                ${isLast?`<button class="btn btn-ghost btn-sm" onclick="downloadReport()" title="Download all Stage 4 content as a Word document">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  Download report
+                </button>`:''}
+                <button class="copy-btn" id="copy-btn" onclick="copyOut()">Copy all</button>
+              </div>
             </div>
             <div class="out-body" id="out-txt">${md(result)}</div>
           </div>
           ${isLast?`
+          <!-- ── EXEC SUMMARY NAV HINT ── -->
+          <div class="exec-nav-hint ani">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            For more information on each priority identified in this assessment — including concrete implementation options — toggle through the priority panels below.
+          </div>
           <!-- ── PRIORITY STEPPER ── -->
           <div class="priority-stepper" id="priority-stepper"></div>
           <!-- ── PRIORITY CARD ── -->
@@ -1537,20 +1574,12 @@
   function goBack(currentStage){
     if(currentStage<=1)return;
     const prevStage = currentStage-1;
-    // Trim history back to after the previous stage's assistant turn.
-    // History is an array of {role,content} messages. Each stage adds 1 user + 1 assistant msg.
-    // Stage 1: messages 0(user) 1(assistant)
-    // Stage 2: messages 2(user) 3(assistant)  etc.
-    // We want to keep everything up to and including prevStage's assistant reply.
-    // That's prevStage*2 messages (0-indexed).
-    const keepCount = prevStage * 2;
-    hist = hist.slice(0, keepCount);
+    // Restore history and output from when prevStage completed
+    hist = stageHists[prevStage] ? stageHists[prevStage].slice() : hist;
     curS = prevStage;
     busy = false;
     setStepper(prevStage, 'done');
-    // Re-render the previous stage output from the last assistant message in trimmed history
-    const lastAssistant = hist[hist.length-1];
-    const prevResult = lastAssistant ? (typeof lastAssistant.content==='string' ? lastAssistant.content : '') : '';
+    const prevResult = stageOutputs[prevStage] || '';
     clearUI();
     renderOut(prevStage, prevResult, false);
     updateSessionBar();
@@ -1582,8 +1611,88 @@
     }
   }
 
+  function downloadReport(){
+    const execSummary = stageOutputs[4] || '';
+    if(!execSummary && !stageFourPriorities.length){ alert('No Stage 4 output available to download.'); return; }
+
+    // Build a Word-compatible HTML document
+    const dateStr = new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
+    let body = `<h1>FCV Recommendations Note</h1>
+<p style="color:#666;font-size:9pt"><em>Generated by WBG FCV Sensitivity Project Screener · ${dateStr}</em></p>
+<hr>
+<h2>Executive Summary · Project-Wide Considerations</h2>
+${md(execSummary)}`;
+
+    if(stageFourPriorities.length){
+      body += `<hr><h2>Strategic Priorities</h2>`;
+      stageFourPriorities.forEach((pr, i) => {
+        const title = pr.title.replace(/^Priority\s+\d+\s*[·•]\s*/i,'');
+        const riskColor = pr.risk_level==='High'?'#c0392b':pr.risk_level==='Medium'?'#e07b00':'#1a7a4a';
+        body += `<div style="margin-top:22pt;border-top:1pt solid #1a3a5c;padding-top:14pt">
+<h3 style="color:#1a3a5c;margin-bottom:4pt">Priority ${i+1} · ${esc(title)}</h3>
+<p style="font-size:9pt;color:#555;margin-top:0">${pr.dimension?`<strong>Dimension:</strong> ${esc(pr.dimension)} &nbsp;|&nbsp; `:''}${pr.risk_level?`<strong>Risk Level:</strong> <span style="color:${riskColor}">${esc(pr.risk_level)}</span>`:''}
+</p>`;
+        if(pr.the_gap) body += `<p><strong>The Gap:</strong><br>${esc(pr.the_gap)}</p>`;
+        if(pr.why_it_matters) body += `<p><strong>Why It Matters Operationally:</strong><br>${esc(pr.why_it_matters)}</p>`;
+        if(pr.why_fcv_matters) body += `<p><strong>Why It Matters for Addressing FCV:</strong><br>${esc(pr.why_fcv_matters)}</p>`;
+
+        const cached = explorerCache[pr.title];
+        if(cached && cached.issue){
+          body += `<p><strong>Detailed Analysis (FCV Solutions Explorer):</strong><br>${esc(cached.issue)}</p>`;
+          if(cached.options && cached.options.length){
+            body += `<p><strong>Options to Consider:</strong></p><ul>`;
+            cached.options.forEach(opt => {
+              body += `<li><strong>Option ${esc(opt.letter)}: ${esc(opt.title)}</strong>`;
+              if(opt.context) body += `<br><em>${esc(opt.context)}</em>`;
+              if(opt.groups && opt.groups.length){
+                opt.groups.forEach(g => {
+                  body += `<br><strong>${esc(g.label)}</strong><ul>`;
+                  (g.bullets||[]).forEach(b => { body += `<li>${esc(b)}</li>`; });
+                  body += `</ul>`;
+                });
+              }
+              body += `</li>`;
+            });
+            body += `</ul>`;
+          }
+        } else if(pr.suggested_directions){
+          body += `<p><strong>Suggested Directions:</strong><br>${esc(pr.suggested_directions)}</p>`;
+        }
+        body += `</div>`;
+      });
+    }
+
+    const html = `<!DOCTYPE html>
+<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word">
+<head><meta charset="utf-8"><title>FCV Recommendations Note</title>
+<style>
+  body{font-family:Calibri,Arial,sans-serif;font-size:11pt;line-height:1.6;margin:2cm;color:#222;}
+  h1{font-size:16pt;color:#1a3a5c;}
+  h2{font-size:13pt;color:#1a3a5c;border-bottom:1pt solid #1a3a5c;padding-bottom:3pt;margin-top:18pt;}
+  h3{font-size:12pt;color:#1a3a5c;}
+  p{margin:6pt 0;}
+  ul,ol{margin:4pt 0 8pt 0;padding-left:18pt;}
+  li{margin-bottom:3pt;}
+  strong{color:#1a3a5c;}
+  em{color:#555;}
+  hr{border:none;border-top:1pt solid #ccc;margin:14pt 0;}
+  blockquote{border-left:3pt solid #1a3a5c;margin-left:0;padding-left:12pt;color:#555;font-style:italic;}
+</style></head>
+<body>${body}</body></html>`;
+
+    const blob = new Blob([html], {type:'application/msword'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'FCV-Recommendations-Note-' + new Date().toISOString().slice(0,10) + '.doc';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
   function reset(){
-    pF=[];cF=[];hist=[];curS=0;busy=false;
+    pF=[];cF=[];hist=[];curS=0;busy=false;stageOutputs={};stageHists={};
     document.getElementById('upload-panel').style.display='block';
     document.getElementById('analysis-panel').style.display='none';
     document.getElementById('chips').innerHTML='';
@@ -1717,6 +1826,10 @@
   // Session prompt overrides are sent to the backend as prompt_override in the payload.
   // The backend uses the override in place of its DEFAULT_PROMPTS for that stage run.
 
+  // ── Stage output tracking ─────────────────────────────────────────────────
+  let stageOutputs = {};  // {stageNum: result_text} — used by goBack()
+  let stageHists = {};    // {stageNum: hist_snapshot} — used to restore history on goBack()
+
   // ── Stage 4 state ──────────────────────────────────────────────────────────
   let stageFourPriorities = [];
   let currentPriority = 0;  // 0-indexed
@@ -1759,18 +1872,11 @@
           <div class="fcv-need-label" id="fcv-need-label"></div>
         </div>
       </div>
-      <!-- Risk matrix -->
+      <!-- Priority overview -->
       <div class="sidebar-widget">
-        <div class="risk-matrix-widget">
-          <div class="sidebar-widget-label">Risk Overview</div>
-          <div id="risk-matrix-sb">
-            ${['Institutional','Inclusion','Social Cohesion','Security','Livelihoods','Resilience'].map(d=>`
-              <div class="risk-matrix-row">
-                <span class="risk-matrix-dim">${d}</span>
-                <div class="risk-pills"><span class="rpill rpill-na">—</span><span class="rpill rpill-na">—</span></div>
-              </div>`).join('')}
-          </div>
-          <div class="risk-matrix-legend">← TO · FROM →</div>
+        <div class="pov-widget">
+          <div class="sidebar-widget-label">Priority Overview</div>
+          <div id="pov-sb"><div style="font-size:11px;color:var(--muted)">Loading priorities…</div></div>
         </div>
       </div>
       <!-- Priority nav -->
@@ -1807,6 +1913,22 @@
     if(shieldPath) shieldPath.setAttribute('fill', level > 0 ? color : '#c8d8c8');
     if(labelEl){ labelEl.textContent = fcvRating ? `${fcvRating} Sensitivity` : '—'; labelEl.style.color = level > 0 ? color : 'var(--muted)'; }
     if(needEl) needEl.textContent = NEED_LABELS[fcvRating] || '';
+
+    // Priority overview widget
+    const povEl = document.getElementById('pov-sb');
+    if(povEl && n){
+      povEl.innerHTML = stageFourPriorities.map((pr, i) => {
+        const label = pr.title.replace(/^Priority\s+\d+\s*[·•]\s*/i,'');
+        const isDone = i < currentPriority;
+        const isActive = i === currentPriority;
+        const riskCls = pr.risk_level==='High'?'pov-risk-h':pr.risk_level==='Medium'?'pov-risk-m':'pov-risk-l';
+        return `<div class="pov-row" onclick="showPriority(${i})">
+          <div class="pov-num ${isDone?'done':isActive?'active':''}">${isDone?'✓':i+1}</div>
+          <div class="pov-label">${esc(label)}</div>
+          ${pr.risk_level?`<span class="pov-risk ${riskCls}">${esc(pr.risk_level)}</span>`:''}
+        </div>`;
+      }).join('');
+    }
 
     // Priority nav in sidebar
     const pnavEl = document.getElementById('pnav-sb');
@@ -1852,10 +1974,10 @@
     const el = document.getElementById('priority-stepper');
     if(!el) return;
     el.innerHTML = stageFourPriorities.map((pr, i) => {
-      const shortTitle = pr.title.replace(/^Priority\s+\d+\s*[·•]\s*/i,'').slice(0,20) + (pr.title.replace(/^Priority\s+\d+\s*[·•]\s*/i,'').length > 20 ? '…' : '');
+      const fullTitle = pr.title.replace(/^Priority\s+\d+\s*[·•]\s*/i,'');
       return `<div class="ps-step ${i===currentPriority?'active':''}" id="ps-${i}" onclick="showPriority(${i})" title="${esc(pr.title)}">
         <div class="ps-num">${i+1}</div>
-        <div class="ps-label">P${i+1} · ${esc(shortTitle)}</div>
+        <div class="ps-label">${esc(fullTitle)}</div>
       </div>`;
     }).join('');
   }
@@ -1915,13 +2037,21 @@
           </div>
           <div class="pc-zone-body">${esc(pr.the_gap||pr.body||'')}</div>
         </div>
-        <!-- Zone 2: Why it matters -->
+        <!-- Zone 2: Why it matters operationally -->
         <div class="pc-zone zone-why">
           <div class="pc-zone-title">
             <div class="pc-zone-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/></svg></div>
             Why it matters operationally
           </div>
           <div class="pc-zone-body">${esc(pr.why_it_matters||'')}</div>
+        </div>
+        <!-- Zone 2b: Why it matters for FCV -->
+        <div class="pc-zone zone-fcv">
+          <div class="pc-zone-title">
+            <div class="pc-zone-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L3 7v5c0 5.25 3.75 10.15 9 11.35C17.25 22.15 21 17.25 21 12V7L12 2z"/></svg></div>
+            Why it matters for addressing FCV
+          </div>
+          <div class="pc-zone-body">${esc(pr.why_fcv_matters||'')}</div>
         </div>
         <!-- Zone 3: Options (loaded on demand) -->
         <div class="pc-zone zone-act" id="zone-act-${idx}">
