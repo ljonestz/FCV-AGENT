@@ -666,8 +666,18 @@
     .pov-risk-m{background:#fef3c7;color:#92400e;}
     .pov-risk-l{background:#d1fae5;color:#065f46;}
 
+    /* Explorer group layout */
+    .exp-groups{display:flex;flex-direction:column;gap:14px;margin-top:10px;}
+    .exp-group{border:1.5px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+    .exp-group-hdr{padding:10px 14px;display:flex;flex-direction:column;gap:4px;}
+    .exp-group-name{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;}
+    .exp-group-rationale{font-size:12px;line-height:1.55;opacity:.85;}
+    .exp-bridge{font-size:13px;color:var(--text);padding:9px 12px;background:var(--off-white);border-radius:var(--radius-sm);margin-bottom:12px;line-height:1.6;border-left:3px solid var(--wbg-blue);}
+    .exp-stage3-link{display:inline-block;font-size:10.5px;font-weight:600;color:var(--muted);margin-bottom:9px;padding:2px 7px;background:var(--off-white);border-radius:3px;border:1px solid var(--border);}
+    .exp-where{font-size:10.5px;color:var(--muted);margin-top:9px;font-style:italic;}
+
     /* Explorer options inside action zone */
-    .explorer-options{display:flex;flex-direction:column;gap:10px;margin-top:10px;}
+    .explorer-options{display:flex;flex-direction:column;gap:10px;margin-top:8px;}
     .exp-option{
       border:1.5px solid var(--border);border-radius:var(--radius-sm);
       overflow:hidden;transition:box-shadow .15s;
@@ -2059,7 +2069,6 @@ ${md(execSummary)}`;
             <div class="pc-zone-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
             Options to consider
           </div>
-          <div class="pc-zone-body" style="color:var(--muted);font-style:italic;margin-bottom:8px">${esc(pr.suggested_directions||'')}</div>
           <div id="explorer-options-${idx}">
             ${explorerCache[pr.title] ? renderOptionsHtml(explorerCache[pr.title], idx) : `
             <div class="exp-loading" id="exp-loading-${idx}">
@@ -2150,11 +2159,8 @@ ${md(execSummary)}`;
     }
   }
 
-  function parseExplorerText(text){
-    const sec1Match = text.match(/SECTION\s*1[:\s]*THE ISSUE[\s\S]*?(?=SECTION\s*2|$)/i);
-    const sec2Match = text.match(/SECTION\s*2[:\s]*OPTIONS TO CONSIDER[\s\S]*/i);
-    const sec1 = sec1Match ? sec1Match[0].replace(/^SECTION\s*1[:\s]*THE ISSUE\s*/i,'').trim() : '';
-    const sec2Raw = sec2Match ? sec2Match[0].replace(/^SECTION\s*2[:\s]*OPTIONS TO CONSIDER\s*/i,'').trim() : '';
+  // ── Legacy parser (old Option A/B/C format — fallback for cached results) ───
+  function parseLegacyExplorerText(sec1, sec2Raw){
     const optionBlocks = sec2Raw.split(/(?=^\*{0,2}Option [A-C][*:—\s])/m).filter(b=>b.trim());
     const options = optionBlocks.map(block => {
       const titleMatch = block.match(/^\*{0,2}Option ([A-C])\*{0,2}[:\s—]+\*{0,2}\s*(.+?)[\*]*$/m);
@@ -2175,37 +2181,112 @@ ${md(execSummary)}`;
       const bodyRaw = bodyStartIdx >= 0 ? allLines.slice(bodyStartIdx).join('\n').trim() : '';
       return { letter, title, context: contextLines.join(' '), bodyRaw, tagsRaw };
     });
-    return { issue: sec1, options };
+    return { issue: sec1, bridge: '', groups: [], options };
+  }
+
+  function parseExplorerText(text){
+    const sec1Match = text.match(/SECTION\s*1[:\s]*THE ISSUE[\s\S]*?(?=SECTION\s*2|$)/i);
+    const sec1 = sec1Match ? sec1Match[0].replace(/^SECTION\s*1[:\s]*THE ISSUE\s*/i,'').trim() : '';
+    const sec2Match = text.match(/SECTION\s*2[:\s]*OPTIONS TO CONSIDER([\s\S]*)/i);
+    if(!sec2Match) return { issue: sec1, bridge: '', groups: [], options: [] };
+    const sec2Raw = sec2Match[1];
+
+    // Try new group-based format first
+    const groupMatches = [...sec2Raw.matchAll(/%%%GROUP_START%%%([\s\S]*?)%%%GROUP_END%%%/g)];
+    if(!groupMatches.length) return parseLegacyExplorerText(sec1, sec2Raw);
+
+    const bridgeMatch = sec2Raw.match(/BRIDGE:\s*([\s\S]*?)(?=%%%GROUP_START%%%)/);
+    const bridge = bridgeMatch ? bridgeMatch[1].trim() : '';
+
+    const letters = 'ABCDE';
+    let letterIdx = 0;
+    const groups = groupMatches.map(m => {
+      const block = m[1];
+      const groupName = (block.match(/GROUP_NAME:\s*(.+)/) || [])[1]?.trim() || '';
+      const rationale = (block.match(/GROUP_RATIONALE:\s*(.+)/) || [])[1]?.trim() || '';
+      const optMatches = [...block.matchAll(/%%%OPTION_START%%%([\s\S]*?)%%%OPTION_END%%%/g)];
+      const options = optMatches.map(om => {
+        const ob = om[1];
+        const letter = letters[letterIdx++] || String(letterIdx);
+        return {
+          letter,
+          title: (ob.match(/OPTION_TITLE:\s*(.+)/) || [])[1]?.trim() || '',
+          stage3Link: (ob.match(/STAGE3_LINK:\s*(.+)/) || [])[1]?.trim() || '',
+          whatRaw: (ob.match(/WHAT_TO_DO:([\s\S]*?)(?=WHERE:|TAGS:|%%%|$)/) || [])[1]?.trim() || '',
+          where: (ob.match(/WHERE:\s*(.+)/) || [])[1]?.trim() || '',
+          tagsRaw: (ob.match(/TAGS:\s*(.+)/) || [])[1]?.trim() || '',
+        };
+      });
+      return { groupName, rationale, options };
+    });
+    return { issue: sec1, bridge, groups, options: [] };
   }
 
   function renderOptionsHtml(parsed, idx){
-    if(!parsed || !parsed.options || !parsed.options.length){
-      return '<div style="font-size:12px;color:var(--muted);padding:8px 0">No options available.</div>';
+    if(!parsed) return '<div style="font-size:12px;color:var(--muted);padding:8px 0">No options available.</div>';
+
+    // Legacy format (options[] from old A/B/C prompt)
+    if(parsed.options && parsed.options.length && !parsed.groups.length){
+      const tierColors = {A:'#1a7a4a', B:'#0072BB', C:'#6b21a8'};
+      const tierNames = {A:'Within-Bank Adjustment', B:'Government Negotiation', C:'Structural Change'};
+      const optionsHtml = parsed.options.map((opt, i) => `
+        <div class="exp-option" id="exp-opt-${idx}-${i}">
+          <div class="exp-option-hdr" onclick="toggleExpOption('exp-opt-${idx}-${i}')">
+            <div class="exp-option-letter" style="background:${tierColors[opt.letter]||'#1a7a4a'}">${esc(opt.letter)}</div>
+            <div class="exp-option-title">${esc(opt.title)}</div>
+            <span class="exp-option-tier" style="background:${tierColors[opt.letter]||'#1a7a4a'}1a;color:${tierColors[opt.letter]||'#1a7a4a'};border:1px solid ${tierColors[opt.letter]||'#1a7a4a'}40">${esc(tierNames[opt.letter]||'')}</span>
+            <span class="exp-option-arrow">▾</span>
+          </div>
+          <div class="exp-option-body">
+            ${opt.context ? `<div class="exp-option-context">${esc(opt.context)}</div>` : ''}
+            ${opt.bodyRaw ? `<div>${md(opt.bodyRaw)}</div>` : ''}
+            ${opt.tagsRaw ? `<div class="exp-option-tags">${opt.tagsRaw.split('|').map(t=>`<span class="exp-tag">${esc(t.trim())}</span>`).join('')}<button class="exp-ask-btn" onclick="prefillFollowup(${idx},'Option ${esc(opt.letter)}: ${esc(opt.title)}')">Ask about this →</button></div>` : ''}
+          </div>
+        </div>`).join('');
+      return `<div class="explorer-options">${optionsHtml}</div>`;
     }
-    const tierNames = {A:'Within-Bank Adjustment', B:'Government Negotiation', C:'Structural Change'};
-    const tierColors = {A:'#1a7a4a', B:'#0072BB', C:'#6b21a8'};
 
-    const issueHtml = parsed.issue ? `
-      <div style="font-size:12.5px;color:var(--muted);font-style:italic;border-left:3px solid var(--s4);padding:8px 12px;margin-bottom:12px;background:#f8fffe;border-radius:0 4px 4px 0;line-height:1.6">
-        ${md(parsed.issue)}
-      </div>` : '';
+    // New group-based format
+    const groupConfig = {
+      'Crucial Enhancements':      {color:'#b91c1c', bg:'#fff1f1', border:'#fca5a540'},
+      'Important Considerations':  {color:'#0072BB', bg:'#eff6ff', border:'#93c5fd40'},
+      'Above and Beyond':          {color:'#7c3aed', bg:'#f5f3ff', border:'#c4b5fd40'},
+    };
 
-    const optionsHtml = parsed.options.map((opt, i) => `
-      <div class="exp-option" id="exp-opt-${idx}-${i}">
-        <div class="exp-option-hdr" onclick="toggleExpOption('exp-opt-${idx}-${i}')">
-          <div class="exp-option-letter" style="background:${tierColors[opt.letter]||'#1a7a4a'}">${esc(opt.letter)}</div>
-          <div class="exp-option-title">${esc(opt.title)}</div>
-          <span class="exp-option-tier" style="background:${tierColors[opt.letter]||'#1a7a4a'}1a;color:${tierColors[opt.letter]||'#1a7a4a'};border:1px solid ${tierColors[opt.letter]||'#1a7a4a'}40">${esc(tierNames[opt.letter]||'')}</span>
-          <span class="exp-option-arrow">▾</span>
-        </div>
-        <div class="exp-option-body">
-          ${opt.context ? `<div class="exp-option-context">${esc(opt.context)}</div>` : ''}
-          ${opt.bodyRaw ? `<div>${md(opt.bodyRaw)}</div>` : ''}
-          ${opt.tagsRaw ? `<div class="exp-option-tags">${opt.tagsRaw.split('|').map(t=>`<span class="exp-tag">${esc(t.trim())}</span>`).join('')}<button class="exp-ask-btn" onclick="prefillFollowup(${idx},'Option ${esc(opt.letter)}: ${esc(opt.title)}')">Ask about this →</button></div>` : ''}
-        </div>
-      </div>`).join('');
+    const bridgeHtml = parsed.bridge
+      ? `<div class="exp-bridge">${esc(parsed.bridge)}</div>`
+      : `<div class="exp-bridge" style="color:var(--muted);font-style:italic">The following is a list of key options the TTL can consider to address this priority.</div>`;
 
-    return issueHtml + `<div class="explorer-options">${optionsHtml}</div>`;
+    const groupsHtml = (parsed.groups || []).map(group => {
+      const cfg = groupConfig[group.groupName] || {color:'#6b7280', bg:'#f9fafb', border:'#e5e7eb'};
+      const optHtml = group.options.map(opt => `
+        <div class="exp-option" id="exp-opt-${idx}-${esc(opt.letter)}">
+          <div class="exp-option-hdr" onclick="toggleExpOption('exp-opt-${idx}-${esc(opt.letter)}')">
+            <div class="exp-option-letter" style="background:${cfg.color}">${esc(opt.letter)}</div>
+            <div class="exp-option-title">${esc(opt.title)}</div>
+            <span class="exp-option-arrow">▾</span>
+          </div>
+          <div class="exp-option-body">
+            ${opt.stage3Link ? `<div class="exp-stage3-link">↗ ${esc(opt.stage3Link)}</div>` : ''}
+            ${opt.whatRaw ? `<div>${md(opt.whatRaw)}</div>` : ''}
+            ${opt.where ? `<div class="exp-where">📄 ${esc(opt.where)}</div>` : ''}
+            <div class="exp-option-tags">
+              ${opt.tagsRaw ? opt.tagsRaw.split('|').map(t=>`<span class="exp-tag">${esc(t.trim())}</span>`).join('') : ''}
+              <button class="exp-ask-btn" onclick="prefillFollowup(${idx},'Option ${esc(opt.letter)}: ${esc(opt.title)}')">Ask about this →</button>
+            </div>
+          </div>
+        </div>`).join('');
+      return `
+        <div class="exp-group">
+          <div class="exp-group-hdr" style="background:${cfg.bg};border-bottom:1.5px solid ${cfg.border}">
+            <div class="exp-group-name" style="color:${cfg.color}">${esc(group.groupName)}</div>
+            ${group.rationale ? `<div class="exp-group-rationale" style="color:${cfg.color}">${esc(group.rationale)}</div>` : ''}
+          </div>
+          <div class="explorer-options" style="padding:10px 14px;">${optHtml}</div>
+        </div>`;
+    }).join('');
+
+    return bridgeHtml + `<div class="exp-groups">${groupsHtml}</div>`;
   }
 
   function toggleExpOption(id){
