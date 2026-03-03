@@ -296,15 +296,14 @@ GROUP_NAME: [Crucial Enhancements for Strengthening FCV-Sensitivity | Important 
 
 %%%OPTION_START%%%
 OPTION_TITLE: [Specific, verb-led action title — e.g. "Establish an Independent Project Oversight Board"]
-STAGE3_LINK: [Name the specific Stage 3 gap, mitigation measure, or enhancement opportunity this addresses — e.g. "Stage 3 Part B: Elite capture mitigation — Independent Oversight Board"]
+CONTEXT: [1-2 sentences explaining what this option does and why it matters for this specific priority/project context. Helps the TTL understand the option before reading the action bullets.]
 WHAT_TO_DO:
 • [Direct action. Name the WBG document section inline — e.g. "In Annex 3 (Implementation Arrangements), add a provision for..."]
+  NOTE: [1-2 sentences of the most useful implementation context for THIS bullet — effort/cost/timeline, draft language the TTL could insert, political watchpoint, WBG precedent. Only if genuinely adds value; omit if nothing useful to add.]
 • [Direct action. Name the WBG document section inline.]
 • [Direct action. Name the WBG document section inline.]
+  NOTE: [...]
 WHERE: [WBG document type(s) — e.g. PAD-Annex 3, Operations Manual, ESF-ESCP]
-NOTES:
-→ [Implementation note — include whichever of the following adds most decision-support value for THIS specific option: effort/cost/timeline estimate, draft language or exact phrasing the TTL could insert into the document, a political or stakeholder watchpoint, a comparable WBG project precedent, a timing constraint, or any other secondary consideration that helps the TTL weigh whether to pursue this option. 1–2 sentences per item. Repeat for 1–3 items total. Only include items that are genuinely useful for THIS option — do not force all categories.]
-TAGS: [document-type] | [timing] | [effort]
 %%%OPTION_END%%%
 
 [Repeat %%%OPTION_START%%% / %%%OPTION_END%%% for each additional option within this group]
@@ -318,16 +317,16 @@ TAGS: [document-type] | [timing] | [effort]
 # Formatting Rules
 - WHAT_TO_DO bullets must begin directly with the action. NEVER start with "This approach...", "This option...", "This leverages...", "This intervention...", or any framing sentence. Start with the verb.
 - Every WHAT_TO_DO bullet must name the WBG document section inline
-- STAGE3_LINK must reference a specific item from Stage 3, not a generic risk category
+- NOTE lines are optional — only include a NOTE beneath a bullet if it genuinely adds decision-support value; do not force notes on every bullet
 - Do not add introductory text before SECTION 1 or closing remarks after the final %%%GROUP_END%%%
 
 # Quality Check Before Submitting
 - Every option traces to a named Stage 3 gap or mitigation — no generic best practice
 - No HIGH PRIORITY Stage 3 item related to this priority has been omitted
+- Every option has a CONTEXT sentence explaining what it does and why it's relevant
 - Every WHAT_TO_DO bullet names the specific WBG document section
 - All three groups are present, each with ≥1 option
 - No bullet begins with a framing sentence ("This approach...", etc.)
-- Every option has a NOTES block with 1–3 genuinely useful implementation notes
 - No closing remarks after the final %%%GROUP_END%%%'''}
 
 
