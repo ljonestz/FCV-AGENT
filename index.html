@@ -632,6 +632,17 @@
       padding:12px 16px;margin-top:2px;margin-bottom:14px;font-size:13px;color:#2d4a8a;line-height:1.5;
     }
     .exec-nav-hint svg{flex-shrink:0;opacity:.7;}
+    .priorities-intro{background:#fafbfc;border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px;margin-bottom:14px;}
+    .pi-lead{font-size:12.5px;color:var(--text);line-height:1.6;margin:0 0 10px;}
+    .pi-list{display:flex;flex-direction:column;gap:5px;margin-bottom:10px;}
+    .pi-item{display:flex;align-items:center;gap:8px;font-size:12.5px;}
+    .pi-num{width:18px;height:18px;border-radius:50%;background:var(--wbg-navy);color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0;}
+    .pi-title{flex:1;color:var(--text);}
+    .pi-risk{font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;white-space:nowrap;}
+    .pi-risk-h{background:#fee2e2;color:#b91c1c;}
+    .pi-risk-m{background:#dbeafe;color:#1d4ed8;}
+    .pi-risk-l{background:#d1fae5;color:#065f46;}
+    .pi-footer{font-size:12px;color:var(--muted);margin:0;line-height:1.5;}
 
     /* Priority overview widget (replaces Risk Overview) */
     .pov-widget{padding:12px 14px;}
@@ -1434,6 +1445,8 @@
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
             For more information on each priority identified in this assessment — including concrete implementation options — toggle through the priority panels below.
           </div>
+          <!-- ── PRIORITIES INTRO ── -->
+          <div id="priorities-intro"></div>
           <!-- ── PRIORITY STEPPER ── -->
           <div class="priority-stepper" id="priority-stepper"></div>
           <!-- ── PRIORITY CARD ── -->
@@ -1871,9 +1884,32 @@ ${md(execSummary)}`;
   function initStage4UI(){
     if(!stageFourPriorities.length) return;
     currentPriority = 0;
+    renderPrioritiesIntro();
     renderPriorityStepper();
     showPriority(0);
     updateSidebar();
+  }
+
+  function renderPrioritiesIntro(){
+    const el = document.getElementById('priorities-intro');
+    if(!el || !stageFourPriorities.length) return;
+    const n = stageFourPriorities.length;
+    const riskLabel = (r) => r === 'High' ? 'High priority' : r === 'Medium' ? 'Medium priority' : r === 'Low' ? 'Lower priority' : '';
+    const riskCls = (r) => r === 'High' ? 'pi-risk-h' : r === 'Medium' ? 'pi-risk-m' : 'pi-risk-l';
+    const listItems = stageFourPriorities.map((pr, i) => {
+      const title = pr.title.replace(/^Priority\s+\d+\s*[·•]\s*/i, '');
+      const risk = riskLabel(pr.risk_level);
+      return `<div class="pi-item">
+        <span class="pi-num">${i+1}</span>
+        <span class="pi-title">${esc(title)}</span>
+        ${risk ? `<span class="pi-risk ${riskCls(pr.risk_level)}">${esc(risk)}</span>` : ''}
+      </div>`;
+    }).join('');
+    el.innerHTML = `<div class="priorities-intro ani">
+      <p class="pi-lead">Based on a three-stage assessment of the project documents, <strong>${n} strategic ${n === 1 ? 'priority has' : 'priorities have'} been identified</strong> to strengthen FCV-sensitivity and responsiveness in the design and delivery of this project:</p>
+      <div class="pi-list">${listItems}</div>
+      <p class="pi-footer">Toggle through the panels below to explore each priority and concrete implementation options in more detail.</p>
+    </div>`;
   }
 
   function renderPriorityStepper(){
