@@ -1432,11 +1432,9 @@
                 <button class="copy-btn" id="copy-btn" onclick="copyOut()">Copy all</button>
               </div>
             </div>
-            <div class="out-body" id="out-txt">${md(result)}</div>
+            <div class="out-body" id="out-txt">${md(result)}${isLast?'<div id="priorities-intro"></div>':''}</div>
           </div>
           ${isLast?`
-          <!-- ── PRIORITIES INTRO ── -->
-          <div id="priorities-intro"></div>
           <!-- ── PRIORITY STEPPER ── -->
           <div class="priority-stepper" id="priority-stepper"></div>
           <!-- ── PRIORITY CARD ── -->

@@ -299,8 +299,9 @@ OPTION_TITLE: [Specific, verb-led action title — e.g. "Establish an Independen
 CONTEXT: [1-2 sentences explaining what this option does and why it matters for this specific priority/project context. Helps the TTL understand the option before reading the action bullets.]
 WHAT_TO_DO:
 • [Direct action. Name the WBG document section inline — e.g. "In Annex 3 (Implementation Arrangements), add a provision for..."]
-  NOTE: [1-2 sentences of the most useful implementation context for THIS bullet — effort/cost/timeline, draft language the TTL could insert, political watchpoint, WBG precedent. Only if genuinely adds value; omit if nothing useful to add.]
+  NOTE: [1-3 sentences covering whichever of the following is most useful for THIS bullet: (a) draft language the TTL could insert verbatim into the named document section, (b) key considerations or tradeoffs the TTL should weigh before acting, or (c) practical details on effort/cost/timeline or political and stakeholder sensitivities. Only omit a NOTE if this bullet is a purely administrative step with no meaningful implementation nuance.]
 • [Direct action. Name the WBG document section inline.]
+  NOTE: [...]
 • [Direct action. Name the WBG document section inline.]
   NOTE: [...]
 WHERE: [WBG document type(s) — e.g. PAD-Annex 3, Operations Manual, ESF-ESCP]
@@ -317,13 +318,14 @@ WHERE: [WBG document type(s) — e.g. PAD-Annex 3, Operations Manual, ESF-ESCP]
 # Formatting Rules
 - WHAT_TO_DO bullets must begin directly with the action. NEVER start with "This approach...", "This option...", "This leverages...", "This intervention...", or any framing sentence. Start with the verb.
 - Every WHAT_TO_DO bullet must name the WBG document section inline
-- NOTE lines are optional — only include a NOTE beneath a bullet if it genuinely adds decision-support value; do not force notes on every bullet
+- NOTE lines are expected beneath every substantive bullet — omit only for purely administrative steps with no meaningful implementation nuance
 - Do not add introductory text before SECTION 1 or closing remarks after the final %%%GROUP_END%%%
 
 # Quality Check Before Submitting
 - Every option traces to a named Stage 3 gap or mitigation — no generic best practice
 - No HIGH PRIORITY Stage 3 item related to this priority has been omitted
 - Every option has a CONTEXT sentence explaining what it does and why it's relevant
+- Every substantive WHAT_TO_DO bullet has a NOTE with decision-support detail (draft language, considerations, or practical factors)
 - Every WHAT_TO_DO bullet names the specific WBG document section
 - All three groups are present, each with ≥1 option
 - No bullet begins with a framing sentence ("This approach...", etc.)
