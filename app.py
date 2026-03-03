@@ -302,6 +302,8 @@ WHAT_TO_DO:
 • [Direct action. Name the WBG document section inline.]
 • [Direct action. Name the WBG document section inline.]
 WHERE: [WBG document type(s) — e.g. PAD-Annex 3, Operations Manual, ESF-ESCP]
+NOTES:
+→ [Implementation note — include whichever of the following adds most decision-support value for THIS specific option: effort/cost/timeline estimate, draft language or exact phrasing the TTL could insert into the document, a political or stakeholder watchpoint, a comparable WBG project precedent, a timing constraint, or any other secondary consideration that helps the TTL weigh whether to pursue this option. 1–2 sentences per item. Repeat for 1–3 items total. Only include items that are genuinely useful for THIS option — do not force all categories.]
 TAGS: [document-type] | [timing] | [effort]
 %%%OPTION_END%%%
 
@@ -325,6 +327,7 @@ TAGS: [document-type] | [timing] | [effort]
 - Every WHAT_TO_DO bullet names the specific WBG document section
 - All three groups are present, each with ≥1 option
 - No bullet begins with a framing sentence ("This approach...", etc.)
+- Every option has a NOTES block with 1–3 genuinely useful implementation notes
 - No closing remarks after the final %%%GROUP_END%%%'''}
 
 

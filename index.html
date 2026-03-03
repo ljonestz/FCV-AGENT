@@ -694,6 +694,10 @@
       transition:all .14s;font-family:inherit;
     }
     .exp-ask-btn:hover{background:var(--s4);color:#fff;}
+    .exp-notes{background:#f0f6ff;border:1px solid #bfdbfe;border-radius:6px;padding:10px 14px;margin:10px 0 4px;}
+    .exp-notes-hdr{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#2563eb;margin-bottom:6px;}
+    .exp-note-item{font-size:12px;line-height:1.6;color:var(--text);padding:3px 0;}
+    .exp-note-item:not(:last-child){border-bottom:1px dashed #dbeafe;padding-bottom:6px;margin-bottom:3px;}
 
     /* Explorer loading inside card */
     .exp-loading{
@@ -2092,8 +2096,9 @@ ${md(execSummary)}`;
           letter,
           title: (ob.match(/OPTION_TITLE:\s*(.+)/) || [])[1]?.trim() || '',
           stage3Link: (ob.match(/STAGE3_LINK:\s*(.+)/) || [])[1]?.trim() || '',
-          whatRaw: (ob.match(/WHAT_TO_DO:([\s\S]*?)(?=WHERE:|TAGS:|%%%|$)/) || [])[1]?.trim() || '',
+          whatRaw: (ob.match(/WHAT_TO_DO:([\s\S]*?)(?=WHERE:|NOTES:|TAGS:|%%%|$)/) || [])[1]?.trim() || '',
           where: (ob.match(/WHERE:\s*(.+)/) || [])[1]?.trim() || '',
+          notesRaw: (ob.match(/NOTES:([\s\S]*?)(?=TAGS:|%%%|$)/) || [])[1]?.trim() || '',
           tagsRaw: (ob.match(/TAGS:\s*(.+)/) || [])[1]?.trim() || '',
         };
       });
@@ -2148,6 +2153,7 @@ ${md(execSummary)}`;
             ${opt.stage3Link ? `<div class="exp-stage3-link">↗ ${esc(opt.stage3Link)}</div>` : ''}
             ${opt.whatRaw ? `<div>${md(opt.whatRaw)}</div>` : ''}
             ${opt.where ? `<div class="exp-where">📄 ${esc(opt.where)}</div>` : ''}
+            ${opt.notesRaw ? `<div class="exp-notes"><div class="exp-notes-hdr">Implementation notes</div>${opt.notesRaw.split('\n').filter(l=>l.trim().startsWith('→')).map(l=>`<div class="exp-note-item">${md(l.replace(/^→\s*/,''))}</div>`).join('')}</div>` : ''}
             <div class="exp-option-tags">
               ${opt.tagsRaw ? opt.tagsRaw.split('|').map(t=>`<span class="exp-tag">${esc(t.trim())}</span>`).join('') : ''}
               <button class="exp-ask-btn" onclick="prefillFollowup(${idx},'Option ${esc(opt.letter)}: ${esc(opt.title)}')">Ask about this →</button>
