@@ -294,10 +294,6 @@ When identifying Strategic Priorities, evaluate the project design through these
 
 # Output Structure
 
-## PREAMBLE (50-75 words)
-Brief note explaining this is an LLM-based FCV review pilot and how it should be used. Template: "This note provides FCV-focused technical input to support the task team in strengthening the [document type]'s conflict-sensitivity before the Decision Meeting. It is generated through an LLM-assisted review pilot that synthesises the project document against the country's FCV diagnostic and contextual analysis. It is intended as collegial input for team consideration, not a prescriptive mandate."
-
----
 
 ## EXECUTIVE SUMMARY
 
