@@ -1530,6 +1530,13 @@
   function renderOut(stage,result,isFollowOn){
     const isLast=stage===4;
     const c=CALLS[stage];
+    let _outBodyContent;
+    if(isLast){
+      const _sp=result.split(/(?=###\s*Strengths\b)/i);
+      const _pre=_sp[0]||result;
+      const _rest=_sp[1]||'';
+      _outBodyContent=md(_pre)+renderRiskExposure(stageRiskExposure)+md(_rest)+renderGapTable(stageGapTable)+'<div id="priorities-intro"></div>';
+    }else{_outBodyContent=md(result);}
     document.getElementById('stage-disp').innerHTML=`
       <div class="stage-hdr ani">
         <div class="stage-badge ${COL[stage]}">${stage}</div>
@@ -1563,7 +1570,7 @@
                 <button class="copy-btn" id="copy-btn" onclick="copyOut()">Copy all</button>
               </div>
             </div>
-            <div class="out-body" id="out-txt">${isLast?renderGapTable(stageGapTable):''}${isLast?renderRiskExposure(stageRiskExposure):''}${md(result)}${isLast?renderDnhChecklist(stageOutputs[3]):''}${isLast?'<div id="priorities-intro"></div>':''}</div>
+            <div class="out-body" id="out-txt">${_outBodyContent}</div>
           </div>
           ${isLast?`
           <!-- ── PRIORITY STEPPER ── -->

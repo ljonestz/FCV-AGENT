@@ -304,11 +304,25 @@ Brief note explaining this is an LLM-based FCV review pilot and how it should be
 ### Opening Assessment (ONE BOLD SENTENCE, 25-35 words)
 A single bolded sentence summarising the project's overall FCV integration status.
 
+### Operational Context (150-200 words, ONE PARAGRAPH)
+Synthesise 3-4 converging FCV risks creating a uniquely challenging operating environment for THIS project. Forward-looking framing for post-preparation events. 2-3 citations max.
+
+### FCV Risk Exposure (130-170 words, TWO PARAGRAPHS)
+This sub-section bridges the analytical findings from Stages 1-3 into plain-language insight for a non-FCV-specialist TTL. Output this section using EXACTLY this delimiter format:
+
+%%%RISK_EXPOSURE_START%%%
+RISKS_TO_PROJECT: [One paragraph, 60-85 words. Identify the 2-3 FCV dynamics from the country context that pose the most direct threat to this project's delivery. Write in plain operational language — not analytical jargon. Name the specific risk and explain briefly why it matters for this project specifically.]
+RISKS_FROM_PROJECT: [One paragraph, 60-85 words. Identify 1-2 ways the project's current design could inadvertently worsen fragility or conflict if not carefully managed. Draw on Stage 2 "Risk FROM project" findings. Explain the mechanism clearly for a reader who has not seen Stages 1-3.]
+%%%RISK_EXPOSURE_END%%%
+
 ### Strengths (80-120 words, prose)
 3-4 concrete strengths actually present in the project document. Flowing prose. 2-3 citations max. Never cite the PCN/PAD itself.
 
+### Gaps (100-130 words, prose)
+The main weakness or cluster of weaknesses, constructively framed. Reference the WBG recommendations framework where relevant. 1-2 citations from RRA or external sources only.
+
 ### FCV Design Assessment Table
-Immediately after Strengths, output a table summarising how well the project meets each of the six WBG recommendations. Use EXACTLY this delimiter format — one block, no extra blank lines:
+After Gaps, output a table summarising how well the project meets each of the six WBG recommendations. Use EXACTLY this delimiter format — one block, no extra blank lines:
 
 %%%GAP_TABLE_START%%%
 REC_1_STATUS: [Strong | Partial | Weak | Not Addressed]
@@ -330,20 +344,6 @@ REC_6_STATUS: [Strong | Partial | Weak | Not Addressed]
 REC_6_GAP: [One sentence]
 REC_6_RISK: [High | Medium | Low]
 %%%GAP_TABLE_END%%%
-
-### FCV Risk Exposure (130-170 words, TWO PARAGRAPHS)
-This sub-section bridges the analytical findings from Stages 1-3 into plain-language insight for a non-FCV-specialist TTL. Output this section using EXACTLY this delimiter format:
-
-%%%RISK_EXPOSURE_START%%%
-RISKS_TO_PROJECT: [One paragraph, 60-85 words. Identify the 2-3 FCV dynamics from the country context that pose the most direct threat to this project's delivery. Write in plain operational language — not analytical jargon. Name the specific risk and explain briefly why it matters for this project specifically.]
-RISKS_FROM_PROJECT: [One paragraph, 60-85 words. Identify 1-2 ways the project's current design could inadvertently worsen fragility or conflict if not carefully managed. Draw on Stage 2 "Risk FROM project" findings. Explain the mechanism clearly for a reader who has not seen Stages 1-3.]
-%%%RISK_EXPOSURE_END%%%
-
-### Gaps (100-130 words, prose)
-The main weakness or cluster of weaknesses, constructively framed. Reference the WBG recommendations framework where relevant. 1-2 citations from RRA or external sources only.
-
-### Operational Context (150-200 words, ONE PARAGRAPH)
-Synthesise 3-4 converging FCV risks creating a uniquely challenging operating environment for THIS project. Forward-looking framing for post-preparation events. 2-3 citations max.
 
 ---
 
