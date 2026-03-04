@@ -702,8 +702,12 @@
     .exp-bullet-item::before{content:'•';position:absolute;left:2px;top:1px;color:var(--wbg-navy);font-weight:700;}
     .exp-bullet-text{font-size:13px;line-height:1.5;color:var(--text);}
     .exp-bullet-text p{margin:0;}
-    .exp-bullet-note{font-size:11.5px;line-height:1.55;color:#4b5563;padding:4px 8px;border-left:2px solid #bfdbfe;margin:5px 0 0 2px;background:#f8fbff;border-radius:0 3px 3px 0;}
+    .exp-bullet-note{font-size:11.5px;line-height:1.55;color:#4b5563;padding:4px 8px;border-left:2px solid #bfdbfe;margin:5px 0 0 2px;background:#f8fbff;border-radius:0 3px 3px 0;font-weight:600;}
     .exp-bullet-note p{margin:0;}
+    .pc-meta-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}
+    .pc-meta-chip{font-size:11px;padding:2px 8px;border-radius:10px;background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;}
+    .exp-meta-row{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 4px;}
+    .exp-meta-chip{font-size:11px;padding:2px 8px;border-radius:10px;background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;}
 
     /* Explorer loading inside card */
     .exp-loading{
@@ -1960,6 +1964,11 @@ ${md(execSummary)}`;
               <span class="pc-chip ${riskClass}">Risk: ${esc(pr.risk_level||'—')}</span>
               ${pr.dimension ? `<span class="pc-chip">${esc(pr.dimension)}</span>` : ''}
             </div>
+            ${(pr.who_acts||pr.when||pr.resources) ? `<div class="pc-meta-row">
+              ${pr.who_acts ? `<span class="pc-meta-chip"><strong>Who:</strong> ${esc(pr.who_acts)}</span>` : ''}
+              ${pr.when ? `<span class="pc-meta-chip"><strong>When:</strong> ${esc(pr.when)}</span>` : ''}
+              ${pr.resources ? `<span class="pc-meta-chip"><strong>Resources:</strong> ${esc(pr.resources)}</span>` : ''}
+            </div>` : ''}
           </div>
         </div>
         <!-- Zone 1: The Gap -->
@@ -2120,8 +2129,11 @@ ${md(execSummary)}`;
           letter,
           title: (ob.match(/OPTION_TITLE:\s*(.+)/) || [])[1]?.trim() || '',
           context: (ob.match(/CONTEXT:([\s\S]*?)(?=WHAT_TO_DO:|WHERE:|%%%|$)/) || [])[1]?.trim() || '',
-          whatRaw: (ob.match(/WHAT_TO_DO:([\s\S]*?)(?=WHERE:|%%%|$)/) || [])[1]?.trim() || '',
+          whatRaw: (ob.match(/WHAT_TO_DO:([\s\S]*?)(?=WHERE:|WHO_ACTS:|%%%|$)/) || [])[1]?.trim() || '',
           where: (ob.match(/WHERE:\s*(.+)/) || [])[1]?.trim() || '',
+          who_acts: (ob.match(/WHO_ACTS:\s*(.+)/) || [])[1]?.trim() || '',
+          when: (ob.match(/WHEN:\s*(.+)/) || [])[1]?.trim() || '',
+          resources: (ob.match(/RESOURCES:\s*(.+)/) || [])[1]?.trim() || '',
         };
       });
       return { groupName, rationale, options };
@@ -2189,7 +2201,7 @@ ${md(execSummary)}`;
         const bulletsHtml = bullets.map(b =>
           `<div class="exp-bullet-item">
             <div class="exp-bullet-text">${md(b.bullet)}</div>
-            ${b.note ? `<div class="exp-bullet-note">${md(b.note)}</div>` : ''}
+            ${b.note ? `<div class="exp-bullet-note"><strong>NOTE:</strong> ${md(b.note)}</div>` : ''}
           </div>`).join('');
         return `
         <div class="exp-option" id="exp-opt-${idx}-${esc(opt.letter)}">
@@ -2202,6 +2214,11 @@ ${md(execSummary)}`;
             ${opt.context ? `<div class="exp-option-context">${md(opt.context)}</div>` : ''}
             ${bulletsHtml ? `<div class="exp-bullets">${bulletsHtml}</div>` : ''}
             ${opt.where ? `<div class="exp-where">📄 ${esc(opt.where)}</div>` : ''}
+            ${(opt.who_acts||opt.when||opt.resources) ? `<div class="exp-meta-row">
+              ${opt.who_acts ? `<span class="exp-meta-chip"><strong>Who:</strong> ${esc(opt.who_acts)}</span>` : ''}
+              ${opt.when ? `<span class="exp-meta-chip"><strong>When:</strong> ${esc(opt.when)}</span>` : ''}
+              ${opt.resources ? `<span class="exp-meta-chip"><strong>Resources:</strong> ${esc(opt.resources)}</span>` : ''}
+            </div>` : ''}
             <div class="exp-option-footer">
               <button class="exp-ask-btn" onclick="prefillFollowup(${idx},'Option ${esc(opt.letter)}: ${esc(opt.title)}')">Ask about this →</button>
             </div>

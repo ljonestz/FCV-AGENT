@@ -340,6 +340,9 @@ RISK_LEVEL: [One of: High | Medium | Low]
 THE_GAP: 2-3 sentences on what is missing or inadequate in the current project design, specifically for this country and sector. Name the document section or component that is absent or insufficient.
 WHY_IT_MATTERS: 2-3 sentences covering both the operational consequence of not addressing this gap AND its significance through an FCV lens. Name the specific delivery risk, then explain the FCV mechanism at stake (e.g. exclusion fuelling grievance, weak institutions enabling spoilers, displacement disrupting community cohesion). Be concise — cover both dimensions in the same passage.
 SUGGESTED_DIRECTIONS: 2-3 sentences of entry points for the TTL. Use language like "Consider...", "The team may want to...", "Explore...". No bullet lists — write as flowing prose suggestions.
+WHO_ACTS: [One of: TTL | PIU | Government counterpart | FCV specialist | Procurement team]
+WHEN: [One of: At design stage | Before appraisal | During implementation]
+RESOURCES: [One of: Minimal | Moderate | Significant]
 
 Language to use: "Consider...", "The team may want to...", "Would benefit from...", "Explore...", "Could strengthen..."
 Strict prohibitions: NO specific percentages or dollar amounts; NO generic language; NO sub-bullet lists within a priority; NO criticism for post-preparation events.
@@ -367,6 +370,9 @@ RISK_LEVEL: [level]
 THE_GAP: [2-3 sentences]
 WHY_IT_MATTERS: [2-3 sentences — operational + FCV dimensions combined]
 SUGGESTED_DIRECTIONS: [2-3 sentences]
+WHO_ACTS: [one actor]
+WHEN: [one stage]
+RESOURCES: [one level]
 %%%PRIORITY_END%%%
 
 These delimiters are parsed by the interface. Do not add text between %%%PRIORITY_END%%% and the next %%%PRIORITY_START%%%.
@@ -390,7 +396,7 @@ These delimiters are parsed by the interface. Do not add text between %%%PRIORIT
 
 # Quality Check Before Submitting
 - Every priority wrapped in %%%PRIORITY_START%%% / %%%PRIORITY_END%%% delimiters
-- Every priority has all 6 fields: TITLE, FCV_DIMENSION, RISK_LEVEL, THE_GAP, WHY_IT_MATTERS, SUGGESTED_DIRECTIONS
+- Every priority has all 9 fields: TITLE, FCV_DIMENSION, RISK_LEVEL, THE_GAP, WHY_IT_MATTERS, SUGGESTED_DIRECTIONS, WHO_ACTS, WHEN, RESOURCES
 - 4-5 priorities total
 - Every priority names at least one specific geography, group, institution, or historical event
 - No generic or templated language anywhere
@@ -487,6 +493,9 @@ WHAT_TO_DO:
 • [Direct action. Name the WBG document section inline.]
   NOTE: [...]
 WHERE: [WBG document type(s) — e.g. PAD-Annex 3, Operations Manual, ESF-ESCP]
+WHO_ACTS: [One of: TTL | PIU | Government counterpart | FCV specialist | Procurement team]
+WHEN: [One of: At design stage | Before appraisal | During implementation]
+RESOURCES: [One of: Minimal | Moderate | Significant]
 %%%OPTION_END%%%
 
 [Repeat %%%OPTION_START%%% / %%%OPTION_END%%% for each additional option within this group]
@@ -508,6 +517,7 @@ WHERE: [WBG document type(s) — e.g. PAD-Annex 3, Operations Manual, ESF-ESCP]
 - Every option traces to a named Stage 3 gap or mitigation — no generic best practice
 - No HIGH PRIORITY Stage 3 item related to this priority has been omitted
 - Every option has a CONTEXT sentence explaining what it does and why it's relevant
+- Every option has WHO_ACTS, WHEN, and RESOURCES fields populated
 - Every substantive WHAT_TO_DO bullet has a NOTE with decision-support detail (draft language, considerations, or practical factors)
 - Every WHAT_TO_DO bullet names the specific WBG document section
 - All three groups are present, each with ≥1 option
@@ -562,6 +572,9 @@ def extract_priorities(text):
         why_it_matters = get_field('WHY_IT_MATTERS')
         why_fcv_matters = get_field('WHY_FCV_MATTERS')
         suggested_directions = get_field('SUGGESTED_DIRECTIONS')
+        who_acts = get_field('WHO_ACTS')
+        when = get_field('WHEN')
+        resources = get_field('RESOURCES')
         body = '\n\n'.join(filter(None, [the_gap, why_it_matters, why_fcv_matters, suggested_directions]))
         priorities.append({
             'title': title,
@@ -572,6 +585,9 @@ def extract_priorities(text):
             'why_it_matters': why_it_matters,
             'why_fcv_matters': why_fcv_matters,
             'suggested_directions': suggested_directions,
+            'who_acts': who_acts,
+            'when': when,
+            'resources': resources,
         })
     # Fallback: positional parsing if fewer than 4 delimiter blocks found
     if len(priorities) < 4:
