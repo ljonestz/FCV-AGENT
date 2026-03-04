@@ -307,12 +307,37 @@ A single bolded sentence summarising the project's overall FCV integration statu
 ### Strengths (80-120 words, prose)
 3-4 concrete strengths actually present in the project document. Flowing prose. 2-3 citations max. Never cite the PCN/PAD itself.
 
+### FCV Design Assessment Table
+Immediately after Strengths, output a table summarising how well the project meets each of the six WBG recommendations. Use EXACTLY this delimiter format — one block, no extra blank lines:
+
+%%%GAP_TABLE_START%%%
+REC_1_STATUS: [Strong | Partial | Weak | Not Addressed]
+REC_1_GAP: [One sentence — the key gap, or "No significant gap identified" if Strong]
+REC_1_RISK: [High | Medium | Low]
+REC_2_STATUS: [Strong | Partial | Weak | Not Addressed]
+REC_2_GAP: [One sentence]
+REC_2_RISK: [High | Medium | Low]
+REC_3_STATUS: [Strong | Partial | Weak | Not Addressed]
+REC_3_GAP: [One sentence]
+REC_3_RISK: [High | Medium | Low]
+REC_4_STATUS: [Strong | Partial | Weak | Not Addressed]
+REC_4_GAP: [One sentence]
+REC_4_RISK: [High | Medium | Low]
+REC_5_STATUS: [Strong | Partial | Weak | Not Addressed]
+REC_5_GAP: [One sentence]
+REC_5_RISK: [High | Medium | Low]
+REC_6_STATUS: [Strong | Partial | Weak | Not Addressed]
+REC_6_GAP: [One sentence]
+REC_6_RISK: [High | Medium | Low]
+%%%GAP_TABLE_END%%%
+
 ### FCV Risk Exposure (130-170 words, TWO PARAGRAPHS)
-This sub-section bridges the analytical findings from Stages 1-3 into plain-language insight for a non-FCV-specialist TTL.
+This sub-section bridges the analytical findings from Stages 1-3 into plain-language insight for a non-FCV-specialist TTL. Output this section using EXACTLY this delimiter format:
 
-**Paragraph 1 — Risks to this project:** Identify the 2-3 FCV dynamics from the country context that pose the most direct threat to this project's delivery. Write in plain, operational language — not analytical jargon. Name the specific risk (e.g. "contested elections creating implementation delays", "gang-controlled access routes limiting site supervision") and explain briefly why it matters for this project specifically.
-
-**Paragraph 2 — How this project could affect FCV dynamics:** Identify 1-2 ways the project's current design could inadvertently worsen fragility or conflict if not carefully managed. This should draw on Stage 2's "Risk FROM project" findings. Write for a reader who has not seen Stages 1-3 — explain the mechanism clearly (e.g. "If benefits are concentrated in one community without transparent targeting criteria, this risks inflaming existing tensions between...").
+%%%RISK_EXPOSURE_START%%%
+RISKS_TO_PROJECT: [One paragraph, 60-85 words. Identify the 2-3 FCV dynamics from the country context that pose the most direct threat to this project's delivery. Write in plain operational language — not analytical jargon. Name the specific risk and explain briefly why it matters for this project specifically.]
+RISKS_FROM_PROJECT: [One paragraph, 60-85 words. Identify 1-2 ways the project's current design could inadvertently worsen fragility or conflict if not carefully managed. Draw on Stage 2 "Risk FROM project" findings. Explain the mechanism clearly for a reader who has not seen Stages 1-3.]
+%%%RISK_EXPOSURE_END%%%
 
 ### Gaps (100-130 words, prose)
 The main weakness or cluster of weaknesses, constructively framed. Reference the WBG recommendations framework where relevant. 1-2 citations from RRA or external sources only.
@@ -388,11 +413,12 @@ These delimiters are parsed by the interface. Do not add text between %%%PRIORIT
 - Preamble: 50-75 words
 - Opening Assessment: 25-35 words
 - Strengths: 80-120 words
-- FCV Risk Exposure: 130-170 words (two paragraphs)
+- FCV Design Assessment Table: one sentence per recommendation (concise)
+- FCV Risk Exposure: 130-170 words total across both paragraphs
 - Gaps: 100-130 words
 - Operational Context: 150-200 words
 - Each priority (all fields combined): 120-160 words
-- TOTAL MAXIMUM: 2,100 words
+- TOTAL MAXIMUM: 2,200 words
 
 # Quality Check Before Submitting
 - Every priority wrapped in %%%PRIORITY_START%%% / %%%PRIORITY_END%%% delimiters
@@ -402,6 +428,9 @@ These delimiters are parsed by the interface. Do not add text between %%%PRIORIT
 - No generic or templated language anywhere
 - FCV Risk Exposure section has exactly two paragraphs: one on risks TO the project, one on how the project could affect FCV dynamics
 - FCV Risk Exposure is written in plain language accessible to a non-FCV-specialist — no unexplained jargon
+- GAP_TABLE block is present with all 6 recommendations (REC_1 through REC_6), each having STATUS, GAP, and RISK fields
+- RISK_EXPOSURE block is present with both RISKS_TO_PROJECT and RISKS_FROM_PROJECT fields
+- Both RISKS_TO_PROJECT and RISKS_FROM_PROJECT are written in plain language with no unexplained jargon
 
 Now produce the FCV Support Note following this exact structure.''',
 
@@ -535,6 +564,9 @@ def clean_stage4_output(text):
     text = re.sub(r'%%%PRIORITY_START%%%.*?%%%PRIORITY_END%%%', '', text, flags=re.DOTALL)
     # Remove FCV rating line
     text = re.sub(r'%%%FCV_RATING:[^%]*%%%\n?', '', text)
+    # Remove gap table and risk exposure blocks — UI renders them
+    text = re.sub(r'%%%GAP_TABLE_START%%%.*?%%%GAP_TABLE_END%%%', '', text, flags=re.DOTALL)
+    text = re.sub(r'%%%RISK_EXPOSURE_START%%%.*?%%%RISK_EXPOSURE_END%%%', '', text, flags=re.DOTALL)
     # Clean up extra blank lines left by removal
     text = re.sub(r'\n{3,}', '\n\n', text).strip()
     return text
@@ -546,6 +578,49 @@ def extract_fcv_rating(text):
     if m:
         return m.group(1).strip()
     return ''
+
+
+def extract_gap_table(text):
+    """Parse %%%GAP_TABLE_START%%% / %%%GAP_TABLE_END%%% block from Stage 4 output."""
+    m = re.search(r'%%%GAP_TABLE_START%%%(.*?)%%%GAP_TABLE_END%%%', text, re.DOTALL)
+    if not m:
+        return None
+    block = m.group(1).strip()
+    table = []
+    rec_names = [
+        'DRR-informed design',
+        'Stakeholder analysis',
+        'Theory of Change / PDO',
+        'Risk and results equation',
+        'Results Framework / M&E',
+        'Digital and innovative tools'
+    ]
+    for i in range(1, 7):
+        def get_val(field, b=block, n=i):
+            match = re.search(rf'REC_{n}_{field}:\s*(.+)', b)
+            return match.group(1).strip() if match else ''
+        table.append({
+            'rec_num': i,
+            'rec_name': rec_names[i-1],
+            'status': get_val('STATUS'),
+            'gap': get_val('GAP'),
+            'risk': get_val('RISK'),
+        })
+    return table
+
+
+def extract_risk_exposure(text):
+    """Parse %%%RISK_EXPOSURE_START%%% / %%%RISK_EXPOSURE_END%%% block from Stage 4 output."""
+    m = re.search(r'%%%RISK_EXPOSURE_START%%%(.*?)%%%RISK_EXPOSURE_END%%%', text, re.DOTALL)
+    if not m:
+        return None
+    block = m.group(1).strip()
+    to_match = re.search(r'RISKS_TO_PROJECT:\s*(.+?)(?=RISKS_FROM_PROJECT:|$)', block, re.DOTALL)
+    from_match = re.search(r'RISKS_FROM_PROJECT:\s*(.+?)$', block, re.DOTALL)
+    return {
+        'risks_to': to_match.group(1).strip() if to_match else '',
+        'risks_from': from_match.group(1).strip() if from_match else '',
+    }
 
 
 def extract_priorities(text):
@@ -888,9 +963,13 @@ def run_stage():
                 # Stage 4: extract priorities + rating from raw delimited text, then clean for display
                 priorities = []
                 fcv_rating = ''
+                gap_table = None
+                risk_exposure = None
                 if stage == 4:
                     priorities = extract_priorities(full_text)
                     fcv_rating = extract_fcv_rating(full_text)
+                    gap_table = extract_gap_table(full_text)
+                    risk_exposure = extract_risk_exposure(full_text)
                     full_text = clean_stage4_output(full_text)
                     from datetime import date
                     header = DO_NO_HARM_HEADER.format(date=date.today().strftime('%d %B %Y'))
@@ -900,7 +979,7 @@ def run_stage():
                 if len(updated_messages) > 20:
                     updated_messages = updated_messages[-20:]
 
-                yield f"data: {json.dumps({'done': True, 'result': full_text, 'history': updated_messages, 'stage': stage, 'priorities': priorities, 'fcv_rating': fcv_rating})}\n\n"
+                yield f"data: {json.dumps({'done': True, 'result': full_text, 'history': updated_messages, 'stage': stage, 'priorities': priorities, 'fcv_rating': fcv_rating, 'gap_table': gap_table, 'risk_exposure': risk_exposure})}\n\n"
 
             except anthropic.AuthenticationError:
                 yield f"data: {json.dumps({'error': 'Invalid API key.'})}\n\n"

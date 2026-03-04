@@ -709,6 +709,60 @@
     .exp-meta-row{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 4px;}
     .exp-meta-chip{font-size:11px;padding:2px 8px;border-radius:10px;background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;}
 
+    /* Gap summary table */
+    .gap-table{width:100%;border-collapse:collapse;font-size:12.5px;margin:10px 0 4px;}
+    .gap-table th{text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);padding:5px 10px;border-bottom:2px solid var(--border);background:var(--off-white);}
+    .gap-table td{padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:top;line-height:1.45;}
+    .gap-table tr:last-child td{border-bottom:none;}
+    .gap-table tr:hover td{background:#fafcff;}
+    .gap-table .rec-name{font-weight:600;color:var(--text);}
+    .gap-table .gap-note{font-size:11.5px;color:var(--muted);margin-top:2px;}
+    .status-pill{display:inline-block;font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:10px;white-space:nowrap;}
+    .status-strong{background:#d1fae5;color:#065f46;}
+    .status-partial{background:#fef3c7;color:#92400e;}
+    .status-weak{background:#fee2e2;color:#991b1b;}
+    .status-none{background:#f1f5f9;color:#475569;}
+    .risk-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:3px;vertical-align:middle;}
+    .dot-h{background:#ef4444;}.dot-m{background:#f59e0b;}.dot-l{background:#22c55e;}
+
+    /* FCV Risk Exposure */
+    .risk-exposure{background:#fff8f0;border:1px solid #fde8c8;border-radius:var(--radius-sm);overflow:hidden;margin:10px 0 4px;}
+    .re-hdr{background:#fde8c8;padding:8px 14px;display:flex;align-items:center;gap:8px;}
+    .re-hdr-icon{font-size:14px;}
+    .re-hdr-title{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.09em;color:#92400e;}
+    .re-body{padding:14px 16px;display:flex;flex-direction:column;gap:12px;}
+    .re-para{display:flex;gap:11px;}
+    .re-para-icon{flex-shrink:0;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;margin-top:1px;}
+    .re-to{background:#fee2e2;color:#991b1b;}
+    .re-from{background:#fef3c7;color:#92400e;}
+    .re-para-content{flex:1;}
+    .re-para-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:3px;}
+    .label-to{color:#991b1b;}
+    .label-from{color:#92400e;}
+    .re-para-text{font-size:13px;line-height:1.65;color:var(--text);}
+
+    /* Do No Harm collapsible */
+    .dnh-toggle{width:100%;background:none;border:none;cursor:pointer;text-align:left;padding:9px 14px;display:flex;align-items:center;gap:8px;font-family:inherit;border-top:1px solid var(--border);margin-top:4px;}
+    .dnh-toggle-label{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);flex:1;}
+    .dnh-toggle-arrow{font-size:11px;color:var(--muted);transition:transform .18s;}
+    .dnh-toggle.open .dnh-toggle-arrow{transform:rotate(180deg);}
+    .dnh-body{display:none;border-top:1px solid var(--border);}
+    .dnh-body.open{display:block;}
+    .dnh-table{width:100%;border-collapse:collapse;font-size:12px;}
+    .dnh-table td{padding:7px 14px;border-bottom:1px solid var(--border);vertical-align:top;line-height:1.4;}
+    .dnh-table tr:last-child td{border-bottom:none;}
+    .dnh-table td:first-child{width:46%;font-size:12px;color:var(--text);}
+    .dnh-table td:nth-child(2){width:13%;text-align:center;}
+    .dnh-table td:nth-child(3){font-size:11.5px;color:var(--muted);}
+    .dnh-yes{color:#065f46;font-weight:700;font-size:11px;}
+    .dnh-partial{color:#92400e;font-weight:700;font-size:11px;}
+    .dnh-no{color:#991b1b;font-weight:700;font-size:11px;}
+    .dnh-table-hdr td{background:var(--off-white);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:6px 14px;}
+
+    /* Exec section label */
+    .exec-section-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:16px 0 7px;display:flex;align-items:center;gap:7px;}
+    .exec-section-lbl::after{content:'';flex:1;height:1px;background:var(--border);}
+
     /* Explorer loading inside card */
     .exp-loading{
       display:flex;align-items:center;gap:12px;padding:20px 0;
@@ -1363,7 +1417,7 @@
             }
             if(p.preprocess){const el=document.getElementById('s-out');if(el)el.innerHTML=`<div style="display:flex;align-items:center;gap:10px;color:var(--muted);font-style:italic;padding:12px 0"><svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;animation:spin 1s linear infinite;flex-shrink:0"><circle cx="12" cy="12" r="10" stroke-opacity=".25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-opacity="1"/></svg>${esc(p.preprocess)}</div>`}
             if(p.chunk){streamed+=p.chunk;const el=document.getElementById('s-out');if(el)el.innerHTML=md(streamed)}
-            if(p.done){hist=p.history||hist;curS=stage;stageOutputs[stage]=p.result;stageHists[stage]=hist.slice();updateSessionBar();renderOut(stage,p.result,followOn);setStepper(stage,'done');
+            if(p.done){hist=p.history||hist;curS=stage;stageOutputs[stage]=p.result;stageHists[stage]=hist.slice();updateSessionBar();if(stage===4){stageGapTable=p.gap_table||null;stageRiskExposure=p.risk_exposure||null;}renderOut(stage,p.result,followOn);setStepper(stage,'done');
               // Explorer panel + sidebar for Stage 4
               if(stage===4 && p.priorities && p.priorities.length){
                 stageFourPriorities=p.priorities;
@@ -1398,6 +1452,79 @@
       }
     }catch(e){showErr(e.message,stage);document.getElementById('stage-disp').innerHTML=''}
     busy=false;
+  }
+
+  function renderGapTable(gapTable) {
+    if (!gapTable || !gapTable.length) return '';
+    const statusClass = s => s === 'Strong' ? 'status-strong' : s === 'Partial' ? 'status-partial' : s === 'Weak' ? 'status-weak' : 'status-none';
+    const riskDot = r => `<span class="risk-dot ${r==='High'?'dot-h':r==='Medium'?'dot-m':'dot-l'}"></span>${esc(r)}`;
+    const rows = gapTable.map(row => `
+      <tr>
+        <td><span class="rec-name">${row.rec_num} · ${esc(row.rec_name)}</span></td>
+        <td><span class="status-pill ${statusClass(row.status)}">${esc(row.status)}</span></td>
+        <td class="gap-note">${esc(row.gap)}</td>
+        <td>${riskDot(row.risk)}</td>
+      </tr>`).join('');
+    return `
+      <div class="exec-section-lbl">FCV Design Assessment — Six Recommendations</div>
+      <table class="gap-table">
+        <thead><tr><th>WBG Recommendation</th><th>Status</th><th>Key gap</th><th>Risk</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+  }
+
+  function renderRiskExposure(re) {
+    if (!re || (!re.risks_to && !re.risks_from)) return '';
+    return `
+      <div class="exec-section-lbl">FCV Risk Exposure</div>
+      <div class="risk-exposure">
+        <div class="re-hdr">
+          <span class="re-hdr-icon">⚠</span>
+          <span class="re-hdr-title">Key risks for the Task Team to be aware of</span>
+        </div>
+        <div class="re-body">
+          ${re.risks_to ? `<div class="re-para">
+            <div class="re-para-icon re-to">→</div>
+            <div class="re-para-content">
+              <div class="re-para-label label-to">How FCV risks could affect this project</div>
+              <div class="re-para-text">${md(re.risks_to)}</div>
+            </div>
+          </div>` : ''}
+          ${re.risks_from ? `<div class="re-para">
+            <div class="re-para-icon re-from">←</div>
+            <div class="re-para-content">
+              <div class="re-para-label label-from">How this project could affect FCV dynamics</div>
+              <div class="re-para-text">${md(re.risks_from)}</div>
+            </div>
+          </div>` : ''}
+        </div>
+      </div>`;
+  }
+
+  function renderDnhChecklist(stage3Text) {
+    if (!stage3Text) return '';
+    const tableMatch = stage3Text.match(/##\s*Part C[\s\S]*?(?=##\s*Part D|$)/i);
+    if (!tableMatch) return '';
+    const rows = [...tableMatch[0].matchAll(/\|\s*([^|]+?)\s*\|\s*(Yes|Partial|No)\s*\|\s*([^|]+?)\s*\|/gi)];
+    if (!rows.length) return '';
+    const statusHtml = s => {
+      const cl = s.toLowerCase() === 'yes' ? 'dnh-yes' : s.toLowerCase() === 'partial' ? 'dnh-partial' : 'dnh-no';
+      return `<span class="${cl}">${esc(s)}</span>`;
+    };
+    const rowsHtml = rows.map(r => `<tr><td>${esc(r[1].trim())}</td><td>${statusHtml(r[2].trim())}</td><td>${esc(r[3].trim())}</td></tr>`).join('');
+    const id = 'dnh-' + Math.random().toString(36).slice(2,7);
+    return `
+      <button class="dnh-toggle" onclick="this.classList.toggle('open');document.getElementById('${id}').classList.toggle('open');this.querySelector('.dnh-toggle-arrow').textContent=document.getElementById('${id}').classList.contains('open')?'▴':'▾';">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5a6a7e" stroke-width="2.5"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <span class="dnh-toggle-label">Do No Harm Checklist</span>
+        <span class="dnh-toggle-arrow">▾</span>
+      </button>
+      <div class="dnh-body" id="${id}">
+        <table class="dnh-table">
+          <tr class="dnh-table-hdr"><td>Principle</td><td>Status</td><td>Evidence or gap</td></tr>
+          ${rowsHtml}
+        </table>
+      </div>`;
   }
 
   function renderOut(stage,result,isFollowOn){
@@ -1436,7 +1563,7 @@
                 <button class="copy-btn" id="copy-btn" onclick="copyOut()">Copy all</button>
               </div>
             </div>
-            <div class="out-body" id="out-txt">${md(result)}${isLast?'<div id="priorities-intro"></div>':''}</div>
+            <div class="out-body" id="out-txt">${isLast?renderGapTable(stageGapTable):''}${isLast?renderRiskExposure(stageRiskExposure):''}${md(result)}${isLast?renderDnhChecklist(stageOutputs[3]):''}${isLast?'<div id="priorities-intro"></div>':''}</div>
           </div>
           ${isLast?`
           <!-- ── PRIORITY STEPPER ── -->
@@ -1786,6 +1913,8 @@ ${md(execSummary)}`;
   // ── Stage output tracking ─────────────────────────────────────────────────
   let stageOutputs = {};  // {stageNum: result_text} — used by goBack()
   let stageHists = {};    // {stageNum: hist_snapshot} — used to restore history on goBack()
+  let stageGapTable = null;
+  let stageRiskExposure = null;
 
   // ── Stage 4 state ──────────────────────────────────────────────────────────
   let stageFourPriorities = [];
