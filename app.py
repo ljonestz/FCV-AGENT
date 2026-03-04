@@ -307,8 +307,15 @@ A single bolded sentence summarising the project's overall FCV integration statu
 ### Strengths (80-120 words, prose)
 3-4 concrete strengths actually present in the project document. Flowing prose. 2-3 citations max. Never cite the PCN/PAD itself.
 
+### FCV Risk Exposure (130-170 words, TWO PARAGRAPHS)
+This sub-section bridges the analytical findings from Stages 1-3 into plain-language insight for a non-FCV-specialist TTL.
+
+**Paragraph 1 — Risks to this project:** Identify the 2-3 FCV dynamics from the country context that pose the most direct threat to this project's delivery. Write in plain, operational language — not analytical jargon. Name the specific risk (e.g. "contested elections creating implementation delays", "gang-controlled access routes limiting site supervision") and explain briefly why it matters for this project specifically.
+
+**Paragraph 2 — How this project could affect FCV dynamics:** Identify 1-2 ways the project's current design could inadvertently worsen fragility or conflict if not carefully managed. This should draw on Stage 2's "Risk FROM project" findings. Write for a reader who has not seen Stages 1-3 — explain the mechanism clearly (e.g. "If benefits are concentrated in one community without transparent targeting criteria, this risks inflaming existing tensions between...").
+
 ### Gaps (100-130 words, prose)
-The main weakness or cluster of weaknesses, constructively framed. 1-2 citations from RRA or external sources only.
+The main weakness or cluster of weaknesses, constructively framed. Reference the WBG recommendations framework where relevant. 1-2 citations from RRA or external sources only.
 
 ### Operational Context (150-200 words, ONE PARAGRAPH)
 Synthesise 3-4 converging FCV risks creating a uniquely challenging operating environment for THIS project. Forward-looking framing for post-preparation events. 2-3 citations max.
@@ -328,7 +335,7 @@ Each priority MUST:
 For EACH priority, you will output structured fields (see delimiter format below). Each field must contain:
 
 TITLE: Priority N · [Actionable verb phrase starting with a strong verb]
-FCV_DIMENSION: [One of: Institutional Legitimacy | Inclusion | Social Cohesion | Security | Economic Livelihoods | Resilience]
+FCV_DIMENSION: [One of: Institutional Legitimacy | Inclusion | Social Cohesion | Security | Economic Livelihoods | Resilience — these map to the analytical risk dimensions and will appear as visible tags on each priority card]
 RISK_LEVEL: [One of: High | Medium | Low]
 THE_GAP: 2-3 sentences on what is missing or inadequate in the current project design, specifically for this country and sector. Name the document section or component that is absent or insufficient.
 WHY_IT_MATTERS: 2-3 sentences covering both the operational consequence of not addressing this gap AND its significance through an FCV lens. Name the specific delivery risk, then explain the FCV mechanism at stake (e.g. exclusion fuelling grievance, weak institutions enabling spoilers, displacement disrupting community cohesion). Be concise — cover both dimensions in the same passage.
@@ -375,10 +382,11 @@ These delimiters are parsed by the interface. Do not add text between %%%PRIORIT
 - Preamble: 50-75 words
 - Opening Assessment: 25-35 words
 - Strengths: 80-120 words
+- FCV Risk Exposure: 130-170 words (two paragraphs)
 - Gaps: 100-130 words
 - Operational Context: 150-200 words
 - Each priority (all fields combined): 120-160 words
-- TOTAL MAXIMUM: 1,800 words
+- TOTAL MAXIMUM: 2,100 words
 
 # Quality Check Before Submitting
 - Every priority wrapped in %%%PRIORITY_START%%% / %%%PRIORITY_END%%% delimiters
@@ -386,6 +394,8 @@ These delimiters are parsed by the interface. Do not add text between %%%PRIORIT
 - 4-5 priorities total
 - Every priority names at least one specific geography, group, institution, or historical event
 - No generic or templated language anywhere
+- FCV Risk Exposure section has exactly two paragraphs: one on risks TO the project, one on how the project could affect FCV dynamics
+- FCV Risk Exposure is written in plain language accessible to a non-FCV-specialist — no unexplained jargon
 
 Now produce the FCV Support Note following this exact structure.''',
 
@@ -424,11 +434,16 @@ CRITICAL: Your options must draw directly and specifically from what Stage 3 ide
 ---
 
 # WBG FCV OPERATIONAL LEVERS — REFERENCE
-- **GEMS:** Satellite/mobile technology for remote supervision
-- **Third-Party Monitoring (TPM):** Independent NGO/research verification where Bank access is limited
-- **Iterative Risk Management:** Formal trigger points in PAD/POM to pause and adapt
-- **Alternative Implementation Arrangements:** NGOs, UN agencies, or community groups as delivery partners
-- **Conflict-Sensitive GRMs:** Customary/traditional dispute resolution alongside formal complaint systems
+Use these tools where relevant. Always explain them briefly in plain language the first time you reference them in any option.
+
+- **CERC** (Contingency Emergency Response Component): A zero-dollar contingency added at appraisal, activated during crises without Board restructuring. Enables rapid fund reallocation when conflict or shocks disrupt delivery.
+- **HEIS** (Hands-on Expanded Implementation Support): Allows WBG staff to directly support procurement and implementation in fragile settings, bypassing standard timelines.
+- **TPM** (Third-Party Monitoring): Independent NGO or research body engaged to verify activities where direct Bank supervision is impossible due to access or security constraints.
+- **GEMS** (Geo-Enabling initiative for Monitoring and Supervision): Satellite and mobile technology for remote project supervision and data collection in hard-to-reach areas.
+- **Unallocated funds**: A budget reserve built into the design providing flexibility to respond to context changes without Board restructuring.
+- **Phased disbursement**: Disbursement tranches tied to conditions, allowing design adaptation based on context before releasing subsequent funding.
+- **Alternative Implementation Arrangements**: UN agencies, international NGOs, or community-driven mechanisms as delivery partners where government capacity is limited or contested.
+- **GRM** (Grievance Redress Mechanism): A formal system for beneficiaries to raise complaints. In FCV contexts, should complement — not replace — customary or community-based dispute resolution.
 
 ---
 
@@ -454,7 +469,7 @@ Every group must have at least 1 option. Total: 3–5 options across all groups.
 # Output Format
 
 ## SECTION 1: THE ISSUE (100–150 words)
-Explain why this priority matters for THIS project in THIS country context. Anchor directly and explicitly to Stage 3 findings — name the specific gaps, risks, or mitigations Stage 3 identified. Name at least one specific place, community, institution, or historical event. Be direct about what happens if this is not addressed. Do not restate the priority text.
+Explain why this priority matters for THIS project in THIS country context. Anchor directly and explicitly to Stage 3 findings — name the specific gaps, risks, or mitigations Stage 3 identified. Name at least one specific place, community, institution, or historical event. Be direct about what happens if this is not addressed. Do not restate the priority text. Where relevant, anchor the issue explicitly to one or more of the six WBG FCV recommendations (DRR-informed design, stakeholder analysis, ToC/PDO, risk-results equation, FCV-smart M&E, digital tools) to help the TTL understand where this fits in the broader operational framework.
 
 ## SECTION 2: OPTIONS TO CONSIDER
 
@@ -486,6 +501,7 @@ WHERE: [WBG document type(s) — e.g. PAD-Annex 3, Operations Manual, ESF-ESCP]
 - WHAT_TO_DO bullets must begin directly with the action. NEVER start with "This approach...", "This option...", "This leverages...", "This intervention...", or any framing sentence. Start with the verb.
 - Every WHAT_TO_DO bullet must name the WBG document section inline
 - NOTE lines are expected beneath every substantive bullet — omit only for purely administrative steps with no meaningful implementation nuance
+- Always explain WBG technical terms (CERC, HEIS, TPM, GEMS, GRM, SORT, POM) briefly in plain language the first time they appear in any option — include a parenthetical one-line explanation. Do not assume the reader knows these acronyms.
 - Do not add introductory text before SECTION 1 or closing remarks after the final %%%GROUP_END%%%
 
 # Quality Check Before Submitting
