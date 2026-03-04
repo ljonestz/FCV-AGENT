@@ -503,6 +503,321 @@
     .topbar-prompt-btn:hover{background:rgba(255,255,255,.2);color:#fff}
     .topbar-prompt-btn.has-modified{border-color:rgba(245,158,11,.6);color:#fbbf24}
 
+    /* ══════════════════════════════════════════
+       STAGE 4 — PRIORITY CARD SYSTEM
+    ══════════════════════════════════════════ */
+
+    /* Overall Stage 4 layout */
+    .stage4-layout{display:flex;gap:20px;align-items:flex-start;}
+    .stage4-main{flex:1;min-width:0;}
+
+    /* Sidebar */
+    .fcv-sidebar{
+      width:210px;flex-shrink:0;
+      position:sticky;top:24px;
+      display:flex;flex-direction:column;gap:12px;
+    }
+    .sidebar-widget{
+      background:#fff;border:1px solid var(--border);border-radius:var(--radius);
+      box-shadow:var(--shadow-sm);overflow:hidden;
+    }
+    .sidebar-widget-fcv{padding:14px 16px 16px;}
+    .sidebar-widget-label{
+      font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;
+      color:var(--muted);margin-bottom:8px;
+    }
+    .fcv-rating-label{
+      font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;
+      transition:color .3s;margin-bottom:3px;text-align:center;
+    }
+    .fcv-need-label{font-size:10.5px;color:var(--muted);font-style:italic;line-height:1.4;text-align:center;}
+
+    /* Sidebar risk matrix */
+    .risk-matrix-widget{padding:12px 14px;}
+    .risk-matrix-row{display:flex;align-items:center;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border);}
+    .risk-matrix-row:last-child{border-bottom:none;}
+    .risk-matrix-dim{font-size:10.5px;color:var(--text);flex:1;}
+    .risk-pills{display:flex;gap:3px;}
+    .rpill{font-size:9px;font-weight:700;padding:2px 5px;border-radius:3px;letter-spacing:.03em;}
+    .rpill-h{background:#fee2e2;color:#991b1b;}
+    .rpill-m{background:#fef3c7;color:#92400e;}
+    .rpill-l{background:#d1fae5;color:#065f46;}
+    .rpill-na{background:#f3f4f6;color:#9ca3af;}
+    .risk-matrix-legend{font-size:9px;color:var(--muted);margin-top:6px;text-align:right;}
+
+    /* Sidebar priority nav */
+    /* Priority step indicator bar */
+    .priority-stepper{
+      display:flex;background:#fff;border:1px solid var(--border);
+      border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow-sm);
+      margin-bottom:16px;
+    }
+    .ps-step{
+      flex:1;padding:9px 6px;text-align:center;cursor:pointer;
+      border-right:1px solid var(--border);transition:all .15s;
+    }
+    .ps-step:last-child{border-right:none;}
+    .ps-num{
+      width:20px;height:20px;border-radius:50%;background:var(--border);
+      display:flex;align-items:center;justify-content:center;
+      font-size:10px;font-weight:700;color:var(--muted);margin:0 auto 3px;transition:all .15s;
+    }
+    .ps-label{font-size:9px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.02em;line-height:1.35;word-break:break-word;white-space:normal;}
+    .ps-step.active{background:var(--wbg-navy);}
+    .ps-step.active .ps-num{background:var(--wbg-blue);color:#fff;}
+    .ps-step.active .ps-label{color:rgba(255,255,255,.8);}
+    .ps-step.done .ps-num{background:var(--s4);color:#fff;font-size:9px;}
+    .ps-step.done .ps-label{color:var(--s4);}
+    .ps-risk{font-size:8px;font-weight:700;border-radius:3px;padding:1px 4px;margin:3px auto 0;display:inline-block;letter-spacing:.03em;}
+    .ps-risk-h{background:#fee2e2;color:#b91c1c;}
+    .ps-risk-m{background:#dbeafe;color:#1d4ed8;}
+    .ps-risk-l{background:#d1fae5;color:#065f46;}
+    .ps-step.active .ps-risk{opacity:.85;}
+    .ps-step.active .ps-risk-h{background:#fca5a540;color:#fca5a5;}
+    .ps-step.active .ps-risk-m{background:#93c5fd40;color:#93c5fd;}
+    .ps-step.active .ps-risk-l{background:#6ee7b740;color:#6ee7b7;}
+
+    /* Priority card */
+    .priority-card{
+      background:#fff;border:1px solid var(--border);
+      border-radius:var(--radius);overflow:hidden;
+      box-shadow:var(--shadow-md);margin-bottom:14px;
+    }
+    .priority-card-hdr{
+      background:var(--wbg-navy);padding:16px 22px;
+      display:flex;align-items:flex-start;gap:14px;
+    }
+    .pc-num-badge{
+      width:38px;height:38px;border-radius:50%;
+      background:rgba(255,255,255,.12);border:2px solid rgba(255,255,255,.22);
+      display:flex;align-items:center;justify-content:center;
+      font-family:'Source Serif 4',serif;font-size:17px;color:#fff;
+      font-weight:400;flex-shrink:0;
+    }
+    .pc-hdr-eyebrow{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--wbg-cyan);margin-bottom:3px;}
+    .pc-hdr-title{font-family:'Source Serif 4',serif;font-weight:300;font-size:17px;color:#fff;line-height:1.3;}
+    .pc-hdr-title strong{font-weight:600;}
+    .pc-hdr-chips{display:flex;gap:7px;margin-top:8px;flex-wrap:wrap;}
+    .pc-chip{font-size:10px;padding:2px 8px;border-radius:20px;border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.65);font-weight:600;}
+    .pc-chip-risk-h{color:#fca5a5;border-color:rgba(252,165,165,.4);}
+    .pc-chip-risk-m{color:#fcd34d;border-color:rgba(252,211,77,.4);}
+    .pc-chip-risk-l{color:#86efac;border-color:rgba(134,239,172,.4);}
+
+    /* Priority zones */
+    .pc-zone{padding:16px 22px;border-bottom:1px solid var(--border);}
+    .pc-zone:last-of-type{border-bottom:none;}
+    .pc-zone-title{
+      display:flex;align-items:center;gap:7px;
+      font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;
+      margin-bottom:8px;
+    }
+    .pc-zone-icon{width:22px;height:22px;border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+    .pc-zone-body{font-size:13px;color:var(--text);line-height:1.75;}
+
+    /* Zone colour themes */
+    .pc-zone.zone-gap{background:#fffdf8;}
+    .pc-zone.zone-gap .pc-zone-title{color:var(--s3);}
+    .pc-zone.zone-gap .pc-zone-icon{background:#fff3e0;}
+    .pc-zone.zone-why{background:#fff;}
+    .pc-zone.zone-why .pc-zone-title{color:var(--muted);}
+    .pc-zone.zone-why .pc-zone-icon{background:var(--off-white);}
+    .pc-zone.zone-act{background:#f8fffe;}
+    .pc-zone.zone-act .pc-zone-title{color:var(--s4);}
+    .pc-zone.zone-act .pc-zone-icon{background:#e8f7ef;}
+
+    .priorities-intro{margin-bottom:14px;}
+    .pi-lead{font-size:12.5px;color:var(--text);line-height:1.6;margin:0 0 10px;}
+    .pi-list{display:flex;flex-direction:column;gap:5px;margin-bottom:10px;}
+    .pi-item{display:flex;align-items:center;gap:8px;font-size:12.5px;}
+    .pi-num{width:18px;height:18px;border-radius:50%;background:var(--wbg-navy);color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0;}
+    .pi-title{flex:1;color:var(--text);}
+    .pi-risk{font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;white-space:nowrap;}
+    .pi-risk-h{background:#fee2e2;color:#b91c1c;}
+    .pi-risk-m{background:#dbeafe;color:#1d4ed8;}
+    .pi-risk-l{background:#d1fae5;color:#065f46;}
+    .pi-footer{font-size:12px;color:var(--muted);margin:0;line-height:1.5;}
+
+    /* Priority overview widget (replaces Risk Overview) */
+    .pov-widget{padding:12px 14px;}
+    .pov-row{display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--border);cursor:pointer;}
+    .pov-row:last-child{border-bottom:none;}
+    .pov-row:hover{background:var(--off-white);margin:-0px -2px;padding-left:2px;padding-right:2px;}
+    .pov-num{width:18px;height:18px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:var(--muted);flex-shrink:0;}
+    .pov-num.active{background:var(--wbg-navy);color:#fff;}
+    .pov-num.done{background:var(--s4);color:#fff;}
+    .pov-label{font-size:10px;color:var(--text);flex:1;line-height:1.3;}
+    .pov-risk{font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;flex-shrink:0;}
+    .pov-risk-h{background:#fee2e2;color:#991b1b;}
+    .pov-risk-m{background:#fef3c7;color:#92400e;}
+    .pov-risk-l{background:#d1fae5;color:#065f46;}
+
+    /* Explorer group layout */
+    .exp-groups{display:flex;flex-direction:column;gap:14px;margin-top:10px;}
+    .exp-group{border:1.5px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+    .exp-group-hdr{padding:10px 14px;display:flex;flex-direction:column;gap:4px;}
+    .exp-group-name{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;}
+    .exp-where{font-size:10.5px;color:var(--muted);margin-top:9px;font-style:italic;}
+
+    /* Explorer options inside action zone */
+    .explorer-options{display:flex;flex-direction:column;gap:10px;margin-top:8px;}
+    .exp-option{
+      border:1.5px solid var(--border);border-radius:var(--radius-sm);
+      overflow:hidden;transition:box-shadow .15s;
+    }
+    .exp-option:hover{box-shadow:var(--shadow-sm);}
+    .exp-option-hdr{
+      display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;
+      transition:background .14s;
+    }
+    .exp-option-hdr:hover{background:var(--off-white);}
+    .exp-option-letter{
+      width:24px;height:24px;border-radius:50%;
+      display:flex;align-items:center;justify-content:center;
+      font-size:11px;font-weight:700;color:#fff;flex-shrink:0;
+    }
+    .exp-option-title{font-size:12.5px;font-weight:700;color:var(--text);flex:1;}
+    .exp-option-tier{font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;letter-spacing:.04em;white-space:nowrap;}
+    .exp-option-arrow{font-size:11px;color:var(--muted);transition:transform .18s;flex-shrink:0;}
+    .exp-option.open .exp-option-arrow{transform:rotate(180deg);}
+    .exp-option-body{
+      padding:12px 14px 14px 48px;border-top:1px solid var(--border);
+      font-size:13px;color:var(--text);line-height:1.7;display:none;
+    }
+    .exp-option.open .exp-option-body{display:block;}
+    .exp-option-body strong{color:#1a3a25;font-weight:700;}
+    .exp-option-body ul{margin:4px 0 8px;padding-left:18px;}
+    .exp-option-body li{margin-bottom:5px;}
+    .exp-option-context{font-size:12.5px;color:var(--muted);font-style:italic;margin-bottom:10px;line-height:1.6;}
+    .exp-option-context p{margin:0;}
+    .exp-option-footer{display:flex;justify-content:flex-end;margin-top:10px;padding-top:8px;border-top:1px dashed var(--border);}
+    .exp-ask-btn{
+      font-size:11px;font-weight:600;padding:3px 10px;
+      background:#fff;border:1px solid var(--s4);color:var(--s4);
+      border-radius:var(--radius-sm);cursor:pointer;white-space:nowrap;
+      transition:all .14s;font-family:inherit;
+    }
+    .exp-ask-btn:hover{background:var(--s4);color:#fff;}
+    .exp-bullets{margin:4px 0;}
+    .exp-bullet-item{padding-left:16px;position:relative;margin-bottom:12px;}
+    .exp-bullet-item::before{content:'•';position:absolute;left:2px;top:1px;color:var(--wbg-navy);font-weight:700;}
+    .exp-bullet-text{font-size:13px;line-height:1.5;color:var(--text);}
+    .exp-bullet-text p{margin:0;}
+    .exp-bullet-note{font-size:11.5px;line-height:1.55;color:#4b5563;padding:4px 8px;border-left:2px solid #bfdbfe;margin:5px 0 0 2px;background:#f8fbff;border-radius:0 3px 3px 0;font-weight:600;}
+    .exp-bullet-note p{margin:0;}
+    .pc-meta-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}
+    .pc-meta-chip{font-size:11px;padding:2px 8px;border-radius:10px;background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;}
+    .exp-meta-row{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 4px;}
+    .exp-meta-chip{font-size:11px;padding:2px 8px;border-radius:10px;background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;}
+
+    /* Gap summary table */
+    .gap-table{width:100%;border-collapse:collapse;font-size:12.5px;margin:10px 0 4px;}
+    .gap-table th{text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);padding:5px 10px;border-bottom:2px solid var(--border);background:var(--off-white);}
+    .gap-table td{padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:top;line-height:1.45;}
+    .gap-table tr:last-child td{border-bottom:none;}
+    .gap-table tr:hover td{background:#fafcff;}
+    .gap-table .rec-name{font-weight:600;color:var(--text);}
+    .gap-table .gap-note{font-size:11.5px;color:var(--muted);margin-top:2px;}
+    .status-pill{display:inline-block;font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:10px;white-space:nowrap;}
+    .status-strong{background:#d1fae5;color:#065f46;}
+    .status-partial{background:#fef3c7;color:#92400e;}
+    .status-weak{background:#fee2e2;color:#991b1b;}
+    .status-none{background:#f1f5f9;color:#475569;}
+    .risk-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:3px;vertical-align:middle;}
+    .dot-h{background:#ef4444;}.dot-m{background:#f59e0b;}.dot-l{background:#22c55e;}
+
+    /* FCV Risk Exposure */
+    .risk-exposure{background:#fff8f0;border:1px solid #fde8c8;border-radius:var(--radius-sm);overflow:hidden;margin:10px 0 4px;}
+    .re-hdr{background:#fde8c8;padding:8px 14px;display:flex;align-items:center;gap:8px;}
+    .re-hdr-icon{font-size:14px;}
+    .re-hdr-title{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.09em;color:#92400e;}
+    .re-body{padding:14px 16px;display:flex;flex-direction:column;gap:12px;}
+    .re-para{display:flex;gap:11px;}
+    .re-para-icon{flex-shrink:0;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;margin-top:1px;}
+    .re-to{background:#fee2e2;color:#991b1b;}
+    .re-from{background:#fef3c7;color:#92400e;}
+    .re-para-content{flex:1;}
+    .re-para-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:3px;}
+    .label-to{color:#991b1b;}
+    .label-from{color:#92400e;}
+    .re-para-text{font-size:13px;line-height:1.65;color:var(--text);}
+
+    /* Do No Harm collapsible */
+    .dnh-toggle{width:100%;background:none;border:none;cursor:pointer;text-align:left;padding:9px 14px;display:flex;align-items:center;gap:8px;font-family:inherit;border-top:1px solid var(--border);margin-top:4px;}
+    .dnh-toggle-label{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);flex:1;}
+    .dnh-toggle-arrow{font-size:11px;color:var(--muted);transition:transform .18s;}
+    .dnh-toggle.open .dnh-toggle-arrow{transform:rotate(180deg);}
+    .dnh-body{display:none;border-top:1px solid var(--border);}
+    .dnh-body.open{display:block;}
+    .dnh-table{width:100%;border-collapse:collapse;font-size:12px;}
+    .dnh-table td{padding:7px 14px;border-bottom:1px solid var(--border);vertical-align:top;line-height:1.4;}
+    .dnh-table tr:last-child td{border-bottom:none;}
+    .dnh-table td:first-child{width:46%;font-size:12px;color:var(--text);}
+    .dnh-table td:nth-child(2){width:13%;text-align:center;}
+    .dnh-table td:nth-child(3){font-size:11.5px;color:var(--muted);}
+    .dnh-yes{color:#065f46;font-weight:700;font-size:11px;}
+    .dnh-partial{color:#92400e;font-weight:700;font-size:11px;}
+    .dnh-no{color:#991b1b;font-weight:700;font-size:11px;}
+    .dnh-table-hdr td{background:var(--off-white);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:6px 14px;}
+
+    /* Exec section label */
+    .exec-section-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:16px 0 7px;display:flex;align-items:center;gap:7px;}
+    .exec-section-lbl::after{content:'';flex:1;height:1px;background:var(--border);}
+    .gap-table-caption{font-size:12px;color:var(--muted);margin:0 0 8px;line-height:1.5;}
+
+    /* Explorer loading inside card */
+    .exp-loading{
+      display:flex;align-items:center;gap:12px;padding:20px 0;
+      justify-content:center;color:var(--muted);font-size:13px;
+    }
+
+    /* Follow-up zone */
+    .pc-followup{
+      padding:12px 22px 14px;background:var(--off-white);border-top:1px solid var(--border);
+      display:flex;align-items:center;gap:9px;
+    }
+    .pc-followup-label{font-size:11px;color:var(--muted);font-weight:600;white-space:nowrap;}
+    .pc-followup-input{
+      flex:1;border:1.5px solid var(--border);border-radius:var(--radius-sm);
+      padding:7px 10px;font-family:inherit;font-size:13px;color:var(--text);
+      background:#fff;transition:border-color .15s;
+    }
+    .pc-followup-input:focus{outline:none;border-color:var(--wbg-blue);}
+    .pc-followup-input::placeholder{color:#9aabb8;}
+    .pc-followup-btn{
+      padding:7px 14px;background:var(--wbg-navy);color:#fff;border:none;
+      border-radius:var(--radius-sm);font-family:inherit;font-size:12px;
+      font-weight:600;cursor:pointer;white-space:nowrap;transition:background .15s;
+    }
+    .pc-followup-btn:hover{background:#003366;}
+    .pc-followup-answer{
+      display:none;padding:12px 22px 14px;
+      background:#fff;border-top:1px solid var(--border);
+      font-size:13px;line-height:1.7;color:var(--text);
+    }
+    .pc-followup-answer.visible{display:block;}
+
+    /* Priority nav prev/next */
+    .pc-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;}
+    .pc-nav-counter{font-size:12px;color:var(--muted);}
+
+    /* Section divider */
+    .section-divider{display:flex;align-items:center;gap:12px;margin:24px 0 20px;}
+    .section-divider-line{flex:1;height:1px;background:var(--border);}
+    .section-divider-lbl{font-size:10.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);white-space:nowrap;}
+
+    /* Priority icon row in sidebar */
+    .priority-icon-row{display:flex;gap:3px;justify-content:center;margin:8px 0 6px;}
+    .p-icon{cursor:default;}
+    .p-icon svg{display:block;fill:none;stroke:#d1dbe8;transition:stroke .25s,fill .25s;}
+    .p-icon.active svg{fill:#1a7a4a;stroke:#1a7a4a;}
+
+    @media(max-width:860px){
+      .stage4-layout{flex-direction:column;}
+      .fcv-sidebar{width:100%;position:static;}
+      .priority-stepper{overflow-x:auto;}
+    }
+
+
   </style>
 </head>
 <body>
@@ -580,6 +895,7 @@
       <button class="prompt-tab" id="ptab-2" onclick="showPromptTab(2)">Stage 2 · Screening</button>
       <button class="prompt-tab" id="ptab-3" onclick="showPromptTab(3)">Stage 3 · Gaps</button>
       <button class="prompt-tab" id="ptab-4" onclick="showPromptTab(4)">Stage 4 · Rec. Note</button>
+      <button class="prompt-tab" id="ptab-explorer" onclick="showPromptTab('explorer')">Explorer</button>
     </div>
     <div class="prompt-modal-body">
       <div class="prompt-info">
@@ -722,6 +1038,7 @@
       </div>
     </div>
 
+    <form id="upload-form" onsubmit="return false">
     <div class="upload-zones">
       <div class="zone-wrap">
         <div class="zone-lbl"><span class="zone-dot p"></span>Project Document</div>
@@ -729,7 +1046,7 @@
         <div class="drop-zone" id="dp">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--border)" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
           <p style="margin-bottom:8px">Drag &amp; drop, or select below</p>
-          <input type="file" id="ip" multiple accept=".pdf,.txt,.docx,.doc,.md" style="display:block;font-size:13px;color:var(--text);cursor:pointer;max-width:130px;">
+          <input type="file" id="ip" name="project_doc" multiple accept=".pdf,.txt,.docx,.doc,.md" style="display:block;font-size:13px;color:var(--text);cursor:pointer;max-width:130px;">
         </div>
       </div>
 
@@ -739,10 +1056,11 @@
         <div class="drop-zone" id="dc">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--border)" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
           <p style="margin-bottom:8px">Drag &amp; drop, or select below</p>
-          <input type="file" id="ic" multiple accept=".pdf,.txt,.docx,.doc,.md" style="display:block;font-size:13px;color:var(--text);cursor:pointer;max-width:130px;">
+          <input type="file" id="ic" name="context_doc" multiple accept=".pdf,.txt,.docx,.doc,.md" style="display:block;font-size:13px;color:var(--text);cursor:pointer;max-width:130px;">
         </div>
       </div>
     </div>
+    </form>
 
     <div class="chips" id="chips" aria-live="polite"></div>
     <div id="debug-log" style="margin:0 32px 8px;font-size:11px;color:#666;min-height:16px"></div>
@@ -786,6 +1104,7 @@
   // ── State ──────────────────────────────────────────────────────────────────
   let pF=[],cF=[],hist=[],curS=0,busy=false;
   let sessionName='';
+  // Stage 4 state is declared in the Stage 4 section below
 
   // ── Onboarding ──────────────────────────────────────────────────────────────
   function initOnboarding(){
@@ -881,7 +1200,7 @@
     }
   }
 
-  const NAMES={1:'Identifying FCV Risks',2:'FCV-Sensitivity Screening',3:'Identifying Project Gaps',4:'Recommendations Note'};
+  const NAMES={1:'Identifying FCV Risks',2:'FCV-Sensitivity Screening',3:'Identifying Project Gaps',4:'Executive Summary · Project-Wide Considerations'};
   const SHORT={1:'Identifying FCV Risks',2:'FCV-Sensitivity Screening',3:'Identifying Project Gaps',4:'Recommendations Note'};
   const SUBS={1:'Extracting all FCV-relevant information from your documents',2:'Assessing risks across six FCV dimensions',3:'Identifying gaps and recommending mitigations',4:'Generating the final TTL support note'};
   const COL={1:'s1',2:'s2',3:'s3',4:'s4'};
@@ -910,31 +1229,38 @@
       addFiles(Array.from(e.dataTransfer.files), arr, type);
     });
 
-    // File input change
-    inp.addEventListener('change', function(e) {
-      const log = document.getElementById('debug-log');
-      log.textContent = 'change event fired on ' + inputId;
-      console.log('change event', inputId, this.files);
-      if (this.files && this.files.length > 0) {
-        log.textContent = 'Files detected: ' + Array.from(this.files).map(f=>f.name).join(', ');
+    // File input change / input events
+    inp.addEventListener('change', function() {
+      if(this.files && this.files.length > 0){
         addFiles(Array.from(this.files), arr, type);
-      } else {
-        log.textContent = 'change fired but files was empty or null (files=' + this.files + ')';
+        // Only reset input after files were successfully read, so startAnalysis()
+        // fallback can still read ipEl.files if this event fires with empty files
+        setTimeout(() => { this.value = ''; }, 100);
       }
-      setTimeout(() => { this.value = ''; }, 100);
     });
-    // Also try input event as fallback
-    inp.addEventListener('input', function(e) {
-      const log = document.getElementById('debug-log');
-      log.textContent = 'input event fired on ' + inputId;
-      if (this.files && this.files.length > 0) {
-        addFiles(Array.from(this.files), arr, type);
-      }
+    inp.addEventListener('input', function() {
+      if(this.files && this.files.length > 0) addFiles(Array.from(this.files), arr, type);
     });
   }
 
   setupZone('dp', 'ip', pF, 'p');
   setupZone('dc', 'ic', cF, 'c');
+
+  // Polling fallback: detect files even if the browser suppresses change/input events
+  // (common in corporate environments with DLP or security software).
+  // Runs every 600ms and syncs whatever the native file inputs currently hold.
+  setInterval(function(){
+    let changed = false;
+    const ip = document.getElementById('ip');
+    const ic = document.getElementById('ic');
+    if(ip && ip.files && ip.files.length > 0){
+      Array.from(ip.files).forEach(f=>{ if(!pF.find(x=>x.name===f.name)){pF.push(f);changed=true;} });
+    }
+    if(ic && ic.files && ic.files.length > 0){
+      Array.from(ic.files).forEach(f=>{ if(!cF.find(x=>x.name===f.name)){cF.push(f);changed=true;} });
+    }
+    if(changed) renderChips();
+  }, 600);
 
   function addFiles(files, arr, type) {
     let added = 0;
@@ -961,33 +1287,49 @@
       const chip = document.createElement('div');
       chip.className = `chip ${t}`;
       const icon = t === 'p' ? '📄' : '📋';
-      // Escape filename for safe use in onclick
       const safeName = f.name.replace(/'/g, "\'");
       chip.innerHTML = `<span title="${f.name}">${icon} ${f.name}</span><button onclick="removeF('${safeName}','${t}')" aria-label="Remove ${f.name}">×</button>`;
       el.appendChild(chip);
     });
     document.getElementById('dp').classList.toggle('has', pF.length > 0);
     document.getElementById('dc').classList.toggle('has', cF.length > 0);
-    // button always enabled; startAnalysis guards internally
+    // Clear any debug/error text once files are confirmed present
+    if(all.length > 0){
+      const log = document.getElementById('debug-log');
+      if(log && log.style.color !== '#b91c1c') log.textContent = '';
+    }
   }
-
-  // Fallback: enable Begin button when native input shows files, even if change event was blocked
-  // Button is always enabled — startAnalysis() checks for files
 
   async function startAnalysis(){
     if(busy) return;
-    // Collect files directly from inputs at click time (works even if change event was blocked by corporate policy)
+    let fallbackAdded = 0;
+
+    // PRIMARY: try FormData (uses browser's internal form API — works even when the
+    // files property is restricted by enterprise security/DLP software)
+    try {
+      const uploadForm = document.getElementById('upload-form');
+      if(uploadForm){
+        const fd = new FormData(uploadForm);
+        fd.getAll('project_doc').forEach(f=>{ if(f && f.size>0 && !pF.find(x=>x.name===f.name)){pF.push(f);fallbackAdded++;} });
+        fd.getAll('context_doc').forEach(f=>{ if(f && f.size>0 && !cF.find(x=>x.name===f.name)){cF.push(f);fallbackAdded++;} });
+      }
+    } catch(e) { /* FormData unavailable — fall through to direct files access */ }
+
+    // FALLBACK: read files property directly at click time
     const ipEl = document.getElementById('ip');
     const icEl = document.getElementById('ic');
-    if (ipEl && ipEl.files) {
-      Array.from(ipEl.files).forEach(f => { if (!pF.find(x => x.name === f.name)) pF.push(f); });
+    if(ipEl && ipEl.files){
+      Array.from(ipEl.files).forEach(f=>{ if(!pF.find(x=>x.name===f.name)){pF.push(f);fallbackAdded++;} });
     }
-    if (icEl && icEl.files) {
-      Array.from(icEl.files).forEach(f => { if (!cF.find(x => x.name === f.name)) cF.push(f); });
+    if(icEl && icEl.files){
+      Array.from(icEl.files).forEach(f=>{ if(!cF.find(x=>x.name===f.name)){cF.push(f);fallbackAdded++;} });
     }
-    if (!pF.length) {
+
+    if(fallbackAdded > 0) renderChips();
+
+    if(!pF.length){
       const log = document.getElementById('debug-log');
-      if (log) { log.style.color='#b91c1c'; log.textContent = '⚠ Please select a project document before beginning.'; }
+      if(log){ log.style.color='#b91c1c'; log.textContent='⚠ Please select a project document before beginning.'; }
       return;
     }
     document.getElementById('upload-panel').style.display = 'none';
@@ -1074,8 +1416,20 @@
               // Store warnings to render after renderOut fires
               window._truncWarnings = p.truncation_warnings;
             }
+            if(p.preprocess){const el=document.getElementById('s-out');if(el)el.innerHTML=`<div style="display:flex;align-items:center;gap:10px;color:var(--muted);font-style:italic;padding:12px 0"><svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;animation:spin 1s linear infinite;flex-shrink:0"><circle cx="12" cy="12" r="10" stroke-opacity=".25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-opacity="1"/></svg>${esc(p.preprocess)}</div>`}
             if(p.chunk){streamed+=p.chunk;const el=document.getElementById('s-out');if(el)el.innerHTML=md(streamed)}
-            if(p.done){hist=p.history||hist;curS=stage;updateSessionBar();renderOut(stage,p.result,followOn);setStepper(stage,'done');
+            if(p.done){hist=p.history||hist;curS=stage;stageOutputs[stage]=p.result;stageHists[stage]=hist.slice();updateSessionBar();if(stage===4){stageGapTable=p.gap_table||null;stageRiskExposure=p.risk_exposure||null;}renderOut(stage,p.result,followOn);setStepper(stage,'done');
+              // Explorer panel + sidebar for Stage 4
+              if(stage===4 && p.priorities && p.priorities.length){
+                stageFourPriorities=p.priorities;
+                // Preserve cache entries whose title still exists in new priorities
+                const newTitles=new Set(p.priorities.map(pr=>pr.title));
+                for(const t of Object.keys(explorerCache)){if(!newTitles.has(t))delete explorerCache[t];}
+                explorerHistory=[];
+                if(p.fcv_rating) fcvRating=p.fcv_rating;
+                updateSidebar();
+                populateExplorerDropdown(p.priorities);
+              }
               // Inject truncation warning banner if any
               if(window._truncWarnings && window._truncWarnings.length){
                 const warnHtml = window._truncWarnings.map(w=>`<div class="trunc-warn-item">${md(w)}</div>`).join('');
@@ -1101,9 +1455,90 @@
     busy=false;
   }
 
+  function renderGapTable(gapTable) {
+    if (!gapTable || !gapTable.length) return '';
+    const statusClass = s => s === 'Strong' ? 'status-strong' : s === 'Partial' ? 'status-partial' : s === 'Weak' ? 'status-weak' : 'status-none';
+    const riskDot = r => `<span class="risk-dot ${r==='High'?'dot-h':r==='Medium'?'dot-m':'dot-l'}"></span>${esc(r)}`;
+    const rows = gapTable.map(row => `
+      <tr>
+        <td><span class="rec-name">${row.rec_num} · ${esc(row.rec_name)}</span></td>
+        <td><span class="status-pill ${statusClass(row.status)}">${esc(row.status)}</span></td>
+        <td class="gap-note">${esc(row.gap)}</td>
+        <td>${riskDot(row.risk)}</td>
+      </tr>`).join('');
+    return `
+      <div class="exec-section-lbl">FCV Design Assessment — Six Recommendations</div>
+      <p class="gap-table-caption">The table below highlights key gaps in FCV-sensitivity across the six pillars of the WBG Operational Support Team's Manual on FCV Sensitivity.</p>
+      <table class="gap-table">
+        <thead><tr><th>WBG Recommendation</th><th>Status</th><th>Key gap</th><th>Risk</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+  }
+
+  function renderRiskExposure(re) {
+    if (!re || (!re.risks_to && !re.risks_from)) return '';
+    return `
+      <div class="exec-section-lbl">FCV Risk Exposure</div>
+      <div class="risk-exposure">
+        <div class="re-hdr">
+          <span class="re-hdr-icon">⚠</span>
+          <span class="re-hdr-title">Key risks for the Task Team to be aware of</span>
+        </div>
+        <div class="re-body">
+          ${re.risks_to ? `<div class="re-para">
+            <div class="re-para-icon re-to">→</div>
+            <div class="re-para-content">
+              <div class="re-para-label label-to">How FCV risks could affect this project</div>
+              <div class="re-para-text">${md(re.risks_to)}</div>
+            </div>
+          </div>` : ''}
+          ${re.risks_from ? `<div class="re-para">
+            <div class="re-para-icon re-from">←</div>
+            <div class="re-para-content">
+              <div class="re-para-label label-from">How this project could affect FCV dynamics</div>
+              <div class="re-para-text">${md(re.risks_from)}</div>
+            </div>
+          </div>` : ''}
+        </div>
+      </div>`;
+  }
+
+  function renderDnhChecklist(stage3Text) {
+    if (!stage3Text) return '';
+    const tableMatch = stage3Text.match(/##\s*Part C[\s\S]*?(?=##\s*Part D|$)/i);
+    if (!tableMatch) return '';
+    const rows = [...tableMatch[0].matchAll(/\|\s*([^|]+?)\s*\|\s*(Yes|Partial|No)\s*\|\s*([^|]+?)\s*\|/gi)];
+    if (!rows.length) return '';
+    const statusHtml = s => {
+      const cl = s.toLowerCase() === 'yes' ? 'dnh-yes' : s.toLowerCase() === 'partial' ? 'dnh-partial' : 'dnh-no';
+      return `<span class="${cl}">${esc(s)}</span>`;
+    };
+    const rowsHtml = rows.map(r => `<tr><td>${esc(r[1].trim())}</td><td>${statusHtml(r[2].trim())}</td><td>${esc(r[3].trim())}</td></tr>`).join('');
+    const id = 'dnh-' + Math.random().toString(36).slice(2,7);
+    return `
+      <button class="dnh-toggle" onclick="this.classList.toggle('open');document.getElementById('${id}').classList.toggle('open');this.querySelector('.dnh-toggle-arrow').textContent=document.getElementById('${id}').classList.contains('open')?'▴':'▾';">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5a6a7e" stroke-width="2.5"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <span class="dnh-toggle-label">Do No Harm Checklist</span>
+        <span class="dnh-toggle-arrow">▾</span>
+      </button>
+      <div class="dnh-body" id="${id}">
+        <table class="dnh-table">
+          <tr class="dnh-table-hdr"><td>Principle</td><td>Status</td><td>Evidence or gap</td></tr>
+          ${rowsHtml}
+        </table>
+      </div>`;
+  }
+
   function renderOut(stage,result,isFollowOn){
     const isLast=stage===4;
     const c=CALLS[stage];
+    let _outBodyContent;
+    if(isLast){
+      const _sp=result.split(/(?=###\s*Strengths\b)/i);
+      const _pre=_sp[0]||result;
+      const _rest=_sp[1]||'';
+      _outBodyContent=md(_pre)+renderRiskExposure(stageRiskExposure)+md(_rest)+renderGapTable(stageGapTable)+'<div id="priorities-intro"></div>';
+    }else{_outBodyContent=md(result);}
     document.getElementById('stage-disp').innerHTML=`
       <div class="stage-hdr ani">
         <div class="stage-badge ${COL[stage]}">${stage}</div>
@@ -1124,13 +1559,43 @@
         }</div>
         <div class="callout-body"><strong>${c.t}</strong>${c.b}</div>
       </div>
-      <div class="out-card ani">
-        <div class="out-hdr">
-          <div class="out-hdr-l"><span class="dot done"></span>${NAMES[stage]}</div>
-          <button class="copy-btn" id="copy-btn" onclick="copyOut()">Copy all</button>
+      <div class="${isLast?'stage4-layout':''}">
+        <div class="${isLast?'stage4-main':''}">
+          <div class="out-card ani">
+            <div class="out-hdr">
+              <div class="out-hdr-l"><span class="dot done"></span>${NAMES[stage]}</div>
+              <div style="display:flex;gap:8px;align-items:center">
+                ${isLast?`<button class="btn btn-ghost btn-sm" onclick="downloadReport()" title="Download all Stage 4 content as a Word document">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  Download report
+                </button>`:''}
+                <button class="copy-btn" id="copy-btn" onclick="copyOut()">Copy all</button>
+              </div>
+            </div>
+            <div class="out-body" id="out-txt">${_outBodyContent}</div>
+          </div>
+          ${isLast?`
+          <!-- ── PRIORITY STEPPER ── -->
+          <div class="priority-stepper" id="priority-stepper"></div>
+          <!-- ── PRIORITY CARD ── -->
+          <div id="priority-card-area"></div>
+          <!-- ── PRIORITY NAV ── -->
+          <div class="pc-nav" id="pc-nav" style="display:none">
+            <button class="btn btn-ghost btn-sm" id="pc-prev-btn" onclick="prevPriority()">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+              Previous
+            </button>
+            <span class="pc-nav-counter" id="pc-nav-counter"></span>
+            <button class="btn btn-blue btn-sm" id="pc-next-btn" onclick="nextPriority()">
+              Next
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </button>
+          </div>
+          `:''}
         </div>
-        <div class="out-body" id="out-txt">${md(result)}</div>
-      </div>`;
+        ${isLast?`<aside class="fcv-sidebar" id="fcv-sidebar">${sidebarHtml()}</aside>`:''}
+      </div>
+      `;
 
     document.getElementById('refine-area').innerHTML=`
       <div class="refine-card ani">
@@ -1202,20 +1667,12 @@
   function goBack(currentStage){
     if(currentStage<=1)return;
     const prevStage = currentStage-1;
-    // Trim history back to after the previous stage's assistant turn.
-    // History is an array of {role,content} messages. Each stage adds 1 user + 1 assistant msg.
-    // Stage 1: messages 0(user) 1(assistant)
-    // Stage 2: messages 2(user) 3(assistant)  etc.
-    // We want to keep everything up to and including prevStage's assistant reply.
-    // That's prevStage*2 messages (0-indexed).
-    const keepCount = prevStage * 2;
-    hist = hist.slice(0, keepCount);
+    // Restore history and output from when prevStage completed
+    hist = stageHists[prevStage] ? stageHists[prevStage].slice() : hist;
     curS = prevStage;
     busy = false;
     setStepper(prevStage, 'done');
-    // Re-render the previous stage output from the last assistant message in trimmed history
-    const lastAssistant = hist[hist.length-1];
-    const prevResult = lastAssistant ? (typeof lastAssistant.content==='string' ? lastAssistant.content : '') : '';
+    const prevResult = stageOutputs[prevStage] || '';
     clearUI();
     renderOut(prevStage, prevResult, false);
     updateSessionBar();
@@ -1247,8 +1704,88 @@
     }
   }
 
+  function downloadReport(){
+    const execSummary = stageOutputs[4] || '';
+    if(!execSummary && !stageFourPriorities.length){ alert('No Stage 4 output available to download.'); return; }
+
+    // Build a Word-compatible HTML document
+    const dateStr = new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
+    let body = `<h1>FCV Recommendations Note</h1>
+<p style="color:#666;font-size:9pt"><em>Generated by WBG FCV Sensitivity Project Screener · ${dateStr}</em></p>
+<hr>
+<h2>Executive Summary · Project-Wide Considerations</h2>
+${md(execSummary)}`;
+
+    if(stageFourPriorities.length){
+      body += `<hr><h2>Strategic Priorities</h2>`;
+      stageFourPriorities.forEach((pr, i) => {
+        const title = pr.title.replace(/^Priority\s+\d+\s*[·•]\s*/i,'');
+        const riskColor = pr.risk_level==='High'?'#c0392b':pr.risk_level==='Medium'?'#e07b00':'#1a7a4a';
+        body += `<div style="margin-top:22pt;border-top:1pt solid #1a3a5c;padding-top:14pt">
+<h3 style="color:#1a3a5c;margin-bottom:4pt">Priority ${i+1} · ${esc(title)}</h3>
+<p style="font-size:9pt;color:#555;margin-top:0">${pr.dimension?`<strong>Dimension:</strong> ${esc(pr.dimension)} &nbsp;|&nbsp; `:''}${pr.risk_level?`<strong>Risk Level:</strong> <span style="color:${riskColor}">${esc(pr.risk_level)}</span>`:''}
+</p>`;
+        if(pr.the_gap) body += `<p><strong>The Gap:</strong><br>${esc(pr.the_gap)}</p>`;
+        if(pr.why_it_matters) body += `<p><strong>Why It Matters Operationally:</strong><br>${esc(pr.why_it_matters)}</p>`;
+        if(pr.why_fcv_matters) body += `<p><strong>Why It Matters for Addressing FCV:</strong><br>${esc(pr.why_fcv_matters)}</p>`;
+
+        const cached = explorerCache[pr.title];
+        if(cached && cached.issue){
+          body += `<p><strong>Detailed Analysis (FCV Solutions Explorer):</strong><br>${esc(cached.issue)}</p>`;
+          if(cached.options && cached.options.length){
+            body += `<p><strong>Options to Consider:</strong></p><ul>`;
+            cached.options.forEach(opt => {
+              body += `<li><strong>Option ${esc(opt.letter)}: ${esc(opt.title)}</strong>`;
+              if(opt.context) body += `<br><em>${esc(opt.context)}</em>`;
+              if(opt.groups && opt.groups.length){
+                opt.groups.forEach(g => {
+                  body += `<br><strong>${esc(g.label)}</strong><ul>`;
+                  (g.bullets||[]).forEach(b => { body += `<li>${esc(b)}</li>`; });
+                  body += `</ul>`;
+                });
+              }
+              body += `</li>`;
+            });
+            body += `</ul>`;
+          }
+        } else if(pr.suggested_directions){
+          body += `<p><strong>Suggested Directions:</strong><br>${esc(pr.suggested_directions)}</p>`;
+        }
+        body += `</div>`;
+      });
+    }
+
+    const html = `<!DOCTYPE html>
+<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word">
+<head><meta charset="utf-8"><title>FCV Recommendations Note</title>
+<style>
+  body{font-family:Calibri,Arial,sans-serif;font-size:11pt;line-height:1.6;margin:2cm;color:#222;}
+  h1{font-size:16pt;color:#1a3a5c;}
+  h2{font-size:13pt;color:#1a3a5c;border-bottom:1pt solid #1a3a5c;padding-bottom:3pt;margin-top:18pt;}
+  h3{font-size:12pt;color:#1a3a5c;}
+  p{margin:6pt 0;}
+  ul,ol{margin:4pt 0 8pt 0;padding-left:18pt;}
+  li{margin-bottom:3pt;}
+  strong{color:#1a3a5c;}
+  em{color:#555;}
+  hr{border:none;border-top:1pt solid #ccc;margin:14pt 0;}
+  blockquote{border-left:3pt solid #1a3a5c;margin-left:0;padding-left:12pt;color:#555;font-style:italic;}
+</style></head>
+<body>${body}</body></html>`;
+
+    const blob = new Blob([html], {type:'application/msword'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'FCV-Recommendations-Note-' + new Date().toISOString().slice(0,10) + '.doc';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
   function reset(){
-    pF=[];cF=[];hist=[];curS=0;busy=false;
+    pF=[];cF=[];hist=[];curS=0;busy=false;stageOutputs={};stageHists={};
     document.getElementById('upload-panel').style.display='block';
     document.getElementById('analysis-panel').style.display='none';
     document.getElementById('chips').innerHTML='';
@@ -1312,19 +1849,20 @@
 
   function showPromptTab(n){
     promptModalActiveTab = n;
-    // Update tab styles
-    for(let i=1;i<=4;i++){
-      const tab = document.getElementById('ptab-'+i);
-      if(!tab) continue;
-      tab.className = 'prompt-tab' + (i===n?' active':'');
+    // Update tab styles for all tabs (1-4 and 'explorer')
+    const allTabIds = [1, 2, 3, 4, 'explorer'];
+    allTabIds.forEach(id=>{
+      const tab = document.getElementById('ptab-'+id);
+      if(!tab) return;
+      tab.className = 'prompt-tab' + (id===n?' active':'');
       // Show modified dot if session override exists
       const dot = tab.querySelector('.prompt-modified-dot');
-      if(sessionPrompts[i]){
+      if(sessionPrompts[id]){
         if(!dot){ const d=document.createElement('span'); d.className='prompt-modified-dot'; tab.appendChild(d); }
       } else {
         if(dot) dot.remove();
       }
-    }
+    });
     // Load text into editor
     const text = sessionPrompts[n] || defaultPrompts[String(n)] || '';
     const editor = document.getElementById('prompt-edit-area');
@@ -1380,6 +1918,543 @@
   // Override getPromptForStage to use session overrides when present
   // Session prompt overrides are sent to the backend as prompt_override in the payload.
   // The backend uses the override in place of its DEFAULT_PROMPTS for that stage run.
+
+  // ── Stage output tracking ─────────────────────────────────────────────────
+  let stageOutputs = {};  // {stageNum: result_text} — used by goBack()
+  let stageHists = {};    // {stageNum: hist_snapshot} — used to restore history on goBack()
+  let stageGapTable = null;
+  let stageRiskExposure = null;
+
+  // ── Stage 4 state ──────────────────────────────────────────────────────────
+  let stageFourPriorities = [];
+  let currentPriority = 0;  // 0-indexed
+  let explorerCache = {};   // {priorityTitle: parsedExplorerData}
+  let explorerHistory = []; // for follow-up queries
+  let fcvRating = '';
+
+  const LEVELS = ['Extremely Low','Very Low','Low','Adequate','Well Embedded','Very Well Embedded'];
+  const LEVEL_COLORS = {1:'#C0392B',2:'#E07B00',3:'#D97706',4:'#0072BB',5:'#1A7A4A',6:'#0d5c36'};
+  const ARC_LEN = 141.37;
+  const NEED_LABELS = {
+    'Extremely Low':'Critical redesign needed',
+    'Very Low':'Significant changes needed',
+    'Low':'Moderate improvements needed',
+    'Adequate':'Targeted enhancements possible',
+    'Well Embedded':'Minor refinements available',
+    'Very Well Embedded':'Strong foundation — sustain'
+  };
+
+  // Risk matrix data populated from Stage 2 parsing (best effort)
+  let riskMatrixData = [];
+
+  // ── Sidebar ─────────────────────────────────────────────────────────────────
+
+  function sidebarHtml(){
+    return `
+      <!-- Gauge -->
+      <div class="sidebar-widget">
+        <div class="sidebar-widget-fcv">
+          <div class="sidebar-widget-label">Current FCV Sensitivity</div>
+          <svg viewBox="0 0 120 80" width="120" height="80" style="display:block;margin:0 auto -4px">
+            <path d="M15 70 A45 45 0 0 1 105 70" fill="none" stroke="#e8edf2" stroke-width="11" stroke-linecap="round"/>
+            <path id="fcv-arc-fill" d="M15 70 A45 45 0 0 1 105 70" fill="none" stroke="#e8edf2" stroke-width="11" stroke-linecap="round" stroke-dasharray="0 141.37"/>
+            <g transform="translate(60,47)">
+              <path id="fcv-shield-path" d="M0-14L-9-10v9c0 7 5 12.5 9 14.5 4-2 9-7.5 9-14.5v-9L0-14z" fill="#c8d8c8"/>
+            </g>
+          </svg>
+          <div class="fcv-rating-label" id="fcv-rating-label" style="color:var(--muted)">Analysing…</div>
+          <div class="fcv-need-label" id="fcv-need-label"></div>
+        </div>
+      </div>
+      <!-- Priority overview -->
+      <div class="sidebar-widget">
+        <div class="pov-widget">
+          <div class="sidebar-widget-label">Priority Overview</div>
+          <div id="pov-sb"><div style="font-size:11px;color:var(--muted)">Loading priorities…</div></div>
+        </div>
+      </div>
+      `;
+  }
+
+  function updateSidebar(){
+    const n = stageFourPriorities.length;
+    const level = LEVELS.findIndex(l => l.toLowerCase() === (fcvRating||'').toLowerCase()) + 1;
+    const color = LEVEL_COLORS[level] || '#e8edf2';
+
+    // Gauge
+    const arcFill = document.getElementById('fcv-arc-fill');
+    const shieldPath = document.getElementById('fcv-shield-path');
+    const labelEl = document.getElementById('fcv-rating-label');
+    const needEl = document.getElementById('fcv-need-label');
+    if(arcFill){ const filled = level > 0 ? (level/6)*ARC_LEN : 0; arcFill.setAttribute('stroke-dasharray',`${filled} ${ARC_LEN}`); arcFill.setAttribute('stroke',color); }
+    if(shieldPath) shieldPath.setAttribute('fill', level > 0 ? color : '#c8d8c8');
+    if(labelEl){ labelEl.textContent = fcvRating ? `${fcvRating} Sensitivity` : '—'; labelEl.style.color = level > 0 ? color : 'var(--muted)'; }
+    if(needEl) needEl.textContent = NEED_LABELS[fcvRating] || '';
+
+    // Priority overview widget
+    const povEl = document.getElementById('pov-sb');
+    if(povEl && n){
+      povEl.innerHTML = stageFourPriorities.map((pr, i) => {
+        const label = pr.title.replace(/^Priority\s+\d+\s*[·•]\s*/i,'');
+        const isDone = i < currentPriority;
+        const isActive = i === currentPriority;
+        const riskCls = pr.risk_level==='High'?'pov-risk-h':pr.risk_level==='Medium'?'pov-risk-m':'pov-risk-l';
+        return `<div class="pov-row" onclick="showPriority(${i})">
+          <div class="pov-num ${isDone?'done':isActive?'active':''}">${isDone?'✓':i+1}</div>
+          <div class="pov-label">${esc(label)}</div>
+          ${pr.risk_level?`<span class="pov-risk ${riskCls}">${esc(pr.risk_level)}</span>`:''}
+        </div>`;
+      }).join('');
+    }
+
+  }
+
+  // ── Priority stepper & card rendering ────────────────────────────────────
+
+  function initStage4UI(){
+    if(!stageFourPriorities.length) return;
+    currentPriority = 0;
+    renderPrioritiesIntro();
+    renderPriorityStepper();
+    showPriority(0);
+    updateSidebar();
+  }
+
+  function renderPrioritiesIntro(){
+    const el = document.getElementById('priorities-intro');
+    if(!el || !stageFourPriorities.length) return;
+    const n = stageFourPriorities.length;
+    const riskLabel = (r) => r === 'High' ? 'High priority' : r === 'Medium' ? 'Medium priority' : r === 'Low' ? 'Lower priority' : '';
+    const riskCls = (r) => r === 'High' ? 'pi-risk-h' : r === 'Medium' ? 'pi-risk-m' : 'pi-risk-l';
+    const listItems = stageFourPriorities.map((pr, i) => {
+      const title = pr.title.replace(/^Priority\s+\d+\s*[·•]\s*/i, '');
+      const risk = riskLabel(pr.risk_level);
+      return `<div class="pi-item">
+        <span class="pi-num">${i+1}</span>
+        <span class="pi-title">${esc(title)}</span>
+        ${risk ? `<span class="pi-risk ${riskCls(pr.risk_level)}">${esc(risk)}</span>` : ''}
+      </div>`;
+    }).join('');
+    el.innerHTML = `<div class="priorities-intro ani">
+      <p class="pi-lead">Based on a three-stage assessment of the project documents, <strong>${n} strategic ${n === 1 ? 'priority has' : 'priorities have'} been identified</strong> to strengthen FCV-sensitivity and responsiveness in the design and delivery of this project:</p>
+      <div class="pi-list">${listItems}</div>
+      <p class="pi-footer">Toggle through the panels below to explore each priority and concrete implementation options in more detail.</p>
+    </div>`;
+  }
+
+  function renderPriorityStepper(){
+    const el = document.getElementById('priority-stepper');
+    if(!el) return;
+    el.innerHTML = stageFourPriorities.map((pr, i) => {
+      const fullTitle = pr.title.replace(/^Priority\s+\d+\s*[·•]\s*/i,'');
+      const riskCls = pr.risk_level==='High'?'ps-risk-h':pr.risk_level==='Medium'?'ps-risk-m':'ps-risk-l';
+      const riskLbl = pr.risk_level==='High'?'HIGH':pr.risk_level==='Medium'?'MED':pr.risk_level==='Low'?'LOW':'';
+      return `<div class="ps-step ${i===currentPriority?'active':''}" id="ps-${i}" onclick="showPriority(${i})" title="${esc(pr.title)}">
+        <div class="ps-num">${i+1}</div>
+        <div class="ps-label">${esc(fullTitle)}</div>
+        ${riskLbl?`<div class="ps-risk ${riskCls}">${riskLbl}</div>`:''}
+      </div>`;
+    }).join('');
+  }
+
+  function showPriority(idx){
+    const pr = stageFourPriorities[idx];
+    if(!pr) return;
+    currentPriority = idx;
+    const n = stageFourPriorities.length;
+
+    // Update stepper
+    stageFourPriorities.forEach((p2, i) => {
+      const el = document.getElementById(`ps-${i}`);
+      if(el) el.className = `ps-step ${i < idx ? 'done' : i === idx ? 'active' : ''}`;
+      const numEl = el ? el.querySelector('.ps-num') : null;
+      if(numEl){ if(i < idx){ numEl.textContent = '✓'; } else { numEl.textContent = String(i+1); } }
+    });
+
+    // Update nav
+    const navEl = document.getElementById('pc-nav');
+    const counterEl = document.getElementById('pc-nav-counter');
+    const prevBtn = document.getElementById('pc-prev-btn');
+    const nextBtn = document.getElementById('pc-next-btn');
+    if(navEl) navEl.style.display = 'flex';
+    if(counterEl) counterEl.textContent = `Priority ${idx+1} of ${n}`;
+    if(prevBtn) prevBtn.disabled = idx === 0;
+    if(nextBtn){
+      if(idx === n-1){ nextBtn.textContent = 'Done'; nextBtn.onclick = () => {}; nextBtn.disabled = true; }
+      else { nextBtn.innerHTML = 'Next <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>'; nextBtn.onclick = nextPriority; }
+    }
+
+    // Determine risk chip class
+    const riskClass = pr.risk_level === 'High' ? 'pc-chip-risk-h' : pr.risk_level === 'Medium' ? 'pc-chip-risk-m' : 'pc-chip-risk-l';
+
+    // Render card
+    const cardArea = document.getElementById('priority-card-area');
+    if(!cardArea) return;
+
+    cardArea.innerHTML = `
+      <div class="priority-card ani">
+        <div class="priority-card-hdr">
+          <div class="pc-num-badge">${idx+1}</div>
+          <div>
+            <div class="pc-hdr-eyebrow">Priority ${idx+1} of ${n} · ${esc(pr.dimension||'')}</div>
+            <div class="pc-hdr-title">${md(pr.title.replace(/^Priority\s+\d+\s*[·•]\s*/i,''))}</div>
+            <div class="pc-hdr-chips">
+              <span class="pc-chip ${riskClass}">Risk: ${esc(pr.risk_level||'—')}</span>
+              ${pr.dimension ? `<span class="pc-chip">${esc(pr.dimension)}</span>` : ''}
+            </div>
+            ${(pr.who_acts||pr.when||pr.resources) ? `<div class="pc-meta-row">
+              ${pr.who_acts ? `<span class="pc-meta-chip"><strong>Who:</strong> ${esc(pr.who_acts)}</span>` : ''}
+              ${pr.when ? `<span class="pc-meta-chip"><strong>When:</strong> ${esc(pr.when)}</span>` : ''}
+              ${pr.resources ? `<span class="pc-meta-chip"><strong>Resources:</strong> ${esc(pr.resources)}</span>` : ''}
+            </div>` : ''}
+          </div>
+        </div>
+        <!-- Zone 1: The Gap -->
+        <div class="pc-zone zone-gap">
+          <div class="pc-zone-title">
+            <div class="pc-zone-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+            The Gap
+          </div>
+          <div class="pc-zone-body">${esc(pr.the_gap||pr.body||'')}</div>
+        </div>
+        <!-- Zone 2: Why it matters -->
+        <div class="pc-zone zone-why">
+          <div class="pc-zone-title">
+            <div class="pc-zone-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/></svg></div>
+            Why it matters
+          </div>
+          <div class="pc-zone-body">${esc((pr.why_it_matters||'') + (pr.why_fcv_matters ? ' ' + pr.why_fcv_matters : ''))}</div>
+        </div>
+        <!-- Zone 3: Options (loaded on demand) -->
+        <div class="pc-zone zone-act" id="zone-act-${idx}">
+          <div class="pc-zone-title">
+            <div class="pc-zone-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
+            Options to consider
+          </div>
+          <div id="explorer-options-${idx}">
+            ${explorerCache[pr.title] ? renderOptionsHtml(explorerCache[pr.title], idx) : `
+            <div class="exp-loading" id="exp-loading-${idx}">
+              <svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;animation:spin 1s linear infinite;flex-shrink:0"><circle cx="12" cy="12" r="10" stroke-opacity=".25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-opacity="1"/></svg>
+              Loading detailed options…
+            </div>`}
+          </div>
+        </div>
+        <!-- Follow-up -->
+        <div class="pc-followup">
+          <span class="pc-followup-label">Explore further:</span>
+          <input class="pc-followup-input" type="text" id="pc-followup-input-${idx}"
+            placeholder="e.g. 'Which organisations could lead the conflict mapping?' or 'How does this affect the PAD risk section?'"
+            onkeydown="if(event.key==='Enter'){submitPriorityFollowup(${idx})}"/>
+          <button class="pc-followup-btn" onclick="submitPriorityFollowup(${idx})">Ask →</button>
+        </div>
+        <div class="pc-followup-answer" id="pc-followup-answer-${idx}"></div>
+      </div>`;
+
+    // Load explorer if not cached
+    if(!explorerCache[pr.title]){
+      loadExplorerForPriority(idx);
+    }
+
+    updateSidebar();
+    cardArea.scrollIntoView({behavior:'smooth', block:'nearest'});
+  }
+
+  function nextPriority(){ if(currentPriority < stageFourPriorities.length-1) showPriority(currentPriority+1); }
+  function prevPriority(){ if(currentPriority > 0) showPriority(currentPriority-1); }
+
+  // ── Explorer loading & rendering ─────────────────────────────────────────
+
+  async function loadExplorerForPriority(idx){
+    const pr = stageFourPriorities[idx];
+    if(!pr || explorerCache[pr.title]) return;
+
+    const promptOverride = sessionPrompts['explorer'] || '';
+    try {
+      const payload = { priority_title: pr.title, priority_body: pr.body, history: hist };
+      if(promptOverride) payload.prompt_override = promptOverride;
+
+      const res = await fetch('/api/run-explorer', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+      if(!res.ok) throw new Error('Server error '+res.status);
+
+      const reader = res.body.getReader(), dec = new TextDecoder();
+      let buf = '', streamed = '';
+
+      while(true){
+        const {done, value} = await reader.read(); if(done) break;
+        buf += dec.decode(value, {stream:true});
+        const lines = buf.split('\n'); buf = lines.pop();
+        for(const line of lines){
+          if(!line.startsWith('data: ')) continue;
+          try{
+            const p = JSON.parse(line.slice(6));
+            if(p.error) throw new Error(p.error);
+            if(p.done){
+              const parsed = parseExplorerText(p.result);
+              explorerCache[pr.title] = parsed;
+              explorerHistory = [
+                {role:'user', content:'[Explorer: '+pr.title+']'},
+                {role:'assistant', content:p.result}
+              ];
+              // If this priority is still showing, update the options zone
+              if(currentPriority === idx){
+                const optArea = document.getElementById(`explorer-options-${idx}`);
+                if(optArea) optArea.innerHTML = renderOptionsHtml(parsed, idx);
+              }
+              updateSidebar();
+            }
+          } catch(e){ if(e.message!=='Unexpected end of JSON input'){
+            const loadEl = document.getElementById(`exp-loading-${idx}`);
+            if(loadEl) loadEl.textContent = 'Could not load options: '+e.message;
+          }}
+        }
+      }
+    } catch(e){
+      const loadEl = document.getElementById(`exp-loading-${idx}`);
+      if(loadEl) loadEl.textContent = 'Error: '+e.message;
+    }
+  }
+
+  // ── Legacy parser (old Option A/B/C format — fallback for cached results) ───
+  function parseLegacyExplorerText(sec1, sec2Raw){
+    const optionBlocks = sec2Raw.split(/(?=^\*{0,2}Option [A-C][*:—\s])/m).filter(b=>b.trim());
+    const options = optionBlocks.map(block => {
+      const titleMatch = block.match(/^\*{0,2}Option ([A-C])\*{0,2}[:\s—]+\*{0,2}\s*(.+?)[\*]*$/m);
+      const letter = titleMatch ? titleMatch[1] : '?';
+      const title = titleMatch ? titleMatch[2].replace(/\*/g,'').trim() : '';
+      const tagsMatch = block.match(/TAGS:\s*(.+)/i);
+      const tagsRaw = tagsMatch ? tagsMatch[1].trim() : '';
+      const blockBody = block.replace(/^\*{0,2}Option [A-C]\*{0,2}[:\s—].+\n?/m,'').replace(/TAGS:.*/i,'').trim();
+      const allLines = blockBody.split('\n');
+      const contextLines = [];
+      let bodyStartIdx = -1;
+      for(let i=0;i<allLines.length;i++){
+        const trimmed = allLines[i].trim();
+        if(!trimmed) continue;
+        if(trimmed.startsWith('•')||trimmed.startsWith('-')||/^\*\*[^*]+\*\*:?\s*$/.test(trimmed)||/^\*\*[^*]+:\*\*\s*$/.test(trimmed)){ bodyStartIdx=i; break; }
+        if(!/^\*\*Option [A-C]:/.test(trimmed)) contextLines.push(trimmed);
+      }
+      const bodyRaw = bodyStartIdx >= 0 ? allLines.slice(bodyStartIdx).join('\n').trim() : '';
+      return { letter, title, context: contextLines.join(' '), bodyRaw, tagsRaw };
+    });
+    return { issue: sec1, bridge: '', groups: [], options };
+  }
+
+  function parseExplorerText(text){
+    const sec1Match = text.match(/SECTION\s*1[:\s]*THE ISSUE[\s\S]*?(?=SECTION\s*2|$)/i);
+    const sec1 = sec1Match ? sec1Match[0].replace(/^SECTION\s*1[:\s]*THE ISSUE\s*/i,'').trim() : '';
+    const sec2Match = text.match(/SECTION\s*2[:\s]*OPTIONS TO CONSIDER([\s\S]*)/i);
+    if(!sec2Match) return { issue: sec1, bridge: '', groups: [], options: [] };
+    const sec2Raw = sec2Match[1];
+
+    // Try new group-based format first
+    const groupMatches = [...sec2Raw.matchAll(/%%%GROUP_START%%%([\s\S]*?)%%%GROUP_END%%%/g)];
+    if(!groupMatches.length) return parseLegacyExplorerText(sec1, sec2Raw);
+
+    const bridgeMatch = sec2Raw.match(/BRIDGE:\s*([\s\S]*?)(?=%%%GROUP_START%%%)/);
+    const bridge = bridgeMatch ? bridgeMatch[1].trim() : '';
+
+    const letters = 'ABCDE';
+    let letterIdx = 0;
+    const groups = groupMatches.map(m => {
+      const block = m[1];
+      const groupName = (block.match(/GROUP_NAME:\s*(.+)/) || [])[1]?.trim() || '';
+      const rationale = (block.match(/GROUP_RATIONALE:\s*(.+)/) || [])[1]?.trim() || '';
+      const optMatches = [...block.matchAll(/%%%OPTION_START%%%([\s\S]*?)%%%OPTION_END%%%/g)];
+      const options = optMatches.map(om => {
+        const ob = om[1];
+        const letter = letters[letterIdx++] || String(letterIdx);
+        return {
+          letter,
+          title: (ob.match(/OPTION_TITLE:\s*(.+)/) || [])[1]?.trim() || '',
+          context: (ob.match(/CONTEXT:([\s\S]*?)(?=WHAT_TO_DO:|WHERE:|%%%|$)/) || [])[1]?.trim() || '',
+          whatRaw: (ob.match(/WHAT_TO_DO:([\s\S]*?)(?=WHERE:|WHO_ACTS:|%%%|$)/) || [])[1]?.trim() || '',
+          where: (ob.match(/WHERE:\s*(.+)/) || [])[1]?.trim() || '',
+          who_acts: (ob.match(/WHO_ACTS:\s*(.+)/) || [])[1]?.trim() || '',
+          when: (ob.match(/WHEN:\s*(.+)/) || [])[1]?.trim() || '',
+          resources: (ob.match(/RESOURCES:\s*(.+)/) || [])[1]?.trim() || '',
+        };
+      });
+      return { groupName, rationale, options };
+    });
+    return { issue: sec1, bridge, groups, options: [] };
+  }
+
+  function renderOptionsHtml(parsed, idx){
+    if(!parsed) return '<div style="font-size:12px;color:var(--muted);padding:8px 0">No options available.</div>';
+
+    // Legacy format (options[] from old A/B/C prompt)
+    if(parsed.options && parsed.options.length && !parsed.groups.length){
+      const tierColors = {A:'#1a7a4a', B:'#0072BB', C:'#6b21a8'};
+      const tierNames = {A:'Within-Bank Adjustment', B:'Government Negotiation', C:'Structural Change'};
+      const optionsHtml = parsed.options.map((opt, i) => `
+        <div class="exp-option" id="exp-opt-${idx}-${i}">
+          <div class="exp-option-hdr" onclick="toggleExpOption('exp-opt-${idx}-${i}')">
+            <div class="exp-option-letter" style="background:${tierColors[opt.letter]||'#1a7a4a'}">${esc(opt.letter)}</div>
+            <div class="exp-option-title">${esc(opt.title)}</div>
+            <span class="exp-option-tier" style="background:${tierColors[opt.letter]||'#1a7a4a'}1a;color:${tierColors[opt.letter]||'#1a7a4a'};border:1px solid ${tierColors[opt.letter]||'#1a7a4a'}40">${esc(tierNames[opt.letter]||'')}</span>
+            <span class="exp-option-arrow">▾</span>
+          </div>
+          <div class="exp-option-body">
+            ${opt.context ? `<div class="exp-option-context">${esc(opt.context)}</div>` : ''}
+            ${opt.bodyRaw ? `<div>${md(opt.bodyRaw)}</div>` : ''}
+            ${opt.tagsRaw ? `<div class="exp-option-tags">${opt.tagsRaw.split('|').map(t=>`<span class="exp-tag">${esc(t.trim())}</span>`).join('')}<button class="exp-ask-btn" onclick="prefillFollowup(${idx},'Option ${esc(opt.letter)}: ${esc(opt.title)}')">Ask about this →</button></div>` : ''}
+          </div>
+        </div>`).join('');
+      return `<div class="explorer-options">${optionsHtml}</div>`;
+    }
+
+    // New group-based format
+    function getGroupCfg(groupName){
+      const n = (groupName||'').toLowerCase();
+      if(n.includes('crucial'))   return {color:'#b91c1c', bg:'#fff1f1', border:'#fca5a540'};
+      if(n.includes('important')) return {color:'#0072BB', bg:'#eff6ff', border:'#93c5fd40'};
+      if(n.includes('above')||n.includes('optional')) return {color:'#7c3aed', bg:'#f5f3ff', border:'#c4b5fd40'};
+      return {color:'#6b7280', bg:'#f9fafb', border:'#e5e7eb'};
+    }
+
+    function parseBulletsWithNotes(text){
+      const lines = text.split('\n');
+      const items = [];
+      let cur = null;
+      for(const ln of lines){
+        const t = ln.trim();
+        if(!t) continue;
+        if(t.startsWith('•') || t.startsWith('-') || t.startsWith('*')){
+          if(cur) items.push(cur);
+          cur = { bullet: t.replace(/^[•\-*]\s*/,''), note: '' };
+        } else if(/^NOTE:\s*/i.test(t) && cur){
+          cur.note = t.replace(/^NOTE:\s*/i,'');
+        } else if(cur && !cur.note){
+          cur.bullet += ' ' + t;
+        }
+      }
+      if(cur) items.push(cur);
+      return items;
+    }
+
+    const groupsHtml = (parsed.groups || []).map(group => {
+      const cfg = getGroupCfg(group.groupName);
+      const optHtml = group.options.map(opt => {
+        const bullets = parseBulletsWithNotes(opt.whatRaw || '');
+        const bulletsHtml = bullets.map(b =>
+          `<div class="exp-bullet-item">
+            <div class="exp-bullet-text">${md(b.bullet)}</div>
+            ${b.note ? `<div class="exp-bullet-note"><strong>NOTE:</strong> ${md(b.note)}</div>` : ''}
+          </div>`).join('');
+        return `
+        <div class="exp-option" id="exp-opt-${idx}-${esc(opt.letter)}">
+          <div class="exp-option-hdr" onclick="toggleExpOption('exp-opt-${idx}-${esc(opt.letter)}')">
+            <div class="exp-option-letter" style="background:${cfg.color}">${esc(opt.letter)}</div>
+            <div class="exp-option-title">${esc(opt.title)}</div>
+            <span class="exp-option-arrow">▾</span>
+          </div>
+          <div class="exp-option-body">
+            ${opt.context ? `<div class="exp-option-context">${md(opt.context)}</div>` : ''}
+            ${bulletsHtml ? `<div class="exp-bullets">${bulletsHtml}</div>` : ''}
+            ${opt.where ? `<div class="exp-where">📄 ${esc(opt.where)}</div>` : ''}
+            ${(opt.who_acts||opt.when||opt.resources) ? `<div class="exp-meta-row">
+              ${opt.who_acts ? `<span class="exp-meta-chip"><strong>Who:</strong> ${esc(opt.who_acts)}</span>` : ''}
+              ${opt.when ? `<span class="exp-meta-chip"><strong>When:</strong> ${esc(opt.when)}</span>` : ''}
+              ${opt.resources ? `<span class="exp-meta-chip"><strong>Resources:</strong> ${esc(opt.resources)}</span>` : ''}
+            </div>` : ''}
+            <div class="exp-option-footer">
+              <button class="exp-ask-btn" onclick="prefillFollowup(${idx},'Option ${esc(opt.letter)}: ${esc(opt.title)}')">Ask about this →</button>
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+      return `
+        <div class="exp-group">
+          <div class="exp-group-hdr" style="background:${cfg.bg};border-bottom:1.5px solid ${cfg.border}">
+            <div class="exp-group-name" style="color:${cfg.color}">${esc(group.groupName)}</div>
+          </div>
+          <div class="explorer-options" style="padding:10px 14px;">${optHtml}</div>
+        </div>`;
+    }).join('');
+
+    return `<div class="exp-groups">${groupsHtml}</div>`;
+  }
+
+  function toggleExpOption(id){
+    const el = document.getElementById(id);
+    if(el) el.classList.toggle('open');
+  }
+
+  function prefillFollowup(idx, text){
+    const inp = document.getElementById(`pc-followup-input-${idx}`);
+    if(inp){ inp.value = `Tell me more about ${text}`; inp.focus(); inp.scrollIntoView({behavior:'smooth',block:'nearest'}); }
+  }
+
+  // ── Follow-up queries ─────────────────────────────────────────────────────
+
+  async function submitPriorityFollowup(idx){
+    const inp = document.getElementById(`pc-followup-input-${idx}`);
+    const ansEl = document.getElementById(`pc-followup-answer-${idx}`);
+    if(!inp || !ansEl) return;
+    const msg = inp.value.trim();
+    if(!msg) return;
+    inp.value = '';
+
+    const pr = stageFourPriorities[idx];
+    // Build messages: use explorer history if available, otherwise build from stage history
+    let messages;
+    if(explorerHistory.length){
+      messages = [...explorerHistory, {role:'user', content:msg}];
+    } else {
+      const context = hist.filter(m=>m.role==='assistant').map((m,i)=>`Stage ${i+1} output:\n${m.content}`).join('\n\n---\n\n');
+      messages = [
+        {role:'user', content:`Context from prior FCV analysis:\n\n${context}\n\nNow answer the following question about the priority "${pr.title}":`},
+        {role:'assistant', content:'Understood. I will answer based on the prior FCV analysis.'},
+        {role:'user', content:msg}
+      ];
+    }
+
+    ansEl.className = 'pc-followup-answer visible';
+    ansEl.innerHTML = '<em style="color:var(--muted)">Generating…</em>';
+
+    try {
+      const res = await fetch('/api/run-explorer', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({follow_up_messages: messages}) });
+      if(!res.ok) throw new Error('Server error '+res.status);
+      const reader = res.body.getReader(), dec = new TextDecoder();
+      let buf = '', streamed = '';
+      while(true){
+        const {done,value} = await reader.read(); if(done) break;
+        buf += dec.decode(value,{stream:true});
+        const lines = buf.split('\n'); buf = lines.pop();
+        for(const line of lines){
+          if(!line.startsWith('data: ')) continue;
+          try{
+            const p = JSON.parse(line.slice(6));
+            if(p.error) throw new Error(p.error);
+            if(p.chunk){ streamed += p.chunk; ansEl.innerHTML = md(streamed); }
+            if(p.done){
+              explorerHistory = [...messages, {role:'assistant', content:p.result}];
+            }
+          } catch(e){ if(e.message!=='Unexpected end of JSON input') ansEl.innerHTML=`<span style="color:#b91c1c">Error: ${esc(e.message)}</span>`; }
+        }
+      }
+    } catch(e){ ansEl.innerHTML = `<span style="color:#b91c1c">Error: ${esc(e.message)}</span>`; }
+  }
+
+  // ── Populate priorities when Stage 4 completes ────────────────────────────
+
+  function populateExplorerDropdown(priorities){
+    // Kept for compatibility — now calls initStage4UI instead
+    stageFourPriorities = priorities;
+    initStage4UI();
+  }
+
+  function selectPrioritySb(title){
+    const idx = stageFourPriorities.findIndex(p=>p.title===title);
+    if(idx >= 0) showPriority(idx);
+  }
+
+
+
+  function esc(s){
+    if(!s)return'';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
 
 </script>
 </body>
