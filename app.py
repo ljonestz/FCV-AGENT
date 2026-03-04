@@ -4,7 +4,7 @@ import json
 import base64
 from flask import Flask, request, jsonify, send_from_directory, Response, stream_with_context
 import anthropic
-from background_docs import FCV_GUIDE
+from background_docs import FCV_GUIDE, FCV_OPERATIONAL_MANUAL
 import io
 try:
     from pypdf import PdfReader
@@ -669,7 +669,8 @@ def run_stage():
                         content_parts.append({"type": "text", "text": f"=== {dp['label']}: {dp['name']}{suffix} ===\n\n{final_text}"})
 
                     content_parts.append({"type": "text", "text": (
-                        "\n\n--- WBG FCV Sensitivity and Responsiveness Guide (always included) ---\n" + FCV_GUIDE
+                        "\n\n--- WBG FCV Sensitivity and Responsiveness Guide (always included) ---\n" + FCV_GUIDE +
+                        "\n\n--- WBG FCV Operational Manual — Design Framework (always included) ---\n" + FCV_OPERATIONAL_MANUAL
                     )})
                     content_parts.append({"type": "text", "text": stage_prompt})
                     messages.append({"role": "user", "content": content_parts})
