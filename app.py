@@ -93,7 +93,7 @@ Where does the project document's own risk picture align with or diverge from th
 You are an FCV specialist conducting systematic screening analysis for World Bank projects using the WBG FCV Operational Manual framework.
 
 # Task
-Using the information extracted in Stage 1, assess how well this project\'s current design meets the six WBG recommendations for FCV-sensitive operational design. For each recommendation, evaluate:
+Using the information extracted in Stage 1, assess how well this project\'s current design meets the six recommendations for promoting FCV-sensitivity based on the OST manual. For each recommendation, evaluate:
 
 1. **Current Status:** Strong / Partial / Weak / Not Addressed
 2. **What the project does well** (if anything) against this recommendation
@@ -171,7 +171,7 @@ Be specific — quote or reference the project document where possible. Note whe
 
 ## Summary Assessment Table
 
-| WBG Recommendation | Current Status | Risk TO Project | Risk FROM Project | Priority |
+| OST FCV Priority | Current Status | Risk TO Project | Risk FROM Project | Priority |
 |---|---|---|---|---|
 | 1. DRR-informed design | [Strong/Partial/Weak/Not Addressed] | [H/M/L] | [H/M/L] | [H/M/L] |
 | 2. Stakeholder analysis | [Strong/Partial/Weak/Not Addressed] | [H/M/L] | [H/M/L] | [H/M/L] |
@@ -192,7 +192,7 @@ Be specific — quote or reference the project document where possible. Note whe
 You are an FCV risk mitigation specialist reviewing project design adequacy against the WBG FCV Operational Manual framework.
 
 # Task
-Based on the Stage 2 assessment of the six WBG FCV recommendations, identify the most critical design gaps, propose specific mitigation measures, and flag enhancement opportunities. Focus on what a Task Team Leader can actually do with this information.
+Based on the Stage 2 assessment of the OST's six recommendations for promoting FCV sensitivity, identify the most critical design gaps, propose specific mitigation measures, and flag enhancement opportunities. Focus on what a Task Team Leader can actually do with this information.
 
 ---
 
@@ -315,10 +315,10 @@ RISKS_FROM_PROJECT: [One paragraph, 60-85 words. Identify 1-2 ways the project's
 3-4 concrete strengths actually present in the project document. Flowing prose. 2-3 citations max. Never cite the PCN/PAD itself.
 
 ### Gaps (100-130 words, prose)
-The main weakness or cluster of weaknesses, constructively framed. Reference the WBG recommendations framework where relevant. 1-2 citations from RRA or external sources only.
+The main weakness or cluster of weaknesses, constructively framed. Reference the OST FCV-sensitivity framework where relevant. 1-2 citations from RRA or external sources only.
 
 ### FCV Design Assessment Table
-After Gaps, output a table summarising how well the project meets each of the six WBG recommendations. Use EXACTLY this delimiter format — one block, no extra blank lines:
+After Gaps, output a table summarising how well the project meets each of the OST's six recommendations for promoting FCV sensitivity. Use EXACTLY this delimiter format — one block, no extra blank lines:
 
 %%%GAP_TABLE_START%%%
 REC_1_STATUS: [Strong | Partial | Weak | Not Addressed]
@@ -500,7 +500,7 @@ Every group must have at least 1 option. Total: 3–5 options across all groups.
 # Output Format
 
 ## SECTION 1: THE ISSUE (100–150 words)
-Explain why this priority matters for THIS project in THIS country context. Anchor directly and explicitly to Stage 3 findings — name the specific gaps, risks, or mitigations Stage 3 identified. Name at least one specific place, community, institution, or historical event. Be direct about what happens if this is not addressed. Do not restate the priority text. Where relevant, anchor the issue explicitly to one or more of the six WBG FCV recommendations (DRR-informed design, stakeholder analysis, ToC/PDO, risk-results equation, FCV-smart M&E, digital tools) to help the TTL understand where this fits in the broader operational framework.
+Explain why this priority matters for THIS project in THIS country context. Anchor directly and explicitly to Stage 3 findings — name the specific gaps, risks, or mitigations Stage 3 identified. Name at least one specific place, community, institution, or historical event. Be direct about what happens if this is not addressed. Do not restate the priority text. Where relevant, anchor the issue explicitly to one or more of the OST's six recommendations for promoting FCV sensitivity (DRR-informed design, stakeholder analysis, ToC/PDO, risk-results equation, FCV-smart M&E, digital tools) to help the TTL understand where this fits in the broader operational framework.
 
 ## SECTION 2: OPTIONS TO CONSIDER
 
