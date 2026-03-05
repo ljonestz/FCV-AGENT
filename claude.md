@@ -11,20 +11,23 @@ This is a **World Bank FCV (Fragility, Conflict, and Violence) Sensitivity Asses
 ## 1. Project Architecture
 
 ### 1.1 Tech Stack
-- **Backend:** Python Flask + Anthropic Claude API (Sonnet 4)
+- **Backend:** Python Flask 3.0.3 + Anthropic Claude API (Claude Sonnet 4 - latest version)
 - **Frontend:** HTML + vanilla JavaScript + Markdown rendering
 - **Hosting:** Render.com
-- **Document processing:** PDF text extraction + LLM-assisted large document summarization
+- **Document processing:** PDF text extraction (pypdf) + LLM-assisted large document summarization
 - **Session management:** Browser localStorage + JSON-serialized conversation history
+- **Document generation:** python-docx for potential export functionality
 
 ### 1.2 Core Files
 ```
-app.py                 # Flask backend, all 4 prompts, stage routes, explorer endpoint
+app.py                 # Flask backend, all 4 prompts, stage routes, explorer endpoint, document processing
 index.html             # Frontend UI, Stage 1-4 display, explorer panel, prompt modal
-background_docs.py     # FCV_GUIDE constant (WBG FCV diagnostic framework)
-requirements.txt       # Python dependencies
+background_docs.py     # FCV_GUIDE and FCV_OPERATIONAL_MANUAL constants (WBG FCV framework)
+prompts.json           # Session-specific prompt overrides (persisted per session)
+requirements.txt       # Python dependencies (Flask, Anthropic SDK, pypdf, python-docx)
 Procfile              # Render deployment config
-architecture.html      # Diagram explaining the 4-stage workflow (optional reference page)
+.gitignore            # Git ignore rules
+static/               # Static assets (if any)
 ```
 
 ### 1.3 Four-Stage Pipeline
@@ -147,6 +150,8 @@ This was creating length/clarity issues — the note got dense, and it wasn't cl
 ## 3. Prompt Architecture
 
 ### 3.1 Where Prompts Live
+
+**Default prompts:**
 ```python
 # In app.py, top-level DEFAULT_PROMPTS dictionary
 DEFAULT_PROMPTS = {
@@ -158,7 +163,15 @@ DEFAULT_PROMPTS = {
 }
 ```
 
-Can be overridden via prompt modal UI (Admin tab → per-stage prompt editor).
+**Session-specific overrides:**
+- Stored in `prompts.json` (in project root)
+- Loaded via `load_prompts()` function, which merges with DEFAULT_PROMPTS
+- Saved via `save_prompts()` function when user edits via Admin modal
+- Scoped to current session only (not persisted across sessions)
+
+**How to override:**
+- Via UI: Admin tab → per-stage prompt editor → Save & Close
+- Via code: Edit DEFAULT_PROMPTS in app.py (persists globally across all sessions)
 
 ### 3.2 Stage 1: "Identifying FCV Risks"
 
@@ -170,8 +183,9 @@ Can be overridden via prompt modal UI (Admin tab → per-stage prompt editor).
 - Both parts are strictly separated in the output.
 
 **Large document handling:**
-- Documents > 800k characters are first summarized by an LLM extraction step to preserve FCV-relevant content while fitting in context.
-- Truncation warnings are shown to users so they know if a document was summarized.
+- Documents > 150,000 characters are first condensed via LLM extraction step to preserve FCV-relevant content while fitting in context.
+- Documents > 500,000 characters are truncated to MAX_DOC_CHARS to respect API limits.
+- Truncation warnings are shown to users so they know if a document was summarized or truncated.
 
 **User refine loop:** After Stage 1 displays, users can use a refine box to:
 - Correct misreadings
@@ -310,7 +324,7 @@ Can be overridden via prompt modal UI (Admin tab → per-stage prompt editor).
 
 ```python
 # Core analysis route (all 4 stages)
-POST /api/run
+POST /api/run-stage
   Input: {stage, documents[], history[], user_message, prompt_override}
   Output: Server-Sent Events (SSE) stream with chunks, then {done, output, priorities, fcv_rating}
 
@@ -319,9 +333,17 @@ POST /api/run-explorer
   Input: {priority_title, priority_body, history[], user_question}
   Output: SSE stream with chunks, then {done, output, issue, options[]}
 
-# Session management
-GET /sessions/{session_id}   # load saved session
-POST /sessions/{session_id}  # save session
+# Admin/Prompt management
+GET /api/admin/prompts         # Get current session prompts
+POST /api/admin/prompts        # Save custom prompts for session
+POST /api/admin/prompts/reset  # Reset prompts to defaults
+
+# System endpoints
+GET /                          # Main app page
+GET /health                    # Health check endpoint
+GET /how-it-works             # Workflow explanation page
+GET /admin                     # Admin panel (prompts modal)
+GET /api/default-prompts      # Get default prompts for reference
 ```
 
 ### 5.2 Document Handling
@@ -373,6 +395,29 @@ def extract_priorities(stage4_output):
 - Pulled from Stage 3 output via regex (finding `## Part C` + Markdown table)
 - Parsed into rows with principle/status/evidence columns
 - Re-rendered in Stage 4 UI as a collapsible, color-coded table
+
+### 6.5 PDF Processing Pipeline
+**Extraction steps in `extract_pdf_text()`:**
+1. Decode base64 PDF content from frontend
+2. Use PyPDF to read PDF pages
+3. Extract text from each page sequentially
+4. Return: (extracted_text, page_count)
+5. Handle errors gracefully with fallback messages
+
+**Large document condensation in `extract_fcv_content()`:**
+1. Check if document length exceeds EXTRACT_THRESHOLD (150,000 chars)
+2. If yes, use Claude API to summarize FCV-relevant content
+3. Preserve key information while reducing size
+4. Append truncation warning to user output
+5. Handle PDF extraction errors with user-friendly messages
+
+### 6.6 Priority Parsing and JSON Extraction
+**In `extract_priorities()`:**
+1. Search for `%%%PRIORITY_START%%%` and `%%%PRIORITY_END%%%` delimiters
+2. Extract JSON from between delimiters for each priority
+3. Parse JSON and validate required fields (title, dimension, risk_level, the_gap, why_it_matters, suggested_directions)
+4. Fallback: If delimiters not found, attempt positional parsing from Markdown structure
+5. Return: List of priority dictionaries with validated fields
 
 ---
 
@@ -435,7 +480,11 @@ To add/remove fields:
 ### 8.1 Local Testing
 ```bash
 # Install dependencies
-pip install -r requirements.txt --break-system-packages
+pip install -r requirements.txt
+
+# Set environment variables (required)
+export ANTHROPIC_API_KEY="your-api-key-here"
+export ADMIN_PASSWORD="fcv-admin-2024"  # Optional, uses default if not set
 
 # Run the app
 python3 app.py
@@ -449,9 +498,15 @@ python3 app.py
 3. Render reads the `Procfile` and `requirements.txt`
 4. Deploy automatically on push to that branch
 
-**Environment variables needed:**
-- `ANTHROPIC_API_KEY` — your Claude API key (set in Render dashboard)
-- `ADMIN_PASSWORD` — optional, for prompt admin modal (default: "fcv-admin-2024")
+**Environment variables needed (set in Render dashboard):**
+- `ANTHROPIC_API_KEY` — your Claude API key (required)
+- `ADMIN_PASSWORD` — optional, for prompt admin modal (default: "fcv-admin-2024" if not set)
+
+**Current dependencies:**
+- Flask 3.0.3
+- anthropic >= 0.40.0 (Anthropic SDK for Claude API)
+- pypdf >= 4.0.0 (PDF text extraction)
+- python-docx 1.1.2 (future document generation support)
 
 ### 8.3 GitHub Workflow
 ```bash
@@ -474,16 +529,41 @@ git push origin feature/explorer-panel
 
 ---
 
-## 9. Known Limitations & Future Improvements
+## 9. Safety & Output Handling
 
-### 9.1 Current Limitations
+### 9.1 AI Disclaimer Header
+All Stage 4 outputs include a header disclaimer:
+```
+---
+**AI-Generated Output — For Review Purposes Only**
+
+This Recommendations Note was produced by an LLM-assisted screening tool. It is intended as a supplementary analytical input to support expert review, not as a substitute for professional FCV analysis. The content reflects the AI interpretation of uploaded documents and embedded WBG guidance, and may contain errors, omissions, or misjudgements. Users are responsible for critically reviewing, verifying, and adapting this output before any operational use.
+
+*Generated by WBG FCV Sensitivity Project Screener · {date}*
+
+---
+```
+
+This disclaimer is prepended to all Stage 4 outputs via the `DO_NO_HARM_HEADER` constant in `app.py`.
+
+### 9.2 Stream-Based Output with Error Handling
+- All API responses use Server-Sent Events (SSE) for real-time streaming
+- Frontend displays text progressively as chunks arrive
+- If stream fails, frontend displays error message with recovery options
+- Session history is preserved even if a stage fails mid-stream
+
+---
+
+## 10. Known Limitations & Future Improvements
+
+### 10.1 Current Limitations
 - **localStorage scope:** Sessions are browser/device-specific; no team sharing or long-term archival
 - **Rate limiting:** LLM calls are not rate-limited; high-volume usage could hit API throttles
 - **Large PDFs:** Documents >800k chars are truncated; very large projects may lose nuance
 - **Accessibility:** Some frontend components could be more accessible (ARIA labels, keyboard navigation)
 - **Mobile:** UI is desktop-optimized; mobile experience is limited
 
-### 9.2 Potential Improvements
+### 10.2 Potential Improvements
 - **Backend session database:** Store conversation history in a database (PostgreSQL, Firebase) for team collaboration and audit trails
 - **Document caching:** Cache extracted/summarized documents to avoid re-processing on repeat runs
 - **Priority versioning:** Track changes to priorities across refinement rounds
@@ -494,31 +574,32 @@ git push origin feature/explorer-panel
 
 ---
 
-## 10. Helpful Context & Design Decisions
+## 11. Helpful Context & Design Decisions
 
-### 10.1 Why Claude Sonnet 4?
+### 11.1 Why Claude Sonnet 4?
 - Strong reasoning for FCV analysis (structured assessment, evidence weighting)
 - Fast enough for iterative refinement (vs. Opus)
 - Efficient cost (vs. Haiku, which would struggle with nuanced FCV reasoning)
+- **Current version:** `claude-sonnet-4-20250514` (latest available model with strong analytical capabilities)
 
-### 10.2 Why Flask (Not React/Next.js)?
+### 11.2 Why Flask (Not React/Next.js)?
 - Lightweight and quick to deploy
 - Direct LLM integration on backend (easier to manage API keys, prompts, context)
 - Frontend is mostly vanilla JS, so framework overhead not necessary
 - Easy to host on Render or similar
 
-### 10.3 Why SSE Streaming (Not Polling)?
+### 11.3 Why SSE Streaming (Not Polling)?
 - Real-time feedback to user (progressive rendering)
 - Simpler UX (no "thinking..." spinners)
 - Efficient (no repeated polling)
 
-### 10.4 Why localStorage for Sessions (Current Implementation)?
+### 11.4 Why localStorage for Sessions (Current Implementation)?
 - Quick to implement
 - No backend database needed
 - Works offline
 - **Trade-off:** Not suitable for long-term storage or team collaboration (see Limitations section)
 
-### 10.5 Why Do We Parse Priorities via Delimiters?
+### 11.5 Why Do We Parse Priorities via Delimiters?
 - Reliable extraction from unstructured LLM output
 - Fallback to positional parsing if delimiters fail
 - Allows the LLM to generate prose around priorities (preamble, discussion) without breaking parsing
@@ -526,9 +607,9 @@ git push origin feature/explorer-panel
 
 ---
 
-## 11. Testing & Quality Assurance
+## 12. Testing & Quality Assurance
 
-### 11.1 How to Test the App
+### 12.1 How to Test the App
 
 **Manual testing workflow:**
 1. Upload a test project document (e.g., a PAD from GitHub or Ghana example)
@@ -549,7 +630,7 @@ git push origin feature/explorer-panel
 - Are they evidence-based (grounded in uploaded docs) or speculative?
 - Are multiple options offered or a single "solution" prescribed?
 
-### 11.2 Red-Teaming the Prompts
+### 12.2 Red-Teaming the Prompts
 Ask Claude (in a separate conversation) to critique the Stage 4 output:
 - Are the recommended priorities the most important ones?
 - Are any dimensions under/overweighted?
@@ -558,7 +639,7 @@ Ask Claude (in a separate conversation) to critique the Stage 4 output:
 
 ---
 
-## 12. Questions to Ask Before Making Changes
+## 13. Questions to Ask Before Making Changes
 
 Before modifying prompts, frontend, or backend logic, ask yourself:
 
@@ -572,7 +653,7 @@ Before modifying prompts, frontend, or backend logic, ask yourself:
 
 ---
 
-## 13. Conversation Starters for Claude
+## 14. Conversation Starters for Claude
 
 When you return with a new issue or request, here are useful framing questions:
 
@@ -596,35 +677,37 @@ When you return with a new issue or request, here are useful framing questions:
 
 ---
 
-## 14. File Structure & Repository Organization
+## 15. File Structure & Repository Organization
 
 ```
-FCV-Project-Screener/
-├── app.py                    # Flask backend + all prompts
-├── index.html                # Main frontend UI (single-page app)
-├── architecture.html         # Optional workflow diagram page
-├── background_docs.py        # FCV_GUIDE constant
-├── requirements.txt          # Python dependencies
+FCV-AGENT/
+├── app.py                    # Flask backend + all prompts + routes
+├── index.html                # Main frontend UI (single-page app, ~4000 lines)
+├── background_docs.py        # FCV_GUIDE and FCV_OPERATIONAL_MANUAL constants
+├── prompts.json              # Session-specific prompt overrides (empty by default)
+├── requirements.txt          # Python dependencies (Flask, anthropic, pypdf, python-docx)
 ├── Procfile                  # Render deployment config
-├── .gitignore
-├── README.md                 # Quick start guide for users
+├── .gitignore               # Git ignore rules
 ├── claude.md                 # THIS FILE - guidance for Claude
-└── .github/workflows/        # (optional) CI/CD configs
+├── static/                  # Static assets (if any)
+├── .git/                    # Git repository metadata
+└── README.md                # (optional) Quick start guide for users
 ```
 
 ---
 
-## 15. Quick Reference: Key Constants & Limits
+## 16. Quick Reference: Key Constants & Limits
 
 ```python
-MAX_DOC_CHARS = 800_000              # Docs larger than this get LLM summarization
-MAX_ASSISTANT_CHARS = 40_000         # Truncate prior outputs to this length for context
-ADMIN_PASSWORD = "fcv-admin-2024"    # Password for prompt admin modal
+MAX_DOC_CHARS = 500_000              # Docs larger than this get LLM summarization
+EXTRACT_THRESHOLD = 150_000          # Docs larger than this are condensed via LLM before analysis
+ADMIN_PASSWORD = "fcv-admin-2024"    # Password for prompt admin modal (from env var ADMIN_PASSWORD)
+PROMPTS_FILE = 'prompts.json'        # Location of session-specific prompt overrides
 ```
 
 ---
 
-## 16. Getting Help & Debugging
+## 17. Getting Help & Debugging
 
 ### Common Issues
 
@@ -654,7 +737,7 @@ ADMIN_PASSWORD = "fcv-admin-2024"    # Password for prompt admin modal
 
 ---
 
-## 17. Credits & Context
+## 18. Credits & Context
 
 This tool was developed iteratively based on feedback from World Bank FCV practitioners (particularly Shubham's note on specificity and actionability). The key insight — that recommendations must move from broad critique ("service delivery needs to be targeted") to specific, location-aware guidance ("focus on Nzerekore, Kindia, Kankan where state legitimacy is lowest") — is central to the design.
 
@@ -667,7 +750,7 @@ The Explorer feature was added to solve the "length vs. depth" problem: keep the
 
 ---
 
-## 18. Final Note
+## 19. Final Note
 
 This `claude.md` is a living document. As you make changes, iterate on features, and learn what works, please update it. The goal is that any developer (including Claude in future conversations) should be able to:
 1. Understand the app's architecture in 30 minutes
@@ -679,5 +762,7 @@ If you find gaps in this documentation, or if new design decisions emerge, updat
 
 ---
 
-**Last updated:** March 2026  
+**Last updated:** March 5, 2026
 **Current version:** FCV Screener 4.0 (with Explorer panel + specificity mandate)
+**Current Claude model:** claude-sonnet-4-20250514
+**Architecture:** Flask 3.0.3 backend + vanilla JS frontend + Anthropic SDK integration
