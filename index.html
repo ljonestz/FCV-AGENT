@@ -2606,7 +2606,10 @@ ${md(execSummary)}`;
     }
 
     if (currentAction) { parsed.actions.push(currentAction); }
-    if (currentSection === 'connector' || currentSection === 'closing') {
+    // Flush remaining prose buffer to the right field
+    if (currentSection === 'opening') {
+      parsed.openingProse = proseBuffer.trim();
+    } else if (currentSection === 'connector' || currentSection === 'closing') {
       parsed.closingProse = proseBuffer.trim();
     }
 

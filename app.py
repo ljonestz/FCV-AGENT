@@ -552,7 +552,16 @@ You will receive:
 4. The suggested directions from Stage 4 (the entry points)
 5. The full Stage 1–3 conversation history (for project-specific grounding)
 
-Use all of this to make the narrative as specific as possible to the actual project — reference the real project components, real geographic contexts, real stakeholder groups, and real document sections where known. Generic advice is not acceptable.'''}
+Use all of this to make the narrative as specific as possible to the actual project — reference the real project components, real geographic contexts, real stakeholder groups, and real document sections where known. Generic advice is not acceptable.
+
+## Priority you are addressing
+
+**Title:** {PRIORITY_TITLE}
+
+**Full priority text from the FCV Support Note:**
+{PRIORITY_TEXT}
+
+Begin your response immediately with %%%EXPLORER_NARRATIVE_START%%%.'''}
 
 
 
