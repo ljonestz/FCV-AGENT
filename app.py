@@ -806,7 +806,7 @@ def extract_country_name(project_doc_text: str, api_client) -> str:
 
 FCV_RESEARCH_PROMPT = """You are an expert FCV (Fragility, Conflict, and Violence) analyst. Your task is to conduct a focused research sweep on the FCV situation in **{country}** using web search.
 
-Conduct 5–6 targeted searches covering different dimensions of the FCV situation. Prioritise these source types:
+Conduct 7–8 targeted searches covering different dimensions of the FCV situation. Prioritise these source types:
 - UN agencies (OCHA, UNHCR, UNDP, DPPA situation reports)
 - World Bank (FCV assessments, Country Partnership Frameworks, country diagnostics)
 - International Crisis Group (ICG)
@@ -820,6 +820,8 @@ Structure your searches to cover:
 3. Humanitarian situation and displacement in {country}
 4. Economic vulnerability and social cohesion in {country}
 5. FCV assessment or fragility analysis of {country} (World Bank / ICG / ACAPS)
+6. Structural drivers, root causes, and political economy of fragility in {country} (medium- to long-term)
+7. Vulnerable regions, ethnic minorities, and marginalised groups most affected by conflict or FCV threats in {country}
 
 After searching, synthesise all findings into a structured FCV Research Brief using EXACTLY this format:
 
@@ -842,10 +844,16 @@ After searching, synthesise all findings into a structured FCV Research Brief us
 #### 5. Key FCV Actors & Dynamics
 [2–4 sentences covering state/non-state actors, political economy of conflict, key grievances, conflict drivers]
 
-#### 6. Regional & Cross-Border Dimensions
+#### 6. Structural Drivers & Political Economy (Medium- to Long-Term)
+[3–5 sentences covering: historical root causes of fragility; resource or rent distribution conflicts; elite capture and exclusionary political settlements; identity-based or ethnic/religious grievances; demographic pressures (youth bulge, urbanisation); climate and environmental stressors; state formation weaknesses that perpetuate fragility over the medium and long term]
+
+#### 7. Vulnerable Regions & Affected Groups
+[3–5 sentences identifying: specific subnational regions or provinces with elevated FCV exposure; ethnic, religious, or linguistic minorities facing disproportionate risk; internally displaced populations or returnees; women and girls in conflict-affected areas; youth at risk of recruitment or radicalisation; any caste, class, or occupational groups systematically excluded from protection or services]
+
+#### 8. Regional & Cross-Border Dimensions
 [1–3 sentences covering regional spill-overs, refugee flows, cross-border armed groups, regional geopolitics]
 
-#### 7. FCV Trajectory & Outlook
+#### 9. FCV Trajectory & Outlook
 [1–3 sentences on whether the situation is improving, stable, or deteriorating, and key risks ahead]
 
 #### Key Sources Consulted
@@ -864,11 +872,11 @@ def run_fcv_web_research(country: str, api_client) -> dict:
     try:
         resp = api_client.beta.messages.create(
             model="claude-sonnet-4-20250514",
-            max_tokens=3500,
+            max_tokens=4500,
             tools=[{
                 "type": "web_search_20250305",
                 "name": "web_search",
-                "max_uses": 6
+                "max_uses": 8
             }],
             messages=[{"role": "user", "content": prompt}],
             betas=["web-search-2025-03-05"]
