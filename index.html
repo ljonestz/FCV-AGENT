@@ -468,16 +468,17 @@
 
     /* ── Truncation warning banner ── */
     /* Research brief panel */
-    .research-brief-panel{margin-top:14px;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;background:var(--surface)}
-    .research-brief-toggle{width:100%;display:flex;align-items:center;gap:8px;padding:10px 15px;background:transparent;border:none;cursor:pointer;font-size:12.5px;color:var(--muted);text-align:left;transition:background .15s}
-    .research-brief-toggle:hover{background:var(--hover)}
-    .research-brief-toggle span{flex:1}
-    .rb-chevron{transition:transform .2s}
+    .research-brief-panel{margin-top:18px;border:2px solid var(--wbg-blue);border-radius:var(--radius);overflow:hidden;background:#fff;box-shadow:0 2px 12px rgba(0,159,218,.15)}
+    .research-brief-toggle{width:100%;display:flex;align-items:center;gap:10px;padding:13px 18px;background:linear-gradient(135deg,rgba(0,159,218,.08) 0%,rgba(71,196,235,.06) 100%);border:none;cursor:pointer;font-size:13.5px;font-weight:600;color:var(--wbg-navy);text-align:left;transition:background .18s,box-shadow .18s;letter-spacing:.01em}
+    .research-brief-toggle:hover{background:linear-gradient(135deg,rgba(0,159,218,.15) 0%,rgba(71,196,235,.12) 100%);box-shadow:inset 0 -2px 0 var(--wbg-blue)}
+    .research-brief-toggle .rb-label{flex:1}
+    .rb-badge{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;background:var(--wbg-blue);color:#fff;padding:2px 8px;border-radius:20px;flex-shrink:0}
+    .rb-chevron{transition:transform .2s;color:var(--wbg-blue);flex-shrink:0}
     .research-brief-panel.open .rb-chevron{transform:rotate(180deg)}
-    .research-brief-panel.open .research-brief-toggle{color:var(--text)}
-    .research-brief-body{display:none;padding:0 18px 18px;border-top:1px solid var(--border)}
+    .research-brief-panel.open .research-brief-toggle{background:linear-gradient(135deg,rgba(0,159,218,.12) 0%,rgba(71,196,235,.09) 100%);box-shadow:inset 0 -2px 0 var(--wbg-blue)}
+    .research-brief-body{display:none;padding:0 18px 18px;border-top:2px solid rgba(0,159,218,.2)}
     .research-brief-panel.open .research-brief-body{display:block}
-    .research-brief-notice{display:flex;align-items:flex-start;gap:7px;font-size:12px;color:var(--muted);font-style:italic;margin:12px 0 14px;padding:9px 12px;background:var(--hover);border-radius:6px;line-height:1.5}
+    .research-brief-notice{display:flex;align-items:flex-start;gap:7px;font-size:12px;color:var(--muted);font-style:italic;margin:12px 0 14px;padding:9px 12px;background:rgba(0,159,218,.06);border-radius:6px;line-height:1.5;border-left:3px solid var(--wbg-cyan)}
     .research-brief-content{font-size:13.5px;line-height:1.65}
     .trunc-warn-area{background:#fff7ed;border:1.5px solid #fed7aa;border-radius:var(--radius);padding:14px 18px;margin-bottom:14px}
     .trunc-warn-hdr{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:#c2410c;margin-bottom:8px}
@@ -1754,9 +1755,10 @@
     const countryLabel = country && country !== 'Unknown' ? ` \u2014 ${esc(country)}` : '';
     panel.innerHTML = `
       <button class="research-brief-toggle" onclick="const p=this.closest('.research-brief-panel');p.classList.toggle('open');this.setAttribute('aria-expanded',p.classList.contains('open'))" aria-expanded="false">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <span>View automated FCV research brief${countryLabel}</span>
-        <svg class="rb-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--wbg-blue);flex-shrink:0"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <span class="rb-label">View automated FCV research brief${countryLabel}</span>
+        <span class="rb-badge">View sources</span>
+        <svg class="rb-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
       </button>
       <div class="research-brief-body">
         <div class="research-brief-notice">

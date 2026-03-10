@@ -75,10 +75,10 @@ FCV-relevant information that appears missing or inadequately addressed in the p
 Draw on available sources in this strict priority order:
 
 1. **Uploaded contextual documents** (RRA, country risk assessments, etc.) — cite these by name as [From: document name]. These take the highest precedence.
-2. **Automated FCV web research** (if provided above under "AUTOMATED FCV WEB RESEARCH") — cite as [From: web research / source type]. Use this to fill gaps not covered by uploaded documents, or to supplement with more recent or different perspectives.
-3. **Training knowledge** of reputable sources (UN Security Council reports, ICG reports, World Bank FCV assessments, ACLED data, Fragile States Index) — cite as [From: training knowledge / source type]. Use only where neither uploaded documents nor web research addresses the point.
+2. **Automated FCV web research** (if provided above under "AUTOMATED FCV WEB RESEARCH") — cite by naming the specific organisation or publication where identifiable (e.g. [From: Human Rights Watch], [From: ICG], [From: ACLED], [From: World Justice Project], [From: OCHA], [From: Fragile States Index]). If the web research does not clearly attribute a finding to a specific organisation, use [From: web research / source type]. Do not use generic labels like "web research / political analysis" when a named source can be identified.
+3. **Training knowledge** of reputable sources (UN Security Council reports, ICG reports, World Bank FCV assessments, ACLED data, Fragile States Index) — cite by naming the specific organisation or report (e.g. [From: World Bank FCV assessment], [From: ICG report], [From: ACLED data], [From: Fragile States Index], [From: UN Security Council]). Use only where neither uploaded documents nor web research addresses the point.
 
-Always clearly label which source tier you are drawing from at each point.
+Always clearly label which source tier you are drawing from at each point, and always name the specific organisation or report rather than using generic descriptors.
 
 ### Country and Regional FCV Landscape
 The broader fragility, conflict, and violence dynamics affecting this country and region — drawing on contextual documents first, then training knowledge.
