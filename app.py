@@ -1123,7 +1123,17 @@ def run_stage():
                     header = DO_NO_HARM_HEADER.format(date=date.today().strftime('%d %B %Y'))
                     full_text = header + full_text
 
-                updated_messages = messages + [{"role": "assistant", "content": full_text}]
+                # For Stage 1, replace the large content_parts user message with a compact
+                # placeholder before storing history. Subsequent stages only extract assistant
+                # outputs from history, so carrying the full documents/research/guides forward
+                # would send huge payloads unnecessarily on every Stage 2/3/4 call.
+                if stage == 1:
+                    updated_messages = [
+                        {"role": "user", "content": "[Stage 1 — project documents and FCV context analysed]"},
+                        {"role": "assistant", "content": full_text}
+                    ]
+                else:
+                    updated_messages = messages + [{"role": "assistant", "content": full_text}]
                 if len(updated_messages) > 20:
                     updated_messages = updated_messages[-20:]
 
