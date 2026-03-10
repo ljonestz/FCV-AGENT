@@ -782,6 +782,256 @@
       justify-content:center;color:var(--muted);font-size:13px;
     }
 
+    /* ── Explorer narrative (new design) ── */
+    .fcv-explorer-narrative {
+      font-size: 14px;
+      line-height: 1.88;
+      color: var(--text, #1a2a3a);
+    }
+    .fcv-explorer-narrative p {
+      margin-bottom: 1em;
+    }
+    .fcv-explorer-narrative p:last-child {
+      margin-bottom: 0;
+    }
+    .fcv-opening {
+      margin-bottom: 1.2em;
+    }
+    .fcv-connector {
+      font-size: 14px;
+      line-height: 1.85;
+      color: var(--text, #1a2a3a);
+      margin: 0.8em 0;
+    }
+    .fcv-closing {
+      font-size: 13.5px;
+      color: var(--muted, #5a6a7e);
+      font-style: italic;
+      margin-top: 1.2em;
+      padding-top: 1em;
+      border-top: 1px dashed var(--border, #d9e2ec);
+      line-height: 1.7;
+    }
+
+    /* Action paragraphs */
+    .fcv-action-para {
+      margin: 1.3em 0;
+      padding-left: 18px;
+      border-left: 3px solid #1A7A4A;
+      position: relative;
+    }
+    .fcv-action-body p {
+      margin-bottom: 0.75em;
+      font-size: 14px;
+      line-height: 1.85;
+    }
+    .fcv-action-body p:last-child {
+      margin-bottom: 0;
+    }
+    .fcv-crucial-flag {
+      display: flex;
+      width: fit-content;
+      align-items: center;
+      gap: 5px;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: #b91c1c;
+      background: #fff5f5;
+      border: 1px solid #fecaca;
+      border-radius: 4px;
+      padding: 2px 7px;
+      margin-bottom: 7px;
+    }
+    .fcv-action-heading {
+      font-size: 14.5px;
+      font-weight: 700;
+      color: var(--navy, #002244);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: flex-start;
+      gap: 9px;
+      line-height: 1.35;
+    }
+    .fcv-action-icon {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    /* Inset notes (draft language / implementation consideration) */
+    .fcv-inset-note {
+      border-radius: 0 6px 6px 0;
+      padding: 10px 15px;
+      margin: 10px 0 8px;
+      font-size: 13px;
+      line-height: 1.7;
+    }
+    .fcv-inset-note p {
+      margin-bottom: 0.5em;
+    }
+    .fcv-inset-note p:last-child {
+      margin-bottom: 0;
+    }
+    .fcv-draft {
+      background: #f0f9f4;
+      border-left: 3px solid rgba(26, 122, 74, 0.35);
+      color: #1a3a25;
+    }
+    .fcv-consider {
+      background: #f0f8ff;
+      border-left: 3px solid rgba(0, 159, 218, 0.35);
+      color: #1a3040;
+    }
+    .fcv-inset-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin-bottom: 6px;
+    }
+    .fcv-draft .fcv-inset-label { color: #1A7A4A; }
+    .fcv-consider .fcv-inset-label { color: #009FDA; }
+
+    /* Document reference row */
+    .fcv-doc-ref-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+      padding-top: 8px;
+      border-top: 1px dashed var(--border, #d9e2ec);
+    }
+    .fcv-doc-ref-label {
+      font-size: 10.5px;
+      color: var(--muted, #5a6a7e);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .fcv-doc-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      color: var(--muted, #5a6a7e);
+      background: #f1f5f9;
+      border: 1px solid var(--border, #d9e2ec);
+      border-radius: 4px;
+      padding: 1px 7px;
+    }
+
+    /* Go Further collapsible */
+    .fcv-gf-toggle {
+      width: 100%;
+      background: none;
+      border: none;
+      cursor: pointer;
+      text-align: left;
+      padding: 12px 0 0;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      font-family: inherit;
+      border-top: 1px solid var(--border, #d9e2ec);
+      margin-top: 16px;
+      transition: opacity 0.14s;
+    }
+    .fcv-gf-toggle:hover { opacity: 0.8; }
+    .fcv-gf-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted, #5a6a7e);
+      flex: 1;
+    }
+    .fcv-gf-badge {
+      font-size: 10px;
+      padding: 2px 9px;
+      background: #f5f0ff;
+      border: 1px solid rgba(91, 33, 182, 0.2);
+      border-radius: 10px;
+      color: #5b21b6;
+      font-weight: 700;
+    }
+    .fcv-gf-arrow {
+      font-size: 11px;
+      color: var(--muted, #5a6a7e);
+      transition: transform 0.18s;
+    }
+    .fcv-gf-toggle.open .fcv-gf-arrow { transform: rotate(180deg); }
+    .fcv-gf-body {
+      display: none;
+      padding: 14px 0 4px;
+    }
+    .fcv-gf-body.open { display: block; }
+    .fcv-gf-intro {
+      font-size: 13.5px;
+      color: #374151;
+      margin-bottom: 16px;
+      line-height: 1.8;
+      border-left: 3px solid rgba(91, 33, 182, 0.25);
+      padding-left: 13px;
+      font-style: italic;
+    }
+    .fcv-gf-item {
+      margin-bottom: 16px;
+      padding-bottom: 16px;
+      border-bottom: 1px dashed rgba(91, 33, 182, 0.15);
+    }
+    .fcv-gf-item:last-child {
+      margin-bottom: 0;
+      padding-bottom: 0;
+      border-bottom: none;
+    }
+    .fcv-gf-item-heading {
+      display: flex;
+      align-items: flex-start;
+      gap: 9px;
+      margin-bottom: 8px;
+    }
+    .fcv-gf-letter {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #7c3aed;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .fcv-gf-item-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #5b21b6;
+      line-height: 1.35;
+    }
+    .fcv-gf-item-body {
+      padding-left: 31px;
+      font-size: 13.5px;
+      line-height: 1.78;
+    }
+    .fcv-gf-item-body p {
+      margin-bottom: 0.6em;
+    }
+    .fcv-gf-item-body p:last-child {
+      margin-bottom: 0;
+    }
+
     /* Follow-up zone */
     .pc-followup{
       padding:12px 22px 14px;background:var(--off-white);border-top:1px solid var(--border);
@@ -2197,10 +2447,10 @@ ${md(execSummary)}`;
         <div class="pc-zone zone-act" id="zone-act-${idx}">
           <div class="pc-zone-title">
             <div class="pc-zone-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
-            Options to consider
+            How to act
           </div>
           <div id="explorer-options-${idx}">
-            ${explorerCache[pr.title] ? renderOptionsHtml(explorerCache[pr.title], idx) : `
+            ${explorerCache[pr.title] ? renderExplorerNarrativeHtml(explorerCache[pr.title], idx) : `
             <div class="exp-loading" id="exp-loading-${idx}">
               <svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;animation:spin 1s linear infinite;flex-shrink:0"><circle cx="12" cy="12" r="10" stroke-opacity=".25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-opacity="1"/></svg>
               Loading detailed options…
@@ -2266,7 +2516,7 @@ ${md(execSummary)}`;
               // If this priority is still showing, update the options zone
               if(currentPriority === idx){
                 const optArea = document.getElementById(`explorer-options-${idx}`);
-                if(optArea) optArea.innerHTML = renderOptionsHtml(parsed, idx);
+                if(optArea) optArea.innerHTML = renderExplorerNarrativeHtml(parsed, idx);
               }
               updateSidebar();
             }
@@ -2307,140 +2557,315 @@ ${md(execSummary)}`;
     return { issue: sec1, bridge: '', groups: [], options };
   }
 
-  function parseExplorerText(text){
-    const sec1Match = text.match(/SECTION\s*1[:\s]*THE ISSUE[\s\S]*?(?=SECTION\s*2|$)/i);
-    const sec1 = sec1Match ? sec1Match[0].replace(/^SECTION\s*1[:\s]*THE ISSUE\s*/i,'').trim() : '';
-    const sec2Match = text.match(/SECTION\s*2[:\s]*OPTIONS TO CONSIDER([\s\S]*)/i);
-    if(!sec2Match) return { issue: sec1, bridge: '', groups: [], options: [] };
-    const sec2Raw = sec2Match[1];
-
-    // Try new group-based format first
-    const groupMatches = [...sec2Raw.matchAll(/%%%GROUP_START%%%([\s\S]*?)%%%GROUP_END%%%/g)];
-    if(!groupMatches.length) return parseLegacyExplorerText(sec1, sec2Raw);
-
-    const bridgeMatch = sec2Raw.match(/BRIDGE:\s*([\s\S]*?)(?=%%%GROUP_START%%%)/);
-    const bridge = bridgeMatch ? bridgeMatch[1].trim() : '';
-
-    const letters = 'ABCDE';
-    let letterIdx = 0;
-    const groups = groupMatches.map(m => {
-      const block = m[1];
-      const groupName = (block.match(/GROUP_NAME:\s*(.+)/) || [])[1]?.trim() || '';
-      const rationale = (block.match(/GROUP_RATIONALE:\s*(.+)/) || [])[1]?.trim() || '';
-      const optMatches = [...block.matchAll(/%%%OPTION_START%%%([\s\S]*?)%%%OPTION_END%%%/g)];
-      const options = optMatches.map(om => {
-        const ob = om[1];
-        const letter = letters[letterIdx++] || String(letterIdx);
-        return {
-          letter,
-          title: (ob.match(/OPTION_TITLE:\s*(.+)/) || [])[1]?.trim() || '',
-          context: (ob.match(/CONTEXT:([\s\S]*?)(?=WHAT_TO_DO:|WHERE:|%%%|$)/) || [])[1]?.trim() || '',
-          whatRaw: (ob.match(/WHAT_TO_DO:([\s\S]*?)(?=WHERE:|WHO_ACTS:|%%%|$)/) || [])[1]?.trim() || '',
-          where: (ob.match(/WHERE:\s*(.+)/) || [])[1]?.trim() || '',
-          who_acts: (ob.match(/WHO_ACTS:\s*(.+)/) || [])[1]?.trim() || '',
-          when: (ob.match(/WHEN:\s*(.+)/) || [])[1]?.trim() || '',
-          resources: (ob.match(/RESOURCES:\s*(.+)/) || [])[1]?.trim() || '',
-        };
+  function parseExplorerText(raw) {
+    // Detect old format and fall back to legacy parser
+    if(/SECTION\s*1[:\s]*THE ISSUE/i.test(raw)) {
+      const sec1Match = raw.match(/SECTION\s*1[:\s]*THE ISSUE[\s\S]*?(?=SECTION\s*2|$)/i);
+      const sec1 = sec1Match ? sec1Match[0].replace(/^SECTION\s*1[:\s]*THE ISSUE\s*/i,'').trim() : '';
+      const sec2Match = raw.match(/SECTION\s*2[:\s]*OPTIONS TO CONSIDER([\s\S]*)/i);
+      if(!sec2Match) return { issue: sec1, bridge: '', groups: [], options: [], _legacy: true };
+      const sec2Raw = sec2Match[1];
+      const groupMatches = [...sec2Raw.matchAll(/%%%GROUP_START%%%([\s\S]*?)%%%GROUP_END%%%/g)];
+      if(!groupMatches.length) return parseLegacyExplorerText(sec1, sec2Raw);
+      const bridgeMatch = sec2Raw.match(/BRIDGE:\s*([\s\S]*?)(?=%%%GROUP_START%%%)/);
+      const bridge = bridgeMatch ? bridgeMatch[1].trim() : '';
+      const letters = 'ABCDE'; let letterIdx = 0;
+      const groups = groupMatches.map(m => {
+        const block = m[1];
+        const groupName = (block.match(/GROUP_NAME:\s*(.+)/) || [])[1]?.trim() || '';
+        const rationale = (block.match(/GROUP_RATIONALE:\s*(.+)/) || [])[1]?.trim() || '';
+        const optMatches = [...block.matchAll(/%%%OPTION_START%%%([\s\S]*?)%%%OPTION_END%%%/g)];
+        const options = optMatches.map(om => {
+          const ob = om[1]; const letter = letters[letterIdx++] || String(letterIdx);
+          return {
+            letter,
+            title: (ob.match(/OPTION_TITLE:\s*(.+)/) || [])[1]?.trim() || '',
+            context: (ob.match(/CONTEXT:([\s\S]*?)(?=WHAT_TO_DO:|WHERE:|%%%|$)/) || [])[1]?.trim() || '',
+            whatRaw: (ob.match(/WHAT_TO_DO:([\s\S]*?)(?=WHERE:|WHO_ACTS:|%%%|$)/) || [])[1]?.trim() || '',
+            where: (ob.match(/WHERE:\s*(.+)/) || [])[1]?.trim() || '',
+            who_acts: (ob.match(/WHO_ACTS:\s*(.+)/) || [])[1]?.trim() || '',
+            when: (ob.match(/WHEN:\s*(.+)/) || [])[1]?.trim() || '',
+            resources: (ob.match(/RESOURCES:\s*(.+)/) || [])[1]?.trim() || '',
+          };
+        });
+        return { groupName, rationale, options };
       });
-      return { groupName, rationale, options };
-    });
-    return { issue: sec1, bridge, groups, options: [] };
-  }
-
-  function renderOptionsHtml(parsed, idx){
-    if(!parsed) return '<div style="font-size:12px;color:var(--muted);padding:8px 0">No options available.</div>';
-
-    // Legacy format (options[] from old A/B/C prompt)
-    if(parsed.options && parsed.options.length && !parsed.groups.length){
-      const tierColors = {A:'#1a7a4a', B:'#0072BB', C:'#6b21a8'};
-      const tierNames = {A:'Within-Bank Adjustment', B:'Government Negotiation', C:'Structural Change'};
-      const optionsHtml = parsed.options.map((opt, i) => `
-        <div class="exp-option" id="exp-opt-${idx}-${i}">
-          <div class="exp-option-hdr" onclick="toggleExpOption('exp-opt-${idx}-${i}')">
-            <div class="exp-option-letter" style="background:${tierColors[opt.letter]||'#1a7a4a'}">${esc(opt.letter)}</div>
-            <div class="exp-option-title">${esc(opt.title)}</div>
-            <span class="exp-option-tier" style="background:${tierColors[opt.letter]||'#1a7a4a'}1a;color:${tierColors[opt.letter]||'#1a7a4a'};border:1px solid ${tierColors[opt.letter]||'#1a7a4a'}40">${esc(tierNames[opt.letter]||'')}</span>
-            <span class="exp-option-arrow">▾</span>
-          </div>
-          <div class="exp-option-body">
-            ${opt.context ? `<div class="exp-option-context">${esc(opt.context)}</div>` : ''}
-            ${opt.bodyRaw ? `<div>${md(opt.bodyRaw)}</div>` : ''}
-            ${opt.tagsRaw ? `<div class="exp-option-tags">${opt.tagsRaw.split('|').map(t=>`<span class="exp-tag">${esc(t.trim())}</span>`).join('')}<button class="exp-ask-btn" onclick="prefillFollowup(${idx},'Option ${esc(opt.letter)}: ${esc(opt.title)}')">Ask about this →</button></div>` : ''}
-          </div>
-        </div>`).join('');
-      return `<div class="explorer-options">${optionsHtml}</div>`;
+      return { issue: sec1, bridge, groups, options: [], _legacy: true };
     }
 
-    // New group-based format
-    function getGroupCfg(groupName){
-      const n = (groupName||'').toLowerCase();
-      if(n.includes('crucial'))   return {color:'#b91c1c', bg:'#fff1f1', border:'#fca5a540'};
-      if(n.includes('important')) return {color:'#0072BB', bg:'#eff6ff', border:'#93c5fd40'};
-      if(n.includes('above')||n.includes('optional')) return {color:'#7c3aed', bg:'#f5f3ff', border:'#c4b5fd40'};
-      return {color:'#6b7280', bg:'#f9fafb', border:'#e5e7eb'};
-    }
+    // New narrative format
+    const narrativeMatch = raw.match(/%%%EXPLORER_NARRATIVE_START%%%([\s\S]*?)%%%EXPLORER_NARRATIVE_END%%%/);
+    const narrativeRaw = narrativeMatch ? narrativeMatch[1].trim() : raw;
 
-    function parseBulletsWithNotes(text){
-      const lines = text.split('\n');
-      const items = [];
-      let cur = null;
-      for(const ln of lines){
-        const t = ln.trim();
-        if(!t) continue;
-        if(t.startsWith('•') || t.startsWith('-') || t.startsWith('*')){
-          if(cur) items.push(cur);
-          cur = { bullet: t.replace(/^[•\-*]\s*/,''), note: '' };
-        } else if(/^NOTE:\s*/i.test(t) && cur){
-          cur.note = t.replace(/^NOTE:\s*/i,'');
-        } else if(cur && !cur.note){
-          cur.bullet += ' ' + t;
+    const goFurtherMatch = raw.match(/%%%GO_FURTHER_START%%%([\s\S]*?)%%%GO_FURTHER_END%%%/);
+    const goFurtherRaw = goFurtherMatch ? goFurtherMatch[1].trim() : '';
+
+    const parsed = { openingProse: '', actions: [], closingProse: '' };
+    const lines = narrativeRaw.split('\n');
+    let currentSection = 'opening';
+    let currentAction = null;
+    let proseBuffer = '';
+
+    for (let li = 0; li < lines.length; li++) {
+      const line = lines[li];
+      const trimmed = line.trim();
+
+      if (trimmed === '%%%CRUCIAL%%%') {
+        if (currentAction) { parsed.actions.push(currentAction); }
+        else if (currentSection === 'opening') { parsed.openingProse = proseBuffer.trim(); }
+        proseBuffer = '';
+        currentAction = { crucial: true, heading: '', bodyParagraphs: '', draftLanguage: '', implementationNote: '', docRefs: '', connectorProse: '' };
+        currentSection = 'action';
+        continue;
+      }
+
+      if (trimmed.startsWith('%%%ACTION_HEADING%%%')) {
+        const headingText = trimmed.replace('%%%ACTION_HEADING%%%', '').trim();
+        if (currentAction && !currentAction.heading) {
+          currentAction.heading = headingText;
+        } else {
+          if (currentAction) { parsed.actions.push(currentAction); }
+          else if (currentSection === 'opening') { parsed.openingProse = proseBuffer.trim(); }
+          proseBuffer = '';
+          currentAction = { crucial: false, heading: headingText, bodyParagraphs: '', draftLanguage: '', implementationNote: '', docRefs: '', connectorProse: '' };
+          currentSection = 'action';
+        }
+        continue;
+      }
+
+      if (trimmed.startsWith('%%%DRAFT_LANGUAGE%%%')) {
+        currentSection = 'draft';
+        continue;
+      }
+
+      if (trimmed.startsWith('%%%IMPLEMENTATION_NOTE%%%')) {
+        currentSection = 'impl';
+        continue;
+      }
+
+      if (trimmed.startsWith('%%%DOC_REFS%%%')) {
+        currentSection = 'docrefs';
+        continue;
+      }
+
+      // Detect connector prose after doc refs
+      if (currentSection === 'docrefs' && trimmed && !trimmed.startsWith('%%%')) {
+        if (currentAction && currentAction.docRefs && trimmed.length > 60 &&
+            !trimmed.includes('PAD') && !trimmed.includes('Annex') && !trimmed.includes('Manual')) {
+          currentSection = 'connector';
+          proseBuffer = trimmed;
+          continue;
         }
       }
-      if(cur) items.push(cur);
-      return items;
+
+      if (currentSection === 'opening') {
+        proseBuffer += (proseBuffer ? '\n' : '') + line;
+      } else if (currentSection === 'action' && currentAction) {
+        currentAction.bodyParagraphs += (currentAction.bodyParagraphs ? '\n' : '') + line;
+      } else if (currentSection === 'draft' && currentAction) {
+        currentAction.draftLanguage += (currentAction.draftLanguage ? '\n' : '') + line;
+      } else if (currentSection === 'impl' && currentAction) {
+        currentAction.implementationNote += (currentAction.implementationNote ? '\n' : '') + line;
+      } else if (currentSection === 'docrefs' && currentAction) {
+        currentAction.docRefs += (currentAction.docRefs ? '\n' : '') + line;
+      } else if (currentSection === 'connector') {
+        proseBuffer += (proseBuffer ? '\n' : '') + line;
+      }
     }
 
-    const groupsHtml = (parsed.groups || []).map(group => {
-      const cfg = getGroupCfg(group.groupName);
-      const optHtml = group.options.map(opt => {
-        const bullets = parseBulletsWithNotes(opt.whatRaw || '');
-        const bulletsHtml = bullets.map(b =>
-          `<div class="exp-bullet-item">
-            <div class="exp-bullet-text">${md(b.bullet)}</div>
-            ${b.note ? `<div class="exp-bullet-note"><strong>NOTE:</strong> ${md(b.note)}</div>` : ''}
+    if (currentAction) { parsed.actions.push(currentAction); }
+    // Flush remaining prose buffer to the right field
+    if (currentSection === 'opening') {
+      parsed.openingProse = proseBuffer.trim();
+    } else if (currentSection === 'connector' || currentSection === 'closing') {
+      parsed.closingProse = proseBuffer.trim();
+    }
+
+    // Parse Go Further items
+    const gfItems = [];
+    if (goFurtherRaw) {
+      const gfBlocks = goFurtherRaw.split('%%%GF_ITEM%%%').filter(b => b.trim());
+      for (const block of gfBlocks) {
+        const titleMatch = block.match(/%%%GF_TITLE%%%\s*(.+)/);
+        if (titleMatch) {
+          const title = titleMatch[1].trim();
+          const body = block.replace(/%%%GF_TITLE%%%\s*.+/, '').trim();
+          gfItems.push({ title, body });
+        }
+      }
+    }
+
+    parsed.goFurtherItems = gfItems;
+    return parsed;
+  }
+
+  function renderExplorerNarrativeHtml(parsed, priorityIdx) {
+    if (!parsed) return '<div style="font-size:12px;color:var(--muted);padding:8px 0">No content available.</div>';
+
+    // Fall back to legacy rendering for old cached results
+    if (parsed._legacy) {
+      const idx = priorityIdx;
+      if (!parsed) return '<div style="font-size:12px;color:var(--muted);padding:8px 0">No options available.</div>';
+      if (parsed.options && parsed.options.length && !parsed.groups.length) {
+        const tierColors = {A:'#1a7a4a', B:'#0072BB', C:'#6b21a8'};
+        const tierNames = {A:'Within-Bank Adjustment', B:'Government Negotiation', C:'Structural Change'};
+        const optionsHtml = parsed.options.map((opt, i) => `
+          <div class="exp-option" id="exp-opt-${idx}-${i}">
+            <div class="exp-option-hdr" onclick="toggleExpOption('exp-opt-${idx}-${i}')">
+              <div class="exp-option-letter" style="background:${tierColors[opt.letter]||'#1a7a4a'}">${esc(opt.letter)}</div>
+              <div class="exp-option-title">${esc(opt.title)}</div>
+              <span class="exp-option-tier" style="background:${tierColors[opt.letter]||'#1a7a4a'}1a;color:${tierColors[opt.letter]||'#1a7a4a'};border:1px solid ${tierColors[opt.letter]||'#1a7a4a'}40">${esc(tierNames[opt.letter]||'')}</span>
+              <span class="exp-option-arrow">▾</span>
+            </div>
+            <div class="exp-option-body">
+              ${opt.context ? `<div class="exp-option-context">${esc(opt.context)}</div>` : ''}
+              ${opt.bodyRaw ? `<div>${md(opt.bodyRaw)}</div>` : ''}
+            </div>
+          </div>`).join('');
+        return `<div class="explorer-options">${optionsHtml}</div>`;
+      }
+      function getGroupCfg(groupName){
+        const n = (groupName||'').toLowerCase();
+        if(n.includes('crucial'))   return {color:'#b91c1c', bg:'#fff1f1', border:'#fca5a540'};
+        if(n.includes('important')) return {color:'#0072BB', bg:'#eff6ff', border:'#93c5fd40'};
+        if(n.includes('above')||n.includes('optional')) return {color:'#7c3aed', bg:'#f5f3ff', border:'#c4b5fd40'};
+        return {color:'#6b7280', bg:'#f9fafb', border:'#e5e7eb'};
+      }
+      const groupsHtml = (parsed.groups || []).map(group => {
+        const cfg = getGroupCfg(group.groupName);
+        const optHtml = group.options.map(opt => `
+          <div class="exp-option" id="exp-opt-${idx}-${esc(opt.letter)}">
+            <div class="exp-option-hdr" onclick="toggleExpOption('exp-opt-${idx}-${esc(opt.letter)}')">
+              <div class="exp-option-letter" style="background:${cfg.color}">${esc(opt.letter)}</div>
+              <div class="exp-option-title">${esc(opt.title)}</div>
+              <span class="exp-option-arrow">▾</span>
+            </div>
+            <div class="exp-option-body">
+              ${opt.context ? `<div class="exp-option-context">${md(opt.context)}</div>` : ''}
+              ${opt.where ? `<div class="exp-where">📄 ${esc(opt.where)}</div>` : ''}
+            </div>
           </div>`).join('');
         return `
-        <div class="exp-option" id="exp-opt-${idx}-${esc(opt.letter)}">
-          <div class="exp-option-hdr" onclick="toggleExpOption('exp-opt-${idx}-${esc(opt.letter)}')">
-            <div class="exp-option-letter" style="background:${cfg.color}">${esc(opt.letter)}</div>
-            <div class="exp-option-title">${esc(opt.title)}</div>
-            <span class="exp-option-arrow">▾</span>
-          </div>
-          <div class="exp-option-body">
-            ${opt.context ? `<div class="exp-option-context">${md(opt.context)}</div>` : ''}
-            ${bulletsHtml ? `<div class="exp-bullets">${bulletsHtml}</div>` : ''}
-            ${opt.where ? `<div class="exp-where">📄 ${esc(opt.where)}</div>` : ''}
-            ${(opt.who_acts||opt.when||opt.resources) ? `<div class="exp-meta-row">
-              ${opt.who_acts ? `<span class="exp-meta-chip"><strong>Who:</strong> ${esc(opt.who_acts)}</span>` : ''}
-              ${opt.when ? `<span class="exp-meta-chip"><strong>When:</strong> ${esc(opt.when)}</span>` : ''}
-              ${opt.resources ? `<span class="exp-meta-chip"><strong>Resources:</strong> ${esc(opt.resources)}</span>` : ''}
-            </div>` : ''}
-            <div class="exp-option-footer">
-              <button class="exp-ask-btn" onclick="prefillFollowup(${idx},'Option ${esc(opt.letter)}: ${esc(opt.title)}')">Ask about this →</button>
+          <div class="exp-group">
+            <div class="exp-group-hdr" style="background:${cfg.bg};border-bottom:1.5px solid ${cfg.border}">
+              <div class="exp-group-name" style="color:${cfg.color}">${esc(group.groupName)}</div>
             </div>
-          </div>
-        </div>`;
+            <div class="explorer-options" style="padding:10px 14px;">${optHtml}</div>
+          </div>`;
       }).join('');
-      return `
-        <div class="exp-group">
-          <div class="exp-group-hdr" style="background:${cfg.bg};border-bottom:1.5px solid ${cfg.border}">
-            <div class="exp-group-name" style="color:${cfg.color}">${esc(group.groupName)}</div>
-          </div>
-          <div class="explorer-options" style="padding:10px 14px;">${optHtml}</div>
-        </div>`;
-    }).join('');
+      return `<div class="exp-groups">${groupsHtml}</div>`;
+    }
 
-    return `<div class="exp-groups">${groupsHtml}</div>`;
+    // ── New narrative rendering ──
+    const escFn = s => (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+    const iconPeople = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`;
+    const iconEye   = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+    const iconChart = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>`;
+    const iconDoc   = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`;
+    const iconInfo  = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`;
+    const iconBolt  = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`;
+    const icons = [iconPeople, iconEye, iconChart];
+
+    function paraHtml(text) {
+      if (!text) return '';
+      return text.trim().split(/\n\n+/).map(p => p.trim()).filter(Boolean)
+        .map(p => `<p>${escFn(p)}</p>`).join('');
+    }
+
+    function stripDocLocation(text) {
+      if (!text) return '';
+      return text.replace(/^\[?Document location[^\n]*\n+/i, '').trim();
+    }
+
+    function docRefsHtml(refs) {
+      if (!refs) return '';
+      const pills = refs.split(',').map(r => r.trim()).filter(Boolean)
+        .map(r => `<span class="fcv-doc-pill">📄 ${escFn(r)}</span>`).join('');
+      return `<div class="fcv-doc-ref-row"><span class="fcv-doc-ref-label">Where:</span>${pills}</div>`;
+    }
+
+    let actionsHtml = '';
+    (parsed.actions || []).forEach((action, i) => {
+      const isCrucial = action.crucial;
+      const borderColor = isCrucial ? '#1A7A4A' : '#009FDA';
+      const iconHtml = icons[i % icons.length];
+      const iconBg = isCrucial ? '#1A7A4A' : '#009FDA';
+
+      const crucialBadge = isCrucial ? `
+        <div class="fcv-crucial-flag">
+          ${iconBolt}
+          Essential action
+        </div>` : '';
+
+      const draftBlock = action.draftLanguage ? `
+        <div class="fcv-inset-note fcv-draft">
+          <div class="fcv-inset-label">${iconDoc} Suggested language</div>
+          ${paraHtml(stripDocLocation(action.draftLanguage))}
+        </div>` : '';
+
+      const implBlock = action.implementationNote ? `
+        <div class="fcv-inset-note fcv-consider">
+          <div class="fcv-inset-label">${iconInfo} Implementation consideration</div>
+          ${paraHtml(action.implementationNote)}
+        </div>` : '';
+
+      actionsHtml += `
+        <div class="fcv-action-para" style="border-left-color:${borderColor}">
+          ${crucialBadge}
+          <div class="fcv-action-heading">
+            <div class="fcv-action-icon" style="background:${iconBg}">${iconHtml}</div>
+            <span>${escFn(action.heading)}</span>
+          </div>
+          <div class="fcv-action-body">
+            ${paraHtml(action.bodyParagraphs)}
+            ${draftBlock}
+            ${implBlock}
+            ${docRefsHtml(action.docRefs)}
+          </div>
+        </div>`;
+
+      if (action.connectorProse) {
+        actionsHtml += `<p class="fcv-connector">${escFn(action.connectorProse)}</p>`;
+      }
+    });
+
+    let goFurtherHtml = '';
+    if (parsed.goFurtherItems && parsed.goFurtherItems.length > 0) {
+      const gfId = `gf-${priorityIdx}-${Math.random().toString(36).slice(2,6)}`;
+      const letters = ['A','B','C'];
+      const itemsHtml = parsed.goFurtherItems.map((item, gi) => `
+        <div class="fcv-gf-item">
+          <div class="fcv-gf-item-heading">
+            <div class="fcv-gf-letter">${letters[gi] || (gi+1)}</div>
+            <div class="fcv-gf-item-title">${escFn(item.title)}</div>
+          </div>
+          <div class="fcv-gf-item-body">${paraHtml(item.body)}</div>
+        </div>`).join('');
+
+      goFurtherHtml = `
+        <button class="fcv-gf-toggle" onclick="this.classList.toggle('open');document.getElementById('${gfId}').classList.toggle('open');this.querySelector('.fcv-gf-arrow').textContent=document.getElementById('${gfId}').classList.contains('open')?'▴':'▾';">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          <span class="fcv-gf-label">Want to go further?</span>
+          <span class="fcv-gf-badge">Optional</span>
+          <span class="fcv-gf-arrow">▾</span>
+        </button>
+        <div class="fcv-gf-body" id="${gfId}">
+          <p class="fcv-gf-intro">The actions above address the most significant gaps. If the team has additional appetite, resources, and political capital, the ideas below go further — but they are not prerequisites.</p>
+          ${itemsHtml}
+        </div>`;
+    }
+
+    const closingHtml = parsed.closingProse
+      ? `<p class="fcv-closing">${escFn(parsed.closingProse)}</p>` : '';
+
+    return `
+      <div class="fcv-explorer-narrative">
+        <div class="fcv-opening">${paraHtml(parsed.openingProse)}</div>
+        ${actionsHtml}
+        ${closingHtml}
+      </div>
+      ${goFurtherHtml}`;
   }
 
   function toggleExpOption(id){
