@@ -467,6 +467,18 @@
     .session-bar-btns{margin-left:auto;display:flex;gap:6px}
 
     /* ── Truncation warning banner ── */
+    /* Research brief panel */
+    .research-brief-panel{margin-top:14px;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;background:var(--surface)}
+    .research-brief-toggle{width:100%;display:flex;align-items:center;gap:8px;padding:10px 15px;background:transparent;border:none;cursor:pointer;font-size:12.5px;color:var(--muted);text-align:left;transition:background .15s}
+    .research-brief-toggle:hover{background:var(--hover)}
+    .research-brief-toggle span{flex:1}
+    .rb-chevron{transition:transform .2s}
+    .research-brief-panel.open .rb-chevron{transform:rotate(180deg)}
+    .research-brief-panel.open .research-brief-toggle{color:var(--text)}
+    .research-brief-body{display:none;padding:0 18px 18px;border-top:1px solid var(--border)}
+    .research-brief-panel.open .research-brief-body{display:block}
+    .research-brief-notice{display:flex;align-items:flex-start;gap:7px;font-size:12px;color:var(--muted);font-style:italic;margin:12px 0 14px;padding:9px 12px;background:var(--hover);border-radius:6px;line-height:1.5}
+    .research-brief-content{font-size:13.5px;line-height:1.65}
     .trunc-warn-area{background:#fff7ed;border:1.5px solid #fed7aa;border-radius:var(--radius);padding:14px 18px;margin-bottom:14px}
     .trunc-warn-hdr{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:#c2410c;margin-bottom:8px}
     .trunc-warn-item{font-size:12.5px;color:#7c2d12;margin-bottom:4px;line-height:1.55;padding-left:4px}
@@ -1666,9 +1678,37 @@
               // Store warnings to render after renderOut fires
               window._truncWarnings = p.truncation_warnings;
             }
+            if(p.research_status){
+              const el=document.getElementById('s-out');
+              if(el){
+                let msg='';
+                if(p.research_status==='extracting_country'){
+                  msg='Identifying country from project document\u2026';
+                } else if(p.research_status==='searching'&&p.country){
+                  researchCountry=p.country;
+                  msg=`Searching for FCV context: <strong>${esc(p.country)}</strong>\u2026`;
+                } else if(p.research_status==='cached'&&p.country){
+                  researchCountry=p.country;
+                  msg=`Loading FCV research for <strong>${esc(p.country)}</strong>\u2026`;
+                } else if(p.research_status==='complete'){
+                  if(p.brief) researchBrief=p.brief;
+                  if(p.country) researchCountry=p.country;
+                  msg='';
+                } else if(p.research_status==='error'){
+                  msg='';
+                }
+                if(msg) el.innerHTML=`<div style="display:flex;align-items:center;gap:10px;color:var(--muted);font-style:italic;padding:12px 0"><svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;animation:spin 1s linear infinite;flex-shrink:0"><circle cx="12" cy="12" r="10" stroke-opacity=".25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-opacity="1"/></svg>${msg}</div>`;
+              }
+            }
             if(p.preprocess){const el=document.getElementById('s-out');if(el)el.innerHTML=`<div style="display:flex;align-items:center;gap:10px;color:var(--muted);font-style:italic;padding:12px 0"><svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;animation:spin 1s linear infinite;flex-shrink:0"><circle cx="12" cy="12" r="10" stroke-opacity=".25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-opacity="1"/></svg>${esc(p.preprocess)}</div>`}
             if(p.chunk){streamed+=p.chunk;const el=document.getElementById('s-out');if(el)el.innerHTML=md(streamed)}
             if(p.done){hist=p.history||hist;curS=stage;stageOutputs[stage]=p.result;stageHists[stage]=hist.slice();updateSessionBar();if(stage===4){stageGapTable=p.gap_table||null;stageRiskExposure=p.risk_exposure||null;}renderOut(stage,p.result,followOn);setStepper(stage,'done');
+              // Research brief panel for Stage 1
+              if(stage===1){
+                if(p.research_brief) researchBrief=p.research_brief;
+                if(p.research_country) researchCountry=p.research_country;
+                if(researchBrief) injectResearchBriefPanel(researchBrief,researchCountry);
+              }
               // Explorer panel + sidebar for Stage 4
               if(stage===4 && p.priorities && p.priorities.length){
                 stageFourPriorities=p.priorities;
@@ -1703,6 +1743,30 @@
       }
     }catch(e){showErr(e.message,stage);document.getElementById('stage-disp').innerHTML=''}
     busy=false;
+  }
+
+  function injectResearchBriefPanel(brief, country) {
+    const existing = document.getElementById('research-brief-panel');
+    if (existing) existing.remove();
+    const panel = document.createElement('div');
+    panel.id = 'research-brief-panel';
+    panel.className = 'research-brief-panel ani';
+    const countryLabel = country && country !== 'Unknown' ? ` \u2014 ${esc(country)}` : '';
+    panel.innerHTML = `
+      <button class="research-brief-toggle" onclick="const p=this.closest('.research-brief-panel');p.classList.toggle('open');this.setAttribute('aria-expanded',p.classList.contains('open'))" aria-expanded="false">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <span>View automated FCV research brief${countryLabel}</span>
+        <svg class="rb-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="research-brief-body">
+        <div class="research-brief-notice">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          Automated research from public sources. Uploaded contextual documents take precedence. Verify before operational use.
+        </div>
+        <div class="research-brief-content">${md(brief)}</div>
+      </div>`;
+    const disp = document.getElementById('stage-disp');
+    if (disp) disp.appendChild(panel);
   }
 
   function renderGapTable(gapTable) {
@@ -2035,7 +2099,7 @@ ${md(execSummary)}`;
   }
 
   function reset(){
-    pF=[];cF=[];hist=[];curS=0;busy=false;stageOutputs={};stageHists={};
+    pF=[];cF=[];hist=[];curS=0;busy=false;stageOutputs={};stageHists={};researchBrief='';researchCountry='';
     document.getElementById('upload-panel').style.display='block';
     document.getElementById('analysis-panel').style.display='none';
     document.getElementById('chips').innerHTML='';
@@ -2174,6 +2238,10 @@ ${md(execSummary)}`;
   let stageHists = {};    // {stageNum: hist_snapshot} — used to restore history on goBack()
   let stageGapTable = null;
   let stageRiskExposure = null;
+
+  // ── Research brief state ───────────────────────────────────────────────────
+  let researchBrief = '';
+  let researchCountry = '';
 
   // ── Stage 4 state ──────────────────────────────────────────────────────────
   let stageFourPriorities = [];

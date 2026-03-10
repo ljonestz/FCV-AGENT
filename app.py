@@ -18,6 +18,9 @@ EXTRACT_THRESHOLD = 150_000  # Documents larger than this are condensed via LLM 
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "fcv-admin-2024")
 PROMPTS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'prompts.json')
 
+# ── Research cache (in-process, keyed by country name) ───────────────────────
+_research_cache: dict = {}  # key: country.lower() → {brief, country, sources}
+
 DO_NO_HARM_HEADER = """---
 **AI-Generated Output — For Review Purposes Only**
 
@@ -69,7 +72,13 @@ FCV-relevant information that appears missing or inadequately addressed in the p
 ---
 
 ## Part B: Wider FCV Context
-Draw first on any **contextual documents uploaded** (RRA, country risk assessments, etc.) — cite these by name. Then supplement with your **training knowledge** of reputable sources (UN Security Council reports, ICG reports, World Bank FCV assessments, ACLED data, Fragile States Index). Clearly distinguish between the two throughout: label findings from uploaded documents as [From: document name] and findings from training knowledge as [From: training knowledge / source type].
+Draw on available sources in this strict priority order:
+
+1. **Uploaded contextual documents** (RRA, country risk assessments, etc.) — cite these by name as [From: document name]. These take the highest precedence.
+2. **Automated FCV web research** (if provided above under "AUTOMATED FCV WEB RESEARCH") — cite as [From: web research / source type]. Use this to fill gaps not covered by uploaded documents, or to supplement with more recent or different perspectives.
+3. **Training knowledge** of reputable sources (UN Security Council reports, ICG reports, World Bank FCV assessments, ACLED data, Fragile States Index) — cite as [From: training knowledge / source type]. Use only where neither uploaded documents nor web research addresses the point.
+
+Always clearly label which source tier you are drawing from at each point.
 
 ### Country and Regional FCV Landscape
 The broader fragility, conflict, and violence dynamics affecting this country and region — drawing on contextual documents first, then training knowledge.
@@ -84,7 +93,7 @@ Where does the project document's own risk picture align with or diverge from th
 
 # Quality Guidelines
 - Part A: extract only from the project document — quote or paraphrase precisely, do not infer beyond what is stated
-- Part B: cite contextual documents by name first; only use training knowledge where contextual documents do not address the point
+- Part B: follow source priority strictly — uploaded docs first, then web research, then training knowledge; always label the tier at each point
 - Always clearly signal which Part and section you are in
 - Note when information is ambiguous, absent, or contradictory
 - Be specific — generic statements about fragility are not useful''',
@@ -773,6 +782,111 @@ def extract_fcv_content(text, doc_name, api_client):
         return text[:EXTRACT_THRESHOLD] + f"\n\n[Extraction failed ({str(e)}); showing first {EXTRACT_THRESHOLD//1000}k characters only.]"
 
 
+def extract_country_name(project_doc_text: str, api_client) -> str:
+    """Extract the country name from the first portion of a project document."""
+    snippet = project_doc_text[:4000]
+    try:
+        resp = api_client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=50,
+            messages=[{
+                "role": "user",
+                "content": (
+                    f"This is the beginning of a World Bank project document (PAD, PCN, or PID):\n\n{snippet}\n\n"
+                    "What country is this project in? Reply with ONLY the country name — no explanation, "
+                    "no punctuation, no extra words. If there are multiple countries, list them separated by commas."
+                )
+            }]
+        )
+        country = resp.content[0].text.strip().strip('.').strip('"').strip("'")
+        return country if country else "Unknown"
+    except Exception:
+        return "Unknown"
+
+
+FCV_RESEARCH_PROMPT = """You are an expert FCV (Fragility, Conflict, and Violence) analyst. Your task is to conduct a focused research sweep on the FCV situation in **{country}** using web search.
+
+Conduct 5–6 targeted searches covering different dimensions of the FCV situation. Prioritise these source types:
+- UN agencies (OCHA, UNHCR, UNDP, DPPA situation reports)
+- World Bank (FCV assessments, Country Partnership Frameworks, country diagnostics)
+- International Crisis Group (ICG)
+- ACAPS, IRC, or similar humanitarian intelligence organisations
+- Fragile States Index / Fund for Peace
+- Reputable regional/international media for recent developments
+
+Structure your searches to cover:
+1. Current conflict and security situation in {country}
+2. Governance, institutions, and political stability in {country}
+3. Humanitarian situation and displacement in {country}
+4. Economic vulnerability and social cohesion in {country}
+5. FCV assessment or fragility analysis of {country} (World Bank / ICG / ACAPS)
+
+After searching, synthesise all findings into a structured FCV Research Brief using EXACTLY this format:
+
+---
+### FCV Research Brief: {country}
+*Automated research from public sources — supplemental to any uploaded contextual documents*
+
+#### 1. Current Conflict & Security Landscape
+[2–4 sentences covering active conflicts, security incidents, armed actors, geographic hotspots]
+
+#### 2. Governance & Institutional Context
+[2–4 sentences covering state capacity, rule of law, corruption, subnational governance, political dynamics]
+
+#### 3. Humanitarian Situation
+[2–4 sentences covering displacement (IDPs/refugees), humanitarian access, food security, health/education]
+
+#### 4. Economic Vulnerability & Social Cohesion
+[2–4 sentences covering poverty, unemployment especially youth, intercommunal tensions, gender dynamics, social exclusion]
+
+#### 5. Key FCV Actors & Dynamics
+[2–4 sentences covering state/non-state actors, political economy of conflict, key grievances, conflict drivers]
+
+#### 6. Regional & Cross-Border Dimensions
+[1–3 sentences covering regional spill-overs, refugee flows, cross-border armed groups, regional geopolitics]
+
+#### 7. FCV Trajectory & Outlook
+[1–3 sentences on whether the situation is improving, stable, or deteriorating, and key risks ahead]
+
+#### Key Sources Consulted
+[List the main sources found and drawn on, with publication dates where available]
+---
+
+Be concise but substantive. Prioritise recent information (last 2–3 years). Where you find conflicting assessments, note both perspectives briefly."""
+
+
+def run_fcv_web_research(country: str, api_client) -> dict:
+    """
+    Run automated FCV web research for the given country using the Anthropic
+    web search tool. Returns a dict with 'brief' (str) and 'country' (str).
+    """
+    prompt = FCV_RESEARCH_PROMPT.format(country=country)
+    try:
+        resp = api_client.beta.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=3500,
+            tools=[{
+                "type": "web_search_20250305",
+                "name": "web_search",
+                "max_uses": 6
+            }],
+            messages=[{"role": "user", "content": prompt}],
+            betas=["web-search-2025-03-05"]
+        )
+        # Extract text blocks from response (tool_use blocks may be interspersed)
+        brief_parts = []
+        for block in resp.content:
+            if hasattr(block, 'type') and block.type == 'text':
+                brief_parts.append(block.text)
+        brief = '\n'.join(brief_parts).strip()
+        return {'brief': brief, 'country': country}
+    except Exception as e:
+        return {
+            'brief': f'*Automated FCV web research could not be completed for {country}: {str(e)}*',
+            'country': country
+        }
+
+
 # ── Flask app ────────────────────────────────────────────────────────────────
 
 app = Flask(__name__, static_folder='static')
@@ -925,6 +1039,8 @@ def run_stage():
 
         def generate():
             collected = []
+            research_brief_text = ''
+            research_country = ''
             try:
                 yield f"data: {json.dumps({'ping': True})}\n\n"
 
@@ -935,6 +1051,29 @@ def run_stage():
                     content_parts = []
                     has_context = any(d['label'] == 'CONTEXT DOCUMENT' for d in doc_parts)
                     context_sep_added = False
+
+                    # ── Automated FCV Web Research Phase ──────────────────────
+                    try:
+                        first_doc_text = doc_parts[0]['raw_text'] if doc_parts else ''
+                        yield f"data: {json.dumps({'research_status': 'extracting_country'})}\n\n"
+                        research_country = extract_country_name(first_doc_text, client)
+
+                        cache_key = research_country.lower().strip()
+                        if cache_key in _research_cache:
+                            research_data = _research_cache[cache_key]
+                            research_brief_text = research_data['brief']
+                            yield f"data: {json.dumps({'research_status': 'cached', 'country': research_country})}\n\n"
+                        else:
+                            yield f"data: {json.dumps({'research_status': 'searching', 'country': research_country})}\n\n"
+                            research_data = run_fcv_web_research(research_country, client)
+                            research_brief_text = research_data['brief']
+                            _research_cache[cache_key] = research_data
+
+                        yield f"data: {json.dumps({'research_status': 'complete', 'country': research_country, 'brief': research_brief_text})}\n\n"
+                    except Exception:
+                        research_brief_text = ''
+                        yield f"data: {json.dumps({'research_status': 'error', 'country': research_country})}\n\n"
+                    # ── End Research Phase ────────────────────────────────────
 
                     for dp in doc_parts:
                         if dp['label'] == 'CONTEXT DOCUMENT' and not context_sep_added:
@@ -951,6 +1090,19 @@ def run_stage():
 
                         suffix = f" ({dp['page_count']} pages)" if dp['page_count'] else ""
                         content_parts.append({"type": "text", "text": f"=== {dp['label']}: {dp['name']}{suffix} ===\n\n{final_text}"})
+
+                    # Inject research brief as supplemental Part B context
+                    if research_brief_text:
+                        content_parts.append({"type": "text", "text": (
+                            "\n\n--- AUTOMATED FCV WEB RESEARCH (supplemental — uploaded documents take precedence) ---\n"
+                            "The following is an automated research brief compiled from public sources via web search. "
+                            "It is supplemental only. Where uploaded contextual documents address the same topic, "
+                            "those documents take precedence. Use these findings to fill gaps not covered by uploads, "
+                            "or to supplement with more recent or different perspectives. "
+                            "Label all findings drawn from this source as [From: web research / source type].\n\n"
+                            + research_brief_text +
+                            "\n--- END AUTOMATED WEB RESEARCH ---\n"
+                        )})
 
                     content_parts.append({"type": "text", "text": (
                         "\n\n--- WBG FCV Sensitivity and Responsiveness Guide (always included) ---\n" + FCV_GUIDE +
@@ -989,7 +1141,7 @@ def run_stage():
                 if len(updated_messages) > 20:
                     updated_messages = updated_messages[-20:]
 
-                yield f"data: {json.dumps({'done': True, 'result': full_text, 'history': updated_messages, 'stage': stage, 'priorities': priorities, 'fcv_rating': fcv_rating, 'gap_table': gap_table, 'risk_exposure': risk_exposure})}\n\n"
+                yield f"data: {json.dumps({'done': True, 'result': full_text, 'history': updated_messages, 'stage': stage, 'priorities': priorities, 'fcv_rating': fcv_rating, 'gap_table': gap_table, 'risk_exposure': risk_exposure, 'research_brief': research_brief_text if stage == 1 else None, 'research_country': research_country if stage == 1 else None})}\n\n"
 
             except anthropic.AuthenticationError:
                 yield f"data: {json.dumps({'error': 'Invalid API key.'})}\n\n"
