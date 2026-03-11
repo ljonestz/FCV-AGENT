@@ -232,6 +232,15 @@
     .chip button{background:none;border:none;cursor:pointer;color:inherit;opacity:.5;padding:0;line-height:1;font-size:15px}
     .chip button:hover{opacity:1}
 
+    /* Document type badge */
+    .doc-type-badge{display:inline-block;padding:2px 9px;border-radius:12px;font-size:11px;font-weight:700;letter-spacing:.3px;background:#e8f4fc;color:#004e7c;border:1px solid rgba(0,159,218,.3)}
+    .doc-type-badge.dt-pcn,.doc-type-badge.dt-pid{background:#fef9e7;color:#92400e;border-color:rgba(180,83,9,.25)}
+    .doc-type-badge.dt-pad{background:#e8f4fc;color:#004e7c;border-color:rgba(0,159,218,.3)}
+    .doc-type-badge.dt-af{background:#f0fdf4;color:#166534;border-color:rgba(22,163,74,.25)}
+    .doc-type-badge.dt-restructuring{background:#fdf4ff;color:#7e22ce;border-color:rgba(126,34,206,.2)}
+    .doc-type-badge.dt-isr{background:#f0fdf4;color:#166534;border-color:rgba(22,163,74,.25)}
+    .doc-type-badge.dt-unknown{background:#f3f4f6;color:#6b7280;border-color:#d1d5db}
+
     /* Built-in docs notice */
     .builtin-notice{
       margin:0 32px 16px;padding:10px 14px;
@@ -1326,6 +1335,19 @@
     </form>
 
     <div class="chips" id="chips" aria-live="polite"></div>
+    <div id="doc-type-area" style="display:none;margin:0 32px 4px;font-size:12px;color:var(--muted);align-items:center;gap:8px;flex-wrap:wrap;">
+      <span>Detected document type:</span>
+      <span id="doc-type-badge" class="doc-type-badge">—</span>
+      <select id="doc-type-override" onchange="docType=this.value;updateDocTypeBadge()" title="Override detected document type" style="font-size:11px;border:1px solid var(--border);border-radius:4px;padding:2px 6px;color:var(--text);background:var(--surface);cursor:pointer;">
+        <option value="Unknown">Unknown / Override…</option>
+        <option value="PCN">PCN — Project Concept Note</option>
+        <option value="PID">PID — Project Information Document</option>
+        <option value="PAD">PAD — Project Appraisal Document</option>
+        <option value="AF">AF — Additional Financing</option>
+        <option value="Restructuring">Restructuring Paper</option>
+        <option value="ISR">ISR — Implementation Status Report</option>
+      </select>
+    </div>
     <div id="debug-log" style="margin:0 32px 8px;font-size:11px;color:#666;min-height:16px"></div>
 
     <div class="builtin-notice">
@@ -1367,6 +1389,7 @@
   // ── State ──────────────────────────────────────────────────────────────────
   let pF=[],cF=[],hist=[],curS=0,busy=false;
   let sessionName='';
+  let docType='Unknown', docTypeDetecting=false;
   // Stage 4 state is declared in the Stage 4 section below
 
   // ── Onboarding ──────────────────────────────────────────────────────────────
@@ -1396,7 +1419,8 @@
       savedAt: new Date().toISOString(),
       currentStage: curS,
       history: hist,
-      fileNames: { project: pF.map(f=>f.name), context: cF.map(f=>f.name) }
+      fileNames: { project: pF.map(f=>f.name), context: cF.map(f=>f.name) },
+      docType: docType
     };
     const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
     const url = URL.createObjectURL(blob);
@@ -1421,6 +1445,7 @@
         }
         hist = state.history;
         curS = state.currentStage || 0;
+        if(state.docType) { docType = state.docType; updateDocTypeBadge(); }
         sessionName = file.name;
         document.getElementById('upload-panel').style.display='none';
         document.getElementById('analysis-panel').style.display='block';
@@ -1537,8 +1562,12 @@
   }
 
   function removeF(name, type) {
-    if (type === 'p') pF = pF.filter(f => f.name !== name);
-    else cF = cF.filter(f => f.name !== name);
+    if (type === 'p') {
+      pF = pF.filter(f => f.name !== name);
+      docType = 'Unknown';  // reset so detection re-runs with new primary file
+    } else {
+      cF = cF.filter(f => f.name !== name);
+    }
     renderChips();
   }
 
@@ -1561,6 +1590,72 @@
       const log = document.getElementById('debug-log');
       if(log && log.style.color !== '#b91c1c') log.textContent = '';
     }
+    // Show/hide doc type area and trigger detection on new project files
+    const dtArea = document.getElementById('doc-type-area');
+    if(dtArea) dtArea.style.display = pF.length > 0 ? 'flex' : 'none';
+    if(pF.length > 0 && docType === 'Unknown' && !docTypeDetecting) detectDocumentType();
+  }
+
+  function updateDocTypeBadge() {
+    const badge = document.getElementById('doc-type-badge');
+    const sel = document.getElementById('doc-type-override');
+    if(!badge) return;
+    const typeMap = {
+      PCN:'PCN', PID:'PID', PAD:'PAD', AF:'AF',
+      Restructuring:'Restructuring', ISR:'ISR', Unknown:'Detecting…'
+    };
+    badge.textContent = typeMap[docType] || docType;
+    // Apply colour class
+    const clsMap = {
+      PCN:'dt-pcn', PID:'dt-pid', PAD:'dt-pad', AF:'dt-af',
+      Restructuring:'dt-restructuring', ISR:'dt-isr', Unknown:'dt-unknown'
+    };
+    badge.className = 'doc-type-badge ' + (clsMap[docType] || 'dt-unknown');
+    // Sync dropdown
+    if(sel) sel.value = docType in clsMap ? docType : 'Unknown';
+  }
+
+  async function detectDocumentType() {
+    if(!pF.length || docTypeDetecting) return;
+    docTypeDetecting = true;
+    const badge = document.getElementById('doc-type-badge');
+    if(badge){ badge.textContent = 'Detecting…'; badge.className = 'doc-type-badge dt-unknown'; }
+    try {
+      const file = pF[0];
+      const isPdf = file.name.toLowerCase().endsWith('.pdf');
+      let body;
+      if(isPdf){
+        // Send base64 PDF to backend; it will extract text before classifying
+        const b64 = await new Promise((res, rej) => {
+          const r = new FileReader();
+          r.onload = e => res(e.target.result.split(',')[1]);
+          r.onerror = () => rej(new Error('Read error'));
+          r.readAsDataURL(file);
+        });
+        body = JSON.stringify({doc_b64: b64, doc_name: file.name});
+      } else {
+        const text = await new Promise((res, rej) => {
+          const r = new FileReader();
+          r.onload = e => res(e.target.result.slice(0, 5000));
+          r.onerror = () => rej(new Error('Read error'));
+          r.readAsText(file);
+        });
+        body = JSON.stringify({doc_text: text});
+      }
+      const resp = await fetch('/api/detect-document-type', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body
+      });
+      if(resp.ok){
+        const data = await resp.json();
+        docType = data.document_type || 'Unknown';
+      }
+    } catch(e) {
+      docType = 'Unknown';
+    }
+    docTypeDetecting = false;
+    updateDocTypeBadge();
   }
 
   async function startAnalysis(){
@@ -1618,7 +1713,7 @@
       </div>`;
 
     try{
-      const payload={stage,history:hist,user_message:followOn||''};
+      const payload={stage,history:hist,user_message:followOn||'',document_type:docType};
       // Attach session prompt override if user has edited this stage's prompt
       if(sessionPrompts[stage]){
         payload.prompt_override = sessionPrompts[stage];
