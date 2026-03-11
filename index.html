@@ -1769,8 +1769,9 @@
       </div>`;
     const disp = document.getElementById('stage-disp');
     if (disp) {
-      const outCard = disp.querySelector('.out-card');
-      if (outCard) { disp.insertBefore(panel, outCard); } else { disp.appendChild(panel); }
+      // Insert after the callout (direct child of disp), before the main output layout
+      const callout = disp.querySelector('.callout');
+      if (callout) { callout.insertAdjacentElement('afterend', panel); } else { disp.appendChild(panel); }
     }
   }
 
