@@ -1,8 +1,18 @@
 # FCV Project Screening App — Claude Development Guide
 
+> **Claude Code Maintenance Instruction:** After every substantial change to this app (new features, prompt changes, new delimiters, UI additions, architectural decisions), update this `claude.md` file to reflect the change before committing. Keep section 1.3 (Stage pipeline), section 3 (Prompt Architecture), section 4 (Frontend), and section 5.3 (Priority Parsing) accurate at all times.
+
+---
+
 ## Overview
 
-This is a **World Bank FCV (Fragility, Conflict, and Violence) Sensitivity Assessment Tool** — a Flask-based web application that guides Task Team Leaders (TTLs) through a 4-stage workflow to assess how sensitive a World Bank project is to fragility, conflict, and violence dynamics, and to generate targeted, actionable recommendations for improving its FCV responsiveness.
+This is a **World Bank FCV (Fragility, Conflict, and Violence) Project Screener** — a Flask-based web application that guides Task Team Leaders (TTLs) through a 4-stage workflow to assess how well a World Bank project integrates FCV considerations, and to generate targeted, actionable recommendations for improving its design and delivery.
+
+The tool explicitly distinguishes two concepts:
+- **FCV Sensitivity** — whether the project avoids doing harm: do-no-harm, contextual awareness, conflict-informed design, and operational readiness for FCV conditions.
+- **FCV Responsiveness** — whether the project actively addresses the root drivers of fragility or builds resilience, anchored to the four pillars of the WBG FCV Strategy 2020–2025 (Preventing conflict / Crisis engagement / Transition out of fragility / Spillover mitigation).
+
+Every prompt output now tags recommendations, mitigations, and priorities as [S], [R], or [S+R].
 
 **Key goal:** Move from broad, vague recommendations ("service delivery needs to be targeted so it doesn't contribute to grievance") to specific, location-aware, operationally grounded suggestions ("historically, Nzerekore, Kindia, and Kankan have been excluded from service delivery; focus on these regions to rebuild state-society relationships").
 
@@ -37,6 +47,8 @@ STAGE 1 — Identifying FCV Risks
 ├─ Input: Project document (any stage: Concept Note, PID, PCN, PAD, restructuring/AF draft)
 │         + optional contextual docs (RRA, country risk assessments — 1–2 recommended)
 ├─ Output: Part A (project doc extract) + Part B (contextualized analysis)
+│  └─ Final line of output: %%%DOC_TYPE: [PCN/PID/PAD/AF/Restructuring/ISR/Unknown]%%%
+│     Frontend extracts this to set docType — no separate API call needed
 ├─ Automated FCV Web Research (runs before LLM generation):
 │  ├─ extract_country_name() — LLM call to identify country from project doc (first 4000 chars)
 │  ├─ extract_sector_name()  — LLM call to identify primary sector from project doc
@@ -54,6 +66,7 @@ STAGE 1 — Identifying FCV Risks
 │  └─ Large docs (>150k chars) pre-processed by LLM FCV extraction; docs >500k chars truncated
 └─ UI: Stage header + research brief dropdown (top) + main output card + refine input box
    Loading note: Stage 1 shows "may take 60–90 seconds" due to web research phase
+   DOC_TYPE line is stripped from display text before rendering
 
 STAGE 2 — FCV-Sensitivity Screening
 ├─ Input: Stage 1 output
@@ -64,16 +77,39 @@ STAGE 2 — FCV-Sensitivity Screening
 │  ├─ Security
 │  ├─ Economic Livelihoods
 │  └─ Resilience
+├─ After the Summary Assessment Table — SENSITIVITY vs. RESPONSIVENESS CLASSIFICATION:
+│  ├─ Each OST recommendation tagged [S], [R], or [S+R] with pre-assigned defaults:
+│  │  ├─ Rec 1 (RRA/CRSS use) = [S]
+│  │  ├─ Rec 2 (conflict-sensitive targeting) = [S]
+│  │  ├─ Rec 3 (inclusive stakeholder engagement) = [S+R]
+│  │  ├─ Rec 4 (Do No Harm / conflict-sensitive design) = [S]
+│  │  ├─ Rec 5 (adaptive management) = [S]
+│  │  └─ Rec 6 (M&E / GRM) = [S+R]
+│  └─ RESPONSIVENESS PROBE paragraph (100–150 words): which of the four FCV Strategy pillars
+│     the project has potential to address (Pillar 1: preventing conflict / Pillar 2: crisis
+│     engagement / Pillar 3: transition out of fragility / Pillar 4: spillover mitigation)
+├─ [S+R] strictly defined — only genuine overlap zones:
+│  (1) inclusion/targeting of conflict-affected populations
+│  (2) FCV logic embedded in ToC/PDO framing
+│  (3) adaptive M&E that monitors harm AND adapts for resilience
+│  (4) GRM designed to strengthen state-citizen accountability
 ├─ Prompt includes specific location callouts and evidence-based reasoning
-└─ UI: Rating table + dimension explanations + refine input box
+└─ UI: Rating table + dimension explanations + S/R classification + refine input box
 
 STAGE 3 — Identifying Project Gaps
 ├─ Input: Stages 1–2 output
 ├─ Output:
 │  ├─ Part A: FCV sensitivity gaps (what's missing from design/implementation)
-│  ├─ Part B: Mitigations + enhancement opportunities (specific, location-named, mechanism-focused)
+│  ├─ Part B: Mitigations (specific, location-named, mechanism-focused)
+│  │  └─ Each mitigation measure now includes a TAG column: [S] / [R] / [S+R]
 │  ├─ Part C: Do No Harm Checklist (structured table with Yes/Partial/No + evidence)
-│  └─ Part D: Analytical quality check
+│  ├─ Part D: FCV Responsiveness Opportunities (formerly "Enhancement Opportunities")
+│  │  └─ Structured around four FCV Strategy pillars:
+│  │     ├─ Pillar 1: Preventing conflict
+│  │     ├─ Pillar 2: Crisis engagement
+│  │     ├─ Pillar 3: Transition out of fragility
+│  │     └─ Pillar 4: Spillover mitigation
+│  └─ Part E: Top 5 Priority Actions — each carries a [S] / [R] / [S+R] tag
 ├─ Prompt enforces geographic specificity and operational grounding
 └─ UI: Collapsible sections + expandable Do-No-Harm checklist rendered from Part C table
 
@@ -89,19 +125,31 @@ STAGE 4 — Recommendations Note + Explorer
 │  │  │  └─ RISKS_FROM_PROJECT (60–85 words, plain language)
 │  │  ├─ Strengths (80–120 words)
 │  │  ├─ Gaps (100–130 words)
-│  │  └─ FCV Design Assessment Table (%%%GAP_TABLE_START/END%%% delimiters):
-│  │     └─ 6 OST recommendations — each with STATUS, GAP, RISK fields
+│  │  ├─ FCV Sensitivity Summary (%%%SENSITIVITY_SUMMARY_START/END%%% delimiters):
+│  │  │  └─ 80–100 word assessment of overall FCV Sensitivity standing
+│  │  └─ FCV Responsiveness Summary (%%%RESPONSIVENESS_SUMMARY_START/END%%% delimiters):
+│  │     └─ 80–100 word assessment anchored to the four FCV Strategy pillars
 │  ├─ FCV Sensitivity Rating (%%%FCV_RATING: [level]%%% line):
 │  │  └─ Scale: Extremely Low | Very Low | Low | Adequate | Well Embedded | Very Well Embedded
+│  ├─ FCV Responsiveness Rating (%%%FCV_RESPONSIVENESS_RATING: [level]%%% line):
+│  │  └─ Same scale; emitted immediately after the sensitivity rating line
 │  └─ Strategic Priorities (4–5, each in %%%PRIORITY_START/END%%% delimiters):
-│     └─ Fields: TITLE, FCV_DIMENSION, RISK_LEVEL, THE_GAP, WHY_IT_MATTERS,
-│                SUGGESTED_DIRECTIONS, WHO_ACTS, WHEN, RESOURCES
+│     └─ Fields (10 total): TITLE, FCV_DIMENSION, TAG, RISK_LEVEL, THE_GAP, WHY_IT_MATTERS,
+│                            SUGGESTED_DIRECTIONS, WHO_ACTS, WHEN, RESOURCES
+│        TAG field: [S] / [R] / [S+R] — same strict definition as Stage 2/3
+│        Most priorities will be [S] or [R]; [S+R] only for four named overlap zones
+├─ Note: %%%GAP_TABLE_START/END%%% delimiter + extraction code still exist in backend
+│        but the FCV Design Assessment Table is NOT rendered in the UI
+├─ clean_stage4_output() strips: RISK_EXPOSURE, SENSITIVITY_SUMMARY, RESPONSIVENESS_SUMMARY,
+│  FCV_RATING, FCV_RESPONSIVENESS_RATING, GAP_TABLE, and all PRIORITY blocks from display text
 ├─ Citation policy: ONLY cite documents that appear as [From: doc name] in Stage 1.
 │  NEVER fabricate document titles. Non-uploaded sources → [From: training knowledge] or
 │  [From: web research]. This prevents hallucinated citations (e.g. [RRA 2022] when no RRA uploaded).
 └─ UI:
-   ├─ Main output card (preamble + exec summary + FCV Risk Exposure + Strengths + Gaps + Assessment Table)
-   ├─ FCV Rating gauge (sidebar)
+   ├─ Main output card (preamble + exec summary + FCV Risk Exposure + Strengths + Gaps)
+   ├─ FCV Sensitivity + FCV Responsiveness summary cards (side by side, after Gaps)
+   ├─ FCV Sensitivity gauge (sidebar, blue, shield icon)
+   ├─ FCV Responsiveness gauge (sidebar, green, leaf icon)
    ├─ Priority cards (horizontal stepper, shows one at a time)
    ├─ Per-priority zone: gap, why_it_matters, suggested_directions + explorer options
    └─ "Explore FCV-Sensitive Solutions" panel (loaded async)
@@ -230,6 +278,13 @@ DEFAULT_PROMPTS = {
 - Documents > 500,000 characters are truncated to MAX_DOC_CHARS.
 - Truncation warnings shown to users when triggered.
 
+**Document type classification (embedded in Stage 1):**
+- The very last line of every Stage 1 response is: `%%%DOC_TYPE: [PCN/PID/PAD/AF/Restructuring/ISR/Unknown]%%%`
+- The frontend extracts this via regex when Stage 1 completes and sets the `docType` state
+- This replaces the former separate `/api/detect-document-type` API call (which was slow, 10–15 seconds)
+- The DOC_TYPE line is stripped from the display text before rendering to the user
+- Manual document type override selects have been removed from both the upload area and session bar
+
 **Loading time note:** Stage 1 loading card shows "may take 60–90 seconds" to set expectations for the web research phase.
 
 **User refine loop:** After Stage 1 displays, users can use a refine box to:
@@ -239,24 +294,59 @@ DEFAULT_PROMPTS = {
 
 ### 3.3 Stage 2: "FCV-Sensitivity Screening"
 
-**Purpose:** Assess project across 6 FCV dimensions, both risks TO the project and risks FROM the project.
+**Purpose:** Assess project across 6 FCV dimensions, both risks TO the project and risks FROM the project. Also classifies each OST recommendation as [S], [R], or [S+R] and probes FCV Responsiveness potential.
 
 **Key behaviors:**
 - Outputs structured risk ratings (e.g., "Risk: Medium | Evidence: Project's focus on service delivery in contested areas may increase exposure...")
 - Includes specific geographic callouts (e.g., "In Nzerekore and Kindia, where state legitimacy is already low...")
 - Reasoning is explicit so users can see if a dimension is overweighted, underweighted, or missing key context.
 
+**SENSITIVITY vs. RESPONSIVENESS CLASSIFICATION (appended after Summary Assessment Table):**
+- Pre-assigned defaults for the 6 OST recommendations:
+  - Rec 1 (RRA/CRSS utilization) = **[S]**
+  - Rec 2 (conflict-sensitive targeting) = **[S]**
+  - Rec 3 (inclusive stakeholder engagement) = **[S+R]**
+  - Rec 4 (Do No Harm / conflict-sensitive design) = **[S]**
+  - Rec 5 (adaptive management / monitoring arrangements) = **[S]**
+  - Rec 6 (M&E / GRM) = **[S+R]**
+- LLM adjusts tags based on project evidence; defaults may be overridden where justified
+
+**RESPONSIVENESS PROBE paragraph (100–150 words):**
+- Written after the S/R classification table
+- Assesses which of the four FCV Strategy pillars the project has potential to address:
+  - Pillar 1: Preventing conflict and promoting peace
+  - Pillar 2: Engaging in crisis situations
+  - Pillar 3: Helping countries transition out of fragility
+  - Pillar 4: Mitigating regional and global spillovers
+- Honest assessment: most projects will have limited responsiveness potential; probe should not overstate
+
+**Strict [S+R] definition (must be enforced):**
+[S+R] is ONLY valid for these four overlap zones:
+1. Inclusion/targeting of conflict-affected populations (where design serves both harm-avoidance AND active inclusion as a resilience strategy)
+2. FCV logic embedded in the ToC/PDO framing (not just a risk note — actually changes the project theory)
+3. Adaptive M&E that both monitors harm AND adapts to build resilience
+4. GRM designed to strengthen state-citizen accountability (not just complaint handling)
+If in doubt → assign [S] or [R]. Most recommendations will not qualify for [S+R].
+
 **User refine loop:** Users can correct dimension ratings or add missing geographic/contextual information before proceeding to Stage 3.
 
 ### 3.4 Stage 3: "Identifying Project Gaps"
 
-**Purpose:** Identify where the project design / implementation falls short on FCV sensitivity, and propose mitigations.
+**Purpose:** Identify where the project design / implementation falls short on FCV sensitivity, and propose mitigations. Also maps responsiveness opportunities onto the four FCV Strategy pillars.
 
 **Output parts:**
 - **Part A:** Gaps in FCV sensitivity (design, implementation, M&E, stakeholder engagement, etc.)
-- **Part B:** Concrete, location-specific mitigations and enhancement opportunities (names regions, mechanisms, entry points, WBG instruments)
+- **Part B:** Concrete, location-specific mitigations — each with a **TAG column** (`[S]` / `[R]` / `[S+R]`)
+  - Tag follows same strict definition as Stage 2 (most mitigations will be [S] or [R])
 - **Part C:** Do No Harm Checklist (principle | Yes/Partial/No | evidence/gap)
-- **Part D:** Analytical quality assurance (internal flag for ambiguous claims, missing citations, etc.)
+- **Part D: FCV Responsiveness Opportunities** (formerly "Enhancement Opportunities")
+  - Structured around the four FCV Strategy pillars:
+    - Pillar 1: Preventing conflict and promoting peace
+    - Pillar 2: Engaging in crisis situations
+    - Pillar 3: Helping countries transition out of fragility
+    - Pillar 4: Mitigating regional and global spillovers
+  - Each pillar lists specific project design changes that could move beyond sensitivity into responsiveness
+- **Part E:** Top 5 Priority Actions — each carries a `[S]` / `[R]` / `[S+R]` tag
 
 **Key behaviors:**
 - Mitigations are not generic ("improve stakeholder engagement") but specific ("establish community feedback forums in Kankan District, staffed by local civil society orgs trusted by Dinka pastoralists, with quarterly feedback to project implementation unit")
@@ -279,15 +369,19 @@ DEFAULT_PROMPTS = {
       RISKS_FROM_PROJECT: How project design could worsen fragility
   - Strengths (80–120 words)
   - Gaps (100–130 words)
-  - FCV Design Assessment Table (6 OST recommendations, STATUS/GAP/RISK per recommendation)
+  - FCV Sensitivity Summary (80–100 words, extracted via delimiter, shown as summary card)
+  - FCV Responsiveness Summary (80–100 words, extracted via delimiter, shown as summary card)
 ]
 
 [FCV Sensitivity Rating — one of:
   Extremely Low | Very Low | Low | Adequate | Well Embedded | Very Well Embedded]
 
+[FCV Responsiveness Rating — same scale, emitted immediately after sensitivity rating]
+
 [4–5 Strategic Priority cards, each with:
   - TITLE: Priority N · [Actionable verb phrase]
   - FCV_DIMENSION: one of the 6 dimensions
+  - TAG: [S] | [R] | [S+R]  ← NEW field (field 3)
   - RISK_LEVEL: High | Medium | Low
   - THE_GAP: 2–3 sentences
   - WHY_IT_MATTERS: 2–3 sentences (operational + FCV dimensions combined)
@@ -305,21 +399,42 @@ RISKS_TO_PROJECT: [paragraph]
 RISKS_FROM_PROJECT: [paragraph]
 %%%RISK_EXPOSURE_END%%%
 
-%%%GAP_TABLE_START%%%
-REC_1_STATUS: [Strong | Partial | Weak | Not Addressed]
-REC_1_GAP: [one sentence]
-REC_1_RISK: [High | Medium | Low]
-... (REC_1 through REC_6)
-%%%GAP_TABLE_END%%%
+%%%SENSITIVITY_SUMMARY_START%%%
+[80–100 word assessment of overall FCV Sensitivity standing]
+%%%SENSITIVITY_SUMMARY_END%%%
+
+%%%RESPONSIVENESS_SUMMARY_START%%%
+[80–100 word assessment of FCV Responsiveness anchored to FCV Strategy pillars]
+%%%RESPONSIVENESS_SUMMARY_END%%%
 
 %%%FCV_RATING: [level]%%%
+
+%%%FCV_RESPONSIVENESS_RATING: [level]%%%
 
 %%%PRIORITY_START%%%
 TITLE: Priority N · [phrase]
 FCV_DIMENSION: [dimension]
-... (all 9 fields)
+TAG: [S] | [R] | [S+R]
+RISK_LEVEL: [High | Medium | Low]
+THE_GAP: [text]
+WHY_IT_MATTERS: [text]
+SUGGESTED_DIRECTIONS: [text]
+WHO_ACTS: [text]
+WHEN: [text]
+RESOURCES: [text]
 %%%PRIORITY_END%%%
 ```
+
+**Note on %%%GAP_TABLE_START/END%%%:** The LLM is no longer instructed to emit this block, and `renderGapTable()` is no longer called from the main rendering flow. However, the backend extraction code (`extract_gap_table()`) and the `renderGapTable()` JS function still exist for potential future use. The FCV Design Assessment Table is not displayed in the current UI.
+
+**clean_stage4_output() strips the following blocks before rendering display text:**
+- `%%%RISK_EXPOSURE_START/END%%%`
+- `%%%SENSITIVITY_SUMMARY_START/END%%%`
+- `%%%RESPONSIVENESS_SUMMARY_START/END%%%`
+- `%%%FCV_RATING: ...%%%`
+- `%%%FCV_RESPONSIVENESS_RATING: ...%%%`
+- `%%%GAP_TABLE_START/END%%%`
+- `%%%PRIORITY_START/END%%%` (all priority blocks)
 
 **Citation policy for Stage 4:**
 - ONLY cite documents that appeared as `[From: document name]` in Stage 1. NEVER fabricate titles.
@@ -354,6 +469,9 @@ FCV_DIMENSION: [dimension]
 5. **Output panel (Stages 1–4)** — Displays LLM output + collapsible sections (Parts A/B for Stage 1, etc.)
 6. **Explorer panel (Stage 4)** — Horizontal priority stepper + priority card + inline explorer options
 7. **Prompt modal** — Admin-only, lets users view/edit the 5 prompts (Stage 1–4 + Explorer) per session
+8. **FCV Sensitivity gauge (sidebar)** — SVG arc gauge, blue, shield icon; animates from `%%%FCV_RATING%%%` delimiter
+9. **FCV Responsiveness gauge (sidebar)** — SVG arc gauge, green, leaf icon; animates from `%%%FCV_RESPONSIVENESS_RATING%%%` delimiter
+   - IDs: `fcv-resp-arc-fill`, `fcv-resp-leaf-path`, `fcv-resp-rating-label`, `fcv-resp-need-label`
 
 ### 4.2 Key JavaScript Functions
 
@@ -370,11 +488,25 @@ FCV_DIMENSION: [dimension]
 
 **Stage 4 Explorer:**
 - `initStage4UI()` — parse priorities, build stepper, show Priority 1
-- `showPriority(idx)` — render full priority card
+- `showPriority(idx)` — render full priority card; eyebrow includes full S/R badge via `renderSRTagBadge(pr.tag||'')`
 - `loadExplorer(idx)` — fetch explorer options for priority, cache result
 - `toggleExpOption(id)` — collapse/expand A/B/C option cards
 - `submitExplorerFollowup(idx, question)` — send follow-up question via `/api/run-explorer`
-- `renderPriorityStepper()` — build horizontal step indicator
+- `renderPriorityStepper()` — build horizontal step indicator; compact S/R badge below risk badge on each tab
+- `renderPrioritiesIntro()` — renders intro list; compact S/R badge after risk label in each `pi-item`
+
+**S/R tag badges:**
+- `renderSRTagBadge(tag, compact)` — renders inline pill badge
+  - Full mode (default): "Sensitivity" / "Responsiveness" / "Sensitivity + Responsiveness"
+  - Compact mode (`compact=true`): "S" / "R" / "S+R"
+  - CSS classes: `.sr-tag`, `.sr-tag.sensitivity`, `.sr-tag.responsiveness`, `.sr-tag.both`
+- `renderSRCards(sensitivityText, responsivenessText)` — renders two side-by-side summary cards
+  - Inserted between the Gaps paragraph and the `<div id="priorities-intro">` div in Stage 4 output
+  - CSS: `.sensitivity-responsiveness-grid`, `.sr-card`, `.sr-card.sensitivity` (border `#0050A0`), `.sr-card.responsiveness` (border `#16A34A`), `.sr-card-label`
+
+**Sidebar (updateSidebar()):**
+- Animates both gauges: sensitivity arc + responsiveness arc
+- Priority overview (`pov-row`) includes compact S/R badge after risk label
 
 **Utilities:**
 - `md(text)` — markdown-to-HTML renderer
@@ -382,14 +514,21 @@ FCV_DIMENSION: [dimension]
 - `formatDate()` — human-readable timestamps
 - `saveSession()` / `loadSession()` — localStorage serialization
 
-### 4.3 Styling & Aesthetics
+### 4.3 Removed Items
+- **`detectDocumentType()` function** — removed. Doc type is now embedded in Stage 1 output (see Section 3.2).
+- **`/api/detect-document-type` API call** — endpoint and call both removed.
+- **Manual document type override `<select>` elements** — removed from both upload area and session bar.
+- **FCV Design Assessment Table** — `renderGapTable()` is no longer called from `renderOut`. Table is not displayed. Code remains for potential future use.
+- **`docTypeDetecting` variable** — removed (was used to gate doc type detection).
+
+### 4.4 Styling & Aesthetics
 - **Color scheme:** WBG-inspired palette (deep navy, cobalt blue, orange accents)
 - **Stage colors:** Each stage has a distinct color (s1, s2, s3, s4) used in progress bars, section headers, and priority dimension badges
 - **Typography:** Noto Sans (clean, readable)
 - **Spacing:** 12/24/32px grid
 - **Icons:** Lucide React SVG icons (used sparingly for clarity)
 
-### 4.4 Do No Harm Checklist Rendering
+### 4.5 Do No Harm Checklist Rendering
 - Extracted from Stage 3 output via regex (looking for `## Part C` section)
 - Parsed as a Markdown table with rows: `| Principle | Status | Evidence/Gap |`
 - Rendered as HTML table with color-coded status badges (green/yellow/red)
@@ -446,8 +585,28 @@ extracted_text, page_count = extract_pdf_text(base64_content, filename)
 def extract_priorities(stage4_output):
     # Search for %%%PRIORITY_START%%% ... %%%PRIORITY_END%%% delimiters
     # Extract JSON from each block
-    # Return: [{title, dimension, risk_level, the_gap, why_it_matters, suggested_directions}, ...]
-    # Fallback: positional parsing if delimiters not found
+    # Return: [{title, dimension, tag, risk_level, the_gap, why_it_matters,
+    #           suggested_directions, who_acts, when, resources}, ...]
+    # NEW: also extracts 'tag' field from the TAG: line ([S] / [R] / [S+R])
+    # Fallback: positional parsing if delimiters not found; tag defaults to '' if not found
+```
+
+**Additional extraction functions (Stage 4):**
+```python
+extract_sensitivity_summary(text)    # Extracts %%%SENSITIVITY_SUMMARY_START/END%%% block
+extract_responsiveness_summary(text) # Extracts %%%RESPONSIVENESS_SUMMARY_START/END%%% block
+extract_fcv_responsiveness_rating(text) # Extracts %%%FCV_RESPONSIVENESS_RATING: [level]%%%
+```
+
+**Stage 4 JSON response now includes:**
+```json
+{
+  "priorities": [...],
+  "fcv_rating": "...",
+  "fcv_responsiveness_rating": "...",
+  "sensitivity_summary": "...",
+  "responsiveness_summary": "..."
+}
 ```
 
 ---
@@ -618,7 +777,7 @@ All Stage 4 outputs include a header disclaimer:
 
 This Recommendations Note was produced by an LLM-assisted screening tool. It is intended as a supplementary analytical input to support expert review, not as a substitute for professional FCV analysis. The content reflects the AI interpretation of uploaded documents and embedded WBG guidance, and may contain errors, omissions, or misjudgements. Users are responsible for critically reviewing, verifying, and adapting this output before any operational use.
 
-*Generated by WBG FCV Sensitivity Project Screener · {date}*
+*Generated by WBG FCV Project Screener · {date}*
 
 ---
 ```
@@ -843,7 +1002,7 @@ If you find gaps in this documentation, or if new design decisions emerge, updat
 
 ---
 
-**Last updated:** March 5, 2026
-**Current version:** FCV Screener 4.0 (with Explorer panel + specificity mandate)
+**Last updated:** March 11, 2026
+**Current version:** FCV Project Screener 5.0 (with S/R distinction, dual gauges, embedded doc type detection)
 **Current Claude model:** claude-sonnet-4-20250514
 **Architecture:** Flask 3.0.3 backend + vanilla JS frontend + Anthropic SDK integration
