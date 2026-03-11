@@ -199,6 +199,27 @@
     /* ── Card ── */
     .card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-sm);overflow:hidden}
 
+    /* ── Tool explainer bar ── */
+    .tool-explainer{
+      background:linear-gradient(135deg,#f0f7ff,#e8f4fc);
+      border-bottom:1px solid rgba(0,159,218,.18);
+      padding:14px 32px;
+    }
+    .tool-explainer-inner{
+      display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+    }
+    .tool-explainer-text{
+      flex:1;font-size:13px;color:#1a3a5a;line-height:1.55;min-width:200px;
+    }
+    .tool-explainer-link{
+      display:inline-flex;align-items:center;gap:5px;
+      font-size:12px;font-weight:600;color:var(--wbg-blue);
+      background:rgba(0,159,218,.08);border:1px solid rgba(0,159,218,.25);
+      border-radius:20px;padding:5px 12px;cursor:pointer;
+      white-space:nowrap;font-family:inherit;transition:all .14s;
+    }
+    .tool-explainer-link:hover{background:rgba(0,159,218,.15);border-color:var(--wbg-blue)}
+
     /* ── Upload panel ── */
     .upload-intro{
       padding:28px 32px 22px;
@@ -229,6 +250,7 @@
       transition:all .18s ease;background:var(--off-white);
       text-align:center;min-height:100px;
       display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;
+      margin-top:auto;
     }
     .drop-zone:hover,.drop-zone.over{border-color:var(--wbg-blue);background:#eef7fc}
     .drop-zone.has{border-color:#1a7a4a;background:#f0f9f4}
@@ -396,6 +418,12 @@
     .load-sub{font-size:13px;color:var(--muted)}
     .load-tags{margin-top:16px;display:flex;justify-content:center;gap:6px;flex-wrap:wrap}
     .load-tag{font-size:11px;padding:3px 10px;background:var(--off-white);border-radius:20px;color:var(--muted);border:1px solid var(--border)}
+    .stage-wait-notice{
+      display:flex;align-items:flex-start;gap:9px;
+      background:#fffbeb;border:1px solid #fcd34d;border-radius:6px;
+      padding:10px 14px;margin-bottom:14px;font-size:13px;color:#92400e;line-height:1.5;
+    }
+    .stage-wait-notice svg{flex-shrink:0;margin-top:1px}
 
     /* ── Footer ── */
     .page-footer{
@@ -953,57 +981,57 @@
     .fcv-doc-ref-label {
       font-size: 10.5px;
       color: var(--muted, #5a6a7e);
-      font-weight: 600;
+      font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.05em;
+      white-space: nowrap;
     }
-    .fcv-doc-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      font-size: 11px;
+    .fcv-doc-ref-text {
+      font-size: 12px;
       color: var(--muted, #5a6a7e);
-      background: #f1f5f9;
-      border: 1px solid var(--border, #d9e2ec);
-      border-radius: 4px;
-      padding: 1px 7px;
+      line-height: 1.45;
     }
 
     /* Go Further collapsible */
     .fcv-gf-toggle {
       width: 100%;
-      background: none;
-      border: none;
+      background: linear-gradient(135deg, #f5f0ff, #ede9fe);
+      border: 1.5px solid rgba(109, 40, 217, 0.25);
+      border-radius: 8px;
       cursor: pointer;
       text-align: left;
-      padding: 12px 0 0;
+      padding: 12px 16px;
       display: flex;
       align-items: center;
       gap: 9px;
       font-family: inherit;
-      border-top: 1px solid var(--border, #d9e2ec);
-      margin-top: 16px;
-      transition: opacity 0.14s;
+      margin-top: 20px;
+      transition: all 0.18s;
+      box-shadow: 0 1px 4px rgba(109, 40, 217, 0.08);
     }
-    .fcv-gf-toggle:hover { opacity: 0.8; }
+    .fcv-gf-toggle:hover {
+      background: linear-gradient(135deg, #ede9fe, #ddd6fe);
+      border-color: rgba(109, 40, 217, 0.4);
+      box-shadow: 0 2px 8px rgba(109, 40, 217, 0.14);
+    }
     .fcv-gf-label {
       font-size: 13px;
-      font-weight: 600;
-      color: var(--muted, #5a6a7e);
+      font-weight: 700;
+      color: #5b21b6;
       flex: 1;
     }
     .fcv-gf-badge {
       font-size: 10px;
       padding: 2px 9px;
-      background: #f5f0ff;
-      border: 1px solid rgba(91, 33, 182, 0.2);
+      background: rgba(109, 40, 217, 0.12);
+      border: 1px solid rgba(91, 33, 182, 0.25);
       border-radius: 10px;
       color: #5b21b6;
       font-weight: 700;
     }
     .fcv-gf-arrow {
-      font-size: 11px;
-      color: var(--muted, #5a6a7e);
+      font-size: 13px;
+      color: #7c3aed;
       transition: transform 0.18s;
     }
     .fcv-gf-toggle.open .fcv-gf-arrow { transform: rotate(180deg); }
@@ -1350,6 +1378,18 @@
 
   <!-- Upload panel -->
   <div id="upload-panel" class="card ani">
+
+    <div class="tool-explainer">
+      <div class="tool-explainer-inner">
+        <div class="tool-explainer-text">
+          <strong>What this tool does:</strong> This AI-assisted screener analyses draft WBG project documents — PCNs, PIDs, PADs, and more — for fragility, conflict, and violence (FCV) dynamics. It generates a structured Recommendations Note for the Task Team Leader, drawing on the WBG FCV Sensitivity &amp; Responsiveness Guide and the country context. Designed to support — not replace — expert FCV review.
+        </div>
+        <button class="tool-explainer-link" onclick="document.getElementById('onboarding-modal').style.display='flex'">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          How does this work?
+        </button>
+      </div>
+    </div>
 
     <div class="upload-intro">
       <div class="upload-icon-box">
@@ -1770,12 +1810,17 @@
     document.getElementById('stage-disp').innerHTML=`
       <div class="stage-hdr ani">
         <div class="stage-badge ${COL[stage]}">${stage}</div>
-        <div><div class="stage-title">${NAMES[stage]}</div><div class="stage-sub">${followOn?'Refining…':SUBS[stage]}</div></div>
+        <div>
+          <div class="stage-title">${NAMES[stage]}</div>
+          <div class="stage-sub">${followOn?'Refining…':SUBS[stage]}</div>
+          ${(stage===1&&!followOn)?`<div class="stage-sub" style="margin-top:3px;color:#b45309">⏱ This stage can take 1–2 minutes — please wait for everything to load before reading or interacting</div>`:''}
+        </div>
       </div>
+      ${(stage===1&&!followOn)?`<div class="stage-wait-notice"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span><strong>Please wait until Stage 1 finishes loading</strong> before reading or interacting with the output. This stage includes automated FCV web research and may take 1–2 minutes to complete.</span></div>`:''}
       <div class="load-card">
         <div class="spinner" role="status" aria-label="Loading"></div>
         <div class="load-title">${followOn?'Updating output…':'Generating '+SHORT[stage]+'…'}</div>
-        <p class="load-sub">${stage===1 ? 'Stage 1 includes automated FCV web research and may take 60–90 seconds — please wait.' : 'This usually takes 20–60 seconds.'}</p>
+        <p class="load-sub">${stage===1 ? 'Stage 1 includes automated FCV web research — this can take 1–2 minutes. Please wait.' : stage===4 ? 'Generating the full Recommendations Note — this may take 1–2 minutes.' : 'This usually takes 20–60 seconds.'}</p>
         <div class="load-tags"><span class="load-tag">Reading documents</span><span class="load-tag">Applying FCV lens</span><span class="load-tag">Drawing on web context</span></div>
       </div>`;
 
@@ -1817,8 +1862,13 @@
       document.getElementById('stage-disp').innerHTML=`
         <div class="stage-hdr ani">
           <div class="stage-badge ${COL[stage]}">${stage}</div>
-          <div><div class="stage-title">${NAMES[stage]}</div><div class="stage-sub">Generating…</div></div>
+          <div>
+            <div class="stage-title">${NAMES[stage]}</div>
+            <div class="stage-sub">Generating…</div>
+            ${(stage===4)?`<div class="stage-sub" style="margin-top:3px;color:#b45309">⏱ Please wait for the full output to finish rendering before reading or interacting</div>`:''}
+          </div>
         </div>
+        ${(stage===4)?`<div class="stage-wait-notice"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span><strong>Stage 4 is generating — please wait for the full output to finish rendering</strong> before reading or interacting with the Recommendations Note. This can take 1–2 minutes.</span></div>`:''}
         <div class="callout info ani">
           <div class="callout-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
           <div class="callout-body"><strong>${CALLS[stage].t}</strong>${CALLS[stage].b}</div>
@@ -2948,9 +2998,9 @@ ${md(execSummary)}`;
 
     function docRefsHtml(refs) {
       if (!refs) return '';
-      const pills = refs.split(',').map(r => r.trim()).filter(Boolean)
-        .map(r => `<span class="fcv-doc-pill">📄 ${escFn(r)}</span>`).join('');
-      return `<div class="fcv-doc-ref-row"><span class="fcv-doc-ref-label">Where:</span>${pills}</div>`;
+      const parts = refs.split(',').map(r => r.trim()).filter(Boolean);
+      if (!parts.length) return '';
+      return `<div class="fcv-doc-ref-row"><span class="fcv-doc-ref-label">Where:</span><span class="fcv-doc-ref-text">${escFn(parts.join('; '))}</span></div>`;
     }
 
     let actionsHtml = '';
@@ -2966,9 +3016,11 @@ ${md(execSummary)}`;
           Essential action
         </div>` : '';
 
+      const draftLocation = action.docRefs ? action.docRefs.split(',').map(r=>r.trim()).filter(Boolean)[0] || '' : '';
+      const draftTitle = draftLocation ? `Suggested Language: ${escFn(draftLocation)}` : 'Suggested Language';
       const draftBlock = action.draftLanguage ? `
         <div class="fcv-inset-note fcv-draft">
-          <div class="fcv-inset-label">${iconDoc} Suggested language</div>
+          <div class="fcv-inset-label">${iconDoc} ${draftTitle}</div>
           ${paraHtml(stripDocLocation(action.draftLanguage))}
         </div>` : '';
 
@@ -3014,7 +3066,7 @@ ${md(execSummary)}`;
       goFurtherHtml = `
         <button class="fcv-gf-toggle" onclick="this.classList.toggle('open');document.getElementById('${gfId}').classList.toggle('open');this.querySelector('.fcv-gf-arrow').textContent=document.getElementById('${gfId}').classList.contains('open')?'▴':'▾';">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-          <span class="fcv-gf-label">Want to go further?</span>
+          <span class="fcv-gf-label">Want to Go Above and Beyond? Click here for additional recommendations</span>
           <span class="fcv-gf-badge">Optional</span>
           <span class="fcv-gf-arrow">▾</span>
         </button>

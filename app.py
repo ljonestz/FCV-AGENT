@@ -326,30 +326,6 @@ RISKS_FROM_PROJECT: [One paragraph, 60-85 words. Identify 1-2 ways the project's
 ### Gaps (100-130 words, prose)
 The main weakness or cluster of weaknesses, constructively framed. Reference the OST FCV-sensitivity framework where relevant. 1-2 citations from RRA or external sources only.
 
-### FCV Design Assessment Table
-After Gaps, output a table summarising how well the project meets each of the OST's six recommendations for promoting FCV sensitivity. Use EXACTLY this delimiter format — one block, no extra blank lines:
-
-%%%GAP_TABLE_START%%%
-REC_1_STATUS: [Strong | Partial | Weak | Not Addressed]
-REC_1_GAP: [One sentence — the key gap, or "No significant gap identified" if Strong]
-REC_1_RISK: [High | Medium | Low]
-REC_2_STATUS: [Strong | Partial | Weak | Not Addressed]
-REC_2_GAP: [One sentence]
-REC_2_RISK: [High | Medium | Low]
-REC_3_STATUS: [Strong | Partial | Weak | Not Addressed]
-REC_3_GAP: [One sentence]
-REC_3_RISK: [High | Medium | Low]
-REC_4_STATUS: [Strong | Partial | Weak | Not Addressed]
-REC_4_GAP: [One sentence]
-REC_4_RISK: [High | Medium | Low]
-REC_5_STATUS: [Strong | Partial | Weak | Not Addressed]
-REC_5_GAP: [One sentence]
-REC_5_RISK: [High | Medium | Low]
-REC_6_STATUS: [Strong | Partial | Weak | Not Addressed]
-REC_6_GAP: [One sentence]
-REC_6_RISK: [High | Medium | Low]
-%%%GAP_TABLE_END%%%
-
 ---
 
 ## STRATEGIC PRIORITIES
@@ -420,7 +396,6 @@ These delimiters are parsed by the interface. Do not add text between %%%PRIORIT
 - Preamble: 50-75 words
 - Opening Assessment: 25-35 words
 - Strengths: 80-120 words
-- FCV Design Assessment Table: one sentence per recommendation (concise)
 - FCV Risk Exposure: 130-170 words total across both paragraphs
 - Gaps: 100-130 words
 - Operational Context: 150-200 words
@@ -435,7 +410,6 @@ These delimiters are parsed by the interface. Do not add text between %%%PRIORIT
 - No generic or templated language anywhere
 - FCV Risk Exposure section has exactly two paragraphs: one on risks TO the project, one on how the project could affect FCV dynamics
 - FCV Risk Exposure is written in plain language accessible to a non-FCV-specialist — no unexplained jargon
-- GAP_TABLE block is present with all 6 recommendations (REC_1 through REC_6), each having STATUS, GAP, and RISK fields
 - RISK_EXPOSURE block is present with both RISKS_TO_PROJECT and RISKS_FROM_PROJECT fields
 - Both RISKS_TO_PROJECT and RISKS_FROM_PROJECT are written in plain language with no unexplained jargon
 
@@ -588,6 +562,11 @@ def clean_stage4_output(text):
     # Remove gap table and risk exposure blocks — UI renders them
     text = re.sub(r'%%%GAP_TABLE_START%%%.*?%%%GAP_TABLE_END%%%', '', text, flags=re.DOTALL)
     text = re.sub(r'%%%RISK_EXPOSURE_START%%%.*?%%%RISK_EXPOSURE_END%%%', '', text, flags=re.DOTALL)
+    # Remove headings that are no longer needed in the display text:
+    # - "FCV Design Assessment Table" heading (table data is extracted separately)
+    # - "STRATEGIC PRIORITIES" heading (priorities rendered via card UI)
+    text = re.sub(r'#{1,4}\s*FCV Design Assessment Table[^\n]*\n?', '', text, flags=re.IGNORECASE)
+    text = re.sub(r'#{1,4}\s*STRATEGIC PRIORITIES[^\n]*\n?', '', text, flags=re.IGNORECASE)
     # Clean up extra blank lines left by removal
     text = re.sub(r'\n{3,}', '\n\n', text).strip()
     return text
@@ -717,10 +696,10 @@ Document text:
 
 def detect_document_type_from_text(text: str, api_client) -> str:
     """Classify a project document into one of the standard WBG document types."""
-    snippet = text[:5000]
+    snippet = text[:2000]
     try:
         resp = api_client.messages.create(
-            model="claude-sonnet-4-20250514",
+            model="claude-haiku-4-5-20251001",
             max_tokens=20,
             messages=[{
                 "role": "user",
