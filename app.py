@@ -96,7 +96,14 @@ Where does the project document's own risk picture align with or diverge from th
 - Part B: follow source priority strictly — uploaded docs first, then web research, then training knowledge; always label the tier at each point
 - Always clearly signal which Part and section you are in
 - Note when information is ambiguous, absent, or contradictory
-- Be specific — generic statements about fragility are not useful''',
+- Be specific — generic statements about fragility are not useful
+
+---
+
+# Document Type
+At the very end of your response, after all sections, output a single classifier line:
+%%%DOC_TYPE: [exactly one of: PCN / PID / PAD / AF / Restructuring / ISR / Unknown]%%%
+Identify what type of World Bank project document was uploaded as the primary project document.''',
 
 "2": '''# Role
 You are an FCV specialist conducting systematic screening analysis for World Bank projects using the WBG FCV Operational Manual framework.
@@ -189,6 +196,39 @@ Be specific — quote or reference the project document where possible. Note whe
 | 5. Results Framework/M&E | [Strong/Partial/Weak/Not Addressed] | [H/M/L] | [H/M/L] | [H/M/L] |
 | 6. Digital tools | [Strong/Partial/Weak/Not Addressed] | [H/M/L] | [H/M/L] | [H/M/L] |
 
+---
+
+SENSITIVITY vs. RESPONSIVENESS CLASSIFICATION
+
+After completing the six-recommendation assessment, add a classification tag to each recommendation. Apply these definitions strictly — [S+R] must be earned, not assumed.
+
+[S] — FCV SENSITIVITY: The recommendation primarily concerns how the project operates in the FCV context. This includes: using RRA findings to inform design; adapting targeting, implementation arrangements, procurement, or service delivery modalities to FCV realities; ensuring stakeholder consultations reach excluded/marginalised groups; and building a risk framework that accounts for security conditions, institutional weakness, and elite capture. Shorthand: will the project avoid making things worse?
+
+[R] — FCV RESPONSIVENESS: The recommendation primarily concerns whether the project actively addresses root drivers of fragility or builds resilience, anchored to the four FCV Strategy pillars:
+- Pillar 1 (Preventing conflict): addressing exclusion, grievances, institutional illegitimacy, social cohesion
+- Pillar 2 (Crisis engagement): adaptive design, continuity of services under stress, resilience-building
+- Pillar 3 (Transition out of fragility): social contract renewal, state legitimacy, local private sector
+- Pillar 4 (Spillover mitigation): forced displacement, cross-border dynamics, regional resilience
+Shorthand: will the project actively help make things better along a fragility dimension?
+
+[S+R] — BOTH: Reserve for recommendations that GENUINELY serve both functions at the same time. The four legitimate overlap zones are:
+1. Inclusion and targeting: deliberately including conflict-affected, marginalised, or displaced populations simultaneously avoids harm (S) and addresses exclusion as a root driver of fragility (R, Pillar 1).
+2. Theory of change / PDO: when the FCV logic is substantively embedded in the project's stated objective — not just in the risk register — this crosses from sensitivity into responsiveness.
+3. M&E and adaptive management: tracking conflict indicators is sensitivity; using them to actively adapt scope and strengthen resilience in real time is responsiveness (Pillar 2). A recommendation qualifies for [S+R] only if it substantively addresses both monitoring for harm AND adaptive resilience-building.
+4. Citizen engagement / GRM: a robust GRM avoids unaddressed harm (S); if it is explicitly designed to feed back into government accountability and strengthen the state-citizen relationship, it becomes a Pillar 3 responsiveness feature.
+
+STRICT RULE: Most recommendations will be [S] or [R], not [S+R]. Do not use [S+R] because a recommendation vaguely touches both concepts. Use it only when the same design element demonstrably and substantively serves both purposes.
+
+Use the following pre-assigned default tags unless project-specific evidence strongly warrants a different classification:
+- Rec 1: [S]
+- Rec 2: [S]
+- Rec 3: [S+R]
+- Rec 4: [S]
+- Rec 5: [S]
+- Rec 6: [S+R]
+
+After the summary assessment table, add a RESPONSIVENESS PROBE section (100-150 words). This should assess: Does this project have meaningful potential to address any of the four FCV Strategy pillars (Preventing conflict / Remaining engaged in crisis / Transition out of fragility / Mitigating spillovers)? What specific opportunities are present or missed, given this project's sector and geography? Do not produce generic peacebuilding suggestions — ground every point in the project's actual design and context.
+
 # Quality Guidelines
 - Evidence-based: ground all assessments in what Stage 1 extracted — quote or paraphrase specifically
 - Distinguish clearly between "Risk TO project" (FCV context threatens delivery) and "Risk FROM project" (project could worsen FCV dynamics)
@@ -228,6 +268,14 @@ For each gap identified in Part A, propose specific, actionable mitigations. Str
 **When:** [At design stage / Before appraisal / During implementation]
 **Resource level:** [Minimal — existing budget / Moderate — requires dedicated allocation / Significant — requires restructuring]
 
+For each mitigation measure in Part B, assign a TAG and include it as a TAG column in the table. Apply strictly — [S+R] must be earned, not assumed:
+
+[S] — The mitigation primarily improves how the project operates in the FCV context: using RRA findings, adapting implementation arrangements or targeting to FCV realities, strengthening conflict-sensitive stakeholder engagement, or improving risk management to account for security conditions and institutional weakness. Shorthand: avoids making things worse.
+
+[R] — The mitigation actively shifts the project toward addressing a root driver of fragility or building resilience, substantively linked to one of the four FCV Strategy pillars (Pillar 1: preventing conflict; Pillar 2: crisis engagement; Pillar 3: transition out of fragility; Pillar 4: spillover mitigation). Shorthand: actively helps make things better.
+
+[S+R] — Reserve for mitigations that genuinely serve both functions at the same time: e.g. deliberate inclusion of marginalised/displaced populations (avoids exclusion harm AND addresses Pillar 1 exclusion driver); embedding FCV logic substantively in the ToC/PDO (not just the risk register); adaptive M&E that both monitors for harm and strengthens resilience in real time; a GRM designed to feed back into government accountability (Pillar 3). Most mitigations will be [S] or [R] — do not use [S+R] because a measure vaguely touches both concepts.
+
 Explain any technical WBG mechanisms briefly in plain language the first time they appear — e.g. if recommending a CERC, add: "(a zero-dollar contingency component that can be activated rapidly during crises without Board approval)".
 
 ---
@@ -247,9 +295,24 @@ Explain any technical WBG mechanisms briefly in plain language the first time th
 
 ---
 
-## Part D: Enhancement Opportunities
+## Part D: FCV Responsiveness Opportunities
 
-Identify 2-3 ways this project could go beyond Do No Harm to actively support peacebuilding or resilience. Be specific to this country and sector — no generic suggestions. For each opportunity, name the specific project component or mechanism it would affect.
+PART D: FCV RESPONSIVENESS OPPORTUNITIES
+
+This section specifically addresses FCV Responsiveness — opportunities for the project to go beyond sensitivity and actively contribute to addressing the root drivers of fragility or strengthening resilience. Ground each opportunity in one of the four FCV Strategy 2020-2025 pillars:
+
+- Pillar 1: Conflict Prevention (grievances, exclusion, institutional illegitimacy, social cohesion)
+- Pillar 2: Crisis Engagement (adaptive design, continuity of essential services under stress)
+- Pillar 3: Transition out of fragility (social contract renewal, core institutional capacity, local private sector)
+- Pillar 4: Spillover mitigation (forced displacement, cross-border dynamics, regional resilience)
+
+For each opportunity, specify:
+- Which pillar it relates to
+- What the specific project entry point is (component, instrument, or M&E indicator)
+- What would need to change in the current design to realise it
+- Whether it is a minor addition or requires substantive design change
+
+Produce 2-3 opportunities only. Every opportunity must be grounded in this project's specific sector and geography — do not generate generic suggestions.
 
 ---
 
@@ -257,6 +320,8 @@ Identify 2-3 ways this project could go beyond Do No Harm to actively support pe
 
 ### Top 5 Priority Actions
 List the five most important actions, in priority order. Each should be a single, direct sentence naming the specific action and where it should happen (PAD section, POM, ESCP, etc.).
+
+For each of the Top 5 Priority Actions in Part E, append a tag — [S], [R], or [S+R] — using the same strict definitions as above. Most actions will be [S] or [R]. Use [S+R] only for actions that demonstrably serve both the do-no-harm function and an active fragility-reduction function at the same time.
 
 ### Overall FCV Integration Rating
 **Rating:** [Strong / Adequate / Weak / Absent]
@@ -326,6 +391,16 @@ RISKS_FROM_PROJECT: [One paragraph, 60-85 words. Identify 1-2 ways the project's
 ### Gaps (100-130 words, prose)
 The main weakness or cluster of weaknesses, constructively framed. Reference the OST FCV-sensitivity framework where relevant. 1-2 citations from RRA or external sources only.
 
+After the Gaps paragraph, output the following two blocks in order:
+
+%%%SENSITIVITY_SUMMARY_START%%%
+Write a paragraph of 80-100 words assessing the project's overall FCV SENSITIVITY standing. Cover: how well the project avoids doing harm in the FCV context, the quality of its contextual awareness, and its operational readiness. Be direct about the overall level — do not hedge. Reference 1-2 specific strengths and 1-2 specific gaps from the Stage 2 screening.
+%%%SENSITIVITY_SUMMARY_END%%%
+
+%%%RESPONSIVENESS_SUMMARY_START%%%
+Write a paragraph of 80-100 words assessing the project's FCV RESPONSIVENESS — the degree to which it actively contributes to addressing root drivers of fragility and/or building resilience. Anchor this explicitly to whichever of the four FCV Strategy pillars are most relevant to this project's context and sector. Be honest: many projects will have low responsiveness scores. Say so clearly and explain what the missed opportunity is, rather than inflating the assessment.
+%%%RESPONSIVENESS_SUMMARY_END%%%
+
 ---
 
 ## STRATEGIC PRIORITIES
@@ -366,12 +441,34 @@ Base this on the project's CURRENT state of FCV integration — not the ideal st
 
 ---
 
+# CRITICAL — FCV RESPONSIVENESS RATING
+Immediately after the FCV Sensitivity Rating line, output a second rating line:
+
+%%%FCV_RESPONSIVENESS_RATING: [level]%%%
+
+Where [level] is EXACTLY one of: Extremely Low | Very Low | Low | Adequate | Well Embedded | Very Well Embedded
+
+Base this on the project's current FCV RESPONSIVENESS — the degree to which it actively addresses root drivers of fragility or builds resilience through the four FCV Strategy pillars. Note: most projects will have a lower responsiveness rating than sensitivity rating; do not inflate this score.
+
+---
+
 # CRITICAL — PRIORITY DELIMITER FORMAT
 Wrap each priority block in delimiter tags. Use EXACTLY this format — every field on its own line with no extra blank lines between fields:
 
 %%%PRIORITY_START%%%
 TITLE: Priority N · [Actionable verb phrase]
 FCV_DIMENSION: [dimension]
+TAG: Output EXACTLY one of: [S] / [R] / [S+R]
+
+Apply the following definitions strictly. [S+R] must be earned — do not use it by default.
+
+[S] — This priority primarily concerns HOW the project operates in the FCV context. Indicators: improving use of RRA/diagnostic findings; adapting targeting, implementation arrangements, procurement, or service delivery to the FCV context; strengthening conflict-sensitive stakeholder engagement; improving the risk framework to account for security conditions, institutional weakness, or elite capture. Shorthand: will this priority help the project avoid making things worse?
+
+[R] — This priority actively addresses a root driver of fragility or builds resilience, substantively linked to one of the four FCV Strategy pillars: Pillar 1 (preventing conflict — exclusion, grievances, institutional illegitimacy, social cohesion); Pillar 2 (crisis engagement — adaptive design, service continuity under stress, resilience-building); Pillar 3 (transition out of fragility — social contract renewal, state legitimacy, local private sector); Pillar 4 (spillover mitigation — displacement, cross-border dynamics, regional resilience). Shorthand: will this priority actively help make fragility dynamics better?
+
+[S+R] — Reserve ONLY for priorities that genuinely and substantively serve both functions simultaneously. The four legitimate overlap zones are: (1) inclusion/targeting of conflict-affected or displaced populations — avoids exclusion harm (S) AND addresses exclusion as a root driver (R, Pillar 1); (2) embedding FCV logic substantively in the ToC/PDO framing, not just the risk register; (3) adaptive M&E that both monitors for harm AND adapts project scope to strengthen resilience in real time (Pillar 2); (4) a GRM or citizen engagement mechanism designed explicitly to strengthen government accountability and the state-citizen relationship (Pillar 3). If in doubt, assign [S] or [R] — most priorities will not qualify for [S+R].
+
+Output the tag label only — no explanation.
 RISK_LEVEL: [level]
 THE_GAP: [2-3 sentences]
 WHY_IT_MATTERS: [2-3 sentences — operational + FCV dimensions combined]
@@ -404,7 +501,10 @@ These delimiters are parsed by the interface. Do not add text between %%%PRIORIT
 
 # Quality Check Before Submitting
 - Every priority wrapped in %%%PRIORITY_START%%% / %%%PRIORITY_END%%% delimiters
-- Every priority has all 9 fields: TITLE, FCV_DIMENSION, RISK_LEVEL, THE_GAP, WHY_IT_MATTERS, SUGGESTED_DIRECTIONS, WHO_ACTS, WHEN, RESOURCES
+- Every priority has all 10 fields: TITLE, FCV_DIMENSION, TAG, RISK_LEVEL, THE_GAP, WHY_IT_MATTERS, SUGGESTED_DIRECTIONS, WHO_ACTS, WHEN, RESOURCES
+- %%%SENSITIVITY_SUMMARY_START%%% / %%%SENSITIVITY_SUMMARY_END%%% block is present (80-100 words)
+- %%%RESPONSIVENESS_SUMMARY_START%%% / %%%RESPONSIVENESS_SUMMARY_END%%% block is present (80-100 words)
+- %%%FCV_RESPONSIVENESS_RATING:%%% line is present immediately after %%%FCV_RATING:%%%
 - 4-5 priorities total
 - Every priority names at least one specific geography, group, institution, or historical event
 - No generic or templated language anywhere
@@ -557,11 +657,14 @@ def clean_stage4_output(text):
     """
     # Remove all priority blocks — UI renders them via card system
     text = re.sub(r'%%%PRIORITY_START%%%.*?%%%PRIORITY_END%%%', '', text, flags=re.DOTALL)
-    # Remove FCV rating line
+    # Remove FCV rating lines
     text = re.sub(r'%%%FCV_RATING:[^%]*%%%\n?', '', text)
-    # Remove gap table and risk exposure blocks — UI renders them
+    text = re.sub(r'%%%FCV_RESPONSIVENESS_RATING:[^%]*%%%\n?', '', text)
+    # Remove gap table, risk exposure, and S/R summary blocks — UI renders them
     text = re.sub(r'%%%GAP_TABLE_START%%%.*?%%%GAP_TABLE_END%%%', '', text, flags=re.DOTALL)
     text = re.sub(r'%%%RISK_EXPOSURE_START%%%.*?%%%RISK_EXPOSURE_END%%%', '', text, flags=re.DOTALL)
+    text = re.sub(r'%%%SENSITIVITY_SUMMARY_START%%%.*?%%%SENSITIVITY_SUMMARY_END%%%', '', text, flags=re.DOTALL)
+    text = re.sub(r'%%%RESPONSIVENESS_SUMMARY_START%%%.*?%%%RESPONSIVENESS_SUMMARY_END%%%', '', text, flags=re.DOTALL)
     # Remove headings that are no longer needed in the display text:
     # - "FCV Design Assessment Table" heading (table data is extracted separately)
     # - "STRATEGIC PRIORITIES" heading (priorities rendered via card UI)
@@ -575,6 +678,14 @@ def clean_stage4_output(text):
 def extract_fcv_rating(text):
     """Parse %%%FCV_RATING: [level]%%% from Stage 4 output."""
     m = re.search(r'%%%FCV_RATING:\s*([^%\n]+)%%%', text)
+    if m:
+        return m.group(1).strip()
+    return ''
+
+
+def extract_fcv_responsiveness_rating(text):
+    """Parse %%%FCV_RESPONSIVENESS_RATING: [level]%%% from Stage 4 output."""
+    m = re.search(r'%%%FCV_RESPONSIVENESS_RATING:\s*([^%\n]+)%%%', text)
     if m:
         return m.group(1).strip()
     return ''
@@ -607,6 +718,18 @@ def extract_gap_table(text):
             'risk': get_val('RISK'),
         })
     return table
+
+
+def extract_sensitivity_summary(text):
+    """Parse %%%SENSITIVITY_SUMMARY_START%%% / %%%SENSITIVITY_SUMMARY_END%%% block from Stage 4 output."""
+    m = re.search(r'%%%SENSITIVITY_SUMMARY_START%%%(.*?)%%%SENSITIVITY_SUMMARY_END%%%', text, re.DOTALL)
+    return m.group(1).strip() if m else ''
+
+
+def extract_responsiveness_summary(text):
+    """Parse %%%RESPONSIVENESS_SUMMARY_START%%% / %%%RESPONSIVENESS_SUMMARY_END%%% block from Stage 4 output."""
+    m = re.search(r'%%%RESPONSIVENESS_SUMMARY_START%%%(.*?)%%%RESPONSIVENESS_SUMMARY_END%%%', text, re.DOTALL)
+    return m.group(1).strip() if m else ''
 
 
 def extract_risk_exposure(text):
@@ -642,6 +765,7 @@ def extract_priorities(text):
         if not title:
             continue
         dimension = get_field('FCV_DIMENSION')
+        tag = get_field('TAG')
         risk_level = get_field('RISK_LEVEL')
         the_gap = get_field('THE_GAP')
         why_it_matters = get_field('WHY_IT_MATTERS')
@@ -655,6 +779,7 @@ def extract_priorities(text):
             'title': title,
             'body': body,
             'dimension': dimension,
+            'tag': tag,
             'risk_level': risk_level,
             'the_gap': the_gap,
             'why_it_matters': why_it_matters,
@@ -669,7 +794,7 @@ def extract_priorities(text):
         fallback = re.findall(r'Priority \d+\s*[·•]\s*[^\n]+', text)
         if fallback and len(fallback) >= len(priorities):
             priorities = [{'title': t.strip(), 'body': '', 'dimension': '',
-                           'risk_level': '', 'the_gap': '', 'why_it_matters': '',
+                           'tag': '', 'risk_level': '', 'the_gap': '', 'why_it_matters': '',
                            'why_fcv_matters': '', 'suggested_directions': ''} for t in fallback]
     return priorities
 
@@ -1404,13 +1529,19 @@ def run_stage():
                 # Stage 4: extract priorities + rating from raw delimited text, then clean for display
                 priorities = []
                 fcv_rating = ''
+                fcv_responsiveness_rating = ''
                 gap_table = None
                 risk_exposure = None
+                sensitivity_summary = ''
+                responsiveness_summary = ''
                 if stage == 4:
                     priorities = extract_priorities(full_text)
                     fcv_rating = extract_fcv_rating(full_text)
+                    fcv_responsiveness_rating = extract_fcv_responsiveness_rating(full_text)
                     gap_table = extract_gap_table(full_text)
                     risk_exposure = extract_risk_exposure(full_text)
+                    sensitivity_summary = extract_sensitivity_summary(full_text)
+                    responsiveness_summary = extract_responsiveness_summary(full_text)
                     full_text = clean_stage4_output(full_text)
                     from datetime import date
                     header = DO_NO_HARM_HEADER.format(date=date.today().strftime('%d %B %Y'))
@@ -1430,7 +1561,7 @@ def run_stage():
                 if len(updated_messages) > 20:
                     updated_messages = updated_messages[-20:]
 
-                yield f"data: {json.dumps({'done': True, 'result': full_text, 'history': updated_messages, 'stage': stage, 'priorities': priorities, 'fcv_rating': fcv_rating, 'gap_table': gap_table, 'risk_exposure': risk_exposure, 'research_brief': research_brief_text if stage == 1 else None, 'research_country': research_country if stage == 1 else None})}\n\n"
+                yield f"data: {json.dumps({'done': True, 'result': full_text, 'history': updated_messages, 'stage': stage, 'priorities': priorities, 'fcv_rating': fcv_rating, 'fcv_responsiveness_rating': fcv_responsiveness_rating, 'gap_table': gap_table, 'risk_exposure': risk_exposure, 'sensitivity_summary': sensitivity_summary, 'responsiveness_summary': responsiveness_summary, 'research_brief': research_brief_text if stage == 1 else None, 'research_country': research_country if stage == 1 else None})}\n\n"
 
             except anthropic.AuthenticationError:
                 yield f"data: {json.dumps({'error': 'Invalid API key.'})}\n\n"

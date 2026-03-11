@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>FCV Sensitivity Project Screener · WBG FCV Analytics Unit</title>
+  <title>FCV Project Screener · WBG FCV Analytics Unit</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -1203,6 +1203,62 @@
     .pc-num-badge{font-family:'Inter',sans-serif!important;font-weight:700!important}
 
   </style>
+<style>
+  /* ── FCV Sensitivity vs Responsiveness cards ───────────────────────────── */
+  .sensitivity-responsiveness-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 20px 0;
+  }
+  @media (max-width: 768px) {
+    .sensitivity-responsiveness-grid { grid-template-columns: 1fr; }
+  }
+  .sr-card {
+    border-left: 3px solid;
+    border-radius: 0 8px 8px 0;
+    padding: 16px 20px;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .sr-card.sensitivity { border-left-color: #0050A0; }
+  .sr-card.responsiveness { border-left-color: #16A34A; }
+  .sr-card-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: #64748B;
+    margin-bottom: 8px;
+  }
+  .sr-card p { font-size: 14px; line-height: 1.7; margin: 0; }
+
+  /* ── S/R tag pill badges ───────────────────────────────────────────────── */
+  .sr-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-left: 8px;
+  }
+  .sr-tag.sensitivity {
+    background: #EBF2FA;
+    color: #0050A0;
+    border: 1px solid #BFDBFE;
+  }
+  .sr-tag.responsiveness {
+    background: #DCFCE7;
+    color: #16A34A;
+    border: 1px solid #86EFAC;
+  }
+  .sr-tag.both {
+    background: #F1F5F9;
+    color: #1A202C;
+    border: 1px solid #CBD5E1;
+  }
+</style>
 </head>
 <body>
 
@@ -1221,7 +1277,7 @@
     </svg>
     <span class="top-bar-wordmark">WBG FCV Analytics Unit</span>
     <span class="top-bar-divider"></span>
-    <span class="top-bar-unit">FCV Sensitivity Screener</span>
+    <span class="top-bar-unit">FCV Project Screener</span>
   </div>
   <span class="top-bar-badge">Pilot</span>
 </div>
@@ -1270,7 +1326,7 @@
   <div class="modal" style="max-width:680px">
     <div class="modal-hdr" style="padding:24px 32px 20px">
       <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:var(--wbg-cyan);margin-bottom:8px;display:flex;align-items:center;gap:8px"><span style="display:inline-block;width:16px;height:2px;background:var(--wbg-cyan)"></span>WBG FCV Analytics Unit</div>
-      <h2 style="font-size:24px;margin-bottom:6px">FCV Sensitivity Project Screener</h2>
+      <h2 style="font-size:24px;margin-bottom:6px">FCV Project Screener</h2>
       <p style="font-size:14px;font-style:italic;color:rgba(255,255,255,.6)">A tool for screening WBG projects for recommendations to strengthen FCV sensitivity and responsiveness</p>
     </div>
     <div class="modal-body" style="padding:0;max-height:72vh;overflow-y:auto">
@@ -1339,19 +1395,6 @@
   <span id="session-status">No active session</span>
   <div id="util-doc-type-area" style="display:none;align-items:center;gap:6px;margin-left:8px">
     <span id="util-doc-type-badge" class="util-doc-type-badge">—</span>
-    <button onclick="document.getElementById('util-doc-type-select').style.display=document.getElementById('util-doc-type-select').style.display==='none'?'inline-block':'none'" title="Override document type" class="util-doc-type-edit-btn">
-      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-    </button>
-    <select id="util-doc-type-select" onchange="docType=this.value;updateDocTypeBadge();this.style.display='none'" style="display:none;font-size:11px;border:1px solid var(--color-border);border-radius:4px;padding:2px 6px;background:#fff;cursor:pointer;">
-      <option value="">— override —</option>
-      <option value="PCN">PCN</option>
-      <option value="PID">PID</option>
-      <option value="PAD">PAD</option>
-      <option value="AF">AF</option>
-      <option value="Restructuring">Restructuring</option>
-      <option value="ISR">ISR</option>
-      <option value="Unknown">Unknown</option>
-    </select>
   </div>
   <div class="session-bar-btns">
     <button class="btn btn-ghost btn-sm" id="prompt-bar-btn" onclick="openPromptModal()" title="View and edit analysis prompts">
@@ -1373,8 +1416,8 @@
 <!-- ══ LANDING HERO ══ -->
 <div id="landing-hero" class="hero">
   <div class="hero-inner">
-    <div class="hero-eyebrow">FCV Sensitivity Project Screener</div>
-    <h1>FCV Sensitivity <strong>Project Screener</strong></h1>
+    <div class="hero-eyebrow">FCV Project Screener</div>
+    <h1>FCV <strong>Project Screener</strong></h1>
     <p class="hero-sub">A tool for screening WBG projects for recommendations to strengthen <em>FCV sensitivity and responsiveness</em></p>
     <p style="font-size:14px;color:rgba(255,255,255,.82);line-height:1.65;max-width:600px;margin-bottom:18px;">This tool uses an LLM to screen draft WBG project documents for FCV dynamics and generate recommendations on how to strengthen FCV sensitivity and responsiveness. Upload your project documents and follow the step-by-step process to produce a final recommendation note. At each stage you can review the AI's thinking and make refinements before proceeding.</p>
     <div style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:6px;padding:10px 14px;max-width:560px;margin-bottom:20px;display:flex;align-items:flex-start;gap:8px;">
@@ -1455,17 +1498,8 @@
 
     <div class="chips" id="chips" aria-live="polite"></div>
     <div id="doc-type-area" style="display:none;margin:0 32px 4px;font-size:12px;color:var(--muted);align-items:center;gap:8px;flex-wrap:wrap;">
-      <span>Detected document type:</span>
+      <span>Document type:</span>
       <span id="doc-type-badge" class="doc-type-badge">—</span>
-      <select id="doc-type-override" onchange="docType=this.value;updateDocTypeBadge()" title="Override detected document type" style="font-size:11px;border:1px solid var(--border);border-radius:4px;padding:2px 6px;color:var(--text);background:var(--surface);cursor:pointer;">
-        <option value="Unknown">Unknown / Override…</option>
-        <option value="PCN">PCN — Project Concept Note</option>
-        <option value="PID">PID — Project Information Document</option>
-        <option value="PAD">PAD — Project Appraisal Document</option>
-        <option value="AF">AF — Additional Financing</option>
-        <option value="Restructuring">Restructuring Paper</option>
-        <option value="ISR">ISR — Implementation Status Report</option>
-      </select>
     </div>
     <div id="debug-log" style="margin:0 32px 8px;font-size:11px;color:#666;min-height:16px"></div>
 
@@ -1508,7 +1542,7 @@
   // ── State ──────────────────────────────────────────────────────────────────
   let pF=[],cF=[],hist=[],curS=0,busy=false;
   let sessionName='';
-  let docType='Unknown', docTypeDetecting=false;
+  let docType='Unknown';
   // Stage 4 state is declared in the Stage 4 section below
 
   // ── Onboarding ──────────────────────────────────────────────────────────────
@@ -1685,7 +1719,7 @@
   function removeF(name, type) {
     if (type === 'p') {
       pF = pF.filter(f => f.name !== name);
-      docType = 'Unknown';  // reset so detection re-runs with new primary file
+      docType = 'Unknown';  // reset; will be detected from Stage 1 output
     } else {
       cF = cF.filter(f => f.name !== name);
     }
@@ -1711,29 +1745,27 @@
       const log = document.getElementById('debug-log');
       if(log && log.style.color !== '#b91c1c') log.textContent = '';
     }
-    // Show/hide doc type area and trigger detection on new project files
+    // Doc type area is updated automatically from Stage 1 output — hide initially
     const dtArea = document.getElementById('doc-type-area');
-    if(dtArea) dtArea.style.display = pF.length > 0 ? 'flex' : 'none';
-    if(pF.length > 0 && docType === 'Unknown' && !docTypeDetecting) detectDocumentType();
+    if(dtArea) dtArea.style.display = 'none';
   }
 
   function updateDocTypeBadge() {
     const badge = document.getElementById('doc-type-badge');
-    const sel = document.getElementById('doc-type-override');
     if(!badge) return;
     const typeMap = {
       PCN:'PCN', PID:'PID', PAD:'PAD', AF:'AF',
-      Restructuring:'Restructuring', ISR:'ISR', Unknown:'Detecting…'
+      Restructuring:'Restructuring', ISR:'ISR', Unknown:'Unknown'
     };
-    badge.textContent = typeMap[docType] || docType;
-    // Apply colour class
     const clsMap = {
       PCN:'dt-pcn', PID:'dt-pid', PAD:'dt-pad', AF:'dt-af',
       Restructuring:'dt-restructuring', ISR:'dt-isr', Unknown:'dt-unknown'
     };
+    badge.textContent = typeMap[docType] || docType;
     badge.className = 'doc-type-badge ' + (clsMap[docType] || 'dt-unknown');
-    // Sync dropdown
-    if(sel) sel.value = docType in clsMap ? docType : 'Unknown';
+    // Show the doc type area once we have a type
+    const dtArea = document.getElementById('doc-type-area');
+    if(dtArea && docType && docType !== 'Unknown') dtArea.style.display = 'flex';
     // Update utility bar badge
     const utilBadge = document.getElementById('util-doc-type-badge');
     const utilArea = document.getElementById('util-doc-type-area');
@@ -1747,48 +1779,8 @@
     }
   }
 
-  async function detectDocumentType() {
-    if(!pF.length || docTypeDetecting) return;
-    docTypeDetecting = true;
-    const badge = document.getElementById('doc-type-badge');
-    if(badge){ badge.textContent = 'Detecting…'; badge.className = 'doc-type-badge dt-unknown'; }
-    try {
-      const file = pF[0];
-      const isPdf = file.name.toLowerCase().endsWith('.pdf');
-      let body;
-      if(isPdf){
-        // Send base64 PDF to backend; it will extract text before classifying
-        const b64 = await new Promise((res, rej) => {
-          const r = new FileReader();
-          r.onload = e => res(e.target.result.split(',')[1]);
-          r.onerror = () => rej(new Error('Read error'));
-          r.readAsDataURL(file);
-        });
-        body = JSON.stringify({doc_b64: b64, doc_name: file.name});
-      } else {
-        const text = await new Promise((res, rej) => {
-          const r = new FileReader();
-          r.onload = e => res(e.target.result.slice(0, 5000));
-          r.onerror = () => rej(new Error('Read error'));
-          r.readAsText(file);
-        });
-        body = JSON.stringify({doc_text: text});
-      }
-      const resp = await fetch('/api/detect-document-type', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body
-      });
-      if(resp.ok){
-        const data = await resp.json();
-        docType = data.document_type || 'Unknown';
-      }
-    } catch(e) {
-      docType = 'Unknown';
-    }
-    docTypeDetecting = false;
-    updateDocTypeBadge();
-  }
+  // Document type is now detected automatically during Stage 1 analysis
+  // via %%%DOC_TYPE:%%% delimiter in the Stage 1 output — no separate API call needed.
 
   async function startAnalysis(){
     if(busy) return;
@@ -1942,9 +1934,10 @@
             }
             if(p.preprocess){const el=document.getElementById('s-out');if(el)el.innerHTML=`<div style="display:flex;align-items:center;gap:10px;color:var(--muted);font-style:italic;padding:12px 0"><svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;animation:spin 1s linear infinite;flex-shrink:0"><circle cx="12" cy="12" r="10" stroke-opacity=".25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-opacity="1"/></svg>${esc(p.preprocess)}</div>`}
             if(p.chunk){streamed+=p.chunk;const el=document.getElementById('s-out');if(el)el.innerHTML=md(streamed)}
-            if(p.done){hist=p.history||hist;curS=stage;stageOutputs[stage]=p.result;stageHists[stage]=hist.slice();updateSessionBar();if(stage===4){stageGapTable=p.gap_table||null;stageRiskExposure=p.risk_exposure||null;}renderOut(stage,p.result,followOn);setStepper(stage,'done');
+            if(p.done){hist=p.history||hist;curS=stage;stageOutputs[stage]=p.result;stageHists[stage]=hist.slice();updateSessionBar();if(stage===4){stageGapTable=p.gap_table||null;stageRiskExposure=p.risk_exposure||null;stageSensitivitySummary=p.sensitivity_summary||'';stageResponsivenessSummary=p.responsiveness_summary||'';if(p.fcv_rating)fcvRating=p.fcv_rating;if(p.fcv_responsiveness_rating)fcvResponsivenessRating=p.fcv_responsiveness_rating;}renderOut(stage,p.result,followOn);setStepper(stage,'done');
               // Research brief panel for Stage 1
               if(stage===1){
+                const dtMatch=p.result&&p.result.match(/%%%DOC_TYPE:\s*([^%\n]+)%%%/);if(dtMatch){docType=dtMatch[1].trim();updateDocTypeBadge();}
                 if(p.research_brief) researchBrief=p.research_brief;
                 if(p.research_country) researchCountry=p.research_country;
                 if(researchBrief) injectResearchBriefPanel(researchBrief,researchCountry);
@@ -1956,7 +1949,6 @@
                 const newTitles=new Set(p.priorities.map(pr=>pr.title));
                 for(const t of Object.keys(explorerCache)){if(!newTitles.has(t))delete explorerCache[t];}
                 explorerHistory=[];
-                if(p.fcv_rating) fcvRating=p.fcv_rating;
                 updateSidebar();
                 populateExplorerDropdown(p.priorities);
               }
@@ -2014,22 +2006,51 @@
     }
   }
 
+  function renderSRTagBadge(tag, compact) {
+    if (!tag) return '';
+    const cls = tag === '[S]' ? 'sensitivity' : tag === '[R]' ? 'responsiveness' : 'both';
+    let label;
+    if (compact) {
+      label = tag === '[S]' ? 'S' : tag === '[R]' ? 'R' : 'S+R';
+    } else {
+      label = tag === '[S]' ? 'Sensitivity' : tag === '[R]' ? 'Responsiveness' : 'Sensitivity + Responsiveness';
+    }
+    return `<span class="sr-tag ${cls}">${label}</span>`;
+  }
+
+  function renderSRCards(sensitivityText, responsivenessText) {
+    if (!sensitivityText && !responsivenessText) return '';
+    return `
+      <div class="sensitivity-responsiveness-grid">
+        <div class="sr-card sensitivity">
+          <div class="sr-card-label">FCV SENSITIVITY</div>
+          <p>${esc(sensitivityText)}</p>
+        </div>
+        <div class="sr-card responsiveness">
+          <div class="sr-card-label">FCV RESPONSIVENESS</div>
+          <p>${esc(responsivenessText)}</p>
+        </div>
+      </div>`;
+  }
+
   function renderGapTable(gapTable) {
     if (!gapTable || !gapTable.length) return '';
     const statusClass = s => s === 'Strong' ? 'status-strong' : s === 'Partial' ? 'status-partial' : s === 'Weak' ? 'status-weak' : 'status-none';
     const riskDot = r => `<span class="risk-dot ${r==='High'?'dot-h':r==='Medium'?'dot-m':'dot-l'}"></span>${esc(r)}`;
+    const typeTag = {1:'[S]', 2:'[S]', 3:'[S+R]', 4:'[S]', 5:'[S]', 6:'[S+R]'};
     const rows = gapTable.map(row => `
       <tr>
         <td><span class="rec-name">${row.rec_num} · ${esc(row.rec_name)}</span></td>
         <td><span class="status-pill ${statusClass(row.status)}">${esc(row.status)}</span></td>
         <td class="gap-note">${esc(row.gap)}</td>
         <td>${riskDot(row.risk)}</td>
+        <td>${renderSRTagBadge(typeTag[row.rec_num]||'')}</td>
       </tr>`).join('');
     return `
       <div class="exec-section-lbl">FCV Design Assessment — Six Recommendations</div>
       <p class="gap-table-caption">The table below highlights key gaps based on the six pillars of the FCV-sensitivity in the Operational Support Team's Manual for project design and delivery in FCV.</p>
       <table class="gap-table">
-        <thead><tr><th>OST FCV Priority</th><th>Status</th><th>Key gap</th><th>Risk</th></tr></thead>
+        <thead><tr><th>OST FCV Priority</th><th>Status</th><th>Key gap</th><th>Risk</th><th>Type</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>`;
   }
@@ -2096,8 +2117,11 @@
       const _sp=result.split(/(?=###\s*Strengths\b)/i);
       const _pre=_sp[0]||result;
       const _rest=_sp[1]||'';
-      _outBodyContent=md(_pre)+renderRiskExposure(stageRiskExposure)+md(_rest)+'<div id="priorities-intro"></div>';
-    }else{_outBodyContent=md(result);}
+      _outBodyContent=md(_pre)+renderRiskExposure(stageRiskExposure)+md(_rest)+renderSRCards(stageSensitivitySummary,stageResponsivenessSummary)+'<div id="priorities-intro"></div>';
+    }else{
+      const cleanResult = stage===1 ? result.replace(/\n*%%%DOC_TYPE:[^%\n]*%%%\n*/g,'') : result;
+      _outBodyContent=md(cleanResult);
+    }
     document.getElementById('stage-disp').innerHTML=`
       <div class="stage-hdr ani">
         <div class="stage-badge ${COL[stage]}">${stage}</div>
@@ -2270,7 +2294,7 @@
     // Build a Word-compatible HTML document
     const dateStr = new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
     let body = `<h1>FCV Recommendations Note</h1>
-<p style="color:#666;font-size:9pt"><em>Generated by WBG FCV Sensitivity Project Screener · ${dateStr}</em></p>
+<p style="color:#666;font-size:9pt"><em>Generated by WBG FCV Project Screener · ${dateStr}</em></p>
 <hr>
 <h2>Executive Summary · Project-Wide Considerations</h2>
 ${md(execSummary)}`;
@@ -2485,6 +2509,8 @@ ${md(execSummary)}`;
   let stageHists = {};    // {stageNum: hist_snapshot} — used to restore history on goBack()
   let stageGapTable = null;
   let stageRiskExposure = null;
+  let stageSensitivitySummary = '';
+  let stageResponsivenessSummary = '';
 
   // ── Research brief state ───────────────────────────────────────────────────
   let researchBrief = '';
@@ -2496,6 +2522,7 @@ ${md(execSummary)}`;
   let explorerCache = {};   // {priorityTitle: parsedExplorerData}
   let explorerHistory = []; // for follow-up queries
   let fcvRating = '';
+  let fcvResponsivenessRating = '';
 
   const LEVELS = ['Extremely Low','Very Low','Low','Adequate','Well Embedded','Very Well Embedded'];
   const LEVEL_COLORS = {1:'#C0392B',2:'#E07B00',3:'#D97706',4:'#0072BB',5:'#1A7A4A',6:'#0d5c36'};
@@ -2516,10 +2543,10 @@ ${md(execSummary)}`;
 
   function sidebarHtml(){
     return `
-      <!-- Gauge -->
+      <!-- Sensitivity Gauge -->
       <div class="sidebar-widget">
         <div class="sidebar-widget-fcv">
-          <div class="sidebar-widget-label">Current FCV Sensitivity</div>
+          <div class="sidebar-widget-label">FCV Sensitivity</div>
           <svg viewBox="0 0 120 80" width="120" height="80" style="display:block;margin:0 auto -4px">
             <path d="M15 70 A45 45 0 0 1 105 70" fill="none" stroke="#e8edf2" stroke-width="11" stroke-linecap="round"/>
             <path id="fcv-arc-fill" d="M15 70 A45 45 0 0 1 105 70" fill="none" stroke="#e8edf2" stroke-width="11" stroke-linecap="round" stroke-dasharray="0 141.37"/>
@@ -2529,6 +2556,21 @@ ${md(execSummary)}`;
           </svg>
           <div class="fcv-rating-label" id="fcv-rating-label" style="color:var(--muted)">Analysing…</div>
           <div class="fcv-need-label" id="fcv-need-label"></div>
+        </div>
+      </div>
+      <!-- Responsiveness Gauge -->
+      <div class="sidebar-widget">
+        <div class="sidebar-widget-fcv">
+          <div class="sidebar-widget-label">FCV Responsiveness</div>
+          <svg viewBox="0 0 120 80" width="120" height="80" style="display:block;margin:0 auto -4px">
+            <path d="M15 70 A45 45 0 0 1 105 70" fill="none" stroke="#e8edf2" stroke-width="11" stroke-linecap="round"/>
+            <path id="fcv-resp-arc-fill" d="M15 70 A45 45 0 0 1 105 70" fill="none" stroke="#e8edf2" stroke-width="11" stroke-linecap="round" stroke-dasharray="0 141.37"/>
+            <g transform="translate(60,47)">
+              <path id="fcv-resp-leaf-path" d="M0-13 C6-13 12-8 12-1 C12 6 6 13 0 16 C-6 13 -12 6 -12-1 C-12-8 -6-13 0-13z" fill="#c8d8c8"/>
+            </g>
+          </svg>
+          <div class="fcv-rating-label" id="fcv-resp-rating-label" style="color:var(--muted)">Analysing…</div>
+          <div class="fcv-need-label" id="fcv-resp-need-label"></div>
         </div>
       </div>
       <!-- Priority overview -->
@@ -2546,7 +2588,7 @@ ${md(execSummary)}`;
     const level = LEVELS.findIndex(l => l.toLowerCase() === (fcvRating||'').toLowerCase()) + 1;
     const color = LEVEL_COLORS[level] || '#e8edf2';
 
-    // Gauge
+    // Sensitivity Gauge
     const arcFill = document.getElementById('fcv-arc-fill');
     const shieldPath = document.getElementById('fcv-shield-path');
     const labelEl = document.getElementById('fcv-rating-label');
@@ -2555,6 +2597,18 @@ ${md(execSummary)}`;
     if(shieldPath) shieldPath.setAttribute('fill', level > 0 ? color : '#c8d8c8');
     if(labelEl){ labelEl.textContent = fcvRating ? `${fcvRating} Sensitivity` : '—'; labelEl.style.color = level > 0 ? color : 'var(--muted)'; }
     if(needEl) needEl.textContent = NEED_LABELS[fcvRating] || '';
+
+    // Responsiveness Gauge
+    const respLevel = LEVELS.findIndex(l => l.toLowerCase() === (fcvResponsivenessRating||'').toLowerCase()) + 1;
+    const respColor = LEVEL_COLORS[respLevel] || '#e8edf2';
+    const respArc = document.getElementById('fcv-resp-arc-fill');
+    const respLeaf = document.getElementById('fcv-resp-leaf-path');
+    const respLabel = document.getElementById('fcv-resp-rating-label');
+    const respNeed = document.getElementById('fcv-resp-need-label');
+    if(respArc){ const filled = respLevel > 0 ? (respLevel/6)*ARC_LEN : 0; respArc.setAttribute('stroke-dasharray',`${filled} ${ARC_LEN}`); respArc.setAttribute('stroke',respColor); }
+    if(respLeaf) respLeaf.setAttribute('fill', respLevel > 0 ? respColor : '#c8d8c8');
+    if(respLabel){ respLabel.textContent = fcvResponsivenessRating ? `${fcvResponsivenessRating} Responsiveness` : '—'; respLabel.style.color = respLevel > 0 ? respColor : 'var(--muted)'; }
+    if(respNeed) respNeed.textContent = NEED_LABELS[fcvResponsivenessRating] || '';
 
     // Priority overview widget
     const povEl = document.getElementById('pov-sb');
@@ -2567,7 +2621,10 @@ ${md(execSummary)}`;
         return `<div class="pov-row" onclick="showPriority(${i})">
           <div class="pov-num ${isDone?'done':isActive?'active':''}">${isDone?'✓':i+1}</div>
           <div class="pov-label">${esc(label)}</div>
-          ${pr.risk_level?`<span class="pov-risk ${riskCls}">${esc(pr.risk_level)}</span>`:''}
+          <div style="display:flex;align-items:center;gap:3px">
+            ${pr.risk_level?`<span class="pov-risk ${riskCls}">${esc(pr.risk_level)}</span>`:''}
+            ${pr.tag?renderSRTagBadge(pr.tag,true):''}
+          </div>
         </div>`;
       }).join('');
     }
@@ -2598,6 +2655,7 @@ ${md(execSummary)}`;
         <span class="pi-num">${i+1}</span>
         <span class="pi-title">${esc(title)}</span>
         ${risk ? `<span class="pi-risk ${riskCls(pr.risk_level)}">${esc(risk)}</span>` : ''}
+        ${pr.tag ? renderSRTagBadge(pr.tag,true) : ''}
       </div>`;
     }).join('');
     el.innerHTML = `<div class="priorities-section-hdr">Strategic Priorities</div><div class="priorities-intro ani">
@@ -2617,7 +2675,10 @@ ${md(execSummary)}`;
       return `<div class="ps-step ${i===currentPriority?'active':''}" id="ps-${i}" onclick="showPriority(${i})" title="${esc(pr.title)}">
         <div class="ps-num">${i+1}</div>
         <div class="ps-label">${esc(fullTitle)}</div>
-        ${riskLbl?`<div class="ps-risk ${riskCls}">${riskLbl}</div>`:''}
+        <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;justify-content:center">
+          ${riskLbl?`<div class="ps-risk ${riskCls}">${riskLbl}</div>`:''}
+          ${pr.tag?renderSRTagBadge(pr.tag,true):''}
+        </div>
       </div>`;
     }).join('');
   }
@@ -2661,7 +2722,7 @@ ${md(execSummary)}`;
         <div class="priority-card-hdr">
           <div class="pc-num-badge">${idx+1}</div>
           <div>
-            <div class="pc-hdr-eyebrow">Priority ${idx+1} of ${n} · ${esc(pr.dimension||'')}</div>
+            <div class="pc-hdr-eyebrow">Priority ${idx+1} of ${n} · ${esc(pr.dimension||'')}${renderSRTagBadge(pr.tag||'')}</div>
             <div class="pc-hdr-title">${md(pr.title.replace(/^Priority\s+\d+\s*[·•]\s*/i,''))}</div>
             <div class="pc-hdr-chips">
               <span class="pc-chip ${riskClass}">Risk: ${esc(pr.risk_level||'—')}</span>
