@@ -34,13 +34,26 @@ static/               # Static assets (if any)
 
 ```
 STAGE 1 — Identifying FCV Risks
-├─ Input: Project document (PAD/PCN/PID) + contextual docs (RRA, country risk assessments)
+├─ Input: Project document (any stage: Concept Note, PID, PCN, PAD, restructuring/AF draft)
+│         + optional contextual docs (RRA, country risk assessments — 1–2 recommended)
 ├─ Output: Part A (project doc extract) + Part B (contextualized analysis)
+├─ Automated FCV Web Research (runs before LLM generation):
+│  ├─ extract_country_name() — LLM call to identify country from project doc (first 4000 chars)
+│  ├─ extract_sector_name()  — LLM call to identify primary sector from project doc
+│  ├─ run_fcv_web_research(country, sector) — Anthropic web_search tool, 9 searches, up to 5500 tokens
+│  ├─ Research cached in-memory by "country::sector" key
+│  ├─ Research brief injected into Stage 1 context as supplemental Part B material
+│  └─ Research brief shown as collapsible dropdown at TOP of Stage 1 output (above main content)
+├─ Three-tier citation priority:
+│  ├─ Tier 1 — Uploaded contextual docs: [From: document name] (highest precedence)
+│  ├─ Tier 2 — Automated web research: [From: web research] or named source
+│  └─ Tier 3 — Training knowledge: [From: training knowledge] or named org/report
 ├─ Prompt behavior:
 │  ├─ Part A: Extract *only* from project doc; no outside knowledge
-│  ├─ Part B: Use contextual docs first [From: doc name], supplement with training knowledge [From: training knowledge]
-│  └─ Large docs (>800k chars) pre-processed by LLM extraction
-└─ UI: Two collapsible sections + refine input box
+│  ├─ Part B: Use tiers 1→2→3 in strict priority order; always label the source tier
+│  └─ Large docs (>150k chars) pre-processed by LLM FCV extraction; docs >500k chars truncated
+└─ UI: Stage header + research brief dropdown (top) + main output card + refine input box
+   Loading note: Stage 1 shows "may take 60–90 seconds" due to web research phase
 
 STAGE 2 — FCV-Sensitivity Screening
 ├─ Input: Stage 1 output
@@ -52,7 +65,7 @@ STAGE 2 — FCV-Sensitivity Screening
 │  ├─ Economic Livelihoods
 │  └─ Resilience
 ├─ Prompt includes specific location callouts and evidence-based reasoning
-└─ UI: Rating table + dimension explanations
+└─ UI: Rating table + dimension explanations + refine input box
 
 STAGE 3 — Identifying Project Gaps
 ├─ Input: Stages 1–2 output
@@ -62,19 +75,33 @@ STAGE 3 — Identifying Project Gaps
 │  ├─ Part C: Do No Harm Checklist (structured table with Yes/Partial/No + evidence)
 │  └─ Part D: Analytical quality check
 ├─ Prompt enforces geographic specificity and operational grounding
-└─ UI: Collapsible sections + expandable Do-No-Harm checklist
+└─ UI: Collapsible sections + expandable Do-No-Harm checklist rendered from Part C table
 
 STAGE 4 — Recommendations Note + Explorer
-├─ Input: Stages 1–3 output
-├─ Output:
-│  ├─ Preamble (overview of FCV sensitivity + strengths)
-│  ├─ Executive Summary (main findings)
-│  ├─ Structured priorities (5–7 key priorities with: title, dimension, risk level, the gap, why it matters, suggested directions)
-│  │  └─ Wrapped in %%%PRIORITY_START/END%%% delimiters for parsing
-│  └─ FCV Rating (0–100 sensitivity score)
-├─ Technical Annex removed (replaced by on-demand Explorer)
+├─ Input: Stages 1–3 output (conversation history)
+├─ Output (structured with delimiters for frontend parsing):
+│  ├─ Preamble (50–75 words: overview of FCV sensitivity)
+│  ├─ Executive Summary:
+│  │  ├─ Opening Assessment (1 bold sentence, 25–35 words)
+│  │  ├─ Operational Context (150–200 words)
+│  │  ├─ FCV Risk Exposure (%%%RISK_EXPOSURE_START/END%%% delimiters):
+│  │  │  ├─ RISKS_TO_PROJECT (60–85 words, plain language)
+│  │  │  └─ RISKS_FROM_PROJECT (60–85 words, plain language)
+│  │  ├─ Strengths (80–120 words)
+│  │  ├─ Gaps (100–130 words)
+│  │  └─ FCV Design Assessment Table (%%%GAP_TABLE_START/END%%% delimiters):
+│  │     └─ 6 OST recommendations — each with STATUS, GAP, RISK fields
+│  ├─ FCV Sensitivity Rating (%%%FCV_RATING: [level]%%% line):
+│  │  └─ Scale: Extremely Low | Very Low | Low | Adequate | Well Embedded | Very Well Embedded
+│  └─ Strategic Priorities (4–5, each in %%%PRIORITY_START/END%%% delimiters):
+│     └─ Fields: TITLE, FCV_DIMENSION, RISK_LEVEL, THE_GAP, WHY_IT_MATTERS,
+│                SUGGESTED_DIRECTIONS, WHO_ACTS, WHEN, RESOURCES
+├─ Citation policy: ONLY cite documents that appear as [From: doc name] in Stage 1.
+│  NEVER fabricate document titles. Non-uploaded sources → [From: training knowledge] or
+│  [From: web research]. This prevents hallucinated citations (e.g. [RRA 2022] when no RRA uploaded).
 └─ UI:
-   ├─ Main output card (preamble + exec summary + FCV gauge)
+   ├─ Main output card (preamble + exec summary + FCV Risk Exposure + Strengths + Gaps + Assessment Table)
+   ├─ FCV Rating gauge (sidebar)
    ├─ Priority cards (horizontal stepper, shows one at a time)
    ├─ Per-priority zone: gap, why_it_matters, suggested_directions + explorer options
    └─ "Explore FCV-Sensitive Solutions" panel (loaded async)
@@ -175,17 +202,35 @@ DEFAULT_PROMPTS = {
 
 ### 3.2 Stage 1: "Identifying FCV Risks"
 
-**Purpose:** Extract FCV-relevant content from uploaded project and contextual documents.
+**Purpose:** Extract FCV-relevant content from uploaded project and contextual documents, enriched by automated web research.
+
+**Input:** Any project document at any preparation stage (Concept Note, PID, PCN, PAD, restructuring/AF draft). Optionally 1–2 contextual documents (RRA, country risk report, etc.).
+
+**Automated FCV web research phase (runs before LLM generation):**
+1. `extract_country_name()` — brief LLM call to identify project country (first 4000 chars)
+2. `extract_sector_name()` — brief LLM call to identify primary project sector
+3. `run_fcv_web_research(country, sector)` — Anthropic web_search tool, 9 targeted searches, up to 5500 tokens
+   - Covers: conflict/security, governance, humanitarian, economic, FCV actors, structural drivers, vulnerable groups, regional dimensions, **sector-specific FCV considerations**
+   - Results cached in-memory by `"country::sector"` key; lost on server restart
+4. Research brief injected into Stage 1 context as supplemental material
+5. Research brief shown as collapsible dropdown at TOP of Stage 1 output (labeled "Automated FCV risk briefing — general country & sector insights")
+
+**Three-tier citation priority:**
+- Tier 1 — Uploaded contextual docs: `[From: document name]` (highest precedence)
+- Tier 2 — Automated web research: `[From: web research]` or named source (e.g. `[From: ICG]`)
+- Tier 3 — Training knowledge: `[From: training knowledge]` or named org/report
 
 **Key behaviors:**
-- Part A: "Extract only from the project document (PAD, PCN, or PID). Do not bring in outside knowledge."
-- Part B: "Use any uploaded contextual documents first, citing them as [From: document name]. Supplement with training knowledge as [From: training knowledge]."
+- Part A: Extract only from the project document. No outside knowledge.
+- Part B: Use tiers 1→2→3 in strict priority order; always label the source tier at each point.
 - Both parts are strictly separated in the output.
 
 **Large document handling:**
-- Documents > 150,000 characters are first condensed via LLM extraction step to preserve FCV-relevant content while fitting in context.
-- Documents > 500,000 characters are truncated to MAX_DOC_CHARS to respect API limits.
-- Truncation warnings are shown to users so they know if a document was summarized or truncated.
+- Documents > 150,000 characters are condensed via LLM extraction (FCV-relevant content only).
+- Documents > 500,000 characters are truncated to MAX_DOC_CHARS.
+- Truncation warnings shown to users when triggered.
+
+**Loading time note:** Stage 1 loading card shows "may take 60–90 seconds" to set expectations for the web research phase.
 
 **User refine loop:** After Stage 1 displays, users can use a refine box to:
 - Correct misreadings
@@ -224,28 +269,62 @@ DEFAULT_PROMPTS = {
 
 **Main Output (Recommendations Note):**
 ```
-[Preamble: Overview of project's FCV sensitivity, key context]
+[Preamble: 50–75 words on project FCV sensitivity context]
 
-[Executive Summary: Main findings on strengths, gaps, and priority areas]
-
-[5–7 Priority cards, each with:
-  - Title (e.g., "Strengthen state legitimacy in service delivery")
-  - FCV Dimension (e.g., "Institutional Legitimacy")
-  - Risk Level (e.g., "High")
-  - The Gap (what's missing from the project design/implementation)
-  - Why It Matters (consequence if not addressed)
-  - Suggested Directions (prose, operational entry points)
+[Executive Summary:
+  - Opening Assessment (1 bold sentence)
+  - Operational Context (150–200 words)
+  - FCV Risk Exposure (plain language, 2 paragraphs):
+      RISKS_TO_PROJECT: How FCV dynamics threaten project delivery
+      RISKS_FROM_PROJECT: How project design could worsen fragility
+  - Strengths (80–120 words)
+  - Gaps (100–130 words)
+  - FCV Design Assessment Table (6 OST recommendations, STATUS/GAP/RISK per recommendation)
 ]
 
-[FCV Rating: 0–100 sensitivity score]
+[FCV Sensitivity Rating — one of:
+  Extremely Low | Very Low | Low | Adequate | Well Embedded | Very Well Embedded]
+
+[4–5 Strategic Priority cards, each with:
+  - TITLE: Priority N · [Actionable verb phrase]
+  - FCV_DIMENSION: one of the 6 dimensions
+  - RISK_LEVEL: High | Medium | Low
+  - THE_GAP: 2–3 sentences
+  - WHY_IT_MATTERS: 2–3 sentences (operational + FCV dimensions combined)
+  - SUGGESTED_DIRECTIONS: 2–3 sentences in consultative prose
+  - WHO_ACTS: TTL | PIU | Government counterpart | FCV specialist | Procurement team
+  - WHEN: At design stage | Before appraisal | During implementation
+  - RESOURCES: Minimal | Moderate | Significant
+]
 ```
 
-**Priorities are wrapped in delimiters** for frontend parsing:
+**Delimiter formats for frontend parsing:**
 ```
+%%%RISK_EXPOSURE_START%%%
+RISKS_TO_PROJECT: [paragraph]
+RISKS_FROM_PROJECT: [paragraph]
+%%%RISK_EXPOSURE_END%%%
+
+%%%GAP_TABLE_START%%%
+REC_1_STATUS: [Strong | Partial | Weak | Not Addressed]
+REC_1_GAP: [one sentence]
+REC_1_RISK: [High | Medium | Low]
+... (REC_1 through REC_6)
+%%%GAP_TABLE_END%%%
+
+%%%FCV_RATING: [level]%%%
+
 %%%PRIORITY_START%%%
-{JSON: {title, dimension, risk_level, the_gap, why_it_matters, suggested_directions}}
+TITLE: Priority N · [phrase]
+FCV_DIMENSION: [dimension]
+... (all 9 fields)
 %%%PRIORITY_END%%%
 ```
+
+**Citation policy for Stage 4:**
+- ONLY cite documents that appeared as `[From: document name]` in Stage 1. NEVER fabricate titles.
+- Non-uploaded sources → `[From: training knowledge]` or `[From: web research]`
+- This prevents hallucinated citations (e.g., citing `[RRA 2022]` when no RRA was uploaded)
 
 **Explorer input:** Each priority's JSON is fed to the Explorer prompt, which generates 3–5 concrete design options (A/B/C/D/E) with:
 - Title + operational context
@@ -559,7 +638,9 @@ This disclaimer is prepended to all Stage 4 outputs via the `DO_NO_HARM_HEADER` 
 ### 10.1 Current Limitations
 - **localStorage scope:** Sessions are browser/device-specific; no team sharing or long-term archival
 - **Rate limiting:** LLM calls are not rate-limited; high-volume usage could hit API throttles
-- **Large PDFs:** Documents >800k chars are truncated; very large projects may lose nuance
+- **Large PDFs:** Documents >500k chars are truncated; very large projects may lose nuance
+- **Citation hallucination risk:** Stage 4 prompt now explicitly prohibits fabricating document citations (e.g. [RRA 2022] when no RRA was uploaded). If the Stage 4 prompt is modified, ensure this guard is preserved.
+- **Research cache is in-process:** Web research results are cached in memory per "country::sector" key; cache is lost on server restart. Repeat runs with same country+sector pair use cached results.
 - **Accessibility:** Some frontend components could be more accessible (ARIA labels, keyboard navigation)
 - **Mobile:** UI is desktop-optimized; mobile experience is limited
 
