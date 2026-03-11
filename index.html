@@ -1203,6 +1203,62 @@
     .pc-num-badge{font-family:'Inter',sans-serif!important;font-weight:700!important}
 
   </style>
+<style>
+  /* ── FCV Sensitivity vs Responsiveness cards ───────────────────────────── */
+  .sensitivity-responsiveness-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 20px 0;
+  }
+  @media (max-width: 768px) {
+    .sensitivity-responsiveness-grid { grid-template-columns: 1fr; }
+  }
+  .sr-card {
+    border-left: 3px solid;
+    border-radius: 0 8px 8px 0;
+    padding: 16px 20px;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .sr-card.sensitivity { border-left-color: #0050A0; }
+  .sr-card.responsiveness { border-left-color: #16A34A; }
+  .sr-card-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: #64748B;
+    margin-bottom: 8px;
+  }
+  .sr-card p { font-size: 14px; line-height: 1.7; margin: 0; }
+
+  /* ── S/R tag pill badges ───────────────────────────────────────────────── */
+  .sr-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-left: 8px;
+  }
+  .sr-tag.sensitivity {
+    background: #EBF2FA;
+    color: #0050A0;
+    border: 1px solid #BFDBFE;
+  }
+  .sr-tag.responsiveness {
+    background: #DCFCE7;
+    color: #16A34A;
+    border: 1px solid #86EFAC;
+  }
+  .sr-tag.both {
+    background: #F1F5F9;
+    color: #1A202C;
+    border: 1px solid #CBD5E1;
+  }
+</style>
 </head>
 <body>
 
@@ -1942,7 +1998,7 @@
             }
             if(p.preprocess){const el=document.getElementById('s-out');if(el)el.innerHTML=`<div style="display:flex;align-items:center;gap:10px;color:var(--muted);font-style:italic;padding:12px 0"><svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;animation:spin 1s linear infinite;flex-shrink:0"><circle cx="12" cy="12" r="10" stroke-opacity=".25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-opacity="1"/></svg>${esc(p.preprocess)}</div>`}
             if(p.chunk){streamed+=p.chunk;const el=document.getElementById('s-out');if(el)el.innerHTML=md(streamed)}
-            if(p.done){hist=p.history||hist;curS=stage;stageOutputs[stage]=p.result;stageHists[stage]=hist.slice();updateSessionBar();if(stage===4){stageGapTable=p.gap_table||null;stageRiskExposure=p.risk_exposure||null;}renderOut(stage,p.result,followOn);setStepper(stage,'done');
+            if(p.done){hist=p.history||hist;curS=stage;stageOutputs[stage]=p.result;stageHists[stage]=hist.slice();updateSessionBar();if(stage===4){stageGapTable=p.gap_table||null;stageRiskExposure=p.risk_exposure||null;stageSensitivitySummary=p.sensitivity_summary||'';stageResponsivenessSummary=p.responsiveness_summary||'';}renderOut(stage,p.result,followOn);setStepper(stage,'done');
               // Research brief panel for Stage 1
               if(stage===1){
                 if(p.research_brief) researchBrief=p.research_brief;
@@ -2014,22 +2070,46 @@
     }
   }
 
+  function renderSRTagBadge(tag) {
+    if (!tag) return '';
+    const cls = tag === '[S]' ? 'sensitivity' : tag === '[R]' ? 'responsiveness' : 'both';
+    const label = tag === '[S]' ? 'Sensitivity' : tag === '[R]' ? 'Responsiveness' : 'S + R';
+    return `<span class="sr-tag ${cls}">${label}</span>`;
+  }
+
+  function renderSRCards(sensitivityText, responsivenessText) {
+    if (!sensitivityText && !responsivenessText) return '';
+    return `
+      <div class="sensitivity-responsiveness-grid">
+        <div class="sr-card sensitivity">
+          <div class="sr-card-label">FCV SENSITIVITY</div>
+          <p>${esc(sensitivityText)}</p>
+        </div>
+        <div class="sr-card responsiveness">
+          <div class="sr-card-label">FCV RESPONSIVENESS</div>
+          <p>${esc(responsivenessText)}</p>
+        </div>
+      </div>`;
+  }
+
   function renderGapTable(gapTable) {
     if (!gapTable || !gapTable.length) return '';
     const statusClass = s => s === 'Strong' ? 'status-strong' : s === 'Partial' ? 'status-partial' : s === 'Weak' ? 'status-weak' : 'status-none';
     const riskDot = r => `<span class="risk-dot ${r==='High'?'dot-h':r==='Medium'?'dot-m':'dot-l'}"></span>${esc(r)}`;
+    const typeTag = {1:'[S]', 2:'[S]', 3:'[S+R]', 4:'[S]', 5:'[S]', 6:'[S+R]'};
     const rows = gapTable.map(row => `
       <tr>
         <td><span class="rec-name">${row.rec_num} · ${esc(row.rec_name)}</span></td>
         <td><span class="status-pill ${statusClass(row.status)}">${esc(row.status)}</span></td>
         <td class="gap-note">${esc(row.gap)}</td>
         <td>${riskDot(row.risk)}</td>
+        <td>${renderSRTagBadge(typeTag[row.rec_num]||'')}</td>
       </tr>`).join('');
     return `
       <div class="exec-section-lbl">FCV Design Assessment — Six Recommendations</div>
       <p class="gap-table-caption">The table below highlights key gaps based on the six pillars of the FCV-sensitivity in the Operational Support Team's Manual for project design and delivery in FCV.</p>
       <table class="gap-table">
-        <thead><tr><th>OST FCV Priority</th><th>Status</th><th>Key gap</th><th>Risk</th></tr></thead>
+        <thead><tr><th>OST FCV Priority</th><th>Status</th><th>Key gap</th><th>Risk</th><th>Type</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>`;
   }
@@ -2096,7 +2176,7 @@
       const _sp=result.split(/(?=###\s*Strengths\b)/i);
       const _pre=_sp[0]||result;
       const _rest=_sp[1]||'';
-      _outBodyContent=md(_pre)+renderRiskExposure(stageRiskExposure)+md(_rest)+'<div id="priorities-intro"></div>';
+      _outBodyContent=md(_pre)+renderRiskExposure(stageRiskExposure)+md(_rest)+renderSRCards(stageSensitivitySummary,stageResponsivenessSummary)+renderGapTable(stageGapTable)+'<div id="priorities-intro"></div>';
     }else{_outBodyContent=md(result);}
     document.getElementById('stage-disp').innerHTML=`
       <div class="stage-hdr ani">
@@ -2485,6 +2565,8 @@ ${md(execSummary)}`;
   let stageHists = {};    // {stageNum: hist_snapshot} — used to restore history on goBack()
   let stageGapTable = null;
   let stageRiskExposure = null;
+  let stageSensitivitySummary = '';
+  let stageResponsivenessSummary = '';
 
   // ── Research brief state ───────────────────────────────────────────────────
   let researchBrief = '';
@@ -2661,7 +2743,7 @@ ${md(execSummary)}`;
         <div class="priority-card-hdr">
           <div class="pc-num-badge">${idx+1}</div>
           <div>
-            <div class="pc-hdr-eyebrow">Priority ${idx+1} of ${n} · ${esc(pr.dimension||'')}</div>
+            <div class="pc-hdr-eyebrow">Priority ${idx+1} of ${n} · ${esc(pr.dimension||'')}${renderSRTagBadge(pr.tag||'')}</div>
             <div class="pc-hdr-title">${md(pr.title.replace(/^Priority\s+\d+\s*[·•]\s*/i,''))}</div>
             <div class="pc-hdr-chips">
               <span class="pc-chip ${riskClass}">Risk: ${esc(pr.risk_level||'—')}</span>
