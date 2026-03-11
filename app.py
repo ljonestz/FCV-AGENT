@@ -200,13 +200,26 @@ Be specific — quote or reference the project document where possible. Note whe
 
 SENSITIVITY vs. RESPONSIVENESS CLASSIFICATION
 
-After completing the six-recommendation assessment, add a classification tag to each recommendation using these definitions:
+After completing the six-recommendation assessment, add a classification tag to each recommendation. Apply these definitions strictly — [S+R] must be earned, not assumed.
 
-[S] = Primarily relates to FCV Sensitivity (do-no-harm, contextual awareness, operational readiness)
-[R] = Primarily relates to FCV Responsiveness (addressing root drivers, building resilience, aligning to FCV Strategy pillars)
-[S+R] = Substantively relates to both
+[S] — FCV SENSITIVITY: The recommendation primarily concerns how the project operates in the FCV context. This includes: using RRA findings to inform design; adapting targeting, implementation arrangements, procurement, or service delivery modalities to FCV realities; ensuring stakeholder consultations reach excluded/marginalised groups; and building a risk framework that accounts for security conditions, institutional weakness, and elite capture. Shorthand: will the project avoid making things worse?
 
-Use the following pre-assigned default tags unless project-specific evidence strongly warrants overriding to [S+R]:
+[R] — FCV RESPONSIVENESS: The recommendation primarily concerns whether the project actively addresses root drivers of fragility or builds resilience, anchored to the four FCV Strategy pillars:
+- Pillar 1 (Preventing conflict): addressing exclusion, grievances, institutional illegitimacy, social cohesion
+- Pillar 2 (Crisis engagement): adaptive design, continuity of services under stress, resilience-building
+- Pillar 3 (Transition out of fragility): social contract renewal, state legitimacy, local private sector
+- Pillar 4 (Spillover mitigation): forced displacement, cross-border dynamics, regional resilience
+Shorthand: will the project actively help make things better along a fragility dimension?
+
+[S+R] — BOTH: Reserve for recommendations that GENUINELY serve both functions at the same time. The four legitimate overlap zones are:
+1. Inclusion and targeting: deliberately including conflict-affected, marginalised, or displaced populations simultaneously avoids harm (S) and addresses exclusion as a root driver of fragility (R, Pillar 1).
+2. Theory of change / PDO: when the FCV logic is substantively embedded in the project's stated objective — not just in the risk register — this crosses from sensitivity into responsiveness.
+3. M&E and adaptive management: tracking conflict indicators is sensitivity; using them to actively adapt scope and strengthen resilience in real time is responsiveness (Pillar 2). A recommendation qualifies for [S+R] only if it substantively addresses both monitoring for harm AND adaptive resilience-building.
+4. Citizen engagement / GRM: a robust GRM avoids unaddressed harm (S); if it is explicitly designed to feed back into government accountability and strengthen the state-citizen relationship, it becomes a Pillar 3 responsiveness feature.
+
+STRICT RULE: Most recommendations will be [S] or [R], not [S+R]. Do not use [S+R] because a recommendation vaguely touches both concepts. Use it only when the same design element demonstrably and substantively serves both purposes.
+
+Use the following pre-assigned default tags unless project-specific evidence strongly warrants a different classification:
 - Rec 1: [S]
 - Rec 2: [S]
 - Rec 3: [S+R]
@@ -255,11 +268,13 @@ For each gap identified in Part A, propose specific, actionable mitigations. Str
 **When:** [At design stage / Before appraisal / During implementation]
 **Resource level:** [Minimal — existing budget / Moderate — requires dedicated allocation / Significant — requires restructuring]
 
-For each mitigation measure in Part B, assign a TAG:
-[S] if the mitigation primarily improves FCV sensitivity (do no harm, contextual awareness, operational readiness)
-[R] if the mitigation primarily improves FCV responsiveness (addressing root drivers, building resilience, aligning to FCV Strategy pillars)
-[S+R] if it substantively addresses both
-Include this as a TAG column in the Part B table.
+For each mitigation measure in Part B, assign a TAG and include it as a TAG column in the table. Apply strictly — [S+R] must be earned, not assumed:
+
+[S] — The mitigation primarily improves how the project operates in the FCV context: using RRA findings, adapting implementation arrangements or targeting to FCV realities, strengthening conflict-sensitive stakeholder engagement, or improving risk management to account for security conditions and institutional weakness. Shorthand: avoids making things worse.
+
+[R] — The mitigation actively shifts the project toward addressing a root driver of fragility or building resilience, substantively linked to one of the four FCV Strategy pillars (Pillar 1: preventing conflict; Pillar 2: crisis engagement; Pillar 3: transition out of fragility; Pillar 4: spillover mitigation). Shorthand: actively helps make things better.
+
+[S+R] — Reserve for mitigations that genuinely serve both functions at the same time: e.g. deliberate inclusion of marginalised/displaced populations (avoids exclusion harm AND addresses Pillar 1 exclusion driver); embedding FCV logic substantively in the ToC/PDO (not just the risk register); adaptive M&E that both monitors for harm and strengthens resilience in real time; a GRM designed to feed back into government accountability (Pillar 3). Most mitigations will be [S] or [R] — do not use [S+R] because a measure vaguely touches both concepts.
 
 Explain any technical WBG mechanisms briefly in plain language the first time they appear — e.g. if recommending a CERC, add: "(a zero-dollar contingency component that can be activated rapidly during crises without Board approval)".
 
@@ -306,7 +321,7 @@ Produce 2-3 opportunities only. Every opportunity must be grounded in this proje
 ### Top 5 Priority Actions
 List the five most important actions, in priority order. Each should be a single, direct sentence naming the specific action and where it should happen (PAD section, POM, ESCP, etc.).
 
-For each of the Top 5 Priority Actions in Part E, append a tag: [S], [R], or [S+R] using the same definitions as above.
+For each of the Top 5 Priority Actions in Part E, append a tag — [S], [R], or [S+R] — using the same strict definitions as above. Most actions will be [S] or [R]. Use [S+R] only for actions that demonstrably serve both the do-no-harm function and an active fragility-reduction function at the same time.
 
 ### Overall FCV Integration Rating
 **Rating:** [Strong / Adequate / Weak / Absent]
@@ -443,11 +458,17 @@ Wrap each priority block in delimiter tags. Use EXACTLY this format — every fi
 %%%PRIORITY_START%%%
 TITLE: Priority N · [Actionable verb phrase]
 FCV_DIMENSION: [dimension]
-TAG: [S], [R], or [S+R]
-- [S] if the priority primarily relates to improving FCV sensitivity (do no harm, contextual awareness, operational readiness)
-- [R] if the priority primarily relates to improving FCV responsiveness (addressing root drivers, resilience, FCV Strategy pillars)
-- [S+R] if it substantively addresses both
-Output a single tag label only — not a paragraph.
+TAG: Output EXACTLY one of: [S] / [R] / [S+R]
+
+Apply the following definitions strictly. [S+R] must be earned — do not use it by default.
+
+[S] — This priority primarily concerns HOW the project operates in the FCV context. Indicators: improving use of RRA/diagnostic findings; adapting targeting, implementation arrangements, procurement, or service delivery to the FCV context; strengthening conflict-sensitive stakeholder engagement; improving the risk framework to account for security conditions, institutional weakness, or elite capture. Shorthand: will this priority help the project avoid making things worse?
+
+[R] — This priority actively addresses a root driver of fragility or builds resilience, substantively linked to one of the four FCV Strategy pillars: Pillar 1 (preventing conflict — exclusion, grievances, institutional illegitimacy, social cohesion); Pillar 2 (crisis engagement — adaptive design, service continuity under stress, resilience-building); Pillar 3 (transition out of fragility — social contract renewal, state legitimacy, local private sector); Pillar 4 (spillover mitigation — displacement, cross-border dynamics, regional resilience). Shorthand: will this priority actively help make fragility dynamics better?
+
+[S+R] — Reserve ONLY for priorities that genuinely and substantively serve both functions simultaneously. The four legitimate overlap zones are: (1) inclusion/targeting of conflict-affected or displaced populations — avoids exclusion harm (S) AND addresses exclusion as a root driver (R, Pillar 1); (2) embedding FCV logic substantively in the ToC/PDO framing, not just the risk register; (3) adaptive M&E that both monitors for harm AND adapts project scope to strengthen resilience in real time (Pillar 2); (4) a GRM or citizen engagement mechanism designed explicitly to strengthen government accountability and the state-citizen relationship (Pillar 3). If in doubt, assign [S] or [R] — most priorities will not qualify for [S+R].
+
+Output the tag label only — no explanation.
 RISK_LEVEL: [level]
 THE_GAP: [2-3 sentences]
 WHY_IT_MATTERS: [2-3 sentences — operational + FCV dimensions combined]
