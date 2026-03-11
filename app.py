@@ -695,6 +695,235 @@ def extract_priorities(text):
     return priorities
 
 
+# ── Document type detection ───────────────────────────────────────────────────
+
+DOCUMENT_TYPE_DETECTION_PROMPT = """You are a World Bank document classifier. Based on the text below, classify this document into exactly one of the following types:
+
+- PCN (Project Concept Note)
+- PID (Project Information Document)
+- PAD (Project Appraisal Document)
+- AF (Additional Financing document)
+- Restructuring (Restructuring Paper)
+- ISR (Implementation Status and Results Report)
+- Unknown (if none of the above fit)
+
+Look for: explicit document type labels in the title or header; stage-specific sections (detailed results frameworks + cost tables + procurement plan suggest PAD; DO rating + IP rating suggest ISR; "Additional Financing" in title suggests AF; references to component changes/reallocation suggest Restructuring; early-stage language with limited implementation detail suggests PCN; pre-appraisal basic description suggests PID).
+
+Return ONLY the document type label from the list above — no explanation, no punctuation, no extra words.
+
+Document text:
+"""
+
+
+def detect_document_type_from_text(text: str, api_client) -> str:
+    """Classify a project document into one of the standard WBG document types."""
+    snippet = text[:5000]
+    try:
+        resp = api_client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=20,
+            messages=[{
+                "role": "user",
+                "content": DOCUMENT_TYPE_DETECTION_PROMPT + snippet
+            }]
+        )
+        result = resp.content[0].text.strip().strip('.').strip('"').strip("'")
+        valid = {'PCN', 'PID', 'PAD', 'AF', 'Restructuring', 'ISR', 'Unknown'}
+        return result if result in valid else 'Unknown'
+    except Exception:
+        return 'Unknown'
+
+
+def build_doc_type_context(document_type: str, stage: int) -> str:
+    """Return a stage-specific context preamble for the given document type.
+
+    Returns an empty string for Unknown (no adaptation applied).
+    The returned string is prepended to the stage system prompt so that the
+    LLM adapts its analysis depth, scrutiny, framing, and tone accordingly.
+    """
+    if not document_type or document_type == 'Unknown':
+        return ''
+
+    labels = {
+        'PCN': 'PCN (Project Concept Note)',
+        'PID': 'PID (Project Information Document)',
+        'PAD': 'PAD (Project Appraisal Document)',
+        'AF': 'AF (Additional Financing)',
+        'Restructuring': 'Restructuring Paper',
+        'ISR': 'ISR (Implementation Status and Results Report)',
+    }
+    label = labels.get(document_type, document_type)
+
+    stage_instructions = {
+        1: {
+            'PCN': (
+                "RESEARCH DEPTH: Maximum. Design is still fluid — conduct broader contextual research "
+                "covering historical FCV drivers, subnational variation, and potential future conflict "
+                "trajectories. Flag if the project's geographic or sectoral scope may inadvertently "
+                "exclude conflict-affected populations or regions. Do not limit analysis to currently "
+                "stated project scope — probe structural questions the document has not yet addressed."
+            ),
+            'PID': (
+                "RESEARCH DEPTH: Moderate. The document is post-PCN but pre-appraisal. Focus on "
+                "validating stated risks against current data. If major FCV risks are absent from the "
+                "document, flag them prominently as preparation priorities."
+            ),
+            'PAD': (
+                "RESEARCH DEPTH: Targeted. The design is largely locked. Accept the project's stated "
+                "scope and risk framing. Focus research on validating current risk ratings and checking "
+                "for overlooked recent developments that could affect implementation."
+            ),
+            'AF': (
+                "RESEARCH DEPTH: Change-focused. Concentrate on what has changed since the original "
+                "project was designed — new risks, shifts in conflict dynamics, and lessons from "
+                "implementation so far. Explicitly surface: What FCV issues emerged during "
+                "implementation of the original project?"
+            ),
+            'Restructuring': (
+                "RESEARCH DEPTH: Diagnostic. Focus on why the restructuring is happening — is it due "
+                "to FCV shocks, implementation bottlenecks, or changing government priorities? Assess "
+                "whether the proposed changes are FCV-informed or purely reactive."
+            ),
+            'ISR': (
+                "RESEARCH DEPTH: Implementation-focused. Research recent FCV developments that may "
+                "affect ongoing implementation. Validate current risk flags already noted in the ISR "
+                "against the latest available data. Do not revisit original design rationale."
+            ),
+        },
+        2: {
+            'PCN': (
+                "SCRUTINY LEVEL: Maximum. Apply rigorous scrutiny across all six FCV-sensitivity "
+                "dimensions. Flag any dimension rated below 'Moderate' as requiring fundamental design "
+                "rethinking — not just incremental tweaks. Probe explicitly whether the theory of "
+                "change is FCV-informed or generic development logic. This is the moment to raise "
+                "fundamental questions."
+            ),
+            'PID': (
+                "SCRUTINY LEVEL: Moderate. Apply substantive scrutiny but accept that some design "
+                "parameters are now set. Highlight critical gaps (especially on inclusion and social "
+                "cohesion) while recognising that wholesale redesign is unlikely."
+            ),
+            'PAD': (
+                "SCRUTINY LEVEL: Light. The design is finalised. Do not question the theory of change "
+                "at this stage. Flag only critical FCV blindspots that could materially derail "
+                "implementation. Focus on what can still be adjusted in the Operations Manual, citizen "
+                "engagement framework, or M&E plan."
+            ),
+            'AF': (
+                "SCRUTINY LEVEL: Dual-track. Screen both the original project design (briefly) and "
+                "the proposed AF scope. Flag explicitly if the AF is simply scaling a design that was "
+                "FCV-blind, versus using the AF as an opportunity to course-correct past gaps."
+            ),
+            'Restructuring': (
+                "SCRUTINY LEVEL: Change-focused. Screen the proposed restructuring specifically. "
+                "Assess whether the restructuring is FCV-responsive or inadvertently increasing FCV "
+                "risk — for example, by reallocating resources away from conflict-affected areas or "
+                "removing safeguard components."
+            ),
+            'ISR': (
+                "SCRUTINY LEVEL: Performance-focused. Screen the project's implementation performance "
+                "against FCV sensitivity — not the original design. Flag if FCV risks are manifesting "
+                "in low DO/IP ratings, safeguard issues, stakeholder complaints, or M&E gaps. "
+                "Do not re-examine the original theory of change."
+            ),
+        },
+        3: {
+            'PCN': (
+                "GAP FRAMING: Design opportunities. Frame all gaps as structural redesign openings, "
+                "not deficiencies. Propose bold mitigations: component redesign, alternative "
+                "beneficiary targeting, alternative implementation modalities (community-driven "
+                "development, local CSO partnerships). The Do-No-Harm checklist should include "
+                "early-stage safeguards: stakeholder mapping, conflict analysis integration into "
+                "preparation, and theory-of-change stress-testing."
+            ),
+            'PID': (
+                "GAP FRAMING: Preparation priorities. Frame gaps as things that can still be "
+                "integrated before appraisal. Propose mitigations that do not require wholesale "
+                "redesign: targeted consultations, adding FCV-sensitive monitoring indicators, "
+                "adjusting procurement or fiduciary arrangements. The Do-No-Harm checklist should "
+                "focus on what analytical work and stakeholder engagement is still possible."
+            ),
+            'PAD': (
+                "GAP FRAMING: Implementation adjustments. Frame gaps as operational safeguards and "
+                "early supervision priorities — things embeddable in the Operations Manual, citizen "
+                "engagement framework, or M&E plan. Do not propose component redesign. The "
+                "Do-No-Harm checklist focuses on operational safeguards during implementation."
+            ),
+            'AF': (
+                "GAP FRAMING: Course-correction. Frame gaps as AF-specific opportunities to address "
+                "weaknesses from the original project. Propose concrete additions: new sub-components, "
+                "adjusted targeting, revised citizen engagement, updated safeguards. The Do-No-Harm "
+                "checklist should ask explicitly: Is the AF inadvertently reinforcing exclusion or "
+                "grievances from the original project?"
+            ),
+            'Restructuring': (
+                "GAP FRAMING: Restructuring design tweaks. Propose adjustments to the restructuring "
+                "itself: safeguards to add, consultation processes to embed, revised risk mitigation. "
+                "The Do-No-Harm checklist should ask: Will the restructuring create new grievances or "
+                "exacerbate exclusion?"
+            ),
+            'ISR': (
+                "GAP FRAMING: Supervision priorities and immediate actions. Propose mitigations that "
+                "are implementable now without formal restructuring: stakeholder re-engagement, M&E "
+                "adjustments, revised procurement or fiduciary controls, GRM improvements. The "
+                "Do-No-Harm checklist should ask: Are there active implementation practices "
+                "currently creating harm?"
+            ),
+        },
+        4: {
+            'PCN': (
+                "TONE: Exploratory and ambitious. Encourage the TTL to consider alternative "
+                "approaches rather than just optimising the current design. Explorer deep-dives should "
+                "offer alternative theories of change, cross-sectoral linkages, and adaptive "
+                "management frameworks. Recommendations should reflect that maximum flexibility "
+                "still exists."
+            ),
+            'PID': (
+                "TONE: Constructive and focused. Recommendations should prioritise integration points "
+                "before appraisal: analytical work still possible, stakeholder engagement, results "
+                "framework adjustments. Explorer deep-dives should focus on what can realistically "
+                "be integrated in the remaining preparation window."
+            ),
+            'PAD': (
+                "TONE: Pragmatic and precise. Focus recommendations on actionable Year 1 supervision "
+                "priorities — what the TTL should watch for in the first year of implementation, "
+                "which indicators to track closely, when to trigger adaptive measures. Explorer "
+                "deep-dives should focus on risk mitigation scenarios and operational contingencies, "
+                "not alternative designs."
+            ),
+            'AF': (
+                "TONE: Reflective and corrective. Recommendations should highlight lessons learned "
+                "from the original project and how the AF can integrate them. Explorer deep-dives "
+                "should offer concrete adaptive design elements addable via the AF instrument."
+            ),
+            'Restructuring': (
+                "TONE: Adaptive and alert. Recommendations should focus on what to monitor closely "
+                "during the restructured project period and what triggers should prompt further "
+                "action. Explorer deep-dives should include scenario planning for potential FCV "
+                "shocks during the remaining implementation period."
+            ),
+            'ISR': (
+                "TONE: Operational and immediate. Recommendations should be concrete supervision "
+                "actions: what to discuss at the next aide-memoire, which indicators to watch, "
+                "when to trigger a formal risk review or mid-term review. Explorer deep-dives should "
+                "be tactical, addressing specific implementation bottlenecks directly."
+            ),
+        },
+    }
+
+    instructions = stage_instructions.get(stage, {}).get(document_type, '')
+    if not instructions:
+        return ''
+
+    return (
+        f"DOCUMENT TYPE CONTEXT\n"
+        f"=====================\n"
+        f"Detected document type: {label}\n\n"
+        f"{instructions}\n"
+        f"=====================\n"
+    )
+
+
 def load_prompts():
     try:
         if os.path.exists(PROMPTS_FILE):
@@ -996,6 +1225,31 @@ def get_default_prompts():
     return jsonify(DEFAULT_PROMPTS)
 
 
+@app.route('/api/detect-document-type', methods=['POST'])
+def detect_document_type_route():
+    """Classify an uploaded project document into a standard WBG document type.
+
+    Accepts either:
+    - {'doc_text': '<plain text>'}  for text/DOCX files
+    - {'doc_b64': '<base64>', 'doc_name': '<filename>'}  for PDF files
+    """
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'Request body required'}), 400
+        if 'doc_b64' in data:
+            # PDF: extract text first, then classify
+            text, _ = extract_pdf_text(data['doc_b64'], data.get('doc_name', 'document.pdf'))
+        elif 'doc_text' in data:
+            text = data['doc_text']
+        else:
+            return jsonify({'error': 'doc_text or doc_b64 required'}), 400
+        doc_type = detect_document_type_from_text(text, client)
+        return jsonify({'document_type': doc_type})
+    except Exception as e:
+        return jsonify({'document_type': 'Unknown', 'error': str(e)})
+
+
 # ── Main analysis route ───────────────────────────────────────────────────────
 
 @app.route('/api/run-stage', methods=['POST'])
@@ -1009,6 +1263,7 @@ def run_stage():
         conversation_history = data.get('history', [])
         user_message = data.get('user_message', '').strip()
         prompt_override = data.get('prompt_override', '').strip()  # session-only override from frontend
+        document_type = data.get('document_type', 'Unknown').strip()
 
         MAX_ASSISTANT_CHARS = 40000
 
@@ -1067,12 +1322,18 @@ def run_stage():
                                   'needs_extraction': len(text) > EXTRACT_THRESHOLD})
 
             stage_prompt = prompt_override if prompt_override else get_prompt_for_stage(1)
+            doc_type_ctx = build_doc_type_context(document_type, 1)
+            if doc_type_ctx:
+                stage_prompt = doc_type_ctx + "\n\n" + stage_prompt
             # messages will be fully built inside generate() for stage 1
 
         elif user_message:
             messages.append({"role": "user", "content": user_message})
         else:
             stage_prompt = prompt_override if prompt_override else get_prompt_for_stage(stage)
+            doc_type_ctx = build_doc_type_context(document_type, stage)
+            if doc_type_ctx:
+                stage_prompt = doc_type_ctx + "\n\n" + stage_prompt
             messages.append({"role": "user", "content": stage_prompt})
 
         def generate():
