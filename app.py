@@ -96,7 +96,14 @@ Where does the project document's own risk picture align with or diverge from th
 - Part B: follow source priority strictly — uploaded docs first, then web research, then training knowledge; always label the tier at each point
 - Always clearly signal which Part and section you are in
 - Note when information is ambiguous, absent, or contradictory
-- Be specific — generic statements about fragility are not useful''',
+- Be specific — generic statements about fragility are not useful
+
+---
+
+# Document Type
+At the very end of your response, after all sections, output a single classifier line:
+%%%DOC_TYPE: [exactly one of: PCN / PID / PAD / AF / Restructuring / ISR / Unknown]%%%
+Identify what type of World Bank project document was uploaded as the primary project document.''',
 
 "2": '''# Role
 You are an FCV specialist conducting systematic screening analysis for World Bank projects using the WBG FCV Operational Manual framework.
@@ -379,30 +386,6 @@ Write a paragraph of 80-100 words assessing the project's overall FCV SENSITIVIT
 Write a paragraph of 80-100 words assessing the project's FCV RESPONSIVENESS — the degree to which it actively contributes to addressing root drivers of fragility and/or building resilience. Anchor this explicitly to whichever of the four FCV Strategy pillars are most relevant to this project's context and sector. Be honest: many projects will have low responsiveness scores. Say so clearly and explain what the missed opportunity is, rather than inflating the assessment.
 %%%RESPONSIVENESS_SUMMARY_END%%%
 
-After the two summary blocks, output a structured six-recommendation assessment table:
-
-# FCV Design Assessment Table
-%%%GAP_TABLE_START%%%
-REC_1_STATUS: [Strong / Partial / Weak / Not Addressed]
-REC_1_GAP: [key gap in one sentence or N/A if no significant gap]
-REC_1_RISK: [High / Medium / Low]
-REC_2_STATUS: [Strong / Partial / Weak / Not Addressed]
-REC_2_GAP: [key gap in one sentence or N/A if no significant gap]
-REC_2_RISK: [High / Medium / Low]
-REC_3_STATUS: [Strong / Partial / Weak / Not Addressed]
-REC_3_GAP: [key gap in one sentence or N/A if no significant gap]
-REC_3_RISK: [High / Medium / Low]
-REC_4_STATUS: [Strong / Partial / Weak / Not Addressed]
-REC_4_GAP: [key gap in one sentence or N/A if no significant gap]
-REC_4_RISK: [High / Medium / Low]
-REC_5_STATUS: [Strong / Partial / Weak / Not Addressed]
-REC_5_GAP: [key gap in one sentence or N/A if no significant gap]
-REC_5_RISK: [High / Medium / Low]
-REC_6_STATUS: [Strong / Partial / Weak / Not Addressed]
-REC_6_GAP: [key gap in one sentence or N/A if no significant gap]
-REC_6_RISK: [High / Medium / Low]
-%%%GAP_TABLE_END%%%
-
 ---
 
 ## STRATEGIC PRIORITIES
@@ -440,6 +423,17 @@ Before the first priority delimiter, output a single rating line:
 Where [level] is EXACTLY one of: Extremely Low | Very Low | Low | Adequate | Well Embedded | Very Well Embedded
 
 Base this on the project's CURRENT state of FCV integration — not the ideal state after applying these priorities.
+
+---
+
+# CRITICAL — FCV RESPONSIVENESS RATING
+Immediately after the FCV Sensitivity Rating line, output a second rating line:
+
+%%%FCV_RESPONSIVENESS_RATING: [level]%%%
+
+Where [level] is EXACTLY one of: Extremely Low | Very Low | Low | Adequate | Well Embedded | Very Well Embedded
+
+Base this on the project's current FCV RESPONSIVENESS — the degree to which it actively addresses root drivers of fragility or builds resilience through the four FCV Strategy pillars. Note: most projects will have a lower responsiveness rating than sensitivity rating; do not inflate this score.
 
 ---
 
@@ -489,7 +483,7 @@ These delimiters are parsed by the interface. Do not add text between %%%PRIORIT
 - Every priority has all 10 fields: TITLE, FCV_DIMENSION, TAG, RISK_LEVEL, THE_GAP, WHY_IT_MATTERS, SUGGESTED_DIRECTIONS, WHO_ACTS, WHEN, RESOURCES
 - %%%SENSITIVITY_SUMMARY_START%%% / %%%SENSITIVITY_SUMMARY_END%%% block is present (80-100 words)
 - %%%RESPONSIVENESS_SUMMARY_START%%% / %%%RESPONSIVENESS_SUMMARY_END%%% block is present (80-100 words)
-- %%%GAP_TABLE_START%%% / %%%GAP_TABLE_END%%% block is present with all 6 REC entries (STATUS, GAP, RISK each)
+- %%%FCV_RESPONSIVENESS_RATING:%%% line is present immediately after %%%FCV_RATING:%%%
 - 4-5 priorities total
 - Every priority names at least one specific geography, group, institution, or historical event
 - No generic or templated language anywhere
@@ -642,8 +636,9 @@ def clean_stage4_output(text):
     """
     # Remove all priority blocks — UI renders them via card system
     text = re.sub(r'%%%PRIORITY_START%%%.*?%%%PRIORITY_END%%%', '', text, flags=re.DOTALL)
-    # Remove FCV rating line
+    # Remove FCV rating lines
     text = re.sub(r'%%%FCV_RATING:[^%]*%%%\n?', '', text)
+    text = re.sub(r'%%%FCV_RESPONSIVENESS_RATING:[^%]*%%%\n?', '', text)
     # Remove gap table, risk exposure, and S/R summary blocks — UI renders them
     text = re.sub(r'%%%GAP_TABLE_START%%%.*?%%%GAP_TABLE_END%%%', '', text, flags=re.DOTALL)
     text = re.sub(r'%%%RISK_EXPOSURE_START%%%.*?%%%RISK_EXPOSURE_END%%%', '', text, flags=re.DOTALL)
@@ -662,6 +657,14 @@ def clean_stage4_output(text):
 def extract_fcv_rating(text):
     """Parse %%%FCV_RATING: [level]%%% from Stage 4 output."""
     m = re.search(r'%%%FCV_RATING:\s*([^%\n]+)%%%', text)
+    if m:
+        return m.group(1).strip()
+    return ''
+
+
+def extract_fcv_responsiveness_rating(text):
+    """Parse %%%FCV_RESPONSIVENESS_RATING: [level]%%% from Stage 4 output."""
+    m = re.search(r'%%%FCV_RESPONSIVENESS_RATING:\s*([^%\n]+)%%%', text)
     if m:
         return m.group(1).strip()
     return ''
@@ -1505,6 +1508,7 @@ def run_stage():
                 # Stage 4: extract priorities + rating from raw delimited text, then clean for display
                 priorities = []
                 fcv_rating = ''
+                fcv_responsiveness_rating = ''
                 gap_table = None
                 risk_exposure = None
                 sensitivity_summary = ''
@@ -1512,6 +1516,7 @@ def run_stage():
                 if stage == 4:
                     priorities = extract_priorities(full_text)
                     fcv_rating = extract_fcv_rating(full_text)
+                    fcv_responsiveness_rating = extract_fcv_responsiveness_rating(full_text)
                     gap_table = extract_gap_table(full_text)
                     risk_exposure = extract_risk_exposure(full_text)
                     sensitivity_summary = extract_sensitivity_summary(full_text)
@@ -1535,7 +1540,7 @@ def run_stage():
                 if len(updated_messages) > 20:
                     updated_messages = updated_messages[-20:]
 
-                yield f"data: {json.dumps({'done': True, 'result': full_text, 'history': updated_messages, 'stage': stage, 'priorities': priorities, 'fcv_rating': fcv_rating, 'gap_table': gap_table, 'risk_exposure': risk_exposure, 'sensitivity_summary': sensitivity_summary, 'responsiveness_summary': responsiveness_summary, 'research_brief': research_brief_text if stage == 1 else None, 'research_country': research_country if stage == 1 else None})}\n\n"
+                yield f"data: {json.dumps({'done': True, 'result': full_text, 'history': updated_messages, 'stage': stage, 'priorities': priorities, 'fcv_rating': fcv_rating, 'fcv_responsiveness_rating': fcv_responsiveness_rating, 'gap_table': gap_table, 'risk_exposure': risk_exposure, 'sensitivity_summary': sensitivity_summary, 'responsiveness_summary': responsiveness_summary, 'research_brief': research_brief_text if stage == 1 else None, 'research_country': research_country if stage == 1 else None})}\n\n"
 
             except anthropic.AuthenticationError:
                 yield f"data: {json.dumps({'error': 'Invalid API key.'})}\n\n"
