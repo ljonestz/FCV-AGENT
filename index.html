@@ -4,7 +4,7 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>FCV Sensitivity Project Screener · WBG FCV Analytics Unit</title>
-  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300;400;600;700&family=Source+Serif+4:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
@@ -33,10 +33,27 @@
       --shadow-sm: 0 1px 4px rgba(0,34,68,.08);
       --shadow-md: 0 4px 14px rgba(0,34,68,.10);
       --shadow-lg: 0 8px 28px rgba(0,34,68,.13);
+
+      /* Design-system tokens */
+      --color-navy:       #002244;
+      --color-navy-light: #003366;
+      --color-blue:       #0050A0;
+      --color-blue-soft:  #EBF2FA;
+      --color-bg:         #F5F7FA;
+      --color-surface:    #FFFFFF;
+      --color-border:     #E2E8F0;
+      --color-text:       #1A202C;
+      --color-text-muted: #64748B;
+      --color-success:    #16A34A;
+      --color-warning:    #D97706;
+      --color-danger:     #DC2626;
     }
 
     html{scroll-behavior:smooth}
-    body{font-family:'Source Sans 3',Arial,sans-serif;background:var(--off-white);color:var(--text);min-height:100vh;line-height:1.6;font-size:15px}
+    body{font-family:'Inter',sans-serif;background:var(--color-bg,#F5F7FA);color:var(--color-text,#1A202C);min-height:100vh;line-height:1.6;font-size:15px}
+    h1,h2,h3{font-family:'Inter',sans-serif;letter-spacing:-0.02em;font-weight:700}
+    .out-body h1,.out-body h2,.stage-title,.stage-badge,.pc-num-badge,.pc-hdr-title,.upload-intro-text h2{font-family:'Inter',sans-serif!important}
+    .btn,.refine-in,.prompt-edit,.pc-followup-input{font-family:'Inter',sans-serif}
 
     /* ── Skip link ── */
     .skip{position:absolute;top:-50px;left:0;background:var(--wbg-blue);color:#fff;padding:8px 16px;z-index:200;border-radius:0 0 4px 0;font-size:13px;text-decoration:none;transition:top .2s}
@@ -47,8 +64,10 @@
     ══════════════════════════════════════════ */
     .top-bar{
       background:var(--wbg-navy);
-      padding:6px 32px;
+      height:56px;
+      padding:0 32px;
       display:flex;align-items:center;justify-content:space-between;
+      position:sticky;top:0;z-index:100;
     }
     .top-bar-left{display:flex;align-items:center;gap:12px}
 
@@ -137,43 +156,40 @@
     .hero-chip svg{flex-shrink:0}
 
     /* ══════════════════════════════════════════
-       STEPPER
+       STEPPER — Tab-strip style
     ══════════════════════════════════════════ */
     .stepper-wrap{
-      max-width:860px;margin:28px auto 0;
-      padding:0 24px;
+      max-width:none;margin:0;padding:0;
+      background:#fff;
+      border-bottom:1px solid var(--color-border);
     }
     .stepper{
-      display:flex;background:#fff;
-      border:1px solid var(--border);
-      border-radius:var(--radius);
-      overflow:hidden;box-shadow:var(--shadow-sm);
+      max-width:860px;margin:0 auto;padding:0 24px;
+      display:flex;
+      background:transparent;border:none;border-radius:0;
+      overflow:visible;box-shadow:none;
     }
     .step{
-      flex:1;padding:13px 10px;
-      display:flex;flex-direction:column;align-items:center;gap:5px;
-      font-size:11px;font-weight:600;color:var(--muted);
-      border-right:1px solid var(--border);
-      transition:all .22s ease;
-      text-transform:uppercase;letter-spacing:.05em;
-      user-select:none;
+      flex:none;
+      height:44px;padding:0 20px;
+      display:flex;align-items:center;
+      font-size:13px;font-weight:500;
+      color:var(--color-text-muted);
+      border:none;
+      border-bottom:2px solid transparent;
+      border-right:none;
+      text-transform:none;letter-spacing:0;
+      user-select:none;cursor:default;
+      transition:color .18s,border-color .18s;
+      position:relative;top:1px;
     }
     .step:last-child{border-right:none}
-    .step-num{
-      width:24px;height:24px;border-radius:50%;
-      background:var(--border);
-      display:flex;align-items:center;justify-content:center;
-      font-size:12px;font-weight:700;color:var(--muted);
-      transition:all .22s ease;
-    }
-    .step.active{background:var(--wbg-navy);color:rgba(255,255,255,.85)}
-    .step.active .step-num{background:var(--wbg-blue);color:#fff}
-    .step.done{background:#f0f9f4;color:#1a7a4a}
-    .step.done .step-num{background:#1a7a4a;color:#fff;font-size:10px}
-    .step.done .step-num::after{content:'✓'}
-    .step.err{background:#fff5f5;color:#b91c1c}
-    .step.err .step-num{background:#ef4444;color:#fff;font-size:11px}
-    .step.err .step-num::after{content:'!'}
+    .step-num{display:none}
+    .step.active{color:var(--color-blue);font-weight:600;border-bottom:2px solid var(--color-blue);background:transparent}
+    .step.done{color:var(--color-success);background:transparent}
+    .step.done::before{content:'✓ '}
+    .step.err{color:var(--color-danger);background:transparent}
+    .step.err::before{content:'! '}
 
     /* ══════════════════════════════════════════
        MAIN CONTENT AREA
@@ -261,19 +277,26 @@
     .btn{
       display:inline-flex;align-items:center;gap:7px;
       border:none;border-radius:var(--radius-sm);
-      font-family:'Source Sans 3',Arial,sans-serif;
+      font-family:'Inter',sans-serif;
       font-size:14px;font-weight:600;cursor:pointer;
       transition:all .16s ease;letter-spacing:.01em;white-space:nowrap;
     }
-    .btn:focus-visible{outline:2px solid var(--wbg-blue);outline-offset:2px}
+    .btn:focus-visible{outline:2px solid var(--color-blue);outline-offset:2px}
     .btn:disabled{opacity:.4;cursor:not-allowed}
 
-    .btn-primary{background:var(--wbg-navy);color:#fff;padding:11px 24px;box-shadow:var(--shadow-sm)}
-    .btn-primary:hover:not(:disabled){background:#003366}
+    /* Tier 1: Primary */
+    .btn-primary{background:var(--color-navy)!important;color:#fff!important;padding:10px 20px!important;border-radius:6px!important;font-weight:600!important;font-size:14px!important;border:none!important;box-shadow:none!important}
+    .btn-primary:hover:not(:disabled){background:var(--color-navy-light)!important}
+    /* Tier 1b: Blue accent (Continue etc.) */
     .btn-blue{background:var(--wbg-blue);color:#fff;padding:11px 24px;box-shadow:var(--shadow-sm)}
     .btn-blue:hover:not(:disabled){background:#007ab8}
-    .btn-ghost{background:#fff;color:var(--text);border:1.5px solid var(--border);padding:10px 18px}
-    .btn-ghost:hover:not(:disabled){border-color:var(--wbg-blue);color:var(--wbg-blue)}
+    /* Tier 2: Secondary */
+    .btn-secondary{background:transparent;color:var(--color-navy);border:1px solid var(--color-navy);padding:10px 20px;border-radius:6px;font-weight:500;font-size:14px}
+    .btn-secondary:hover:not(:disabled){background:var(--color-blue-soft)}
+    /* Tier 3: Ghost */
+    .btn-ghost{background:transparent!important;color:var(--color-text-muted)!important;border:none!important;padding:6px 12px!important;font-size:13px!important;font-weight:500!important;border-radius:4px!important;box-shadow:none!important}
+    .btn-ghost:hover:not(:disabled){color:var(--color-text)!important;background:var(--color-bg)!important}
+    .btn-ghost.btn-sm{padding:6px 12px!important;font-size:13px!important}
     .btn-danger{background:#fff;color:#b91c1c;border:1.5px solid #fca5a5;padding:10px 18px}
     .btn-danger:hover:not(:disabled){background:#fef2f2}
     .btn-sm{padding:7px 14px!important;font-size:13px!important}
@@ -470,10 +493,14 @@
     .modal-foot{display:flex;align-items:center;justify-content:space-between;gap:12px}
     .modal-foot label{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);cursor:pointer}
 
-    /* ── Session persistence bar ── */
-    .session-bar{display:flex;align-items:center;gap:8px;padding:10px 32px;background:#f0f4f8;border-bottom:1px solid var(--border);font-size:12px;color:var(--muted)}
+    /* ── Session / Utility bar ── */
+    .session-bar{display:flex;align-items:center;gap:8px;padding:0 32px;height:40px;background:#fff;border-bottom:1px solid var(--color-border);font-size:12px;color:var(--color-text-muted);position:sticky;top:56px;z-index:99}
     .session-bar svg{flex-shrink:0}
-    .session-bar-btns{margin-left:auto;display:flex;gap:6px}
+    .session-bar-btns{margin-left:auto;display:flex;gap:4px}
+    /* Utility bar doc-type badge */
+    .util-doc-type-badge{display:inline-flex;align-items:center;gap:6px;background:var(--color-blue-soft);color:var(--color-blue);border:1px solid #BFDBFE;border-radius:20px;padding:3px 10px;font-size:12px;font-weight:600}
+    .util-doc-type-edit-btn{background:none;border:none;cursor:pointer;color:var(--color-text-muted);padding:2px 4px;border-radius:4px;display:inline-flex;align-items:center}
+    .util-doc-type-edit-btn:hover{color:var(--color-blue)}
 
     /* ── Truncation warning banner ── */
     /* Research brief panel */
@@ -1089,6 +1116,55 @@
       .priority-stepper{overflow-x:auto;}
     }
 
+    /* ══════════════════════════════════════════
+       MODERN UI OVERRIDES
+    ══════════════════════════════════════════ */
+
+    /* Cards */
+    .card{border:1px solid var(--color-border)!important;border-radius:8px!important;box-shadow:0 1px 3px rgba(0,0,0,.04),0 1px 2px rgba(0,0,0,.03)!important}
+    .out-card{border:1px solid var(--color-border)!important;border-radius:8px!important;box-shadow:0 1px 3px rgba(0,0,0,.04),0 1px 2px rgba(0,0,0,.03)!important}
+
+    /* Main padding (hero removed, sticky bars are 96px total) */
+    .main{padding-top:32px!important}
+
+    /* AI output body */
+    .out-body{font-size:15px!important;line-height:1.7!important}
+    .out-body h1{font-family:'Inter',sans-serif!important;font-size:18px!important;font-weight:700!important;letter-spacing:-0.02em!important}
+    .out-body h2{font-family:'Inter',sans-serif!important;font-size:15px!important;font-weight:700!important;letter-spacing:-0.02em!important;border-bottom:1px solid var(--color-border)}
+    .out-body h3{font-family:'Inter',sans-serif!important;font-size:14px!important;font-weight:700!important;text-transform:uppercase!important;letter-spacing:0.06em!important;color:var(--color-text-muted)!important;margin-top:24px!important}
+
+    /* Callout / info boxes — left-border accent */
+    .callout{border:none!important;border-radius:0 6px 6px 0!important;padding:12px 16px!important}
+    .callout.info{background:var(--color-blue-soft)!important;border-left:3px solid var(--color-blue)!important;color:var(--color-text)!important}
+    .callout.ok{background:#F0FDF4!important;border-left:3px solid var(--color-success)!important;color:var(--color-text)!important}
+
+    /* Confidential and built-in notices */
+    .confidential-notice{background:#FFFBEB!important;border:none!important;border-left:3px solid var(--color-warning)!important;border-radius:0 6px 6px 0!important;padding:12px 16px!important;color:#78350f!important}
+    .builtin-notice{background:var(--color-blue-soft)!important;border:none!important;border-left:3px solid var(--color-success)!important;border-radius:0 6px 6px 0!important;padding:12px 16px!important;color:var(--color-text)!important}
+    .builtin-notice svg{color:var(--color-success)!important;stroke:var(--color-success)!important}
+
+    /* Refine input area */
+    .refine-card{background:transparent!important;border:none!important;box-shadow:none!important;padding:0!important}
+    .refine-row{border:1px solid var(--color-border)!important;border-radius:10px!important;background:#fff!important;display:flex!important;align-items:flex-end!important;padding:8px 12px!important;gap:8px!important;box-shadow:0 1px 4px rgba(0,0,0,.06)!important;transition:border-color 0.15s!important}
+    .refine-row:focus-within{border-color:var(--color-blue)!important;box-shadow:0 0 0 3px rgba(0,80,160,.08)!important}
+    .refine-in{border:none!important;outline:none!important;flex:1!important;font-size:14px!important;font-family:'Inter',sans-serif!important;resize:none!important;min-height:40px!important;max-height:120px!important;background:transparent!important;padding:0!important}
+    .refine-in:focus{outline:none!important}
+
+    /* Doc-type badge (unified blue style) */
+    .doc-type-badge{display:inline-flex!important;align-items:center!important;gap:6px!important;background:var(--color-blue-soft)!important;color:var(--color-blue)!important;border:1px solid #BFDBFE!important;border-radius:20px!important;padding:3px 10px!important;font-size:12px!important;font-weight:600!important}
+    .doc-type-badge.dt-pcn,.doc-type-badge.dt-pid,.doc-type-badge.dt-pad,.doc-type-badge.dt-af,.doc-type-badge.dt-restructuring,.doc-type-badge.dt-isr{background:var(--color-blue-soft)!important;color:var(--color-blue)!important;border-color:#BFDBFE!important}
+    .doc-type-badge.dt-unknown{background:#f8fafc!important;color:var(--color-text-muted)!important;border-color:var(--color-border)!important}
+
+    /* Upload intro h2 — Inter */
+    .upload-intro-text h2{font-family:'Inter',sans-serif!important;font-weight:700!important;letter-spacing:-0.02em!important}
+
+    /* Stage title / badge */
+    .stage-title{font-family:'Inter',sans-serif!important;font-weight:700!important;letter-spacing:-0.02em!important}
+    .stage-badge{font-family:'Inter',sans-serif!important;font-weight:700!important}
+
+    /* Priority card headings */
+    .pc-hdr-title{font-family:'Inter',sans-serif!important;font-weight:600!important}
+    .pc-num-badge{font-family:'Inter',sans-serif!important;font-weight:700!important}
 
   </style>
 </head>
@@ -1109,52 +1185,11 @@
     </svg>
     <span class="top-bar-wordmark">WBG FCV Analytics Unit</span>
     <span class="top-bar-divider"></span>
-    <span class="top-bar-unit">Project Screener</span>
+    <span class="top-bar-unit">FCV Sensitivity Screener</span>
   </div>
-  <span class="top-bar-badge">Internal Tool · Pilot</span>
+  <span class="top-bar-badge">Pilot</span>
 </div>
 
-<!-- ══ HERO ══ -->
-<div class="hero" role="region" aria-label="Tool overview">
-  <div class="hero-inner">
-    <div class="hero-eyebrow">FCV Sensitivity Project Screener</div>
-    <h1>FCV Sensitivity Project Screener</h1><p class="hero-tool-title">A tool for screening WBG projects for recommendations to strengthen <strong>FCV sensitivity and responsiveness</strong></p>
-    <p class="hero-sub">This tool uses an LLM to screen draft WBG project documents for FCV dynamics and generate recommendations on how to strengthen FCV sensitivity and responsiveness. Upload your project documents and follow the step-by-step process to produce a final recommendation note. At each stage you can review the AI's thinking and make refinements before proceeding.</p>
-    <div class="hero-disclaimer">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-      <span>Output is generated by an LLM and should be approached with care. It is not a replacement for expert analysis and should be used as a supplementary input only.</span>
-    </div>
-    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:20px">
-      <a href="/how-it-works" target="_blank" style="display:inline-flex;align-items:center;gap:8px;padding:9px 18px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);border-radius:6px;color:#fff;font-size:13px;font-weight:600;text-decoration:none;letter-spacing:.02em;transition:all .18s" onmouseover="this.style.background='rgba(255,255,255,.2)'" onmouseout="this.style.background='rgba(255,255,255,.12)'">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        How this tool works
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-      </a>
-    </div>
-    <div class="hero-chips">
-      <span class="hero-chip">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-        Four-stage analysis
-      </span>
-      <span class="hero-chip">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        Web-informed risk context
-      </span>
-      <span class="hero-chip">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-        WBG FCV guidance embedded
-      </span>
-      <span class="hero-chip">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-        Refineable at each stage
-      </span>
-      <span class="hero-chip">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/></svg>
-        Adapts to document type &amp; stage
-      </span>
-    </div>
-  </div>
-</div>
 
 <!-- Prompt viewer/editor modal -->
 <div id="prompt-modal" class="prompt-modal-bg" style="display:none" role="dialog" aria-modal="true" aria-label="View and edit analysis prompts">
@@ -1266,6 +1301,22 @@
 <div class="session-bar" id="session-bar">
   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
   <span id="session-status">No active session</span>
+  <div id="util-doc-type-area" style="display:none;align-items:center;gap:6px;margin-left:8px">
+    <span id="util-doc-type-badge" class="util-doc-type-badge">—</span>
+    <button onclick="document.getElementById('util-doc-type-select').style.display=document.getElementById('util-doc-type-select').style.display==='none'?'inline-block':'none'" title="Override document type" class="util-doc-type-edit-btn">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+    </button>
+    <select id="util-doc-type-select" onchange="docType=this.value;updateDocTypeBadge();this.style.display='none'" style="display:none;font-size:11px;border:1px solid var(--color-border);border-radius:4px;padding:2px 6px;background:#fff;cursor:pointer;">
+      <option value="">— override —</option>
+      <option value="PCN">PCN</option>
+      <option value="PID">PID</option>
+      <option value="PAD">PAD</option>
+      <option value="AF">AF</option>
+      <option value="Restructuring">Restructuring</option>
+      <option value="ISR">ISR</option>
+      <option value="Unknown">Unknown</option>
+    </select>
+  </div>
   <div class="session-bar-btns">
     <button class="btn btn-ghost btn-sm" id="prompt-bar-btn" onclick="openPromptModal()" title="View and edit analysis prompts">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
@@ -1618,6 +1669,17 @@
     badge.className = 'doc-type-badge ' + (clsMap[docType] || 'dt-unknown');
     // Sync dropdown
     if(sel) sel.value = docType in clsMap ? docType : 'Unknown';
+    // Update utility bar badge
+    const utilBadge = document.getElementById('util-doc-type-badge');
+    const utilArea = document.getElementById('util-doc-type-area');
+    if(utilBadge && utilArea) {
+      if(docType && docType !== 'Unknown') {
+        utilBadge.textContent = typeMap[docType] || docType;
+        utilArea.style.display = 'inline-flex';
+      } else {
+        utilArea.style.display = 'none';
+      }
+    }
   }
 
   async function detectDocumentType() {
