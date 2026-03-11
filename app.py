@@ -410,7 +410,9 @@ These delimiters are parsed by the interface. Do not add text between %%%PRIORIT
 ---
 
 # Citation Format
-- Format: [Document Name Year] e.g. [RRA 2022], [LLM Risk Summary 2025]
+- CRITICAL: Only cite a document by name (e.g. [Honduras RRA 2023]) if it was explicitly uploaded as a contextual document and appeared with a [From: document name] citation in the Stage 1 analysis above. NEVER fabricate or assume document titles — even if you know a document of that type likely exists for this country.
+- For findings drawn from training knowledge, use: [From: training knowledge] or name the specific organisation (e.g. [From: World Bank FCV assessment], [From: ICG], [From: ACLED])
+- For findings from automated web research, use: [From: web research] or name the specific source if identifiable
 - NEVER cite the PCN or PAD being reviewed
 - No page numbers; keep citations sparse and naturally integrated
 
@@ -804,9 +806,9 @@ def extract_country_name(project_doc_text: str, api_client) -> str:
         return "Unknown"
 
 
-FCV_RESEARCH_PROMPT = """You are an expert FCV (Fragility, Conflict, and Violence) analyst. Your task is to conduct a focused research sweep on the FCV situation in **{country}** using web search.
+FCV_RESEARCH_PROMPT = """You are an expert FCV (Fragility, Conflict, and Violence) analyst. Your task is to conduct a focused research sweep on the FCV situation in **{country}** using web search. The project being assessed is in the **{sector}** sector.
 
-Conduct 7–8 targeted searches covering different dimensions of the FCV situation. Prioritise these source types:
+Conduct 8–9 targeted searches covering different dimensions of the FCV situation. Prioritise these source types:
 - UN agencies (OCHA, UNHCR, UNDP, DPPA situation reports)
 - World Bank (FCV assessments, Country Partnership Frameworks, country diagnostics)
 - International Crisis Group (ICG)
@@ -822,6 +824,7 @@ Structure your searches to cover:
 5. FCV assessment or fragility analysis of {country} (World Bank / ICG / ACAPS)
 6. Structural drivers, root causes, and political economy of fragility in {country} (medium- to long-term)
 7. Vulnerable regions, ethnic minorities, and marginalised groups most affected by conflict or FCV threats in {country}
+8. FCV challenges, risks, and design considerations specifically related to {sector} projects in fragile or conflict-affected settings
 
 After searching, synthesise all findings into a structured FCV Research Brief using EXACTLY this format:
 
@@ -856,6 +859,9 @@ After searching, synthesise all findings into a structured FCV Research Brief us
 #### 9. FCV Trajectory & Outlook
 [1–3 sentences on whether the situation is improving, stable, or deteriorating, and key risks ahead]
 
+#### 10. Sector-Specific FCV Considerations — {sector}
+[3–5 sentences on FCV dynamics particularly relevant to {sector} projects in fragile/conflict contexts. Cover: how conflict or fragility affects {sector} service delivery in {country}; risks that {sector} projects commonly face in FCV settings (e.g. elite capture of services, exclusion of displaced populations, infrastructure as a conflict target, staff safety); and any {sector}-specific design adaptations or entry points that matter in this FCV context.]
+
 #### Key Sources Consulted
 [List the main sources found and drawn on, with publication dates where available]
 ---
@@ -863,20 +869,44 @@ After searching, synthesise all findings into a structured FCV Research Brief us
 Be concise but substantive. Prioritise recent information (last 2–3 years). Where you find conflicting assessments, note both perspectives briefly."""
 
 
-def run_fcv_web_research(country: str, api_client) -> dict:
+def extract_sector_name(project_doc_text: str, api_client) -> str:
+    """Extract the primary sector/theme of the project from its opening pages."""
+    snippet = project_doc_text[:4000]
+    try:
+        resp = api_client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=50,
+            messages=[{
+                "role": "user",
+                "content": (
+                    f"This is the beginning of a World Bank project document:\n\n{snippet}\n\n"
+                    "What is the primary sector or theme of this project? Reply with a short label only "
+                    "(e.g. 'Education', 'Water and Sanitation', 'Social Protection', 'Agriculture', "
+                    "'Health', 'Urban Development', 'Transport', 'Energy', 'Governance', 'Finance'). "
+                    "No explanation, no punctuation beyond the label itself."
+                )
+            }]
+        )
+        sector = resp.content[0].text.strip().strip('.').strip('"').strip("'")
+        return sector if sector else "Development"
+    except Exception:
+        return "Development"
+
+
+def run_fcv_web_research(country: str, sector: str, api_client) -> dict:
     """
     Run automated FCV web research for the given country using the Anthropic
     web search tool. Returns a dict with 'brief' (str) and 'country' (str).
     """
-    prompt = FCV_RESEARCH_PROMPT.format(country=country)
+    prompt = FCV_RESEARCH_PROMPT.format(country=country, sector=sector)
     try:
         resp = api_client.beta.messages.create(
             model="claude-sonnet-4-20250514",
-            max_tokens=4500,
+            max_tokens=5500,
             tools=[{
                 "type": "web_search_20250305",
                 "name": "web_search",
-                "max_uses": 8
+                "max_uses": 9
             }],
             messages=[{"role": "user", "content": prompt}],
             betas=["web-search-2025-03-05"]
@@ -1065,15 +1095,16 @@ def run_stage():
                         first_doc_text = doc_parts[0]['raw_text'] if doc_parts else ''
                         yield f"data: {json.dumps({'research_status': 'extracting_country'})}\n\n"
                         research_country = extract_country_name(first_doc_text, client)
+                        research_sector = extract_sector_name(first_doc_text, client)
 
-                        cache_key = research_country.lower().strip()
+                        cache_key = f"{research_country.lower().strip()}::{research_sector.lower().strip()}"
                         if cache_key in _research_cache:
                             research_data = _research_cache[cache_key]
                             research_brief_text = research_data['brief']
                             yield f"data: {json.dumps({'research_status': 'cached', 'country': research_country})}\n\n"
                         else:
                             yield f"data: {json.dumps({'research_status': 'searching', 'country': research_country})}\n\n"
-                            research_data = run_fcv_web_research(research_country, client)
+                            research_data = run_fcv_web_research(research_country, research_sector, client)
                             research_brief_text = research_data['brief']
                             _research_cache[cache_key] = research_data
 
