@@ -1145,7 +1145,10 @@ def extract_country_and_sector(project_doc_text: str, api_client) -> tuple:
                 )
             }]
         )
-        data = json.loads(resp.content[0].text.strip())
+        raw = resp.content[0].text.strip()
+        # Strip markdown code fences if the model wrapped the JSON
+        raw = re.sub(r'^```(?:json)?\s*', '', raw, flags=re.IGNORECASE).rstrip('`').strip()
+        data = json.loads(raw)
         country = str(data.get("country", "")).strip().strip('.').strip('"').strip("'") or "Unknown"
         sector = str(data.get("sector", "")).strip().strip('.').strip('"').strip("'") or "Development"
         return (country, sector)
