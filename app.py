@@ -18,8 +18,17 @@ EXTRACT_THRESHOLD = 150_000  # Documents larger than this are condensed via LLM 
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "fcv-admin-2024")
 PROMPTS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'prompts.json')
 
-# ── Research cache (in-process, keyed by country name) ───────────────────────
-_research_cache: dict = {}  # key: country.lower() → {brief, country, sources}
+# ── Research cache (persisted to disk, keyed by country::sector) ─────────────
+RESEARCH_CACHE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'research_cache.json')
+_research_cache: dict = {}  # key: "country::sector" → {brief, country}
+
+# Load persisted research cache on startup
+try:
+    if os.path.exists(RESEARCH_CACHE_FILE):
+        with open(RESEARCH_CACHE_FILE, 'r', encoding='utf-8') as _f:
+            _research_cache = json.load(_f)
+except Exception:
+    pass
 
 DO_NO_HARM_HEADER = """---
 **AI-Generated Output — For Review Purposes Only**
@@ -1117,26 +1126,31 @@ def extract_fcv_content(text, doc_name, api_client):
         return text[:EXTRACT_THRESHOLD] + f"\n\n[Extraction failed ({str(e)}); showing first {EXTRACT_THRESHOLD//1000}k characters only.]"
 
 
-def extract_country_name(project_doc_text: str, api_client) -> str:
-    """Extract the country name from the first portion of a project document."""
+def extract_country_and_sector(project_doc_text: str, api_client) -> tuple:
+    """Extract country name and primary sector from the project document in one call."""
     snippet = project_doc_text[:4000]
     try:
         resp = api_client.messages.create(
-            model="claude-sonnet-4-20250514",
-            max_tokens=50,
+            model="claude-haiku-4-5-20251001",
+            max_tokens=100,
             messages=[{
                 "role": "user",
                 "content": (
-                    f"This is the beginning of a World Bank project document (PAD, PCN, or PID):\n\n{snippet}\n\n"
-                    "What country is this project in? Reply with ONLY the country name — no explanation, "
-                    "no punctuation, no extra words. If there are multiple countries, list them separated by commas."
+                    f"This is the beginning of a World Bank project document:\n\n{snippet}\n\n"
+                    "Return JSON only, in this exact format: {\"country\": \"...\", \"sector\": \"...\"}\n"
+                    "For country: the country or countries the project is in (comma-separated if multiple).\n"
+                    "For sector: the primary sector or theme (e.g. 'Education', 'Water and Sanitation', "
+                    "'Social Protection', 'Agriculture', 'Health', 'Urban Development', 'Transport', "
+                    "'Energy', 'Governance', 'Finance'). No explanation, JSON only."
                 )
             }]
         )
-        country = resp.content[0].text.strip().strip('.').strip('"').strip("'")
-        return country if country else "Unknown"
+        data = json.loads(resp.content[0].text.strip())
+        country = str(data.get("country", "")).strip().strip('.').strip('"').strip("'") or "Unknown"
+        sector = str(data.get("sector", "")).strip().strip('.').strip('"').strip("'") or "Development"
+        return (country, sector)
     except Exception:
-        return "Unknown"
+        return ("Unknown", "Development")
 
 
 FCV_RESEARCH_PROMPT = """You are an expert FCV (Fragility, Conflict, and Violence) analyst. Your task is to conduct a focused research sweep on the FCV situation in **{country}** using web search. The project being assessed is in the **{sector}** sector.
@@ -1202,29 +1216,6 @@ After searching, synthesise all findings into a structured FCV Research Brief us
 Be concise but substantive. Prioritise recent information (last 2–3 years). Where you find conflicting assessments, note both perspectives briefly."""
 
 
-def extract_sector_name(project_doc_text: str, api_client) -> str:
-    """Extract the primary sector/theme of the project from its opening pages."""
-    snippet = project_doc_text[:4000]
-    try:
-        resp = api_client.messages.create(
-            model="claude-sonnet-4-20250514",
-            max_tokens=50,
-            messages=[{
-                "role": "user",
-                "content": (
-                    f"This is the beginning of a World Bank project document:\n\n{snippet}\n\n"
-                    "What is the primary sector or theme of this project? Reply with a short label only "
-                    "(e.g. 'Education', 'Water and Sanitation', 'Social Protection', 'Agriculture', "
-                    "'Health', 'Urban Development', 'Transport', 'Energy', 'Governance', 'Finance'). "
-                    "No explanation, no punctuation beyond the label itself."
-                )
-            }]
-        )
-        sector = resp.content[0].text.strip().strip('.').strip('"').strip("'")
-        return sector if sector else "Development"
-    except Exception:
-        return "Development"
-
 
 def run_fcv_web_research(country: str, sector: str, api_client) -> dict:
     """
@@ -1234,12 +1225,12 @@ def run_fcv_web_research(country: str, sector: str, api_client) -> dict:
     prompt = FCV_RESEARCH_PROMPT.format(country=country, sector=sector)
     try:
         resp = api_client.beta.messages.create(
-            model="claude-sonnet-4-20250514",
-            max_tokens=5500,
+            model="claude-haiku-4-5-20251001",
+            max_tokens=3000,
             tools=[{
                 "type": "web_search_20250305",
                 "name": "web_search",
-                "max_uses": 9
+                "max_uses": 5
             }],
             messages=[{"role": "user", "content": prompt}],
             betas=["web-search-2025-03-05"]
@@ -1369,7 +1360,7 @@ def run_stage():
         prompt_override = data.get('prompt_override', '').strip()  # session-only override from frontend
         document_type = data.get('document_type', 'Unknown').strip()
 
-        MAX_ASSISTANT_CHARS = 40000
+        MAX_ASSISTANT_CHARS = 20000
 
         prior_outputs = []
         for m in conversation_history:
@@ -1438,7 +1429,10 @@ def run_stage():
             doc_type_ctx = build_doc_type_context(document_type, stage)
             if doc_type_ctx:
                 stage_prompt = doc_type_ctx + "\n\n" + stage_prompt
-            messages.append({"role": "user", "content": stage_prompt})
+            if stage == 2:
+                messages.append({"role": "user", "content": FCV_OPERATIONAL_MANUAL + "\n\n" + stage_prompt})
+            else:
+                messages.append({"role": "user", "content": stage_prompt})
 
         def generate():
             collected = []
@@ -1459,8 +1453,7 @@ def run_stage():
                     try:
                         first_doc_text = doc_parts[0]['raw_text'] if doc_parts else ''
                         yield f"data: {json.dumps({'research_status': 'extracting_country'})}\n\n"
-                        research_country = extract_country_name(first_doc_text, client)
-                        research_sector = extract_sector_name(first_doc_text, client)
+                        research_country, research_sector = extract_country_and_sector(first_doc_text, client)
 
                         cache_key = f"{research_country.lower().strip()}::{research_sector.lower().strip()}"
                         if cache_key in _research_cache:
@@ -1472,6 +1465,11 @@ def run_stage():
                             research_data = run_fcv_web_research(research_country, research_sector, client)
                             research_brief_text = research_data['brief']
                             _research_cache[cache_key] = research_data
+                            try:
+                                with open(RESEARCH_CACHE_FILE, 'w', encoding='utf-8') as _f:
+                                    json.dump(_research_cache, _f, ensure_ascii=False)
+                            except Exception:
+                                pass
 
                         yield f"data: {json.dumps({'research_status': 'complete', 'country': research_country, 'brief': research_brief_text})}\n\n"
                     except Exception:
@@ -1509,15 +1507,14 @@ def run_stage():
                         )})
 
                     content_parts.append({"type": "text", "text": (
-                        "\n\n--- WBG FCV Sensitivity and Responsiveness Guide (always included) ---\n" + FCV_GUIDE +
-                        "\n\n--- WBG FCV Operational Manual — Design Framework (always included) ---\n" + FCV_OPERATIONAL_MANUAL
+                        "\n\n--- WBG FCV Sensitivity and Responsiveness Guide (always included) ---\n" + FCV_GUIDE
                     )})
                     content_parts.append({"type": "text", "text": stage_prompt})
                     messages.append({"role": "user", "content": content_parts})
 
                 with client.messages.stream(
                     model="claude-sonnet-4-20250514",
-                    max_tokens=16000,
+                    max_tokens=10000,
                     messages=messages
                 ) as stream:
                     for text_chunk in stream.text_stream:
@@ -1583,7 +1580,7 @@ def run_explorer():
             return jsonify({'error': 'Invalid request.'}), 400
 
         follow_up_messages = data.get('follow_up_messages', None)
-        MAX_ASSISTANT_CHARS = 40000
+        MAX_ASSISTANT_CHARS = 20000
 
         if follow_up_messages:
             # Follow-up "dig deeper" query — use provided messages directly
