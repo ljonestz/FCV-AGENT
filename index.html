@@ -972,10 +972,9 @@
     /* Document reference row */
     .fcv-doc-ref-row {
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       gap: 6px;
-      flex-wrap: nowrap;
-      overflow: hidden;
+      flex-wrap: wrap;
       margin-top: 10px;
       padding-top: 8px;
       border-top: 1px dashed var(--border, #d9e2ec);
@@ -988,14 +987,13 @@
       letter-spacing: 0.05em;
       white-space: nowrap;
       flex-shrink: 0;
+      padding-top: 1px;
     }
     .fcv-doc-ref-text {
       font-size: 12px;
       color: var(--muted, #5a6a7e);
-      line-height: 1.45;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      line-height: 1.5;
+      white-space: normal;
       flex: 1;
       min-width: 0;
     }
@@ -2621,7 +2619,7 @@ ${md(execSummary)}`;
         return `<div class="pov-row" onclick="showPriority(${i})">
           <div class="pov-num ${isDone?'done':isActive?'active':''}">${isDone?'✓':i+1}</div>
           <div class="pov-label">${esc(label)}</div>
-          <div style="display:flex;align-items:center;gap:3px">
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">
             ${pr.risk_level?`<span class="pov-risk ${riskCls}">${esc(pr.risk_level)}</span>`:''}
             ${pr.tag?renderSRTagBadge(pr.tag,true):''}
           </div>
