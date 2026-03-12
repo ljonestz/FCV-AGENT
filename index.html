@@ -2657,7 +2657,7 @@ ${md(execSummary)}`;
       </div>`;
     }).join('');
     el.innerHTML = `<div class="priorities-section-hdr">Strategic Priorities</div><div class="priorities-intro ani">
-      <p class="pi-lead">Based on a three-stage assessment of the project documents, <strong>${n} strategic ${n === 1 ? 'priority has' : 'priorities have'} been identified</strong> to strengthen FCV-sensitivity and responsiveness in the design and delivery of this project:</p>
+      <p class="pi-lead">Based on a three-stage assessment of the project documents, <strong>${n} strategic ${n === 1 ? 'priority has' : 'priorities have'} been identified</strong> to strengthen FCV-sensitivity <span class="sr-tag sensitivity" style="font-size:9px;padding:1px 5px;vertical-align:middle">S</span> and responsiveness <span class="sr-tag responsiveness" style="font-size:9px;padding:1px 5px;vertical-align:middle">R</span> in the design and delivery of this project:</p>
       <div class="pi-list">${listItems}</div>
       <p class="pi-footer">Toggle through the panels below to explore each priority and concrete implementation options in more detail.</p>
     </div>`;
@@ -2675,7 +2675,6 @@ ${md(execSummary)}`;
         <div class="ps-label">${esc(fullTitle)}</div>
         <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;justify-content:center">
           ${riskLbl?`<div class="ps-risk ${riskCls}">${riskLbl}</div>`:''}
-          ${pr.tag?renderSRTagBadge(pr.tag,true):''}
         </div>
       </div>`;
     }).join('');
