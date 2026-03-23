@@ -87,8 +87,10 @@ def _check_citations(priority: dict, uploaded_doc_names: list) -> list:
         cite_s = cite.strip()
         if any(org.lower() in cite_s.lower() for org in CITATION_ORG_WHITELIST):
             continue
-        if any(doc in cite_s.lower() or cite_s.lower() in doc
-               for doc in doc_names_lower):
+        # Strip extensions for loose matching: citation vs uploaded filename
+        doc_bases = [d.rsplit('.', 1)[0] if '.' in d else d for d in doc_names_lower]
+        if any(base in cite_s.lower() or cite_s.lower() in base
+               for base in doc_bases):
             continue
         unverified.append(cite_s)
     return unverified
