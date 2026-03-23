@@ -114,45 +114,46 @@ STAGE 3 — Identifying Project Gaps
 └─ UI: Collapsible sections + expandable Do-No-Harm checklist rendered from Part C table
 
 STAGE 4 — Recommendations Note + Explorer
-├─ Input: Stages 1–3 output (conversation history)
-├─ Output (structured with delimiters for frontend parsing):
-│  ├─ Preamble (50–75 words: overview of FCV sensitivity)
-│  ├─ Executive Summary:
-│  │  ├─ Opening Assessment (1 bold sentence, 25–35 words)
-│  │  ├─ Operational Context (150–200 words)
-│  │  ├─ FCV Risk Exposure (%%%RISK_EXPOSURE_START/END%%% delimiters):
-│  │  │  ├─ RISKS_TO_PROJECT (60–85 words, plain language)
-│  │  │  └─ RISKS_FROM_PROJECT (60–85 words, plain language)
-│  │  ├─ Strengths (80–120 words)
-│  │  ├─ Gaps (100–130 words)
-│  │  ├─ FCV Sensitivity Summary (%%%SENSITIVITY_SUMMARY_START/END%%% delimiters):
-│  │  │  └─ 80–100 word assessment of overall FCV Sensitivity standing
-│  │  └─ FCV Responsiveness Summary (%%%RESPONSIVENESS_SUMMARY_START/END%%% delimiters):
-│  │     └─ 80–100 word assessment anchored to the four FCV Strategy pillars
-│  ├─ FCV Sensitivity Rating (%%%FCV_RATING: [level]%%% line):
-│  │  └─ Scale: Extremely Low | Very Low | Low | Adequate | Well Embedded | Very Well Embedded
-│  ├─ FCV Responsiveness Rating (%%%FCV_RESPONSIVENESS_RATING: [level]%%% line):
-│  │  └─ Same scale; emitted immediately after the sensitivity rating line
-│  └─ Strategic Priorities (4–5, each in %%%PRIORITY_START/END%%% delimiters):
-│     └─ Fields (10 total): TITLE, FCV_DIMENSION, TAG, RISK_LEVEL, THE_GAP, WHY_IT_MATTERS,
-│                            SUGGESTED_DIRECTIONS, WHO_ACTS, WHEN, RESOURCES
-│        TAG field: [S] / [R] / [S+R] — same strict definition as Stage 2/3
+├─ Input: Stages 1–3 output (conversation history) + uploaded_doc_names list
+├─ Output (narrative memo + JSON block appended at end):
+│  ├─ Narrative: Preamble + Executive Summary (risk exposure, strengths, gaps,
+│  │             sensitivity summary, responsiveness summary, ratings)
+│  └─ JSON block: appended after narrative, delimited %%%JSON_START%%%...%%%JSON_END%%%
+│     Fields: fcv_rating, fcv_responsiveness_rating, sensitivity_summary,
+│             responsiveness_summary, risk_exposure {risks_to, risks_from},
+│             priorities[] — each with:
+│               title, fcv_dimension, tag, risk_level, the_gap, why_it_matters,
+│               recommendation (SINGULAR — one cohesive action, NOT options menu),
+│               who_acts, when, resources
+│        when values: "At design stage" | "Before appraisal" | "During implementation"
+│        TAG: [S] / [R] / [S+R] — same strict definition as Stage 2/3
 │        Most priorities will be [S] or [R]; [S+R] only for four named overlap zones
-├─ Note: %%%GAP_TABLE_START/END%%% delimiter + extraction code still exist in backend
-│        but the FCV Design Assessment Table is NOT rendered in the UI
-├─ clean_stage4_output() strips: RISK_EXPOSURE, SENSITIVITY_SUMMARY, RESPONSIVENESS_SUMMARY,
-│  FCV_RATING, FCV_RESPONSIVENESS_RATING, GAP_TABLE, and all PRIORITY blocks from display text
+├─ extract_priorities() rewrites JSON block via json.loads() + validation:
+│  ├─ Returns unified dict: {error, priorities, fcv_rating, fcv_responsiveness_rating,
+│  │                         sensitivity_summary, responsiveness_summary, risk_exposure}
+│  ├─ _check_specificity(): heuristic for mid-sentence capitalised words (proper nouns)
+│  ├─ _check_citations(): cross-references [From: ...] patterns against uploaded doc names
+│  │   (extension-stripped) + org whitelist; flags unknown sources
+│  └─ Malformed JSON: returns {error: True, message: ...} — NOT silent failure
+├─ clean_stage4_output() strips %%%JSON_START/END%%% block as primary;
+│  legacy delimiter stripping retained as fallback for cached outputs
 ├─ Citation policy: ONLY cite documents that appear as [From: doc name] in Stage 1.
 │  NEVER fabricate document titles. Non-uploaded sources → [From: training knowledge] or
 │  [From: web research]. This prevents hallucinated citations (e.g. [RRA 2022] when no RRA uploaded).
+│  uploaded_doc_names must be included in /api/run-stage request body for citation check.
 └─ UI:
    ├─ Main output card (preamble + exec summary + FCV Risk Exposure + Strengths + Gaps)
    ├─ FCV Sensitivity + FCV Responsiveness summary cards (side by side, after Gaps)
    ├─ FCV Sensitivity gauge (sidebar, blue, shield icon)
    ├─ FCV Responsiveness gauge (sidebar, green, leaf icon)
    ├─ Priority cards (horizontal stepper, shows one at a time)
-   ├─ Per-priority zone: gap, why_it_matters, suggested_directions + explorer options
-   └─ "Explore FCV-Sensitive Solutions" panel (loaded async)
+   ├─ S/R tag badges have hover tooltips explaining each tag meaning
+   ├─ Specificity warning badge (amber, dismissible) if no proper nouns detected
+   ├─ Citation warning badge (amber, dismissible) if unrecognised [From: ...] strings found
+   ├─ Per-priority zone: gap, why_it_matters, recommendation + explorer options
+   ├─ "Explore FCV-Sensitive Solutions" panel (loaded async, with cancel button + elapsed timer)
+   ├─ Explorer results cached per priority integer index in localStorage
+   └─ Parse error banner shown if JSON extraction fails
 
 EXPLORER (on-demand deep dive)
 ├─ Input: Priority title/body + Stage 1–4 history
@@ -379,62 +380,79 @@ If in doubt → assign [S] or [R]. Most recommendations will not qualify for [S+
 [FCV Responsiveness Rating — same scale, emitted immediately after sensitivity rating]
 
 [4–5 Strategic Priority cards, each with:
-  - TITLE: Priority N · [Actionable verb phrase]
-  - FCV_DIMENSION: one of the 6 dimensions
-  - TAG: [S] | [R] | [S+R]  ← NEW field (field 3)
-  - RISK_LEVEL: High | Medium | Low
-  - THE_GAP: 2–3 sentences
-  - WHY_IT_MATTERS: 2–3 sentences (operational + FCV dimensions combined)
-  - SUGGESTED_DIRECTIONS: 2–3 sentences in consultative prose
-  - WHO_ACTS: TTL | PIU | Government counterpart | FCV specialist | Procurement team
-  - WHEN: At design stage | Before appraisal | During implementation
-  - RESOURCES: Minimal | Moderate | Significant
+  - title: Priority N · [Actionable verb phrase]
+  - fcv_dimension: one of the 6 dimensions
+  - tag: [S] | [R] | [S+R]
+  - risk_level: High | Medium | Low
+  - the_gap: 2–3 sentences
+  - why_it_matters: 2–3 sentences (operational + FCV dimensions combined)
+                    + S/R pillar justification for [R] and [S+R] priorities
+  - recommendation: SINGLE cohesive action (NOT an options menu) — 2–3 sentences,
+                    names specific location + mechanism + entry point
+  - who_acts: TTL | PIU | Government counterpart | FCV specialist | Procurement team
+  - when: At design stage | Before appraisal | During implementation
+  - resources: Minimal | Moderate | Significant
 ]
 ```
 
-**Delimiter formats for frontend parsing:**
+**JSON block format (appended after narrative memo):**
 ```
-%%%RISK_EXPOSURE_START%%%
-RISKS_TO_PROJECT: [paragraph]
-RISKS_FROM_PROJECT: [paragraph]
-%%%RISK_EXPOSURE_END%%%
-
-%%%SENSITIVITY_SUMMARY_START%%%
-[80–100 word assessment of overall FCV Sensitivity standing]
-%%%SENSITIVITY_SUMMARY_END%%%
-
-%%%RESPONSIVENESS_SUMMARY_START%%%
-[80–100 word assessment of FCV Responsiveness anchored to FCV Strategy pillars]
-%%%RESPONSIVENESS_SUMMARY_END%%%
-
-%%%FCV_RATING: [level]%%%
-
-%%%FCV_RESPONSIVENESS_RATING: [level]%%%
-
-%%%PRIORITY_START%%%
-TITLE: Priority N · [phrase]
-FCV_DIMENSION: [dimension]
-TAG: [S] | [R] | [S+R]
-RISK_LEVEL: [High | Medium | Low]
-THE_GAP: [text]
-WHY_IT_MATTERS: [text]
-SUGGESTED_DIRECTIONS: [text]
-WHO_ACTS: [text]
-WHEN: [text]
-RESOURCES: [text]
-%%%PRIORITY_END%%%
+%%%JSON_START%%%
+{
+  "fcv_rating": "Adequate",
+  "fcv_responsiveness_rating": "Low",
+  "sensitivity_summary": "...",
+  "responsiveness_summary": "...",
+  "risk_exposure": {
+    "risks_to": "...",
+    "risks_from": "..."
+  },
+  "priorities": [
+    {
+      "title": "Priority 1 · [Actionable verb phrase]",
+      "fcv_dimension": "Inclusion",
+      "tag": "[S]",
+      "risk_level": "High",
+      "the_gap": "...",
+      "why_it_matters": "...",
+      "recommendation": "Single cohesive action — NOT an options menu",
+      "who_acts": "TTL | PIU | Government counterpart",
+      "when": "Before appraisal",
+      "resources": "Moderate"
+    }
+  ]
+}
+%%%JSON_END%%%
 ```
 
-**Note on %%%GAP_TABLE_START/END%%%:** The LLM is no longer instructed to emit this block, and `renderGapTable()` is no longer called from the main rendering flow. However, the backend extraction code (`extract_gap_table()`) and the `renderGapTable()` JS function still exist for potential future use. The FCV Design Assessment Table is not displayed in the current UI.
+**Critical: `recommendation` field (not `SUGGESTED_DIRECTIONS`):**
+- Single cohesive action, present tense, 2–3 sentences
+- Must NOT be an options menu ("Consider A / Or B / Or C" is NOT allowed)
+- Must name specific location, mechanism, and entry point
+- S/R pillar justification sentence required in `why_it_matters` for [R] and [S+R] priorities
 
-**clean_stage4_output() strips the following blocks before rendering display text:**
-- `%%%RISK_EXPOSURE_START/END%%%`
-- `%%%SENSITIVITY_SUMMARY_START/END%%%`
-- `%%%RESPONSIVENESS_SUMMARY_START/END%%%`
-- `%%%FCV_RATING: ...%%%`
-- `%%%FCV_RESPONSIVENESS_RATING: ...%%%`
-- `%%%GAP_TABLE_START/END%%%`
-- `%%%PRIORITY_START/END%%%` (all priority blocks)
+**`extract_priorities()` return shape:**
+```python
+{
+  'error': bool,               # True if JSON malformed
+  'message': str,              # error description (only when error=True)
+  'priorities': [...],
+  'fcv_rating': str,
+  'fcv_responsiveness_rating': str,
+  'sensitivity_summary': str,
+  'responsiveness_summary': str,
+  'risk_exposure': {'risks_to': str, 'risks_from': str}
+}
+```
+
+**`clean_stage4_output()` stripping order:**
+1. Primary: strip `%%%JSON_START%%%...%%%JSON_END%%%` block (new format)
+2. Fallback: strip legacy delimiter blocks for cached outputs:
+   - `%%%RISK_EXPOSURE_START/END%%%`, `%%%SENSITIVITY_SUMMARY_START/END%%%`
+   - `%%%RESPONSIVENESS_SUMMARY_START/END%%%`, `%%%FCV_RATING/RESPONSIVENESS_RATING%%%`
+   - `%%%PRIORITY_START/END%%%` blocks, `%%%GAP_TABLE_START/END%%%`
+
+**Note on %%%GAP_TABLE_START/END%%%:** LLM is no longer instructed to emit this block. The `extract_gap_table()` backend function still exists but the FCV Design Assessment Table is not displayed in the current UI.
 
 **Citation policy for Stage 4:**
 - ONLY cite documents that appeared as `[From: document name]` in Stage 1. NEVER fabricate titles.
@@ -582,30 +600,37 @@ extracted_text, page_count = extract_pdf_text(base64_content, filename)
 ### 5.3 Priority Parsing (Stage 4 Output)
 
 ```python
-def extract_priorities(stage4_output):
-    # Search for %%%PRIORITY_START%%% ... %%%PRIORITY_END%%% delimiters
-    # Extract JSON from each block
-    # Return: [{title, dimension, tag, risk_level, the_gap, why_it_matters,
-    #           suggested_directions, who_acts, when, resources}, ...]
-    # NEW: also extracts 'tag' field from the TAG: line ([S] / [R] / [S+R])
-    # Fallback: positional parsing if delimiters not found; tag defaults to '' if not found
+def extract_priorities(stage4_output, uploaded_doc_names=None):
+    # Finds %%%JSON_START%%%...%%%JSON_END%%% block, parses via json.loads()
+    # Runs _check_specificity() and _check_citations() post-parse
+    # Returns unified dict:
+    #   {error, message?, priorities, fcv_rating, fcv_responsiveness_rating,
+    #    sensitivity_summary, responsiveness_summary,
+    #    risk_exposure: {risks_to, risks_from}}
+    # Each priority dict has fields: title, fcv_dimension, tag, risk_level,
+    #   the_gap, why_it_matters, recommendation, who_acts, when, resources,
+    #   specificity_warning (bool), citation_warnings (list)
+    # On malformed JSON: returns {error: True, message: ...}
 ```
 
-**Additional extraction functions (Stage 4):**
-```python
-extract_sensitivity_summary(text)    # Extracts %%%SENSITIVITY_SUMMARY_START/END%%% block
-extract_responsiveness_summary(text) # Extracts %%%RESPONSIVENESS_SUMMARY_START/END%%% block
-extract_fcv_responsiveness_rating(text) # Extracts %%%FCV_RESPONSIVENESS_RATING: [level]%%%
-```
+**Note:** The 5 orphaned delimiter-extraction functions have been DELETED:
+- `extract_fcv_rating`, `extract_fcv_responsiveness_rating`
+- `extract_sensitivity_summary`, `extract_responsiveness_summary`
+- `extract_risk_exposure`
 
-**Stage 4 JSON response now includes:**
+These were replaced by the unified `extract_priorities()` return dict.
+
+**Stage 4 SSE done event response includes:**
 ```json
 {
   "priorities": [...],
   "fcv_rating": "...",
   "fcv_responsiveness_rating": "...",
   "sensitivity_summary": "...",
-  "responsiveness_summary": "..."
+  "responsiveness_summary": "...",
+  "risk_exposure": {"risks_to": "...", "risks_from": "..."},
+  "parse_error": false,
+  "parse_error_message": ""
 }
 ```
 
@@ -649,13 +674,31 @@ extract_fcv_responsiveness_rating(text) # Extracts %%%FCV_RESPONSIVENESS_RATING:
 4. Append truncation warning to user output
 5. Handle PDF extraction errors with user-friendly messages
 
-### 6.6 Priority Parsing and JSON Extraction
-**In `extract_priorities()`:**
-1. Search for `%%%PRIORITY_START%%%` and `%%%PRIORITY_END%%%` delimiters
-2. Extract JSON from between delimiters for each priority
-3. Parse JSON and validate required fields (title, dimension, risk_level, the_gap, why_it_matters, suggested_directions)
-4. Fallback: If delimiters not found, attempt positional parsing from Markdown structure
-5. Return: List of priority dictionaries with validated fields
+### 6.6 UX Safeguard Features (Added v6.0)
+
+**S/R tag tooltips:** `renderSRTagBadge()` adds `title` attribute to each tag badge explaining [S], [R], [S+R] in plain language. Hover-accessible.
+
+**Specificity warning badge:** Shown on priority card if `priority.specificity_warning === true`. Amber, dismissible, stored per-priority in localStorage (`warn_spec_dismissed_{idx}`).
+
+**Citation warning badge:** Shown on priority card if `priority.citation_warnings.length > 0`. Amber, dismissible, hover shows flagged citation strings. Stored in localStorage (`warn_cite_dismissed_{idx}`).
+
+**Upload feedback:** `addFiles()` calls `fetchFileMetadata()` which hits `/api/detect-document-type` (extended to return `word_count` + `extraction_status`). Chips show filename + word count + doc type. Non-PDF files limited to 10,000 chars for speed.
+
+**Explorer cancel + timer:** `loadExplorerForPriority()` uses `AbortController` + `setInterval` elapsed timer. Cancel button calls `cancelExplorer()`. Local `timerHandle` variable prevents stale interval clearing.
+
+**Explorer localStorage cache:** `explorerCache` keyed by integer priority index (not title string). Backed by `localStorage` key `explorer_priority_{idx}`. Cache cleared on Stage 4 re-run.
+
+**Stage consistency banner:** `renderOut()` injects a yellow dismissible banner at top of Stage 3/4 output if `stage2_timestamp > stage${N}_timestamp`. Timestamps written to localStorage BEFORE `renderOut()` call. Stage 2 re-run clears both dismissed flags.
+
+### 6.7 Priority Parsing and JSON Extraction
+**In `extract_priorities(text, uploaded_doc_names=None)`:**
+1. Search for `%%%JSON_START%%%` and `%%%JSON_END%%%` delimiters
+2. Parse JSON block via `json.loads()` (no regex field extraction)
+3. Run `_check_specificity()`: looks for mid-sentence capitalised words as proper-noun proxy
+4. Run `_check_citations()`: cross-references `[From: ...]` patterns against uploaded doc names
+   (extensions stripped) + known org whitelist; flags unrecognised sources
+5. Return unified dict with all fields + per-priority `specificity_warning` / `citation_warnings`
+6. On malformed JSON: return `{error: True, message: ...}` — NOT silent failure
 
 ---
 
@@ -688,22 +731,27 @@ To add/remove/modify:
 **Note:** If you change the number of dimensions, you may also need to update Stage 3 & 4 prompts to reference them correctly.
 
 ### 7.3 I Want to Change What Stage 4 Priorities Look Like
-Stage 4 prompt defines the structure of each priority. Currently:
+Stage 4 prompt defines the JSON schema for each priority. Current fields:
 ```json
 {
-  "title": "...",
-  "dimension": "...",
+  "title": "Priority N · phrase",
+  "fcv_dimension": "...",
+  "tag": "[S] | [R] | [S+R]",
   "risk_level": "High|Medium|Low",
   "the_gap": "...",
   "why_it_matters": "...",
-  "suggested_directions": "..."
+  "recommendation": "Single cohesive action — NOT an options menu",
+  "who_acts": "...",
+  "when": "At design stage | Before appraisal | During implementation",
+  "resources": "Minimal | Moderate | Significant"
 }
 ```
 
 To add/remove fields:
-1. Update the `%%%PRIORITY_START/END%%%` section of the Stage 4 prompt to define new fields
-2. Update `extract_priorities()` function in `app.py` to parse the new fields from JSON
-3. Update the priority card rendering in `index.html` (the `showPriority()` function) to display the new fields
+1. Update the JSON schema section of the Stage 4 prompt (`DEFAULT_PROMPTS["4"]` in `app.py`)
+2. Update `extract_priorities()` in `app.py` to handle the new field from the parsed JSON
+3. Update `showPriority()` in `index.html` to display the new field
+4. Update `downloadReport()` in `index.html` if the field should appear in the export
 
 ### 7.4 I Want to Add a 5th Stage
 1. Add a new key to `DEFAULT_PROMPTS` (e.g., `"5"`)
