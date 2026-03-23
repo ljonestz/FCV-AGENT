@@ -1943,12 +1943,20 @@
               // Explorer panel + sidebar for Stage 4
               if(stage===4 && p.priorities && p.priorities.length){
                 stageFourPriorities=p.priorities;
-                // Preserve cache entries whose title still exists in new priorities
-                const newTitles=new Set(p.priorities.map(pr=>pr.title));
-                for(const t of Object.keys(explorerCache)){if(!newTitles.has(t))delete explorerCache[t];}
+                explorerCache = {};
                 explorerHistory=[];
                 updateSidebar();
                 populateExplorerDropdown(p.priorities);
+              }
+              if(stage===4 && p.parse_error){
+                const outEl = document.getElementById('s-out');
+                if(outEl){
+                  const errBanner = document.createElement('div');
+                  errBanner.className = 'trunc-warn-area ani';
+                  errBanner.style.cssText = 'background:#fff3cd;border:1px solid #ffc107;border-radius:6px;padding:10px 14px;margin-top:12px;font-size:0.9em';
+                  errBanner.textContent = p.parse_error_message || 'Stage 4 output could not be parsed — please re-run this stage.';
+                  outEl.appendChild(errBanner);
+                }
               }
               // Inject truncation warning banner if any
               if(window._truncWarnings && window._truncWarnings.length){
@@ -2310,7 +2318,7 @@ ${md(execSummary)}`;
         if(pr.why_it_matters) body += `<p><strong>Why It Matters Operationally:</strong><br>${esc(pr.why_it_matters)}</p>`;
         if(pr.why_fcv_matters) body += `<p><strong>Why It Matters for Addressing FCV:</strong><br>${esc(pr.why_fcv_matters)}</p>`;
 
-        const cached = explorerCache[pr.title];
+        const cached = explorerCache[i];
         if(cached && cached.issue){
           body += `<p><strong>Detailed Analysis (FCV Solutions Explorer):</strong><br>${esc(cached.issue)}</p>`;
           if(cached.options && cached.options.length){
@@ -2329,8 +2337,8 @@ ${md(execSummary)}`;
             });
             body += `</ul>`;
           }
-        } else if(pr.suggested_directions){
-          body += `<p><strong>Suggested Directions:</strong><br>${esc(pr.suggested_directions)}</p>`;
+        } else if(pr.recommendation){
+          body += `<p><strong>Recommendation:</strong><br>${esc(pr.recommendation)}</p>`;
         }
         body += `</div>`;
       });
@@ -2755,10 +2763,11 @@ ${md(execSummary)}`;
             How to act
           </div>
           <div id="explorer-options-${idx}">
-            ${explorerCache[pr.title] ? renderExplorerNarrativeHtml(explorerCache[pr.title], idx) : `
-            <div class="exp-loading" id="exp-loading-${idx}">
-              <svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;animation:spin 1s linear infinite;flex-shrink:0"><circle cx="12" cy="12" r="10" stroke-opacity=".25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-opacity="1"/></svg>
-              Loading detailed options…
+            ${explorerCache[idx] ? renderExplorerNarrativeHtml(explorerCache[idx], idx) : `
+            ${pr.recommendation ? `<div class="pc-zone-body" style="margin-bottom:10px">${esc(pr.recommendation)}</div>` : ''}
+            <div class="exp-loading" id="exp-loading-${idx}" style="font-size:0.85em;color:var(--muted)">
+              <svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;animation:spin 1s linear infinite;flex-shrink:0"><circle cx="12" cy="12" r="10" stroke-opacity=".25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-opacity="1"/></svg>
+              Loading detailed analysis…
             </div>`}
           </div>
         </div>
@@ -2774,7 +2783,7 @@ ${md(execSummary)}`;
       </div>`;
 
     // Load explorer if not cached
-    if(!explorerCache[pr.title]){
+    if(!explorerCache[idx]){
       loadExplorerForPriority(idx);
     }
 
@@ -2789,7 +2798,7 @@ ${md(execSummary)}`;
 
   async function loadExplorerForPriority(idx){
     const pr = stageFourPriorities[idx];
-    if(!pr || explorerCache[pr.title]) return;
+    if(!pr || explorerCache[idx]) return;
 
     const promptOverride = sessionPrompts['explorer'] || '';
     try {
@@ -2813,7 +2822,7 @@ ${md(execSummary)}`;
             if(p.error) throw new Error(p.error);
             if(p.done){
               const parsed = parseExplorerText(p.result);
-              explorerCache[pr.title] = parsed;
+              explorerCache[idx] = parsed;
               explorerHistory = [
                 {role:'user', content:'[Explorer: '+pr.title+']'},
                 {role:'assistant', content:p.result}
