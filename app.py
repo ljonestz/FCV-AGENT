@@ -1406,9 +1406,15 @@ def detect_document_type_route():
         else:
             return jsonify({'error': 'doc_text or doc_b64 required'}), 400
         doc_type = detect_document_type_from_text(text, get_client())
-        return jsonify({'document_type': doc_type})
+        word_count = len(text.split()) if not text.startswith('[Could not extract') else 0
+        extraction_status = 'failed' if text.startswith('[Could not extract') else 'ok'
+        return jsonify({
+            'document_type': doc_type,
+            'word_count': word_count,
+            'extraction_status': extraction_status
+        })
     except Exception as e:
-        return jsonify({'document_type': 'Unknown', 'error': str(e)})
+        return jsonify({'document_type': 'Unknown', 'word_count': 0, 'extraction_status': 'failed', 'error': str(e)})
 
 
 # ── Main analysis route ───────────────────────────────────────────────────────

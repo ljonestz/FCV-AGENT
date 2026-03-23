@@ -261,14 +261,18 @@
 
     .chips{display:flex;flex-wrap:wrap;gap:6px;padding:12px 32px;min-height:14px}
     .chip{
-      display:inline-flex;align-items:center;gap:5px;
-      padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;max-width:210px;
+      display:inline-flex;flex-direction:column;align-items:flex-start;gap:2px;
+      padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;max-width:260px;
     }
     .chip.p{background:#e8f4fc;color:#004e7c;border:1px solid rgba(0,159,218,.25)}
     .chip.c{background:#f0f9f4;color:#1a5c38;border:1px solid rgba(26,122,74,.25)}
+    .chip-main{display:flex;align-items:center;gap:5px;width:100%}
+    .chip-main span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .chip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .chip button{background:none;border:none;cursor:pointer;color:inherit;opacity:.5;padding:0;line-height:1;font-size:15px}
     .chip button:hover{opacity:1}
+    .chip-meta{display:block;font-size:0.75em;color:#666;margin-top:2px;font-weight:400}
+    .chip-meta-error{color:#c0392b}
 
     /* Document type badge */
     .doc-type-badge{display:inline-block;padding:2px 9px;border-radius:12px;font-size:11px;font-weight:700;letter-spacing:.3px;background:#e8f4fc;color:#004e7c;border:1px solid rgba(0,159,218,.3)}
@@ -1734,6 +1738,7 @@
       if (!arr.find(x => x.name === f.name)) {
         arr.push(f);
         added++;
+        fetchFileMetadata(f);
       }
     });
     if (added > 0) renderChips();
@@ -1746,6 +1751,7 @@
     } else {
       cF = cF.filter(f => f.name !== name);
     }
+    delete fileMetadata[name];
     renderChips();
   }
 
@@ -1758,7 +1764,19 @@
       chip.className = `chip ${t}`;
       const icon = t === 'p' ? '📄' : '📋';
       const safeName = f.name.replace(/'/g, "\'");
-      chip.innerHTML = `<span title="${f.name}">${icon} ${f.name}</span><button onclick="removeF('${safeName}','${t}')" aria-label="Remove ${f.name}">×</button>`;
+      const meta = fileMetadata[f.name];
+      let metaHtml = '';
+      if (meta) {
+        if (meta.extraction_status === 'failed') {
+          metaHtml = `<span class="chip-meta chip-meta-error">Could not extract text — may be scanned or password-protected. Try uploading a DOCX version.</span>`;
+        } else {
+          const wc = meta.word_count > 0 ? `~${meta.word_count.toLocaleString()} words` : '';
+          const dt = meta.doc_type && meta.doc_type !== 'Unknown' ? meta.doc_type : '';
+          const details = [wc, dt].filter(Boolean).join(' · ');
+          if (details) metaHtml = `<span class="chip-meta">${details}</span>`;
+        }
+      }
+      chip.innerHTML = `<div class="chip-main"><span title="${f.name}">${icon} ${f.name}</span><button onclick="removeF('${safeName}','${t}')" aria-label="Remove ${f.name}">×</button></div>${metaHtml}`;
       el.appendChild(chip);
     });
     document.getElementById('dp').classList.toggle('has', pF.length > 0);
@@ -1771,6 +1789,49 @@
     // Doc type area is updated automatically from Stage 1 output — hide initially
     const dtArea = document.getElementById('doc-type-area');
     if(dtArea) dtArea.style.display = 'none';
+  }
+
+  async function fetchFileMetadata(file) {
+    try {
+      const isPdf = file.name.toLowerCase().endsWith('.pdf');
+      let payload;
+      if (isPdf) {
+        await new Promise((res, rej) => {
+          const r = new FileReader();
+          r.onload = e => {
+            payload = { doc_b64: e.target.result.split(',')[1], doc_name: file.name };
+            res();
+          };
+          r.onerror = rej;
+          r.readAsDataURL(file);
+        });
+      } else {
+        await new Promise((res, rej) => {
+          const r = new FileReader();
+          r.onload = e => {
+            payload = { doc_text: e.target.result.slice(0, 10000) };
+            res();
+          };
+          r.onerror = rej;
+          r.readAsText(file);
+        });
+      }
+      const resp = await fetch('/api/detect-document-type', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (!resp.ok) return;
+      const data = await resp.json();
+      fileMetadata[file.name] = {
+        word_count: data.word_count || 0,
+        doc_type: data.document_type || 'Unknown',
+        extraction_status: data.extraction_status || 'ok'
+      };
+      renderChips();
+    } catch(e) {
+      // Metadata fetch failed — no update to chip, no error shown (non-blocking)
+    }
   }
 
   function updateDocTypeBadge() {
@@ -2557,6 +2618,7 @@ ${md(execSummary)}`;
   let stageFourPriorities = [];
   let currentPriority = 0;  // 0-indexed
   let explorerCache = {};   // {priorityIndex: parsedExplorerData}
+  let fileMetadata = {};   // {filename: {word_count, doc_type, extraction_status}}
   let explorerHistory = []; // for follow-up queries
   let fcvRating = '';
   let fcvResponsivenessRating = '';
