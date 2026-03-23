@@ -2824,6 +2824,14 @@ ${md(execSummary)}`;
       else { nextBtn.innerHTML = 'Next <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>'; nextBtn.onclick = nextPriority; }
     }
 
+    // Restore Explorer from localStorage before building card HTML (so it renders immediately)
+    if(!explorerCache[idx]){
+      try {
+        const stored = localStorage.getItem('explorer_priority_'+idx);
+        if(stored) explorerCache[idx] = JSON.parse(stored);
+      } catch(e) {}
+    }
+
     // Determine risk chip class
     const riskClass = pr.risk_level === 'High' ? 'pc-chip-risk-h' : pr.risk_level === 'Medium' ? 'pc-chip-risk-m' : 'pc-chip-risk-l';
 
@@ -2914,19 +2922,7 @@ ${md(execSummary)}`;
         <div class="pc-followup-answer" id="pc-followup-answer-${idx}"></div>
       </div>`;
 
-    // Restore from localStorage if not in memory cache
-    if(!explorerCache[idx]){
-      try {
-        const stored = localStorage.getItem('explorer_priority_'+idx);
-        if(stored){
-          explorerCache[idx] = JSON.parse(stored);
-          // Render immediately — no fetch needed
-          const optArea = document.getElementById(`explorer-options-${idx}`);
-          if(optArea) optArea.innerHTML = renderExplorerNarrativeHtml(explorerCache[idx], idx);
-        }
-      } catch(e) {}
-    }
-    // Load explorer if still not cached
+    // Load explorer if not cached (localStorage restore already done above)
     if(!explorerCache[idx]){
       loadExplorerForPriority(idx);
     }
@@ -2950,14 +2946,15 @@ ${md(execSummary)}`;
     }
     explorerAbortController = new AbortController();
 
-    // Start elapsed timer
+    // Start elapsed timer — use local handle to avoid stale abort clearing a newer timer
     let elapsed = 0;
     if(explorerTimerInterval) clearInterval(explorerTimerInterval);
-    explorerTimerInterval = setInterval(() => {
+    const timerHandle = setInterval(() => {
       elapsed++;
       const timerEl = document.getElementById(`exp-timer-${idx}`);
       if(timerEl) timerEl.textContent = `Generating… ${elapsed}s`;
     }, 1000);
+    explorerTimerInterval = timerHandle;
 
     const promptOverride = sessionPrompts['explorer'] || '';
     try {
@@ -2980,7 +2977,7 @@ ${md(execSummary)}`;
             const p = JSON.parse(line.slice(6));
             if(p.error) throw new Error(p.error);
             if(p.done){
-              if(explorerTimerInterval){ clearInterval(explorerTimerInterval); explorerTimerInterval = null; }
+              clearInterval(timerHandle); explorerTimerInterval = null;
               const parsed = parseExplorerText(p.result);
               explorerCache[idx] = parsed;
               // Persist to localStorage so results survive page refresh
@@ -2997,14 +2994,14 @@ ${md(execSummary)}`;
               updateSidebar();
             }
           } catch(e){ if(e.message!=='Unexpected end of JSON input'){
-            if(explorerTimerInterval){ clearInterval(explorerTimerInterval); explorerTimerInterval = null; }
+            clearInterval(timerHandle); explorerTimerInterval = null;
             const loadEl = document.getElementById(`exp-loading-${idx}`);
             if(loadEl) loadEl.textContent = 'Could not load options: '+e.message;
           }}
         }
       }
     } catch(e){
-      if(explorerTimerInterval){ clearInterval(explorerTimerInterval); explorerTimerInterval = null; }
+      clearInterval(timerHandle); explorerTimerInterval = null;
       const loadEl = document.getElementById(`exp-loading-${idx}`);
       if(e.name === 'AbortError'){
         if(loadEl) loadEl.textContent = 'Generation cancelled.';
