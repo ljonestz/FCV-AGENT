@@ -1952,7 +1952,7 @@
                 const outEl = document.getElementById('s-out');
                 if(outEl){
                   const errBanner = document.createElement('div');
-                  errBanner.className = 'trunc-warn-area ani';
+                  errBanner.className = 'ani';
                   errBanner.style.cssText = 'background:#fff3cd;border:1px solid #ffc107;border-radius:6px;padding:10px 14px;margin-top:12px;font-size:0.9em';
                   errBanner.textContent = p.parse_error_message || 'Stage 4 output could not be parsed — please re-run this stage.';
                   outEl.appendChild(errBanner);
@@ -2525,7 +2525,7 @@ ${md(execSummary)}`;
   // ── Stage 4 state ──────────────────────────────────────────────────────────
   let stageFourPriorities = [];
   let currentPriority = 0;  // 0-indexed
-  let explorerCache = {};   // {priorityTitle: parsedExplorerData}
+  let explorerCache = {};   // {priorityIndex: parsedExplorerData}
   let explorerHistory = []; // for follow-up queries
   let fcvRating = '';
   let fcvResponsivenessRating = '';
