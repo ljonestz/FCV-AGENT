@@ -180,6 +180,7 @@ Using the information extracted in Stage 1, assess how well this project\'s curr
 3. **Key gaps** in the current design relative to this recommendation
 4. **Risk to project delivery** from this gap: High / Medium / Low
 5. **Risk from project** (how the project could inadvertently worsen FCV dynamics) related to this recommendation: High / Medium / Low
+6. **Evidence citation:** For each recommendation, cite the specific design element, document passage, or project feature that justifies your rating. Do not give a generic assessment. Example: "Rated Partial because the PAD includes a stakeholder engagement plan (Section 4.2) but it does not differentiate consultation approaches by conflict-affected versus stable areas."
 
 Be specific — quote or reference the project document where possible. Note when information is insufficient to make a confident assessment.
 
