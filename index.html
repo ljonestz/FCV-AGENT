@@ -2021,7 +2021,13 @@
     } else {
       label = tag === '[S]' ? 'Sensitivity' : tag === '[R]' ? 'Responsiveness' : 'Sensitivity + Responsiveness';
     }
-    return `<span class="sr-tag ${cls}">${label}</span>`;
+    const tooltips = {
+      '[S]': 'FCV Sensitivity: this recommendation helps the project operate without causing harm or worsening fragility dynamics.',
+      '[R]': 'FCV Responsiveness: this recommendation actively addresses a root driver of fragility, aligned to one of the four WBG FCV Strategy pillars (preventing conflict, engaging in crisis, transitioning out of fragility, or mitigating spillovers).',
+      '[S+R]': 'Both Sensitivity and Responsiveness: applies only in four specific overlap zones — inclusion/targeting of conflict-affected populations, embedding FCV logic in the ToC/PDO, adaptive M&E that monitors harm AND builds resilience, or GRM designed to strengthen state-citizen accountability.'
+    };
+    const tooltip = tooltips[tag] || '';
+    return `<span class="sr-tag ${cls}" title="${tooltip}">${label}</span>`;
   }
 
   function renderSRCards(sensitivityText, responsivenessText) {
