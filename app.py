@@ -442,12 +442,15 @@ A single bolded sentence summarising the project's overall FCV integration statu
 Synthesise 3-4 converging FCV risks creating a uniquely challenging operating environment for THIS project. Forward-looking framing for post-preparation events. 2-3 citations max.
 
 ### FCV Risk Exposure (130-170 words, TWO PARAGRAPHS)
-This sub-section bridges the analytical findings from Stages 1-3 into plain-language insight for a non-FCV-specialist TTL. Output this section using EXACTLY this delimiter format:
+This sub-section bridges the analytical findings from Stages 1-3 into plain-language insight for a non-FCV-specialist TTL.
 
-%%%RISK_EXPOSURE_START%%%
-RISKS_TO_PROJECT: [One paragraph, 60-85 words. Identify the 2-3 FCV dynamics from the country context that pose the most direct threat to this project's delivery. Write in plain operational language — not analytical jargon. Name the specific risk and explain briefly why it matters for this project specifically.]
-RISKS_FROM_PROJECT: [One paragraph, 60-85 words. Identify 1-2 ways the project's current design could inadvertently worsen fragility or conflict if not carefully managed. Draw on Stage 2 "Risk FROM project" findings. Explain the mechanism clearly for a reader who has not seen Stages 1-3.]
-%%%RISK_EXPOSURE_END%%%
+Write two clearly labelled paragraphs:
+
+**Risks to project:** [One paragraph, 60-85 words. Identify the 2-3 FCV dynamics from the country context that pose the most direct threat to this project's delivery. Write in plain operational language — not analytical jargon. Name the specific risk and explain briefly why it matters for this project specifically.]
+
+**How project could affect fragility:** [One paragraph, 60-85 words. Identify 1-2 ways the project's current design could inadvertently worsen fragility or conflict if not carefully managed. Draw on Stage 2 "Risk FROM project" findings. Explain the mechanism clearly for a reader who has not seen Stages 1-3.]
+
+These two paragraphs will also be reproduced faithfully in the JSON block as `risk_to_project` and `risk_from_project` fields.
 
 ### Strengths (80-120 words, prose)
 3-4 concrete strengths actually present in the project document. Flowing prose. 2-3 citations max. Never cite the PCN/PAD itself.
@@ -455,15 +458,15 @@ RISKS_FROM_PROJECT: [One paragraph, 60-85 words. Identify 1-2 ways the project's
 ### Gaps (100-130 words, prose)
 The main weakness or cluster of weaknesses, constructively framed. Reference the OST FCV-sensitivity framework where relevant. 1-2 citations from RRA or external sources only.
 
-After the Gaps paragraph, output the following two blocks in order:
+After the Gaps paragraph, write the following two summary paragraphs:
 
-%%%SENSITIVITY_SUMMARY_START%%%
+**FCV Sensitivity Summary (80-100 words):**
 Write a paragraph of 80-100 words assessing the project's overall FCV SENSITIVITY standing. Cover: how well the project avoids doing harm in the FCV context, the quality of its contextual awareness, and its operational readiness. Be direct about the overall level — do not hedge. Reference 1-2 specific strengths and 1-2 specific gaps from the Stage 2 screening.
-%%%SENSITIVITY_SUMMARY_END%%%
+(This paragraph will also be reproduced faithfully in the JSON block as `sensitivity_summary`.)
 
-%%%RESPONSIVENESS_SUMMARY_START%%%
+**FCV Responsiveness Summary (80-100 words):**
 Write a paragraph of 80-100 words assessing the project's FCV RESPONSIVENESS — the degree to which it actively contributes to addressing root drivers of fragility and/or building resilience. Anchor this explicitly to whichever of the four FCV Strategy pillars are most relevant to this project's context and sector. Be honest: many projects will have low responsiveness scores. Say so clearly and explain what the missed opportunity is, rather than inflating the assessment.
-%%%RESPONSIVENESS_SUMMARY_END%%%
+(This paragraph will also be reproduced faithfully in the JSON block as `responsiveness_summary`.)
 
 ---
 
@@ -477,52 +480,26 @@ Each priority MUST:
 - Be actionable at TTL level, framed as options not mandates
 - Be titled: **Priority N · [Strong verb phrase]**
 
-For EACH priority, you will output structured fields (see delimiter format below). Each field must contain:
+For EACH priority, write the following fields clearly in the narrative. These will also be reproduced in the JSON block at the end:
 
 TITLE: Priority N · [Actionable verb phrase starting with a strong verb]
 FCV_DIMENSION: [One of: Institutional Legitimacy | Inclusion | Social Cohesion | Security | Economic Livelihoods | Resilience — these map to the analytical risk dimensions and will appear as visible tags on each priority card]
 RISK_LEVEL: [One of: High | Medium | Low]
 THE_GAP: 2-3 sentences on what is missing or inadequate in the current project design, specifically for this country and sector. Name the document section or component that is absent or insufficient.
-WHY_IT_MATTERS: 2-3 sentences covering both the operational consequence of not addressing this gap AND its significance through an FCV lens. Name the specific delivery risk, then explain the FCV mechanism at stake (e.g. exclusion fuelling grievance, weak institutions enabling spoilers, displacement disrupting community cohesion). Be concise — cover both dimensions in the same passage.
-SUGGESTED_DIRECTIONS: 2-3 sentences of entry points for the TTL. Use language like "Consider...", "The team may want to...", "Explore...". No bullet lists — write as flowing prose suggestions.
+WHY_IT_MATTERS: 2-3 sentences covering both the operational consequence of not addressing this gap AND its significance through an FCV lens. Name the specific delivery risk, then explain the FCV mechanism at stake (e.g. exclusion fuelling grievance, weak institutions enabling spoilers, displacement disrupting community cohesion). Be concise — cover both dimensions in the same passage. For any priority tagged [R] or [S+R], include a one-sentence S/R justification at the end: e.g., "Tagged [R] because this directly addresses Pillar 2 (remaining engaged during crisis) of the WBG FCV Strategy 2020–2025."
+recommendation: Write ONE cohesive recommended action for this priority. It may contain multiple components (e.g., "Revise the beneficiary targeting criteria to explicitly include IDP households in Bentiu and Malakal, update the consultation plan to ensure female-headed households are reached, and add a disaggregated monitoring indicator tracking service uptake by displacement status") but it must read as a single direction — not a menu of choices. No bullet points within this field. No "Option A / Option B" structure. If multiple actions are truly needed, pick the highest-leverage one and note what it depends on.
 WHO_ACTS: [One of: TTL | PIU | Government counterpart | FCV specialist | Procurement team]
 WHEN: [One of: At design stage | Before appraisal | During implementation]
 RESOURCES: [One of: Minimal | Moderate | Significant]
 
-Language to use: "Consider...", "The team may want to...", "Would benefit from...", "Explore...", "Could strengthen..."
+GEOGRAPHIC VALIDATION: Before finalising each priority, check: does the `the_gap` field name at least one specific location, group, or institution drawn from the uploaded documents or web research? If not, revise it. If no specific geography is available in your sources, name the administrative level at which the project operates (e.g., county, district, commune) and note that sub-national detail is missing.
+
 Strict prohibitions: NO specific percentages or dollar amounts; NO generic language; NO sub-bullet lists within a priority; NO criticism for post-preparation events.
 
 ---
 
-# CRITICAL — FCV SENSITIVITY RATING
-Before the first priority delimiter, output a single rating line:
-
-%%%FCV_RATING: [level]%%%
-
-Where [level] is EXACTLY one of: Extremely Low | Very Low | Low | Adequate | Well Embedded | Very Well Embedded
-
-Base this on the project's CURRENT state of FCV integration — not the ideal state after applying these priorities.
-
----
-
-# CRITICAL — FCV RESPONSIVENESS RATING
-Immediately after the FCV Sensitivity Rating line, output a second rating line:
-
-%%%FCV_RESPONSIVENESS_RATING: [level]%%%
-
-Where [level] is EXACTLY one of: Extremely Low | Very Low | Low | Adequate | Well Embedded | Very Well Embedded
-
-Base this on the project's current FCV RESPONSIVENESS — the degree to which it actively addresses root drivers of fragility or builds resilience through the four FCV Strategy pillars. Note: most projects will have a lower responsiveness rating than sensitivity rating; do not inflate this score.
-
----
-
-# CRITICAL — PRIORITY DELIMITER FORMAT
-Wrap each priority block in delimiter tags. Use EXACTLY this format — every field on its own line with no extra blank lines between fields:
-
-%%%PRIORITY_START%%%
-TITLE: Priority N · [Actionable verb phrase]
-FCV_DIMENSION: [dimension]
-TAG: Output EXACTLY one of: [S] / [R] / [S+R]
+# TAG DEFINITIONS FOR PRIORITIES
+For each priority, assign a TAG using EXACTLY one of: [S] / [R] / [S+R]
 
 Apply the following definitions strictly. [S+R] must be earned — do not use it by default.
 
@@ -532,25 +509,14 @@ Apply the following definitions strictly. [S+R] must be earned — do not use it
 
 [S+R] — Reserve ONLY for priorities that genuinely and substantively serve both functions simultaneously. The four legitimate overlap zones are: (1) inclusion/targeting of conflict-affected or displaced populations — avoids exclusion harm (S) AND addresses exclusion as a root driver (R, Pillar 1); (2) embedding FCV logic substantively in the ToC/PDO framing, not just the risk register; (3) adaptive M&E that both monitors for harm AND adapts project scope to strengthen resilience in real time (Pillar 2); (4) a GRM or citizen engagement mechanism designed explicitly to strengthen government accountability and the state-citizen relationship (Pillar 3). If in doubt, assign [S] or [R] — most priorities will not qualify for [S+R].
 
-Output the tag label only — no explanation.
-RISK_LEVEL: [level]
-THE_GAP: [2-3 sentences]
-WHY_IT_MATTERS: [2-3 sentences — operational + FCV dimensions combined]
-SUGGESTED_DIRECTIONS: [2-3 sentences]
-WHO_ACTS: [one actor]
-WHEN: [one stage]
-RESOURCES: [one level]
-%%%PRIORITY_END%%%
-
-These delimiters are parsed by the interface. Do not add text between %%%PRIORITY_END%%% and the next %%%PRIORITY_START%%%.
-
 ---
 
 # Citation Format
 - CRITICAL: Only cite a document by name (e.g. [Honduras RRA 2023]) if it was explicitly uploaded as a contextual document and appeared with a [From: document name] citation in the Stage 1 analysis above. NEVER fabricate or assume document titles — even if you know a document of that type likely exists for this country.
-- For findings drawn from training knowledge, use: [From: training knowledge] or name the specific organisation (e.g. [From: World Bank FCV assessment], [From: ICG], [From: ACLED])
+- For findings drawn from training knowledge, use: [From: training knowledge] or name the specific organisation (e.g. [From: World Bank], [From: ICG], [From: ACLED])
 - For findings from automated web research, use: [From: web research] or name the specific source if identifiable
 - NEVER cite the PCN or PAD being reviewed
+- CRITICAL: In all text fields of the JSON block, ONLY cite documents that appeared as [From: doc name] in Stage 1, or well-known organisations (World Bank, ACLED, UNODC, ICG, UNHCR, WFP, OCHA, ND-GAIN, OECD). NEVER fabricate document titles, report dates, or RRA names. If no specific source supports a claim, write it without a citation or attribute it to [From: training knowledge].
 - No page numbers; keep citations sparse and naturally integrated
 
 # Word Count Targets
@@ -564,18 +530,49 @@ These delimiters are parsed by the interface. Do not add text between %%%PRIORIT
 - TOTAL MAXIMUM: 2,200 words
 
 # Quality Check Before Submitting
-- Every priority wrapped in %%%PRIORITY_START%%% / %%%PRIORITY_END%%% delimiters
-- Every priority has all 10 fields: TITLE, FCV_DIMENSION, TAG, RISK_LEVEL, THE_GAP, WHY_IT_MATTERS, SUGGESTED_DIRECTIONS, WHO_ACTS, WHEN, RESOURCES
-- %%%SENSITIVITY_SUMMARY_START%%% / %%%SENSITIVITY_SUMMARY_END%%% block is present (80-100 words)
-- %%%RESPONSIVENESS_SUMMARY_START%%% / %%%RESPONSIVENESS_SUMMARY_END%%% block is present (80-100 words)
-- %%%FCV_RESPONSIVENESS_RATING:%%% line is present immediately after %%%FCV_RATING:%%%
-- 4-5 priorities total
+- 4–5 priorities total
 - Every priority names at least one specific geography, group, institution, or historical event
+- `recommendation` field contains a single cohesive action, not a menu of options
+- For any [R] or [S+R] priority, `why_it_matters` includes the S/R pillar justification sentence
+- All citations are from Stage 1 uploaded documents or the approved whitelist — no fabricated document titles
+- JSON block is present at the end, wrapped in %%%JSON_START%%% / %%%JSON_END%%%
+- All 7 top-level JSON fields are populated (fcv_rating, fcv_responsiveness_rating, sensitivity_summary, responsiveness_summary, risk_to_project, risk_from_project, priorities)
+- Each priority JSON object has all 10 fields: number, title, dimension, tag, risk_level, the_gap, why_it_matters, recommendation, who_acts, when, resources
 - No generic or templated language anywhere
-- FCV Risk Exposure section has exactly two paragraphs: one on risks TO the project, one on how the project could affect FCV dynamics
-- FCV Risk Exposure is written in plain language accessible to a non-FCV-specialist — no unexplained jargon
-- RISK_EXPOSURE block is present with both RISKS_TO_PROJECT and RISKS_FROM_PROJECT fields
-- Both RISKS_TO_PROJECT and RISKS_FROM_PROJECT are written in plain language with no unexplained jargon
+
+# CRITICAL — JSON OUTPUT BLOCK
+
+After completing the full narrative output above, append a machine-readable JSON block in EXACTLY this format, between %%%JSON_START%%% and %%%JSON_END%%% markers. This block is parsed by the interface — do not modify the field names, do not skip any field. If a field has no content, write "Not identified" rather than leaving it blank.
+
+The FCV ratings, summaries, and risk exposure paragraphs you have written in the narrative above should be faithfully reproduced in the appropriate JSON fields.
+
+%%%JSON_START%%%
+{
+  "fcv_rating": "Adequate",
+  "fcv_responsiveness_rating": "Low",
+  "sensitivity_summary": "80–100 word assessment copied from the FCV Sensitivity Summary narrative block above",
+  "responsiveness_summary": "80–100 word assessment copied from the FCV Responsiveness Summary narrative block above",
+  "risk_to_project": "The Risks to project paragraph from the FCV Risk Exposure section above",
+  "risk_from_project": "The How project could affect fragility paragraph from the FCV Risk Exposure section above",
+  "priorities": [
+    {
+      "number": 1,
+      "title": "Priority 1 · Short descriptive phrase",
+      "dimension": "Inclusion",
+      "tag": "[S+R]",
+      "risk_level": "High",
+      "the_gap": "Specific gap with named location/group/institution",
+      "why_it_matters": "Why this gap matters for this project, including S/R pillar justification for [R] or [S+R] tags",
+      "recommendation": "One cohesive recommended action — not a menu of options",
+      "who_acts": "TTL",
+      "when": "Project preparation",
+      "resources": "Moderate"
+    }
+  ]
+}
+%%%JSON_END%%%
+
+IMPORTANT: The JSON block must come AFTER all narrative text. Do not include any explanatory text inside the JSON block itself. Use exact field names as shown. The `tag` field must be exactly "[S]", "[R]", or "[S+R]" (with square brackets). The `fcv_rating` and `fcv_responsiveness_rating` must be exactly one of: "Extremely Low" | "Very Low" | "Low" | "Adequate" | "Well Embedded" | "Very Well Embedded".
 
 Now produce the FCV Support Note following this exact structure.''',
 
