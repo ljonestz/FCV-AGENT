@@ -2038,6 +2038,10 @@
                 if(p.research_country) researchCountry=p.research_country;
                 if(researchBrief) injectResearchBriefPanel(researchBrief,researchCountry);
               }
+              // Store completion timestamp for consistency checking
+              if(stage===2) localStorage.setItem('stage2_timestamp', Date.now());
+              if(stage===3){ localStorage.setItem('stage3_timestamp', Date.now()); localStorage.removeItem('stage3_consistency_dismissed'); }
+              if(stage===4){ localStorage.setItem('stage4_timestamp', Date.now()); localStorage.removeItem('stage4_consistency_dismissed'); }
               // Explorer panel + sidebar for Stage 4
               if(stage===4 && p.priorities && p.priorities.length){
                 stageFourPriorities=p.priorities;
@@ -2292,6 +2296,24 @@
       </div>
       `;
 
+    // Stage consistency check: warn if Stage 2 was updated after Stage 3 or Stage 4
+    if(stage === 3 || stage === 4){
+      const s2ts = parseInt(localStorage.getItem('stage2_timestamp') || '0');
+      const sXts = parseInt(localStorage.getItem(`stage${stage}_timestamp`) || '0');
+      const dismissed = localStorage.getItem(`stage${stage}_consistency_dismissed`) === 'true';
+      if(s2ts > sXts && sXts > 0 && !dismissed){
+        const outEl = document.getElementById('stage-disp');
+        if(outEl){
+          const banner = document.createElement('div');
+          banner.id = `consistency-banner-${stage}`;
+          banner.className = 'ani';
+          banner.style.cssText = 'background:#fefce8;border:1px solid #ca8a04;border-radius:6px;padding:10px 14px;margin-bottom:12px;font-size:0.9em;color:#713f12;display:flex;align-items:center;gap:10px';
+          banner.innerHTML = `<span>Stage 2 was updated after this output was generated — consider re-running Stages 3 and 4 for consistency.</span><button style="margin-left:auto;background:none;border:none;cursor:pointer;color:#713f12;font-size:1em" onclick="localStorage.setItem('stage${stage}_consistency_dismissed','true');this.closest('#consistency-banner-${stage}').remove()" title="Dismiss">✕</button>`;
+          outEl.insertBefore(banner, outEl.firstChild);
+        }
+      }
+    }
+
     document.getElementById('refine-area').innerHTML=`
       <div class="refine-card ani">
         <div class="refine-lbl">
@@ -2481,6 +2503,7 @@ ${md(execSummary)}`;
 
   function reset(){
     pF=[];cF=[];hist=[];curS=0;busy=false;stageOutputs={};stageHists={};researchBrief='';researchCountry='';
+    ['stage2_timestamp','stage3_timestamp','stage4_timestamp','stage3_consistency_dismissed','stage4_consistency_dismissed'].forEach(k=>localStorage.removeItem(k));
     document.getElementById('upload-panel').style.display='block';
     document.getElementById('analysis-panel').style.display='none';
     document.getElementById('landing-hero').style.display='block';
