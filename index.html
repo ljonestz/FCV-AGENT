@@ -1809,6 +1809,7 @@
         await new Promise((res, rej) => {
           const r = new FileReader();
           r.onload = e => {
+            // Slice to 10k chars for speed — word count will be understated for large non-PDF files
             payload = { doc_text: e.target.result.slice(0, 10000) };
             res();
           };
