@@ -1256,6 +1256,31 @@
     color: #1A202C;
     border: 1px solid #CBD5E1;
   }
+
+  /* ── Priority card warning badges ──────────────────────────────────────── */
+  .warn-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #fffbeb;
+    border: 1px solid #f59e0b;
+    border-radius: 5px;
+    padding: 5px 10px;
+    font-size: 0.8em;
+    color: #92400e;
+    margin-top: 6px;
+  }
+  .warn-dismiss {
+    margin-left: auto;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #92400e;
+    font-size: 0.9em;
+    padding: 0 2px;
+    line-height: 1;
+  }
+  .warn-dismiss:hover { opacity: 0.7; }
 </style>
 </head>
 <body>
@@ -2724,6 +2749,27 @@ ${md(execSummary)}`;
     // Determine risk chip class
     const riskClass = pr.risk_level === 'High' ? 'pc-chip-risk-h' : pr.risk_level === 'Medium' ? 'pc-chip-risk-m' : 'pc-chip-risk-l';
 
+    // Build warning badges
+    const specKey = `specificity_dismissed_${idx}`;
+    const citeKey = `citation_dismissed_${idx}`;
+    const specDismissed = localStorage.getItem(specKey) === 'true';
+    const citeDismissed = localStorage.getItem(citeKey) === 'true';
+
+    let warningBadges = '';
+    if(pr.specificity_warning && !specDismissed){
+      warningBadges += `<div class="warn-badge" id="warn-spec-${idx}">
+        ⚠ May lack geographic specificity — review before sharing.
+        <button class="warn-dismiss" onclick="localStorage.setItem('${specKey}','true');document.getElementById('warn-spec-${idx}').remove()" title="Dismiss">✕</button>
+      </div>`;
+    }
+    if(pr.unverified_citations && pr.unverified_citations.length && !citeDismissed){
+      const citeList = pr.unverified_citations.map(c => esc(c)).join(', ');
+      warningBadges += `<div class="warn-badge" id="warn-cite-${idx}" title="Unverified: ${citeList}">
+        ⚠ Contains unverified citation(s) — confirm source exists before sharing.
+        <button class="warn-dismiss" onclick="localStorage.setItem('${citeKey}','true');document.getElementById('warn-cite-${idx}').remove()" title="Dismiss">✕</button>
+      </div>`;
+    }
+
     // Render card
     const cardArea = document.getElementById('priority-card-area');
     if(!cardArea) return;
@@ -2744,6 +2790,7 @@ ${md(execSummary)}`;
               ${pr.when ? `<span class="pc-meta-chip"><strong>When:</strong> ${esc(pr.when)}</span>` : ''}
               ${pr.resources ? `<span class="pc-meta-chip"><strong>Resources:</strong> ${esc(pr.resources)}</span>` : ''}
             </div>` : ''}
+            ${warningBadges}
           </div>
         </div>
         <!-- Zone 1: The Gap -->
