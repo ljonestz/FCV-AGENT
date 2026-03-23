@@ -1591,14 +1591,23 @@ def run_stage():
                 risk_exposure = None
                 sensitivity_summary = ''
                 responsiveness_summary = ''
+                parse_error = False
+                parse_error_message = ''
                 if stage == 4:
-                    priorities = extract_priorities(full_text)
-                    fcv_rating = extract_fcv_rating(full_text)
-                    fcv_responsiveness_rating = extract_fcv_responsiveness_rating(full_text)
+                    uploaded_doc_names = [
+                        doc.get('name', '') for doc in data.get('documents', [])
+                        if doc.get('name')
+                    ]
+                    parsed = extract_priorities(full_text, uploaded_doc_names)
+                    priorities = parsed.get('priorities', [])
+                    fcv_rating = parsed.get('fcv_rating', '')
+                    fcv_responsiveness_rating = parsed.get('fcv_responsiveness_rating', '')
+                    risk_exposure = parsed.get('risk_exposure', None)
+                    sensitivity_summary = parsed.get('sensitivity_summary', '')
+                    responsiveness_summary = parsed.get('responsiveness_summary', '')
                     gap_table = extract_gap_table(full_text)
-                    risk_exposure = extract_risk_exposure(full_text)
-                    sensitivity_summary = extract_sensitivity_summary(full_text)
-                    responsiveness_summary = extract_responsiveness_summary(full_text)
+                    parse_error = parsed.get('error', False)
+                    parse_error_message = parsed.get('message', '')
                     full_text = clean_stage4_output(full_text)
                     from datetime import date
                     header = DO_NO_HARM_HEADER.format(date=date.today().strftime('%d %B %Y'))
@@ -1618,7 +1627,7 @@ def run_stage():
                 if len(updated_messages) > 20:
                     updated_messages = updated_messages[-20:]
 
-                yield f"data: {json.dumps({'done': True, 'result': full_text, 'history': updated_messages, 'stage': stage, 'priorities': priorities, 'fcv_rating': fcv_rating, 'fcv_responsiveness_rating': fcv_responsiveness_rating, 'gap_table': gap_table, 'risk_exposure': risk_exposure, 'sensitivity_summary': sensitivity_summary, 'responsiveness_summary': responsiveness_summary, 'research_brief': research_brief_text if stage == 1 else None, 'research_country': research_country if stage == 1 else None})}\n\n"
+                yield f"data: {json.dumps({'done': True, 'result': full_text, 'history': updated_messages, 'stage': stage, 'priorities': priorities, 'fcv_rating': fcv_rating, 'fcv_responsiveness_rating': fcv_responsiveness_rating, 'gap_table': gap_table, 'risk_exposure': risk_exposure, 'sensitivity_summary': sensitivity_summary, 'responsiveness_summary': responsiveness_summary, 'parse_error': parse_error, 'parse_error_message': parse_error_message, 'research_brief': research_brief_text if stage == 1 else None, 'research_country': research_country if stage == 1 else None})}\n\n"
 
             except anthropic.AuthenticationError:
                 yield f"data: {json.dumps({'error': 'Invalid API key.'})}\n\n"
