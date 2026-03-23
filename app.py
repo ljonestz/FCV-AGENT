@@ -715,16 +715,23 @@ Begin your response immediately with %%%EXPLORER_NARRATIVE_START%%%.'''}
 
 
 def clean_stage4_output(text):
-    """Strip %%%PRIORITY_START/END%%% blocks and %%%FCV_RATING:...%%% delimiters.
-    Priority content is now rendered by the card UI, so we remove all delimiter
-    blocks from the display text entirely — only preamble + executive summary remain.
+    """Strip machine-readable blocks from Stage 4 output, leaving only the narrative.
+
+    Primary target: %%%JSON_START%%% / %%%JSON_END%%% block emitted by the new
+    JSON-architecture prompt. The JSON block contains all structured data (priorities,
+    ratings, summaries, risk exposure) and is parsed separately by extract_priorities().
+
+    Fallback stripping of legacy delimiter blocks is preserved so that any cached or
+    stored Stage 4 outputs produced by the old prompt continue to render cleanly.
+
+    Heading cleanup and blank-line normalisation are also applied.
     """
-    # Remove all priority blocks — UI renders them via card system
+    # Primary: strip the new JSON block — all structured data lives here
+    text = re.sub(r'%%%JSON_START%%%.*?%%%JSON_END%%%', '', text, flags=re.DOTALL)
+    # Fallback: strip legacy delimiter blocks from old-format Stage 4 outputs
     text = re.sub(r'%%%PRIORITY_START%%%.*?%%%PRIORITY_END%%%', '', text, flags=re.DOTALL)
-    # Remove FCV rating lines
     text = re.sub(r'%%%FCV_RATING:[^%]*%%%\n?', '', text)
     text = re.sub(r'%%%FCV_RESPONSIVENESS_RATING:[^%]*%%%\n?', '', text)
-    # Remove gap table, risk exposure, and S/R summary blocks — UI renders them
     text = re.sub(r'%%%GAP_TABLE_START%%%.*?%%%GAP_TABLE_END%%%', '', text, flags=re.DOTALL)
     text = re.sub(r'%%%RISK_EXPOSURE_START%%%.*?%%%RISK_EXPOSURE_END%%%', '', text, flags=re.DOTALL)
     text = re.sub(r'%%%SENSITIVITY_SUMMARY_START%%%.*?%%%SENSITIVITY_SUMMARY_END%%%', '', text, flags=re.DOTALL)
@@ -737,22 +744,6 @@ def clean_stage4_output(text):
     # Clean up extra blank lines left by removal
     text = re.sub(r'\n{3,}', '\n\n', text).strip()
     return text
-
-
-def extract_fcv_rating(text):
-    """Parse %%%FCV_RATING: [level]%%% from Stage 4 output."""
-    m = re.search(r'%%%FCV_RATING:\s*([^%\n]+)%%%', text)
-    if m:
-        return m.group(1).strip()
-    return ''
-
-
-def extract_fcv_responsiveness_rating(text):
-    """Parse %%%FCV_RESPONSIVENESS_RATING: [level]%%% from Stage 4 output."""
-    m = re.search(r'%%%FCV_RESPONSIVENESS_RATING:\s*([^%\n]+)%%%', text)
-    if m:
-        return m.group(1).strip()
-    return ''
 
 
 def extract_gap_table(text):
@@ -782,32 +773,6 @@ def extract_gap_table(text):
             'risk': get_val('RISK'),
         })
     return table
-
-
-def extract_sensitivity_summary(text):
-    """Parse %%%SENSITIVITY_SUMMARY_START%%% / %%%SENSITIVITY_SUMMARY_END%%% block from Stage 4 output."""
-    m = re.search(r'%%%SENSITIVITY_SUMMARY_START%%%(.*?)%%%SENSITIVITY_SUMMARY_END%%%', text, re.DOTALL)
-    return m.group(1).strip() if m else ''
-
-
-def extract_responsiveness_summary(text):
-    """Parse %%%RESPONSIVENESS_SUMMARY_START%%% / %%%RESPONSIVENESS_SUMMARY_END%%% block from Stage 4 output."""
-    m = re.search(r'%%%RESPONSIVENESS_SUMMARY_START%%%(.*?)%%%RESPONSIVENESS_SUMMARY_END%%%', text, re.DOTALL)
-    return m.group(1).strip() if m else ''
-
-
-def extract_risk_exposure(text):
-    """Parse %%%RISK_EXPOSURE_START%%% / %%%RISK_EXPOSURE_END%%% block from Stage 4 output."""
-    m = re.search(r'%%%RISK_EXPOSURE_START%%%(.*?)%%%RISK_EXPOSURE_END%%%', text, re.DOTALL)
-    if not m:
-        return None
-    block = m.group(1).strip()
-    to_match = re.search(r'RISKS_TO_PROJECT:\s*(.+?)(?=RISKS_FROM_PROJECT:|$)', block, re.DOTALL)
-    from_match = re.search(r'RISKS_FROM_PROJECT:\s*(.+?)$', block, re.DOTALL)
-    return {
-        'risks_to': to_match.group(1).strip() if to_match else '',
-        'risks_from': from_match.group(1).strip() if from_match else '',
-    }
 
 
 def extract_priorities(text: str, uploaded_doc_names: list = None) -> dict:
