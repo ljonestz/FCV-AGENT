@@ -565,7 +565,7 @@ The FCV ratings, summaries, and risk exposure paragraphs you have written in the
       "why_it_matters": "Why this gap matters for this project, including S/R pillar justification for [R] or [S+R] tags",
       "recommendation": "One cohesive recommended action — not a menu of options",
       "who_acts": "TTL",
-      "when": "Project preparation",
+      "when": "Before appraisal",
       "resources": "Moderate"
     }
   ]
