@@ -1262,7 +1262,13 @@ def run_fcv_web_research(country: str, sector: str, api_client) -> dict:
 
 app = Flask(__name__, static_folder='static')
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
-client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
+_client = None
+
+def get_client():
+    global _client
+    if _client is None:
+        _client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
+    return _client
 
 
 @app.route('/')
@@ -1348,7 +1354,7 @@ def detect_document_type_route():
             text = data['doc_text']
         else:
             return jsonify({'error': 'doc_text or doc_b64 required'}), 400
-        doc_type = detect_document_type_from_text(text, client)
+        doc_type = detect_document_type_from_text(text, get_client())
         return jsonify({'document_type': doc_type})
     except Exception as e:
         return jsonify({'document_type': 'Unknown', 'error': str(e)})
@@ -1459,8 +1465,8 @@ def run_stage():
                     try:
                         first_doc_text = doc_parts[0]['raw_text'] if doc_parts else ''
                         yield f"data: {json.dumps({'research_status': 'extracting_country'})}\n\n"
-                        research_country = extract_country_name(first_doc_text, client)
-                        research_sector = extract_sector_name(first_doc_text, client)
+                        research_country = extract_country_name(first_doc_text, get_client())
+                        research_sector = extract_sector_name(first_doc_text, get_client())
 
                         cache_key = f"{research_country.lower().strip()}::{research_sector.lower().strip()}"
                         if cache_key in _research_cache:
@@ -1469,7 +1475,7 @@ def run_stage():
                             yield f"data: {json.dumps({'research_status': 'cached', 'country': research_country})}\n\n"
                         else:
                             yield f"data: {json.dumps({'research_status': 'searching', 'country': research_country})}\n\n"
-                            research_data = run_fcv_web_research(research_country, research_sector, client)
+                            research_data = run_fcv_web_research(research_country, research_sector, get_client())
                             research_brief_text = research_data['brief']
                             _research_cache[cache_key] = research_data
 
@@ -1488,7 +1494,7 @@ def run_stage():
                             large_idx = large_docs.index(dp) + 1
                             doc_msg = f'Reading {dp["name"]} — extracting FCV-relevant content ({large_idx} of {n_large})…'
                             yield f"data: {json.dumps({'preprocess': doc_msg})}\n\n"
-                            final_text = extract_fcv_content(dp['raw_text'], dp['name'], client)
+                            final_text = extract_fcv_content(dp['raw_text'], dp['name'], get_client())
                         else:
                             final_text = dp['raw_text']
 
@@ -1515,7 +1521,7 @@ def run_stage():
                     content_parts.append({"type": "text", "text": stage_prompt})
                     messages.append({"role": "user", "content": content_parts})
 
-                with client.messages.stream(
+                with get_client().messages.stream(
                     model="claude-sonnet-4-20250514",
                     max_tokens=16000,
                     messages=messages
@@ -1631,7 +1637,7 @@ def run_explorer():
             collected = []
             try:
                 yield f"data: {json.dumps({'ping': True})}\n\n"
-                with client.messages.stream(
+                with get_client().messages.stream(
                     model="claude-sonnet-4-20250514",
                     max_tokens=4000,
                     messages=messages

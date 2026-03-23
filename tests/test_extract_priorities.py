@@ -89,12 +89,6 @@ TITLE: Priority 1 · Old format
 %%%PRIORITY_END%%%
 '''
 
-VAGUE_TEXT_FIXTURE_TEMPLATE = '''%%%JSON_START%%%
-{}
-%%%JSON_END%%%
-'''
-
-
 def _make_vague_fixture():
     """Build a valid JSON fixture where priority 0 has generic (vague) language."""
     data = json.loads(re.search(
@@ -102,7 +96,7 @@ def _make_vague_fixture():
     ).group(1))
     data['priorities'][0]['the_gap'] = 'the project lacks adequate stakeholder engagement.'
     data['priorities'][0]['recommendation'] = 'consider improving the approach to community outreach.'
-    return VAGUE_TEXT_FIXTURE_TEMPLATE.format(json.dumps(data))
+    return f'%%%JSON_START%%%\n{json.dumps(data)}\n%%%JSON_END%%%\n'
 
 
 def _make_citation_fixture(extra_cite):
@@ -110,7 +104,7 @@ def _make_citation_fixture(extra_cite):
         r'%%%JSON_START%%%(.*?)%%%JSON_END%%%', VALID_JSON_FIXTURE, re.DOTALL
     ).group(1))
     data['priorities'][0]['the_gap'] += f' {extra_cite}'
-    return VAGUE_TEXT_FIXTURE_TEMPLATE.format(json.dumps(data))
+    return f'%%%JSON_START%%%\n{json.dumps(data)}\n%%%JSON_END%%%\n'
 
 
 # ── Happy-path tests ──────────────────────────────────────────────────────────
@@ -210,7 +204,7 @@ class TestCitationCheck:
 
     def test_org_whitelist_not_flagged(self):
         fixture = _make_citation_fixture('[From: ACLED data]')
-        result = extract_priorities(fixture)
+        result = extract_priorities(fixture, uploaded_doc_names=[])
         unverified = result['priorities'][0]['unverified_citations']
         assert not any('ACLED' in c for c in unverified)
 
