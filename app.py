@@ -325,6 +325,8 @@ Keep entries concise — 3-5 sentences per recommendation. Only cover recommenda
 
 ## Part B: Recommended Mitigation Measures
 
+IMPORTANT: Only propose mitigations for recommendations rated Partial, Weak, or Not Addressed in Stage 2. Do not re-surface recommendations rated Strong or Well Embedded — these do not need mitigation. Reference the Stage 2 rating explicitly when introducing each mitigation: e.g., "Stage 2 rated stakeholder engagement as Partial because the consultation plan did not differentiate approaches by conflict-affected versus stable areas — the mitigation therefore focuses on..."
+
 For each gap identified in Part A, propose specific, actionable mitigations. Structure each as:
 
 **Gap addressed:** [One-line description]
