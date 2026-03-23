@@ -851,6 +851,17 @@
       display:flex;align-items:center;gap:12px;padding:20px 0;
       justify-content:center;color:var(--muted);font-size:13px;
     }
+    .exp-cancel-btn {
+      background: none;
+      border: 1px solid currentColor;
+      border-radius: 4px;
+      padding: 1px 8px;
+      cursor: pointer;
+      font-size: 0.85em;
+      color: var(--muted);
+      margin-left: 8px;
+    }
+    .exp-cancel-btn:hover { opacity: 0.7; }
 
     /* ── Explorer narrative (new design) ── */
     .fcv-explorer-narrative {
@@ -2031,6 +2042,8 @@
               if(stage===4 && p.priorities && p.priorities.length){
                 stageFourPriorities=p.priorities;
                 explorerCache = {};
+                // Clear localStorage cache so stale explorer results don't reappear for new Stage 4 run
+                Object.keys(localStorage).filter(k=>k.startsWith('explorer_priority_')).forEach(k=>localStorage.removeItem(k));
                 explorerHistory=[];
                 updateSidebar();
                 populateExplorerDropdown(p.priorities);
@@ -2619,6 +2632,8 @@ ${md(execSummary)}`;
   let stageFourPriorities = [];
   let currentPriority = 0;  // 0-indexed
   let explorerCache = {};   // {priorityIndex: parsedExplorerData}
+  let explorerAbortController = null;  // AbortController for cancelling in-flight explorer fetch
+  let explorerTimerInterval = null;    // setInterval handle for elapsed-time display
   let fileMetadata = {};   // {filename: {word_count, doc_type, extraction_status}}
   let explorerHistory = []; // for follow-up queries
   let fcvRating = '';
@@ -2883,7 +2898,8 @@ ${md(execSummary)}`;
             ${pr.recommendation ? `<div class="pc-zone-body" style="margin-bottom:10px">${esc(pr.recommendation)}</div>` : ''}
             <div class="exp-loading" id="exp-loading-${idx}" style="font-size:0.85em;color:var(--muted)">
               <svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;animation:spin 1s linear infinite;flex-shrink:0"><circle cx="12" cy="12" r="10" stroke-opacity=".25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-opacity="1"/></svg>
-              Loading detailed analysis…
+              <span id="exp-timer-${idx}">Generating…</span>
+              <button onclick="cancelExplorer()" class="exp-cancel-btn" title="Cancel generation">Cancel</button>
             </div>`}
           </div>
         </div>
@@ -2898,7 +2914,19 @@ ${md(execSummary)}`;
         <div class="pc-followup-answer" id="pc-followup-answer-${idx}"></div>
       </div>`;
 
-    // Load explorer if not cached
+    // Restore from localStorage if not in memory cache
+    if(!explorerCache[idx]){
+      try {
+        const stored = localStorage.getItem('explorer_priority_'+idx);
+        if(stored){
+          explorerCache[idx] = JSON.parse(stored);
+          // Render immediately — no fetch needed
+          const optArea = document.getElementById(`explorer-options-${idx}`);
+          if(optArea) optArea.innerHTML = renderExplorerNarrativeHtml(explorerCache[idx], idx);
+        }
+      } catch(e) {}
+    }
+    // Load explorer if still not cached
     if(!explorerCache[idx]){
       loadExplorerForPriority(idx);
     }
@@ -2916,12 +2944,27 @@ ${md(execSummary)}`;
     const pr = stageFourPriorities[idx];
     if(!pr || explorerCache[idx]) return;
 
+    // Cancel any in-flight explorer request
+    if(explorerAbortController && !explorerAbortController.signal.aborted){
+      explorerAbortController.abort();
+    }
+    explorerAbortController = new AbortController();
+
+    // Start elapsed timer
+    let elapsed = 0;
+    if(explorerTimerInterval) clearInterval(explorerTimerInterval);
+    explorerTimerInterval = setInterval(() => {
+      elapsed++;
+      const timerEl = document.getElementById(`exp-timer-${idx}`);
+      if(timerEl) timerEl.textContent = `Generating… ${elapsed}s`;
+    }, 1000);
+
     const promptOverride = sessionPrompts['explorer'] || '';
     try {
       const payload = { priority_title: pr.title, priority_body: pr.body, history: hist };
       if(promptOverride) payload.prompt_override = promptOverride;
 
-      const res = await fetch('/api/run-explorer', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+      const res = await fetch('/api/run-explorer', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload), signal: explorerAbortController.signal });
       if(!res.ok) throw new Error('Server error '+res.status);
 
       const reader = res.body.getReader(), dec = new TextDecoder();
@@ -2937,8 +2980,11 @@ ${md(execSummary)}`;
             const p = JSON.parse(line.slice(6));
             if(p.error) throw new Error(p.error);
             if(p.done){
+              if(explorerTimerInterval){ clearInterval(explorerTimerInterval); explorerTimerInterval = null; }
               const parsed = parseExplorerText(p.result);
               explorerCache[idx] = parsed;
+              // Persist to localStorage so results survive page refresh
+              try { localStorage.setItem('explorer_priority_'+idx, JSON.stringify(parsed)); } catch(e) {}
               explorerHistory = [
                 {role:'user', content:'[Explorer: '+pr.title+']'},
                 {role:'assistant', content:p.result}
@@ -2951,15 +2997,25 @@ ${md(execSummary)}`;
               updateSidebar();
             }
           } catch(e){ if(e.message!=='Unexpected end of JSON input'){
+            if(explorerTimerInterval){ clearInterval(explorerTimerInterval); explorerTimerInterval = null; }
             const loadEl = document.getElementById(`exp-loading-${idx}`);
             if(loadEl) loadEl.textContent = 'Could not load options: '+e.message;
           }}
         }
       }
     } catch(e){
+      if(explorerTimerInterval){ clearInterval(explorerTimerInterval); explorerTimerInterval = null; }
       const loadEl = document.getElementById(`exp-loading-${idx}`);
-      if(loadEl) loadEl.textContent = 'Error: '+e.message;
+      if(e.name === 'AbortError'){
+        if(loadEl) loadEl.textContent = 'Generation cancelled.';
+      } else {
+        if(loadEl) loadEl.textContent = 'Error: '+e.message;
+      }
     }
+  }
+
+  function cancelExplorer() {
+    if(explorerAbortController) explorerAbortController.abort();
   }
 
   // ── Legacy parser (old Option A/B/C format — fallback for cached results) ───
