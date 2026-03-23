@@ -2030,7 +2030,13 @@
             }
             if(p.preprocess){const el=document.getElementById('s-out');if(el)el.innerHTML=`<div style="display:flex;align-items:center;gap:10px;color:var(--muted);font-style:italic;padding:12px 0"><svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;animation:spin 1s linear infinite;flex-shrink:0"><circle cx="12" cy="12" r="10" stroke-opacity=".25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-opacity="1"/></svg>${esc(p.preprocess)}</div>`}
             if(p.chunk){streamed+=p.chunk;const el=document.getElementById('s-out');if(el)el.innerHTML=md(streamed)}
-            if(p.done){hist=p.history||hist;curS=stage;stageOutputs[stage]=p.result;stageHists[stage]=hist.slice();updateSessionBar();if(stage===4){stageGapTable=p.gap_table||null;stageRiskExposure=p.risk_exposure||null;stageSensitivitySummary=p.sensitivity_summary||'';stageResponsivenessSummary=p.responsiveness_summary||'';if(p.fcv_rating)fcvRating=p.fcv_rating;if(p.fcv_responsiveness_rating)fcvResponsivenessRating=p.fcv_responsiveness_rating;}renderOut(stage,p.result,followOn);setStepper(stage,'done');
+            if(p.done){hist=p.history||hist;curS=stage;stageOutputs[stage]=p.result;stageHists[stage]=hist.slice();updateSessionBar();if(stage===4){stageGapTable=p.gap_table||null;stageRiskExposure=p.risk_exposure||null;stageSensitivitySummary=p.sensitivity_summary||'';stageResponsivenessSummary=p.responsiveness_summary||'';if(p.fcv_rating)fcvRating=p.fcv_rating;if(p.fcv_responsiveness_rating)fcvResponsivenessRating=p.fcv_responsiveness_rating;}
+              // Write timestamps BEFORE renderOut so the consistency check inside renderOut reads the current run's value
+              // Stage 2 completion also clears any previously dismissed banners on Stage 3/4
+              if(stage===2){ localStorage.setItem('stage2_timestamp', Date.now()); localStorage.removeItem('stage3_consistency_dismissed'); localStorage.removeItem('stage4_consistency_dismissed'); }
+              if(stage===3) localStorage.setItem('stage3_timestamp', Date.now());
+              if(stage===4) localStorage.setItem('stage4_timestamp', Date.now());
+              renderOut(stage,p.result,followOn);setStepper(stage,'done');
               // Research brief panel for Stage 1
               if(stage===1){
                 const dtMatch=p.result&&p.result.match(/%%%DOC_TYPE:\s*([^%\n]+)%%%/);if(dtMatch){docType=dtMatch[1].trim();updateDocTypeBadge();}
@@ -2038,10 +2044,6 @@
                 if(p.research_country) researchCountry=p.research_country;
                 if(researchBrief) injectResearchBriefPanel(researchBrief,researchCountry);
               }
-              // Store completion timestamp for consistency checking
-              if(stage===2) localStorage.setItem('stage2_timestamp', Date.now());
-              if(stage===3){ localStorage.setItem('stage3_timestamp', Date.now()); localStorage.removeItem('stage3_consistency_dismissed'); }
-              if(stage===4){ localStorage.setItem('stage4_timestamp', Date.now()); localStorage.removeItem('stage4_consistency_dismissed'); }
               // Explorer panel + sidebar for Stage 4
               if(stage===4 && p.priorities && p.priorities.length){
                 stageFourPriorities=p.priorities;
