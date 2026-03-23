@@ -1,224 +1,87 @@
 # FCV Project Screening App — Claude Development Guide
 
-> **Claude Code Maintenance Instruction:** After every substantial change to this app (new features, prompt changes, new delimiters, UI additions, architectural decisions), update this `claude.md` file to reflect the change before committing. Keep section 1.3 (Stage pipeline), section 3 (Prompt Architecture), section 4 (Frontend), and section 5.3 (Priority Parsing) accurate at all times.
+> **Claude Code Maintenance Instruction:** After every substantial change to this app (new features, prompt changes, new delimiters, UI additions, architectural decisions), update this `CLAUDE.md` to reflect the change before committing. Keep the Stage pipeline summary, Prompt Architecture, and Priority Parsing sections accurate at all times.
 
 ---
 
 ## Overview
 
-This is a **World Bank FCV (Fragility, Conflict, and Violence) Project Screener** — a Flask-based web application that guides Task Team Leaders (TTLs) through a 4-stage workflow to assess how well a World Bank project integrates FCV considerations, and to generate targeted, actionable recommendations for improving its design and delivery.
+This is a **World Bank FCV (Fragility, Conflict, and Violence) Project Screener** — a Flask-based web app guiding Task Team Leaders (TTLs) through a 4-stage workflow to assess FCV integration and generate targeted recommendations.
 
-The tool explicitly distinguishes two concepts:
-- **FCV Sensitivity** — whether the project avoids doing harm: do-no-harm, contextual awareness, conflict-informed design, and operational readiness for FCV conditions.
-- **FCV Responsiveness** — whether the project actively addresses the root drivers of fragility or builds resilience, anchored to the four pillars of the WBG FCV Strategy 2020–2025 (Preventing conflict / Crisis engagement / Transition out of fragility / Spillover mitigation).
+Two concepts are explicitly distinguished:
+- **FCV Sensitivity [S]** — avoiding harm: do-no-harm, contextual awareness, conflict-informed design, operational readiness.
+- **FCV Responsiveness [R]** — actively addressing root drivers of fragility, anchored to the four pillars of the WBG FCV Strategy 2020–2025.
 
-Every prompt output now tags recommendations, mitigations, and priorities as [S], [R], or [S+R].
+All prompt outputs tag recommendations, mitigations, and priorities as `[S]`, `[R]`, or `[S+R]`.
 
-**Key goal:** Move from broad, vague recommendations ("service delivery needs to be targeted so it doesn't contribute to grievance") to specific, location-aware, operationally grounded suggestions ("historically, Nzerekore, Kindia, and Kankan have been excluded from service delivery; focus on these regions to rebuild state-society relationships").
+**Core mandate:** Recommendations must name locations and mechanisms — not broad policy suggestions. Bad: *"service delivery needs to be targeted."* Good: *"Focus on Nzerekore, Kindia, and Kankan — historically excluded — to rebuild state-society relationships."*
 
 ---
 
-## 1. Project Architecture
+## 1. Architecture
 
 ### 1.1 Tech Stack
-- **Backend:** Python Flask 3.0.3 + Anthropic Claude API (Claude Sonnet 4 - latest version)
-- **Frontend:** HTML + vanilla JavaScript + Markdown rendering
-- **Hosting:** Render.com
-- **Document processing:** PDF text extraction (pypdf) + LLM-assisted large document summarization
-- **Session management:** Browser localStorage + JSON-serialized conversation history
-- **Document generation:** python-docx for potential export functionality
+- **Backend:** Python Flask 3.0.3 + Anthropic Claude API (`claude-sonnet-4-20250514`)
+- **Frontend:** HTML + vanilla JavaScript + Markdown rendering (single-page app)
+- **Hosting:** Render.com (auto-deploys from `main`)
+- **Document processing:** pypdf + LLM-assisted summarization for large docs
+- **Session management:** Browser localStorage + JSON conversation history
 
 ### 1.2 Core Files
 ```
-app.py                 # Flask backend, all 4 prompts, stage routes, explorer endpoint, document processing
-index.html             # Frontend UI, Stage 1-4 display, explorer panel, prompt modal
-background_docs.py     # FCV_GUIDE and FCV_OPERATIONAL_MANUAL constants (WBG FCV framework)
-prompts.json           # Session-specific prompt overrides (persisted per session)
-requirements.txt       # Python dependencies (Flask, Anthropic SDK, pypdf, python-docx)
-Procfile              # Render deployment config
-.gitignore            # Git ignore rules
-static/               # Static assets (if any)
+app.py               # Flask backend, DEFAULT_PROMPTS, all routes, document processing
+index.html           # Frontend UI (~4000 lines), Stage 1–4, Explorer, prompt modal
+background_docs.py   # FCV_GUIDE and FCV_OPERATIONAL_MANUAL constants
+prompts.json         # Session-specific prompt overrides (empty by default)
+requirements.txt     # Flask, anthropic, pypdf, python-docx
+Procfile             # Render: gunicorn app:app
 ```
 
-### 1.3 Four-Stage Pipeline
+### 1.3 Stage Pipeline Summary
 
-```
-STAGE 1 — Identifying FCV Risks
-├─ Input: Project document (any stage: Concept Note, PID, PCN, PAD, restructuring/AF draft)
-│         + optional contextual docs (RRA, country risk assessments — 1–2 recommended)
-├─ Output: Part A (project doc extract) + Part B (contextualized analysis)
-│  └─ Final line of output: %%%DOC_TYPE: [PCN/PID/PAD/AF/Restructuring/ISR/Unknown]%%%
-│     Frontend extracts this to set docType — no separate API call needed
-├─ Automated FCV Web Research (runs before LLM generation):
-│  ├─ extract_country_name() — LLM call to identify country from project doc (first 4000 chars)
-│  ├─ extract_sector_name()  — LLM call to identify primary sector from project doc
-│  ├─ run_fcv_web_research(country, sector) — Anthropic web_search tool, 9 searches, up to 5500 tokens
-│  ├─ Research cached in-memory by "country::sector" key
-│  ├─ Research brief injected into Stage 1 context as supplemental Part B material
-│  └─ Research brief shown as collapsible dropdown at TOP of Stage 1 output (above main content)
-├─ Three-tier citation priority:
-│  ├─ Tier 1 — Uploaded contextual docs: [From: document name] (highest precedence)
-│  ├─ Tier 2 — Automated web research: [From: web research] or named source
-│  └─ Tier 3 — Training knowledge: [From: training knowledge] or named org/report
-├─ Prompt behavior:
-│  ├─ Part A: Extract *only* from project doc; no outside knowledge
-│  ├─ Part B: Use tiers 1→2→3 in strict priority order; always label the source tier
-│  └─ Large docs (>150k chars) pre-processed by LLM FCV extraction; docs >500k chars truncated
-└─ UI: Stage header + research brief dropdown (top) + main output card + refine input box
-   Loading note: Stage 1 shows "may take 60–90 seconds" due to web research phase
-   DOC_TYPE line is stripped from display text before rendering
+| Stage | Input | Key Output | Non-obvious behaviour |
+|---|---|---|---|
+| **1 — FCV Risks** | Project doc + optional contextual docs | Part A (doc extract) + Part B (contextualised) | Runs automated web research (9 searches) before LLM call; embeds `%%%DOC_TYPE: [type]%%%` as last line (stripped from display) |
+| **2 — Sensitivity Screening** | Stage 1 output | Risk ratings across 6 dimensions + S/R classification + Responsiveness Probe | Pre-assigned default tags for 6 OST recommendations (see §3 below) |
+| **3 — Gap Analysis** | Stages 1–2 | Parts A–E: gaps, mitigations (tagged), Do-No-Harm checklist, Responsiveness opportunities, Top 5 priorities | Part C table is parsed by frontend regex and rendered as collapsible checklist in Stage 4 |
+| **4 — Recommendations Note** | Stages 1–3 | Preamble + exec summary + 4–5 priority cards | Heavy delimiter-based parsing; `clean_stage4_output()` strips all delimiters before display |
+| **Explorer** | Priority + full history | 3–5 design options (A/B/C) with PAD callouts | Loaded async per priority; cached per priority index |
 
-STAGE 2 — FCV-Sensitivity Screening
-├─ Input: Stage 1 output
-├─ Output: Risk ratings across 6 FCV dimensions (both risks TO and FROM the project)
-│  ├─ Institutional Legitimacy
-│  ├─ Inclusion
-│  ├─ Social Cohesion
-│  ├─ Security
-│  ├─ Economic Livelihoods
-│  └─ Resilience
-├─ After the Summary Assessment Table — SENSITIVITY vs. RESPONSIVENESS CLASSIFICATION:
-│  ├─ Each OST recommendation tagged [S], [R], or [S+R] with pre-assigned defaults:
-│  │  ├─ Rec 1 (RRA/CRSS use) = [S]
-│  │  ├─ Rec 2 (conflict-sensitive targeting) = [S]
-│  │  ├─ Rec 3 (inclusive stakeholder engagement) = [S+R]
-│  │  ├─ Rec 4 (Do No Harm / conflict-sensitive design) = [S]
-│  │  ├─ Rec 5 (adaptive management) = [S]
-│  │  └─ Rec 6 (M&E / GRM) = [S+R]
-│  └─ RESPONSIVENESS PROBE paragraph (100–150 words): which of the four FCV Strategy pillars
-│     the project has potential to address (Pillar 1: preventing conflict / Pillar 2: crisis
-│     engagement / Pillar 3: transition out of fragility / Pillar 4: spillover mitigation)
-├─ [S+R] strictly defined — only genuine overlap zones:
-│  (1) inclusion/targeting of conflict-affected populations
-│  (2) FCV logic embedded in ToC/PDO framing
-│  (3) adaptive M&E that monitors harm AND adapts for resilience
-│  (4) GRM designed to strengthen state-citizen accountability
-├─ Prompt includes specific location callouts and evidence-based reasoning
-└─ UI: Rating table + dimension explanations + S/R classification + refine input box
+**Stage 1 web research:** `extract_country_name()` → `extract_sector_name()` → `run_fcv_web_research()` (Anthropic `web_search` tool, 9 searches, ≤5500 tokens). Results cached in-memory by `"country::sector"` key (lost on restart). Shown as collapsible dropdown at top of Stage 1 output.
 
-STAGE 3 — Identifying Project Gaps
-├─ Input: Stages 1–2 output
-├─ Output:
-│  ├─ Part A: FCV sensitivity gaps (what's missing from design/implementation)
-│  ├─ Part B: Mitigations (specific, location-named, mechanism-focused)
-│  │  └─ Each mitigation measure now includes a TAG column: [S] / [R] / [S+R]
-│  ├─ Part C: Do No Harm Checklist (structured table with Yes/Partial/No + evidence)
-│  ├─ Part D: FCV Responsiveness Opportunities (formerly "Enhancement Opportunities")
-│  │  └─ Structured around four FCV Strategy pillars:
-│  │     ├─ Pillar 1: Preventing conflict
-│  │     ├─ Pillar 2: Crisis engagement
-│  │     ├─ Pillar 3: Transition out of fragility
-│  │     └─ Pillar 4: Spillover mitigation
-│  └─ Part E: Top 5 Priority Actions — each carries a [S] / [R] / [S+R] tag
-├─ Prompt enforces geographic specificity and operational grounding
-└─ UI: Collapsible sections + expandable Do-No-Harm checklist rendered from Part C table
+**Stage 1 citation tiers:**
+- Tier 1 — Uploaded docs: `[From: document name]`
+- Tier 2 — Web research: `[From: web research]`
+- Tier 3 — Training knowledge: `[From: training knowledge]`
 
-STAGE 4 — Recommendations Note + Explorer
-├─ Input: Stages 1–3 output (conversation history)
-├─ Output (structured with delimiters for frontend parsing):
-│  ├─ Preamble (50–75 words: overview of FCV sensitivity)
-│  ├─ Executive Summary:
-│  │  ├─ Opening Assessment (1 bold sentence, 25–35 words)
-│  │  ├─ Operational Context (150–200 words)
-│  │  ├─ FCV Risk Exposure (%%%RISK_EXPOSURE_START/END%%% delimiters):
-│  │  │  ├─ RISKS_TO_PROJECT (60–85 words, plain language)
-│  │  │  └─ RISKS_FROM_PROJECT (60–85 words, plain language)
-│  │  ├─ Strengths (80–120 words)
-│  │  ├─ Gaps (100–130 words)
-│  │  ├─ FCV Sensitivity Summary (%%%SENSITIVITY_SUMMARY_START/END%%% delimiters):
-│  │  │  └─ 80–100 word assessment of overall FCV Sensitivity standing
-│  │  └─ FCV Responsiveness Summary (%%%RESPONSIVENESS_SUMMARY_START/END%%% delimiters):
-│  │     └─ 80–100 word assessment anchored to the four FCV Strategy pillars
-│  ├─ FCV Sensitivity Rating (%%%FCV_RATING: [level]%%% line):
-│  │  └─ Scale: Extremely Low | Very Low | Low | Adequate | Well Embedded | Very Well Embedded
-│  ├─ FCV Responsiveness Rating (%%%FCV_RESPONSIVENESS_RATING: [level]%%% line):
-│  │  └─ Same scale; emitted immediately after the sensitivity rating line
-│  └─ Strategic Priorities (4–5, each in %%%PRIORITY_START/END%%% delimiters):
-│     └─ Fields (10 total): TITLE, FCV_DIMENSION, TAG, RISK_LEVEL, THE_GAP, WHY_IT_MATTERS,
-│                            SUGGESTED_DIRECTIONS, WHO_ACTS, WHEN, RESOURCES
-│        TAG field: [S] / [R] / [S+R] — same strict definition as Stage 2/3
-│        Most priorities will be [S] or [R]; [S+R] only for four named overlap zones
-├─ Note: %%%GAP_TABLE_START/END%%% delimiter + extraction code still exist in backend
-│        but the FCV Design Assessment Table is NOT rendered in the UI
-├─ clean_stage4_output() strips: RISK_EXPOSURE, SENSITIVITY_SUMMARY, RESPONSIVENESS_SUMMARY,
-│  FCV_RATING, FCV_RESPONSIVENESS_RATING, GAP_TABLE, and all PRIORITY blocks from display text
-├─ Citation policy: ONLY cite documents that appear as [From: doc name] in Stage 1.
-│  NEVER fabricate document titles. Non-uploaded sources → [From: training knowledge] or
-│  [From: web research]. This prevents hallucinated citations (e.g. [RRA 2022] when no RRA uploaded).
-└─ UI:
-   ├─ Main output card (preamble + exec summary + FCV Risk Exposure + Strengths + Gaps)
-   ├─ FCV Sensitivity + FCV Responsiveness summary cards (side by side, after Gaps)
-   ├─ FCV Sensitivity gauge (sidebar, blue, shield icon)
-   ├─ FCV Responsiveness gauge (sidebar, green, leaf icon)
-   ├─ Priority cards (horizontal stepper, shows one at a time)
-   ├─ Per-priority zone: gap, why_it_matters, suggested_directions + explorer options
-   └─ "Explore FCV-Sensitive Solutions" panel (loaded async)
-
-EXPLORER (on-demand deep dive)
-├─ Input: Priority title/body + Stage 1–4 history
-├─ Output: 3–5 concrete design options (A/B/C/D/E) with:
-│  ├─ Title + context
-│  ├─ How to adapt the PAD/design to implement it
-│  ├─ Metadata tags (cost range, implementation modality, timeline)
-│  └─ "Dig deeper" inline Q&A (cached per priority)
-├─ Follows Stage 4 structure: preamble + issue analysis + A/B/C options
-├─ Prompt emphasizes operational levers, WBG instruments, geographic specificity
-└─ UI:
-   ├─ Loaded when priority is shown or when user clicks "Explore solutions ↓"
-   ├─ Per-option card (collapsible, color-coded tags, PAD change callout)
-   └─ "Ask about this" button prefills freetext follow-up
-```
+**Large document handling:** Docs >150k chars are condensed via LLM extraction. Docs >500k chars are truncated to `MAX_DOC_CHARS`.
 
 ---
 
-## 2. Design Decisions & Design Philosophy
+## 2. S/R Tagging Rules (Non-Obvious — Must Be Preserved)
 
-### 2.1 Why 4 Stages (Not a Single Prompt)?
-- **Sequential refinement:** Each stage builds on prior outputs, allowing users to pause, review, and refine before proceeding.
-- **Quality control:** Users see intermediate reasoning and can correct errors or add local knowledge at each step, rather than getting an opaque final output.
-- **Cognitive load:** Breaking analysis into digestible pieces helps TTLs understand the reasoning without overwhelming them.
-- **Flexibility:** Users can re-run Stage 2 without re-analyzing documents, adjust Stage 3 findings before generating final recommendations, etc.
+**`[S+R]` is strictly limited to four overlap zones:**
+1. Inclusion/targeting of conflict-affected populations (harm-avoidance AND active resilience)
+2. FCV logic embedded in the ToC/PDO framing (not just a risk note)
+3. Adaptive M&E that monitors harm AND adapts to build resilience
+4. GRM designed to strengthen state-citizen accountability (not just complaint handling)
 
-### 2.2 Why Stage 1 Splits Part A from Part B?
-- **Transparency:** Users need to understand what the tool extracted *directly* from their project document vs. what it inferred from external context or AI training knowledge.
-- **Document trust:** A project document is a formal WBG artifact; the tool respects its primacy while being clear about supplementation.
-- **Accuracy accountability:** If something in Part A seems wrong, the issue is in extraction; if Part B is off, it's in contextual interpretation or knowledge gaps.
+If in doubt → use `[S]` or `[R]`. Most recommendations will not qualify for `[S+R]`.
 
-### 2.3 Why Remove the Technical Annex & Replace with Explorer?
-**Problem:** Stage 4 was generating two outputs simultaneously:
-- A fixed "Recommendations Note" for the TTL's final memo
-- A "Technical Annex" with extra methodological detail
+**Stage 2 OST recommendation defaults:**
+| Rec | Default |
+|---|---|
+| Rec 1 — RRA/CRSS utilization | `[S]` |
+| Rec 2 — Conflict-sensitive targeting | `[S]` |
+| Rec 3 — Inclusive stakeholder engagement | `[S+R]` |
+| Rec 4 — Do No Harm / conflict-sensitive design | `[S]` |
+| Rec 5 — Adaptive management | `[S]` |
+| Rec 6 — M&E / GRM | `[S+R]` |
 
-This was creating length/clarity issues — the note got dense, and it wasn't clear what belonged in a final memo vs. internal working notes.
+LLM may override defaults where project evidence justifies it.
 
-**Solution:** Move all exploratory depth to an **on-demand Explorer panel** that is:
-- **Separate:** Doesn't clutter the main Recommendations Note
-- **Interactive:** Users drill into *specific* priorities, not a generic annex
-- **Contextual:** Each exploration is grounded in the priority's gap + why it matters
-- **Cacheable:** Avoid redundant API calls for the same priority + follow-up question
-
-**Result:** Clean, memo-ready Stage 4 output + powerful on-demand analytics when users want to dig deeper.
-
-### 2.4 The Specificity & Actionability Mandate
-**Core principle:** Recommendations must be **specific and actionable**, not broad and vague.
-
-- **Bad:** "Service delivery needs to be targeted so it doesn't contribute to grievance"
-- **Good:** "Historically, Nzerekore, Kindia, and Kankan have been excluded from service delivery. To rebuild the state-society relationship, focus service delivery in these regions, prioritizing (a) areas with highest grievance sensitivity, (b) community health extension worker networks, (c) cash-for-work entry points."
-
-**How it's enforced:**
-- Stage 3 prompt explicitly requires geographic naming, mechanism specification, and operational entry points (PAD instruments, existing WBG programs, partner organizations)
-- Stage 4 prompt carries forward these specifics into priority "suggested directions"
-- Explorer prompt offers multiple **options** (A/B/C) rather than a single "solution," with PAD change callouts showing how to operationalize each
-
-**Trade-off managed:** We avoid exact costs (which change) but include enough detail for a TTL to brief management or co-design with counterparts.
-
-### 2.5 Session Persistence & Conversation History
-- All user inputs and LLM outputs are stored in browser localStorage (serialized as JSON)
-- On page reload, the app can recover the session and allow "continue" or "restart" workflows
-- Sessions can be saved with a name, allowing users to return to previous analyses
-- Conversation history is passed to each stage, so the LLM maintains context across all 4 stages
-
-**Limitation:** localStorage is browser-specific and not suitable for long-term storage or team collaboration. For future versions, consider a backend database.
+**Rating scale** (used for both Sensitivity and Responsiveness gauges):
+`Extremely Low | Very Low | Low | Adequate | Well Embedded | Very Well Embedded`
 
 ---
 
@@ -226,173 +89,23 @@ This was creating length/clarity issues — the note got dense, and it wasn't cl
 
 ### 3.1 Where Prompts Live
 
-**Default prompts:**
 ```python
-# In app.py, top-level DEFAULT_PROMPTS dictionary
+# app.py — top-level dictionary
 DEFAULT_PROMPTS = {
-    "1": "# Role\nYou are an expert FCV analyst...",  # Stage 1
-    "2": "# Role\nYou are an expert FCV analyst...",  # Stage 2
-    "3": "# Role\nYou are an expert FCV analyst...",  # Stage 3
-    "4": "# Role\nYou are an expert FCV analyst...",  # Stage 4 (Recommendations Note)
-    "explorer": "# Role\nYou are an expert FCV analyst..."  # Explorer deep-dive
+    "1": "...",        # Stage 1
+    "2": "...",        # Stage 2
+    "3": "...",        # Stage 3
+    "4": "...",        # Stage 4 (Recommendations Note)
+    "explorer": "..."  # Explorer deep-dive
 }
 ```
 
-**Session-specific overrides:**
-- Stored in `prompts.json` (in project root)
-- Loaded via `load_prompts()` function, which merges with DEFAULT_PROMPTS
-- Saved via `save_prompts()` function when user edits via Admin modal
-- Scoped to current session only (not persisted across sessions)
+Session overrides stored in `prompts.json`; merged with defaults via `load_prompts()`. Override via UI: Admin tab → per-stage editor. Override globally: edit `DEFAULT_PROMPTS` in `app.py`.
 
-**How to override:**
-- Via UI: Admin tab → per-stage prompt editor → Save & Close
-- Via code: Edit DEFAULT_PROMPTS in app.py (persists globally across all sessions)
+### 3.2 Stage 4 Delimiters (Critical for Parsing)
 
-### 3.2 Stage 1: "Identifying FCV Risks"
+`clean_stage4_output()` strips these blocks before rendering display text:
 
-**Purpose:** Extract FCV-relevant content from uploaded project and contextual documents, enriched by automated web research.
-
-**Input:** Any project document at any preparation stage (Concept Note, PID, PCN, PAD, restructuring/AF draft). Optionally 1–2 contextual documents (RRA, country risk report, etc.).
-
-**Automated FCV web research phase (runs before LLM generation):**
-1. `extract_country_name()` — brief LLM call to identify project country (first 4000 chars)
-2. `extract_sector_name()` — brief LLM call to identify primary project sector
-3. `run_fcv_web_research(country, sector)` — Anthropic web_search tool, 9 targeted searches, up to 5500 tokens
-   - Covers: conflict/security, governance, humanitarian, economic, FCV actors, structural drivers, vulnerable groups, regional dimensions, **sector-specific FCV considerations**
-   - Results cached in-memory by `"country::sector"` key; lost on server restart
-4. Research brief injected into Stage 1 context as supplemental material
-5. Research brief shown as collapsible dropdown at TOP of Stage 1 output (labeled "Automated FCV risk briefing — general country & sector insights")
-
-**Three-tier citation priority:**
-- Tier 1 — Uploaded contextual docs: `[From: document name]` (highest precedence)
-- Tier 2 — Automated web research: `[From: web research]` or named source (e.g. `[From: ICG]`)
-- Tier 3 — Training knowledge: `[From: training knowledge]` or named org/report
-
-**Key behaviors:**
-- Part A: Extract only from the project document. No outside knowledge.
-- Part B: Use tiers 1→2→3 in strict priority order; always label the source tier at each point.
-- Both parts are strictly separated in the output.
-
-**Large document handling:**
-- Documents > 150,000 characters are condensed via LLM extraction (FCV-relevant content only).
-- Documents > 500,000 characters are truncated to MAX_DOC_CHARS.
-- Truncation warnings shown to users when triggered.
-
-**Document type classification (embedded in Stage 1):**
-- The very last line of every Stage 1 response is: `%%%DOC_TYPE: [PCN/PID/PAD/AF/Restructuring/ISR/Unknown]%%%`
-- The frontend extracts this via regex when Stage 1 completes and sets the `docType` state
-- This replaces the former separate `/api/detect-document-type` API call (which was slow, 10–15 seconds)
-- The DOC_TYPE line is stripped from the display text before rendering to the user
-- Manual document type override selects have been removed from both the upload area and session bar
-
-**Loading time note:** Stage 1 loading card shows "may take 60–90 seconds" to set expectations for the web research phase.
-
-**User refine loop:** After Stage 1 displays, users can use a refine box to:
-- Correct misreadings
-- Add local knowledge not in documents
-- Flag missing content before proceeding
-
-### 3.3 Stage 2: "FCV-Sensitivity Screening"
-
-**Purpose:** Assess project across 6 FCV dimensions, both risks TO the project and risks FROM the project. Also classifies each OST recommendation as [S], [R], or [S+R] and probes FCV Responsiveness potential.
-
-**Key behaviors:**
-- Outputs structured risk ratings (e.g., "Risk: Medium | Evidence: Project's focus on service delivery in contested areas may increase exposure...")
-- Includes specific geographic callouts (e.g., "In Nzerekore and Kindia, where state legitimacy is already low...")
-- Reasoning is explicit so users can see if a dimension is overweighted, underweighted, or missing key context.
-
-**SENSITIVITY vs. RESPONSIVENESS CLASSIFICATION (appended after Summary Assessment Table):**
-- Pre-assigned defaults for the 6 OST recommendations:
-  - Rec 1 (RRA/CRSS utilization) = **[S]**
-  - Rec 2 (conflict-sensitive targeting) = **[S]**
-  - Rec 3 (inclusive stakeholder engagement) = **[S+R]**
-  - Rec 4 (Do No Harm / conflict-sensitive design) = **[S]**
-  - Rec 5 (adaptive management / monitoring arrangements) = **[S]**
-  - Rec 6 (M&E / GRM) = **[S+R]**
-- LLM adjusts tags based on project evidence; defaults may be overridden where justified
-
-**RESPONSIVENESS PROBE paragraph (100–150 words):**
-- Written after the S/R classification table
-- Assesses which of the four FCV Strategy pillars the project has potential to address:
-  - Pillar 1: Preventing conflict and promoting peace
-  - Pillar 2: Engaging in crisis situations
-  - Pillar 3: Helping countries transition out of fragility
-  - Pillar 4: Mitigating regional and global spillovers
-- Honest assessment: most projects will have limited responsiveness potential; probe should not overstate
-
-**Strict [S+R] definition (must be enforced):**
-[S+R] is ONLY valid for these four overlap zones:
-1. Inclusion/targeting of conflict-affected populations (where design serves both harm-avoidance AND active inclusion as a resilience strategy)
-2. FCV logic embedded in the ToC/PDO framing (not just a risk note — actually changes the project theory)
-3. Adaptive M&E that both monitors harm AND adapts to build resilience
-4. GRM designed to strengthen state-citizen accountability (not just complaint handling)
-If in doubt → assign [S] or [R]. Most recommendations will not qualify for [S+R].
-
-**User refine loop:** Users can correct dimension ratings or add missing geographic/contextual information before proceeding to Stage 3.
-
-### 3.4 Stage 3: "Identifying Project Gaps"
-
-**Purpose:** Identify where the project design / implementation falls short on FCV sensitivity, and propose mitigations. Also maps responsiveness opportunities onto the four FCV Strategy pillars.
-
-**Output parts:**
-- **Part A:** Gaps in FCV sensitivity (design, implementation, M&E, stakeholder engagement, etc.)
-- **Part B:** Concrete, location-specific mitigations — each with a **TAG column** (`[S]` / `[R]` / `[S+R]`)
-  - Tag follows same strict definition as Stage 2 (most mitigations will be [S] or [R])
-- **Part C:** Do No Harm Checklist (principle | Yes/Partial/No | evidence/gap)
-- **Part D: FCV Responsiveness Opportunities** (formerly "Enhancement Opportunities")
-  - Structured around the four FCV Strategy pillars:
-    - Pillar 1: Preventing conflict and promoting peace
-    - Pillar 2: Engaging in crisis situations
-    - Pillar 3: Helping countries transition out of fragility
-    - Pillar 4: Mitigating regional and global spillovers
-  - Each pillar lists specific project design changes that could move beyond sensitivity into responsiveness
-- **Part E:** Top 5 Priority Actions — each carries a `[S]` / `[R]` / `[S+R]` tag
-
-**Key behaviors:**
-- Mitigations are not generic ("improve stakeholder engagement") but specific ("establish community feedback forums in Kankan District, staffed by local civil society orgs trusted by Dinka pastoralists, with quarterly feedback to project implementation unit")
-- When multiple options exist, framed as alternatives, not a single "solution"
-- Geographic specificity is required; locations are named, and reasons for targeting specific areas are stated
-
-**User refine loop:** Users can adjust gaps, refine mitigations, or add local knowledge (e.g., "Actually, we already have this mechanism through NGOS X and Y").
-
-### 3.5 Stage 4: "Recommendations Note" (+ Explorer)
-
-**Main Output (Recommendations Note):**
-```
-[Preamble: 50–75 words on project FCV sensitivity context]
-
-[Executive Summary:
-  - Opening Assessment (1 bold sentence)
-  - Operational Context (150–200 words)
-  - FCV Risk Exposure (plain language, 2 paragraphs):
-      RISKS_TO_PROJECT: How FCV dynamics threaten project delivery
-      RISKS_FROM_PROJECT: How project design could worsen fragility
-  - Strengths (80–120 words)
-  - Gaps (100–130 words)
-  - FCV Sensitivity Summary (80–100 words, extracted via delimiter, shown as summary card)
-  - FCV Responsiveness Summary (80–100 words, extracted via delimiter, shown as summary card)
-]
-
-[FCV Sensitivity Rating — one of:
-  Extremely Low | Very Low | Low | Adequate | Well Embedded | Very Well Embedded]
-
-[FCV Responsiveness Rating — same scale, emitted immediately after sensitivity rating]
-
-[4–5 Strategic Priority cards, each with:
-  - TITLE: Priority N · [Actionable verb phrase]
-  - FCV_DIMENSION: one of the 6 dimensions
-  - TAG: [S] | [R] | [S+R]  ← NEW field (field 3)
-  - RISK_LEVEL: High | Medium | Low
-  - THE_GAP: 2–3 sentences
-  - WHY_IT_MATTERS: 2–3 sentences (operational + FCV dimensions combined)
-  - SUGGESTED_DIRECTIONS: 2–3 sentences in consultative prose
-  - WHO_ACTS: TTL | PIU | Government counterpart | FCV specialist | Procurement team
-  - WHEN: At design stage | Before appraisal | During implementation
-  - RESOURCES: Minimal | Moderate | Significant
-]
-```
-
-**Delimiter formats for frontend parsing:**
 ```
 %%%RISK_EXPOSURE_START%%%
 RISKS_TO_PROJECT: [paragraph]
@@ -400,22 +113,21 @@ RISKS_FROM_PROJECT: [paragraph]
 %%%RISK_EXPOSURE_END%%%
 
 %%%SENSITIVITY_SUMMARY_START%%%
-[80–100 word assessment of overall FCV Sensitivity standing]
+[80–100 word assessment]
 %%%SENSITIVITY_SUMMARY_END%%%
 
 %%%RESPONSIVENESS_SUMMARY_START%%%
-[80–100 word assessment of FCV Responsiveness anchored to FCV Strategy pillars]
+[80–100 word assessment]
 %%%RESPONSIVENESS_SUMMARY_END%%%
 
 %%%FCV_RATING: [level]%%%
-
 %%%FCV_RESPONSIVENESS_RATING: [level]%%%
 
 %%%PRIORITY_START%%%
 TITLE: Priority N · [phrase]
 FCV_DIMENSION: [dimension]
 TAG: [S] | [R] | [S+R]
-RISK_LEVEL: [High | Medium | Low]
+RISK_LEVEL: High | Medium | Low
 THE_GAP: [text]
 WHY_IT_MATTERS: [text]
 SUGGESTED_DIRECTIONS: [text]
@@ -425,584 +137,123 @@ RESOURCES: [text]
 %%%PRIORITY_END%%%
 ```
 
-**Note on %%%GAP_TABLE_START/END%%%:** The LLM is no longer instructed to emit this block, and `renderGapTable()` is no longer called from the main rendering flow. However, the backend extraction code (`extract_gap_table()`) and the `renderGapTable()` JS function still exist for potential future use. The FCV Design Assessment Table is not displayed in the current UI.
+`%%%GAP_TABLE_START/END%%%` extraction code exists in backend but table is **not rendered** in the current UI.
 
-**clean_stage4_output() strips the following blocks before rendering display text:**
-- `%%%RISK_EXPOSURE_START/END%%%`
-- `%%%SENSITIVITY_SUMMARY_START/END%%%`
-- `%%%RESPONSIVENESS_SUMMARY_START/END%%%`
-- `%%%FCV_RATING: ...%%%`
-- `%%%FCV_RESPONSIVENESS_RATING: ...%%%`
-- `%%%GAP_TABLE_START/END%%%`
-- `%%%PRIORITY_START/END%%%` (all priority blocks)
+### 3.3 Citation Policy (Stage 4 Hallucination Guard)
 
-**Citation policy for Stage 4:**
-- ONLY cite documents that appeared as `[From: document name]` in Stage 1. NEVER fabricate titles.
-- Non-uploaded sources → `[From: training knowledge]` or `[From: web research]`
-- This prevents hallucinated citations (e.g., citing `[RRA 2022]` when no RRA was uploaded)
+**Only cite documents that appeared as `[From: doc name]` in Stage 1.** Never fabricate titles. Non-uploaded sources → `[From: training knowledge]` or `[From: web research]`. This guards against hallucinated citations like `[RRA 2022]` when no RRA was uploaded. If modifying Stage 4 prompt, preserve this guard.
 
-**Explorer input:** Each priority's JSON is fed to the Explorer prompt, which generates 3–5 concrete design options (A/B/C/D/E) with:
-- Title + operational context
-- Specific PAD/design modifications needed
-- Tags (cost range, modality, timeline)
-- Links to external resources or examples
-- Inline Q&A (via "Dig deeper" chips)
+### 3.4 AI Disclaimer Header
 
-**Key behaviors:**
-- Recommendations are specific and actionable, not broad policy suggestions
-- Geographic locations are named (e.g., "In Oromia, prioritize...")
-- Entry points reference WBG instruments and existing programs
-- Multiple options are offered where applicable
-- A collegial tone appropriate for peer review by a TTL
-
-**Do No Harm Checklist (from Stage 3):** Extracted and displayed as a collapsible table in the Stage 4 UI, showing which Do-No-Harm principles are addressed, partially addressed, or at risk.
+All Stage 4 outputs are prepended with a disclaimer via the `DO_NO_HARM_HEADER` constant in `app.py`. Includes generation date.
 
 ---
 
-## 4. Frontend Architecture
-
-### 4.1 UI Panels
-1. **Onboarding modal** — Disclaimer + warning about AI limitations, checkbox to suppress on future visits
-2. **Session bar** — Floating bar showing current stage progress + save session button
-3. **Stage progress stepper** — Visual indicator of 1-of-4, 2-of-4, etc.
-4. **Input panel (Stages 1–3)** — Upload box, document list, refine input
-5. **Output panel (Stages 1–4)** — Displays LLM output + collapsible sections (Parts A/B for Stage 1, etc.)
-6. **Explorer panel (Stage 4)** — Horizontal priority stepper + priority card + inline explorer options
-7. **Prompt modal** — Admin-only, lets users view/edit the 5 prompts (Stage 1–4 + Explorer) per session
-8. **FCV Sensitivity gauge (sidebar)** — SVG arc gauge, blue, shield icon; animates from `%%%FCV_RATING%%%` delimiter
-9. **FCV Responsiveness gauge (sidebar)** — SVG arc gauge, green, leaf icon; animates from `%%%FCV_RESPONSIVENESS_RATING%%%` delimiter
-   - IDs: `fcv-resp-arc-fill`, `fcv-resp-leaf-path`, `fcv-resp-rating-label`, `fcv-resp-need-label`
-
-### 4.2 Key JavaScript Functions
-
-**Stage management:**
-- `goToStage(n)` — advance to stage n
-- `onStageComplete()` — callback when LLM finishes streaming output
-- `updateSessionBar()` — refresh progress indicator
-
-**Stage 1:**
-- `addDocument()` — trigger file upload
-- `removeDocument(idx)` — remove doc from list
-- `submitStageInput()` — send docs + user refinement to `/api/run-stage`
-- `renderStage1Output()` — display Part A and Part B
-
-**Stage 4 Explorer:**
-- `initStage4UI()` — parse priorities, build stepper, show Priority 1
-- `showPriority(idx)` — render full priority card; eyebrow includes full S/R badge via `renderSRTagBadge(pr.tag||'')`
-- `loadExplorer(idx)` — fetch explorer options for priority, cache result
-- `toggleExpOption(id)` — collapse/expand A/B/C option cards
-- `submitExplorerFollowup(idx, question)` — send follow-up question via `/api/run-explorer`
-- `renderPriorityStepper()` — build horizontal step indicator; compact S/R badge below risk badge on each tab
-- `renderPrioritiesIntro()` — renders intro list; compact S/R badge after risk label in each `pi-item`
-
-**S/R tag badges:**
-- `renderSRTagBadge(tag, compact)` — renders inline pill badge
-  - Full mode (default): "Sensitivity" / "Responsiveness" / "Sensitivity + Responsiveness"
-  - Compact mode (`compact=true`): "S" / "R" / "S+R"
-  - CSS classes: `.sr-tag`, `.sr-tag.sensitivity`, `.sr-tag.responsiveness`, `.sr-tag.both`
-- `renderSRCards(sensitivityText, responsivenessText)` — renders two side-by-side summary cards
-  - Inserted between the Gaps paragraph and the `<div id="priorities-intro">` div in Stage 4 output
-  - CSS: `.sensitivity-responsiveness-grid`, `.sr-card`, `.sr-card.sensitivity` (border `#0050A0`), `.sr-card.responsiveness` (border `#16A34A`), `.sr-card-label`
-
-**Sidebar (updateSidebar()):**
-- Animates both gauges: sensitivity arc + responsiveness arc
-- Priority overview (`pov-row`) includes compact S/R badge after risk label
-
-**Utilities:**
-- `md(text)` — markdown-to-HTML renderer
-- `escHtml()` / `escAttr()` — HTML escaping
-- `formatDate()` — human-readable timestamps
-- `saveSession()` / `loadSession()` — localStorage serialization
-
-### 4.3 Removed Items
-- **`detectDocumentType()` function** — removed. Doc type is now embedded in Stage 1 output (see Section 3.2).
-- **`/api/detect-document-type` API call** — endpoint and call both removed.
-- **Manual document type override `<select>` elements** — removed from both upload area and session bar.
-- **FCV Design Assessment Table** — `renderGapTable()` is no longer called from `renderOut`. Table is not displayed. Code remains for potential future use.
-- **`docTypeDetecting` variable** — removed (was used to gate doc type detection).
-
-### 4.4 Styling & Aesthetics
-- **Color scheme:** WBG-inspired palette (deep navy, cobalt blue, orange accents)
-- **Stage colors:** Each stage has a distinct color (s1, s2, s3, s4) used in progress bars, section headers, and priority dimension badges
-- **Typography:** Noto Sans (clean, readable)
-- **Spacing:** 12/24/32px grid
-- **Icons:** Lucide React SVG icons (used sparingly for clarity)
-
-### 4.5 Do No Harm Checklist Rendering
-- Extracted from Stage 3 output via regex (looking for `## Part C` section)
-- Parsed as a Markdown table with rows: `| Principle | Status | Evidence/Gap |`
-- Rendered as HTML table with color-coded status badges (green/yellow/red)
-- Collapsible so it doesn't clutter the main Stage 4 output
-
----
-
-## 5. Backend Routes & API
-
-### 5.1 Main Routes
+## 4. Key Constants & Limits
 
 ```python
-# Core analysis route (all 4 stages)
-POST /api/run-stage
-  Input: {stage, documents[], history[], user_message, prompt_override}
-  Output: Server-Sent Events (SSE) stream with chunks, then {done, output, priorities, fcv_rating}
-
-# Explorer deep-dive route
-POST /api/run-explorer
-  Input: {priority_title, priority_body, history[], user_question}
-  Output: SSE stream with chunks, then {done, output, issue, options[]}
-
-# Admin/Prompt management
-GET /api/admin/prompts         # Get current session prompts
-POST /api/admin/prompts        # Save custom prompts for session
-POST /api/admin/prompts/reset  # Reset prompts to defaults
-
-# System endpoints
-GET /                          # Main app page
-GET /health                    # Health check endpoint
-GET /how-it-works             # Workflow explanation page
-GET /admin                     # Admin panel (prompts modal)
-GET /api/default-prompts      # Get default prompts for reference
-```
-
-### 5.2 Document Handling
-
-**Large document pre-processing:**
-```python
-if len(doc_content) > MAX_DOC_CHARS:
-    # Use LLM to extract FCV-relevant content
-    # Returns: extracted_text, page_count, truncation_warning
-```
-
-**PDF extraction:**
-```python
-# Uses pypdf library
-extracted_text, page_count = extract_pdf_text(base64_content, filename)
-```
-
-### 5.3 Priority Parsing (Stage 4 Output)
-
-```python
-def extract_priorities(stage4_output):
-    # Search for %%%PRIORITY_START%%% ... %%%PRIORITY_END%%% delimiters
-    # Extract JSON from each block
-    # Return: [{title, dimension, tag, risk_level, the_gap, why_it_matters,
-    #           suggested_directions, who_acts, when, resources}, ...]
-    # NEW: also extracts 'tag' field from the TAG: line ([S] / [R] / [S+R])
-    # Fallback: positional parsing if delimiters not found; tag defaults to '' if not found
-```
-
-**Additional extraction functions (Stage 4):**
-```python
-extract_sensitivity_summary(text)    # Extracts %%%SENSITIVITY_SUMMARY_START/END%%% block
-extract_responsiveness_summary(text) # Extracts %%%RESPONSIVENESS_SUMMARY_START/END%%% block
-extract_fcv_responsiveness_rating(text) # Extracts %%%FCV_RESPONSIVENESS_RATING: [level]%%%
-```
-
-**Stage 4 JSON response now includes:**
-```json
-{
-  "priorities": [...],
-  "fcv_rating": "...",
-  "fcv_responsiveness_rating": "...",
-  "sensitivity_summary": "...",
-  "responsiveness_summary": "..."
-}
+MAX_DOC_CHARS = 500_000        # Hard truncation limit
+EXTRACT_THRESHOLD = 150_000    # Triggers LLM condensation
+ADMIN_PASSWORD = "fcv-admin-2024"  # From env var ADMIN_PASSWORD
+PROMPTS_FILE = 'prompts.json'
 ```
 
 ---
 
-## 6. Key Implementation Details
+## 5. How to Modify
 
-### 6.1 Streaming Output (SSE)
-- All stage and explorer requests use Server-Sent Events (SSE) for streaming
-- Frontend displays text progressively as it arrives, avoiding "long wait" UX
-- Allows users to see the LLM's output in real-time
+### Change a prompt
+1. Admin tab → select stage → edit → Save & Close (session-scoped)
+2. Or edit `DEFAULT_PROMPTS` in `app.py` (global, persists)
 
-### 6.2 Conversation History
-- Entire history (all user messages + LLM responses) is maintained in browser localStorage
-- Passed to each subsequent stage so the LLM maintains context
-- Allows recovery/resume if page reloads
-- Can be serialized to JSON for export/sharing (though this is optional)
+### Change the 6 FCV dimensions
+Edit Stage 2 prompt. If changing the count, also update Stage 3 and 4 prompts to reference them correctly.
 
-### 6.3 Prompt Override System
-- Admin modal allows users to override any of the 5 default prompts (Stage 1–4 + Explorer)
-- Override is scoped to the current session only (not saved globally)
-- Allows experimentation / customization per project
+### Add/remove a Stage 4 priority field
+1. Update the `%%%PRIORITY_START/END%%%` block in the Stage 4 prompt
+2. Update `extract_priorities()` in `app.py`
+3. Update `showPriority()` in `index.html`
 
-### 6.4 Do No Harm Extraction
-- Pulled from Stage 3 output via regex (finding `## Part C` + Markdown table)
-- Parsed into rows with principle/status/evidence columns
-- Re-rendered in Stage 4 UI as a collapsible, color-coded table
-
-### 6.5 PDF Processing Pipeline
-**Extraction steps in `extract_pdf_text()`:**
-1. Decode base64 PDF content from frontend
-2. Use PyPDF to read PDF pages
-3. Extract text from each page sequentially
-4. Return: (extracted_text, page_count)
-5. Handle errors gracefully with fallback messages
-
-**Large document condensation in `extract_fcv_content()`:**
-1. Check if document length exceeds EXTRACT_THRESHOLD (150,000 chars)
-2. If yes, use Claude API to summarize FCV-relevant content
-3. Preserve key information while reducing size
-4. Append truncation warning to user output
-5. Handle PDF extraction errors with user-friendly messages
-
-### 6.6 Priority Parsing and JSON Extraction
-**In `extract_priorities()`:**
-1. Search for `%%%PRIORITY_START%%%` and `%%%PRIORITY_END%%%` delimiters
-2. Extract JSON from between delimiters for each priority
-3. Parse JSON and validate required fields (title, dimension, risk_level, the_gap, why_it_matters, suggested_directions)
-4. Fallback: If delimiters not found, attempt positional parsing from Markdown structure
-5. Return: List of priority dictionaries with validated fields
+### Add a 5th stage
+1. New key in `DEFAULT_PROMPTS`
+2. New case in `/api/run-stage` switch logic
+3. New stage card and input panel in `index.html`
+4. Update stepper
 
 ---
 
-## 7. Common Workflows & How to Modify
+## 6. Deployment
 
-### 7.1 I Want to Change a Prompt
-1. Open the app
-2. Click "Admin" → select the stage (1, 2, 3, 4, or Explorer)
-3. Edit the prompt text in the modal
-4. Click "Save & Close"
-5. Re-run that stage with the new prompt
-
-(This is session-scoped; to persist globally, edit `DEFAULT_PROMPTS` in `app.py`)
-
-### 7.2 I Want to Change the 6 FCV Dimensions
-Stage 2 prompt lists the 6 dimensions explicitly:
-```
-1. Institutional Legitimacy
-2. Inclusion
-3. Social Cohesion
-4. Security
-5. Economic Livelihoods
-6. Resilience
-```
-
-To add/remove/modify:
-1. Edit the Stage 2 prompt in `DEFAULT_PROMPTS` (or via Admin modal)
-2. Re-run Stage 2 with the updated prompt
-
-**Note:** If you change the number of dimensions, you may also need to update Stage 3 & 4 prompts to reference them correctly.
-
-### 7.3 I Want to Change What Stage 4 Priorities Look Like
-Stage 4 prompt defines the structure of each priority. Currently:
-```json
-{
-  "title": "...",
-  "dimension": "...",
-  "risk_level": "High|Medium|Low",
-  "the_gap": "...",
-  "why_it_matters": "...",
-  "suggested_directions": "..."
-}
-```
-
-To add/remove fields:
-1. Update the `%%%PRIORITY_START/END%%%` section of the Stage 4 prompt to define new fields
-2. Update `extract_priorities()` function in `app.py` to parse the new fields from JSON
-3. Update the priority card rendering in `index.html` (the `showPriority()` function) to display the new fields
-
-### 7.4 I Want to Add a 5th Stage
-1. Add a new key to `DEFAULT_PROMPTS` (e.g., `"5"`)
-2. Add a new case in the stage switch logic in the `/api/run` route
-3. Add a new stage card and input panel to `index.html`
-4. Update the stepper to show 1-of-5, 2-of-5, etc.
-
----
-
-## 8. Deployment
-
-### 8.1 Local Testing
+### Local
 ```bash
-# Install dependencies
 pip install -r requirements.txt
-
-# Set environment variables (required)
-export ANTHROPIC_API_KEY="your-api-key-here"
-export ADMIN_PASSWORD="fcv-admin-2024"  # Optional, uses default if not set
-
-# Run the app
+export ANTHROPIC_API_KEY="your-key"
+export ADMIN_PASSWORD="fcv-admin-2024"   # optional
 python3 app.py
-
-# Open http://localhost:5000 in your browser
+# Open http://localhost:5000
 ```
 
-### 8.2 Deploy to Render.com
-1. Connect your GitHub repo to Render
-2. Create a new Web Service, select your repo + branch
-3. Render reads the `Procfile` and `requirements.txt`
-4. Deploy automatically on push to that branch
+### Render.com
+- Connect GitHub repo → Web Service → reads `Procfile` + `requirements.txt`
+- Auto-deploys on push to `main`
+- Required env vars in Render dashboard: `ANTHROPIC_API_KEY`, `ADMIN_PASSWORD`
 
-**Environment variables needed (set in Render dashboard):**
-- `ANTHROPIC_API_KEY` — your Claude API key (required)
-- `ADMIN_PASSWORD` — optional, for prompt admin modal (default: "fcv-admin-2024" if not set)
-
-**Current dependencies:**
-- Flask 3.0.3
-- anthropic >= 0.40.0 (Anthropic SDK for Claude API)
-- pypdf >= 4.0.0 (PDF text extraction)
-- python-docx 1.1.2 (future document generation support)
-
-### 8.3 GitHub Workflow
+### Branch workflow
 ```bash
-# Create a feature branch
-git checkout -b feature/explorer-panel
-
-# Make changes to app.py, index.html, etc.
-
-# Test locally
-python3 app.py
-
-# Commit and push
+git checkout -b feat/my-change
+# make changes, test locally
 git add app.py index.html
-git commit -m "Add explorer panel with deep-dive Q&A"
-git push origin feature/explorer-panel
-
-# Open a PR, review, merge to main
-# Render auto-deploys when main is updated
+git commit -m "feat: describe change"
+git push origin feat/my-change
+# open PR → merge → Render auto-deploys
 ```
 
 ---
 
-## 9. Safety & Output Handling
+## 7. Testing
 
-### 9.1 AI Disclaimer Header
-All Stage 4 outputs include a header disclaimer:
-```
----
-**AI-Generated Output — For Review Purposes Only**
+**Manual workflow:**
+1. Upload a test PAD + contextual doc (RRA or country risk assessment)
+2. Run all 4 stages; check:
+   - Stage 1 Part A extracts from project doc only; Part B cites tiers correctly
+   - Stage 2 ratings are reasonable; S/R tags match the strict definition
+   - Stage 3 mitigations name specific locations and mechanisms
+   - Stage 4 priorities are concrete with geographic callouts; citations not fabricated
+   - Explorer offers distinct A/B/C options with PAD change callouts
+3. Test the refine loop at each stage
+4. Test Explorer deep-dive for 1–2 priorities
 
-This Recommendations Note was produced by an LLM-assisted screening tool. It is intended as a supplementary analytical input to support expert review, not as a substitute for professional FCV analysis. The content reflects the AI interpretation of uploaded documents and embedded WBG guidance, and may contain errors, omissions, or misjudgements. Users are responsible for critically reviewing, verifying, and adapting this output before any operational use.
-
-*Generated by WBG FCV Project Screener · {date}*
-
----
-```
-
-This disclaimer is prepended to all Stage 4 outputs via the `DO_NO_HARM_HEADER` constant in `app.py`.
-
-### 9.2 Stream-Based Output with Error Handling
-- All API responses use Server-Sent Events (SSE) for real-time streaming
-- Frontend displays text progressively as chunks arrive
-- If stream fails, frontend displays error message with recovery options
-- Session history is preserved even if a stage fails mid-stream
+**Prompt quality check:** Are recommendations specific (geography, mechanism, entry points)? Evidence-based? Multiple options offered?
 
 ---
 
-## 10. Known Limitations & Future Improvements
+## 8. Debugging
 
-### 10.1 Current Limitations
-- **localStorage scope:** Sessions are browser/device-specific; no team sharing or long-term archival
-- **Rate limiting:** LLM calls are not rate-limited; high-volume usage could hit API throttles
-- **Large PDFs:** Documents >500k chars are truncated; very large projects may lose nuance
-- **Citation hallucination risk:** Stage 4 prompt now explicitly prohibits fabricating document citations (e.g. [RRA 2022] when no RRA was uploaded). If the Stage 4 prompt is modified, ensure this guard is preserved.
-- **Research cache is in-process:** Web research results are cached in memory per "country::sector" key; cache is lost on server restart. Repeat runs with same country+sector pair use cached results.
-- **Accessibility:** Some frontend components could be more accessible (ARIA labels, keyboard navigation)
-- **Mobile:** UI is desktop-optimized; mobile experience is limited
+**App hangs on Stage 1 large PDF** — LLM is condensing the doc (expected, 30–60s). Check browser console; if no errors, wait.
 
-### 10.2 Potential Improvements
-- **Backend session database:** Store conversation history in a database (PostgreSQL, Firebase) for team collaboration and audit trails
-- **Document caching:** Cache extracted/summarized documents to avoid re-processing on repeat runs
-- **Priority versioning:** Track changes to priorities across refinement rounds
-- **Collaborative mode:** Multiple users review the same analysis in real-time
-- **Export formats:** Generate Word/PDF reports for formal sharing
-- **Custom FCV frameworks:** Allow users to define their own FCV dimensions or assessment model
-- **Integration with World Bank systems:** Connect to project databases, risk dashboards, etc.
+**Stage 2 ratings seem off** — Use the refine box to add local knowledge, or edit Stage 2 prompt via Admin modal and re-run.
+
+**Explorer options not specific enough** — Update Explorer prompt to require geographic naming and mechanism specification.
+
+**Do No Harm checklist not showing in Stage 4** — Stage 3 must generate a `## Part C` section with a Markdown table. Check the regex in `index.html` if the table format differs.
+
+**Debugging steps:**
+1. Browser console (F12) for JS errors
+2. Flask server logs (Render dashboard stdout) for backend errors
+3. Admin modal to inspect the exact prompt used
+4. Copy LLM output and ask Claude: *"Why might this recommendation be vague?"*
 
 ---
 
-## 11. Helpful Context & Design Decisions
+## 9. Known Limitations
 
-### 11.1 Why Claude Sonnet 4?
-- Strong reasoning for FCV analysis (structured assessment, evidence weighting)
-- Fast enough for iterative refinement (vs. Opus)
-- Efficient cost (vs. Haiku, which would struggle with nuanced FCV reasoning)
-- **Current version:** `claude-sonnet-4-20250514` (latest available model with strong analytical capabilities)
-
-### 11.2 Why Flask (Not React/Next.js)?
-- Lightweight and quick to deploy
-- Direct LLM integration on backend (easier to manage API keys, prompts, context)
-- Frontend is mostly vanilla JS, so framework overhead not necessary
-- Easy to host on Render or similar
-
-### 11.3 Why SSE Streaming (Not Polling)?
-- Real-time feedback to user (progressive rendering)
-- Simpler UX (no "thinking..." spinners)
-- Efficient (no repeated polling)
-
-### 11.4 Why localStorage for Sessions (Current Implementation)?
-- Quick to implement
-- No backend database needed
-- Works offline
-- **Trade-off:** Not suitable for long-term storage or team collaboration (see Limitations section)
-
-### 11.5 Why Do We Parse Priorities via Delimiters?
-- Reliable extraction from unstructured LLM output
-- Fallback to positional parsing if delimiters fail
-- Allows the LLM to generate prose around priorities (preamble, discussion) without breaking parsing
-- JSON structure inside delimiters is easy to extend (add/remove priority fields)
+- **localStorage scope:** Sessions are browser/device-specific — no team sharing or archival
+- **Research cache is in-process:** Lost on server restart; repeat runs with same country+sector use cached results
+- **Large PDFs:** Docs >500k chars are truncated; very large projects may lose nuance
+- **Citation hallucination:** Stage 4 prompt guards against this — preserve the guard if modifying Stage 4
 
 ---
 
-## 12. Testing & Quality Assurance
-
-### 12.1 How to Test the App
-
-**Manual testing workflow:**
-1. Upload a test project document (e.g., a PAD from GitHub or Ghana example)
-2. Add a contextual document (e.g., a recent RRA or country risk assessment)
-3. Run through all 4 stages, checking:
-   - Stage 1 Part A extracts correctly from the project doc
-   - Stage 1 Part B references contextual docs and training knowledge separately
-   - Stage 2 ratings are reasonable for the project
-   - Stage 3 gaps are specific and actionable (not vague)
-   - Stage 4 priorities are concrete with geographic callouts
-   - Explorer options are operationally grounded
-4. Try the refine loop at each stage to ensure edits feed into next stage
-5. Test the Explorer deep-dive for 1–2 priorities
-
-**Prompt quality checks:**
-- Are recommendations specific (geography, mechanism, entry points) or vague?
-- Do they reference the WBG framework (FCV dimensions, Do No Harm)?
-- Are they evidence-based (grounded in uploaded docs) or speculative?
-- Are multiple options offered or a single "solution" prescribed?
-
-### 12.2 Red-Teaming the Prompts
-Ask Claude (in a separate conversation) to critique the Stage 4 output:
-- Are the recommended priorities the most important ones?
-- Are any dimensions under/overweighted?
-- Do the recommendations align with the evidence presented?
-- Would a TTL find these actionable?
-
----
-
-## 13. Questions to Ask Before Making Changes
-
-Before modifying prompts, frontend, or backend logic, ask yourself:
-
-1. **What problem does this solve?** Is it addressing a real user pain point or a hypothetical issue?
-2. **How does this affect the other stages?** If I change Stage 2 output, do Stages 3 & 4 prompts need updating?
-3. **Does this add complexity without clear benefit?** Could a simpler approach work?
-4. **How do I test this?** What does a "good" outcome look like?
-5. **Is this a one-time fix or a recurring need?** If recurring, should it be in the prompt or the frontend?
-6. **Who is the user?** Is this for TTLs, FCV specialists, or both? Does the change serve their workflow?
-7. **What's the trade-off?** Does this improve output quality at the cost of longer processing time? Is that acceptable?
-
----
-
-## 14. Conversation Starters for Claude
-
-When you return with a new issue or request, here are useful framing questions:
-
-- **"How do I improve the specificity of Stage 4 recommendations?"**
-  → Share an example of a vague recommendation and ask Claude to help rewrite the Stage 4 prompt to enforce specificity.
-
-- **"The Explorer options are too long / too short."**
-  → Adjust the Explorer prompt's length instructions or add formatting requirements (bullet points, numbered steps, etc.).
-
-- **"I want to test the app with a different FCV framework (e.g., the ICRC framework instead of WBG)."**
-  → Provide the alternative framework and ask Claude to rewrite Stage 2 & 3 prompts to use it.
-
-- **"Can we improve the Do-No-Harm checklist?"**
-  → Share the current checklist and ask Claude to propose new principles or reorganization, then update Stage 3 prompt.
-
-- **"The app should export a Word document / PDF report."**
-  → Specify what should be in the report (which sections from which stages) and ask Claude to add export functionality.
-
-- **"I want to add collaborative review mode."**
-  → Describe the workflow (multiple users commenting on priorities, etc.) and ask Claude to design the backend/frontend changes.
-
----
-
-## 15. File Structure & Repository Organization
-
-```
-FCV-AGENT/
-├── app.py                    # Flask backend + all prompts + routes
-├── index.html                # Main frontend UI (single-page app, ~4000 lines)
-├── background_docs.py        # FCV_GUIDE and FCV_OPERATIONAL_MANUAL constants
-├── prompts.json              # Session-specific prompt overrides (empty by default)
-├── requirements.txt          # Python dependencies (Flask, anthropic, pypdf, python-docx)
-├── Procfile                  # Render deployment config
-├── .gitignore               # Git ignore rules
-├── claude.md                 # THIS FILE - guidance for Claude
-├── static/                  # Static assets (if any)
-├── .git/                    # Git repository metadata
-└── README.md                # (optional) Quick start guide for users
-```
-
----
-
-## 16. Quick Reference: Key Constants & Limits
-
-```python
-MAX_DOC_CHARS = 500_000              # Docs larger than this get LLM summarization
-EXTRACT_THRESHOLD = 150_000          # Docs larger than this are condensed via LLM before analysis
-ADMIN_PASSWORD = "fcv-admin-2024"    # Password for prompt admin modal (from env var ADMIN_PASSWORD)
-PROMPTS_FILE = 'prompts.json'        # Location of session-specific prompt overrides
-```
-
----
-
-## 17. Getting Help & Debugging
-
-### Common Issues
-
-**"The app hangs on Stage 1 with a large PDF"**
-- The LLM is likely summarizing the document (expected, can take 30–60 seconds)
-- Check browser console for errors; if none, wait longer
-- If it truly hangs, check that `MAX_DOC_CHARS` isn't too large
-
-**"Stage 2 ratings seem off"**
-- Ask Claude: "Here's a project in [country]. The Stage 2 prompt gave [rating]. Does this make sense?"
-- Refine Stage 2 via the Admin modal and re-run that stage
-
-**"Explorer options aren't specific enough"**
-- The Explorer prompt needs to be more prescriptive about geographic naming and mechanisms
-- Update the Explorer prompt and re-run a priority
-
-**"Do No Harm checklist isn't showing up in Stage 4"**
-- Check that Stage 3 generated a `## Part C` section with a Markdown table
-- If the table format is slightly different, the regex in `index.html` may not match; ask Claude to help fix the parsing
-
-### How to Debug
-
-1. **Check the browser console** (F12 → Console tab) for JavaScript errors
-2. **Check the Flask server logs** for backend errors (should print to stdout in Render dashboard)
-3. **Use the prompt admin modal** to see exactly what prompt was used for a stage
-4. **Copy the LLM output** and share it with Claude, asking: "Why might this recommendation be vague/inaccurate?"
-
----
-
-## 18. Credits & Context
-
-This tool was developed iteratively based on feedback from World Bank FCV practitioners (particularly Shubham's note on specificity and actionability). The key insight — that recommendations must move from broad critique ("service delivery needs to be targeted") to specific, location-aware guidance ("focus on Nzerekore, Kindia, Kankan where state legitimacy is lowest") — is central to the design.
-
-The 4-stage pipeline was chosen to balance:
-- **Quality:** Each stage allows refinement + user input
-- **Usability:** Not overwhelming; lets TTLs pause and review
-- **Efficiency:** Not redundant; earlier stages feed directly into later ones
-
-The Explorer feature was added to solve the "length vs. depth" problem: keep the main Recommendations Note clean and memo-ready, but offer deep analytical options on demand.
-
----
-
-## 19. Final Note
-
-This `claude.md` is a living document. As you make changes, iterate on features, and learn what works, please update it. The goal is that any developer (including Claude in future conversations) should be able to:
-1. Understand the app's architecture in 30 minutes
-2. Identify where to make a requested change
-3. Know the consequences of that change
-4. Test the change effectively
-
-If you find gaps in this documentation, or if new design decisions emerge, update this file. Future you (and future Claude) will thank you.
-
----
-
-**Last updated:** March 11, 2026
-**Current version:** FCV Project Screener 5.0 (with S/R distinction, dual gauges, embedded doc type detection)
-**Current Claude model:** claude-sonnet-4-20250514
-**Architecture:** Flask 3.0.3 backend + vanilla JS frontend + Anthropic SDK integration
+*Last updated: 2026-03-23*
+*Version: FCV Project Screener 5.0 (S/R distinction, dual gauges, embedded doc type detection)*
+*Model: claude-sonnet-4-20250514*
