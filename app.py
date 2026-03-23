@@ -32,6 +32,68 @@ This Recommendations Note was produced by an LLM-assisted screening tool. It is 
 
 """
 
+# ── Stage 4 JSON parsing constants ───────────────────────────────────────────
+
+CITATION_ORG_WHITELIST = {
+    "World Bank", "ACLED", "UNODC", "ICG", "UNHCR", "WFP", "OCHA",
+    "ND-GAIN", "OECD", "training knowledge", "web research",
+}
+
+_REQUIRED_TOP_FIELDS = [
+    "fcv_rating", "fcv_responsiveness_rating", "sensitivity_summary",
+    "responsiveness_summary", "risk_to_project", "risk_from_project", "priorities",
+]
+
+_REQUIRED_PRIORITY_FIELDS = [
+    "number", "title", "dimension", "tag", "risk_level",
+    "the_gap", "why_it_matters", "recommendation", "who_acts", "when", "resources",
+]
+
+_SPECIFICITY_STOPWORDS = frozenset({
+    'the', 'a', 'an', 'of', 'in', 'and', 'or', 'for', 'with', 'on',
+    'at', 'by', 'to', 'from', 'is', 'are', 'was', 'were', 'be', 'been',
+    'this', 'that', 'which', 'who', 'not', 'but', 'its',
+})
+
+
+def _check_specificity(text: str) -> bool:
+    """Return True (show warning) if no mid-sentence capitalised word is found.
+
+    Heuristic: a word capitalised mid-sentence (not first word, not stopword)
+    is likely a proper noun (place, group, institution). Absence suggests
+    generic language. False negatives are acceptable — the badge is advisory.
+    """
+    if not text:
+        return True
+    sentences = re.split(r'(?<=[.!?])\s+', text.strip())
+    for sent in sentences:
+        words = sent.split()
+        for word in words[1:]:  # skip first word of each sentence
+            clean = re.sub(r'[^\w]', '', word)
+            if (clean
+                    and clean[0].isupper()
+                    and clean.lower() not in _SPECIFICITY_STOPWORDS):
+                return False  # found mid-sentence capital — looks specific
+    return True  # no mid-sentence capitals found — warn
+
+
+def _check_citations(priority: dict, uploaded_doc_names: list) -> list:
+    """Return list of unverified citation strings found in priority text fields."""
+    all_text = ' '.join(str(priority.get(f, '')) for f in _REQUIRED_PRIORITY_FIELDS)
+    raw_citations = re.findall(r'\[From:\s*([^\]]+)\]', all_text)
+    doc_names_lower = [n.lower() for n in (uploaded_doc_names or [])]
+    unverified = []
+    for cite in raw_citations:
+        cite_s = cite.strip()
+        if any(org.lower() in cite_s.lower() for org in CITATION_ORG_WHITELIST):
+            continue
+        if any(doc in cite_s.lower() or cite_s.lower() in doc
+               for doc in doc_names_lower):
+            continue
+        unverified.append(cite_s)
+    return unverified
+
+
 # ── Default prompts ──────────────────────────────────────────────────────────
 
 DEFAULT_PROMPTS = {
@@ -746,57 +808,79 @@ def extract_risk_exposure(text):
     }
 
 
-def extract_priorities(text):
-    """Parse %%%PRIORITY_START%%% / %%%PRIORITY_END%%% blocks from Stage 4 output.
-    Supports structured-field format: TITLE, FCV_DIMENSION, RISK_LEVEL,
-    THE_GAP, WHY_IT_MATTERS, WHY_FCV_MATTERS, SUGGESTED_DIRECTIONS.
+def extract_priorities(text: str, uploaded_doc_names: list = None) -> dict:
+    """Parse %%%JSON_START%%% / %%%JSON_END%%% block from Stage 4 output.
+
+    Returns a dict:
+      On success: {'error': False, 'priorities': [...], 'fcv_rating': ...,
+                   'fcv_responsiveness_rating': ..., 'sensitivity_summary': ...,
+                   'responsiveness_summary': ..., 'risk_exposure': {...}}
+      On failure: {'error': True, 'message': str, 'priorities': [], ...empty fields}
     """
-    pattern = r'%%%PRIORITY_START%%%(.*?)%%%PRIORITY_END%%%'
-    blocks = re.findall(pattern, text, re.DOTALL)
+    _error_result = {
+        'error': True,
+        'message': 'Stage 4 output could not be parsed — please re-run this stage.',
+        'priorities': [],
+        'fcv_rating': '',
+        'fcv_responsiveness_rating': '',
+        'sensitivity_summary': '',
+        'responsiveness_summary': '',
+        'risk_exposure': {'risks_to': '', 'risks_from': ''},
+    }
+
+    m = re.search(r'%%%JSON_START%%%(.*?)%%%JSON_END%%%', text, re.DOTALL)
+    if not m:
+        return _error_result
+
+    try:
+        data = json.loads(m.group(1).strip())
+    except (json.JSONDecodeError, ValueError):
+        return _error_result
+
+    # Fill missing top-level fields with defaults
+    for field in _REQUIRED_TOP_FIELDS:
+        if field not in data:
+            data[field] = [] if field == 'priorities' else ''
+
+    priorities_raw = data.get('priorities', [])
+    if not isinstance(priorities_raw, list) or len(priorities_raw) < 1:
+        return _error_result
+
     priorities = []
-    for block in blocks:
-        lines = block.strip().split('\n')
-        def get_field(fname, lns=lines):
-            for l in lns:
-                if l.startswith(fname + ':'):
-                    return l[len(fname)+1:].strip()
-            return ''
-        title = get_field('TITLE')
-        if not title:
+    for pr in priorities_raw:
+        if not isinstance(pr, dict):
             continue
-        dimension = get_field('FCV_DIMENSION')
-        tag = get_field('TAG')
-        risk_level = get_field('RISK_LEVEL')
-        the_gap = get_field('THE_GAP')
-        why_it_matters = get_field('WHY_IT_MATTERS')
-        why_fcv_matters = get_field('WHY_FCV_MATTERS')
-        suggested_directions = get_field('SUGGESTED_DIRECTIONS')
-        who_acts = get_field('WHO_ACTS')
-        when = get_field('WHEN')
-        resources = get_field('RESOURCES')
-        body = '\n\n'.join(filter(None, [the_gap, why_it_matters, why_fcv_matters, suggested_directions]))
-        priorities.append({
-            'title': title,
-            'body': body,
-            'dimension': dimension,
-            'tag': tag,
-            'risk_level': risk_level,
-            'the_gap': the_gap,
-            'why_it_matters': why_it_matters,
-            'why_fcv_matters': why_fcv_matters,
-            'suggested_directions': suggested_directions,
-            'who_acts': who_acts,
-            'when': when,
-            'resources': resources,
-        })
-    # Fallback: positional parsing if fewer than 4 delimiter blocks found
-    if len(priorities) < 4:
-        fallback = re.findall(r'Priority \d+\s*[·•]\s*[^\n]+', text)
-        if fallback and len(fallback) >= len(priorities):
-            priorities = [{'title': t.strip(), 'body': '', 'dimension': '',
-                           'tag': '', 'risk_level': '', 'the_gap': '', 'why_it_matters': '',
-                           'why_fcv_matters': '', 'suggested_directions': ''} for t in fallback]
-    return priorities
+        # Fill missing priority fields
+        for field in _REQUIRED_PRIORITY_FIELDS:
+            if field not in pr:
+                pr[field] = ''
+
+        # Post-parse checks
+        check_text = (pr.get('the_gap', '') + ' ' + pr.get('recommendation', ''))
+        pr['specificity_warning'] = _check_specificity(check_text)
+        pr['unverified_citations'] = _check_citations(pr, uploaded_doc_names)
+
+        # Build body for Explorer compatibility
+        pr['body'] = '\n\n'.join(filter(None, [
+            pr.get('the_gap', ''),
+            pr.get('why_it_matters', ''),
+            pr.get('recommendation', ''),
+        ]))
+
+        priorities.append(pr)
+
+    return {
+        'error': False,
+        'priorities': priorities,
+        'fcv_rating': str(data.get('fcv_rating', '')).strip(),
+        'fcv_responsiveness_rating': str(data.get('fcv_responsiveness_rating', '')).strip(),
+        'sensitivity_summary': str(data.get('sensitivity_summary', '')).strip(),
+        'responsiveness_summary': str(data.get('responsiveness_summary', '')).strip(),
+        'risk_exposure': {
+            'risks_to': str(data.get('risk_to_project', '')).strip(),
+            'risks_from': str(data.get('risk_from_project', '')).strip(),
+        },
+    }
 
 
 # ── Document type detection ───────────────────────────────────────────────────
