@@ -472,6 +472,9 @@ Write a paragraph of 80-100 words assessing the project's overall FCV SENSITIVIT
 Write a paragraph of 80-100 words assessing the project's FCV RESPONSIVENESS — the degree to which it actively contributes to addressing root drivers of fragility and/or building resilience. Anchor this explicitly to whichever of the four FCV Strategy pillars are most relevant to this project's context and sector. Be honest: many projects will have low responsiveness scores. Say so clearly and explain what the missed opportunity is, rather than inflating the assessment.
 (This paragraph will also be reproduced faithfully in the JSON block as `responsiveness_summary`.)
 
+After writing the FCV Responsiveness Summary paragraph, output this exact line on its own line before continuing:
+%%%PRIORITIES_START%%%
+
 ---
 
 ## STRATEGIC PRIORITIES
@@ -491,7 +494,7 @@ FCV_DIMENSION: [One of: Institutional Legitimacy | Inclusion | Social Cohesion |
 RISK_LEVEL: [One of: High | Medium | Low]
 THE_GAP: 2-3 sentences on what is missing or inadequate in the current project design, specifically for this country and sector. Name the document section or component that is absent or insufficient.
 WHY_IT_MATTERS: 2-3 sentences covering both the operational consequence of not addressing this gap AND its significance through an FCV lens. Name the specific delivery risk, then explain the FCV mechanism at stake (e.g. exclusion fuelling grievance, weak institutions enabling spoilers, displacement disrupting community cohesion). Be concise — cover both dimensions in the same passage. For any priority tagged [R] or [S+R], include a one-sentence S/R justification at the end: e.g., "Tagged [R] because this directly addresses Pillar 2 (remaining engaged during crisis) of the WBG FCV Strategy 2020–2025."
-recommendation: Write ONE cohesive recommended action for this priority. It may contain multiple components (e.g., "Revise the beneficiary targeting criteria to explicitly include IDP households in Bentiu and Malakal, update the consultation plan to ensure female-headed households are reached, and add a disaggregated monitoring indicator tracking service uptake by displacement status") but it must read as a single direction — not a menu of choices. No bullet points within this field. No "Option A / Option B" structure. If multiple actions are truly needed, pick the highest-leverage one and note what it depends on.
+RECOMMENDATION: Write 4–6 sentences of specific, sequenced guidance for this priority. Structure the response to cover: (1) What to change or add — name the specific project element, component, or document section; (2) The mechanism or instrument — name the specific intervention, tool, or arrangement (e.g. third-party monitoring contract, community feedback committee, satellite supervision system); (3) The geographic or institutional target — name the location, community, counterpart institution, or affected group; (4) A first step or dependency — what needs to happen first, or what actor needs to initiate. Write as flowing prose — no bullet points, no option menus, no "Option A / Option B". All components should form one coherent direction.
 WHO_ACTS: [One of: TTL | PIU | Government counterpart | FCV specialist | Procurement team]
 WHEN: [One of: At design stage | Before appraisal | During implementation]
 RESOURCES: [One of: Minimal | Moderate | Significant]
@@ -533,8 +536,8 @@ Apply the following definitions strictly. [S+R] must be earned — do not use it
 - FCV Risk Exposure: 130-170 words total across both paragraphs
 - Gaps: 100-130 words
 - Operational Context: 150-200 words
-- Each priority (all fields combined): 120-160 words
-- TOTAL MAXIMUM: 2,200 words
+- Each priority (all fields combined): 200-280 words
+- TOTAL MAXIMUM: 2,800 words
 
 # Quality Check Before Submitting
 - 4–5 priorities total
@@ -571,7 +574,7 @@ The FCV ratings, summaries, and risk exposure paragraphs you have written in the
       "risk_level": "High",
       "the_gap": "Specific gap with named location/group/institution",
       "why_it_matters": "Why this gap matters for this project, including S/R pillar justification for [R] or [S+R] tags",
-      "recommendation": "One cohesive recommended action — not a menu of options",
+      "recommendation": "Revise the Environmental and Social Commitment Plan to include a conflict-sensitive stakeholder engagement protocol specific to gang-controlled corridors along the CA-13. The protocol should mandate use of trusted community intermediaries — including local parish networks and municipal women's councils — rather than direct government outreach in contested areas. Engage SIT's social development team to pilot the protocol in San Pedro Sula during the first six months of implementation, using anonymous feedback channels to detect intimidation. Flag security incidents monthly to the TTL via the PIU, with a clear threshold (>2 incidents per corridor per quarter) triggering a pause and review.",
       "who_acts": "TTL",
       "when": "Before appraisal",
       "resources": "Moderate",
@@ -650,6 +653,8 @@ def clean_stage4_output(text):
     """
     # Primary: strip the new JSON block — all structured data lives here
     text = re.sub(r'%%%JSON_START%%%.*?%%%JSON_END%%%', '', text, flags=re.DOTALL)
+    # Strip priority narrative section (field labels duplicated in JSON cards)
+    text = re.sub(r'%%%PRIORITIES_START%%%.*', '', text, flags=re.DOTALL)
     # Fallback: strip legacy delimiter blocks from old-format Stage 4 outputs
     text = re.sub(r'%%%PRIORITY_START%%%.*?%%%PRIORITY_END%%%', '', text, flags=re.DOTALL)
     text = re.sub(r'%%%FCV_RATING:[^%]*%%%\n?', '', text)

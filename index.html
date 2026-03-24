@@ -373,6 +373,7 @@
       padding:24px 28px;font-size:14px;line-height:1.8;color:var(--text);
       max-height:540px;overflow-y:auto;
     }
+    #stage-disp.s4-active .out-body{max-height:none;overflow-y:visible}
     .out-body::-webkit-scrollbar{width:5px}
     .out-body::-webkit-scrollbar-track{background:#f5f7fa}
     .out-body::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
@@ -2279,7 +2280,7 @@
               ${sessionPrompts[stage]?'⚑ prompt (modified)':'view prompt'}
             </button>
           </div>
-          <div class="stage-sub">${isFollowOn?'Updated based on your input':SUBS[stage]}</div>
+          <div class="stage-sub">${isFollowOn?'Updated based on your input':isLast?'Recommendations Note generated':SUBS[stage]}</div>
         </div>
       </div>
       <div class="callout ${isLast?'ok':'info'} ani">
@@ -2326,6 +2327,9 @@
         ${isLast?`<aside class="fcv-sidebar" id="fcv-sidebar">${sidebarHtml()}</aside>`:''}
       </div>
       `;
+
+    // Mark Stage 4 so CSS can remove the .out-body scroll constraint
+    if(isLast) document.getElementById('stage-disp').classList.add('s4-active');
 
     // Stage consistency check: warn if Stage 2 was updated after Stage 3 or Stage 4
     if(stage === 3 || stage === 4){
