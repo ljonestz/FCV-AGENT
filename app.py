@@ -32,6 +32,71 @@ This Recommendations Note was produced by an LLM-assisted screening tool. It is 
 
 """
 
+# ── Stage 4 JSON parsing constants ───────────────────────────────────────────
+
+CITATION_ORG_WHITELIST = {
+    "World Bank", "ACLED", "UNODC", "ICG", "UNHCR", "WFP", "OCHA",
+    "ND-GAIN", "OECD", "training knowledge", "web research",
+}
+
+_REQUIRED_TOP_FIELDS = [
+    "fcv_rating", "fcv_responsiveness_rating", "sensitivity_summary",
+    "responsiveness_summary", "risk_to_project", "risk_from_project", "priorities",
+]
+
+_REQUIRED_PRIORITY_FIELDS = [
+    "number", "title", "dimension", "tag", "risk_level",
+    "the_gap", "why_it_matters", "recommendation", "who_acts", "when", "resources",
+    "pad_sections", "suggested_language", "implementation_note",
+]
+
+_SPECIFICITY_STOPWORDS = frozenset({
+    'the', 'a', 'an', 'of', 'in', 'and', 'or', 'for', 'with', 'on',
+    'at', 'by', 'to', 'from', 'is', 'are', 'was', 'were', 'be', 'been',
+    'this', 'that', 'which', 'who', 'not', 'but', 'its',
+})
+
+
+def _check_specificity(text: str) -> bool:
+    """Return True (show warning) if no mid-sentence capitalised word is found.
+
+    Heuristic: a word capitalised mid-sentence (not first word, not stopword)
+    is likely a proper noun (place, group, institution). Absence suggests
+    generic language. False negatives are acceptable — the badge is advisory.
+    """
+    if not text:
+        return True
+    sentences = re.split(r'(?<=[.!?])\s+', text.strip())
+    for sent in sentences:
+        words = sent.split()
+        for word in words[1:]:  # skip first word of each sentence
+            clean = re.sub(r'[^\w]', '', word)
+            if (clean
+                    and clean[0].isupper()
+                    and clean.lower() not in _SPECIFICITY_STOPWORDS):
+                return False  # found mid-sentence capital — looks specific
+    return True  # no mid-sentence capitals found — warn
+
+
+def _check_citations(priority: dict, uploaded_doc_names: list) -> list:
+    """Return list of unverified citation strings found in priority text fields."""
+    all_text = ' '.join(str(priority.get(f, '')) for f in _REQUIRED_PRIORITY_FIELDS)
+    raw_citations = re.findall(r'\[From:\s*([^\]]+)\]', all_text)
+    doc_names_lower = [n.lower() for n in (uploaded_doc_names or [])]
+    unverified = []
+    for cite in raw_citations:
+        cite_s = cite.strip()
+        if any(org.lower() in cite_s.lower() for org in CITATION_ORG_WHITELIST):
+            continue
+        # Strip extensions for loose matching: citation vs uploaded filename
+        doc_bases = [d.rsplit('.', 1)[0] if '.' in d else d for d in doc_names_lower]
+        if any(base in cite_s.lower() or cite_s.lower() in base
+               for base in doc_bases):
+            continue
+        unverified.append(cite_s)
+    return unverified
+
+
 # ── Default prompts ──────────────────────────────────────────────────────────
 
 DEFAULT_PROMPTS = {
@@ -116,6 +181,7 @@ Using the information extracted in Stage 1, assess how well this project\'s curr
 3. **Key gaps** in the current design relative to this recommendation
 4. **Risk to project delivery** from this gap: High / Medium / Low
 5. **Risk from project** (how the project could inadvertently worsen FCV dynamics) related to this recommendation: High / Medium / Low
+6. **Evidence citation:** For each recommendation, cite the specific design element, document passage, or project feature that justifies your rating. Do not give a generic assessment. Example: "Rated Partial because the PAD includes a stakeholder engagement plan (Section 4.2) but it does not differentiate consultation approaches by conflict-affected versus stable areas."
 
 Be specific — quote or reference the project document where possible. Note when information is insufficient to make a confident assessment.
 
@@ -260,6 +326,8 @@ Keep entries concise — 3-5 sentences per recommendation. Only cover recommenda
 
 ## Part B: Recommended Mitigation Measures
 
+IMPORTANT: Only propose mitigations for recommendations rated Partial, Weak, or Not Addressed in Stage 2. Do not re-surface recommendations rated Strong or Well Embedded — these do not need mitigation. Reference the Stage 2 rating explicitly when introducing each mitigation: e.g., "Stage 2 rated stakeholder engagement as Partial because the consultation plan did not differentiate approaches by conflict-affected versus stable areas — the mitigation therefore focuses on..."
+
 For each gap identified in Part A, propose specific, actionable mitigations. Structure each as:
 
 **Gap addressed:** [One-line description]
@@ -377,13 +445,22 @@ A single bolded sentence summarising the project's overall FCV integration statu
 ### Operational Context (150-200 words, ONE PARAGRAPH)
 Synthesise 3-4 converging FCV risks creating a uniquely challenging operating environment for THIS project. Forward-looking framing for post-preparation events. 2-3 citations max.
 
-### FCV Risk Exposure (130-170 words, TWO PARAGRAPHS)
-This sub-section bridges the analytical findings from Stages 1-3 into plain-language insight for a non-FCV-specialist TTL. Output this section using EXACTLY this delimiter format:
+After the Operational Context paragraph, output this exact line on its own line before continuing:
+%%%RISK_NARRATIVE_START%%%
 
-%%%RISK_EXPOSURE_START%%%
-RISKS_TO_PROJECT: [One paragraph, 60-85 words. Identify the 2-3 FCV dynamics from the country context that pose the most direct threat to this project's delivery. Write in plain operational language — not analytical jargon. Name the specific risk and explain briefly why it matters for this project specifically.]
-RISKS_FROM_PROJECT: [One paragraph, 60-85 words. Identify 1-2 ways the project's current design could inadvertently worsen fragility or conflict if not carefully managed. Draw on Stage 2 "Risk FROM project" findings. Explain the mechanism clearly for a reader who has not seen Stages 1-3.]
-%%%RISK_EXPOSURE_END%%%
+### FCV Risk Exposure (130-170 words, TWO PARAGRAPHS)
+This sub-section bridges the analytical findings from Stages 1-3 into plain-language insight for a non-FCV-specialist TTL.
+
+Write two clearly labelled paragraphs:
+
+**Risks to project:** [One paragraph, 60-85 words. Identify the 2-3 FCV dynamics from the country context that pose the most direct threat to this project's delivery. Write in plain operational language — not analytical jargon. Name the specific risk and explain briefly why it matters for this project specifically.]
+
+**How project could affect fragility:** [One paragraph, 60-85 words. Identify 1-2 ways the project's current design could inadvertently worsen fragility or conflict if not carefully managed. Draw on Stage 2 "Risk FROM project" findings. Explain the mechanism clearly for a reader who has not seen Stages 1-3.]
+
+These two paragraphs will also be reproduced faithfully in the JSON block as `risk_to_project` and `risk_from_project` fields.
+
+After writing both FCV Risk Exposure paragraphs, output this exact line on its own line before continuing:
+%%%RISK_NARRATIVE_END%%%
 
 ### Strengths (80-120 words, prose)
 3-4 concrete strengths actually present in the project document. Flowing prose. 2-3 citations max. Never cite the PCN/PAD itself.
@@ -391,15 +468,18 @@ RISKS_FROM_PROJECT: [One paragraph, 60-85 words. Identify 1-2 ways the project's
 ### Gaps (100-130 words, prose)
 The main weakness or cluster of weaknesses, constructively framed. Reference the OST FCV-sensitivity framework where relevant. 1-2 citations from RRA or external sources only.
 
-After the Gaps paragraph, output the following two blocks in order:
+After the Gaps paragraph, output this exact line on its own line before continuing:
+%%%PRIORITIES_START%%%
 
-%%%SENSITIVITY_SUMMARY_START%%%
+Then write the following two summary paragraphs (these will be stripped from the display and shown as summary cards):
+
+**FCV Sensitivity Summary (80-100 words):**
 Write a paragraph of 80-100 words assessing the project's overall FCV SENSITIVITY standing. Cover: how well the project avoids doing harm in the FCV context, the quality of its contextual awareness, and its operational readiness. Be direct about the overall level — do not hedge. Reference 1-2 specific strengths and 1-2 specific gaps from the Stage 2 screening.
-%%%SENSITIVITY_SUMMARY_END%%%
+(This paragraph will also be reproduced faithfully in the JSON block as `sensitivity_summary`.)
 
-%%%RESPONSIVENESS_SUMMARY_START%%%
+**FCV Responsiveness Summary (80-100 words):**
 Write a paragraph of 80-100 words assessing the project's FCV RESPONSIVENESS — the degree to which it actively contributes to addressing root drivers of fragility and/or building resilience. Anchor this explicitly to whichever of the four FCV Strategy pillars are most relevant to this project's context and sector. Be honest: many projects will have low responsiveness scores. Say so clearly and explain what the missed opportunity is, rather than inflating the assessment.
-%%%RESPONSIVENESS_SUMMARY_END%%%
+(This paragraph will also be reproduced faithfully in the JSON block as `responsiveness_summary`.)
 
 ---
 
@@ -413,52 +493,29 @@ Each priority MUST:
 - Be actionable at TTL level, framed as options not mandates
 - Be titled: **Priority N · [Strong verb phrase]**
 
-For EACH priority, you will output structured fields (see delimiter format below). Each field must contain:
+For EACH priority, write the following fields clearly in the narrative. These will also be reproduced in the JSON block at the end:
 
 TITLE: Priority N · [Actionable verb phrase starting with a strong verb]
 FCV_DIMENSION: [One of: Institutional Legitimacy | Inclusion | Social Cohesion | Security | Economic Livelihoods | Resilience — these map to the analytical risk dimensions and will appear as visible tags on each priority card]
 RISK_LEVEL: [One of: High | Medium | Low]
 THE_GAP: 2-3 sentences on what is missing or inadequate in the current project design, specifically for this country and sector. Name the document section or component that is absent or insufficient.
-WHY_IT_MATTERS: 2-3 sentences covering both the operational consequence of not addressing this gap AND its significance through an FCV lens. Name the specific delivery risk, then explain the FCV mechanism at stake (e.g. exclusion fuelling grievance, weak institutions enabling spoilers, displacement disrupting community cohesion). Be concise — cover both dimensions in the same passage.
-SUGGESTED_DIRECTIONS: 2-3 sentences of entry points for the TTL. Use language like "Consider...", "The team may want to...", "Explore...". No bullet lists — write as flowing prose suggestions.
+WHY_IT_MATTERS: 2-3 sentences covering both the operational consequence of not addressing this gap AND its significance through an FCV lens. Name the specific delivery risk, then explain the FCV mechanism at stake (e.g. exclusion fuelling grievance, weak institutions enabling spoilers, displacement disrupting community cohesion). Be concise — cover both dimensions in the same passage. For any priority tagged [R] or [S+R], include a one-sentence S/R justification at the end: e.g., "Tagged [R] because this directly addresses Pillar 2 (remaining engaged during crisis) of the WBG FCV Strategy 2020–2025."
+RECOMMENDATION: Write 4–6 sentences of specific, sequenced guidance for this priority. Structure the response to cover: (1) What to change or add — name the specific project element, component, or document section; (2) The mechanism or instrument — name the specific intervention, tool, or arrangement (e.g. third-party monitoring contract, community feedback committee, satellite supervision system); (3) The geographic or institutional target — name the location, community, counterpart institution, or affected group; (4) A first step or dependency — what needs to happen first, or what actor needs to initiate. Write as flowing prose — no bullet points, no option menus, no "Option A / Option B". All components should form one coherent direction.
 WHO_ACTS: [One of: TTL | PIU | Government counterpart | FCV specialist | Procurement team]
 WHEN: [One of: At design stage | Before appraisal | During implementation]
 RESOURCES: [One of: Minimal | Moderate | Significant]
+PAD_SECTIONS: A semicolon-separated list of 2–3 specific PAD document sections where the recommended change should be made. Use exact section names where known (e.g. "Annex 5: Stakeholder Engagement Plan; ESCP Commitment #4; Project Operations Manual — Security Protocols"). If uncertain of exact section, use document type + functional area (e.g. "PAD — Component 2 design; Procurement Plan").
+SUGGESTED_LANGUAGE: 2–4 sentences of specific draft text that the TTL could insert into the PAD or Project Operations Manual verbatim or near-verbatim. Write in the register of a formal WBG project document ("The project will..."). Make the language specific to this project's context, geography, and implementation arrangements.
+IMPLEMENTATION_NOTE: 1–2 sentences flagging a practical sequencing point, cost implication, or dependency. Be concrete: name the timing, actor, or cost range where known.
 
-Language to use: "Consider...", "The team may want to...", "Would benefit from...", "Explore...", "Could strengthen..."
+GEOGRAPHIC VALIDATION: Before finalising each priority, check: does the `the_gap` field name at least one specific location, group, or institution drawn from the uploaded documents or web research? If not, revise it. If no specific geography is available in your sources, name the administrative level at which the project operates (e.g., county, district, commune) and note that sub-national detail is missing.
+
 Strict prohibitions: NO specific percentages or dollar amounts; NO generic language; NO sub-bullet lists within a priority; NO criticism for post-preparation events.
 
 ---
 
-# CRITICAL — FCV SENSITIVITY RATING
-Before the first priority delimiter, output a single rating line:
-
-%%%FCV_RATING: [level]%%%
-
-Where [level] is EXACTLY one of: Extremely Low | Very Low | Low | Adequate | Well Embedded | Very Well Embedded
-
-Base this on the project's CURRENT state of FCV integration — not the ideal state after applying these priorities.
-
----
-
-# CRITICAL — FCV RESPONSIVENESS RATING
-Immediately after the FCV Sensitivity Rating line, output a second rating line:
-
-%%%FCV_RESPONSIVENESS_RATING: [level]%%%
-
-Where [level] is EXACTLY one of: Extremely Low | Very Low | Low | Adequate | Well Embedded | Very Well Embedded
-
-Base this on the project's current FCV RESPONSIVENESS — the degree to which it actively addresses root drivers of fragility or builds resilience through the four FCV Strategy pillars. Note: most projects will have a lower responsiveness rating than sensitivity rating; do not inflate this score.
-
----
-
-# CRITICAL — PRIORITY DELIMITER FORMAT
-Wrap each priority block in delimiter tags. Use EXACTLY this format — every field on its own line with no extra blank lines between fields:
-
-%%%PRIORITY_START%%%
-TITLE: Priority N · [Actionable verb phrase]
-FCV_DIMENSION: [dimension]
-TAG: Output EXACTLY one of: [S] / [R] / [S+R]
+# TAG DEFINITIONS FOR PRIORITIES
+For each priority, assign a TAG using EXACTLY one of: [S] / [R] / [S+R]
 
 Apply the following definitions strictly. [S+R] must be earned — do not use it by default.
 
@@ -468,25 +525,14 @@ Apply the following definitions strictly. [S+R] must be earned — do not use it
 
 [S+R] — Reserve ONLY for priorities that genuinely and substantively serve both functions simultaneously. The four legitimate overlap zones are: (1) inclusion/targeting of conflict-affected or displaced populations — avoids exclusion harm (S) AND addresses exclusion as a root driver (R, Pillar 1); (2) embedding FCV logic substantively in the ToC/PDO framing, not just the risk register; (3) adaptive M&E that both monitors for harm AND adapts project scope to strengthen resilience in real time (Pillar 2); (4) a GRM or citizen engagement mechanism designed explicitly to strengthen government accountability and the state-citizen relationship (Pillar 3). If in doubt, assign [S] or [R] — most priorities will not qualify for [S+R].
 
-Output the tag label only — no explanation.
-RISK_LEVEL: [level]
-THE_GAP: [2-3 sentences]
-WHY_IT_MATTERS: [2-3 sentences — operational + FCV dimensions combined]
-SUGGESTED_DIRECTIONS: [2-3 sentences]
-WHO_ACTS: [one actor]
-WHEN: [one stage]
-RESOURCES: [one level]
-%%%PRIORITY_END%%%
-
-These delimiters are parsed by the interface. Do not add text between %%%PRIORITY_END%%% and the next %%%PRIORITY_START%%%.
-
 ---
 
 # Citation Format
 - CRITICAL: Only cite a document by name (e.g. [Honduras RRA 2023]) if it was explicitly uploaded as a contextual document and appeared with a [From: document name] citation in the Stage 1 analysis above. NEVER fabricate or assume document titles — even if you know a document of that type likely exists for this country.
-- For findings drawn from training knowledge, use: [From: training knowledge] or name the specific organisation (e.g. [From: World Bank FCV assessment], [From: ICG], [From: ACLED])
+- For findings drawn from training knowledge, use: [From: training knowledge] or name the specific organisation (e.g. [From: World Bank], [From: ICG], [From: ACLED])
 - For findings from automated web research, use: [From: web research] or name the specific source if identifiable
 - NEVER cite the PCN or PAD being reviewed
+- CRITICAL: In all text fields of the JSON block, ONLY cite documents that appeared as [From: doc name] in Stage 1, or well-known organisations (World Bank, ACLED, UNODC, ICG, UNHCR, WFP, OCHA, ND-GAIN, OECD). NEVER fabricate document titles, report dates, or RRA names. If no specific source supports a claim, write it without a citation or attribute it to [From: training knowledge].
 - No page numbers; keep citations sparse and naturally integrated
 
 # Word Count Targets
@@ -496,171 +542,204 @@ These delimiters are parsed by the interface. Do not add text between %%%PRIORIT
 - FCV Risk Exposure: 130-170 words total across both paragraphs
 - Gaps: 100-130 words
 - Operational Context: 150-200 words
-- Each priority (all fields combined): 120-160 words
-- TOTAL MAXIMUM: 2,200 words
+- Each priority (all fields combined): 200-280 words
+- TOTAL MAXIMUM: 2,800 words
 
 # Quality Check Before Submitting
-- Every priority wrapped in %%%PRIORITY_START%%% / %%%PRIORITY_END%%% delimiters
-- Every priority has all 10 fields: TITLE, FCV_DIMENSION, TAG, RISK_LEVEL, THE_GAP, WHY_IT_MATTERS, SUGGESTED_DIRECTIONS, WHO_ACTS, WHEN, RESOURCES
-- %%%SENSITIVITY_SUMMARY_START%%% / %%%SENSITIVITY_SUMMARY_END%%% block is present (80-100 words)
-- %%%RESPONSIVENESS_SUMMARY_START%%% / %%%RESPONSIVENESS_SUMMARY_END%%% block is present (80-100 words)
-- %%%FCV_RESPONSIVENESS_RATING:%%% line is present immediately after %%%FCV_RATING:%%%
-- 4-5 priorities total
+- 4–5 priorities total
 - Every priority names at least one specific geography, group, institution, or historical event
+- `recommendation` field contains a single cohesive action, not a menu of options
+- For any [R] or [S+R] priority, `why_it_matters` includes the S/R pillar justification sentence
+- All citations are from Stage 1 uploaded documents or the approved whitelist — no fabricated document titles
+- JSON block is present at the end, wrapped in %%%JSON_START%%% / %%%JSON_END%%%
+- All 7 top-level JSON fields are populated (fcv_rating, fcv_responsiveness_rating, sensitivity_summary, responsiveness_summary, risk_to_project, risk_from_project, priorities)
+- Each priority's pad_sections, suggested_language, and implementation_note are specific to this project — not generic placeholders
+- Each priority JSON object has all 13 fields: number, title, dimension, tag, risk_level, the_gap, why_it_matters, recommendation, who_acts, when, resources, pad_sections, suggested_language, implementation_note
 - No generic or templated language anywhere
-- FCV Risk Exposure section has exactly two paragraphs: one on risks TO the project, one on how the project could affect FCV dynamics
-- FCV Risk Exposure is written in plain language accessible to a non-FCV-specialist — no unexplained jargon
-- RISK_EXPOSURE block is present with both RISKS_TO_PROJECT and RISKS_FROM_PROJECT fields
-- Both RISKS_TO_PROJECT and RISKS_FROM_PROJECT are written in plain language with no unexplained jargon
+
+# CRITICAL — JSON OUTPUT BLOCK
+
+After completing the full narrative output above, append a machine-readable JSON block in EXACTLY this format, between %%%JSON_START%%% and %%%JSON_END%%% markers. This block is parsed by the interface — do not modify the field names, do not skip any field. If a field has no content, write "Not identified" rather than leaving it blank.
+
+The FCV ratings, summaries, and risk exposure paragraphs you have written in the narrative above should be faithfully reproduced in the appropriate JSON fields.
+
+%%%JSON_START%%%
+{
+  "fcv_rating": "Adequate",
+  "fcv_responsiveness_rating": "Low",
+  "sensitivity_summary": "80–100 word assessment copied from the FCV Sensitivity Summary narrative block above",
+  "responsiveness_summary": "80–100 word assessment copied from the FCV Responsiveness Summary narrative block above",
+  "risk_to_project": "The Risks to project paragraph from the FCV Risk Exposure section above",
+  "risk_from_project": "The How project could affect fragility paragraph from the FCV Risk Exposure section above",
+  "priorities": [
+    {
+      "number": 1,
+      "title": "Priority 1 · Short descriptive phrase",
+      "dimension": "Inclusion",
+      "tag": "[S+R]",
+      "risk_level": "High",
+      "the_gap": "Specific gap with named location/group/institution",
+      "why_it_matters": "Why this gap matters for this project, including S/R pillar justification for [R] or [S+R] tags",
+      "recommendation": "Revise the Environmental and Social Commitment Plan to include a conflict-sensitive stakeholder engagement protocol specific to gang-controlled corridors along the CA-13. The protocol should mandate use of trusted community intermediaries — including local parish networks and municipal women's councils — rather than direct government outreach in contested areas. Engage SIT's social development team to pilot the protocol in San Pedro Sula during the first six months of implementation, using anonymous feedback channels to detect intimidation. Flag security incidents monthly to the TTL via the PIU, with a clear threshold (>2 incidents per corridor per quarter) triggering a pause and review.",
+      "who_acts": "TTL",
+      "when": "Before appraisal",
+      "resources": "Moderate",
+      "pad_sections": "Annex 5: Stakeholder Engagement Plan; ESCP Commitment #4",
+      "suggested_language": "2–4 sentences of draft PAD language the TTL could insert verbatim, written in WBG document register",
+      "implementation_note": "1–2 sentences on timing, cost, sequencing, or key dependency"
+    }
+  ]
+}
+%%%JSON_END%%%
+
+IMPORTANT: The JSON block must come AFTER all narrative text. Do not include any explanatory text inside the JSON block itself. Use exact field names as shown. The `tag` field must be exactly "[S]", "[R]", or "[S+R]" (with square brackets). The `fcv_rating` and `fcv_responsiveness_rating` must be exactly one of: "Extremely Low" | "Very Low" | "Low" | "Adequate" | "Well Embedded" | "Very Well Embedded".
 
 Now produce the FCV Support Note following this exact structure.''',
 
-"explorer": '''You are an FCV (Fragility, Conflict, and Violence) specialist supporting a World Bank Task Team Leader (TTL). You have been given a specific priority recommendation from an FCV sensitivity assessment of a World Bank project. Your job is to write a detailed, actionable, and readable implementation guide for this priority that the TTL can act on directly.
+"explorer": '''You are an FCV (Fragility, Conflict, and Violence) specialist supporting a World Bank Task Team Leader (TTL). A core priority recommendation has already been identified for this project, along with specific PAD language and an implementation note. Your job is to generate 2–3 alternative approaches that go BEYOND the core recommendation — for teams with additional appetite, resources, or political capital.
+
+These alternatives are explicitly optional enhancements, not prerequisites. The core recommendation stands on its own.
 
 ## Output structure
 
-Produce output in the following structure, using these exact section markers:
-
-%%%EXPLORER_NARRATIVE_START%%%
-[Full narrative — see requirements below]
-%%%EXPLORER_NARRATIVE_END%%%
+Produce output using ONLY these section markers:
 
 %%%GO_FURTHER_START%%%
-[Go Further content — see requirements below]
+[2–3 alternative approaches — see requirements below]
 %%%GO_FURTHER_END%%%
 
----
+## Requirements for each alternative approach
 
-## Narrative section requirements (between %%%EXPLORER_NARRATIVE_START%%% and %%%EXPLORER_NARRATIVE_END%%%)
-
-Write flowing, professional prose — NOT bullet points, NOT numbered lists, NOT option menus. The narrative should read as a coherent, standalone recommendation document that a busy TTL can pick up and act on.
-
-### Structure of the narrative:
-
-**1. Opening paragraph (required)**
-Begin with a short orienting paragraph (3–5 sentences) that:
-- Acknowledges there are several ways to address this priority
-- Identifies which 2–3 changes matter most and why
-- Sets up the actions that follow as a connected argument, not a menu
-
-Example register: "There are several ways the team can address this gap, and they work best when pursued together. The two most important changes concern [X] and [Y] — both of which are design-stage decisions that are straightforward to implement but easy to miss. A third step ties these together in the results framework so that progress is tracked rather than assumed."
-
-**2. Action paragraphs (2–3 maximum — do not exceed 3)**
-
-For each action, produce the following in this exact order:
-
-a) If this action is essential/crucial: include this exact marker on its own line before the heading:
-   %%%CRUCIAL%%%
-
-b) Action heading — a short, active, verb-led title. Format as:
-   %%%ACTION_HEADING%%% [heading text here]
-
-c) Body paragraphs — 2–4 paragraphs of substantive, specific prose:
-   - Explain what the action involves in concrete terms
-   - Reference the specific PAD annex or project document section where the change should be made (e.g. "Annex 2 (Component Design)", "Project Operations Manual — Section on Community Structures", "Annex 1 (Results Framework)")
-   - Explain *why* this matters operationally for FCV sensitivity
-   - Be specific: name the mechanism, the actor responsible, the timing, and the verification step
-
-d) Draft language block — include this marker, then the suggested wording only:
-   %%%DRAFT_LANGUAGE%%%
-   [Suggested wording: 1–3 sentences of actual PAD/operations manual language the TTL could insert verbatim]
-
-e) Implementation consideration block — include this marker, then the note:
-   %%%IMPLEMENTATION_NOTE%%%
-   [1–2 sentences flagging a practical caveat, sequencing point, alternative approach, or relevant precedent from comparable projects]
-
-f) Document references — include this marker, then list the specific documents:
-   %%%DOC_REFS%%%
-   [Comma-separated list of specific document locations, e.g.: "PAD — Annex 2 (Component Design)", "Project Operations Manual — Accountability Provisions", "PAD — Annex 1 (Results Framework)"]
-
-**3. Connective prose between actions (required)**
-Between each action paragraph, write 1–2 sentences of connective prose that:
-- Signals the transition to the next action
-- Makes the logical relationship between actions explicit
-- Uses varied transitional language: "A second way to build on this is…", "With committees formed and operating transparently, the final step is to…", "Beyond the governance structures themselves, the team should also consider…"
-- Avoid mechanical transitions like "Next," or "Additionally,"
-
-**4. Closing synthesis paragraph (required)**
-End the narrative with a 2–4 sentence paragraph that:
-- Restates what the three actions achieve together
-- Connects back to the FCV-sensitivity logic (trust-building, inclusion, institutional legitimacy, etc.)
-- Notes that these changes are modest in cost but significant in signal
-- Is written in the register of a supportive colleague, not a compliance checklist
-
-### Tone and style:
-- Write for a TTL who is operationally experienced but time-pressed
-- Be direct and confident — these are recommendations, not options
-- Use active voice and short sentences where possible
-- Refer to "the team" rather than "you" for recommendations about project design; use "you" sparingly for direct personal guidance
-- Do not use bullet points, numbered lists, or headers anywhere in the narrative
-- Do not include meta-commentary ("This section addresses…", "As noted above…")
-
-### Crucial vs recommended actions:
-- Mark an action as %%%CRUCIAL%%% only if failing to take this action would meaningfully undermine FCV sensitivity — i.e. it addresses a high-severity gap that cannot be compensated for elsewhere
-- Limit crucial flags to a maximum of 2 per priority
-- If all actions are equally important, flag none as crucial — the prose should convey priority through ordering and emphasis instead
-
----
-
-## Go Further section requirements (between %%%GO_FURTHER_START%%% and %%%GO_FURTHER_END%%%)
-
-This section is for optional, above-and-beyond ideas that go beyond what is strictly necessary. It will be rendered as a collapsible at the bottom of the priority card with a clear "Optional" label.
-
-Produce 1–2 ideas only. For each, use:
+Produce exactly 2–3 items. For each, use:
 
 %%%GF_ITEM%%%
-%%%GF_TITLE%%% [short title of the idea]
-[2–3 paragraph explanation, written in the same prose register as the main narrative. Be specific about what this idea involves, what the preconditions are, and what value it would add if implemented. Make clear it is not a prerequisite.]
+%%%GF_TITLE%%% [Short, verb-led title — max 10 words]
+[2–3 paragraphs of substantive, specific prose explaining:
+- What this alternative involves concretely (named mechanism, actor, timing)
+- Why it adds value beyond the core recommendation
+- Which specific PAD section or document it would affect (e.g. "Annex 5: SEP", "ESCP Commitment #3", "Project Operations Manual — Adaptive Management")
+- What preconditions, cost, or dependencies it requires
+Make unambiguously clear this is an optional enhancement, not a prerequisite.]
 
-Do not include more than 2 Go Further items. Do not mark Go Further items as crucial.
-
----
+## Tone and style
+- Write for a TTL who is time-pressed but analytically sharp
+- Professional prose — NOT bullet points, NOT numbered lists, NOT headers
+- Be specific: name the real geographic context, real stakeholder groups, real document sections from this project
+- Do not repeat or paraphrase the core recommendation
+- Do not reference the assessment stages or this tool
 
 ## What NOT to do
-- Do not produce OPTION A / OPTION B / OPTION C structure
-- Do not produce bullet point lists
-- Do not use headers like "Section 1" or "Section 2"
-- Do not produce generic, non-specific advice (e.g. "consider stakeholder engagement")
-- Do not reference the assessment stages or the tool itself
-- Do not exceed 3 action paragraphs in the narrative
-- Do not include more than 2 Go Further items
-- Do not include a "Document location:" line inside the %%%DRAFT_LANGUAGE%%% block — put document references only in %%%DOC_REFS%%%
-
----
-
-## Context you will receive
-
-You will receive:
-1. The priority title and FCV dimension
-2. The gap identified (what is missing in the current project design)
-3. Why it matters (the operational consequence)
-4. The suggested directions from Stage 4 (the entry points)
-5. The full Stage 1–3 conversation history (for project-specific grounding)
-
-Use all of this to make the narrative as specific as possible to the actual project — reference the real project components, real geographic contexts, real stakeholder groups, and real document sections where known. Generic advice is not acceptable.
+- Do not exceed 3 items
+- Do not produce bullet lists or option menus
+- Do not produce generic advice ("consider stakeholder engagement")
+- Do not include %%%EXPLORER_NARRATIVE_START%%% or any other markers except the GO_FURTHER ones
 
 ## Priority you are addressing
 
 **Title:** {PRIORITY_TITLE}
 
-**Full priority text from the FCV Support Note:**
+**Core recommendation already identified:**
 {PRIORITY_TEXT}
 
-Begin your response immediately with %%%EXPLORER_NARRATIVE_START%%%.'''}
+Begin your response immediately with %%%GO_FURTHER_START%%%.''',
+
+"followon": '''# Role
+You are a senior FCV specialist at the World Bank supporting a Task Team Leader (TTL) who has just completed a four-stage FCV analysis for their project. The full analysis — including the Recommendations Note — is in the conversation history above.
+
+Your job is to respond to whatever the TTL asks next. Common requests include:
+- Drafting a peer review comment or email for a PCN, PAD, or CPF document
+- Expanding on how to implement a specific priority
+- Reviewing revised PAD text they paste in, against the FCV analysis
+- Drafting a briefing note, management summary, or project brief
+- Answering a specific question about the FCV context or recommendations
+
+---
+
+# When drafting a peer review note or email
+
+Apply the following style guidelines consistently. These reflect how senior FCV peer reviewers at the World Bank write.
+
+## Framing and tone
+- Open by thanking the team for the review opportunity, acknowledging strengths, and signalling that comments are intended to strengthen the work
+- Typical opening: "Thank you for the opportunity to review [document]. Overall, this is a [strong / well-prepared] [PCN / PAD], and the comments below are intended to help further sharpen..."
+- Professional, collegial, constructive — never adversarial
+- Avoid language implying fault or oversight; frame gaps as opportunities to clarify, strengthen, or better align
+
+## Structure: tiered, narrative-first
+- Lead with strategic and narrative-level issues before technical detail
+- Prioritise: overall storyline coherence, grounding in FCV context, alignment with upstream diagnostics (RRA, PLR, SCD, CPF objectives)
+- Ask: is the framing explicit enough for decision-makers? Would a Board or ROC reader understand why these choices make sense in this context?
+- Then move to analytical grounding: anchor critiques to existing diagnostics, not personal preference
+- Reference RRAs, PLRs, or prior diagnostics as the evidentiary standard
+- Flag when a document states intent without demonstrating process or evidence: "This is stated as an intent rather than a documented process…"
+
+## Stage-appropriateness
+- Be precise about what is appropriate at PCN vs. QER vs. PAD stage
+- Suggest deferral rather than deletion where appropriate
+- Protect teams from over-commitment while preserving analytical integrity: "This may be more appropriate for QER or PAD, but at PCN stage it would be sufficient to..."
+
+## FCV-specific analytical lenses
+Always check and comment on:
+1. **Drivers → Risks → Design chain**: Are FCV drivers clearly articulated? Do they translate into specific implementation risks? Are those risks reflected in design, sequencing, indicators, or mitigation?
+2. **Distributional and Do No Harm sensitivity**: Who benefits first, who bears risk? Are distributional impacts analysed or assumed? Are indicators sensitive to youth, gender, or exclusion dynamics? Frame as operational risk, not moralising.
+
+## Recommendations style
+- Every critique implies a feasible, bounded fix
+- Concrete: "add a paragraph", "clarify sequencing", "reference X diagnostic"
+- Not open-ended: avoid "do more analysis" without specifying what
+- Often phrased as options, not directives: "The team may want to consider…" / "One way to strengthen this would be to…"
+- Prefer light-touch fixes (short contextual paragraph, explicit cross-reference) over structural rewrites
+
+## Format
+- Use clear thematic headings for substantive sections
+- Prefer prose over bullets for senior-facing reviews
+- Avoid em-dashes and rhetorical flourishes
+- Neutral, analytical language — no emotive adjectives
+- Clear distinction between observation, implication, and recommendation
+- No unnecessary citations; reference diagnostics by name, not footnotes
+
+## Closing
+- Reiterate openness to discuss; signal alignment with the process
+- Avoid any sense of "final judgment"
+- Typical close: "Happy to discuss further during the meeting." / "Looking forward to the discussion."
+
+---
+
+# General rules (all request types)
+- Do NOT regenerate the full Recommendations Note or repeat the analysis summary
+- Draw specifically on the analysis findings — name locations, groups, mechanisms, and priorities as established in Stages 1–4
+- Be specific and operational; avoid generic FCV language not grounded in this project
+- If the user provides new project context (e.g. a dimension they forgot to mention): briefly identify which priorities this most affects and suggest what specific change to each priority's recommendation would follow — then offer a full re-analysis (direct them to "Go back to Stage 3")
+- If reviewing pasted text: compare against the relevant priority recommendation, identify what it addresses well, and propose specific edits to strengthen it
+
+# Tone
+Collegial, practical, peer-to-peer — the same register as the Recommendations Note.'''}
 
 
 
 def clean_stage4_output(text):
-    """Strip %%%PRIORITY_START/END%%% blocks and %%%FCV_RATING:...%%% delimiters.
-    Priority content is now rendered by the card UI, so we remove all delimiter
-    blocks from the display text entirely — only preamble + executive summary remain.
+    """Strip machine-readable blocks from Stage 4 output, leaving only the narrative.
+
+    Primary target: %%%JSON_START%%% / %%%JSON_END%%% block emitted by the new
+    JSON-architecture prompt. The JSON block contains all structured data (priorities,
+    ratings, summaries, risk exposure) and is parsed separately by extract_priorities().
+
+    Fallback stripping of legacy delimiter blocks is preserved so that any cached or
+    stored Stage 4 outputs produced by the old prompt continue to render cleanly.
+
+    Heading cleanup and blank-line normalisation are also applied.
     """
-    # Remove all priority blocks — UI renders them via card system
+    # Primary: strip the new JSON block — all structured data lives here
+    text = re.sub(r'%%%JSON_START%%%.*?%%%JSON_END%%%', '', text, flags=re.DOTALL)
+    # Strip FCV Risk Exposure narrative (rendered separately as risk-exposure card)
+    text = re.sub(r'%%%RISK_NARRATIVE_START%%%.*?%%%RISK_NARRATIVE_END%%%', '', text, flags=re.DOTALL)
+    # Strip priority narrative section (field labels duplicated in JSON cards;
+    # also strips FCV Sensitivity/Responsiveness summaries which are shown as SR cards)
+    text = re.sub(r'%%%PRIORITIES_START%%%.*', '', text, flags=re.DOTALL)
+    # Fallback: strip legacy delimiter blocks from old-format Stage 4 outputs
     text = re.sub(r'%%%PRIORITY_START%%%.*?%%%PRIORITY_END%%%', '', text, flags=re.DOTALL)
-    # Remove FCV rating lines
     text = re.sub(r'%%%FCV_RATING:[^%]*%%%\n?', '', text)
     text = re.sub(r'%%%FCV_RESPONSIVENESS_RATING:[^%]*%%%\n?', '', text)
-    # Remove gap table, risk exposure, and S/R summary blocks — UI renders them
     text = re.sub(r'%%%GAP_TABLE_START%%%.*?%%%GAP_TABLE_END%%%', '', text, flags=re.DOTALL)
     text = re.sub(r'%%%RISK_EXPOSURE_START%%%.*?%%%RISK_EXPOSURE_END%%%', '', text, flags=re.DOTALL)
     text = re.sub(r'%%%SENSITIVITY_SUMMARY_START%%%.*?%%%SENSITIVITY_SUMMARY_END%%%', '', text, flags=re.DOTALL)
@@ -673,22 +752,6 @@ def clean_stage4_output(text):
     # Clean up extra blank lines left by removal
     text = re.sub(r'\n{3,}', '\n\n', text).strip()
     return text
-
-
-def extract_fcv_rating(text):
-    """Parse %%%FCV_RATING: [level]%%% from Stage 4 output."""
-    m = re.search(r'%%%FCV_RATING:\s*([^%\n]+)%%%', text)
-    if m:
-        return m.group(1).strip()
-    return ''
-
-
-def extract_fcv_responsiveness_rating(text):
-    """Parse %%%FCV_RESPONSIVENESS_RATING: [level]%%% from Stage 4 output."""
-    m = re.search(r'%%%FCV_RESPONSIVENESS_RATING:\s*([^%\n]+)%%%', text)
-    if m:
-        return m.group(1).strip()
-    return ''
 
 
 def extract_gap_table(text):
@@ -720,83 +783,79 @@ def extract_gap_table(text):
     return table
 
 
-def extract_sensitivity_summary(text):
-    """Parse %%%SENSITIVITY_SUMMARY_START%%% / %%%SENSITIVITY_SUMMARY_END%%% block from Stage 4 output."""
-    m = re.search(r'%%%SENSITIVITY_SUMMARY_START%%%(.*?)%%%SENSITIVITY_SUMMARY_END%%%', text, re.DOTALL)
-    return m.group(1).strip() if m else ''
+def extract_priorities(text: str, uploaded_doc_names: list = None) -> dict:
+    """Parse %%%JSON_START%%% / %%%JSON_END%%% block from Stage 4 output.
 
-
-def extract_responsiveness_summary(text):
-    """Parse %%%RESPONSIVENESS_SUMMARY_START%%% / %%%RESPONSIVENESS_SUMMARY_END%%% block from Stage 4 output."""
-    m = re.search(r'%%%RESPONSIVENESS_SUMMARY_START%%%(.*?)%%%RESPONSIVENESS_SUMMARY_END%%%', text, re.DOTALL)
-    return m.group(1).strip() if m else ''
-
-
-def extract_risk_exposure(text):
-    """Parse %%%RISK_EXPOSURE_START%%% / %%%RISK_EXPOSURE_END%%% block from Stage 4 output."""
-    m = re.search(r'%%%RISK_EXPOSURE_START%%%(.*?)%%%RISK_EXPOSURE_END%%%', text, re.DOTALL)
-    if not m:
-        return None
-    block = m.group(1).strip()
-    to_match = re.search(r'RISKS_TO_PROJECT:\s*(.+?)(?=RISKS_FROM_PROJECT:|$)', block, re.DOTALL)
-    from_match = re.search(r'RISKS_FROM_PROJECT:\s*(.+?)$', block, re.DOTALL)
-    return {
-        'risks_to': to_match.group(1).strip() if to_match else '',
-        'risks_from': from_match.group(1).strip() if from_match else '',
+    Returns a dict:
+      On success: {'error': False, 'priorities': [...], 'fcv_rating': ...,
+                   'fcv_responsiveness_rating': ..., 'sensitivity_summary': ...,
+                   'responsiveness_summary': ..., 'risk_exposure': {...}}
+      On failure: {'error': True, 'message': str, 'priorities': [], ...empty fields}
+    """
+    _error_result = {
+        'error': True,
+        'message': 'Stage 4 output could not be parsed — please re-run this stage.',
+        'priorities': [],
+        'fcv_rating': '',
+        'fcv_responsiveness_rating': '',
+        'sensitivity_summary': '',
+        'responsiveness_summary': '',
+        'risk_exposure': {'risks_to': '', 'risks_from': ''},
     }
 
+    m = re.search(r'%%%JSON_START%%%(.*?)%%%JSON_END%%%', text, re.DOTALL)
+    if not m:
+        return _error_result
 
-def extract_priorities(text):
-    """Parse %%%PRIORITY_START%%% / %%%PRIORITY_END%%% blocks from Stage 4 output.
-    Supports structured-field format: TITLE, FCV_DIMENSION, RISK_LEVEL,
-    THE_GAP, WHY_IT_MATTERS, WHY_FCV_MATTERS, SUGGESTED_DIRECTIONS.
-    """
-    pattern = r'%%%PRIORITY_START%%%(.*?)%%%PRIORITY_END%%%'
-    blocks = re.findall(pattern, text, re.DOTALL)
+    try:
+        data = json.loads(m.group(1).strip())
+    except (json.JSONDecodeError, ValueError):
+        return _error_result
+
+    # Fill missing top-level fields with defaults
+    for field in _REQUIRED_TOP_FIELDS:
+        if field not in data:
+            data[field] = [] if field == 'priorities' else ''
+
+    priorities_raw = data.get('priorities', [])
+    if not isinstance(priorities_raw, list) or len(priorities_raw) < 1:
+        return _error_result
+
     priorities = []
-    for block in blocks:
-        lines = block.strip().split('\n')
-        def get_field(fname, lns=lines):
-            for l in lns:
-                if l.startswith(fname + ':'):
-                    return l[len(fname)+1:].strip()
-            return ''
-        title = get_field('TITLE')
-        if not title:
+    for pr in priorities_raw:
+        if not isinstance(pr, dict):
             continue
-        dimension = get_field('FCV_DIMENSION')
-        tag = get_field('TAG')
-        risk_level = get_field('RISK_LEVEL')
-        the_gap = get_field('THE_GAP')
-        why_it_matters = get_field('WHY_IT_MATTERS')
-        why_fcv_matters = get_field('WHY_FCV_MATTERS')
-        suggested_directions = get_field('SUGGESTED_DIRECTIONS')
-        who_acts = get_field('WHO_ACTS')
-        when = get_field('WHEN')
-        resources = get_field('RESOURCES')
-        body = '\n\n'.join(filter(None, [the_gap, why_it_matters, why_fcv_matters, suggested_directions]))
-        priorities.append({
-            'title': title,
-            'body': body,
-            'dimension': dimension,
-            'tag': tag,
-            'risk_level': risk_level,
-            'the_gap': the_gap,
-            'why_it_matters': why_it_matters,
-            'why_fcv_matters': why_fcv_matters,
-            'suggested_directions': suggested_directions,
-            'who_acts': who_acts,
-            'when': when,
-            'resources': resources,
-        })
-    # Fallback: positional parsing if fewer than 4 delimiter blocks found
-    if len(priorities) < 4:
-        fallback = re.findall(r'Priority \d+\s*[·•]\s*[^\n]+', text)
-        if fallback and len(fallback) >= len(priorities):
-            priorities = [{'title': t.strip(), 'body': '', 'dimension': '',
-                           'tag': '', 'risk_level': '', 'the_gap': '', 'why_it_matters': '',
-                           'why_fcv_matters': '', 'suggested_directions': ''} for t in fallback]
-    return priorities
+        # Fill missing priority fields
+        for field in _REQUIRED_PRIORITY_FIELDS:
+            if field not in pr:
+                pr[field] = ''
+
+        # Post-parse checks
+        check_text = (pr.get('the_gap', '') + ' ' + pr.get('recommendation', ''))
+        pr['specificity_warning'] = _check_specificity(check_text)
+        pr['unverified_citations'] = _check_citations(pr, uploaded_doc_names)
+
+        # Build body for Explorer compatibility
+        pr['body'] = '\n\n'.join(filter(None, [
+            pr.get('the_gap', ''),
+            pr.get('why_it_matters', ''),
+            pr.get('recommendation', ''),
+        ]))
+
+        priorities.append(pr)
+
+    return {
+        'error': False,
+        'priorities': priorities,
+        'fcv_rating': str(data.get('fcv_rating', '')).strip(),
+        'fcv_responsiveness_rating': str(data.get('fcv_responsiveness_rating', '')).strip(),
+        'sensitivity_summary': str(data.get('sensitivity_summary', '')).strip(),
+        'responsiveness_summary': str(data.get('responsiveness_summary', '')).strip(),
+        'risk_exposure': {
+            'risks_to': str(data.get('risk_to_project', '')).strip(),
+            'risks_from': str(data.get('risk_from_project', '')).strip(),
+        },
+    }
 
 
 # ── Document type detection ───────────────────────────────────────────────────
@@ -1262,7 +1321,13 @@ def run_fcv_web_research(country: str, sector: str, api_client) -> dict:
 
 app = Flask(__name__, static_folder='static')
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
-client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
+_client = None
+
+def get_client():
+    global _client
+    if _client is None:
+        _client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
+    return _client
 
 
 @app.route('/')
@@ -1348,10 +1413,16 @@ def detect_document_type_route():
             text = data['doc_text']
         else:
             return jsonify({'error': 'doc_text or doc_b64 required'}), 400
-        doc_type = detect_document_type_from_text(text, client)
-        return jsonify({'document_type': doc_type})
+        doc_type = detect_document_type_from_text(text, get_client())
+        word_count = len(text.split()) if not text.startswith('[Could not extract') else 0
+        extraction_status = 'failed' if text.startswith('[Could not extract') else 'ok'
+        return jsonify({
+            'document_type': doc_type,
+            'word_count': word_count,
+            'extraction_status': extraction_status
+        })
     except Exception as e:
-        return jsonify({'document_type': 'Unknown', 'error': str(e)})
+        return jsonify({'document_type': 'Unknown', 'word_count': 0, 'extraction_status': 'failed', 'error': str(e)})
 
 
 # ── Main analysis route ───────────────────────────────────────────────────────
@@ -1459,8 +1530,8 @@ def run_stage():
                     try:
                         first_doc_text = doc_parts[0]['raw_text'] if doc_parts else ''
                         yield f"data: {json.dumps({'research_status': 'extracting_country'})}\n\n"
-                        research_country = extract_country_name(first_doc_text, client)
-                        research_sector = extract_sector_name(first_doc_text, client)
+                        research_country = extract_country_name(first_doc_text, get_client())
+                        research_sector = extract_sector_name(first_doc_text, get_client())
 
                         cache_key = f"{research_country.lower().strip()}::{research_sector.lower().strip()}"
                         if cache_key in _research_cache:
@@ -1469,7 +1540,7 @@ def run_stage():
                             yield f"data: {json.dumps({'research_status': 'cached', 'country': research_country})}\n\n"
                         else:
                             yield f"data: {json.dumps({'research_status': 'searching', 'country': research_country})}\n\n"
-                            research_data = run_fcv_web_research(research_country, research_sector, client)
+                            research_data = run_fcv_web_research(research_country, research_sector, get_client())
                             research_brief_text = research_data['brief']
                             _research_cache[cache_key] = research_data
 
@@ -1488,7 +1559,7 @@ def run_stage():
                             large_idx = large_docs.index(dp) + 1
                             doc_msg = f'Reading {dp["name"]} — extracting FCV-relevant content ({large_idx} of {n_large})…'
                             yield f"data: {json.dumps({'preprocess': doc_msg})}\n\n"
-                            final_text = extract_fcv_content(dp['raw_text'], dp['name'], client)
+                            final_text = extract_fcv_content(dp['raw_text'], dp['name'], get_client())
                         else:
                             final_text = dp['raw_text']
 
@@ -1515,7 +1586,7 @@ def run_stage():
                     content_parts.append({"type": "text", "text": stage_prompt})
                     messages.append({"role": "user", "content": content_parts})
 
-                with client.messages.stream(
+                with get_client().messages.stream(
                     model="claude-sonnet-4-20250514",
                     max_tokens=16000,
                     messages=messages
@@ -1534,14 +1605,23 @@ def run_stage():
                 risk_exposure = None
                 sensitivity_summary = ''
                 responsiveness_summary = ''
+                parse_error = False
+                parse_error_message = ''
                 if stage == 4:
-                    priorities = extract_priorities(full_text)
-                    fcv_rating = extract_fcv_rating(full_text)
-                    fcv_responsiveness_rating = extract_fcv_responsiveness_rating(full_text)
+                    uploaded_doc_names = [
+                        doc.get('name', '') for doc in data.get('documents', [])
+                        if doc.get('name')
+                    ]
+                    parsed = extract_priorities(full_text, uploaded_doc_names)
+                    priorities = parsed.get('priorities', [])
+                    fcv_rating = parsed.get('fcv_rating', '')
+                    fcv_responsiveness_rating = parsed.get('fcv_responsiveness_rating', '')
+                    risk_exposure = parsed.get('risk_exposure', None)
+                    sensitivity_summary = parsed.get('sensitivity_summary', '')
+                    responsiveness_summary = parsed.get('responsiveness_summary', '')
                     gap_table = extract_gap_table(full_text)
-                    risk_exposure = extract_risk_exposure(full_text)
-                    sensitivity_summary = extract_sensitivity_summary(full_text)
-                    responsiveness_summary = extract_responsiveness_summary(full_text)
+                    parse_error = parsed.get('error', False)
+                    parse_error_message = parsed.get('message', '')
                     full_text = clean_stage4_output(full_text)
                     from datetime import date
                     header = DO_NO_HARM_HEADER.format(date=date.today().strftime('%d %B %Y'))
@@ -1561,7 +1641,7 @@ def run_stage():
                 if len(updated_messages) > 20:
                     updated_messages = updated_messages[-20:]
 
-                yield f"data: {json.dumps({'done': True, 'result': full_text, 'history': updated_messages, 'stage': stage, 'priorities': priorities, 'fcv_rating': fcv_rating, 'fcv_responsiveness_rating': fcv_responsiveness_rating, 'gap_table': gap_table, 'risk_exposure': risk_exposure, 'sensitivity_summary': sensitivity_summary, 'responsiveness_summary': responsiveness_summary, 'research_brief': research_brief_text if stage == 1 else None, 'research_country': research_country if stage == 1 else None})}\n\n"
+                yield f"data: {json.dumps({'done': True, 'result': full_text, 'history': updated_messages, 'stage': stage, 'priorities': priorities, 'fcv_rating': fcv_rating, 'fcv_responsiveness_rating': fcv_responsiveness_rating, 'gap_table': gap_table, 'risk_exposure': risk_exposure, 'sensitivity_summary': sensitivity_summary, 'responsiveness_summary': responsiveness_summary, 'parse_error': parse_error, 'parse_error_message': parse_error_message, 'research_brief': research_brief_text if stage == 1 else None, 'research_country': research_country if stage == 1 else None})}\n\n"
 
             except anthropic.AuthenticationError:
                 yield f"data: {json.dumps({'error': 'Invalid API key.'})}\n\n"
@@ -1631,7 +1711,7 @@ def run_explorer():
             collected = []
             try:
                 yield f"data: {json.dumps({'ping': True})}\n\n"
-                with client.messages.stream(
+                with get_client().messages.stream(
                     model="claude-sonnet-4-20250514",
                     max_tokens=4000,
                     messages=messages
@@ -1641,6 +1721,55 @@ def run_explorer():
                         yield f"data: {json.dumps({'chunk': text_chunk})}\n\n"
                 full_text = ''.join(collected)
                 yield f"data: {json.dumps({'done': True, 'result': full_text})}\n\n"
+            except anthropic.AuthenticationError:
+                yield f"data: {json.dumps({'error': 'Invalid API key.'})}\n\n"
+            except Exception as e:
+                yield f"data: {json.dumps({'error': str(e)})}\n\n"
+
+        return Response(stream_with_context(generate()), mimetype='text/event-stream',
+                        headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'})
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/run-followon', methods=['POST'])
+def run_followon():
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'Invalid request.'}), 400
+
+        messages = data.get('messages', [])
+        if not messages:
+            return jsonify({'error': 'No messages provided.'}), 400
+
+        prompt = load_prompts().get('followon', DEFAULT_PROMPTS.get('followon', ''))
+        MAX_ASSISTANT_CHARS = 40000
+
+        # Truncate large assistant messages to avoid token limits
+        trimmed_messages = []
+        for m in messages:
+            if m.get('role') == 'assistant':
+                c = m.get('content', '') if isinstance(m.get('content'), str) else ''
+                if len(c) > MAX_ASSISTANT_CHARS:
+                    c = c[:MAX_ASSISTANT_CHARS] + '\n...[truncated]'
+                trimmed_messages.append({'role': m['role'], 'content': c})
+            else:
+                trimmed_messages.append(m)
+
+        def generate():
+            try:
+                yield f"data: {json.dumps({'ping': True})}\n\n"
+                with get_client().messages.stream(
+                    model="claude-sonnet-4-20250514",
+                    max_tokens=4000,
+                    system=prompt,
+                    messages=trimmed_messages
+                ) as stream:
+                    for text_chunk in stream.text_stream:
+                        yield f"data: {json.dumps({'chunk': text_chunk})}\n\n"
+                yield f"data: {json.dumps({'done': True})}\n\n"
             except anthropic.AuthenticationError:
                 yield f"data: {json.dumps({'error': 'Invalid API key.'})}\n\n"
             except Exception as e:

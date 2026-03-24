@@ -261,14 +261,18 @@
 
     .chips{display:flex;flex-wrap:wrap;gap:6px;padding:12px 32px;min-height:14px}
     .chip{
-      display:inline-flex;align-items:center;gap:5px;
-      padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;max-width:210px;
+      display:inline-flex;flex-direction:column;align-items:flex-start;gap:2px;
+      padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;max-width:260px;
     }
     .chip.p{background:#e8f4fc;color:#004e7c;border:1px solid rgba(0,159,218,.25)}
     .chip.c{background:#f0f9f4;color:#1a5c38;border:1px solid rgba(26,122,74,.25)}
+    .chip-main{display:flex;align-items:center;gap:5px;width:100%}
+    .chip-main span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .chip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .chip button{background:none;border:none;cursor:pointer;color:inherit;opacity:.5;padding:0;line-height:1;font-size:15px}
     .chip button:hover{opacity:1}
+    .chip-meta{display:block;font-size:0.75em;color:#666;margin-top:2px;font-weight:400}
+    .chip-meta-error{color:#c0392b}
 
     /* Document type badge */
     .doc-type-badge{display:inline-block;padding:2px 9px;border-radius:12px;font-size:11px;font-weight:700;letter-spacing:.3px;background:#e8f4fc;color:#004e7c;border:1px solid rgba(0,159,218,.3)}
@@ -369,6 +373,7 @@
       padding:24px 28px;font-size:14px;line-height:1.8;color:var(--text);
       max-height:540px;overflow-y:auto;
     }
+    #stage-disp.s4-active .out-body{max-height:none;overflow-y:visible}
     .out-body::-webkit-scrollbar{width:5px}
     .out-body::-webkit-scrollbar-track{background:#f5f7fa}
     .out-body::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
@@ -689,7 +694,7 @@
       margin-bottom:8px;
     }
     .pc-zone-icon{width:22px;height:22px;border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-    .pc-zone-body{font-size:13px;color:var(--text);line-height:1.75;}
+    .pc-zone-body{font-size:14px;color:var(--text);line-height:1.75;}
 
     /* Zone colour themes */
     .pc-zone.zone-gap{background:#fffdf8;}
@@ -701,6 +706,35 @@
     .pc-zone.zone-act{background:#f8fffe;}
     .pc-zone.zone-act .pc-zone-title{color:var(--s4);}
     .pc-zone.zone-act .pc-zone-icon{background:#e8f7ef;}
+
+    /* Zone-act new layout */
+    .zone-act-section{margin-bottom:14px;}
+    .zone-act-section:last-child{margin-bottom:0;}
+    .zone-act-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--s4);margin-bottom:6px;display:flex;align-items:center;gap:5px;}
+    .zone-act-primary{padding:0 0 14px 0;}
+    .zone-act-essential{background:#f0f7ff;border-left:3px solid var(--wbg-blue);border-radius:0 6px 6px 0;padding:12px 14px;font-size:14px;color:var(--text);line-height:1.75;}
+    .zone-act-pad-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;}
+    .pad-chip{background:#e8f0fe;color:#1a3a6c;font-size:11.5px;font-family:monospace;padding:3px 9px;border-radius:4px;white-space:nowrap;}
+    .zone-act-draft{background:#fffef3;border:1px solid #e8dfa0;border-radius:6px;padding:12px 14px;}
+    .zone-act-draft-text{font-style:italic;font-size:13.5px;color:#4a4a4a;line-height:1.7;border-left:3px solid #c8b840;padding-left:10px;margin-top:6px;}
+    .zone-act-impl{background:#fafafa;border:1px solid var(--border);border-radius:6px;padding:12px 14px;}
+    /* Above and beyond <details> */
+    .zone-act-beyond{border-top:1px solid var(--border);margin-top:14px;}
+    .zone-act-beyond summary{padding:12px 0 4px;cursor:pointer;font-size:13px;font-weight:600;color:#6b21a8;display:flex;align-items:center;gap:7px;list-style:none;user-select:none;}
+    .zone-act-beyond summary::-webkit-details-marker{display:none;}
+    .zone-act-beyond summary .beyond-badge{background:#f3e8ff;color:#6b21a8;font-size:10px;font-weight:600;padding:1px 8px;border-radius:10px;margin-left:4px;}
+    .zone-act-beyond summary .beyond-arrow{margin-left:auto;font-size:11px;color:#6b21a8;transition:transform .2s;}
+    .zone-act-beyond[open] summary .beyond-arrow{transform:rotate(180deg);}
+    .beyond-content{padding:10px 0 4px;}
+    .beyond-intro{font-size:13px;color:var(--muted);margin:0 0 12px;line-height:1.6;}
+    .beyond-item{border:1px solid #e9d5ff;border-radius:6px;background:#faf5ff;padding:12px 14px;margin-bottom:10px;}
+    .beyond-item:last-child{margin-bottom:0;}
+    .beyond-item-hdr{display:flex;align-items:flex-start;gap:10px;margin-bottom:8px;}
+    .beyond-item-letter{width:22px;height:22px;border-radius:50%;background:#7c3aed;color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+    .beyond-item-title{font-size:13px;font-weight:600;color:#4c1d95;line-height:1.4;}
+    .beyond-item-body{font-size:13px;color:var(--text);line-height:1.7;}
+    .beyond-item-body p{margin:0 0 .5em;}
+    .beyond-loading{font-size:13px;color:var(--muted);padding:10px 0;display:flex;align-items:center;gap:8px;}
 
     .priorities-intro{margin-bottom:14px;}
     .priorities-section-hdr{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--s4);margin:20px 0 10px;padding-bottom:6px;border-bottom:2px solid var(--s4);}
@@ -847,6 +881,17 @@
       display:flex;align-items:center;gap:12px;padding:20px 0;
       justify-content:center;color:var(--muted);font-size:13px;
     }
+    .exp-cancel-btn {
+      background: none;
+      border: 1px solid currentColor;
+      border-radius: 4px;
+      padding: 1px 8px;
+      cursor: pointer;
+      font-size: 0.85em;
+      color: var(--muted);
+      margin-left: 8px;
+    }
+    .exp-cancel-btn:hover { opacity: 0.7; }
 
     /* ── Explorer narrative (new design) ── */
     .fcv-explorer-narrative {
@@ -1256,6 +1301,39 @@
     color: #1A202C;
     border: 1px solid #CBD5E1;
   }
+
+  /* ── Priority card warning badges ──────────────────────────────────────── */
+  .warn-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #fffbeb;
+    border: 1px solid #f59e0b;
+    border-radius: 5px;
+    padding: 5px 10px;
+    font-size: 0.8em;
+    color: #92400e;
+    margin-top: 6px;
+  }
+  .warn-dismiss {
+    margin-left: auto;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #92400e;
+    font-size: 0.9em;
+    padding: 0 2px;
+    line-height: 1;
+  }
+  .warn-dismiss:hover { opacity: 0.7; }
+
+  /* ── Follow-on card (Stage 4 query interface) ───────────────────────────── */
+  .followon-card{ background:#fff; border:1px solid var(--border); border-radius:8px; padding:16px; margin-top:16px; }
+  .followon-desc{ font-size:12px; color:var(--muted); margin:4px 0 8px; }
+  .followon-chips{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
+  .followon-chip{ background:#f0f4f8; border:1px solid var(--border); border-radius:14px; padding:4px 12px; font-size:12px; color:var(--text); cursor:pointer; white-space:nowrap; transition:background .15s,border-color .15s; }
+  .followon-chip:hover{ background:#e2e8f0; border-color:#94a3b8; }
+  .followon-result-card{ background:#fff; border:1px solid var(--border); border-radius:8px; margin-top:12px; overflow:hidden; }
 </style>
 </head>
 <body>
@@ -1709,6 +1787,7 @@
       if (!arr.find(x => x.name === f.name)) {
         arr.push(f);
         added++;
+        fetchFileMetadata(f);
       }
     });
     if (added > 0) renderChips();
@@ -1721,6 +1800,7 @@
     } else {
       cF = cF.filter(f => f.name !== name);
     }
+    delete fileMetadata[name];
     renderChips();
   }
 
@@ -1733,7 +1813,19 @@
       chip.className = `chip ${t}`;
       const icon = t === 'p' ? '📄' : '📋';
       const safeName = f.name.replace(/'/g, "\'");
-      chip.innerHTML = `<span title="${f.name}">${icon} ${f.name}</span><button onclick="removeF('${safeName}','${t}')" aria-label="Remove ${f.name}">×</button>`;
+      const meta = fileMetadata[f.name];
+      let metaHtml = '';
+      if (meta) {
+        if (meta.extraction_status === 'failed') {
+          metaHtml = `<span class="chip-meta chip-meta-error">Could not extract text — may be scanned or password-protected. Try uploading a DOCX version.</span>`;
+        } else {
+          const wc = meta.word_count > 0 ? `~${meta.word_count.toLocaleString()} words` : '';
+          const dt = meta.doc_type && meta.doc_type !== 'Unknown' ? meta.doc_type : '';
+          const details = [wc, dt].filter(Boolean).join(' · ');
+          if (details) metaHtml = `<span class="chip-meta">${details}</span>`;
+        }
+      }
+      chip.innerHTML = `<div class="chip-main"><span title="${f.name}">${icon} ${f.name}</span><button onclick="removeF('${safeName}','${t}')" aria-label="Remove ${f.name}">×</button></div>${metaHtml}`;
       el.appendChild(chip);
     });
     document.getElementById('dp').classList.toggle('has', pF.length > 0);
@@ -1746,6 +1838,50 @@
     // Doc type area is updated automatically from Stage 1 output — hide initially
     const dtArea = document.getElementById('doc-type-area');
     if(dtArea) dtArea.style.display = 'none';
+  }
+
+  async function fetchFileMetadata(file) {
+    try {
+      const isPdf = file.name.toLowerCase().endsWith('.pdf');
+      let payload;
+      if (isPdf) {
+        await new Promise((res, rej) => {
+          const r = new FileReader();
+          r.onload = e => {
+            payload = { doc_b64: e.target.result.split(',')[1], doc_name: file.name };
+            res();
+          };
+          r.onerror = rej;
+          r.readAsDataURL(file);
+        });
+      } else {
+        await new Promise((res, rej) => {
+          const r = new FileReader();
+          r.onload = e => {
+            // Slice to 10k chars for speed — word count will be understated for large non-PDF files
+            payload = { doc_text: e.target.result.slice(0, 10000) };
+            res();
+          };
+          r.onerror = rej;
+          r.readAsText(file);
+        });
+      }
+      const resp = await fetch('/api/detect-document-type', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (!resp.ok) return;
+      const data = await resp.json();
+      fileMetadata[file.name] = {
+        word_count: data.word_count || 0,
+        doc_type: data.document_type || 'Unknown',
+        extraction_status: data.extraction_status || 'ok'
+      };
+      renderChips();
+    } catch(e) {
+      // Metadata fetch failed — no update to chip, no error shown (non-blocking)
+    }
   }
 
   function updateDocTypeBadge() {
@@ -1932,7 +2068,13 @@
             }
             if(p.preprocess){const el=document.getElementById('s-out');if(el)el.innerHTML=`<div style="display:flex;align-items:center;gap:10px;color:var(--muted);font-style:italic;padding:12px 0"><svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;animation:spin 1s linear infinite;flex-shrink:0"><circle cx="12" cy="12" r="10" stroke-opacity=".25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-opacity="1"/></svg>${esc(p.preprocess)}</div>`}
             if(p.chunk){streamed+=p.chunk;const el=document.getElementById('s-out');if(el)el.innerHTML=md(streamed)}
-            if(p.done){hist=p.history||hist;curS=stage;stageOutputs[stage]=p.result;stageHists[stage]=hist.slice();updateSessionBar();if(stage===4){stageGapTable=p.gap_table||null;stageRiskExposure=p.risk_exposure||null;stageSensitivitySummary=p.sensitivity_summary||'';stageResponsivenessSummary=p.responsiveness_summary||'';if(p.fcv_rating)fcvRating=p.fcv_rating;if(p.fcv_responsiveness_rating)fcvResponsivenessRating=p.fcv_responsiveness_rating;}renderOut(stage,p.result,followOn);setStepper(stage,'done');
+            if(p.done){hist=p.history||hist;curS=stage;stageOutputs[stage]=p.result;stageHists[stage]=hist.slice();updateSessionBar();if(stage===4){stageGapTable=p.gap_table||null;stageRiskExposure=p.risk_exposure||null;stageSensitivitySummary=p.sensitivity_summary||'';stageResponsivenessSummary=p.responsiveness_summary||'';if(p.fcv_rating)fcvRating=p.fcv_rating;if(p.fcv_responsiveness_rating)fcvResponsivenessRating=p.fcv_responsiveness_rating;}
+              // Write timestamps BEFORE renderOut so the consistency check inside renderOut reads the current run's value
+              // Stage 2 completion also clears any previously dismissed banners on Stage 3/4
+              if(stage===2){ localStorage.setItem('stage2_timestamp', Date.now()); localStorage.removeItem('stage3_consistency_dismissed'); localStorage.removeItem('stage4_consistency_dismissed'); }
+              if(stage===3) localStorage.setItem('stage3_timestamp', Date.now());
+              if(stage===4) localStorage.setItem('stage4_timestamp', Date.now());
+              renderOut(stage,p.result,followOn);setStepper(stage,'done');
               // Research brief panel for Stage 1
               if(stage===1){
                 const dtMatch=p.result&&p.result.match(/%%%DOC_TYPE:\s*([^%\n]+)%%%/);if(dtMatch){docType=dtMatch[1].trim();updateDocTypeBadge();}
@@ -1943,12 +2085,22 @@
               // Explorer panel + sidebar for Stage 4
               if(stage===4 && p.priorities && p.priorities.length){
                 stageFourPriorities=p.priorities;
-                // Preserve cache entries whose title still exists in new priorities
-                const newTitles=new Set(p.priorities.map(pr=>pr.title));
-                for(const t of Object.keys(explorerCache)){if(!newTitles.has(t))delete explorerCache[t];}
+                explorerCache = {};
+                // Clear localStorage cache so stale explorer results don't reappear for new Stage 4 run
+                Object.keys(localStorage).filter(k=>k.startsWith('explorer_priority_')).forEach(k=>localStorage.removeItem(k));
                 explorerHistory=[];
                 updateSidebar();
                 populateExplorerDropdown(p.priorities);
+              }
+              if(stage===4 && p.parse_error){
+                const outEl = document.getElementById('s-out');
+                if(outEl){
+                  const errBanner = document.createElement('div');
+                  errBanner.className = 'ani';
+                  errBanner.style.cssText = 'background:#fff3cd;border:1px solid #ffc107;border-radius:6px;padding:10px 14px;margin-top:12px;font-size:0.9em';
+                  errBanner.textContent = p.parse_error_message || 'Stage 4 output could not be parsed — please re-run this stage.';
+                  outEl.appendChild(errBanner);
+                }
               }
               // Inject truncation warning banner if any
               if(window._truncWarnings && window._truncWarnings.length){
@@ -2013,7 +2165,13 @@
     } else {
       label = tag === '[S]' ? 'Sensitivity' : tag === '[R]' ? 'Responsiveness' : 'Sensitivity + Responsiveness';
     }
-    return `<span class="sr-tag ${cls}">${label}</span>`;
+    const tooltips = {
+      '[S]': 'FCV Sensitivity: this recommendation helps the project operate without causing harm or worsening fragility dynamics.',
+      '[R]': 'FCV Responsiveness: this recommendation actively addresses a root driver of fragility, aligned to one of the four WBG FCV Strategy pillars (preventing conflict, engaging in crisis, transitioning out of fragility, or mitigating spillovers).',
+      '[S+R]': 'Both Sensitivity and Responsiveness: applies only in four specific overlap zones — inclusion/targeting of conflict-affected populations, embedding FCV logic in the ToC/PDO, adaptive M&E that monitors harm AND builds resilience, or GRM designed to strengthen state-citizen accountability.'
+    };
+    const tooltip = tooltips[tag] || '';
+    return `<span class="sr-tag ${cls}" title="${tooltip}">${label}</span>`;
   }
 
   function renderSRCards(sensitivityText, responsivenessText) {
@@ -2130,7 +2288,7 @@
               ${sessionPrompts[stage]?'⚑ prompt (modified)':'view prompt'}
             </button>
           </div>
-          <div class="stage-sub">${isFollowOn?'Updated based on your input':SUBS[stage]}</div>
+          <div class="stage-sub">${isFollowOn?'Updated based on your input':isLast?'Recommendations Note generated':SUBS[stage]}</div>
         </div>
       </div>
       <div class="callout ${isLast?'ok':'info'} ani">
@@ -2178,21 +2336,68 @@
       </div>
       `;
 
-    document.getElementById('refine-area').innerHTML=`
-      <div class="refine-card ani">
-        <div class="refine-lbl">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-          Refine this output
+    // Mark Stage 4 so CSS can remove the .out-body scroll constraint
+    if(isLast) document.getElementById('stage-disp').classList.add('s4-active');
+
+    // Stage consistency check: warn if Stage 2 was updated after Stage 3 or Stage 4
+    if(stage === 3 || stage === 4){
+      const s2ts = parseInt(localStorage.getItem('stage2_timestamp') || '0');
+      const sXts = parseInt(localStorage.getItem(`stage${stage}_timestamp`) || '0');
+      const dismissed = localStorage.getItem(`stage${stage}_consistency_dismissed`) === 'true';
+      if(s2ts > sXts && sXts > 0 && !dismissed){
+        const outEl = document.getElementById('stage-disp');
+        if(outEl){
+          const banner = document.createElement('div');
+          banner.id = `consistency-banner-${stage}`;
+          banner.className = 'ani';
+          banner.style.cssText = 'background:#fefce8;border:1px solid #ca8a04;border-radius:6px;padding:10px 14px;margin-bottom:12px;font-size:0.9em;color:#713f12;display:flex;align-items:center;gap:10px';
+          banner.innerHTML = `<span>Stage 2 was updated after this output was generated — consider re-running Stages 3 and 4 for consistency.</span><button style="margin-left:auto;background:none;border:none;cursor:pointer;color:#713f12;font-size:1em" onclick="localStorage.setItem('stage${stage}_consistency_dismissed','true');this.closest('#consistency-banner-${stage}').remove()" title="Dismiss">✕</button>`;
+          outEl.insertBefore(banner, outEl.firstChild);
+        }
+      }
+    }
+
+    if(isLast){
+      document.getElementById('refine-area').innerHTML=`
+        <div class="followon-card ani">
+          <div class="refine-lbl">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            What would you like to do next?
+          </div>
+          <p class="followon-desc">Use the analysis to generate a follow-on output, or provide new context to refine a specific section.</p>
+          <div class="followon-chips">
+            <button class="followon-chip" onclick="prefillFollowon('Draft a peer review note for this ${docType||\'project\'} summarising key insights and recommended actions for the Task Team. Bear in mind that the note needs to have sufficient detail to assist the Task Team in making necessary changes. Ensure that any issues raised are accompanied by suggestions for how to help address shortfalls, based on insights from the earlier analysis.')">Draft peer review note</button>
+            <button class="followon-chip" onclick="prefillFollowon('Please expand on how to implement the highest-priority recommendation — what are the specific first steps, who should lead, and what should the TTL do in the first 30 days of implementation?')">Expand top recommendation</button>
+            <button class="followon-chip" onclick="prefillFollowon('I have revised the following section of the PAD. Please review it against the FCV recommendations and suggest specific language improvements:\\n\\n[Paste your revised text here]')">Review my revised text</button>
+            <button class="followon-chip" onclick="prefillFollowon('Summarise the key FCV risks and the 3 most important actions in plain language suitable for a 5-minute project brief or management presentation')">Summarise for brief</button>
+          </div>
+          <div class="refine-row">
+            <textarea class="refine-in" id="rfn" rows="3"
+              placeholder="Ask a question, request a document draft, or paste revised PAD text for review… (Shift+Enter for new line)"
+              onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();doFollowOn()}"></textarea>
+            <button class="btn btn-ghost btn-sm" onclick="doFollowOn()">Send
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            </button>
+          </div>
         </div>
-        <div class="refine-row">
-          <textarea class="refine-in" id="rfn" rows="2"
-            placeholder="e.g. 'Expand on the security dimension' · 'The project is in a border area — please factor this in' · 'Adjust tone to be more cautious'"
-            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();doRefine()}"></textarea>
-          <button class="btn btn-ghost btn-sm" onclick="doRefine()">Send
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-          </button>
-        </div>
-      </div>`;
+        <div id="followon-result-area"></div>`;
+    } else {
+      document.getElementById('refine-area').innerHTML=`
+        <div class="refine-card ani">
+          <div class="refine-lbl">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Refine this output
+          </div>
+          <div class="refine-row">
+            <textarea class="refine-in" id="rfn" rows="2"
+              placeholder="e.g. 'Expand on the security dimension' · 'The project is in a border area — please factor this in' · 'Adjust tone to be more cautious'"
+              onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();doRefine()}"></textarea>
+            <button class="btn btn-ghost btn-sm" onclick="doRefine()">Send
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            </button>
+          </div>
+        </div>`;
+    }
 
     document.getElementById('act-area').innerHTML=isLast?`
       <div class="act-bar ani">
@@ -2275,6 +2480,67 @@
     runStage(curS,msg);
   }
 
+  function prefillFollowon(text){
+    const el = document.getElementById('rfn');
+    if(el){ el.value = text; el.focus(); el.select(); }
+  }
+
+  async function doFollowOn(){
+    const el = document.getElementById('rfn');
+    const msg = el?.value.trim();
+    if(!msg || busy) return;
+    el.value = '';
+    const resultArea = document.getElementById('followon-result-area');
+    if(!resultArea) return;
+    resultArea.innerHTML = `<div class="followon-result-card ani">
+      <div class="out-hdr"><div class="out-hdr-l"><span class="dot active"></span>Generating follow-on response…</div></div>
+      <div class="out-body" id="followon-stream-out" style="max-height:none"></div>
+    </div>`;
+    resultArea.scrollIntoView({behavior:'smooth', block:'nearest'});
+
+    busy = true;
+    const messages = buildFollowOnMessages(msg);
+    let accumulated = '';
+    try {
+      const res = await fetch('/api/run-followon', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({messages})
+      });
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      while(true){
+        const {done, value} = await reader.read();
+        if(done) break;
+        buffer += decoder.decode(value, {stream:true});
+        const lines = buffer.split('\n');
+        buffer = lines.pop();
+        for(const line of lines){
+          if(line.startsWith('data: ')){
+            try{
+              const d = JSON.parse(line.slice(6));
+              if(d.chunk){ accumulated += d.chunk; const outEl = document.getElementById('followon-stream-out'); if(outEl) outEl.innerHTML = md(accumulated); }
+              if(d.done) break;
+            }catch{}
+          }
+        }
+      }
+      const hdrEl = resultArea.querySelector('.out-hdr-l');
+      if(hdrEl) hdrEl.innerHTML = '<span class="dot done"></span>Follow-on response';
+    } catch(e){
+      resultArea.innerHTML = `<div class="callout err ani"><div class="callout-body">Follow-on request failed. Please try again.</div></div>`;
+    } finally {
+      busy = false;
+    }
+  }
+
+  function buildFollowOnMessages(userMsg){
+    const history = hist.map(m => ({role: m.role, content: m.content}));
+    history.push({role: 'user', content: userMsg});
+    return history;
+  }
+
   function setStepper(active,status){
     document.getElementById('step-0').className='step done';
     for(let i=1;i<=4;i++){
@@ -2307,30 +2573,28 @@ ${md(execSummary)}`;
 <p style="font-size:9pt;color:#555;margin-top:0">${pr.dimension?`<strong>Dimension:</strong> ${esc(pr.dimension)} &nbsp;|&nbsp; `:''}${pr.risk_level?`<strong>Risk Level:</strong> <span style="color:${riskColor}">${esc(pr.risk_level)}</span>`:''}
 </p>`;
         if(pr.the_gap) body += `<p><strong>The Gap:</strong><br>${esc(pr.the_gap)}</p>`;
-        if(pr.why_it_matters) body += `<p><strong>Why It Matters Operationally:</strong><br>${esc(pr.why_it_matters)}</p>`;
-        if(pr.why_fcv_matters) body += `<p><strong>Why It Matters for Addressing FCV:</strong><br>${esc(pr.why_fcv_matters)}</p>`;
-
-        const cached = explorerCache[pr.title];
-        if(cached && cached.issue){
-          body += `<p><strong>Detailed Analysis (FCV Solutions Explorer):</strong><br>${esc(cached.issue)}</p>`;
-          if(cached.options && cached.options.length){
-            body += `<p><strong>Options to Consider:</strong></p><ul>`;
-            cached.options.forEach(opt => {
-              body += `<li><strong>Option ${esc(opt.letter)}: ${esc(opt.title)}</strong>`;
-              if(opt.context) body += `<br><em>${esc(opt.context)}</em>`;
-              if(opt.groups && opt.groups.length){
-                opt.groups.forEach(g => {
-                  body += `<br><strong>${esc(g.label)}</strong><ul>`;
-                  (g.bullets||[]).forEach(b => { body += `<li>${esc(b)}</li>`; });
-                  body += `</ul>`;
-                });
-              }
-              body += `</li>`;
-            });
-            body += `</ul>`;
-          }
-        } else if(pr.suggested_directions){
-          body += `<p><strong>Suggested Directions:</strong><br>${esc(pr.suggested_directions)}</p>`;
+        if(pr.why_it_matters) body += `<p><strong>Why It Matters:</strong><br>${esc(pr.why_it_matters)}</p>`;
+        if(pr.recommendation) body += `<p><strong>Essential Action:</strong><br>${esc(pr.recommendation)}</p>`;
+        if(pr.pad_sections){
+          const chips = pr.pad_sections.split(';').map(s=>s.trim()).filter(Boolean).map(s=>`<code style="background:#e8f0fe;padding:1px 6px;border-radius:3px;font-size:9pt">${esc(s)}</code>`).join(' ');
+          body += `<p><strong>Where in the PAD:</strong> ${chips}</p>`;
+        }
+        if(pr.suggested_language) body += `<blockquote><strong>Suggested PAD language:</strong><br><em>${esc(pr.suggested_language)}</em></blockquote>`;
+        if(pr.implementation_note) body += `<p><strong>Implementation consideration:</strong><br>${esc(pr.implementation_note)}</p>`;
+        if(pr.who_acts||pr.when||pr.resources){
+          body += `<p style="font-size:9pt;color:#555">`;
+          if(pr.who_acts) body += `<strong>Who acts:</strong> ${esc(pr.who_acts)} &nbsp;`;
+          if(pr.when) body += `<strong>When:</strong> ${esc(pr.when)} &nbsp;`;
+          if(pr.resources) body += `<strong>Resources:</strong> ${esc(pr.resources)}`;
+          body += `</p>`;
+        }
+        // Optional: include above-and-beyond if already loaded
+        const cached = explorerCache[i];
+        if(cached && cached.goFurtherItems && cached.goFurtherItems.length){
+          body += `<p><strong>Above and Beyond (optional):</strong></p>`;
+          cached.goFurtherItems.forEach((item, gi) => {
+            body += `<p style="margin-left:12pt"><strong>${['A','B','C'][gi]||gi+1}. ${esc(item.title)}</strong><br>${esc(item.body||'')}</p>`;
+          });
         }
         body += `</div>`;
       });
@@ -2367,6 +2631,7 @@ ${md(execSummary)}`;
 
   function reset(){
     pF=[];cF=[];hist=[];curS=0;busy=false;stageOutputs={};stageHists={};researchBrief='';researchCountry='';
+    ['stage2_timestamp','stage3_timestamp','stage4_timestamp','stage3_consistency_dismissed','stage4_consistency_dismissed'].forEach(k=>localStorage.removeItem(k));
     document.getElementById('upload-panel').style.display='block';
     document.getElementById('analysis-panel').style.display='none';
     document.getElementById('landing-hero').style.display='block';
@@ -2517,7 +2782,10 @@ ${md(execSummary)}`;
   // ── Stage 4 state ──────────────────────────────────────────────────────────
   let stageFourPriorities = [];
   let currentPriority = 0;  // 0-indexed
-  let explorerCache = {};   // {priorityTitle: parsedExplorerData}
+  let explorerCache = {};   // {priorityIndex: parsedExplorerData}
+  let explorerAbortController = null;  // AbortController for cancelling in-flight explorer fetch
+  let explorerTimerInterval = null;    // setInterval handle for elapsed-time display
+  let fileMetadata = {};   // {filename: {word_count, doc_type, extraction_status}}
   let explorerHistory = []; // for follow-up queries
   let fcvRating = '';
   let fcvResponsivenessRating = '';
@@ -2707,8 +2975,37 @@ ${md(execSummary)}`;
       else { nextBtn.innerHTML = 'Next <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>'; nextBtn.onclick = nextPriority; }
     }
 
+    // Restore Explorer from localStorage before building card HTML (so it renders immediately)
+    if(!explorerCache[idx]){
+      try {
+        const stored = localStorage.getItem('explorer_priority_'+idx);
+        if(stored) explorerCache[idx] = JSON.parse(stored);
+      } catch(e) {}
+    }
+
     // Determine risk chip class
     const riskClass = pr.risk_level === 'High' ? 'pc-chip-risk-h' : pr.risk_level === 'Medium' ? 'pc-chip-risk-m' : 'pc-chip-risk-l';
+
+    // Build warning badges
+    const specKey = `specificity_dismissed_${idx}`;
+    const citeKey = `citation_dismissed_${idx}`;
+    const specDismissed = localStorage.getItem(specKey) === 'true';
+    const citeDismissed = localStorage.getItem(citeKey) === 'true';
+
+    let warningBadges = '';
+    if(pr.specificity_warning && !specDismissed){
+      warningBadges += `<div class="warn-badge" id="warn-spec-${idx}">
+        ⚠ May lack geographic specificity — review before sharing.
+        <button class="warn-dismiss" onclick="localStorage.setItem('${specKey}','true');document.getElementById('warn-spec-${idx}').remove()" title="Dismiss">✕</button>
+      </div>`;
+    }
+    if(pr.unverified_citations && pr.unverified_citations.length && !citeDismissed){
+      const citeList = pr.unverified_citations.map(c => esc(c)).join(', ');
+      warningBadges += `<div class="warn-badge" id="warn-cite-${idx}" title="Unverified: ${citeList}">
+        ⚠ Contains unverified citation(s) — confirm source exists before sharing.
+        <button class="warn-dismiss" onclick="localStorage.setItem('${citeKey}','true');document.getElementById('warn-cite-${idx}').remove()" title="Dismiss">✕</button>
+      </div>`;
+    }
 
     // Render card
     const cardArea = document.getElementById('priority-card-area');
@@ -2730,6 +3027,7 @@ ${md(execSummary)}`;
               ${pr.when ? `<span class="pc-meta-chip"><strong>When:</strong> ${esc(pr.when)}</span>` : ''}
               ${pr.resources ? `<span class="pc-meta-chip"><strong>Resources:</strong> ${esc(pr.resources)}</span>` : ''}
             </div>` : ''}
+            ${warningBadges}
           </div>
         </div>
         <!-- Zone 1: The Gap -->
@@ -2748,35 +3046,50 @@ ${md(execSummary)}`;
           </div>
           <div class="pc-zone-body">${esc((pr.why_it_matters||'') + (pr.why_fcv_matters ? ' ' + pr.why_fcv_matters : ''))}</div>
         </div>
-        <!-- Zone 3: Options (loaded on demand) -->
+        <!-- Zone 3: How to act (from JSON — always available) -->
         <div class="pc-zone zone-act" id="zone-act-${idx}">
           <div class="pc-zone-title">
             <div class="pc-zone-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
             How to act
           </div>
-          <div id="explorer-options-${idx}">
-            ${explorerCache[pr.title] ? renderExplorerNarrativeHtml(explorerCache[pr.title], idx) : `
-            <div class="exp-loading" id="exp-loading-${idx}">
-              <svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;animation:spin 1s linear infinite;flex-shrink:0"><circle cx="12" cy="12" r="10" stroke-opacity=".25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-opacity="1"/></svg>
-              Loading detailed options…
-            </div>`}
+          <div class="zone-act-primary">
+            <!-- Essential action -->
+            <div class="zone-act-section">
+              <div class="zone-act-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Essential action</div>
+              <div class="zone-act-essential">${esc(pr.recommendation||'')}</div>
+            </div>
+            <!-- Where in the PAD -->
+            ${pr.pad_sections ? `<div class="zone-act-section">
+              <div class="zone-act-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Where in the PAD</div>
+              <div class="zone-act-pad-chips">${pr.pad_sections.split(';').map(s=>s.trim()).filter(Boolean).map(s=>`<span class="pad-chip">${esc(s)}</span>`).join('')}</div>
+            </div>` : ''}
+            <!-- Suggested language -->
+            ${pr.suggested_language ? `<div class="zone-act-section zone-act-draft">
+              <div class="zone-act-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Suggested PAD language</div>
+              <div class="zone-act-draft-text">${esc(pr.suggested_language)}</div>
+            </div>` : ''}
+            <!-- Implementation note -->
+            ${pr.implementation_note ? `<div class="zone-act-section zone-act-impl">
+              <div class="zone-act-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> Implementation consideration</div>
+              <div class="pc-zone-body">${esc(pr.implementation_note)}</div>
+            </div>` : ''}
           </div>
+          <!-- Above and beyond (lazy-loaded on expand) -->
+          <details class="zone-act-beyond" id="beyond-details-${idx}" ontoggle="handleBeyondToggle(this,${idx})">
+            <summary>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              Want to go above and beyond? Explore additional approaches
+              <span class="beyond-badge">Optional</span>
+              <span class="beyond-arrow">▾</span>
+            </summary>
+            <div class="beyond-content" id="above-beyond-content-${idx}">
+              ${explorerCache[idx] ? renderAboveAndBeyondHtml(explorerCache[idx]) : `<div class="beyond-loading" id="beyond-loading-${idx}"><svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;animation:spin 1s linear infinite;flex-shrink:0"><circle cx="12" cy="12" r="10" stroke-opacity=".25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-opacity="1"/></svg><span id="beyond-timer-${idx}">Loading alternatives…</span><button onclick="cancelExplorer()" class="exp-cancel-btn" title="Cancel">Cancel</button></div>`}
+            </div>
+          </details>
         </div>
-        <!-- Follow-up -->
-        <div class="pc-followup">
-          <span class="pc-followup-label">Explore further:</span>
-          <input class="pc-followup-input" type="text" id="pc-followup-input-${idx}"
-            placeholder="e.g. 'Which organisations could lead the conflict mapping?' or 'How does this affect the PAD risk section?'"
-            onkeydown="if(event.key==='Enter'){submitPriorityFollowup(${idx})}"/>
-          <button class="pc-followup-btn" onclick="submitPriorityFollowup(${idx})">Ask →</button>
-        </div>
-        <div class="pc-followup-answer" id="pc-followup-answer-${idx}"></div>
       </div>`;
 
-    // Load explorer if not cached
-    if(!explorerCache[pr.title]){
-      loadExplorerForPriority(idx);
-    }
+    // Explorer is lazy-loaded — only fires when user opens the <details> section
 
     updateSidebar();
     cardArea.scrollIntoView({behavior:'smooth', block:'nearest'});
@@ -2789,14 +3102,30 @@ ${md(execSummary)}`;
 
   async function loadExplorerForPriority(idx){
     const pr = stageFourPriorities[idx];
-    if(!pr || explorerCache[pr.title]) return;
+    if(!pr || explorerCache[idx]) return;
+
+    // Cancel any in-flight explorer request
+    if(explorerAbortController && !explorerAbortController.signal.aborted){
+      explorerAbortController.abort();
+    }
+    explorerAbortController = new AbortController();
+
+    // Start elapsed timer — use local handle to avoid stale abort clearing a newer timer
+    let elapsed = 0;
+    if(explorerTimerInterval) clearInterval(explorerTimerInterval);
+    const timerHandle = setInterval(() => {
+      elapsed++;
+      const timerEl = document.getElementById(`beyond-timer-${idx}`);
+      if(timerEl) timerEl.textContent = `Loading alternatives… ${elapsed}s`;
+    }, 1000);
+    explorerTimerInterval = timerHandle;
 
     const promptOverride = sessionPrompts['explorer'] || '';
     try {
       const payload = { priority_title: pr.title, priority_body: pr.body, history: hist };
       if(promptOverride) payload.prompt_override = promptOverride;
 
-      const res = await fetch('/api/run-explorer', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+      const res = await fetch('/api/run-explorer', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload), signal: explorerAbortController.signal });
       if(!res.ok) throw new Error('Server error '+res.status);
 
       const reader = res.body.getReader(), dec = new TextDecoder();
@@ -2812,29 +3141,68 @@ ${md(execSummary)}`;
             const p = JSON.parse(line.slice(6));
             if(p.error) throw new Error(p.error);
             if(p.done){
+              clearInterval(timerHandle); explorerTimerInterval = null;
               const parsed = parseExplorerText(p.result);
-              explorerCache[pr.title] = parsed;
+              explorerCache[idx] = parsed;
+              // Persist to localStorage so results survive page refresh
+              try { localStorage.setItem('explorer_priority_'+idx, JSON.stringify(parsed)); } catch(e) {}
               explorerHistory = [
                 {role:'user', content:'[Explorer: '+pr.title+']'},
                 {role:'assistant', content:p.result}
               ];
-              // If this priority is still showing, update the options zone
-              if(currentPriority === idx){
-                const optArea = document.getElementById(`explorer-options-${idx}`);
-                if(optArea) optArea.innerHTML = renderExplorerNarrativeHtml(parsed, idx);
-              }
+              // Update the above-and-beyond content area
+              const contentEl = document.getElementById(`above-beyond-content-${idx}`);
+              if(contentEl) contentEl.innerHTML = renderAboveAndBeyondHtml(parsed);
               updateSidebar();
             }
           } catch(e){ if(e.message!=='Unexpected end of JSON input'){
-            const loadEl = document.getElementById(`exp-loading-${idx}`);
-            if(loadEl) loadEl.textContent = 'Could not load options: '+e.message;
+            clearInterval(timerHandle); explorerTimerInterval = null;
+            const loadEl = document.getElementById(`beyond-loading-${idx}`);
+            if(loadEl) loadEl.textContent = 'Could not load alternatives: '+e.message;
           }}
         }
       }
     } catch(e){
-      const loadEl = document.getElementById(`exp-loading-${idx}`);
-      if(loadEl) loadEl.textContent = 'Error: '+e.message;
+      clearInterval(timerHandle); explorerTimerInterval = null;
+      const loadEl = document.getElementById(`beyond-loading-${idx}`);
+      if(e.name === 'AbortError'){
+        if(loadEl) loadEl.textContent = 'Generation cancelled.';
+      } else {
+        if(loadEl) loadEl.textContent = 'Error: '+e.message;
+      }
     }
+  }
+
+  function cancelExplorer() {
+    if(explorerAbortController) explorerAbortController.abort();
+  }
+
+  function handleBeyondToggle(detailsEl, idx) {
+    if(!detailsEl.open) return; // closed — nothing to do
+    if(explorerCache[idx]) {
+      // Already cached — render immediately
+      const contentEl = document.getElementById('above-beyond-content-'+idx);
+      if(contentEl) contentEl.innerHTML = renderAboveAndBeyondHtml(explorerCache[idx]);
+      return;
+    }
+    // First open — trigger lazy load
+    loadExplorerForPriority(idx);
+  }
+
+  function renderAboveAndBeyondHtml(parsed) {
+    if(!parsed || !parsed.goFurtherItems || !parsed.goFurtherItems.length){
+      return '<p class="beyond-intro">No additional approaches available.</p>';
+    }
+    const letters = ['A','B','C'];
+    const itemsHtml = parsed.goFurtherItems.map((item,i) => `
+      <div class="beyond-item">
+        <div class="beyond-item-hdr">
+          <div class="beyond-item-letter">${letters[i]||String(i+1)}</div>
+          <div class="beyond-item-title">${esc(item.title)}</div>
+        </div>
+        <div class="beyond-item-body">${md(item.body||'')}</div>
+      </div>`).join('');
+    return `<p class="beyond-intro">The core recommendation above addresses the most critical gap. These alternative approaches are optional enhancements — not prerequisites.</p>${itemsHtml}`;
   }
 
   // ── Legacy parser (old Option A/B/C format — fallback for cached results) ───

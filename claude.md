@@ -114,59 +114,95 @@ STAGE 3 — Identifying Project Gaps
 └─ UI: Collapsible sections + expandable Do-No-Harm checklist rendered from Part C table
 
 STAGE 4 — Recommendations Note + Explorer
-├─ Input: Stages 1–3 output (conversation history)
-├─ Output (structured with delimiters for frontend parsing):
-│  ├─ Preamble (50–75 words: overview of FCV sensitivity)
-│  ├─ Executive Summary:
-│  │  ├─ Opening Assessment (1 bold sentence, 25–35 words)
-│  │  ├─ Operational Context (150–200 words)
-│  │  ├─ FCV Risk Exposure (%%%RISK_EXPOSURE_START/END%%% delimiters):
-│  │  │  ├─ RISKS_TO_PROJECT (60–85 words, plain language)
-│  │  │  └─ RISKS_FROM_PROJECT (60–85 words, plain language)
-│  │  ├─ Strengths (80–120 words)
-│  │  ├─ Gaps (100–130 words)
-│  │  ├─ FCV Sensitivity Summary (%%%SENSITIVITY_SUMMARY_START/END%%% delimiters):
-│  │  │  └─ 80–100 word assessment of overall FCV Sensitivity standing
-│  │  └─ FCV Responsiveness Summary (%%%RESPONSIVENESS_SUMMARY_START/END%%% delimiters):
-│  │     └─ 80–100 word assessment anchored to the four FCV Strategy pillars
-│  ├─ FCV Sensitivity Rating (%%%FCV_RATING: [level]%%% line):
-│  │  └─ Scale: Extremely Low | Very Low | Low | Adequate | Well Embedded | Very Well Embedded
-│  ├─ FCV Responsiveness Rating (%%%FCV_RESPONSIVENESS_RATING: [level]%%% line):
-│  │  └─ Same scale; emitted immediately after the sensitivity rating line
-│  └─ Strategic Priorities (4–5, each in %%%PRIORITY_START/END%%% delimiters):
-│     └─ Fields (10 total): TITLE, FCV_DIMENSION, TAG, RISK_LEVEL, THE_GAP, WHY_IT_MATTERS,
-│                            SUGGESTED_DIRECTIONS, WHO_ACTS, WHEN, RESOURCES
-│        TAG field: [S] / [R] / [S+R] — same strict definition as Stage 2/3
+├─ Input: Stages 1–3 output (conversation history) + uploaded_doc_names list
+├─ Output (narrative memo + JSON block appended at end):
+│  ├─ Narrative: Preamble + Executive Summary (risk exposure, strengths, gaps,
+│  │             sensitivity summary, responsiveness summary, ratings)
+│  └─ JSON block: appended after narrative, delimited %%%JSON_START%%%...%%%JSON_END%%%
+│     Fields: fcv_rating, fcv_responsiveness_rating, sensitivity_summary,
+│             responsiveness_summary, risk_exposure {risks_to, risks_from},
+│             priorities[] — each with:
+│               title, fcv_dimension, tag, risk_level, the_gap, why_it_matters,
+│               recommendation (SINGULAR — one cohesive action, NOT options menu),
+│               who_acts, when, resources,
+│               pad_sections (semicolon-separated PAD sections to modify),
+│               suggested_language (2–4 sentences of draft PAD text in WBG register),
+│               implementation_note (1–2 sentences: timing/cost/sequencing)
+│        when values: "At design stage" | "Before appraisal" | "During implementation"
+│        TAG: [S] / [R] / [S+R] — same strict definition as Stage 2/3
 │        Most priorities will be [S] or [R]; [S+R] only for four named overlap zones
-├─ Note: %%%GAP_TABLE_START/END%%% delimiter + extraction code still exist in backend
-│        but the FCV Design Assessment Table is NOT rendered in the UI
-├─ clean_stage4_output() strips: RISK_EXPOSURE, SENSITIVITY_SUMMARY, RESPONSIVENESS_SUMMARY,
-│  FCV_RATING, FCV_RESPONSIVENESS_RATING, GAP_TABLE, and all PRIORITY blocks from display text
+│        pad_sections/suggested_language/implementation_note always present in JSON →
+│        download never requires clicking Explorer tabs first
+├─ extract_priorities() rewrites JSON block via json.loads() + validation:
+│  ├─ Returns unified dict: {error, priorities, fcv_rating, fcv_responsiveness_rating,
+│  │                         sensitivity_summary, responsiveness_summary, risk_exposure}
+│  ├─ _check_specificity(): heuristic for mid-sentence capitalised words (proper nouns)
+│  ├─ _check_citations(): cross-references [From: ...] patterns against uploaded doc names
+│  │   (extension-stripped) + org whitelist; flags unknown sources
+│  └─ Malformed JSON: returns {error: True, message: ...} — NOT silent failure
+├─ clean_stage4_output() stripping order:
+│  1. Strip %%%JSON_START/END%%% block (structured data)
+│  2. Strip %%%RISK_NARRATIVE_START/END%%% block (Risk Exposure text — shown as card from JSON)
+│  3. Strip everything from %%%PRIORITIES_START%%% onwards (S/R summaries + priorities — shown as cards)
+│  4. Legacy delimiter stripping retained as fallback for cached outputs
 ├─ Citation policy: ONLY cite documents that appear as [From: doc name] in Stage 1.
 │  NEVER fabricate document titles. Non-uploaded sources → [From: training knowledge] or
 │  [From: web research]. This prevents hallucinated citations (e.g. [RRA 2022] when no RRA uploaded).
+│  uploaded_doc_names must be included in /api/run-stage request body for citation check.
 └─ UI:
-   ├─ Main output card (preamble + exec summary + FCV Risk Exposure + Strengths + Gaps)
+   ├─ Main output card (preamble + opening assessment + operational context + strengths + gaps)
+   │  NOTE: FCV Risk Exposure is NOT in the narrative text — it is stripped and shown as a card from JSON
+   │  NOTE: S/R summaries are NOT in the narrative text — stripped and shown as side-by-side cards
    ├─ FCV Sensitivity + FCV Responsiveness summary cards (side by side, after Gaps)
    ├─ FCV Sensitivity gauge (sidebar, blue, shield icon)
    ├─ FCV Responsiveness gauge (sidebar, green, leaf icon)
    ├─ Priority cards (horizontal stepper, shows one at a time)
-   ├─ Per-priority zone: gap, why_it_matters, suggested_directions + explorer options
-   └─ "Explore FCV-Sensitive Solutions" panel (loaded async)
+   ├─ S/R tag badges have hover tooltips explaining each tag meaning
+   ├─ Specificity warning badge (amber, dismissible) if no proper nouns detected
+   ├─ Citation warning badge (amber, dismissible) if unrecognised [From: ...] strings found
+   ├─ Per-priority zone-act layout (4 sections, all from JSON — always available):
+   │  ├─ Essential action box (recommendation, blue left-border)
+   │  ├─ Where in the PAD (.pad-chip tags split from pad_sections on ";")
+   │  ├─ Suggested PAD language (suggested_language, italic yellow card)
+   │  └─ Implementation consideration (implementation_note)
+   ├─ "Go above and beyond" collapsible <details> per priority (LAZY — loads on first open)
+   ├─ Explorer results cached per priority integer index in localStorage
+   └─ Parse error banner shown if JSON extraction fails
 
-EXPLORER (on-demand deep dive)
+FOLLOW-ON (post-analysis query card — Stage 4 only)
+├─ Replaces the standard "Refine this output" card at Stage 4 bottom
+├─ Stages 1–3 still show the standard refine card (calls doRefine() → re-runs stage)
+├─ Input: Full conversationHistory + user message (not just Stage 4)
+├─ Output: SSE-streamed response appended below the follow-on card (does NOT replace Stage 4 output)
+├─ 4 pre-fill chips for common TTL tasks:
+│  - "Draft peer review note" → drafts a peer review email/comment for the PCN/PAD
+│  - "Expand top recommendation" → first steps, who leads, TTL actions in first 30 days
+│  - "Review my revised text" → user pastes revised PAD text; LLM reviews against FCV analysis
+│  - "Summarise for brief" → plain-language summary for 5-minute brief or management presentation
+├─ Clicking a chip pre-fills the textarea via prefillFollowon(text)
+├─ Submit calls doFollowOn() → POST /api/run-followon
+├─ Result rendered in .followon-result-card below the card; header updates on completion
+├─ Key JS functions: prefillFollowon(text), doFollowOn(), buildFollowOnMessages(userMsg)
+├─ CSS: .followon-card, .followon-desc, .followon-chips, .followon-chip, .followon-result-card
+└─ Backend: /api/run-followon route, DEFAULT_PROMPTS["followon"], max_tokens=4000
+   - Prompt includes full WBG peer review style guidelines (tiered structure, FCV lenses,
+     stage-appropriateness, prose-over-bullets, collegial open/close conventions)
+   - Route truncates large assistant messages to 40,000 chars before sending to avoid token limits
+
+EXPLORER (above-and-beyond alternatives only)
 ├─ Input: Priority title/body + Stage 1–4 history
-├─ Output: 3–5 concrete design options (A/B/C/D/E) with:
-│  ├─ Title + context
-│  ├─ How to adapt the PAD/design to implement it
-│  ├─ Metadata tags (cost range, implementation modality, timeline)
-│  └─ "Dig deeper" inline Q&A (cached per priority)
-├─ Follows Stage 4 structure: preamble + issue analysis + A/B/C options
-├─ Prompt emphasizes operational levers, WBG instruments, geographic specificity
+├─ Output: 2–3 optional alternative approaches (%%%GF_ITEM%%% format only)
+│  └─ Each item: title + 2–3 paragraph prose + PAD section reference
+├─ Prompt produces ONLY %%%GO_FURTHER_START%%%...%%%GO_FURTHER_END%%% markers
+│  (no %%%EXPLORER_NARRATIVE_START%%% — that format is legacy/deprecated)
+├─ Lazy-loaded: only fires when user expands the <details> section
+├─ Design principle: core recommendation is self-contained in JSON; Explorer adds
+│  optional depth for teams with additional appetite — NOT required reading
 └─ UI:
-   ├─ Loaded when priority is shown or when user clicks "Explore solutions ↓"
-   ├─ Per-option card (collapsible, color-coded tags, PAD change callout)
-   └─ "Ask about this" button prefills freetext follow-up
+   ├─ <details class="zone-act-beyond"> triggers handleBeyondToggle(el, idx) on open
+   ├─ Loading spinner shown inside <details> until stream completes
+   ├─ renderAboveAndBeyondHtml(parsed) renders goFurtherItems as .beyond-item cards
+   └─ Follow-on card at bottom of Stage 4 (NOT a standard refine card — see FOLLOW-ON section below)
 ```
 
 ---
@@ -197,7 +233,20 @@ This was creating length/clarity issues — the note got dense, and it wasn't cl
 - **Contextual:** Each exploration is grounded in the priority's gap + why it matters
 - **Cacheable:** Avoid redundant API calls for the same priority + follow-up question
 
-**Result:** Clean, memo-ready Stage 4 output + powerful on-demand analytics when users want to dig deeper.
+**Result:** Clean, memo-ready Stage 4 output + optional depth available when users want it.
+
+### 2.3a Why Each Priority Now Has a Single Recommendation + PAD Guidance (not A/B/C options)
+**Problem (identified by TTL user testing):** The previous Explorer auto-loaded 2–3 action options per priority on page load, creating cognitive overload: 5 priorities × 3 options = 15 things to evaluate. Non-specialist TTLs needed a clear directive, not a menu.
+
+**Solution:** Restructure each priority card around one clear action with operational specifics, sourced directly from the Stage 4 JSON:
+- `recommendation` — single cohesive action (already existed)
+- `pad_sections` — explicit PAD sections to modify (new)
+- `suggested_language` — draft text to insert verbatim (new)
+- `implementation_note` — timing/cost/dependency note (new)
+
+Explorer demoted to a collapsed "Go above and beyond" section — lazy-loaded only if the user opens it, explicitly labelled Optional.
+
+**Key architectural consequence:** All core content now lives in the Stage 4 JSON. The download (`downloadReport()`) no longer requires clicking through all priority tabs before exporting — it always has everything it needs.
 
 ### 2.4 The Specificity & Actionability Mandate
 **Core principle:** Recommendations must be **specific and actionable**, not broad and vague.
@@ -207,8 +256,8 @@ This was creating length/clarity issues — the note got dense, and it wasn't cl
 
 **How it's enforced:**
 - Stage 3 prompt explicitly requires geographic naming, mechanism specification, and operational entry points (PAD instruments, existing WBG programs, partner organizations)
-- Stage 4 prompt carries forward these specifics into priority "suggested directions"
-- Explorer prompt offers multiple **options** (A/B/C) rather than a single "solution," with PAD change callouts showing how to operationalize each
+- Stage 4 prompt generates `pad_sections`, `suggested_language`, and `implementation_note` per priority — specifics are in the JSON, not deferred to Explorer
+- Explorer prompt generates 2–3 optional alternative approaches (not A/B/C options menus); core recommendation is always the single clear directive
 
 **Trade-off managed:** We avoid exact costs (which change) but include enough detail for a TTL to brief management or co-design with counterparts.
 
@@ -234,7 +283,8 @@ DEFAULT_PROMPTS = {
     "2": "# Role\nYou are an expert FCV analyst...",  # Stage 2
     "3": "# Role\nYou are an expert FCV analyst...",  # Stage 3
     "4": "# Role\nYou are an expert FCV analyst...",  # Stage 4 (Recommendations Note)
-    "explorer": "# Role\nYou are an expert FCV analyst..."  # Explorer deep-dive
+    "explorer": "# Role\nYou are an expert FCV analyst...",  # Explorer deep-dive
+    "followon": "# Role\nYou are a senior FCV specialist..."  # Follow-on post-analysis tasks
 }
 ```
 
@@ -379,80 +429,107 @@ If in doubt → assign [S] or [R]. Most recommendations will not qualify for [S+
 [FCV Responsiveness Rating — same scale, emitted immediately after sensitivity rating]
 
 [4–5 Strategic Priority cards, each with:
-  - TITLE: Priority N · [Actionable verb phrase]
-  - FCV_DIMENSION: one of the 6 dimensions
-  - TAG: [S] | [R] | [S+R]  ← NEW field (field 3)
-  - RISK_LEVEL: High | Medium | Low
-  - THE_GAP: 2–3 sentences
-  - WHY_IT_MATTERS: 2–3 sentences (operational + FCV dimensions combined)
-  - SUGGESTED_DIRECTIONS: 2–3 sentences in consultative prose
-  - WHO_ACTS: TTL | PIU | Government counterpart | FCV specialist | Procurement team
-  - WHEN: At design stage | Before appraisal | During implementation
-  - RESOURCES: Minimal | Moderate | Significant
+  - title: Priority N · [Actionable verb phrase]
+  - fcv_dimension: one of the 6 dimensions
+  - tag: [S] | [R] | [S+R]
+  - risk_level: High | Medium | Low
+  - the_gap: 2–3 sentences
+  - why_it_matters: 2–3 sentences (operational + FCV dimensions combined)
+                    + S/R pillar justification for [R] and [S+R] priorities
+  - recommendation: SINGLE cohesive action (NOT an options menu) — 2–3 sentences,
+                    names specific location + mechanism + entry point
+  - who_acts: TTL | PIU | Government counterpart | FCV specialist | Procurement team
+  - when: At design stage | Before appraisal | During implementation
+  - resources: Minimal | Moderate | Significant
 ]
 ```
 
-**Delimiter formats for frontend parsing:**
+**JSON block format (appended after narrative memo):**
 ```
-%%%RISK_EXPOSURE_START%%%
-RISKS_TO_PROJECT: [paragraph]
-RISKS_FROM_PROJECT: [paragraph]
-%%%RISK_EXPOSURE_END%%%
-
-%%%SENSITIVITY_SUMMARY_START%%%
-[80–100 word assessment of overall FCV Sensitivity standing]
-%%%SENSITIVITY_SUMMARY_END%%%
-
-%%%RESPONSIVENESS_SUMMARY_START%%%
-[80–100 word assessment of FCV Responsiveness anchored to FCV Strategy pillars]
-%%%RESPONSIVENESS_SUMMARY_END%%%
-
-%%%FCV_RATING: [level]%%%
-
-%%%FCV_RESPONSIVENESS_RATING: [level]%%%
-
-%%%PRIORITY_START%%%
-TITLE: Priority N · [phrase]
-FCV_DIMENSION: [dimension]
-TAG: [S] | [R] | [S+R]
-RISK_LEVEL: [High | Medium | Low]
-THE_GAP: [text]
-WHY_IT_MATTERS: [text]
-SUGGESTED_DIRECTIONS: [text]
-WHO_ACTS: [text]
-WHEN: [text]
-RESOURCES: [text]
-%%%PRIORITY_END%%%
+%%%JSON_START%%%
+{
+  "fcv_rating": "Adequate",
+  "fcv_responsiveness_rating": "Low",
+  "sensitivity_summary": "...",
+  "responsiveness_summary": "...",
+  "risk_exposure": {
+    "risks_to": "...",
+    "risks_from": "..."
+  },
+  "priorities": [
+    {
+      "title": "Priority 1 · [Actionable verb phrase]",
+      "fcv_dimension": "Inclusion",
+      "tag": "[S]",
+      "risk_level": "High",
+      "the_gap": "...",
+      "why_it_matters": "...",
+      "recommendation": "Single cohesive action — NOT an options menu",
+      "who_acts": "TTL | PIU | Government counterpart",
+      "when": "Before appraisal",
+      "resources": "Moderate",
+      "pad_sections": "Annex 5: Stakeholder Engagement Plan; ESCP Commitment #4",
+      "suggested_language": "2–4 sentences of draft PAD text in WBG document register",
+      "implementation_note": "1–2 sentences on timing, cost, or key dependency"
+    }
+  ]
+}
+%%%JSON_END%%%
 ```
 
-**Note on %%%GAP_TABLE_START/END%%%:** The LLM is no longer instructed to emit this block, and `renderGapTable()` is no longer called from the main rendering flow. However, the backend extraction code (`extract_gap_table()`) and the `renderGapTable()` JS function still exist for potential future use. The FCV Design Assessment Table is not displayed in the current UI.
+**Critical: `recommendation` field (not `SUGGESTED_DIRECTIONS`):**
+- Single cohesive action, present tense, 2–3 sentences
+- Must NOT be an options menu ("Consider A / Or B / Or C" is NOT allowed)
+- Must name specific location, mechanism, and entry point
+- S/R pillar justification sentence required in `why_it_matters` for [R] and [S+R] priorities
 
-**clean_stage4_output() strips the following blocks before rendering display text:**
-- `%%%RISK_EXPOSURE_START/END%%%`
-- `%%%SENSITIVITY_SUMMARY_START/END%%%`
-- `%%%RESPONSIVENESS_SUMMARY_START/END%%%`
-- `%%%FCV_RATING: ...%%%`
-- `%%%FCV_RESPONSIVENESS_RATING: ...%%%`
-- `%%%GAP_TABLE_START/END%%%`
-- `%%%PRIORITY_START/END%%%` (all priority blocks)
+**`extract_priorities()` return shape:**
+```python
+{
+  'error': bool,               # True if JSON malformed
+  'message': str,              # error description (only when error=True)
+  'priorities': [...],
+  'fcv_rating': str,
+  'fcv_responsiveness_rating': str,
+  'sensitivity_summary': str,
+  'responsiveness_summary': str,
+  'risk_exposure': {'risks_to': str, 'risks_from': str}
+}
+```
+
+**`clean_stage4_output()` stripping order:**
+1. Strip `%%%JSON_START%%%...%%%JSON_END%%%` block (all structured data)
+2. Strip `%%%RISK_NARRATIVE_START%%%...%%%RISK_NARRATIVE_END%%%` block (Risk Exposure prose — shown as card from JSON instead)
+3. Strip `%%%PRIORITIES_START%%%` onwards (removes S/R summaries + priorities section — all shown as cards from JSON)
+4. Fallback: strip legacy delimiter blocks for cached outputs:
+   - `%%%RISK_EXPOSURE_START/END%%%`, `%%%SENSITIVITY_SUMMARY_START/END%%%`
+   - `%%%RESPONSIVENESS_SUMMARY_START/END%%%`, `%%%FCV_RATING/RESPONSIVENESS_RATING%%%`
+   - `%%%PRIORITY_START/END%%%` blocks, `%%%GAP_TABLE_START/END%%%`
+
+**Stage 4 narrative display after stripping:**
+Preamble → Opening Assessment → Operational Context → [Risk Exposure card from JSON] → Strengths → Gaps → [S/R summary cards from JSON] → [Priority stepper/cards from JSON]
+
+**Note on %%%GAP_TABLE_START/END%%%:** LLM is no longer instructed to emit this block. The `extract_gap_table()` backend function still exists but the FCV Design Assessment Table is not displayed in the current UI.
 
 **Citation policy for Stage 4:**
 - ONLY cite documents that appeared as `[From: document name]` in Stage 1. NEVER fabricate titles.
 - Non-uploaded sources → `[From: training knowledge]` or `[From: web research]`
 - This prevents hallucinated citations (e.g., citing `[RRA 2022]` when no RRA was uploaded)
 
-**Explorer input:** Each priority's JSON is fed to the Explorer prompt, which generates 3–5 concrete design options (A/B/C/D/E) with:
-- Title + operational context
-- Specific PAD/design modifications needed
-- Tags (cost range, modality, timeline)
-- Links to external resources or examples
-- Inline Q&A (via "Dig deeper" chips)
+**Explorer input:** Each priority's JSON (title + body) is fed to the Explorer prompt, which generates **2–3 optional alternative approaches** only. Core content (`pad_sections`, `suggested_language`, `implementation_note`) is in the Stage 4 JSON — not Explorer.
+
+**Explorer output format:**
+- Only `%%%GO_FURTHER_START%%%...%%%GO_FURTHER_END%%%` markers used
+- Each item uses `%%%GF_ITEM%%%` + `%%%GF_TITLE%%%` markers (same as legacy Go Further)
+- Parsed by `parseExplorerText()` → `goFurtherItems[]`
+- Rendered by `renderAboveAndBeyondHtml(parsed)` into `.beyond-item` cards inside `<details>`
 
 **Key behaviors:**
 - Recommendations are specific and actionable, not broad policy suggestions
 - Geographic locations are named (e.g., "In Oromia, prioritize...")
-- Entry points reference WBG instruments and existing programs
-- Multiple options are offered where applicable
+- `pad_sections` chips are rendered from semicolon-separated string (split on `;`)
+- `suggested_language` rendered in italic yellow card (`.zone-act-draft`)
+- `implementation_note` rendered in grey bordered card (`.zone-act-impl`)
 - A collegial tone appropriate for peer review by a TTL
 
 **Do No Harm Checklist (from Stage 3):** Extracted and displayed as a collapsible table in the Stage 4 UI, showing which Do-No-Harm principles are addressed, partially addressed, or at risk.
@@ -488,10 +565,11 @@ RESOURCES: [text]
 
 **Stage 4 Explorer:**
 - `initStage4UI()` — parse priorities, build stepper, show Priority 1
-- `showPriority(idx)` — render full priority card; eyebrow includes full S/R badge via `renderSRTagBadge(pr.tag||'')`
-- `loadExplorer(idx)` — fetch explorer options for priority, cache result
-- `toggleExpOption(id)` — collapse/expand A/B/C option cards
-- `submitExplorerFollowup(idx, question)` — send follow-up question via `/api/run-explorer`
+- `showPriority(idx)` — render full priority card with 4-section zone-act layout from JSON; no auto-load of Explorer
+- `loadExplorerForPriority(idx)` — lazy-loaded by `handleBeyondToggle`; writes to `#above-beyond-content-{idx}`; timer ID is `beyond-timer-{idx}`
+- `handleBeyondToggle(el, idx)` — ontoggle handler for `<details class="zone-act-beyond">`; triggers `loadExplorerForPriority` on first open; renders from cache if already loaded
+- `renderAboveAndBeyondHtml(parsed)` — renders `parsed.goFurtherItems` as `.beyond-item` cards; used by both `handleBeyondToggle` and `loadExplorerForPriority` done callback
+- `cancelExplorer()` — aborts in-flight Explorer request via `explorerAbortController`
 - `renderPriorityStepper()` — build horizontal step indicator; compact S/R badge below risk badge on each tab
 - `renderPrioritiesIntro()` — renders intro list; compact S/R badge after risk label in each `pi-item`
 
@@ -520,6 +598,17 @@ RESOURCES: [text]
 - **Manual document type override `<select>` elements** — removed from both upload area and session bar.
 - **FCV Design Assessment Table** — `renderGapTable()` is no longer called from `renderOut`. Table is not displayed. Code remains for potential future use.
 - **`docTypeDetecting` variable** — removed (was used to gate doc type detection).
+- **Explorer auto-load on `showPriority()`** — removed. Explorer no longer fires on priority tab click. Lazy-loaded via `<details>` toggle instead.
+- **`#explorer-options-{idx}` zone** — removed from zone-act. Replaced by `#above-beyond-content-{idx}` inside `<details>`.
+- **`exp-timer-{idx}` / `exp-loading-{idx}`** — removed. Replaced by `beyond-timer-{idx}` / `beyond-loading-{idx}`.
+- **`pc-followup` inline "Ask →" input** — removed from each priority card. Replaced by the follow-on card at Stage 4 bottom. CSS and `submitPriorityFollowup()` function remain as dead code (no visible effect).
+- **Stage 4 refine card** — replaced by follow-on card with 4 pre-fill chips (see FOLLOW-ON section in 1.3).
+
+### 4.3a Download Behaviour
+- **`downloadReport()`** always includes all core priority content from JSON: `recommendation`, `pad_sections`, `suggested_language`, `implementation_note`, `who_acts`, `when`, `resources`
+- Does NOT require Explorer to have been loaded — no click-through needed before downloading
+- Optionally appends `goFurtherItems` if Explorer was already opened for that priority
+- `pad_sections` rendered as `<code>` chips in the Word export
 
 ### 4.4 Styling & Aesthetics
 - **Color scheme:** WBG-inspired palette (deep navy, cobalt blue, orange accents)
@@ -562,6 +651,13 @@ GET /health                    # Health check endpoint
 GET /how-it-works             # Workflow explanation page
 GET /admin                     # Admin panel (prompts modal)
 GET /api/default-prompts      # Get default prompts for reference
+
+# Follow-on post-analysis route (Stage 4 bottom card)
+POST /api/run-followon
+  Input: {messages[]} — full conversationHistory + user message
+  Output: SSE stream (same chunk/done format as run-stage)
+  System prompt: DEFAULT_PROMPTS["followon"] — WBG peer review style guidelines
+  max_tokens: 4000 (higher than other routes to allow full peer review notes)
 ```
 
 ### 5.2 Document Handling
@@ -582,30 +678,38 @@ extracted_text, page_count = extract_pdf_text(base64_content, filename)
 ### 5.3 Priority Parsing (Stage 4 Output)
 
 ```python
-def extract_priorities(stage4_output):
-    # Search for %%%PRIORITY_START%%% ... %%%PRIORITY_END%%% delimiters
-    # Extract JSON from each block
-    # Return: [{title, dimension, tag, risk_level, the_gap, why_it_matters,
-    #           suggested_directions, who_acts, when, resources}, ...]
-    # NEW: also extracts 'tag' field from the TAG: line ([S] / [R] / [S+R])
-    # Fallback: positional parsing if delimiters not found; tag defaults to '' if not found
+def extract_priorities(stage4_output, uploaded_doc_names=None):
+    # Finds %%%JSON_START%%%...%%%JSON_END%%% block, parses via json.loads()
+    # Runs _check_specificity() and _check_citations() post-parse
+    # Returns unified dict:
+    #   {error, message?, priorities, fcv_rating, fcv_responsiveness_rating,
+    #    sensitivity_summary, responsiveness_summary,
+    #    risk_exposure: {risks_to, risks_from}}
+    # Each priority dict has 13 core fields: title, fcv_dimension, tag, risk_level,
+    #   the_gap, why_it_matters, recommendation, who_acts, when, resources,
+    #   pad_sections, suggested_language, implementation_note,
+    #   + 2 post-parse fields: specificity_warning (bool), citation_warnings (list)
+    # On malformed JSON: returns {error: True, message: ...}
 ```
 
-**Additional extraction functions (Stage 4):**
-```python
-extract_sensitivity_summary(text)    # Extracts %%%SENSITIVITY_SUMMARY_START/END%%% block
-extract_responsiveness_summary(text) # Extracts %%%RESPONSIVENESS_SUMMARY_START/END%%% block
-extract_fcv_responsiveness_rating(text) # Extracts %%%FCV_RESPONSIVENESS_RATING: [level]%%%
-```
+**Note:** The 5 orphaned delimiter-extraction functions have been DELETED:
+- `extract_fcv_rating`, `extract_fcv_responsiveness_rating`
+- `extract_sensitivity_summary`, `extract_responsiveness_summary`
+- `extract_risk_exposure`
 
-**Stage 4 JSON response now includes:**
+These were replaced by the unified `extract_priorities()` return dict.
+
+**Stage 4 SSE done event response includes:**
 ```json
 {
   "priorities": [...],
   "fcv_rating": "...",
   "fcv_responsiveness_rating": "...",
   "sensitivity_summary": "...",
-  "responsiveness_summary": "..."
+  "responsiveness_summary": "...",
+  "risk_exposure": {"risks_to": "...", "risks_from": "..."},
+  "parse_error": false,
+  "parse_error_message": ""
 }
 ```
 
@@ -649,13 +753,33 @@ extract_fcv_responsiveness_rating(text) # Extracts %%%FCV_RESPONSIVENESS_RATING:
 4. Append truncation warning to user output
 5. Handle PDF extraction errors with user-friendly messages
 
-### 6.6 Priority Parsing and JSON Extraction
-**In `extract_priorities()`:**
-1. Search for `%%%PRIORITY_START%%%` and `%%%PRIORITY_END%%%` delimiters
-2. Extract JSON from between delimiters for each priority
-3. Parse JSON and validate required fields (title, dimension, risk_level, the_gap, why_it_matters, suggested_directions)
-4. Fallback: If delimiters not found, attempt positional parsing from Markdown structure
-5. Return: List of priority dictionaries with validated fields
+### 6.6 UX Safeguard Features (Added v6.0)
+
+**S/R tag tooltips:** `renderSRTagBadge()` adds `title` attribute to each tag badge explaining [S], [R], [S+R] in plain language. Hover-accessible.
+
+**Specificity warning badge:** Shown on priority card if `priority.specificity_warning === true`. Amber, dismissible, stored per-priority in localStorage (`warn_spec_dismissed_{idx}`).
+
+**Citation warning badge:** Shown on priority card if `priority.citation_warnings.length > 0`. Amber, dismissible, hover shows flagged citation strings. Stored in localStorage (`warn_cite_dismissed_{idx}`).
+
+**Upload feedback:** `addFiles()` calls `fetchFileMetadata()` which hits `/api/detect-document-type` (extended to return `word_count` + `extraction_status`). Chips show filename + word count + doc type. Non-PDF files limited to 10,000 chars for speed.
+
+**Explorer lazy load + cancel + timer:** `loadExplorerForPriority()` is triggered by `handleBeyondToggle()` when the `<details>` section is first opened. Uses `AbortController` + `setInterval` elapsed timer. Cancel button calls `cancelExplorer()`. Timer updates `beyond-timer-{idx}` (not `exp-timer-{idx}`). Local `timerHandle` variable prevents stale interval clearing.
+
+**Explorer localStorage cache:** `explorerCache` keyed by integer priority index (not title string). Backed by `localStorage` key `explorer_priority_{idx}`. Cache cleared on Stage 4 re-run. On `handleBeyondToggle`, if cache exists, renders immediately without API call.
+
+**Font consistency:** `.pc-zone-body` (priority card body text) is 14px, matching `.out-body` (exec summary). Do not let these diverge — keep both at 14px.
+
+**Stage consistency banner:** `renderOut()` injects a yellow dismissible banner at top of Stage 3/4 output if `stage2_timestamp > stage${N}_timestamp`. Timestamps written to localStorage BEFORE `renderOut()` call. Stage 2 re-run clears both dismissed flags.
+
+### 6.7 Priority Parsing and JSON Extraction
+**In `extract_priorities(text, uploaded_doc_names=None)`:**
+1. Search for `%%%JSON_START%%%` and `%%%JSON_END%%%` delimiters
+2. Parse JSON block via `json.loads()` (no regex field extraction)
+3. Run `_check_specificity()`: looks for mid-sentence capitalised words as proper-noun proxy
+4. Run `_check_citations()`: cross-references `[From: ...]` patterns against uploaded doc names
+   (extensions stripped) + known org whitelist; flags unrecognised sources
+5. Return unified dict with all fields + per-priority `specificity_warning` / `citation_warnings`
+6. On malformed JSON: return `{error: True, message: ...}` — NOT silent failure
 
 ---
 
@@ -688,22 +812,27 @@ To add/remove/modify:
 **Note:** If you change the number of dimensions, you may also need to update Stage 3 & 4 prompts to reference them correctly.
 
 ### 7.3 I Want to Change What Stage 4 Priorities Look Like
-Stage 4 prompt defines the structure of each priority. Currently:
+Stage 4 prompt defines the JSON schema for each priority. Current fields:
 ```json
 {
-  "title": "...",
-  "dimension": "...",
+  "title": "Priority N · phrase",
+  "fcv_dimension": "...",
+  "tag": "[S] | [R] | [S+R]",
   "risk_level": "High|Medium|Low",
   "the_gap": "...",
   "why_it_matters": "...",
-  "suggested_directions": "..."
+  "recommendation": "Single cohesive action — NOT an options menu",
+  "who_acts": "...",
+  "when": "At design stage | Before appraisal | During implementation",
+  "resources": "Minimal | Moderate | Significant"
 }
 ```
 
 To add/remove fields:
-1. Update the `%%%PRIORITY_START/END%%%` section of the Stage 4 prompt to define new fields
-2. Update `extract_priorities()` function in `app.py` to parse the new fields from JSON
-3. Update the priority card rendering in `index.html` (the `showPriority()` function) to display the new fields
+1. Update the JSON schema section of the Stage 4 prompt (`DEFAULT_PROMPTS["4"]` in `app.py`)
+2. Update `extract_priorities()` in `app.py` to handle the new field from the parsed JSON
+3. Update `showPriority()` in `index.html` to display the new field
+4. Update `downloadReport()` in `index.html` if the field should appear in the export
 
 ### 7.4 I Want to Add a 5th Stage
 1. Add a new key to `DEFAULT_PROMPTS` (e.g., `"5"`)
@@ -1002,7 +1131,7 @@ If you find gaps in this documentation, or if new design decisions emerge, updat
 
 ---
 
-**Last updated:** March 11, 2026
-**Current version:** FCV Project Screener 5.0 (with S/R distinction, dual gauges, embedded doc type detection)
+**Last updated:** March 24, 2026
+**Current version:** FCV Project Screener 6.0 (deduplication fix, follow-on card, peer review prompt)
 **Current Claude model:** claude-sonnet-4-20250514
 **Architecture:** Flask 3.0.3 backend + vanilla JS frontend + Anthropic SDK integration
