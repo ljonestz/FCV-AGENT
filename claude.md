@@ -124,10 +124,15 @@ STAGE 4 — Recommendations Note + Explorer
 │             priorities[] — each with:
 │               title, fcv_dimension, tag, risk_level, the_gap, why_it_matters,
 │               recommendation (SINGULAR — one cohesive action, NOT options menu),
-│               who_acts, when, resources
+│               who_acts, when, resources,
+│               pad_sections (semicolon-separated PAD sections to modify),
+│               suggested_language (2–4 sentences of draft PAD text in WBG register),
+│               implementation_note (1–2 sentences: timing/cost/sequencing)
 │        when values: "At design stage" | "Before appraisal" | "During implementation"
 │        TAG: [S] / [R] / [S+R] — same strict definition as Stage 2/3
 │        Most priorities will be [S] or [R]; [S+R] only for four named overlap zones
+│        pad_sections/suggested_language/implementation_note always present in JSON →
+│        download never requires clicking Explorer tabs first
 ├─ extract_priorities() rewrites JSON block via json.loads() + validation:
 │  ├─ Returns unified dict: {error, priorities, fcv_rating, fcv_responsiveness_rating,
 │  │                         sensitivity_summary, responsiveness_summary, risk_exposure}
@@ -150,24 +155,29 @@ STAGE 4 — Recommendations Note + Explorer
    ├─ S/R tag badges have hover tooltips explaining each tag meaning
    ├─ Specificity warning badge (amber, dismissible) if no proper nouns detected
    ├─ Citation warning badge (amber, dismissible) if unrecognised [From: ...] strings found
-   ├─ Per-priority zone: gap, why_it_matters, recommendation + explorer options
-   ├─ "Explore FCV-Sensitive Solutions" panel (loaded async, with cancel button + elapsed timer)
+   ├─ Per-priority zone-act layout (4 sections, all from JSON — always available):
+   │  ├─ Essential action box (recommendation, blue left-border)
+   │  ├─ Where in the PAD (.pad-chip tags split from pad_sections on ";")
+   │  ├─ Suggested PAD language (suggested_language, italic yellow card)
+   │  └─ Implementation consideration (implementation_note)
+   ├─ "Go above and beyond" collapsible <details> per priority (LAZY — loads on first open)
    ├─ Explorer results cached per priority integer index in localStorage
    └─ Parse error banner shown if JSON extraction fails
 
-EXPLORER (on-demand deep dive)
+EXPLORER (above-and-beyond alternatives only)
 ├─ Input: Priority title/body + Stage 1–4 history
-├─ Output: 3–5 concrete design options (A/B/C/D/E) with:
-│  ├─ Title + context
-│  ├─ How to adapt the PAD/design to implement it
-│  ├─ Metadata tags (cost range, implementation modality, timeline)
-│  └─ "Dig deeper" inline Q&A (cached per priority)
-├─ Follows Stage 4 structure: preamble + issue analysis + A/B/C options
-├─ Prompt emphasizes operational levers, WBG instruments, geographic specificity
+├─ Output: 2–3 optional alternative approaches (%%%GF_ITEM%%% format only)
+│  └─ Each item: title + 2–3 paragraph prose + PAD section reference
+├─ Prompt produces ONLY %%%GO_FURTHER_START%%%...%%%GO_FURTHER_END%%% markers
+│  (no %%%EXPLORER_NARRATIVE_START%%% — that format is legacy/deprecated)
+├─ Lazy-loaded: only fires when user expands the <details> section
+├─ Design principle: core recommendation is self-contained in JSON; Explorer adds
+│  optional depth for teams with additional appetite — NOT required reading
 └─ UI:
-   ├─ Loaded when priority is shown or when user clicks "Explore solutions ↓"
-   ├─ Per-option card (collapsible, color-coded tags, PAD change callout)
-   └─ "Ask about this" button prefills freetext follow-up
+   ├─ <details class="zone-act-beyond"> triggers handleBeyondToggle(el, idx) on open
+   ├─ Loading spinner shown inside <details> until stream completes
+   ├─ renderAboveAndBeyondHtml(parsed) renders goFurtherItems as .beyond-item cards
+   └─ "Ask →" follow-up box below zone-act (separate from Explorer)
 ```
 
 ---
@@ -198,7 +208,20 @@ This was creating length/clarity issues — the note got dense, and it wasn't cl
 - **Contextual:** Each exploration is grounded in the priority's gap + why it matters
 - **Cacheable:** Avoid redundant API calls for the same priority + follow-up question
 
-**Result:** Clean, memo-ready Stage 4 output + powerful on-demand analytics when users want to dig deeper.
+**Result:** Clean, memo-ready Stage 4 output + optional depth available when users want it.
+
+### 2.3a Why Each Priority Now Has a Single Recommendation + PAD Guidance (not A/B/C options)
+**Problem (identified by TTL user testing):** The previous Explorer auto-loaded 2–3 action options per priority on page load, creating cognitive overload: 5 priorities × 3 options = 15 things to evaluate. Non-specialist TTLs needed a clear directive, not a menu.
+
+**Solution:** Restructure each priority card around one clear action with operational specifics, sourced directly from the Stage 4 JSON:
+- `recommendation` — single cohesive action (already existed)
+- `pad_sections` — explicit PAD sections to modify (new)
+- `suggested_language` — draft text to insert verbatim (new)
+- `implementation_note` — timing/cost/dependency note (new)
+
+Explorer demoted to a collapsed "Go above and beyond" section — lazy-loaded only if the user opens it, explicitly labelled Optional.
+
+**Key architectural consequence:** All core content now lives in the Stage 4 JSON. The download (`downloadReport()`) no longer requires clicking through all priority tabs before exporting — it always has everything it needs.
 
 ### 2.4 The Specificity & Actionability Mandate
 **Core principle:** Recommendations must be **specific and actionable**, not broad and vague.
@@ -208,8 +231,8 @@ This was creating length/clarity issues — the note got dense, and it wasn't cl
 
 **How it's enforced:**
 - Stage 3 prompt explicitly requires geographic naming, mechanism specification, and operational entry points (PAD instruments, existing WBG programs, partner organizations)
-- Stage 4 prompt carries forward these specifics into priority "suggested directions"
-- Explorer prompt offers multiple **options** (A/B/C) rather than a single "solution," with PAD change callouts showing how to operationalize each
+- Stage 4 prompt generates `pad_sections`, `suggested_language`, and `implementation_note` per priority — specifics are in the JSON, not deferred to Explorer
+- Explorer prompt generates 2–3 optional alternative approaches (not A/B/C options menus); core recommendation is always the single clear directive
 
 **Trade-off managed:** We avoid exact costs (which change) but include enough detail for a TTL to brief management or co-design with counterparts.
 
@@ -418,7 +441,10 @@ If in doubt → assign [S] or [R]. Most recommendations will not qualify for [S+
       "recommendation": "Single cohesive action — NOT an options menu",
       "who_acts": "TTL | PIU | Government counterpart",
       "when": "Before appraisal",
-      "resources": "Moderate"
+      "resources": "Moderate",
+      "pad_sections": "Annex 5: Stakeholder Engagement Plan; ESCP Commitment #4",
+      "suggested_language": "2–4 sentences of draft PAD text in WBG document register",
+      "implementation_note": "1–2 sentences on timing, cost, or key dependency"
     }
   ]
 }
@@ -459,18 +485,20 @@ If in doubt → assign [S] or [R]. Most recommendations will not qualify for [S+
 - Non-uploaded sources → `[From: training knowledge]` or `[From: web research]`
 - This prevents hallucinated citations (e.g., citing `[RRA 2022]` when no RRA was uploaded)
 
-**Explorer input:** Each priority's JSON is fed to the Explorer prompt, which generates 3–5 concrete design options (A/B/C/D/E) with:
-- Title + operational context
-- Specific PAD/design modifications needed
-- Tags (cost range, modality, timeline)
-- Links to external resources or examples
-- Inline Q&A (via "Dig deeper" chips)
+**Explorer input:** Each priority's JSON (title + body) is fed to the Explorer prompt, which generates **2–3 optional alternative approaches** only. Core content (`pad_sections`, `suggested_language`, `implementation_note`) is in the Stage 4 JSON — not Explorer.
+
+**Explorer output format:**
+- Only `%%%GO_FURTHER_START%%%...%%%GO_FURTHER_END%%%` markers used
+- Each item uses `%%%GF_ITEM%%%` + `%%%GF_TITLE%%%` markers (same as legacy Go Further)
+- Parsed by `parseExplorerText()` → `goFurtherItems[]`
+- Rendered by `renderAboveAndBeyondHtml(parsed)` into `.beyond-item` cards inside `<details>`
 
 **Key behaviors:**
 - Recommendations are specific and actionable, not broad policy suggestions
 - Geographic locations are named (e.g., "In Oromia, prioritize...")
-- Entry points reference WBG instruments and existing programs
-- Multiple options are offered where applicable
+- `pad_sections` chips are rendered from semicolon-separated string (split on `;`)
+- `suggested_language` rendered in italic yellow card (`.zone-act-draft`)
+- `implementation_note` rendered in grey bordered card (`.zone-act-impl`)
 - A collegial tone appropriate for peer review by a TTL
 
 **Do No Harm Checklist (from Stage 3):** Extracted and displayed as a collapsible table in the Stage 4 UI, showing which Do-No-Harm principles are addressed, partially addressed, or at risk.
@@ -506,10 +534,11 @@ If in doubt → assign [S] or [R]. Most recommendations will not qualify for [S+
 
 **Stage 4 Explorer:**
 - `initStage4UI()` — parse priorities, build stepper, show Priority 1
-- `showPriority(idx)` — render full priority card; eyebrow includes full S/R badge via `renderSRTagBadge(pr.tag||'')`
-- `loadExplorer(idx)` — fetch explorer options for priority, cache result
-- `toggleExpOption(id)` — collapse/expand A/B/C option cards
-- `submitExplorerFollowup(idx, question)` — send follow-up question via `/api/run-explorer`
+- `showPriority(idx)` — render full priority card with 4-section zone-act layout from JSON; no auto-load of Explorer
+- `loadExplorerForPriority(idx)` — lazy-loaded by `handleBeyondToggle`; writes to `#above-beyond-content-{idx}`; timer ID is `beyond-timer-{idx}`
+- `handleBeyondToggle(el, idx)` — ontoggle handler for `<details class="zone-act-beyond">`; triggers `loadExplorerForPriority` on first open; renders from cache if already loaded
+- `renderAboveAndBeyondHtml(parsed)` — renders `parsed.goFurtherItems` as `.beyond-item` cards; used by both `handleBeyondToggle` and `loadExplorerForPriority` done callback
+- `cancelExplorer()` — aborts in-flight Explorer request via `explorerAbortController`
 - `renderPriorityStepper()` — build horizontal step indicator; compact S/R badge below risk badge on each tab
 - `renderPrioritiesIntro()` — renders intro list; compact S/R badge after risk label in each `pi-item`
 
@@ -538,6 +567,15 @@ If in doubt → assign [S] or [R]. Most recommendations will not qualify for [S+
 - **Manual document type override `<select>` elements** — removed from both upload area and session bar.
 - **FCV Design Assessment Table** — `renderGapTable()` is no longer called from `renderOut`. Table is not displayed. Code remains for potential future use.
 - **`docTypeDetecting` variable** — removed (was used to gate doc type detection).
+- **Explorer auto-load on `showPriority()`** — removed. Explorer no longer fires on priority tab click. Lazy-loaded via `<details>` toggle instead.
+- **`#explorer-options-{idx}` zone** — removed from zone-act. Replaced by `#above-beyond-content-{idx}` inside `<details>`.
+- **`exp-timer-{idx}` / `exp-loading-{idx}`** — removed. Replaced by `beyond-timer-{idx}` / `beyond-loading-{idx}`.
+
+### 4.3a Download Behaviour
+- **`downloadReport()`** always includes all core priority content from JSON: `recommendation`, `pad_sections`, `suggested_language`, `implementation_note`, `who_acts`, `when`, `resources`
+- Does NOT require Explorer to have been loaded — no click-through needed before downloading
+- Optionally appends `goFurtherItems` if Explorer was already opened for that priority
+- `pad_sections` rendered as `<code>` chips in the Word export
 
 ### 4.4 Styling & Aesthetics
 - **Color scheme:** WBG-inspired palette (deep navy, cobalt blue, orange accents)
@@ -607,9 +645,10 @@ def extract_priorities(stage4_output, uploaded_doc_names=None):
     #   {error, message?, priorities, fcv_rating, fcv_responsiveness_rating,
     #    sensitivity_summary, responsiveness_summary,
     #    risk_exposure: {risks_to, risks_from}}
-    # Each priority dict has fields: title, fcv_dimension, tag, risk_level,
+    # Each priority dict has 13 core fields: title, fcv_dimension, tag, risk_level,
     #   the_gap, why_it_matters, recommendation, who_acts, when, resources,
-    #   specificity_warning (bool), citation_warnings (list)
+    #   pad_sections, suggested_language, implementation_note,
+    #   + 2 post-parse fields: specificity_warning (bool), citation_warnings (list)
     # On malformed JSON: returns {error: True, message: ...}
 ```
 
@@ -684,9 +723,11 @@ These were replaced by the unified `extract_priorities()` return dict.
 
 **Upload feedback:** `addFiles()` calls `fetchFileMetadata()` which hits `/api/detect-document-type` (extended to return `word_count` + `extraction_status`). Chips show filename + word count + doc type. Non-PDF files limited to 10,000 chars for speed.
 
-**Explorer cancel + timer:** `loadExplorerForPriority()` uses `AbortController` + `setInterval` elapsed timer. Cancel button calls `cancelExplorer()`. Local `timerHandle` variable prevents stale interval clearing.
+**Explorer lazy load + cancel + timer:** `loadExplorerForPriority()` is triggered by `handleBeyondToggle()` when the `<details>` section is first opened. Uses `AbortController` + `setInterval` elapsed timer. Cancel button calls `cancelExplorer()`. Timer updates `beyond-timer-{idx}` (not `exp-timer-{idx}`). Local `timerHandle` variable prevents stale interval clearing.
 
-**Explorer localStorage cache:** `explorerCache` keyed by integer priority index (not title string). Backed by `localStorage` key `explorer_priority_{idx}`. Cache cleared on Stage 4 re-run.
+**Explorer localStorage cache:** `explorerCache` keyed by integer priority index (not title string). Backed by `localStorage` key `explorer_priority_{idx}`. Cache cleared on Stage 4 re-run. On `handleBeyondToggle`, if cache exists, renders immediately without API call.
+
+**Font consistency:** `.pc-zone-body` (priority card body text) is 14px, matching `.out-body` (exec summary). Do not let these diverge — keep both at 14px.
 
 **Stage consistency banner:** `renderOut()` injects a yellow dismissible banner at top of Stage 3/4 output if `stage2_timestamp > stage${N}_timestamp`. Timestamps written to localStorage BEFORE `renderOut()` call. Stage 2 re-run clears both dismissed flags.
 
