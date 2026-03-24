@@ -693,7 +693,7 @@
       margin-bottom:8px;
     }
     .pc-zone-icon{width:22px;height:22px;border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-    .pc-zone-body{font-size:13px;color:var(--text);line-height:1.75;}
+    .pc-zone-body{font-size:14px;color:var(--text);line-height:1.75;}
 
     /* Zone colour themes */
     .pc-zone.zone-gap{background:#fffdf8;}
@@ -705,6 +705,35 @@
     .pc-zone.zone-act{background:#f8fffe;}
     .pc-zone.zone-act .pc-zone-title{color:var(--s4);}
     .pc-zone.zone-act .pc-zone-icon{background:#e8f7ef;}
+
+    /* Zone-act new layout */
+    .zone-act-section{margin-bottom:14px;}
+    .zone-act-section:last-child{margin-bottom:0;}
+    .zone-act-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--s4);margin-bottom:6px;display:flex;align-items:center;gap:5px;}
+    .zone-act-primary{padding:0 0 14px 0;}
+    .zone-act-essential{background:#f0f7ff;border-left:3px solid var(--wbg-blue);border-radius:0 6px 6px 0;padding:12px 14px;font-size:14px;color:var(--text);line-height:1.75;}
+    .zone-act-pad-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;}
+    .pad-chip{background:#e8f0fe;color:#1a3a6c;font-size:11.5px;font-family:monospace;padding:3px 9px;border-radius:4px;white-space:nowrap;}
+    .zone-act-draft{background:#fffef3;border:1px solid #e8dfa0;border-radius:6px;padding:12px 14px;}
+    .zone-act-draft-text{font-style:italic;font-size:13.5px;color:#4a4a4a;line-height:1.7;border-left:3px solid #c8b840;padding-left:10px;margin-top:6px;}
+    .zone-act-impl{background:#fafafa;border:1px solid var(--border);border-radius:6px;padding:12px 14px;}
+    /* Above and beyond <details> */
+    .zone-act-beyond{border-top:1px solid var(--border);margin-top:14px;}
+    .zone-act-beyond summary{padding:12px 0 4px;cursor:pointer;font-size:13px;font-weight:600;color:#6b21a8;display:flex;align-items:center;gap:7px;list-style:none;user-select:none;}
+    .zone-act-beyond summary::-webkit-details-marker{display:none;}
+    .zone-act-beyond summary .beyond-badge{background:#f3e8ff;color:#6b21a8;font-size:10px;font-weight:600;padding:1px 8px;border-radius:10px;margin-left:4px;}
+    .zone-act-beyond summary .beyond-arrow{margin-left:auto;font-size:11px;color:#6b21a8;transition:transform .2s;}
+    .zone-act-beyond[open] summary .beyond-arrow{transform:rotate(180deg);}
+    .beyond-content{padding:10px 0 4px;}
+    .beyond-intro{font-size:13px;color:var(--muted);margin:0 0 12px;line-height:1.6;}
+    .beyond-item{border:1px solid #e9d5ff;border-radius:6px;background:#faf5ff;padding:12px 14px;margin-bottom:10px;}
+    .beyond-item:last-child{margin-bottom:0;}
+    .beyond-item-hdr{display:flex;align-items:flex-start;gap:10px;margin-bottom:8px;}
+    .beyond-item-letter{width:22px;height:22px;border-radius:50%;background:#7c3aed;color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+    .beyond-item-title{font-size:13px;font-weight:600;color:#4c1d95;line-height:1.4;}
+    .beyond-item-body{font-size:13px;color:var(--text);line-height:1.7;}
+    .beyond-item-body p{margin:0 0 .5em;}
+    .beyond-loading{font-size:13px;color:var(--muted);padding:10px 0;display:flex;align-items:center;gap:8px;}
 
     .priorities-intro{margin-bottom:14px;}
     .priorities-section-hdr{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--s4);margin:20px 0 10px;padding-bottom:6px;border-bottom:2px solid var(--s4);}
@@ -2445,30 +2474,28 @@ ${md(execSummary)}`;
 <p style="font-size:9pt;color:#555;margin-top:0">${pr.dimension?`<strong>Dimension:</strong> ${esc(pr.dimension)} &nbsp;|&nbsp; `:''}${pr.risk_level?`<strong>Risk Level:</strong> <span style="color:${riskColor}">${esc(pr.risk_level)}</span>`:''}
 </p>`;
         if(pr.the_gap) body += `<p><strong>The Gap:</strong><br>${esc(pr.the_gap)}</p>`;
-        if(pr.why_it_matters) body += `<p><strong>Why It Matters Operationally:</strong><br>${esc(pr.why_it_matters)}</p>`;
-        if(pr.why_fcv_matters) body += `<p><strong>Why It Matters for Addressing FCV:</strong><br>${esc(pr.why_fcv_matters)}</p>`;
-
+        if(pr.why_it_matters) body += `<p><strong>Why It Matters:</strong><br>${esc(pr.why_it_matters)}</p>`;
+        if(pr.recommendation) body += `<p><strong>Essential Action:</strong><br>${esc(pr.recommendation)}</p>`;
+        if(pr.pad_sections){
+          const chips = pr.pad_sections.split(';').map(s=>s.trim()).filter(Boolean).map(s=>`<code style="background:#e8f0fe;padding:1px 6px;border-radius:3px;font-size:9pt">${esc(s)}</code>`).join(' ');
+          body += `<p><strong>Where in the PAD:</strong> ${chips}</p>`;
+        }
+        if(pr.suggested_language) body += `<blockquote><strong>Suggested PAD language:</strong><br><em>${esc(pr.suggested_language)}</em></blockquote>`;
+        if(pr.implementation_note) body += `<p><strong>Implementation consideration:</strong><br>${esc(pr.implementation_note)}</p>`;
+        if(pr.who_acts||pr.when||pr.resources){
+          body += `<p style="font-size:9pt;color:#555">`;
+          if(pr.who_acts) body += `<strong>Who acts:</strong> ${esc(pr.who_acts)} &nbsp;`;
+          if(pr.when) body += `<strong>When:</strong> ${esc(pr.when)} &nbsp;`;
+          if(pr.resources) body += `<strong>Resources:</strong> ${esc(pr.resources)}`;
+          body += `</p>`;
+        }
+        // Optional: include above-and-beyond if already loaded
         const cached = explorerCache[i];
-        if(cached && cached.issue){
-          body += `<p><strong>Detailed Analysis (FCV Solutions Explorer):</strong><br>${esc(cached.issue)}</p>`;
-          if(cached.options && cached.options.length){
-            body += `<p><strong>Options to Consider:</strong></p><ul>`;
-            cached.options.forEach(opt => {
-              body += `<li><strong>Option ${esc(opt.letter)}: ${esc(opt.title)}</strong>`;
-              if(opt.context) body += `<br><em>${esc(opt.context)}</em>`;
-              if(opt.groups && opt.groups.length){
-                opt.groups.forEach(g => {
-                  body += `<br><strong>${esc(g.label)}</strong><ul>`;
-                  (g.bullets||[]).forEach(b => { body += `<li>${esc(b)}</li>`; });
-                  body += `</ul>`;
-                });
-              }
-              body += `</li>`;
-            });
-            body += `</ul>`;
-          }
-        } else if(pr.recommendation){
-          body += `<p><strong>Recommendation:</strong><br>${esc(pr.recommendation)}</p>`;
+        if(cached && cached.goFurtherItems && cached.goFurtherItems.length){
+          body += `<p><strong>Above and Beyond (optional):</strong></p>`;
+          cached.goFurtherItems.forEach((item, gi) => {
+            body += `<p style="margin-left:12pt"><strong>${['A','B','C'][gi]||gi+1}. ${esc(item.title)}</strong><br>${esc(item.body||'')}</p>`;
+          });
         }
         body += `</div>`;
       });
@@ -2920,21 +2947,46 @@ ${md(execSummary)}`;
           </div>
           <div class="pc-zone-body">${esc((pr.why_it_matters||'') + (pr.why_fcv_matters ? ' ' + pr.why_fcv_matters : ''))}</div>
         </div>
-        <!-- Zone 3: Options (loaded on demand) -->
+        <!-- Zone 3: How to act (from JSON — always available) -->
         <div class="pc-zone zone-act" id="zone-act-${idx}">
           <div class="pc-zone-title">
             <div class="pc-zone-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
             How to act
           </div>
-          <div id="explorer-options-${idx}">
-            ${explorerCache[idx] ? renderExplorerNarrativeHtml(explorerCache[idx], idx) : `
-            ${pr.recommendation ? `<div class="pc-zone-body" style="margin-bottom:10px">${esc(pr.recommendation)}</div>` : ''}
-            <div class="exp-loading" id="exp-loading-${idx}" style="font-size:0.85em;color:var(--muted)">
-              <svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;animation:spin 1s linear infinite;flex-shrink:0"><circle cx="12" cy="12" r="10" stroke-opacity=".25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-opacity="1"/></svg>
-              <span id="exp-timer-${idx}">Generating…</span>
-              <button onclick="cancelExplorer()" class="exp-cancel-btn" title="Cancel generation">Cancel</button>
-            </div>`}
+          <div class="zone-act-primary">
+            <!-- Essential action -->
+            <div class="zone-act-section">
+              <div class="zone-act-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Essential action</div>
+              <div class="zone-act-essential">${esc(pr.recommendation||'')}</div>
+            </div>
+            <!-- Where in the PAD -->
+            ${pr.pad_sections ? `<div class="zone-act-section">
+              <div class="zone-act-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Where in the PAD</div>
+              <div class="zone-act-pad-chips">${pr.pad_sections.split(';').map(s=>s.trim()).filter(Boolean).map(s=>`<span class="pad-chip">${esc(s)}</span>`).join('')}</div>
+            </div>` : ''}
+            <!-- Suggested language -->
+            ${pr.suggested_language ? `<div class="zone-act-section zone-act-draft">
+              <div class="zone-act-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Suggested PAD language</div>
+              <div class="zone-act-draft-text">${esc(pr.suggested_language)}</div>
+            </div>` : ''}
+            <!-- Implementation note -->
+            ${pr.implementation_note ? `<div class="zone-act-section zone-act-impl">
+              <div class="zone-act-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> Implementation consideration</div>
+              <div class="pc-zone-body">${esc(pr.implementation_note)}</div>
+            </div>` : ''}
           </div>
+          <!-- Above and beyond (lazy-loaded on expand) -->
+          <details class="zone-act-beyond" id="beyond-details-${idx}" ontoggle="handleBeyondToggle(this,${idx})">
+            <summary>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              Want to go above and beyond? Explore additional approaches
+              <span class="beyond-badge">Optional</span>
+              <span class="beyond-arrow">▾</span>
+            </summary>
+            <div class="beyond-content" id="above-beyond-content-${idx}">
+              ${explorerCache[idx] ? renderAboveAndBeyondHtml(explorerCache[idx]) : `<div class="beyond-loading" id="beyond-loading-${idx}"><svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;animation:spin 1s linear infinite;flex-shrink:0"><circle cx="12" cy="12" r="10" stroke-opacity=".25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-opacity="1"/></svg><span id="beyond-timer-${idx}">Loading alternatives…</span><button onclick="cancelExplorer()" class="exp-cancel-btn" title="Cancel">Cancel</button></div>`}
+            </div>
+          </details>
         </div>
         <!-- Follow-up -->
         <div class="pc-followup">
@@ -2947,10 +2999,7 @@ ${md(execSummary)}`;
         <div class="pc-followup-answer" id="pc-followup-answer-${idx}"></div>
       </div>`;
 
-    // Load explorer if not cached (localStorage restore already done above)
-    if(!explorerCache[idx]){
-      loadExplorerForPriority(idx);
-    }
+    // Explorer is lazy-loaded — only fires when user opens the <details> section
 
     updateSidebar();
     cardArea.scrollIntoView({behavior:'smooth', block:'nearest'});
@@ -2976,8 +3025,8 @@ ${md(execSummary)}`;
     if(explorerTimerInterval) clearInterval(explorerTimerInterval);
     const timerHandle = setInterval(() => {
       elapsed++;
-      const timerEl = document.getElementById(`exp-timer-${idx}`);
-      if(timerEl) timerEl.textContent = `Generating… ${elapsed}s`;
+      const timerEl = document.getElementById(`beyond-timer-${idx}`);
+      if(timerEl) timerEl.textContent = `Loading alternatives… ${elapsed}s`;
     }, 1000);
     explorerTimerInterval = timerHandle;
 
@@ -3011,23 +3060,21 @@ ${md(execSummary)}`;
                 {role:'user', content:'[Explorer: '+pr.title+']'},
                 {role:'assistant', content:p.result}
               ];
-              // If this priority is still showing, update the options zone
-              if(currentPriority === idx){
-                const optArea = document.getElementById(`explorer-options-${idx}`);
-                if(optArea) optArea.innerHTML = renderExplorerNarrativeHtml(parsed, idx);
-              }
+              // Update the above-and-beyond content area
+              const contentEl = document.getElementById(`above-beyond-content-${idx}`);
+              if(contentEl) contentEl.innerHTML = renderAboveAndBeyondHtml(parsed);
               updateSidebar();
             }
           } catch(e){ if(e.message!=='Unexpected end of JSON input'){
             clearInterval(timerHandle); explorerTimerInterval = null;
-            const loadEl = document.getElementById(`exp-loading-${idx}`);
-            if(loadEl) loadEl.textContent = 'Could not load options: '+e.message;
+            const loadEl = document.getElementById(`beyond-loading-${idx}`);
+            if(loadEl) loadEl.textContent = 'Could not load alternatives: '+e.message;
           }}
         }
       }
     } catch(e){
       clearInterval(timerHandle); explorerTimerInterval = null;
-      const loadEl = document.getElementById(`exp-loading-${idx}`);
+      const loadEl = document.getElementById(`beyond-loading-${idx}`);
       if(e.name === 'AbortError'){
         if(loadEl) loadEl.textContent = 'Generation cancelled.';
       } else {
@@ -3038,6 +3085,34 @@ ${md(execSummary)}`;
 
   function cancelExplorer() {
     if(explorerAbortController) explorerAbortController.abort();
+  }
+
+  function handleBeyondToggle(detailsEl, idx) {
+    if(!detailsEl.open) return; // closed — nothing to do
+    if(explorerCache[idx]) {
+      // Already cached — render immediately
+      const contentEl = document.getElementById('above-beyond-content-'+idx);
+      if(contentEl) contentEl.innerHTML = renderAboveAndBeyondHtml(explorerCache[idx]);
+      return;
+    }
+    // First open — trigger lazy load
+    loadExplorerForPriority(idx);
+  }
+
+  function renderAboveAndBeyondHtml(parsed) {
+    if(!parsed || !parsed.goFurtherItems || !parsed.goFurtherItems.length){
+      return '<p class="beyond-intro">No additional approaches available.</p>';
+    }
+    const letters = ['A','B','C'];
+    const itemsHtml = parsed.goFurtherItems.map((item,i) => `
+      <div class="beyond-item">
+        <div class="beyond-item-hdr">
+          <div class="beyond-item-letter">${letters[i]||String(i+1)}</div>
+          <div class="beyond-item-title">${esc(item.title)}</div>
+        </div>
+        <div class="beyond-item-body">${md(item.body||'')}</div>
+      </div>`).join('');
+    return `<p class="beyond-intro">The core recommendation above addresses the most critical gap. These alternative approaches are optional enhancements — not prerequisites.</p>${itemsHtml}`;
   }
 
   // ── Legacy parser (old Option A/B/C format — fallback for cached results) ───

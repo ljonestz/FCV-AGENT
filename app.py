@@ -47,6 +47,7 @@ _REQUIRED_TOP_FIELDS = [
 _REQUIRED_PRIORITY_FIELDS = [
     "number", "title", "dimension", "tag", "risk_level",
     "the_gap", "why_it_matters", "recommendation", "who_acts", "when", "resources",
+    "pad_sections", "suggested_language", "implementation_note",
 ]
 
 _SPECIFICITY_STOPWORDS = frozenset({
@@ -494,6 +495,9 @@ recommendation: Write ONE cohesive recommended action for this priority. It may 
 WHO_ACTS: [One of: TTL | PIU | Government counterpart | FCV specialist | Procurement team]
 WHEN: [One of: At design stage | Before appraisal | During implementation]
 RESOURCES: [One of: Minimal | Moderate | Significant]
+PAD_SECTIONS: A semicolon-separated list of 2–3 specific PAD document sections where the recommended change should be made. Use exact section names where known (e.g. "Annex 5: Stakeholder Engagement Plan; ESCP Commitment #4; Project Operations Manual — Security Protocols"). If uncertain of exact section, use document type + functional area (e.g. "PAD — Component 2 design; Procurement Plan").
+SUGGESTED_LANGUAGE: 2–4 sentences of specific draft text that the TTL could insert into the PAD or Project Operations Manual verbatim or near-verbatim. Write in the register of a formal WBG project document ("The project will..."). Make the language specific to this project's context, geography, and implementation arrangements.
+IMPLEMENTATION_NOTE: 1–2 sentences flagging a practical sequencing point, cost implication, or dependency. Be concrete: name the timing, actor, or cost range where known.
 
 GEOGRAPHIC VALIDATION: Before finalising each priority, check: does the `the_gap` field name at least one specific location, group, or institution drawn from the uploaded documents or web research? If not, revise it. If no specific geography is available in your sources, name the administrative level at which the project operates (e.g., county, district, commune) and note that sub-national detail is missing.
 
@@ -540,7 +544,8 @@ Apply the following definitions strictly. [S+R] must be earned — do not use it
 - All citations are from Stage 1 uploaded documents or the approved whitelist — no fabricated document titles
 - JSON block is present at the end, wrapped in %%%JSON_START%%% / %%%JSON_END%%%
 - All 7 top-level JSON fields are populated (fcv_rating, fcv_responsiveness_rating, sensitivity_summary, responsiveness_summary, risk_to_project, risk_from_project, priorities)
-- Each priority JSON object has all 10 fields: number, title, dimension, tag, risk_level, the_gap, why_it_matters, recommendation, who_acts, when, resources
+- Each priority's pad_sections, suggested_language, and implementation_note are specific to this project — not generic placeholders
+- Each priority JSON object has all 13 fields: number, title, dimension, tag, risk_level, the_gap, why_it_matters, recommendation, who_acts, when, resources, pad_sections, suggested_language, implementation_note
 - No generic or templated language anywhere
 
 # CRITICAL — JSON OUTPUT BLOCK
@@ -569,7 +574,10 @@ The FCV ratings, summaries, and risk exposure paragraphs you have written in the
       "recommendation": "One cohesive recommended action — not a menu of options",
       "who_acts": "TTL",
       "when": "Before appraisal",
-      "resources": "Moderate"
+      "resources": "Moderate",
+      "pad_sections": "Annex 5: Stakeholder Engagement Plan; ESCP Commitment #4",
+      "suggested_language": "2–4 sentences of draft PAD language the TTL could insert verbatim, written in WBG document register",
+      "implementation_note": "1–2 sentences on timing, cost, sequencing, or key dependency"
     }
   ]
 }
@@ -579,138 +587,52 @@ IMPORTANT: The JSON block must come AFTER all narrative text. Do not include any
 
 Now produce the FCV Support Note following this exact structure.''',
 
-"explorer": '''You are an FCV (Fragility, Conflict, and Violence) specialist supporting a World Bank Task Team Leader (TTL). You have been given a specific priority recommendation from an FCV sensitivity assessment of a World Bank project. Your job is to write a detailed, actionable, and readable implementation guide for this priority that the TTL can act on directly.
+"explorer": '''You are an FCV (Fragility, Conflict, and Violence) specialist supporting a World Bank Task Team Leader (TTL). A core priority recommendation has already been identified for this project, along with specific PAD language and an implementation note. Your job is to generate 2–3 alternative approaches that go BEYOND the core recommendation — for teams with additional appetite, resources, or political capital.
+
+These alternatives are explicitly optional enhancements, not prerequisites. The core recommendation stands on its own.
 
 ## Output structure
 
-Produce output in the following structure, using these exact section markers:
-
-%%%EXPLORER_NARRATIVE_START%%%
-[Full narrative — see requirements below]
-%%%EXPLORER_NARRATIVE_END%%%
+Produce output using ONLY these section markers:
 
 %%%GO_FURTHER_START%%%
-[Go Further content — see requirements below]
+[2–3 alternative approaches — see requirements below]
 %%%GO_FURTHER_END%%%
 
----
+## Requirements for each alternative approach
 
-## Narrative section requirements (between %%%EXPLORER_NARRATIVE_START%%% and %%%EXPLORER_NARRATIVE_END%%%)
-
-Write flowing, professional prose — NOT bullet points, NOT numbered lists, NOT option menus. The narrative should read as a coherent, standalone recommendation document that a busy TTL can pick up and act on.
-
-### Structure of the narrative:
-
-**1. Opening paragraph (required)**
-Begin with a short orienting paragraph (3–5 sentences) that:
-- Acknowledges there are several ways to address this priority
-- Identifies which 2–3 changes matter most and why
-- Sets up the actions that follow as a connected argument, not a menu
-
-Example register: "There are several ways the team can address this gap, and they work best when pursued together. The two most important changes concern [X] and [Y] — both of which are design-stage decisions that are straightforward to implement but easy to miss. A third step ties these together in the results framework so that progress is tracked rather than assumed."
-
-**2. Action paragraphs (2–3 maximum — do not exceed 3)**
-
-For each action, produce the following in this exact order:
-
-a) If this action is essential/crucial: include this exact marker on its own line before the heading:
-   %%%CRUCIAL%%%
-
-b) Action heading — a short, active, verb-led title. Format as:
-   %%%ACTION_HEADING%%% [heading text here]
-
-c) Body paragraphs — 2–4 paragraphs of substantive, specific prose:
-   - Explain what the action involves in concrete terms
-   - Reference the specific PAD annex or project document section where the change should be made (e.g. "Annex 2 (Component Design)", "Project Operations Manual — Section on Community Structures", "Annex 1 (Results Framework)")
-   - Explain *why* this matters operationally for FCV sensitivity
-   - Be specific: name the mechanism, the actor responsible, the timing, and the verification step
-
-d) Draft language block — include this marker, then the suggested wording only:
-   %%%DRAFT_LANGUAGE%%%
-   [Suggested wording: 1–3 sentences of actual PAD/operations manual language the TTL could insert verbatim]
-
-e) Implementation consideration block — include this marker, then the note:
-   %%%IMPLEMENTATION_NOTE%%%
-   [1–2 sentences flagging a practical caveat, sequencing point, alternative approach, or relevant precedent from comparable projects]
-
-f) Document references — include this marker, then list the specific documents:
-   %%%DOC_REFS%%%
-   [Comma-separated list of specific document locations, e.g.: "PAD — Annex 2 (Component Design)", "Project Operations Manual — Accountability Provisions", "PAD — Annex 1 (Results Framework)"]
-
-**3. Connective prose between actions (required)**
-Between each action paragraph, write 1–2 sentences of connective prose that:
-- Signals the transition to the next action
-- Makes the logical relationship between actions explicit
-- Uses varied transitional language: "A second way to build on this is…", "With committees formed and operating transparently, the final step is to…", "Beyond the governance structures themselves, the team should also consider…"
-- Avoid mechanical transitions like "Next," or "Additionally,"
-
-**4. Closing synthesis paragraph (required)**
-End the narrative with a 2–4 sentence paragraph that:
-- Restates what the three actions achieve together
-- Connects back to the FCV-sensitivity logic (trust-building, inclusion, institutional legitimacy, etc.)
-- Notes that these changes are modest in cost but significant in signal
-- Is written in the register of a supportive colleague, not a compliance checklist
-
-### Tone and style:
-- Write for a TTL who is operationally experienced but time-pressed
-- Be direct and confident — these are recommendations, not options
-- Use active voice and short sentences where possible
-- Refer to "the team" rather than "you" for recommendations about project design; use "you" sparingly for direct personal guidance
-- Do not use bullet points, numbered lists, or headers anywhere in the narrative
-- Do not include meta-commentary ("This section addresses…", "As noted above…")
-
-### Crucial vs recommended actions:
-- Mark an action as %%%CRUCIAL%%% only if failing to take this action would meaningfully undermine FCV sensitivity — i.e. it addresses a high-severity gap that cannot be compensated for elsewhere
-- Limit crucial flags to a maximum of 2 per priority
-- If all actions are equally important, flag none as crucial — the prose should convey priority through ordering and emphasis instead
-
----
-
-## Go Further section requirements (between %%%GO_FURTHER_START%%% and %%%GO_FURTHER_END%%%)
-
-This section is for optional, above-and-beyond ideas that go beyond what is strictly necessary. It will be rendered as a collapsible at the bottom of the priority card with a clear "Optional" label.
-
-Produce 1–2 ideas only. For each, use:
+Produce exactly 2–3 items. For each, use:
 
 %%%GF_ITEM%%%
-%%%GF_TITLE%%% [short title of the idea]
-[2–3 paragraph explanation, written in the same prose register as the main narrative. Be specific about what this idea involves, what the preconditions are, and what value it would add if implemented. Make clear it is not a prerequisite.]
+%%%GF_TITLE%%% [Short, verb-led title — max 10 words]
+[2–3 paragraphs of substantive, specific prose explaining:
+- What this alternative involves concretely (named mechanism, actor, timing)
+- Why it adds value beyond the core recommendation
+- Which specific PAD section or document it would affect (e.g. "Annex 5: SEP", "ESCP Commitment #3", "Project Operations Manual — Adaptive Management")
+- What preconditions, cost, or dependencies it requires
+Make unambiguously clear this is an optional enhancement, not a prerequisite.]
 
-Do not include more than 2 Go Further items. Do not mark Go Further items as crucial.
-
----
+## Tone and style
+- Write for a TTL who is time-pressed but analytically sharp
+- Professional prose — NOT bullet points, NOT numbered lists, NOT headers
+- Be specific: name the real geographic context, real stakeholder groups, real document sections from this project
+- Do not repeat or paraphrase the core recommendation
+- Do not reference the assessment stages or this tool
 
 ## What NOT to do
-- Do not produce OPTION A / OPTION B / OPTION C structure
-- Do not produce bullet point lists
-- Do not use headers like "Section 1" or "Section 2"
-- Do not produce generic, non-specific advice (e.g. "consider stakeholder engagement")
-- Do not reference the assessment stages or the tool itself
-- Do not exceed 3 action paragraphs in the narrative
-- Do not include more than 2 Go Further items
-- Do not include a "Document location:" line inside the %%%DRAFT_LANGUAGE%%% block — put document references only in %%%DOC_REFS%%%
-
----
-
-## Context you will receive
-
-You will receive:
-1. The priority title and FCV dimension
-2. The gap identified (what is missing in the current project design)
-3. Why it matters (the operational consequence)
-4. The suggested directions from Stage 4 (the entry points)
-5. The full Stage 1–3 conversation history (for project-specific grounding)
-
-Use all of this to make the narrative as specific as possible to the actual project — reference the real project components, real geographic contexts, real stakeholder groups, and real document sections where known. Generic advice is not acceptable.
+- Do not exceed 3 items
+- Do not produce bullet lists or option menus
+- Do not produce generic advice ("consider stakeholder engagement")
+- Do not include %%%EXPLORER_NARRATIVE_START%%% or any other markers except the GO_FURTHER ones
 
 ## Priority you are addressing
 
 **Title:** {PRIORITY_TITLE}
 
-**Full priority text from the FCV Support Note:**
+**Core recommendation already identified:**
 {PRIORITY_TEXT}
 
-Begin your response immediately with %%%EXPLORER_NARRATIVE_START%%%.'''}
+Begin your response immediately with %%%GO_FURTHER_START%%%.'''}
 
 
 
