@@ -140,14 +140,19 @@ STAGE 4 — Recommendations Note + Explorer
 │  ├─ _check_citations(): cross-references [From: ...] patterns against uploaded doc names
 │  │   (extension-stripped) + org whitelist; flags unknown sources
 │  └─ Malformed JSON: returns {error: True, message: ...} — NOT silent failure
-├─ clean_stage4_output() strips %%%JSON_START/END%%% block as primary;
-│  legacy delimiter stripping retained as fallback for cached outputs
+├─ clean_stage4_output() stripping order:
+│  1. Strip %%%JSON_START/END%%% block (structured data)
+│  2. Strip %%%RISK_NARRATIVE_START/END%%% block (Risk Exposure text — shown as card from JSON)
+│  3. Strip everything from %%%PRIORITIES_START%%% onwards (S/R summaries + priorities — shown as cards)
+│  4. Legacy delimiter stripping retained as fallback for cached outputs
 ├─ Citation policy: ONLY cite documents that appear as [From: doc name] in Stage 1.
 │  NEVER fabricate document titles. Non-uploaded sources → [From: training knowledge] or
 │  [From: web research]. This prevents hallucinated citations (e.g. [RRA 2022] when no RRA uploaded).
 │  uploaded_doc_names must be included in /api/run-stage request body for citation check.
 └─ UI:
-   ├─ Main output card (preamble + exec summary + FCV Risk Exposure + Strengths + Gaps)
+   ├─ Main output card (preamble + opening assessment + operational context + strengths + gaps)
+   │  NOTE: FCV Risk Exposure is NOT in the narrative text — it is stripped and shown as a card from JSON
+   │  NOTE: S/R summaries are NOT in the narrative text — stripped and shown as side-by-side cards
    ├─ FCV Sensitivity + FCV Responsiveness summary cards (side by side, after Gaps)
    ├─ FCV Sensitivity gauge (sidebar, blue, shield icon)
    ├─ FCV Responsiveness gauge (sidebar, green, leaf icon)
@@ -164,6 +169,26 @@ STAGE 4 — Recommendations Note + Explorer
    ├─ Explorer results cached per priority integer index in localStorage
    └─ Parse error banner shown if JSON extraction fails
 
+FOLLOW-ON (post-analysis query card — Stage 4 only)
+├─ Replaces the standard "Refine this output" card at Stage 4 bottom
+├─ Stages 1–3 still show the standard refine card (calls doRefine() → re-runs stage)
+├─ Input: Full conversationHistory + user message (not just Stage 4)
+├─ Output: SSE-streamed response appended below the follow-on card (does NOT replace Stage 4 output)
+├─ 4 pre-fill chips for common TTL tasks:
+│  - "Draft peer review note" → drafts a peer review email/comment for the PCN/PAD
+│  - "Expand top recommendation" → first steps, who leads, TTL actions in first 30 days
+│  - "Review my revised text" → user pastes revised PAD text; LLM reviews against FCV analysis
+│  - "Summarise for brief" → plain-language summary for 5-minute brief or management presentation
+├─ Clicking a chip pre-fills the textarea via prefillFollowon(text)
+├─ Submit calls doFollowOn() → POST /api/run-followon
+├─ Result rendered in .followon-result-card below the card; header updates on completion
+├─ Key JS functions: prefillFollowon(text), doFollowOn(), buildFollowOnMessages(userMsg)
+├─ CSS: .followon-card, .followon-desc, .followon-chips, .followon-chip, .followon-result-card
+└─ Backend: /api/run-followon route, DEFAULT_PROMPTS["followon"], max_tokens=4000
+   - Prompt includes full WBG peer review style guidelines (tiered structure, FCV lenses,
+     stage-appropriateness, prose-over-bullets, collegial open/close conventions)
+   - Route truncates large assistant messages to 40,000 chars before sending to avoid token limits
+
 EXPLORER (above-and-beyond alternatives only)
 ├─ Input: Priority title/body + Stage 1–4 history
 ├─ Output: 2–3 optional alternative approaches (%%%GF_ITEM%%% format only)
@@ -177,7 +202,7 @@ EXPLORER (above-and-beyond alternatives only)
    ├─ <details class="zone-act-beyond"> triggers handleBeyondToggle(el, idx) on open
    ├─ Loading spinner shown inside <details> until stream completes
    ├─ renderAboveAndBeyondHtml(parsed) renders goFurtherItems as .beyond-item cards
-   └─ "Ask →" follow-up box below zone-act (separate from Explorer)
+   └─ Follow-on card at bottom of Stage 4 (NOT a standard refine card — see FOLLOW-ON section below)
 ```
 
 ---
@@ -258,7 +283,8 @@ DEFAULT_PROMPTS = {
     "2": "# Role\nYou are an expert FCV analyst...",  # Stage 2
     "3": "# Role\nYou are an expert FCV analyst...",  # Stage 3
     "4": "# Role\nYou are an expert FCV analyst...",  # Stage 4 (Recommendations Note)
-    "explorer": "# Role\nYou are an expert FCV analyst..."  # Explorer deep-dive
+    "explorer": "# Role\nYou are an expert FCV analyst...",  # Explorer deep-dive
+    "followon": "# Role\nYou are a senior FCV specialist..."  # Follow-on post-analysis tasks
 }
 ```
 
@@ -472,11 +498,16 @@ If in doubt → assign [S] or [R]. Most recommendations will not qualify for [S+
 ```
 
 **`clean_stage4_output()` stripping order:**
-1. Primary: strip `%%%JSON_START%%%...%%%JSON_END%%%` block (new format)
-2. Fallback: strip legacy delimiter blocks for cached outputs:
+1. Strip `%%%JSON_START%%%...%%%JSON_END%%%` block (all structured data)
+2. Strip `%%%RISK_NARRATIVE_START%%%...%%%RISK_NARRATIVE_END%%%` block (Risk Exposure prose — shown as card from JSON instead)
+3. Strip `%%%PRIORITIES_START%%%` onwards (removes S/R summaries + priorities section — all shown as cards from JSON)
+4. Fallback: strip legacy delimiter blocks for cached outputs:
    - `%%%RISK_EXPOSURE_START/END%%%`, `%%%SENSITIVITY_SUMMARY_START/END%%%`
    - `%%%RESPONSIVENESS_SUMMARY_START/END%%%`, `%%%FCV_RATING/RESPONSIVENESS_RATING%%%`
    - `%%%PRIORITY_START/END%%%` blocks, `%%%GAP_TABLE_START/END%%%`
+
+**Stage 4 narrative display after stripping:**
+Preamble → Opening Assessment → Operational Context → [Risk Exposure card from JSON] → Strengths → Gaps → [S/R summary cards from JSON] → [Priority stepper/cards from JSON]
 
 **Note on %%%GAP_TABLE_START/END%%%:** LLM is no longer instructed to emit this block. The `extract_gap_table()` backend function still exists but the FCV Design Assessment Table is not displayed in the current UI.
 
@@ -570,6 +601,8 @@ If in doubt → assign [S] or [R]. Most recommendations will not qualify for [S+
 - **Explorer auto-load on `showPriority()`** — removed. Explorer no longer fires on priority tab click. Lazy-loaded via `<details>` toggle instead.
 - **`#explorer-options-{idx}` zone** — removed from zone-act. Replaced by `#above-beyond-content-{idx}` inside `<details>`.
 - **`exp-timer-{idx}` / `exp-loading-{idx}`** — removed. Replaced by `beyond-timer-{idx}` / `beyond-loading-{idx}`.
+- **`pc-followup` inline "Ask →" input** — removed from each priority card. Replaced by the follow-on card at Stage 4 bottom. CSS and `submitPriorityFollowup()` function remain as dead code (no visible effect).
+- **Stage 4 refine card** — replaced by follow-on card with 4 pre-fill chips (see FOLLOW-ON section in 1.3).
 
 ### 4.3a Download Behaviour
 - **`downloadReport()`** always includes all core priority content from JSON: `recommendation`, `pad_sections`, `suggested_language`, `implementation_note`, `who_acts`, `when`, `resources`
@@ -618,6 +651,13 @@ GET /health                    # Health check endpoint
 GET /how-it-works             # Workflow explanation page
 GET /admin                     # Admin panel (prompts modal)
 GET /api/default-prompts      # Get default prompts for reference
+
+# Follow-on post-analysis route (Stage 4 bottom card)
+POST /api/run-followon
+  Input: {messages[]} — full conversationHistory + user message
+  Output: SSE stream (same chunk/done format as run-stage)
+  System prompt: DEFAULT_PROMPTS["followon"] — WBG peer review style guidelines
+  max_tokens: 4000 (higher than other routes to allow full peer review notes)
 ```
 
 ### 5.2 Document Handling
@@ -1091,7 +1131,7 @@ If you find gaps in this documentation, or if new design decisions emerge, updat
 
 ---
 
-**Last updated:** March 11, 2026
-**Current version:** FCV Project Screener 5.0 (with S/R distinction, dual gauges, embedded doc type detection)
+**Last updated:** March 24, 2026
+**Current version:** FCV Project Screener 6.0 (deduplication fix, follow-on card, peer review prompt)
 **Current Claude model:** claude-sonnet-4-20250514
 **Architecture:** Flask 3.0.3 backend + vanilla JS frontend + Anthropic SDK integration
