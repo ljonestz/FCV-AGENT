@@ -445,6 +445,9 @@ A single bolded sentence summarising the project's overall FCV integration statu
 ### Operational Context (150-200 words, ONE PARAGRAPH)
 Synthesise 3-4 converging FCV risks creating a uniquely challenging operating environment for THIS project. Forward-looking framing for post-preparation events. 2-3 citations max.
 
+After the Operational Context paragraph, output this exact line on its own line before continuing:
+%%%RISK_NARRATIVE_START%%%
+
 ### FCV Risk Exposure (130-170 words, TWO PARAGRAPHS)
 This sub-section bridges the analytical findings from Stages 1-3 into plain-language insight for a non-FCV-specialist TTL.
 
@@ -456,13 +459,19 @@ Write two clearly labelled paragraphs:
 
 These two paragraphs will also be reproduced faithfully in the JSON block as `risk_to_project` and `risk_from_project` fields.
 
+After writing both FCV Risk Exposure paragraphs, output this exact line on its own line before continuing:
+%%%RISK_NARRATIVE_END%%%
+
 ### Strengths (80-120 words, prose)
 3-4 concrete strengths actually present in the project document. Flowing prose. 2-3 citations max. Never cite the PCN/PAD itself.
 
 ### Gaps (100-130 words, prose)
 The main weakness or cluster of weaknesses, constructively framed. Reference the OST FCV-sensitivity framework where relevant. 1-2 citations from RRA or external sources only.
 
-After the Gaps paragraph, write the following two summary paragraphs:
+After the Gaps paragraph, output this exact line on its own line before continuing:
+%%%PRIORITIES_START%%%
+
+Then write the following two summary paragraphs (these will be stripped from the display and shown as summary cards):
 
 **FCV Sensitivity Summary (80-100 words):**
 Write a paragraph of 80-100 words assessing the project's overall FCV SENSITIVITY standing. Cover: how well the project avoids doing harm in the FCV context, the quality of its contextual awareness, and its operational readiness. Be direct about the overall level — do not hedge. Reference 1-2 specific strengths and 1-2 specific gaps from the Stage 2 screening.
@@ -471,9 +480,6 @@ Write a paragraph of 80-100 words assessing the project's overall FCV SENSITIVIT
 **FCV Responsiveness Summary (80-100 words):**
 Write a paragraph of 80-100 words assessing the project's FCV RESPONSIVENESS — the degree to which it actively contributes to addressing root drivers of fragility and/or building resilience. Anchor this explicitly to whichever of the four FCV Strategy pillars are most relevant to this project's context and sector. Be honest: many projects will have low responsiveness scores. Say so clearly and explain what the missed opportunity is, rather than inflating the assessment.
 (This paragraph will also be reproduced faithfully in the JSON block as `responsiveness_summary`.)
-
-After writing the FCV Responsiveness Summary paragraph, output this exact line on its own line before continuing:
-%%%PRIORITIES_START%%%
 
 ---
 
@@ -635,7 +641,27 @@ Make unambiguously clear this is an optional enhancement, not a prerequisite.]
 **Core recommendation already identified:**
 {PRIORITY_TEXT}
 
-Begin your response immediately with %%%GO_FURTHER_START%%%.'''}
+Begin your response immediately with %%%GO_FURTHER_START%%%.''',
+
+"followon": '''# Role
+You are a senior FCV specialist supporting a World Bank Task Team Leader (TTL) who has just completed a four-stage FCV analysis for their project. The full analysis — including the Recommendations Note — is in the conversation history above.
+
+Your job is to respond to whatever the TTL asks next. This could be:
+- Drafting a follow-on document (peer review comment, briefing note, email summary, management presentation)
+- Expanding on how to implement a specific priority
+- Reviewing revised PAD text they paste in, against the FCV analysis
+- Answering a specific question about the FCV context or recommendations
+
+# Rules
+- Do NOT regenerate the full Recommendations Note or repeat the analysis summary
+- Respond in whatever format best suits the request: email template, structured list, flowing prose, table
+- Draw specifically on the analysis findings — name locations, groups, mechanisms, and priorities as established in Stages 1–4
+- Be specific and operational; avoid generic FCV language not grounded in this project
+- If the user is providing new project context (e.g. a border dimension they forgot to mention): briefly identify which of the priorities this most affects and suggest what specific change to each priority's recommendation would follow — then offer to run a full re-analysis if they want (directing them to use "Go back to Stage 3")
+- If reviewing pasted text: compare it against the relevant priority recommendation, identify what it addresses well, and propose specific edits to strengthen it
+
+# Tone
+Collegial, practical, peer-to-peer — the same voice as the Recommendations Note.'''}
 
 
 
@@ -653,7 +679,10 @@ def clean_stage4_output(text):
     """
     # Primary: strip the new JSON block — all structured data lives here
     text = re.sub(r'%%%JSON_START%%%.*?%%%JSON_END%%%', '', text, flags=re.DOTALL)
-    # Strip priority narrative section (field labels duplicated in JSON cards)
+    # Strip FCV Risk Exposure narrative (rendered separately as risk-exposure card)
+    text = re.sub(r'%%%RISK_NARRATIVE_START%%%.*?%%%RISK_NARRATIVE_END%%%', '', text, flags=re.DOTALL)
+    # Strip priority narrative section (field labels duplicated in JSON cards;
+    # also strips FCV Sensitivity/Responsiveness summaries which are shown as SR cards)
     text = re.sub(r'%%%PRIORITIES_START%%%.*', '', text, flags=re.DOTALL)
     # Fallback: strip legacy delimiter blocks from old-format Stage 4 outputs
     text = re.sub(r'%%%PRIORITY_START%%%.*?%%%PRIORITY_END%%%', '', text, flags=re.DOTALL)
@@ -1640,6 +1669,55 @@ def run_explorer():
                         yield f"data: {json.dumps({'chunk': text_chunk})}\n\n"
                 full_text = ''.join(collected)
                 yield f"data: {json.dumps({'done': True, 'result': full_text})}\n\n"
+            except anthropic.AuthenticationError:
+                yield f"data: {json.dumps({'error': 'Invalid API key.'})}\n\n"
+            except Exception as e:
+                yield f"data: {json.dumps({'error': str(e)})}\n\n"
+
+        return Response(stream_with_context(generate()), mimetype='text/event-stream',
+                        headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'})
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/run-followon', methods=['POST'])
+def run_followon():
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'Invalid request.'}), 400
+
+        messages = data.get('messages', [])
+        if not messages:
+            return jsonify({'error': 'No messages provided.'}), 400
+
+        prompt = load_prompts().get('followon', DEFAULT_PROMPTS.get('followon', ''))
+        MAX_ASSISTANT_CHARS = 40000
+
+        # Truncate large assistant messages to avoid token limits
+        trimmed_messages = []
+        for m in messages:
+            if m.get('role') == 'assistant':
+                c = m.get('content', '') if isinstance(m.get('content'), str) else ''
+                if len(c) > MAX_ASSISTANT_CHARS:
+                    c = c[:MAX_ASSISTANT_CHARS] + '\n...[truncated]'
+                trimmed_messages.append({'role': m['role'], 'content': c})
+            else:
+                trimmed_messages.append(m)
+
+        def generate():
+            try:
+                yield f"data: {json.dumps({'ping': True})}\n\n"
+                with get_client().messages.stream(
+                    model="claude-sonnet-4-20250514",
+                    max_tokens=2000,
+                    system=prompt,
+                    messages=trimmed_messages
+                ) as stream:
+                    for text_chunk in stream.text_stream:
+                        yield f"data: {json.dumps({'chunk': text_chunk})}\n\n"
+                yield f"data: {json.dumps({'done': True})}\n\n"
             except anthropic.AuthenticationError:
                 yield f"data: {json.dumps({'error': 'Invalid API key.'})}\n\n"
             except Exception as e:

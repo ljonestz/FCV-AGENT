@@ -1326,6 +1326,14 @@
     line-height: 1;
   }
   .warn-dismiss:hover { opacity: 0.7; }
+
+  /* ── Follow-on card (Stage 4 query interface) ───────────────────────────── */
+  .followon-card{ background:#fff; border:1px solid var(--border); border-radius:8px; padding:16px; margin-top:16px; }
+  .followon-desc{ font-size:12px; color:var(--muted); margin:4px 0 8px; }
+  .followon-chips{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
+  .followon-chip{ background:#f0f4f8; border:1px solid var(--border); border-radius:14px; padding:4px 12px; font-size:12px; color:var(--text); cursor:pointer; white-space:nowrap; transition:background .15s,border-color .15s; }
+  .followon-chip:hover{ background:#e2e8f0; border-color:#94a3b8; }
+  .followon-result-card{ background:#fff; border:1px solid var(--border); border-radius:8px; margin-top:12px; overflow:hidden; }
 </style>
 </head>
 <body>
@@ -2349,21 +2357,47 @@
       }
     }
 
-    document.getElementById('refine-area').innerHTML=`
-      <div class="refine-card ani">
-        <div class="refine-lbl">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-          Refine this output
+    if(isLast){
+      document.getElementById('refine-area').innerHTML=`
+        <div class="followon-card ani">
+          <div class="refine-lbl">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            What would you like to do next?
+          </div>
+          <p class="followon-desc">Use the analysis to generate a follow-on output, or provide new context to refine a specific section.</p>
+          <div class="followon-chips">
+            <button class="followon-chip" onclick="prefillFollowon('Draft a peer review note for this ${docType||'project'} summarising the key FCV findings and the top 3 recommended actions for the Task Team')">Draft peer review note</button>
+            <button class="followon-chip" onclick="prefillFollowon('Please expand on how to implement the highest-priority recommendation — what are the specific first steps, who should lead, and what should the TTL do in the first 30 days of implementation?')">Expand top recommendation</button>
+            <button class="followon-chip" onclick="prefillFollowon('I have revised the following section of the PAD. Please review it against the FCV recommendations and suggest specific language improvements:\\n\\n[Paste your revised text here]')">Review my revised text</button>
+            <button class="followon-chip" onclick="prefillFollowon('Summarise the key FCV risks and the 3 most important actions in plain language suitable for a 5-minute project brief or management presentation')">Summarise for brief</button>
+          </div>
+          <div class="refine-row">
+            <textarea class="refine-in" id="rfn" rows="3"
+              placeholder="Ask a question, request a document draft, or paste revised PAD text for review… (Shift+Enter for new line)"
+              onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();doFollowOn()}"></textarea>
+            <button class="btn btn-ghost btn-sm" onclick="doFollowOn()">Send
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            </button>
+          </div>
         </div>
-        <div class="refine-row">
-          <textarea class="refine-in" id="rfn" rows="2"
-            placeholder="e.g. 'Expand on the security dimension' · 'The project is in a border area — please factor this in' · 'Adjust tone to be more cautious'"
-            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();doRefine()}"></textarea>
-          <button class="btn btn-ghost btn-sm" onclick="doRefine()">Send
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-          </button>
-        </div>
-      </div>`;
+        <div id="followon-result-area"></div>`;
+    } else {
+      document.getElementById('refine-area').innerHTML=`
+        <div class="refine-card ani">
+          <div class="refine-lbl">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Refine this output
+          </div>
+          <div class="refine-row">
+            <textarea class="refine-in" id="rfn" rows="2"
+              placeholder="e.g. 'Expand on the security dimension' · 'The project is in a border area — please factor this in' · 'Adjust tone to be more cautious'"
+              onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();doRefine()}"></textarea>
+            <button class="btn btn-ghost btn-sm" onclick="doRefine()">Send
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            </button>
+          </div>
+        </div>`;
+    }
 
     document.getElementById('act-area').innerHTML=isLast?`
       <div class="act-bar ani">
@@ -2444,6 +2478,67 @@
     if(!msg||busy)return;el.value='';
     document.getElementById('refine-area').innerHTML='';document.getElementById('act-area').innerHTML='';
     runStage(curS,msg);
+  }
+
+  function prefillFollowon(text){
+    const el = document.getElementById('rfn');
+    if(el){ el.value = text; el.focus(); el.select(); }
+  }
+
+  async function doFollowOn(){
+    const el = document.getElementById('rfn');
+    const msg = el?.value.trim();
+    if(!msg || busy) return;
+    el.value = '';
+    const resultArea = document.getElementById('followon-result-area');
+    if(!resultArea) return;
+    resultArea.innerHTML = `<div class="followon-result-card ani">
+      <div class="out-hdr"><div class="out-hdr-l"><span class="dot active"></span>Generating follow-on response…</div></div>
+      <div class="out-body" id="followon-stream-out" style="max-height:none"></div>
+    </div>`;
+    resultArea.scrollIntoView({behavior:'smooth', block:'nearest'});
+
+    busy = true;
+    const messages = buildFollowOnMessages(msg);
+    let accumulated = '';
+    try {
+      const res = await fetch('/api/run-followon', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({messages})
+      });
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      while(true){
+        const {done, value} = await reader.read();
+        if(done) break;
+        buffer += decoder.decode(value, {stream:true});
+        const lines = buffer.split('\n');
+        buffer = lines.pop();
+        for(const line of lines){
+          if(line.startsWith('data: ')){
+            try{
+              const d = JSON.parse(line.slice(6));
+              if(d.chunk){ accumulated += d.chunk; const outEl = document.getElementById('followon-stream-out'); if(outEl) outEl.innerHTML = md(accumulated); }
+              if(d.done) break;
+            }catch{}
+          }
+        }
+      }
+      const hdrEl = resultArea.querySelector('.out-hdr-l');
+      if(hdrEl) hdrEl.innerHTML = '<span class="dot done"></span>Follow-on response';
+    } catch(e){
+      resultArea.innerHTML = `<div class="callout err ani"><div class="callout-body">Follow-on request failed. Please try again.</div></div>`;
+    } finally {
+      busy = false;
+    }
+  }
+
+  function buildFollowOnMessages(userMsg){
+    const history = hist.map(m => ({role: m.role, content: m.content}));
+    history.push({role: 'user', content: userMsg});
+    return history;
   }
 
   function setStepper(active,status){
@@ -2992,15 +3087,6 @@ ${md(execSummary)}`;
             </div>
           </details>
         </div>
-        <!-- Follow-up -->
-        <div class="pc-followup">
-          <span class="pc-followup-label">Explore further:</span>
-          <input class="pc-followup-input" type="text" id="pc-followup-input-${idx}"
-            placeholder="e.g. 'Which organisations could lead the conflict mapping?' or 'How does this affect the PAD risk section?'"
-            onkeydown="if(event.key==='Enter'){submitPriorityFollowup(${idx})}"/>
-          <button class="pc-followup-btn" onclick="submitPriorityFollowup(${idx})">Ask →</button>
-        </div>
-        <div class="pc-followup-answer" id="pc-followup-answer-${idx}"></div>
       </div>`;
 
     // Explorer is lazy-loaded — only fires when user opens the <details> section
