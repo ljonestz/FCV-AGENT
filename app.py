@@ -253,134 +253,156 @@ At the very end of your response, after all sections, output a single classifier
 Identify what type of World Bank project document was uploaded as the primary project document.''',
 
 "2": '''# Role
-You are an FCV specialist conducting systematic screening analysis for World Bank projects using the WBG FCV Operational Manual framework.
+You are an expert FCV analyst conducting a comprehensive FCV assessment for the World Bank Group. You have deep expertise in the WBG FCV Strategy, the Operational Screening Tool (OST), and the FCV Refresh (January 2026). You are assessing a project based on the Stage 1 context and extraction analysis.
 
 # Task
-Using the information extracted in Stage 1, assess how well this project\'s current design meets the six recommendations for promoting FCV-sensitivity based on the OST manual. For each recommendation, evaluate:
+Using the Stage 1 analysis, conduct a comprehensive FCV assessment of this project. You will produce TWO outputs:
+1. A TTL-facing assessment summary (the main output)
+2. Detailed analytical panels for specialist review ("Under the Hood")
 
-1. **Current Status:** Strong / Partial / Weak / Not Addressed
-2. **What the project does well** (if anything) against this recommendation
-3. **Key gaps** in the current design relative to this recommendation
-4. **Risk to project delivery** from this gap: High / Medium / Low
-5. **Risk from project** (how the project could inadvertently worsen FCV dynamics) related to this recommendation: High / Medium / Low
-6. **Evidence citation:** For each recommendation, cite the specific design element, document passage, or project feature that justifies your rating. Do not give a generic assessment. Example: "Rated Partial because the PAD includes a stakeholder engagement plan (Section 4.2) but it does not differentiate consultation approaches by conflict-affected versus stable areas."
+# Internal Analytical Framework
+You MUST assess the project against ALL of the following (from the FCV Operational Manual), but do NOT expose this framework directly in the TTL-facing summary. Use it to inform your thematic synthesis.
 
-Be specific — quote or reference the project document where possible. Note when information is insufficient to make a confident assessment.
+## 12 OST Recommendations
+Assess the project against each recommendation:
+1. Use DRRs to inform operational design [Shift B]
+2. Integrate FCV into stakeholder analysis and selectivity [Shift B]
+3. Embed FCV into ToC and PDO [Shift B]
+4. Align risk and results equation [Shift A]
+5. Keep RF and M&E realistic and FCV-smart [Shift D]
+6. Use innovative and digital tools [Shift D]
+7. Strengthen in-country M&E capacity and systems [Shift D]
+8. Budget more purposefully for M&E [Shift D]
+9. Use M&E to enhance citizen-state communications [Shift B]
+10. Monitor, learn, and adapt more frequently [Shift A]
+11. Consider pros/cons of impact evaluations [Shift D]
+12. Put an FCV twist in ICRs [Shift D]
 
----
+## 25 Key Questions
+Answer each where evidence permits, noting which are answerable and which have evidence gaps.
 
-## Recommendation 1: Use of DRRs (Drivers, Risks, Resilience factors) to inform operational design
-**What to assess:** Does the project design draw explicitly on identified FCV drivers and sources of resilience specific to this country and sector? Are these DRRs shaping the pathway to outcomes and the project\'s theory of change, or are they confined to a risk register without influencing design?
+## 3 Key Elements
+Evaluate: (1) Flexible Operational Design, (2) Tailored Implementation & Partnerships, (3) Strengthened Implementation Support
 
-**Guiding questions:**
-- Are the specific FCV drivers for this country and sector identified and used to shape component design?
-- Does the project strengthen resilience factors, not just mitigate risks?
-- Is institutional weakness and data scarcity accounted for in the design?
+# TTL-Facing Output (400-500 words)
 
----
+Structure thematically, NOT recommendation-by-recommendation. Use clear, accessible language for non-specialist TTLs.
 
-## Recommendation 2: FCV-sensitive stakeholder analysis and operational selectivity
-**What to assess:** Has the project conducted a stakeholder analysis that accounts for FCV dynamics — including who might be excluded, which groups are conflict-affected, and how benefits could be captured by elites or dominant groups?
+## 1. FCV Sensitivity Assessment
+What the project addresses well and where it falls short on sensitivity. Organise by theme (contextual awareness, design adaptation, targeting, stakeholder engagement, M&E), not by recommendation number. Be specific — name geographic locations, institutions, mechanisms, and project design elements. Cite evidence from the project document.
 
-**Guiding questions:**
-- Are beneficiary selection criteria conflict-sensitive and non-discriminatory?
-- Are marginalised groups (ethnic minorities, displaced populations, women, youth, IDPs) explicitly considered?
-- Could the targeting mechanism create or reinforce divisions between groups?
-- Is the consultation process inclusive and accessible to conflict-affected communities?
+## 2. Do No Harm Traffic-Light
+Assess the project against these 8 Do No Harm principles and provide an inline count:
 
----
+1. Conflict-sensitive targeting and beneficiary selection
+2. Avoiding reinforcement of existing power asymmetries
+3. Preventing exacerbation of inter-group tensions
+4. Ensuring equitable geographic distribution of benefits
+5. Safeguarding against elite capture of project resources
+6. Protecting project staff and beneficiaries from security risks
+7. Monitoring for unintended negative consequences
+8. Establishing accessible and trusted grievance mechanisms
 
-## Recommendation 3: FCV elements embedded in the Theory of Change and PDO
-**What to assess:** Does the Theory of Change reflect FCV realities — including conflict dynamics, institutional fragility, and the risk of unintended consequences? Is there built-in flexibility for a changing environment?
+Format: "**Do No Harm: [X] of 8 principles strongly/partially addressed | [Y] weakly addressed | [Z] not addressed**"
 
-**Guiding questions:**
-- Does the ToC account for how FCV dynamics might disrupt the assumed causal chain?
-- Is there adaptive management built into the design (triggers, unallocated funds, CERC)?
-- Does the PDO remain achievable if the security or political context deteriorates?
-- For DPOs: does the design account for elite capture and vested interests in reform?
+Then provide 2-3 sentences highlighting the most critical Do No Harm concern for this specific project.
 
----
+## 3. FCV Responsiveness Assessment
+Assess against each of the 4 FCV Refresh strategic shifts:
+- **Shift A (Anticipate):** Does the project reflect current fragility classification? Does it anticipate deterioration scenarios? Is early-warning built into M&E?
+- **Shift B (Differentiate):** Is the project calibrated to the country\'s FCV trajectory? Does it differentiate approach based on context type (conflict/displacement/criminal violence)?
+- **Shift C (Jobs & Private Sector):** Does the project address economic livelihoods and job creation as a stability pathway? Are private sector entry points identified?
+- **Shift D (Enhanced Toolkit):** Does the project leverage available operational flexibilities (CERC, HEIS, TPM, GEMS)? Are implementation arrangements FCV-appropriate?
 
-## Recommendation 4: Risk and results equation — FCV security risks
-**What to assess:** Does the project adequately account for security risks in its operational risk framework? Is the SORT table realistic about FCV-related risks? Are implementation arrangements suited to an insecure or volatile environment?
+For each shift, state whether it is "Strongly addressed", "Partially addressed", "Weakly addressed", or "Not addressed" — then give 1-2 sentences of evidence.
 
-**Guiding questions:**
-- Does the SORT/risk table reflect the actual security and political risk in the project area?
-- Are implementation arrangements (PIU, oversight, supervision) realistic for this FCV context?
-- Is there provision for third-party monitoring (TPM) or alternative arrangements in insecure areas?
-- Does the project design account for higher implementation costs in FCV settings?
+## 4. Key Gaps (3-5 most critical)
+Prioritised list of the most critical gaps. Each gap should:
+- Name the specific dimension or theme
+- Explain what is missing from the project design, with evidence
+- Note the risk if unaddressed (both risk TO project delivery and risk FROM project to FCV dynamics)
 
----
+# Status Terminology
+Use ONLY these terms for status assessments:
+- "Strongly addressed" — Comprehensive, evidence-based, operationally embedded
+- "Partially addressed" — Some elements present but gaps in depth, specificity, or integration
+- "Weakly addressed" — Mentioned but superficial, generic, or disconnected from operations
+- "Not addressed" — No meaningful engagement with this dimension
 
-## Recommendation 5: Realistic and FCV-smart Results Framework and M&E
-**What to assess:** Is the Results Framework grounded in what is actually measurable in this FCV context? Does it account for data scarcity, access constraints, and the risk of perverse incentives?
+# S/R Classification
+Tag key findings as:
+- [S] = FCV Sensitivity — project avoids doing harm, is contextually aware, conflict-informed
+- [R] = FCV Responsiveness — project actively addresses fragility drivers or builds resilience
+- [S+R] = Genuine overlap — ONLY for: (1) inclusion/targeting of conflict-affected populations, (2) FCV logic embedded in ToC/PDO, (3) adaptive M&E for harm + resilience, (4) GRM for state-citizen accountability
 
-**Guiding questions:**
-- Are indicators realistic and achievable given the FCV context?
-- Is there a credible baseline data collection plan given access constraints?
-- Does the M&E plan address ethical considerations in data collection in conflict-affected areas?
-- Are WBG Scorecard indicators used and appropriately tailored to FCV conditions?
+STRICT RULE: Most findings will be [S] or [R], not [S+R]. Do not use [S+R] because a finding vaguely touches both concepts. Use it only when the same design element demonstrably and substantively serves both purposes.
 
----
+# Ratings Block
+After the TTL-facing summary, emit this block on its own line:
 
-## Recommendation 6: Use of innovative and digital tools
-**What to assess:** Does the project make use of available digital and innovative tools for monitoring, supervision, and citizen engagement in a context where access may be limited?
+%%%STAGE2_RATINGS_START%%%
+{"sensitivity_rating": "[rating]", "responsiveness_rating": "[rating]"}
+%%%STAGE2_RATINGS_END%%%
 
-**Guiding questions:**
-- Is GEMS (Geo-Enabling initiative for Monitoring and Supervision — satellite and mobile technology for remote project supervision) considered for hard-to-reach areas?
-- Is TPM (Third-Party Monitoring — independent verification by NGOs or research organisations where Bank access is limited) included for insecure project areas?
-- Are digital tools for beneficiary feedback and grievance redress appropriate for the local context (literacy, connectivity, safety)?
+Rating scale (use exactly one of): Extremely Low | Very Low | Low | Adequate | Well Embedded | Very Well Embedded
 
----
+# Under the Hood (Detailed Analytical Panels)
+After the ratings block, emit ALL of the following between delimiters. These are for specialist review — be thorough and evidence-based. Cover ALL items even if evidence is limited — mark gaps explicitly.
 
-## Summary Assessment Table
+%%%UNDER_HOOD_START%%%
 
-| OST FCV Priority | Current Status | Risk TO Project | Risk FROM Project | Priority |
+%%%RECS_TABLE_START%%%
+| # | Recommendation | Status | Evidence | Gaps | Relevant Shift(s) |
+|---|---|---|---|---|---|
+| 1 | Use DRRs to inform operational design | [Strongly addressed/Partially addressed/Weakly addressed/Not addressed] | [specific evidence from project doc] | [what is missing] | Shift B |
+| 2 | Integrate FCV into stakeholder analysis and selectivity | [status] | [evidence] | [gaps] | Shift B |
+| 3 | Embed FCV into ToC and PDO | [status] | [evidence] | [gaps] | Shift B |
+| 4 | Align risk and results equation | [status] | [evidence] | [gaps] | Shift A |
+| 5 | Keep RF and M&E realistic and FCV-smart | [status] | [evidence] | [gaps] | Shift D |
+| 6 | Use innovative and digital tools | [status] | [evidence] | [gaps] | Shift D |
+| 7 | Strengthen in-country M&E capacity and systems | [status] | [evidence] | [gaps] | Shift D |
+| 8 | Budget more purposefully for M&E | [status] | [evidence] | [gaps] | Shift D |
+| 9 | Use M&E to enhance citizen-state communications | [status] | [evidence] | [gaps] | Shift B |
+| 10 | Monitor, learn, and adapt more frequently | [status] | [evidence] | [gaps] | Shift A |
+| 11 | Consider pros/cons of impact evaluations | [status] | [evidence] | [gaps] | Shift D |
+| 12 | Put an FCV twist in ICRs | [status] | [evidence] | [gaps] | Shift D |
+%%%RECS_TABLE_END%%%
+
+%%%DNH_CHECKLIST_START%%%
+| # | Principle | Status | Evidence/Gap |
+|---|---|---|---|
+| 1 | Conflict-sensitive targeting and beneficiary selection | [Strongly addressed/Partially addressed/Weakly addressed/Not addressed] | [specific evidence or gap] |
+| 2 | Avoiding reinforcement of existing power asymmetries | [status] | [evidence/gap] |
+| 3 | Preventing exacerbation of inter-group tensions | [status] | [evidence/gap] |
+| 4 | Ensuring equitable geographic distribution of benefits | [status] | [evidence/gap] |
+| 5 | Safeguarding against elite capture of project resources | [status] | [evidence/gap] |
+| 6 | Protecting project staff and beneficiaries from security risks | [status] | [evidence/gap] |
+| 7 | Monitoring for unintended negative consequences | [status] | [evidence/gap] |
+| 8 | Establishing accessible and trusted grievance mechanisms | [status] | [evidence/gap] |
+%%%DNH_CHECKLIST_END%%%
+
+%%%QUESTIONS_MAP_START%%%
+| # | Key Question | Answerable? | Finding | Source |
 |---|---|---|---|---|
-| 1. DRR-informed design | [Strong/Partial/Weak/Not Addressed] | [H/M/L] | [H/M/L] | [H/M/L] |
-| 2. Stakeholder analysis | [Strong/Partial/Weak/Not Addressed] | [H/M/L] | [H/M/L] | [H/M/L] |
-| 3. ToC and PDO | [Strong/Partial/Weak/Not Addressed] | [H/M/L] | [H/M/L] | [H/M/L] |
-| 4. Risk and results | [Strong/Partial/Weak/Not Addressed] | [H/M/L] | [H/M/L] | [H/M/L] |
-| 5. Results Framework/M&E | [Strong/Partial/Weak/Not Addressed] | [H/M/L] | [H/M/L] | [H/M/L] |
-| 6. Digital tools | [Strong/Partial/Weak/Not Addressed] | [H/M/L] | [H/M/L] | [H/M/L] |
+[One row for EACH of the 25 key questions from the FCV Operational Manual. For each question: state whether it is answerable from available evidence (Yes/Partial/No), provide the finding or note the evidence gap, and cite the source (project document section, uploaded contextual doc, web research, or training knowledge).]
+%%%QUESTIONS_MAP_END%%%
 
----
+%%%EVIDENCE_TRAIL_START%%%
+| Source | Type | Used For |
+|---|---|---|
+[One row per source document or reference used in the assessment. Type = "Project document" / "Contextual document" / "Web research" / "Training knowledge". Used For = brief description of what this source contributed to the analysis.]
+%%%EVIDENCE_TRAIL_END%%%
 
-SENSITIVITY vs. RESPONSIVENESS CLASSIFICATION
+%%%UNDER_HOOD_END%%%
 
-After completing the six-recommendation assessment, add a classification tag to each recommendation. Apply these definitions strictly — [S+R] must be earned, not assumed.
-
-[S] — FCV SENSITIVITY: The recommendation primarily concerns how the project operates in the FCV context. This includes: using RRA findings to inform design; adapting targeting, implementation arrangements, procurement, or service delivery modalities to FCV realities; ensuring stakeholder consultations reach excluded/marginalised groups; and building a risk framework that accounts for security conditions, institutional weakness, and elite capture. Shorthand: will the project avoid making things worse?
-
-[R] — FCV RESPONSIVENESS: The recommendation primarily concerns whether the project actively addresses root drivers of fragility or builds resilience, anchored to the four FCV Strategy pillars:
-- Pillar 1 (Preventing conflict): addressing exclusion, grievances, institutional illegitimacy, social cohesion
-- Pillar 2 (Crisis engagement): adaptive design, continuity of services under stress, resilience-building
-- Pillar 3 (Transition out of fragility): social contract renewal, state legitimacy, local private sector
-- Pillar 4 (Spillover mitigation): forced displacement, cross-border dynamics, regional resilience
-Shorthand: will the project actively help make things better along a fragility dimension?
-
-[S+R] — BOTH: Reserve for recommendations that GENUINELY serve both functions at the same time. The four legitimate overlap zones are:
-1. Inclusion and targeting: deliberately including conflict-affected, marginalised, or displaced populations simultaneously avoids harm (S) and addresses exclusion as a root driver of fragility (R, Pillar 1).
-2. Theory of change / PDO: when the FCV logic is substantively embedded in the project's stated objective — not just in the risk register — this crosses from sensitivity into responsiveness.
-3. M&E and adaptive management: tracking conflict indicators is sensitivity; using them to actively adapt scope and strengthen resilience in real time is responsiveness (Pillar 2). A recommendation qualifies for [S+R] only if it substantively addresses both monitoring for harm AND adaptive resilience-building.
-4. Citizen engagement / GRM: a robust GRM avoids unaddressed harm (S); if it is explicitly designed to feed back into government accountability and strengthen the state-citizen relationship, it becomes a Pillar 3 responsiveness feature.
-
-STRICT RULE: Most recommendations will be [S] or [R], not [S+R]. Do not use [S+R] because a recommendation vaguely touches both concepts. Use it only when the same design element demonstrably and substantively serves both purposes.
-
-Use the following pre-assigned default tags unless project-specific evidence strongly warrants a different classification:
-- Rec 1: [S]
-- Rec 2: [S]
-- Rec 3: [S+R]
-- Rec 4: [S]
-- Rec 5: [S]
-- Rec 6: [S+R]
-
-After the summary assessment table, add a RESPONSIVENESS PROBE section (100-150 words). This should assess: Does this project have meaningful potential to address any of the four FCV Strategy pillars (Preventing conflict / Remaining engaged in crisis / Transition out of fragility / Mitigating spillovers)? What specific opportunities are present or missed, given this project's sector and geography? Do not produce generic peacebuilding suggestions — ground every point in the project's actual design and context.
-
-# Quality Guidelines
-- Evidence-based: ground all assessments in what Stage 1 extracted — quote or paraphrase specifically
+# Important Guidelines
+- The TTL-facing summary must be self-contained and readable without the Under the Hood panels
+- Be specific: name geographic locations, institutions, mechanisms — not generic statements
+- When evidence is missing, say so explicitly rather than speculating
+- Citations follow the three-tier system from Stage 1: [From: document name] > [From: web research] > [From: training knowledge]
+- The Under the Hood tables must cover ALL items (12 recs, 8 DNH principles, 25 questions) even if evidence is limited — mark gaps explicitly
+- Ground every assessment in the Stage 1 extraction — quote or paraphrase specifically
 - Distinguish clearly between "Risk TO project" (FCV context threatens delivery) and "Risk FROM project" (project could worsen FCV dynamics)
-- Be honest about gaps: where information is insufficient, say so explicitly
 - Tailor every assessment to this specific country, sector, and project type — no generic statements
 - When drawing on inference rather than direct evidence, label it: "Based on analytical inference from available information"
 ''',
@@ -1607,6 +1629,20 @@ def run_stage():
             doc_type_ctx = build_doc_type_context(document_type, stage)
             if doc_type_ctx:
                 stage_prompt = doc_type_ctx + "\n\n" + stage_prompt
+
+            # Stage 2 (merged assessment) needs reference material for the 12 OST recs,
+            # 25 key questions, 3 key elements, FCV Refresh shifts, and S/R definitions.
+            if stage == 2:
+                stage_prompt = (
+                    stage_prompt +
+                    "\n\n--- WBG FCV Operational Manual (12 Recommendations, 25 Key Questions, 3 Key Elements) ---\n" +
+                    FCV_OPERATIONAL_MANUAL +
+                    "\n\n--- WBG FCV Strategy Refresh Framework (4 Shifts) ---\n" +
+                    FCV_REFRESH_FRAMEWORK +
+                    "\n\n--- WBG FCV Sensitivity and Responsiveness Guide ---\n" +
+                    FCV_GUIDE
+                )
+
             messages.append({"role": "user", "content": stage_prompt})
 
         def generate():
