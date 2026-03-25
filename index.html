@@ -1334,6 +1334,19 @@
   .followon-chip{ background:#f0f4f8; border:1px solid var(--border); border-radius:14px; padding:4px 12px; font-size:12px; color:var(--text); cursor:pointer; white-space:nowrap; transition:background .15s,border-color .15s; }
   .followon-chip:hover{ background:#e2e8f0; border-color:#94a3b8; }
   .followon-result-card{ background:#fff; border:1px solid var(--border); border-radius:8px; margin-top:12px; overflow:hidden; }
+
+  /* ── Project stage badge and FCS indicator ───────────────────────────── */
+  .doc-type-badge-inline { margin-top: 12px; padding: 8px 0; }
+  .badge-info {
+      background: #e8f4fd; color: #0050A0; padding: 4px 12px;
+      border-radius: 12px; font-size: 13px; font-weight: 500;
+      display: inline-block;
+  }
+  .badge-fcs {
+      background: #fef3cd; color: #856404; padding: 4px 12px;
+      border-radius: 12px; font-size: 13px; font-weight: 500;
+      display: inline-block; margin-left: 8px;
+  }
 </style>
 </head>
 <body>
@@ -1519,11 +1532,10 @@
 <!-- ══ STEPPER ══ -->
 <div class="stepper-wrap" id="stepper-wrap" style="display:none;">
   <nav class="stepper" aria-label="Analysis stages">
-    <div class="step" id="step-0"><div class="step-num">↑</div>Upload</div>
-    <div class="step" id="step-1"><div class="step-num">1</div>FCV Risks</div>
-    <div class="step" id="step-2"><div class="step-num">2</div>Screening</div>
-    <div class="step" id="step-3"><div class="step-num">3</div>Gaps</div>
-    <div class="step" id="step-4"><div class="step-num">4</div>Rec. Note</div>
+    <div class="step done" id="step-0"><span class="step-num">0</span><span class="step-label">Upload</span></div>
+    <div class="step" id="step-1"><span class="step-num">1</span><span class="step-label">Context</span></div>
+    <div class="step" id="step-2"><span class="step-num">2</span><span class="step-label">Assessment</span></div>
+    <div class="step" id="step-3"><span class="step-num">3</span><span class="step-label">Recommendations</span></div>
   </nav>
 </div>
 
@@ -2543,7 +2555,7 @@
 
   function setStepper(active,status){
     document.getElementById('step-0').className='step done';
-    for(let i=1;i<=4;i++){
+    for(let i=1;i<=3;i++){
       const el=document.getElementById(`step-${i}`);if(!el)continue;
       if(i<active)el.className='step done';
       else if(i===active)el.className=status==='err'?'step err':'step active';
