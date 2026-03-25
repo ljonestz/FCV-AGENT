@@ -555,6 +555,27 @@
     .trunc-warn-item strong{color:#9a3412}
     .trunc-warn-note{font-size:12px;color:#92400e;margin-top:8px;padding-top:8px;border-top:1px solid #fed7aa;line-height:1.5}
 
+    /* ── Under the Hood panels (Stage 2) ── */
+    .under-hood-section { margin-top: 24px; }
+    .under-hood-header {
+        font-size: 16px; font-weight: 600; color: #333;
+        margin-bottom: 12px; padding-bottom: 8px;
+        border-bottom: 2px solid #e0e0e0;
+    }
+    .under-hood-panel {
+        margin-bottom: 8px; border: 1px solid #e0e0e0;
+        border-radius: 8px; overflow: hidden;
+    }
+    .under-hood-panel summary {
+        padding: 12px 16px; cursor: pointer; font-weight: 500;
+        background: #f8f9fa; font-size: 14px;
+    }
+    .under-hood-panel[open] summary { border-bottom: 1px solid #e0e0e0; }
+    .under-hood-content { padding: 16px; font-size: 14px; }
+    .under-hood-content table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .under-hood-content th, .under-hood-content td { padding: 8px; border: 1px solid #ddd; text-align: left; }
+    .under-hood-content th { background: #f0f0f0; font-weight: 600; }
+
     /* ── Prompt viewer modal ── */
     .prompt-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .2s ease}
     .prompt-modal{background:#fff;border-radius:10px;width:100%;max-width:780px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden}
@@ -2080,19 +2101,43 @@
             }
             if(p.preprocess){const el=document.getElementById('s-out');if(el)el.innerHTML=`<div style="display:flex;align-items:center;gap:10px;color:var(--muted);font-style:italic;padding:12px 0"><svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;animation:spin 1s linear infinite;flex-shrink:0"><circle cx="12" cy="12" r="10" stroke-opacity=".25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-opacity="1"/></svg>${esc(p.preprocess)}</div>`}
             if(p.chunk){streamed+=p.chunk;const el=document.getElementById('s-out');if(el)el.innerHTML=md(streamed)}
-            if(p.done){hist=p.history||hist;curS=stage;stageOutputs[stage]=p.result;stageHists[stage]=hist.slice();updateSessionBar();if(stage===4){stageGapTable=p.gap_table||null;stageRiskExposure=p.risk_exposure||null;stageSensitivitySummary=p.sensitivity_summary||'';stageResponsivenessSummary=p.responsiveness_summary||'';if(p.fcv_rating)fcvRating=p.fcv_rating;if(p.fcv_responsiveness_rating)fcvResponsivenessRating=p.fcv_responsiveness_rating;}
+            if(p.done){hist=p.history||hist;curS=stage;stageOutputs[stage]=p.result;stageHists[stage]=hist.slice();updateSessionBar();
+              // Stage 2: capture ratings and under_hood data
+              if(stage===2){
+                if(p.sensitivity_rating){ fcvRating=p.sensitivity_rating; }
+                if(p.responsiveness_rating){ fcvResponsivenessRating=p.responsiveness_rating; }
+                if(p.under_hood){ stage2UnderHood=p.under_hood; localStorage.setItem('stage2_under_hood', JSON.stringify(p.under_hood)); }
+              }
+              if(stage===4){stageGapTable=p.gap_table||null;stageRiskExposure=p.risk_exposure||null;stageSensitivitySummary=p.sensitivity_summary||'';stageResponsivenessSummary=p.responsiveness_summary||'';if(p.fcv_rating)fcvRating=p.fcv_rating;if(p.fcv_responsiveness_rating)fcvResponsivenessRating=p.fcv_responsiveness_rating;}
               // Write timestamps BEFORE renderOut so the consistency check inside renderOut reads the current run's value
               // Stage 2 completion also clears any previously dismissed banners on Stage 3/4
               if(stage===2){ localStorage.setItem('stage2_timestamp', Date.now()); localStorage.removeItem('stage3_consistency_dismissed'); localStorage.removeItem('stage4_consistency_dismissed'); }
               if(stage===3) localStorage.setItem('stage3_timestamp', Date.now());
               if(stage===4) localStorage.setItem('stage4_timestamp', Date.now());
-              renderOut(stage,p.result,followOn);setStepper(stage,'done');
+              // For Stage 2, use display_text (stripped of delimiters) if provided by backend
+              const renderResult = (stage===2 && p.display_text) ? p.display_text : p.result;
+              renderOut(stage,renderResult,followOn);setStepper(stage,'done');
               // Research brief panel for Stage 1
               if(stage===1){
                 const dtMatch=p.result&&p.result.match(/%%%DOC_TYPE:\s*([^%\n]+)%%%/);if(dtMatch){docType=dtMatch[1].trim();updateDocTypeBadge();}
                 if(p.research_brief) researchBrief=p.research_brief;
                 if(p.research_country) researchCountry=p.research_country;
                 if(researchBrief) injectResearchBriefPanel(researchBrief,researchCountry);
+              }
+              // Stage 2: show parse error banner and update sidebar
+              if(stage===2){
+                if(p.parse_error){
+                  const outTxt = document.getElementById('out-txt');
+                  if(outTxt){
+                    const warnBanner = document.createElement('div');
+                    warnBanner.className = 'ani';
+                    warnBanner.style.cssText = 'background:#fff3cd;color:#856404;padding:12px 16px;border-radius:8px;margin-bottom:16px;font-size:14px;border:1px solid #ffc107';
+                    warnBanner.textContent = p.parse_error_message || 'Assessment detail could not be parsed into panels. Full output shown below.';
+                    outTxt.insertBefore(warnBanner, outTxt.firstChild);
+                  }
+                }
+                // Note: under_hood panels and sidebar are injected by renderOut (which already ran above),
+                // because stage2UnderHood was stored before renderOut was called.
               }
               // Explorer panel + sidebar for Stage 4
               if(stage===4 && p.priorities && p.priorities.length){
@@ -2166,6 +2211,25 @@
       const callout = disp.querySelector('.callout');
       if (callout) { callout.insertAdjacentElement('afterend', panel); } else { disp.appendChild(panel); }
     }
+  }
+
+  function buildUnderHoodPanels(underHood) {
+    var panels = [
+        { key: 'recs_table', title: 'Full 12-Recommendation Assessment' },
+        { key: 'dnh_checklist', title: 'Do No Harm Checklist (8 Principles)' },
+        { key: 'questions_map', title: '25 Key Questions Assessment' },
+        { key: 'evidence_trail', title: 'Evidence Trail' }
+    ];
+    return '<div class="under-hood-section">' +
+        '<h3 class="under-hood-header">Under the Hood \u2014 Detailed Assessment</h3>' +
+        panels.map(function(p) {
+            var content = (underHood && underHood[p.key]) ? underHood[p.key] : 'No data available.';
+            return '<details class="under-hood-panel">' +
+                '<summary>' + esc(p.title) + '</summary>' +
+                '<div class="under-hood-content out-body">' + md(content) + '</div>' +
+                '</details>';
+        }).join('') +
+        '</div>';
   }
 
   function renderSRTagBadge(tag, compact) {
@@ -2279,6 +2343,7 @@
 
   function renderOut(stage,result,isFollowOn){
     const isLast=stage===4;
+    const hasSidebar=stage>=2;
     const c=CALLS[stage];
     let _outBodyContent;
     if(isLast){
@@ -2310,8 +2375,8 @@
         }</div>
         <div class="callout-body"><strong>${c.t}</strong>${c.b}</div>
       </div>
-      <div class="${isLast?'stage4-layout':''}">
-        <div class="${isLast?'stage4-main':''}">
+      <div class="${hasSidebar?'stage4-layout':''}">
+        <div class="${hasSidebar?'stage4-main':''}">
           <div class="out-card ani">
             <div class="out-hdr">
               <div class="out-hdr-l"><span class="dot done"></span>${NAMES[stage]}</div>
@@ -2344,7 +2409,7 @@
           </div>
           `:''}
         </div>
-        ${isLast?`<aside class="fcv-sidebar" id="fcv-sidebar">${sidebarHtml()}</aside>`:''}
+        ${hasSidebar?`<aside class="fcv-sidebar" id="fcv-sidebar">${sidebarHtml()}</aside>`:''}
       </div>
       `;
 
@@ -2432,6 +2497,16 @@
         </button><div class="sep"></div>`:''}
         <button class="btn btn-ghost" onclick="reset()">Start over</button>
       </div>`;
+
+    // Stage 2: inject under_hood panels (from global or localStorage) and update sidebar gauges
+    if(stage === 2){
+      const outTxt = document.getElementById('out-txt');
+      const storedHood = stage2UnderHood || (function(){ try{ const s=localStorage.getItem('stage2_under_hood'); return s?JSON.parse(s):null; }catch(e){ return null; } })();
+      if(outTxt && storedHood){
+        outTxt.insertAdjacentHTML('beforeend', buildUnderHoodPanels(storedHood));
+      }
+      updateSidebar();
+    }
 
     document.getElementById('stage-disp').scrollIntoView({behavior:'smooth',block:'start'});
   }
@@ -2790,6 +2865,9 @@ ${md(execSummary)}`;
   // ── Research brief state ───────────────────────────────────────────────────
   let researchBrief = '';
   let researchCountry = '';
+
+  // ── Stage 2 state ──────────────────────────────────────────────────────────
+  let stage2UnderHood = null;  // {recs_table, dnh_checklist, questions_map, evidence_trail}
 
   // ── Stage 4 state ──────────────────────────────────────────────────────────
   let stageFourPriorities = [];
