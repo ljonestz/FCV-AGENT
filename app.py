@@ -44,14 +44,16 @@ CITATION_ORG_WHITELIST = {
 }
 
 _REQUIRED_TOP_FIELDS = [
-    "fcv_rating", "fcv_responsiveness_rating", "sensitivity_summary",
-    "responsiveness_summary", "risk_to_project", "risk_from_project", "priorities",
+    'fcv_rating', 'fcv_responsiveness_rating',
+    'sensitivity_summary', 'responsiveness_summary',
+    'risk_exposure', 'priorities'
 ]
 
 _REQUIRED_PRIORITY_FIELDS = [
-    "number", "title", "dimension", "tag", "risk_level",
-    "the_gap", "why_it_matters", "recommendation", "who_acts", "when", "resources",
-    "pad_sections", "suggested_language", "implementation_note",
+    'title', 'fcv_dimension', 'tag', 'refresh_shift', 'risk_level',
+    'the_gap', 'why_it_matters', 'recommendation',
+    'who_acts', 'when', 'resources',
+    'pad_sections', 'suggested_language', 'implementation_note'
 ]
 
 _SPECIFICITY_STOPWORDS = frozenset({
@@ -99,6 +101,66 @@ def _check_citations(priority: dict, uploaded_doc_names: list) -> list:
             continue
         unverified.append(cite_s)
     return unverified
+
+
+def extract_stage2_ratings(stage2_output):
+    """Extract sensitivity and responsiveness ratings from Stage 2 output.
+    Looks for %%%STAGE2_RATINGS_START%%%...%%%STAGE2_RATINGS_END%%% block.
+    """
+    pattern = r'%%%STAGE2_RATINGS_START%%%(.*?)%%%STAGE2_RATINGS_END%%%'
+    match = re.search(pattern, stage2_output, re.DOTALL)
+    if not match:
+        return {'error': True, 'message': 'No ratings block found in Stage 2 output'}
+    try:
+        ratings = json.loads(match.group(1).strip())
+        return {
+            'error': False,
+            'sensitivity_rating': ratings.get('sensitivity_rating', 'Unknown'),
+            'responsiveness_rating': ratings.get('responsiveness_rating', 'Unknown')
+        }
+    except json.JSONDecodeError as e:
+        return {'error': True, 'message': f'Failed to parse ratings JSON: {str(e)}'}
+
+
+def extract_under_hood(stage2_output):
+    """Extract Under the Hood analytical panels from Stage 2 output.
+    Finds %%%UNDER_HOOD_START%%%...%%%UNDER_HOOD_END%%% and sub-blocks.
+    Returns dict with panel contents and cleaned display text.
+    """
+    hood_pattern = r'%%%UNDER_HOOD_START%%%(.*?)%%%UNDER_HOOD_END%%%'
+    hood_match = re.search(hood_pattern, stage2_output, re.DOTALL)
+
+    if not hood_match:
+        return {
+            'error': True,
+            'message': 'No Under the Hood block found in Stage 2 output',
+            'display_text': stage2_output,
+            'recs_table': '', 'dnh_checklist': '',
+            'questions_map': '', 'evidence_trail': ''
+        }
+
+    hood_text = hood_match.group(1)
+
+    def _extract_block(text, start_tag, end_tag):
+        p = rf'{re.escape(start_tag)}(.*?){re.escape(end_tag)}'
+        m = re.search(p, text, re.DOTALL)
+        return m.group(1).strip() if m else ''
+
+    recs_table = _extract_block(hood_text, '%%%RECS_TABLE_START%%%', '%%%RECS_TABLE_END%%%')
+    dnh_checklist = _extract_block(hood_text, '%%%DNH_CHECKLIST_START%%%', '%%%DNH_CHECKLIST_END%%%')
+    questions_map = _extract_block(hood_text, '%%%QUESTIONS_MAP_START%%%', '%%%QUESTIONS_MAP_END%%%')
+    evidence_trail = _extract_block(hood_text, '%%%EVIDENCE_TRAIL_START%%%', '%%%EVIDENCE_TRAIL_END%%%')
+
+    display_text = stage2_output
+    display_text = re.sub(r'%%%STAGE2_RATINGS_START%%%.*?%%%STAGE2_RATINGS_END%%%', '', display_text, flags=re.DOTALL)
+    display_text = re.sub(r'%%%UNDER_HOOD_START%%%.*?%%%UNDER_HOOD_END%%%', '', display_text, flags=re.DOTALL)
+    display_text = display_text.strip()
+
+    return {
+        'error': False, 'display_text': display_text,
+        'recs_table': recs_table, 'dnh_checklist': dnh_checklist,
+        'questions_map': questions_map, 'evidence_trail': evidence_trail
+    }
 
 
 # ── Default prompts ──────────────────────────────────────────────────────────
@@ -721,6 +783,13 @@ Collegial, practical, peer-to-peer — the same register as the Recommendations 
 
 
 
+def clean_stage2_output(text):
+    """Strip delimiter blocks from Stage 2 output for display."""
+    text = re.sub(r'%%%STAGE2_RATINGS_START%%%.*?%%%STAGE2_RATINGS_END%%%', '', text, flags=re.DOTALL)
+    text = re.sub(r'%%%UNDER_HOOD_START%%%.*?%%%UNDER_HOOD_END%%%', '', text, flags=re.DOTALL)
+    return text.strip()
+
+
 def clean_stage4_output(text):
     """Strip machine-readable blocks from Stage 4 output, leaving only the narrative.
 
@@ -788,7 +857,7 @@ def extract_gap_table(text):
 
 
 def extract_priorities(text: str, uploaded_doc_names: list = None) -> dict:
-    """Parse %%%JSON_START%%% / %%%JSON_END%%% block from Stage 4 output.
+    """Parse %%%JSON_START%%% / %%%JSON_END%%% block from Stage 3/4 output.
 
     Returns a dict:
       On success: {'error': False, 'priorities': [...], 'fcv_rating': ...,
@@ -798,7 +867,7 @@ def extract_priorities(text: str, uploaded_doc_names: list = None) -> dict:
     """
     _error_result = {
         'error': True,
-        'message': 'Stage 4 output could not be parsed — please re-run this stage.',
+        'message': 'Stage 3/4 output could not be parsed — please re-run this stage.',
         'priorities': [],
         'fcv_rating': '',
         'fcv_responsiveness_rating': '',
@@ -848,6 +917,15 @@ def extract_priorities(text: str, uploaded_doc_names: list = None) -> dict:
 
         priorities.append(pr)
 
+    # Extract risk_exposure from nested object (new schema)
+    risk_exposure_raw = data.get('risk_exposure', {})
+    if isinstance(risk_exposure_raw, dict):
+        risks_to = str(risk_exposure_raw.get('risks_to', '')).strip()
+        risks_from = str(risk_exposure_raw.get('risks_from', '')).strip()
+    else:
+        risks_to = ''
+        risks_from = ''
+
     return {
         'error': False,
         'priorities': priorities,
@@ -856,8 +934,8 @@ def extract_priorities(text: str, uploaded_doc_names: list = None) -> dict:
         'sensitivity_summary': str(data.get('sensitivity_summary', '')).strip(),
         'responsiveness_summary': str(data.get('responsiveness_summary', '')).strip(),
         'risk_exposure': {
-            'risks_to': str(data.get('risk_to_project', '')).strip(),
-            'risks_from': str(data.get('risk_from_project', '')).strip(),
+            'risks_to': risks_to,
+            'risks_from': risks_from,
         },
     }
 
