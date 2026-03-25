@@ -373,7 +373,7 @@
       padding:24px 28px;font-size:14px;line-height:1.8;color:var(--text);
       max-height:540px;overflow-y:auto;
     }
-    #stage-disp.s4-active .out-body{max-height:none;overflow-y:visible}
+    #stage-disp.s3-active .out-body{max-height:none;overflow-y:visible}
     .out-body::-webkit-scrollbar{width:5px}
     .out-body::-webkit-scrollbar-track{background:#f5f7fa}
     .out-body::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
@@ -610,7 +610,7 @@
        STAGE 4 — PRIORITY CARD SYSTEM
     ══════════════════════════════════════════ */
 
-    /* Overall Stage 4 layout */
+    /* Overall Stage 3 (Recommendations) layout */
     .stage4-layout{display:flex;gap:20px;align-items:flex-start;}
     .stage4-main{flex:1;min-width:0;}
 
@@ -1348,7 +1348,28 @@
   }
   .warn-dismiss:hover { opacity: 0.7; }
 
-  /* ── Follow-on card (Stage 4 query interface) ───────────────────────────── */
+  /* ── Shift badge (refresh_shift field on priorities) ───────────────────── */
+  .shift-badge {
+    background: #e8f5e9; color: #2e7d32; padding: 2px 8px;
+    border-radius: 10px; font-size: 11px; font-weight: 500;
+    border: 1px solid #c8e6c9; display: inline-block;
+  }
+
+  /* ── Who-chip (multi-value who_acts) ─────────────────────────────────────── */
+  .who-chip {
+    background: #f0f0f0; color: #333; padding: 2px 8px;
+    border-radius: 10px; font-size: 12px; display: inline-block;
+    margin-right: 4px; margin-bottom: 2px;
+  }
+
+  /* ── Stage-awareness badge (shown on Stage 3 output) ─────────────────────── */
+  .stage-awareness-badge {
+    background: #e3f2fd; color: #1565c0; padding: 8px 16px;
+    border-radius: 8px; font-size: 13px; margin-bottom: 16px;
+    border-left: 4px solid #1565c0;
+  }
+
+  /* ── Follow-on card (Stage 3 query interface) ───────────────────────────── */
   .followon-card{ background:#fff; border:1px solid var(--border); border-radius:8px; padding:16px; margin-top:16px; }
   .followon-desc{ font-size:12px; color:var(--muted); margin:4px 0 8px; }
   .followon-chips{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
@@ -1406,8 +1427,8 @@
     <div class="prompt-modal-tabs" id="prompt-tabs">
       <button class="prompt-tab active" id="ptab-1" onclick="showPromptTab(1)">Stage 1 · FCV Risks</button>
       <button class="prompt-tab" id="ptab-2" onclick="showPromptTab(2)">Stage 2 · Screening</button>
-      <button class="prompt-tab" id="ptab-3" onclick="showPromptTab(3)">Stage 3 · Gaps</button>
-      <button class="prompt-tab" id="ptab-4" onclick="showPromptTab(4)">Stage 4 · Rec. Note</button>
+      <button class="prompt-tab" id="ptab-3" onclick="showPromptTab(3)">Stage 3 · Recommendations</button>
+      <button class="prompt-tab" id="ptab-deeper" onclick="showPromptTab('deeper')">Go Deeper</button>
       <button class="prompt-tab" id="ptab-explorer" onclick="showPromptTab('explorer')">Explorer</button>
     </div>
     <div class="prompt-modal-body">
@@ -1464,7 +1485,7 @@
             <p style="font-size:12.5px;color:var(--text);line-height:1.55">The AI identifies gaps in FCV sensitivity and design, proposes mitigations for high-risk dimensions, and runs a do-no-harm checklist. This content feeds directly into the final Recommendations Note — review it carefully before proceeding.</p>
           </div>
           <div style="border:1px solid var(--border);border-radius:6px;padding:12px 14px;border-top:3px solid var(--s4)">
-            <div style="font-size:11px;font-weight:700;color:var(--s4);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Stage 4 · Recommendations Note</div>
+            <div style="font-size:11px;font-weight:700;color:var(--s4);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Stage 3 · Recommendations Note</div>
             <p style="font-size:12.5px;color:var(--text);line-height:1.55">A collegial peer-review memo addressed to the TTL. It summarises FCV strengths and gaps, sets out strategic priorities, and includes a technical annex. The output includes a mandatory AI disclaimer and can be copied directly into Word.</p>
           </div>
         </div>
@@ -1652,7 +1673,7 @@
   let pF=[],cF=[],hist=[],curS=0,busy=false;
   let sessionName='';
   let docType='Unknown';
-  // Stage 4 state is declared in the Stage 4 section below
+  // Stage 3 (Recommendations) state is declared in the Stage 3 section below
 
   // ── Onboarding ──────────────────────────────────────────────────────────────
   function initOnboarding(){
@@ -1752,20 +1773,18 @@
     }
   }
 
-  const NAMES={1:'Identifying FCV Risks',2:'FCV-Sensitivity Screening',3:'Identifying Project Gaps',4:'Executive Summary · Project-Wide Considerations'};
+  const NAMES={1:'Identifying FCV Risks',2:'FCV Assessment',3:'Recommendations Note'};
   const SHORT={1:'Identifying FCV Risks',2:'FCV-Sensitivity Screening',3:'Identifying Project Gaps',4:'Recommendations Note'};
   const SUBS={1:'Extracting all FCV-relevant information from your documents',2:'Assessing risks across six FCV dimensions',3:'Identifying gaps and recommending mitigations',4:'Generating the final TTL support note'};
-  const COL={1:'s1',2:'s2',3:'s3',4:'s4'};
+  const COL={1:'s1',2:'s2',3:'s4'};
 
   const CALLS={
-    1:{t:'Stage 1 of 4 · Identifying FCV Risks',
+    1:{t:'Stage 1 of 3 · Identifying FCV Risks',
        b: ' <strong>What you are reading:</strong> The output has two parts. <strong>Part A</strong> extracts FCV risks directly from the <em>project document</em> (PAD, PCN, or PID) only — it is a close reading of what that document says and implies. <strong>Part B</strong> draws on any <em>contextual documents</em> you uploaded (such as the RRA or country risk assessment) and supplements these with the AI\'s training knowledge of sources such as UN, ICG, and World Bank reports. Check both parts carefully — use the query box below to correct anything or add local knowledge before proceeding.'},
-    2:{t:'Stage 2 of 4 · FCV-Sensitivity Screening',
+    2:{t:'Stage 2 of 3 · FCV Assessment',
        b:'<strong>What you are reading:</strong> This is the LLM structured assessment of the project FCV sensitivity and responsiveness across key dimensions. It shows how the AI is weighing the evidence and forming its judgements. Review the ratings and reasoning carefully — if a dimension seems underweighted, overweighted, or is missing important context, use the query box below to adjust before moving on.'},
-    3:{t:'Stage 3 of 4 · Identifying Project Gaps',
-       b:'<strong>What you are reading:</strong> This is the LLM analysis of gaps in FCV sensitivity and responsiveness, along with proposed mitigations and a do-no-harm check. This content feeds directly into the final Recommendations Note, so it is worth taking time here to refine any gaps that seem inaccurate or to add local knowledge the AI may not have captured.'},
-    4:{t:'Stage 4 of 4 · Recommendations Note — ready to copy',
-       b:'<strong>What you are reading:</strong> This is the LLM-generated Recommendations Note for the Task Team Leader, drawing on the analysis from the previous three stages. Review it carefully before use — treat it as a well-informed draft, not a final expert assessment. You can still refine specific sections using the query box. When satisfied, click <strong>Copy all</strong> and paste into your Word document.'}
+    3:{t:'Stage 3 of 3 · Recommendations Note — ready to copy',
+       b:'<strong>What you are reading:</strong> This is the LLM-generated Recommendations Note for the Task Team Leader, drawing on the analysis from the previous two stages. Review it carefully before use — treat it as a well-informed draft, not a final expert assessment. You can still refine specific sections using the query box. When satisfied, click <strong>Copy all</strong> and paste into your Word document.'}
   };
 
   function setupZone(zoneId, inputId, arr, type) {
@@ -2006,7 +2025,7 @@
       <div class="load-card">
         <div class="spinner" role="status" aria-label="Loading"></div>
         <div class="load-title">${followOn?'Updating output…':'Generating '+SHORT[stage]+'…'}</div>
-        <p class="load-sub">${stage===1 ? 'Stage 1 includes automated FCV web research — this can take 1–2 minutes. Please wait.' : stage===4 ? 'Generating the full Recommendations Note — this may take 1–2 minutes.' : 'This usually takes 20–60 seconds.'}</p>
+        <p class="load-sub">${stage===1 ? 'Stage 1 includes automated FCV web research — this can take 1–2 minutes. Please wait.' : stage===3 ? 'Generating the full Recommendations Note — this may take 1–2 minutes.' : 'This usually takes 20–60 seconds.'}</p>
         <div class="load-tags"><span class="load-tag">Reading documents</span><span class="load-tag">Applying FCV lens</span><span class="load-tag">Drawing on web context</span></div>
       </div>`;
 
@@ -2051,10 +2070,10 @@
           <div>
             <div class="stage-title">${NAMES[stage]}</div>
             <div class="stage-sub">Generating…</div>
-            ${(stage===4)?`<div class="stage-sub" style="margin-top:3px;color:#b45309">⏱ Please wait for the full output to finish rendering before reading or interacting</div>`:''}
+            ${(stage===3)?`<div class="stage-sub" style="margin-top:3px;color:#b45309">⏱ Please wait for the full output to finish rendering before reading or interacting</div>`:''}
           </div>
         </div>
-        ${(stage===4)?`<div class="stage-wait-notice"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span><strong>Stage 4 is generating — please wait for the full output to finish rendering</strong> before reading or interacting with the Recommendations Note. This can take 1–2 minutes.</span></div>`:''}
+        ${(stage===3)?`<div class="stage-wait-notice"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span><strong>Stage 3 is generating — please wait for the full output to finish rendering</strong> before reading or interacting with the Recommendations Note. This can take 1–2 minutes.</span></div>`:''}
         <div class="callout info ani">
           <div class="callout-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
           <div class="callout-body"><strong>${CALLS[stage].t}</strong>${CALLS[stage].b}</div>
@@ -2108,12 +2127,11 @@
                 if(p.responsiveness_rating){ fcvResponsivenessRating=p.responsiveness_rating; }
                 if(p.under_hood){ stage2UnderHood=p.under_hood; localStorage.setItem('stage2_under_hood', JSON.stringify(p.under_hood)); }
               }
-              if(stage===4){stageGapTable=p.gap_table||null;stageRiskExposure=p.risk_exposure||null;stageSensitivitySummary=p.sensitivity_summary||'';stageResponsivenessSummary=p.responsiveness_summary||'';if(p.fcv_rating)fcvRating=p.fcv_rating;if(p.fcv_responsiveness_rating)fcvResponsivenessRating=p.fcv_responsiveness_rating;}
+              if(stage===3){stageGapTable=p.gap_table||null;stageRiskExposure=p.risk_exposure||null;stageSensitivitySummary=p.sensitivity_summary||'';stageResponsivenessSummary=p.responsiveness_summary||'';if(p.fcv_rating)fcvRating=p.fcv_rating;if(p.fcv_responsiveness_rating)fcvResponsivenessRating=p.fcv_responsiveness_rating;}
               // Write timestamps BEFORE renderOut so the consistency check inside renderOut reads the current run's value
-              // Stage 2 completion also clears any previously dismissed banners on Stage 3/4
-              if(stage===2){ localStorage.setItem('stage2_timestamp', Date.now()); localStorage.removeItem('stage3_consistency_dismissed'); localStorage.removeItem('stage4_consistency_dismissed'); }
+              // Stage 2 completion also clears any previously dismissed banner on Stage 3
+              if(stage===2){ localStorage.setItem('stage2_timestamp', Date.now()); localStorage.removeItem('stage3_consistency_dismissed'); }
               if(stage===3) localStorage.setItem('stage3_timestamp', Date.now());
-              if(stage===4) localStorage.setItem('stage4_timestamp', Date.now());
               // For Stage 2, use display_text (stripped of delimiters) if provided by backend
               const renderResult = (stage===2 && p.display_text) ? p.display_text : p.result;
               renderOut(stage,renderResult,followOn);setStepper(stage,'done');
@@ -2139,23 +2157,23 @@
                 // Note: under_hood panels and sidebar are injected by renderOut (which already ran above),
                 // because stage2UnderHood was stored before renderOut was called.
               }
-              // Explorer panel + sidebar for Stage 4
-              if(stage===4 && p.priorities && p.priorities.length){
-                stageFourPriorities=p.priorities;
+              // Priority cards + sidebar for Stage 3 (Recommendations)
+              if(stage===3 && p.priorities && p.priorities.length){
+                stageThreePriorities=p.priorities;
                 explorerCache = {};
-                // Clear localStorage cache so stale explorer results don't reappear for new Stage 4 run
+                // Clear localStorage cache so stale explorer results don't reappear for new Stage 3 run
                 Object.keys(localStorage).filter(k=>k.startsWith('explorer_priority_')).forEach(k=>localStorage.removeItem(k));
                 explorerHistory=[];
                 updateSidebar();
                 populateExplorerDropdown(p.priorities);
               }
-              if(stage===4 && p.parse_error){
+              if(stage===3 && p.parse_error){
                 const outEl = document.getElementById('s-out');
                 if(outEl){
                   const errBanner = document.createElement('div');
                   errBanner.className = 'ani';
                   errBanner.style.cssText = 'background:#fff3cd;border:1px solid #ffc107;border-radius:6px;padding:10px 14px;margin-top:12px;font-size:0.9em';
-                  errBanner.textContent = p.parse_error_message || 'Stage 4 output could not be parsed — please re-run this stage.';
+                  errBanner.textContent = p.parse_error_message || 'Stage 3 output could not be parsed — please re-run this stage.';
                   outEl.appendChild(errBanner);
                 }
               }
@@ -2342,7 +2360,7 @@
   }
 
   function renderOut(stage,result,isFollowOn){
-    const isLast=stage===4;
+    const isLast=stage===3;
     const hasSidebar=stage>=2;
     const c=CALLS[stage];
     let _outBodyContent;
@@ -2350,7 +2368,8 @@
       const _sp=result.split(/(?=###\s*Strengths\b)/i);
       const _pre=_sp[0]||result;
       const _rest=_sp[1]||'';
-      _outBodyContent=md(_pre)+renderRiskExposure(stageRiskExposure)+md(_rest)+renderSRCards(stageSensitivitySummary,stageResponsivenessSummary)+'<div id="priorities-intro"></div>';
+      const _stageBadge = docType && docType !== 'Unknown' ? `<div class="stage-awareness-badge">Recommendations tailored for <strong>${esc(docType)}</strong> stage</div>` : '';
+      _outBodyContent=_stageBadge+md(_pre)+renderRiskExposure(stageRiskExposure)+md(_rest)+renderSRCards(stageSensitivitySummary,stageResponsivenessSummary)+'<div id="priorities-intro"></div>';
     }else{
       const cleanResult = stage===1 ? result.replace(/\n*%%%DOC_TYPE:[^%\n]*%%%\n*/g,'') : result;
       _outBodyContent=md(cleanResult);
@@ -2381,7 +2400,7 @@
             <div class="out-hdr">
               <div class="out-hdr-l"><span class="dot done"></span>${NAMES[stage]}</div>
               <div style="display:flex;gap:8px;align-items:center">
-                ${isLast?`<button class="btn btn-ghost btn-sm" onclick="downloadReport()" title="Download all Stage 4 content as a Word document">
+                ${isLast?`<button class="btn btn-ghost btn-sm" onclick="downloadReport()" title="Download all Stage 3 content as a Word document">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                   Download report
                 </button>`:''}
@@ -2413,11 +2432,11 @@
       </div>
       `;
 
-    // Mark Stage 4 so CSS can remove the .out-body scroll constraint
-    if(isLast) document.getElementById('stage-disp').classList.add('s4-active');
+    // Mark Stage 3 (Recommendations) so CSS can remove the .out-body scroll constraint
+    if(isLast) document.getElementById('stage-disp').classList.add('s3-active');
 
-    // Stage consistency check: warn if Stage 2 was updated after Stage 3 or Stage 4
-    if(stage === 3 || stage === 4){
+    // Stage consistency check: warn if Stage 2 was updated after Stage 3
+    if(stage === 3){
       const s2ts = parseInt(localStorage.getItem('stage2_timestamp') || '0');
       const sXts = parseInt(localStorage.getItem(`stage${stage}_timestamp`) || '0');
       const dismissed = localStorage.getItem(`stage${stage}_consistency_dismissed`) === 'true';
@@ -2428,7 +2447,7 @@
           banner.id = `consistency-banner-${stage}`;
           banner.className = 'ani';
           banner.style.cssText = 'background:#fefce8;border:1px solid #ca8a04;border-radius:6px;padding:10px 14px;margin-bottom:12px;font-size:0.9em;color:#713f12;display:flex;align-items:center;gap:10px';
-          banner.innerHTML = `<span>Stage 2 was updated after this output was generated — consider re-running Stages 3 and 4 for consistency.</span><button style="margin-left:auto;background:none;border:none;cursor:pointer;color:#713f12;font-size:1em" onclick="localStorage.setItem('stage${stage}_consistency_dismissed','true');this.closest('#consistency-banner-${stage}').remove()" title="Dismiss">✕</button>`;
+          banner.innerHTML = `<span>Stage 2 was updated after this output was generated — consider re-running Stage 3 for consistency.</span><button style="margin-left:auto;background:none;border:none;cursor:pointer;color:#713f12;font-size:1em" onclick="localStorage.setItem('stage${stage}_consistency_dismissed','true');this.closest('#consistency-banner-${stage}').remove()" title="Dismiss">✕</button>`;
           outEl.insertBefore(banner, outEl.firstChild);
         }
       }
@@ -2639,8 +2658,8 @@
   }
 
   function downloadReport(){
-    const execSummary = stageOutputs[4] || '';
-    if(!execSummary && !stageFourPriorities.length){ alert('No Stage 4 output available to download.'); return; }
+    const execSummary = stageOutputs[3] || '';
+    if(!execSummary && !stageThreePriorities.length){ alert('No Stage 3 output available to download.'); return; }
 
     // Build a Word-compatible HTML document
     const dateStr = new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
@@ -2650,9 +2669,9 @@
 <h2>Executive Summary · Project-Wide Considerations</h2>
 ${md(execSummary)}`;
 
-    if(stageFourPriorities.length){
+    if(stageThreePriorities.length){
       body += `<hr><h2>Strategic Priorities</h2>`;
-      stageFourPriorities.forEach((pr, i) => {
+      stageThreePriorities.forEach((pr, i) => {
         const title = pr.title.replace(/^Priority\s+\d+\s*[·•]\s*/i,'');
         const riskColor = pr.risk_level==='High'?'#c0392b':pr.risk_level==='Medium'?'#e07b00':'#1a7a4a';
         body += `<div style="margin-top:22pt;border-top:1pt solid #1a3a5c;padding-top:14pt">
@@ -2718,7 +2737,7 @@ ${md(execSummary)}`;
 
   function reset(){
     pF=[];cF=[];hist=[];curS=0;busy=false;stageOutputs={};stageHists={};researchBrief='';researchCountry='';
-    ['stage2_timestamp','stage3_timestamp','stage4_timestamp','stage3_consistency_dismissed','stage4_consistency_dismissed'].forEach(k=>localStorage.removeItem(k));
+    ['stage2_timestamp','stage3_timestamp','stage3_consistency_dismissed'].forEach(k=>localStorage.removeItem(k));
     document.getElementById('upload-panel').style.display='block';
     document.getElementById('analysis-panel').style.display='none';
     document.getElementById('landing-hero').style.display='block';
@@ -2784,8 +2803,8 @@ ${md(execSummary)}`;
 
   function showPromptTab(n){
     promptModalActiveTab = n;
-    // Update tab styles for all tabs (1-4 and 'explorer')
-    const allTabIds = [1, 2, 3, 4, 'explorer'];
+    // Update tab styles for all tabs (1-3, 'deeper', and 'explorer')
+    const allTabIds = [1, 2, 3, 'deeper', 'explorer'];
     allTabIds.forEach(id=>{
       const tab = document.getElementById('ptab-'+id);
       if(!tab) return;
@@ -2869,8 +2888,8 @@ ${md(execSummary)}`;
   // ── Stage 2 state ──────────────────────────────────────────────────────────
   let stage2UnderHood = null;  // {recs_table, dnh_checklist, questions_map, evidence_trail}
 
-  // ── Stage 4 state ──────────────────────────────────────────────────────────
-  let stageFourPriorities = [];
+  // ── Stage 3 (Recommendations) state ───────────────────────────────────────
+  let stageThreePriorities = [];
   let currentPriority = 0;  // 0-indexed
   let explorerCache = {};   // {priorityIndex: parsedExplorerData}
   let explorerAbortController = null;  // AbortController for cancelling in-flight explorer fetch
@@ -2940,7 +2959,7 @@ ${md(execSummary)}`;
   }
 
   function updateSidebar(){
-    const n = stageFourPriorities.length;
+    const n = stageThreePriorities.length;
     const level = LEVELS.findIndex(l => l.toLowerCase() === (fcvRating||'').toLowerCase()) + 1;
     const color = LEVEL_COLORS[level] || '#e8edf2';
 
@@ -2969,7 +2988,7 @@ ${md(execSummary)}`;
     // Priority overview widget
     const povEl = document.getElementById('pov-sb');
     if(povEl && n){
-      povEl.innerHTML = stageFourPriorities.map((pr, i) => {
+      povEl.innerHTML = stageThreePriorities.map((pr, i) => {
         const label = pr.title.replace(/^Priority\s+\d+\s*[·•]\s*/i,'');
         const isDone = i < currentPriority;
         const isActive = i === currentPriority;
@@ -2989,8 +3008,8 @@ ${md(execSummary)}`;
 
   // ── Priority stepper & card rendering ────────────────────────────────────
 
-  function initStage4UI(){
-    if(!stageFourPriorities.length) return;
+  function initStage3UI(){
+    if(!stageThreePriorities.length) return;
     currentPriority = 0;
     renderPrioritiesIntro();
     renderPriorityStepper();
@@ -3000,11 +3019,11 @@ ${md(execSummary)}`;
 
   function renderPrioritiesIntro(){
     const el = document.getElementById('priorities-intro');
-    if(!el || !stageFourPriorities.length) return;
-    const n = stageFourPriorities.length;
+    if(!el || !stageThreePriorities.length) return;
+    const n = stageThreePriorities.length;
     const riskLabel = (r) => r === 'High' ? 'High priority' : r === 'Medium' ? 'Medium priority' : r === 'Low' ? 'Lower priority' : '';
     const riskCls = (r) => r === 'High' ? 'pi-risk-h' : r === 'Medium' ? 'pi-risk-m' : 'pi-risk-l';
-    const listItems = stageFourPriorities.map((pr, i) => {
+    const listItems = stageThreePriorities.map((pr, i) => {
       const title = pr.title.replace(/^Priority\s+\d+\s*[·•]\s*/i, '');
       const risk = riskLabel(pr.risk_level);
       return `<div class="pi-item">
@@ -3014,17 +3033,17 @@ ${md(execSummary)}`;
         ${pr.tag ? renderSRTagBadge(pr.tag,true) : ''}
       </div>`;
     }).join('');
-    el.innerHTML = `<div class="priorities-section-hdr">Strategic Priorities</div><div class="priorities-intro ani">
-      <p class="pi-lead">Based on a three-stage assessment of the project documents, <strong>${n} strategic ${n === 1 ? 'priority has' : 'priorities have'} been identified</strong> to strengthen FCV-sensitivity <span class="sr-tag sensitivity" style="font-size:9px;padding:1px 5px;vertical-align:middle">S</span> and responsiveness <span class="sr-tag responsiveness" style="font-size:9px;padding:1px 5px;vertical-align:middle">R</span> in the design and delivery of this project:</p>
+    el.innerHTML = `<div class="priorities-section-hdr">Priority Actions for the Task Team</div><div class="priorities-intro ani">
+      <p class="pi-lead">Based on a three-stage assessment of the project documents, <strong>${n} priority ${n === 1 ? 'action has' : 'actions have'} been identified</strong> to strengthen FCV-sensitivity <span class="sr-tag sensitivity" style="font-size:9px;padding:1px 5px;vertical-align:middle">S</span> and responsiveness <span class="sr-tag responsiveness" style="font-size:9px;padding:1px 5px;vertical-align:middle">R</span> in the design and delivery of this project:</p>
       <div class="pi-list">${listItems}</div>
-      <p class="pi-footer">Toggle through the panels below to explore each priority and concrete implementation options in more detail.</p>
+      <p class="pi-footer">Toggle through the panels below to explore each priority action and concrete implementation options in more detail.</p>
     </div>`;
   }
 
   function renderPriorityStepper(){
     const el = document.getElementById('priority-stepper');
     if(!el) return;
-    el.innerHTML = stageFourPriorities.map((pr, i) => {
+    el.innerHTML = stageThreePriorities.map((pr, i) => {
       const fullTitle = pr.title.replace(/^Priority\s+\d+\s*[·•]\s*/i,'');
       const riskCls = pr.risk_level==='High'?'ps-risk-h':pr.risk_level==='Medium'?'ps-risk-m':'ps-risk-l';
       const riskLbl = pr.risk_level==='High'?'HIGH':pr.risk_level==='Medium'?'MED':pr.risk_level==='Low'?'LOW':'';
@@ -3039,13 +3058,13 @@ ${md(execSummary)}`;
   }
 
   function showPriority(idx){
-    const pr = stageFourPriorities[idx];
+    const pr = stageThreePriorities[idx];
     if(!pr) return;
     currentPriority = idx;
-    const n = stageFourPriorities.length;
+    const n = stageThreePriorities.length;
 
     // Update stepper
-    stageFourPriorities.forEach((p2, i) => {
+    stageThreePriorities.forEach((p2, i) => {
       const el = document.getElementById(`ps-${i}`);
       if(el) el.className = `ps-step ${i < idx ? 'done' : i === idx ? 'active' : ''}`;
       const numEl = el ? el.querySelector('.ps-num') : null;
@@ -3111,11 +3130,12 @@ ${md(execSummary)}`;
             <div class="pc-hdr-chips">
               <span class="pc-chip ${riskClass}">Risk: ${esc(pr.risk_level||'—')}</span>
               ${pr.dimension ? `<span class="pc-chip">${esc(pr.dimension)}</span>` : ''}
+              ${pr.refresh_shift ? `<span class="shift-badge" title="${esc(pr.refresh_shift)}">${esc(pr.refresh_shift.replace('Shift ',''))}</span>` : ''}
             </div>
             ${(pr.who_acts||pr.when||pr.resources) ? `<div class="pc-meta-row">
-              ${pr.who_acts ? `<span class="pc-meta-chip"><strong>Who:</strong> ${esc(pr.who_acts)}</span>` : ''}
+              ${pr.who_acts ? `<span class="pc-meta-chip"><strong>Who:</strong> ${(pr.who_acts||'').split(';').map(w=>w.trim()).filter(Boolean).map(w=>'<span class="who-chip">'+esc(w)+'</span>').join(' ')}</span>` : ''}
               ${pr.when ? `<span class="pc-meta-chip"><strong>When:</strong> ${esc(pr.when)}</span>` : ''}
-              ${pr.resources ? `<span class="pc-meta-chip"><strong>Resources:</strong> ${esc(pr.resources)}</span>` : ''}
+              ${(()=>{const resTooltips={'Minimal':'Existing budget — no additional allocation needed','Moderate':'Dedicated allocation — requires budget line','Significant':'Requires restructuring or additional financing'};const baseRes=(pr.resources||'').split('(')[0].trim();const tip=resTooltips[baseRes]||'';return pr.resources?`<span class="pc-meta-chip"${tip?' title="'+esc(tip)+'"':''}><strong>Resources:</strong> ${esc(pr.resources)}</span>`:'';})()}
             </div>` : ''}
             ${warningBadges}
           </div>
@@ -3185,13 +3205,13 @@ ${md(execSummary)}`;
     cardArea.scrollIntoView({behavior:'smooth', block:'nearest'});
   }
 
-  function nextPriority(){ if(currentPriority < stageFourPriorities.length-1) showPriority(currentPriority+1); }
+  function nextPriority(){ if(currentPriority < stageThreePriorities.length-1) showPriority(currentPriority+1); }
   function prevPriority(){ if(currentPriority > 0) showPriority(currentPriority-1); }
 
   // ── Explorer loading & rendering ─────────────────────────────────────────
 
   async function loadExplorerForPriority(idx){
-    const pr = stageFourPriorities[idx];
+    const pr = stageThreePriorities[idx];
     if(!pr || explorerCache[idx]) return;
 
     // Cancel any in-flight explorer request
@@ -3653,7 +3673,7 @@ ${md(execSummary)}`;
     if(!msg) return;
     inp.value = '';
 
-    const pr = stageFourPriorities[idx];
+    const pr = stageThreePriorities[idx];
     // Build messages: use explorer history if available, otherwise build from stage history
     let messages;
     if(explorerHistory.length){
@@ -3694,16 +3714,16 @@ ${md(execSummary)}`;
     } catch(e){ ansEl.innerHTML = `<span style="color:#b91c1c">Error: ${esc(e.message)}</span>`; }
   }
 
-  // ── Populate priorities when Stage 4 completes ────────────────────────────
+  // ── Populate priorities when Stage 3 completes ────────────────────────────
 
   function populateExplorerDropdown(priorities){
-    // Kept for compatibility — now calls initStage4UI instead
-    stageFourPriorities = priorities;
-    initStage4UI();
+    // Kept for compatibility — now calls initStage3UI instead
+    stageThreePriorities = priorities;
+    initStage3UI();
   }
 
   function selectPrioritySb(title){
-    const idx = stageFourPriorities.findIndex(p=>p.title===title);
+    const idx = stageThreePriorities.findIndex(p=>p.title===title);
     if(idx >= 0) showPriority(idx);
   }
 
