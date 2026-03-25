@@ -756,6 +756,21 @@
     .beyond-item-body{font-size:13px;color:var(--text);line-height:1.7;}
     .beyond-item-body p{margin:0 0 .5em;}
     .beyond-loading{font-size:13px;color:var(--muted);padding:10px 0;display:flex;align-items:center;gap:8px;}
+    /* Go Deeper 3-tab section */
+    .go-deeper{border-top:1px solid var(--border);margin-top:14px;}
+    .go-deeper > summary{padding:12px 0 4px;cursor:pointer;font-size:13px;font-weight:600;color:#6b21a8;display:flex;align-items:center;gap:7px;list-style:none;user-select:none;}
+    .go-deeper > summary::-webkit-details-marker{display:none;}
+    .go-deeper > summary .beyond-badge{background:#f3e8ff;color:#6b21a8;font-size:10px;font-weight:600;padding:1px 8px;border-radius:10px;margin-left:4px;}
+    .go-deeper > summary .beyond-arrow{margin-left:auto;font-size:11px;color:#6b21a8;transition:transform .2s;}
+    .go-deeper[open] > summary .beyond-arrow{transform:rotate(180deg);}
+    .deeper-content{padding:10px 0 4px;}
+    .deeper-tabs{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
+    .deeper-tab{padding:6px 16px;border-radius:20px;border:1px solid #ccc;background:#fff;cursor:pointer;font-size:13px;font-weight:500;transition:all 0.15s;}
+    .deeper-tab.active{background:#0050A0;color:#fff;border-color:#0050A0;}
+    .deeper-tab:hover:not(.active){background:#f0f0f0;}
+    .deeper-tab-content{min-height:100px;}
+    .deeper-trail,.deeper-playbook{font-size:14px;line-height:1.6;}
+    .deeper-loading{font-size:13px;color:var(--muted);padding:10px 0;display:flex;align-items:center;gap:8px;}
 
     .priorities-intro{margin-bottom:14px;}
     .priorities-section-hdr{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--s4);margin:20px 0 10px;padding-bottom:6px;border-bottom:2px solid var(--s4);}
@@ -2160,9 +2175,15 @@
               // Priority cards + sidebar for Stage 3 (Recommendations)
               if(stage===3 && p.priorities && p.priorities.length){
                 stageThreePriorities=p.priorities;
-                explorerCache = {};
-                // Clear localStorage cache so stale explorer results don't reappear for new Stage 3 run
-                Object.keys(localStorage).filter(k=>k.startsWith('explorer_priority_')).forEach(k=>localStorage.removeItem(k));
+                // Clear Go Deeper caches so stale results don't reappear for new Stage 3 run
+                currentDeeperTab = {};
+                for(var i=0;i<10;i++){
+                  localStorage.removeItem('deeper_'+i+'_alternatives');
+                  localStorage.removeItem('deeper_'+i+'_trail');
+                  localStorage.removeItem('deeper_'+i+'_playbook');
+                  // Also clear legacy explorer cache keys
+                  localStorage.removeItem('explorer_priority_'+i);
+                }
                 explorerHistory=[];
                 updateSidebar();
                 populateExplorerDropdown(p.priorities);
@@ -2694,13 +2715,18 @@ ${md(execSummary)}`;
           if(pr.resources) body += `<strong>Resources:</strong> ${esc(pr.resources)}`;
           body += `</p>`;
         }
-        // Optional: include above-and-beyond if already loaded
-        const cached = explorerCache[i];
-        if(cached && cached.goFurtherItems && cached.goFurtherItems.length){
-          body += `<p><strong>Above and Beyond (optional):</strong></p>`;
-          cached.goFurtherItems.forEach((item, gi) => {
-            body += `<p style="margin-left:12pt"><strong>${['A','B','C'][gi]||gi+1}. ${esc(item.title)}</strong><br>${esc(item.body||'')}</p>`;
-          });
+        // Optional: include alternative approaches if already loaded via Go Deeper
+        const altCacheRaw = localStorage.getItem('deeper_' + i + '_alternatives');
+        if(altCacheRaw){
+          try {
+            const altParsed = parseExplorerText(altCacheRaw);
+            if(altParsed && altParsed.goFurtherItems && altParsed.goFurtherItems.length){
+              body += `<p><strong>Alternative approaches (optional):</strong></p>`;
+              altParsed.goFurtherItems.forEach((item, gi) => {
+                body += `<p style="margin-left:12pt"><strong>${['A','B','C'][gi]||gi+1}. ${esc(item.title)}</strong><br>${esc(item.body||'')}</p>`;
+              });
+            }
+          } catch(e) {}
         }
         body += `</div>`;
       });
@@ -2891,9 +2917,8 @@ ${md(execSummary)}`;
   // ── Stage 3 (Recommendations) state ───────────────────────────────────────
   let stageThreePriorities = [];
   let currentPriority = 0;  // 0-indexed
-  let explorerCache = {};   // {priorityIndex: parsedExplorerData}
-  let explorerAbortController = null;  // AbortController for cancelling in-flight explorer fetch
-  let explorerTimerInterval = null;    // setInterval handle for elapsed-time display
+  let currentDeeperTab = {};  // {priorityIndex: 'alternatives'|'trail'|'playbook'}
+  let deeperAbortController = null;  // AbortController for cancelling in-flight Go Deeper fetch
   let fileMetadata = {};   // {filename: {word_count, doc_type, extraction_status}}
   let explorerHistory = []; // for follow-up queries
   let fcvRating = '';
@@ -3084,14 +3109,6 @@ ${md(execSummary)}`;
       else { nextBtn.innerHTML = 'Next <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>'; nextBtn.onclick = nextPriority; }
     }
 
-    // Restore Explorer from localStorage before building card HTML (so it renders immediately)
-    if(!explorerCache[idx]){
-      try {
-        const stored = localStorage.getItem('explorer_priority_'+idx);
-        if(stored) explorerCache[idx] = JSON.parse(stored);
-      } catch(e) {}
-    }
-
     // Determine risk chip class
     const riskClass = pr.risk_level === 'High' ? 'pc-chip-risk-h' : pr.risk_level === 'Medium' ? 'pc-chip-risk-m' : 'pc-chip-risk-l';
 
@@ -3184,22 +3201,34 @@ ${md(execSummary)}`;
               <div class="pc-zone-body">${esc(pr.implementation_note)}</div>
             </div>` : ''}
           </div>
-          <!-- Above and beyond (lazy-loaded on expand) -->
-          <details class="zone-act-beyond" id="beyond-details-${idx}" ontoggle="handleBeyondToggle(this,${idx})">
+          <!-- Go Deeper 3-tab section (lazy-loaded on expand) -->
+          <details class="go-deeper" id="deeper-details-${idx}" ontoggle="handleDeeperToggle(this,${idx})">
             <summary>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-              Want to go above and beyond? Explore additional approaches
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              Go Deeper
               <span class="beyond-badge">Optional</span>
               <span class="beyond-arrow">▾</span>
             </summary>
-            <div class="beyond-content" id="above-beyond-content-${idx}">
-              ${explorerCache[idx] ? renderAboveAndBeyondHtml(explorerCache[idx]) : `<div class="beyond-loading" id="beyond-loading-${idx}"><svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;animation:spin 1s linear infinite;flex-shrink:0"><circle cx="12" cy="12" r="10" stroke-opacity=".25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-opacity="1"/></svg><span id="beyond-timer-${idx}">Loading alternatives…</span><button onclick="cancelExplorer()" class="exp-cancel-btn" title="Cancel">Cancel</button></div>`}
+            <div class="deeper-content">
+              <div class="deeper-tabs">
+                <button class="deeper-tab active" onclick="switchDeeperTab(${idx},'alternatives',this)">Alternative approaches</button>
+                <button class="deeper-tab" onclick="switchDeeperTab(${idx},'trail',this)">Analytical trail</button>
+                <button class="deeper-tab" onclick="switchDeeperTab(${idx},'playbook',this)">Playbook references</button>
+              </div>
+              <div class="deeper-tab-content" id="deeper-content-${idx}">
+                <div class="deeper-loading" id="deeper-loading-${idx}" style="display:none">
+                  <svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;animation:spin 1s linear infinite;flex-shrink:0"><circle cx="12" cy="12" r="10" stroke-opacity=".25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-opacity="1"/></svg>
+                  <span id="deeper-timer-${idx}">Loading...</span>
+                  <button onclick="cancelDeeper()" class="exp-cancel-btn" title="Cancel">Cancel</button>
+                </div>
+                <div id="deeper-result-${idx}"></div>
+              </div>
             </div>
           </details>
         </div>
       </div>`;
 
-    // Explorer is lazy-loaded — only fires when user opens the <details> section
+    // Go Deeper is lazy-loaded — only fires when user opens the <details> section
 
     updateSidebar();
     cardArea.scrollIntoView({behavior:'smooth', block:'nearest'});
@@ -3208,95 +3237,198 @@ ${md(execSummary)}`;
   function nextPriority(){ if(currentPriority < stageThreePriorities.length-1) showPriority(currentPriority+1); }
   function prevPriority(){ if(currentPriority > 0) showPriority(currentPriority-1); }
 
-  // ── Explorer loading & rendering ─────────────────────────────────────────
+  // ── Go Deeper 3-tab section ──────────────────────────────────────────────
 
-  async function loadExplorerForPriority(idx){
-    const pr = stageThreePriorities[idx];
-    if(!pr || explorerCache[idx]) return;
-
-    // Cancel any in-flight explorer request
-    if(explorerAbortController && !explorerAbortController.signal.aborted){
-      explorerAbortController.abort();
-    }
-    explorerAbortController = new AbortController();
-
-    // Start elapsed timer — use local handle to avoid stale abort clearing a newer timer
-    let elapsed = 0;
-    if(explorerTimerInterval) clearInterval(explorerTimerInterval);
-    const timerHandle = setInterval(() => {
-      elapsed++;
-      const timerEl = document.getElementById(`beyond-timer-${idx}`);
-      if(timerEl) timerEl.textContent = `Loading alternatives… ${elapsed}s`;
-    }, 1000);
-    explorerTimerInterval = timerHandle;
-
-    const promptOverride = sessionPrompts['explorer'] || '';
-    try {
-      const payload = { priority_title: pr.title, priority_body: pr.body, history: hist };
-      if(promptOverride) payload.prompt_override = promptOverride;
-
-      const res = await fetch('/api/run-explorer', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload), signal: explorerAbortController.signal });
-      if(!res.ok) throw new Error('Server error '+res.status);
-
-      const reader = res.body.getReader(), dec = new TextDecoder();
-      let buf = '', streamed = '';
-
-      while(true){
-        const {done, value} = await reader.read(); if(done) break;
-        buf += dec.decode(value, {stream:true});
-        const lines = buf.split('\n'); buf = lines.pop();
-        for(const line of lines){
-          if(!line.startsWith('data: ')) continue;
-          try{
-            const p = JSON.parse(line.slice(6));
-            if(p.error) throw new Error(p.error);
-            if(p.done){
-              clearInterval(timerHandle); explorerTimerInterval = null;
-              const parsed = parseExplorerText(p.result);
-              explorerCache[idx] = parsed;
-              // Persist to localStorage so results survive page refresh
-              try { localStorage.setItem('explorer_priority_'+idx, JSON.stringify(parsed)); } catch(e) {}
-              explorerHistory = [
-                {role:'user', content:'[Explorer: '+pr.title+']'},
-                {role:'assistant', content:p.result}
-              ];
-              // Update the above-and-beyond content area
-              const contentEl = document.getElementById(`above-beyond-content-${idx}`);
-              if(contentEl) contentEl.innerHTML = renderAboveAndBeyondHtml(parsed);
-              updateSidebar();
-            }
-          } catch(e){ if(e.message!=='Unexpected end of JSON input'){
-            clearInterval(timerHandle); explorerTimerInterval = null;
-            const loadEl = document.getElementById(`beyond-loading-${idx}`);
-            if(loadEl) loadEl.textContent = 'Could not load alternatives: '+e.message;
-          }}
-        }
-      }
-    } catch(e){
-      clearInterval(timerHandle); explorerTimerInterval = null;
-      const loadEl = document.getElementById(`beyond-loading-${idx}`);
-      if(e.name === 'AbortError'){
-        if(loadEl) loadEl.textContent = 'Generation cancelled.';
-      } else {
-        if(loadEl) loadEl.textContent = 'Error: '+e.message;
-      }
+  function handleDeeperToggle(detailsEl, idx) {
+    if (!detailsEl.open) return; // closed — nothing to do
+    if (currentDeeperTab[idx]) return; // already initialised for this priority
+    currentDeeperTab[idx] = 'alternatives';
+    const cacheKey = 'deeper_' + idx + '_alternatives';
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) {
+      const resultEl = document.getElementById('deeper-result-' + idx);
+      if (resultEl) resultEl.innerHTML = renderDeeperContent('alternatives', cached);
+    } else {
+      loadDeeperTab(idx, 'alternatives');
     }
   }
 
-  function cancelExplorer() {
-    if(explorerAbortController) explorerAbortController.abort();
-  }
+  function switchDeeperTab(idx, tab, btnEl) {
+    // Update active button state
+    const tabs = btnEl.parentElement.querySelectorAll('.deeper-tab');
+    tabs.forEach(function(t) { t.classList.remove('active'); });
+    btnEl.classList.add('active');
+    currentDeeperTab[idx] = tab;
 
-  function handleBeyondToggle(detailsEl, idx) {
-    if(!detailsEl.open) return; // closed — nothing to do
-    if(explorerCache[idx]) {
-      // Already cached — render immediately
-      const contentEl = document.getElementById('above-beyond-content-'+idx);
-      if(contentEl) contentEl.innerHTML = renderAboveAndBeyondHtml(explorerCache[idx]);
+    const cacheKey = 'deeper_' + idx + '_' + tab;
+    const cached = localStorage.getItem(cacheKey);
+    const resultEl = document.getElementById('deeper-result-' + idx);
+
+    if (cached) {
+      if (resultEl) resultEl.innerHTML = renderDeeperContent(tab, cached);
       return;
     }
-    // First open — trigger lazy load
-    loadExplorerForPriority(idx);
+
+    if (tab === 'trail') {
+      loadAnalyticalTrail(idx);
+    } else {
+      loadDeeperTab(idx, tab);
+    }
+  }
+
+  function loadAnalyticalTrail(idx) {
+    // Client-side only — no API call
+    const resultEl = document.getElementById('deeper-result-' + idx);
+    if (!resultEl) return;
+    let underHood = {};
+    try { underHood = JSON.parse(localStorage.getItem('stage2_under_hood') || '{}'); } catch(e) {}
+    const dimension = (stageThreePriorities[idx] || {}).dimension || (stageThreePriorities[idx] || {}).fcv_dimension || '';
+
+    if (!underHood.recs_table && !underHood.questions_map && !underHood.evidence_trail) {
+      resultEl.innerHTML = '<p class="beyond-intro">No analytical trail data available. Complete Stage 2 first.</p>';
+      return;
+    }
+
+    let result = '';
+
+    // Filter recommendations table by dimension
+    if (underHood.recs_table) {
+      const lines = underHood.recs_table.trim().split('\n');
+      const header = lines.slice(0, 2);
+      const escapedDim = dimension.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp('\\b' + escapedDim + '\\b', 'i');
+      const dataRows = lines.slice(2).filter(function(line) { return !dimension || regex.test(line); });
+      if (dataRows.length) {
+        result += '### Relevant Recommendations\n\n' + header.concat(dataRows).join('\n') + '\n\n';
+      }
+    }
+
+    // Filter key questions by dimension
+    if (underHood.questions_map) {
+      const qlines = underHood.questions_map.trim().split('\n');
+      const qheader = qlines.slice(0, 2);
+      const escapedDim2 = dimension.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const qregex = new RegExp('\\b' + escapedDim2 + '\\b', 'i');
+      const qrows = qlines.slice(2).filter(function(line) { return !dimension || qregex.test(line); });
+      if (qrows.length) {
+        result += '### Relevant Key Questions\n\n' + qheader.concat(qrows).join('\n') + '\n\n';
+      }
+    }
+
+    // Always show evidence trail
+    if (underHood.evidence_trail) {
+      result += '### Evidence Trail\n\n' + underHood.evidence_trail;
+    }
+
+    const content = result || 'No detailed analytical data available' + (dimension ? ' for the ' + dimension + ' dimension.' : '.');
+    try { localStorage.setItem('deeper_' + idx + '_trail', content); } catch(e) {}
+    resultEl.innerHTML = renderDeeperContent('trail', content);
+  }
+
+  async function loadDeeperTab(idx, tab) {
+    const loadingEl = document.getElementById('deeper-loading-' + idx);
+    const resultEl = document.getElementById('deeper-result-' + idx);
+    if (!resultEl) return;
+
+    if (loadingEl) loadingEl.style.display = 'flex';
+    resultEl.innerHTML = '';
+
+    const priority = stageThreePriorities[idx];
+    if (!priority) { if (loadingEl) loadingEl.style.display = 'none'; return; }
+
+    // Cancel any in-flight deeper request
+    if (deeperAbortController && !deeperAbortController.signal.aborted) {
+      deeperAbortController.abort();
+    }
+    deeperAbortController = new AbortController();
+
+    const startTime = Date.now();
+    const timerEl = document.getElementById('deeper-timer-' + idx);
+    const timerHandle = setInterval(function() {
+      if (timerEl) timerEl.textContent = 'Loading... ' + Math.round((Date.now() - startTime) / 1000) + 's';
+    }, 500);
+
+    let accumulated = '';
+
+    try {
+      const resp = await fetch('/api/run-deeper', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          tab: tab === 'playbook' ? 'playbook_refs' : 'alternatives',
+          priority_title: priority.title || '',
+          priority_body: JSON.stringify(priority),
+          history: hist,
+          doc_type: docType || 'Unknown'
+        }),
+        signal: deeperAbortController.signal
+      });
+
+      if (!resp.ok) throw new Error('Server error ' + resp.status);
+
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let sseBuffer = '';
+
+      while (true) {
+        const {done, value} = await reader.read();
+        if (done) break;
+        sseBuffer += decoder.decode(value, {stream: true});
+        const events = sseBuffer.split('\n\n');
+        sseBuffer = events.pop();
+        for (let i = 0; i < events.length; i++) {
+          const event = events[i];
+          if (!event.trim()) continue;
+          const eventLines = event.split('\n');
+          for (let j = 0; j < eventLines.length; j++) {
+            const line = eventLines[j];
+            if (line.indexOf('data: ') !== 0) continue;
+            try {
+              const d = JSON.parse(line.slice(6));
+              if (d.error) throw new Error(d.error);
+              if (d.chunk) {
+                accumulated += d.chunk;
+                resultEl.innerHTML = '<div class="out-body">' + md(accumulated) + '</div>';
+              }
+              if (d.done && d.output) accumulated = d.output;
+            } catch(e) { if (e.message !== 'Unexpected end of JSON input') throw e; }
+          }
+        }
+      }
+
+      clearInterval(timerHandle);
+      if (loadingEl) loadingEl.style.display = 'none';
+
+      const cacheKey = 'deeper_' + idx + '_' + tab;
+      try { localStorage.setItem(cacheKey, accumulated); } catch(e) {}
+
+      if (tab === 'alternatives') {
+        const parsed = parseExplorerText(accumulated);
+        resultEl.innerHTML = renderAboveAndBeyondHtml(parsed);
+      } else {
+        resultEl.innerHTML = renderDeeperContent('playbook', accumulated);
+      }
+    } catch(e) {
+      clearInterval(timerHandle);
+      if (loadingEl) loadingEl.style.display = 'none';
+      if (e.name === 'AbortError') {
+        resultEl.innerHTML = '<p class="beyond-intro">Generation cancelled.</p>';
+      } else {
+        resultEl.innerHTML = '<p class="err-msg">Failed to load content: ' + esc(e.message) + '</p>';
+      }
+    }
+  }
+
+  function renderDeeperContent(tab, content) {
+    if (tab === 'alternatives') {
+      const parsed = parseExplorerText(content);
+      return renderAboveAndBeyondHtml(parsed);
+    }
+    return '<div class="deeper-' + tab + ' out-body">' + md(content) + '</div>';
+  }
+
+  function cancelDeeper() {
+    if (deeperAbortController) deeperAbortController.abort();
   }
 
   function renderAboveAndBeyondHtml(parsed) {
