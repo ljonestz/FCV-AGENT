@@ -1357,6 +1357,16 @@ def run_fcv_web_research(country: str, sector: str, api_client) -> dict:
 
 # ── Flask app ────────────────────────────────────────────────────────────────
 
+# Clear stale prompts.json if it references old 4-stage keys
+if os.path.exists(PROMPTS_FILE):
+    try:
+        with open(PROMPTS_FILE) as _f:
+            _old_prompts = json.load(_f)
+        if '4' in _old_prompts or 'explorer' in _old_prompts:
+            os.remove(PROMPTS_FILE)
+    except (json.JSONDecodeError, IOError):
+        pass
+
 app = Flask(__name__, static_folder='static')
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
 _client = None

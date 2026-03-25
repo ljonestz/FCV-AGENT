@@ -1440,11 +1440,11 @@
       <button class="prompt-modal-close" onclick="closePromptModal()" aria-label="Close">×</button>
     </div>
     <div class="prompt-modal-tabs" id="prompt-tabs">
-      <button class="prompt-tab active" id="ptab-1" onclick="showPromptTab(1)">Stage 1 · FCV Risks</button>
-      <button class="prompt-tab" id="ptab-2" onclick="showPromptTab(2)">Stage 2 · Screening</button>
+      <button class="prompt-tab active" id="ptab-1" onclick="showPromptTab(1)">Stage 1 · Context</button>
+      <button class="prompt-tab" id="ptab-2" onclick="showPromptTab(2)">Stage 2 · Assessment</button>
       <button class="prompt-tab" id="ptab-3" onclick="showPromptTab(3)">Stage 3 · Recommendations</button>
       <button class="prompt-tab" id="ptab-deeper" onclick="showPromptTab('deeper')">Go Deeper</button>
-      <button class="prompt-tab" id="ptab-explorer" onclick="showPromptTab('explorer')">Explorer</button>
+      <button class="prompt-tab" id="ptab-followon" onclick="showPromptTab('followon')">Follow-on</button>
     </div>
     <div class="prompt-modal-body">
       <div class="prompt-info">
@@ -1730,6 +1730,14 @@
     document.getElementById('session-status').textContent = 'Session saved at ' + new Date().toLocaleTimeString();
   }
 
+  function showLegacyBanner() {
+    var banner = document.createElement('div');
+    banner.className = 'warn-banner';
+    banner.style.margin = '16px';
+    banner.innerHTML = 'This session was created with an earlier version of the screener. To use the new assessment framework, please start a new session. Your old session data is preserved.';
+    document.getElementById('main').prepend(banner);
+  }
+
   function loadSession(input){
     const file = input.files[0];
     if(!file) return;
@@ -1740,6 +1748,16 @@
         if(!state.version || !state.history){
           alert('This does not appear to be a valid FCV session file.');
           return;
+        }
+        // Check for legacy 4-stage format
+        if(state && state.history){
+          var hasOldStage4 = state.history.some(function(msg){
+            return msg.stage === '4' || msg.stage === 4;
+          });
+          if(hasOldStage4 || (state.stageOutputs && state.stageOutputs[4])){
+            showLegacyBanner();
+            return;
+          }
         }
         hist = state.history;
         curS = state.currentStage || 0;
@@ -1755,7 +1773,7 @@
           'Resumed: ' + file.name + ' (saved ' + savedAt + ') — Stage ' + curS + ' complete';
         setStepper(curS+1, 'active');
         // Show resume prompt in stage-disp
-        const nextStage = curS < 4 ? curS + 1 : 4;
+        const nextStage = curS < 3 ? curS + 1 : 3;
         document.getElementById('stage-disp').innerHTML = `
           <div class="callout info ani">
             <div class="callout-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
@@ -1763,7 +1781,7 @@
             ${state.fileNames.project.length ? '<br>Original files: ' + [...state.fileNames.project,...state.fileNames.context].join(', ') : ''}
             <br>Note: you will need to re-upload your documents if you want to run Stage 1 again.</div>
           </div>`;
-        document.getElementById('act-area').innerHTML = curS < 4 ? `
+        document.getElementById('act-area').innerHTML = curS < 3 ? `
           <div class="act-bar ani">
             <button class="btn btn-blue" onclick="runStage(${nextStage})">
               Continue from Stage ${nextStage}
@@ -1784,13 +1802,13 @@
     if(curS > 0){
       document.getElementById('save-session-btn').style.display='';
       document.getElementById('session-status').textContent =
-        'Stage ' + curS + ' of 4 complete' + (sessionName ? ' · ' + sessionName : '');
+        'Stage ' + curS + ' of 3 complete' + (sessionName ? ' · ' + sessionName : '');
     }
   }
 
   const NAMES={1:'Identifying FCV Risks',2:'FCV Assessment',3:'Recommendations Note'};
-  const SHORT={1:'Identifying FCV Risks',2:'FCV-Sensitivity Screening',3:'Identifying Project Gaps',4:'Recommendations Note'};
-  const SUBS={1:'Extracting all FCV-relevant information from your documents',2:'Assessing risks across six FCV dimensions',3:'Identifying gaps and recommending mitigations',4:'Generating the final TTL support note'};
+  const SHORT={1:'Identifying FCV Risks',2:'FCV Assessment',3:'Recommendations Note'};
+  const SUBS={1:'Extracting all FCV-relevant information from your documents',2:'Assessing FCV risks across six dimensions and 12 recommendations',3:'Generating the Recommendations Note and priority actions'};
   const COL={1:'s1',2:'s2',3:'s4'};
 
   const CALLS={
@@ -2829,8 +2847,8 @@ ${md(execSummary)}`;
 
   function showPromptTab(n){
     promptModalActiveTab = n;
-    // Update tab styles for all tabs (1-3, 'deeper', and 'explorer')
-    const allTabIds = [1, 2, 3, 'deeper', 'explorer'];
+    // Update tab styles for all tabs (1-3, 'deeper', and 'followon')
+    const allTabIds = [1, 2, 3, 'deeper', 'followon'];
     allTabIds.forEach(id=>{
       const tab = document.getElementById('ptab-'+id);
       if(!tab) return;
@@ -3763,7 +3781,7 @@ ${md(execSummary)}`;
       goFurtherHtml = `
         <button class="fcv-gf-toggle" onclick="this.classList.toggle('open');document.getElementById('${gfId}').classList.toggle('open');this.querySelector('.fcv-gf-arrow').textContent=document.getElementById('${gfId}').classList.contains('open')?'▴':'▾';">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-          <span class="fcv-gf-label">Want to Go Above and Beyond? Click here for additional recommendations</span>
+          <span class="fcv-gf-label">Go Deeper — click for additional recommendations</span>
           <span class="fcv-gf-badge">Optional</span>
           <span class="fcv-gf-arrow">▾</span>
         </button>
