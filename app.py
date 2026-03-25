@@ -782,15 +782,15 @@ def clean_stage2_output(text):
     return text.strip()
 
 
-def clean_stage4_output(text):
-    """Strip machine-readable blocks from Stage 4 output, leaving only the narrative.
+def clean_stage3_output(text):
+    """Strip machine-readable blocks from Stage 3 output, leaving only the narrative.
 
-    Primary target: %%%JSON_START%%% / %%%JSON_END%%% block emitted by the new
+    Primary target: %%%JSON_START%%% / %%%JSON_END%%% block emitted by the
     JSON-architecture prompt. The JSON block contains all structured data (priorities,
     ratings, summaries, risk exposure) and is parsed separately by extract_priorities().
 
     Fallback stripping of legacy delimiter blocks is preserved so that any cached or
-    stored Stage 4 outputs produced by the old prompt continue to render cleanly.
+    stored outputs produced by the old prompt continue to render cleanly.
 
     Heading cleanup and blank-line normalisation are also applied.
     """
@@ -1066,84 +1066,41 @@ def build_doc_type_context(document_type: str, stage: int) -> str:
         },
         3: {
             'PCN': (
-                "GAP FRAMING: Design opportunities. Frame all gaps as structural redesign openings, "
-                "not deficiencies. Propose bold mitigations: component redesign, alternative "
-                "beneficiary targeting, alternative implementation modalities (community-driven "
-                "development, local CSO partnerships). The Do-No-Harm checklist should include "
-                "early-stage safeguards: stakeholder mapping, conflict analysis integration into "
-                "preparation, and theory-of-change stress-testing."
-            ),
-            'PID': (
-                "GAP FRAMING: Preparation priorities. Frame gaps as things that can still be "
-                "integrated before appraisal. Propose mitigations that do not require wholesale "
-                "redesign: targeted consultations, adding FCV-sensitive monitoring indicators, "
-                "adjusting procurement or fiduciary arrangements. The Do-No-Harm checklist should "
-                "focus on what analytical work and stakeholder engagement is still possible."
-            ),
-            'PAD': (
-                "GAP FRAMING: Implementation adjustments. Frame gaps as operational safeguards and "
-                "early supervision priorities — things embeddable in the Operations Manual, citizen "
-                "engagement framework, or M&E plan. Do not propose component redesign. The "
-                "Do-No-Harm checklist focuses on operational safeguards during implementation."
-            ),
-            'AF': (
-                "GAP FRAMING: Course-correction. Frame gaps as AF-specific opportunities to address "
-                "weaknesses from the original project. Propose concrete additions: new sub-components, "
-                "adjusted targeting, revised citizen engagement, updated safeguards. The Do-No-Harm "
-                "checklist should ask explicitly: Is the AF inadvertently reinforcing exclusion or "
-                "grievances from the original project?"
-            ),
-            'Restructuring': (
-                "GAP FRAMING: Restructuring design tweaks. Propose adjustments to the restructuring "
-                "itself: safeguards to add, consultation processes to embed, revised risk mitigation. "
-                "The Do-No-Harm checklist should ask: Will the restructuring create new grievances or "
-                "exacerbate exclusion?"
-            ),
-            'ISR': (
-                "GAP FRAMING: Supervision priorities and immediate actions. Propose mitigations that "
-                "are implementable now without formal restructuring: stakeholder re-engagement, M&E "
-                "adjustments, revised procurement or fiduciary controls, GRM improvements. The "
-                "Do-No-Harm checklist should ask: Are there active implementation practices "
-                "currently creating harm?"
-            ),
-        },
-        4: {
-            'PCN': (
                 "TONE: Exploratory and ambitious. Encourage the TTL to consider alternative "
-                "approaches rather than just optimising the current design. Explorer deep-dives should "
+                "approaches rather than just optimising the current design. Go Deeper options should "
                 "offer alternative theories of change, cross-sectoral linkages, and adaptive "
                 "management frameworks. Recommendations should reflect that maximum flexibility "
-                "still exists."
+                "still exists. Frame gaps as structural redesign openings, not deficiencies."
             ),
             'PID': (
                 "TONE: Constructive and focused. Recommendations should prioritise integration points "
                 "before appraisal: analytical work still possible, stakeholder engagement, results "
-                "framework adjustments. Explorer deep-dives should focus on what can realistically "
-                "be integrated in the remaining preparation window."
+                "framework adjustments. Frame gaps as preparation priorities — things that can still "
+                "be integrated before appraisal without wholesale redesign."
             ),
             'PAD': (
                 "TONE: Pragmatic and precise. Focus recommendations on actionable Year 1 supervision "
                 "priorities — what the TTL should watch for in the first year of implementation, "
-                "which indicators to track closely, when to trigger adaptive measures. Explorer "
-                "deep-dives should focus on risk mitigation scenarios and operational contingencies, "
-                "not alternative designs."
+                "which indicators to track closely, when to trigger adaptive measures. Frame gaps as "
+                "implementation adjustments embeddable in the Operations Manual, citizen engagement "
+                "framework, or M&E plan. Do not propose component redesign."
             ),
             'AF': (
                 "TONE: Reflective and corrective. Recommendations should highlight lessons learned "
-                "from the original project and how the AF can integrate them. Explorer deep-dives "
-                "should offer concrete adaptive design elements addable via the AF instrument."
+                "from the original project and how the AF can integrate them. Frame gaps as "
+                "AF-specific opportunities to address weaknesses from the original project."
             ),
             'Restructuring': (
                 "TONE: Adaptive and alert. Recommendations should focus on what to monitor closely "
                 "during the restructured project period and what triggers should prompt further "
-                "action. Explorer deep-dives should include scenario planning for potential FCV "
-                "shocks during the remaining implementation period."
+                "action. Focus on adjustments to the restructuring itself: safeguards to add, "
+                "consultation processes to embed, revised risk mitigation."
             ),
             'ISR': (
                 "TONE: Operational and immediate. Recommendations should be concrete supervision "
                 "actions: what to discuss at the next aide-memoire, which indicators to watch, "
-                "when to trigger a formal risk review or mid-term review. Explorer deep-dives should "
-                "be tactical, addressing specific implementation bottlenecks directly."
+                "when to trigger a formal risk review or mid-term review. Frame gaps as supervision "
+                "priorities and immediate actions implementable without formal restructuring."
             ),
         },
     }
@@ -1604,6 +1561,41 @@ def run_stage():
                     FCV_GUIDE
                 )
 
+            # Stage 3 (Recommendations Note) needs stage-awareness injection
+            # and FCV Refresh framework reference material.
+            elif stage == 3:
+                doc_type = data.get('doc_type', document_type or 'Unknown')
+                stage_config = STAGE_GUIDANCE_MAP.get(doc_type, STAGE_GUIDANCE_MAP.get('Unknown', {}))
+                playbook_phase = stage_config.get('playbook_phase', 'Preparation')
+                if playbook_phase == 'Implementation':
+                    playbook = PLAYBOOK_IMPLEMENTATION
+                elif playbook_phase == 'Closing':
+                    playbook = PLAYBOOK_CLOSING
+                else:
+                    playbook = PLAYBOOK_PREPARATION
+                if doc_type == 'ISR':
+                    playbook = PLAYBOOK_IMPLEMENTATION + "\n\n" + PLAYBOOK_CLOSING
+
+                timing_opts = stage_config.get('timing_options', ['Preparation'])
+                timing_str = ' / '.join(timing_opts) if isinstance(timing_opts, list) else str(timing_opts)
+
+                # Format the prompt with stage-awareness placeholders
+                try:
+                    stage_prompt = stage_prompt.format(
+                        doc_type=doc_type,
+                        timing_emphasis=timing_str,
+                        playbook_guidance=playbook
+                    )
+                except KeyError:
+                    pass  # If format fails, use prompt as-is
+
+                # Append FCV Refresh framework as reference material
+                stage_prompt = (
+                    stage_prompt +
+                    "\n\n--- WBG FCV Strategy Refresh Framework (4 Shifts) ---\n" +
+                    FCV_REFRESH_FRAMEWORK
+                )
+
             messages.append({"role": "user", "content": stage_prompt})
 
         def generate():
@@ -1693,7 +1685,7 @@ def run_stage():
 
                 full_text = ''.join(collected)
 
-                # Stage 4: extract priorities + rating from raw delimited text, then clean for display
+                # Post-processing: extract structured data from delimited blocks
                 priorities = []
                 fcv_rating = ''
                 fcv_responsiveness_rating = ''
@@ -1703,7 +1695,18 @@ def run_stage():
                 responsiveness_summary = ''
                 parse_error = False
                 parse_error_message = ''
-                if stage == 4:
+                stage2_ratings = {}
+                under_hood = {}
+
+                if stage == 2:
+                    # Stage 2: extract ratings and Under the Hood panels
+                    stage2_ratings = extract_stage2_ratings(full_text)
+                    under_hood = extract_under_hood(full_text)
+                    parse_error = under_hood.get('error', False) or stage2_ratings.get('error', False)
+                    parse_error_message = under_hood.get('message', '') or stage2_ratings.get('message', '')
+
+                elif stage == 3:
+                    # Stage 3 (Recommendations Note): extract priorities + ratings
                     uploaded_doc_names = [
                         doc.get('name', '') for doc in data.get('documents', [])
                         if doc.get('name')
@@ -1718,7 +1721,7 @@ def run_stage():
                     gap_table = extract_gap_table(full_text)
                     parse_error = parsed.get('error', False)
                     parse_error_message = parsed.get('message', '')
-                    full_text = clean_stage4_output(full_text)
+                    full_text = clean_stage3_output(full_text)
                     from datetime import date
                     header = DO_NO_HARM_HEADER.format(date=date.today().strftime('%d %B %Y'))
                     full_text = header + full_text
@@ -1726,7 +1729,7 @@ def run_stage():
                 # For Stage 1, replace the large content_parts user message with a compact
                 # placeholder before storing history. Subsequent stages only extract assistant
                 # outputs from history, so carrying the full documents/research/guides forward
-                # would send huge payloads unnecessarily on every Stage 2/3/4 call.
+                # would send huge payloads unnecessarily on every Stage 2/3 call.
                 if stage == 1:
                     updated_messages = [
                         {"role": "user", "content": "[Stage 1 — project documents and FCV context analysed]"},
@@ -1737,7 +1740,41 @@ def run_stage():
                 if len(updated_messages) > 20:
                     updated_messages = updated_messages[-20:]
 
-                yield f"data: {json.dumps({'done': True, 'result': full_text, 'history': updated_messages, 'stage': stage, 'priorities': priorities, 'fcv_rating': fcv_rating, 'fcv_responsiveness_rating': fcv_responsiveness_rating, 'gap_table': gap_table, 'risk_exposure': risk_exposure, 'sensitivity_summary': sensitivity_summary, 'responsiveness_summary': responsiveness_summary, 'parse_error': parse_error, 'parse_error_message': parse_error_message, 'research_brief': research_brief_text if stage == 1 else None, 'research_country': research_country if stage == 1 else None})}\n\n"
+                # Build done event payload
+                done_data = {
+                    'done': True,
+                    'result': full_text,
+                    'history': updated_messages,
+                    'stage': stage,
+                    'parse_error': parse_error,
+                    'parse_error_message': parse_error_message,
+                    'research_brief': research_brief_text if stage == 1 else None,
+                    'research_country': research_country if stage == 1 else None,
+                }
+
+                if stage == 2:
+                    # Stage 2: include ratings and Under the Hood panel data
+                    done_data['display_text'] = under_hood.get('display_text', full_text)
+                    done_data['sensitivity_rating'] = stage2_ratings.get('sensitivity_rating', '')
+                    done_data['responsiveness_rating'] = stage2_ratings.get('responsiveness_rating', '')
+                    done_data['under_hood'] = {
+                        'recs_table': under_hood.get('recs_table', ''),
+                        'dnh_checklist': under_hood.get('dnh_checklist', ''),
+                        'questions_map': under_hood.get('questions_map', ''),
+                        'evidence_trail': under_hood.get('evidence_trail', ''),
+                    }
+
+                elif stage == 3:
+                    # Stage 3: include priorities, ratings, summaries, risk exposure
+                    done_data['priorities'] = priorities
+                    done_data['fcv_rating'] = fcv_rating
+                    done_data['fcv_responsiveness_rating'] = fcv_responsiveness_rating
+                    done_data['gap_table'] = gap_table
+                    done_data['risk_exposure'] = risk_exposure
+                    done_data['sensitivity_summary'] = sensitivity_summary
+                    done_data['responsiveness_summary'] = responsiveness_summary
+
+                yield f"data: {json.dumps(done_data)}\n\n"
 
             except anthropic.AuthenticationError:
                 yield f"data: {json.dumps({'error': 'Invalid API key.'})}\n\n"
@@ -1751,56 +1788,86 @@ def run_stage():
         return jsonify({'error': str(e)}), 500
 
 
-@app.route('/api/run-explorer', methods=['POST'])
-def run_explorer():
+@app.route('/api/run-deeper', methods=['POST'])
+def run_deeper():
+    """Handle Go Deeper requests for priority cards.
+
+    Supports two tab types:
+    - 'alternatives': generates 2-3 optional alternative approaches (uses 'deeper' prompt)
+    - 'playbook_refs': generates playbook-grounded operational guidance (uses 'deeper_playbook' prompt)
+    The 'analytical_trail' tab is handled client-side — no backend call needed.
+    """
     try:
         data = request.get_json()
         if not data:
             return jsonify({'error': 'Invalid request.'}), 400
 
-        follow_up_messages = data.get('follow_up_messages', None)
+        tab = data.get('tab', 'alternatives')
+        priority_title = data.get('priority_title', '').strip()
+        priority_body = data.get('priority_body', '').strip()
+        history = data.get('history', [])
+        doc_type = data.get('doc_type', 'Unknown')
+        prompt_override = data.get('prompt_override', '').strip()
+
         MAX_ASSISTANT_CHARS = 40000
 
-        if follow_up_messages:
-            # Follow-up "dig deeper" query — use provided messages directly
-            messages = []
-            for m in follow_up_messages:
-                if m['role'] == 'assistant':
-                    c = m['content'] if isinstance(m['content'], str) else ''
-                    if len(c) > MAX_ASSISTANT_CHARS:
-                        c = c[:MAX_ASSISTANT_CHARS] + '\n...[truncated]'
-                    messages.append({'role': m['role'], 'content': c})
-                else:
-                    messages.append(m)
-        else:
-            # Initial explorer call for a priority
-            priority_title = data.get('priority_title', '').strip()
-            priority_body = data.get('priority_body', '').strip()
-            history = data.get('history', [])
-            prompt_override = data.get('prompt_override', '').strip()
+        # Build context from stage history
+        prior_outputs = []
+        for m in history:
+            if m['role'] == 'assistant':
+                c = m['content'] if isinstance(m['content'], str) else ''
+                if len(c) > MAX_ASSISTANT_CHARS:
+                    c = c[:MAX_ASSISTANT_CHARS] + '\n...[truncated]'
+                prior_outputs.append(c)
 
-            # Build context from stage history
-            prior_outputs = []
-            for m in history:
-                if m['role'] == 'assistant':
-                    c = m['content'] if isinstance(m['content'], str) else ''
-                    if len(c) > MAX_ASSISTANT_CHARS:
-                        c = c[:MAX_ASSISTANT_CHARS] + '\n...[truncated]'
-                    prior_outputs.append(c)
+        messages = []
+        if prior_outputs:
+            context = "\n\n---\n\n".join(
+                f"Stage {i+1} output:\n{o}" for i, o in enumerate(prior_outputs)
+            )
+            messages = [
+                {"role": "user", "content": f"Prior FCV analysis context:\n\n{context}\n\nUse this as the basis for the deep-dive."},
+                {"role": "assistant", "content": "Understood. I will use this prior analysis to generate concrete guidance for the selected priority."}
+            ]
 
-            messages = []
-            if prior_outputs:
-                context = "\n\n---\n\n".join(
-                    f"Stage {i+1} output:\n{o}" for i, o in enumerate(prior_outputs)
+        if tab == 'playbook_refs':
+            # Playbook references tab — use deeper_playbook prompt with playbook content
+            prompt = prompt_override if prompt_override else load_prompts().get('deeper_playbook', DEFAULT_PROMPTS.get('deeper_playbook', ''))
+
+            # Select playbook content based on doc_type
+            stage_config = STAGE_GUIDANCE_MAP.get(doc_type, STAGE_GUIDANCE_MAP.get('Unknown', {}))
+            playbook_phase = stage_config.get('playbook_phase', 'Preparation')
+            if playbook_phase == 'Implementation':
+                playbook = PLAYBOOK_IMPLEMENTATION
+            elif playbook_phase == 'Closing':
+                playbook = PLAYBOOK_CLOSING
+            else:
+                playbook = PLAYBOOK_PREPARATION
+            if doc_type == 'ISR':
+                playbook = PLAYBOOK_IMPLEMENTATION + "\n\n" + PLAYBOOK_CLOSING
+
+            # Extract additional priority fields from the request for richer context
+            priority_dimension = data.get('priority_dimension', '')
+            priority_recommendation = data.get('priority_recommendation', '')
+            priority_impl_note = data.get('priority_impl_note', '')
+
+            # Format the playbook prompt with context
+            try:
+                prompt = prompt.format(
+                    playbook_content=playbook,
+                    priority_title=priority_title,
+                    priority_dimension=priority_dimension,
+                    priority_recommendation=priority_recommendation,
+                    priority_impl_note=priority_impl_note,
                 )
-                messages = [
-                    {"role": "user", "content": f"Prior FCV analysis context:\n\n{context}\n\nUse this as the basis for the explorer deep-dive."},
-                    {"role": "assistant", "content": "Understood. I will use this prior analysis to generate concrete options for the selected priority."}
-                ]
+            except KeyError:
+                pass  # If format fails, use prompt as-is
 
-            # Load and fill the explorer prompt
-            explorer_prompt = prompt_override if prompt_override else load_prompts().get('explorer', '')
-            filled_prompt = explorer_prompt.replace('{PRIORITY_TITLE}', priority_title).replace('{PRIORITY_TEXT}', priority_body)
+            messages.append({"role": "user", "content": prompt})
+        else:
+            # Alternatives tab — same as legacy explorer
+            prompt = prompt_override if prompt_override else load_prompts().get('deeper', DEFAULT_PROMPTS.get('deeper', ''))
+            filled_prompt = prompt.replace('{PRIORITY_TITLE}', priority_title).replace('{PRIORITY_TEXT}', priority_body)
             messages.append({"role": "user", "content": filled_prompt})
 
         def generate():
