@@ -1,50 +1,775 @@
 # Background documents embedded at deploy time
+# Sources: WBG FCV Strategy Refresh (Jan 2026), OST Manual (June 2025),
+#          FCV Operational Playbook (Diagnostics, Preparation, Implementation, Closing)
 
-FCV_GUIDE = "The below is an LLM-based summary of several WBG good practice guides on promoting FCV-sensitivity and responsiveness. It serves as an input to the CPF reviewer to provide background material on relevant questions to consider (full list or resources included in Annex below).\nThe World Bank Group (WBG) considers addressing Fragility, Conflict, and Violence (FCV) a mission-critical strategic priority essential for achieving the twin goals of ending extreme poverty and promoting shared prosperity. Assessing a country strategy, such as a **Country Partnership Framework (CPF)** or a **Country Engagement Note (CEN)**, for FCV-sensitivity and FCV-responsiveness is vital to ensure that engagement is adapted and tailored to the unique complexities of FCV settings.\nThis assessment relies primarily on conducting an **FCV Sensitive Program and Portfolio Analysis**, which serves as a critical bridge between the foundational analysis of FCV drivers and sources of resilience (often performed in the Risk and Resilience Assessment or RRA) and the strategy\u2019s operational recommendations.\nThe assessment should be structured around three main areas: defining the core traits, posing key screening questions across the strategy and portfolio, and evaluating institutional coherence for effective promotion.\n---\n## I. Core Traits of FCV-Sensitivity and FCV-Responsiveness\nOperating in FCV settings is fundamentally different from business-as-usual development work due to constantly changing circumstances, high insecurity, low institutional capacity, and high costs. Therefore, the WBG relies on a differentiated approach.\n### A. FCV Sensitivity (Diagnostic and Design Quality)\nFCV sensitivity relates to the *intentionality* and *analytical depth* embedded in the strategy and operations. A strategy demonstrates FCV sensitivity if it:\n1.  **Demonstrates Awareness:** Shows a sound understanding of FCV dynamics, including drivers of conflict, violence, and fragility, alongside existing sources of resilience.\n2.  **Designs for Effectiveness:** Is specifically designed and implemented to ensure effectiveness by accounting for the effects of FCV dynamics, often utilizing operational flexibilities and relevant FCV tools.\n3.  **Applies \"Do No Harm\":** Explicitly ensures that the program, portfolio, or policy dialogue does not inadvertently contribute to drivers of FCV or undermine sources of resilience. This means preventing projects from exacerbating existing exclusion or inequality between groups or regions.\n4.  **Maximizes Positive Impact:** Actively seeks opportunities to help address the sources and impacts of FCV and strengthen resilience factors and peacebuilding opportunities.\nFCV-sensitive programming requires moving beyond the broad context setting of the RRA/SCD to perform **more micro and sectoral specific analyses** to determine not just *what* to do, but *how* to do it successfully.\n### B. FCV Responsiveness (Implementation and Operational Agility)\nFCV responsiveness is the institutional and operational capacity to adapt delivery mechanisms, resource allocation, and policy stance rapidly and flexibly to the constantly changing FCV environment. The effectiveness of the FCV Strategy relies on structural and resource alignment across the \"Four P's\": **Policies, Programming, Personnel, and Partnerships**.\n---\n## II. Key Screening Questions: Assessing Strategic FCV Integration\nAssessing a CPF involves analyzing the overall country engagement (Strategic Analysis) and examining the underlying operational framework and planned portfolio.\n### A. Strategic Analysis and Foundational Diagnostics (Programming & Policies)\nThese questions focus on the core analytical integrity and high-level strategic choices within the CPF/CEN/PLR:\n| Assessment Area | Key Screening Questions (The CPF Document) | Supporting Sources / Detail |\n| :--- | :--- | :--- |\n| **1. Analytical Foundation** | **Is the strategy based on systematic, mandatory FCV diagnostics?** | The CPF/SCD must incorporate the analysis and recommendations of the **Risk and Resilience Assessment (RRA)** \"more forcefully\". The RRA methodology should be revised to clearly frame key drivers, apply a gender lens, and prioritize a multi-sectoral approach. |\n| **2. FCV Driver Integration** | **Does the strategy systematically identify and address the relevant FCV drivers and sources of resilience (DRRs)?** | The CPF must outline how the WBG program addresses DRRs, and this focus is critical for ensuring long-term effects of projects. The document should clearly demonstrate the establishment of an **intervention logic** focusing on FCV challenges where the Bank has a comparative advantage. |\n| **3. Strategic Differentiation** | **Does the CPF articulate a tailored approach based on the FCV pillars of engagement?** | The strategy must define the mode of engagement (e.g., Prevention, Remaining Engaged during crisis, Transition, Mitigating Spillovers) and how this mode has been reflected and potentially shifted in response to the evolving context. The approach should reflect the necessity of working differently in FCV settings compared to non-FCS countries. |\n| **4. Institutional Focus** | **Does the strategy commit to supporting legitimate, transparent, and accountable core institutions?** | WBG programming should invest in strengthening core institutions, including justice and rule of law, and building the capacity of local authorities, civil society, and markets. Transparency is vital for building trust and reinforcing the social contract. |\n| **5. Contextual Clarity** | **Does the strategy address the political economy and context-specific risk tolerance?** | The CPF must be informed by political economy analysis to understand specific local, subnational, and national FCV drivers (e.g., land/water conflict, elite capture, regional disparities). It should reflect the WBG\u2019s necessity to tolerate a **higher exposure to residual risk** in FCV situations to achieve development outcomes, which requires a candid approach to risk management. |\n### B. Portfolio and Operational Screening (Programming & Policies in Practice)\nThese questions delve into the actual planned or existing portfolio and how operational effectiveness is ensured, linking strategy to project-level design:\n| Assessment Area | Key Screening Questions (Portfolio and Operations) | Supporting Sources / Detail |\n| :--- | :--- | :--- |\n| **1. Targeting and Selection** | **Is the portfolio selective, simple, and targeted to avoid fragmentation and maximize impact?** | The portfolio should focus on the most important sectors and themes that can curtail FCV drivers. Effectiveness is increased by focusing programs on **conflict-affected areas** and geographically targeting support where the development impact can be greatest. |\n| **2. Inclusion and Vulnerable Groups** | **Does the portfolio explicitly target FCV-affected/vulnerable groups, and ensure inclusion?** | Interventions must consider the differing needs of affected groups, especially the vulnerable, marginalized, women, girls, and youth. The **Peace and Inclusion Lenses** often focus on inclusion/targeting of geographic areas and social/identity groups (e.g., males/females, youth, displaced, ethnic groups) to ensure projects do not exacerbate inequality. |\n| **3. FCV Tools and Conflict Screening** | **Does the strategy promote systematic use of project-level FCV screening tools?** | The strategy should leverage tools like **Conflict Filters/Peace and Inclusion Lenses** to identify key project risks (e.g., related to geographic selection, benefit distribution, consultation process) and potential mitigating measures. Lenses are most impactful when applied at the earliest stages of project design (concept note/appraisal stage). |\n| **4. Operational Flexibilities** | **Are operational flexibilities systematically utilized or enabled to allow for swift, adaptive delivery?** | Check for policy adaptations (in the CPF narrative and pipeline design) related to procurement (e.g., HEIS, APAs), financial management (e.g., direct payments, alternative assurance), and environmental/social standards (ESF flexibility, adaptive management, deferred instrument preparation). |\n| **5. Security Considerations** | **Do operations systematically integrate security considerations throughout the project cycle?** | The strategy must ensure that project design, documentation, implementation, supervision, and M&E factor in security issues. The updated OP 2.30 provides an authorizing framework to partner with security actors and work on security issues. |\n| **6. Monitoring and Learning (M&E)** | **Is the M&E system adapted to the FCV context and focused on learning and adaptation?** | The strategy needs to support realistic and FCV-smart results frameworks that reflect FCV drivers and allow for adjustment during implementation. It should mandate **real-time monitoring** for strategy and program adaptation. Innovative tools like the Geo-Enabling initiative for Monitoring and Supervision (**GEMS**) and Third-Party Monitoring (**TPM**) should be utilized to collect data despite insecurity. |\n### C. Enabling Environment (Personnel & Partnerships)\nThe effectiveness of the strategy relies on institutional capacity and external collaboration:\n| Assessment Area | Key Screening Questions (Personnel & Partnerships) | Supporting Sources / Detail |\n| :--- | :--- | :--- |\n| **1. Personnel and CMU Commitment** | **Is there sufficient, appropriately skilled staff deployed on the ground, supported by strong CMU buy-in?** | CMU buy-in is critical for successful tool deployment (e.g., mandatory use of Peace Lenses, budget allocation). The strategy must ensure staff are trained in FCV-relevant skills, incentivized to work in FCV settings, and that the staffing footprint is adequate, particularly for field-based roles (TTLs, FCV specialists). |\n| **2. Resource Allocation and Protection** | **Are budgets protected and aligned with the higher cost of FCV work?** | The financial framework should align administrative budgets and staffing incentives with the increased financial commitment in FCV contexts. Funds dedicated to project preparation, analytics, and supervision (the core of FCV sensitivity) must be protected. M&E activities, in particular, must be budgeted purposefully due to higher volatility and costs. |\n| **3. Partnerships and Coherence** | **Does the strategy define robust, synergistic partnerships across the humanitarian-development-peace nexus?** | The CPF must outline how the WBG partners with external stakeholders (UN, NGOs, MDBs, peacebuilding actors) based on complementarity and comparative advantage. **Country Platforms** are important mechanisms for coordination, prioritization, and aligning support for country priorities. |\n| **4. Private Sector Integration (One WBG)** | **How are IFC and MIGA integrated, and are their approaches conflict-sensitive?** | The strategy should detail joint approaches (e.g., CPSDs, Country Strategies, upstream project development) to maximize private sector impact in job creation and service delivery. IFC/MIGA must implement **systematic conflict sensitivity approaches** and integrate FCV lenses into their impact measurement systems (AIMM/IMPACT). |\n---\n## III. Assessing Effective Promotion: The Coherence Challenge\nA strategy is effectively promoting FCV-sensitivity and FCV-responsiveness when its institutional design and implementation produce coherent results\u2014an area where the WBG has faced challenges.\n### A. The Sensitivity-Responsiveness Divide\nWhile the WBG FCV Strategy (2020-2025) successfully amplified the strategic focus on FCV and improved diagnostic quality (enhanced sensitivity), a critical **implementation gap persists**.\n*   **Failure to Mandate Programmatic Adaptation:** Evaluations show that World Bank lending portfolios demonstrated **limited adaptation** to address underlying FCV drivers, even when those drivers were identified in RRAs. This failure confirms an insufficient linkage between the high-quality analysis (sensitivity) and operational decision-making/portfolio design (responsiveness). Effective promotion requires strengthening internal mechanisms to ensure CPFs and subsequent lending portfolios actively adapt their structures, instruments, and sequencing based on RRA findings.\n*   **Inadequate Institutional Coherence:** The FCV Strategy suffered from foundational design gaps, specifically lacking an overarching Theory of Change to clearly link operational improvements (like new tools) to desired FCV outcomes at the global and country levels. This deficit compromised monitorability, learning, and adaptive management. Effective promotion requires publishing a detailed implementation plan that establishes clear, measurable linkages between strategic intent and operational action across the WBG.\n*   **Decline in Private Sector Outcomes:** Despite the focus on *One WBG* and scaling up finance (responsiveness), the performance ratings of IFC\u2019s investments in FCS have declined significantly. This suggests that while risk is accepted, core business models often lack sufficient adaptation, leading to poor execution (low sensitivity in practice).\n### B. Markers of Effective FCV Promotion in a CPF\nA strong CPF should not merely acknowledge FCV challenges; it should show evidence that the structure, financing, and delivery mechanism are fundamentally adapted. Key markers include:\n| Marker of Effectiveness | Description / Supporting Evidence |\n| :--- | :--- |\n| **Mandatory Analytical Integration** | FCV-informed programming approaches are treated as **non-negotiable** for project approval in FCS contexts. Analytical products (RRAs) are revised to yield clear, comprehensive, and operationally relevant recommendations, strengthening the linkage between diagnostics and operational impact. |\n| **Adaptive Design and Simplicity** | The strategy emphasizes **selectivity, simplicity, and flexibility** as the core implementation model, recognizing that linear development responses are ineffective in FCV settings. Projects should include longer-term timelines that allow for capacity building and adaptation. |\n| **Targeting and Focus on Exclusion** | The strategy prioritizes and documents efforts to address FCV drivers related to limited justice, rule of law, service delivery gaps, and **regional imbalances/social exclusion**. The portfolio explicitly focuses on geographically constrained areas or marginalized groups (e.g., through Conflict Filters/Peace Lenses on inclusion and targeting). |\n| **Institutional Capacity Building** | Support must focus directly on **core governance** to address FCV drivers, strengthening institutions that promote transparency and accountability. This requires support for client M&E systems, not just parallel accounting systems, aiming to build effective, legitimate, and sustainable institutions that strengthen the social contract. |\n| **Commitment to Learning and Budget** | The strategy must commit to continuous learning and resource alignment. Projects that fail should be handled with a **learning perspective** as much as an accountability lens. Financial and personnel frameworks must be revamped to align administrative budgets and staffing incentives proportionally with the increased financial commitment, protecting funds for preparation and supervision. |\nEffectively assessing an FCV strategy requires moving beyond merely checking whether the strategy mentions \"FCV\" to determining if it genuinely alters the *DNA* of the World Bank's engagement\u2014that is, whether analytical insights lead directly to adapted operations, tailored partnerships, sufficient resources, and responsive institutional mechanisms. If the strategy merely documents risks (sensitivity) without compelling operational changes (responsiveness), its effectiveness in addressing the root causes of fragility will be compromised.\nAnnex: List of resources drawn on to generate this brief:\n1. A Guide to Implementing Social Safety Nets in Fragile, Conflict, and Violent Context - World Bank Documents and Reports\n2. A_Review_of_the_World_Banks_Experiences_Using_Conflict_Filters_and_Peace_Lenses.pdf\n3. An Evaluation of Coherence in World Bank Group Fragility Engagement: Distinguishing and Operationalizing FCV Sensitivity and Responsiveness\n4. An Evaluation of the World Bank Group Strategy for Fragility, Conflict, and Violence 2020\u201325\n5. Classification of Fragility and Conflict Situations for ... - The World Bank\n6. Country Program Evaluation World Bank Group Support to Somalia, Fiscal Years 2013\u201322\n7. Development Policy Financing (DPF) - World Bank\n8. English Text (73.95 KB) - Open Knowledge Repository - World Bank\n9. Executive Summary: Somalia Country Private Sector Diagnostic - International Finance Corporation\n10. FCV-Note-Policy-Dialogue-on-Prevention-and-Transition-under-the-FCV-Envelope.pdf\n11. FCV-strategy narative-2025-09-27-revised-final.pdf\n12. Fragility, Conflict & Violence - World Bank\n13. Fragility, Conflict and Violence Envelope | International ...\n14. Fragility, Conflict and Violence Overview - World Bank\n15. Fragility, Conflict, and Violence - International Development Association - World Bank\n16. How to Improve Results in FCV Environments.pdf\n17. Mid-Term Review of the World Bank Group Strategy for Fragility, Conflict, and Violence (2020\u201325)\n18. OPSPF Policy Operational Flexibilities.docx\n19. Publication: An Evaluation of the World Bank Group Strategy for Fragility, Conflict, and Violence, 2020\u201325\n20. Publication: World Bank Group Support to Somalia, Fiscal Years 2013\u201322 - Country Program Evaluation (Approach Paper, March 2, 2023)\n21. The World Bank Group in the Federal Republic of Somalia Fiscal ...\n22. Updated-Bank-Policy-Development-Cooperation-and-Fragility-Conflict-and-Violence.pdf - Documents & Reports\n23. World Bank Document\n24. World Bank Group - International Development, Poverty and Sustainability\n25. World Bank Group Strategy for Fragility, Conflict and Violence (FCV) Stakeholder Consultation Meetings Feedback Summary Date\n26. World Bank Group Strategy for Fragility, Conflict, and Violence 2020\u20132025 (or World-Bank-Group-Strategy-for-Fragility-Conflict-and-Violence-2020-2025.pdf)\n27. good-practice-note-fcv-sensitive-program-and-portfolio-analysis.pdf\n28. good-practice-note-peace-and-inclusion-lenses.pdf\nTop of Form\nBottom of Form"
+# ─────────────────────────────────────────────────────────────────────────────
+# 1. FCV_GUIDE — Core FCV framework and screening questions (~3,000 tokens)
+# ─────────────────────────────────────────────────────────────────────────────
+
+FCV_GUIDE = """## WBG FCV Framework — Sensitivity, Responsiveness, and Strategic Shifts
+
+### I. Core Definitions
+
+**FCV Sensitivity** — The intentionality and analytical depth embedded in strategy and operations. A project demonstrates FCV sensitivity when it:
+1. **Demonstrates Awareness** — Shows understanding of FCV dynamics, drivers of conflict/fragility, and sources of resilience
+2. **Designs for Effectiveness** — Accounts for FCV dynamics using operational flexibilities and FCV tools
+3. **Applies Do No Harm** — Ensures the project does not exacerbate drivers of FCV or undermine resilience
+4. **Maximizes Positive Impact** — Actively seeks to address FCV sources and strengthen resilience
+
+FCV-sensitive programming requires moving beyond broad context-setting to **sector- and geography-specific analysis** that shapes not just *what* the project does, but *how* it does it.
+
+**FCV Responsiveness** — The operational and institutional capacity to adapt delivery mechanisms, resource allocation, and policy stance to a changing FCV environment. Effectiveness depends on alignment across the "Four Ps": **Policies, Programming, Personnel, and Partnerships**.
+
+### II. FCV Refresh — Four Strategic Shifts (January 2026)
+
+The WBG FCV Strategy Refresh replaces the original four pillars (preventing conflict, remaining engaged, transition, spillovers) with four cross-cutting strategic shifts:
+
+**Shift A — Anticipate** (WHEN)
+Risk-monitoring and management process to identify country-level FCV risks early and inform strategic choices. Work proactively with partners to tackle emerging risks before they escalate. Introduces a forward-looking FCV country-classification scheme to replace the backward-looking FCS list.
+
+**Shift B — Differentiate** (WHAT)
+Tailor engagement to FCV country classification and potential for lasting development impact. Different FCV contexts (conflict-affected, at-risk, forced displacement, criminal violence) require different operational approaches, instruments, and partnership models. Uses a traffic-light system for country-level FCV risk classification.
+
+**Shift C — Jobs & Private Sector** (WHAT)
+Work better as One WBG on the jobs agenda in FCV settings. Security, justice, and jobs are three critical intertwined prerequisites for sustained peace and prosperity. Focus areas: entrepreneurship ecosystem, MSME capacity building, business enabling environment reforms, IFC upstream/advisory, blended finance (IDA PSW). Create WBG MSME hub for coordinated analytics. Local Champions Initiative and Africa Fragility Initiative as delivery models.
+
+**Shift D — Enhanced Toolkit & Partnerships** (HOW)
+Enhance the WBG operational toolkit and pursue more focused partnerships. Attract, support and build talent to work in/on FCV settings. Strengthen HDP nexus coordination. Adaptive tactical and strategic management throughout the country engagement cycle.
+
+### III. FCV Country Classification Scheme (Refresh)
+
+The refreshed approach introduces a differentiated classification:
+- **Conflict-affected** — Active armed conflict or post-conflict (within 5 years)
+- **At risk** — Elevated fragility indicators; emerging or escalating risks
+- **Forced displacement** — Significant refugee or IDP populations
+- **Criminal violence** — Organised crime, gang violence (especially MICs)
+- **Compound risk** — Multiple overlapping crises (climate, food insecurity, displacement)
+
+### IV. Assessment Rating Scale
+
+When rating FCV sensitivity or responsiveness, use these levels:
+- **Strongly addressed** — Comprehensive, evidence-based, operationally embedded
+- **Partially addressed** — Some elements present but gaps in depth, specificity, or integration
+- **Weakly addressed** — Mentioned but superficial, generic, or disconnected from operations
+- **Not addressed** — No meaningful engagement with this dimension
+
+### V. Key Screening Questions
+
+#### A. Strategic Analysis and Diagnostics
+1. Is the project informed by mandatory FCV diagnostics (RRA or equivalent)?
+2. Does it systematically identify FCV drivers and sources of resilience relevant to the sector/geography?
+3. Does it articulate a tailored approach based on the FCV classification and applicable strategic shift(s)?
+4. Does it commit to supporting legitimate, transparent, and accountable institutions?
+5. Does it address political economy and context-specific risk tolerance?
+
+#### B. Portfolio and Operational Screening
+6. Is the portfolio selective, simple, and targeted to maximise impact?
+7. Does it explicitly target FCV-affected/vulnerable groups and ensure inclusion?
+8. Does it use project-level FCV screening tools (Peace & Inclusion Lenses)?
+9. Are operational flexibilities systematically utilised (CERC, HEIS, condensed procedures)?
+10. Are security considerations integrated throughout the project cycle?
+11. Is the M&E system adapted to FCV context, focused on learning and adaptation?
+
+#### C. Enabling Environment
+12. Is there sufficient, skilled staff with strong CMU buy-in?
+13. Are budgets aligned with the higher cost of FCV work?
+14. Are partnerships defined across the HDP nexus?
+15. How are IFC and MIGA integrated with conflict-sensitive approaches?
+
+### VI. Markers of Effective FCV Integration
+- **Mandatory analytical integration** — FCV-informed programming is non-negotiable for project approval in FCS contexts
+- **Adaptive design and simplicity** — Selectivity, flexibility, and longer timelines
+- **Targeting and focus on exclusion** — Geographic and social group targeting documented
+- **Institutional capacity building** — Core governance and M&E system strengthening
+- **Commitment to learning and budget** — Learning perspective for failures; protected preparation/supervision budgets
+"""
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 2. FCV_OPERATIONAL_MANUAL — 12 Recommendations + 25 Key Questions (~5,000 tokens)
+# ─────────────────────────────────────────────────────────────────────────────
 
 FCV_OPERATIONAL_MANUAL = """## WBG FCV Operational Manual — Core Framework for FCV-Sensitive Project Design
 
-This summarises the Bank's internal operational guidance for FCV Country Coordinators (June 2025). It defines what makes a project FCV-sensitive and provides the six recommendations that Task Teams should follow.
+Source: FCV Operational Manual for FCV Country Coordinators (June 2025)
 
 ### Definition of an FCV-Sensitive Operation
 An FCV-smart operation addresses FCV drivers and sources of resilience specific to its setting, is designed to be effective in a fragile or conflict-affected context, applies Do No Harm principles to avoid exacerbating fragility, and actively seeks to strengthen resilience. FCV sensitivity requires moving beyond broad contextual awareness to sector- and geography-specific analysis that shapes not just *what* the project does, but *how* it does it.
 
-### Six Recommendations for FCV-Sensitive Operational Design
+### Three Key Elements
+1. **Flexible Operational Design** — Phased implementation, unallocated funds, CERCs, framework approach, financing gap provisions
+2. **Tailored Implementation & Partnerships** — UN agencies, NGOs, TPM, community-driven approaches, security sector engagement, non-state actors
+3. **Strengthened Implementation Support** — HEIS, GEMS, real-time risk monitoring, adaptive management, enhanced supervision
 
-**Recommendation 1 — Use Drivers, Risks, and Resilience factors (DRRs) to inform operational design**
-The design should be informed by FCV drivers and risks specific to the setting, relevant to the sectoral and geographical focus, and anchored in evidence-based analysis. DRRs should shape the pathway to outcomes and strengthen resilience factors as critical elements to building trust and sustaining results. Institutional weaknesses and data scarcity must be kept in mind throughout.
+---
 
-**Recommendation 2 — Integrate FCV elements into stakeholder analysis and operational selectivity**
-A stakeholder analysis should identify who the beneficiaries are, how they will be targeted and affected, how the intervention addresses FCV-specific challenges, and what results can be expected for different groups. Focus on the impact of the development challenge on various stakeholders, how the intervention can produce positive outcomes, and how stakeholders can be managed and engaged in a conflict-sensitive way.
+### Twelve Recommendations for FCV-Sensitive Operational Design
 
-**Recommendation 3 — Embed FCV elements into the Theory of Change (ToC) and Project Development Objective (PDO)**
-The PDO, ToC, and results framework should be guided by DRRs and designed with flexibility to adapt to a changing environment. Build in that flexibility at the outset while maintaining a long-term outcome orientation. For DPOs, provide insight into the reform context including vested interests and elite capture risks, drawing on RRAs or political economy analyses.
+#### Operational Design (Recs 1–6)
 
-**Recommendation 4 — Align the risk and results equation to mitigate FCV security risks**
-FCV contexts are characterised by high inherent political and stakeholder risks, low or deteriorating institutional capacity, and more pronounced intended and unintended consequences. The risk management approach must monitor the evolution of risks in volatile contexts to manage results proactively. Engage OPCS, SSI, LEGAM, and the FCV Group as relevant to ensure security risks are appropriately integrated into the operational risk framework (SORT).
+**Rec 1 — Use DRRs to inform operational design** [Shift B: Differentiate]
+Design informed by FCV drivers and risks specific to the setting, relevant to the sectoral and geographical focus, anchored in evidence-based analysis. DRRs should shape the pathway to outcomes and strengthen resilience factors. Institutional weaknesses and data scarcity must be kept in mind throughout.
 
-**Recommendation 5 — Keep the Results Framework (RF) and M&E plan realistic and FCV-smart**
-The RF and M&E plan must be based on the specific FCV environment and build on existing systems. Choose relevant indicators, select appropriate data collection instruments, address the lack of baseline data, and handle ethical considerations in data collection. WBG Scorecard indicators should be used; RF indicators may need to be tailored to FCV sensitivities.
+**Rec 2 — Integrate FCV into stakeholder analysis and selectivity** [Shift B: Differentiate]
+Identify who beneficiaries are, how they will be targeted and affected, how the intervention addresses FCV challenges, and expected results for different groups. Assess impact on various stakeholders and how they can be managed in a conflict-sensitive way. Use Box 1 selection questions (evidence of past effectiveness, implementing agency commitment, capacity gaps, Do No Harm, complementarity with other actors).
 
-**Recommendation 6 — Make good use of innovative and digital tools**
-Digital and innovative tools are indispensable for sound M&E in most FCV settings. Options include: GEMS (Geo-Enabling initiative for Monitoring and Supervision — satellite and mobile technology for remote project supervision), TPM (Third-Party Monitoring — independent verification by NGOs or research organisations where Bank access is limited), and other digital tools for remote data collection. Selection should match operational needs, access constraints, and ethical considerations.
+**Rec 3 — Embed FCV into ToC and PDO** [Shift B: Differentiate]
+PDO, ToC, and results framework guided by DRRs with built-in flexibility. Long-term outcome orientation. For DPOs, provide insight into reform context including vested interests and elite capture risks, drawing on RRAs or political economy analyses.
 
-### Key Questions for PCN-Stage FCV Review (IPF/PforR)
-- Is the project design informed by DRRs from the RRA or equivalent analysis?
-- Are beneficiary selection criteria conflict-sensitive and non-discriminatory?
-- Does the ToC reflect FCV dynamics and include flexibility for adaptation?
-- Are implementation arrangements appropriate for insecure or low-capacity areas (e.g. UN agencies, TPM, NGOs)?
-- Does the project use available FCV operational flexibilities (CERC, HEIS, phased disbursement, unallocated funds)?
-- Is the GRM designed to be accessible to all groups, including marginalised populations?
-- Does the results framework reflect realistic FCV-smart indicators with appropriate data collection approaches?
+**Rec 4 — Align risk and results equation** [Shift A: Anticipate]
+FCV contexts have high political/stakeholder risks, low institutional capacity, pronounced consequences. Risk management must monitor risk evolution in volatile contexts proactively. Engage OPCS, SSI, LEGAM, FCV Group for security risk integration into SORT.
+
+**Rec 5 — Keep RF and M&E realistic and FCV-smart** [Shift D: Enhanced Toolkit]
+RF and M&E based on specific FCV environment, building on existing systems. Choose relevant indicators, appropriate data collection instruments, address baseline data gaps, handle ethical considerations. Tailor indicators to FCV sensitivities.
+
+**Rec 6 — Use innovative and digital tools** [Shift D: Enhanced Toolkit]
+GEMS (satellite/mobile for remote supervision), TPM (independent verification by NGOs/research organisations), digital data collection. Selection should match operational needs, access constraints, and ethical considerations.
+
+#### Results and M&E (Recs 7–12)
+
+**Rec 7 — Strengthen in-country M&E capacity and systems** [Shift D: Enhanced Toolkit]
+Strengthening client M&E systems should be the guiding principle. Conduct client M&E capacity assessment. Design M&E system with focus on capacity building and sustainability. Avoid parallel systems where possible.
+
+**Rec 8 — Budget more purposefully for M&E** [Shift D: Enhanced Toolkit]
+Operations often insufficiently budget for M&E in FCV settings. Budget across four expenditure categories: data collection, human resources, training, evaluations, plus contingency for emerging needs. Higher costs in FCV must be explicitly planned for.
+
+**Rec 9 — Use M&E to enhance citizen-state communications** [Shift B: Differentiate]
+M&E can build communication channels between citizens and state institutions, improving citizen-state relations. Link M&E system with efforts to communicate about operational activities and progress. Supports social contract strengthening.
+
+**Rec 10 — Monitor, learn, and adapt more frequently** [Shift A: Anticipate]
+Flexibility requires more frequent monitoring, learning, and adaptation. Use data and information for real-time decision-making. Rapidly adjust to realities on the ground. Learn, adjust, and improve delivery continuously.
+
+**Rec 11 — Consider pros/cons of impact evaluations** [Shift D: Enhanced Toolkit]
+Impact evaluations generate rigorous evidence on FCV operations but need different implementation in FCV. Not suitable for all interventions. Prioritise when: interventions are significant; evidence is scarce or contested; strong government ownership exists. Plan and budget early; explore appropriate methodologies for FCV limitations.
+
+**Rec 12 — Put an FCV twist in ICRs** [Shift D: Enhanced Toolkit]
+ICR should: (i) describe how design responded to FCV elements, (ii) document adaptation to changing environment, (iii) document impact on DRRs, (iv) report on institutional resilience and capacity, (v) look beyond results framework using other data sources for FCV-specific lessons.
+
+---
+
+### 25 Key Questions for FCV Review
+
+#### PCN Stage — IPF/PforR (Questions 1–15)
+1. Is the project design informed by DRRs from the RRA or equivalent analysis?
+2. Are DRRs relevant to the sector and geographical focus of the operation?
+3. Is the project linked to the CPF's FCV-related objectives and results?
+4. Are beneficiary selection criteria conflict-sensitive and non-discriminatory?
+5. Has a stakeholder analysis identified FCV-affected groups and their needs?
+6. Does the ToC reflect FCV dynamics and include flexibility for adaptation?
+7. Does the PDO incorporate FCV-relevant outcomes where appropriate?
+8. Are implementation arrangements appropriate for insecure or low-capacity areas (UN agencies, TPM, NGOs)?
+9. Does the project use available FCV operational flexibilities (CERC, HEIS, phased disbursement, unallocated funds)?
+10. Are security risks appropriately identified and integrated into the SORT?
+11. Is the GRM designed to be accessible to all groups, including marginalised populations?
+12. Does the RF include FCV-relevant indicators with appropriate disaggregation?
+13. Are data collection instruments realistic given access and security constraints?
+14. Is M&E budgeted adequately for the FCV context?
+15. Has the project considered combining interventions with complementary operations?
+
+#### PCN Stage — DPO (Questions 16–19)
+16. Is the reform context analysed for vested interests, elite capture, and FCV risks?
+17. Are prior actions conflict-sensitive and designed to avoid exacerbating fragility?
+18. Is policy dialogue aligned with FCV drivers and resilience factors?
+19. Are institutional strengthening measures included to sustain reform benefits?
+
+#### QER Stage (Questions 20–22)
+20. Has the design addressed issues raised at Concept Review regarding FCV elements?
+21. Are partnerships and implementation modalities confirmed and appropriate?
+22. Are fiduciary arrangements (FM, procurement) adapted to the FCV context?
+
+#### DM/ROC Stage (Questions 23–25)
+23. Is the operation ready for appraisal with FCV elements fully integrated?
+24. Have remaining design issues related to FCV sensitivity been resolved?
+25. Are all FCV-related risk mitigations in place and appropriately budgeted?
+
+---
 
 ### Operational Flexibilities Available in FCV Contexts
-TTLs should be advised on these specific tools where relevant:
-- **CERC** (Contingency Emergency Response Component): A zero-dollar component added at appraisal that can be activated rapidly during crises without Board restructuring. Enables swift reallocation of funds when conflict or shock disrupts project delivery.
-- **HEIS** (Hands-on Expanded Implementation Support): Allows WBG staff to provide direct procurement and implementation support in fragile settings, bypassing standard procurement timelines.
-- **TPM** (Third-Party Monitoring): Independent NGO or research organisation engaged to verify project activities in areas where direct supervision is not possible due to insecurity or access constraints.
-- **GEMS** (Geo-Enabling initiative for Monitoring and Supervision): Satellite and mobile technology platform for remote supervision and data collection in hard-to-reach areas.
-- **Unallocated funds**: A budget reserve built into the project at design stage, providing flexibility to respond to changing circumstances without restructuring.
-- **Phased disbursement**: Conditions tied to disbursement tranches, allowing the project to adapt its design based on progress and context before releasing subsequent funding.
-- **Alternative Implementation Arrangements**: Use of UN agencies, international NGOs, or community-driven mechanisms as implementing partners where government capacity is limited or contested.
+
+- **CERC** (Contingency Emergency Response Component): Zero-dollar component activated rapidly during crises without Board restructuring. Enables swift fund reallocation.
+- **HEIS** (Hands-on Expanded Implementation Support): WBG staff provide direct procurement support, bypassing standard timelines. Does not substitute for Borrower decision-making.
+- **TPM** (Third-Party Monitoring): Independent NGO/research org verification where direct supervision is impossible.
+- **GEMS** (Geo-Enabling initiative for Monitoring and Supervision): Satellite/mobile technology for remote supervision and data collection.
+- **Unallocated funds**: Budget reserve for flexibility without restructuring.
+- **Phased disbursement**: Conditions tied to tranches; adapt design based on progress.
+- **Alternative implementation**: UN agencies, INGOs, community-driven mechanisms as implementing partners.
+- **Framework approach**: Umbrella framework with details agreed in Project Operations Manual.
+- **Condensed procedures**: Consolidated preparation stages, shorter turnaround times (3 days vs. 5 for comments, 10 days vs. 18 for Board submission).
+- **Higher retroactive financing**: Up to 40% (vs. standard 20%) for Para 12 projects.
+- **Increased PPA**: Up to US$10M (vs. standard US$6M) for Para 12 projects.
+- **RRO** (Rapid Response Option): Repurpose up to 10% of undisbursed IPF/PforR portfolio within a fiscal year.
+
+### Questions for Selecting Operational Interventions (Box 1)
+- Is there evidence the intervention has worked elsewhere and would work in this FCV context?
+- Have similar interventions been tried before? What were results and stakeholder impacts?
+- Is the implementing agency showing commitment and political will?
+- What implementation capacity gaps exist and how will the intervention address them?
+- Are short-term conflict-sensitive needs balanced with long-term resilience building?
+- Does the solution consider differing needs of affected groups, especially the vulnerable?
+- Could any part of the intervention cause harm or contribute to conflict?
+- Has the operation considered complementary interventions from other actors to tackle the same DRRs?
+
+### Strengthening Social Cohesion (Box 2)
+Operations can strengthen social cohesion by: addressing regional/inter-group inequities; having positive impacts on groups vulnerable to mobilisation (ex-combatants, unemployed youth); bolstering state legitimacy through local service delivery; addressing grievances (e.g. education in native language); promoting inclusion of marginalised groups; improving inter-group dialogue.
 """
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 3. FCV_REFRESH_FRAMEWORK — Strategy Refresh detail (~1,500 tokens)
+# ─────────────────────────────────────────────────────────────────────────────
+
+FCV_REFRESH_FRAMEWORK = """## WBG FCV Strategy Refresh Framework (January 2026)
+
+Source: Internal briefing — Towards a Refreshed WBG Strategy for Engaging in FCV Settings
+
+### Context
+- Extreme poverty is shifting toward FCV-affected countries; success in FCV is mission-critical
+- Conflict and violence are not limited to low-income countries; MICs increasingly threatened by organised crime
+- Jobs are urgently needed but harder to create in FCV settings; private sector dominated by MSMEs
+- Security, justice, and jobs are three intertwined prerequisites for sustained peace and prosperity (WDR 2011)
+
+### Problem Statement
+If WBG support is to have lasting development impact in FCV settings, four major shifts are needed:
+
+### Shift A — Anticipate Better (WHEN to engage)
+- Forward-looking risk-monitoring and management process
+- Identify country-level FCV risks early, inform strategic choices
+- New FCV country-classification scheme (replaces backward-looking FCS list)
+- Distinct from IDA traffic-light system for debt risks
+- Work proactively with partners to tackle emerging risks
+
+### Shift B — Differentiate (WHAT to do)
+- Tailor engagement to FCV country classification and potential for lasting impact
+- Different operational approaches for: conflict-affected, at-risk, forced displacement, criminal violence
+- Differentiated approach covers: analytics depth, instrument choice, partnership model, risk appetite, supervision intensity
+- FCV traffic-light system for country-level classification (green/amber/red)
+
+### Shift C — Jobs & Private Sector (WHAT to prioritise)
+- One WBG approach: IBRD/IDA + IFC/MIGA + Knowledge Bank working together
+- Entrepreneurship ecosystem and MSME capacity building
+- Business enabling environment: registration, licensing, digital payments, collateral, self-reliance for refugees
+- Skills and capabilities: incubators, digitisation, value chain development
+- Local Champions Initiative (piloted in 6 West African FCS countries; $45M investments generated)
+- Organisational adjustments: WBG MSME hub, dedicated IFC MSME unit, fit-for-purpose E&S/IDD for MSMEs, streamlined processing
+
+### Shift D — Enhanced Toolkit & Partnerships (HOW to deliver)
+- Enhanced WBG operational toolkit
+- More focused HDP nexus partnerships
+- Attract, support and build talent for FCV settings (critical enabler)
+- Adaptive tactical management (annual business plan review)
+- Adaptive strategic management (CPF → RRA update → portfolio adjustment)
+
+### FCV-Sensitive vs. FCV-Responsive Country Engagement
+The refreshed country engagement approach in FCS contexts adds six FCV-specific layers:
+1. RRA integrated with SCD
+2. FCV-sensitive CPF with FCV-responsive outcomes
+3. IDA FCV Envelope (PRA, RECA, TAA)
+4. IDA Window for Host Communities and Refugees (WHR)
+5. IDA Private Sector Window (PSW)
+6. RRA updates feeding adaptive strategic management
+
+### Mapping Shifts to Project-Level Assessment
+| Shift | Project-level implication |
+|-------|--------------------------|
+| A — Anticipate | Risk monitoring embedded in M&E; SORT updated for FCV; early-warning indicators in RF |
+| B — Differentiate | Design tailored to FCV classification; DRRs shape ToC; context-specific flexibilities activated |
+| C — Jobs & PS | Private sector components; MSME support; IFC upstream integration; employment outcomes |
+| D — Toolkit | GEMS/TPM for supervision; HEIS for procurement; talent/staffing considerations; HDP partnerships |
+"""
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 4. PLAYBOOK_DIAGNOSTICS — Analytics and diagnostics phase (~2,000 tokens)
+# ─────────────────────────────────────────────────────────────────────────────
+
+PLAYBOOK_DIAGNOSTICS = """## FCV Operational Playbook — Diagnostics Phase
+
+Source: FCV Operational Playbook, Analytics page
+
+### RRA Methodology and Purpose
+Risk and Resilience Assessments (RRAs) are the WBG's primary diagnostic tool for understanding FCV drivers and sources of resilience. Two objectives:
+1. Facilitate holistic understanding of FCV drivers and sources of resilience; foster a nuanced approach to FCV and associated risks
+2. Provide differentiated, strategically and operationally relevant recommendations
+
+RRAs are conducted in collaboration with the FCV Group. They inform both portfolio- and project-level considerations.
+
+### Recovery and Peacebuilding Assessments (RPBAs)
+Joint EU-UN-WBG partnership methodology for coordinating re-engagement in countries emerging from conflict or political crisis. Helps countries assess, plan, and prioritise recovery requirements under a common process.
+
+### FCV-Sensitive Portfolio Analyses
+Examine current, recent, and pipeline World Bank country program to assess FCV sensitivity. Feed into considerations for current projects, policy dialogue, project pipeline, and future project design.
+
+### Peace and Inclusion Lenses
+Matrices and questionnaires for portfolios and individual projects to:
+- Identify and address conflict risks
+- Identify opportunities for projects to contribute to peacebuilding
+- Most impactful when applied at earliest stages of project design (concept note/appraisal)
+
+### Key Diagnostic Questions
+- What are the fundamental drivers of fragility in this context?
+- What are the sources of resilience that can be strengthened?
+- How do FCV dynamics interact with the specific sector and geography?
+- What are the risks TO the project from FCV dynamics?
+- What are the risks FROM the project to FCV dynamics (Do No Harm)?
+- Who are the key stakeholders, and how are they affected by FCV?
+- What data gaps exist, and how can they be addressed?
+
+### Compound Risk Framework
+In most fragile contexts, fragility risks are exacerbated by and interact with other risks to produce consequences greater than the sum of individual risks. Examples:
+- Natural hazards destroy crops, livestock, water/sanitation infrastructure
+- Disease and pest outbreaks worsen socio-political and economic tensions
+- Climate change compounds conflict-related displacement and food insecurity
+- Resource competition intersects with ethnic/regional tensions
+
+The FCV Group provides knowledge and data on global and situation-specific compound risk.
+
+### Data Sources
+
+**WBG Internal:**
+- FCV Data Collection: 1,300+ datasets on forced displacement, food insecurity, fragility
+- GEMS platforms for portfolio mapping and spatial analysis
+- Horn of Africa RRA Dashboard (interactive spatial data overlay)
+- Country-level crisis and conflict monitoring (incident tracking + risk factor monitoring)
+
+**External:**
+- UNOCHA Situation Reports and Daily Briefs
+- International Crisis Group (ICG) — conflict analytics and updates
+- IOM — migration and forced displacement data
+- UNHCR (via Joint Data Center on Forced Displacement)
+- ACLED, UCDP for conflict event data
+
+### Forced Displacement Resources
+- **Joint Data Center (JDC)**: WB-UNHCR collaboration; up-to-date forced displacement statistics
+- **FCV Forced Displacement Team**: Data sources and development good practices
+- **2023 WDR**: Migrants, Refugees and Societies
+- **2021 Development Approach**: Conflict-induced internal displacement
+
+### Country Private Sector Diagnostic (CPSD)
+Joint IFC-World Bank product to identify private sector opportunities and constraints. In FCS contexts: detailed analysis of business environment, sector potential, investment risks. IFC piloting conflict-sensitive approaches and applying "fragility lens" in CPSDs.
+"""
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 5. PLAYBOOK_PREPARATION — Project preparation in FCV (~3,000 tokens)
+# ─────────────────────────────────────────────────────────────────────────────
+
+PLAYBOOK_PREPARATION = """## FCV Operational Playbook — Project Preparation Phase
+
+Source: FCV Operational Playbook, Project Preparation page
+
+### What Is Different About Preparing Projects in FCV Settings
+Teams should consider: (1) whether to use operational flexibilities and which ones; (2) how to design FCV-sensitive M&E; (3) ensuring all design work is informed by FCV analytics.
+
+### Key Policy References
+- **In all FCV contexts**: IPF policy (esp. **Paragraph 12** for urgent need/capacity constraints), PforR policy, DPF policy
+- **OP 7.30**: Dealing with De Facto Governments (unconstitutional government changes)
+- **OP 7.60**: Projects in Disputed Areas
+- **OP 8.00**: Rapid Response to Crises and Emergencies
+
+### Project Design Flexibilities (no Para 12 required)
+- **Framework approach**: Umbrella of activities/areas, details in Project Operations Manual
+- **Phased implementation**: Focus initially on certain activities/areas; assess at MTR, adapt for remainder
+- **Unallocated funds**: Flexibility for cost increases or new activities (via restructuring)
+- **CERC**: Zero-dollar financing window for immediate emergency response; can be activated without Board restructuring
+- **CLD (Community and Local Development)**: Participatory decision-making, local capacity building, demand-driven financing; enhances social contract and trust
+- **Financing gap**: For TF-supported projects, appraise with anticipated TF amount even if not yet available
+
+### Para 12 Efficiencies (urgent need/capacity constraints)
+- **Higher retroactive financing**: Up to 40% (vs. 20%) for payments up to 12 months before signing
+- **Increased PPA**: Up to US$10M (vs. US$6M) for preparation and start-up
+- **Condensed procedures**: Consolidated preparation stages; Decision Review before appraisal; shortened comment periods (3 vs. 5 business days); reduced Board lead time (10 vs. 18 days)
+
+### Adaptive Implementation Tools
+- **Repurposing**: Reallocate within project description without restructuring
+- **Restructuring**: Simplified processing; most changes approved by CD/RVP
+- **Additional Financing**: Scale up or cover gaps during implementation
+- **Cancelling to recommit**: Free up funds from underperforming activities
+
+### Financial Management in FCV
+Guided by principles of **simplicity and flexibility**. FMSs apply dynamic fiduciary assurance, creative problem-solving in constrained environments.
+
+**Common FM flexibilities:**
+- Reduced audit submission timing and frequency (PMFM/CFMO approval)
+- Reduced IFR reporting frequency (FMS professional judgement)
+- Greater use of direct payments (reduced minimum thresholds)
+- Partnerships for assurance with CMU, WFA, MoF
+- Greater use of technology for remote FM supervision
+
+### Procurement in FCV
+Streamlined arrangements documented in PPSD. Key flexibilities:
+- **Direct Selection**: Purchase directly when delay would prevent timely relief
+- **HEIS**: Hands-on expanded implementation support (physical help, not execution)
+- **Framework Agreements**: Pre-negotiated supplier arrangements
+- **Advance procurement and retroactive financing**
+- **Use of UN agencies**: Standard Forms of Agreement for indirect financing
+- **Alternative Procurement Arrangements**: With MDBs, UN, bilaterals, well-performing borrower agencies
+- During immediate response: may accept Borrower's national procurement arrangements; prior review within 6 hours
+
+### Environmental and Social Framework (ESF) in FCV
+ESF provides systematic risk management using judgement-based, adaptive approaches. No special carve-outs for FCV, but flexibility comes through the process.
+
+**Borrower responsibilities**: E&S assessment (ESS1), Stakeholder Engagement Plan (ESS10), ESCP implementation, monitoring and reporting.
+
+**Key ESF standards relevant to FCV**: ESS4 (Community Health & Safety, incl. security personnel paras 24-27), labour conditions (ESS2), land acquisition (ESS5), indigenous peoples (ESS7).
+
+### Security Sector Engagement
+FCV Policy Para 3: Core principles — focus on reconstruction/development mandate; non-interference in domestic political affairs. Two categories:
+1. Technical/financial support for development activities relating to security sector
+2. Exceptional use of security/military agencies in project implementation in crises
+
+### Non-State Actors
+FCV Policy Para 18: Under exceptional circumstances (areas not controlled by government), Bank may work with non-state actors. Requires enhanced due diligence framework.
+
+### Forced Displacement
+FCV Policy Para 9: Development approach focusing on medium-to-long-term challenges. Support refugees and IDPs, sustainable development in host communities, strengthen institutions. Politically sensitive — governments can be both hosts and drivers of displacement.
+
+### Stakeholder Engagement Design
+1. Identify how FCV elements impact each stakeholder category (disadvantaged, benefiting, influential)
+2. Consider FCV setting when scoping activities — avoid overreach in low-capacity environments
+3. Assess stakeholder attitudes toward proposed project (supportive vs. resistant)
+4. Prepare stakeholder management plan with engagement action items and risk mitigations
+
+### M&E Framework Design in FCV
+- Include measurable FCV-related results in RF
+- Choose indicators reflecting FCV elements with appropriate disaggregation
+- Strengthen client M&E systems; include institution-building indicators
+- Align data collection instruments with needs and ground reality
+- Tackle baseline data gaps early (mine existing studies, quick surveys)
+- Include ethical considerations for data privacy/protection in FCV environments
+- Regularly review ToC for needed updates
+- Use SORT for consistent risk monitoring
+
+### Working with UN and Third Parties
+Three modes of UN engagement:
+1. **Indirect financing** (most common): Borrower contracts UN agency under Bank-financed operation via Standard Forms of Agreement
+2. **Direct financing** (exceptional): Bank directly contracts UN due to high fiduciary/security risks or OP 7.30 situations
+3. **Bank execution**: UN provides specialised TA via vendor contract
+
+Non-UN third parties (INGOs, local CSOs, regional entities): Determine eligibility with country lawyer, FM and procurement specialists; assess operational value and policy framework capacity.
+
+### IFC Private Sector Support
+- **Upstream & Advisory**: Early project cycle engagement, patient capital approach
+- **Blended finance**: IDA PSW and other facilities to de-risk projects
+- **CPSD**: Country Private Sector Diagnostics with fragility lens
+- **AFI**: Africa Fragility Initiative for domestic private sector
+- **LCI**: Local Champions Initiative (6 West African FCS countries)
+"""
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 6. PLAYBOOK_IMPLEMENTATION — Implementation in FCV (~2,500 tokens)
+# ─────────────────────────────────────────────────────────────────────────────
+
+PLAYBOOK_IMPLEMENTATION = """## FCV Operational Playbook — Implementation Phase
+
+Source: FCV Operational Playbook, Project Implementation page; OST Manual (Lessons and Recommendations)
+
+### What Is Different About Implementing in FCV Settings
+FCV implementation requires: continuous risk monitoring (project, country, regional level); frequent adaptation; higher tolerance for residual risk; non-traditional partnerships; enhanced supervision; and explicit attention to security, access constraints, and changing political dynamics.
+
+### Key Policy Framework During Implementation
+- IPF policy (esp. Para 12), PforR policy, DPF policy
+- OP 7.30 (de facto governments), OP 7.60 (disputed areas), OP 8.00 (rapid response)
+- CERCs for rapid crisis response within existing projects
+- Portfolio adjustment and restructuring as adaptive tools
+- Rapid Response Option (RRO): repurpose up to 10% of undisbursed IPF/PforR portfolio
+
+### Risk Monitoring and Adaptation
+- Monitor risk evolution at project, country, and regional levels
+- Use SORT for consistent risk rating and management
+- Periodically review ToC assumptions — critical in volatile contexts
+- Align risk mitigation implementation with project activity timelines
+- Include institutional capacity strengthening for risk monitoring
+- Ground-truth assumptions through development actors, including traditionally excluded groups
+
+### Third-Party Monitoring (TPM)
+Independent verification by NGOs or research organisations where direct supervision is not possible due to insecurity or access constraints. TPM can also be used for E&S risk management and benefit sharing.
+
+### GEMS (Geo-Enabling Initiative for Monitoring and Supervision)
+Systematically enhances M&E on client side and portfolio supervision on WB side. Builds capacity for field-appropriate, low-cost, open-source technology for digital real-time data collection. Platforms for remote supervision, real-time risk monitoring, portfolio mapping, and cross-partner coordination.
+
+### Digital and ICT Tools
+Select based on operational needs, access constraints, and ethical considerations. Options include: mobile data collection, satellite imagery, remote sensing, GIS mapping, digital payment systems, SMS-based feedback mechanisms.
+
+### Dealing with the Security Sector
+FCV Policy Para 3 principles apply. Two categories of engagement:
+1. Technical/financial support for development activities relating to security sector
+2. Exceptional use of security/military agencies in implementation (crises, emergencies, insecure areas)
+Consult ESS4 (paras 24-27) on risks and impacts of security personnel use.
+
+### Working with Non-State Actors
+FCV Policy Para 18: Enhanced due diligence for engagement in areas not controlled by government. Determine if engagement is consistent with Bank's legal and policy requirements.
+
+### Working in Inaccessible Contexts
+Key lessons from WBG engagement in insecure environments (Afghanistan, CAR, DRC, Myanmar, Sahel, South Sudan, Sudan, Yemen):
+
+**Strategic enablers:**
+- Flexible operational design for geographic expansion and adaptation to shifting security
+- TTLs play crucial role in shaping operating environment alongside project managers and CMUs
+- Broader portfolio planning essential — anticipate deteriorating access across the portfolio
+
+**Common programmatic approaches:**
+- **Iterative and layered programming**: Begin with low-risk activities, expand as trust builds
+- **Direct implementation**: Where national staff have access; requires minimum conditions
+- **Community-based programming**: Build trust through engagement with community leaders
+- **Remote programming**: Cash transfers, digital approaches for insecure/hard-to-reach areas
+- **Contractor-based delivery**: Locally accepted or pre-approved contractors
+
+**Partnership trade-offs:**
+- UN partnerships should align with long-term development goals, not just short-term needs
+- TPI requires system-strengthening integration, transparency, and early exit planning
+- NGO partnerships valuable for community ties
+- Security force partnerships require caution due to complexity and risk
+- Country systems must remain a focus; manage trade-offs between delivery and state-building
+
+### Forced Displacement During Implementation
+FCV Policy Para 9: Medium-to-long-term development focus. Address specific vulnerabilities of refugees and IDPs. Support host communities. Strengthen relevant institutions. Consider political sensitivities in host countries.
+
+### Gender in FCV Implementation
+- Move beyond gender tagging to effective and sustainable gender value chains
+- Understand distinct cultural norms for operational effectiveness
+- Enhance women's role through education, finance, and partnerships
+- Systematic M&E for GBV response best practices
+- Prioritise services for GBV survivors, especially forcibly displaced
+- Engage men and boys as promoters and beneficiaries of gender equality
+
+### Climate and FCV Nexus
+- Examine natural resource dependency and climate/security risk interaction
+- Assess impacts on different groups and regions; spatial data analysis
+- Address weak institutional capacity for climate change management
+- Ensure climate policies are inclusive of vulnerable groups
+- Anticipate negative externalities of adaptation/mitigation (just transition)
+- Sector-specific analysis of how investments alter resource access
+
+### Financial Management During Implementation
+Dynamic fiduciary assurance approach. FM flexibilities available: reduced audit/IFR frequency, greater direct payments, partnerships for assurance, technology-enabled remote supervision.
+
+### Procurement During Implementation
+HEIS, UN agencies, direct selection, framework agreements, post-review focus. In immediate response: accept Borrower's national procedures if consistent with Bank principles.
+
+### Stakeholder Engagement and Reputation Management
+Manage reputational risk actively. Ensure engagement aligned with citizen engagement strategy. Support transparency, accountability, and inclusiveness principles.
+
+### Integrity Risk Management
+In FCV settings, integrity risks are elevated. Recommendations: publicise bid invitations/awards widely; verify bidders and subcontractors; monitor contract size; align procurement documents with Bank fraud/corruption clauses; evaluate financial capability for competitiveness; strong documentation; clear complaint handling process.
+"""
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 7. PLAYBOOK_CLOSING — Project closing and ICR (~1,500 tokens)
+# ─────────────────────────────────────────────────────────────────────────────
+
+PLAYBOOK_CLOSING = """## FCV Operational Playbook — Project Closing Phase
+
+Source: FCV Operational Playbook, Project Closing page; OST Manual Rec 12
+
+### Challenges in Assessing Results in FCV
+Assessing results in FCV is more challenging due to:
+- Fast-changing and difficult operating environment
+- Weak state institutional capacity
+- High levels of exclusion and limited basic service provision
+- Insecurity and access restrictions
+- Dynamic forced displacement situations
+- Frequent project adaptations making storyline/performance assessment complex
+- Longer timeframes needed for observable changes
+- Data collection difficulties due to insecurity and low ground capacity
+
+While proactive restructuring should reflect RF adaptations, frequent changes complicate closure assessment. Each FCV situation is different — guidance applicability varies.
+
+### Impact Evaluation Considerations
+Impact evaluations by DIME/DEC can generate evidence on what works in FCV and why. Should be considered only if:
+- Results will be disseminated and used for decision-making
+- Strong government ownership and active demand for findings
+- Interventions are significant (size, policy importance, potential consequences)
+- Evidence is scarce or contested for the intervention in context
+
+**Key tips:**
+- Explore appropriate methodologies for FCV limitations
+- Get strong client buy-in
+- Plan and budget early in project lifecycle
+- Get support from WB internal teams specialised in impact evaluations
+
+### ICR Guidance for FCV (Section by Section)
+
+**Context at Appraisal:**
+Provide clear FCV storyline. Ensure ToC links project design/components to FCV context. If fragility element in PDO, ensure it is measurable and within operation's reach.
+
+**Significant Changes During Implementation:**
+Document rapid political, social, or conflict environment changes. Explain effects on ToC and PDO. Document implications for DRRs. Include all ToC versions for transparency.
+
+**Relevance of PDO:**
+Assess alignment with on-the-ground conditions and delivery partner capacity. Define development challenge, Bank's role, and how operation addresses DRRs. Evaluate whether PDO is outcome-oriented and feasible given government capacity and sector experience.
+
+**Efficacy (Achievement of PDO):**
+Be realistic about data collection possibilities. Use both quantitative and qualitative data (including perception surveys) beyond RF indicators. Start preparations for completion early; retrofit data as needed. Demonstrate reasonable progress or explain barriers. Consult OPCS guidelines on split ratings where applicable.
+
+**Key Factors Affecting Implementation:**
+Analyse factors beyond implementing agency/government control. Understand how operation adapted to changes during implementation. Critical for understanding what enabled or constrained results.
+
+**Quality of M&E:**
+Assess whether: (1) M&E framework was appropriately adapted to FCV context; (2) it considered effects on fragility and conflict itself. Develop robust FCV-sensitive M&E framework from the start.
+
+**Bank Performance:**
+Detail how Bank responded to challenging environment. Cover:
+- Design: Did operation respond to previous country experience?
+- Implementation: How did team respond to emerging challenges and unanticipated developments?
+
+**Risk to Development Outcome:**
+Reflect risk that outcomes will not be maintained (more prevalent in FCV). Assess:
+- Institutional capacity risk: Are results sustainable?
+- Risk mitigation: Level of achievement in managing risks to outcomes
+
+**Lessons Learned:**
+Should be context-specific, based on implementation and adaptation experiences, aligned with fragility constraints and drivers, and contribute to evidence base for future interventions.
+
+### FCV Twist in ICR (OST Manual Rec 12)
+The ICR should:
+1. Describe how operational design responded and was linked to FCV elements
+2. Document how the operation responded to the changing environment
+3. Document any impact of the operation on DRRs
+4. Report on improved institutional resilience and strengthened capacity
+5. Look beyond the results framework and use other data sources for FCV-specific lessons
+"""
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 8. STAGE_GUIDANCE_MAP — Maps doc types to playbook phases (~800 tokens)
+# ─────────────────────────────────────────────────────────────────────────────
+
+STAGE_GUIDANCE_MAP = {
+    "PCN": {
+        "playbook_phase": "Preparation",
+        "timing_options": ["At design stage", "Before appraisal"],
+        "framing": "Early design — focus on embedding FCV elements into ToC, PDO, stakeholder analysis, and operational approach before the design is locked.",
+        "key_flexibilities": [
+            "CERC", "HEIS", "Phased implementation", "Unallocated funds",
+            "Framework approach", "CLD", "Para 12 condensed procedures",
+            "Higher retroactive financing (40%)", "Increased PPA ($10M)"
+        ],
+        "pad_section_examples": [
+            "Section I: Strategic Context",
+            "Section II: Project Description",
+            "Annex 1: Results Framework",
+            "Annex 2: Implementation Arrangements",
+            "Annex 5: Stakeholder Engagement Plan",
+            "ESCP",
+            "SORT"
+        ]
+    },
+    "PID": {
+        "playbook_phase": "Preparation",
+        "timing_options": ["At design stage", "Before appraisal"],
+        "framing": "Public information document — recommendations should focus on what needs to be integrated before the PAD is finalised.",
+        "key_flexibilities": [
+            "CERC", "HEIS", "Phased implementation", "Unallocated funds",
+            "Framework approach", "CLD"
+        ],
+        "pad_section_examples": [
+            "Section I: Strategic Context",
+            "Section II: Project Description",
+            "Annex 1: Results Framework",
+            "Annex 2: Implementation Arrangements"
+        ]
+    },
+    "PAD": {
+        "playbook_phase": "Preparation",
+        "timing_options": ["At design stage", "Before appraisal"],
+        "framing": "Appraisal document — FCV elements should already be embedded. Focus on strengthening what exists, identifying gaps before Board approval, and ensuring operational readiness.",
+        "key_flexibilities": [
+            "CERC", "HEIS", "TPM", "GEMS", "Phased disbursement",
+            "Unallocated funds", "Framework approach",
+            "Alternative implementation arrangements"
+        ],
+        "pad_section_examples": [
+            "Section I: Strategic Context",
+            "Section II: Project Description",
+            "Section III: Implementation Arrangements",
+            "Section IV: Assessment Summary",
+            "Annex 1: Results Framework and Monitoring",
+            "Annex 2: Detailed Project Description",
+            "Annex 3: Implementation Arrangements",
+            "Annex 4: Implementation Support Plan",
+            "Annex 5: Stakeholder Engagement Plan",
+            "ESCP",
+            "SORT"
+        ]
+    },
+    "AF": {
+        "playbook_phase": "Implementation",
+        "timing_options": ["During implementation"],
+        "framing": "Additional Financing — focus on how FCV context has evolved since original approval, whether adaptation is needed, and whether new flexibilities should be activated.",
+        "key_flexibilities": [
+            "CERC activation", "HEIS", "TPM", "GEMS",
+            "Restructuring", "Repurposing", "RRO"
+        ],
+        "pad_section_examples": [
+            "AF Project Paper: Section I (Changes)",
+            "AF Project Paper: Section II (Rationale)",
+            "Updated Results Framework",
+            "Updated ESCP",
+            "Updated SORT"
+        ]
+    },
+    "Restructuring": {
+        "playbook_phase": "Implementation",
+        "timing_options": ["During implementation"],
+        "framing": "Restructuring — focus on how FCV dynamics necessitate changes and whether the adapted design remains conflict-sensitive and operationally feasible.",
+        "key_flexibilities": [
+            "CERC activation", "Repurposing within project description",
+            "Component reallocation", "Indicator revision",
+            "Geographic refocusing", "Implementation arrangement changes"
+        ],
+        "pad_section_examples": [
+            "Restructuring Paper: Proposed Changes",
+            "Restructuring Paper: Rationale",
+            "Updated Results Framework",
+            "Updated SORT"
+        ]
+    },
+    "ISR": {
+        "playbook_phase": "Implementation",
+        "timing_options": ["During implementation"],
+        "framing": "Implementation Status Report — assess whether FCV risks have materialised, whether adaptations are needed, and whether M&E is capturing FCV-relevant outcomes.",
+        "key_flexibilities": [
+            "TPM", "GEMS", "HEIS", "Restructuring",
+            "Repurposing", "CERC activation", "RRO"
+        ],
+        "pad_section_examples": [
+            "ISR: Implementation Progress",
+            "ISR: Key Risks and Issues",
+            "ISR: Results Framework Progress",
+            "ISR: Safeguards Compliance"
+        ]
+    },
+    "ICR": {
+        "playbook_phase": "Closing",
+        "timing_options": ["During implementation"],
+        "framing": "Implementation Completion Report — assess FCV storyline, adaptation to changing environment, impact on DRRs, institutional resilience, and FCV-specific lessons.",
+        "key_flexibilities": [],
+        "pad_section_examples": [
+            "ICR: Context at Appraisal",
+            "ICR: Significant Changes During Implementation",
+            "ICR: Relevance of PDO",
+            "ICR: Efficacy",
+            "ICR: Bank Performance",
+            "ICR: Risk to Development Outcome",
+            "ICR: Lessons Learned"
+        ]
+    },
+    "Unknown": {
+        "playbook_phase": "Preparation",
+        "timing_options": ["At design stage", "Before appraisal", "During implementation"],
+        "framing": "Document type not identified — provide general FCV sensitivity recommendations applicable across the project cycle.",
+        "key_flexibilities": [
+            "CERC", "HEIS", "TPM", "GEMS", "Phased implementation",
+            "Unallocated funds", "Framework approach"
+        ],
+        "pad_section_examples": [
+            "Strategic Context",
+            "Project Description",
+            "Results Framework",
+            "Implementation Arrangements",
+            "SORT"
+        ]
+    }
+}

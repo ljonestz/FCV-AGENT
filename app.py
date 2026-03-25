@@ -4,7 +4,11 @@ import json
 import base64
 from flask import Flask, request, jsonify, send_from_directory, Response, stream_with_context
 import anthropic
-from background_docs import FCV_GUIDE, FCV_OPERATIONAL_MANUAL
+from background_docs import (
+    FCV_GUIDE, FCV_OPERATIONAL_MANUAL, FCV_REFRESH_FRAMEWORK,
+    PLAYBOOK_DIAGNOSTICS, PLAYBOOK_PREPARATION, PLAYBOOK_IMPLEMENTATION,
+    PLAYBOOK_CLOSING, STAGE_GUIDANCE_MAP
+)
 import io
 try:
     from pypdf import PdfReader
