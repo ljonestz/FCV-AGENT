@@ -167,7 +167,7 @@ def extract_under_hood(stage2_output):
 
 DEFAULT_PROMPTS = {
 "1": '''# Role
-You are an expert FCV (Fragility, Conflict, and Violence) analyst for the World Bank Group, specialising in identifying conflict risks and development challenges in fragile contexts.
+You are an expert FCV (Fragility, Conflict, and Violence) analyst for the World Bank Group, specialising in identifying conflict risks and development challenges in fragile contexts. You have access to the WBG FCV Strategy Refresh framework and the FCV Operational Playbook Diagnostics guidance, which inform your analysis of compound risks, forced displacement, private sector dimensions, and FCV classification context.
 
 # Task
 Analyse the provided documents and produce a structured FCV assessment in two clearly separated parts:
@@ -200,6 +200,13 @@ Location-specific information from the project document: specific regions, provi
 ### Data Gaps in the Project Document
 FCV-relevant information that appears missing or inadequately addressed in the project document specifically.
 
+### Playbook-Guided Extraction
+In addition to the above, specifically flag:
+- Whether the project references or uses a Risk and Resilience Assessment (RRA) or equivalent FCV diagnostic
+- Compound risk indicators — where multiple fragility drivers interact (conflict + climate, displacement + food insecurity, etc.)
+- Forced displacement considerations — references to refugee/IDP populations, host communities, durable solutions
+- Private sector diagnostic alignment — references to Country Private Sector Diagnostic (CPSD), MSME components, IFC engagement
+
 ---
 
 ## Part B: Wider FCV Context
@@ -210,6 +217,15 @@ Draw on available sources in this strict priority order:
 3. **Training knowledge** of reputable sources (UN Security Council reports, ICG reports, World Bank FCV assessments, ACLED data, Fragile States Index) — cite by naming the specific organisation or report (e.g. [From: World Bank FCV assessment], [From: ICG report], [From: ACLED data], [From: Fragile States Index], [From: UN Security Council]). Use only where neither uploaded documents nor web research addresses the point.
 
 Always clearly label which source tier you are drawing from at each point, and always name the specific organisation or report rather than using generic descriptors.
+
+### FCV Classification Context
+- Note if the country appears on the FCS (Fragile and Conflict-affected Situations) list
+- If FCS, note eligibility category for FCV Envelope financing (PRA — Prevention and Resilience Allocation; RECA — Remaining Engaged during Conflict Allocation; TAA — Turn Around Allocation)
+- Assess which FCV Refresh strategic shift(s) are most relevant to this project context:
+  - Shift A (Anticipate): Is there evidence of forward-looking risk monitoring?
+  - Shift B (Differentiate): Is the approach tailored to the specific FCV classification?
+  - Shift C (Jobs & Private Sector): Does the project address economic livelihoods or private sector?
+  - Shift D (Enhanced Toolkit): Does the project leverage operational flexibilities?
 
 ### Country and Regional FCV Landscape
 The broader fragility, conflict, and violence dynamics affecting this country and region — drawing on contextual documents first, then training knowledge.
@@ -1663,7 +1679,8 @@ def run_stage():
 
                     content_parts.append({"type": "text", "text": (
                         "\n\n--- WBG FCV Sensitivity and Responsiveness Guide (always included) ---\n" + FCV_GUIDE +
-                        "\n\n--- WBG FCV Operational Manual — Design Framework (always included) ---\n" + FCV_OPERATIONAL_MANUAL
+                        "\n\n--- FCV Operational Playbook — Diagnostics Phase (always included) ---\n" + PLAYBOOK_DIAGNOSTICS +
+                        "\n\n--- WBG FCV Strategy Refresh Framework (always included) ---\n" + FCV_REFRESH_FRAMEWORK
                     )})
                     content_parts.append({"type": "text", "text": stage_prompt})
                     messages.append({"role": "user", "content": content_parts})
