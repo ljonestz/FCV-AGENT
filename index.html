@@ -2187,8 +2187,10 @@
                     outTxt.insertBefore(warnBanner, outTxt.firstChild);
                   }
                 }
-                // Note: under_hood panels and sidebar are injected by renderOut (which already ran above),
+                // Note: under_hood panels are injected by renderOut (which already ran above),
                 // because stage2UnderHood was stored before renderOut was called.
+                // Update sidebar gauges with Stage 2 ratings
+                updateSidebar();
               }
               // Priority cards + sidebar for Stage 3 (Recommendations)
               if(stage===3 && p.priorities && p.priorities.length){
@@ -2713,9 +2715,10 @@ ${md(execSummary)}`;
       stageThreePriorities.forEach((pr, i) => {
         const title = pr.title.replace(/^Priority\s+\d+\s*[·•]\s*/i,'');
         const riskColor = pr.risk_level==='High'?'#c0392b':pr.risk_level==='Medium'?'#e07b00':'#1a7a4a';
+        const tagLabel = pr.tag === '[S]' ? 'Sensitivity' : pr.tag === '[R]' ? 'Responsiveness' : pr.tag === '[S+R]' ? 'Sensitivity + Responsiveness' : '';
         body += `<div style="margin-top:22pt;border-top:1pt solid #1a3a5c;padding-top:14pt">
 <h3 style="color:#1a3a5c;margin-bottom:4pt">Priority ${i+1} · ${esc(title)}</h3>
-<p style="font-size:9pt;color:#555;margin-top:0">${pr.dimension?`<strong>Dimension:</strong> ${esc(pr.dimension)} &nbsp;|&nbsp; `:''}${pr.risk_level?`<strong>Risk Level:</strong> <span style="color:${riskColor}">${esc(pr.risk_level)}</span>`:''}
+<p style="font-size:9pt;color:#555;margin-top:0">${pr.dimension?`<strong>Dimension:</strong> ${esc(pr.dimension)} &nbsp;|&nbsp; `:''}${pr.risk_level?`<strong>Risk Level:</strong> <span style="color:${riskColor}">${esc(pr.risk_level)}</span> &nbsp;`:''}${tagLabel?`<strong>Focus:</strong> ${esc(tagLabel)}`:''}${pr.refresh_shift?` &nbsp;|&nbsp; <strong>Shift:</strong> ${esc(pr.refresh_shift)}`:''}
 </p>`;
         if(pr.the_gap) body += `<p><strong>The Gap:</strong><br>${esc(pr.the_gap)}</p>`;
         if(pr.why_it_matters) body += `<p><strong>Why It Matters:</strong><br>${esc(pr.why_it_matters)}</p>`;
@@ -2727,10 +2730,18 @@ ${md(execSummary)}`;
         if(pr.suggested_language) body += `<blockquote><strong>Suggested PAD language:</strong><br><em>${esc(pr.suggested_language)}</em></blockquote>`;
         if(pr.implementation_note) body += `<p><strong>Implementation consideration:</strong><br>${esc(pr.implementation_note)}</p>`;
         if(pr.who_acts||pr.when||pr.resources){
+          const resTooltips={'Minimal':'Existing budget — no additional allocation needed','Moderate':'Dedicated allocation — requires budget line','Significant':'Requires restructuring or additional financing'};
           body += `<p style="font-size:9pt;color:#555">`;
-          if(pr.who_acts) body += `<strong>Who acts:</strong> ${esc(pr.who_acts)} &nbsp;`;
+          if(pr.who_acts){
+            const whoChips = pr.who_acts.split(';').map(w=>w.trim()).filter(Boolean);
+            body += `<strong>Who acts:</strong> ${whoChips.map(w=>esc(w)).join(' · ')} &nbsp;`;
+          }
           if(pr.when) body += `<strong>When:</strong> ${esc(pr.when)} &nbsp;`;
-          if(pr.resources) body += `<strong>Resources:</strong> ${esc(pr.resources)}`;
+          if(pr.resources){
+            const baseRes=(pr.resources||'').split('(')[0].trim();
+            const tip=resTooltips[baseRes]||'';
+            body += `<strong>Resources:</strong> ${esc(pr.resources)}${tip?' ('+esc(tip)+')':''}`;
+          }
           body += `</p>`;
         }
         // Optional: include alternative approaches if already loaded via Go Deeper
