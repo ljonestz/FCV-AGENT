@@ -338,10 +338,10 @@ Rules for themes:
 - Be specific: name geographic locations, institutions, mechanisms, project design elements
 - Cite evidence from the project document and Stage 1 analysis
 
-Format each finding as a paragraph. At the end of each finding paragraph, place the tag and shift on the same line:
-"[finding text] **[S]** *Anticipate*"
-"[finding text] **[R]** *Jobs & Private Sector*"
-"[finding text] **[S+R]** *Differentiate*"
+Format each finding as a paragraph. At the end of each finding paragraph, place the tag and shift on the same line. Always prefix shift names with "FCV Strategy Shift:" so the reader knows what they refer to:
+"[finding text] **[S]** *FCV Strategy Shift: Anticipate*"
+"[finding text] **[R]** *FCV Strategy Shift: Jobs & Private Sector*"
+"[finding text] **[S+R]** *FCV Strategy Shift: Differentiate*"
 
 ## Do No Harm (after all themes, before synthesis)
 
