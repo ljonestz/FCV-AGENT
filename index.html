@@ -575,6 +575,19 @@
     .under-hood-content table { width: 100%; border-collapse: collapse; font-size: 13px; }
     .under-hood-content th, .under-hood-content td { padding: 8px; border: 1px solid #ddd; text-align: left; }
     .under-hood-content th { background: #f0f0f0; font-weight: 600; }
+    .under-hood-subtitle { font-size: 12px; font-weight: 400; color: var(--muted, #6B7280); margin-left: 2px; }
+
+    /* ── S/R Definition Box (Stage 2 top) ── */
+    .sr-def-box { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--border, #EEF0F3); border: 1px solid var(--border, #EEF0F3); border-radius: 8px; overflow: hidden; margin-bottom: 20px; }
+    @media (max-width: 768px) { .sr-def-box { grid-template-columns: 1fr; } }
+    .sr-def-item { background: #fff; padding: 14px 18px; }
+    .sr-def-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
+    .sr-def-s { color: #0050A0; }
+    .sr-def-r { color: #16A34A; }
+    .sr-def-icon { width: 18px; height: 18px; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: #fff; }
+    .sr-def-icon-s { background: #0050A0; }
+    .sr-def-icon-r { background: #16A34A; }
+    .sr-def-desc { font-size: 12px; color: var(--muted, #6B7280); line-height: 1.5; }
 
     /* ── Prompt viewer modal ── */
     .prompt-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .2s ease}
@@ -2268,19 +2281,32 @@
     }
   }
 
+  function buildSRDefinitionBox() {
+    return '<div class="sr-def-box">' +
+      '<div class="sr-def-item">' +
+        '<div class="sr-def-label sr-def-s"><span class="sr-def-icon sr-def-icon-s">S</span> FCV Sensitivity</div>' +
+        '<div class="sr-def-desc">Is the project <em>aware of and designed for</em> the FCV context? Contextual awareness, conflict-informed design, Do No Harm, FCV-adapted operations.</div>' +
+      '</div>' +
+      '<div class="sr-def-item">' +
+        '<div class="sr-def-label sr-def-r"><span class="sr-def-icon sr-def-icon-r">R</span> FCV Responsiveness</div>' +
+        '<div class="sr-def-desc">Does the project <em>actively work to change</em> the FCV situation? Addressing root causes, strengthening resilience, building pathways out of FCV.</div>' +
+      '</div>' +
+    '</div>';
+  }
+
   function buildUnderHoodPanels(underHood) {
     var panels = [
-        { key: 'recs_table', title: 'Full 12-Recommendation Assessment' },
-        { key: 'dnh_checklist', title: 'Do No Harm Checklist (8 Principles)' },
-        { key: 'questions_map', title: '25 Key Questions Assessment' },
-        { key: 'evidence_trail', title: 'Evidence Trail' }
+        { key: 'recs_table', title: 'How well does the project integrate FCV considerations?', subtitle: '12 operational standards assessed with status and evidence' },
+        { key: 'dnh_checklist', title: 'Could this project unintentionally cause harm?', subtitle: '8 conflict-sensitivity principles checked against the design' },
+        { key: 'questions_map', title: 'What did we look for \u2014 and what was missing?', subtitle: 'Diagnostic questions used to probe the project' },
+        { key: 'evidence_trail', title: 'Where did this analysis come from?', subtitle: 'Sources, types, and what each contributed' }
     ];
     return '<div class="under-hood-section">' +
         '<h3 class="under-hood-header">Under the Hood \u2014 Detailed Assessment</h3>' +
         panels.map(function(p) {
             var content = (underHood && underHood[p.key]) ? underHood[p.key] : 'No data available.';
             return '<details class="under-hood-panel">' +
-                '<summary>' + esc(p.title) + '</summary>' +
+                '<summary>' + esc(p.title) + '<span class="under-hood-subtitle"> \u2014 ' + esc(p.subtitle) + '</span></summary>' +
                 '<div class="under-hood-content out-body">' + md(content) + '</div>' +
                 '</details>';
         }).join('') +
@@ -2297,9 +2323,9 @@
       label = tag === '[S]' ? 'Sensitivity' : tag === '[R]' ? 'Responsiveness' : 'Sensitivity + Responsiveness';
     }
     const tooltips = {
-      '[S]': 'FCV Sensitivity: this recommendation helps the project operate without causing harm or worsening fragility dynamics.',
-      '[R]': 'FCV Responsiveness: this recommendation actively addresses a root driver of fragility, aligned to one of the four WBG FCV Strategy pillars (preventing conflict, engaging in crisis, transitioning out of fragility, or mitigating spillovers).',
-      '[S+R]': 'Both Sensitivity and Responsiveness: applies only in four specific overlap zones — inclusion/targeting of conflict-affected populations, embedding FCV logic in the ToC/PDO, adaptive M&E that monitors harm AND builds resilience, or GRM designed to strengthen state-citizen accountability.'
+      '[S]': 'FCV Sensitivity: helps the project avoid making things worse \u2014 contextual awareness, conflict-informed design, Do No Harm, FCV-adapted operations.',
+      '[R]': 'FCV Responsiveness: actively helps make fragility dynamics better \u2014 addresses root causes, builds resilience, leverages FCV tools for transformative impact.',
+      '[S+R]': 'Both Sensitivity and Responsiveness: applies only in four overlap zones \u2014 inclusion/targeting of conflict-affected populations, FCV logic in ToC/PDO, adaptive M&E for harm + resilience, or GRM for state-citizen accountability.'
     };
     const tooltip = tooltips[tag] || '';
     return `<span class="sr-tag ${cls}" title="${tooltip}">${label}</span>`;
@@ -2409,7 +2435,8 @@
       _outBodyContent=_stageBadge+md(_pre)+renderRiskExposure(stageRiskExposure)+md(_rest)+renderSRCards(stageSensitivitySummary,stageResponsivenessSummary)+'<div id="priorities-intro"></div>';
     }else{
       const cleanResult = stage===1 ? result.replace(/\n*%%%DOC_TYPE:[^%\n]*%%%\n*/g,'') : result;
-      _outBodyContent=md(cleanResult);
+      const srDefPrefix = stage===2 ? buildSRDefinitionBox() : '';
+      _outBodyContent = srDefPrefix + md(cleanResult);
     }
     document.getElementById('stage-disp').innerHTML=`
       <div class="stage-hdr ani">
@@ -3303,41 +3330,51 @@ ${md(execSummary)}`;
   }
 
   function loadAnalyticalTrail(idx) {
-    // Client-side only — no API call
+    // Client-side only — no API call. Filters Stage 2 Under the Hood data by priority keywords.
     const resultEl = document.getElementById('deeper-result-' + idx);
     if (!resultEl) return;
     let underHood = {};
     try { underHood = JSON.parse(localStorage.getItem('stage2_under_hood') || '{}'); } catch(e) {}
-    const dimension = (stageThreePriorities[idx] || {}).dimension || (stageThreePriorities[idx] || {}).fcv_dimension || '';
+    const priority = stageThreePriorities[idx] || {};
+    const dimension = priority.dimension || priority.fcv_dimension || '';
+    const titleWords = (priority.title || '').replace(/^Priority\s+\d+\s*[·•]\s*/i, '').split(/\s+/).filter(function(w) { return w.length > 3; });
 
     if (!underHood.recs_table && !underHood.questions_map && !underHood.evidence_trail) {
       resultEl.innerHTML = '<p class="beyond-intro">No analytical trail data available. Complete Stage 2 first.</p>';
       return;
     }
 
+    // Match rows by dimension keyword OR 2+ title keywords
+    function matchesRow(line) {
+      if (!dimension && !titleWords.length) return true;
+      var lower = line.toLowerCase();
+      if (dimension && lower.indexOf(dimension.toLowerCase()) !== -1) return true;
+      var matchCount = 0;
+      for (var i = 0; i < titleWords.length; i++) {
+        if (lower.indexOf(titleWords[i].toLowerCase()) !== -1) matchCount++;
+      }
+      return matchCount >= 2;
+    }
+
     let result = '';
 
-    // Filter recommendations table by dimension
+    // Filter operational standards table
     if (underHood.recs_table) {
       const lines = underHood.recs_table.trim().split('\n');
       const header = lines.slice(0, 2);
-      const escapedDim = dimension.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const regex = new RegExp('\\b' + escapedDim + '\\b', 'i');
-      const dataRows = lines.slice(2).filter(function(line) { return !dimension || regex.test(line); });
+      const dataRows = lines.slice(2).filter(matchesRow);
       if (dataRows.length) {
-        result += '### Relevant Recommendations\n\n' + header.concat(dataRows).join('\n') + '\n\n';
+        result += '### Relevant Operational Standards\n\n' + header.concat(dataRows).join('\n') + '\n\n';
       }
     }
 
-    // Filter key questions by dimension
+    // Filter diagnostic questions
     if (underHood.questions_map) {
       const qlines = underHood.questions_map.trim().split('\n');
       const qheader = qlines.slice(0, 2);
-      const escapedDim2 = dimension.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const qregex = new RegExp('\\b' + escapedDim2 + '\\b', 'i');
-      const qrows = qlines.slice(2).filter(function(line) { return !dimension || qregex.test(line); });
+      const qrows = qlines.slice(2).filter(matchesRow);
       if (qrows.length) {
-        result += '### Relevant Key Questions\n\n' + qheader.concat(qrows).join('\n') + '\n\n';
+        result += '### Relevant Diagnostic Questions\n\n' + qheader.concat(qrows).join('\n') + '\n\n';
       }
     }
 
