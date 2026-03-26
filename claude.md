@@ -25,7 +25,7 @@ Every prompt output tags recommendations, mitigations, and priorities as [S], [R
 - FCV Playbook integration for stage-aware recommendations (PCN vs. PAD vs. implementation)
 - "Under the Hood" expandable panels in Stage 2 for FCV Country Coordinators
 - Do No Harm shown as traffic-light inline (8 canonical principles) rather than standalone checklist
-- "Go Deeper" replaces Explorer — 3 tabs: alternative approaches, analytical trail, Playbook references
+- "Go Deeper" replaces Explorer — 3 tabs: Other options, Why this recommendation, WBG policy guidance
 - `refresh_shift` field added to each priority card (maps to 1 of 4 FCV Refresh shifts)
 - Expanded `who_acts`, `when`, and `resources` fields with defined value sets
 
@@ -198,7 +198,7 @@ STAGE 3 — Recommendations Note (stage-aware)
    ├─ S/R tag badges with hover tooltips (unchanged)
    ├─ Specificity + citation warning badges (unchanged)
    ├─ "Go Deeper" collapsible <details> per priority (replaces "Go above and beyond"):
-   │  ├─ 3 tab buttons inside the <details>: "Alternative approaches" | "Analytical trail" | "Playbook refs"
+   │  ├─ 3 tab buttons inside the <details>: "Other options" | "Why this recommendation" | "WBG policy guidance"
    │  ├─ Tab 1 (alternatives): SSE-streamed LLM call via /api/run-deeper (tab="alternatives")
    │  │  Prompt: DEFAULT_PROMPTS["deeper"] — 2–3 optional alternative approaches
    │  ├─ Tab 2 (analytical trail): NO LLM call — filters stage2_under_hood from localStorage
@@ -231,15 +231,15 @@ FOLLOW-ON (post-analysis query card — Stage 3 only)
 GO DEEPER (optional depth panel — Stage 3 only; replaces Explorer from v6.0)
 ├─ Input: Priority JSON (title + body) + doc_type + history + stage2_under_hood (for Tab 2)
 ├─ 3 tabs, lazy-loaded via <details class="go-deeper"> toggle:
-│  Tab 1 — Alternative approaches (DEFAULT active on open):
+│  Tab 1 — Other options (DEFAULT active on open):
 │    ├─ SSE-streamed LLM call via POST /api/run-deeper {tab: "alternatives"}
 │    ├─ Prompt: DEFAULT_PROMPTS["deeper"] — 2–3 optional alternative approaches
 │    └─ Output format: %%%GO_FURTHER_START%%%...%%%GO_FURTHER_END%%% with %%%GF_ITEM%%% blocks
-│  Tab 2 — Analytical trail (NO API CALL):
+│  Tab 2 — Why this recommendation (NO API CALL):
 │    ├─ Data sourced from localStorage key "stage2_under_hood" (saved after Stage 2 completes)
 │    ├─ Backend filters recs_table and questions_map rows matching priority's fcv_dimension
 │    └─ Renders instantly — no spinner; user sees OST evidence driving this priority
-│  Tab 3 — Playbook references:
+│  Tab 3 — WBG policy guidance:
 │    ├─ SSE-streamed LLM call via POST /api/run-deeper {tab: "playbook_refs"}
 │    ├─ Prompt: DEFAULT_PROMPTS["deeper_playbook"] + stage-appropriate Playbook constant
 │    └─ Returns relevant operational flexibilities, policy citations, implementation guidance
@@ -270,8 +270,8 @@ GO DEEPER (optional depth panel — Stage 3 only; replaces Explorer from v6.0)
 
 **Solution:** Replace Explorer with a **3-tab "Go Deeper" panel** that:
 - **Tab 1 (Alternatives):** Same content as old Explorer — 2–3 optional alternative approaches (LLM call)
-- **Tab 2 (Analytical trail):** Which OST recs and key questions from Stage 2 drove this priority — sourced from `localStorage.stage2_under_hood` with **no API call** (renders instantly)
-- **Tab 3 (Playbook refs):** Operational flexibilities and Playbook guidance for the project's lifecycle stage — lightweight LLM call
+- **Tab 2 (Why this recommendation):** Which OST recs and key questions from Stage 2 drove this priority — sourced from `localStorage.stage2_under_hood` with **no API call** (renders instantly)
+- **Tab 3 (WBG policy guidance):** Operational flexibilities and Playbook guidance for the project's lifecycle stage — lightweight LLM call
 
 **Key architectural innovation:** Tab 2 uses data already collected in Stage 2. No extra API call, no latency. The `stage2_under_hood` block is stored in localStorage after Stage 2 completes and read by Go Deeper on demand.
 
@@ -673,11 +673,12 @@ Preamble → Opening Assessment → Operational Context → [Risk Exposure card 
 - `pad_sections` rendered as `<code>` chips in the Word export
 
 ### 4.4 Styling & Aesthetics
-- **Color scheme:** WBG-inspired palette (deep navy, cobalt blue, orange accents)
+- **Color scheme:** WB Design System palette — wb-blue (#009FDA), wb-navy (#002244), wb-gray-900 (#111827), wb-gray-50 (#F7F8FA), wb-gray-100 (#EEF0F3), wb-gray-500 (#6B7280). RAG status: rag-red (#D73027), rag-amber (#FFFFBF), rag-green (#1A9850). See `memory/reference_wb_design_system.md` for full palette reference.
 - **Stage colors:** 3 stage colors (s1 blue, s2 amber, s3 green) used in progress bars, section headers, and priority dimension badges
-- **Typography:** Noto Sans (clean, readable)
-- **Spacing:** 12/24/32px grid
-- **Icons:** Lucide React SVG icons (used sparingly for clarity)
+- **Typography:** Open Sans (WBG standard font, loaded from Google Fonts). Body 14px/400, section headings 15px/700, page titles 18px/700, labels 10px/600. No decorative typefaces.
+- **Spacing:** 4px base unit; xs=4, sm=8, md=16, lg=24, xl=32, 2xl=48
+- **Cards:** border-radius: 8px, box-shadow: 0 1px 3px rgba(0,0,0,0.08)
+- **Icons:** Lucide SVG icons (used sparingly). Future: migrate to OCHA Humanitarian Icons per WB style guide.
 
 ### 4.5 Do No Harm Rendering (updated v7.0)
 - DNH is no longer a standalone checklist in Stage 3.
@@ -1278,7 +1279,8 @@ If you find gaps in this documentation, or if new design decisions emerge, updat
 
 ---
 
-**Last updated:** 2026-03-25
-**Current version:** FCV Project Screener 7.0 (3-stage pipeline redesign: OST Manual integration, FCV Refresh adoption, Playbook integration, Go Deeper 3-tab panel, Under the Hood panels)
+**Last updated:** 2026-03-26
+**Current version:** FCV Project Screener 7.1 (WB Design System alignment, Go Deeper UX improvements, 3-stage modal/landing page updates)
 **Current Claude model:** claude-sonnet-4-20250514
 **Architecture:** Flask 3.0.3 backend + vanilla JS frontend + Anthropic SDK integration
+**Design system:** WB Digital Look & Feel Style Guide — Open Sans, WB palette (#009FDA/#002244/#111827), RAG status colours. Reference: https://geospatial-commons.github.io/WB-Design-Guidelines/chapters/design-system.html
