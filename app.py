@@ -498,7 +498,7 @@ When identifying Strategic Priorities, evaluate the project design through these
 A single bolded sentence summarising the project's overall FCV integration status.
 
 ### Operational Context (150-200 words, ONE PARAGRAPH)
-Synthesise 3-4 converging FCV risks creating a uniquely challenging operating environment for THIS project. Forward-looking framing for post-preparation events. 2-3 citations max.
+Synthesise 3-4 converging FCV risks creating a uniquely challenging operating environment for THIS project. Forward-looking framing for post-preparation events. No inline citations.
 
 After the Operational Context paragraph, output this exact line on its own line before continuing:
 %%%RISK_NARRATIVE_START%%%
@@ -518,10 +518,10 @@ After writing both FCV Risk Exposure paragraphs, output this exact line on its o
 %%%RISK_NARRATIVE_END%%%
 
 ### Strengths (80-120 words, prose)
-3-4 concrete strengths actually present in the project document. Flowing prose. 2-3 citations max. Never cite the PCN/PAD itself.
+3-4 concrete strengths actually present in the project document. Flowing prose. No inline citations.
 
 ### Gaps (100-130 words, prose)
-The main weakness or cluster of weaknesses, constructively framed. Reference the Stage 2 assessment findings where relevant. 1-2 citations from RRA or external sources only.
+The main weakness or cluster of weaknesses, constructively framed. Reference the Stage 2 assessment findings where relevant. No inline citations.
 
 After the Gaps paragraph, output this exact line on its own line before continuing:
 %%%PRIORITIES_START%%%
@@ -585,13 +585,12 @@ Apply the following definitions strictly. [S+R] must be earned — do not use it
 
 ---
 
-# Citation Format
-- CRITICAL: Only cite a document by name (e.g. [Honduras RRA 2023]) if it was explicitly uploaded as a contextual document and appeared with a [From: document name] citation in the Stage 1 analysis above. NEVER fabricate or assume document titles — even if you know a document of that type likely exists for this country.
-- For findings drawn from training knowledge, use: [From: training knowledge] or name the specific organisation (e.g. [From: World Bank], [From: ICG], [From: ACLED])
-- For findings from automated web research, use: [From: web research] or name the specific source if identifiable
-- NEVER cite the PCN or PAD being reviewed
-- CRITICAL: In all text fields of the JSON block, ONLY cite documents that appeared as [From: doc name] in Stage 1, or well-known organisations (World Bank, ACLED, UNODC, ICG, UNHCR, WFP, OCHA, ND-GAIN, OECD). NEVER fabricate document titles, report dates, or RRA names. If no specific source supports a claim, write it without a citation or attribute it to [From: training knowledge].
-- No page numbers; keep citations sparse and naturally integrated
+# Citation Policy — NO INLINE CITATIONS IN THE NARRATIVE
+- DO NOT include [From: ...] citation tags anywhere in the Recommendations Note narrative or JSON fields. The note should read as a clean, professional peer-review memo without source annotations.
+- The evidence trail and source attribution was already provided in Stage 2 (Under the Hood). The Recommendations Note is a synthesis — it does not need to re-cite sources.
+- You may name well-known organisations naturally in prose (e.g., "ACLED data suggests..." or "according to the RRA...") but do NOT use bracketed [From: ...] tags.
+- NEVER fabricate document titles, report dates, or RRA names. If a specific uploaded document was referenced in Stage 1, you may mention it by name naturally — but not as a bracketed citation.
+- NEVER cite the PCN or PAD being reviewed.
 
 # Word Count Targets
 - Preamble: 50-75 words
@@ -608,7 +607,7 @@ Apply the following definitions strictly. [S+R] must be earned — do not use it
 - Every priority names at least one specific geography, group, institution, or historical event
 - `recommendation` field contains a single cohesive action, not a menu of options
 - For any [R] or [S+R] priority, `why_it_matters` includes the shift justification sentence
-- All citations are from Stage 1 uploaded documents or the approved whitelist — no fabricated document titles
+- No [From: ...] citation tags appear anywhere in the narrative or JSON fields
 - JSON block is present at the end, wrapped in %%%JSON_START%%% / %%%JSON_END%%%
 - All 6 top-level JSON fields are populated (fcv_rating, fcv_responsiveness_rating, sensitivity_summary, responsiveness_summary, risk_exposure, priorities)
 - Each priority's pad_sections, suggested_language, and implementation_note are specific to this project — not generic placeholders
