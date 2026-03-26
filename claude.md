@@ -324,8 +324,8 @@ Go Deeper demoted to a collapsed section — lazy-loaded only if the user opens 
 - Stage 2 prompt uses the full 12-rec OST Manual + 25 key questions — no longer limited to 6 recs
 - Stage 3 prompt explicitly requires geographic naming, mechanism specification, and operational entry points (PAD instruments, existing WBG programs, partner organizations)
 - Stage 3 prompt is stage-aware: PCN projects get "build into the ToC now" framing; PAD projects get "revise Section X" framing; implementation-stage get "adjust during next restructuring" framing
-- Stage 3 generates `pad_sections`, `suggested_language`, `implementation_note`, and `refresh_shift` per priority — all in JSON
-- Go Deeper "alternatives" tab generates 2–3 optional alternative approaches; core recommendation is always the single clear directive
+- Stage 3 generates `actions[]` (per-action document_element + guidance + suggested_language), `pad_sections`, `implementation_note`, and `refresh_shift` per priority — all in JSON
+- Go Deeper "alternatives" tab generates 2–3 optional alternative approaches; core actions are always the primary directive
 
 **Trade-off managed:** We avoid exact costs (which change) but include enough detail for a TTL to brief management or co-design with counterparts.
 
@@ -493,8 +493,8 @@ If in doubt → [S] or [R].
   - the_gap: 2–3 sentences
   - why_it_matters: 2–3 sentences (operational + FCV dimensions combined)
                     + shift justification for [R] and [S+R] priorities
-  - recommendation: SINGLE cohesive action (NOT an options menu) — 2–3 sentences,
-                    names specific location + mechanism + entry point
+  - actions: array of 2–4 objects, each with document_element, guidance (2–4 sentences),
+             and suggested_language (2–3 sentences of ready-to-paste PAD text)
   - who_acts: TTL; PIU; Government; FCV CC; FM Team; ESF Team; Technical Team; M&E Team
               (multi-value, semicolon-separated; expanded from v6.0)
   - when: Identification | Preparation | Appraisal | Implementation | Restructuring
@@ -524,12 +524,17 @@ If in doubt → [S] or [R].
       "risk_level": "High",
       "the_gap": "...",
       "why_it_matters": "...",
-      "recommendation": "Single cohesive action — NOT an options menu",
+      "actions": [
+        {
+          "document_element": "ESCP Commitment (new)",
+          "guidance": "2–4 sentences describing what to add/revise and why",
+          "suggested_language": "2–3 sentences of ready-to-paste draft PAD text"
+        }
+      ],
       "who_acts": "TTL; PIU",
       "when": "Preparation",
       "resources": "Moderate (dedicated allocation)",
       "pad_sections": "Annex 5: Stakeholder Engagement Plan; ESCP Commitment #4",
-      "suggested_language": "2–4 sentences of draft PAD text in WBG document register",
       "implementation_note": "1–2 sentences on timing, cost, or key dependency"
     }
   ]
@@ -537,10 +542,11 @@ If in doubt → [S] or [R].
 %%%JSON_END%%%
 ```
 
-**Critical: `recommendation` field (not `SUGGESTED_DIRECTIONS`):**
-- Single cohesive action, present tense, 2–3 sentences
+**Critical: `actions` array (replaces old `recommendation` field):**
+- 2–4 structured actions per priority, each naming a specific document element to revise
+- Each action has `guidance` (2–4 sentences) and `suggested_language` (2–3 sentences of ready-to-paste text)
 - Must NOT be an options menu ("Consider A / Or B / Or C" is NOT allowed)
-- Must name specific location, mechanism, and entry point
+- Must name specific location, mechanism, and entry point in guidance
 - S/R pillar justification sentence required in `why_it_matters` for [R] and [S+R] priorities
 
 **`extract_priorities()` return shape:**
@@ -584,8 +590,8 @@ Preamble → Opening Assessment → Operational Context → [Risk Exposure card 
 **Key behaviors:**
 - Recommendations are specific and actionable, not broad policy suggestions
 - Geographic locations are named (e.g., "In Oromia, prioritize...")
-- `pad_sections` chips rendered from semicolon-separated string (split on `;`)
-- `suggested_language` rendered in italic yellow card (`.zone-act-draft`)
+- `pad_sections` retained in JSON as metadata (no longer displayed as standalone chips — action titles identify document elements)
+- Per-action `suggested_language` rendered with "Suggested text:" label in italic yellow card (`.zone-act-draft-text`)
 - `implementation_note` rendered in grey bordered card (`.zone-act-impl`)
 - `refresh_shift` badge shown on priority card header (e.g., "Shift B: Differentiate")
 - A collegial tone appropriate for peer review by a TTL
@@ -623,7 +629,7 @@ Preamble → Opening Assessment → Operational Context → [Risk Exposure card 
 
 **Stage 3 priorities + Go Deeper:**
 - `initStage3UI()` — parse priorities from JSON, build stepper, show Priority 1
-- `showPriority(idx)` — render full priority card with 5-section zone-act layout from JSON (refresh_shift badge, recommendation, PAD sections, suggested language, implementation note); no auto-load of Go Deeper
+- `showPriority(idx)` — render full priority card with zone-act layout from JSON (refresh_shift badge, actions[] loop with per-action guidance + suggested text, implementation note); no auto-load of Go Deeper
 - `handleGoDeeper(el, idx)` — ontoggle handler for `<details class="go-deeper">`; initialises 3 tab buttons on first open
 - `switchGoDeeperTab(idx, tabName)` — swaps active tab; loads content if not cached
   - `tabName: "alternatives"` → calls `loadDeeperAlternatives(idx)`
@@ -684,13 +690,13 @@ Preamble → Opening Assessment → Operational Context → [Risk Exposure card 
 - SSE streaming for all LLM calls
 - Conversation history passed between stages
 - Styling, typography, WBG colour palette
-- Priority card zone-act layout (recommendation, PAD chips, suggested language, implementation note)
-- `extract_priorities()` (updated to parse `refresh_shift`, new `who_acts`/`when` values)
+- Priority card zone-act layout (actions[] loop, per-action suggested text, implementation note)
+- `extract_priorities()` (updated to parse `actions[]`, `refresh_shift`, new `who_acts`/`when` values)
 - S/R tag badges with hover tooltips
 - Specificity + citation warning badges
 
 ### 4.3a Download Behaviour
-- **`downloadReport()`** always includes all core priority content from JSON: `recommendation`, `refresh_shift`, `pad_sections`, `suggested_language`, `implementation_note`, `who_acts`, `when`, `resources`
+- **`downloadReport()`** always includes all core priority content from JSON: `actions[]` (with per-action guidance + suggested_language), `refresh_shift`, `implementation_note`, `who_acts`, `when`, `resources`
 - Does NOT require Go Deeper to have been opened — no click-through needed before downloading
 - Optionally appends `goFurtherItems` (alternatives tab content) if Go Deeper was already opened for that priority
 - `pad_sections` rendered as `<code>` chips in the Word export
@@ -787,10 +793,10 @@ def extract_priorities(stage3_output, uploaded_doc_names=None):
     #   {error, message?, priorities, fcv_rating, fcv_responsiveness_rating,
     #    sensitivity_summary, responsiveness_summary,
     #    risk_exposure: {risks_to, risks_from}}
-    # Each priority dict has 14 core fields (13 from v6.0 + new refresh_shift):
+    # Each priority dict has 13 core fields:
     #   title, fcv_dimension, tag, refresh_shift, risk_level,
-    #   the_gap, why_it_matters, recommendation, who_acts, when, resources,
-    #   pad_sections, suggested_language, implementation_note,
+    #   the_gap, why_it_matters, actions[] (array of {document_element, guidance, suggested_language}),
+    #   who_acts, when, resources, pad_sections, implementation_note,
     #   + 2 post-parse fields: specificity_warning (bool), citation_warnings (list)
     # Updated who_acts validation: TTL | PIU | Government | FCV CC | FM Team | ESF Team | Technical Team | M&E Team
     # Updated when validation: Identification | Preparation | Appraisal | Implementation | Restructuring
@@ -958,7 +964,7 @@ To add/remove/modify:
 
 ### 7.3 I Want to Change What Stage 3 Priorities Look Like
 Stage 3 prompt defines the JSON schema for each priority. Current fields (see full schema in Section 3.4):
-- `title`, `fcv_dimension`, `tag`, `refresh_shift`, `risk_level`, `the_gap`, `why_it_matters`, `recommendation`, `who_acts`, `when`, `resources`, `pad_sections`, `suggested_language`, `implementation_note`
+- `title`, `fcv_dimension`, `tag`, `refresh_shift`, `risk_level`, `the_gap`, `why_it_matters`, `actions[]`, `who_acts`, `when`, `resources`, `pad_sections`, `implementation_note`
 
 To add/remove fields:
 1. Update the JSON schema section of Stage 3 prompt (`DEFAULT_PROMPTS["3"]` in `app.py`)
@@ -1303,7 +1309,7 @@ If you find gaps in this documentation, or if new design decisions emerge, updat
 ---
 
 **Last updated:** 2026-03-26
-**Current version:** FCV Project Screener 7.2 (Stage 2 thematic narrative restructure, sharpened S/R definitions, bulleted recommendations, Go Deeper reduced to 2 tabs, citations removed from Stage 3)
+**Current version:** FCV Project Screener 7.3 (structured actions[] array with per-action guidance + suggested text, expanded prompt depth, "Where in the PAD" chips removed)
 **Current Claude model:** claude-sonnet-4-20250514
 **Architecture:** Flask 3.0.3 backend + vanilla JS frontend + Anthropic SDK integration
 **Design system:** WB Digital Look & Feel Style Guide — Open Sans, WB palette (#009FDA/#002244/#111827), RAG status colours. Reference: https://geospatial-commons.github.io/WB-Design-Guidelines/chapters/design-system.html
