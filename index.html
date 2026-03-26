@@ -4,7 +4,7 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>FCV Project Screener · WBG FCV Analytics Unit</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
@@ -15,12 +15,12 @@
       --wbg-cyan:   #47C4EB;
       --wbg-dark:   #00263A;
 
-      /* UI neutrals */
+      /* UI neutrals (WB Design System) */
       --white:      #ffffff;
-      --off-white:  #f5f7fa;
-      --border:     #d9e2ec;
-      --muted:      #5a6a7e;
-      --text:       #1a2a3a;
+      --off-white:  #F7F8FA;
+      --border:     #EEF0F3;
+      --muted:      #6B7280;
+      --text:       #111827;
 
       /* Stage accent colours */
       --s1: #0072BB;
@@ -30,30 +30,30 @@
 
       --radius:    8px;
       --radius-sm: 5px;
-      --shadow-sm: 0 1px 4px rgba(0,34,68,.08);
-      --shadow-md: 0 4px 14px rgba(0,34,68,.10);
-      --shadow-lg: 0 8px 28px rgba(0,34,68,.13);
+      --shadow-sm: 0 1px 3px rgba(0,0,0,.08);
+      --shadow-md: 0 4px 12px rgba(0,0,0,.10);
+      --shadow-lg: 0 8px 24px rgba(0,0,0,.12);
 
-      /* Design-system tokens */
+      /* Design-system tokens (WB Design System) */
       --color-navy:       #002244;
-      --color-navy-light: #003366;
-      --color-blue:       #0050A0;
-      --color-blue-soft:  #EBF2FA;
-      --color-bg:         #F5F7FA;
+      --color-navy-light: #12436D;
+      --color-blue:       #009FDA;
+      --color-blue-soft:  #E8F5FC;
+      --color-bg:         #F7F8FA;
       --color-surface:    #FFFFFF;
-      --color-border:     #E2E8F0;
-      --color-text:       #1A202C;
-      --color-text-muted: #64748B;
-      --color-success:    #16A34A;
-      --color-warning:    #D97706;
-      --color-danger:     #DC2626;
+      --color-border:     #EEF0F3;
+      --color-text:       #111827;
+      --color-text-muted: #6B7280;
+      --color-success:    #1A9850;
+      --color-warning:    #D73027;
+      --color-danger:     #D73027;
     }
 
     html{scroll-behavior:smooth}
-    body{font-family:'Inter',sans-serif;background:var(--color-bg,#F5F7FA);color:var(--color-text,#1A202C);min-height:100vh;line-height:1.6;font-size:15px}
-    h1,h2,h3{font-family:'Inter',sans-serif;letter-spacing:-0.02em;font-weight:700}
-    .out-body h1,.out-body h2,.stage-title,.stage-badge,.pc-num-badge,.pc-hdr-title,.upload-intro-text h2{font-family:'Inter',sans-serif!important}
-    .btn,.refine-in,.prompt-edit,.pc-followup-input{font-family:'Inter',sans-serif}
+    body{font-family:'Open Sans',sans-serif;background:var(--color-bg,#F7F8FA);color:var(--color-text,#111827);min-height:100vh;line-height:1.6;font-size:14px}
+    h1,h2,h3{font-family:'Open Sans',sans-serif;letter-spacing:-0.02em;font-weight:700}
+    .out-body h1,.out-body h2,.stage-title,.stage-badge,.pc-num-badge,.pc-hdr-title,.upload-intro-text h2{font-family:'Open Sans',sans-serif!important}
+    .btn,.refine-in,.prompt-edit,.pc-followup-input{font-family:'Open Sans',sans-serif}
 
     /* ── Skip link ── */
     .skip{position:absolute;top:-50px;left:0;background:var(--wbg-blue);color:#fff;padding:8px 16px;z-index:200;border-radius:0 0 4px 0;font-size:13px;text-decoration:none;transition:top .2s}
@@ -75,7 +75,7 @@
     .wbg-globe{width:32px;height:32px;flex-shrink:0}
 
     .top-bar-wordmark{
-      font-family:'Source Sans 3',Arial,sans-serif;
+      font-family:'Open Sans',sans-serif;
       font-size:13px;font-weight:600;
       color:rgba(255,255,255,.9);
       letter-spacing:.03em;
@@ -133,8 +133,8 @@
     .hero-eyebrow::before{content:'';display:inline-block;width:20px;height:2px;background:var(--wbg-cyan)}
 
     .hero h1{
-      font-family:'Source Serif 4',serif;
-      font-weight:300;font-size:34px;
+      font-family:'Open Sans',sans-serif;
+      font-weight:400;font-size:32px;
       color:#fff;line-height:1.2;margin-bottom:10px;
       letter-spacing:-.01em;
     }
@@ -233,7 +233,7 @@
       display:flex;align-items:center;justify-content:center;
       border:1px solid rgba(0,159,218,.2);
     }
-    .upload-intro-text h2{font-family:'Source Serif 4',serif;font-weight:400;font-size:20px;color:var(--text);margin-bottom:4px}
+    .upload-intro-text h2{font-family:'Open Sans',sans-serif;font-weight:700;font-size:18px;color:var(--text);margin-bottom:4px}
     .upload-intro-text p{font-size:14px;color:var(--muted);line-height:1.55}
 
     .upload-zones{display:grid;grid-template-columns:1fr 1fr;gap:18px;padding:20px 32px;border-bottom:1px solid var(--border)}
@@ -303,7 +303,7 @@
     .btn{
       display:inline-flex;align-items:center;gap:7px;
       border:none;border-radius:var(--radius-sm);
-      font-family:'Inter',sans-serif;
+      font-family:'Open Sans',sans-serif;
       font-size:14px;font-weight:600;cursor:pointer;
       transition:all .16s ease;letter-spacing:.01em;white-space:nowrap;
     }
@@ -344,17 +344,17 @@
     .stage-badge{
       width:36px;height:36px;border-radius:50%;
       display:flex;align-items:center;justify-content:center;
-      font-family:'Source Serif 4',serif;font-size:16px;font-weight:400;
+      font-family:'Open Sans',sans-serif;font-size:16px;font-weight:400;
       color:#fff;flex-shrink:0;
     }
     .s1{background:var(--s1)} .s2{background:var(--s2)} .s3{background:var(--s3)} .s4{background:var(--s4)}
-    .stage-title{font-family:'Source Serif 4',serif;font-weight:400;font-size:20px;color:var(--text)}
+    .stage-title{font-family:'Open Sans',sans-serif;font-weight:700;font-size:18px;color:var(--text)}
     .stage-sub{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
 
     /* ── Output card ── */
     .out-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:16px;box-shadow:var(--shadow-sm)}
     .out-hdr{
-      padding:10px 18px;background:#f5f7fa;border-bottom:1px solid var(--border);
+      padding:10px 18px;background:#F7F8FA;border-bottom:1px solid var(--border);
       display:flex;justify-content:space-between;align-items:center;
     }
     .out-hdr-l{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;font-weight:600}
@@ -364,7 +364,7 @@
     .copy-btn{
       background:none;border:1px solid var(--border);padding:3px 11px;
       border-radius:4px;font-size:11px;cursor:pointer;color:var(--muted);
-      transition:all .14s;font-family:'Source Sans 3',Arial,sans-serif;font-weight:600;
+      transition:all .14s;font-family:'Open Sans',sans-serif;font-weight:600;
     }
     .copy-btn:hover{border-color:var(--wbg-blue);color:var(--wbg-blue)}
     .copy-btn.ok{color:#1a7a4a;border-color:#1a7a4a}
@@ -375,22 +375,22 @@
     }
     #stage-disp.s3-active .out-body{max-height:none;overflow-y:visible}
     .out-body::-webkit-scrollbar{width:5px}
-    .out-body::-webkit-scrollbar-track{background:#f5f7fa}
+    .out-body::-webkit-scrollbar-track{background:#F7F8FA}
     .out-body::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
 
-    .out-body h1{font-family:'Source Serif 4',serif;font-weight:400;font-size:20px;margin:1.3em 0 .4em;color:var(--text)}
-    .out-body h2{font-family:'Source Serif 4',serif;font-weight:400;font-size:17px;margin:1.2em 0 .35em;border-bottom:1px solid var(--border);padding-bottom:5px;color:var(--text)}
-    .out-body h3{font-size:12px;font-weight:700;margin:1em 0 .3em;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+    .out-body h1{font-family:'Open Sans',sans-serif;font-weight:700;font-size:18px;margin:1.3em 0 .4em;color:var(--text)}
+    .out-body h2{font-family:'Open Sans',sans-serif;font-weight:700;font-size:15px;margin:1.2em 0 .35em;border-bottom:1px solid var(--border);padding-bottom:5px;color:var(--text)}
+    .out-body h3{font-size:10px;font-weight:600;margin:1em 0 .3em;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
     .out-body p{margin-bottom:.7em}
     .out-body strong{font-weight:700}
     .out-body em{font-style:italic;color:#3a4a5a}
     .out-body ul,.out-body ol{margin:.4em 0 .7em 1.4em}
     .out-body li{margin-bottom:.25em}
     .out-body hr{border:none;border-top:1px solid var(--border);margin:1.2em 0}
-    .out-body table{width:100%;border-collapse:collapse;margin:1em 0;font-size:13px}
-    .out-body th{background:#f5f7fa;padding:8px 11px;text-align:left;font-weight:700;border:1px solid var(--border);font-size:11px;text-transform:uppercase;letter-spacing:.04em}
+    .out-body table{width:100%;border-collapse:collapse;margin:1em 0;font-size:14px}
+    .out-body th{background:#EEF0F3;padding:8px 11px;text-align:left;font-weight:600;border:1px solid var(--border);font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
     .out-body td{padding:8px 11px;border:1px solid var(--border);vertical-align:top}
-    .out-body tr:nth-child(even) td{background:#fafbfc}
+    .out-body tr:nth-child(even) td{background:#F7F8FA}
 
     /* ── Refine card ── */
     .refine-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;margin-bottom:16px;box-shadow:var(--shadow-sm)}
@@ -398,7 +398,7 @@
     .refine-row{display:flex;gap:9px}
     .refine-in{
       flex:1;border:1.5px solid var(--border);border-radius:var(--radius-sm);
-      padding:9px 12px;font-family:'Source Sans 3',Arial,sans-serif;font-size:14px;
+      padding:9px 12px;font-family:'Open Sans',sans-serif;font-size:14px;
       color:var(--text);background:var(--off-white);resize:none;transition:border-color .18s;line-height:1.5;
     }
     .refine-in:focus{outline:none;border-color:var(--wbg-blue)}
@@ -419,7 +419,7 @@
     /* ── Loading ── */
     .load-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:48px 32px;text-align:center;margin-bottom:16px;box-shadow:var(--shadow-sm)}
     .spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--wbg-blue);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 16px}
-    .load-title{font-family:'Source Serif 4',serif;font-weight:300;font-size:18px;color:var(--text);margin-bottom:5px}
+    .load-title{font-family:'Open Sans',sans-serif;font-weight:300;font-size:18px;color:var(--text);margin-bottom:5px}
     .load-sub{font-size:13px;color:var(--muted)}
     .load-tags{margin-top:16px;display:flex;justify-content:center;gap:6px;flex-wrap:wrap}
     .load-tag{font-size:11px;padding:3px 10px;background:var(--off-white);border-radius:20px;color:var(--muted);border:1px solid var(--border)}
@@ -514,7 +514,7 @@
     .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .2s ease}
     .modal{background:#fff;border-radius:10px;max-width:620px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.25);overflow:hidden}
     .modal-hdr{background:var(--wbg-navy);padding:22px 28px;position:relative}
-    .modal-hdr h2{font-family:'Source Serif 4',serif;font-weight:300;font-size:22px;color:#fff;margin-bottom:4px}
+    .modal-hdr h2{font-family:'Open Sans',sans-serif;font-weight:300;font-size:22px;color:#fff;margin-bottom:4px}
     .modal-hdr p{font-size:13px;color:rgba(255,255,255,.65)}
     .modal-body{padding:24px 28px}
     .modal-stages{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}
@@ -580,22 +580,22 @@
     .prompt-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .2s ease}
     .prompt-modal{background:#fff;border-radius:10px;width:100%;max-width:780px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden}
     .prompt-modal-hdr{background:var(--wbg-navy);padding:18px 26px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
-    .prompt-modal-hdr h2{font-family:'Source Serif 4',serif;font-weight:300;font-size:19px;color:#fff}
+    .prompt-modal-hdr h2{font-family:'Open Sans',sans-serif;font-weight:300;font-size:19px;color:#fff}
     .prompt-modal-hdr p{font-size:12px;color:rgba(255,255,255,.55);margin-top:2px}
     .prompt-modal-close{background:none;border:none;color:rgba(255,255,255,.6);cursor:pointer;font-size:22px;line-height:1;padding:2px 6px;border-radius:4px}
     .prompt-modal-close:hover{color:#fff;background:rgba(255,255,255,.1)}
-    .prompt-modal-tabs{display:flex;gap:2px;padding:12px 16px 0;background:#f5f7fa;border-bottom:2px solid var(--border);flex-shrink:0}
+    .prompt-modal-tabs{display:flex;gap:2px;padding:12px 16px 0;background:#F7F8FA;border-bottom:2px solid var(--border);flex-shrink:0}
     .prompt-tab{padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;border-radius:5px 5px 0 0;color:var(--muted);border:none;background:none;text-transform:uppercase;letter-spacing:.05em;transition:all .15s;display:flex;align-items:center;gap:6px}
     .prompt-tab.active{background:var(--wbg-navy);color:#fff}
     .prompt-tab:hover:not(.active){background:#e8edf2;color:var(--text)}
     .prompt-modified-dot{width:7px;height:7px;border-radius:50%;background:#f59e0b;flex-shrink:0}
     .prompt-modal-body{flex:1;overflow-y:auto;padding:20px 24px}
-    .prompt-info{font-size:12.5px;color:var(--muted);background:#f5f7fa;border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:14px;line-height:1.55}
+    .prompt-info{font-size:12.5px;color:var(--muted);background:#F7F8FA;border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:14px;line-height:1.55}
     .prompt-modified-banner{font-size:12px;background:#fffbeb;border:1px solid #fcd34d;color:#78350f;border-radius:var(--radius-sm);padding:8px 12px;margin-bottom:10px;display:flex;align-items:center;gap:8px}
-    textarea.prompt-edit{width:100%;min-height:400px;padding:14px 16px;font-family:'Source Code Pro',monospace;font-size:12px;line-height:1.65;color:var(--text);border:1.5px solid var(--border);border-radius:var(--radius-sm);resize:vertical;background:#fafbfc}
+    textarea.prompt-edit{width:100%;min-height:400px;padding:14px 16px;font-family:'Source Code Pro',monospace;font-size:12px;line-height:1.65;color:var(--text);border:1.5px solid var(--border);border-radius:var(--radius-sm);resize:vertical;background:#F7F8FA}
     textarea.prompt-edit:focus{outline:none;border-color:var(--wbg-blue);background:#fff}
     textarea.prompt-edit.modified{border-color:#f59e0b;background:#fffef8}
-    .prompt-modal-foot{padding:14px 24px;background:#f5f7fa;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+    .prompt-modal-foot{padding:14px 24px;background:#F7F8FA;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
     .prompt-modal-foot-left{font-size:12px;color:var(--muted)}
     /* View prompt link on stage header */
     .view-prompt-link{font-size:11px;color:var(--wbg-blue);cursor:pointer;background:none;border:none;padding:2px 6px;border-radius:3px;font-family:inherit;font-weight:600;letter-spacing:.03em;opacity:.8;text-decoration:underline;text-underline-offset:2px}
@@ -694,11 +694,11 @@
       width:38px;height:38px;border-radius:50%;
       background:rgba(255,255,255,.12);border:2px solid rgba(255,255,255,.22);
       display:flex;align-items:center;justify-content:center;
-      font-family:'Source Serif 4',serif;font-size:17px;color:#fff;
+      font-family:'Open Sans',sans-serif;font-size:17px;color:#fff;
       font-weight:400;flex-shrink:0;
     }
     .pc-hdr-eyebrow{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--wbg-cyan);margin-bottom:3px;}
-    .pc-hdr-title{font-family:'Source Serif 4',serif;font-weight:300;font-size:17px;color:#fff;line-height:1.3;}
+    .pc-hdr-title{font-family:'Open Sans',sans-serif;font-weight:600;font-size:15px;color:#fff;line-height:1.3;}
     .pc-hdr-title strong{font-weight:600;}
     .pc-hdr-chips{display:flex;gap:7px;margin-top:8px;flex-wrap:wrap;}
     .pc-chip{font-size:10px;padding:2px 8px;border-radius:20px;border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.65);font-weight:600;}
@@ -1244,9 +1244,9 @@
 
     /* AI output body */
     .out-body{font-size:15px!important;line-height:1.7!important}
-    .out-body h1{font-family:'Inter',sans-serif!important;font-size:18px!important;font-weight:700!important;letter-spacing:-0.02em!important}
-    .out-body h2{font-family:'Inter',sans-serif!important;font-size:15px!important;font-weight:700!important;letter-spacing:-0.02em!important;border-bottom:1px solid var(--color-border)}
-    .out-body h3{font-family:'Inter',sans-serif!important;font-size:14px!important;font-weight:700!important;text-transform:uppercase!important;letter-spacing:0.06em!important;color:var(--color-text-muted)!important;margin-top:24px!important}
+    .out-body h1{font-family:'Open Sans',sans-serif!important;font-size:18px!important;font-weight:700!important;letter-spacing:-0.02em!important}
+    .out-body h2{font-family:'Open Sans',sans-serif!important;font-size:15px!important;font-weight:700!important;letter-spacing:-0.02em!important;border-bottom:1px solid var(--color-border)}
+    .out-body h3{font-family:'Open Sans',sans-serif!important;font-size:14px!important;font-weight:700!important;text-transform:uppercase!important;letter-spacing:0.06em!important;color:var(--color-text-muted)!important;margin-top:24px!important}
 
     /* Callout / info boxes — left-border accent */
     .callout{border:none!important;border-radius:0 6px 6px 0!important;padding:12px 16px!important}
@@ -1262,7 +1262,7 @@
     .refine-card{background:transparent!important;border:none!important;box-shadow:none!important;padding:0!important}
     .refine-row{border:1px solid var(--color-border)!important;border-radius:10px!important;background:#fff!important;display:flex!important;align-items:flex-end!important;padding:8px 12px!important;gap:8px!important;box-shadow:0 1px 4px rgba(0,0,0,.06)!important;transition:border-color 0.15s!important}
     .refine-row:focus-within{border-color:var(--color-blue)!important;box-shadow:0 0 0 3px rgba(0,80,160,.08)!important}
-    .refine-in{border:none!important;outline:none!important;flex:1!important;font-size:14px!important;font-family:'Inter',sans-serif!important;resize:none!important;min-height:40px!important;max-height:120px!important;background:transparent!important;padding:0!important}
+    .refine-in{border:none!important;outline:none!important;flex:1!important;font-size:14px!important;font-family:'Open Sans',sans-serif!important;resize:none!important;min-height:40px!important;max-height:120px!important;background:transparent!important;padding:0!important}
     .refine-in:focus{outline:none!important}
 
     /* Doc-type badge (unified blue style) */
@@ -1271,15 +1271,15 @@
     .doc-type-badge.dt-unknown{background:#f8fafc!important;color:var(--color-text-muted)!important;border-color:var(--color-border)!important}
 
     /* Upload intro h2 — Inter */
-    .upload-intro-text h2{font-family:'Inter',sans-serif!important;font-weight:700!important;letter-spacing:-0.02em!important}
+    .upload-intro-text h2{font-family:'Open Sans',sans-serif!important;font-weight:700!important;letter-spacing:-0.02em!important}
 
     /* Stage title / badge */
-    .stage-title{font-family:'Inter',sans-serif!important;font-weight:700!important;letter-spacing:-0.02em!important}
-    .stage-badge{font-family:'Inter',sans-serif!important;font-weight:700!important}
+    .stage-title{font-family:'Open Sans',sans-serif!important;font-weight:700!important;letter-spacing:-0.02em!important}
+    .stage-badge{font-family:'Open Sans',sans-serif!important;font-weight:700!important}
 
     /* Priority card headings */
-    .pc-hdr-title{font-family:'Inter',sans-serif!important;font-weight:600!important}
-    .pc-num-badge{font-family:'Inter',sans-serif!important;font-weight:700!important}
+    .pc-hdr-title{font-family:'Open Sans',sans-serif!important;font-weight:600!important}
+    .pc-num-badge{font-family:'Open Sans',sans-serif!important;font-weight:700!important}
 
   </style>
 <style>
@@ -1479,29 +1479,25 @@
 
       <div style="padding:20px 32px;border-bottom:1px solid var(--border)">
         <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:10px">What this tool does</div>
-        <p style="font-size:14px;line-height:1.65;color:var(--text)">This tool uses an AI language model (LLM) to screen draft WBG project documents — such as PCNs and PADs — for FCV dynamics. It generates structured recommendations on how to strengthen FCV sensitivity and responsiveness, drawing on the uploaded documents, the WBG FCV Sensitivity &amp; Responsiveness Guide, and the AI's broader knowledge of the country and sector context.</p>
+        <p style="font-size:14px;line-height:1.65;color:var(--text)">This tool uses an AI language model (LLM) to screen draft WBG project documents — such as PCNs and PADs — for FCV dynamics. It generates structured recommendations on how to strengthen FCV sensitivity and responsiveness, drawing on insights and framing from the OST Manual on FCV Sensitivity and Responsiveness, the WBG FCV Strategy, and the FCV Playbook — alongside the uploaded documents and the AI's broader knowledge of the country and sector context.</p>
         <p style="font-size:14px;line-height:1.65;color:var(--text);margin-top:10px">The tool is designed to support — not replace — expert FCV analysis. It works best as a starting point for peer review conversations between FCV specialists and Task Team Leaders.</p>
         <p style="font-size:14px;line-height:1.65;color:var(--text);margin-top:10px">The tool automatically detects the type of project document uploaded — PCN, PID, PAD, Additional Financing, Restructuring Paper, or ISR — and adjusts the depth, framing, and tone of its analysis accordingly. A concept note triggers broader, more exploratory research; an ISR produces operationally-focused supervision priorities.</p>
       </div>
 
       <div style="padding:20px 32px;border-bottom:1px solid var(--border)">
-        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:14px">How to use it — four stages</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:14px">How to use it — three stages</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
           <div style="border:1px solid var(--border);border-radius:6px;padding:12px 14px;border-top:3px solid var(--s1)">
-            <div style="font-size:11px;font-weight:700;color:var(--s1);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Stage 1 · Identifying FCV Risks</div>
-            <p style="font-size:12.5px;color:var(--text);line-height:1.55">Upload your project document — PCN, PID, PAD, Additional Financing, Restructuring Paper, or ISR. The tool auto-detects the document type and adapts the analysis accordingly. The AI extracts all FCV-relevant content and flags information from its own knowledge of the country context. Review what it finds and correct anything that is wrong or missing before proceeding.</p>
+            <div style="font-size:11px;font-weight:700;color:var(--s1);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Stage 1 · Context & Extraction</div>
+            <p style="font-size:12.5px;color:var(--text);line-height:1.55">Upload your project document — PCN, PID, PAD, Additional Financing, Restructuring Paper, or ISR. The tool auto-detects the document type, runs automated web research on the country context, and extracts all FCV-relevant content. Review what it finds and correct anything before proceeding.</p>
           </div>
           <div style="border:1px solid var(--border);border-radius:6px;padding:12px 14px;border-top:3px solid var(--s2)">
-            <div style="font-size:11px;font-weight:700;color:var(--s2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Stage 2 · FCV-Sensitivity Screening</div>
-            <p style="font-size:12.5px;color:var(--text);line-height:1.55">The AI assesses the project across six FCV dimensions, rating risks both <em>to</em> the project (how the FCV context threatens success) and <em>from</em> the project (how it could inadvertently worsen fragility). A risk matrix summarises the findings.</p>
+            <div style="font-size:11px;font-weight:700;color:var(--s2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Stage 2 · FCV Assessment</div>
+            <p style="font-size:12.5px;color:var(--text);line-height:1.55">The AI assesses the project's FCV sensitivity and responsiveness using the full OST framework — 12 recommendations, 25 key questions, and a Do No Harm checklist. Detailed analytical evidence is available in expandable "Under the Hood" panels.</p>
           </div>
           <div style="border:1px solid var(--border);border-radius:6px;padding:12px 14px;border-top:3px solid var(--s3)">
-            <div style="font-size:11px;font-weight:700;color:var(--s3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Stage 3 · Identifying Project Gaps</div>
-            <p style="font-size:12.5px;color:var(--text);line-height:1.55">The AI identifies gaps in FCV sensitivity and design, proposes mitigations for high-risk dimensions, and runs a do-no-harm checklist. This content feeds directly into the final Recommendations Note — review it carefully before proceeding.</p>
-          </div>
-          <div style="border:1px solid var(--border);border-radius:6px;padding:12px 14px;border-top:3px solid var(--s4)">
-            <div style="font-size:11px;font-weight:700;color:var(--s4);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Stage 3 · Recommendations Note</div>
-            <p style="font-size:12.5px;color:var(--text);line-height:1.55">A collegial peer-review memo addressed to the TTL. It summarises FCV strengths and gaps, sets out strategic priorities, and includes a technical annex. The output includes a mandatory AI disclaimer and can be copied directly into Word.</p>
+            <div style="font-size:11px;font-weight:700;color:var(--s3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Stage 3 · Recommendations Note</div>
+            <p style="font-size:12.5px;color:var(--text);line-height:1.55">A collegial peer-review memo addressed to the TTL with strategic priority cards tailored to the project's lifecycle stage. Each priority includes specific actions, PAD language, and implementation guidance. Optional "Go Deeper" panels provide alternative approaches and Playbook references.</p>
           </div>
         </div>
       </div>
@@ -1518,7 +1514,7 @@
         </div>
         <ul style="font-size:13px;line-height:1.7;color:#7f1d1d;padding-left:18px">
           <li>Outputs are generated by an AI and <strong>may contain errors, omissions, or misjudgements</strong>. They should not be treated as definitive expert analysis.</li>
-          <li>The AI draws on general knowledge of the country context, which may be <strong>outdated or incomplete</strong>. Always verify against current, authoritative sources.</li>
+          <li>The AI draws on the OST Manual, FCV Strategy, and FCV Playbook, supplemented by its general knowledge of the country context, which may be <strong>outdated or incomplete</strong>. Always verify against current, authoritative sources.</li>
           <li>The Recommendations Note should be <strong>reviewed, adapted, and validated</strong> by an FCV specialist before any operational use.</li>
           <li><strong>Do not upload classified, confidential, or otherwise restricted documents.</strong> Only use materials cleared for use with external AI processing systems.</li>
         </ul>
@@ -1578,9 +1574,9 @@
       </button>
     </div>
     <div class="hero-chips" style="margin-top:18px;">
-      <span class="hero-chip"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Four-stage analysis</span>
+      <span class="hero-chip"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Three-stage analysis</span>
       <span class="hero-chip"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> Web-informed risk context</span>
-      <span class="hero-chip"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> WBG FCV guidance embedded</span>
+      <span class="hero-chip"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> OST Manual · FCV Strategy · Playbook embedded</span>
       <span class="hero-chip"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Refineable at each stage</span>
     </div>
   </div>
@@ -1650,7 +1646,7 @@
 
     <div class="builtin-notice">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
-      <span><strong>Pre-loaded:</strong> WBG FCV Sensitivity &amp; Responsiveness Guide — no upload needed. Country-specific risk documents (e.g. RRA, risk summaries) should be uploaded separately per project.</span>
+      <span><strong>Pre-loaded:</strong> OST Manual on FCV Sensitivity and Responsiveness, WBG FCV Strategy, and FCV Playbook — no upload needed. Country-specific risk documents (e.g. RRA, risk summaries) should be uploaded separately per project.</span>
     </div>
     <div class="confidential-notice">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2.5" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
@@ -1806,13 +1802,13 @@
     }
   }
 
-  const NAMES={1:'Identifying FCV Risks',2:'FCV Assessment',3:'Recommendations Note'};
-  const SHORT={1:'Identifying FCV Risks',2:'FCV Assessment',3:'Recommendations Note'};
+  const NAMES={1:'Context & Extraction',2:'FCV Assessment',3:'Recommendations Note'};
+  const SHORT={1:'Context & Extraction',2:'FCV Assessment',3:'Recommendations Note'};
   const SUBS={1:'Extracting all FCV-relevant information from your documents',2:'Assessing FCV risks across six dimensions and 12 recommendations',3:'Generating the Recommendations Note and priority actions'};
   const COL={1:'s1',2:'s2',3:'s4'};
 
   const CALLS={
-    1:{t:'Stage 1 of 3 · Identifying FCV Risks',
+    1:{t:'Stage 1 of 3 · Context & Extraction',
        b: ' <strong>What you are reading:</strong> The output has two parts. <strong>Part A</strong> extracts FCV risks directly from the <em>project document</em> (PAD, PCN, or PID) only — it is a close reading of what that document says and implies. <strong>Part B</strong> draws on any <em>contextual documents</em> you uploaded (such as the RRA or country risk assessment) and supplements these with the AI\'s training knowledge of sources such as UN, ICG, and World Bank reports. Check both parts carefully — use the query box below to correct anything or add local knowledge before proceeding.'},
     2:{t:'Stage 2 of 3 · FCV Assessment',
        b:'<strong>What you are reading:</strong> This is the LLM structured assessment of the project FCV sensitivity and responsiveness across key dimensions. It shows how the AI is weighing the evidence and forming its judgements. Review the ratings and reasoning carefully — if a dimension seems underweighted, overweighted, or is missing important context, use the query box below to adjust before moving on.'},
@@ -3239,10 +3235,11 @@ ${md(execSummary)}`;
               <span class="beyond-arrow">▾</span>
             </summary>
             <div class="deeper-content">
+              <p style="font-size:12px;color:var(--muted);line-height:1.55;margin:4px 0 12px;padding:0 2px;">Explore the reasoning behind this recommendation, other options that were considered, and relevant WBG policy guidance from the FCV Playbook.</p>
               <div class="deeper-tabs">
-                <button class="deeper-tab active" onclick="switchDeeperTab(${idx},'alternatives',this)">Alternative approaches</button>
-                <button class="deeper-tab" onclick="switchDeeperTab(${idx},'trail',this)">Analytical trail</button>
-                <button class="deeper-tab" onclick="switchDeeperTab(${idx},'playbook',this)">Playbook references</button>
+                <button class="deeper-tab active" onclick="switchDeeperTab(${idx},'alternatives',this)">Other options</button>
+                <button class="deeper-tab" onclick="switchDeeperTab(${idx},'trail',this)">Why this recommendation</button>
+                <button class="deeper-tab" onclick="switchDeeperTab(${idx},'playbook',this)">WBG policy guidance</button>
               </div>
               <div class="deeper-tab-content" id="deeper-content-${idx}">
                 <div class="deeper-loading" id="deeper-loading-${idx}" style="display:none">
