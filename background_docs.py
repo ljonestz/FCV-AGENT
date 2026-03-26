@@ -10,15 +10,19 @@ FCV_GUIDE = """## WBG FCV Framework — Sensitivity, Responsiveness, and Strateg
 
 ### I. Core Definitions
 
-**FCV Sensitivity** — The intentionality and analytical depth embedded in strategy and operations. A project demonstrates FCV sensitivity when it:
-1. **Demonstrates Awareness** — Shows understanding of FCV dynamics, drivers of conflict/fragility, and sources of resilience
-2. **Designs for Effectiveness** — Accounts for FCV dynamics using operational flexibilities and FCV tools
-3. **Applies Do No Harm** — Ensures the project does not exacerbate drivers of FCV or undermine resilience
-4. **Maximizes Positive Impact** — Actively seeks to address FCV sources and strengthen resilience
+**FCV Sensitivity** — Is the project *aware of and designed for* the FCV context? A project demonstrates FCV sensitivity when it:
+1. **Contextual Awareness** — Shows understanding of FCV dynamics, drivers of conflict/fragility, and sources of resilience relevant to the sector and geography
+2. **Conflict-Informed Design** — Designs targeting, implementation, and safeguards to account for FCV dynamics
+3. **Do No Harm** — Ensures the project does not exacerbate drivers of FCV, reinforce power asymmetries, or undermine resilience
+4. **FCV-Adapted Operations** — Adjusts procurement, supervision, M&E, and stakeholder engagement for the FCV context
 
 FCV-sensitive programming requires moving beyond broad context-setting to **sector- and geography-specific analysis** that shapes not just *what* the project does, but *how* it does it.
 
-**FCV Responsiveness** — The operational and institutional capacity to adapt delivery mechanisms, resource allocation, and policy stance to a changing FCV environment. Effectiveness depends on alignment across the "Four Ps": **Policies, Programming, Personnel, and Partnerships**.
+**FCV Responsiveness** — Does the project *actively work to change* the FCV situation? A project demonstrates FCV responsiveness when it:
+1. **Root-Cause Engagement** — Addresses drivers of fragility and conflict, not just their symptoms
+2. **Resilience Building** — Strengthens pathways out of FCV (institutional legitimacy, social cohesion, economic livelihoods)
+3. **Transformative Use of FCV Tools** — Leverages operational flexibilities (CERC, HEIS, TPM, GEMS) for impact beyond standard delivery
+4. **Peace & Stability Dividends** — Connects project outcomes to stability, state-citizen trust, and reduced fragility
 
 ### II. FCV Refresh — Four Strategic Shifts (January 2026)
 
