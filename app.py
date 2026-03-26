@@ -558,7 +558,11 @@ REFRESH_SHIFT: [One of: Shift A: Anticipate | Shift B: Differentiate | Shift C: 
 RISK_LEVEL: [One of: High | Medium | Low]
 THE_GAP: 2-3 sentences on what is missing or inadequate in the current project design, specifically for this country and sector. Name the document section or component that is absent or insufficient.
 WHY_IT_MATTERS: 2-3 sentences covering both the operational consequence of not addressing this gap AND its significance through an FCV lens. Name the specific delivery risk, then explain the FCV mechanism at stake (e.g. exclusion fuelling grievance, weak institutions enabling spoilers, displacement disrupting community cohesion). Be concise — cover both dimensions in the same passage. For any priority tagged [R] or [S+R], include a one-sentence shift justification at the end: e.g., "Tagged [R] because this directly addresses Shift B (Differentiate) by calibrating the design to the country's specific FCV trajectory."
-RECOMMENDATION: Write 4-6 sentences of specific, sequenced guidance for this priority. Structure the response to cover: (1) What to change or add — name the specific project element, component, or document section; (2) The mechanism or instrument — name the specific intervention, tool, or arrangement (e.g. third-party monitoring contract, community feedback committee, satellite supervision system); (3) The geographic or institutional target — name the location, community, counterpart institution, or affected group; (4) A first step or dependency — what needs to happen first, or what actor needs to initiate. Write as flowing prose — no bullet points, no option menus, no "Option A / Option B". All components should form one coherent direction. Tailor the framing to {doc_type} stage.
+RECOMMENDATION: Write 2-4 bullet points of specific guidance on what to add or strengthen in the project document to address this gap. Each bullet should identify a specific document element to revise (e.g. a PAD section, Operations Manual component, Results Framework indicator, or ESCP commitment) and describe what "good" looks like — enough detail that the TTL knows what to draft, but not so detailed it becomes an implementation manual.
+
+Format as a markdown bulleted list using "- **[Document element]** — [what to add or revise and why]" for each bullet.
+
+Focus on document-level changes the task team can make at the {doc_type} stage. Do NOT write implementation procedures, operational protocols, or step-by-step instructions for project execution — those belong in the Operations Manual, not in this note. Each bullet = one thing to change in the document.
 WHO_ACTS: [Semicolon-separated from: TTL; PIU; Government; FCV CC; FM Team; ESF Team; Technical Team; M&E Team]
 WHEN: [One of: Identification | Preparation | Appraisal | Implementation | Restructuring — must be appropriate for {doc_type} stage]
 RESOURCES: [One of: Minimal (existing budget) | Moderate (dedicated allocation) | Significant (requires restructuring)]
@@ -568,7 +572,7 @@ IMPLEMENTATION_NOTE: 1-2 sentences flagging a practical sequencing point, cost i
 
 GEOGRAPHIC VALIDATION: Before finalising each priority, check: does the `the_gap` field name at least one specific location, group, or institution drawn from the uploaded documents or web research? If not, revise it. If no specific geography is available in your sources, name the administrative level at which the project operates (e.g., county, district, commune) and note that sub-national detail is missing.
 
-Strict prohibitions: NO specific percentages or dollar amounts; NO generic language; NO sub-bullet lists within a priority; NO criticism for post-preparation events.
+Strict prohibitions: NO specific percentages or dollar amounts; NO generic language; NO criticism for post-preparation events. The `recommendation` field uses markdown bullets; all other fields use flowing prose.
 
 ---
 
@@ -605,7 +609,7 @@ Apply the following definitions strictly. [S+R] must be earned — do not use it
 # Quality Check Before Submitting
 - 4-5 priorities total
 - Every priority names at least one specific geography, group, institution, or historical event
-- `recommendation` field contains a single cohesive action, not a menu of options
+- `recommendation` field contains 2-4 bullet points identifying specific document elements to revise, not a prose paragraph or option menu
 - For any [R] or [S+R] priority, `why_it_matters` includes the shift justification sentence
 - No [From: ...] citation tags appear anywhere in the narrative or JSON fields
 - JSON block is present at the end, wrapped in %%%JSON_START%%% / %%%JSON_END%%%
@@ -640,7 +644,7 @@ The FCV ratings, summaries, and risk exposure paragraphs you have written in the
       "risk_level": "High",
       "the_gap": "Specific gap with named location/group/institution",
       "why_it_matters": "Why this gap matters for this project, including shift justification for [R] or [S+R] tags",
-      "recommendation": "Revise the Environmental and Social Commitment Plan to include a conflict-sensitive stakeholder engagement protocol specific to gang-controlled corridors along the CA-13. The protocol should mandate use of trusted community intermediaries — including local parish networks and municipal women's councils — rather than direct government outreach in contested areas. Engage SIT's social development team to pilot the protocol in San Pedro Sula during the first six months of implementation, using anonymous feedback channels to detect intimidation. Flag security incidents monthly to the TTL via the PIU, with a clear threshold triggering a pause and review.",
+      "recommendation": "- **ESCP Commitment #4** — Add a conflict-sensitive stakeholder engagement protocol for gang-controlled corridors along the CA-13, requiring use of trusted community intermediaries (local parish networks, municipal women's councils) rather than direct government outreach in contested areas\n- **Stakeholder Engagement Plan (Annex 5)** — Include anonymous feedback channels designed to detect intimidation or extortion during consultations, with clear escalation thresholds that trigger a pause-and-review\n- **PIU reporting requirements** — Add monthly security incident reporting to the TTL, with a defined threshold for triggering operational review",
       "who_acts": "TTL; ESF Team",
       "when": "Preparation",
       "resources": "Moderate (dedicated allocation)",
@@ -708,7 +712,7 @@ Use the expanded actor vocabulary: TTL, PIU, Government, FCV CC, FM Team, ESF Te
 Begin your response immediately with %%%GO_FURTHER_START%%%.''',
 
 "deeper_playbook": '''# Role
-You are an FCV operational specialist helping a World Bank Task Team apply WBG guidance to strengthen a specific priority action from an FCV screening analysis.
+You are an FCV operational specialist helping a World Bank Task Team connect a specific priority action to concrete resources, tools, and guidance from the WBG FCV Playbook.
 
 # Context
 You are given a specific priority from an FCV screening, along with the relevant operational playbook guidance for this project's lifecycle stage.
@@ -716,14 +720,18 @@ You are given a specific priority from an FCV screening, along with the relevant
 {playbook_content}
 
 # Task
-For the given priority, identify and explain:
-1. **Relevant operational flexibilities** — Name the specific mechanism (CERC, HEIS, TPM, GEMS, condensed procedures, phased disbursement, etc.) and explain how it applies to this priority's FCV dimension and country context
-2. **Applicable policy references** — Cite the specific policy (OP 7.30, OP 8.00, Para 12 IPF, etc.) with brief explanation of how it enables or constrains the recommended action
-3. **Implementation guidance** — Specific to this priority's FCV dimension and country context, covering sequencing, dependencies, and practical first steps
-4. **Named WBG resources or teams** — Who can the TTL contact? (GEMS team, FCV Group, OPCS, SSI, LEGAM, regional FCV coordinators)
+For the given priority, draw directly from the FCV Playbook content above to identify:
+
+1. **What the Playbook says** — Quote or closely paraphrase the specific Playbook guidance that is most relevant to this priority. What does the Playbook recommend for this type of issue at this project stage? Be specific — cite the section or phase.
+
+2. **Operational tools and flexibilities available** — Name the specific mechanisms the TTL can draw on (CERC, HEIS, TPM, GEMS, condensed procedures, phased disbursement, framework approach, etc.) and explain in 1-2 sentences how each applies to this priority in this country context.
+
+3. **WBG resources the TTL can access** — Name the specific teams, units, or coordination mechanisms available: GEMS team, FCV Group, OPCS, SSI, LEGAM, regional FCV coordinators, HDP nexus partners. For each, explain what they can provide for this specific priority.
+
+4. **Policy hooks** — Cite the specific policy provisions (OP 7.30, OP 8.00, Para 12 IPF, etc.) that enable or support the recommended action. Explain briefly how each applies.
 
 # Output Format
-Structured prose, 300-500 words. Use clear thematic headings. NOT bullet lists.
+Structured prose, 300-500 words. Use clear thematic headings (bold). Write for a TTL who needs to know what is available to them and how to access it.
 Be specific to the priority — do not give generic FCV advice. Reference the project's country, sector, and specific design elements where relevant.
 
 # Priority you are addressing
@@ -1841,10 +1849,10 @@ def run_stage():
 def run_deeper():
     """Handle Go Deeper requests for priority cards.
 
-    Supports two tab types:
-    - 'alternatives': generates 2-3 optional alternative approaches (uses 'deeper' prompt)
-    - 'playbook_refs': generates playbook-grounded operational guidance (uses 'deeper_playbook' prompt)
-    The 'analytical_trail' tab is handled client-side — no backend call needed.
+    Supports tab types:
+    - 'playbook_refs': generates FCV Playbook-grounded resources and guidance (uses 'deeper_playbook' prompt)
+    - 'alternatives': (legacy, no longer shown in UI) generates optional alternative approaches
+    The 'analytical_trail' / 'trail' tab is handled client-side — no backend call needed.
     """
     try:
         data = request.get_json()

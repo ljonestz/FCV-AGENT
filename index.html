@@ -3308,11 +3308,10 @@ ${md(execSummary)}`;
               <span class="beyond-arrow">▾</span>
             </summary>
             <div class="deeper-content">
-              <p style="font-size:12px;color:var(--muted);line-height:1.55;margin:4px 0 12px;padding:0 2px;">Explore the reasoning behind this recommendation, other options that were considered, and relevant WBG policy guidance from the FCV Playbook.</p>
+              <p style="font-size:12px;color:var(--muted);line-height:1.55;margin:4px 0 12px;padding:0 2px;">Explore the evidence behind this recommendation and relevant resources from the FCV Playbook.</p>
               <div class="deeper-tabs">
-                <button class="deeper-tab active" onclick="switchDeeperTab(${idx},'alternatives',this)">Other options</button>
-                <button class="deeper-tab" onclick="switchDeeperTab(${idx},'trail',this)">Why this recommendation</button>
-                <button class="deeper-tab" onclick="switchDeeperTab(${idx},'playbook',this)">WBG policy guidance</button>
+                <button class="deeper-tab active" onclick="switchDeeperTab(${idx},'trail',this)">Evidence trail</button>
+                <button class="deeper-tab" onclick="switchDeeperTab(${idx},'playbook',this)">Link to FCV Playbook</button>
               </div>
               <div class="deeper-tab-content" id="deeper-content-${idx}">
                 <div class="deeper-loading" id="deeper-loading-${idx}" style="display:none">
@@ -3341,15 +3340,9 @@ ${md(execSummary)}`;
   function handleDeeperToggle(detailsEl, idx) {
     if (!detailsEl.open) return; // closed — nothing to do
     if (currentDeeperTab[idx]) return; // already initialised for this priority
-    currentDeeperTab[idx] = 'alternatives';
-    const cacheKey = 'deeper_' + idx + '_alternatives';
-    const cached = localStorage.getItem(cacheKey);
-    if (cached) {
-      const resultEl = document.getElementById('deeper-result-' + idx);
-      if (resultEl) resultEl.innerHTML = renderDeeperContent('alternatives', cached);
-    } else {
-      loadDeeperTab(idx, 'alternatives');
-    }
+    currentDeeperTab[idx] = 'trail';
+    // Evidence trail loads instantly from localStorage — no API call
+    loadAnalyticalTrail(idx);
   }
 
   function switchDeeperTab(idx, tab, btnEl) {
