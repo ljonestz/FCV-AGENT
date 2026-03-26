@@ -51,9 +51,9 @@ _REQUIRED_TOP_FIELDS = [
 
 _REQUIRED_PRIORITY_FIELDS = [
     'title', 'fcv_dimension', 'tag', 'refresh_shift', 'risk_level',
-    'the_gap', 'why_it_matters', 'recommendation',
+    'the_gap', 'why_it_matters', 'actions',
     'who_acts', 'when', 'resources',
-    'pad_sections', 'suggested_language', 'implementation_note'
+    'pad_sections', 'implementation_note'
 ]
 
 _SPECIFICITY_STOPWORDS = frozenset({
@@ -558,21 +558,21 @@ REFRESH_SHIFT: [One of: Shift A: Anticipate | Shift B: Differentiate | Shift C: 
 RISK_LEVEL: [One of: High | Medium | Low]
 THE_GAP: 2-3 sentences on what is missing or inadequate in the current project design, specifically for this country and sector. Name the document section or component that is absent or insufficient.
 WHY_IT_MATTERS: 2-3 sentences covering both the operational consequence of not addressing this gap AND its significance through an FCV lens. Name the specific delivery risk, then explain the FCV mechanism at stake (e.g. exclusion fuelling grievance, weak institutions enabling spoilers, displacement disrupting community cohesion). Be concise — cover both dimensions in the same passage. For any priority tagged [R] or [S+R], include a one-sentence shift justification at the end: e.g., "Tagged [R] because this directly addresses Shift B (Differentiate) by calibrating the design to the country's specific FCV trajectory."
-RECOMMENDATION: Write 2-4 bullet points of specific guidance on what to add or strengthen in the project document to address this gap. Each bullet should identify a specific document element to revise (e.g. a PAD section, Operations Manual component, Results Framework indicator, or ESCP commitment) and describe what "good" looks like — enough detail that the TTL knows what to draft, but not so detailed it becomes an implementation manual.
+ACTIONS: Provide 2-4 specific actions to address this gap. Each action identifies a specific document element to revise (e.g. a PAD section, Operations Manual component, Results Framework indicator, or ESCP commitment) and provides enough detail that the TTL knows what to draft. Focus on document-level changes the task team can make at the {doc_type} stage. Do NOT write implementation procedures, operational protocols, or step-by-step instructions for project execution — those belong in the Operations Manual, not in this note. Each action = one thing to change in the document.
 
-Format as a markdown bulleted list using "- **[Document element]** — [what to add or revise and why]" for each bullet.
-
-Focus on document-level changes the task team can make at the {doc_type} stage. Do NOT write implementation procedures, operational protocols, or step-by-step instructions for project execution — those belong in the Operations Manual, not in this note. Each bullet = one thing to change in the document.
+For each action, provide:
+- `document_element`: The specific document component to revise (e.g. "ESCP Commitment (new)", "Stakeholder Engagement Plan (Annex 5)", "Results Framework — Intermediate Indicator")
+- `guidance`: 2-3 sentences describing what to add or revise and why. Enough detail that the TTL knows what "good" looks like.
+- `suggested_language`: 1-2 sentences of draft PAD text the TTL could insert verbatim or near-verbatim. Write in formal WBG project document register ("The project will..."). Make the language specific to this project's context, geography, and implementation arrangements.
 WHO_ACTS: [Semicolon-separated from: TTL; PIU; Government; FCV CC; FM Team; ESF Team; Technical Team; M&E Team]
 WHEN: [One of: Identification | Preparation | Appraisal | Implementation | Restructuring — must be appropriate for {doc_type} stage]
 RESOURCES: [One of: Minimal (existing budget) | Moderate (dedicated allocation) | Significant (requires restructuring)]
 PAD_SECTIONS: A semicolon-separated list of 2-3 specific PAD document sections where the recommended change should be made. Use exact section names where known (e.g. "Annex 5: Stakeholder Engagement Plan; ESCP Commitment #4; Project Operations Manual — Security Protocols"). If uncertain of exact section, use document type + functional area (e.g. "PAD — Component 2 design; Procurement Plan").
-SUGGESTED_LANGUAGE: 2-4 sentences of specific draft text that the TTL could insert into the PAD or Project Operations Manual verbatim or near-verbatim. Write in the register of a formal WBG project document ("The project will..."). Make the language specific to this project's context, geography, and implementation arrangements.
 IMPLEMENTATION_NOTE: 1-2 sentences flagging a practical sequencing point, cost implication, or dependency. Be concrete: name the timing, actor, or cost range where known.
 
 GEOGRAPHIC VALIDATION: Before finalising each priority, check: does the `the_gap` field name at least one specific location, group, or institution drawn from the uploaded documents or web research? If not, revise it. If no specific geography is available in your sources, name the administrative level at which the project operates (e.g., county, district, commune) and note that sub-national detail is missing.
 
-Strict prohibitions: NO specific percentages or dollar amounts; NO generic language; NO criticism for post-preparation events. The `recommendation` field uses markdown bullets; all other fields use flowing prose.
+Strict prohibitions: NO specific percentages or dollar amounts; NO generic language; NO criticism for post-preparation events. The `actions` field is a structured array (see JSON block below); all other fields use flowing prose.
 
 ---
 
@@ -609,13 +609,13 @@ Apply the following definitions strictly. [S+R] must be earned — do not use it
 # Quality Check Before Submitting
 - 4-5 priorities total
 - Every priority names at least one specific geography, group, institution, or historical event
-- `recommendation` field contains 2-4 bullet points identifying specific document elements to revise, not a prose paragraph or option menu
+- `actions` array contains 2-4 objects, each with `document_element`, `guidance` (2-3 sentences), and `suggested_language` (1-2 sentences)
 - For any [R] or [S+R] priority, `why_it_matters` includes the shift justification sentence
 - No [From: ...] citation tags appear anywhere in the narrative or JSON fields
 - JSON block is present at the end, wrapped in %%%JSON_START%%% / %%%JSON_END%%%
 - All 6 top-level JSON fields are populated (fcv_rating, fcv_responsiveness_rating, sensitivity_summary, responsiveness_summary, risk_exposure, priorities)
-- Each priority's pad_sections, suggested_language, and implementation_note are specific to this project — not generic placeholders
-- Each priority JSON object has all 14 fields: title, fcv_dimension, tag, refresh_shift, risk_level, the_gap, why_it_matters, recommendation, who_acts, when, resources, pad_sections, suggested_language, implementation_note
+- Each priority's pad_sections, actions (including per-action suggested_language), and implementation_note are specific to this project — not generic placeholders
+- Each priority JSON object has all 13 fields: title, fcv_dimension, tag, refresh_shift, risk_level, the_gap, why_it_matters, actions, who_acts, when, resources, pad_sections, implementation_note
 - No generic or templated language anywhere
 - All `when` values are appropriate for the {doc_type} stage
 
@@ -644,12 +644,22 @@ The FCV ratings, summaries, and risk exposure paragraphs you have written in the
       "risk_level": "High",
       "the_gap": "Specific gap with named location/group/institution",
       "why_it_matters": "Why this gap matters for this project, including shift justification for [R] or [S+R] tags",
-      "recommendation": "- **ESCP Commitment #4** — Add a conflict-sensitive stakeholder engagement protocol for gang-controlled corridors along the CA-13, requiring use of trusted community intermediaries (local parish networks, municipal women's councils) rather than direct government outreach in contested areas\n- **Stakeholder Engagement Plan (Annex 5)** — Include anonymous feedback channels designed to detect intimidation or extortion during consultations, with clear escalation thresholds that trigger a pause-and-review\n- **PIU reporting requirements** — Add monthly security incident reporting to the TTL, with a defined threshold for triggering operational review",
+      "actions": [
+        {{{{
+          "document_element": "ESCP Commitment (new)",
+          "guidance": "Add a conflict-sensitive stakeholder engagement protocol for gang-controlled corridors along the CA-13. Require use of trusted community intermediaries (local parish networks, municipal women's councils) rather than direct government outreach in contested areas. This mitigates the risk of consultations being co-opted by armed groups.",
+          "suggested_language": "The project will employ community-based intermediaries for stakeholder engagement in areas with active armed group presence along the CA-13 corridor, with protocols subject to quarterly security review."
+        }}}},
+        {{{{
+          "document_element": "Stakeholder Engagement Plan (Annex 5)",
+          "guidance": "Include anonymous feedback channels designed to detect intimidation or extortion during consultations. Define clear escalation thresholds that trigger a pause-and-review of engagement activities. This ensures the project can identify and respond to threats to meaningful participation.",
+          "suggested_language": "The Stakeholder Engagement Plan will include anonymous reporting channels and defined escalation thresholds; engagement activities will be paused pending review if intimidation indicators exceed agreed thresholds."
+        }}}}
+      ],
       "who_acts": "TTL; ESF Team",
       "when": "Preparation",
       "resources": "Moderate (dedicated allocation)",
       "pad_sections": "Annex 5: Stakeholder Engagement Plan; ESCP Commitment #4",
-      "suggested_language": "2-4 sentences of draft PAD language the TTL could insert verbatim, written in WBG document register",
       "implementation_note": "1-2 sentences on timing, cost, sequencing, or key dependency"
     }}}}
   ]
@@ -942,8 +952,34 @@ def extract_priorities(text: str, uploaded_doc_names: list = None) -> dict:
             if field not in pr:
                 pr[field] = ''
 
-        # Post-parse checks
-        check_text = (pr.get('the_gap', '') + ' ' + pr.get('recommendation', ''))
+        # ── Normalise actions array ──────────────────────────────
+        # New format: actions is a list of {document_element, guidance, suggested_language}
+        # Backwards compat: if old 'recommendation' string exists, convert it
+        if 'actions' not in pr or not isinstance(pr.get('actions'), list):
+            old_rec = pr.get('recommendation', '')
+            old_lang = pr.get('suggested_language', '')
+            if old_rec:
+                pr['actions'] = [{
+                    'document_element': 'Recommendation',
+                    'guidance': old_rec,
+                    'suggested_language': old_lang,
+                }]
+            else:
+                pr['actions'] = []
+        else:
+            # Ensure each action has all three fields
+            for act in pr['actions']:
+                if not isinstance(act, dict):
+                    continue
+                act.setdefault('document_element', '')
+                act.setdefault('guidance', '')
+                act.setdefault('suggested_language', '')
+
+        # Post-parse checks — check specificity across gap + all action guidance
+        actions_text = ' '.join(
+            act.get('guidance', '') for act in pr['actions'] if isinstance(act, dict)
+        )
+        check_text = (pr.get('the_gap', '') + ' ' + actions_text)
         pr['specificity_warning'] = _check_specificity(check_text)
         pr['unverified_citations'] = _check_citations(pr, uploaded_doc_names)
 
@@ -951,7 +987,7 @@ def extract_priorities(text: str, uploaded_doc_names: list = None) -> dict:
         pr['body'] = '\n\n'.join(filter(None, [
             pr.get('the_gap', ''),
             pr.get('why_it_matters', ''),
-            pr.get('recommendation', ''),
+            actions_text,
         ]))
 
         priorities.append(pr)
@@ -1903,10 +1939,22 @@ def run_deeper():
             if doc_type == 'ISR':
                 playbook = PLAYBOOK_IMPLEMENTATION + "\n\n" + PLAYBOOK_CLOSING
 
-            # Extract additional priority fields from the request for richer context
-            priority_dimension = data.get('priority_dimension', '')
-            priority_recommendation = data.get('priority_recommendation', '')
-            priority_impl_note = data.get('priority_impl_note', '')
+            # Extract additional priority fields — parse from priority_body JSON if available
+            try:
+                _pr = json.loads(priority_body) if priority_body.startswith('{') else {}
+            except (json.JSONDecodeError, ValueError):
+                _pr = {}
+            priority_dimension = data.get('priority_dimension', '') or _pr.get('fcv_dimension', '')
+            # Build recommendation text from actions array (new format) or fall back to old field
+            _actions = _pr.get('actions', [])
+            if isinstance(_actions, list) and _actions:
+                priority_recommendation = '\n'.join(
+                    f"- **{a.get('document_element','')}** — {a.get('guidance','')}"
+                    for a in _actions if isinstance(a, dict)
+                )
+            else:
+                priority_recommendation = data.get('priority_recommendation', '') or _pr.get('recommendation', '')
+            priority_impl_note = data.get('priority_impl_note', '') or _pr.get('implementation_note', '')
 
             # Format the playbook prompt with context
             try:
