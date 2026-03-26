@@ -13,21 +13,34 @@ This is a **World Bank FCV (Fragility, Conflict, and Violence) Project Screener*
 **v7.0 redesign:** The app was redesigned from 4 stages to 3 stages, driven by feedback from FCV practitioners and integration of the full OST Manual, the FCV Playbook, and the January 2026 FCV Refresh Strategy. Old Stage 2 (Screening) and Stage 3 (Gaps) are merged into a single FCV Assessment stage. The Recommendations Note (formerly Stage 4) becomes Stage 3.
 
 The tool explicitly distinguishes two concepts:
-- **FCV Sensitivity** — whether the project avoids doing harm: do-no-harm, contextual awareness, conflict-informed design, and operational readiness for FCV conditions.
-- **FCV Responsiveness** — whether the project actively addresses the root drivers of fragility or builds resilience, framed around the **4 strategic shifts from the January 2026 FCV Refresh** (Anticipate / Differentiate / Jobs & private sector / Enhanced toolkit). These replace the old WBG FCV Strategy 2020–2025 pillars.
+- **FCV Sensitivity [S]** — Is the project *aware of and designed for* the FCV context? Contextual awareness, conflict-informed design, Do No Harm, FCV-adapted operations. Shorthand: does this help the project avoid making things worse?
+- **FCV Responsiveness [R]** — Does the project *actively work to change* the FCV situation? Root-cause engagement, resilience building, transformative use of FCV tools, peace & stability dividends. Shorthand: does this actively help make fragility dynamics better?
 
-Every prompt output tags recommendations, mitigations, and priorities as [S], [R], or [S+R].
+The 4 FCV Strategy Shifts (Anticipate / Differentiate / Jobs & Private Sector / Enhanced Toolkit) are **cross-cutting** — they apply to both sensitivity and responsiveness findings and are tagged inline as "FCV Strategy Shift: X".
+
+Every prompt output tags recommendations, mitigations, and priorities as [S], [R], or [S+R]. These are assigned dynamically per-finding based on how the project implements each measure — not pre-assigned per recommendation. S/R definitions are shown to the user in a "Key Definitions" box at the top of Stage 2 and Stage 3 output, and on the landing page.
 
 **Key goal:** Move from broad, vague recommendations ("service delivery needs to be targeted so it doesn't contribute to grievance") to specific, location-aware, operationally grounded, stage-aware suggestions ("historically, Nzerekore, Kindia, and Kankan have been excluded from service delivery; focus on these regions to rebuild state-society relationships — action required before PAD appraisal").
 
 **New in v7.0:**
 - Full 12 OST recommendations + 25 key questions drive Stage 2 internally (up from 6 recs)
 - FCV Playbook integration for stage-aware recommendations (PCN vs. PAD vs. implementation)
-- "Under the Hood" expandable panels in Stage 2 for FCV Country Coordinators
-- Do No Harm shown as traffic-light inline (8 canonical principles) rather than standalone checklist
-- "Go Deeper" replaces Explorer — 3 tabs: Other options, Why this recommendation, WBG policy guidance
-- `refresh_shift` field added to each priority card (maps to 1 of 4 FCV Refresh shifts)
+- "Under the Hood" expandable panels in Stage 2 for FCV Country Coordinators (plain-language titles referencing OST Manual)
+- Do No Harm shown as traffic-light after thematic analysis (8 canonical principles), before synthesis
+- `refresh_shift` field added to each priority card (maps to 1 of 4 FCV Strategy Shifts)
 - Expanded `who_acts`, `when`, and `resources` fields with defined value sets
+
+**New in v7.2 (Stage 2 restructure):**
+- Stage 2 output restructured from fixed Sensitivity→DNH→Responsiveness→Gaps to **dynamic thematic narrative** (3–5 themes derived from project)
+- S/R tags dynamically assigned per-finding (not pre-assigned per-rec); shifts cross-cutting (not boxed under responsiveness)
+- DNH repositioned after themes, before synthesis
+- Under the Hood panels renamed to plain-language questions with OST Manual subtitles; Panel 1 gains S/R Tag column
+- S/R definition box shown at top of Stage 2 (with tag legend) and Stage 3 output
+- S/R definitions added to landing page hero section
+- Stage 3 `recommendation` field now produces 2–4 markdown bullets identifying document elements to revise (was single prose paragraph)
+- Stage 3 no longer includes inline `[From: ...]` citation tags — clean peer-review memo
+- "Go Deeper" reduced to 2 tabs: "Evidence trail" (instant, default) + "Link to FCV Playbook" (LLM call). "Other options" (alternatives) tab removed
+- Deeper Playbook prompt rewritten to focus on Playbook quotes, operational tools, WBG teams/resources, and policy hooks
 
 ---
 
@@ -94,20 +107,25 @@ STAGE 2 — FCV Assessment (merged Screening + Gaps)
 │  ├─ 25 key questions
 │  └─ 3 key elements
 │  TTL does NOT see the framework structure — they see themed findings
-├─ Output structure:
-│  ├─ TTL-facing Assessment Summary (400–500 words, thematic narrative):
-│  │  ├─ FCV Sensitivity findings: what the project addresses well, where it falls short
-│  │  ├─ Do No Harm traffic-light inline (e.g., "6 of 8 principles addressed | 1 partial | 1 gap")
-│  │  ├─ FCV Responsiveness findings (framed around the 4 FCV Refresh shifts)
-│  │  └─ Key gaps: 3–5 most critical, prioritised, with evidence
+├─ Output structure (v7.2 — dynamic thematic narrative):
+│  ├─ S/R Definition Box (hardcoded frontend element, not LLM-generated)
+│  ├─ Tag Legend ("Reading this assessment" — explains [S], [R], [S+R] and FCV Strategy Shift badges)
+│  ├─ TTL-facing Assessment (400–500 words, dynamic thematic narrative):
+│  │  ├─ 3–5 analytical themes (dynamic, derived from 12 recs + 25 questions for THIS project)
+│  │  │  Each finding tagged [S]/[R]/[S+R] + "FCV Strategy Shift: X" inline
+│  │  │  Themes can mix S and R findings — they are analytical groupings, not S/R buckets
+│  │  ├─ Do No Harm traffic-light (after themes, before synthesis)
+│  │  ├─ Synthesis: S paragraph (80–100 words) + R paragraph (80–100 words)
+│  │  ├─ Ratings: Sensitivity + Responsiveness
+│  │  └─ Key gaps: 3–5 most critical, tagged [S]/[R]/[S+R], prioritised
 │  └─ Delimiter blocks (parsed by frontend, stripped from display):
 │     ├─ %%%STAGE2_RATINGS_START/END%%% — JSON: {sensitivity_rating, responsiveness_rating}
 │     └─ %%%UNDER_HOOD_START/END%%% containing:
-│        ├─ %%%RECS_TABLE_START/END%%%    — Full 12-rec assessment table
+│        ├─ %%%RECS_TABLE_START/END%%%    — 12-rec table (now with S/R Tag column, dynamically assigned)
 │        ├─ %%%DNH_CHECKLIST_START/END%%% — 8-principle DNH checklist (traffic-light)
 │        ├─ %%%QUESTIONS_MAP_START/END%%% — 25 key questions with findings
-│        └─ %%%EVIDENCE_TRAIL_START/END%%% — Sources, citation tiers, confidence
-├─ Do No Harm — canonical 8 principles:
+│        └─ %%%EVIDENCE_TRAIL_START/END%%% — Sources, types, contributions
+├─ Do No Harm — canonical 8 principles (positioned after themes, before synthesis):
 │  1. Conflict-sensitive targeting and beneficiary selection
 │  2. Avoiding reinforcement of existing power asymmetries
 │  3. Preventing exacerbation of inter-group tensions
@@ -116,11 +134,11 @@ STAGE 2 — FCV Assessment (merged Screening + Gaps)
 │  6. Protecting project staff and beneficiaries from security risks
 │  7. Monitoring for unintended negative consequences
 │  8. Establishing accessible and trusted grievance mechanisms
-├─ Responsiveness framing — 4 FCV Refresh strategic shifts (replaces old pillars):
-│  ├─ Shift A: Anticipate — does the project reflect current fragility classification?
-│  ├─ Shift B: Differentiate — is it calibrated to country FCV trajectory/context type?
-│  ├─ Shift C: Jobs & private sector — does it address economic livelihoods/job creation?
-│  └─ Shift D: Enhanced toolkit — does it leverage operational flexibilities (OP7.30, etc.)?
+├─ FCV Strategy Shifts — 4 cross-cutting strategic directions (tagged inline on S and R findings):
+│  ├─ FCV Strategy Shift A: Anticipate — risk monitoring, early warning, classification awareness
+│  ├─ FCV Strategy Shift B: Differentiate — tailoring to FCV context type
+│  ├─ FCV Strategy Shift C: Jobs & Private Sector — economic livelihoods, MSME, private sector
+│  └─ FCV Strategy Shift D: Enhanced Toolkit — operational flexibilities, partnerships, adaptive management
 ├─ [S+R] strictly defined — only genuine overlap zones (unchanged from v6.0):
 │  (1) inclusion/targeting of conflict-affected populations
 │  (2) FCV logic embedded in ToC/PDO framing
@@ -136,11 +154,11 @@ STAGE 2 — FCV Assessment (merged Screening + Gaps)
    ├─ Main output: Assessment Summary narrative
    ├─ Ratings sidebar: Sensitivity gauge (blue, shield) + Responsiveness gauge (green, leaf)
    │  — moved from old Stage 4 to Stage 2 in v7.0
-   ├─ "Under the Hood" panels (4 expandable <details> sections):
-   │  ├─ Panel 1: Full 12-rec assessment table
-   │  ├─ Panel 2: Detailed DNH checklist
-   │  ├─ Panel 3: 25 key questions mapping
-   │  └─ Panel 4: Evidence trail
+   ├─ "Under the Hood" panels (4 expandable <details> with plain-language titles + OST Manual subtitles):
+   │  ├─ Panel 1: "How well does the project integrate FCV considerations?" (12 operational standards from OST Manual, with S/R Tag column)
+   │  ├─ Panel 2: "Could this project unintentionally cause harm?" (8 DNH principles from OST Manual)
+   │  ├─ Panel 3: "What did we look for — and what was missing?" (25 diagnostic questions from OST Manual)
+   │  └─ Panel 4: "Where did this analysis come from?" (sources, types, contributions)
    └─ Refine input box
 
 STAGE 3 — Recommendations Note (stage-aware)
@@ -179,9 +197,9 @@ STAGE 3 — Recommendations Note (stage-aware)
 │  2. Strip %%%RISK_NARRATIVE_START/END%%% block
 │  3. Strip everything from %%%PRIORITIES_START%%% onwards
 │  4. Legacy delimiter stripping for cached outputs
-├─ Citation policy: ONLY cite documents that appeared as [From: doc name] in Stage 1.
-│  NEVER fabricate titles. Non-uploaded → [From: training knowledge] or [From: web research].
-│  uploaded_doc_names must be in /api/run-stage request body for citation check.
+├─ Citation policy (v7.2): Stage 3 NO LONGER includes inline [From: ...] citation tags.
+│  The note reads as a clean peer-review memo. Sources may be mentioned naturally in prose
+│  (e.g., "ACLED data suggests...") but not as bracketed citations. Never fabricate document titles.
 ├─ Prompt includes: stage-appropriate PLAYBOOK constant, FCV_REFRESH_FRAMEWORK
 └─ UI:
    ├─ Main output card (preamble + opening assessment + operational context)
@@ -190,23 +208,21 @@ STAGE 3 — Recommendations Note (stage-aware)
    ├─ FCV Sensitivity + FCV Responsiveness summary cards (side by side, after Gaps)
    ├─ Priority cards (horizontal stepper, shows one at a time)
    ├─ Per-priority zone-act layout (5 sections, all from JSON — always available):
-   │  ├─ refresh_shift badge (NEW — e.g., "Shift B: Differentiate")
-   │  ├─ Essential action box (recommendation, blue left-border)
+   │  ├─ refresh_shift badge (e.g., "FCV Strategy Shift B: Differentiate")
+   │  ├─ Essential action box (recommendation as 2–4 markdown bullets identifying document elements to revise, blue left-border)
    │  ├─ Where in the PAD (.pad-chip tags split from pad_sections on ";")
    │  ├─ Suggested PAD language (suggested_language, italic yellow card)
    │  └─ Implementation consideration (implementation_note)
    ├─ S/R tag badges with hover tooltips (unchanged)
    ├─ Specificity + citation warning badges (unchanged)
-   ├─ "Go Deeper" collapsible <details> per priority (replaces "Go above and beyond"):
-   │  ├─ 3 tab buttons inside the <details>: "Other options" | "Why this recommendation" | "WBG policy guidance"
-   │  ├─ Tab 1 (alternatives): SSE-streamed LLM call via /api/run-deeper (tab="alternatives")
-   │  │  Prompt: DEFAULT_PROMPTS["deeper"] — 2–3 optional alternative approaches
-   │  ├─ Tab 2 (analytical trail): NO LLM call — filters stage2_under_hood from localStorage
-   │  │  by priority's fcv_dimension; renders matching OST recs/questions instantly
-   │  └─ Tab 3 (playbook refs): SSE-streamed LLM call via /api/run-deeper (tab="playbook_refs")
-   │     Prompt: DEFAULT_PROMPTS["deeper_playbook"] — Playbook-grounded operational guidance
-   ├─ All 3 Go Deeper tabs cached per priority per tab (keys: deeper_{idx}_alternatives,
-   │  deeper_{idx}_trail, deeper_{idx}_playbook)
+   ├─ "Go Deeper" collapsible <details> per priority (2 tabs, v7.2):
+   │  ├─ 2 tab buttons: "Evidence trail" (default) | "Link to FCV Playbook"
+   │  ├─ Tab 1 (Evidence trail): DEFAULT on open. NO LLM call — filters stage2_under_hood
+   │  │  from localStorage by priority keywords (fcv_dimension + title words); renders instantly
+   │  └─ Tab 2 (FCV Playbook): SSE-streamed LLM call via /api/run-deeper (tab="playbook_refs")
+   │     Prompt: DEFAULT_PROMPTS["deeper_playbook"] — Playbook quotes, tools, WBG teams, policy hooks
+   │  NOTE: "Other options" (alternatives) tab removed in v7.2 — was rarely useful
+   ├─ Go Deeper tabs cached per priority per tab (keys: deeper_{idx}_trail, deeper_{idx}_playbook)
    └─ Parse error banner shown if JSON extraction fails
 
 FOLLOW-ON (post-analysis query card — Stage 3 only)
@@ -265,23 +281,24 @@ GO DEEPER (optional depth panel — Stage 3 only; replaces Explorer from v6.0)
 - **Document trust:** A project document is a formal WBG artifact; the tool respects its primacy while being clear about supplementation.
 - **Accuracy accountability:** If something in Part A seems wrong, the issue is in extraction; if Part B is off, it's in contextual interpretation or knowledge gaps.
 
-### 2.3 Why Replace Explorer with "Go Deeper" (3-tab panel)?
-**Problem with old Explorer:** It only offered alternative approaches — a single type of optional depth. FCV Country Coordinators wanted to see the analytical reasoning behind a recommendation (which OST recs drove it?) and the Playbook guidance relevant to their project stage. Single-tab Explorer couldn't serve those needs.
+### 2.3 Why "Go Deeper" (2-tab panel)?
+**Problem with old Explorer:** It only offered alternative approaches. FCV Country Coordinators wanted to see the analytical reasoning behind a recommendation (which OST recs drove it?) and the Playbook guidance relevant to their project stage.
 
-**Solution:** Replace Explorer with a **3-tab "Go Deeper" panel** that:
-- **Tab 1 (Alternatives):** Same content as old Explorer — 2–3 optional alternative approaches (LLM call)
-- **Tab 2 (Why this recommendation):** Which OST recs and key questions from Stage 2 drove this priority — sourced from `localStorage.stage2_under_hood` with **no API call** (renders instantly)
-- **Tab 3 (WBG policy guidance):** Operational flexibilities and Playbook guidance for the project's lifecycle stage — lightweight LLM call
+**Solution (v7.2):** Replace Explorer with a **2-tab "Go Deeper" panel** that:
+- **Tab 1 (Evidence trail):** DEFAULT on open. Which OST recs and key questions from Stage 2 drove this priority — sourced from `localStorage.stage2_under_hood` with **no API call** (renders instantly)
+- **Tab 2 (Link to FCV Playbook):** FCV Playbook quotes, operational tools and flexibilities, WBG teams/resources the TTL can access, and applicable policy hooks — lightweight LLM call
 
-**Key architectural innovation:** Tab 2 uses data already collected in Stage 2. No extra API call, no latency. The `stage2_under_hood` block is stored in localStorage after Stage 2 completes and read by Go Deeper on demand.
+The "Other options" (alternatives) tab was removed in v7.2 — user testing showed it was rarely used and added cognitive load without clear value.
+
+**Key architectural innovation:** Tab 1 uses data already collected in Stage 2. No extra API call, no latency. The `stage2_under_hood` block is stored in localStorage after Stage 2 completes and read by Go Deeper on demand.
 
 **Result:** Core recommendation is self-contained in JSON. Go Deeper adds optional analytical depth. Download never requires clicking through tabs.
 
-### 2.3a Why Each Priority Still Has a Single Recommendation + PAD Guidance
-**Principle retained from v6.0:** Non-specialist TTLs need a clear directive, not a menu of options.
+### 2.3a Why Each Priority Uses Bulleted Document Guidance
+**Principle (updated v7.2):** Non-specialist TTLs need clear guidance on what to revise in their project document.
 
-Each priority card remains structured around one clear action from the Stage 3 JSON:
-- `recommendation` — single cohesive action (2–3 sentences)
+Each priority card is structured around document-level changes from the Stage 3 JSON:
+- `recommendation` — 2–4 markdown bullets, each identifying a specific document element to revise
 - `pad_sections` — explicit PAD sections to modify (semicolon-separated)
 - `suggested_language` — draft text to insert verbatim (2–4 sentences)
 - `implementation_note` — timing/cost/dependency note (1–2 sentences)
@@ -325,13 +342,13 @@ Go Deeper demoted to a collapsed section — lazy-loaded only if the user opens 
 # In app.py, top-level DEFAULT_PROMPTS dictionary
 DEFAULT_PROMPTS = {
     "1": "# Role\nYou are an expert FCV analyst...",          # Stage 1: Context & Extraction
-    "2": "# Role\nYou are an expert FCV analyst...",          # Stage 2: FCV Assessment (merged)
-    "3": "# Role\nYou are an expert FCV analyst...",          # Stage 3: Recommendations Note
-    "deeper": "# Role\nYou are an expert FCV analyst...",     # Go Deeper Tab 1: Alternative approaches
-    "deeper_playbook": "# Role\nYou are an expert FCV...",   # Go Deeper Tab 3: Playbook references
+    "2": "# Role\nYou are an expert FCV analyst...",          # Stage 2: FCV Assessment (dynamic thematic narrative)
+    "3": "# Role\nYou are an expert FCV analyst...",          # Stage 3: Recommendations Note (no inline citations, bulleted recs)
+    "deeper": "# Role\nYou are an FCV specialist...",         # (Legacy — alternatives tab removed in v7.2, prompt retained for backwards compat)
+    "deeper_playbook": "# Role\nYou are an FCV...",           # Go Deeper Tab 2: Link to FCV Playbook
     "followon": "# Role\nYou are a senior FCV specialist..."  # Follow-on post-analysis tasks
 }
-# Note: Go Deeper Tab 2 (Analytical trail) has NO prompt — it is a frontend-only data filter
+# Note: Go Deeper Tab 1 (Evidence trail) has NO prompt — it is a frontend-only data filter from localStorage
 ```
 
 **Session-specific overrides:**
@@ -1280,7 +1297,7 @@ If you find gaps in this documentation, or if new design decisions emerge, updat
 ---
 
 **Last updated:** 2026-03-26
-**Current version:** FCV Project Screener 7.1 (WB Design System alignment, Go Deeper UX improvements, 3-stage modal/landing page updates)
+**Current version:** FCV Project Screener 7.2 (Stage 2 thematic narrative restructure, sharpened S/R definitions, bulleted recommendations, Go Deeper reduced to 2 tabs, citations removed from Stage 3)
 **Current Claude model:** claude-sonnet-4-20250514
 **Architecture:** Flask 3.0.3 backend + vanilla JS frontend + Anthropic SDK integration
 **Design system:** WB Digital Look & Feel Style Guide — Open Sans, WB palette (#009FDA/#002244/#111827), RAG status colours. Reference: https://geospatial-commons.github.io/WB-Design-Guidelines/chapters/design-system.html
