@@ -562,8 +562,8 @@ ACTIONS: Provide 2-4 specific actions to address this gap. Each action identifie
 
 For each action, provide:
 - `document_element`: The specific document component to revise (e.g. "ESCP Commitment (new)", "Stakeholder Engagement Plan (Annex 5)", "Results Framework — Intermediate Indicator")
-- `guidance`: 2-3 sentences describing what to add or revise and why. Enough detail that the TTL knows what "good" looks like.
-- `suggested_language`: 1-2 sentences of draft PAD text the TTL could insert verbatim or near-verbatim. Write in formal WBG project document register ("The project will..."). Make the language specific to this project's context, geography, and implementation arrangements.
+- `guidance`: 2-3 sentences (up to 4 for complex actions) describing what to add or revise and why. Be specific: name the concrete content to include (e.g. which indicators, which stakeholder groups, which risk triggers). Enough detail that the TTL knows exactly what "good" looks like without needing to interpret.
+- `suggested_language`: 2-3 sentences of ready-to-paste draft text for the specific document element named above. Write in formal WBG project document register. Be concrete and specific to this project's context, geography, sector, and implementation arrangements — the TTL should be able to insert this into the PAD section or commitment with minimal editing. Name specific actors, locations, mechanisms, or thresholds where possible rather than using placeholder language.
 WHO_ACTS: [Semicolon-separated from: TTL; PIU; Government; FCV CC; FM Team; ESF Team; Technical Team; M&E Team]
 WHEN: [One of: Identification | Preparation | Appraisal | Implementation | Restructuring — must be appropriate for {doc_type} stage]
 RESOURCES: [One of: Minimal (existing budget) | Moderate (dedicated allocation) | Significant (requires restructuring)]
@@ -609,7 +609,7 @@ Apply the following definitions strictly. [S+R] must be earned — do not use it
 # Quality Check Before Submitting
 - 4-5 priorities total
 - Every priority names at least one specific geography, group, institution, or historical event
-- `actions` array contains 2-4 objects, each with `document_element`, `guidance` (2-3 sentences), and `suggested_language` (1-2 sentences)
+- `actions` array contains 2-4 objects, each with `document_element`, `guidance` (2-4 sentences), and `suggested_language` (2-3 sentences of ready-to-paste PAD text)
 - For any [R] or [S+R] priority, `why_it_matters` includes the shift justification sentence
 - No [From: ...] citation tags appear anywhere in the narrative or JSON fields
 - JSON block is present at the end, wrapped in %%%JSON_START%%% / %%%JSON_END%%%
@@ -648,12 +648,12 @@ The FCV ratings, summaries, and risk exposure paragraphs you have written in the
         {{{{
           "document_element": "ESCP Commitment (new)",
           "guidance": "Add a conflict-sensitive stakeholder engagement protocol for gang-controlled corridors along the CA-13. Require use of trusted community intermediaries (local parish networks, municipal women's councils) rather than direct government outreach in contested areas. This mitigates the risk of consultations being co-opted by armed groups.",
-          "suggested_language": "The project will employ community-based intermediaries for stakeholder engagement in areas with active armed group presence along the CA-13 corridor, with protocols subject to quarterly security review."
+          "suggested_language": "The project will employ community-based intermediaries — including local parish networks and municipal women's councils — for all stakeholder engagement activities in areas with active armed group presence along the CA-13 corridor. Engagement protocols will be subject to quarterly security review by the PIU Security Focal Point, with immediate suspension of activities where intermediary safety is compromised."
         }}}},
         {{{{
           "document_element": "Stakeholder Engagement Plan (Annex 5)",
           "guidance": "Include anonymous feedback channels designed to detect intimidation or extortion during consultations. Define clear escalation thresholds that trigger a pause-and-review of engagement activities. This ensures the project can identify and respond to threats to meaningful participation.",
-          "suggested_language": "The Stakeholder Engagement Plan will include anonymous reporting channels and defined escalation thresholds; engagement activities will be paused pending review if intimidation indicators exceed agreed thresholds."
+          "suggested_language": "The Stakeholder Engagement Plan will establish anonymous feedback mechanisms — including sealed comment boxes at consultation venues and a dedicated phone line managed by the TPM agent — to detect intimidation or coercion during community engagement. Where two or more credible reports of intimidation are received within a single consultation cycle, the PIU will suspend engagement in the affected municipality and notify the TTL within 48 hours for review."
         }}}}
       ],
       "who_acts": "TTL; ESF Team",
