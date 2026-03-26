@@ -4,7 +4,7 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>FCV Project Screener · WBG FCV Analytics Unit</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
@@ -15,12 +15,12 @@
       --wbg-cyan:   #47C4EB;
       --wbg-dark:   #00263A;
 
-      /* UI neutrals */
+      /* UI neutrals (WB Design System) */
       --white:      #ffffff;
-      --off-white:  #f5f7fa;
-      --border:     #d9e2ec;
-      --muted:      #5a6a7e;
-      --text:       #1a2a3a;
+      --off-white:  #F7F8FA;
+      --border:     #EEF0F3;
+      --muted:      #6B7280;
+      --text:       #111827;
 
       /* Stage accent colours */
       --s1: #0072BB;
@@ -30,30 +30,30 @@
 
       --radius:    8px;
       --radius-sm: 5px;
-      --shadow-sm: 0 1px 4px rgba(0,34,68,.08);
-      --shadow-md: 0 4px 14px rgba(0,34,68,.10);
-      --shadow-lg: 0 8px 28px rgba(0,34,68,.13);
+      --shadow-sm: 0 1px 3px rgba(0,0,0,.08);
+      --shadow-md: 0 4px 12px rgba(0,0,0,.10);
+      --shadow-lg: 0 8px 24px rgba(0,0,0,.12);
 
-      /* Design-system tokens */
+      /* Design-system tokens (WB Design System) */
       --color-navy:       #002244;
-      --color-navy-light: #003366;
-      --color-blue:       #0050A0;
-      --color-blue-soft:  #EBF2FA;
-      --color-bg:         #F5F7FA;
+      --color-navy-light: #12436D;
+      --color-blue:       #009FDA;
+      --color-blue-soft:  #E8F5FC;
+      --color-bg:         #F7F8FA;
       --color-surface:    #FFFFFF;
-      --color-border:     #E2E8F0;
-      --color-text:       #1A202C;
-      --color-text-muted: #64748B;
-      --color-success:    #16A34A;
-      --color-warning:    #D97706;
-      --color-danger:     #DC2626;
+      --color-border:     #EEF0F3;
+      --color-text:       #111827;
+      --color-text-muted: #6B7280;
+      --color-success:    #1A9850;
+      --color-warning:    #D73027;
+      --color-danger:     #D73027;
     }
 
     html{scroll-behavior:smooth}
-    body{font-family:'Inter',sans-serif;background:var(--color-bg,#F5F7FA);color:var(--color-text,#1A202C);min-height:100vh;line-height:1.6;font-size:15px}
-    h1,h2,h3{font-family:'Inter',sans-serif;letter-spacing:-0.02em;font-weight:700}
-    .out-body h1,.out-body h2,.stage-title,.stage-badge,.pc-num-badge,.pc-hdr-title,.upload-intro-text h2{font-family:'Inter',sans-serif!important}
-    .btn,.refine-in,.prompt-edit,.pc-followup-input{font-family:'Inter',sans-serif}
+    body{font-family:'Open Sans',sans-serif;background:var(--color-bg,#F7F8FA);color:var(--color-text,#111827);min-height:100vh;line-height:1.6;font-size:14px}
+    h1,h2,h3{font-family:'Open Sans',sans-serif;letter-spacing:-0.02em;font-weight:700}
+    .out-body h1,.out-body h2,.stage-title,.stage-badge,.pc-num-badge,.pc-hdr-title,.upload-intro-text h2{font-family:'Open Sans',sans-serif!important}
+    .btn,.refine-in,.prompt-edit,.pc-followup-input{font-family:'Open Sans',sans-serif}
 
     /* ── Skip link ── */
     .skip{position:absolute;top:-50px;left:0;background:var(--wbg-blue);color:#fff;padding:8px 16px;z-index:200;border-radius:0 0 4px 0;font-size:13px;text-decoration:none;transition:top .2s}
@@ -75,7 +75,7 @@
     .wbg-globe{width:32px;height:32px;flex-shrink:0}
 
     .top-bar-wordmark{
-      font-family:'Source Sans 3',Arial,sans-serif;
+      font-family:'Open Sans',sans-serif;
       font-size:13px;font-weight:600;
       color:rgba(255,255,255,.9);
       letter-spacing:.03em;
@@ -133,8 +133,8 @@
     .hero-eyebrow::before{content:'';display:inline-block;width:20px;height:2px;background:var(--wbg-cyan)}
 
     .hero h1{
-      font-family:'Source Serif 4',serif;
-      font-weight:300;font-size:34px;
+      font-family:'Open Sans',sans-serif;
+      font-weight:400;font-size:32px;
       color:#fff;line-height:1.2;margin-bottom:10px;
       letter-spacing:-.01em;
     }
@@ -233,7 +233,7 @@
       display:flex;align-items:center;justify-content:center;
       border:1px solid rgba(0,159,218,.2);
     }
-    .upload-intro-text h2{font-family:'Source Serif 4',serif;font-weight:400;font-size:20px;color:var(--text);margin-bottom:4px}
+    .upload-intro-text h2{font-family:'Open Sans',sans-serif;font-weight:700;font-size:18px;color:var(--text);margin-bottom:4px}
     .upload-intro-text p{font-size:14px;color:var(--muted);line-height:1.55}
 
     .upload-zones{display:grid;grid-template-columns:1fr 1fr;gap:18px;padding:20px 32px;border-bottom:1px solid var(--border)}
@@ -303,7 +303,7 @@
     .btn{
       display:inline-flex;align-items:center;gap:7px;
       border:none;border-radius:var(--radius-sm);
-      font-family:'Inter',sans-serif;
+      font-family:'Open Sans',sans-serif;
       font-size:14px;font-weight:600;cursor:pointer;
       transition:all .16s ease;letter-spacing:.01em;white-space:nowrap;
     }
@@ -344,17 +344,17 @@
     .stage-badge{
       width:36px;height:36px;border-radius:50%;
       display:flex;align-items:center;justify-content:center;
-      font-family:'Source Serif 4',serif;font-size:16px;font-weight:400;
+      font-family:'Open Sans',sans-serif;font-size:16px;font-weight:400;
       color:#fff;flex-shrink:0;
     }
     .s1{background:var(--s1)} .s2{background:var(--s2)} .s3{background:var(--s3)} .s4{background:var(--s4)}
-    .stage-title{font-family:'Source Serif 4',serif;font-weight:400;font-size:20px;color:var(--text)}
+    .stage-title{font-family:'Open Sans',sans-serif;font-weight:700;font-size:18px;color:var(--text)}
     .stage-sub{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
 
     /* ── Output card ── */
     .out-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:16px;box-shadow:var(--shadow-sm)}
     .out-hdr{
-      padding:10px 18px;background:#f5f7fa;border-bottom:1px solid var(--border);
+      padding:10px 18px;background:#F7F8FA;border-bottom:1px solid var(--border);
       display:flex;justify-content:space-between;align-items:center;
     }
     .out-hdr-l{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;font-weight:600}
@@ -364,7 +364,7 @@
     .copy-btn{
       background:none;border:1px solid var(--border);padding:3px 11px;
       border-radius:4px;font-size:11px;cursor:pointer;color:var(--muted);
-      transition:all .14s;font-family:'Source Sans 3',Arial,sans-serif;font-weight:600;
+      transition:all .14s;font-family:'Open Sans',sans-serif;font-weight:600;
     }
     .copy-btn:hover{border-color:var(--wbg-blue);color:var(--wbg-blue)}
     .copy-btn.ok{color:#1a7a4a;border-color:#1a7a4a}
@@ -373,24 +373,24 @@
       padding:24px 28px;font-size:14px;line-height:1.8;color:var(--text);
       max-height:540px;overflow-y:auto;
     }
-    #stage-disp.s4-active .out-body{max-height:none;overflow-y:visible}
+    #stage-disp.s3-active .out-body{max-height:none;overflow-y:visible}
     .out-body::-webkit-scrollbar{width:5px}
-    .out-body::-webkit-scrollbar-track{background:#f5f7fa}
+    .out-body::-webkit-scrollbar-track{background:#F7F8FA}
     .out-body::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
 
-    .out-body h1{font-family:'Source Serif 4',serif;font-weight:400;font-size:20px;margin:1.3em 0 .4em;color:var(--text)}
-    .out-body h2{font-family:'Source Serif 4',serif;font-weight:400;font-size:17px;margin:1.2em 0 .35em;border-bottom:1px solid var(--border);padding-bottom:5px;color:var(--text)}
-    .out-body h3{font-size:12px;font-weight:700;margin:1em 0 .3em;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+    .out-body h1{font-family:'Open Sans',sans-serif;font-weight:700;font-size:18px;margin:1.3em 0 .4em;color:var(--text)}
+    .out-body h2{font-family:'Open Sans',sans-serif;font-weight:700;font-size:15px;margin:1.2em 0 .35em;border-bottom:1px solid var(--border);padding-bottom:5px;color:var(--text)}
+    .out-body h3{font-size:10px;font-weight:600;margin:1em 0 .3em;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
     .out-body p{margin-bottom:.7em}
     .out-body strong{font-weight:700}
     .out-body em{font-style:italic;color:#3a4a5a}
     .out-body ul,.out-body ol{margin:.4em 0 .7em 1.4em}
     .out-body li{margin-bottom:.25em}
     .out-body hr{border:none;border-top:1px solid var(--border);margin:1.2em 0}
-    .out-body table{width:100%;border-collapse:collapse;margin:1em 0;font-size:13px}
-    .out-body th{background:#f5f7fa;padding:8px 11px;text-align:left;font-weight:700;border:1px solid var(--border);font-size:11px;text-transform:uppercase;letter-spacing:.04em}
+    .out-body table{width:100%;border-collapse:collapse;margin:1em 0;font-size:14px}
+    .out-body th{background:#EEF0F3;padding:8px 11px;text-align:left;font-weight:600;border:1px solid var(--border);font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
     .out-body td{padding:8px 11px;border:1px solid var(--border);vertical-align:top}
-    .out-body tr:nth-child(even) td{background:#fafbfc}
+    .out-body tr:nth-child(even) td{background:#F7F8FA}
 
     /* ── Refine card ── */
     .refine-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;margin-bottom:16px;box-shadow:var(--shadow-sm)}
@@ -398,7 +398,7 @@
     .refine-row{display:flex;gap:9px}
     .refine-in{
       flex:1;border:1.5px solid var(--border);border-radius:var(--radius-sm);
-      padding:9px 12px;font-family:'Source Sans 3',Arial,sans-serif;font-size:14px;
+      padding:9px 12px;font-family:'Open Sans',sans-serif;font-size:14px;
       color:var(--text);background:var(--off-white);resize:none;transition:border-color .18s;line-height:1.5;
     }
     .refine-in:focus{outline:none;border-color:var(--wbg-blue)}
@@ -419,7 +419,7 @@
     /* ── Loading ── */
     .load-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:48px 32px;text-align:center;margin-bottom:16px;box-shadow:var(--shadow-sm)}
     .spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--wbg-blue);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 16px}
-    .load-title{font-family:'Source Serif 4',serif;font-weight:300;font-size:18px;color:var(--text);margin-bottom:5px}
+    .load-title{font-family:'Open Sans',sans-serif;font-weight:300;font-size:18px;color:var(--text);margin-bottom:5px}
     .load-sub{font-size:13px;color:var(--muted)}
     .load-tags{margin-top:16px;display:flex;justify-content:center;gap:6px;flex-wrap:wrap}
     .load-tag{font-size:11px;padding:3px 10px;background:var(--off-white);border-radius:20px;color:var(--muted);border:1px solid var(--border)}
@@ -514,7 +514,7 @@
     .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .2s ease}
     .modal{background:#fff;border-radius:10px;max-width:620px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.25);overflow:hidden}
     .modal-hdr{background:var(--wbg-navy);padding:22px 28px;position:relative}
-    .modal-hdr h2{font-family:'Source Serif 4',serif;font-weight:300;font-size:22px;color:#fff;margin-bottom:4px}
+    .modal-hdr h2{font-family:'Open Sans',sans-serif;font-weight:300;font-size:22px;color:#fff;margin-bottom:4px}
     .modal-hdr p{font-size:13px;color:rgba(255,255,255,.65)}
     .modal-body{padding:24px 28px}
     .modal-stages{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}
@@ -555,26 +555,79 @@
     .trunc-warn-item strong{color:#9a3412}
     .trunc-warn-note{font-size:12px;color:#92400e;margin-top:8px;padding-top:8px;border-top:1px solid #fed7aa;line-height:1.5}
 
+    /* ── Under the Hood panels (Stage 2) ── */
+    .under-hood-section { margin-top: 24px; }
+    .under-hood-header {
+        font-size: 16px; font-weight: 600; color: #333;
+        margin-bottom: 12px; padding-bottom: 8px;
+        border-bottom: 2px solid #e0e0e0;
+    }
+    .under-hood-panel {
+        margin-bottom: 8px; border: 1px solid #e0e0e0;
+        border-radius: 8px; overflow: hidden;
+    }
+    .under-hood-panel summary {
+        padding: 12px 16px; cursor: pointer; font-weight: 500;
+        background: #f8f9fa; font-size: 14px;
+    }
+    .under-hood-panel[open] summary { border-bottom: 1px solid #e0e0e0; }
+    .under-hood-content { padding: 16px; font-size: 14px; }
+    .under-hood-content table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .under-hood-content th, .under-hood-content td { padding: 8px; border: 1px solid #ddd; text-align: left; }
+    .under-hood-content th { background: #f0f0f0; font-weight: 600; }
+    .under-hood-subtitle { font-size: 12px; font-weight: 400; color: var(--muted, #6B7280); margin-left: 2px; }
+
+    /* ── S/R Definition Box (Stage 2/3 top) ── */
+    .sr-def-box { border: 1px solid var(--border, #EEF0F3); border-radius: 8px; overflow: hidden; margin-bottom: 20px; background: #fff; }
+    .sr-def-header { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--muted, #6B7280); padding: 10px 18px 0; }
+    .sr-def-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--border, #EEF0F3); }
+    @media (max-width: 768px) { .sr-def-grid { grid-template-columns: 1fr; } }
+    .sr-def-item { background: #fff; padding: 14px 18px; }
+    .sr-def-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
+    .sr-def-s { color: #0050A0; }
+    .sr-def-r { color: #16A34A; }
+    .sr-def-icon { width: 18px; height: 18px; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: #fff; }
+    .sr-def-icon-s { background: #0050A0; }
+    .sr-def-icon-r { background: #16A34A; }
+    .sr-def-desc { font-size: 12px; color: var(--muted, #6B7280); line-height: 1.5; }
+
+    /* ── Tag Legend (Stage 2) ── */
+    .tag-legend { border: 1px solid var(--border, #EEF0F3); border-radius: 8px; padding: 12px 18px; margin-bottom: 20px; background: #fff; }
+    .tag-legend-header { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--muted, #6B7280); margin-bottom: 8px; }
+    .tag-legend-body { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+    .tag-legend-item { display: inline-flex; align-items: center; gap: 5px; }
+    .tag-legend-text { font-size: 12px; color: var(--text, #111827); }
+    .tag-legend-sep { width: 1px; height: 16px; background: var(--border, #EEF0F3); }
+    .shift-badge-legend { display: inline-block; font-size: 10px; font-weight: 500; padding: 2px 8px; border-radius: 20px; background: #F3E8FF; color: #6B21A8; border: 1px solid #DDD6FE; }
+
+    /* ── Hero S/R Definitions (landing page) ── */
+    .hero-sr-defs { display: flex; gap: 16px; max-width: 600px; margin-bottom: 18px; flex-wrap: wrap; }
+    .hero-sr-item { display: flex; align-items: flex-start; gap: 8px; font-size: 12.5px; color: rgba(255,255,255,.82); line-height: 1.5; flex: 1; min-width: 240px; }
+    .hero-sr-item strong { color: #fff; }
+    .hero-sr-badge { width: 22px; height: 22px; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #fff; flex-shrink: 0; margin-top: 1px; }
+    .hero-sr-s { background: #0050A0; }
+    .hero-sr-r { background: #16A34A; }
+
     /* ── Prompt viewer modal ── */
     .prompt-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .2s ease}
     .prompt-modal{background:#fff;border-radius:10px;width:100%;max-width:780px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden}
     .prompt-modal-hdr{background:var(--wbg-navy);padding:18px 26px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
-    .prompt-modal-hdr h2{font-family:'Source Serif 4',serif;font-weight:300;font-size:19px;color:#fff}
+    .prompt-modal-hdr h2{font-family:'Open Sans',sans-serif;font-weight:300;font-size:19px;color:#fff}
     .prompt-modal-hdr p{font-size:12px;color:rgba(255,255,255,.55);margin-top:2px}
     .prompt-modal-close{background:none;border:none;color:rgba(255,255,255,.6);cursor:pointer;font-size:22px;line-height:1;padding:2px 6px;border-radius:4px}
     .prompt-modal-close:hover{color:#fff;background:rgba(255,255,255,.1)}
-    .prompt-modal-tabs{display:flex;gap:2px;padding:12px 16px 0;background:#f5f7fa;border-bottom:2px solid var(--border);flex-shrink:0}
+    .prompt-modal-tabs{display:flex;gap:2px;padding:12px 16px 0;background:#F7F8FA;border-bottom:2px solid var(--border);flex-shrink:0}
     .prompt-tab{padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;border-radius:5px 5px 0 0;color:var(--muted);border:none;background:none;text-transform:uppercase;letter-spacing:.05em;transition:all .15s;display:flex;align-items:center;gap:6px}
     .prompt-tab.active{background:var(--wbg-navy);color:#fff}
     .prompt-tab:hover:not(.active){background:#e8edf2;color:var(--text)}
     .prompt-modified-dot{width:7px;height:7px;border-radius:50%;background:#f59e0b;flex-shrink:0}
     .prompt-modal-body{flex:1;overflow-y:auto;padding:20px 24px}
-    .prompt-info{font-size:12.5px;color:var(--muted);background:#f5f7fa;border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:14px;line-height:1.55}
+    .prompt-info{font-size:12.5px;color:var(--muted);background:#F7F8FA;border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:14px;line-height:1.55}
     .prompt-modified-banner{font-size:12px;background:#fffbeb;border:1px solid #fcd34d;color:#78350f;border-radius:var(--radius-sm);padding:8px 12px;margin-bottom:10px;display:flex;align-items:center;gap:8px}
-    textarea.prompt-edit{width:100%;min-height:400px;padding:14px 16px;font-family:'Source Code Pro',monospace;font-size:12px;line-height:1.65;color:var(--text);border:1.5px solid var(--border);border-radius:var(--radius-sm);resize:vertical;background:#fafbfc}
+    textarea.prompt-edit{width:100%;min-height:400px;padding:14px 16px;font-family:'Source Code Pro',monospace;font-size:12px;line-height:1.65;color:var(--text);border:1.5px solid var(--border);border-radius:var(--radius-sm);resize:vertical;background:#F7F8FA}
     textarea.prompt-edit:focus{outline:none;border-color:var(--wbg-blue);background:#fff}
     textarea.prompt-edit.modified{border-color:#f59e0b;background:#fffef8}
-    .prompt-modal-foot{padding:14px 24px;background:#f5f7fa;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+    .prompt-modal-foot{padding:14px 24px;background:#F7F8FA;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
     .prompt-modal-foot-left{font-size:12px;color:var(--muted)}
     /* View prompt link on stage header */
     .view-prompt-link{font-size:11px;color:var(--wbg-blue);cursor:pointer;background:none;border:none;padding:2px 6px;border-radius:3px;font-family:inherit;font-weight:600;letter-spacing:.03em;opacity:.8;text-decoration:underline;text-underline-offset:2px}
@@ -589,7 +642,7 @@
        STAGE 4 — PRIORITY CARD SYSTEM
     ══════════════════════════════════════════ */
 
-    /* Overall Stage 4 layout */
+    /* Overall Stage 3 (Recommendations) layout */
     .stage4-layout{display:flex;gap:20px;align-items:flex-start;}
     .stage4-main{flex:1;min-width:0;}
 
@@ -673,11 +726,11 @@
       width:38px;height:38px;border-radius:50%;
       background:rgba(255,255,255,.12);border:2px solid rgba(255,255,255,.22);
       display:flex;align-items:center;justify-content:center;
-      font-family:'Source Serif 4',serif;font-size:17px;color:#fff;
+      font-family:'Open Sans',sans-serif;font-size:17px;color:#fff;
       font-weight:400;flex-shrink:0;
     }
     .pc-hdr-eyebrow{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--wbg-cyan);margin-bottom:3px;}
-    .pc-hdr-title{font-family:'Source Serif 4',serif;font-weight:300;font-size:17px;color:#fff;line-height:1.3;}
+    .pc-hdr-title{font-family:'Open Sans',sans-serif;font-weight:600;font-size:15px;color:#fff;line-height:1.3;}
     .pc-hdr-title strong{font-weight:600;}
     .pc-hdr-chips{display:flex;gap:7px;margin-top:8px;flex-wrap:wrap;}
     .pc-chip{font-size:10px;padding:2px 8px;border-radius:20px;border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.65);font-weight:600;}
@@ -735,6 +788,21 @@
     .beyond-item-body{font-size:13px;color:var(--text);line-height:1.7;}
     .beyond-item-body p{margin:0 0 .5em;}
     .beyond-loading{font-size:13px;color:var(--muted);padding:10px 0;display:flex;align-items:center;gap:8px;}
+    /* Go Deeper 3-tab section */
+    .go-deeper{border-top:1px solid var(--border);margin-top:14px;}
+    .go-deeper > summary{padding:12px 0 4px;cursor:pointer;font-size:13px;font-weight:600;color:#6b21a8;display:flex;align-items:center;gap:7px;list-style:none;user-select:none;}
+    .go-deeper > summary::-webkit-details-marker{display:none;}
+    .go-deeper > summary .beyond-badge{background:#f3e8ff;color:#6b21a8;font-size:10px;font-weight:600;padding:1px 8px;border-radius:10px;margin-left:4px;}
+    .go-deeper > summary .beyond-arrow{margin-left:auto;font-size:11px;color:#6b21a8;transition:transform .2s;}
+    .go-deeper[open] > summary .beyond-arrow{transform:rotate(180deg);}
+    .deeper-content{padding:10px 0 4px;}
+    .deeper-tabs{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
+    .deeper-tab{padding:6px 16px;border-radius:20px;border:1px solid #ccc;background:#fff;cursor:pointer;font-size:13px;font-weight:500;transition:all 0.15s;}
+    .deeper-tab.active{background:#0050A0;color:#fff;border-color:#0050A0;}
+    .deeper-tab:hover:not(.active){background:#f0f0f0;}
+    .deeper-tab-content{min-height:100px;}
+    .deeper-trail,.deeper-playbook{font-size:14px;line-height:1.6;}
+    .deeper-loading{font-size:13px;color:var(--muted);padding:10px 0;display:flex;align-items:center;gap:8px;}
 
     .priorities-intro{margin-bottom:14px;}
     .priorities-section-hdr{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--s4);margin:20px 0 10px;padding-bottom:6px;border-bottom:2px solid var(--s4);}
@@ -1208,9 +1276,9 @@
 
     /* AI output body */
     .out-body{font-size:15px!important;line-height:1.7!important}
-    .out-body h1{font-family:'Inter',sans-serif!important;font-size:18px!important;font-weight:700!important;letter-spacing:-0.02em!important}
-    .out-body h2{font-family:'Inter',sans-serif!important;font-size:15px!important;font-weight:700!important;letter-spacing:-0.02em!important;border-bottom:1px solid var(--color-border)}
-    .out-body h3{font-family:'Inter',sans-serif!important;font-size:14px!important;font-weight:700!important;text-transform:uppercase!important;letter-spacing:0.06em!important;color:var(--color-text-muted)!important;margin-top:24px!important}
+    .out-body h1{font-family:'Open Sans',sans-serif!important;font-size:18px!important;font-weight:700!important;letter-spacing:-0.02em!important}
+    .out-body h2{font-family:'Open Sans',sans-serif!important;font-size:15px!important;font-weight:700!important;letter-spacing:-0.02em!important;border-bottom:1px solid var(--color-border)}
+    .out-body h3{font-family:'Open Sans',sans-serif!important;font-size:14px!important;font-weight:700!important;text-transform:uppercase!important;letter-spacing:0.06em!important;color:var(--color-text-muted)!important;margin-top:24px!important}
 
     /* Callout / info boxes — left-border accent */
     .callout{border:none!important;border-radius:0 6px 6px 0!important;padding:12px 16px!important}
@@ -1226,7 +1294,7 @@
     .refine-card{background:transparent!important;border:none!important;box-shadow:none!important;padding:0!important}
     .refine-row{border:1px solid var(--color-border)!important;border-radius:10px!important;background:#fff!important;display:flex!important;align-items:flex-end!important;padding:8px 12px!important;gap:8px!important;box-shadow:0 1px 4px rgba(0,0,0,.06)!important;transition:border-color 0.15s!important}
     .refine-row:focus-within{border-color:var(--color-blue)!important;box-shadow:0 0 0 3px rgba(0,80,160,.08)!important}
-    .refine-in{border:none!important;outline:none!important;flex:1!important;font-size:14px!important;font-family:'Inter',sans-serif!important;resize:none!important;min-height:40px!important;max-height:120px!important;background:transparent!important;padding:0!important}
+    .refine-in{border:none!important;outline:none!important;flex:1!important;font-size:14px!important;font-family:'Open Sans',sans-serif!important;resize:none!important;min-height:40px!important;max-height:120px!important;background:transparent!important;padding:0!important}
     .refine-in:focus{outline:none!important}
 
     /* Doc-type badge (unified blue style) */
@@ -1235,15 +1303,15 @@
     .doc-type-badge.dt-unknown{background:#f8fafc!important;color:var(--color-text-muted)!important;border-color:var(--color-border)!important}
 
     /* Upload intro h2 — Inter */
-    .upload-intro-text h2{font-family:'Inter',sans-serif!important;font-weight:700!important;letter-spacing:-0.02em!important}
+    .upload-intro-text h2{font-family:'Open Sans',sans-serif!important;font-weight:700!important;letter-spacing:-0.02em!important}
 
     /* Stage title / badge */
-    .stage-title{font-family:'Inter',sans-serif!important;font-weight:700!important;letter-spacing:-0.02em!important}
-    .stage-badge{font-family:'Inter',sans-serif!important;font-weight:700!important}
+    .stage-title{font-family:'Open Sans',sans-serif!important;font-weight:700!important;letter-spacing:-0.02em!important}
+    .stage-badge{font-family:'Open Sans',sans-serif!important;font-weight:700!important}
 
     /* Priority card headings */
-    .pc-hdr-title{font-family:'Inter',sans-serif!important;font-weight:600!important}
-    .pc-num-badge{font-family:'Inter',sans-serif!important;font-weight:700!important}
+    .pc-hdr-title{font-family:'Open Sans',sans-serif!important;font-weight:600!important}
+    .pc-num-badge{font-family:'Open Sans',sans-serif!important;font-weight:700!important}
 
   </style>
 <style>
@@ -1327,13 +1395,47 @@
   }
   .warn-dismiss:hover { opacity: 0.7; }
 
-  /* ── Follow-on card (Stage 4 query interface) ───────────────────────────── */
+  /* ── Shift badge (refresh_shift field on priorities) ───────────────────── */
+  .shift-badge {
+    background: #e8f5e9; color: #2e7d32; padding: 2px 8px;
+    border-radius: 10px; font-size: 11px; font-weight: 500;
+    border: 1px solid #c8e6c9; display: inline-block;
+  }
+
+  /* ── Who-chip (multi-value who_acts) ─────────────────────────────────────── */
+  .who-chip {
+    background: #f0f0f0; color: #333; padding: 2px 8px;
+    border-radius: 10px; font-size: 12px; display: inline-block;
+    margin-right: 4px; margin-bottom: 2px;
+  }
+
+  /* ── Stage-awareness badge (shown on Stage 3 output) ─────────────────────── */
+  .stage-awareness-badge {
+    background: #e3f2fd; color: #1565c0; padding: 8px 16px;
+    border-radius: 8px; font-size: 13px; margin-bottom: 16px;
+    border-left: 4px solid #1565c0;
+  }
+
+  /* ── Follow-on card (Stage 3 query interface) ───────────────────────────── */
   .followon-card{ background:#fff; border:1px solid var(--border); border-radius:8px; padding:16px; margin-top:16px; }
   .followon-desc{ font-size:12px; color:var(--muted); margin:4px 0 8px; }
   .followon-chips{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
   .followon-chip{ background:#f0f4f8; border:1px solid var(--border); border-radius:14px; padding:4px 12px; font-size:12px; color:var(--text); cursor:pointer; white-space:nowrap; transition:background .15s,border-color .15s; }
   .followon-chip:hover{ background:#e2e8f0; border-color:#94a3b8; }
   .followon-result-card{ background:#fff; border:1px solid var(--border); border-radius:8px; margin-top:12px; overflow:hidden; }
+
+  /* ── Project stage badge and FCS indicator ───────────────────────────── */
+  .doc-type-badge-inline { margin-top: 12px; padding: 8px 0; }
+  .badge-info {
+      background: #e8f4fd; color: #0050A0; padding: 4px 12px;
+      border-radius: 12px; font-size: 13px; font-weight: 500;
+      display: inline-block;
+  }
+  .badge-fcs {
+      background: #fef3cd; color: #856404; padding: 4px 12px;
+      border-radius: 12px; font-size: 13px; font-weight: 500;
+      display: inline-block; margin-left: 8px;
+  }
 </style>
 </head>
 <body>
@@ -1370,11 +1472,11 @@
       <button class="prompt-modal-close" onclick="closePromptModal()" aria-label="Close">×</button>
     </div>
     <div class="prompt-modal-tabs" id="prompt-tabs">
-      <button class="prompt-tab active" id="ptab-1" onclick="showPromptTab(1)">Stage 1 · FCV Risks</button>
-      <button class="prompt-tab" id="ptab-2" onclick="showPromptTab(2)">Stage 2 · Screening</button>
-      <button class="prompt-tab" id="ptab-3" onclick="showPromptTab(3)">Stage 3 · Gaps</button>
-      <button class="prompt-tab" id="ptab-4" onclick="showPromptTab(4)">Stage 4 · Rec. Note</button>
-      <button class="prompt-tab" id="ptab-explorer" onclick="showPromptTab('explorer')">Explorer</button>
+      <button class="prompt-tab active" id="ptab-1" onclick="showPromptTab(1)">Stage 1 · Context</button>
+      <button class="prompt-tab" id="ptab-2" onclick="showPromptTab(2)">Stage 2 · Assessment</button>
+      <button class="prompt-tab" id="ptab-3" onclick="showPromptTab(3)">Stage 3 · Recommendations</button>
+      <button class="prompt-tab" id="ptab-deeper" onclick="showPromptTab('deeper')">Go Deeper</button>
+      <button class="prompt-tab" id="ptab-followon" onclick="showPromptTab('followon')">Follow-on</button>
     </div>
     <div class="prompt-modal-body">
       <div class="prompt-info">
@@ -1409,29 +1511,25 @@
 
       <div style="padding:20px 32px;border-bottom:1px solid var(--border)">
         <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:10px">What this tool does</div>
-        <p style="font-size:14px;line-height:1.65;color:var(--text)">This tool uses an AI language model (LLM) to screen draft WBG project documents — such as PCNs and PADs — for FCV dynamics. It generates structured recommendations on how to strengthen FCV sensitivity and responsiveness, drawing on the uploaded documents, the WBG FCV Sensitivity &amp; Responsiveness Guide, and the AI's broader knowledge of the country and sector context.</p>
+        <p style="font-size:14px;line-height:1.65;color:var(--text)">This tool uses an AI language model (LLM) to screen draft WBG project documents — such as PCNs and PADs — for FCV dynamics. It generates structured recommendations on how to strengthen FCV sensitivity and responsiveness, drawing on insights and framing from the OST Manual on FCV Sensitivity and Responsiveness, the WBG FCV Strategy, and the FCV Playbook — alongside the uploaded documents and the AI's broader knowledge of the country and sector context.</p>
         <p style="font-size:14px;line-height:1.65;color:var(--text);margin-top:10px">The tool is designed to support — not replace — expert FCV analysis. It works best as a starting point for peer review conversations between FCV specialists and Task Team Leaders.</p>
         <p style="font-size:14px;line-height:1.65;color:var(--text);margin-top:10px">The tool automatically detects the type of project document uploaded — PCN, PID, PAD, Additional Financing, Restructuring Paper, or ISR — and adjusts the depth, framing, and tone of its analysis accordingly. A concept note triggers broader, more exploratory research; an ISR produces operationally-focused supervision priorities.</p>
       </div>
 
       <div style="padding:20px 32px;border-bottom:1px solid var(--border)">
-        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:14px">How to use it — four stages</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:14px">How to use it — three stages</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
           <div style="border:1px solid var(--border);border-radius:6px;padding:12px 14px;border-top:3px solid var(--s1)">
-            <div style="font-size:11px;font-weight:700;color:var(--s1);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Stage 1 · Identifying FCV Risks</div>
-            <p style="font-size:12.5px;color:var(--text);line-height:1.55">Upload your project document — PCN, PID, PAD, Additional Financing, Restructuring Paper, or ISR. The tool auto-detects the document type and adapts the analysis accordingly. The AI extracts all FCV-relevant content and flags information from its own knowledge of the country context. Review what it finds and correct anything that is wrong or missing before proceeding.</p>
+            <div style="font-size:11px;font-weight:700;color:var(--s1);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Stage 1 · Context & Extraction</div>
+            <p style="font-size:12.5px;color:var(--text);line-height:1.55">Upload your project document — PCN, PID, PAD, Additional Financing, Restructuring Paper, or ISR. The tool auto-detects the document type, runs automated web research on the country context, and extracts all FCV-relevant content. Review what it finds and correct anything before proceeding.</p>
           </div>
           <div style="border:1px solid var(--border);border-radius:6px;padding:12px 14px;border-top:3px solid var(--s2)">
-            <div style="font-size:11px;font-weight:700;color:var(--s2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Stage 2 · FCV-Sensitivity Screening</div>
-            <p style="font-size:12.5px;color:var(--text);line-height:1.55">The AI assesses the project across six FCV dimensions, rating risks both <em>to</em> the project (how the FCV context threatens success) and <em>from</em> the project (how it could inadvertently worsen fragility). A risk matrix summarises the findings.</p>
+            <div style="font-size:11px;font-weight:700;color:var(--s2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Stage 2 · FCV Assessment</div>
+            <p style="font-size:12.5px;color:var(--text);line-height:1.55">The AI assesses the project's FCV sensitivity and responsiveness using the full OST framework — 12 recommendations, 25 key questions, and a Do No Harm checklist. Detailed analytical evidence is available in expandable "Under the Hood" panels.</p>
           </div>
           <div style="border:1px solid var(--border);border-radius:6px;padding:12px 14px;border-top:3px solid var(--s3)">
-            <div style="font-size:11px;font-weight:700;color:var(--s3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Stage 3 · Identifying Project Gaps</div>
-            <p style="font-size:12.5px;color:var(--text);line-height:1.55">The AI identifies gaps in FCV sensitivity and design, proposes mitigations for high-risk dimensions, and runs a do-no-harm checklist. This content feeds directly into the final Recommendations Note — review it carefully before proceeding.</p>
-          </div>
-          <div style="border:1px solid var(--border);border-radius:6px;padding:12px 14px;border-top:3px solid var(--s4)">
-            <div style="font-size:11px;font-weight:700;color:var(--s4);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Stage 4 · Recommendations Note</div>
-            <p style="font-size:12.5px;color:var(--text);line-height:1.55">A collegial peer-review memo addressed to the TTL. It summarises FCV strengths and gaps, sets out strategic priorities, and includes a technical annex. The output includes a mandatory AI disclaimer and can be copied directly into Word.</p>
+            <div style="font-size:11px;font-weight:700;color:var(--s3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Stage 3 · Recommendations Note</div>
+            <p style="font-size:12.5px;color:var(--text);line-height:1.55">A collegial peer-review memo addressed to the TTL with strategic priority cards tailored to the project's lifecycle stage. Each priority includes specific actions, PAD language, and implementation guidance. Optional "Go Deeper" panels provide alternative approaches and Playbook references.</p>
           </div>
         </div>
       </div>
@@ -1448,7 +1546,7 @@
         </div>
         <ul style="font-size:13px;line-height:1.7;color:#7f1d1d;padding-left:18px">
           <li>Outputs are generated by an AI and <strong>may contain errors, omissions, or misjudgements</strong>. They should not be treated as definitive expert analysis.</li>
-          <li>The AI draws on general knowledge of the country context, which may be <strong>outdated or incomplete</strong>. Always verify against current, authoritative sources.</li>
+          <li>The AI draws on the OST Manual, FCV Strategy, and FCV Playbook, supplemented by its general knowledge of the country context, which may be <strong>outdated or incomplete</strong>. Always verify against current, authoritative sources.</li>
           <li>The Recommendations Note should be <strong>reviewed, adapted, and validated</strong> by an FCV specialist before any operational use.</li>
           <li><strong>Do not upload classified, confidential, or otherwise restricted documents.</strong> Only use materials cleared for use with external AI processing systems.</li>
         </ul>
@@ -1500,6 +1598,16 @@
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="2" style="flex-shrink:0;margin-top:2px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
       <span style="font-size:12.5px;color:rgba(255,255,255,.72);line-height:1.5;">Output is generated by an LLM and should be approached with care. It is not a replacement for expert analysis and should be used as a supplementary input only.</span>
     </div>
+    <div class="hero-sr-defs">
+      <div class="hero-sr-item">
+        <span class="hero-sr-badge hero-sr-s">S</span>
+        <div><strong>FCV Sensitivity</strong> — Is the project <em>aware of and designed for</em> the FCV context?</div>
+      </div>
+      <div class="hero-sr-item">
+        <span class="hero-sr-badge hero-sr-r">R</span>
+        <div><strong>FCV Responsiveness</strong> — Does the project <em>actively work to change</em> the FCV situation?</div>
+      </div>
+    </div>
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:0;">
       <button class="btn" onclick="document.getElementById('onboarding-modal').style.display='flex'" style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.3);color:#fff;font-size:13px;padding:9px 18px;border-radius:6px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
@@ -1508,9 +1616,9 @@
       </button>
     </div>
     <div class="hero-chips" style="margin-top:18px;">
-      <span class="hero-chip"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Four-stage analysis</span>
+      <span class="hero-chip"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Three-stage analysis</span>
       <span class="hero-chip"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> Web-informed risk context</span>
-      <span class="hero-chip"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> WBG FCV guidance embedded</span>
+      <span class="hero-chip"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> OST Manual · FCV Strategy · Playbook embedded</span>
       <span class="hero-chip"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Refineable at each stage</span>
     </div>
   </div>
@@ -1519,11 +1627,10 @@
 <!-- ══ STEPPER ══ -->
 <div class="stepper-wrap" id="stepper-wrap" style="display:none;">
   <nav class="stepper" aria-label="Analysis stages">
-    <div class="step" id="step-0"><div class="step-num">↑</div>Upload</div>
-    <div class="step" id="step-1"><div class="step-num">1</div>FCV Risks</div>
-    <div class="step" id="step-2"><div class="step-num">2</div>Screening</div>
-    <div class="step" id="step-3"><div class="step-num">3</div>Gaps</div>
-    <div class="step" id="step-4"><div class="step-num">4</div>Rec. Note</div>
+    <div class="step done" id="step-0"><span class="step-num">0</span><span class="step-label">Upload</span></div>
+    <div class="step" id="step-1"><span class="step-num">1</span><span class="step-label">Context</span></div>
+    <div class="step" id="step-2"><span class="step-num">2</span><span class="step-label">Assessment</span></div>
+    <div class="step" id="step-3"><span class="step-num">3</span><span class="step-label">Recommendations</span></div>
   </nav>
 </div>
 
@@ -1581,7 +1688,7 @@
 
     <div class="builtin-notice">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
-      <span><strong>Pre-loaded:</strong> WBG FCV Sensitivity &amp; Responsiveness Guide — no upload needed. Country-specific risk documents (e.g. RRA, risk summaries) should be uploaded separately per project.</span>
+      <span><strong>Pre-loaded:</strong> OST Manual on FCV Sensitivity and Responsiveness, WBG FCV Strategy, and FCV Playbook — no upload needed. Country-specific risk documents (e.g. RRA, risk summaries) should be uploaded separately per project.</span>
     </div>
     <div class="confidential-notice">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2.5" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
@@ -1619,7 +1726,7 @@
   let pF=[],cF=[],hist=[],curS=0,busy=false;
   let sessionName='';
   let docType='Unknown';
-  // Stage 4 state is declared in the Stage 4 section below
+  // Stage 3 (Recommendations) state is declared in the Stage 3 section below
 
   // ── Onboarding ──────────────────────────────────────────────────────────────
   function initOnboarding(){
@@ -1661,6 +1768,14 @@
     document.getElementById('session-status').textContent = 'Session saved at ' + new Date().toLocaleTimeString();
   }
 
+  function showLegacyBanner() {
+    var banner = document.createElement('div');
+    banner.className = 'warn-banner';
+    banner.style.margin = '16px';
+    banner.innerHTML = 'This session was created with an earlier version of the screener. To use the new assessment framework, please start a new session. Your old session data is preserved.';
+    document.getElementById('main').prepend(banner);
+  }
+
   function loadSession(input){
     const file = input.files[0];
     if(!file) return;
@@ -1671,6 +1786,16 @@
         if(!state.version || !state.history){
           alert('This does not appear to be a valid FCV session file.');
           return;
+        }
+        // Check for legacy 4-stage format
+        if(state && state.history){
+          var hasOldStage4 = state.history.some(function(msg){
+            return msg.stage === '4' || msg.stage === 4;
+          });
+          if(hasOldStage4 || (state.stageOutputs && state.stageOutputs[4])){
+            showLegacyBanner();
+            return;
+          }
         }
         hist = state.history;
         curS = state.currentStage || 0;
@@ -1686,7 +1811,7 @@
           'Resumed: ' + file.name + ' (saved ' + savedAt + ') — Stage ' + curS + ' complete';
         setStepper(curS+1, 'active');
         // Show resume prompt in stage-disp
-        const nextStage = curS < 4 ? curS + 1 : 4;
+        const nextStage = curS < 3 ? curS + 1 : 3;
         document.getElementById('stage-disp').innerHTML = `
           <div class="callout info ani">
             <div class="callout-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
@@ -1694,7 +1819,7 @@
             ${state.fileNames.project.length ? '<br>Original files: ' + [...state.fileNames.project,...state.fileNames.context].join(', ') : ''}
             <br>Note: you will need to re-upload your documents if you want to run Stage 1 again.</div>
           </div>`;
-        document.getElementById('act-area').innerHTML = curS < 4 ? `
+        document.getElementById('act-area').innerHTML = curS < 3 ? `
           <div class="act-bar ani">
             <button class="btn btn-blue" onclick="runStage(${nextStage})">
               Continue from Stage ${nextStage}
@@ -1715,24 +1840,22 @@
     if(curS > 0){
       document.getElementById('save-session-btn').style.display='';
       document.getElementById('session-status').textContent =
-        'Stage ' + curS + ' of 4 complete' + (sessionName ? ' · ' + sessionName : '');
+        'Stage ' + curS + ' of 3 complete' + (sessionName ? ' · ' + sessionName : '');
     }
   }
 
-  const NAMES={1:'Identifying FCV Risks',2:'FCV-Sensitivity Screening',3:'Identifying Project Gaps',4:'Executive Summary · Project-Wide Considerations'};
-  const SHORT={1:'Identifying FCV Risks',2:'FCV-Sensitivity Screening',3:'Identifying Project Gaps',4:'Recommendations Note'};
-  const SUBS={1:'Extracting all FCV-relevant information from your documents',2:'Assessing risks across six FCV dimensions',3:'Identifying gaps and recommending mitigations',4:'Generating the final TTL support note'};
-  const COL={1:'s1',2:'s2',3:'s3',4:'s4'};
+  const NAMES={1:'Context & Extraction',2:'FCV Assessment',3:'Recommendations Note'};
+  const SHORT={1:'Context & Extraction',2:'FCV Assessment',3:'Recommendations Note'};
+  const SUBS={1:'Extracting all FCV-relevant information from your documents',2:'Assessing FCV risks across six dimensions and 12 recommendations',3:'Generating the Recommendations Note and priority actions'};
+  const COL={1:'s1',2:'s2',3:'s4'};
 
   const CALLS={
-    1:{t:'Stage 1 of 4 · Identifying FCV Risks',
+    1:{t:'Stage 1 of 3 · Context & Extraction',
        b: ' <strong>What you are reading:</strong> The output has two parts. <strong>Part A</strong> extracts FCV risks directly from the <em>project document</em> (PAD, PCN, or PID) only — it is a close reading of what that document says and implies. <strong>Part B</strong> draws on any <em>contextual documents</em> you uploaded (such as the RRA or country risk assessment) and supplements these with the AI\'s training knowledge of sources such as UN, ICG, and World Bank reports. Check both parts carefully — use the query box below to correct anything or add local knowledge before proceeding.'},
-    2:{t:'Stage 2 of 4 · FCV-Sensitivity Screening',
+    2:{t:'Stage 2 of 3 · FCV Assessment',
        b:'<strong>What you are reading:</strong> This is the LLM structured assessment of the project FCV sensitivity and responsiveness across key dimensions. It shows how the AI is weighing the evidence and forming its judgements. Review the ratings and reasoning carefully — if a dimension seems underweighted, overweighted, or is missing important context, use the query box below to adjust before moving on.'},
-    3:{t:'Stage 3 of 4 · Identifying Project Gaps',
-       b:'<strong>What you are reading:</strong> This is the LLM analysis of gaps in FCV sensitivity and responsiveness, along with proposed mitigations and a do-no-harm check. This content feeds directly into the final Recommendations Note, so it is worth taking time here to refine any gaps that seem inaccurate or to add local knowledge the AI may not have captured.'},
-    4:{t:'Stage 4 of 4 · Recommendations Note — ready to copy',
-       b:'<strong>What you are reading:</strong> This is the LLM-generated Recommendations Note for the Task Team Leader, drawing on the analysis from the previous three stages. Review it carefully before use — treat it as a well-informed draft, not a final expert assessment. You can still refine specific sections using the query box. When satisfied, click <strong>Copy all</strong> and paste into your Word document.'}
+    3:{t:'Stage 3 of 3 · Recommendations Note — ready to copy',
+       b:'<strong>What you are reading:</strong> This is the LLM-generated Recommendations Note for the Task Team Leader, drawing on the analysis from the previous two stages. Review it carefully before use — treat it as a well-informed draft, not a final expert assessment. You can still refine specific sections using the query box. When satisfied, click <strong>Copy all</strong> and paste into your Word document.'}
   };
 
   function setupZone(zoneId, inputId, arr, type) {
@@ -1973,7 +2096,7 @@
       <div class="load-card">
         <div class="spinner" role="status" aria-label="Loading"></div>
         <div class="load-title">${followOn?'Updating output…':'Generating '+SHORT[stage]+'…'}</div>
-        <p class="load-sub">${stage===1 ? 'Stage 1 includes automated FCV web research — this can take 1–2 minutes. Please wait.' : stage===4 ? 'Generating the full Recommendations Note — this may take 1–2 minutes.' : 'This usually takes 20–60 seconds.'}</p>
+        <p class="load-sub">${stage===1 ? 'Stage 1 includes automated FCV web research — this can take 1–2 minutes. Please wait.' : stage===3 ? 'Generating the full Recommendations Note — this may take 1–2 minutes.' : 'This usually takes 20–60 seconds.'}</p>
         <div class="load-tags"><span class="load-tag">Reading documents</span><span class="load-tag">Applying FCV lens</span><span class="load-tag">Drawing on web context</span></div>
       </div>`;
 
@@ -2018,10 +2141,10 @@
           <div>
             <div class="stage-title">${NAMES[stage]}</div>
             <div class="stage-sub">Generating…</div>
-            ${(stage===4)?`<div class="stage-sub" style="margin-top:3px;color:#b45309">⏱ Please wait for the full output to finish rendering before reading or interacting</div>`:''}
+            ${(stage===3)?`<div class="stage-sub" style="margin-top:3px;color:#b45309">⏱ Please wait for the full output to finish rendering before reading or interacting</div>`:''}
           </div>
         </div>
-        ${(stage===4)?`<div class="stage-wait-notice"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span><strong>Stage 4 is generating — please wait for the full output to finish rendering</strong> before reading or interacting with the Recommendations Note. This can take 1–2 minutes.</span></div>`:''}
+        ${(stage===3)?`<div class="stage-wait-notice"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span><strong>Stage 3 is generating — please wait for the full output to finish rendering</strong> before reading or interacting with the Recommendations Note. This can take 1–2 minutes.</span></div>`:''}
         <div class="callout info ani">
           <div class="callout-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
           <div class="callout-body"><strong>${CALLS[stage].t}</strong>${CALLS[stage].b}</div>
@@ -2068,13 +2191,21 @@
             }
             if(p.preprocess){const el=document.getElementById('s-out');if(el)el.innerHTML=`<div style="display:flex;align-items:center;gap:10px;color:var(--muted);font-style:italic;padding:12px 0"><svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;animation:spin 1s linear infinite;flex-shrink:0"><circle cx="12" cy="12" r="10" stroke-opacity=".25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-opacity="1"/></svg>${esc(p.preprocess)}</div>`}
             if(p.chunk){streamed+=p.chunk;const el=document.getElementById('s-out');if(el)el.innerHTML=md(streamed)}
-            if(p.done){hist=p.history||hist;curS=stage;stageOutputs[stage]=p.result;stageHists[stage]=hist.slice();updateSessionBar();if(stage===4){stageGapTable=p.gap_table||null;stageRiskExposure=p.risk_exposure||null;stageSensitivitySummary=p.sensitivity_summary||'';stageResponsivenessSummary=p.responsiveness_summary||'';if(p.fcv_rating)fcvRating=p.fcv_rating;if(p.fcv_responsiveness_rating)fcvResponsivenessRating=p.fcv_responsiveness_rating;}
+            if(p.done){hist=p.history||hist;curS=stage;stageOutputs[stage]=p.result;stageHists[stage]=hist.slice();updateSessionBar();
+              // Stage 2: capture ratings and under_hood data
+              if(stage===2){
+                if(p.sensitivity_rating){ fcvRating=p.sensitivity_rating; }
+                if(p.responsiveness_rating){ fcvResponsivenessRating=p.responsiveness_rating; }
+                if(p.under_hood){ stage2UnderHood=p.under_hood; localStorage.setItem('stage2_under_hood', JSON.stringify(p.under_hood)); }
+              }
+              if(stage===3){stageGapTable=p.gap_table||null;stageRiskExposure=p.risk_exposure||null;stageSensitivitySummary=p.sensitivity_summary||'';stageResponsivenessSummary=p.responsiveness_summary||'';if(p.fcv_rating)fcvRating=p.fcv_rating;if(p.fcv_responsiveness_rating)fcvResponsivenessRating=p.fcv_responsiveness_rating;}
               // Write timestamps BEFORE renderOut so the consistency check inside renderOut reads the current run's value
-              // Stage 2 completion also clears any previously dismissed banners on Stage 3/4
-              if(stage===2){ localStorage.setItem('stage2_timestamp', Date.now()); localStorage.removeItem('stage3_consistency_dismissed'); localStorage.removeItem('stage4_consistency_dismissed'); }
+              // Stage 2 completion also clears any previously dismissed banner on Stage 3
+              if(stage===2){ localStorage.setItem('stage2_timestamp', Date.now()); localStorage.removeItem('stage3_consistency_dismissed'); }
               if(stage===3) localStorage.setItem('stage3_timestamp', Date.now());
-              if(stage===4) localStorage.setItem('stage4_timestamp', Date.now());
-              renderOut(stage,p.result,followOn);setStepper(stage,'done');
+              // For Stage 2, use display_text (stripped of delimiters) if provided by backend
+              const renderResult = (stage===2 && p.display_text) ? p.display_text : p.result;
+              renderOut(stage,renderResult,followOn);setStepper(stage,'done');
               // Research brief panel for Stage 1
               if(stage===1){
                 const dtMatch=p.result&&p.result.match(/%%%DOC_TYPE:\s*([^%\n]+)%%%/);if(dtMatch){docType=dtMatch[1].trim();updateDocTypeBadge();}
@@ -2082,23 +2213,46 @@
                 if(p.research_country) researchCountry=p.research_country;
                 if(researchBrief) injectResearchBriefPanel(researchBrief,researchCountry);
               }
-              // Explorer panel + sidebar for Stage 4
-              if(stage===4 && p.priorities && p.priorities.length){
-                stageFourPriorities=p.priorities;
-                explorerCache = {};
-                // Clear localStorage cache so stale explorer results don't reappear for new Stage 4 run
-                Object.keys(localStorage).filter(k=>k.startsWith('explorer_priority_')).forEach(k=>localStorage.removeItem(k));
+              // Stage 2: show parse error banner and update sidebar
+              if(stage===2){
+                if(p.parse_error){
+                  const outTxt = document.getElementById('out-txt');
+                  if(outTxt){
+                    const warnBanner = document.createElement('div');
+                    warnBanner.className = 'ani';
+                    warnBanner.style.cssText = 'background:#fff3cd;color:#856404;padding:12px 16px;border-radius:8px;margin-bottom:16px;font-size:14px;border:1px solid #ffc107';
+                    warnBanner.textContent = p.parse_error_message || 'Assessment detail could not be parsed into panels. Full output shown below.';
+                    outTxt.insertBefore(warnBanner, outTxt.firstChild);
+                  }
+                }
+                // Note: under_hood panels are injected by renderOut (which already ran above),
+                // because stage2UnderHood was stored before renderOut was called.
+                // Update sidebar gauges with Stage 2 ratings
+                updateSidebar();
+              }
+              // Priority cards + sidebar for Stage 3 (Recommendations)
+              if(stage===3 && p.priorities && p.priorities.length){
+                stageThreePriorities=p.priorities;
+                // Clear Go Deeper caches so stale results don't reappear for new Stage 3 run
+                currentDeeperTab = {};
+                for(var i=0;i<10;i++){
+                  localStorage.removeItem('deeper_'+i+'_alternatives');
+                  localStorage.removeItem('deeper_'+i+'_trail');
+                  localStorage.removeItem('deeper_'+i+'_playbook');
+                  // Also clear legacy explorer cache keys
+                  localStorage.removeItem('explorer_priority_'+i);
+                }
                 explorerHistory=[];
                 updateSidebar();
                 populateExplorerDropdown(p.priorities);
               }
-              if(stage===4 && p.parse_error){
+              if(stage===3 && p.parse_error){
                 const outEl = document.getElementById('s-out');
                 if(outEl){
                   const errBanner = document.createElement('div');
                   errBanner.className = 'ani';
                   errBanner.style.cssText = 'background:#fff3cd;border:1px solid #ffc107;border-radius:6px;padding:10px 14px;margin-top:12px;font-size:0.9em';
-                  errBanner.textContent = p.parse_error_message || 'Stage 4 output could not be parsed — please re-run this stage.';
+                  errBanner.textContent = p.parse_error_message || 'Stage 3 output could not be parsed — please re-run this stage.';
                   outEl.appendChild(errBanner);
                 }
               }
@@ -2156,6 +2310,55 @@
     }
   }
 
+  function buildSRDefinitionBox(compact) {
+    var header = compact ? '' : '<div class="sr-def-header">Key Definitions</div>';
+    return '<div class="sr-def-box">' +
+      header +
+      '<div class="sr-def-grid">' +
+      '<div class="sr-def-item">' +
+        '<div class="sr-def-label sr-def-s"><span class="sr-def-icon sr-def-icon-s">S</span> FCV Sensitivity</div>' +
+        '<div class="sr-def-desc">Is the project <em>aware of and designed for</em> the FCV context? Contextual awareness, conflict-informed design, Do No Harm, FCV-adapted operations.</div>' +
+      '</div>' +
+      '<div class="sr-def-item">' +
+        '<div class="sr-def-label sr-def-r"><span class="sr-def-icon sr-def-icon-r">R</span> FCV Responsiveness</div>' +
+        '<div class="sr-def-desc">Does the project <em>actively work to change</em> the FCV situation? Addressing root causes, strengthening resilience, building pathways out of FCV.</div>' +
+      '</div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function buildTagLegend() {
+    return '<div class="tag-legend">' +
+      '<div class="tag-legend-header">Reading this assessment</div>' +
+      '<div class="tag-legend-body">' +
+        '<div class="tag-legend-item"><span class="sr-tag sensitivity">S</span> <span class="tag-legend-text">= Sensitivity finding</span></div>' +
+        '<div class="tag-legend-item"><span class="sr-tag responsiveness">R</span> <span class="tag-legend-text">= Responsiveness finding</span></div>' +
+        '<div class="tag-legend-item"><span class="sr-tag both">S+R</span> <span class="tag-legend-text">= Both</span></div>' +
+        '<div class="tag-legend-sep"></div>' +
+        '<div class="tag-legend-item"><span class="shift-badge-legend">FCV Strategy Shift</span> <span class="tag-legend-text">= Linked strategic direction from the WBG FCV Strategy Refresh</span></div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function buildUnderHoodPanels(underHood) {
+    var panels = [
+        { key: 'recs_table', title: 'How well does the project integrate FCV considerations?', subtitle: '12 operational standards from the OST Manual, assessed with status and evidence' },
+        { key: 'dnh_checklist', title: 'Could this project unintentionally cause harm?', subtitle: '8 Do No Harm principles from the OST Manual, checked against the project design' },
+        { key: 'questions_map', title: 'What did we look for \u2014 and what was missing?', subtitle: '25 diagnostic questions from the OST Manual used to probe the project' },
+        { key: 'evidence_trail', title: 'Where did this analysis come from?', subtitle: 'Sources, types, and what each contributed to this assessment' }
+    ];
+    return '<div class="under-hood-section">' +
+        '<h3 class="under-hood-header">Under the Hood \u2014 Detailed Assessment</h3>' +
+        panels.map(function(p) {
+            var content = (underHood && underHood[p.key]) ? underHood[p.key] : 'No data available.';
+            return '<details class="under-hood-panel">' +
+                '<summary>' + esc(p.title) + '<span class="under-hood-subtitle"> \u2014 ' + esc(p.subtitle) + '</span></summary>' +
+                '<div class="under-hood-content out-body">' + md(content) + '</div>' +
+                '</details>';
+        }).join('') +
+        '</div>';
+  }
+
   function renderSRTagBadge(tag, compact) {
     if (!tag) return '';
     const cls = tag === '[S]' ? 'sensitivity' : tag === '[R]' ? 'responsiveness' : 'both';
@@ -2166,9 +2369,9 @@
       label = tag === '[S]' ? 'Sensitivity' : tag === '[R]' ? 'Responsiveness' : 'Sensitivity + Responsiveness';
     }
     const tooltips = {
-      '[S]': 'FCV Sensitivity: this recommendation helps the project operate without causing harm or worsening fragility dynamics.',
-      '[R]': 'FCV Responsiveness: this recommendation actively addresses a root driver of fragility, aligned to one of the four WBG FCV Strategy pillars (preventing conflict, engaging in crisis, transitioning out of fragility, or mitigating spillovers).',
-      '[S+R]': 'Both Sensitivity and Responsiveness: applies only in four specific overlap zones — inclusion/targeting of conflict-affected populations, embedding FCV logic in the ToC/PDO, adaptive M&E that monitors harm AND builds resilience, or GRM designed to strengthen state-citizen accountability.'
+      '[S]': 'FCV Sensitivity: helps the project avoid making things worse \u2014 contextual awareness, conflict-informed design, Do No Harm, FCV-adapted operations.',
+      '[R]': 'FCV Responsiveness: actively helps make fragility dynamics better \u2014 addresses root causes, builds resilience, leverages FCV tools for transformative impact.',
+      '[S+R]': 'Both Sensitivity and Responsiveness: applies only in four overlap zones \u2014 inclusion/targeting of conflict-affected populations, FCV logic in ToC/PDO, adaptive M&E for harm + resilience, or GRM for state-citizen accountability.'
     };
     const tooltip = tooltips[tag] || '';
     return `<span class="sr-tag ${cls}" title="${tooltip}">${label}</span>`;
@@ -2266,17 +2469,20 @@
   }
 
   function renderOut(stage,result,isFollowOn){
-    const isLast=stage===4;
+    const isLast=stage===3;
+    const hasSidebar=stage>=2;
     const c=CALLS[stage];
     let _outBodyContent;
     if(isLast){
       const _sp=result.split(/(?=###\s*Strengths\b)/i);
       const _pre=_sp[0]||result;
       const _rest=_sp[1]||'';
-      _outBodyContent=md(_pre)+renderRiskExposure(stageRiskExposure)+md(_rest)+renderSRCards(stageSensitivitySummary,stageResponsivenessSummary)+'<div id="priorities-intro"></div>';
+      const _stageBadge = docType && docType !== 'Unknown' ? `<div class="stage-awareness-badge">Recommendations tailored for <strong>${esc(docType)}</strong> stage</div>` : '';
+      _outBodyContent=buildSRDefinitionBox(true)+_stageBadge+md(_pre)+renderRiskExposure(stageRiskExposure)+md(_rest)+renderSRCards(stageSensitivitySummary,stageResponsivenessSummary)+'<div id="priorities-intro"></div>';
     }else{
       const cleanResult = stage===1 ? result.replace(/\n*%%%DOC_TYPE:[^%\n]*%%%\n*/g,'') : result;
-      _outBodyContent=md(cleanResult);
+      const srDefPrefix = stage===2 ? buildSRDefinitionBox() + buildTagLegend() : '';
+      _outBodyContent = srDefPrefix + md(cleanResult);
     }
     document.getElementById('stage-disp').innerHTML=`
       <div class="stage-hdr ani">
@@ -2298,13 +2504,13 @@
         }</div>
         <div class="callout-body"><strong>${c.t}</strong>${c.b}</div>
       </div>
-      <div class="${isLast?'stage4-layout':''}">
-        <div class="${isLast?'stage4-main':''}">
+      <div class="${hasSidebar?'stage4-layout':''}">
+        <div class="${hasSidebar?'stage4-main':''}">
           <div class="out-card ani">
             <div class="out-hdr">
               <div class="out-hdr-l"><span class="dot done"></span>${NAMES[stage]}</div>
               <div style="display:flex;gap:8px;align-items:center">
-                ${isLast?`<button class="btn btn-ghost btn-sm" onclick="downloadReport()" title="Download all Stage 4 content as a Word document">
+                ${isLast?`<button class="btn btn-ghost btn-sm" onclick="downloadReport()" title="Download all Stage 3 content as a Word document">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                   Download report
                 </button>`:''}
@@ -2332,15 +2538,15 @@
           </div>
           `:''}
         </div>
-        ${isLast?`<aside class="fcv-sidebar" id="fcv-sidebar">${sidebarHtml()}</aside>`:''}
+        ${hasSidebar?`<aside class="fcv-sidebar" id="fcv-sidebar">${sidebarHtml()}</aside>`:''}
       </div>
       `;
 
-    // Mark Stage 4 so CSS can remove the .out-body scroll constraint
-    if(isLast) document.getElementById('stage-disp').classList.add('s4-active');
+    // Mark Stage 3 (Recommendations) so CSS can remove the .out-body scroll constraint
+    if(isLast) document.getElementById('stage-disp').classList.add('s3-active');
 
-    // Stage consistency check: warn if Stage 2 was updated after Stage 3 or Stage 4
-    if(stage === 3 || stage === 4){
+    // Stage consistency check: warn if Stage 2 was updated after Stage 3
+    if(stage === 3){
       const s2ts = parseInt(localStorage.getItem('stage2_timestamp') || '0');
       const sXts = parseInt(localStorage.getItem(`stage${stage}_timestamp`) || '0');
       const dismissed = localStorage.getItem(`stage${stage}_consistency_dismissed`) === 'true';
@@ -2351,7 +2557,7 @@
           banner.id = `consistency-banner-${stage}`;
           banner.className = 'ani';
           banner.style.cssText = 'background:#fefce8;border:1px solid #ca8a04;border-radius:6px;padding:10px 14px;margin-bottom:12px;font-size:0.9em;color:#713f12;display:flex;align-items:center;gap:10px';
-          banner.innerHTML = `<span>Stage 2 was updated after this output was generated — consider re-running Stages 3 and 4 for consistency.</span><button style="margin-left:auto;background:none;border:none;cursor:pointer;color:#713f12;font-size:1em" onclick="localStorage.setItem('stage${stage}_consistency_dismissed','true');this.closest('#consistency-banner-${stage}').remove()" title="Dismiss">✕</button>`;
+          banner.innerHTML = `<span>Stage 2 was updated after this output was generated — consider re-running Stage 3 for consistency.</span><button style="margin-left:auto;background:none;border:none;cursor:pointer;color:#713f12;font-size:1em" onclick="localStorage.setItem('stage${stage}_consistency_dismissed','true');this.closest('#consistency-banner-${stage}').remove()" title="Dismiss">✕</button>`;
           outEl.insertBefore(banner, outEl.firstChild);
         }
       }
@@ -2366,7 +2572,7 @@
           </div>
           <p class="followon-desc">Use the analysis to generate a follow-on output, or provide new context to refine a specific section.</p>
           <div class="followon-chips">
-            <button class="followon-chip" onclick="prefillFollowon('Draft a peer review note for this ${docType||\'project\'} summarising key insights and recommended actions for the Task Team. Bear in mind that the note needs to have sufficient detail to assist the Task Team in making necessary changes. Ensure that any issues raised are accompanied by suggestions for how to help address shortfalls, based on insights from the earlier analysis.')">Draft peer review note</button>
+            <button class="followon-chip" onclick="prefillFollowon(&quot;Draft a peer review note for this ${docType||'project'} summarising key insights and recommended actions for the Task Team. Bear in mind that the note needs to have sufficient detail to assist the Task Team in making necessary changes. Ensure that any issues raised are accompanied by suggestions for how to help address shortfalls, based on insights from the earlier analysis.&quot;)">Draft peer review note</button>
             <button class="followon-chip" onclick="prefillFollowon('Please expand on how to implement the highest-priority recommendation — what are the specific first steps, who should lead, and what should the TTL do in the first 30 days of implementation?')">Expand top recommendation</button>
             <button class="followon-chip" onclick="prefillFollowon('I have revised the following section of the PAD. Please review it against the FCV recommendations and suggest specific language improvements:\\n\\n[Paste your revised text here]')">Review my revised text</button>
             <button class="followon-chip" onclick="prefillFollowon('Summarise the key FCV risks and the 3 most important actions in plain language suitable for a 5-minute project brief or management presentation')">Summarise for brief</button>
@@ -2420,6 +2626,16 @@
         </button><div class="sep"></div>`:''}
         <button class="btn btn-ghost" onclick="reset()">Start over</button>
       </div>`;
+
+    // Stage 2: inject under_hood panels (from global or localStorage) and update sidebar gauges
+    if(stage === 2){
+      const outTxt = document.getElementById('out-txt');
+      const storedHood = stage2UnderHood || (function(){ try{ const s=localStorage.getItem('stage2_under_hood'); return s?JSON.parse(s):null; }catch(e){ return null; } })();
+      if(outTxt && storedHood){
+        outTxt.insertAdjacentHTML('beforeend', buildUnderHoodPanels(storedHood));
+      }
+      updateSidebar();
+    }
 
     document.getElementById('stage-disp').scrollIntoView({behavior:'smooth',block:'start'});
   }
@@ -2543,7 +2759,7 @@
 
   function setStepper(active,status){
     document.getElementById('step-0').className='step done';
-    for(let i=1;i<=4;i++){
+    for(let i=1;i<=3;i++){
       const el=document.getElementById(`step-${i}`);if(!el)continue;
       if(i<active)el.className='step done';
       else if(i===active)el.className=status==='err'?'step err':'step active';
@@ -2552,8 +2768,8 @@
   }
 
   function downloadReport(){
-    const execSummary = stageOutputs[4] || '';
-    if(!execSummary && !stageFourPriorities.length){ alert('No Stage 4 output available to download.'); return; }
+    const execSummary = stageOutputs[3] || '';
+    if(!execSummary && !stageThreePriorities.length){ alert('No Stage 3 output available to download.'); return; }
 
     // Build a Word-compatible HTML document
     const dateStr = new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
@@ -2563,14 +2779,15 @@
 <h2>Executive Summary · Project-Wide Considerations</h2>
 ${md(execSummary)}`;
 
-    if(stageFourPriorities.length){
+    if(stageThreePriorities.length){
       body += `<hr><h2>Strategic Priorities</h2>`;
-      stageFourPriorities.forEach((pr, i) => {
+      stageThreePriorities.forEach((pr, i) => {
         const title = pr.title.replace(/^Priority\s+\d+\s*[·•]\s*/i,'');
         const riskColor = pr.risk_level==='High'?'#c0392b':pr.risk_level==='Medium'?'#e07b00':'#1a7a4a';
+        const tagLabel = pr.tag === '[S]' ? 'Sensitivity' : pr.tag === '[R]' ? 'Responsiveness' : pr.tag === '[S+R]' ? 'Sensitivity + Responsiveness' : '';
         body += `<div style="margin-top:22pt;border-top:1pt solid #1a3a5c;padding-top:14pt">
 <h3 style="color:#1a3a5c;margin-bottom:4pt">Priority ${i+1} · ${esc(title)}</h3>
-<p style="font-size:9pt;color:#555;margin-top:0">${pr.dimension?`<strong>Dimension:</strong> ${esc(pr.dimension)} &nbsp;|&nbsp; `:''}${pr.risk_level?`<strong>Risk Level:</strong> <span style="color:${riskColor}">${esc(pr.risk_level)}</span>`:''}
+<p style="font-size:9pt;color:#555;margin-top:0">${pr.dimension?`<strong>Dimension:</strong> ${esc(pr.dimension)} &nbsp;|&nbsp; `:''}${pr.risk_level?`<strong>Risk Level:</strong> <span style="color:${riskColor}">${esc(pr.risk_level)}</span> &nbsp;`:''}${tagLabel?`<strong>Focus:</strong> ${esc(tagLabel)}`:''}${pr.refresh_shift?` &nbsp;|&nbsp; <strong>Shift:</strong> ${esc(pr.refresh_shift)}`:''}
 </p>`;
         if(pr.the_gap) body += `<p><strong>The Gap:</strong><br>${esc(pr.the_gap)}</p>`;
         if(pr.why_it_matters) body += `<p><strong>Why It Matters:</strong><br>${esc(pr.why_it_matters)}</p>`;
@@ -2582,19 +2799,32 @@ ${md(execSummary)}`;
         if(pr.suggested_language) body += `<blockquote><strong>Suggested PAD language:</strong><br><em>${esc(pr.suggested_language)}</em></blockquote>`;
         if(pr.implementation_note) body += `<p><strong>Implementation consideration:</strong><br>${esc(pr.implementation_note)}</p>`;
         if(pr.who_acts||pr.when||pr.resources){
+          const resTooltips={'Minimal':'Existing budget — no additional allocation needed','Moderate':'Dedicated allocation — requires budget line','Significant':'Requires restructuring or additional financing'};
           body += `<p style="font-size:9pt;color:#555">`;
-          if(pr.who_acts) body += `<strong>Who acts:</strong> ${esc(pr.who_acts)} &nbsp;`;
+          if(pr.who_acts){
+            const whoChips = pr.who_acts.split(';').map(w=>w.trim()).filter(Boolean);
+            body += `<strong>Who acts:</strong> ${whoChips.map(w=>esc(w)).join(' · ')} &nbsp;`;
+          }
           if(pr.when) body += `<strong>When:</strong> ${esc(pr.when)} &nbsp;`;
-          if(pr.resources) body += `<strong>Resources:</strong> ${esc(pr.resources)}`;
+          if(pr.resources){
+            const baseRes=(pr.resources||'').split('(')[0].trim();
+            const tip=resTooltips[baseRes]||'';
+            body += `<strong>Resources:</strong> ${esc(pr.resources)}${tip?' ('+esc(tip)+')':''}`;
+          }
           body += `</p>`;
         }
-        // Optional: include above-and-beyond if already loaded
-        const cached = explorerCache[i];
-        if(cached && cached.goFurtherItems && cached.goFurtherItems.length){
-          body += `<p><strong>Above and Beyond (optional):</strong></p>`;
-          cached.goFurtherItems.forEach((item, gi) => {
-            body += `<p style="margin-left:12pt"><strong>${['A','B','C'][gi]||gi+1}. ${esc(item.title)}</strong><br>${esc(item.body||'')}</p>`;
-          });
+        // Optional: include alternative approaches if already loaded via Go Deeper
+        const altCacheRaw = localStorage.getItem('deeper_' + i + '_alternatives');
+        if(altCacheRaw){
+          try {
+            const altParsed = parseExplorerText(altCacheRaw);
+            if(altParsed && altParsed.goFurtherItems && altParsed.goFurtherItems.length){
+              body += `<p><strong>Alternative approaches (optional):</strong></p>`;
+              altParsed.goFurtherItems.forEach((item, gi) => {
+                body += `<p style="margin-left:12pt"><strong>${['A','B','C'][gi]||gi+1}. ${esc(item.title)}</strong><br>${esc(item.body||'')}</p>`;
+              });
+            }
+          } catch(e) {}
         }
         body += `</div>`;
       });
@@ -2631,7 +2861,7 @@ ${md(execSummary)}`;
 
   function reset(){
     pF=[];cF=[];hist=[];curS=0;busy=false;stageOutputs={};stageHists={};researchBrief='';researchCountry='';
-    ['stage2_timestamp','stage3_timestamp','stage4_timestamp','stage3_consistency_dismissed','stage4_consistency_dismissed'].forEach(k=>localStorage.removeItem(k));
+    ['stage2_timestamp','stage3_timestamp','stage3_consistency_dismissed'].forEach(k=>localStorage.removeItem(k));
     document.getElementById('upload-panel').style.display='block';
     document.getElementById('analysis-panel').style.display='none';
     document.getElementById('landing-hero').style.display='block';
@@ -2697,8 +2927,8 @@ ${md(execSummary)}`;
 
   function showPromptTab(n){
     promptModalActiveTab = n;
-    // Update tab styles for all tabs (1-4 and 'explorer')
-    const allTabIds = [1, 2, 3, 4, 'explorer'];
+    // Update tab styles for all tabs (1-3, 'deeper', and 'followon')
+    const allTabIds = [1, 2, 3, 'deeper', 'followon'];
     allTabIds.forEach(id=>{
       const tab = document.getElementById('ptab-'+id);
       if(!tab) return;
@@ -2779,12 +3009,14 @@ ${md(execSummary)}`;
   let researchBrief = '';
   let researchCountry = '';
 
-  // ── Stage 4 state ──────────────────────────────────────────────────────────
-  let stageFourPriorities = [];
+  // ── Stage 2 state ──────────────────────────────────────────────────────────
+  let stage2UnderHood = null;  // {recs_table, dnh_checklist, questions_map, evidence_trail}
+
+  // ── Stage 3 (Recommendations) state ───────────────────────────────────────
+  let stageThreePriorities = [];
   let currentPriority = 0;  // 0-indexed
-  let explorerCache = {};   // {priorityIndex: parsedExplorerData}
-  let explorerAbortController = null;  // AbortController for cancelling in-flight explorer fetch
-  let explorerTimerInterval = null;    // setInterval handle for elapsed-time display
+  let currentDeeperTab = {};  // {priorityIndex: 'alternatives'|'trail'|'playbook'}
+  let deeperAbortController = null;  // AbortController for cancelling in-flight Go Deeper fetch
   let fileMetadata = {};   // {filename: {word_count, doc_type, extraction_status}}
   let explorerHistory = []; // for follow-up queries
   let fcvRating = '';
@@ -2850,7 +3082,7 @@ ${md(execSummary)}`;
   }
 
   function updateSidebar(){
-    const n = stageFourPriorities.length;
+    const n = stageThreePriorities.length;
     const level = LEVELS.findIndex(l => l.toLowerCase() === (fcvRating||'').toLowerCase()) + 1;
     const color = LEVEL_COLORS[level] || '#e8edf2';
 
@@ -2879,7 +3111,7 @@ ${md(execSummary)}`;
     // Priority overview widget
     const povEl = document.getElementById('pov-sb');
     if(povEl && n){
-      povEl.innerHTML = stageFourPriorities.map((pr, i) => {
+      povEl.innerHTML = stageThreePriorities.map((pr, i) => {
         const label = pr.title.replace(/^Priority\s+\d+\s*[·•]\s*/i,'');
         const isDone = i < currentPriority;
         const isActive = i === currentPriority;
@@ -2899,8 +3131,8 @@ ${md(execSummary)}`;
 
   // ── Priority stepper & card rendering ────────────────────────────────────
 
-  function initStage4UI(){
-    if(!stageFourPriorities.length) return;
+  function initStage3UI(){
+    if(!stageThreePriorities.length) return;
     currentPriority = 0;
     renderPrioritiesIntro();
     renderPriorityStepper();
@@ -2910,11 +3142,11 @@ ${md(execSummary)}`;
 
   function renderPrioritiesIntro(){
     const el = document.getElementById('priorities-intro');
-    if(!el || !stageFourPriorities.length) return;
-    const n = stageFourPriorities.length;
+    if(!el || !stageThreePriorities.length) return;
+    const n = stageThreePriorities.length;
     const riskLabel = (r) => r === 'High' ? 'High priority' : r === 'Medium' ? 'Medium priority' : r === 'Low' ? 'Lower priority' : '';
     const riskCls = (r) => r === 'High' ? 'pi-risk-h' : r === 'Medium' ? 'pi-risk-m' : 'pi-risk-l';
-    const listItems = stageFourPriorities.map((pr, i) => {
+    const listItems = stageThreePriorities.map((pr, i) => {
       const title = pr.title.replace(/^Priority\s+\d+\s*[·•]\s*/i, '');
       const risk = riskLabel(pr.risk_level);
       return `<div class="pi-item">
@@ -2924,17 +3156,17 @@ ${md(execSummary)}`;
         ${pr.tag ? renderSRTagBadge(pr.tag,true) : ''}
       </div>`;
     }).join('');
-    el.innerHTML = `<div class="priorities-section-hdr">Strategic Priorities</div><div class="priorities-intro ani">
-      <p class="pi-lead">Based on a three-stage assessment of the project documents, <strong>${n} strategic ${n === 1 ? 'priority has' : 'priorities have'} been identified</strong> to strengthen FCV-sensitivity <span class="sr-tag sensitivity" style="font-size:9px;padding:1px 5px;vertical-align:middle">S</span> and responsiveness <span class="sr-tag responsiveness" style="font-size:9px;padding:1px 5px;vertical-align:middle">R</span> in the design and delivery of this project:</p>
+    el.innerHTML = `<div class="priorities-section-hdr">Priority Actions for the Task Team</div><div class="priorities-intro ani">
+      <p class="pi-lead">Based on a three-stage assessment of the project documents, <strong>${n} priority ${n === 1 ? 'action has' : 'actions have'} been identified</strong> to strengthen FCV-sensitivity <span class="sr-tag sensitivity" style="font-size:9px;padding:1px 5px;vertical-align:middle">S</span> and responsiveness <span class="sr-tag responsiveness" style="font-size:9px;padding:1px 5px;vertical-align:middle">R</span> in the design and delivery of this project:</p>
       <div class="pi-list">${listItems}</div>
-      <p class="pi-footer">Toggle through the panels below to explore each priority and concrete implementation options in more detail.</p>
+      <p class="pi-footer">Toggle through the panels below to explore each priority action and concrete implementation options in more detail.</p>
     </div>`;
   }
 
   function renderPriorityStepper(){
     const el = document.getElementById('priority-stepper');
     if(!el) return;
-    el.innerHTML = stageFourPriorities.map((pr, i) => {
+    el.innerHTML = stageThreePriorities.map((pr, i) => {
       const fullTitle = pr.title.replace(/^Priority\s+\d+\s*[·•]\s*/i,'');
       const riskCls = pr.risk_level==='High'?'ps-risk-h':pr.risk_level==='Medium'?'ps-risk-m':'ps-risk-l';
       const riskLbl = pr.risk_level==='High'?'HIGH':pr.risk_level==='Medium'?'MED':pr.risk_level==='Low'?'LOW':'';
@@ -2949,13 +3181,13 @@ ${md(execSummary)}`;
   }
 
   function showPriority(idx){
-    const pr = stageFourPriorities[idx];
+    const pr = stageThreePriorities[idx];
     if(!pr) return;
     currentPriority = idx;
-    const n = stageFourPriorities.length;
+    const n = stageThreePriorities.length;
 
     // Update stepper
-    stageFourPriorities.forEach((p2, i) => {
+    stageThreePriorities.forEach((p2, i) => {
       const el = document.getElementById(`ps-${i}`);
       if(el) el.className = `ps-step ${i < idx ? 'done' : i === idx ? 'active' : ''}`;
       const numEl = el ? el.querySelector('.ps-num') : null;
@@ -2973,14 +3205,6 @@ ${md(execSummary)}`;
     if(nextBtn){
       if(idx === n-1){ nextBtn.textContent = 'Done'; nextBtn.onclick = () => {}; nextBtn.disabled = true; }
       else { nextBtn.innerHTML = 'Next <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>'; nextBtn.onclick = nextPriority; }
-    }
-
-    // Restore Explorer from localStorage before building card HTML (so it renders immediately)
-    if(!explorerCache[idx]){
-      try {
-        const stored = localStorage.getItem('explorer_priority_'+idx);
-        if(stored) explorerCache[idx] = JSON.parse(stored);
-      } catch(e) {}
     }
 
     // Determine risk chip class
@@ -3021,11 +3245,12 @@ ${md(execSummary)}`;
             <div class="pc-hdr-chips">
               <span class="pc-chip ${riskClass}">Risk: ${esc(pr.risk_level||'—')}</span>
               ${pr.dimension ? `<span class="pc-chip">${esc(pr.dimension)}</span>` : ''}
+              ${pr.refresh_shift ? `<span class="shift-badge" title="${esc(pr.refresh_shift)}">${esc(pr.refresh_shift.replace('Shift ',''))}</span>` : ''}
             </div>
             ${(pr.who_acts||pr.when||pr.resources) ? `<div class="pc-meta-row">
-              ${pr.who_acts ? `<span class="pc-meta-chip"><strong>Who:</strong> ${esc(pr.who_acts)}</span>` : ''}
+              ${pr.who_acts ? `<span class="pc-meta-chip"><strong>Who:</strong> ${(pr.who_acts||'').split(';').map(w=>w.trim()).filter(Boolean).map(w=>'<span class="who-chip">'+esc(w)+'</span>').join(' ')}</span>` : ''}
               ${pr.when ? `<span class="pc-meta-chip"><strong>When:</strong> ${esc(pr.when)}</span>` : ''}
-              ${pr.resources ? `<span class="pc-meta-chip"><strong>Resources:</strong> ${esc(pr.resources)}</span>` : ''}
+              ${(()=>{const resTooltips={'Minimal':'Existing budget — no additional allocation needed','Moderate':'Dedicated allocation — requires budget line','Significant':'Requires restructuring or additional financing'};const baseRes=(pr.resources||'').split('(')[0].trim();const tip=resTooltips[baseRes]||'';return pr.resources?`<span class="pc-meta-chip"${tip?' title="'+esc(tip)+'"':''}><strong>Resources:</strong> ${esc(pr.resources)}</span>`:'';})()}
             </div>` : ''}
             ${warningBadges}
           </div>
@@ -3074,119 +3299,238 @@ ${md(execSummary)}`;
               <div class="pc-zone-body">${esc(pr.implementation_note)}</div>
             </div>` : ''}
           </div>
-          <!-- Above and beyond (lazy-loaded on expand) -->
-          <details class="zone-act-beyond" id="beyond-details-${idx}" ontoggle="handleBeyondToggle(this,${idx})">
+          <!-- Go Deeper 3-tab section (lazy-loaded on expand) -->
+          <details class="go-deeper" id="deeper-details-${idx}" ontoggle="handleDeeperToggle(this,${idx})">
             <summary>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-              Want to go above and beyond? Explore additional approaches
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              Go Deeper
               <span class="beyond-badge">Optional</span>
               <span class="beyond-arrow">▾</span>
             </summary>
-            <div class="beyond-content" id="above-beyond-content-${idx}">
-              ${explorerCache[idx] ? renderAboveAndBeyondHtml(explorerCache[idx]) : `<div class="beyond-loading" id="beyond-loading-${idx}"><svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;animation:spin 1s linear infinite;flex-shrink:0"><circle cx="12" cy="12" r="10" stroke-opacity=".25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-opacity="1"/></svg><span id="beyond-timer-${idx}">Loading alternatives…</span><button onclick="cancelExplorer()" class="exp-cancel-btn" title="Cancel">Cancel</button></div>`}
+            <div class="deeper-content">
+              <p style="font-size:12px;color:var(--muted);line-height:1.55;margin:4px 0 12px;padding:0 2px;">Explore the evidence behind this recommendation and relevant resources from the FCV Playbook.</p>
+              <div class="deeper-tabs">
+                <button class="deeper-tab active" onclick="switchDeeperTab(${idx},'trail',this)">Evidence trail</button>
+                <button class="deeper-tab" onclick="switchDeeperTab(${idx},'playbook',this)">Link to FCV Playbook</button>
+              </div>
+              <div class="deeper-tab-content" id="deeper-content-${idx}">
+                <div class="deeper-loading" id="deeper-loading-${idx}" style="display:none">
+                  <svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;animation:spin 1s linear infinite;flex-shrink:0"><circle cx="12" cy="12" r="10" stroke-opacity=".25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-opacity="1"/></svg>
+                  <span id="deeper-timer-${idx}">Loading...</span>
+                  <button onclick="cancelDeeper()" class="exp-cancel-btn" title="Cancel">Cancel</button>
+                </div>
+                <div id="deeper-result-${idx}"></div>
+              </div>
             </div>
           </details>
         </div>
       </div>`;
 
-    // Explorer is lazy-loaded — only fires when user opens the <details> section
+    // Go Deeper is lazy-loaded — only fires when user opens the <details> section
 
     updateSidebar();
     cardArea.scrollIntoView({behavior:'smooth', block:'nearest'});
   }
 
-  function nextPriority(){ if(currentPriority < stageFourPriorities.length-1) showPriority(currentPriority+1); }
+  function nextPriority(){ if(currentPriority < stageThreePriorities.length-1) showPriority(currentPriority+1); }
   function prevPriority(){ if(currentPriority > 0) showPriority(currentPriority-1); }
 
-  // ── Explorer loading & rendering ─────────────────────────────────────────
+  // ── Go Deeper 3-tab section ──────────────────────────────────────────────
 
-  async function loadExplorerForPriority(idx){
-    const pr = stageFourPriorities[idx];
-    if(!pr || explorerCache[idx]) return;
-
-    // Cancel any in-flight explorer request
-    if(explorerAbortController && !explorerAbortController.signal.aborted){
-      explorerAbortController.abort();
-    }
-    explorerAbortController = new AbortController();
-
-    // Start elapsed timer — use local handle to avoid stale abort clearing a newer timer
-    let elapsed = 0;
-    if(explorerTimerInterval) clearInterval(explorerTimerInterval);
-    const timerHandle = setInterval(() => {
-      elapsed++;
-      const timerEl = document.getElementById(`beyond-timer-${idx}`);
-      if(timerEl) timerEl.textContent = `Loading alternatives… ${elapsed}s`;
-    }, 1000);
-    explorerTimerInterval = timerHandle;
-
-    const promptOverride = sessionPrompts['explorer'] || '';
-    try {
-      const payload = { priority_title: pr.title, priority_body: pr.body, history: hist };
-      if(promptOverride) payload.prompt_override = promptOverride;
-
-      const res = await fetch('/api/run-explorer', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload), signal: explorerAbortController.signal });
-      if(!res.ok) throw new Error('Server error '+res.status);
-
-      const reader = res.body.getReader(), dec = new TextDecoder();
-      let buf = '', streamed = '';
-
-      while(true){
-        const {done, value} = await reader.read(); if(done) break;
-        buf += dec.decode(value, {stream:true});
-        const lines = buf.split('\n'); buf = lines.pop();
-        for(const line of lines){
-          if(!line.startsWith('data: ')) continue;
-          try{
-            const p = JSON.parse(line.slice(6));
-            if(p.error) throw new Error(p.error);
-            if(p.done){
-              clearInterval(timerHandle); explorerTimerInterval = null;
-              const parsed = parseExplorerText(p.result);
-              explorerCache[idx] = parsed;
-              // Persist to localStorage so results survive page refresh
-              try { localStorage.setItem('explorer_priority_'+idx, JSON.stringify(parsed)); } catch(e) {}
-              explorerHistory = [
-                {role:'user', content:'[Explorer: '+pr.title+']'},
-                {role:'assistant', content:p.result}
-              ];
-              // Update the above-and-beyond content area
-              const contentEl = document.getElementById(`above-beyond-content-${idx}`);
-              if(contentEl) contentEl.innerHTML = renderAboveAndBeyondHtml(parsed);
-              updateSidebar();
-            }
-          } catch(e){ if(e.message!=='Unexpected end of JSON input'){
-            clearInterval(timerHandle); explorerTimerInterval = null;
-            const loadEl = document.getElementById(`beyond-loading-${idx}`);
-            if(loadEl) loadEl.textContent = 'Could not load alternatives: '+e.message;
-          }}
-        }
-      }
-    } catch(e){
-      clearInterval(timerHandle); explorerTimerInterval = null;
-      const loadEl = document.getElementById(`beyond-loading-${idx}`);
-      if(e.name === 'AbortError'){
-        if(loadEl) loadEl.textContent = 'Generation cancelled.';
-      } else {
-        if(loadEl) loadEl.textContent = 'Error: '+e.message;
-      }
-    }
+  function handleDeeperToggle(detailsEl, idx) {
+    if (!detailsEl.open) return; // closed — nothing to do
+    if (currentDeeperTab[idx]) return; // already initialised for this priority
+    currentDeeperTab[idx] = 'trail';
+    // Evidence trail loads instantly from localStorage — no API call
+    loadAnalyticalTrail(idx);
   }
 
-  function cancelExplorer() {
-    if(explorerAbortController) explorerAbortController.abort();
-  }
+  function switchDeeperTab(idx, tab, btnEl) {
+    // Update active button state
+    const tabs = btnEl.parentElement.querySelectorAll('.deeper-tab');
+    tabs.forEach(function(t) { t.classList.remove('active'); });
+    btnEl.classList.add('active');
+    currentDeeperTab[idx] = tab;
 
-  function handleBeyondToggle(detailsEl, idx) {
-    if(!detailsEl.open) return; // closed — nothing to do
-    if(explorerCache[idx]) {
-      // Already cached — render immediately
-      const contentEl = document.getElementById('above-beyond-content-'+idx);
-      if(contentEl) contentEl.innerHTML = renderAboveAndBeyondHtml(explorerCache[idx]);
+    const cacheKey = 'deeper_' + idx + '_' + tab;
+    const cached = localStorage.getItem(cacheKey);
+    const resultEl = document.getElementById('deeper-result-' + idx);
+
+    if (cached) {
+      if (resultEl) resultEl.innerHTML = renderDeeperContent(tab, cached);
       return;
     }
-    // First open — trigger lazy load
-    loadExplorerForPriority(idx);
+
+    if (tab === 'trail') {
+      loadAnalyticalTrail(idx);
+    } else {
+      loadDeeperTab(idx, tab);
+    }
+  }
+
+  function loadAnalyticalTrail(idx) {
+    // Client-side only — no API call. Filters Stage 2 Under the Hood data by priority keywords.
+    const resultEl = document.getElementById('deeper-result-' + idx);
+    if (!resultEl) return;
+    let underHood = {};
+    try { underHood = JSON.parse(localStorage.getItem('stage2_under_hood') || '{}'); } catch(e) {}
+    const priority = stageThreePriorities[idx] || {};
+    const dimension = priority.dimension || priority.fcv_dimension || '';
+    const titleWords = (priority.title || '').replace(/^Priority\s+\d+\s*[·•]\s*/i, '').split(/\s+/).filter(function(w) { return w.length > 3; });
+
+    if (!underHood.recs_table && !underHood.questions_map && !underHood.evidence_trail) {
+      resultEl.innerHTML = '<p class="beyond-intro">No analytical trail data available. Complete Stage 2 first.</p>';
+      return;
+    }
+
+    // Match rows by dimension keyword OR 2+ title keywords
+    function matchesRow(line) {
+      if (!dimension && !titleWords.length) return true;
+      var lower = line.toLowerCase();
+      if (dimension && lower.indexOf(dimension.toLowerCase()) !== -1) return true;
+      var matchCount = 0;
+      for (var i = 0; i < titleWords.length; i++) {
+        if (lower.indexOf(titleWords[i].toLowerCase()) !== -1) matchCount++;
+      }
+      return matchCount >= 2;
+    }
+
+    let result = '';
+
+    // Filter operational standards table
+    if (underHood.recs_table) {
+      const lines = underHood.recs_table.trim().split('\n');
+      const header = lines.slice(0, 2);
+      const dataRows = lines.slice(2).filter(matchesRow);
+      if (dataRows.length) {
+        result += '### Relevant Operational Standards\n\n' + header.concat(dataRows).join('\n') + '\n\n';
+      }
+    }
+
+    // Filter diagnostic questions
+    if (underHood.questions_map) {
+      const qlines = underHood.questions_map.trim().split('\n');
+      const qheader = qlines.slice(0, 2);
+      const qrows = qlines.slice(2).filter(matchesRow);
+      if (qrows.length) {
+        result += '### Relevant Diagnostic Questions\n\n' + qheader.concat(qrows).join('\n') + '\n\n';
+      }
+    }
+
+    // Always show evidence trail
+    if (underHood.evidence_trail) {
+      result += '### Evidence Trail\n\n' + underHood.evidence_trail;
+    }
+
+    const content = result || 'No detailed analytical data available' + (dimension ? ' for the ' + dimension + ' dimension.' : '.');
+    try { localStorage.setItem('deeper_' + idx + '_trail', content); } catch(e) {}
+    resultEl.innerHTML = renderDeeperContent('trail', content);
+  }
+
+  async function loadDeeperTab(idx, tab) {
+    const loadingEl = document.getElementById('deeper-loading-' + idx);
+    const resultEl = document.getElementById('deeper-result-' + idx);
+    if (!resultEl) return;
+
+    if (loadingEl) loadingEl.style.display = 'flex';
+    resultEl.innerHTML = '';
+
+    const priority = stageThreePriorities[idx];
+    if (!priority) { if (loadingEl) loadingEl.style.display = 'none'; return; }
+
+    // Cancel any in-flight deeper request
+    if (deeperAbortController && !deeperAbortController.signal.aborted) {
+      deeperAbortController.abort();
+    }
+    deeperAbortController = new AbortController();
+
+    const startTime = Date.now();
+    const timerEl = document.getElementById('deeper-timer-' + idx);
+    const timerHandle = setInterval(function() {
+      if (timerEl) timerEl.textContent = 'Loading... ' + Math.round((Date.now() - startTime) / 1000) + 's';
+    }, 500);
+
+    let accumulated = '';
+
+    try {
+      const resp = await fetch('/api/run-deeper', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          tab: tab === 'playbook' ? 'playbook_refs' : 'alternatives',
+          priority_title: priority.title || '',
+          priority_body: JSON.stringify(priority),
+          history: hist,
+          doc_type: docType || 'Unknown'
+        }),
+        signal: deeperAbortController.signal
+      });
+
+      if (!resp.ok) throw new Error('Server error ' + resp.status);
+
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let sseBuffer = '';
+
+      while (true) {
+        const {done, value} = await reader.read();
+        if (done) break;
+        sseBuffer += decoder.decode(value, {stream: true});
+        const events = sseBuffer.split('\n\n');
+        sseBuffer = events.pop();
+        for (let i = 0; i < events.length; i++) {
+          const event = events[i];
+          if (!event.trim()) continue;
+          const eventLines = event.split('\n');
+          for (let j = 0; j < eventLines.length; j++) {
+            const line = eventLines[j];
+            if (line.indexOf('data: ') !== 0) continue;
+            try {
+              const d = JSON.parse(line.slice(6));
+              if (d.error) throw new Error(d.error);
+              if (d.chunk) {
+                accumulated += d.chunk;
+                resultEl.innerHTML = '<div class="out-body">' + md(accumulated) + '</div>';
+              }
+              if (d.done && d.output) accumulated = d.output;
+            } catch(e) { if (e.message !== 'Unexpected end of JSON input') throw e; }
+          }
+        }
+      }
+
+      clearInterval(timerHandle);
+      if (loadingEl) loadingEl.style.display = 'none';
+
+      const cacheKey = 'deeper_' + idx + '_' + tab;
+      try { localStorage.setItem(cacheKey, accumulated); } catch(e) {}
+
+      if (tab === 'alternatives') {
+        const parsed = parseExplorerText(accumulated);
+        resultEl.innerHTML = renderAboveAndBeyondHtml(parsed);
+      } else {
+        resultEl.innerHTML = renderDeeperContent('playbook', accumulated);
+      }
+    } catch(e) {
+      clearInterval(timerHandle);
+      if (loadingEl) loadingEl.style.display = 'none';
+      if (e.name === 'AbortError') {
+        resultEl.innerHTML = '<p class="beyond-intro">Generation cancelled.</p>';
+      } else {
+        resultEl.innerHTML = '<p class="err-msg">Failed to load content: ' + esc(e.message) + '</p>';
+      }
+    }
+  }
+
+  function renderDeeperContent(tab, content) {
+    if (tab === 'alternatives') {
+      const parsed = parseExplorerText(content);
+      return renderAboveAndBeyondHtml(parsed);
+    }
+    return '<div class="deeper-' + tab + ' out-body">' + md(content) + '</div>';
+  }
+
+  function cancelDeeper() {
+    if (deeperAbortController) deeperAbortController.abort();
   }
 
   function renderAboveAndBeyondHtml(parsed) {
@@ -3521,7 +3865,7 @@ ${md(execSummary)}`;
       goFurtherHtml = `
         <button class="fcv-gf-toggle" onclick="this.classList.toggle('open');document.getElementById('${gfId}').classList.toggle('open');this.querySelector('.fcv-gf-arrow').textContent=document.getElementById('${gfId}').classList.contains('open')?'▴':'▾';">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-          <span class="fcv-gf-label">Want to Go Above and Beyond? Click here for additional recommendations</span>
+          <span class="fcv-gf-label">Go Deeper — click for additional recommendations</span>
           <span class="fcv-gf-badge">Optional</span>
           <span class="fcv-gf-arrow">▾</span>
         </button>
@@ -3563,7 +3907,7 @@ ${md(execSummary)}`;
     if(!msg) return;
     inp.value = '';
 
-    const pr = stageFourPriorities[idx];
+    const pr = stageThreePriorities[idx];
     // Build messages: use explorer history if available, otherwise build from stage history
     let messages;
     if(explorerHistory.length){
@@ -3604,16 +3948,16 @@ ${md(execSummary)}`;
     } catch(e){ ansEl.innerHTML = `<span style="color:#b91c1c">Error: ${esc(e.message)}</span>`; }
   }
 
-  // ── Populate priorities when Stage 4 completes ────────────────────────────
+  // ── Populate priorities when Stage 3 completes ────────────────────────────
 
   function populateExplorerDropdown(priorities){
-    // Kept for compatibility — now calls initStage4UI instead
-    stageFourPriorities = priorities;
-    initStage4UI();
+    // Kept for compatibility — now calls initStage3UI instead
+    stageThreePriorities = priorities;
+    initStage3UI();
   }
 
   function selectPrioritySb(title){
-    const idx = stageFourPriorities.findIndex(p=>p.title===title);
+    const idx = stageThreePriorities.findIndex(p=>p.title===title);
     if(idx >= 0) showPriority(idx);
   }
 

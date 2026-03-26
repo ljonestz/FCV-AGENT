@@ -1,20 +1,46 @@
 # FCV Project Screening App — Claude Development Guide
 
 > **Claude Code Maintenance Instruction:** After every substantial change to this app (new features, prompt changes, new delimiters, UI additions, architectural decisions), update this `claude.md` file to reflect the change before committing. Keep section 1.3 (Stage pipeline), section 3 (Prompt Architecture), section 4 (Frontend), and section 5.3 (Priority Parsing) accurate at all times.
+>
+> **Version note:** This file was updated for v7.0 (3-stage pipeline redesign). If sections reference "Stage 4" or "Explorer" without qualification, that is legacy content from v6.0 — check whether it has been superseded.
 
 ---
 
 ## Overview
 
-This is a **World Bank FCV (Fragility, Conflict, and Violence) Project Screener** — a Flask-based web application that guides Task Team Leaders (TTLs) through a 4-stage workflow to assess how well a World Bank project integrates FCV considerations, and to generate targeted, actionable recommendations for improving its design and delivery.
+This is a **World Bank FCV (Fragility, Conflict, and Violence) Project Screener** — a Flask-based web application that guides Task Team Leaders (TTLs) through a **3-stage workflow** to assess how well a World Bank project integrates FCV considerations, and to generate targeted, actionable recommendations for improving its design and delivery.
+
+**v7.0 redesign:** The app was redesigned from 4 stages to 3 stages, driven by feedback from FCV practitioners and integration of the full OST Manual, the FCV Playbook, and the January 2026 FCV Refresh Strategy. Old Stage 2 (Screening) and Stage 3 (Gaps) are merged into a single FCV Assessment stage. The Recommendations Note (formerly Stage 4) becomes Stage 3.
 
 The tool explicitly distinguishes two concepts:
-- **FCV Sensitivity** — whether the project avoids doing harm: do-no-harm, contextual awareness, conflict-informed design, and operational readiness for FCV conditions.
-- **FCV Responsiveness** — whether the project actively addresses the root drivers of fragility or builds resilience, anchored to the four pillars of the WBG FCV Strategy 2020–2025 (Preventing conflict / Crisis engagement / Transition out of fragility / Spillover mitigation).
+- **FCV Sensitivity [S]** — Is the project *aware of and designed for* the FCV context? Contextual awareness, conflict-informed design, Do No Harm, FCV-adapted operations. Shorthand: does this help the project avoid making things worse?
+- **FCV Responsiveness [R]** — Does the project *actively work to change* the FCV situation? Root-cause engagement, resilience building, transformative use of FCV tools, peace & stability dividends. Shorthand: does this actively help make fragility dynamics better?
 
-Every prompt output now tags recommendations, mitigations, and priorities as [S], [R], or [S+R].
+The 4 FCV Strategy Shifts (Anticipate / Differentiate / Jobs & Private Sector / Enhanced Toolkit) are **cross-cutting** — they apply to both sensitivity and responsiveness findings and are tagged inline as "FCV Strategy Shift: X".
 
-**Key goal:** Move from broad, vague recommendations ("service delivery needs to be targeted so it doesn't contribute to grievance") to specific, location-aware, operationally grounded suggestions ("historically, Nzerekore, Kindia, and Kankan have been excluded from service delivery; focus on these regions to rebuild state-society relationships").
+Every prompt output tags recommendations, mitigations, and priorities as [S], [R], or [S+R]. These are assigned dynamically per-finding based on how the project implements each measure — not pre-assigned per recommendation. S/R definitions are shown to the user in a "Key Definitions" box at the top of Stage 2 and Stage 3 output, and on the landing page.
+
+**Key goal:** Move from broad, vague recommendations ("service delivery needs to be targeted so it doesn't contribute to grievance") to specific, location-aware, operationally grounded, stage-aware suggestions ("historically, Nzerekore, Kindia, and Kankan have been excluded from service delivery; focus on these regions to rebuild state-society relationships — action required before PAD appraisal").
+
+**New in v7.0:**
+- Full 12 OST recommendations + 25 key questions drive Stage 2 internally (up from 6 recs)
+- FCV Playbook integration for stage-aware recommendations (PCN vs. PAD vs. implementation)
+- "Under the Hood" expandable panels in Stage 2 for FCV Country Coordinators (plain-language titles referencing OST Manual)
+- Do No Harm shown as traffic-light after thematic analysis (8 canonical principles), before synthesis
+- `refresh_shift` field added to each priority card (maps to 1 of 4 FCV Strategy Shifts)
+- Expanded `who_acts`, `when`, and `resources` fields with defined value sets
+
+**New in v7.2 (Stage 2 restructure):**
+- Stage 2 output restructured from fixed Sensitivity→DNH→Responsiveness→Gaps to **dynamic thematic narrative** (3–5 themes derived from project)
+- S/R tags dynamically assigned per-finding (not pre-assigned per-rec); shifts cross-cutting (not boxed under responsiveness)
+- DNH repositioned after themes, before synthesis
+- Under the Hood panels renamed to plain-language questions with OST Manual subtitles; Panel 1 gains S/R Tag column
+- S/R definition box shown at top of Stage 2 (with tag legend) and Stage 3 output
+- S/R definitions added to landing page hero section
+- Stage 3 `recommendation` field now produces 2–4 markdown bullets identifying document elements to revise (was single prose paragraph)
+- Stage 3 no longer includes inline `[From: ...]` citation tags — clean peer-review memo
+- "Go Deeper" reduced to 2 tabs: "Evidence trail" (instant, default) + "Link to FCV Playbook" (LLM call). "Other options" (alternatives) tab removed
+- Deeper Playbook prompt rewritten to focus on Playbook quotes, operational tools, WBG teams/resources, and policy hooks
 
 ---
 
@@ -30,9 +56,11 @@ Every prompt output now tags recommendations, mitigations, and priorities as [S]
 
 ### 1.2 Core Files
 ```
-app.py                 # Flask backend, all 4 prompts, stage routes, explorer endpoint, document processing
-index.html             # Frontend UI, Stage 1-4 display, explorer panel, prompt modal
-background_docs.py     # FCV_GUIDE and FCV_OPERATIONAL_MANUAL constants (WBG FCV framework)
+app.py                 # Flask backend, all 3 stage prompts + deeper/followon prompts, routes, document processing
+index.html             # Frontend UI, Stage 1-3 display, Go Deeper panel, prompt modal
+background_docs.py     # 8 constants: FCV_GUIDE, FCV_OPERATIONAL_MANUAL, FCV_REFRESH_FRAMEWORK,
+                       #   PLAYBOOK_DIAGNOSTICS, PLAYBOOK_PREPARATION, PLAYBOOK_IMPLEMENTATION,
+                       #   PLAYBOOK_CLOSING, STAGE_GUIDANCE_MAP
 prompts.json           # Session-specific prompt overrides (persisted per session)
 requirements.txt       # Python dependencies (Flask, Anthropic SDK, pypdf, python-docx)
 Procfile              # Render deployment config
@@ -40,10 +68,10 @@ Procfile              # Render deployment config
 static/               # Static assets (if any)
 ```
 
-### 1.3 Four-Stage Pipeline
+### 1.3 Three-Stage Pipeline
 
 ```
-STAGE 1 — Identifying FCV Risks
+STAGE 1 — Context & Extraction
 ├─ Input: Project document (any stage: Concept Note, PID, PCN, PAD, restructuring/AF draft)
 │         + optional contextual docs (RRA, country risk assessments — 1–2 recommended)
 ├─ Output: Part A (project doc extract) + Part B (contextualized analysis)
@@ -64,116 +92,144 @@ STAGE 1 — Identifying FCV Risks
 │  ├─ Part A: Extract *only* from project doc; no outside knowledge
 │  ├─ Part B: Use tiers 1→2→3 in strict priority order; always label the source tier
 │  └─ Large docs (>150k chars) pre-processed by LLM FCV extraction; docs >500k chars truncated
+├─ Extraction guided by Playbook Diagnostics questions (RRA utilisation, compound risks, forced
+│  displacement, CPSD context)
+├─ FCV classification context from FCV Refresh (is this an FCS country? what trajectory?)
+├─ Prompt includes: FCV_GUIDE, PLAYBOOK_DIAGNOSTICS, FCV_REFRESH_FRAMEWORK
 └─ UI: Stage header + research brief dropdown (top) + main output card + refine input box
    Loading note: Stage 1 shows "may take 60–90 seconds" due to web research phase
    DOC_TYPE line is stripped from display text before rendering
 
-STAGE 2 — FCV-Sensitivity Screening
+STAGE 2 — FCV Assessment (merged Screening + Gaps)
 ├─ Input: Stage 1 output
-├─ Output: Risk ratings across 6 FCV dimensions (both risks TO and FROM the project)
-│  ├─ Institutional Legitimacy
-│  ├─ Inclusion
-│  ├─ Social Cohesion
-│  ├─ Security
-│  ├─ Economic Livelihoods
-│  └─ Resilience
-├─ After the Summary Assessment Table — SENSITIVITY vs. RESPONSIVENESS CLASSIFICATION:
-│  ├─ Each OST recommendation tagged [S], [R], or [S+R] with pre-assigned defaults:
-│  │  ├─ Rec 1 (RRA/CRSS use) = [S]
-│  │  ├─ Rec 2 (conflict-sensitive targeting) = [S]
-│  │  ├─ Rec 3 (inclusive stakeholder engagement) = [S+R]
-│  │  ├─ Rec 4 (Do No Harm / conflict-sensitive design) = [S]
-│  │  ├─ Rec 5 (adaptive management) = [S]
-│  │  └─ Rec 6 (M&E / GRM) = [S+R]
-│  └─ RESPONSIVENESS PROBE paragraph (100–150 words): which of the four FCV Strategy pillars
-│     the project has potential to address (Pillar 1: preventing conflict / Pillar 2: crisis
-│     engagement / Pillar 3: transition out of fragility / Pillar 4: spillover mitigation)
-├─ [S+R] strictly defined — only genuine overlap zones:
+├─ Internal analytical engine:
+│  ├─ All 12 OST recommendations (up from 6 in v6.0)
+│  ├─ 25 key questions
+│  └─ 3 key elements
+│  TTL does NOT see the framework structure — they see themed findings
+├─ Output structure (v7.2 — dynamic thematic narrative):
+│  ├─ S/R Definition Box (hardcoded frontend element, not LLM-generated)
+│  ├─ Tag Legend ("Reading this assessment" — explains [S], [R], [S+R] and FCV Strategy Shift badges)
+│  ├─ TTL-facing Assessment (400–500 words, dynamic thematic narrative):
+│  │  ├─ 3–5 analytical themes (dynamic, derived from 12 recs + 25 questions for THIS project)
+│  │  │  Each finding tagged [S]/[R]/[S+R] + "FCV Strategy Shift: X" inline
+│  │  │  Themes can mix S and R findings — they are analytical groupings, not S/R buckets
+│  │  ├─ Do No Harm traffic-light (after themes, before synthesis)
+│  │  ├─ Synthesis: S paragraph (80–100 words) + R paragraph (80–100 words)
+│  │  ├─ Ratings: Sensitivity + Responsiveness
+│  │  └─ Key gaps: 3–5 most critical, tagged [S]/[R]/[S+R], prioritised
+│  └─ Delimiter blocks (parsed by frontend, stripped from display):
+│     ├─ %%%STAGE2_RATINGS_START/END%%% — JSON: {sensitivity_rating, responsiveness_rating}
+│     └─ %%%UNDER_HOOD_START/END%%% containing:
+│        ├─ %%%RECS_TABLE_START/END%%%    — 12-rec table (now with S/R Tag column, dynamically assigned)
+│        ├─ %%%DNH_CHECKLIST_START/END%%% — 8-principle DNH checklist (traffic-light)
+│        ├─ %%%QUESTIONS_MAP_START/END%%% — 25 key questions with findings
+│        └─ %%%EVIDENCE_TRAIL_START/END%%% — Sources, types, contributions
+├─ Do No Harm — canonical 8 principles (positioned after themes, before synthesis):
+│  1. Conflict-sensitive targeting and beneficiary selection
+│  2. Avoiding reinforcement of existing power asymmetries
+│  3. Preventing exacerbation of inter-group tensions
+│  4. Ensuring equitable geographic distribution of benefits
+│  5. Safeguarding against elite capture of project resources
+│  6. Protecting project staff and beneficiaries from security risks
+│  7. Monitoring for unintended negative consequences
+│  8. Establishing accessible and trusted grievance mechanisms
+├─ FCV Strategy Shifts — 4 cross-cutting strategic directions (tagged inline on S and R findings):
+│  ├─ FCV Strategy Shift A: Anticipate — risk monitoring, early warning, classification awareness
+│  ├─ FCV Strategy Shift B: Differentiate — tailoring to FCV context type
+│  ├─ FCV Strategy Shift C: Jobs & Private Sector — economic livelihoods, MSME, private sector
+│  └─ FCV Strategy Shift D: Enhanced Toolkit — operational flexibilities, partnerships, adaptive management
+├─ [S+R] strictly defined — only genuine overlap zones (unchanged from v6.0):
 │  (1) inclusion/targeting of conflict-affected populations
 │  (2) FCV logic embedded in ToC/PDO framing
 │  (3) adaptive M&E that monitors harm AND adapts for resilience
 │  (4) GRM designed to strengthen state-citizen accountability
-├─ Prompt includes specific location callouts and evidence-based reasoning
-└─ UI: Rating table + dimension explanations + S/R classification + refine input box
-
-STAGE 3 — Identifying Project Gaps
-├─ Input: Stages 1–2 output
-├─ Output:
-│  ├─ Part A: FCV sensitivity gaps (what's missing from design/implementation)
-│  ├─ Part B: Mitigations (specific, location-named, mechanism-focused)
-│  │  └─ Each mitigation measure now includes a TAG column: [S] / [R] / [S+R]
-│  ├─ Part C: Do No Harm Checklist (structured table with Yes/Partial/No + evidence)
-│  ├─ Part D: FCV Responsiveness Opportunities (formerly "Enhancement Opportunities")
-│  │  └─ Structured around four FCV Strategy pillars:
-│  │     ├─ Pillar 1: Preventing conflict
-│  │     ├─ Pillar 2: Crisis engagement
-│  │     ├─ Pillar 3: Transition out of fragility
-│  │     └─ Pillar 4: Spillover mitigation
-│  └─ Part E: Top 5 Priority Actions — each carries a [S] / [R] / [S+R] tag
-├─ Prompt enforces geographic specificity and operational grounding
-└─ UI: Collapsible sections + expandable Do-No-Harm checklist rendered from Part C table
-
-STAGE 4 — Recommendations Note + Explorer
-├─ Input: Stages 1–3 output (conversation history) + uploaded_doc_names list
-├─ Output (narrative memo + JSON block appended at end):
-│  ├─ Narrative: Preamble + Executive Summary (risk exposure, strengths, gaps,
-│  │             sensitivity summary, responsiveness summary, ratings)
-│  └─ JSON block: appended after narrative, delimited %%%JSON_START%%%...%%%JSON_END%%%
-│     Fields: fcv_rating, fcv_responsiveness_rating, sensitivity_summary,
-│             responsiveness_summary, risk_exposure {risks_to, risks_from},
-│             priorities[] — each with:
-│               title, fcv_dimension, tag, risk_level, the_gap, why_it_matters,
-│               recommendation (SINGULAR — one cohesive action, NOT options menu),
-│               who_acts, when, resources,
-│               pad_sections (semicolon-separated PAD sections to modify),
-│               suggested_language (2–4 sentences of draft PAD text in WBG register),
-│               implementation_note (1–2 sentences: timing/cost/sequencing)
-│        when values: "At design stage" | "Before appraisal" | "During implementation"
-│        TAG: [S] / [R] / [S+R] — same strict definition as Stage 2/3
-│        Most priorities will be [S] or [R]; [S+R] only for four named overlap zones
-│        pad_sections/suggested_language/implementation_note always present in JSON →
-│        download never requires clicking Explorer tabs first
-├─ extract_priorities() rewrites JSON block via json.loads() + validation:
-│  ├─ Returns unified dict: {error, priorities, fcv_rating, fcv_responsiveness_rating,
-│  │                         sensitivity_summary, responsiveness_summary, risk_exposure}
-│  ├─ _check_specificity(): heuristic for mid-sentence capitalised words (proper nouns)
-│  ├─ _check_citations(): cross-references [From: ...] patterns against uploaded doc names
-│  │   (extension-stripped) + org whitelist; flags unknown sources
-│  └─ Malformed JSON: returns {error: True, message: ...} — NOT silent failure
-├─ clean_stage4_output() stripping order:
-│  1. Strip %%%JSON_START/END%%% block (structured data)
-│  2. Strip %%%RISK_NARRATIVE_START/END%%% block (Risk Exposure text — shown as card from JSON)
-│  3. Strip everything from %%%PRIORITIES_START%%% onwards (S/R summaries + priorities — shown as cards)
-│  4. Legacy delimiter stripping retained as fallback for cached outputs
-├─ Citation policy: ONLY cite documents that appear as [From: doc name] in Stage 1.
-│  NEVER fabricate document titles. Non-uploaded sources → [From: training knowledge] or
-│  [From: web research]. This prevents hallucinated citations (e.g. [RRA 2022] when no RRA uploaded).
-│  uploaded_doc_names must be included in /api/run-stage request body for citation check.
+├─ extract_stage2_ratings(): parses %%%STAGE2_RATINGS_START/END%%% → {sensitivity_rating, responsiveness_rating}
+├─ extract_under_hood(): parses %%%UNDER_HOOD_START/END%%% → {recs_table, dnh_checklist, questions_map, evidence_trail}
+│  └─ On failure: parse_error: true in SSE done event; raw text shown; banner displayed; Stage 3 can still proceed
+├─ clean_stage2_output(): strips ratings + under_hood blocks from display text
+├─ Under Hood text stored in localStorage key "stage2_under_hood" for use by Go Deeper Tab 2
+├─ Prompt includes: FCV_OPERATIONAL_MANUAL, FCV_REFRESH_FRAMEWORK, FCV_GUIDE
 └─ UI:
-   ├─ Main output card (preamble + opening assessment + operational context + strengths + gaps)
-   │  NOTE: FCV Risk Exposure is NOT in the narrative text — it is stripped and shown as a card from JSON
-   │  NOTE: S/R summaries are NOT in the narrative text — stripped and shown as side-by-side cards
+   ├─ Main output: Assessment Summary narrative
+   ├─ Ratings sidebar: Sensitivity gauge (blue, shield) + Responsiveness gauge (green, leaf)
+   │  — moved from old Stage 4 to Stage 2 in v7.0
+   ├─ "Under the Hood" panels (4 expandable <details> with plain-language titles + OST Manual subtitles):
+   │  ├─ Panel 1: "How well does the project integrate FCV considerations?" (12 operational standards from OST Manual, with S/R Tag column)
+   │  ├─ Panel 2: "Could this project unintentionally cause harm?" (8 DNH principles from OST Manual)
+   │  ├─ Panel 3: "What did we look for — and what was missing?" (25 diagnostic questions from OST Manual)
+   │  └─ Panel 4: "Where did this analysis come from?" (sources, types, contributions)
+   └─ Refine input box
+
+STAGE 3 — Recommendations Note (stage-aware)
+├─ Input: Stages 1–2 output (conversation history) + doc_type (from Stage 1) + uploaded_doc_names list
+├─ Stage-awareness logic (doc_type passed in request body):
+│  ├─ PCN/PID → PLAYBOOK_PREPARATION, timing: "Identification / Preparation"
+│  ├─ PAD     → PLAYBOOK_PREPARATION, timing: "Preparation / Appraisal"
+│  ├─ AF/Restructuring → PLAYBOOK_IMPLEMENTATION, timing: "Implementation / Restructuring"
+│  ├─ ISR     → PLAYBOOK_IMPLEMENTATION + PLAYBOOK_CLOSING, timing: "Implementation"
+│  └─ Unknown → PLAYBOOK_PREPARATION (safe default)
+├─ Output (narrative memo + JSON block appended at end):
+│  ├─ Narrative: Preamble + Opening Assessment + Operational Context + Risk Exposure +
+│  │             Strengths + Gaps + Sensitivity Summary + Responsiveness Summary +
+│  │             Stage badge (e.g., "Recommendations tailored for PCN stage")
+│  └─ JSON block: delimited %%%JSON_START%%%...%%%JSON_END%%%
+│     Top-level fields: fcv_rating, fcv_responsiveness_rating, sensitivity_summary,
+│       responsiveness_summary, risk_exposure {risks_to, risks_from}, priorities[]
+│     Each priority:
+│       title, fcv_dimension, tag, refresh_shift (NEW — one of 4 FCV Refresh shifts),
+│       risk_level, the_gap, why_it_matters, recommendation (SINGULAR),
+│       who_acts (multi-value, semicolon-separated: TTL; PIU; Government; FCV CC;
+│                 FM Team; ESF Team; Technical Team; M&E Team),
+│       when (Identification | Preparation | Appraisal | Implementation | Restructuring),
+│       resources (Minimal (existing budget) | Moderate (dedicated allocation) |
+│                  Significant (requires restructuring)),
+│       pad_sections (semicolon-separated), suggested_language, implementation_note
+│     TAG: [S] / [R] / [S+R] — same strict definition as Stage 2
+│     Most priorities will be [S] or [R]; [S+R] only for four named overlap zones
+├─ extract_priorities() — same JSON-parse-based approach as v6.0, with updates:
+│  ├─ Parses new refresh_shift field
+│  ├─ Updated who_acts and when validation against new value sets
+│  ├─ _check_specificity() and _check_citations() unchanged
+│  └─ Returns unified dict with all fields + per-priority specificity_warning/citation_warnings
+├─ clean_stage3_output() (renamed from clean_stage4_output()):
+│  1. Strip %%%JSON_START/END%%% block
+│  2. Strip %%%RISK_NARRATIVE_START/END%%% block
+│  3. Strip everything from %%%PRIORITIES_START%%% onwards
+│  4. Legacy delimiter stripping for cached outputs
+├─ Citation policy (v7.2): Stage 3 NO LONGER includes inline [From: ...] citation tags.
+│  The note reads as a clean peer-review memo. Sources may be mentioned naturally in prose
+│  (e.g., "ACLED data suggests...") but not as bracketed citations. Never fabricate document titles.
+├─ Prompt includes: stage-appropriate PLAYBOOK constant, FCV_REFRESH_FRAMEWORK
+└─ UI:
+   ├─ Main output card (preamble + opening assessment + operational context)
+   │  NOTE: Risk Exposure stripped → shown as card from JSON
+   │  NOTE: S/R summaries stripped → shown as side-by-side cards from JSON
    ├─ FCV Sensitivity + FCV Responsiveness summary cards (side by side, after Gaps)
-   ├─ FCV Sensitivity gauge (sidebar, blue, shield icon)
-   ├─ FCV Responsiveness gauge (sidebar, green, leaf icon)
    ├─ Priority cards (horizontal stepper, shows one at a time)
-   ├─ S/R tag badges have hover tooltips explaining each tag meaning
-   ├─ Specificity warning badge (amber, dismissible) if no proper nouns detected
-   ├─ Citation warning badge (amber, dismissible) if unrecognised [From: ...] strings found
-   ├─ Per-priority zone-act layout (4 sections, all from JSON — always available):
-   │  ├─ Essential action box (recommendation, blue left-border)
+   ├─ Per-priority zone-act layout (5 sections, all from JSON — always available):
+   │  ├─ refresh_shift badge (e.g., "FCV Strategy Shift B: Differentiate")
+   │  ├─ Essential action box (recommendation as 2–4 markdown bullets identifying document elements to revise, blue left-border)
    │  ├─ Where in the PAD (.pad-chip tags split from pad_sections on ";")
    │  ├─ Suggested PAD language (suggested_language, italic yellow card)
    │  └─ Implementation consideration (implementation_note)
-   ├─ "Go above and beyond" collapsible <details> per priority (LAZY — loads on first open)
-   ├─ Explorer results cached per priority integer index in localStorage
+   ├─ S/R tag badges with hover tooltips (unchanged)
+   ├─ Specificity + citation warning badges (unchanged)
+   ├─ "Go Deeper" collapsible <details> per priority (2 tabs, v7.2):
+   │  ├─ 2 tab buttons: "Evidence trail" (default) | "Link to FCV Playbook"
+   │  ├─ Tab 1 (Evidence trail): DEFAULT on open. NO LLM call — filters stage2_under_hood
+   │  │  from localStorage by priority keywords (fcv_dimension + title words); renders instantly
+   │  └─ Tab 2 (FCV Playbook): SSE-streamed LLM call via /api/run-deeper (tab="playbook_refs")
+   │     Prompt: DEFAULT_PROMPTS["deeper_playbook"] — Playbook quotes, tools, WBG teams, policy hooks
+   │  NOTE: "Other options" (alternatives) tab removed in v7.2 — was rarely useful
+   ├─ Go Deeper tabs cached per priority per tab (keys: deeper_{idx}_trail, deeper_{idx}_playbook)
    └─ Parse error banner shown if JSON extraction fails
 
-FOLLOW-ON (post-analysis query card — Stage 4 only)
-├─ Replaces the standard "Refine this output" card at Stage 4 bottom
-├─ Stages 1–3 still show the standard refine card (calls doRefine() → re-runs stage)
-├─ Input: Full conversationHistory + user message (not just Stage 4)
-├─ Output: SSE-streamed response appended below the follow-on card (does NOT replace Stage 4 output)
+FOLLOW-ON (post-analysis query card — Stage 3 only)
+├─ Replaces the standard "Refine this output" card at Stage 3 bottom
+├─ Stages 1–2 still show the standard refine card (calls doRefine() → re-runs stage)
+├─ Input: Full conversationHistory + user message
+├─ Output: SSE-streamed response appended below the follow-on card (does NOT replace Stage 3 output)
 ├─ 4 pre-fill chips for common TTL tasks:
 │  - "Draft peer review note" → drafts a peer review email/comment for the PCN/PAD
 │  - "Expand top recommendation" → first steps, who leads, TTL actions in first 30 days
@@ -185,68 +241,72 @@ FOLLOW-ON (post-analysis query card — Stage 4 only)
 ├─ Key JS functions: prefillFollowon(text), doFollowOn(), buildFollowOnMessages(userMsg)
 ├─ CSS: .followon-card, .followon-desc, .followon-chips, .followon-chip, .followon-result-card
 └─ Backend: /api/run-followon route, DEFAULT_PROMPTS["followon"], max_tokens=4000
-   - Prompt includes full WBG peer review style guidelines (tiered structure, FCV lenses,
-     stage-appropriateness, prose-over-bullets, collegial open/close conventions)
+   - Prompt includes full WBG peer review style guidelines
    - Route truncates large assistant messages to 40,000 chars before sending to avoid token limits
 
-EXPLORER (above-and-beyond alternatives only)
-├─ Input: Priority title/body + Stage 1–4 history
-├─ Output: 2–3 optional alternative approaches (%%%GF_ITEM%%% format only)
-│  └─ Each item: title + 2–3 paragraph prose + PAD section reference
-├─ Prompt produces ONLY %%%GO_FURTHER_START%%%...%%%GO_FURTHER_END%%% markers
-│  (no %%%EXPLORER_NARRATIVE_START%%% — that format is legacy/deprecated)
-├─ Lazy-loaded: only fires when user expands the <details> section
-├─ Design principle: core recommendation is self-contained in JSON; Explorer adds
-│  optional depth for teams with additional appetite — NOT required reading
-└─ UI:
-   ├─ <details class="zone-act-beyond"> triggers handleBeyondToggle(el, idx) on open
-   ├─ Loading spinner shown inside <details> until stream completes
-   ├─ renderAboveAndBeyondHtml(parsed) renders goFurtherItems as .beyond-item cards
-   └─ Follow-on card at bottom of Stage 4 (NOT a standard refine card — see FOLLOW-ON section below)
+GO DEEPER (optional depth panel — Stage 3 only; replaces Explorer from v6.0)
+├─ Input: Priority JSON (title + body) + doc_type + history + stage2_under_hood (for Tab 2)
+├─ 3 tabs, lazy-loaded via <details class="go-deeper"> toggle:
+│  Tab 1 — Other options (DEFAULT active on open):
+│    ├─ SSE-streamed LLM call via POST /api/run-deeper {tab: "alternatives"}
+│    ├─ Prompt: DEFAULT_PROMPTS["deeper"] — 2–3 optional alternative approaches
+│    └─ Output format: %%%GO_FURTHER_START%%%...%%%GO_FURTHER_END%%% with %%%GF_ITEM%%% blocks
+│  Tab 2 — Why this recommendation (NO API CALL):
+│    ├─ Data sourced from localStorage key "stage2_under_hood" (saved after Stage 2 completes)
+│    ├─ Backend filters recs_table and questions_map rows matching priority's fcv_dimension
+│    └─ Renders instantly — no spinner; user sees OST evidence driving this priority
+│  Tab 3 — WBG policy guidance:
+│    ├─ SSE-streamed LLM call via POST /api/run-deeper {tab: "playbook_refs"}
+│    ├─ Prompt: DEFAULT_PROMPTS["deeper_playbook"] + stage-appropriate Playbook constant
+│    └─ Returns relevant operational flexibilities, policy citations, implementation guidance
+├─ Cache keys: deeper_{idx}_alternatives, deeper_{idx}_trail, deeper_{idx}_playbook
+├─ Cancel button aborts in-flight SSE calls for Tabs 1 and 3 (Tab 2 has no call to cancel)
+└─ Design principle: core recommendation is self-contained in JSON; Go Deeper adds
+   optional analytical depth — NOT required reading before downloading
 ```
 
 ---
 
 ## 2. Design Decisions & Design Philosophy
 
-### 2.1 Why 4 Stages (Not a Single Prompt)?
+### 2.1 Why 3 Stages (Not 4 or 1)?
 - **Sequential refinement:** Each stage builds on prior outputs, allowing users to pause, review, and refine before proceeding.
 - **Quality control:** Users see intermediate reasoning and can correct errors or add local knowledge at each step, rather than getting an opaque final output.
 - **Cognitive load:** Breaking analysis into digestible pieces helps TTLs understand the reasoning without overwhelming them.
-- **Flexibility:** Users can re-run Stage 2 without re-analyzing documents, adjust Stage 3 findings before generating final recommendations, etc.
+- **Fewer redundant stages:** Old Stages 2 (Screening) and 3 (Gaps) overlapped — the same weaknesses were being identified twice. Merging them into a single Assessment stage eliminates duplication and gives TTLs a cleaner, faster workflow.
+- **Flexibility:** Users can re-run Stage 2 without re-analyzing documents, adjust findings before generating final recommendations, etc.
 
 ### 2.2 Why Stage 1 Splits Part A from Part B?
 - **Transparency:** Users need to understand what the tool extracted *directly* from their project document vs. what it inferred from external context or AI training knowledge.
 - **Document trust:** A project document is a formal WBG artifact; the tool respects its primacy while being clear about supplementation.
 - **Accuracy accountability:** If something in Part A seems wrong, the issue is in extraction; if Part B is off, it's in contextual interpretation or knowledge gaps.
 
-### 2.3 Why Remove the Technical Annex & Replace with Explorer?
-**Problem:** Stage 4 was generating two outputs simultaneously:
-- A fixed "Recommendations Note" for the TTL's final memo
-- A "Technical Annex" with extra methodological detail
+### 2.3 Why "Go Deeper" (2-tab panel)?
+**Problem with old Explorer:** It only offered alternative approaches. FCV Country Coordinators wanted to see the analytical reasoning behind a recommendation (which OST recs drove it?) and the Playbook guidance relevant to their project stage.
 
-This was creating length/clarity issues — the note got dense, and it wasn't clear what belonged in a final memo vs. internal working notes.
+**Solution (v7.2):** Replace Explorer with a **2-tab "Go Deeper" panel** that:
+- **Tab 1 (Evidence trail):** DEFAULT on open. Which OST recs and key questions from Stage 2 drove this priority — sourced from `localStorage.stage2_under_hood` with **no API call** (renders instantly)
+- **Tab 2 (Link to FCV Playbook):** FCV Playbook quotes, operational tools and flexibilities, WBG teams/resources the TTL can access, and applicable policy hooks — lightweight LLM call
 
-**Solution:** Move all exploratory depth to an **on-demand Explorer panel** that is:
-- **Separate:** Doesn't clutter the main Recommendations Note
-- **Interactive:** Users drill into *specific* priorities, not a generic annex
-- **Contextual:** Each exploration is grounded in the priority's gap + why it matters
-- **Cacheable:** Avoid redundant API calls for the same priority + follow-up question
+The "Other options" (alternatives) tab was removed in v7.2 — user testing showed it was rarely used and added cognitive load without clear value.
 
-**Result:** Clean, memo-ready Stage 4 output + optional depth available when users want it.
+**Key architectural innovation:** Tab 1 uses data already collected in Stage 2. No extra API call, no latency. The `stage2_under_hood` block is stored in localStorage after Stage 2 completes and read by Go Deeper on demand.
 
-### 2.3a Why Each Priority Now Has a Single Recommendation + PAD Guidance (not A/B/C options)
-**Problem (identified by TTL user testing):** The previous Explorer auto-loaded 2–3 action options per priority on page load, creating cognitive overload: 5 priorities × 3 options = 15 things to evaluate. Non-specialist TTLs needed a clear directive, not a menu.
+**Result:** Core recommendation is self-contained in JSON. Go Deeper adds optional analytical depth. Download never requires clicking through tabs.
 
-**Solution:** Restructure each priority card around one clear action with operational specifics, sourced directly from the Stage 4 JSON:
-- `recommendation` — single cohesive action (already existed)
-- `pad_sections` — explicit PAD sections to modify (new)
-- `suggested_language` — draft text to insert verbatim (new)
-- `implementation_note` — timing/cost/dependency note (new)
+### 2.3a Why Each Priority Uses Bulleted Document Guidance
+**Principle (updated v7.2):** Non-specialist TTLs need clear guidance on what to revise in their project document.
 
-Explorer demoted to a collapsed "Go above and beyond" section — lazy-loaded only if the user opens it, explicitly labelled Optional.
+Each priority card is structured around document-level changes from the Stage 3 JSON:
+- `recommendation` — 2–4 markdown bullets, each identifying a specific document element to revise
+- `pad_sections` — explicit PAD sections to modify (semicolon-separated)
+- `suggested_language` — draft text to insert verbatim (2–4 sentences)
+- `implementation_note` — timing/cost/dependency note (1–2 sentences)
+- `refresh_shift` — NEW: which FCV Refresh shift this priority addresses
 
-**Key architectural consequence:** All core content now lives in the Stage 4 JSON. The download (`downloadReport()`) no longer requires clicking through all priority tabs before exporting — it always has everything it needs.
+Go Deeper demoted to a collapsed section — lazy-loaded only if the user opens it, explicitly labelled Optional.
+
+**Key architectural consequence:** All core content lives in Stage 3 JSON. `downloadReport()` never requires clicking through Go Deeper tabs — it always has everything it needs.
 
 ### 2.4 The Specificity & Actionability Mandate
 **Core principle:** Recommendations must be **specific and actionable**, not broad and vague.
@@ -255,9 +315,11 @@ Explorer demoted to a collapsed "Go above and beyond" section — lazy-loaded on
 - **Good:** "Historically, Nzerekore, Kindia, and Kankan have been excluded from service delivery. To rebuild the state-society relationship, focus service delivery in these regions, prioritizing (a) areas with highest grievance sensitivity, (b) community health extension worker networks, (c) cash-for-work entry points."
 
 **How it's enforced:**
+- Stage 2 prompt uses the full 12-rec OST Manual + 25 key questions — no longer limited to 6 recs
 - Stage 3 prompt explicitly requires geographic naming, mechanism specification, and operational entry points (PAD instruments, existing WBG programs, partner organizations)
-- Stage 4 prompt generates `pad_sections`, `suggested_language`, and `implementation_note` per priority — specifics are in the JSON, not deferred to Explorer
-- Explorer prompt generates 2–3 optional alternative approaches (not A/B/C options menus); core recommendation is always the single clear directive
+- Stage 3 prompt is stage-aware: PCN projects get "build into the ToC now" framing; PAD projects get "revise Section X" framing; implementation-stage get "adjust during next restructuring" framing
+- Stage 3 generates `pad_sections`, `suggested_language`, `implementation_note`, and `refresh_shift` per priority — all in JSON
+- Go Deeper "alternatives" tab generates 2–3 optional alternative approaches; core recommendation is always the single clear directive
 
 **Trade-off managed:** We avoid exact costs (which change) but include enough detail for a TTL to brief management or co-design with counterparts.
 
@@ -265,7 +327,7 @@ Explorer demoted to a collapsed "Go above and beyond" section — lazy-loaded on
 - All user inputs and LLM outputs are stored in browser localStorage (serialized as JSON)
 - On page reload, the app can recover the session and allow "continue" or "restart" workflows
 - Sessions can be saved with a name, allowing users to return to previous analyses
-- Conversation history is passed to each stage, so the LLM maintains context across all 4 stages
+- Conversation history is passed to each stage, so the LLM maintains context across all 3 stages
 
 **Limitation:** localStorage is browser-specific and not suitable for long-term storage or team collaboration. For future versions, consider a backend database.
 
@@ -279,13 +341,14 @@ Explorer demoted to a collapsed "Go above and beyond" section — lazy-loaded on
 ```python
 # In app.py, top-level DEFAULT_PROMPTS dictionary
 DEFAULT_PROMPTS = {
-    "1": "# Role\nYou are an expert FCV analyst...",  # Stage 1
-    "2": "# Role\nYou are an expert FCV analyst...",  # Stage 2
-    "3": "# Role\nYou are an expert FCV analyst...",  # Stage 3
-    "4": "# Role\nYou are an expert FCV analyst...",  # Stage 4 (Recommendations Note)
-    "explorer": "# Role\nYou are an expert FCV analyst...",  # Explorer deep-dive
+    "1": "# Role\nYou are an expert FCV analyst...",          # Stage 1: Context & Extraction
+    "2": "# Role\nYou are an expert FCV analyst...",          # Stage 2: FCV Assessment (dynamic thematic narrative)
+    "3": "# Role\nYou are an expert FCV analyst...",          # Stage 3: Recommendations Note (no inline citations, bulleted recs)
+    "deeper": "# Role\nYou are an FCV specialist...",         # (Legacy — alternatives tab removed in v7.2, prompt retained for backwards compat)
+    "deeper_playbook": "# Role\nYou are an FCV...",           # Go Deeper Tab 2: Link to FCV Playbook
     "followon": "# Role\nYou are a senior FCV specialist..."  # Follow-on post-analysis tasks
 }
+# Note: Go Deeper Tab 1 (Evidence trail) has NO prompt — it is a frontend-only data filter from localStorage
 ```
 
 **Session-specific overrides:**
@@ -298,9 +361,9 @@ DEFAULT_PROMPTS = {
 - Via UI: Admin tab → per-stage prompt editor → Save & Close
 - Via code: Edit DEFAULT_PROMPTS in app.py (persists globally across all sessions)
 
-### 3.2 Stage 1: "Identifying FCV Risks"
+### 3.2 Stage 1: "Context & Extraction"
 
-**Purpose:** Extract FCV-relevant content from uploaded project and contextual documents, enriched by automated web research.
+**Purpose:** Extract FCV-relevant content from uploaded project and contextual documents, enriched by automated web research and Playbook Diagnostics framing.
 
 **Input:** Any project document at any preparation stage (Concept Note, PID, PCN, PAD, restructuring/AF draft). Optionally 1–2 contextual documents (RRA, country risk report, etc.).
 
@@ -308,10 +371,10 @@ DEFAULT_PROMPTS = {
 1. `extract_country_name()` — brief LLM call to identify project country (first 4000 chars)
 2. `extract_sector_name()` — brief LLM call to identify primary project sector
 3. `run_fcv_web_research(country, sector)` — Anthropic web_search tool, 9 targeted searches, up to 5500 tokens
-   - Covers: conflict/security, governance, humanitarian, economic, FCV actors, structural drivers, vulnerable groups, regional dimensions, **sector-specific FCV considerations**
+   - Covers: conflict/security, governance, humanitarian, economic, FCV actors, structural drivers, vulnerable groups, regional dimensions, sector-specific FCV considerations
    - Results cached in-memory by `"country::sector"` key; lost on server restart
 4. Research brief injected into Stage 1 context as supplemental material
-5. Research brief shown as collapsible dropdown at TOP of Stage 1 output (labeled "Automated FCV risk briefing — general country & sector insights")
+5. Research brief shown as collapsible dropdown at TOP of Stage 1 output
 
 **Three-tier citation priority:**
 - Tier 1 — Uploaded contextual docs: `[From: document name]` (highest precedence)
@@ -321,7 +384,8 @@ DEFAULT_PROMPTS = {
 **Key behaviors:**
 - Part A: Extract only from the project document. No outside knowledge.
 - Part B: Use tiers 1→2→3 in strict priority order; always label the source tier at each point.
-- Both parts are strictly separated in the output.
+- Extraction guided by Playbook Diagnostics questions (RRA utilisation, compound risks, forced displacement, CPSD)
+- FCV classification context from FCV Refresh injected (is this an FCS country? what trajectory?)
 
 **Large document handling:**
 - Documents > 150,000 characters are condensed via LLM extraction (FCV-relevant content only).
@@ -331,81 +395,67 @@ DEFAULT_PROMPTS = {
 **Document type classification (embedded in Stage 1):**
 - The very last line of every Stage 1 response is: `%%%DOC_TYPE: [PCN/PID/PAD/AF/Restructuring/ISR/Unknown]%%%`
 - The frontend extracts this via regex when Stage 1 completes and sets the `docType` state
-- This replaces the former separate `/api/detect-document-type` API call (which was slow, 10–15 seconds)
 - The DOC_TYPE line is stripped from the display text before rendering to the user
-- Manual document type override selects have been removed from both the upload area and session bar
+- `docType` is passed in the Stage 3 request body for stage-aware prompt injection
 
-**Loading time note:** Stage 1 loading card shows "may take 60–90 seconds" to set expectations for the web research phase.
+**Prompt constants injected:** `FCV_GUIDE`, `PLAYBOOK_DIAGNOSTICS`, `FCV_REFRESH_FRAMEWORK`
 
-**User refine loop:** After Stage 1 displays, users can use a refine box to:
-- Correct misreadings
-- Add local knowledge not in documents
-- Flag missing content before proceeding
+**Loading time note:** Stage 1 loading card shows "may take 60–90 seconds" due to web research phase.
 
-### 3.3 Stage 2: "FCV-Sensitivity Screening"
+**User refine loop:** After Stage 1 displays, users can correct misreadings, add local knowledge, or flag missing content before proceeding.
 
-**Purpose:** Assess project across 6 FCV dimensions, both risks TO the project and risks FROM the project. Also classifies each OST recommendation as [S], [R], or [S+R] and probes FCV Responsiveness potential.
+### 3.3 Stage 2: "FCV Assessment" (merged Screening + Gaps)
 
-**Key behaviors:**
-- Outputs structured risk ratings (e.g., "Risk: Medium | Evidence: Project's focus on service delivery in contested areas may increase exposure...")
-- Includes specific geographic callouts (e.g., "In Nzerekore and Kindia, where state legitimacy is already low...")
-- Reasoning is explicit so users can see if a dimension is overweighted, underweighted, or missing key context.
+**Purpose:** Assess project FCV sensitivity and responsiveness using the full OST framework. Identify gaps and Do No Harm status. Produce both a TTL-facing thematic summary and detailed analytical record for FCV CCs.
 
-**SENSITIVITY vs. RESPONSIVENESS CLASSIFICATION (appended after Summary Assessment Table):**
-- Pre-assigned defaults for the 6 OST recommendations:
-  - Rec 1 (RRA/CRSS utilization) = **[S]**
-  - Rec 2 (conflict-sensitive targeting) = **[S]**
-  - Rec 3 (inclusive stakeholder engagement) = **[S+R]**
-  - Rec 4 (Do No Harm / conflict-sensitive design) = **[S]**
-  - Rec 5 (adaptive management / monitoring arrangements) = **[S]**
-  - Rec 6 (M&E / GRM) = **[S+R]**
-- LLM adjusts tags based on project evidence; defaults may be overridden where justified
+**Internal analytical engine:** All 12 OST recommendations + 25 key questions + 3 key elements. The TTL sees themed findings only — the framework structure is in "Under the Hood" panels.
 
-**RESPONSIVENESS PROBE paragraph (100–150 words):**
-- Written after the S/R classification table
-- Assesses which of the four FCV Strategy pillars the project has potential to address:
-  - Pillar 1: Preventing conflict and promoting peace
-  - Pillar 2: Engaging in crisis situations
-  - Pillar 3: Helping countries transition out of fragility
-  - Pillar 4: Mitigating regional and global spillovers
-- Honest assessment: most projects will have limited responsiveness potential; probe should not overstate
+**TTL-facing output (400–500 words, thematic narrative):**
+- FCV Sensitivity findings: what the project addresses well, where it falls short
+- Do No Harm traffic-light inline (e.g., "6 of 8 principles addressed | 1 partial | 1 gap")
+- FCV Responsiveness findings: framed around the 4 FCV Refresh shifts (not old pillars)
+- Key gaps: 3–5 most critical, prioritised, with evidence
 
-**Strict [S+R] definition (must be enforced):**
-[S+R] is ONLY valid for these four overlap zones:
-1. Inclusion/targeting of conflict-affected populations (where design serves both harm-avoidance AND active inclusion as a resilience strategy)
-2. FCV logic embedded in the ToC/PDO framing (not just a risk note — actually changes the project theory)
-3. Adaptive M&E that both monitors harm AND adapts to build resilience
-4. GRM designed to strengthen state-citizen accountability (not just complaint handling)
-If in doubt → assign [S] or [R]. Most recommendations will not qualify for [S+R].
+**Responsiveness assessment — 4 FCV Refresh shifts (replaces old pillar-by-pillar analysis):**
+- Shift A: Anticipate — does the project design reflect current fragility classification?
+- Shift B: Differentiate — is it calibrated to the country's FCV trajectory/context type?
+- Shift C: Jobs & private sector — does it address economic livelihoods/job creation as a stability pathway?
+- Shift D: Enhanced toolkit — does it leverage operational flexibilities (OP7.30, TPIs, CERC, etc.)?
 
-**User refine loop:** Users can correct dimension ratings or add missing geographic/contextual information before proceeding to Stage 3.
+**Do No Harm — canonical 8 principles:**
+1. Conflict-sensitive targeting and beneficiary selection
+2. Avoiding reinforcement of existing power asymmetries
+3. Preventing exacerbation of inter-group tensions
+4. Ensuring equitable geographic distribution of benefits
+5. Safeguarding against elite capture of project resources
+6. Protecting project staff and beneficiaries from security risks
+7. Monitoring for unintended negative consequences
+8. Establishing accessible and trusted grievance mechanisms
 
-### 3.4 Stage 3: "Identifying Project Gaps"
+**Strict [S+R] definition (unchanged from v6.0):**
+[S+R] only valid for: (1) inclusion/targeting of conflict-affected populations; (2) FCV logic in ToC/PDO; (3) adaptive M&E for harm + resilience; (4) GRM for state-citizen accountability.
+If in doubt → [S] or [R].
 
-**Purpose:** Identify where the project design / implementation falls short on FCV sensitivity, and propose mitigations. Also maps responsiveness opportunities onto the four FCV Strategy pillars.
+**"Under the Hood" panels (collapsed, expandable `<details>`):**
+- Panel 1: Full 12-rec assessment (table: rec | status | evidence | gaps | shift alignment)
+- Panel 2: Detailed DNH checklist (8 principles, traffic-light table with evidence)
+- Panel 3: 25 key questions mapping (answerable/gaps, evidence for each)
+- Panel 4: Evidence trail (sources used, citation tier, confidence level)
 
-**Output parts:**
-- **Part A:** Gaps in FCV sensitivity (design, implementation, M&E, stakeholder engagement, etc.)
-- **Part B:** Concrete, location-specific mitigations — each with a **TAG column** (`[S]` / `[R]` / `[S+R]`)
-  - Tag follows same strict definition as Stage 2 (most mitigations will be [S] or [R])
-- **Part C:** Do No Harm Checklist (principle | Yes/Partial/No | evidence/gap)
-- **Part D: FCV Responsiveness Opportunities** (formerly "Enhancement Opportunities")
-  - Structured around the four FCV Strategy pillars:
-    - Pillar 1: Preventing conflict and promoting peace
-    - Pillar 2: Engaging in crisis situations
-    - Pillar 3: Helping countries transition out of fragility
-    - Pillar 4: Mitigating regional and global spillovers
-  - Each pillar lists specific project design changes that could move beyond sensitivity into responsiveness
-- **Part E:** Top 5 Priority Actions — each carries a `[S]` / `[R]` / `[S+R]` tag
+**Backend parsing functions for Stage 2:**
+- `extract_stage2_ratings()` — parses `%%%STAGE2_RATINGS_START/END%%%` → `{sensitivity_rating, responsiveness_rating}`
+- `extract_under_hood()` — parses `%%%UNDER_HOOD_START/END%%%` → `{recs_table, dnh_checklist, questions_map, evidence_trail}`
+- `clean_stage2_output()` — strips ratings + under_hood delimiter blocks from display text
 
-**Key behaviors:**
-- Mitigations are not generic ("improve stakeholder engagement") but specific ("establish community feedback forums in Kankan District, staffed by local civil society orgs trusted by Dinka pastoralists, with quarterly feedback to project implementation unit")
-- When multiple options exist, framed as alternatives, not a single "solution"
-- Geographic specificity is required; locations are named, and reasons for targeting specific areas are stated
+**Error handling:** If `extract_under_hood()` fails, `parse_error: true` in SSE done event; raw text shown; yellow banner displayed; Stage 3 can still proceed using conversation history.
 
-**User refine loop:** Users can adjust gaps, refine mitigations, or add local knowledge (e.g., "Actually, we already have this mechanism through NGOS X and Y").
+**Prompt constants injected:** `FCV_OPERATIONAL_MANUAL`, `FCV_REFRESH_FRAMEWORK`, `FCV_GUIDE`
 
-### 3.5 Stage 4: "Recommendations Note" (+ Explorer)
+**User refine loop:** Users can correct findings or add local knowledge before proceeding to Stage 3.
+
+### 3.4 Stage 3: "Recommendations Note" (stage-aware)
+
+**Purpose:** Generate a formal, memo-ready Recommendations Note with actionable priority cards, tailored to the project's lifecycle stage using Playbook guidance.
 
 **Main Output (Recommendations Note):**
 ```
@@ -432,15 +482,18 @@ If in doubt → assign [S] or [R]. Most recommendations will not qualify for [S+
   - title: Priority N · [Actionable verb phrase]
   - fcv_dimension: one of the 6 dimensions
   - tag: [S] | [R] | [S+R]
+  - refresh_shift: Shift A: Anticipate | Shift B: Differentiate | Shift C: Jobs & private sector | Shift D: Enhanced toolkit
   - risk_level: High | Medium | Low
   - the_gap: 2–3 sentences
   - why_it_matters: 2–3 sentences (operational + FCV dimensions combined)
-                    + S/R pillar justification for [R] and [S+R] priorities
+                    + shift justification for [R] and [S+R] priorities
   - recommendation: SINGLE cohesive action (NOT an options menu) — 2–3 sentences,
                     names specific location + mechanism + entry point
-  - who_acts: TTL | PIU | Government counterpart | FCV specialist | Procurement team
-  - when: At design stage | Before appraisal | During implementation
-  - resources: Minimal | Moderate | Significant
+  - who_acts: TTL; PIU; Government; FCV CC; FM Team; ESF Team; Technical Team; M&E Team
+              (multi-value, semicolon-separated; expanded from v6.0)
+  - when: Identification | Preparation | Appraisal | Implementation | Restructuring
+          (expanded from v6.0 — more granular lifecycle stages)
+  - resources: Minimal (existing budget) | Moderate (dedicated allocation) | Significant (requires restructuring)
 ]
 ```
 
@@ -461,13 +514,14 @@ If in doubt → assign [S] or [R]. Most recommendations will not qualify for [S+
       "title": "Priority 1 · [Actionable verb phrase]",
       "fcv_dimension": "Inclusion",
       "tag": "[S]",
+      "refresh_shift": "Shift B: Differentiate",
       "risk_level": "High",
       "the_gap": "...",
       "why_it_matters": "...",
       "recommendation": "Single cohesive action — NOT an options menu",
-      "who_acts": "TTL | PIU | Government counterpart",
-      "when": "Before appraisal",
-      "resources": "Moderate",
+      "who_acts": "TTL; PIU",
+      "when": "Preparation",
+      "resources": "Moderate (dedicated allocation)",
       "pad_sections": "Annex 5: Stakeholder Engagement Plan; ESCP Commitment #4",
       "suggested_language": "2–4 sentences of draft PAD text in WBG document register",
       "implementation_note": "1–2 sentences on timing, cost, or key dependency"
@@ -497,42 +551,40 @@ If in doubt → assign [S] or [R]. Most recommendations will not qualify for [S+
 }
 ```
 
-**`clean_stage4_output()` stripping order:**
+**`clean_stage3_output()` stripping order (renamed from `clean_stage4_output()`):**
 1. Strip `%%%JSON_START%%%...%%%JSON_END%%%` block (all structured data)
 2. Strip `%%%RISK_NARRATIVE_START%%%...%%%RISK_NARRATIVE_END%%%` block (Risk Exposure prose — shown as card from JSON instead)
-3. Strip `%%%PRIORITIES_START%%%` onwards (removes S/R summaries + priorities section — all shown as cards from JSON)
+3. Strip everything from `%%%PRIORITIES_START%%%` onwards (S/R summaries + priorities — all shown as cards from JSON)
 4. Fallback: strip legacy delimiter blocks for cached outputs:
    - `%%%RISK_EXPOSURE_START/END%%%`, `%%%SENSITIVITY_SUMMARY_START/END%%%`
    - `%%%RESPONSIVENESS_SUMMARY_START/END%%%`, `%%%FCV_RATING/RESPONSIVENESS_RATING%%%`
    - `%%%PRIORITY_START/END%%%` blocks, `%%%GAP_TABLE_START/END%%%`
 
-**Stage 4 narrative display after stripping:**
+**Stage 3 narrative display after stripping:**
 Preamble → Opening Assessment → Operational Context → [Risk Exposure card from JSON] → Strengths → Gaps → [S/R summary cards from JSON] → [Priority stepper/cards from JSON]
 
-**Note on %%%GAP_TABLE_START/END%%%:** LLM is no longer instructed to emit this block. The `extract_gap_table()` backend function still exists but the FCV Design Assessment Table is not displayed in the current UI.
-
-**Citation policy for Stage 4:**
+**Citation policy for Stage 3:**
 - ONLY cite documents that appeared as `[From: document name]` in Stage 1. NEVER fabricate titles.
 - Non-uploaded sources → `[From: training knowledge]` or `[From: web research]`
 - This prevents hallucinated citations (e.g., citing `[RRA 2022]` when no RRA was uploaded)
+- `uploaded_doc_names` must be included in `/api/run-stage` request body for citation check
 
-**Explorer input:** Each priority's JSON (title + body) is fed to the Explorer prompt, which generates **2–3 optional alternative approaches** only. Core content (`pad_sections`, `suggested_language`, `implementation_note`) is in the Stage 4 JSON — not Explorer.
-
-**Explorer output format:**
+**Go Deeper "alternatives" tab output format:**
 - Only `%%%GO_FURTHER_START%%%...%%%GO_FURTHER_END%%%` markers used
-- Each item uses `%%%GF_ITEM%%%` + `%%%GF_TITLE%%%` markers (same as legacy Go Further)
-- Parsed by `parseExplorerText()` → `goFurtherItems[]`
-- Rendered by `renderAboveAndBeyondHtml(parsed)` into `.beyond-item` cards inside `<details>`
+- Each item uses `%%%GF_ITEM%%%` + `%%%GF_TITLE%%%` markers
+- Parsed by `parseGoFurtherText()` → `goFurtherItems[]`
+- Rendered by `renderGoFurtherHtml(parsed)` into `.beyond-item` cards inside the tab content area
 
 **Key behaviors:**
 - Recommendations are specific and actionable, not broad policy suggestions
 - Geographic locations are named (e.g., "In Oromia, prioritize...")
-- `pad_sections` chips are rendered from semicolon-separated string (split on `;`)
+- `pad_sections` chips rendered from semicolon-separated string (split on `;`)
 - `suggested_language` rendered in italic yellow card (`.zone-act-draft`)
 - `implementation_note` rendered in grey bordered card (`.zone-act-impl`)
+- `refresh_shift` badge shown on priority card header (e.g., "Shift B: Differentiate")
 - A collegial tone appropriate for peer review by a TTL
 
-**Do No Harm Checklist (from Stage 3):** Extracted and displayed as a collapsible table in the Stage 4 UI, showing which Do-No-Harm principles are addressed, partially addressed, or at risk.
+**Do No Harm:** Not shown as standalone checklist in Stage 3. DNH traffic-light is inline in Stage 2's Assessment Summary. Detailed DNH checklist is in Stage 2's "Under the Hood" Panel 2.
 
 ---
 
@@ -541,13 +593,13 @@ Preamble → Opening Assessment → Operational Context → [Risk Exposure card 
 ### 4.1 UI Panels
 1. **Onboarding modal** — Disclaimer + warning about AI limitations, checkbox to suppress on future visits
 2. **Session bar** — Floating bar showing current stage progress + save session button
-3. **Stage progress stepper** — Visual indicator of 1-of-4, 2-of-4, etc.
-4. **Input panel (Stages 1–3)** — Upload box, document list, refine input
-5. **Output panel (Stages 1–4)** — Displays LLM output + collapsible sections (Parts A/B for Stage 1, etc.)
-6. **Explorer panel (Stage 4)** — Horizontal priority stepper + priority card + inline explorer options
-7. **Prompt modal** — Admin-only, lets users view/edit the 5 prompts (Stage 1–4 + Explorer) per session
-8. **FCV Sensitivity gauge (sidebar)** — SVG arc gauge, blue, shield icon; animates from `%%%FCV_RATING%%%` delimiter
-9. **FCV Responsiveness gauge (sidebar)** — SVG arc gauge, green, leaf icon; animates from `%%%FCV_RESPONSIVENESS_RATING%%%` delimiter
+3. **Stage progress stepper** — 3-step indicator: Context → Assessment → Recommendations
+4. **Input panel (Stages 1–2)** — Upload box, document list, refine input
+5. **Output panel (Stages 1–3)** — Displays LLM output + collapsible sections
+6. **Under the Hood panels (Stage 2)** — 4 expandable `<details>` sections (12-rec table, DNH checklist, key questions, evidence trail)
+7. **Ratings sidebar (Stage 2+)** — FCV Sensitivity gauge (blue, shield) + FCV Responsiveness gauge (green, leaf); shown from Stage 2 onwards (moved from old Stage 4)
+8. **Go Deeper panel (Stage 3)** — Per-priority `<details class="go-deeper">` containing 3 tab buttons + content area
+9. **Prompt modal** — Admin-only, lets users view/edit prompts (Stage 1, 2, 3, deeper, followon) per session
    - IDs: `fcv-resp-arc-fill`, `fcv-resp-leaf-path`, `fcv-resp-rating-label`, `fcv-resp-need-label`
 
 ### 4.2 Key JavaScript Functions
@@ -563,15 +615,21 @@ Preamble → Opening Assessment → Operational Context → [Risk Exposure card 
 - `submitStageInput()` — send docs + user refinement to `/api/run-stage`
 - `renderStage1Output()` — display Part A and Part B
 
-**Stage 4 Explorer:**
-- `initStage4UI()` — parse priorities, build stepper, show Priority 1
-- `showPriority(idx)` — render full priority card with 4-section zone-act layout from JSON; no auto-load of Explorer
-- `loadExplorerForPriority(idx)` — lazy-loaded by `handleBeyondToggle`; writes to `#above-beyond-content-{idx}`; timer ID is `beyond-timer-{idx}`
-- `handleBeyondToggle(el, idx)` — ontoggle handler for `<details class="zone-act-beyond">`; triggers `loadExplorerForPriority` on first open; renders from cache if already loaded
-- `renderAboveAndBeyondHtml(parsed)` — renders `parsed.goFurtherItems` as `.beyond-item` cards; used by both `handleBeyondToggle` and `loadExplorerForPriority` done callback
-- `cancelExplorer()` — aborts in-flight Explorer request via `explorerAbortController`
-- `renderPriorityStepper()` — build horizontal step indicator; compact S/R badge below risk badge on each tab
-- `renderPrioritiesIntro()` — renders intro list; compact S/R badge after risk label in each `pi-item`
+**Stage 3 priorities + Go Deeper:**
+- `initStage3UI()` — parse priorities from JSON, build stepper, show Priority 1
+- `showPriority(idx)` — render full priority card with 5-section zone-act layout from JSON (refresh_shift badge, recommendation, PAD sections, suggested language, implementation note); no auto-load of Go Deeper
+- `handleGoDeeper(el, idx)` — ontoggle handler for `<details class="go-deeper">`; initialises 3 tab buttons on first open
+- `switchGoDeeperTab(idx, tabName)` — swaps active tab; loads content if not cached
+  - `tabName: "alternatives"` → calls `loadDeeperAlternatives(idx)`
+  - `tabName: "trail"` → calls `loadDeeperTrail(idx)` (no API call — filters localStorage)
+  - `tabName: "playbook"` → calls `loadDeeperPlaybook(idx)`
+- `loadDeeperAlternatives(idx)` — SSE call to `/api/run-deeper?tab=alternatives`; writes to `#deeper-content-{idx}`; caches in `deeper_{idx}_alternatives`
+- `loadDeeperTrail(idx)` — no API call; reads `localStorage.stage2_under_hood`; filters by `priority.fcv_dimension`; renders matching OST recs/questions
+- `loadDeeperPlaybook(idx)` — SSE call to `/api/run-deeper?tab=playbook_refs`; caches in `deeper_{idx}_playbook`
+- `cancelGoDeeper()` — aborts in-flight SSE request via `goDeeperAbortController`
+- `renderGoFurtherHtml(parsed)` — renders `parsed.goFurtherItems` as `.beyond-item` cards (alternatives tab)
+- `renderPriorityStepper()` — build horizontal step indicator; compact S/R badge + refresh_shift below risk badge on each tab
+- `renderPrioritiesIntro()` — renders intro list; compact S/R badge + refresh_shift after risk label in each `pi-item`
 
 **S/R tag badges:**
 - `renderSRTagBadge(tag, compact)` — renders inline pill badge
@@ -592,36 +650,59 @@ Preamble → Opening Assessment → Operational Context → [Risk Exposure card 
 - `formatDate()` — human-readable timestamps
 - `saveSession()` / `loadSession()` — localStorage serialization
 
-### 4.3 Removed Items
-- **`detectDocumentType()` function** — removed. Doc type is now embedded in Stage 1 output (see Section 3.2).
-- **`/api/detect-document-type` API call** — endpoint and call both removed.
-- **Manual document type override `<select>` elements** — removed from both upload area and session bar.
-- **FCV Design Assessment Table** — `renderGapTable()` is no longer called from `renderOut`. Table is not displayed. Code remains for potential future use.
-- **`docTypeDetecting` variable** — removed (was used to gate doc type detection).
-- **Explorer auto-load on `showPriority()`** — removed. Explorer no longer fires on priority tab click. Lazy-loaded via `<details>` toggle instead.
-- **`#explorer-options-{idx}` zone** — removed from zone-act. Replaced by `#above-beyond-content-{idx}` inside `<details>`.
-- **`exp-timer-{idx}` / `exp-loading-{idx}`** — removed. Replaced by `beyond-timer-{idx}` / `beyond-loading-{idx}`.
-- **`pc-followup` inline "Ask →" input** — removed from each priority card. Replaced by the follow-on card at Stage 4 bottom. CSS and `submitPriorityFollowup()` function remain as dead code (no visible effect).
-- **Stage 4 refine card** — replaced by follow-on card with 4 pre-fill chips (see FOLLOW-ON section in 1.3).
+### 4.3 Removed Items (v7.0)
+- **Stage 2 (Screening) as a separate stage** — merged into new Stage 2 (Assessment).
+- **Stage 3 (Gaps) as a separate stage** — merged into new Stage 2 (Assessment).
+- **Old Stage 4 numbering** — Recommendations Note is now Stage 3.
+- **Old 4-pillar responsiveness framing** — replaced by 4 FCV Refresh shifts throughout.
+- **Standalone Do No Harm Checklist** — folded into Stage 2 (traffic-light inline + Under the Hood Panel 2).
+- **`/api/run-explorer` route** — replaced by `/api/run-deeper` (3 tabs).
+- **`DEFAULT_PROMPTS["4"]` and `DEFAULT_PROMPTS["explorer"]` keys** — replaced by `"3"`, `"deeper"`, `"deeper_playbook"`.
+- **Explorer `<details class="zone-act-beyond">` pattern** — replaced by Go Deeper `<details class="go-deeper">` with 3 tab buttons.
+- **`loadExplorerForPriority()`, `handleBeyondToggle()`, `cancelExplorer()`** — replaced by `loadDeeperAlternatives()`, `loadDeeperPlaybook()`, `handleGoDeeper()`, `cancelGoDeeper()`.
+- **`explorerAbortController`, `explorerCache`** — replaced by `goDeeperAbortController` + per-tab cache keys.
+- **`beyond-timer-{idx}` / `beyond-loading-{idx}`** — replaced by Go Deeper tab-level loading spinners.
+- **`renderAboveAndBeyondHtml()`** — renamed/replaced by `renderGoFurtherHtml()`.
+- **FCV Sensitivity and Responsiveness gauges at Stage 4** — moved to Stage 2 (shown from Stage 2 onwards).
+- **`clean_stage4_output()`** — renamed `clean_stage3_output()`.
+- **`initStage4UI()`** — renamed `initStage3UI()`.
+- **`pc-followup` inline "Ask →" input** — previously removed; remains dead code.
+
+**Still present but renamed:**
+- `DEFAULT_PROMPTS["3"]` (was `"4"`)
+- `clean_stage3_output()` (was `clean_stage4_output()`)
+- `initStage3UI()` (was `initStage4UI()`)
+
+**Preserved (no change from v6.0):**
+- Onboarding modal, session management, prompt admin modal (key names updated)
+- SSE streaming for all LLM calls
+- Conversation history passed between stages
+- Styling, typography, WBG colour palette
+- Priority card zone-act layout (recommendation, PAD chips, suggested language, implementation note)
+- `extract_priorities()` (updated to parse `refresh_shift`, new `who_acts`/`when` values)
+- S/R tag badges with hover tooltips
+- Specificity + citation warning badges
 
 ### 4.3a Download Behaviour
-- **`downloadReport()`** always includes all core priority content from JSON: `recommendation`, `pad_sections`, `suggested_language`, `implementation_note`, `who_acts`, `when`, `resources`
-- Does NOT require Explorer to have been loaded — no click-through needed before downloading
-- Optionally appends `goFurtherItems` if Explorer was already opened for that priority
+- **`downloadReport()`** always includes all core priority content from JSON: `recommendation`, `refresh_shift`, `pad_sections`, `suggested_language`, `implementation_note`, `who_acts`, `when`, `resources`
+- Does NOT require Go Deeper to have been opened — no click-through needed before downloading
+- Optionally appends `goFurtherItems` (alternatives tab content) if Go Deeper was already opened for that priority
 - `pad_sections` rendered as `<code>` chips in the Word export
 
 ### 4.4 Styling & Aesthetics
-- **Color scheme:** WBG-inspired palette (deep navy, cobalt blue, orange accents)
-- **Stage colors:** Each stage has a distinct color (s1, s2, s3, s4) used in progress bars, section headers, and priority dimension badges
-- **Typography:** Noto Sans (clean, readable)
-- **Spacing:** 12/24/32px grid
-- **Icons:** Lucide React SVG icons (used sparingly for clarity)
+- **Color scheme:** WB Design System palette — wb-blue (#009FDA), wb-navy (#002244), wb-gray-900 (#111827), wb-gray-50 (#F7F8FA), wb-gray-100 (#EEF0F3), wb-gray-500 (#6B7280). RAG status: rag-red (#D73027), rag-amber (#FFFFBF), rag-green (#1A9850). See `memory/reference_wb_design_system.md` for full palette reference.
+- **Stage colors:** 3 stage colors (s1 blue, s2 amber, s3 green) used in progress bars, section headers, and priority dimension badges
+- **Typography:** Open Sans (WBG standard font, loaded from Google Fonts). Body 14px/400, section headings 15px/700, page titles 18px/700, labels 10px/600. No decorative typefaces.
+- **Spacing:** 4px base unit; xs=4, sm=8, md=16, lg=24, xl=32, 2xl=48
+- **Cards:** border-radius: 8px, box-shadow: 0 1px 3px rgba(0,0,0,0.08)
+- **Icons:** Lucide SVG icons (used sparingly). Future: migrate to OCHA Humanitarian Icons per WB style guide.
 
-### 4.5 Do No Harm Checklist Rendering
-- Extracted from Stage 3 output via regex (looking for `## Part C` section)
-- Parsed as a Markdown table with rows: `| Principle | Status | Evidence/Gap |`
-- Rendered as HTML table with color-coded status badges (green/yellow/red)
-- Collapsible so it doesn't clutter the main Stage 4 output
+### 4.5 Do No Harm Rendering (updated v7.0)
+- DNH is no longer a standalone checklist in Stage 3.
+- **Inline traffic-light** (Stage 2 Assessment Summary): e.g., "Do No Harm: 6 of 8 addressed | 1 partial | 1 gap"
+- **Detailed checklist** (Stage 2 "Under the Hood" Panel 2): 8-principle table with traffic-light status + evidence, rendered from `%%%DNH_CHECKLIST_START/END%%%` delimiter block
+- Rendered as HTML table with color-coded status badges (green/amber/red)
+- Collapsible inside Under the Hood Panel 2 `<details>` section
 
 ---
 
@@ -630,15 +711,29 @@ Preamble → Opening Assessment → Operational Context → [Risk Exposure card 
 ### 5.1 Main Routes
 
 ```python
-# Core analysis route (all 4 stages)
+# Core analysis route (all 3 stages)
 POST /api/run-stage
-  Input: {stage, documents[], history[], user_message, prompt_override}
-  Output: Server-Sent Events (SSE) stream with chunks, then {done, output, priorities, fcv_rating}
+  Input: {stage, documents[], history[], user_message, prompt_override,
+          doc_type (Stage 3 only — for stage-aware prompt injection),
+          uploaded_doc_names (Stage 3 only — for citation check)}
+  Output: SSE stream with chunks, then:
+    Stage 1: {done, output}
+    Stage 2: {done, output, sensitivity_rating, responsiveness_rating,
+              under_hood: {recs_table, dnh_checklist, questions_map, evidence_trail},
+              parse_error, parse_error_message}
+    Stage 3: {done, output, priorities[], fcv_rating, fcv_responsiveness_rating,
+              sensitivity_summary, responsiveness_summary,
+              risk_exposure: {risks_to, risks_from},
+              parse_error, parse_error_message}
 
-# Explorer deep-dive route
-POST /api/run-explorer
-  Input: {priority_title, priority_body, history[], user_question}
-  Output: SSE stream with chunks, then {done, output, issue, options[]}
+# Go Deeper route (replaces /api/run-explorer)
+POST /api/run-deeper
+  Input: {priority_index, tab, priority_title, priority_body, history[],
+          doc_type, stage2_under_hood (for analytical_trail tab only)}
+  tab values: "alternatives" | "analytical_trail" | "playbook_refs"
+  Output:
+    alternatives/playbook_refs: SSE stream with chunks, then {done, output}
+    analytical_trail: {done, output} — no SSE; filtered from stage2_under_hood immediately
 
 # Admin/Prompt management
 GET /api/admin/prompts         # Get current session prompts
@@ -652,12 +747,13 @@ GET /how-it-works             # Workflow explanation page
 GET /admin                     # Admin panel (prompts modal)
 GET /api/default-prompts      # Get default prompts for reference
 
-# Follow-on post-analysis route (Stage 4 bottom card)
+# Follow-on post-analysis route (Stage 3 bottom card)
 POST /api/run-followon
   Input: {messages[]} — full conversationHistory + user message
   Output: SSE stream (same chunk/done format as run-stage)
   System prompt: DEFAULT_PROMPTS["followon"] — WBG peer review style guidelines
   max_tokens: 4000 (higher than other routes to allow full peer review notes)
+  Route truncates large assistant messages to 40,000 chars before sending
 ```
 
 ### 5.2 Document Handling
@@ -675,31 +771,44 @@ if len(doc_content) > MAX_DOC_CHARS:
 extracted_text, page_count = extract_pdf_text(base64_content, filename)
 ```
 
-### 5.3 Priority Parsing (Stage 4 Output)
+### 5.3 Priority Parsing (Stage 3 Output)
 
 ```python
-def extract_priorities(stage4_output, uploaded_doc_names=None):
+def extract_priorities(stage3_output, uploaded_doc_names=None):
     # Finds %%%JSON_START%%%...%%%JSON_END%%% block, parses via json.loads()
     # Runs _check_specificity() and _check_citations() post-parse
     # Returns unified dict:
     #   {error, message?, priorities, fcv_rating, fcv_responsiveness_rating,
     #    sensitivity_summary, responsiveness_summary,
     #    risk_exposure: {risks_to, risks_from}}
-    # Each priority dict has 13 core fields: title, fcv_dimension, tag, risk_level,
+    # Each priority dict has 14 core fields (13 from v6.0 + new refresh_shift):
+    #   title, fcv_dimension, tag, refresh_shift, risk_level,
     #   the_gap, why_it_matters, recommendation, who_acts, when, resources,
     #   pad_sections, suggested_language, implementation_note,
     #   + 2 post-parse fields: specificity_warning (bool), citation_warnings (list)
+    # Updated who_acts validation: TTL | PIU | Government | FCV CC | FM Team | ESF Team | Technical Team | M&E Team
+    # Updated when validation: Identification | Preparation | Appraisal | Implementation | Restructuring
     # On malformed JSON: returns {error: True, message: ...}
 ```
 
-**Note:** The 5 orphaned delimiter-extraction functions have been DELETED:
-- `extract_fcv_rating`, `extract_fcv_responsiveness_rating`
-- `extract_sensitivity_summary`, `extract_responsiveness_summary`
-- `extract_risk_exposure`
+### 5.4 Stage 2 Output Parsing
 
-These were replaced by the unified `extract_priorities()` return dict.
+```python
+def extract_stage2_ratings(stage2_output):
+    # Finds %%%STAGE2_RATINGS_START/END%%% block, parses JSON
+    # Returns {sensitivity_rating: str, responsiveness_rating: str}
 
-**Stage 4 SSE done event response includes:**
+def extract_under_hood(stage2_output):
+    # Finds %%%UNDER_HOOD_START/END%%% block
+    # Extracts sub-blocks: recs_table, dnh_checklist, questions_map, evidence_trail
+    # Returns {recs_table: str, dnh_checklist: str, questions_map: str, evidence_trail: str}
+    # On failure: returns {error: True, message: ...}
+
+def clean_stage2_output(stage2_output):
+    # Strips %%%STAGE2_RATINGS_START/END%%% and %%%UNDER_HOOD_START/END%%% from display text
+```
+
+**Stage 3 SSE done event response:**
 ```json
 {
   "priorities": [...],
@@ -708,6 +817,22 @@ These were replaced by the unified `extract_priorities()` return dict.
   "sensitivity_summary": "...",
   "responsiveness_summary": "...",
   "risk_exposure": {"risks_to": "...", "risks_from": "..."},
+  "parse_error": false,
+  "parse_error_message": ""
+}
+```
+
+**Stage 2 SSE done event response:**
+```json
+{
+  "sensitivity_rating": "Adequate",
+  "responsiveness_rating": "Low",
+  "under_hood": {
+    "recs_table": "...",
+    "dnh_checklist": "...",
+    "questions_map": "...",
+    "evidence_trail": "..."
+  },
   "parse_error": false,
   "parse_error_message": ""
 }
@@ -729,14 +854,17 @@ These were replaced by the unified `extract_priorities()` return dict.
 - Can be serialized to JSON for export/sharing (though this is optional)
 
 ### 6.3 Prompt Override System
-- Admin modal allows users to override any of the 5 default prompts (Stage 1–4 + Explorer)
+- Admin modal allows users to override any of the 5 default prompts (Stage 1, 2, 3, deeper, followon)
 - Override is scoped to the current session only (not saved globally)
 - Allows experimentation / customization per project
 
-### 6.4 Do No Harm Extraction
-- Pulled from Stage 3 output via regex (finding `## Part C` + Markdown table)
-- Parsed into rows with principle/status/evidence columns
-- Re-rendered in Stage 4 UI as a collapsible, color-coded table
+### 6.4 Under the Hood Panels (Stage 2)
+- Stage 2 LLM outputs delimiter-wrapped blocks after the TTL summary
+- `extract_under_hood()` parses `%%%UNDER_HOOD_START/END%%%` → 4 sub-blocks
+- Each sub-block rendered in its own expandable `<details>` section
+- Sub-block raw text stored in `localStorage.stage2_under_hood` after Stage 2 completes
+- `stage2_under_hood` used by Go Deeper "Analytical trail" tab (Tab 2) — **no API call needed**
+- If parsing fails, `parse_error: true` in SSE event; raw text shown with yellow banner; Stage 3 still proceeds
 
 ### 6.5 PDF Processing Pipeline
 **Extraction steps in `extract_pdf_text()`:**
@@ -753,33 +881,42 @@ These were replaced by the unified `extract_priorities()` return dict.
 4. Append truncation warning to user output
 5. Handle PDF extraction errors with user-friendly messages
 
-### 6.6 UX Safeguard Features (Added v6.0)
+### 6.6 UX Safeguard Features (v7.0 updates)
 
-**S/R tag tooltips:** `renderSRTagBadge()` adds `title` attribute to each tag badge explaining [S], [R], [S+R] in plain language. Hover-accessible.
+**S/R tag tooltips:** `renderSRTagBadge()` adds `title` attribute to each tag badge explaining [S], [R], [S+R] in plain language. Hover-accessible. Unchanged.
 
-**Specificity warning badge:** Shown on priority card if `priority.specificity_warning === true`. Amber, dismissible, stored per-priority in localStorage (`warn_spec_dismissed_{idx}`).
+**Refresh shift badge:** New in v7.0. Each priority card header shows a `refresh_shift` badge (e.g., "Shift B: Differentiate"). Renders from JSON. No tooltip required — shift name is self-explanatory.
 
-**Citation warning badge:** Shown on priority card if `priority.citation_warnings.length > 0`. Amber, dismissible, hover shows flagged citation strings. Stored in localStorage (`warn_cite_dismissed_{idx}`).
+**Specificity warning badge:** Shown on priority card if `priority.specificity_warning === true`. Amber, dismissible, stored per-priority in localStorage (`warn_spec_dismissed_{idx}`). Unchanged.
 
-**Upload feedback:** `addFiles()` calls `fetchFileMetadata()` which hits `/api/detect-document-type` (extended to return `word_count` + `extraction_status`). Chips show filename + word count + doc type. Non-PDF files limited to 10,000 chars for speed.
+**Citation warning badge:** Shown on priority card if `priority.citation_warnings.length > 0`. Amber, dismissible, hover shows flagged citation strings. Stored in localStorage (`warn_cite_dismissed_{idx}`). Unchanged.
 
-**Explorer lazy load + cancel + timer:** `loadExplorerForPriority()` is triggered by `handleBeyondToggle()` when the `<details>` section is first opened. Uses `AbortController` + `setInterval` elapsed timer. Cancel button calls `cancelExplorer()`. Timer updates `beyond-timer-{idx}` (not `exp-timer-{idx}`). Local `timerHandle` variable prevents stale interval clearing.
+**Go Deeper lazy load + cancel:** SSE calls for "alternatives" and "playbook_refs" tabs use `AbortController`. Cancel button calls `cancelGoDeeper()`. Analytical trail tab (Tab 2) renders instantly — no spinner, no cancel button needed. Cache keys: `deeper_{idx}_alternatives`, `deeper_{idx}_trail`, `deeper_{idx}_playbook`. Cache cleared on Stage 3 re-run.
 
-**Explorer localStorage cache:** `explorerCache` keyed by integer priority index (not title string). Backed by `localStorage` key `explorer_priority_{idx}`. Cache cleared on Stage 4 re-run. On `handleBeyondToggle`, if cache exists, renders immediately without API call.
+**Under the Hood parse error banner:** If `extract_under_hood()` fails on Stage 2 output, a yellow dismissible banner is shown at top of Stage 2 output. Raw text displayed as fallback. Stage 3 can still proceed.
 
 **Font consistency:** `.pc-zone-body` (priority card body text) is 14px, matching `.out-body` (exec summary). Do not let these diverge — keep both at 14px.
 
-**Stage consistency banner:** `renderOut()` injects a yellow dismissible banner at top of Stage 3/4 output if `stage2_timestamp > stage${N}_timestamp`. Timestamps written to localStorage BEFORE `renderOut()` call. Stage 2 re-run clears both dismissed flags.
+**Stage consistency banner:** `renderOut()` injects a yellow dismissible banner at top of Stage 3 output if `stage2_timestamp > stage3_timestamp`. Timestamps written to localStorage BEFORE `renderOut()` call. Stage 2 re-run clears dismissed flags.
 
 ### 6.7 Priority Parsing and JSON Extraction
 **In `extract_priorities(text, uploaded_doc_names=None)`:**
 1. Search for `%%%JSON_START%%%` and `%%%JSON_END%%%` delimiters
 2. Parse JSON block via `json.loads()` (no regex field extraction)
-3. Run `_check_specificity()`: looks for mid-sentence capitalised words as proper-noun proxy
-4. Run `_check_citations()`: cross-references `[From: ...]` patterns against uploaded doc names
+3. Validate new `refresh_shift` field (one of 4 shifts)
+4. Validate updated `who_acts` multi-value field (semicolon-separated, expanded set)
+5. Validate updated `when` field (Identification | Preparation | Appraisal | Implementation | Restructuring)
+6. Run `_check_specificity()`: looks for mid-sentence capitalised words as proper-noun proxy
+7. Run `_check_citations()`: cross-references `[From: ...]` patterns against uploaded doc names
    (extensions stripped) + known org whitelist; flags unrecognised sources
-5. Return unified dict with all fields + per-priority `specificity_warning` / `citation_warnings`
-6. On malformed JSON: return `{error: True, message: ...}` — NOT silent failure
+8. Return unified dict with all fields + per-priority `specificity_warning` / `citation_warnings`
+9. On malformed JSON: return `{error: True, message: ...}` — NOT silent failure
+
+**Stage 2 parsing in `extract_stage2_ratings()` and `extract_under_hood()`:**
+1. `extract_stage2_ratings()`: finds `%%%STAGE2_RATINGS_START/END%%%`, parses compact JSON `{sensitivity_rating, responsiveness_rating}`
+2. `extract_under_hood()`: finds `%%%UNDER_HOOD_START/END%%%`, extracts 4 named sub-blocks via inner delimiters
+3. Both called from Stage 2 SSE done handler in `/api/run-stage`
+4. Results returned in SSE done event payload; stored in localStorage by frontend
 
 ---
 
@@ -787,12 +924,14 @@ These were replaced by the unified `extract_priorities()` return dict.
 
 ### 7.1 I Want to Change a Prompt
 1. Open the app
-2. Click "Admin" → select the stage (1, 2, 3, 4, or Explorer)
+2. Click "Admin" → select the stage (1, 2, 3, deeper, or followon)
 3. Edit the prompt text in the modal
 4. Click "Save & Close"
 5. Re-run that stage with the new prompt
 
 (This is session-scoped; to persist globally, edit `DEFAULT_PROMPTS` in `app.py`)
+
+**Note:** `deeper_playbook` prompt (Tab 3) is not exposed in the Admin modal by default — edit in `app.py` to change it.
 
 ### 7.2 I Want to Change the 6 FCV Dimensions
 Stage 2 prompt lists the 6 dimensions explicitly:
@@ -809,36 +948,30 @@ To add/remove/modify:
 1. Edit the Stage 2 prompt in `DEFAULT_PROMPTS` (or via Admin modal)
 2. Re-run Stage 2 with the updated prompt
 
-**Note:** If you change the number of dimensions, you may also need to update Stage 3 & 4 prompts to reference them correctly.
+**Note:** If you change the number of dimensions, also update Stage 3 prompt to reference them correctly. The `fcv_dimension` field in Stage 3 JSON must match a known dimension for Go Deeper "Analytical trail" filtering to work.
 
-### 7.3 I Want to Change What Stage 4 Priorities Look Like
-Stage 4 prompt defines the JSON schema for each priority. Current fields:
-```json
-{
-  "title": "Priority N · phrase",
-  "fcv_dimension": "...",
-  "tag": "[S] | [R] | [S+R]",
-  "risk_level": "High|Medium|Low",
-  "the_gap": "...",
-  "why_it_matters": "...",
-  "recommendation": "Single cohesive action — NOT an options menu",
-  "who_acts": "...",
-  "when": "At design stage | Before appraisal | During implementation",
-  "resources": "Minimal | Moderate | Significant"
-}
-```
+### 7.3 I Want to Change What Stage 3 Priorities Look Like
+Stage 3 prompt defines the JSON schema for each priority. Current fields (see full schema in Section 3.4):
+- `title`, `fcv_dimension`, `tag`, `refresh_shift`, `risk_level`, `the_gap`, `why_it_matters`, `recommendation`, `who_acts`, `when`, `resources`, `pad_sections`, `suggested_language`, `implementation_note`
 
 To add/remove fields:
-1. Update the JSON schema section of the Stage 4 prompt (`DEFAULT_PROMPTS["4"]` in `app.py`)
+1. Update the JSON schema section of Stage 3 prompt (`DEFAULT_PROMPTS["3"]` in `app.py`)
 2. Update `extract_priorities()` in `app.py` to handle the new field from the parsed JSON
 3. Update `showPriority()` in `index.html` to display the new field
 4. Update `downloadReport()` in `index.html` if the field should appear in the export
 
-### 7.4 I Want to Add a 5th Stage
-1. Add a new key to `DEFAULT_PROMPTS` (e.g., `"5"`)
-2. Add a new case in the stage switch logic in the `/api/run` route
+### 7.4 I Want to Change the FCV Refresh Shifts
+The 4 FCV Refresh shifts are referenced in Stage 2 and Stage 3 prompts and in the `refresh_shift` field of each priority JSON. To update:
+1. Edit `FCV_REFRESH_FRAMEWORK` in `background_docs.py`
+2. Update Stage 2 and Stage 3 prompts to reference the new shifts
+3. Update `extract_priorities()` shift validation list
+4. Update the `refresh_shift` badge rendering in `showPriority()` if shift names change
+
+### 7.5 I Want to Add a 4th Stage
+1. Add a new key to `DEFAULT_PROMPTS` (e.g., `"4"`)
+2. Add a new case in the stage switch logic in the `/api/run-stage` route
 3. Add a new stage card and input panel to `index.html`
-4. Update the stepper to show 1-of-5, 2-of-5, etc.
+4. Update the stepper to show 1-of-4, 2-of-4, etc.
 
 ---
 
@@ -899,7 +1032,7 @@ git push origin feature/explorer-panel
 ## 9. Safety & Output Handling
 
 ### 9.1 AI Disclaimer Header
-All Stage 4 outputs include a header disclaimer:
+All Stage 3 outputs include a header disclaimer:
 ```
 ---
 **AI-Generated Output — For Review Purposes Only**
@@ -983,15 +1116,19 @@ This disclaimer is prepended to all Stage 4 outputs via the `DO_NO_HARM_HEADER` 
 **Manual testing workflow:**
 1. Upload a test project document (e.g., a PAD from GitHub or Ghana example)
 2. Add a contextual document (e.g., a recent RRA or country risk assessment)
-3. Run through all 4 stages, checking:
+3. Run through all 3 stages, checking:
    - Stage 1 Part A extracts correctly from the project doc
    - Stage 1 Part B references contextual docs and training knowledge separately
-   - Stage 2 ratings are reasonable for the project
-   - Stage 3 gaps are specific and actionable (not vague)
-   - Stage 4 priorities are concrete with geographic callouts
-   - Explorer options are operationally grounded
+   - Stage 2 Assessment Summary is thematic and uses FCV Refresh framing (not old pillars)
+   - Stage 2 "Under the Hood" panels parse correctly and show the full 12-rec table
+   - Stage 2 gauges (sensitivity + responsiveness) animate correctly
+   - Stage 3 priorities are concrete with geographic callouts and `refresh_shift` badges
+   - Stage 3 priorities use the correct lifecycle stage framing (PCN vs PAD etc.)
+   - Go Deeper "alternatives" tab loads correctly per priority
+   - Go Deeper "analytical trail" tab renders instantly from Stage 2 data
+   - Go Deeper "playbook_refs" tab loads relevant Playbook guidance
 4. Try the refine loop at each stage to ensure edits feed into next stage
-5. Test the Explorer deep-dive for 1–2 priorities
+5. Test the Follow-on card at Stage 3 bottom with at least 2 pre-fill chips
 
 **Prompt quality checks:**
 - Are recommendations specific (geography, mechanism, entry points) or vague?
@@ -1000,11 +1137,14 @@ This disclaimer is prepended to all Stage 4 outputs via the `DO_NO_HARM_HEADER` 
 - Are multiple options offered or a single "solution" prescribed?
 
 ### 12.2 Red-Teaming the Prompts
-Ask Claude (in a separate conversation) to critique the Stage 4 output:
+Ask Claude (in a separate conversation) to critique Stage 3 output:
 - Are the recommended priorities the most important ones?
 - Are any dimensions under/overweighted?
 - Do the recommendations align with the evidence presented?
 - Would a TTL find these actionable?
+- Is the `refresh_shift` assignment for each priority plausible?
+- Does the Stage 2 Assessment Summary correctly apply the 4 FCV Refresh shifts (not old pillars)?
+- Does the "Analytical trail" tab correctly attribute priorities to OST recs/questions?
 
 ---
 
@@ -1013,7 +1153,7 @@ Ask Claude (in a separate conversation) to critique the Stage 4 output:
 Before modifying prompts, frontend, or backend logic, ask yourself:
 
 1. **What problem does this solve?** Is it addressing a real user pain point or a hypothetical issue?
-2. **How does this affect the other stages?** If I change Stage 2 output, do Stages 3 & 4 prompts need updating?
+2. **How does this affect the other stages?** If I change Stage 2 output, does Stage 3 prompt need updating? Does it affect Go Deeper "Analytical trail" parsing?
 3. **Does this add complexity without clear benefit?** Could a simpler approach work?
 4. **How do I test this?** What does a "good" outcome look like?
 5. **Is this a one-time fix or a recurring need?** If recurring, should it be in the prompt or the frontend?
@@ -1026,17 +1166,20 @@ Before modifying prompts, frontend, or backend logic, ask yourself:
 
 When you return with a new issue or request, here are useful framing questions:
 
-- **"How do I improve the specificity of Stage 4 recommendations?"**
-  → Share an example of a vague recommendation and ask Claude to help rewrite the Stage 4 prompt to enforce specificity.
+- **"How do I improve the specificity of Stage 3 recommendations?"**
+  → Share an example of a vague recommendation and ask Claude to help rewrite the Stage 3 prompt to enforce specificity.
 
-- **"The Explorer options are too long / too short."**
-  → Adjust the Explorer prompt's length instructions or add formatting requirements (bullet points, numbered steps, etc.).
+- **"The Go Deeper 'alternatives' tab is too long / too short."**
+  → Adjust `DEFAULT_PROMPTS["deeper"]` length instructions or formatting requirements.
+
+- **"The 'analytical trail' tab isn't matching the right OST recommendations."**
+  → Check that `priority.fcv_dimension` is one of the 6 canonical values and that the Stage 2 recs table has a dimension column. Update the filtering logic in `loadDeeperTrail()`.
 
 - **"I want to test the app with a different FCV framework (e.g., the ICRC framework instead of WBG)."**
-  → Provide the alternative framework and ask Claude to rewrite Stage 2 & 3 prompts to use it.
+  → Provide the alternative framework and ask Claude to rewrite Stage 2 prompt and `FCV_OPERATIONAL_MANUAL` to use it.
 
 - **"Can we improve the Do-No-Harm checklist?"**
-  → Share the current checklist and ask Claude to propose new principles or reorganization, then update Stage 3 prompt.
+  → The canonical 8 principles are in Section 3.3 and in the Stage 2 prompt. Update the prompt and rerun Stage 2.
 
 - **"The app should export a Word document / PDF report."**
   → Specify what should be in the report (which sections from which stages) and ask Claude to add export functionality.
@@ -1050,15 +1193,20 @@ When you return with a new issue or request, here are useful framing questions:
 
 ```
 FCV-AGENT/
-├── app.py                    # Flask backend + all prompts + routes
-├── index.html                # Main frontend UI (single-page app, ~4000 lines)
-├── background_docs.py        # FCV_GUIDE and FCV_OPERATIONAL_MANUAL constants
+├── app.py                    # Flask backend + all prompts (5 keys) + routes
+├── index.html                # Main frontend UI (single-page app, ~4000+ lines)
+├── background_docs.py        # 8 constants: FCV_GUIDE, FCV_OPERATIONAL_MANUAL,
+│                             #   FCV_REFRESH_FRAMEWORK, PLAYBOOK_DIAGNOSTICS,
+│                             #   PLAYBOOK_PREPARATION, PLAYBOOK_IMPLEMENTATION,
+│                             #   PLAYBOOK_CLOSING, STAGE_GUIDANCE_MAP
 ├── prompts.json              # Session-specific prompt overrides (empty by default)
 ├── requirements.txt          # Python dependencies (Flask, anthropic, pypdf, python-docx)
 ├── Procfile                  # Render deployment config
 ├── .gitignore               # Git ignore rules
-├── claude.md                 # THIS FILE - guidance for Claude
+├── CLAUDE.md                 # THIS FILE - guidance for Claude
 ├── static/                  # Static assets (if any)
+├── docs/                    # Design specs and plans
+│   └── superpowers/specs/   # Architecture design documents
 ├── .git/                    # Git repository metadata
 └── README.md                # (optional) Quick start guide for users
 ```
@@ -1089,13 +1237,25 @@ PROMPTS_FILE = 'prompts.json'        # Location of session-specific prompt overr
 - Ask Claude: "Here's a project in [country]. The Stage 2 prompt gave [rating]. Does this make sense?"
 - Refine Stage 2 via the Admin modal and re-run that stage
 
-**"Explorer options aren't specific enough"**
-- The Explorer prompt needs to be more prescriptive about geographic naming and mechanisms
-- Update the Explorer prompt and re-run a priority
+**"Under the Hood panels aren't showing in Stage 2"**
+- Check that Stage 2 output contains `%%%UNDER_HOOD_START%%%` and `%%%UNDER_HOOD_END%%%` delimiters
+- Look for yellow parse error banner at top of Stage 2 output
+- Check browser console for `extract_under_hood` errors
+- If delimiters are missing, the Stage 2 prompt may have been overridden — reset via Admin modal
 
-**"Do No Harm checklist isn't showing up in Stage 4"**
-- Check that Stage 3 generated a `## Part C` section with a Markdown table
-- If the table format is slightly different, the regex in `index.html` may not match; ask Claude to help fix the parsing
+**"Go Deeper 'alternatives' tab isn't loading"**
+- Check that `/api/run-deeper` route exists and `DEFAULT_PROMPTS["deeper"]` is set
+- Check browser console for SSE errors
+- Verify `priority.fcv_dimension` and `priority.title` are being sent correctly in the request body
+
+**"Go Deeper 'analytical trail' shows nothing"**
+- Check that `localStorage.stage2_under_hood` has content (run Stage 2 first)
+- Verify `priority.fcv_dimension` matches a dimension name used in the Stage 2 recs table
+- Check the `loadDeeperTrail()` filtering logic against the actual recs table format
+
+**"Stage 3 priorities are missing `refresh_shift`"**
+- The Stage 3 JSON schema requires `refresh_shift` — check that `DEFAULT_PROMPTS["3"]` includes it in the schema spec
+- If priorities parse but `refresh_shift` is null/missing, badge will not render but the app won't break
 
 ### How to Debug
 
@@ -1108,14 +1268,19 @@ PROMPTS_FILE = 'prompts.json'        # Location of session-specific prompt overr
 
 ## 18. Credits & Context
 
-This tool was developed iteratively based on feedback from World Bank FCV practitioners (particularly Shubham's note on specificity and actionability). The key insight — that recommendations must move from broad critique ("service delivery needs to be targeted") to specific, location-aware guidance ("focus on Nzerekore, Kindia, Kankan where state legitimacy is lowest") — is central to the design.
+This tool was developed iteratively based on feedback from World Bank FCV practitioners (particularly feedback on specificity, actionability, and framework completeness). The key insights driving the design:
 
-The 4-stage pipeline was chosen to balance:
+1. **Specificity mandate:** Recommendations must move from broad critique ("service delivery needs to be targeted") to specific, location-aware guidance ("focus on Nzerekore, Kindia, Kankan where state legitimacy is lowest").
+2. **Framework completeness:** The original app used only 6 of 12 OST recommendations. v7.0 integrates all 12 + 25 key questions + 3 key elements, driving a richer assessment.
+3. **FCV Refresh adoption:** The January 2026 FCV Refresh introduced 4 strategic shifts. Old pillar framing (prevent/engage/transition/spillover) is superseded by Anticipate/Differentiate/Jobs & private sector/Enhanced toolkit.
+4. **TTL vs. FCV CC distinction:** TTLs need clean, actionable findings. FCV Country Coordinators need analytical depth. The "Under the Hood" panel architecture serves both without cluttering the primary output.
+
+The 3-stage pipeline was chosen to balance:
 - **Quality:** Each stage allows refinement + user input
-- **Usability:** Not overwhelming; lets TTLs pause and review
-- **Efficiency:** Not redundant; earlier stages feed directly into later ones
+- **Usability:** Not overwhelming; reduced from 4 stages by merging the duplicative Screening + Gaps stages
+- **Efficiency:** Earlier stages feed directly into later ones; web research + Under the Hood data reduces redundant LLM calls in later stages
 
-The Explorer feature was added to solve the "length vs. depth" problem: keep the main Recommendations Note clean and memo-ready, but offer deep analytical options on demand.
+"Go Deeper" (replacing Explorer) was added to address the FCV CC need for analytical provenance — not just "what should I do" but "why did the tool say that?"
 
 ---
 
@@ -1131,7 +1296,8 @@ If you find gaps in this documentation, or if new design decisions emerge, updat
 
 ---
 
-**Last updated:** March 24, 2026
-**Current version:** FCV Project Screener 6.0 (deduplication fix, follow-on card, peer review prompt)
+**Last updated:** 2026-03-26
+**Current version:** FCV Project Screener 7.2 (Stage 2 thematic narrative restructure, sharpened S/R definitions, bulleted recommendations, Go Deeper reduced to 2 tabs, citations removed from Stage 3)
 **Current Claude model:** claude-sonnet-4-20250514
 **Architecture:** Flask 3.0.3 backend + vanilla JS frontend + Anthropic SDK integration
+**Design system:** WB Digital Look & Feel Style Guide — Open Sans, WB palette (#009FDA/#002244/#111827), RAG status colours. Reference: https://geospatial-commons.github.io/WB-Design-Guidelines/chapters/design-system.html

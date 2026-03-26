@@ -4,7 +4,11 @@ import json
 import base64
 from flask import Flask, request, jsonify, send_from_directory, Response, stream_with_context
 import anthropic
-from background_docs import FCV_GUIDE, FCV_OPERATIONAL_MANUAL
+from background_docs import (
+    FCV_GUIDE, FCV_OPERATIONAL_MANUAL, FCV_REFRESH_FRAMEWORK,
+    PLAYBOOK_DIAGNOSTICS, PLAYBOOK_PREPARATION, PLAYBOOK_IMPLEMENTATION,
+    PLAYBOOK_CLOSING, STAGE_GUIDANCE_MAP
+)
 import io
 try:
     from pypdf import PdfReader
@@ -40,14 +44,16 @@ CITATION_ORG_WHITELIST = {
 }
 
 _REQUIRED_TOP_FIELDS = [
-    "fcv_rating", "fcv_responsiveness_rating", "sensitivity_summary",
-    "responsiveness_summary", "risk_to_project", "risk_from_project", "priorities",
+    'fcv_rating', 'fcv_responsiveness_rating',
+    'sensitivity_summary', 'responsiveness_summary',
+    'risk_exposure', 'priorities'
 ]
 
 _REQUIRED_PRIORITY_FIELDS = [
-    "number", "title", "dimension", "tag", "risk_level",
-    "the_gap", "why_it_matters", "recommendation", "who_acts", "when", "resources",
-    "pad_sections", "suggested_language", "implementation_note",
+    'title', 'fcv_dimension', 'tag', 'refresh_shift', 'risk_level',
+    'the_gap', 'why_it_matters', 'recommendation',
+    'who_acts', 'when', 'resources',
+    'pad_sections', 'suggested_language', 'implementation_note'
 ]
 
 _SPECIFICITY_STOPWORDS = frozenset({
@@ -97,11 +103,71 @@ def _check_citations(priority: dict, uploaded_doc_names: list) -> list:
     return unverified
 
 
+def extract_stage2_ratings(stage2_output):
+    """Extract sensitivity and responsiveness ratings from Stage 2 output.
+    Looks for %%%STAGE2_RATINGS_START%%%...%%%STAGE2_RATINGS_END%%% block.
+    """
+    pattern = r'%%%STAGE2_RATINGS_START%%%(.*?)%%%STAGE2_RATINGS_END%%%'
+    match = re.search(pattern, stage2_output, re.DOTALL)
+    if not match:
+        return {'error': True, 'message': 'No ratings block found in Stage 2 output'}
+    try:
+        ratings = json.loads(match.group(1).strip())
+        return {
+            'error': False,
+            'sensitivity_rating': ratings.get('sensitivity_rating', 'Unknown'),
+            'responsiveness_rating': ratings.get('responsiveness_rating', 'Unknown')
+        }
+    except json.JSONDecodeError as e:
+        return {'error': True, 'message': f'Failed to parse ratings JSON: {str(e)}'}
+
+
+def extract_under_hood(stage2_output):
+    """Extract Under the Hood analytical panels from Stage 2 output.
+    Finds %%%UNDER_HOOD_START%%%...%%%UNDER_HOOD_END%%% and sub-blocks.
+    Returns dict with panel contents and cleaned display text.
+    """
+    hood_pattern = r'%%%UNDER_HOOD_START%%%(.*?)%%%UNDER_HOOD_END%%%'
+    hood_match = re.search(hood_pattern, stage2_output, re.DOTALL)
+
+    if not hood_match:
+        return {
+            'error': True,
+            'message': 'No Under the Hood block found in Stage 2 output',
+            'display_text': stage2_output,
+            'recs_table': '', 'dnh_checklist': '',
+            'questions_map': '', 'evidence_trail': ''
+        }
+
+    hood_text = hood_match.group(1)
+
+    def _extract_block(text, start_tag, end_tag):
+        p = rf'{re.escape(start_tag)}(.*?){re.escape(end_tag)}'
+        m = re.search(p, text, re.DOTALL)
+        return m.group(1).strip() if m else ''
+
+    recs_table = _extract_block(hood_text, '%%%RECS_TABLE_START%%%', '%%%RECS_TABLE_END%%%')
+    dnh_checklist = _extract_block(hood_text, '%%%DNH_CHECKLIST_START%%%', '%%%DNH_CHECKLIST_END%%%')
+    questions_map = _extract_block(hood_text, '%%%QUESTIONS_MAP_START%%%', '%%%QUESTIONS_MAP_END%%%')
+    evidence_trail = _extract_block(hood_text, '%%%EVIDENCE_TRAIL_START%%%', '%%%EVIDENCE_TRAIL_END%%%')
+
+    display_text = stage2_output
+    display_text = re.sub(r'%%%STAGE2_RATINGS_START%%%.*?%%%STAGE2_RATINGS_END%%%', '', display_text, flags=re.DOTALL)
+    display_text = re.sub(r'%%%UNDER_HOOD_START%%%.*?%%%UNDER_HOOD_END%%%', '', display_text, flags=re.DOTALL)
+    display_text = display_text.strip()
+
+    return {
+        'error': False, 'display_text': display_text,
+        'recs_table': recs_table, 'dnh_checklist': dnh_checklist,
+        'questions_map': questions_map, 'evidence_trail': evidence_trail
+    }
+
+
 # ── Default prompts ──────────────────────────────────────────────────────────
 
 DEFAULT_PROMPTS = {
 "1": '''# Role
-You are an expert FCV (Fragility, Conflict, and Violence) analyst for the World Bank Group, specialising in identifying conflict risks and development challenges in fragile contexts.
+You are an expert FCV (Fragility, Conflict, and Violence) analyst for the World Bank Group, specialising in identifying conflict risks and development challenges in fragile contexts. You have access to the WBG FCV Strategy Refresh framework and the FCV Operational Playbook Diagnostics guidance, which inform your analysis of compound risks, forced displacement, private sector dimensions, and FCV classification context.
 
 # Task
 Analyse the provided documents and produce a structured FCV assessment in two clearly separated parts:
@@ -134,6 +200,13 @@ Location-specific information from the project document: specific regions, provi
 ### Data Gaps in the Project Document
 FCV-relevant information that appears missing or inadequately addressed in the project document specifically.
 
+### Playbook-Guided Extraction
+In addition to the above, specifically flag:
+- Whether the project references or uses a Risk and Resilience Assessment (RRA) or equivalent FCV diagnostic
+- Compound risk indicators — where multiple fragility drivers interact (conflict + climate, displacement + food insecurity, etc.)
+- Forced displacement considerations — references to refugee/IDP populations, host communities, durable solutions
+- Private sector diagnostic alignment — references to Country Private Sector Diagnostic (CPSD), MSME components, IFC engagement
+
 ---
 
 ## Part B: Wider FCV Context
@@ -144,6 +217,15 @@ Draw on available sources in this strict priority order:
 3. **Training knowledge** of reputable sources (UN Security Council reports, ICG reports, World Bank FCV assessments, ACLED data, Fragile States Index) — cite by naming the specific organisation or report (e.g. [From: World Bank FCV assessment], [From: ICG report], [From: ACLED data], [From: Fragile States Index], [From: UN Security Council]). Use only where neither uploaded documents nor web research addresses the point.
 
 Always clearly label which source tier you are drawing from at each point, and always name the specific organisation or report rather than using generic descriptors.
+
+### FCV Classification Context
+- Note if the country appears on the FCS (Fragile and Conflict-affected Situations) list
+- If FCS, note eligibility category for FCV Envelope financing (PRA — Prevention and Resilience Allocation; RECA — Remaining Engaged during Conflict Allocation; TAA — Turn Around Allocation)
+- Assess which FCV Refresh strategic shift(s) are most relevant to this project context:
+  - Shift A (Anticipate): Is there evidence of forward-looking risk monitoring?
+  - Shift B (Differentiate): Is the approach tailored to the specific FCV classification?
+  - Shift C (Jobs & Private Sector): Does the project address economic livelihoods or private sector?
+  - Shift D (Enhanced Toolkit): Does the project leverage operational flexibilities?
 
 ### Country and Regional FCV Landscape
 The broader fragility, conflict, and violence dynamics affecting this country and region — drawing on contextual documents first, then training knowledge.
@@ -171,239 +253,212 @@ At the very end of your response, after all sections, output a single classifier
 Identify what type of World Bank project document was uploaded as the primary project document.''',
 
 "2": '''# Role
-You are an FCV specialist conducting systematic screening analysis for World Bank projects using the WBG FCV Operational Manual framework.
+You are an expert FCV analyst conducting a comprehensive FCV assessment for the World Bank Group. You have deep expertise in the WBG FCV Strategy, the Operational Screening Tool (OST), and the FCV Refresh (January 2026). You are assessing a project based on the Stage 1 context and extraction analysis.
 
 # Task
-Using the information extracted in Stage 1, assess how well this project\'s current design meets the six recommendations for promoting FCV-sensitivity based on the OST manual. For each recommendation, evaluate:
+Using the Stage 1 analysis, conduct a comprehensive FCV assessment of this project. You will produce TWO outputs:
+1. A TTL-facing assessment narrative (the main output)
+2. Detailed analytical panels for specialist review ("Under the Hood")
 
-1. **Current Status:** Strong / Partial / Weak / Not Addressed
-2. **What the project does well** (if anything) against this recommendation
-3. **Key gaps** in the current design relative to this recommendation
-4. **Risk to project delivery** from this gap: High / Medium / Low
-5. **Risk from project** (how the project could inadvertently worsen FCV dynamics) related to this recommendation: High / Medium / Low
-6. **Evidence citation:** For each recommendation, cite the specific design element, document passage, or project feature that justifies your rating. Do not give a generic assessment. Example: "Rated Partial because the PAD includes a stakeholder engagement plan (Section 4.2) but it does not differentiate consultation approaches by conflict-affected versus stable areas."
+# Internal Analytical Framework
+You MUST assess the project against ALL of the following (from the FCV Operational Manual), but do NOT expose this framework directly in the TTL-facing narrative. Use it to drive your thematic analysis.
 
-Be specific — quote or reference the project document where possible. Note when information is insufficient to make a confident assessment.
+## 12 OST Recommendations
+Assess the project against each recommendation. For EACH recommendation, determine:
+- Its status (Strongly addressed / Partially addressed / Weakly addressed / Not addressed)
+- Whether it functions as a SENSITIVITY measure, a RESPONSIVENESS measure, or BOTH [S+R] in this specific project (this is dynamic — the same rec can be S in one project and R in another)
+- Which of the 4 FCV Refresh shifts it aligns with
 
----
+The 12 recommendations:
+1. Use DRRs to inform operational design
+2. Integrate FCV into stakeholder analysis and selectivity
+3. Embed FCV into ToC and PDO
+4. Align risk and results equation
+5. Keep RF and M&E realistic and FCV-smart
+6. Use innovative and digital tools
+7. Strengthen in-country M&E capacity and systems
+8. Budget more purposefully for M&E
+9. Use M&E to enhance citizen-state communications
+10. Monitor, learn, and adapt more frequently
+11. Consider pros/cons of impact evaluations
+12. Put an FCV twist in ICRs
 
-## Recommendation 1: Use of DRRs (Drivers, Risks, Resilience factors) to inform operational design
-**What to assess:** Does the project design draw explicitly on identified FCV drivers and sources of resilience specific to this country and sector? Are these DRRs shaping the pathway to outcomes and the project\'s theory of change, or are they confined to a risk register without influencing design?
+## 25 Key Questions
+Answer each where evidence permits, noting which are answerable and which have evidence gaps.
 
-**Guiding questions:**
-- Are the specific FCV drivers for this country and sector identified and used to shape component design?
-- Does the project strengthen resilience factors, not just mitigate risks?
-- Is institutional weakness and data scarcity accounted for in the design?
+## 3 Key Elements
+Evaluate: (1) Flexible Operational Design, (2) Tailored Implementation & Partnerships, (3) Strengthened Implementation Support
 
----
+# S/R Definitions — CRITICAL
 
-## Recommendation 2: FCV-sensitive stakeholder analysis and operational selectivity
-**What to assess:** Has the project conducted a stakeholder analysis that accounts for FCV dynamics — including who might be excluded, which groups are conflict-affected, and how benefits could be captured by elites or dominant groups?
+**FCV Sensitivity [S]** — Is the project *aware of and designed for* the FCV context?
+- Contextual awareness of FCV drivers and dynamics
+- Conflict-informed design and targeting
+- Do No Harm — ensuring the project does not exacerbate fragility
+- FCV-adapted operations and safeguards
+Shorthand: does this help the project AVOID MAKING THINGS WORSE?
 
-**Guiding questions:**
-- Are beneficiary selection criteria conflict-sensitive and non-discriminatory?
-- Are marginalised groups (ethnic minorities, displaced populations, women, youth, IDPs) explicitly considered?
-- Could the targeting mechanism create or reinforce divisions between groups?
-- Is the consultation process inclusive and accessible to conflict-affected communities?
+**FCV Responsiveness [R]** — Does the project *actively work to change* the FCV situation?
+- Addressing root causes of fragility and conflict
+- Strengthening resilience and building pathways out of FCV
+- Leveraging FCV tools and flexibilities for transformative (not just operational) impact
+- Connecting project outcomes to stability and peace dividends
+Shorthand: does this ACTIVELY HELP MAKE FRAGILITY DYNAMICS BETTER?
 
----
+**[S+R]** — Genuinely dual. ONLY for these four overlap zones:
+1. Inclusion/targeting of conflict-affected populations (S: avoids exclusion harm; R: actively rebuilds inclusion)
+2. FCV logic embedded in ToC/PDO (S: acknowledges dynamics; R: designs for change)
+3. Adaptive M&E that monitors harm AND adapts for resilience
+4. GRM designed to strengthen state-citizen accountability (S: receives complaints; R: builds institutional trust)
 
-## Recommendation 3: FCV elements embedded in the Theory of Change and PDO
-**What to assess:** Does the Theory of Change reflect FCV realities — including conflict dynamics, institutional fragility, and the risk of unintended consequences? Is there built-in flexibility for a changing environment?
+STRICT RULE: Most findings will be [S] or [R], not [S+R]. Do not default to [S+R] — it must be earned.
 
-**Guiding questions:**
-- Does the ToC account for how FCV dynamics might disrupt the assumed causal chain?
-- Is there adaptive management built into the design (triggers, unallocated funds, CERC)?
-- Does the PDO remain achievable if the security or political context deteriorates?
-- For DPOs: does the design account for elite capture and vested interests in reform?
+# FCV Refresh Strategic Shifts — Cross-Cutting
+The 4 shifts apply to BOTH sensitivity and responsiveness findings. They are strategic directions, not an S/R category:
+- **Anticipate** — Risk monitoring, early warning, forward-looking classification
+- **Differentiate** — Tailoring to FCV context type (conflict/displacement/criminal violence/at-risk)
+- **Jobs & Private Sector** — Economic livelihoods, MSME, private sector entry points
+- **Enhanced Toolkit** — Operational flexibilities (CERC, HEIS, TPM, GEMS), partnerships, adaptive management
 
----
+Tag findings with the relevant shift where applicable. A sensitivity finding can reference any shift; a responsiveness finding can reference any shift.
 
-## Recommendation 4: Risk and results equation — FCV security risks
-**What to assess:** Does the project adequately account for security risks in its operational risk framework? Is the SORT table realistic about FCV-related risks? Are implementation arrangements suited to an insecure or volatile environment?
+# TTL-Facing Output Structure
 
-**Guiding questions:**
-- Does the SORT/risk table reflect the actual security and political risk in the project area?
-- Are implementation arrangements (PIU, oversight, supervision) realistic for this FCV context?
-- Is there provision for third-party monitoring (TPM) or alternative arrangements in insecure areas?
-- Does the project design account for higher implementation costs in FCV settings?
+Write a thematic narrative assessment (400–500 words total for themes + DNH + synthesis). Use clear, accessible language for non-specialist TTLs.
 
----
+## Dynamic Analytical Themes (3–5 themes)
 
-## Recommendation 5: Realistic and FCV-smart Results Framework and M&E
-**What to assess:** Is the Results Framework grounded in what is actually measurable in this FCV context? Does it account for data scarcity, access constraints, and the risk of perverse incentives?
+Group your findings into 3–5 ANALYTICAL THEMES based on what the 12 recs and 25 key questions surface for THIS specific project. Do NOT use fixed section names.
 
-**Guiding questions:**
-- Are indicators realistic and achievable given the FCV context?
-- Is there a credible baseline data collection plan given access constraints?
-- Does the M&E plan address ethical considerations in data collection in conflict-affected areas?
-- Are WBG Scorecard indicators used and appropriately tailored to FCV conditions?
+Rules for themes:
+- Theme titles should be SHORT and DESCRIPTIVE (e.g., "Contextual Awareness & Risk Analysis", "Targeting, Inclusion & Beneficiary Protection", "Economic Resilience & Root-Cause Engagement")
+- Themes must NOT be named "Sensitivity" or "Responsiveness" — they are analytical groupings that can contain a mix of [S] and [R] findings
+- Each finding within a theme carries exactly ONE tag: [S], [R], or [S+R] — placed at the end of the finding paragraph
+- Each finding references the relevant FCV Refresh shift where applicable — placed after the S/R tag
+- Be specific: name geographic locations, institutions, mechanisms, project design elements
+- Cite evidence from the project document and Stage 1 analysis
 
----
+Format each finding as a paragraph. At the end of each finding paragraph, place the tag and shift on the same line. Always prefix shift names with "FCV Strategy Shift:" so the reader knows what they refer to:
+"[finding text] **[S]** *FCV Strategy Shift: Anticipate*"
+"[finding text] **[R]** *FCV Strategy Shift: Jobs & Private Sector*"
+"[finding text] **[S+R]** *FCV Strategy Shift: Differentiate*"
 
-## Recommendation 6: Use of innovative and digital tools
-**What to assess:** Does the project make use of available digital and innovative tools for monitoring, supervision, and citizen engagement in a context where access may be limited?
+## Do No Harm (after all themes, before synthesis)
 
-**Guiding questions:**
-- Is GEMS (Geo-Enabling initiative for Monitoring and Supervision — satellite and mobile technology for remote project supervision) considered for hard-to-reach areas?
-- Is TPM (Third-Party Monitoring — independent verification by NGOs or research organisations where Bank access is limited) included for insecure project areas?
-- Are digital tools for beneficiary feedback and grievance redress appropriate for the local context (literacy, connectivity, safety)?
+Assess the project against these 8 Do No Harm principles:
+1. Conflict-sensitive targeting and beneficiary selection
+2. Avoiding reinforcement of existing power asymmetries
+3. Preventing exacerbation of inter-group tensions
+4. Ensuring equitable geographic distribution of benefits
+5. Safeguarding against elite capture of project resources
+6. Protecting project staff and beneficiaries from security risks
+7. Monitoring for unintended negative consequences
+8. Establishing accessible and trusted grievance mechanisms
 
----
+Output format — a standalone section titled "## Do No Harm":
+Line 1: "**Do No Harm: [X] of 8 principles addressed | [Y] partial | [Z] not addressed**"
+Then 2–4 sentences highlighting the most critical DNH issues for this specific project.
 
-## Summary Assessment Table
+## Synthesis (after Do No Harm)
 
-| OST FCV Priority | Current Status | Risk TO Project | Risk FROM Project | Priority |
+Two clearly labelled paragraphs (80–100 words each):
+- "**FCV Sensitivity:**" — Summarise sensitivity findings across all themes
+- "**FCV Responsiveness:**" — Summarise responsiveness findings across all themes
+
+## Key Gaps (3–5 most critical)
+
+After synthesis, list the 3–5 most critical gaps. Each gap:
+- Has a bold title with [S], [R], or [S+R] tag
+- 1–2 sentences of specific evidence (NOT generic)
+- Prioritised by severity (most critical first)
+
+Format: "**[Gap title] [S]:** [specific evidence and risk]"
+
+# Status Terminology
+Use ONLY these terms: "Strongly addressed" / "Partially addressed" / "Weakly addressed" / "Not addressed"
+
+# Ratings Block
+After the TTL-facing narrative, emit this block on its own line:
+
+%%%STAGE2_RATINGS_START%%%
+{"sensitivity_rating": "[rating]", "responsiveness_rating": "[rating]"}
+%%%STAGE2_RATINGS_END%%%
+
+Rating scale (use exactly one of): Extremely Low | Very Low | Low | Adequate | Well Embedded | Very Well Embedded
+
+# Under the Hood (Detailed Analytical Panels)
+After the ratings block, emit ALL of the following between delimiters. These are for specialist review — be thorough and cover ALL items even if evidence is limited.
+
+%%%UNDER_HOOD_START%%%
+
+%%%RECS_TABLE_START%%%
+| # | Operational Standard | Status | Evidence | Gaps | S/R Tag | Shift(s) |
+|---|---|---|---|---|---|---|
+| 1 | Use DRRs to inform operational design | [status] | [evidence] | [gaps] | [S]/[R]/[S+R] | [shift] |
+| 2 | Integrate FCV into stakeholder analysis and selectivity | [status] | [evidence] | [gaps] | [S]/[R]/[S+R] | [shift] |
+| 3 | Embed FCV into ToC and PDO | [status] | [evidence] | [gaps] | [S]/[R]/[S+R] | [shift] |
+| 4 | Align risk and results equation | [status] | [evidence] | [gaps] | [S]/[R]/[S+R] | [shift] |
+| 5 | Keep RF and M&E realistic and FCV-smart | [status] | [evidence] | [gaps] | [S]/[R]/[S+R] | [shift] |
+| 6 | Use innovative and digital tools | [status] | [evidence] | [gaps] | [S]/[R]/[S+R] | [shift] |
+| 7 | Strengthen in-country M&E capacity and systems | [status] | [evidence] | [gaps] | [S]/[R]/[S+R] | [shift] |
+| 8 | Budget more purposefully for M&E | [status] | [evidence] | [gaps] | [S]/[R]/[S+R] | [shift] |
+| 9 | Use M&E to enhance citizen-state communications | [status] | [evidence] | [gaps] | [S]/[R]/[S+R] | [shift] |
+| 10 | Monitor, learn, and adapt more frequently | [status] | [evidence] | [gaps] | [S]/[R]/[S+R] | [shift] |
+| 11 | Consider pros/cons of impact evaluations | [status] | [evidence] | [gaps] | [S]/[R]/[S+R] | [shift] |
+| 12 | Put an FCV twist in ICRs | [status] | [evidence] | [gaps] | [S]/[R]/[S+R] | [shift] |
+%%%RECS_TABLE_END%%%
+
+%%%DNH_CHECKLIST_START%%%
+| # | Principle | Status | Evidence/Gap |
+|---|---|---|---|
+| 1 | Conflict-sensitive targeting and beneficiary selection | [status] | [evidence/gap] |
+| 2 | Avoiding reinforcement of existing power asymmetries | [status] | [evidence/gap] |
+| 3 | Preventing exacerbation of inter-group tensions | [status] | [evidence/gap] |
+| 4 | Ensuring equitable geographic distribution of benefits | [status] | [evidence/gap] |
+| 5 | Safeguarding against elite capture of project resources | [status] | [evidence/gap] |
+| 6 | Protecting project staff and beneficiaries from security risks | [status] | [evidence/gap] |
+| 7 | Monitoring for unintended negative consequences | [status] | [evidence/gap] |
+| 8 | Establishing accessible and trusted grievance mechanisms | [status] | [evidence/gap] |
+%%%DNH_CHECKLIST_END%%%
+
+%%%QUESTIONS_MAP_START%%%
+| # | Key Question | Answerable? | Finding | Source |
 |---|---|---|---|---|
-| 1. DRR-informed design | [Strong/Partial/Weak/Not Addressed] | [H/M/L] | [H/M/L] | [H/M/L] |
-| 2. Stakeholder analysis | [Strong/Partial/Weak/Not Addressed] | [H/M/L] | [H/M/L] | [H/M/L] |
-| 3. ToC and PDO | [Strong/Partial/Weak/Not Addressed] | [H/M/L] | [H/M/L] | [H/M/L] |
-| 4. Risk and results | [Strong/Partial/Weak/Not Addressed] | [H/M/L] | [H/M/L] | [H/M/L] |
-| 5. Results Framework/M&E | [Strong/Partial/Weak/Not Addressed] | [H/M/L] | [H/M/L] | [H/M/L] |
-| 6. Digital tools | [Strong/Partial/Weak/Not Addressed] | [H/M/L] | [H/M/L] | [H/M/L] |
+[One row for EACH of the 25 key questions from the FCV Operational Manual. For each: state Yes/Partial/No, finding or gap, and source.]
+%%%QUESTIONS_MAP_END%%%
 
----
+%%%EVIDENCE_TRAIL_START%%%
+| Source | Type | Used For |
+|---|---|---|
+[One row per source. Type = "Project document" / "Contextual document" / "Web research" / "Embedded guidance" / "Training knowledge".]
+%%%EVIDENCE_TRAIL_END%%%
 
-SENSITIVITY vs. RESPONSIVENESS CLASSIFICATION
+%%%UNDER_HOOD_END%%%
 
-After completing the six-recommendation assessment, add a classification tag to each recommendation. Apply these definitions strictly — [S+R] must be earned, not assumed.
-
-[S] — FCV SENSITIVITY: The recommendation primarily concerns how the project operates in the FCV context. This includes: using RRA findings to inform design; adapting targeting, implementation arrangements, procurement, or service delivery modalities to FCV realities; ensuring stakeholder consultations reach excluded/marginalised groups; and building a risk framework that accounts for security conditions, institutional weakness, and elite capture. Shorthand: will the project avoid making things worse?
-
-[R] — FCV RESPONSIVENESS: The recommendation primarily concerns whether the project actively addresses root drivers of fragility or builds resilience, anchored to the four FCV Strategy pillars:
-- Pillar 1 (Preventing conflict): addressing exclusion, grievances, institutional illegitimacy, social cohesion
-- Pillar 2 (Crisis engagement): adaptive design, continuity of services under stress, resilience-building
-- Pillar 3 (Transition out of fragility): social contract renewal, state legitimacy, local private sector
-- Pillar 4 (Spillover mitigation): forced displacement, cross-border dynamics, regional resilience
-Shorthand: will the project actively help make things better along a fragility dimension?
-
-[S+R] — BOTH: Reserve for recommendations that GENUINELY serve both functions at the same time. The four legitimate overlap zones are:
-1. Inclusion and targeting: deliberately including conflict-affected, marginalised, or displaced populations simultaneously avoids harm (S) and addresses exclusion as a root driver of fragility (R, Pillar 1).
-2. Theory of change / PDO: when the FCV logic is substantively embedded in the project's stated objective — not just in the risk register — this crosses from sensitivity into responsiveness.
-3. M&E and adaptive management: tracking conflict indicators is sensitivity; using them to actively adapt scope and strengthen resilience in real time is responsiveness (Pillar 2). A recommendation qualifies for [S+R] only if it substantively addresses both monitoring for harm AND adaptive resilience-building.
-4. Citizen engagement / GRM: a robust GRM avoids unaddressed harm (S); if it is explicitly designed to feed back into government accountability and strengthen the state-citizen relationship, it becomes a Pillar 3 responsiveness feature.
-
-STRICT RULE: Most recommendations will be [S] or [R], not [S+R]. Do not use [S+R] because a recommendation vaguely touches both concepts. Use it only when the same design element demonstrably and substantively serves both purposes.
-
-Use the following pre-assigned default tags unless project-specific evidence strongly warrants a different classification:
-- Rec 1: [S]
-- Rec 2: [S]
-- Rec 3: [S+R]
-- Rec 4: [S]
-- Rec 5: [S]
-- Rec 6: [S+R]
-
-After the summary assessment table, add a RESPONSIVENESS PROBE section (100-150 words). This should assess: Does this project have meaningful potential to address any of the four FCV Strategy pillars (Preventing conflict / Remaining engaged in crisis / Transition out of fragility / Mitigating spillovers)? What specific opportunities are present or missed, given this project's sector and geography? Do not produce generic peacebuilding suggestions — ground every point in the project's actual design and context.
-
-# Quality Guidelines
-- Evidence-based: ground all assessments in what Stage 1 extracted — quote or paraphrase specifically
+# Important Guidelines
+- The TTL-facing narrative must be self-contained and readable without the Under the Hood panels
+- Be specific: name geographic locations, institutions, mechanisms — not generic statements
+- When evidence is missing, say so explicitly rather than speculating
+- Citations follow the three-tier system from Stage 1: [From: document name] > [From: web research] > [From: training knowledge]
+- The Under the Hood tables must cover ALL items (12 recs, 8 DNH principles, 25 questions) even if evidence is limited — mark gaps explicitly
+- Ground every assessment in the Stage 1 extraction — quote or paraphrase specifically
 - Distinguish clearly between "Risk TO project" (FCV context threatens delivery) and "Risk FROM project" (project could worsen FCV dynamics)
-- Be honest about gaps: where information is insufficient, say so explicitly
 - Tailor every assessment to this specific country, sector, and project type — no generic statements
 - When drawing on inference rather than direct evidence, label it: "Based on analytical inference from available information"
 ''',
 
-"3": '''# Role
-You are an FCV risk mitigation specialist reviewing project design adequacy against the WBG FCV Operational Manual framework.
-
-# Task
-Based on the Stage 2 assessment of the OST's six recommendations for promoting FCV sensitivity, identify the most critical design gaps, propose specific mitigation measures, and flag enhancement opportunities. Focus on what a Task Team Leader can actually do with this information.
+"3": '''# Role and Context
+You are a senior FCV specialist providing collegial technical input to a World Bank Task Team Leader (TTL). Your purpose is to offer constructive guidance to strengthen the project's FCV integration. Tone: supportive, consultative, operationally focused — a trusted peer reviewer, not an auditor. This is NOT an audit or compliance checklist.
 
 ---
 
-## Part A: Critical Gaps by Recommendation
+## Stage Awareness
+This project is at **{doc_type}** stage. Tailor all recommendations accordingly:
+- Timing options for this stage: {timing_emphasis}
+- Use stage-appropriate language (e.g., "Build into the ToC now" for PCN, "Revise PAD Section X" for PAD, "Flag in next ISR" for ISR)
+- Reference relevant operational flexibilities from the Playbook guidance below
 
-For each recommendation rated Weak or Not Addressed in Stage 2, provide a focused gap analysis:
-
-**Recommendation [N] — [Name]**
-- **What is missing:** Specific design element or analysis that is absent or inadequate
-- **Why it matters operationally:** What delivery risk does this create?
-- **Why it matters for FCV:** What fragility mechanism could this trigger or worsen?
-
-Keep entries concise — 3-5 sentences per recommendation. Only cover recommendations with meaningful gaps (Weak or Not Addressed). Skip recommendations rated Strong.
-
----
-
-## Part B: Recommended Mitigation Measures
-
-IMPORTANT: Only propose mitigations for recommendations rated Partial, Weak, or Not Addressed in Stage 2. Do not re-surface recommendations rated Strong or Well Embedded — these do not need mitigation. Reference the Stage 2 rating explicitly when introducing each mitigation: e.g., "Stage 2 rated stakeholder engagement as Partial because the consultation plan did not differentiate approaches by conflict-affected versus stable areas — the mitigation therefore focuses on..."
-
-For each gap identified in Part A, propose specific, actionable mitigations. Structure each as:
-
-**Gap addressed:** [One-line description]
-**Mitigation measure:** [Specific action — name the WBG document or mechanism where this should be added, e.g. "Add a CERC component in PAD Annex 2", "Revise beneficiary targeting criteria in the Project Operations Manual", "Commission a conflict-sensitive stakeholder mapping before appraisal"]
-**Who acts:** [TTL / PIU / Government counterpart / FCV specialist / Procurement team]
-**When:** [At design stage / Before appraisal / During implementation]
-**Resource level:** [Minimal — existing budget / Moderate — requires dedicated allocation / Significant — requires restructuring]
-
-For each mitigation measure in Part B, assign a TAG and include it as a TAG column in the table. Apply strictly — [S+R] must be earned, not assumed:
-
-[S] — The mitigation primarily improves how the project operates in the FCV context: using RRA findings, adapting implementation arrangements or targeting to FCV realities, strengthening conflict-sensitive stakeholder engagement, or improving risk management to account for security conditions and institutional weakness. Shorthand: avoids making things worse.
-
-[R] — The mitigation actively shifts the project toward addressing a root driver of fragility or building resilience, substantively linked to one of the four FCV Strategy pillars (Pillar 1: preventing conflict; Pillar 2: crisis engagement; Pillar 3: transition out of fragility; Pillar 4: spillover mitigation). Shorthand: actively helps make things better.
-
-[S+R] — Reserve for mitigations that genuinely serve both functions at the same time: e.g. deliberate inclusion of marginalised/displaced populations (avoids exclusion harm AND addresses Pillar 1 exclusion driver); embedding FCV logic substantively in the ToC/PDO (not just the risk register); adaptive M&E that both monitors for harm and strengthens resilience in real time; a GRM designed to feed back into government accountability (Pillar 3). Most mitigations will be [S] or [R] — do not use [S+R] because a measure vaguely touches both concepts.
-
-Explain any technical WBG mechanisms briefly in plain language the first time they appear — e.g. if recommending a CERC, add: "(a zero-dollar contingency component that can be activated rapidly during crises without Board approval)".
-
----
-
-## Part C: Do No Harm Checklist
-
-| Do No Harm Principle | Status | Evidence or Gap |
-|---|---|---|
-| Beneficiary targeting is conflict-sensitive and non-discriminatory | [Yes / Partial / No] | [1-2 sentences] |
-| Project site selection accounts for conflict geography | [Yes / Partial / No] | [1-2 sentences] |
-| Consultation processes are inclusive of marginalised groups | [Yes / Partial / No] | [1-2 sentences] |
-| GRM is accessible to all, including conflict-affected populations | [Yes / Partial / No] | [1-2 sentences] |
-| Monitoring includes tracking unintended conflict impacts | [Yes / Partial / No] | [1-2 sentences] |
-| Adaptive management provisions exist for changing context | [Yes / Partial / No] | [1-2 sentences] |
-| Risk and results equation accounts for FCV security conditions | [Yes / Partial / No] | [1-2 sentences] |
-| Digital/remote monitoring tools considered for access-constrained areas | [Yes / Partial / No] | [1-2 sentences] |
-
----
-
-## Part D: FCV Responsiveness Opportunities
-
-PART D: FCV RESPONSIVENESS OPPORTUNITIES
-
-This section specifically addresses FCV Responsiveness — opportunities for the project to go beyond sensitivity and actively contribute to addressing the root drivers of fragility or strengthening resilience. Ground each opportunity in one of the four FCV Strategy 2020-2025 pillars:
-
-- Pillar 1: Conflict Prevention (grievances, exclusion, institutional illegitimacy, social cohesion)
-- Pillar 2: Crisis Engagement (adaptive design, continuity of essential services under stress)
-- Pillar 3: Transition out of fragility (social contract renewal, core institutional capacity, local private sector)
-- Pillar 4: Spillover mitigation (forced displacement, cross-border dynamics, regional resilience)
-
-For each opportunity, specify:
-- Which pillar it relates to
-- What the specific project entry point is (component, instrument, or M&E indicator)
-- What would need to change in the current design to realise it
-- Whether it is a minor addition or requires substantive design change
-
-Produce 2-3 opportunities only. Every opportunity must be grounded in this project's specific sector and geography — do not generate generic suggestions.
-
----
-
-## Part E: Output Summary
-
-### Top 5 Priority Actions
-List the five most important actions, in priority order. Each should be a single, direct sentence naming the specific action and where it should happen (PAD section, POM, ESCP, etc.).
-
-For each of the Top 5 Priority Actions in Part E, append a tag — [S], [R], or [S+R] — using the same strict definitions as above. Most actions will be [S] or [R]. Use [S+R] only for actions that demonstrably serve both the do-no-harm function and an active fragility-reduction function at the same time.
-
-### Overall FCV Integration Rating
-**Rating:** [Strong / Adequate / Weak / Absent]
-**Justification:** 2-3 sentences grounded in the Stage 2 and Stage 3 evidence, naming the most significant strength and the most significant gap.
-
-# Quality Guidelines
-- Actionability: every recommendation must name a specific WBG document or mechanism
-- Plain language: briefly explain any technical WBG term (CERC, HEIS, TPM, GEMS, GRM) the first time it appears
-- Proportionality: match mitigation intensity to risk severity — not everything is High priority
-- Specificity: every entry should name a concrete project element, geography, or group — no generic FCV statements
-''',
-
-"4": '''# Role and Context
-You are a senior FCV specialist providing collegial technical input to a World Bank Task Team Leader (TTL). Your purpose is to offer constructive guidance to strengthen the PCN or PAD's FCV integration before the Decision Meeting. Tone: supportive, consultative, operationally focused — a trusted peer reviewer, not an auditor. This is NOT an audit or compliance checklist.
+{playbook_guidance}
 
 ---
 
@@ -443,30 +498,30 @@ When identifying Strategic Priorities, evaluate the project design through these
 A single bolded sentence summarising the project's overall FCV integration status.
 
 ### Operational Context (150-200 words, ONE PARAGRAPH)
-Synthesise 3-4 converging FCV risks creating a uniquely challenging operating environment for THIS project. Forward-looking framing for post-preparation events. 2-3 citations max.
+Synthesise 3-4 converging FCV risks creating a uniquely challenging operating environment for THIS project. Forward-looking framing for post-preparation events. No inline citations.
 
 After the Operational Context paragraph, output this exact line on its own line before continuing:
 %%%RISK_NARRATIVE_START%%%
 
 ### FCV Risk Exposure (130-170 words, TWO PARAGRAPHS)
-This sub-section bridges the analytical findings from Stages 1-3 into plain-language insight for a non-FCV-specialist TTL.
+This sub-section bridges the analytical findings from Stages 1-2 into plain-language insight for a non-FCV-specialist TTL.
 
 Write two clearly labelled paragraphs:
 
 **Risks to project:** [One paragraph, 60-85 words. Identify the 2-3 FCV dynamics from the country context that pose the most direct threat to this project's delivery. Write in plain operational language — not analytical jargon. Name the specific risk and explain briefly why it matters for this project specifically.]
 
-**How project could affect fragility:** [One paragraph, 60-85 words. Identify 1-2 ways the project's current design could inadvertently worsen fragility or conflict if not carefully managed. Draw on Stage 2 "Risk FROM project" findings. Explain the mechanism clearly for a reader who has not seen Stages 1-3.]
+**How project could affect fragility:** [One paragraph, 60-85 words. Identify 1-2 ways the project's current design could inadvertently worsen fragility or conflict if not carefully managed. Draw on Stage 2 "Risk FROM project" findings. Explain the mechanism clearly for a reader who has not seen Stages 1-2.]
 
-These two paragraphs will also be reproduced faithfully in the JSON block as `risk_to_project` and `risk_from_project` fields.
+These two paragraphs will also be reproduced faithfully in the JSON block as `risks_to` and `risks_from` fields inside the `risk_exposure` object.
 
 After writing both FCV Risk Exposure paragraphs, output this exact line on its own line before continuing:
 %%%RISK_NARRATIVE_END%%%
 
 ### Strengths (80-120 words, prose)
-3-4 concrete strengths actually present in the project document. Flowing prose. 2-3 citations max. Never cite the PCN/PAD itself.
+3-4 concrete strengths actually present in the project document. Flowing prose. No inline citations.
 
 ### Gaps (100-130 words, prose)
-The main weakness or cluster of weaknesses, constructively framed. Reference the OST FCV-sensitivity framework where relevant. 1-2 citations from RRA or external sources only.
+The main weakness or cluster of weaknesses, constructively framed. Reference the Stage 2 assessment findings where relevant. No inline citations.
 
 After the Gaps paragraph, output this exact line on its own line before continuing:
 %%%PRIORITIES_START%%%
@@ -474,43 +529,50 @@ After the Gaps paragraph, output this exact line on its own line before continui
 Then write the following two summary paragraphs (these will be stripped from the display and shown as summary cards):
 
 **FCV Sensitivity Summary (80-100 words):**
-Write a paragraph of 80-100 words assessing the project's overall FCV SENSITIVITY standing. Cover: how well the project avoids doing harm in the FCV context, the quality of its contextual awareness, and its operational readiness. Be direct about the overall level — do not hedge. Reference 1-2 specific strengths and 1-2 specific gaps from the Stage 2 screening.
+Write a paragraph of 80-100 words assessing the project's overall FCV SENSITIVITY standing. Cover: how well the project avoids doing harm in the FCV context, the quality of its contextual awareness, and its operational readiness. Be direct about the overall level — do not hedge. Reference 1-2 specific strengths and 1-2 specific gaps from the Stage 2 assessment.
 (This paragraph will also be reproduced faithfully in the JSON block as `sensitivity_summary`.)
 
 **FCV Responsiveness Summary (80-100 words):**
-Write a paragraph of 80-100 words assessing the project's FCV RESPONSIVENESS — the degree to which it actively contributes to addressing root drivers of fragility and/or building resilience. Anchor this explicitly to whichever of the four FCV Strategy pillars are most relevant to this project's context and sector. Be honest: many projects will have low responsiveness scores. Say so clearly and explain what the missed opportunity is, rather than inflating the assessment.
+Write a paragraph of 80-100 words assessing the project's FCV RESPONSIVENESS — the degree to which it actively contributes to addressing root drivers of fragility and/or building resilience. Anchor this explicitly to whichever of the four FCV Refresh strategic shifts (Shift A: Anticipate, Shift B: Differentiate, Shift C: Jobs & Private Sector, Shift D: Enhanced Toolkit) are most relevant to this project's context and sector. Be honest: many projects will have low responsiveness scores. Say so clearly and explain what the missed opportunity is, rather than inflating the assessment.
 (This paragraph will also be reproduced faithfully in the JSON block as `responsiveness_summary`.)
 
 ---
 
-## STRATEGIC PRIORITIES
+## PRIORITY ACTIONS FOR THE TASK TEAM
 
 This is the most important section. Generate between 4 and 5 strategic priorities.
 
 Each priority MUST:
-- Address a concrete, distinct gap from your Stage 1-3 analysis
+- Address a concrete, distinct gap from your Stage 1-2 analysis
 - Name specific local realities: regions, groups, institutions, or historical grievances
 - Be actionable at TTL level, framed as options not mandates
 - Be titled: **Priority N · [Strong verb phrase]**
+- Be appropriate for the **{doc_type}** stage — do not recommend actions that are premature or too late for this lifecycle stage
 
 For EACH priority, write the following fields clearly in the narrative. These will also be reproduced in the JSON block at the end:
 
 TITLE: Priority N · [Actionable verb phrase starting with a strong verb]
 FCV_DIMENSION: [One of: Institutional Legitimacy | Inclusion | Social Cohesion | Security | Economic Livelihoods | Resilience — these map to the analytical risk dimensions and will appear as visible tags on each priority card]
+TAG: [One of: [S] | [R] | [S+R] — see tag definitions below]
+REFRESH_SHIFT: [One of: Shift A: Anticipate | Shift B: Differentiate | Shift C: Jobs & private sector | Shift D: Enhanced toolkit — the FCV Refresh strategic shift this priority most directly aligns with]
 RISK_LEVEL: [One of: High | Medium | Low]
 THE_GAP: 2-3 sentences on what is missing or inadequate in the current project design, specifically for this country and sector. Name the document section or component that is absent or insufficient.
-WHY_IT_MATTERS: 2-3 sentences covering both the operational consequence of not addressing this gap AND its significance through an FCV lens. Name the specific delivery risk, then explain the FCV mechanism at stake (e.g. exclusion fuelling grievance, weak institutions enabling spoilers, displacement disrupting community cohesion). Be concise — cover both dimensions in the same passage. For any priority tagged [R] or [S+R], include a one-sentence S/R justification at the end: e.g., "Tagged [R] because this directly addresses Pillar 2 (remaining engaged during crisis) of the WBG FCV Strategy 2020–2025."
-RECOMMENDATION: Write 4–6 sentences of specific, sequenced guidance for this priority. Structure the response to cover: (1) What to change or add — name the specific project element, component, or document section; (2) The mechanism or instrument — name the specific intervention, tool, or arrangement (e.g. third-party monitoring contract, community feedback committee, satellite supervision system); (3) The geographic or institutional target — name the location, community, counterpart institution, or affected group; (4) A first step or dependency — what needs to happen first, or what actor needs to initiate. Write as flowing prose — no bullet points, no option menus, no "Option A / Option B". All components should form one coherent direction.
-WHO_ACTS: [One of: TTL | PIU | Government counterpart | FCV specialist | Procurement team]
-WHEN: [One of: At design stage | Before appraisal | During implementation]
-RESOURCES: [One of: Minimal | Moderate | Significant]
-PAD_SECTIONS: A semicolon-separated list of 2–3 specific PAD document sections where the recommended change should be made. Use exact section names where known (e.g. "Annex 5: Stakeholder Engagement Plan; ESCP Commitment #4; Project Operations Manual — Security Protocols"). If uncertain of exact section, use document type + functional area (e.g. "PAD — Component 2 design; Procurement Plan").
-SUGGESTED_LANGUAGE: 2–4 sentences of specific draft text that the TTL could insert into the PAD or Project Operations Manual verbatim or near-verbatim. Write in the register of a formal WBG project document ("The project will..."). Make the language specific to this project's context, geography, and implementation arrangements.
-IMPLEMENTATION_NOTE: 1–2 sentences flagging a practical sequencing point, cost implication, or dependency. Be concrete: name the timing, actor, or cost range where known.
+WHY_IT_MATTERS: 2-3 sentences covering both the operational consequence of not addressing this gap AND its significance through an FCV lens. Name the specific delivery risk, then explain the FCV mechanism at stake (e.g. exclusion fuelling grievance, weak institutions enabling spoilers, displacement disrupting community cohesion). Be concise — cover both dimensions in the same passage. For any priority tagged [R] or [S+R], include a one-sentence shift justification at the end: e.g., "Tagged [R] because this directly addresses Shift B (Differentiate) by calibrating the design to the country's specific FCV trajectory."
+RECOMMENDATION: Write 2-4 bullet points of specific guidance on what to add or strengthen in the project document to address this gap. Each bullet should identify a specific document element to revise (e.g. a PAD section, Operations Manual component, Results Framework indicator, or ESCP commitment) and describe what "good" looks like — enough detail that the TTL knows what to draft, but not so detailed it becomes an implementation manual.
+
+Format as a markdown bulleted list using "- **[Document element]** — [what to add or revise and why]" for each bullet.
+
+Focus on document-level changes the task team can make at the {doc_type} stage. Do NOT write implementation procedures, operational protocols, or step-by-step instructions for project execution — those belong in the Operations Manual, not in this note. Each bullet = one thing to change in the document.
+WHO_ACTS: [Semicolon-separated from: TTL; PIU; Government; FCV CC; FM Team; ESF Team; Technical Team; M&E Team]
+WHEN: [One of: Identification | Preparation | Appraisal | Implementation | Restructuring — must be appropriate for {doc_type} stage]
+RESOURCES: [One of: Minimal (existing budget) | Moderate (dedicated allocation) | Significant (requires restructuring)]
+PAD_SECTIONS: A semicolon-separated list of 2-3 specific PAD document sections where the recommended change should be made. Use exact section names where known (e.g. "Annex 5: Stakeholder Engagement Plan; ESCP Commitment #4; Project Operations Manual — Security Protocols"). If uncertain of exact section, use document type + functional area (e.g. "PAD — Component 2 design; Procurement Plan").
+SUGGESTED_LANGUAGE: 2-4 sentences of specific draft text that the TTL could insert into the PAD or Project Operations Manual verbatim or near-verbatim. Write in the register of a formal WBG project document ("The project will..."). Make the language specific to this project's context, geography, and implementation arrangements.
+IMPLEMENTATION_NOTE: 1-2 sentences flagging a practical sequencing point, cost implication, or dependency. Be concrete: name the timing, actor, or cost range where known.
 
 GEOGRAPHIC VALIDATION: Before finalising each priority, check: does the `the_gap` field name at least one specific location, group, or institution drawn from the uploaded documents or web research? If not, revise it. If no specific geography is available in your sources, name the administrative level at which the project operates (e.g., county, district, commune) and note that sub-national detail is missing.
 
-Strict prohibitions: NO specific percentages or dollar amounts; NO generic language; NO sub-bullet lists within a priority; NO criticism for post-preparation events.
+Strict prohibitions: NO specific percentages or dollar amounts; NO generic language; NO criticism for post-preparation events. The `recommendation` field uses markdown bullets; all other fields use flowing prose.
 
 ---
 
@@ -519,21 +581,20 @@ For each priority, assign a TAG using EXACTLY one of: [S] / [R] / [S+R]
 
 Apply the following definitions strictly. [S+R] must be earned — do not use it by default.
 
-[S] — This priority primarily concerns HOW the project operates in the FCV context. Indicators: improving use of RRA/diagnostic findings; adapting targeting, implementation arrangements, procurement, or service delivery to the FCV context; strengthening conflict-sensitive stakeholder engagement; improving the risk framework to account for security conditions, institutional weakness, or elite capture. Shorthand: will this priority help the project avoid making things worse?
+[S] — FCV Sensitivity. This priority helps the project AVOID MAKING THINGS WORSE. It concerns how the project operates in the FCV context: contextual awareness, conflict-informed design, Do No Harm, targeting adaptation, risk framework strengthening, FCV-adapted operations and safeguards.
 
-[R] — This priority actively addresses a root driver of fragility or builds resilience, substantively linked to one of the four FCV Strategy pillars: Pillar 1 (preventing conflict — exclusion, grievances, institutional illegitimacy, social cohesion); Pillar 2 (crisis engagement — adaptive design, service continuity under stress, resilience-building); Pillar 3 (transition out of fragility — social contract renewal, state legitimacy, local private sector); Pillar 4 (spillover mitigation — displacement, cross-border dynamics, regional resilience). Shorthand: will this priority actively help make fragility dynamics better?
+[R] — FCV Responsiveness. This priority ACTIVELY HELPS MAKE FRAGILITY DYNAMICS BETTER. It addresses root causes of fragility, builds resilience, leverages FCV tools for transformative impact, or connects project outcomes to stability and peace dividends. Linked to one or more FCV Refresh shifts: Anticipate (early warning, classification awareness), Differentiate (calibrate to FCV context type), Jobs & Private Sector (economic livelihoods as stability pathways), Enhanced Toolkit (CERC, HEIS, TPM, GEMS, FCV-appropriate implementation).
 
-[S+R] — Reserve ONLY for priorities that genuinely and substantively serve both functions simultaneously. The four legitimate overlap zones are: (1) inclusion/targeting of conflict-affected or displaced populations — avoids exclusion harm (S) AND addresses exclusion as a root driver (R, Pillar 1); (2) embedding FCV logic substantively in the ToC/PDO framing, not just the risk register; (3) adaptive M&E that both monitors for harm AND adapts project scope to strengthen resilience in real time (Pillar 2); (4) a GRM or citizen engagement mechanism designed explicitly to strengthen government accountability and the state-citizen relationship (Pillar 3). If in doubt, assign [S] or [R] — most priorities will not qualify for [S+R].
+[S+R] — Reserve ONLY for priorities that genuinely serve both functions simultaneously. The four overlap zones: (1) inclusion/targeting of conflict-affected populations — avoids exclusion harm (S) AND addresses exclusion as a root driver (R); (2) embedding FCV logic substantively in the ToC/PDO; (3) adaptive M&E that monitors harm AND adapts for resilience; (4) GRM designed to strengthen state-citizen accountability. If in doubt, assign [S] or [R].
 
 ---
 
-# Citation Format
-- CRITICAL: Only cite a document by name (e.g. [Honduras RRA 2023]) if it was explicitly uploaded as a contextual document and appeared with a [From: document name] citation in the Stage 1 analysis above. NEVER fabricate or assume document titles — even if you know a document of that type likely exists for this country.
-- For findings drawn from training knowledge, use: [From: training knowledge] or name the specific organisation (e.g. [From: World Bank], [From: ICG], [From: ACLED])
-- For findings from automated web research, use: [From: web research] or name the specific source if identifiable
-- NEVER cite the PCN or PAD being reviewed
-- CRITICAL: In all text fields of the JSON block, ONLY cite documents that appeared as [From: doc name] in Stage 1, or well-known organisations (World Bank, ACLED, UNODC, ICG, UNHCR, WFP, OCHA, ND-GAIN, OECD). NEVER fabricate document titles, report dates, or RRA names. If no specific source supports a claim, write it without a citation or attribute it to [From: training knowledge].
-- No page numbers; keep citations sparse and naturally integrated
+# Citation Policy — NO INLINE CITATIONS IN THE NARRATIVE
+- DO NOT include [From: ...] citation tags anywhere in the Recommendations Note narrative or JSON fields. The note should read as a clean, professional peer-review memo without source annotations.
+- The evidence trail and source attribution was already provided in Stage 2 (Under the Hood). The Recommendations Note is a synthesis — it does not need to re-cite sources.
+- You may name well-known organisations naturally in prose (e.g., "ACLED data suggests..." or "according to the RRA...") but do NOT use bracketed [From: ...] tags.
+- NEVER fabricate document titles, report dates, or RRA names. If a specific uploaded document was referenced in Stage 1, you may mention it by name naturally — but not as a bracketed citation.
+- NEVER cite the PCN or PAD being reviewed.
 
 # Word Count Targets
 - Preamble: 50-75 words
@@ -546,16 +607,17 @@ Apply the following definitions strictly. [S+R] must be earned — do not use it
 - TOTAL MAXIMUM: 2,800 words
 
 # Quality Check Before Submitting
-- 4–5 priorities total
+- 4-5 priorities total
 - Every priority names at least one specific geography, group, institution, or historical event
-- `recommendation` field contains a single cohesive action, not a menu of options
-- For any [R] or [S+R] priority, `why_it_matters` includes the S/R pillar justification sentence
-- All citations are from Stage 1 uploaded documents or the approved whitelist — no fabricated document titles
+- `recommendation` field contains 2-4 bullet points identifying specific document elements to revise, not a prose paragraph or option menu
+- For any [R] or [S+R] priority, `why_it_matters` includes the shift justification sentence
+- No [From: ...] citation tags appear anywhere in the narrative or JSON fields
 - JSON block is present at the end, wrapped in %%%JSON_START%%% / %%%JSON_END%%%
-- All 7 top-level JSON fields are populated (fcv_rating, fcv_responsiveness_rating, sensitivity_summary, responsiveness_summary, risk_to_project, risk_from_project, priorities)
+- All 6 top-level JSON fields are populated (fcv_rating, fcv_responsiveness_rating, sensitivity_summary, responsiveness_summary, risk_exposure, priorities)
 - Each priority's pad_sections, suggested_language, and implementation_note are specific to this project — not generic placeholders
-- Each priority JSON object has all 13 fields: number, title, dimension, tag, risk_level, the_gap, why_it_matters, recommendation, who_acts, when, resources, pad_sections, suggested_language, implementation_note
+- Each priority JSON object has all 14 fields: title, fcv_dimension, tag, refresh_shift, risk_level, the_gap, why_it_matters, recommendation, who_acts, when, resources, pad_sections, suggested_language, implementation_note
 - No generic or templated language anywhere
+- All `when` values are appropriate for the {doc_type} stage
 
 # CRITICAL — JSON OUTPUT BLOCK
 
@@ -564,39 +626,41 @@ After completing the full narrative output above, append a machine-readable JSON
 The FCV ratings, summaries, and risk exposure paragraphs you have written in the narrative above should be faithfully reproduced in the appropriate JSON fields.
 
 %%%JSON_START%%%
-{
+{{{{
   "fcv_rating": "Adequate",
   "fcv_responsiveness_rating": "Low",
-  "sensitivity_summary": "80–100 word assessment copied from the FCV Sensitivity Summary narrative block above",
-  "responsiveness_summary": "80–100 word assessment copied from the FCV Responsiveness Summary narrative block above",
-  "risk_to_project": "The Risks to project paragraph from the FCV Risk Exposure section above",
-  "risk_from_project": "The How project could affect fragility paragraph from the FCV Risk Exposure section above",
+  "sensitivity_summary": "80-100 word assessment copied from the FCV Sensitivity Summary narrative block above",
+  "responsiveness_summary": "80-100 word assessment copied from the FCV Responsiveness Summary narrative block above",
+  "risk_exposure": {{{{
+    "risks_to": "The Risks to project paragraph from the FCV Risk Exposure section above",
+    "risks_from": "The How project could affect fragility paragraph from the FCV Risk Exposure section above"
+  }}}},
   "priorities": [
-    {
-      "number": 1,
+    {{{{
       "title": "Priority 1 · Short descriptive phrase",
-      "dimension": "Inclusion",
+      "fcv_dimension": "Inclusion",
       "tag": "[S+R]",
+      "refresh_shift": "Shift B: Differentiate",
       "risk_level": "High",
       "the_gap": "Specific gap with named location/group/institution",
-      "why_it_matters": "Why this gap matters for this project, including S/R pillar justification for [R] or [S+R] tags",
-      "recommendation": "Revise the Environmental and Social Commitment Plan to include a conflict-sensitive stakeholder engagement protocol specific to gang-controlled corridors along the CA-13. The protocol should mandate use of trusted community intermediaries — including local parish networks and municipal women's councils — rather than direct government outreach in contested areas. Engage SIT's social development team to pilot the protocol in San Pedro Sula during the first six months of implementation, using anonymous feedback channels to detect intimidation. Flag security incidents monthly to the TTL via the PIU, with a clear threshold (>2 incidents per corridor per quarter) triggering a pause and review.",
-      "who_acts": "TTL",
-      "when": "Before appraisal",
-      "resources": "Moderate",
+      "why_it_matters": "Why this gap matters for this project, including shift justification for [R] or [S+R] tags",
+      "recommendation": "- **ESCP Commitment #4** — Add a conflict-sensitive stakeholder engagement protocol for gang-controlled corridors along the CA-13, requiring use of trusted community intermediaries (local parish networks, municipal women's councils) rather than direct government outreach in contested areas\n- **Stakeholder Engagement Plan (Annex 5)** — Include anonymous feedback channels designed to detect intimidation or extortion during consultations, with clear escalation thresholds that trigger a pause-and-review\n- **PIU reporting requirements** — Add monthly security incident reporting to the TTL, with a defined threshold for triggering operational review",
+      "who_acts": "TTL; ESF Team",
+      "when": "Preparation",
+      "resources": "Moderate (dedicated allocation)",
       "pad_sections": "Annex 5: Stakeholder Engagement Plan; ESCP Commitment #4",
-      "suggested_language": "2–4 sentences of draft PAD language the TTL could insert verbatim, written in WBG document register",
-      "implementation_note": "1–2 sentences on timing, cost, sequencing, or key dependency"
-    }
+      "suggested_language": "2-4 sentences of draft PAD language the TTL could insert verbatim, written in WBG document register",
+      "implementation_note": "1-2 sentences on timing, cost, sequencing, or key dependency"
+    }}}}
   ]
-}
+}}}}
 %%%JSON_END%%%
 
-IMPORTANT: The JSON block must come AFTER all narrative text. Do not include any explanatory text inside the JSON block itself. Use exact field names as shown. The `tag` field must be exactly "[S]", "[R]", or "[S+R]" (with square brackets). The `fcv_rating` and `fcv_responsiveness_rating` must be exactly one of: "Extremely Low" | "Very Low" | "Low" | "Adequate" | "Well Embedded" | "Very Well Embedded".
+IMPORTANT: The JSON block must come AFTER all narrative text. Do not include any explanatory text inside the JSON block itself. Use exact field names as shown. The `tag` field must be exactly "[S]", "[R]", or "[S+R]" (with square brackets). The `fcv_rating` and `fcv_responsiveness_rating` must be exactly one of: "Extremely Low" | "Very Low" | "Low" | "Adequate" | "Well Embedded" | "Very Well Embedded". The `refresh_shift` field must be exactly one of: "Shift A: Anticipate" | "Shift B: Differentiate" | "Shift C: Jobs & private sector" | "Shift D: Enhanced toolkit". The `who_acts` field is semicolon-separated (e.g. "TTL; ESF Team"). The `when` field must be exactly one of: "Identification" | "Preparation" | "Appraisal" | "Implementation" | "Restructuring".
 
 Now produce the FCV Support Note following this exact structure.''',
 
-"explorer": '''You are an FCV (Fragility, Conflict, and Violence) specialist supporting a World Bank Task Team Leader (TTL). A core priority recommendation has already been identified for this project, along with specific PAD language and an implementation note. Your job is to generate 2–3 alternative approaches that go BEYOND the core recommendation — for teams with additional appetite, resources, or political capital.
+"deeper": '''You are an FCV (Fragility, Conflict, and Violence) specialist supporting a World Bank Task Team Leader (TTL). A core priority recommendation has already been identified for this project, along with specific PAD language and an implementation note. Your job is to generate 2-3 alternative approaches that go BEYOND the core recommendation — for teams with additional appetite, resources, or political capital.
 
 These alternatives are explicitly optional enhancements, not prerequisites. The core recommendation stands on its own.
 
@@ -605,21 +669,25 @@ These alternatives are explicitly optional enhancements, not prerequisites. The 
 Produce output using ONLY these section markers:
 
 %%%GO_FURTHER_START%%%
-[2–3 alternative approaches — see requirements below]
+[2-3 alternative approaches — see requirements below]
 %%%GO_FURTHER_END%%%
 
 ## Requirements for each alternative approach
 
-Produce exactly 2–3 items. For each, use:
+Produce exactly 2-3 items. For each, use:
 
 %%%GF_ITEM%%%
 %%%GF_TITLE%%% [Short, verb-led title — max 10 words]
-[2–3 paragraphs of substantive, specific prose explaining:
+[2-3 paragraphs of substantive, specific prose explaining:
 - What this alternative involves concretely (named mechanism, actor, timing)
 - Why it adds value beyond the core recommendation
 - Which specific PAD section or document it would affect (e.g. "Annex 5: SEP", "ESCP Commitment #3", "Project Operations Manual — Adaptive Management")
 - What preconditions, cost, or dependencies it requires
+- Where relevant, how this connects to one of the FCV Refresh strategic shifts (Shift A: Anticipate, Shift B: Differentiate, Shift C: Jobs & Private Sector, Shift D: Enhanced Toolkit)
 Make unambiguously clear this is an optional enhancement, not a prerequisite.]
+
+## Who might act
+Use the expanded actor vocabulary: TTL, PIU, Government, FCV CC, FM Team, ESF Team, Technical Team, M&E Team
 
 ## Tone and style
 - Write for a TTL who is time-pressed but analytically sharp
@@ -643,8 +711,43 @@ Make unambiguously clear this is an optional enhancement, not a prerequisite.]
 
 Begin your response immediately with %%%GO_FURTHER_START%%%.''',
 
+"deeper_playbook": '''# Role
+You are an FCV operational specialist helping a World Bank Task Team connect a specific priority action to concrete resources, tools, and guidance from the WBG FCV Playbook.
+
+# Context
+You are given a specific priority from an FCV screening, along with the relevant operational playbook guidance for this project's lifecycle stage.
+
+{playbook_content}
+
+# Task
+For the given priority, draw directly from the FCV Playbook content above to identify:
+
+1. **What the Playbook says** — Quote or closely paraphrase the specific Playbook guidance that is most relevant to this priority. What does the Playbook recommend for this type of issue at this project stage? Be specific — cite the section or phase.
+
+2. **Operational tools and flexibilities available** — Name the specific mechanisms the TTL can draw on (CERC, HEIS, TPM, GEMS, condensed procedures, phased disbursement, framework approach, etc.) and explain in 1-2 sentences how each applies to this priority in this country context.
+
+3. **WBG resources the TTL can access** — Name the specific teams, units, or coordination mechanisms available: GEMS team, FCV Group, OPCS, SSI, LEGAM, regional FCV coordinators, HDP nexus partners. For each, explain what they can provide for this specific priority.
+
+4. **Policy hooks** — Cite the specific policy provisions (OP 7.30, OP 8.00, Para 12 IPF, etc.) that enable or support the recommended action. Explain briefly how each applies.
+
+# Output Format
+Structured prose, 300-500 words. Use clear thematic headings (bold). Write for a TTL who needs to know what is available to them and how to access it.
+Be specific to the priority — do not give generic FCV advice. Reference the project's country, sector, and specific design elements where relevant.
+
+# Priority you are addressing
+
+**Title:** {priority_title}
+
+**FCV Dimension:** {priority_dimension}
+
+**Core recommendation:**
+{priority_recommendation}
+
+**Implementation note:**
+{priority_impl_note}''',
+
 "followon": '''# Role
-You are a senior FCV specialist at the World Bank supporting a Task Team Leader (TTL) who has just completed a four-stage FCV analysis for their project. The full analysis — including the Recommendations Note — is in the conversation history above.
+You are a senior FCV specialist at the World Bank supporting a Task Team Leader (TTL) who has just completed a three-stage FCV analysis for their project. The full analysis — including the Recommendations Note — is in the conversation history above.
 
 Your job is to respond to whatever the TTL asks next. Common requests include:
 - Drafting a peer review comment or email for a PCN, PAD, or CPF document
@@ -707,9 +810,11 @@ Always check and comment on:
 
 # General rules (all request types)
 - Do NOT regenerate the full Recommendations Note or repeat the analysis summary
-- Draw specifically on the analysis findings — name locations, groups, mechanisms, and priorities as established in Stages 1–4
+- Draw specifically on the analysis findings — name locations, groups, mechanisms, and priorities as established in Stages 1-3
 - Be specific and operational; avoid generic FCV language not grounded in this project
-- If the user provides new project context (e.g. a dimension they forgot to mention): briefly identify which priorities this most affects and suggest what specific change to each priority's recommendation would follow — then offer a full re-analysis (direct them to "Go back to Stage 3")
+- When referencing FCV responsiveness, use the four FCV Refresh strategic shifts (Shift A: Anticipate, Shift B: Differentiate, Shift C: Jobs & Private Sector, Shift D: Enhanced Toolkit) rather than the old FCV Strategy 2020-2025 pillars
+- Use the status terminology: "Strongly addressed", "Partially addressed", "Weakly addressed", "Not addressed"
+- If the user provides new project context (e.g. a dimension they forgot to mention): briefly identify which priorities this most affects and suggest what specific change to each priority's recommendation would follow — then offer a full re-analysis (direct them to "Go back to Stage 2")
 - If reviewing pasted text: compare against the relevant priority recommendation, identify what it addresses well, and propose specific edits to strengthen it
 
 # Tone
@@ -717,15 +822,22 @@ Collegial, practical, peer-to-peer — the same register as the Recommendations 
 
 
 
-def clean_stage4_output(text):
-    """Strip machine-readable blocks from Stage 4 output, leaving only the narrative.
+def clean_stage2_output(text):
+    """Strip delimiter blocks from Stage 2 output for display."""
+    text = re.sub(r'%%%STAGE2_RATINGS_START%%%.*?%%%STAGE2_RATINGS_END%%%', '', text, flags=re.DOTALL)
+    text = re.sub(r'%%%UNDER_HOOD_START%%%.*?%%%UNDER_HOOD_END%%%', '', text, flags=re.DOTALL)
+    return text.strip()
 
-    Primary target: %%%JSON_START%%% / %%%JSON_END%%% block emitted by the new
+
+def clean_stage3_output(text):
+    """Strip machine-readable blocks from Stage 3 output, leaving only the narrative.
+
+    Primary target: %%%JSON_START%%% / %%%JSON_END%%% block emitted by the
     JSON-architecture prompt. The JSON block contains all structured data (priorities,
     ratings, summaries, risk exposure) and is parsed separately by extract_priorities().
 
     Fallback stripping of legacy delimiter blocks is preserved so that any cached or
-    stored Stage 4 outputs produced by the old prompt continue to render cleanly.
+    stored outputs produced by the old prompt continue to render cleanly.
 
     Heading cleanup and blank-line normalisation are also applied.
     """
@@ -784,7 +896,7 @@ def extract_gap_table(text):
 
 
 def extract_priorities(text: str, uploaded_doc_names: list = None) -> dict:
-    """Parse %%%JSON_START%%% / %%%JSON_END%%% block from Stage 4 output.
+    """Parse %%%JSON_START%%% / %%%JSON_END%%% block from Stage 3/4 output.
 
     Returns a dict:
       On success: {'error': False, 'priorities': [...], 'fcv_rating': ...,
@@ -794,7 +906,7 @@ def extract_priorities(text: str, uploaded_doc_names: list = None) -> dict:
     """
     _error_result = {
         'error': True,
-        'message': 'Stage 4 output could not be parsed — please re-run this stage.',
+        'message': 'Stage 3/4 output could not be parsed — please re-run this stage.',
         'priorities': [],
         'fcv_rating': '',
         'fcv_responsiveness_rating': '',
@@ -844,6 +956,15 @@ def extract_priorities(text: str, uploaded_doc_names: list = None) -> dict:
 
         priorities.append(pr)
 
+    # Extract risk_exposure from nested object (new schema)
+    risk_exposure_raw = data.get('risk_exposure', {})
+    if isinstance(risk_exposure_raw, dict):
+        risks_to = str(risk_exposure_raw.get('risks_to', '')).strip()
+        risks_from = str(risk_exposure_raw.get('risks_from', '')).strip()
+    else:
+        risks_to = ''
+        risks_from = ''
+
     return {
         'error': False,
         'priorities': priorities,
@@ -852,8 +973,8 @@ def extract_priorities(text: str, uploaded_doc_names: list = None) -> dict:
         'sensitivity_summary': str(data.get('sensitivity_summary', '')).strip(),
         'responsiveness_summary': str(data.get('responsiveness_summary', '')).strip(),
         'risk_exposure': {
-            'risks_to': str(data.get('risk_to_project', '')).strip(),
-            'risks_from': str(data.get('risk_from_project', '')).strip(),
+            'risks_to': risks_to,
+            'risks_from': risks_from,
         },
     }
 
@@ -992,84 +1113,41 @@ def build_doc_type_context(document_type: str, stage: int) -> str:
         },
         3: {
             'PCN': (
-                "GAP FRAMING: Design opportunities. Frame all gaps as structural redesign openings, "
-                "not deficiencies. Propose bold mitigations: component redesign, alternative "
-                "beneficiary targeting, alternative implementation modalities (community-driven "
-                "development, local CSO partnerships). The Do-No-Harm checklist should include "
-                "early-stage safeguards: stakeholder mapping, conflict analysis integration into "
-                "preparation, and theory-of-change stress-testing."
-            ),
-            'PID': (
-                "GAP FRAMING: Preparation priorities. Frame gaps as things that can still be "
-                "integrated before appraisal. Propose mitigations that do not require wholesale "
-                "redesign: targeted consultations, adding FCV-sensitive monitoring indicators, "
-                "adjusting procurement or fiduciary arrangements. The Do-No-Harm checklist should "
-                "focus on what analytical work and stakeholder engagement is still possible."
-            ),
-            'PAD': (
-                "GAP FRAMING: Implementation adjustments. Frame gaps as operational safeguards and "
-                "early supervision priorities — things embeddable in the Operations Manual, citizen "
-                "engagement framework, or M&E plan. Do not propose component redesign. The "
-                "Do-No-Harm checklist focuses on operational safeguards during implementation."
-            ),
-            'AF': (
-                "GAP FRAMING: Course-correction. Frame gaps as AF-specific opportunities to address "
-                "weaknesses from the original project. Propose concrete additions: new sub-components, "
-                "adjusted targeting, revised citizen engagement, updated safeguards. The Do-No-Harm "
-                "checklist should ask explicitly: Is the AF inadvertently reinforcing exclusion or "
-                "grievances from the original project?"
-            ),
-            'Restructuring': (
-                "GAP FRAMING: Restructuring design tweaks. Propose adjustments to the restructuring "
-                "itself: safeguards to add, consultation processes to embed, revised risk mitigation. "
-                "The Do-No-Harm checklist should ask: Will the restructuring create new grievances or "
-                "exacerbate exclusion?"
-            ),
-            'ISR': (
-                "GAP FRAMING: Supervision priorities and immediate actions. Propose mitigations that "
-                "are implementable now without formal restructuring: stakeholder re-engagement, M&E "
-                "adjustments, revised procurement or fiduciary controls, GRM improvements. The "
-                "Do-No-Harm checklist should ask: Are there active implementation practices "
-                "currently creating harm?"
-            ),
-        },
-        4: {
-            'PCN': (
                 "TONE: Exploratory and ambitious. Encourage the TTL to consider alternative "
-                "approaches rather than just optimising the current design. Explorer deep-dives should "
+                "approaches rather than just optimising the current design. Go Deeper options should "
                 "offer alternative theories of change, cross-sectoral linkages, and adaptive "
                 "management frameworks. Recommendations should reflect that maximum flexibility "
-                "still exists."
+                "still exists. Frame gaps as structural redesign openings, not deficiencies."
             ),
             'PID': (
                 "TONE: Constructive and focused. Recommendations should prioritise integration points "
                 "before appraisal: analytical work still possible, stakeholder engagement, results "
-                "framework adjustments. Explorer deep-dives should focus on what can realistically "
-                "be integrated in the remaining preparation window."
+                "framework adjustments. Frame gaps as preparation priorities — things that can still "
+                "be integrated before appraisal without wholesale redesign."
             ),
             'PAD': (
                 "TONE: Pragmatic and precise. Focus recommendations on actionable Year 1 supervision "
                 "priorities — what the TTL should watch for in the first year of implementation, "
-                "which indicators to track closely, when to trigger adaptive measures. Explorer "
-                "deep-dives should focus on risk mitigation scenarios and operational contingencies, "
-                "not alternative designs."
+                "which indicators to track closely, when to trigger adaptive measures. Frame gaps as "
+                "implementation adjustments embeddable in the Operations Manual, citizen engagement "
+                "framework, or M&E plan. Do not propose component redesign."
             ),
             'AF': (
                 "TONE: Reflective and corrective. Recommendations should highlight lessons learned "
-                "from the original project and how the AF can integrate them. Explorer deep-dives "
-                "should offer concrete adaptive design elements addable via the AF instrument."
+                "from the original project and how the AF can integrate them. Frame gaps as "
+                "AF-specific opportunities to address weaknesses from the original project."
             ),
             'Restructuring': (
                 "TONE: Adaptive and alert. Recommendations should focus on what to monitor closely "
                 "during the restructured project period and what triggers should prompt further "
-                "action. Explorer deep-dives should include scenario planning for potential FCV "
-                "shocks during the remaining implementation period."
+                "action. Focus on adjustments to the restructuring itself: safeguards to add, "
+                "consultation processes to embed, revised risk mitigation."
             ),
             'ISR': (
                 "TONE: Operational and immediate. Recommendations should be concrete supervision "
                 "actions: what to discuss at the next aide-memoire, which indicators to watch, "
-                "when to trigger a formal risk review or mid-term review. Explorer deep-dives should "
-                "be tactical, addressing specific implementation bottlenecks directly."
+                "when to trigger a formal risk review or mid-term review. Frame gaps as supervision "
+                "priorities and immediate actions implementable without formal restructuring."
             ),
         },
     }
@@ -1111,8 +1189,15 @@ def get_prompt_for_stage(stage):
 
 
 def get_stage_name(stage):
-    return {1: "Identifying FCV Risks", 2: "FCV-Sensitivity Screening",
-            3: "Identifying Project Gaps", 4: "Recommendations Note"}.get(stage, f"Stage {stage}")
+    names = {
+        "1": "Context & Extraction",
+        "2": "FCV Assessment",
+        "3": "Recommendations Note",
+        "deeper": "Go Deeper",
+        "deeper_playbook": "Playbook References",
+        "followon": "Follow-on"
+    }
+    return names.get(str(stage), f"Stage {stage}")
 
 
 # ── PDF helper ───────────────────────────────────────────────────────────────
@@ -1319,6 +1404,16 @@ def run_fcv_web_research(country: str, sector: str, api_client) -> dict:
 
 # ── Flask app ────────────────────────────────────────────────────────────────
 
+# Clear stale prompts.json if it references old 4-stage keys
+if os.path.exists(PROMPTS_FILE):
+    try:
+        with open(PROMPTS_FILE) as _f:
+            _old_prompts = json.load(_f)
+        if '4' in _old_prompts or 'explorer' in _old_prompts:
+            os.remove(PROMPTS_FILE)
+    except (json.JSONDecodeError, IOError):
+        pass
+
 app = Flask(__name__, static_folder='static')
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
 _client = None
@@ -1509,6 +1604,55 @@ def run_stage():
             doc_type_ctx = build_doc_type_context(document_type, stage)
             if doc_type_ctx:
                 stage_prompt = doc_type_ctx + "\n\n" + stage_prompt
+
+            # Stage 2 (merged assessment) needs reference material for the 12 OST recs,
+            # 25 key questions, 3 key elements, FCV Refresh shifts, and S/R definitions.
+            if stage == 2:
+                stage_prompt = (
+                    stage_prompt +
+                    "\n\n--- WBG FCV Operational Manual (12 Recommendations, 25 Key Questions, 3 Key Elements) ---\n" +
+                    FCV_OPERATIONAL_MANUAL +
+                    "\n\n--- WBG FCV Strategy Refresh Framework (4 Shifts) ---\n" +
+                    FCV_REFRESH_FRAMEWORK +
+                    "\n\n--- WBG FCV Sensitivity and Responsiveness Guide ---\n" +
+                    FCV_GUIDE
+                )
+
+            # Stage 3 (Recommendations Note) needs stage-awareness injection
+            # and FCV Refresh framework reference material.
+            elif stage == 3:
+                doc_type = data.get('doc_type', document_type or 'Unknown')
+                stage_config = STAGE_GUIDANCE_MAP.get(doc_type, STAGE_GUIDANCE_MAP.get('Unknown', {}))
+                playbook_phase = stage_config.get('playbook_phase', 'Preparation')
+                if playbook_phase == 'Implementation':
+                    playbook = PLAYBOOK_IMPLEMENTATION
+                elif playbook_phase == 'Closing':
+                    playbook = PLAYBOOK_CLOSING
+                else:
+                    playbook = PLAYBOOK_PREPARATION
+                if doc_type == 'ISR':
+                    playbook = PLAYBOOK_IMPLEMENTATION + "\n\n" + PLAYBOOK_CLOSING
+
+                timing_opts = stage_config.get('timing_options', ['Preparation'])
+                timing_str = ' / '.join(timing_opts) if isinstance(timing_opts, list) else str(timing_opts)
+
+                # Format the prompt with stage-awareness placeholders
+                try:
+                    stage_prompt = stage_prompt.format(
+                        doc_type=doc_type,
+                        timing_emphasis=timing_str,
+                        playbook_guidance=playbook
+                    )
+                except KeyError:
+                    pass  # If format fails, use prompt as-is
+
+                # Append FCV Refresh framework as reference material
+                stage_prompt = (
+                    stage_prompt +
+                    "\n\n--- WBG FCV Strategy Refresh Framework (4 Shifts) ---\n" +
+                    FCV_REFRESH_FRAMEWORK
+                )
+
             messages.append({"role": "user", "content": stage_prompt})
 
         def generate():
@@ -1581,7 +1725,8 @@ def run_stage():
 
                     content_parts.append({"type": "text", "text": (
                         "\n\n--- WBG FCV Sensitivity and Responsiveness Guide (always included) ---\n" + FCV_GUIDE +
-                        "\n\n--- WBG FCV Operational Manual — Design Framework (always included) ---\n" + FCV_OPERATIONAL_MANUAL
+                        "\n\n--- FCV Operational Playbook — Diagnostics Phase (always included) ---\n" + PLAYBOOK_DIAGNOSTICS +
+                        "\n\n--- WBG FCV Strategy Refresh Framework (always included) ---\n" + FCV_REFRESH_FRAMEWORK
                     )})
                     content_parts.append({"type": "text", "text": stage_prompt})
                     messages.append({"role": "user", "content": content_parts})
@@ -1597,7 +1742,7 @@ def run_stage():
 
                 full_text = ''.join(collected)
 
-                # Stage 4: extract priorities + rating from raw delimited text, then clean for display
+                # Post-processing: extract structured data from delimited blocks
                 priorities = []
                 fcv_rating = ''
                 fcv_responsiveness_rating = ''
@@ -1607,7 +1752,18 @@ def run_stage():
                 responsiveness_summary = ''
                 parse_error = False
                 parse_error_message = ''
-                if stage == 4:
+                stage2_ratings = {}
+                under_hood = {}
+
+                if stage == 2:
+                    # Stage 2: extract ratings and Under the Hood panels
+                    stage2_ratings = extract_stage2_ratings(full_text)
+                    under_hood = extract_under_hood(full_text)
+                    parse_error = under_hood.get('error', False) or stage2_ratings.get('error', False)
+                    parse_error_message = under_hood.get('message', '') or stage2_ratings.get('message', '')
+
+                elif stage == 3:
+                    # Stage 3 (Recommendations Note): extract priorities + ratings
                     uploaded_doc_names = [
                         doc.get('name', '') for doc in data.get('documents', [])
                         if doc.get('name')
@@ -1622,7 +1778,7 @@ def run_stage():
                     gap_table = extract_gap_table(full_text)
                     parse_error = parsed.get('error', False)
                     parse_error_message = parsed.get('message', '')
-                    full_text = clean_stage4_output(full_text)
+                    full_text = clean_stage3_output(full_text)
                     from datetime import date
                     header = DO_NO_HARM_HEADER.format(date=date.today().strftime('%d %B %Y'))
                     full_text = header + full_text
@@ -1630,7 +1786,7 @@ def run_stage():
                 # For Stage 1, replace the large content_parts user message with a compact
                 # placeholder before storing history. Subsequent stages only extract assistant
                 # outputs from history, so carrying the full documents/research/guides forward
-                # would send huge payloads unnecessarily on every Stage 2/3/4 call.
+                # would send huge payloads unnecessarily on every Stage 2/3 call.
                 if stage == 1:
                     updated_messages = [
                         {"role": "user", "content": "[Stage 1 — project documents and FCV context analysed]"},
@@ -1641,7 +1797,41 @@ def run_stage():
                 if len(updated_messages) > 20:
                     updated_messages = updated_messages[-20:]
 
-                yield f"data: {json.dumps({'done': True, 'result': full_text, 'history': updated_messages, 'stage': stage, 'priorities': priorities, 'fcv_rating': fcv_rating, 'fcv_responsiveness_rating': fcv_responsiveness_rating, 'gap_table': gap_table, 'risk_exposure': risk_exposure, 'sensitivity_summary': sensitivity_summary, 'responsiveness_summary': responsiveness_summary, 'parse_error': parse_error, 'parse_error_message': parse_error_message, 'research_brief': research_brief_text if stage == 1 else None, 'research_country': research_country if stage == 1 else None})}\n\n"
+                # Build done event payload
+                done_data = {
+                    'done': True,
+                    'result': full_text,
+                    'history': updated_messages,
+                    'stage': stage,
+                    'parse_error': parse_error,
+                    'parse_error_message': parse_error_message,
+                    'research_brief': research_brief_text if stage == 1 else None,
+                    'research_country': research_country if stage == 1 else None,
+                }
+
+                if stage == 2:
+                    # Stage 2: include ratings and Under the Hood panel data
+                    done_data['display_text'] = under_hood.get('display_text', full_text)
+                    done_data['sensitivity_rating'] = stage2_ratings.get('sensitivity_rating', '')
+                    done_data['responsiveness_rating'] = stage2_ratings.get('responsiveness_rating', '')
+                    done_data['under_hood'] = {
+                        'recs_table': under_hood.get('recs_table', ''),
+                        'dnh_checklist': under_hood.get('dnh_checklist', ''),
+                        'questions_map': under_hood.get('questions_map', ''),
+                        'evidence_trail': under_hood.get('evidence_trail', ''),
+                    }
+
+                elif stage == 3:
+                    # Stage 3: include priorities, ratings, summaries, risk exposure
+                    done_data['priorities'] = priorities
+                    done_data['fcv_rating'] = fcv_rating
+                    done_data['fcv_responsiveness_rating'] = fcv_responsiveness_rating
+                    done_data['gap_table'] = gap_table
+                    done_data['risk_exposure'] = risk_exposure
+                    done_data['sensitivity_summary'] = sensitivity_summary
+                    done_data['responsiveness_summary'] = responsiveness_summary
+
+                yield f"data: {json.dumps(done_data)}\n\n"
 
             except anthropic.AuthenticationError:
                 yield f"data: {json.dumps({'error': 'Invalid API key.'})}\n\n"
@@ -1655,56 +1845,86 @@ def run_stage():
         return jsonify({'error': str(e)}), 500
 
 
-@app.route('/api/run-explorer', methods=['POST'])
-def run_explorer():
+@app.route('/api/run-deeper', methods=['POST'])
+def run_deeper():
+    """Handle Go Deeper requests for priority cards.
+
+    Supports tab types:
+    - 'playbook_refs': generates FCV Playbook-grounded resources and guidance (uses 'deeper_playbook' prompt)
+    - 'alternatives': (legacy, no longer shown in UI) generates optional alternative approaches
+    The 'analytical_trail' / 'trail' tab is handled client-side — no backend call needed.
+    """
     try:
         data = request.get_json()
         if not data:
             return jsonify({'error': 'Invalid request.'}), 400
 
-        follow_up_messages = data.get('follow_up_messages', None)
+        tab = data.get('tab', 'alternatives')
+        priority_title = data.get('priority_title', '').strip()
+        priority_body = data.get('priority_body', '').strip()
+        history = data.get('history', [])
+        doc_type = data.get('doc_type', 'Unknown')
+        prompt_override = data.get('prompt_override', '').strip()
+
         MAX_ASSISTANT_CHARS = 40000
 
-        if follow_up_messages:
-            # Follow-up "dig deeper" query — use provided messages directly
-            messages = []
-            for m in follow_up_messages:
-                if m['role'] == 'assistant':
-                    c = m['content'] if isinstance(m['content'], str) else ''
-                    if len(c) > MAX_ASSISTANT_CHARS:
-                        c = c[:MAX_ASSISTANT_CHARS] + '\n...[truncated]'
-                    messages.append({'role': m['role'], 'content': c})
-                else:
-                    messages.append(m)
-        else:
-            # Initial explorer call for a priority
-            priority_title = data.get('priority_title', '').strip()
-            priority_body = data.get('priority_body', '').strip()
-            history = data.get('history', [])
-            prompt_override = data.get('prompt_override', '').strip()
+        # Build context from stage history
+        prior_outputs = []
+        for m in history:
+            if m['role'] == 'assistant':
+                c = m['content'] if isinstance(m['content'], str) else ''
+                if len(c) > MAX_ASSISTANT_CHARS:
+                    c = c[:MAX_ASSISTANT_CHARS] + '\n...[truncated]'
+                prior_outputs.append(c)
 
-            # Build context from stage history
-            prior_outputs = []
-            for m in history:
-                if m['role'] == 'assistant':
-                    c = m['content'] if isinstance(m['content'], str) else ''
-                    if len(c) > MAX_ASSISTANT_CHARS:
-                        c = c[:MAX_ASSISTANT_CHARS] + '\n...[truncated]'
-                    prior_outputs.append(c)
+        messages = []
+        if prior_outputs:
+            context = "\n\n---\n\n".join(
+                f"Stage {i+1} output:\n{o}" for i, o in enumerate(prior_outputs)
+            )
+            messages = [
+                {"role": "user", "content": f"Prior FCV analysis context:\n\n{context}\n\nUse this as the basis for the deep-dive."},
+                {"role": "assistant", "content": "Understood. I will use this prior analysis to generate concrete guidance for the selected priority."}
+            ]
 
-            messages = []
-            if prior_outputs:
-                context = "\n\n---\n\n".join(
-                    f"Stage {i+1} output:\n{o}" for i, o in enumerate(prior_outputs)
+        if tab == 'playbook_refs':
+            # Playbook references tab — use deeper_playbook prompt with playbook content
+            prompt = prompt_override if prompt_override else load_prompts().get('deeper_playbook', DEFAULT_PROMPTS.get('deeper_playbook', ''))
+
+            # Select playbook content based on doc_type
+            stage_config = STAGE_GUIDANCE_MAP.get(doc_type, STAGE_GUIDANCE_MAP.get('Unknown', {}))
+            playbook_phase = stage_config.get('playbook_phase', 'Preparation')
+            if playbook_phase == 'Implementation':
+                playbook = PLAYBOOK_IMPLEMENTATION
+            elif playbook_phase == 'Closing':
+                playbook = PLAYBOOK_CLOSING
+            else:
+                playbook = PLAYBOOK_PREPARATION
+            if doc_type == 'ISR':
+                playbook = PLAYBOOK_IMPLEMENTATION + "\n\n" + PLAYBOOK_CLOSING
+
+            # Extract additional priority fields from the request for richer context
+            priority_dimension = data.get('priority_dimension', '')
+            priority_recommendation = data.get('priority_recommendation', '')
+            priority_impl_note = data.get('priority_impl_note', '')
+
+            # Format the playbook prompt with context
+            try:
+                prompt = prompt.format(
+                    playbook_content=playbook,
+                    priority_title=priority_title,
+                    priority_dimension=priority_dimension,
+                    priority_recommendation=priority_recommendation,
+                    priority_impl_note=priority_impl_note,
                 )
-                messages = [
-                    {"role": "user", "content": f"Prior FCV analysis context:\n\n{context}\n\nUse this as the basis for the explorer deep-dive."},
-                    {"role": "assistant", "content": "Understood. I will use this prior analysis to generate concrete options for the selected priority."}
-                ]
+            except KeyError:
+                pass  # If format fails, use prompt as-is
 
-            # Load and fill the explorer prompt
-            explorer_prompt = prompt_override if prompt_override else load_prompts().get('explorer', '')
-            filled_prompt = explorer_prompt.replace('{PRIORITY_TITLE}', priority_title).replace('{PRIORITY_TEXT}', priority_body)
+            messages.append({"role": "user", "content": prompt})
+        else:
+            # Alternatives tab — same as legacy explorer
+            prompt = prompt_override if prompt_override else load_prompts().get('deeper', DEFAULT_PROMPTS.get('deeper', ''))
+            filled_prompt = prompt.replace('{PRIORITY_TITLE}', priority_title).replace('{PRIORITY_TEXT}', priority_body)
             messages.append({"role": "user", "content": filled_prompt})
 
         def generate():
