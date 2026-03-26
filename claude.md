@@ -37,7 +37,7 @@ Every prompt output tags recommendations, mitigations, and priorities as [S], [R
 - Under the Hood panels renamed to plain-language questions with OST Manual subtitles; Panel 1 gains S/R Tag column
 - S/R definition box shown at top of Stage 2 (with tag legend) and Stage 3 output
 - S/R definitions added to landing page hero section
-- Stage 3 `recommendation` field now produces 2–4 markdown bullets identifying document elements to revise (was single prose paragraph)
+- Stage 3 `recommendation` replaced by structured `actions` array — each action has `document_element`, `guidance` (2–4 sentences), and `suggested_language` (2–3 sentences of ready-to-paste PAD text). Rendered as individual action cards with "Suggested text:" label. "Where in the PAD" chips removed (action titles already identify document elements).
 - Stage 3 no longer includes inline `[From: ...]` citation tags — clean peer-review memo
 - "Go Deeper" reduced to 2 tabs: "Evidence trail" (instant, default) + "Link to FCV Playbook" (LLM call). "Other options" (alternatives) tab removed
 - Deeper Playbook prompt rewritten to focus on Playbook quotes, operational tools, WBG teams/resources, and policy hooks
@@ -177,20 +177,22 @@ STAGE 3 — Recommendations Note (stage-aware)
 │     Top-level fields: fcv_rating, fcv_responsiveness_rating, sensitivity_summary,
 │       responsiveness_summary, risk_exposure {risks_to, risks_from}, priorities[]
 │     Each priority:
-│       title, fcv_dimension, tag, refresh_shift (NEW — one of 4 FCV Refresh shifts),
-│       risk_level, the_gap, why_it_matters, recommendation (SINGULAR),
+│       title, fcv_dimension, tag, refresh_shift (one of 4 FCV Refresh shifts),
+│       risk_level, the_gap, why_it_matters,
+│       actions[] (array of {document_element, guidance, suggested_language}),
 │       who_acts (multi-value, semicolon-separated: TTL; PIU; Government; FCV CC;
 │                 FM Team; ESF Team; Technical Team; M&E Team),
 │       when (Identification | Preparation | Appraisal | Implementation | Restructuring),
 │       resources (Minimal (existing budget) | Moderate (dedicated allocation) |
 │                  Significant (requires restructuring)),
-│       pad_sections (semicolon-separated), suggested_language, implementation_note
+│       pad_sections (semicolon-separated), implementation_note
 │     TAG: [S] / [R] / [S+R] — same strict definition as Stage 2
 │     Most priorities will be [S] or [R]; [S+R] only for four named overlap zones
 ├─ extract_priorities() — same JSON-parse-based approach as v6.0, with updates:
 │  ├─ Parses new refresh_shift field
+│  ├─ Normalises actions[] array (new format); backwards-compat converts old recommendation string
 │  ├─ Updated who_acts and when validation against new value sets
-│  ├─ _check_specificity() and _check_citations() unchanged
+│  ├─ _check_specificity() validates across all action guidance text
 │  └─ Returns unified dict with all fields + per-priority specificity_warning/citation_warnings
 ├─ clean_stage3_output() (renamed from clean_stage4_output()):
 │  1. Strip %%%JSON_START/END%%% block
@@ -207,11 +209,13 @@ STAGE 3 — Recommendations Note (stage-aware)
    │  NOTE: S/R summaries stripped → shown as side-by-side cards from JSON
    ├─ FCV Sensitivity + FCV Responsiveness summary cards (side by side, after Gaps)
    ├─ Priority cards (horizontal stepper, shows one at a time)
-   ├─ Per-priority zone-act layout (5 sections, all from JSON — always available):
+   ├─ Per-priority zone-act layout (from JSON — always available):
    │  ├─ refresh_shift badge (e.g., "FCV Strategy Shift B: Differentiate")
-   │  ├─ Essential action box (recommendation as 2–4 markdown bullets identifying document elements to revise, blue left-border)
-   │  ├─ Where in the PAD (.pad-chip tags split from pad_sections on ";")
-   │  ├─ Suggested PAD language (suggested_language, italic yellow card)
+   │  ├─ Essential actions — loop over actions[] array, each rendered as:
+   │  │  ├─ Document element title (bold, blue — e.g. "ESCP Commitment (new)")
+   │  │  ├─ Guidance text (2–4 sentences)
+   │  │  └─ "Suggested text:" + draft PAD language (italic, yellow card with gold border)
+   │  ├─ "Where in the PAD" chips removed (action titles serve this purpose)
    │  └─ Implementation consideration (implementation_note)
    ├─ S/R tag badges with hover tooltips (unchanged)
    ├─ Specificity + citation warning badges (unchanged)
@@ -298,11 +302,13 @@ The "Other options" (alternatives) tab was removed in v7.2 — user testing show
 **Principle (updated v7.2):** Non-specialist TTLs need clear guidance on what to revise in their project document.
 
 Each priority card is structured around document-level changes from the Stage 3 JSON:
-- `recommendation` — 2–4 markdown bullets, each identifying a specific document element to revise
-- `pad_sections` — explicit PAD sections to modify (semicolon-separated)
-- `suggested_language` — draft text to insert verbatim (2–4 sentences)
+- `actions[]` — array of 2–4 objects, each with:
+  - `document_element` — specific PAD section/component to revise (serves as the action title)
+  - `guidance` — 2–4 sentences describing what to add/revise and why
+  - `suggested_language` — 2–3 sentences of ready-to-paste draft PAD text (labelled "Suggested text:")
+- `pad_sections` — retained in JSON as metadata (no longer displayed as standalone chips)
 - `implementation_note` — timing/cost/dependency note (1–2 sentences)
-- `refresh_shift` — NEW: which FCV Refresh shift this priority addresses
+- `refresh_shift` — which FCV Refresh shift this priority addresses
 
 Go Deeper demoted to a collapsed section — lazy-loaded only if the user opens it, explicitly labelled Optional.
 
