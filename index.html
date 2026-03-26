@@ -766,6 +766,13 @@
     .zone-act-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--s4);margin-bottom:6px;display:flex;align-items:center;gap:5px;}
     .zone-act-primary{padding:0 0 14px 0;}
     .zone-act-essential{background:#f0f7ff;border-left:3px solid var(--wbg-blue);border-radius:0 6px 6px 0;padding:12px 14px;font-size:14px;color:var(--text);line-height:1.75;}
+    .zone-act-intro{font-size:13px;color:var(--muted);margin-bottom:10px;line-height:1.5;}
+    .zone-act-action{background:#f0f7ff;border-left:3px solid var(--wbg-blue);border-radius:0 6px 6px 0;padding:12px 14px;margin-bottom:10px;}
+    .zone-act-action:last-child{margin-bottom:0;}
+    .zone-act-action-title{font-size:13px;font-weight:700;color:var(--wbg-blue);margin-bottom:6px;}
+    .zone-act-action-guidance{font-size:14px;color:var(--text);line-height:1.75;}
+    .zone-act-action-lang{margin-top:8px;}
+    .zone-act-lang-label{font-style:normal;font-weight:600;color:#8a7a20;}
     .zone-act-pad-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;}
     .pad-chip{background:#e8f0fe;color:#1a3a6c;font-size:11.5px;font-family:monospace;padding:3px 9px;border-radius:4px;white-space:nowrap;}
     .zone-act-draft{background:#fffef3;border:1px solid #e8dfa0;border-radius:6px;padding:12px 14px;}
@@ -2791,12 +2798,21 @@ ${md(execSummary)}`;
 </p>`;
         if(pr.the_gap) body += `<p><strong>The Gap:</strong><br>${esc(pr.the_gap)}</p>`;
         if(pr.why_it_matters) body += `<p><strong>Why It Matters:</strong><br>${esc(pr.why_it_matters)}</p>`;
-        if(pr.recommendation) body += `<p><strong>Essential Action:</strong><br>${esc(pr.recommendation)}</p>`;
-        if(pr.pad_sections){
+        if(pr.actions && pr.actions.length > 0){
+          body += `<p><strong>Essential Action${pr.actions.length > 1 ? 's' : ''}:</strong></p>`;
+          pr.actions.forEach(act => {
+            body += `<p style="margin-left:12pt"><strong>${esc(act.document_element||'')}</strong><br>${esc(act.guidance||'')}`;
+            if(act.suggested_language) body += `<br><strong style="color:#8a7a20;font-size:9pt">Suggested text:</strong> <em style="color:#4a4a4a">${esc(act.suggested_language)}</em>`;
+            body += `</p>`;
+          });
+        } else if(pr.recommendation){
+          body += `<p><strong>Essential Action:</strong><br>${esc(pr.recommendation)}</p>`;
+        }
+        if((!pr.actions || pr.actions.length === 0) && pr.pad_sections){
           const chips = pr.pad_sections.split(';').map(s=>s.trim()).filter(Boolean).map(s=>`<code style="background:#e8f0fe;padding:1px 6px;border-radius:3px;font-size:9pt">${esc(s)}</code>`).join(' ');
           body += `<p><strong>Where in the PAD:</strong> ${chips}</p>`;
         }
-        if(pr.suggested_language) body += `<blockquote><strong>Suggested PAD language:</strong><br><em>${esc(pr.suggested_language)}</em></blockquote>`;
+        if((!pr.actions || pr.actions.length === 0) && pr.suggested_language) body += `<blockquote><strong>Suggested PAD language:</strong><br><em>${esc(pr.suggested_language)}</em></blockquote>`;
         if(pr.implementation_note) body += `<p><strong>Implementation consideration:</strong><br>${esc(pr.implementation_note)}</p>`;
         if(pr.who_acts||pr.when||pr.resources){
           const resTooltips={'Minimal':'Existing budget — no additional allocation needed','Moderate':'Dedicated allocation — requires budget line','Significant':'Requires restructuring or additional financing'};
@@ -3278,18 +3294,26 @@ ${md(execSummary)}`;
             How to act
           </div>
           <div class="zone-act-primary">
-            <!-- Essential action -->
-            <div class="zone-act-section">
+            <!-- Essential actions -->
+            ${(pr.actions && pr.actions.length > 0) ? `<div class="zone-act-section">
+              <div class="zone-act-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Essential action${pr.actions.length > 1 ? 's' : ''}</div>
+              <div class="zone-act-intro">${pr.actions.length > 1 ? 'Below are proposed actions to help address this priority.' : 'Below is a proposed action to help address this priority.'}</div>
+              ${pr.actions.map(act => `<div class="zone-act-action">
+                <div class="zone-act-action-title">${esc(act.document_element||'')}</div>
+                <div class="zone-act-action-guidance">${esc(act.guidance||'')}</div>
+                ${act.suggested_language ? `<div class="zone-act-action-lang"><div class="zone-act-draft-text"><span class="zone-act-lang-label">Suggested text:</span> ${esc(act.suggested_language)}</div></div>` : ''}
+              </div>`).join('')}
+            </div>` : (pr.recommendation ? `<div class="zone-act-section">
               <div class="zone-act-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Essential action</div>
-              <div class="zone-act-essential">${esc(pr.recommendation||'')}</div>
-            </div>
-            <!-- Where in the PAD -->
-            ${pr.pad_sections ? `<div class="zone-act-section">
+              <div class="zone-act-essential">${esc(pr.recommendation)}</div>
+            </div>` : '')}
+            <!-- Where in the PAD (legacy only — action titles already identify document elements) -->
+            ${(!pr.actions || pr.actions.length === 0) && pr.pad_sections ? `<div class="zone-act-section">
               <div class="zone-act-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Where in the PAD</div>
               <div class="zone-act-pad-chips">${pr.pad_sections.split(';').map(s=>s.trim()).filter(Boolean).map(s=>`<span class="pad-chip">${esc(s)}</span>`).join('')}</div>
             </div>` : ''}
-            <!-- Suggested language -->
-            ${pr.suggested_language ? `<div class="zone-act-section zone-act-draft">
+            <!-- Suggested language (legacy fallback — only shown if no actions array) -->
+            ${(!pr.actions || pr.actions.length === 0) && pr.suggested_language ? `<div class="zone-act-section zone-act-draft">
               <div class="zone-act-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Suggested PAD language</div>
               <div class="zone-act-draft-text">${esc(pr.suggested_language)}</div>
             </div>` : ''}
