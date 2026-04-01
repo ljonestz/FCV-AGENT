@@ -1410,27 +1410,40 @@ def run_fcv_web_research(country: str, sector: str, api_client) -> dict:
     """
     Run automated FCV web research for the given country using the Anthropic
     web search tool. Returns a dict with 'brief' (str) and 'country' (str).
+    Hard timeout of 150 seconds prevents indefinite hangs on slow API responses.
     """
+    from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeout
     prompt = FCV_RESEARCH_PROMPT.format(country=country, sector=sector)
-    try:
-        resp = api_client.beta.messages.create(
+
+    def _call():
+        return api_client.beta.messages.create(
             model="claude-sonnet-4-20250514",
             max_tokens=5500,
             tools=[{
                 "type": "web_search_20250305",
                 "name": "web_search",
-                "max_uses": 9
+                "max_uses": 6
             }],
             messages=[{"role": "user", "content": prompt}],
             betas=["web-search-2025-03-05"]
         )
-        # Extract text blocks from response (tool_use blocks may be interspersed)
+
+    try:
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(_call)
+            resp = future.result(timeout=150)  # 2.5 minute hard wall-clock limit
+
         brief_parts = []
         for block in resp.content:
             if hasattr(block, 'type') and block.type == 'text':
                 brief_parts.append(block.text)
         brief = '\n'.join(brief_parts).strip()
         return {'brief': brief, 'country': country}
+    except FuturesTimeout:
+        return {
+            'brief': f'*Web research for {country} exceeded the time limit — proceeding without supplemental research.*',
+            'country': country
+        }
     except Exception as e:
         return {
             'brief': f'*Automated FCV web research could not be completed for {country}: {str(e)}*',
