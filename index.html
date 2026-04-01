@@ -1935,15 +1935,103 @@
   // Restore mode preference
   (function(){const m=localStorage.getItem('fcv_analysis_mode');if(m==='stepbystep')selectMode('stepbystep');})();
 
+  // Express resume: check for partial express state on page load
+  (function(){
+    try{
+      const saved=localStorage.getItem('fcv_express_stageOutputs');
+      if(!saved)return;
+      const outputs=JSON.parse(saved);
+      // If Stage 3 is present the run completed — clean up and do nothing
+      if(outputs[3]){localStorage.removeItem('fcv_express_stageOutputs');localStorage.removeItem('fcv_express_stageHists');return;}
+      // Partial state: at least Stage 1 exists but Stage 3 does not
+      const lastStage=outputs[2]?2:outputs[1]?1:null;
+      if(!lastStage)return;
+      // Show resume prompt on the upload panel
+      const resumeDiv=document.createElement('div');
+      resumeDiv.id='express-resume-banner';
+      resumeDiv.className='rerun-banner ani';
+      resumeDiv.style.cssText='margin:16px 0 0;border-radius:8px;padding:14px 18px;display:flex;align-items:flex-start;gap:12px;background:#fffbeb;border:1px solid #F59E0B;';
+      resumeDiv.innerHTML=`
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#B45309" stroke-width="2" style="flex-shrink:0;margin-top:1px"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <div style="flex:1">
+          <div style="font-weight:700;color:#92400E;margin-bottom:4px">Incomplete express run detected</div>
+          <div style="font-size:13px;color:#78350F;margin-bottom:10px">Stage ${lastStage} of 3 completed. Resume to continue from Stage ${lastStage+1}, or discard and start fresh.</div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-blue btn-sm" onclick="resumeExpressRun()">Resume from Stage ${lastStage+1}</button>
+            <button class="btn btn-ghost btn-sm" onclick="discardExpressResume()">Discard &amp; start fresh</button>
+          </div>
+        </div>`;
+      // Insert at top of upload panel
+      const card=document.getElementById('upload-panel');
+      if(card)card.prepend(resumeDiv);
+    }catch(e){}
+  })();
+
+  function resumeExpressRun(){
+    try{
+      const savedOutputs=JSON.parse(localStorage.getItem('fcv_express_stageOutputs')||'{}');
+      const savedHists=JSON.parse(localStorage.getItem('fcv_express_stageHists')||'{}');
+      stageOutputs=savedOutputs;stageHists=savedHists;
+      const lastStage=savedOutputs[2]?2:1;
+      hist=savedHists[lastStage]||[];
+      // Remove the banner
+      const b=document.getElementById('express-resume-banner');if(b)b.remove();
+      // Restore mode and start express from next stage
+      selectMode('express');
+      document.getElementById('upload-panel').style.display='none';
+      document.getElementById('landing-hero').style.display='none';
+      document.getElementById('analysis-panel').style.display='block';
+      document.getElementById('stepper-wrap').style.display='';
+      document.getElementById('save-session-btn').style.display='';
+      curS=lastStage;
+      showExpressProgress();
+      updateExpressStage(lastStage,'done','');
+      for(let i=1;i<lastStage;i++)updateExpressStage(i,'done','');
+      // Chain from next stage
+      const next=lastStage+1;
+      updateExpressStage(next,'active','');
+      runStage(next,null,function(completedStage,p){
+        if(completedStage<3){
+          stageOutputs[completedStage]=p.display_text||'';
+          stageHists[completedStage]=hist.slice();
+          localStorage.setItem('fcv_express_stageOutputs',JSON.stringify(stageOutputs));
+          const nextNext=completedStage+1;
+          updateExpressStage(completedStage,'done','');
+          updateExpressStage(nextNext,'active','');
+          runStage(nextNext,null,arguments.callee);
+        }else{
+          stageOutputs[3]=p.display_text||'';
+          stageHists[3]=hist.slice();
+          localStorage.removeItem('fcv_express_stageOutputs');
+          localStorage.removeItem('fcv_express_stageHists');
+          hideExpressProgress();
+          curS=3;setStepper(3,'done');
+          renderOut(3,stageOutputs[3],false);
+          enableClickableStepper();
+          updateSessionBar();
+        }
+      });
+    }catch(e){alert('Could not resume session: '+e.message);}
+  }
+
+  function discardExpressResume(){
+    localStorage.removeItem('fcv_express_stageOutputs');
+    localStorage.removeItem('fcv_express_stageHists');
+    const b=document.getElementById('express-resume-banner');if(b)b.remove();
+  }
+
   // ── Session persistence ─────────────────────────────────────────────────────
   function saveSession(){
     const state = {
-      version: 1,
+      version: 2,
       savedAt: new Date().toISOString(),
       currentStage: curS,
       history: hist,
       fileNames: { project: pF.map(f=>f.name), context: cF.map(f=>f.name) },
-      docType: docType
+      docType: docType,
+      analysisMode: analysisMode,
+      stageOutputs: stageOutputs,
+      stageHists: stageHists
     };
     const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
     const url = URL.createObjectURL(blob);
@@ -1987,6 +2075,10 @@
         hist = state.history;
         curS = state.currentStage || 0;
         if(state.docType) { docType = state.docType; updateDocTypeBadge(); }
+        // v2 fields — backwards-compat: treat missing analysisMode as 'stepbystep'
+        selectMode(state.analysisMode || 'stepbystep');
+        if(state.stageOutputs) stageOutputs = state.stageOutputs;
+        if(state.stageHists) stageHists = state.stageHists;
         sessionName = file.name;
         document.getElementById('upload-panel').style.display='none';
         document.getElementById('analysis-panel').style.display='block';
