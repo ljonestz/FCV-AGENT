@@ -2259,13 +2259,116 @@
       return;
     }
     document.getElementById('upload-panel').style.display = 'none';
-    document.getElementById('analysis-panel').style.display = 'block';
     document.getElementById('landing-hero').style.display = 'none';
-    document.getElementById('stepper-wrap').style.display = '';
-    await runStage(1);
+    if(analysisMode==='express'){
+      await runExpress();
+    }else{
+      document.getElementById('analysis-panel').style.display = 'block';
+      document.getElementById('stepper-wrap').style.display = '';
+      await runStage(1);
+    }
   }
 
-  async function runStage(stage,followOn=null){
+  // ── Express mode chain ───────────────────────────────────────────────────
+  async function runExpress(){
+    if(busy)return;
+    document.getElementById('analysis-panel').style.display='block';
+    document.getElementById('stepper-wrap').style.display='none';
+    document.getElementById('main').style.display='none';
+    showExpressProgress();updateExpressStage(1,'active',null);
+    try{
+      await runStage(1,null,function(s1,p1){
+        const summary1=(docType!=='Unknown'?docType:'Document')+' stage \u00B7 Context extracted';
+        updateExpressStage(1,'done',summary1);
+        localStorage.setItem('fcv_express_stageOutputs',JSON.stringify(stageOutputs));
+        localStorage.setItem('fcv_express_stageHists',JSON.stringify(stageHists));
+        localStorage.setItem('fcv_express_curS','1');
+        updateExpressStage(2,'active',null);
+        runStage(2,null,function(s2,p2){
+          const sensR=p2.sensitivity_rating||'\u2014',respR=p2.responsiveness_rating||'\u2014';
+          updateExpressStage(2,'done','Sensitivity: '+sensR+' \u00B7 Responsiveness: '+respR);
+          localStorage.setItem('fcv_express_stageOutputs',JSON.stringify(stageOutputs));
+          localStorage.setItem('fcv_express_stageHists',JSON.stringify(stageHists));
+          localStorage.setItem('fcv_express_curS','2');
+          updateExpressStage(3,'active',null);
+          runStage(3,null,function(s3,p3){
+            updateExpressStage(3,'done','Complete');
+            localStorage.setItem('fcv_express_stageOutputs',JSON.stringify(stageOutputs));
+            localStorage.setItem('fcv_express_stageHists',JSON.stringify(stageHists));
+            localStorage.setItem('fcv_express_curS','3');
+            hideExpressProgress();
+            document.getElementById('stepper-wrap').style.display='';
+            document.getElementById('main').style.display='';
+            curS=3;setStepper(3,'done');
+            const renderResult3=(p3.display_text)||stageOutputs[3];
+            renderOut(3,renderResult3,false);
+            if(stageThreePriorities&&stageThreePriorities.length)initStage3UI();
+            if(stage2UnderHood)localStorage.setItem('stage2_under_hood',JSON.stringify(stage2UnderHood));
+            enableClickableStepper();
+            localStorage.removeItem('fcv_express_stageOutputs');
+            localStorage.removeItem('fcv_express_stageHists');
+            localStorage.removeItem('fcv_express_curS');
+            busy=false;
+          });
+        });
+      });
+    }catch(e){
+      showExpressError(curS||1,(e&&e.message)||'An error occurred');
+      busy=false;
+    }
+  }
+
+  function retryExpressStage(stage){
+    busy=false;updateExpressStage(stage,'active',null);
+    if(epTimerInterval)clearInterval(epTimerInterval);
+    epTimerInterval=setInterval(updateEpTimer,1000);
+    if(epMessageInterval)clearInterval(epMessageInterval);
+    epMessageIdx=0;
+    epMessageInterval=setInterval(()=>{
+      epMessageIdx=(epMessageIdx+1)%EP_MESSAGES.length;
+      const card=document.getElementById('ep-message-card');
+      card.classList.add('fade-out');
+      setTimeout(()=>{showEpMessage(epMessageIdx);card.classList.remove('fade-out');},500);
+    },15000);
+    if(stage===1){runExpress();return;}
+    if(stage===2){
+      runStage(2,null,function(s2,p2){
+        const sensR=p2.sensitivity_rating||'\u2014',respR=p2.responsiveness_rating||'\u2014';
+        updateExpressStage(2,'done','Sensitivity: '+sensR+' \u00B7 Responsiveness: '+respR);
+        updateExpressStage(3,'active',null);
+        runStage(3,null,function(s3,p3){
+          updateExpressStage(3,'done','Complete');
+          hideExpressProgress();document.getElementById('stepper-wrap').style.display='';document.getElementById('main').style.display='';
+          curS=3;setStepper(3,'done');renderOut(3,stageOutputs[3],false);
+          if(stageThreePriorities&&stageThreePriorities.length)initStage3UI();
+          enableClickableStepper();busy=false;
+        });
+      });
+    }else if(stage===3){
+      runStage(3,null,function(s3,p3){
+        updateExpressStage(3,'done','Complete');
+        hideExpressProgress();document.getElementById('stepper-wrap').style.display='';document.getElementById('main').style.display='';
+        curS=3;setStepper(3,'done');renderOut(3,stageOutputs[3],false);
+        if(stageThreePriorities&&stageThreePriorities.length)initStage3UI();
+        enableClickableStepper();busy=false;
+      });
+    }
+  }
+
+  function switchToStepByStep(stage){
+    hideExpressProgress();analysisMode='stepbystep';localStorage.setItem('fcv_analysis_mode','stepbystep');
+    document.getElementById('stepper-wrap').style.display='';document.getElementById('main').style.display='';
+    busy=false;
+    const prev=stage-1;
+    if(prev>=1&&stageOutputs[prev]){
+      curS=prev;setStepper(prev,'done');renderOut(prev,stageOutputs[prev],false);
+      if(prev===2&&stage2UnderHood){buildUnderHoodPanels(stage2UnderHood);updateSidebar();}
+    }else{
+      curS=stage;setStepper(stage,'err');showErr('Stage '+stage+' failed during express mode. You can retry or go back.',stage);
+    }
+  }
+
+  async function runStage(stage,followOn=null,onComplete=null){
     if(busy)return;
     busy=true;curS=stage;
     setStepper(stage,'active');clearUI();
@@ -2392,6 +2495,8 @@
               if(stage===3) localStorage.setItem('stage3_timestamp', Date.now());
               // For Stage 2, use display_text (stripped of delimiters) if provided by backend
               const renderResult = (stage===2 && p.display_text) ? p.display_text : p.result;
+              // Express mode: skip rendering intermediate stages, call chain callback instead
+              if(onComplete){busy=false;onComplete(stage,p);return;}
               renderOut(stage,renderResult,followOn);setStepper(stage,'done');
               // Research brief panel for Stage 1
               if(stage===1){
