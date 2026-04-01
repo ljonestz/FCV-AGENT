@@ -1790,6 +1790,30 @@
       <div><strong>Confidentiality reminder:</strong> Do not upload classified, confidential, or otherwise restricted documents. Only upload materials approved for use with external AI processing systems.</div>
     </div>
 
+    <!-- ══ MODE SELECTION ══ -->
+    <div class="mode-section" id="mode-section">
+      <div class="mode-section-label">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        Choose your workflow
+      </div>
+      <div class="mode-cards">
+        <div class="mode-card selected" id="mode-express" onclick="selectMode('express')">
+          <div class="mode-radio"></div>
+          <div class="mode-badge mode-badge-default">Default</div>
+          <div class="mode-title">Express Analysis</div>
+          <div class="mode-desc">Runs all stages automatically. Get your full Recommendations Note in one go. Review intermediate findings after.</div>
+          <div class="mode-time">&#9201; ~4&ndash;5 min &middot; No interaction needed</div>
+        </div>
+        <div class="mode-card" id="mode-stepbystep" onclick="selectMode('stepbystep')">
+          <div class="mode-radio"></div>
+          <div class="mode-badge mode-badge-rec">Recommended</div>
+          <div class="mode-title">Step-by-Step</div>
+          <div class="mode-desc">Guide the analysis stage by stage. Review findings, add local knowledge, and refine before proceeding.</div>
+          <div class="mode-time">&#9201; ~8&ndash;12 min &middot; Full control</div>
+        </div>
+      </div>
+    </div>
+
     <div class="upload-foot">
       <p class="upload-hint">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
@@ -1821,7 +1845,16 @@
   let pF=[],cF=[],hist=[],curS=0,busy=false;
   let sessionName='';
   let docType='Unknown';
+  let analysisMode='express';
   // Stage 3 (Recommendations) state is declared in the Stage 3 section below
+
+  // ── Mode selection ────────────────────────────────────────────────────────
+  function selectMode(mode){
+    analysisMode=mode;
+    document.getElementById('mode-express').classList.toggle('selected',mode==='express');
+    document.getElementById('mode-stepbystep').classList.toggle('selected',mode==='stepbystep');
+    localStorage.setItem('fcv_analysis_mode',mode);
+  }
 
   // ── Onboarding ──────────────────────────────────────────────────────────────
   function initOnboarding(){
@@ -1842,6 +1875,8 @@
     document.getElementById('onboarding-modal').style.display='none';
   }
   initOnboarding();
+  // Restore mode preference
+  (function(){const m=localStorage.getItem('fcv_analysis_mode');if(m==='stepbystep')selectMode('stepbystep');})();
 
   // ── Session persistence ─────────────────────────────────────────────────────
   function saveSession(){
