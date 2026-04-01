@@ -2954,6 +2954,127 @@
     }
   }
 
+  // ── Express progress screen ──────────────────────────────────────────────
+  let epTimerInterval=null,epMessageInterval=null,epStartTime=null,epMessageIdx=0;
+  const EP_MESSAGES=[
+    {icon:'\u2615',text:'"Go grab a coffee \u2014 this will take a few minutes."'},
+    {icon:'\uD83D\uDCDA',text:'"Your project is being assessed against 12 operational standards and 25 key questions."'},
+    {icon:'\u23F3',text:'"Don\u2019t worry, the wait will be worth it."'},
+    {icon:'\uD83C\uDF0D',text:'"In FCV settings, nothing good happens quickly."'},
+    {icon:'\uD83D\uDCC8',text:'"We\u2019re cross-referencing your document against the full FCV Playbook."'},
+    {icon:'\uD83D\uDCA1',text:'"Tip: You can review each stage\u2019s findings once the analysis is complete."'}
+  ];
+
+  function showExpressProgress(){
+    document.getElementById('ep-accent').style.display='block';
+    document.getElementById('express-progress').classList.add('visible');
+    for(let i=1;i<=3;i++){
+      document.getElementById('ep-card-'+i).className='ep-stage-card pending';
+      document.getElementById('ep-title-'+i).className='ep-stage-title pending';
+      const s=document.getElementById('ep-summary-'+i);s.innerHTML='Pending';s.style.color='#9CA3AF';
+      document.getElementById('ep-circle-'+i).className='ep-step-circle pending';
+      document.getElementById('ep-circle-'+i).innerHTML=i;
+      document.getElementById('ep-label-'+i).className='ep-step-label pending';
+    }
+    document.getElementById('ep-conn-1').className='ep-step-connector pending';
+    document.getElementById('ep-conn-2').className='ep-step-connector pending';
+    document.getElementById('ep-progress-fill').style.width='0%';
+    epStartTime=Date.now();
+    epTimerInterval=setInterval(updateEpTimer,1000);
+    updateEpTimer();
+    epMessageIdx=0;showEpMessage(0);
+    epMessageInterval=setInterval(()=>{
+      epMessageIdx=(epMessageIdx+1)%EP_MESSAGES.length;
+      const card=document.getElementById('ep-message-card');
+      card.classList.add('fade-out');
+      setTimeout(()=>{showEpMessage(epMessageIdx);card.classList.remove('fade-out');},500);
+    },15000);
+  }
+
+  function hideExpressProgress(){
+    document.getElementById('ep-accent').style.display='none';
+    document.getElementById('express-progress').classList.remove('visible');
+    if(epTimerInterval){clearInterval(epTimerInterval);epTimerInterval=null;}
+    if(epMessageInterval){clearInterval(epMessageInterval);epMessageInterval=null;}
+  }
+
+  function updateEpTimer(){
+    if(!epStartTime)return;
+    const secs=Math.floor((Date.now()-epStartTime)/1000);
+    const m=Math.floor(secs/60),s=secs%60;
+    document.getElementById('ep-elapsed').textContent=m+':'+(s<10?'0':'')+s;
+  }
+
+  function showEpMessage(idx){
+    const msg=EP_MESSAGES[idx];
+    document.getElementById('ep-message-icon').textContent=msg.icon;
+    document.getElementById('ep-message-text').textContent=msg.text;
+  }
+
+  function getStageActivityText(stage){
+    if(stage===1)return'Extracting FCV context from your documents\u2026';
+    if(stage===2)return'Analysing sensitivity, responsiveness, and Do No Harm\u2026';
+    if(stage===3)return'Generating your Recommendations Note\u2026';
+    return'Processing\u2026';
+  }
+
+  function updateExpressStage(stage,status,summary){
+    for(let i=1;i<=3;i++){
+      const circle=document.getElementById('ep-circle-'+i);
+      const label=document.getElementById('ep-label-'+i);
+      if(i<stage||(i===stage&&status==='done')){
+        circle.className='ep-step-circle done';circle.innerHTML='\u2713';label.className='ep-step-label done';
+      }else if(i===stage&&status==='active'){
+        circle.className='ep-step-circle active';circle.innerHTML=i;label.className='ep-step-label active';
+      }else{
+        circle.className='ep-step-circle pending';circle.innerHTML=i;label.className='ep-step-label pending';
+      }
+    }
+    const conn1=document.getElementById('ep-conn-1'),conn2=document.getElementById('ep-conn-2');
+    conn1.className='ep-step-connector '+(stage>1||(stage===1&&status==='done')?'done':stage===1&&status==='active'?'active':'pending');
+    conn2.className='ep-step-connector '+(stage>2||(stage===2&&status==='done')?'done':stage===2&&status==='active'?'active':'pending');
+    let pct=0;
+    if(stage===1&&status==='active')pct=10;else if(stage===1&&status==='done')pct=33;
+    else if(stage===2&&status==='active')pct=45;else if(stage===2&&status==='done')pct=66;
+    else if(stage===3&&status==='active')pct=75;else if(stage===3&&status==='done')pct=100;
+    document.getElementById('ep-progress-fill').style.width=pct+'%';
+    for(let i=1;i<=3;i++){
+      const card=document.getElementById('ep-card-'+i);
+      const title=document.getElementById('ep-title-'+i);
+      const sum=document.getElementById('ep-summary-'+i);
+      if(i<stage||(i===stage&&status==='done')){
+        card.className='ep-stage-card done';title.className='ep-stage-title done';
+      }else if(i===stage&&status==='active'){
+        card.className='ep-stage-card active';title.className='ep-stage-title active';
+        sum.innerHTML='<div class="ep-stage-spinner"><div class="ep-spinner-dot"></div><div class="ep-spinner-dot"></div><div class="ep-spinner-dot"></div><span>'+getStageActivityText(i)+'</span></div>';
+        sum.style.color='';
+      }else if(i===stage&&status==='error'){
+        card.className='ep-stage-card error';title.className='ep-stage-title error';
+      }else{
+        card.className='ep-stage-card pending';title.className='ep-stage-title pending';sum.innerHTML='Pending';sum.style.color='#9CA3AF';
+      }
+    }
+    if(status==='done'&&summary){
+      const sum=document.getElementById('ep-summary-'+stage);
+      sum.innerHTML=escHtml(summary);sum.style.color='#4B5563';
+      const hdr=document.getElementById('ep-card-'+stage).querySelector('.ep-stage-header');
+      if(!hdr.querySelector('.ep-stage-check'))hdr.insertAdjacentHTML('beforeend','<div class="ep-stage-check">\u2713</div>');
+    }
+  }
+
+  function showExpressError(stage,errorMsg){
+    updateExpressStage(stage,'error',null);
+    const sum=document.getElementById('ep-summary-'+stage);
+    sum.innerHTML='<div style="color:#DC2626;font-size:13px;margin-top:6px">'+escHtml(errorMsg)+'</div>'+
+      '<div class="ep-error-actions">'+
+      '<button class="btn" onclick="retryExpressStage('+stage+')" style="background:var(--wbg-navy);color:#fff;border:none;border-radius:5px;font-size:12px;padding:6px 14px;cursor:pointer">Retry this stage</button>'+
+      '<button class="btn" onclick="switchToStepByStep('+stage+')" style="background:#fff;color:var(--wbg-navy);border:1px solid #D1D5DB;border-radius:5px;font-size:12px;padding:6px 14px;cursor:pointer">Switch to step-by-step</button>'+
+      '</div>';
+    sum.style.color='';
+    if(epTimerInterval){clearInterval(epTimerInterval);epTimerInterval=null;}
+    if(epMessageInterval){clearInterval(epMessageInterval);epMessageInterval=null;}
+  }
+
   function downloadReport(){
     const execSummary = stageOutputs[3] || '';
     if(!execSummary && !stageThreePriorities.length){ alert('No Stage 3 output available to download.'); return; }
