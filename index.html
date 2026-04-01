@@ -1729,6 +1729,63 @@
   </nav>
 </div>
 
+<!-- ══ EXPRESS PROGRESS SCREEN ══ -->
+<div class="ep-accent" id="ep-accent" style="display:none"></div>
+<div class="express-progress" id="express-progress">
+  <div class="ep-header">
+    <h2>Preparing Your FCV Recommendations Note</h2>
+    <p>Your documents are being analysed against 12 operational standards, 25 key questions, and the full FCV Playbook.</p>
+  </div>
+  <div class="ep-stepper">
+    <div class="ep-step-node">
+      <div class="ep-step-circle pending" id="ep-circle-1">1</div>
+      <div class="ep-step-label pending" id="ep-label-1">Context &amp;<br>Extraction</div>
+    </div>
+    <div class="ep-step-connector pending" id="ep-conn-1"></div>
+    <div class="ep-step-node">
+      <div class="ep-step-circle pending" id="ep-circle-2">2</div>
+      <div class="ep-step-label pending" id="ep-label-2">FCV<br>Assessment</div>
+    </div>
+    <div class="ep-step-connector pending" id="ep-conn-2"></div>
+    <div class="ep-step-node">
+      <div class="ep-step-circle pending" id="ep-circle-3">3</div>
+      <div class="ep-step-label pending" id="ep-label-3">Recommendations<br>Note</div>
+    </div>
+  </div>
+  <div class="ep-progress-bar"><div class="ep-progress-fill" id="ep-progress-fill"></div></div>
+  <div class="ep-stage-cards" id="ep-stage-cards">
+    <div class="ep-stage-card pending" id="ep-card-1">
+      <div class="ep-stage-header">
+        <div class="ep-stage-title pending" id="ep-title-1">Stage 1 &mdash; Context &amp; Extraction</div>
+      </div>
+      <div class="ep-stage-summary" id="ep-summary-1" style="color:#9CA3AF;margin-top:6px">Pending</div>
+    </div>
+    <div class="ep-stage-card pending" id="ep-card-2">
+      <div class="ep-stage-header">
+        <div class="ep-stage-title pending" id="ep-title-2">Stage 2 &mdash; FCV Assessment</div>
+      </div>
+      <div class="ep-stage-summary" id="ep-summary-2" style="color:#9CA3AF;margin-top:6px">Pending</div>
+    </div>
+    <div class="ep-stage-card pending" id="ep-card-3">
+      <div class="ep-stage-header">
+        <div class="ep-stage-title pending" id="ep-title-3">Stage 3 &mdash; Recommendations Note</div>
+      </div>
+      <div class="ep-stage-summary" id="ep-summary-3" style="color:#9CA3AF;margin-top:6px">Pending</div>
+    </div>
+  </div>
+  <div class="ep-timer">
+    <span>Elapsed:</span>
+    <span class="elapsed" id="ep-elapsed">0:00</span>
+    <span>&middot;</span>
+    <span>Estimated total: 4&ndash;5 minutes</span>
+  </div>
+  <div class="ep-message-card" id="ep-message-card">
+    <div class="ep-message-icon" id="ep-message-icon">&#9749;</div>
+    <div class="ep-message-text" id="ep-message-text">"Go grab a coffee &mdash; this will take a few minutes."</div>
+  </div>
+  <div class="ep-bottom-note">Keep this tab open. You&rsquo;ll be able to review each stage&rsquo;s findings once the analysis is complete.</div>
+</div>
+
 <!-- ══ MAIN ══ -->
 <main class="main" id="main">
 
