@@ -5,6 +5,7 @@ import base64
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeout
 from flask import Flask, request, jsonify, send_from_directory, Response, stream_with_context
 import anthropic
+import httpx
 from background_docs import (
     FCV_GUIDE, FCV_OPERATIONAL_MANUAL, FCV_REFRESH_FRAMEWORK,
     PLAYBOOK_DIAGNOSTICS, PLAYBOOK_PREPARATION, PLAYBOOK_IMPLEMENTATION,
@@ -1492,7 +1493,13 @@ _client = None
 def get_client():
     global _client
     if _client is None:
-        _client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
+        # 30s connect timeout; 10-minute read timeout (generous for long LLM generations,
+        # but catches indefinite hangs when the API accepts the request but stalls before
+        # returning any tokens).
+        _client = anthropic.Anthropic(
+            api_key=os.environ.get("ANTHROPIC_API_KEY"),
+            timeout=httpx.Timeout(timeout=600.0, connect=30.0)
+        )
     return _client
 
 
