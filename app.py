@@ -2,6 +2,7 @@ import os
 import re
 import json
 import base64
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeout
 from flask import Flask, request, jsonify, send_from_directory, Response, stream_with_context
 import anthropic
 from background_docs import (
@@ -1038,8 +1039,8 @@ Document text:
 def detect_document_type_from_text(text: str, api_client) -> str:
     """Classify a project document into one of the standard WBG document types."""
     snippet = text[:2000]
-    try:
-        resp = api_client.messages.create(
+    def _call():
+        return api_client.messages.create(
             model="claude-haiku-4-5-20251001",
             max_tokens=20,
             messages=[{
@@ -1047,6 +1048,10 @@ def detect_document_type_from_text(text: str, api_client) -> str:
                 "content": DOCUMENT_TYPE_DETECTION_PROMPT + snippet
             }]
         )
+    try:
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(_call)
+            resp = future.result(timeout=30)
         result = resp.content[0].text.strip().strip('.').strip('"').strip("'")
         valid = {'PCN', 'PID', 'PAD', 'AF', 'Restructuring', 'ISR', 'Unknown'}
         return result if result in valid else 'Unknown'
@@ -1280,9 +1285,12 @@ Produce a thorough extraction that a senior FCV analyst can work from directly."
 
 
 def extract_fcv_content(text, doc_name, api_client):
-    """Use Claude to extract FCV-relevant content from a large document."""
-    try:
-        response = api_client.messages.create(
+    """Use Claude to extract FCV-relevant content from a large document.
+    Hard timeout of 120 seconds prevents indefinite hangs on slow API responses.
+    Falls back to truncated raw text if the call times out or fails.
+    """
+    def _call():
+        return api_client.messages.create(
             model="claude-sonnet-4-20250514",
             max_tokens=8192,
             messages=[{
@@ -1290,18 +1298,25 @@ def extract_fcv_content(text, doc_name, api_client):
                 "content": f"{FCV_EXTRACT_PROMPT}\n\n=== DOCUMENT: {doc_name} ===\n\n{text}"
             }]
         )
+    try:
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(_call)
+            response = future.result(timeout=120)  # 2-minute hard wall-clock limit
         extracted = response.content[0].text
         return f"[FCV-relevant content extracted from {doc_name} — full document was {len(text)//1000}k characters]\n\n{extracted}"
+    except FuturesTimeout:
+        # Timed out — fall back to truncated raw text so the stage can still proceed
+        return text[:EXTRACT_THRESHOLD] + f"\n\n[Extraction timed out after 120 seconds; showing first {EXTRACT_THRESHOLD//1000}k characters only.]"
     except Exception as e:
-        # Fallback: return first EXTRACT_THRESHOLD chars if extraction fails
+        # Other failure — same fallback
         return text[:EXTRACT_THRESHOLD] + f"\n\n[Extraction failed ({str(e)}); showing first {EXTRACT_THRESHOLD//1000}k characters only.]"
 
 
 def extract_country_name(project_doc_text: str, api_client) -> str:
     """Extract the country name from the first portion of a project document."""
     snippet = project_doc_text[:4000]
-    try:
-        resp = api_client.messages.create(
+    def _call():
+        return api_client.messages.create(
             model="claude-sonnet-4-20250514",
             max_tokens=50,
             messages=[{
@@ -1313,6 +1328,10 @@ def extract_country_name(project_doc_text: str, api_client) -> str:
                 )
             }]
         )
+    try:
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(_call)
+            resp = future.result(timeout=30)
         country = resp.content[0].text.strip().strip('.').strip('"').strip("'")
         return country if country else "Unknown"
     except Exception:
@@ -1385,8 +1404,8 @@ Be concise but substantive. Prioritise recent information (last 2–3 years). Wh
 def extract_sector_name(project_doc_text: str, api_client) -> str:
     """Extract the primary sector/theme of the project from its opening pages."""
     snippet = project_doc_text[:4000]
-    try:
-        resp = api_client.messages.create(
+    def _call():
+        return api_client.messages.create(
             model="claude-sonnet-4-20250514",
             max_tokens=50,
             messages=[{
@@ -1400,6 +1419,10 @@ def extract_sector_name(project_doc_text: str, api_client) -> str:
                 )
             }]
         )
+    try:
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(_call)
+            resp = future.result(timeout=30)
         sector = resp.content[0].text.strip().strip('.').strip('"').strip("'")
         return sector if sector else "Development"
     except Exception:
@@ -1412,7 +1435,6 @@ def run_fcv_web_research(country: str, sector: str, api_client) -> dict:
     web search tool. Returns a dict with 'brief' (str) and 'country' (str).
     Hard timeout of 150 seconds prevents indefinite hangs on slow API responses.
     """
-    from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeout
     prompt = FCV_RESEARCH_PROMPT.format(country=country, sector=sector)
 
     def _call():
