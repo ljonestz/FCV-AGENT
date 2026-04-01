@@ -2373,22 +2373,16 @@
       await runStage(1,null,function(s1,p1){
         const summary1=(docType!=='Unknown'?docType:'Document')+' stage \u00B7 Context extracted';
         updateExpressStage(1,'done',summary1);
-        localStorage.setItem('fcv_express_stageOutputs',JSON.stringify(stageOutputs));
-        localStorage.setItem('fcv_express_stageHists',JSON.stringify(stageHists));
-        localStorage.setItem('fcv_express_curS','1');
+        epSafeStore(stageOutputs,stageHists,'1');
         updateExpressStage(2,'active',null);
         runStage(2,null,function(s2,p2){
           const sensR=p2.sensitivity_rating||'\u2014',respR=p2.responsiveness_rating||'\u2014';
           updateExpressStage(2,'done','Sensitivity: '+sensR+' \u00B7 Responsiveness: '+respR);
-          localStorage.setItem('fcv_express_stageOutputs',JSON.stringify(stageOutputs));
-          localStorage.setItem('fcv_express_stageHists',JSON.stringify(stageHists));
-          localStorage.setItem('fcv_express_curS','2');
+          epSafeStore(stageOutputs,stageHists,'2');
           updateExpressStage(3,'active',null);
           runStage(3,null,function(s3,p3){
             updateExpressStage(3,'done','Complete');
-            localStorage.setItem('fcv_express_stageOutputs',JSON.stringify(stageOutputs));
-            localStorage.setItem('fcv_express_stageHists',JSON.stringify(stageHists));
-            localStorage.setItem('fcv_express_curS','3');
+            epSafeStore(stageOutputs,stageHists,'3');
             hideExpressProgress();
             document.getElementById('stepper-wrap').style.display='';
             document.getElementById('main').style.display='';
@@ -2551,28 +2545,37 @@
               window._truncWarnings = p.truncation_warnings;
             }
             if(p.research_status){
-              const el=document.getElementById('s-out');
-              if(el){
-                let msg='';
-                if(p.research_status==='extracting_country'){
-                  msg='Identifying country from project document\u2026';
-                } else if(p.research_status==='searching'&&p.country){
-                  researchCountry=p.country;
-                  msg=`Searching for FCV context: <strong>${esc(p.country)}</strong>\u2026`;
-                } else if(p.research_status==='cached'&&p.country){
-                  researchCountry=p.country;
-                  msg=`Loading FCV research for <strong>${esc(p.country)}</strong>\u2026`;
-                } else if(p.research_status==='complete'){
-                  if(p.brief) researchBrief=p.brief;
-                  if(p.country) researchCountry=p.country;
-                  msg='';
-                } else if(p.research_status==='error'){
-                  msg='';
-                }
-                if(msg) el.innerHTML=`<div style="display:flex;align-items:center;gap:10px;color:var(--muted);font-style:italic;padding:12px 0"><svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;animation:spin 1s linear infinite;flex-shrink:0"><circle cx="12" cy="12" r="10" stroke-opacity=".25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-opacity="1"/></svg>${msg}</div>`;
+              let rsMsg='';
+              if(p.research_status==='extracting_country'){
+                rsMsg='Identifying project country\u2026';
+              } else if(p.research_status==='searching'&&p.country){
+                researchCountry=p.country;
+                rsMsg='Searching FCV context: '+esc(p.country)+'\u2026';
+              } else if(p.research_status==='cached'&&p.country){
+                researchCountry=p.country;
+                rsMsg='Loading FCV research for '+esc(p.country)+'\u2026';
+              } else if(p.research_status==='complete'){
+                if(p.brief) researchBrief=p.brief;
+                if(p.country) researchCountry=p.country;
+                rsMsg='Research complete \u2014 generating analysis\u2026';
               }
+              // Update express Stage 1 card with live research status
+              if(analysisMode==='express'&&stage===1&&rsMsg){
+                const epSum=document.getElementById('ep-summary-1');
+                if(epSum)epSum.innerHTML='<div class="ep-stage-spinner"><div class="ep-spinner-dot"></div><div class="ep-spinner-dot"></div><div class="ep-spinner-dot"></div><span>'+rsMsg+'</span></div>';
+              }
+              // Also update step-by-step s-out
+              const el=document.getElementById('s-out');
+              if(el&&rsMsg)el.innerHTML=`<div style="display:flex;align-items:center;gap:10px;color:var(--muted);font-style:italic;padding:12px 0"><svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;animation:spin 1s linear infinite;flex-shrink:0"><circle cx="12" cy="12" r="10" stroke-opacity=".25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-opacity="1"/></svg>${rsMsg}</div>`;
             }
-            if(p.preprocess){const el=document.getElementById('s-out');if(el)el.innerHTML=`<div style="display:flex;align-items:center;gap:10px;color:var(--muted);font-style:italic;padding:12px 0"><svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;animation:spin 1s linear infinite;flex-shrink:0"><circle cx="12" cy="12" r="10" stroke-opacity=".25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-opacity="1"/></svg>${esc(p.preprocess)}</div>`}
+            if(p.preprocess){
+              const ppMsg=esc(p.preprocess);
+              if(analysisMode==='express'&&stage===1){
+                const epSum=document.getElementById('ep-summary-1');
+                if(epSum)epSum.innerHTML='<div class="ep-stage-spinner"><div class="ep-spinner-dot"></div><div class="ep-spinner-dot"></div><div class="ep-spinner-dot"></div><span>'+ppMsg+'</span></div>';
+              }
+              const el=document.getElementById('s-out');if(el)el.innerHTML=`<div style="display:flex;align-items:center;gap:10px;color:var(--muted);font-style:italic;padding:12px 0"><svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;animation:spin 1s linear infinite;flex-shrink:0"><circle cx="12" cy="12" r="10" stroke-opacity=".25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-opacity="1"/></svg>${ppMsg}</div>`;
+            }
             if(p.chunk){streamed+=p.chunk;const el=document.getElementById('s-out');if(el)el.innerHTML=md(streamed)}
             if(p.done){hist=p.history||hist;curS=stage;stageOutputs[stage]=p.result;stageHists[stage]=hist.slice();updateSessionBar();
               // Stage 2: capture ratings and under_hood data
@@ -3249,6 +3252,13 @@
     {icon:'🎯',text:'Stage 3 aligns recommendations with core priorities from the WBG FCV Strategy.'},
     {icon:'💡',text:'Tip: You can review each stage\'s findings once the analysis is complete.'}
   ];
+
+  // Silently write express checkpoint to localStorage; fails gracefully if quota exceeded
+  function epSafeStore(outputs,hists,curStage){
+    try{localStorage.setItem('fcv_express_stageOutputs',JSON.stringify(outputs));}catch(e){}
+    try{localStorage.setItem('fcv_express_stageHists',JSON.stringify(hists));}catch(e){}
+    try{localStorage.setItem('fcv_express_curS',curStage);}catch(e){}
+  }
 
   function showExpressProgress(){
     document.getElementById('ep-accent').style.display='block';
