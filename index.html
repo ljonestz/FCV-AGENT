@@ -3059,6 +3059,87 @@
     }
   }
 
+  // ── Post-express stage navigation ────────────────────────────────────────
+  function enableClickableStepper(){
+    const wrap=document.getElementById('stepper-wrap');
+    wrap.classList.add('stepper-clickable');
+    let hint=document.getElementById('stepper-hint');
+    if(!hint){
+      hint=document.createElement('div');hint.id='stepper-hint';hint.className='stepper-hint';
+      hint.textContent='Click any stage above to review its output';wrap.after(hint);
+    }
+    for(let i=1;i<=3;i++){
+      const step=document.getElementById('step-'+i);
+      if(step)step.onclick=(function(n){return function(){navigateToStage(n);};})(i);
+    }
+  }
+
+  function disableClickableStepper(){
+    document.getElementById('stepper-wrap').classList.remove('stepper-clickable');
+    const hint=document.getElementById('stepper-hint');if(hint)hint.remove();
+    for(let i=1;i<=3;i++){const s=document.getElementById('step-'+i);if(s)s.onclick=null;}
+  }
+
+  function navigateToStage(stage){
+    if(busy)return;if(!stageOutputs[stage])return;
+    curS=stage;
+    document.getElementById('step-0').className='step done';
+    for(let i=1;i<=3;i++){
+      const el=document.getElementById('step-'+i);if(!el)continue;
+      el.className=stageOutputs[i]?(i===stage?'step done current':'step done'):'step';
+    }
+    clearUI();
+    const renderResult=(stage===2&&stage2UnderHood)?stageOutputs[stage]:stageOutputs[stage];
+    renderOut(stage,renderResult,false);
+    if(stage===2&&stage2UnderHood){buildUnderHoodPanels(stage2UnderHood);updateSidebar();}
+    if(stage===3&&stageThreePriorities&&stageThreePriorities.length)initStage3UI();
+    if(stage<3&&analysisMode==='express')injectRerunBanner(stage);
+    injectStageNavArrows(stage);
+    updateSessionBar();
+  }
+
+  function injectRerunBanner(stage){
+    if(document.getElementById('rerun-banner'))return;
+    const banner=document.createElement('div');
+    banner.id='rerun-banner';banner.className='rerun-banner';
+    banner.innerHTML='<div class="rerun-banner-icon">\u26A0\uFE0F</div>'+
+      '<div class="rerun-banner-text"><strong>Want to refine this stage?</strong> You can add context or correct findings and re-run. Note: re-running will produce slightly different results due to the nature of AI analysis, and Stage 3 will need to be regenerated.</div>'+
+      '<button class="rerun-btn" onclick="startRerun('+stage+')">Refine &amp; Re-run</button>';
+    const badge=document.createElement('div');
+    badge.className='read-only-badge';badge.textContent='Read-only \u00B7 From Express run';
+    const stagedisp=document.getElementById('stage-disp');
+    if(stagedisp){stagedisp.prepend(badge);stagedisp.prepend(banner);}
+  }
+
+  function startRerun(stage){
+    analysisMode='stepbystep';localStorage.setItem('fcv_analysis_mode','stepbystep');
+    disableClickableStepper();
+    document.getElementById('rerun-banner')&&document.getElementById('rerun-banner').remove();
+    document.querySelectorAll('.read-only-badge').forEach(b=>b.remove());
+    document.getElementById('stage-nav-arrows')&&document.getElementById('stage-nav-arrows').remove();
+    if(stageHists[stage])hist=stageHists[stage].slice();
+    curS=stage;
+    for(let i=stage+1;i<=3;i++){delete stageOutputs[i];delete stageHists[i];}
+    stageThreePriorities=[];fcvRating='';fcvResponsivenessRating='';
+    clearUI();renderOut(stage,stageOutputs[stage],false);
+    if(stage===2&&stage2UnderHood){buildUnderHoodPanels(stage2UnderHood);updateSidebar();}
+  }
+
+  function injectStageNavArrows(stage){
+    document.getElementById('stage-nav-arrows')&&document.getElementById('stage-nav-arrows').remove();
+    const names={1:'Context',2:'Assessment',3:'Recommendations'};
+    const nav=document.createElement('div');nav.id='stage-nav-arrows';nav.className='stage-nav-arrows';
+    const left=stage>1&&stageOutputs[stage-1]
+      ?'<button class="stage-nav-btn" onclick="navigateToStage('+(stage-1)+')">\u2190 Stage '+(stage-1)+': '+names[stage-1]+'</button>'
+      :'<div></div>';
+    const right=stage<3&&stageOutputs[stage+1]
+      ?'<button class="stage-nav-btn primary" onclick="navigateToStage('+(stage+1)+')">Stage '+(stage+1)+': '+names[stage+1]+' \u2192</button>'
+      :'<div></div>';
+    nav.innerHTML=left+right;
+    const actArea=document.getElementById('act-area');
+    if(actArea)actArea.after(nav);
+  }
+
   // ── Express progress screen ──────────────────────────────────────────────
   let epTimerInterval=null,epMessageInterval=null,epStartTime=null,epMessageIdx=0;
   const EP_MESSAGES=[
