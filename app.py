@@ -1286,30 +1286,47 @@ Produce a thorough extraction that a senior FCV analyst can work from directly."
 
 
 def extract_fcv_content(text, doc_name, api_client):
-    """Use Claude to extract FCV-relevant content from a large document.
-    Hard timeout of 120 seconds prevents indefinite hangs on slow API responses.
+    """Use Claude Haiku to extract FCV-relevant content from a large document.
+
+    Uses Haiku (not Sonnet) because this is a mechanical extraction task —
+    find and copy FCV-relevant passages, not analysis. Haiku is ~10x faster,
+    which prevents the indefinite stalls that occur when Sonnet processes
+    very large PADs (300–500k chars / ~100k input tokens).
+
+    Input is capped at 200k chars before sending to keep latency predictable.
+    A 90s ThreadPoolExecutor timeout provides a hard safety net.
     Falls back to truncated raw text if the call times out or fails.
     """
+    # Cap input: 200k chars (~50k tokens) is sufficient for Haiku to identify
+    # all FCV-relevant sections in any WBG project document.
+    HAIKU_INPUT_LIMIT = 200_000
+    text_to_send = text[:HAIKU_INPUT_LIMIT]
+    truncation_note = (
+        f" [input capped at {HAIKU_INPUT_LIMIT//1000}k of {len(text)//1000}k chars for extraction]"
+        if len(text) > HAIKU_INPUT_LIMIT else ""
+    )
+
     def _call():
         return api_client.messages.create(
-            model="claude-sonnet-4-20250514",
-            max_tokens=8192,
+            model="claude-haiku-4-5-20251001",
+            max_tokens=6000,
             messages=[{
                 "role": "user",
-                "content": f"{FCV_EXTRACT_PROMPT}\n\n=== DOCUMENT: {doc_name} ===\n\n{text}"
+                "content": f"{FCV_EXTRACT_PROMPT}\n\n=== DOCUMENT: {doc_name} ===\n\n{text_to_send}"
             }]
         )
     try:
         with ThreadPoolExecutor(max_workers=1) as executor:
             future = executor.submit(_call)
-            response = future.result(timeout=120)  # 2-minute hard wall-clock limit
+            response = future.result(timeout=90)  # 90-second hard wall-clock limit
         extracted = response.content[0].text
-        return f"[FCV-relevant content extracted from {doc_name} — full document was {len(text)//1000}k characters]\n\n{extracted}"
+        return (
+            f"[FCV-relevant content extracted from {doc_name} — "
+            f"full document was {len(text)//1000}k characters{truncation_note}]\n\n{extracted}"
+        )
     except FuturesTimeout:
-        # Timed out — fall back to truncated raw text so the stage can still proceed
-        return text[:EXTRACT_THRESHOLD] + f"\n\n[Extraction timed out after 120 seconds; showing first {EXTRACT_THRESHOLD//1000}k characters only.]"
+        return text[:EXTRACT_THRESHOLD] + f"\n\n[Extraction timed out after 90 seconds; showing first {EXTRACT_THRESHOLD//1000}k characters only.]"
     except Exception as e:
-        # Other failure — same fallback
         return text[:EXTRACT_THRESHOLD] + f"\n\n[Extraction failed ({str(e)}); showing first {EXTRACT_THRESHOLD//1000}k characters only.]"
 
 
