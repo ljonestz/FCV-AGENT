@@ -290,6 +290,7 @@
       border-radius:var(--radius-sm);
       display:flex;align-items:center;gap:10px;
       font-size:12px;color:#1a5c38;
+      border-top:1px solid var(--wbg-gray-100);padding-top:16px;margin-top:4px;
     }
     .builtin-notice svg{flex-shrink:0}
 
@@ -1445,11 +1446,11 @@
   }
 
   /* ── Express/Step-by-Step Mode Selection ── */
-  .mode-section{border-top:1px solid var(--wbg-gray-100);padding-top:20px;margin-top:4px;margin-bottom:20px}
+  .mode-section{margin-top:4px;margin-bottom:16px}
   .mode-section-label{font-size:12px;font-weight:700;color:var(--wbg-navy);margin-bottom:12px;display:flex;align-items:center;gap:8px}
   .mode-section-label svg{color:var(--wbg-cyan)}
-  .mode-cards{display:flex;gap:12px}
-  .mode-card{flex:1;border-radius:6px;padding:16px 18px;cursor:pointer;transition:all .2s ease;position:relative;border:1.5px solid var(--wbg-gray-100);background:var(--wbg-gray-50)}
+  .mode-cards{display:flex;gap:12px;align-items:stretch}
+  .mode-card{flex:1;border-radius:6px;padding:16px 18px;cursor:pointer;transition:all .2s ease;position:relative;border:1.5px solid var(--wbg-gray-100);background:var(--wbg-gray-50);display:flex;flex-direction:column}
   .mode-card:hover{border-color:#B0C4D8}
   .mode-card.selected{border-color:var(--wbg-cyan);background:#fff;box-shadow:0 0 0 1px rgba(0,157,218,.1)}
   .mode-radio{width:16px;height:16px;border-radius:50%;border:2px solid var(--border);position:absolute;top:16px;right:16px;transition:all .2s}
@@ -1459,7 +1460,7 @@
   .mode-badge-rec{background:var(--wbg-navy);color:#fff}
   .mode-title{font-size:14px;font-weight:700;color:var(--wbg-navy);margin-bottom:4px;padding-right:24px}
   .mode-desc{font-size:12px;color:var(--wbg-gray-500);line-height:1.5;margin-bottom:10px}
-  .mode-time{font-size:11px;color:#9CA3AF;font-weight:600;display:flex;align-items:center;gap:5px}
+  .mode-time{font-size:11px;color:#9CA3AF;font-weight:600;display:flex;align-items:center;gap:5px;margin-top:auto;padding-top:8px}
 
   /* ── Express Progress Screen ── */
   .express-progress{display:none;max-width:680px;width:100%;margin:0 auto;padding:48px 32px 40px}
@@ -1734,7 +1735,7 @@
 <div class="express-progress" id="express-progress">
   <div class="ep-header">
     <h2>Preparing Your FCV Recommendations Note</h2>
-    <p>Your documents are being analysed against 12 operational standards, 25 key questions, and the full FCV Playbook.</p>
+    <p>Assessed against 12 operational standards and 25 key questions from the OST Manual — with insights from the FCV Playbook and alignment with core priorities from the FCV Strategy.</p>
   </div>
   <div class="ep-stepper">
     <div class="ep-step-node">
@@ -1838,15 +1839,6 @@
     </div>
     <div id="debug-log" style="margin:0 32px 8px;font-size:11px;color:#666;min-height:16px"></div>
 
-    <div class="builtin-notice">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
-      <span><strong>Pre-loaded:</strong> OST Manual on FCV Sensitivity and Responsiveness, WBG FCV Strategy, and FCV Playbook — no upload needed. Country-specific risk documents (e.g. RRA, risk summaries) should be uploaded separately per project.</span>
-    </div>
-    <div class="confidential-notice">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2.5" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-      <div><strong>Confidentiality reminder:</strong> Do not upload classified, confidential, or otherwise restricted documents. Only upload materials approved for use with external AI processing systems.</div>
-    </div>
-
     <!-- ══ MODE SELECTION ══ -->
     <div class="mode-section" id="mode-section">
       <div class="mode-section-label">
@@ -1869,6 +1861,15 @@
           <div class="mode-time">&#9201; ~8&ndash;12 min &middot; Full control</div>
         </div>
       </div>
+    </div>
+
+    <div class="builtin-notice">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+      <span><strong>Pre-loaded:</strong> OST Manual on FCV Sensitivity and Responsiveness, WBG FCV Strategy, and FCV Playbook — no upload needed. Country-specific risk documents (e.g. RRA, risk summaries) should be uploaded separately per project.</span>
+    </div>
+    <div class="confidential-notice">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2.5" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <div><strong>Confidentiality reminder:</strong> Do not upload classified, confidential, or otherwise restricted documents. Only upload materials approved for use with external AI processing systems.</div>
     </div>
 
     <div class="upload-foot">
@@ -2587,16 +2588,17 @@
               if(stage===3) localStorage.setItem('stage3_timestamp', Date.now());
               // For Stage 2, use display_text (stripped of delimiters) if provided by backend
               const renderResult = (stage===2 && p.display_text) ? p.display_text : p.result;
-              // Express mode: skip rendering intermediate stages, call chain callback instead
-              if(onComplete){busy=false;onComplete(stage,p);return;}
-              renderOut(stage,renderResult,followOn);setStepper(stage,'done');
-              // Research brief panel for Stage 1
+              // Stage 1: extract docType + research data before calling onComplete (Stage 3 needs docType)
               if(stage===1){
                 const dtMatch=p.result&&p.result.match(/%%%DOC_TYPE:\s*([^%\n]+)%%%/);if(dtMatch){docType=dtMatch[1].trim();updateDocTypeBadge();}
                 if(p.research_brief) researchBrief=p.research_brief;
                 if(p.research_country) researchCountry=p.research_country;
-                if(researchBrief) injectResearchBriefPanel(researchBrief,researchCountry);
               }
+              // Express mode: skip rendering intermediate stages, call chain callback instead
+              if(onComplete){busy=false;try{onComplete(stage,p);}catch(e){showExpressError(stage,(e&&e.message)||'Express chain error');busy=false;}return;}
+              renderOut(stage,renderResult,followOn);setStepper(stage,'done');
+              // Research brief panel (step-by-step only — express skips rendering)
+              if(stage===1&&researchBrief) injectResearchBriefPanel(researchBrief,researchCountry);
               // Stage 2: show parse error banner and update sidebar
               if(stage===2){
                 if(p.parse_error){
@@ -2661,7 +2663,11 @@
           }catch(e){if(e.message!=='Unexpected end of JSON input')throw e}
         }
       }
-    }catch(e){showErr(e.message,stage);document.getElementById('stage-disp').innerHTML=''}
+    }catch(e){
+      const _emsg=(e&&e.message)||'An error occurred';
+      if(analysisMode==='express'){showExpressError(stage,_emsg);}
+      else{showErr(_emsg,stage);}
+      document.getElementById('stage-disp').innerHTML=''}
     busy=false;
   }
 
@@ -3235,12 +3241,13 @@
   // ── Express progress screen ──────────────────────────────────────────────
   let epTimerInterval=null,epMessageInterval=null,epStartTime=null,epMessageIdx=0;
   const EP_MESSAGES=[
-    {icon:'\u2615',text:'"Go grab a coffee \u2014 this will take a few minutes."'},
-    {icon:'\uD83D\uDCDA',text:'"Your project is being assessed against 12 operational standards and 25 key questions."'},
-    {icon:'\u23F3',text:'"Don\u2019t worry, the wait will be worth it."'},
-    {icon:'\uD83C\uDF0D',text:'"In FCV settings, nothing good happens quickly."'},
-    {icon:'\uD83D\uDCC8',text:'"We\u2019re cross-referencing your document against the full FCV Playbook."'},
-    {icon:'\uD83D\uDCA1',text:'"Tip: You can review each stage\u2019s findings once the analysis is complete."'}
+    {icon:'☕',text:'Go grab a coffee — this will take a few minutes.'},
+    {icon:'📖',text:'Your project is assessed against 12 operational standards and 25 key questions from the OST Manual.'},
+    {icon:'⏳',text:'Don\'t worry, the wait will be worth it.'},
+    {icon:'🌍',text:'In FCV settings, nothing good happens quickly.'},
+    {icon:'📚',text:'We\'re drawing on the FCV Playbook for insights on relevant practices and operational tools.'},
+    {icon:'🎯',text:'Stage 3 aligns recommendations with core priorities from the WBG FCV Strategy.'},
+    {icon:'💡',text:'Tip: You can review each stage\'s findings once the analysis is complete.'}
   ];
 
   function showExpressProgress(){
