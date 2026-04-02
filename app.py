@@ -4,6 +4,7 @@ import json
 import base64
 import queue
 import threading
+from datetime import date
 from concurrent.futures import ThreadPoolExecutor
 from flask import Flask, request, jsonify, send_from_directory, Response, stream_with_context
 import anthropic
@@ -2070,10 +2071,11 @@ def run_express():
                     if dp['label'] == 'CONTEXT DOCUMENT' and not context_sep_added:
                         content_parts.append({"type": "text", "text": "\n\n--- CONTEXTUAL DOCUMENTS ---\n"})
                         context_sep_added = True
-                    if len(dp['raw_text']) > STAGE1_EXTRACT_THRESHOLD:
-                        dp_name = dp['name']
-                        yield f"data: {json.dumps({'preprocess': 'Extracting FCV content from ' + dp_name + '...'})}\n\n"
-                        final_text = extract_fcv_content_haiku(dp['raw_text'], dp['name'], get_research_client())
+                    if len(dp['raw_text']) > STAGE1_MAX_DOC_CHARS:
+                        final_text = (
+                            dp['raw_text'][:STAGE1_MAX_DOC_CHARS] +
+                            f"\n\n[Document truncated to {STAGE1_MAX_DOC_CHARS:,} characters for analysis]"
+                        )
                     else:
                         final_text = dp['raw_text']
                     suffix = f" ({dp['page_count']} pages)" if dp['page_count'] else ""
@@ -2225,7 +2227,6 @@ def run_express():
                 uploaded_doc_names = [doc.get('name', '') for doc in documents if doc.get('name')]
                 parsed = extract_priorities(stage3_output, uploaded_doc_names)
                 stage3_output_clean = clean_stage3_output(stage3_output)
-                from datetime import date
                 header = DO_NO_HARM_HEADER.format(date=date.today().strftime('%d %B %Y'))
                 stage3_output_clean = header + stage3_output_clean
 
