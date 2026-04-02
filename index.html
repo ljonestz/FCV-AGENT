@@ -2365,30 +2365,168 @@
   // ── Express mode chain ───────────────────────────────────────────────────
   async function runExpress(){
     if(busy)return;
+    busy=true;
     document.getElementById('analysis-panel').style.display='block';
     document.getElementById('stepper-wrap').style.display='none';
     document.getElementById('main').style.display='none';
     showExpressProgress();updateExpressStage(1,'active',null);
+
+    // Read files for upload payload
+    const readF=(file,isCtx)=>new Promise((res,rej)=>{
+      const isPdf=file.name.toLowerCase().endsWith('.pdf');
+      const r=new FileReader();
+      if(isPdf){r.onload=e=>res({name:file.name,type:'pdf',content:e.target.result.split(',')[1],isContext:isCtx});r.readAsDataURL(file)}
+      else{r.onload=e=>res({name:file.name,type:'text',content:e.target.result,isContext:isCtx});r.readAsText(file)}
+      r.onerror=()=>rej(new Error('Could not read '+file.name));
+    });
+
+    let payload;
     try{
-      await runStage(1,null,function(s1,p1){
-        const summary1=(docType!=='Unknown'?docType:'Document')+' stage \u00B7 Context extracted';
-        updateExpressStage(1,'done',summary1);
-        epSafeStore(stageOutputs,stageHists,'1');
-        updateExpressStage(2,'active',null);
-        runStage(2,null,function(s2,p2){
-          const sensR=p2.sensitivity_rating||'\u2014',respR=p2.responsiveness_rating||'\u2014';
-          updateExpressStage(2,'done','Sensitivity: '+sensR+' \u00B7 Responsiveness: '+respR);
-          epSafeStore(stageOutputs,stageHists,'2');
-          updateExpressStage(3,'active',null);
-          runStage(3,null,function(s3,p3){
-            updateExpressStage(3,'done','Complete');
-            epSafeStore(stageOutputs,stageHists,'3');
+      payload={documents:[
+        ...await Promise.all(pF.map(f=>readF(f,false))),
+        ...await Promise.all(cF.map(f=>readF(f,true)))
+      ]};
+    }catch(e){
+      showExpressError(1,'Could not read documents: '+(e.message||e));
+      busy=false;return;
+    }
+
+    const expressAbort=new AbortController();
+    const expressTimeout=setTimeout(()=>expressAbort.abort(new Error('Express analysis timed out after 10 minutes.')),10*60*1000);
+
+    let res;
+    try{
+      res=await fetch('/api/run-express',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(payload),
+        signal:expressAbort.signal
+      });
+    }catch(e){
+      clearTimeout(expressTimeout);
+      showExpressError(1,e.name==='AbortError'?(e.message||'Request timed out'):'Could not reach the server.');
+      busy=false;return;
+    }
+
+    if(!res.ok){
+      clearTimeout(expressTimeout);
+      let msg='Server error '+res.status;
+      try{const d=await res.json();msg=d.error||msg}catch(e){}
+      showExpressError(1,msg);busy=false;return;
+    }
+
+    const reader=res.body.getReader(),dec=new TextDecoder();
+    let buf='';
+    let currentStage=1;
+
+    try{
+      while(true){
+        const{done,value}=await reader.read();
+        if(done)break;
+        buf+=dec.decode(value,{stream:true});
+        const lines=buf.split('\n');buf=lines.pop();
+
+        for(const line of lines){
+          if(!line.startsWith('data: '))continue;
+          let p;
+          try{p=JSON.parse(line.slice(6));}catch(e){continue;}
+
+          // ── Stage start ──
+          if(p.stage_start){
+            currentStage=p.stage_start;
+            updateExpressStage(currentStage,'active',null);
+          }
+
+          // ── Research status (Stage 1) ──
+          else if(p.research_status){
+            let rsMsg='';
+            if(p.research_status==='extracting_country') rsMsg='Identifying project country\u2026';
+            else if(p.research_status==='searching'&&p.country){researchCountry=p.country;rsMsg='Searching FCV context: '+esc(p.country)+'\u2026';}
+            else if(p.research_status==='cached'&&p.country){researchCountry=p.country;rsMsg='Loading cached FCV research\u2026';}
+            else if(p.research_status==='complete'){if(p.brief)researchBrief=p.brief;if(p.country)researchCountry=p.country;rsMsg='Research complete \u2014 generating analysis\u2026';}
+            else if(p.research_status==='error'){rsMsg='Web research unavailable \u2014 proceeding\u2026';}
+            if(rsMsg){const epSum=document.getElementById('ep-summary-1');if(epSum)epSum.innerHTML='<div class="ep-stage-spinner"><div class="ep-spinner-dot"></div><div class="ep-spinner-dot"></div><div class="ep-spinner-dot"></div><span>'+rsMsg+'</span></div>';}
+          }
+
+          // ── Preprocess (doc truncation notice) ──
+          else if(p.preprocess){
+            const epSum=document.getElementById('ep-summary-1');
+            if(epSum)epSum.innerHTML='<div class="ep-stage-spinner"><div class="ep-spinner-dot"></div><div class="ep-spinner-dot"></div><div class="ep-spinner-dot"></div><span>'+esc(p.preprocess)+'</span></div>';
+          }
+
+          // ── Preparing analysis ──
+          else if(p.status==='preparing_analysis'){
+            const epSum=document.getElementById('ep-summary-1');
+            if(epSum)epSum.innerHTML='<div class="ep-stage-spinner"><div class="ep-spinner-dot"></div><div class="ep-spinner-dot"></div><div class="ep-spinner-dot"></div><span>Generating analysis\u2026</span></div>';
+          }
+
+          // ── Streaming chunks ──
+          else if(p.chunk){
+            // Chunks arrive with p.stage — buffered but not rendered during express progress
+          }
+
+          // ── Keepalive ──
+          else if(p.keepalive){/* silent */}
+
+          // ── Stage done ──
+          else if(p.stage_done){
+            const sn=p.stage_done;
+
+            if(sn===1){
+              stageOutputs[1]=p.result;
+              hist=p.history||[];stageHists[1]=hist.slice();
+              if(p.doc_type&&p.doc_type!=='Unknown'){docType=p.doc_type;updateDocTypeBadge();}
+              if(p.research_brief)researchBrief=p.research_brief;
+              if(p.research_country)researchCountry=p.research_country;
+              const summary1=(docType!=='Unknown'?docType:'Document')+' stage \u00B7 Context extracted';
+              updateExpressStage(1,'done',summary1);
+              epSafeStore(stageOutputs,stageHists,'1');
+            }
+
+            else if(sn===2){
+              stageOutputs[2]=p.display_text||p.result;
+              hist=p.history||hist;stageHists[2]=hist.slice();
+              if(p.sensitivity_rating)fcvRating=p.sensitivity_rating;
+              if(p.responsiveness_rating)fcvResponsivenessRating=p.responsiveness_rating;
+              if(p.under_hood){stage2UnderHood=p.under_hood;localStorage.setItem('stage2_under_hood',JSON.stringify(p.under_hood));}
+              localStorage.setItem('stage2_timestamp',Date.now());
+              const sensR=p.sensitivity_rating||'\u2014',respR=p.responsiveness_rating||'\u2014';
+              updateExpressStage(2,'done','Sensitivity: '+sensR+' \u00B7 Responsiveness: '+respR);
+              epSafeStore(stageOutputs,stageHists,'2');
+            }
+
+            else if(sn===3){
+              stageOutputs[3]=p.result;
+              hist=p.history||hist;stageHists[3]=hist.slice();
+              stageGapTable=p.gap_table||null;
+              stageRiskExposure=p.risk_exposure||null;
+              stageSensitivitySummary=p.sensitivity_summary||'';
+              stageResponsivenessSummary=p.responsiveness_summary||'';
+              if(p.fcv_rating)fcvRating=p.fcv_rating;
+              if(p.fcv_responsiveness_rating)fcvResponsivenessRating=p.fcv_responsiveness_rating;
+              if(p.priorities)stageThreePriorities=p.priorities;
+              localStorage.setItem('stage3_timestamp',Date.now());
+              updateExpressStage(3,'done','Complete');
+              epSafeStore(stageOutputs,stageHists,'3');
+            }
+          }
+
+          // ── Error ──
+          else if(p.error){
+            clearTimeout(expressTimeout);
+            const failedStage=p.failed_stage||currentStage;
+            showExpressError(failedStage,p.error);
+            busy=false;return;
+          }
+
+          // ── Express complete ──
+          else if(p.express_done){
+            clearTimeout(expressTimeout);
             hideExpressProgress();
             document.getElementById('stepper-wrap').style.display='';
             document.getElementById('main').style.display='';
             curS=3;setStepper(3,'done');
-            const renderResult3=(p3.display_text)||stageOutputs[3];
-            renderOut(3,renderResult3,false);
+            renderOut(3,stageOutputs[3],false);
             if(stageThreePriorities&&stageThreePriorities.length)initStage3UI();
             if(stage2UnderHood)localStorage.setItem('stage2_under_hood',JSON.stringify(stage2UnderHood));
             enableClickableStepper();
@@ -2396,50 +2534,23 @@
             localStorage.removeItem('fcv_express_stageHists');
             localStorage.removeItem('fcv_express_curS');
             busy=false;
-          });
-        });
-      });
+          }
+        }
+      }
     }catch(e){
-      showExpressError(curS||1,(e&&e.message)||'An error occurred');
+      clearTimeout(expressTimeout);
+      showExpressError(currentStage,e.message||'Connection lost');
       busy=false;
     }
   }
 
   function retryExpressStage(stage){
-    busy=false;updateExpressStage(stage,'active',null);
+    busy=false;
+    // For simplicity, retry restarts the full express chain.
+    // Completed stages will complete faster due to research cache.
     if(epTimerInterval)clearInterval(epTimerInterval);
-    epTimerInterval=setInterval(updateEpTimer,1000);
     if(epMessageInterval)clearInterval(epMessageInterval);
-    epMessageIdx=0;
-    epMessageInterval=setInterval(()=>{
-      epMessageIdx=(epMessageIdx+1)%EP_MESSAGES.length;
-      const card=document.getElementById('ep-message-card');
-      card.classList.add('fade-out');
-      setTimeout(()=>{showEpMessage(epMessageIdx);card.classList.remove('fade-out');},500);
-    },15000);
-    if(stage===1){runExpress();return;}
-    if(stage===2){
-      runStage(2,null,function(s2,p2){
-        const sensR=p2.sensitivity_rating||'\u2014',respR=p2.responsiveness_rating||'\u2014';
-        updateExpressStage(2,'done','Sensitivity: '+sensR+' \u00B7 Responsiveness: '+respR);
-        updateExpressStage(3,'active',null);
-        runStage(3,null,function(s3,p3){
-          updateExpressStage(3,'done','Complete');
-          hideExpressProgress();document.getElementById('stepper-wrap').style.display='';document.getElementById('main').style.display='';
-          curS=3;setStepper(3,'done');renderOut(3,stageOutputs[3],false);
-          if(stageThreePriorities&&stageThreePriorities.length)initStage3UI();
-          enableClickableStepper();busy=false;
-        });
-      });
-    }else if(stage===3){
-      runStage(3,null,function(s3,p3){
-        updateExpressStage(3,'done','Complete');
-        hideExpressProgress();document.getElementById('stepper-wrap').style.display='';document.getElementById('main').style.display='';
-        curS=3;setStepper(3,'done');renderOut(3,stageOutputs[3],false);
-        if(stageThreePriorities&&stageThreePriorities.length)initStage3UI();
-        enableClickableStepper();busy=false;
-      });
-    }
+    runExpress();
   }
 
   function switchToStepByStep(stage){
@@ -2455,7 +2566,7 @@
     }
   }
 
-  async function runStage(stage,followOn=null,onComplete=null){
+  async function runStage(stage,followOn=null){
     if(busy)return;
     busy=true;curS=stage;
     setStepper(stage,'active');clearUI();
@@ -2614,8 +2725,6 @@
                 if(p.research_brief) researchBrief=p.research_brief;
                 if(p.research_country) researchCountry=p.research_country;
               }
-              // Express mode: skip rendering intermediate stages, call chain callback instead
-              if(onComplete){busy=false;try{onComplete(stage,p);}catch(e){showExpressError(stage,(e&&e.message)||'Express chain error');busy=false;}return;}
               renderOut(stage,renderResult,followOn);setStepper(stage,'done');
               // Research brief panel (step-by-step only — express skips rendering)
               if(stage===1&&researchBrief) injectResearchBriefPanel(researchBrief,researchCountry);
