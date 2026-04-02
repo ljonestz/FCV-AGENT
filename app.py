@@ -2,8 +2,13 @@ import os
 import re
 import json
 import base64
+import queue
+import threading
+from datetime import date
+from concurrent.futures import ThreadPoolExecutor
 from flask import Flask, request, jsonify, send_from_directory, Response, stream_with_context
 import anthropic
+import httpx
 from background_docs import (
     FCV_GUIDE, FCV_OPERATIONAL_MANUAL, FCV_REFRESH_FRAMEWORK,
     PLAYBOOK_DIAGNOSTICS, PLAYBOOK_PREPARATION, PLAYBOOK_IMPLEMENTATION,
@@ -18,7 +23,8 @@ except ImportError:
 # ── Constants ────────────────────────────────────────────────────────────────
 
 MAX_DOC_CHARS = 500_000       # Max chars extracted from any single document
-EXTRACT_THRESHOLD = 150_000  # Documents larger than this are condensed via LLM before analysis
+STAGE1_MAX_DOC_CHARS = 60_000       # Docs are truncated to this before Stage 1 — no LLM extraction,
+                                     # no blocking pre-stage calls, no proxy timeout risk
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "fcv-admin-2024")
 PROMPTS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'prompts.json')
 
@@ -244,6 +250,7 @@ Where does the project document's own risk picture align with or diverge from th
 - Always clearly signal which Part and section you are in
 - Note when information is ambiguous, absent, or contradictory
 - Be specific — generic statements about fragility are not useful
+- **Length:** Keep Part A and Part B combined to approximately 1,000–1,500 words. Be concise and evidence-focused; do not pad sections where evidence is thin.
 
 ---
 
@@ -1259,50 +1266,18 @@ def extract_pdf_text(b64_data, name):
         return f'[Could not extract text from {name}: {str(e)}]', 0
 
 
-FCV_EXTRACT_PROMPT = """You are extracting content relevant to FCV (Fragility, Conflict, Violence) analysis from a World Bank project document. The extracted content will be used by an FCV specialist to assess the project's sensitivity to conflict, fragility, and violence.
-
-Extract and preserve ALL information relevant to:
-- Active conflict, security threats, and violence dynamics
-- Governance failures, institutional fragility, and accountability gaps
-- Social exclusion, discrimination, and marginalized groups
-- Displacement, migration, and refugee/IDP dynamics
-- Economic vulnerability and livelihoods under conflict stress
-- Political economy, power dynamics, and elite capture risks
-- Gender-based violence and women's exclusion
-- Cross-border dynamics and regional instability
-- Environmental and climate-conflict linkages
-- Any fragility classifications, risk ratings, SORT assessments, or diagnostic findings
-- Project-specific design risks related to FCV context
-
-Preserve key passages close to verbatim. Include section headers, quantitative data, and geographic specifics. Omit routine procurement tables, standard safeguard checklists, and financial management sections unless they have direct FCV relevance.
-
-Produce a thorough extraction that a senior FCV analyst can work from directly."""
-
-
-def extract_fcv_content(text, doc_name, api_client):
-    """Use Claude to extract FCV-relevant content from a large document."""
-    try:
-        response = api_client.messages.create(
-            model="claude-sonnet-4-20250514",
-            max_tokens=8192,
-            messages=[{
-                "role": "user",
-                "content": f"{FCV_EXTRACT_PROMPT}\n\n=== DOCUMENT: {doc_name} ===\n\n{text}"
-            }]
-        )
-        extracted = response.content[0].text
-        return f"[FCV-relevant content extracted from {doc_name} — full document was {len(text)//1000}k characters]\n\n{extracted}"
-    except Exception as e:
-        # Fallback: return first EXTRACT_THRESHOLD chars if extraction fails
-        return text[:EXTRACT_THRESHOLD] + f"\n\n[Extraction failed ({str(e)}); showing first {EXTRACT_THRESHOLD//1000}k characters only.]"
+# FCV_EXTRACT_PROMPT and extract_fcv_content() removed — Stage 1 Sonnet handles
+# FCV extraction directly in Part A. Large docs are truncated to MAX_DOC_CHARS.
 
 
 def extract_country_name(project_doc_text: str, api_client) -> str:
-    """Extract the country name from the first portion of a project document."""
+    """Extract the country name from the first portion of a project document.
+    Uses Haiku (trivial classification task). Timeout handled by httpx client.
+    """
     snippet = project_doc_text[:4000]
     try:
         resp = api_client.messages.create(
-            model="claude-sonnet-4-20250514",
+            model="claude-haiku-4-5-20251001",
             max_tokens=50,
             messages=[{
                 "role": "user",
@@ -1383,11 +1358,13 @@ Be concise but substantive. Prioritise recent information (last 2–3 years). Wh
 
 
 def extract_sector_name(project_doc_text: str, api_client) -> str:
-    """Extract the primary sector/theme of the project from its opening pages."""
+    """Extract the primary sector/theme of the project from its opening pages.
+    Uses Haiku (trivial classification task). Timeout handled by httpx client.
+    """
     snippet = project_doc_text[:4000]
     try:
         resp = api_client.messages.create(
-            model="claude-sonnet-4-20250514",
+            model="claude-haiku-4-5-20251001",
             max_tokens=50,
             messages=[{
                 "role": "user",
@@ -1410,6 +1387,7 @@ def run_fcv_web_research(country: str, sector: str, api_client) -> dict:
     """
     Run automated FCV web research for the given country using the Anthropic
     web search tool. Returns a dict with 'brief' (str) and 'country' (str).
+    Timeout handled by the httpx client (get_research_client, 60s total).
     """
     prompt = FCV_RESEARCH_PROMPT.format(country=country, sector=sector)
     try:
@@ -1419,12 +1397,11 @@ def run_fcv_web_research(country: str, sector: str, api_client) -> dict:
             tools=[{
                 "type": "web_search_20250305",
                 "name": "web_search",
-                "max_uses": 9
+                "max_uses": 4
             }],
             messages=[{"role": "user", "content": prompt}],
             betas=["web-search-2025-03-05"]
         )
-        # Extract text blocks from response (tool_use blocks may be interspersed)
         brief_parts = []
         for block in resp.content:
             if hasattr(block, 'type') and block.type == 'text':
@@ -1433,7 +1410,7 @@ def run_fcv_web_research(country: str, sector: str, api_client) -> dict:
         return {'brief': brief, 'country': country}
     except Exception as e:
         return {
-            'brief': f'*Automated FCV web research could not be completed for {country}: {str(e)}*',
+            'brief': f'*Web research for {country} could not be completed — proceeding without supplemental research.*',
             'country': country
         }
 
@@ -1455,10 +1432,45 @@ app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
 _client = None
 
 def get_client():
+    """Main client for streaming LLM calls (Stages 1-3). Generous timeout."""
     global _client
     if _client is None:
-        _client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
+        _client = anthropic.Anthropic(
+            api_key=os.environ.get("ANTHROPIC_API_KEY"),
+            timeout=httpx.Timeout(timeout=600.0, connect=30.0)
+        )
     return _client
+
+
+_fast_client = None
+
+def get_fast_client():
+    """Client with aggressive timeouts for lightweight pre-streaming calls
+    (country/sector extraction via Haiku, doc type detection).
+    Connect: 10s. Total: 25s per request.
+    """
+    global _fast_client
+    if _fast_client is None:
+        _fast_client = anthropic.Anthropic(
+            api_key=os.environ.get("ANTHROPIC_API_KEY"),
+            timeout=httpx.Timeout(timeout=25.0, connect=10.0)
+        )
+    return _fast_client
+
+
+_research_client = None
+
+def get_research_client():
+    """Client for web research only. 45s total — limits the silent window before
+    the keepalive stream starts. On timeout, research is skipped gracefully.
+    """
+    global _research_client
+    if _research_client is None:
+        _research_client = anthropic.Anthropic(
+            api_key=os.environ.get("ANTHROPIC_API_KEY"),
+            timeout=httpx.Timeout(timeout=45.0, connect=10.0)
+        )
+    return _research_client
 
 
 @app.route('/')
@@ -1600,8 +1612,10 @@ def run_stage():
             project_docs = [d for d in documents if not d.get('isContext')]
             context_docs = [d for d in documents if d.get('isContext')]
 
-            # Pre-extract raw text for all docs; store metadata for generate() to process
-            doc_parts = []  # list of dicts: {label, name, raw_text, page_count, needs_extraction}
+            # Pre-extract raw text for all docs; truncate to MAX_DOC_CHARS.
+            # No separate LLM extraction step — Stage 1 Sonnet handles FCV
+            # extraction directly in Part A of its output.
+            doc_parts = []  # list of dicts: {label, name, raw_text, page_count}
             for doc in project_docs:
                 name = doc.get('name', 'document')
                 file_type = doc.get('type', 'text')
@@ -1612,8 +1626,7 @@ def run_stage():
                     text = raw[:MAX_DOC_CHARS]
                     page_count = 0
                 doc_parts.append({'label': 'PROJECT DOCUMENT', 'name': name,
-                                  'raw_text': text, 'page_count': page_count,
-                                  'needs_extraction': len(text) > EXTRACT_THRESHOLD})
+                                  'raw_text': text[:MAX_DOC_CHARS], 'page_count': page_count})
             for doc in context_docs:
                 name = doc.get('name', 'document')
                 file_type = doc.get('type', 'text')
@@ -1624,8 +1637,7 @@ def run_stage():
                     text = raw[:MAX_DOC_CHARS]
                     page_count = 0
                 doc_parts.append({'label': 'CONTEXT DOCUMENT', 'name': name,
-                                  'raw_text': text, 'page_count': page_count,
-                                  'needs_extraction': len(text) > EXTRACT_THRESHOLD})
+                                  'raw_text': text[:MAX_DOC_CHARS], 'page_count': page_count})
 
             stage_prompt = prompt_override if prompt_override else get_prompt_for_stage(1)
             doc_type_ctx = build_doc_type_context(document_type, 1)
@@ -1698,20 +1710,23 @@ def run_stage():
             try:
                 yield f"data: {json.dumps({'ping': True})}\n\n"
 
-                # ── Stage 1: build content_parts, extracting large docs via LLM ──
+                # ── Stage 1: build content_parts, run web research ──
                 if stage == 1:
-                    large_docs = [d for d in doc_parts if d['needs_extraction']]
-                    n_large = len(large_docs)
                     content_parts = []
-                    has_context = any(d['label'] == 'CONTEXT DOCUMENT' for d in doc_parts)
                     context_sep_added = False
 
                     # ── Automated FCV Web Research Phase ──────────────────────
+                    # Country+sector extraction run in parallel via Haiku (~2-3s)
+                    # Web research uses dedicated client with 60s httpx timeout
                     try:
                         first_doc_text = doc_parts[0]['raw_text'] if doc_parts else ''
                         yield f"data: {json.dumps({'research_status': 'extracting_country'})}\n\n"
-                        research_country = extract_country_name(first_doc_text, get_client())
-                        research_sector = extract_sector_name(first_doc_text, get_client())
+                        fast = get_fast_client()
+                        with ThreadPoolExecutor(max_workers=2) as pool:
+                            country_future = pool.submit(extract_country_name, first_doc_text, fast)
+                            sector_future = pool.submit(extract_sector_name, first_doc_text, fast)
+                            research_country = country_future.result()
+                            research_sector = sector_future.result()
 
                         cache_key = f"{research_country.lower().strip()}::{research_sector.lower().strip()}"
                         if cache_key in _research_cache:
@@ -1720,7 +1735,7 @@ def run_stage():
                             yield f"data: {json.dumps({'research_status': 'cached', 'country': research_country})}\n\n"
                         else:
                             yield f"data: {json.dumps({'research_status': 'searching', 'country': research_country})}\n\n"
-                            research_data = run_fcv_web_research(research_country, research_sector, get_client())
+                            research_data = run_fcv_web_research(research_country, research_sector, get_research_client())
                             research_brief_text = research_data['brief']
                             _research_cache[cache_key] = research_data
 
@@ -1730,18 +1745,22 @@ def run_stage():
                         yield f"data: {json.dumps({'research_status': 'error', 'country': research_country})}\n\n"
                     # ── End Research Phase ────────────────────────────────────
 
+                    # Assemble document content.
+                    # Documents are truncated to STAGE1_MAX_DOC_CHARS — no LLM extraction,
+                    # no additional blocking API calls before the keepalive stream starts.
                     for dp in doc_parts:
                         if dp['label'] == 'CONTEXT DOCUMENT' and not context_sep_added:
                             content_parts.append({"type": "text", "text": "\n\n--- CONTEXTUAL DOCUMENTS ---\n"})
                             context_sep_added = True
 
-                        if dp['needs_extraction']:
-                            large_idx = large_docs.index(dp) + 1
-                            doc_msg = f'Reading {dp["name"]} — extracting FCV-relevant content ({large_idx} of {n_large})…'
-                            yield f"data: {json.dumps({'preprocess': doc_msg})}\n\n"
-                            final_text = extract_fcv_content(dp['raw_text'], dp['name'], get_client())
+                        raw = dp['raw_text']
+                        if len(raw) > STAGE1_MAX_DOC_CHARS:
+                            final_text = (
+                                raw[:STAGE1_MAX_DOC_CHARS] +
+                                f"\n\n[Document truncated to {STAGE1_MAX_DOC_CHARS:,} characters for analysis]"
+                            )
                         else:
-                            final_text = dp['raw_text']
+                            final_text = raw
 
                         suffix = f" ({dp['page_count']} pages)" if dp['page_count'] else ""
                         content_parts.append({"type": "text", "text": f"=== {dp['label']}: {dp['name']}{suffix} ===\n\n{final_text}"})
@@ -1767,14 +1786,46 @@ def run_stage():
                     content_parts.append({"type": "text", "text": stage_prompt})
                     messages.append({"role": "user", "content": content_parts})
 
-                with get_client().messages.stream(
-                    model="claude-sonnet-4-20250514",
-                    max_tokens=16000,
-                    messages=messages
-                ) as stream:
-                    for text_chunk in stream.text_stream:
-                        collected.append(text_chunk)
-                        yield f"data: {json.dumps({'chunk': text_chunk})}\n\n"
+                # Signal that the LLM stream is about to open — resets any proxy idle timer
+                # and updates the UI past the "Research complete" status.
+                yield f"data: {json.dumps({'status': 'preparing_analysis'})}\n\n"
+
+                # ── Queue-based keepalive stream ───────────────────────────────────────
+                # The Sonnet stream runs in a background thread; the generator reads from
+                # a queue with a 20-second timeout.  If no chunk arrives in 20 s a
+                # keepalive event is sent, preventing any proxy from closing the SSE
+                # connection during Sonnet's time-to-first-token phase.
+                _stage_max_tokens = 8000 if stage == 1 else 16000
+                _stream_q: queue.Queue = queue.Queue()
+
+                def _run_stream() -> None:
+                    try:
+                        with get_client().messages.stream(
+                            model="claude-sonnet-4-20250514",
+                            max_tokens=_stage_max_tokens,
+                            messages=messages
+                        ) as _s:
+                            for _chunk in _s.text_stream:
+                                _stream_q.put(('chunk', _chunk))
+                        _stream_q.put(('done', None))
+                    except Exception as _e:
+                        _stream_q.put(('error', str(_e)))
+
+                threading.Thread(target=_run_stream, daemon=True).start()
+
+                while True:
+                    try:
+                        _kind, _payload = _stream_q.get(timeout=20)
+                    except queue.Empty:
+                        yield f"data: {json.dumps({'keepalive': True})}\n\n"
+                        continue
+                    if _kind == 'chunk':
+                        collected.append(_payload)
+                        yield f"data: {json.dumps({'chunk': _payload})}\n\n"
+                    elif _kind == 'done':
+                        break
+                    elif _kind == 'error':
+                        raise Exception(_payload)
 
                 full_text = ''.join(collected)
 
@@ -1875,6 +1926,334 @@ def run_stage():
                 yield f"data: {json.dumps({'error': str(e)})}\n\n"
 
         return Response(stream_with_context(generate()), mimetype='text/event-stream',
+                        headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'})
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+def _stream_stage(messages, max_tokens, stage_num):
+    """Run one Anthropic streaming call with keepalive pings.
+
+    Yields SSE-formatted strings:
+      - {"chunk": "...", "stage": N}  for each text chunk
+      - {"keepalive": true}           every 20s if no data flowing
+
+    After the generator is fully exhausted, the full collected text is
+    available via _stream_stage._last_result (a function attribute).
+    """
+    import queue as _q
+    collected = []
+    stream_q = _q.Queue()
+
+    def _run():
+        try:
+            with get_client().messages.stream(
+                model="claude-sonnet-4-20250514",
+                max_tokens=max_tokens,
+                messages=messages
+            ) as s:
+                for chunk in s.text_stream:
+                    stream_q.put(('chunk', chunk))
+            stream_q.put(('done', None))
+        except Exception as e:
+            stream_q.put(('error', str(e)))
+
+    t = threading.Thread(target=_run, daemon=True)
+    t.start()
+
+    while True:
+        try:
+            kind, payload = stream_q.get(timeout=20)
+        except _q.Empty:
+            yield f"data: {json.dumps({'keepalive': True})}\n\n"
+            continue
+        if kind == 'chunk':
+            collected.append(payload)
+            yield f"data: {json.dumps({'chunk': payload, 'stage': stage_num})}\n\n"
+        elif kind == 'done':
+            break
+        elif kind == 'error':
+            raise Exception(payload)
+
+    # Store collected text so the caller can access it after iteration
+    _stream_stage._last_result = ''.join(collected)
+
+
+@app.route('/api/run-express', methods=['POST'])
+def run_express():
+    """Run all 3 stages in a single SSE stream for express mode."""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'Invalid request.'}), 400
+
+        documents = data.get('documents', [])
+        if not documents:
+            return jsonify({'error': 'Please upload at least one project document.'}), 400
+
+        MAX_ASSISTANT_CHARS = 40000
+
+        def generate():
+            # ── Variables that persist across stages ──
+            stage1_output = ''
+            stage2_output = ''
+            doc_type = 'Unknown'
+            research_brief_text = ''
+            research_country = ''
+            conversation_history = []
+
+            try:
+                # ════════════════════════════════════════════════════════════
+                # STAGE 1 — Context & Extraction
+                # ════════════════════════════════════════════════════════════
+                yield f"data: {json.dumps({'stage_start': 1})}\n\n"
+
+                project_docs = [d for d in documents if not d.get('isContext')]
+                context_docs = [d for d in documents if d.get('isContext')]
+
+                # Pre-extract raw text for all docs
+                doc_parts = []
+                for doc in project_docs:
+                    name = doc.get('name', 'document')
+                    file_type = doc.get('type', 'text')
+                    raw = doc.get('content', '')
+                    if file_type == 'pdf':
+                        text, page_count = extract_pdf_text(raw, name)
+                    else:
+                        text = raw[:MAX_DOC_CHARS]
+                        page_count = 0
+                    doc_parts.append({'label': 'PROJECT DOCUMENT', 'name': name,
+                                      'raw_text': text[:MAX_DOC_CHARS], 'page_count': page_count})
+                for doc in context_docs:
+                    name = doc.get('name', 'document')
+                    file_type = doc.get('type', 'text')
+                    raw = doc.get('content', '')
+                    if file_type == 'pdf':
+                        text, page_count = extract_pdf_text(raw, name)
+                    else:
+                        text = raw[:MAX_DOC_CHARS]
+                        page_count = 0
+                    doc_parts.append({'label': 'CONTEXT DOCUMENT', 'name': name,
+                                      'raw_text': text[:MAX_DOC_CHARS], 'page_count': page_count})
+
+                # ── Web research phase ──
+                try:
+                    first_doc_text = doc_parts[0]['raw_text'] if doc_parts else ''
+                    yield f"data: {json.dumps({'research_status': 'extracting_country'})}\n\n"
+                    fast = get_fast_client()
+                    with ThreadPoolExecutor(max_workers=2) as pool:
+                        country_future = pool.submit(extract_country_name, first_doc_text, fast)
+                        sector_future = pool.submit(extract_sector_name, first_doc_text, fast)
+                        research_country = country_future.result()
+                        research_sector = sector_future.result()
+
+                    cache_key = f"{research_country.lower().strip()}::{research_sector.lower().strip()}"
+                    if cache_key in _research_cache:
+                        research_data = _research_cache[cache_key]
+                        research_brief_text = research_data['brief']
+                        yield f"data: {json.dumps({'research_status': 'cached', 'country': research_country})}\n\n"
+                    else:
+                        yield f"data: {json.dumps({'research_status': 'searching', 'country': research_country})}\n\n"
+                        research_data = run_fcv_web_research(research_country, research_sector, get_research_client())
+                        research_brief_text = research_data['brief']
+                        _research_cache[cache_key] = research_data
+
+                    yield f"data: {json.dumps({'research_status': 'complete', 'country': research_country, 'brief': research_brief_text})}\n\n"
+                except Exception:
+                    research_brief_text = ''
+                    yield f"data: {json.dumps({'research_status': 'error', 'country': research_country})}\n\n"
+
+                # ── Assemble Stage 1 content_parts ──
+                content_parts = []
+                context_sep_added = False
+                for dp in doc_parts:
+                    if dp['label'] == 'CONTEXT DOCUMENT' and not context_sep_added:
+                        content_parts.append({"type": "text", "text": "\n\n--- CONTEXTUAL DOCUMENTS ---\n"})
+                        context_sep_added = True
+                    if len(dp['raw_text']) > STAGE1_MAX_DOC_CHARS:
+                        final_text = (
+                            dp['raw_text'][:STAGE1_MAX_DOC_CHARS] +
+                            f"\n\n[Document truncated to {STAGE1_MAX_DOC_CHARS:,} characters for analysis]"
+                        )
+                    else:
+                        final_text = dp['raw_text']
+                    suffix = f" ({dp['page_count']} pages)" if dp['page_count'] else ""
+                    content_parts.append({"type": "text", "text": f"=== {dp['label']}: {dp['name']}{suffix} ===\n\n{final_text}"})
+
+                if research_brief_text:
+                    content_parts.append({"type": "text", "text": (
+                        "\n\n--- AUTOMATED FCV WEB RESEARCH (supplemental — uploaded documents take precedence) ---\n"
+                        "The following is an automated research brief compiled from public sources via web search. "
+                        "It is supplemental only. Where uploaded contextual documents address the same topic, "
+                        "those documents take precedence. Use these findings to fill gaps not covered by uploads, "
+                        "or to supplement with more recent or different perspectives. "
+                        "Label all findings drawn from this source as [From: web research / source type].\n\n"
+                        + research_brief_text +
+                        "\n--- END AUTOMATED WEB RESEARCH ---\n"
+                    )})
+
+                content_parts.append({"type": "text", "text": (
+                    "\n\n--- WBG FCV Sensitivity and Responsiveness Guide (always included) ---\n" + FCV_GUIDE +
+                    "\n\n--- FCV Operational Playbook — Diagnostics Phase (always included) ---\n" + PLAYBOOK_DIAGNOSTICS +
+                    "\n\n--- WBG FCV Strategy Refresh Framework (always included) ---\n" + FCV_REFRESH_FRAMEWORK
+                )})
+
+                stage1_prompt = get_prompt_for_stage(1)
+                content_parts.append({"type": "text", "text": stage1_prompt})
+
+                stage1_messages = [{"role": "user", "content": content_parts}]
+
+                # ── Stream Stage 1 ──
+                yield f"data: {json.dumps({'status': 'preparing_analysis'})}\n\n"
+                for event in _stream_stage(stage1_messages, 8000, 1):
+                    yield event
+                stage1_output = _stream_stage._last_result
+
+                # Extract doc_type from Stage 1 output
+                dt_match = re.search(r'%%%DOC_TYPE:\s*([^%\n]+)%%%', stage1_output)
+                if dt_match:
+                    doc_type = dt_match.group(1).strip()
+
+                # Build truncated history for next stages
+                conversation_history = [
+                    {"role": "user", "content": "[Stage 1 — project documents and FCV context analysed]"},
+                    {"role": "assistant", "content": stage1_output[:MAX_ASSISTANT_CHARS] if len(stage1_output) > MAX_ASSISTANT_CHARS else stage1_output}
+                ]
+
+                # ── Stage 1 done event ──
+                yield f"data: {json.dumps({'stage_done': 1, 'result': stage1_output, 'history': conversation_history, 'research_brief': research_brief_text, 'research_country': research_country, 'doc_type': doc_type})}\n\n"
+
+                # ════════════════════════════════════════════════════════════
+                # STAGE 2 — FCV Assessment
+                # ════════════════════════════════════════════════════════════
+                yield f"data: {json.dumps({'stage_start': 2})}\n\n"
+
+                stage2_prompt = get_prompt_for_stage(2)
+                doc_type_ctx = build_doc_type_context(doc_type, 2)
+                if doc_type_ctx:
+                    stage2_prompt = doc_type_ctx + "\n\n" + stage2_prompt
+                stage2_prompt = (
+                    stage2_prompt +
+                    "\n\n--- WBG FCV Operational Manual (12 Recommendations, 25 Key Questions, 3 Key Elements) ---\n" +
+                    FCV_OPERATIONAL_MANUAL +
+                    "\n\n--- WBG FCV Strategy Refresh Framework (4 Shifts) ---\n" +
+                    FCV_REFRESH_FRAMEWORK +
+                    "\n\n--- WBG FCV Sensitivity and Responsiveness Guide ---\n" +
+                    FCV_GUIDE
+                )
+
+                # Build messages: prior context + Stage 2 prompt
+                stage2_messages = [
+                    {"role": "user", "content": f"Prior FCV analysis context:\n\nStage 1 output:\n{conversation_history[1]['content']}\n\nUse this as the basis for the next stage."},
+                    {"role": "assistant", "content": "Understood. I will build on this prior analysis."},
+                    {"role": "user", "content": stage2_prompt}
+                ]
+
+                # ── Stream Stage 2 ──
+                for event in _stream_stage(stage2_messages, 16000, 2):
+                    yield event
+                stage2_output = _stream_stage._last_result
+
+                # Parse Stage 2 output
+                stage2_ratings = extract_stage2_ratings(stage2_output)
+                under_hood = extract_under_hood(stage2_output)
+                s2_parse_error = under_hood.get('error', False) or stage2_ratings.get('error', False)
+                s2_parse_error_msg = under_hood.get('message', '') or stage2_ratings.get('message', '')
+
+                # Update conversation history
+                s2_truncated = stage2_output[:MAX_ASSISTANT_CHARS] if len(stage2_output) > MAX_ASSISTANT_CHARS else stage2_output
+                conversation_history.extend([
+                    {"role": "user", "content": stage2_prompt},
+                    {"role": "assistant", "content": s2_truncated}
+                ])
+                if len(conversation_history) > 20:
+                    conversation_history = conversation_history[-20:]
+
+                # ── Stage 2 done event ──
+                yield f"data: {json.dumps({'stage_done': 2, 'result': stage2_output, 'display_text': under_hood.get('display_text', stage2_output), 'history': conversation_history, 'sensitivity_rating': stage2_ratings.get('sensitivity_rating', ''), 'responsiveness_rating': stage2_ratings.get('responsiveness_rating', ''), 'under_hood': {'recs_table': under_hood.get('recs_table', ''), 'dnh_checklist': under_hood.get('dnh_checklist', ''), 'questions_map': under_hood.get('questions_map', ''), 'evidence_trail': under_hood.get('evidence_trail', '')}, 'parse_error': s2_parse_error, 'parse_error_message': s2_parse_error_msg})}\n\n"
+
+                # ════════════════════════════════════════════════════════════
+                # STAGE 3 — Recommendations Note
+                # ════════════════════════════════════════════════════════════
+                yield f"data: {json.dumps({'stage_start': 3})}\n\n"
+
+                stage3_prompt = get_prompt_for_stage(3)
+                doc_type_ctx = build_doc_type_context(doc_type, 3)
+                if doc_type_ctx:
+                    stage3_prompt = doc_type_ctx + "\n\n" + stage3_prompt
+
+                # Stage-aware playbook injection
+                stage_config = STAGE_GUIDANCE_MAP.get(doc_type, STAGE_GUIDANCE_MAP.get('Unknown', {}))
+                playbook_phase = stage_config.get('playbook_phase', 'Preparation')
+                if playbook_phase == 'Implementation':
+                    playbook = PLAYBOOK_IMPLEMENTATION
+                elif playbook_phase == 'Closing':
+                    playbook = PLAYBOOK_CLOSING
+                else:
+                    playbook = PLAYBOOK_PREPARATION
+                if doc_type == 'ISR':
+                    playbook = PLAYBOOK_IMPLEMENTATION + "\n\n" + PLAYBOOK_CLOSING
+
+                timing_opts = stage_config.get('timing_options', ['Preparation'])
+                timing_str = ' / '.join(timing_opts) if isinstance(timing_opts, list) else str(timing_opts)
+
+                try:
+                    stage3_prompt = stage3_prompt.format(
+                        doc_type=doc_type,
+                        timing_emphasis=timing_str,
+                        playbook_guidance=playbook
+                    )
+                except KeyError:
+                    pass
+
+                stage3_prompt = (
+                    stage3_prompt +
+                    "\n\n--- WBG FCV Strategy Refresh Framework (4 Shifts) ---\n" +
+                    FCV_REFRESH_FRAMEWORK
+                )
+
+                # Build Stage 3 messages from conversation history
+                stage3_messages = conversation_history + [
+                    {"role": "user", "content": stage3_prompt}
+                ]
+
+                # ── Stream Stage 3 ──
+                for event in _stream_stage(stage3_messages, 16000, 3):
+                    yield event
+                stage3_output = _stream_stage._last_result
+
+                # Parse Stage 3 output
+                uploaded_doc_names = [doc.get('name', '') for doc in documents if doc.get('name')]
+                parsed = extract_priorities(stage3_output, uploaded_doc_names)
+                stage3_output_clean = clean_stage3_output(stage3_output)
+                header = DO_NO_HARM_HEADER.format(date=date.today().strftime('%d %B %Y'))
+                stage3_output_clean = header + stage3_output_clean
+
+                # Final conversation history
+                s3_truncated = stage3_output[:MAX_ASSISTANT_CHARS] if len(stage3_output) > MAX_ASSISTANT_CHARS else stage3_output
+                conversation_history.append({"role": "user", "content": stage3_prompt})
+                conversation_history.append({"role": "assistant", "content": s3_truncated})
+                if len(conversation_history) > 20:
+                    conversation_history = conversation_history[-20:]
+
+                # ── Stage 3 done event ──
+                yield f"data: {json.dumps({'stage_done': 3, 'result': stage3_output_clean, 'history': conversation_history, 'priorities': parsed.get('priorities', []), 'fcv_rating': parsed.get('fcv_rating', ''), 'fcv_responsiveness_rating': parsed.get('fcv_responsiveness_rating', ''), 'sensitivity_summary': parsed.get('sensitivity_summary', ''), 'responsiveness_summary': parsed.get('responsiveness_summary', ''), 'risk_exposure': parsed.get('risk_exposure'), 'gap_table': extract_gap_table(stage3_output), 'parse_error': parsed.get('error', False), 'parse_error_message': parsed.get('message', '')})}\n\n"
+
+                # ── Express complete ──
+                yield f"data: {json.dumps({'express_done': True})}\n\n"
+
+            except Exception as e:
+                # Determine which stage failed based on what's been completed
+                failed_stage = 1
+                if stage1_output and not stage2_output:
+                    failed_stage = 2
+                elif stage2_output:
+                    failed_stage = 3
+                yield f"data: {json.dumps({'error': str(e), 'failed_stage': failed_stage})}\n\n"
+
+        return Response(stream_with_context(generate()),
+                        mimetype='text/event-stream',
                         headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'})
 
     except Exception as e:

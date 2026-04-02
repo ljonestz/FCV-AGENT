@@ -63,7 +63,7 @@ background_docs.py     # 8 constants: FCV_GUIDE, FCV_OPERATIONAL_MANUAL, FCV_REF
                        #   PLAYBOOK_CLOSING, STAGE_GUIDANCE_MAP
 prompts.json           # Session-specific prompt overrides (persisted per session)
 requirements.txt       # Python dependencies (Flask, Anthropic SDK, pypdf, python-docx)
-Procfile              # Render deployment config
+Procfile              # Render deployment config (gunicorn + gevent; see Section 8.2)
 .gitignore            # Git ignore rules
 static/               # Static assets (if any)
 ```
@@ -716,6 +716,61 @@ Preamble → Opening Assessment → Operational Context → [Risk Exposure card 
 - Rendered as HTML table with color-coded status badges (green/amber/red)
 - Collapsible inside Under the Hood Panel 2 `<details>` section
 
+### 4.6 Express Mode Architecture (v7.4)
+
+**Dual-mode workflow:** Users choose between two modes on the landing page before starting analysis.
+
+- **Express Analysis** (default): All 3 stages run automatically; user waits ~4–5 min on a progress screen; can review/re-run any stage after.
+- **Step-by-Step** (recommended): Current interactive workflow — user reviews and refines at each stage before proceeding.
+
+Both modes use identical prompts, code paths, and output quality. Express mode is a frontend orchestration change only — no backend modifications.
+
+**State variable:** `let analysisMode = 'express'` (persisted to `localStorage.fcv_analysis_mode`). `selectMode(mode)` updates state + card UI.
+
+**Mode selection UI:** Two side-by-side cards inside `.mode-section` div, placed between the notices and the "Begin FCV Analysis" button on the upload panel. CSS classes: `.mode-section`, `.mode-card`, `.mode-card.selected`, `.mode-radio`, `.mode-badge`.
+
+**`runStage()` modification:** Gains an optional third parameter `onComplete(stage, parsedResult)`. When provided (by `runExpress()`), it is called instead of `renderOut()` after all data extraction is complete. Step-by-step mode passes `null` — behaviour is unchanged.
+
+**`runExpress()`:**
+1. Shows `#ep-accent` + `#express-progress` screen via `showExpressProgress()`
+2. Calls `runStage(1, null, callback1)` where callback1 stores output, updates stepper, calls `runStage(2, null, callback2)`, and so on
+3. After Stage 3 completes: hides progress screen, calls `renderOut(3, ...)`, calls `enableClickableStepper()`, cleans up express localStorage keys
+4. On failure: `showExpressError(stage, msg)` shows red card with "Retry this stage" and "Switch to step-by-step" options
+
+**Progress screen elements** (all inside `#express-progress`, hidden until express starts):
+- `#ep-accent` — 4px gradient accent bar across top of viewport
+- `.ep-stepper` — 3-node horizontal stepper with circle status, connectors
+- `.ep-progress-bar` / `.ep-progress-fill` — 3px bar advancing 33%/66%/100%
+- `.ep-stage-card` × 3 — status cards (pending/active/done) with 1-line summary after completion
+- `.ep-timer` — "Elapsed: X:XX · Estimated total: 4–5 minutes"
+- `.ep-message-card` — rotating message card, cycles every 15s via `setInterval`; 6 messages in `EP_MESSAGES[]`
+
+**Progress screen JS functions:**
+- `showExpressProgress()` / `hideExpressProgress()` — show/hide screen, start/stop timer + message rotation intervals
+- `updateEpTimer()` — increments elapsed seconds display every 1s
+- `showEpMessage(idx)` — sets icon + text from `EP_MESSAGES`
+- `updateExpressStage(stage, status, summary)` — updates stepper circle class, connector colours, progress bar fill, stage card state; `status` is `'pending'|'active'|'done'`
+- `showExpressError(stage, errorMsg)` — red border on failed card, shows retry/switch buttons
+
+**Post-express stage navigation:**
+- `enableClickableStepper()` — adds `.stepper-clickable` class to stepper, adds hint text, adds `onclick` to step elements
+- `disableClickableStepper()` — removes same
+- `navigateToStage(stage)` — renders stored `stageOutputs[stage]` via `renderOut()`, adds re-run banner (Stages 1–2), adds arrow nav buttons
+- `injectRerunBanner(stage)` — amber warning banner: "Want to refine this stage? Re-running will produce slightly different results and Stage 3 will need to be regenerated." + "Refine & Re-run" button
+- `startRerun(stage)` — switches `analysisMode` to `'stepbystep'`, restores `stageHists[stage]`, invalidates subsequent `stageOutputs`, renders stage for re-run
+- `injectStageNavArrows(stage)` — injects `← Stage N-1` / `Stage N+1 →` buttons below output for navigation between stored outputs
+
+**`retryExpressStage(stage)`:** Re-runs failed stage and resumes chain if successful.
+
+**`switchToStepByStep(stage)`:** Bails from express, renders last successfully completed stage in step-by-step mode, sets `analysisMode = 'stepbystep'`.
+
+**Session persistence (v2 format):**
+- `saveSession()` bumped to `version: 2`, now includes `analysisMode`, `stageOutputs`, `stageHists` fields
+- `loadSession()` restores all three; missing `analysisMode` treated as `'stepbystep'` (backwards compat with v1)
+- During express run, `stageOutputs` / `stageHists` written to `localStorage.fcv_express_stageOutputs` / `fcv_express_stageHists` after each stage completes
+- Express resume IIFE runs on page load: if partial keys exist and Stage 3 is missing, shows amber "Resume or restart?" banner in upload panel with "Resume from Stage N+1" and "Discard & start fresh" buttons
+- `resumeExpressRun()` / `discardExpressResume()` handle the two choices
+
 ---
 
 ## 5. Backend Routes & API
@@ -737,6 +792,22 @@ POST /api/run-stage
               sensitivity_summary, responsiveness_summary,
               risk_exposure: {risks_to, risks_from},
               parse_error, parse_error_message}
+
+# Express mode route (single SSE endpoint for all 3 stages)
+POST /api/run-express
+  Input: {documents[]}
+  Output: SSE stream with events:
+    stage_start: {stage_start: N} — before each stage begins
+    research_status: {research_status, country} — during Stage 1 web research
+    preprocess: {preprocess: message} — during Stage 1 doc extraction
+    chunk: {chunk: text, stage: N} — streaming LLM text for each stage
+    stage_done: {stage_done: N, result, history, ...stage-specific data} — after each stage completes
+    keepalive: {keepalive: true} — every 20s if no data sent
+    error: {error: message, failed_stage: N} — if a stage fails
+    express_done: {express_done: true} — all 3 stages completed
+  Notes: Runs Stage 1→2→3 in a single SSE connection. Reuses all existing parsing
+    functions. Keepalive pings cover web research gaps and inter-stage transitions.
+    Frontend runExpress() connects to this endpoint and dispatches on event types.
 
 # Go Deeper route (replaces /api/run-explorer)
 POST /api/run-deeper
@@ -1009,6 +1080,8 @@ python3 app.py
 2. Create a new Web Service, select your repo + branch
 3. Render reads the `Procfile` and `requirements.txt`
 4. Deploy automatically on push to that branch
+
+**Production server:** gunicorn + gevent (`--worker-class gevent --timeout 600`). This is required for long-running SSE connections (Express mode, Stage 1 web research). Flask dev server (`python3 app.py`) is still used for local development only — do not use it in production.
 
 **Environment variables needed (set in Render dashboard):**
 - `ANTHROPIC_API_KEY` — your Claude API key (required)
@@ -1308,8 +1381,8 @@ If you find gaps in this documentation, or if new design decisions emerge, updat
 
 ---
 
-**Last updated:** 2026-03-26
-**Current version:** FCV Project Screener 7.3 (structured actions[] array with per-action guidance + suggested text, expanded prompt depth, "Where in the PAD" chips removed)
+**Last updated:** 2026-04-01
+**Current version:** FCV Project Screener 7.4 (dual-mode workflow: Express Analysis + Step-by-Step; progress screen; post-express stage navigation; session v2 format)
 **Current Claude model:** claude-sonnet-4-20250514
 **Architecture:** Flask 3.0.3 backend + vanilla JS frontend + Anthropic SDK integration
 **Design system:** WB Digital Look & Feel Style Guide — Open Sans, WB palette (#009FDA/#002244/#111827), RAG status colours. Reference: https://geospatial-commons.github.io/WB-Design-Guidelines/chapters/design-system.html
