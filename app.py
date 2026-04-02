@@ -2,7 +2,7 @@ import os
 import re
 import json
 import base64
-from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeout
+from concurrent.futures import ThreadPoolExecutor
 from flask import Flask, request, jsonify, send_from_directory, Response, stream_with_context
 import anthropic
 import httpx
@@ -20,7 +20,8 @@ except ImportError:
 # ── Constants ────────────────────────────────────────────────────────────────
 
 MAX_DOC_CHARS = 500_000       # Max chars extracted from any single document
-EXTRACT_THRESHOLD = 150_000  # Documents larger than this are condensed via LLM before analysis
+# EXTRACT_THRESHOLD removed — large documents are now truncated to MAX_DOC_CHARS
+# and sent directly to the Stage 1 Sonnet call, which handles FCV extraction itself.
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "fcv-admin-2024")
 PROMPTS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'prompts.json')
 
@@ -1040,8 +1041,8 @@ Document text:
 def detect_document_type_from_text(text: str, api_client) -> str:
     """Classify a project document into one of the standard WBG document types."""
     snippet = text[:2000]
-    def _call():
-        return api_client.messages.create(
+    try:
+        resp = api_client.messages.create(
             model="claude-haiku-4-5-20251001",
             max_tokens=20,
             messages=[{
@@ -1049,10 +1050,6 @@ def detect_document_type_from_text(text: str, api_client) -> str:
                 "content": DOCUMENT_TYPE_DETECTION_PROMPT + snippet
             }]
         )
-    try:
-        with ThreadPoolExecutor(max_workers=1) as executor:
-            future = executor.submit(_call)
-            resp = future.result(timeout=30)
         result = resp.content[0].text.strip().strip('.').strip('"').strip("'")
         valid = {'PCN', 'PID', 'PAD', 'AF', 'Restructuring', 'ISR', 'Unknown'}
         return result if result in valid else 'Unknown'
@@ -1265,77 +1262,18 @@ def extract_pdf_text(b64_data, name):
         return f'[Could not extract text from {name}: {str(e)}]', 0
 
 
-FCV_EXTRACT_PROMPT = """You are extracting content relevant to FCV (Fragility, Conflict, Violence) analysis from a World Bank project document. The extracted content will be used by an FCV specialist to assess the project's sensitivity to conflict, fragility, and violence.
-
-Extract and preserve ALL information relevant to:
-- Active conflict, security threats, and violence dynamics
-- Governance failures, institutional fragility, and accountability gaps
-- Social exclusion, discrimination, and marginalized groups
-- Displacement, migration, and refugee/IDP dynamics
-- Economic vulnerability and livelihoods under conflict stress
-- Political economy, power dynamics, and elite capture risks
-- Gender-based violence and women's exclusion
-- Cross-border dynamics and regional instability
-- Environmental and climate-conflict linkages
-- Any fragility classifications, risk ratings, SORT assessments, or diagnostic findings
-- Project-specific design risks related to FCV context
-
-Preserve key passages close to verbatim. Include section headers, quantitative data, and geographic specifics. Omit routine procurement tables, standard safeguard checklists, and financial management sections unless they have direct FCV relevance.
-
-Produce a thorough extraction that a senior FCV analyst can work from directly."""
-
-
-def extract_fcv_content(text, doc_name, api_client):
-    """Use Claude Haiku to extract FCV-relevant content from a large document.
-
-    Uses Haiku (not Sonnet) because this is a mechanical extraction task —
-    find and copy FCV-relevant passages, not analysis. Haiku is ~10x faster,
-    which prevents the indefinite stalls that occur when Sonnet processes
-    very large PADs (300–500k chars / ~100k input tokens).
-
-    Input is capped at 200k chars before sending to keep latency predictable.
-    A 90s ThreadPoolExecutor timeout provides a hard safety net.
-    Falls back to truncated raw text if the call times out or fails.
-    """
-    # Cap input: 200k chars (~50k tokens) is sufficient for Haiku to identify
-    # all FCV-relevant sections in any WBG project document.
-    HAIKU_INPUT_LIMIT = 200_000
-    text_to_send = text[:HAIKU_INPUT_LIMIT]
-    truncation_note = (
-        f" [input capped at {HAIKU_INPUT_LIMIT//1000}k of {len(text)//1000}k chars for extraction]"
-        if len(text) > HAIKU_INPUT_LIMIT else ""
-    )
-
-    def _call():
-        return api_client.messages.create(
-            model="claude-haiku-4-5-20251001",
-            max_tokens=6000,
-            messages=[{
-                "role": "user",
-                "content": f"{FCV_EXTRACT_PROMPT}\n\n=== DOCUMENT: {doc_name} ===\n\n{text_to_send}"
-            }]
-        )
-    try:
-        with ThreadPoolExecutor(max_workers=1) as executor:
-            future = executor.submit(_call)
-            response = future.result(timeout=90)  # 90-second hard wall-clock limit
-        extracted = response.content[0].text
-        return (
-            f"[FCV-relevant content extracted from {doc_name} — "
-            f"full document was {len(text)//1000}k characters{truncation_note}]\n\n{extracted}"
-        )
-    except FuturesTimeout:
-        return text[:EXTRACT_THRESHOLD] + f"\n\n[Extraction timed out after 90 seconds; showing first {EXTRACT_THRESHOLD//1000}k characters only.]"
-    except Exception as e:
-        return text[:EXTRACT_THRESHOLD] + f"\n\n[Extraction failed ({str(e)}); showing first {EXTRACT_THRESHOLD//1000}k characters only.]"
+# FCV_EXTRACT_PROMPT and extract_fcv_content() removed — Stage 1 Sonnet handles
+# FCV extraction directly in Part A. Large docs are truncated to MAX_DOC_CHARS.
 
 
 def extract_country_name(project_doc_text: str, api_client) -> str:
-    """Extract the country name from the first portion of a project document."""
+    """Extract the country name from the first portion of a project document.
+    Uses Haiku (trivial classification task). Timeout handled by httpx client.
+    """
     snippet = project_doc_text[:4000]
-    def _call():
-        return api_client.messages.create(
-            model="claude-sonnet-4-20250514",
+    try:
+        resp = api_client.messages.create(
+            model="claude-haiku-4-5-20251001",
             max_tokens=50,
             messages=[{
                 "role": "user",
@@ -1346,10 +1284,6 @@ def extract_country_name(project_doc_text: str, api_client) -> str:
                 )
             }]
         )
-    try:
-        with ThreadPoolExecutor(max_workers=1) as executor:
-            future = executor.submit(_call)
-            resp = future.result(timeout=30)
         country = resp.content[0].text.strip().strip('.').strip('"').strip("'")
         return country if country else "Unknown"
     except Exception:
@@ -1420,11 +1354,13 @@ Be concise but substantive. Prioritise recent information (last 2–3 years). Wh
 
 
 def extract_sector_name(project_doc_text: str, api_client) -> str:
-    """Extract the primary sector/theme of the project from its opening pages."""
+    """Extract the primary sector/theme of the project from its opening pages.
+    Uses Haiku (trivial classification task). Timeout handled by httpx client.
+    """
     snippet = project_doc_text[:4000]
-    def _call():
-        return api_client.messages.create(
-            model="claude-sonnet-4-20250514",
+    try:
+        resp = api_client.messages.create(
+            model="claude-haiku-4-5-20251001",
             max_tokens=50,
             messages=[{
                 "role": "user",
@@ -1437,10 +1373,6 @@ def extract_sector_name(project_doc_text: str, api_client) -> str:
                 )
             }]
         )
-    try:
-        with ThreadPoolExecutor(max_workers=1) as executor:
-            future = executor.submit(_call)
-            resp = future.result(timeout=30)
         sector = resp.content[0].text.strip().strip('.').strip('"').strip("'")
         return sector if sector else "Development"
     except Exception:
@@ -1451,42 +1383,30 @@ def run_fcv_web_research(country: str, sector: str, api_client) -> dict:
     """
     Run automated FCV web research for the given country using the Anthropic
     web search tool. Returns a dict with 'brief' (str) and 'country' (str).
-    Hard timeout of 150 seconds prevents indefinite hangs on slow API responses.
+    Timeout handled by the httpx client (get_research_client, 60s total).
     """
     prompt = FCV_RESEARCH_PROMPT.format(country=country, sector=sector)
-
-    def _call():
-        return api_client.beta.messages.create(
+    try:
+        resp = api_client.beta.messages.create(
             model="claude-sonnet-4-20250514",
             max_tokens=5500,
             tools=[{
                 "type": "web_search_20250305",
                 "name": "web_search",
-                "max_uses": 6
+                "max_uses": 4
             }],
             messages=[{"role": "user", "content": prompt}],
             betas=["web-search-2025-03-05"]
         )
-
-    try:
-        with ThreadPoolExecutor(max_workers=1) as executor:
-            future = executor.submit(_call)
-            resp = future.result(timeout=150)  # 2.5 minute hard wall-clock limit
-
         brief_parts = []
         for block in resp.content:
             if hasattr(block, 'type') and block.type == 'text':
                 brief_parts.append(block.text)
         brief = '\n'.join(brief_parts).strip()
         return {'brief': brief, 'country': country}
-    except FuturesTimeout:
-        return {
-            'brief': f'*Web research for {country} exceeded the time limit — proceeding without supplemental research.*',
-            'country': country
-        }
     except Exception as e:
         return {
-            'brief': f'*Automated FCV web research could not be completed for {country}: {str(e)}*',
+            'brief': f'*Web research for {country} could not be completed — proceeding without supplemental research.*',
             'country': country
         }
 
@@ -1508,16 +1428,45 @@ app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
 _client = None
 
 def get_client():
+    """Main client for streaming LLM calls (Stages 1-3). Generous timeout."""
     global _client
     if _client is None:
-        # 30s connect timeout; 10-minute read timeout (generous for long LLM generations,
-        # but catches indefinite hangs when the API accepts the request but stalls before
-        # returning any tokens).
         _client = anthropic.Anthropic(
             api_key=os.environ.get("ANTHROPIC_API_KEY"),
             timeout=httpx.Timeout(timeout=600.0, connect=30.0)
         )
     return _client
+
+
+_fast_client = None
+
+def get_fast_client():
+    """Client with aggressive timeouts for lightweight pre-streaming calls
+    (country/sector extraction via Haiku, doc type detection).
+    Connect: 10s. Total: 25s per request.
+    """
+    global _fast_client
+    if _fast_client is None:
+        _fast_client = anthropic.Anthropic(
+            api_key=os.environ.get("ANTHROPIC_API_KEY"),
+            timeout=httpx.Timeout(timeout=25.0, connect=10.0)
+        )
+    return _fast_client
+
+
+_research_client = None
+
+def get_research_client():
+    """Client with moderate timeouts for web research (needs more time for tool use).
+    Connect: 10s. Total: 60s per request.
+    """
+    global _research_client
+    if _research_client is None:
+        _research_client = anthropic.Anthropic(
+            api_key=os.environ.get("ANTHROPIC_API_KEY"),
+            timeout=httpx.Timeout(timeout=60.0, connect=10.0)
+        )
+    return _research_client
 
 
 @app.route('/')
@@ -1659,8 +1608,10 @@ def run_stage():
             project_docs = [d for d in documents if not d.get('isContext')]
             context_docs = [d for d in documents if d.get('isContext')]
 
-            # Pre-extract raw text for all docs; store metadata for generate() to process
-            doc_parts = []  # list of dicts: {label, name, raw_text, page_count, needs_extraction}
+            # Pre-extract raw text for all docs; truncate to MAX_DOC_CHARS.
+            # No separate LLM extraction step — Stage 1 Sonnet handles FCV
+            # extraction directly in Part A of its output.
+            doc_parts = []  # list of dicts: {label, name, raw_text, page_count}
             for doc in project_docs:
                 name = doc.get('name', 'document')
                 file_type = doc.get('type', 'text')
@@ -1671,8 +1622,7 @@ def run_stage():
                     text = raw[:MAX_DOC_CHARS]
                     page_count = 0
                 doc_parts.append({'label': 'PROJECT DOCUMENT', 'name': name,
-                                  'raw_text': text, 'page_count': page_count,
-                                  'needs_extraction': len(text) > EXTRACT_THRESHOLD})
+                                  'raw_text': text[:MAX_DOC_CHARS], 'page_count': page_count})
             for doc in context_docs:
                 name = doc.get('name', 'document')
                 file_type = doc.get('type', 'text')
@@ -1683,8 +1633,7 @@ def run_stage():
                     text = raw[:MAX_DOC_CHARS]
                     page_count = 0
                 doc_parts.append({'label': 'CONTEXT DOCUMENT', 'name': name,
-                                  'raw_text': text, 'page_count': page_count,
-                                  'needs_extraction': len(text) > EXTRACT_THRESHOLD})
+                                  'raw_text': text[:MAX_DOC_CHARS], 'page_count': page_count})
 
             stage_prompt = prompt_override if prompt_override else get_prompt_for_stage(1)
             doc_type_ctx = build_doc_type_context(document_type, 1)
@@ -1757,20 +1706,23 @@ def run_stage():
             try:
                 yield f"data: {json.dumps({'ping': True})}\n\n"
 
-                # ── Stage 1: build content_parts, extracting large docs via LLM ──
+                # ── Stage 1: build content_parts, run web research ──
                 if stage == 1:
-                    large_docs = [d for d in doc_parts if d['needs_extraction']]
-                    n_large = len(large_docs)
                     content_parts = []
-                    has_context = any(d['label'] == 'CONTEXT DOCUMENT' for d in doc_parts)
                     context_sep_added = False
 
                     # ── Automated FCV Web Research Phase ──────────────────────
+                    # Country+sector extraction run in parallel via Haiku (~2-3s)
+                    # Web research uses dedicated client with 60s httpx timeout
                     try:
                         first_doc_text = doc_parts[0]['raw_text'] if doc_parts else ''
                         yield f"data: {json.dumps({'research_status': 'extracting_country'})}\n\n"
-                        research_country = extract_country_name(first_doc_text, get_client())
-                        research_sector = extract_sector_name(first_doc_text, get_client())
+                        fast = get_fast_client()
+                        with ThreadPoolExecutor(max_workers=2) as pool:
+                            country_future = pool.submit(extract_country_name, first_doc_text, fast)
+                            sector_future = pool.submit(extract_sector_name, first_doc_text, fast)
+                            research_country = country_future.result()
+                            research_sector = sector_future.result()
 
                         cache_key = f"{research_country.lower().strip()}::{research_sector.lower().strip()}"
                         if cache_key in _research_cache:
@@ -1779,7 +1731,7 @@ def run_stage():
                             yield f"data: {json.dumps({'research_status': 'cached', 'country': research_country})}\n\n"
                         else:
                             yield f"data: {json.dumps({'research_status': 'searching', 'country': research_country})}\n\n"
-                            research_data = run_fcv_web_research(research_country, research_sector, get_client())
+                            research_data = run_fcv_web_research(research_country, research_sector, get_research_client())
                             research_brief_text = research_data['brief']
                             _research_cache[cache_key] = research_data
 
@@ -1789,19 +1741,13 @@ def run_stage():
                         yield f"data: {json.dumps({'research_status': 'error', 'country': research_country})}\n\n"
                     # ── End Research Phase ────────────────────────────────────
 
+                    # Assemble document content — no LLM extraction, just truncated raw text
                     for dp in doc_parts:
                         if dp['label'] == 'CONTEXT DOCUMENT' and not context_sep_added:
                             content_parts.append({"type": "text", "text": "\n\n--- CONTEXTUAL DOCUMENTS ---\n"})
                             context_sep_added = True
 
-                        if dp['needs_extraction']:
-                            large_idx = large_docs.index(dp) + 1
-                            doc_msg = f'Reading {dp["name"]} — extracting FCV-relevant content ({large_idx} of {n_large})…'
-                            yield f"data: {json.dumps({'preprocess': doc_msg})}\n\n"
-                            final_text = extract_fcv_content(dp['raw_text'], dp['name'], get_client())
-                        else:
-                            final_text = dp['raw_text']
-
+                        final_text = dp['raw_text']
                         suffix = f" ({dp['page_count']} pages)" if dp['page_count'] else ""
                         content_parts.append({"type": "text", "text": f"=== {dp['label']}: {dp['name']}{suffix} ===\n\n{final_text}"})
 
