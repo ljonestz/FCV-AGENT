@@ -4,7 +4,12 @@ A Flask web application that guides World Bank Task Team Leaders (TTLs) through 
 
 ## What it does
 
-Upload a project document (PAD, PCN, PID, or restructuring paper) and optionally a contextual document (RRA, country risk assessment). The tool then:
+Upload a project document (PAD, PCN, PID, or restructuring paper) and optionally a contextual document (RRA, country risk assessment). On the landing page, choose your workflow:
+
+- **Express Analysis** (default) — all 3 stages run automatically in a single connection (~4–5 min). A progress screen shows live status for each stage. No interaction needed until results are ready.
+- **Step-by-Step** — interactive mode; review and refine at each stage before proceeding (~8–12 min).
+
+Both modes produce identical output. The tool then:
 
 1. **Stage 1 — Context Extraction** — Extracts FCV risks from the project document, enriched by automated web research
 2. **Stage 2 — FCV Assessment** — Thematic analysis across FCV dimensions (sensitivity + responsiveness), Do No Harm traffic-light, Under the Hood panels for FCV Country Coordinators
