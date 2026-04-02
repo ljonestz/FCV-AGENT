@@ -1969,50 +1969,7 @@
   })();
 
   function resumeExpressRun(){
-    try{
-      const savedOutputs=JSON.parse(localStorage.getItem('fcv_express_stageOutputs')||'{}');
-      const savedHists=JSON.parse(localStorage.getItem('fcv_express_stageHists')||'{}');
-      stageOutputs=savedOutputs;stageHists=savedHists;
-      const lastStage=savedOutputs[2]?2:1;
-      hist=savedHists[lastStage]||[];
-      // Remove the banner
-      const b=document.getElementById('express-resume-banner');if(b)b.remove();
-      // Restore mode and start express from next stage
-      selectMode('express');
-      document.getElementById('upload-panel').style.display='none';
-      document.getElementById('landing-hero').style.display='none';
-      document.getElementById('analysis-panel').style.display='block';
-      document.getElementById('stepper-wrap').style.display='';
-      document.getElementById('save-session-btn').style.display='';
-      curS=lastStage;
-      showExpressProgress();
-      updateExpressStage(lastStage,'done','');
-      for(let i=1;i<lastStage;i++)updateExpressStage(i,'done','');
-      // Chain from next stage
-      const next=lastStage+1;
-      updateExpressStage(next,'active','');
-      runStage(next,null,function(completedStage,p){
-        if(completedStage<3){
-          stageOutputs[completedStage]=p.display_text||'';
-          stageHists[completedStage]=hist.slice();
-          localStorage.setItem('fcv_express_stageOutputs',JSON.stringify(stageOutputs));
-          const nextNext=completedStage+1;
-          updateExpressStage(completedStage,'done','');
-          updateExpressStage(nextNext,'active','');
-          runStage(nextNext,null,arguments.callee);
-        }else{
-          stageOutputs[3]=p.display_text||'';
-          stageHists[3]=hist.slice();
-          localStorage.removeItem('fcv_express_stageOutputs');
-          localStorage.removeItem('fcv_express_stageHists');
-          hideExpressProgress();
-          curS=3;setStepper(3,'done');
-          renderOut(3,stageOutputs[3],false);
-          enableClickableStepper();
-          updateSessionBar();
-        }
-      });
-    }catch(e){alert('Could not resume session: '+e.message);}
+    runExpress();
   }
 
   function discardExpressResume(){
@@ -3478,7 +3435,7 @@
     }
     if(status==='done'&&summary){
       const sum=document.getElementById('ep-summary-'+stage);
-      sum.innerHTML=escHtml(summary);sum.style.color='#4B5563';
+      sum.innerHTML=esc(summary);sum.style.color='#4B5563';
       const hdr=document.getElementById('ep-card-'+stage).querySelector('.ep-stage-header');
       if(!hdr.querySelector('.ep-stage-check'))hdr.insertAdjacentHTML('beforeend','<div class="ep-stage-check">\u2713</div>');
     }
@@ -3487,7 +3444,7 @@
   function showExpressError(stage,errorMsg){
     updateExpressStage(stage,'error',null);
     const sum=document.getElementById('ep-summary-'+stage);
-    sum.innerHTML='<div style="color:#DC2626;font-size:13px;margin-top:6px">'+escHtml(errorMsg)+'</div>'+
+    sum.innerHTML='<div style="color:#DC2626;font-size:13px;margin-top:6px">'+esc(errorMsg)+'</div>'+
       '<div class="ep-error-actions">'+
       '<button class="btn" onclick="retryExpressStage('+stage+')" style="background:var(--wbg-navy);color:#fff;border:none;border-radius:5px;font-size:12px;padding:6px 14px;cursor:pointer">Retry this stage</button>'+
       '<button class="btn" onclick="switchToStepByStep('+stage+')" style="background:#fff;color:var(--wbg-navy);border:1px solid #D1D5DB;border-radius:5px;font-size:12px;padding:6px 14px;cursor:pointer">Switch to step-by-step</button>'+
