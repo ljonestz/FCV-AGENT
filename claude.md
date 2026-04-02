@@ -2,7 +2,7 @@
 
 > **Claude Code Maintenance Instruction:** After every substantial change to this app (new features, prompt changes, new delimiters, UI additions, architectural decisions), update this `claude.md` file to reflect the change before committing. Keep section 1.3 (Stage pipeline), section 3 (Prompt Architecture), section 4 (Frontend), and section 5.3 (Priority Parsing) accurate at all times.
 >
-> **Version note:** This file was updated for v7.0 (3-stage pipeline redesign). If sections reference "Stage 4" or "Explorer" without qualification, that is legacy content from v6.0 — check whether it has been superseded.
+> **Version note:** This file was updated for v7.4 (express mode single-endpoint). If sections reference "Stage 4" or "Explorer" without qualification, that is legacy content from v6.0 — check whether it has been superseded.
 
 ---
 
@@ -57,7 +57,10 @@ Every prompt output tags recommendations, mitigations, and priorities as [S], [R
 ### 1.2 Core Files
 ```
 app.py                 # Flask backend, all 3 stage prompts + deeper/followon prompts, routes, document processing
-index.html             # Frontend UI, Stage 1-3 display, Go Deeper panel, prompt modal
+index.html             # Frontend UI, Stage 1-3 display, Go Deeper panel, prompt modal;
+                       #   also contains express mode UI: mode-selection cards, progress screen,
+                       #   runExpress(), retryExpressStage(), resumeExpressRun(), post-express
+                       #   stepper navigation, and session v2 persistence (analysisMode field)
 background_docs.py     # 8 constants: FCV_GUIDE, FCV_OPERATIONAL_MANUAL, FCV_REFRESH_FRAMEWORK,
                        #   PLAYBOOK_DIAGNOSTICS, PLAYBOOK_PREPARATION, PLAYBOOK_IMPLEMENTATION,
                        #   PLAYBOOK_CLOSING, STAGE_GUIDANCE_MAP
@@ -69,6 +72,10 @@ static/               # Static assets (if any)
 ```
 
 ### 1.3 Three-Stage Pipeline
+
+**Two workflow modes (v7.4):** The pipeline stages are identical in both modes — the difference is in how they are orchestrated.
+- **Express Analysis** (default) — user uploads docs and clicks Begin; a single `/api/run-express` SSE endpoint runs all 3 stages in one connection with no user interaction needed mid-run. A progress screen shows a stepper, stage cards, elapsed timer, and rotating messages.
+- **Step-by-Step** — existing interactive workflow, unchanged; each stage calls `/api/run-stage` individually and the user can refine before proceeding.
 
 ```
 STAGE 1 — Context & Extraction
@@ -1092,6 +1099,8 @@ python3 app.py
 - anthropic >= 0.40.0 (Anthropic SDK for Claude API)
 - pypdf >= 4.0.0 (PDF text extraction)
 - python-docx 1.1.2 (future document generation support)
+- gunicorn >= 21.2.0 (production WSGI server — required for SSE long-running connections)
+- gevent >= 23.9.0 (async worker class for gunicorn — required for concurrent SSE streams)
 
 ### 8.3 GitHub Workflow
 ```bash
@@ -1381,7 +1390,7 @@ If you find gaps in this documentation, or if new design decisions emerge, updat
 
 ---
 
-**Last updated:** 2026-04-01
+**Last updated:** 2026-04-02
 **Current version:** FCV Project Screener 7.4 (dual-mode workflow: Express Analysis + Step-by-Step; progress screen; post-express stage navigation; session v2 format)
 **Current Claude model:** claude-sonnet-4-20250514
 **Architecture:** Flask 3.0.3 backend + vanilla JS frontend + Anthropic SDK integration
