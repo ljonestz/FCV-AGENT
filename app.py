@@ -1785,7 +1785,8 @@ def run_stage():
                             context_sep_added = True
 
                         if len(dp['raw_text']) > STAGE1_EXTRACT_THRESHOLD:
-                            yield f"data: {json.dumps({'preprocess': f'Extracting FCV content from {dp[\"name\"]}...'})}\n\n"
+                            _dp_name = dp['name']
+                            yield f"data: {json.dumps({'preprocess': f'Extracting FCV content from {_dp_name}...'})}\n\n"
                             final_text = extract_fcv_content_haiku(dp['raw_text'], dp['name'], get_research_client())
                         else:
                             final_text = dp['raw_text']
