@@ -22,8 +22,8 @@ except ImportError:
 # ── Constants ────────────────────────────────────────────────────────────────
 
 MAX_DOC_CHARS = 500_000       # Max chars extracted from any single document
-STAGE1_EXTRACT_THRESHOLD = 80_000   # Docs above this get Haiku pre-extraction before Stage 1
-                                     # Cuts Sonnet input by ~80 %, dramatically reducing TTFT
+STAGE1_MAX_DOC_CHARS = 60_000       # Docs are truncated to this before Stage 1 — no LLM extraction,
+                                     # no blocking pre-stage calls, no proxy timeout risk
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "fcv-admin-2024")
 PROMPTS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'prompts.json')
 
@@ -1382,38 +1382,6 @@ def extract_sector_name(project_doc_text: str, api_client) -> str:
         return "Development"
 
 
-def extract_fcv_content_haiku(raw_text: str, doc_name: str, api_client) -> str:
-    """Pre-extract FCV-relevant sections from large documents using Haiku.
-
-    Called for docs > STAGE1_EXTRACT_THRESHOLD chars. Returns a condensed
-    ~2,000–3,000 word FCV-focused summary, dramatically reducing the Sonnet
-    Stage 1 input and its time-to-first-token.
-    Falls back to first 80 k chars of raw text on failure.
-    """
-    extract_prompt = (
-        "Extract ONLY the FCV-relevant content from this World Bank project document.\n\n"
-        "Return a condensed version (~2,000–3,000 words) preserving:\n"
-        "- Project development objective and theory of change\n"
-        "- All references to conflict, fragility, violence, security, displacement, or political risks\n"
-        "- Risk assessment and environmental/social risk sections\n"
-        "- Stakeholder analysis, inclusion/exclusion, targeting criteria\n"
-        "- Grievance mechanisms and accountability features\n"
-        "- Geographic scope, beneficiary populations, implementation modality\n"
-        "- Any conflict-sensitivity, Do No Harm, or FCV considerations\n\n"
-        "Omit: financial tables, procurement schedules, legal covenants, standard boilerplate.\n\n"
-        f"DOCUMENT ({doc_name}):\n{raw_text[:300_000]}"
-    )
-    try:
-        resp = api_client.messages.create(
-            model="claude-haiku-4-5-20251001",
-            max_tokens=3000,
-            messages=[{"role": "user", "content": extract_prompt}]
-        )
-        return resp.content[0].text.strip()
-    except Exception:
-        return raw_text[:80_000] + "\n\n[Document truncated to 80,000 chars — full extraction unavailable]"
-
-
 def run_fcv_web_research(country: str, sector: str, api_client) -> dict:
     """
     Run automated FCV web research for the given country using the Anthropic
@@ -1492,14 +1460,14 @@ def get_fast_client():
 _research_client = None
 
 def get_research_client():
-    """Client for web research and Haiku doc extraction.
-    Connect: 10s. Total: 90s — enough for 4 web searches or Haiku extraction.
+    """Client for web research only. 45s total — limits the silent window before
+    the keepalive stream starts. On timeout, research is skipped gracefully.
     """
     global _research_client
     if _research_client is None:
         _research_client = anthropic.Anthropic(
             api_key=os.environ.get("ANTHROPIC_API_KEY"),
-            timeout=httpx.Timeout(timeout=90.0, connect=10.0)
+            timeout=httpx.Timeout(timeout=45.0, connect=10.0)
         )
     return _research_client
 
@@ -1777,19 +1745,21 @@ def run_stage():
                     # ── End Research Phase ────────────────────────────────────
 
                     # Assemble document content.
-                    # Large docs (> STAGE1_EXTRACT_THRESHOLD) are pre-extracted using Haiku,
-                    # which cuts the Sonnet Stage 1 input by ~80 % and eliminates long TTFT.
+                    # Documents are truncated to STAGE1_MAX_DOC_CHARS — no LLM extraction,
+                    # no additional blocking API calls before the keepalive stream starts.
                     for dp in doc_parts:
                         if dp['label'] == 'CONTEXT DOCUMENT' and not context_sep_added:
                             content_parts.append({"type": "text", "text": "\n\n--- CONTEXTUAL DOCUMENTS ---\n"})
                             context_sep_added = True
 
-                        if len(dp['raw_text']) > STAGE1_EXTRACT_THRESHOLD:
-                            _dp_name = dp['name']
-                            yield f"data: {json.dumps({'preprocess': f'Extracting FCV content from {_dp_name}...'})}\n\n"
-                            final_text = extract_fcv_content_haiku(dp['raw_text'], dp['name'], get_research_client())
+                        raw = dp['raw_text']
+                        if len(raw) > STAGE1_MAX_DOC_CHARS:
+                            final_text = (
+                                raw[:STAGE1_MAX_DOC_CHARS] +
+                                f"\n\n[Document truncated to {STAGE1_MAX_DOC_CHARS:,} characters for analysis]"
+                            )
                         else:
-                            final_text = dp['raw_text']
+                            final_text = raw
 
                         suffix = f" ({dp['page_count']} pages)" if dp['page_count'] else ""
                         content_parts.append({"type": "text", "text": f"=== {dp['label']}: {dp['name']}{suffix} ===\n\n{final_text}"})
@@ -1959,6 +1929,54 @@ def run_stage():
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+def _stream_stage(messages, max_tokens, stage_num):
+    """Run one Anthropic streaming call with keepalive pings.
+
+    Yields SSE-formatted strings:
+      - {"chunk": "...", "stage": N}  for each text chunk
+      - {"keepalive": true}           every 20s if no data flowing
+
+    After the generator is fully exhausted, the full collected text is
+    available via _stream_stage._last_result (a function attribute).
+    """
+    import queue as _q
+    collected = []
+    stream_q = _q.Queue()
+
+    def _run():
+        try:
+            with get_client().messages.stream(
+                model="claude-sonnet-4-20250514",
+                max_tokens=max_tokens,
+                messages=messages
+            ) as s:
+                for chunk in s.text_stream:
+                    stream_q.put(('chunk', chunk))
+            stream_q.put(('done', None))
+        except Exception as e:
+            stream_q.put(('error', str(e)))
+
+    t = threading.Thread(target=_run, daemon=True)
+    t.start()
+
+    while True:
+        try:
+            kind, payload = stream_q.get(timeout=20)
+        except _q.Empty:
+            yield f"data: {json.dumps({'keepalive': True})}\n\n"
+            continue
+        if kind == 'chunk':
+            collected.append(payload)
+            yield f"data: {json.dumps({'chunk': payload, 'stage': stage_num})}\n\n"
+        elif kind == 'done':
+            break
+        elif kind == 'error':
+            raise Exception(payload)
+
+    # Store collected text so the caller can access it after iteration
+    _stream_stage._last_result = ''.join(collected)
 
 
 @app.route('/api/run-deeper', methods=['POST'])
