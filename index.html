@@ -2485,7 +2485,7 @@
             curS=3;setStepper(3,'done');
             renderOut(3,stageOutputs[3],false);
             if(stageThreePriorities&&stageThreePriorities.length)initStage3UI();
-            if(stage2UnderHood)localStorage.setItem('stage2_under_hood',JSON.stringify(stage2UnderHood));
+            // stage2_under_hood already written by the stage_done handler for stage 2 — no redundant write needed here
             enableClickableStepper();
             localStorage.removeItem('fcv_express_stageOutputs');
             localStorage.removeItem('fcv_express_stageHists');
@@ -2498,10 +2498,16 @@
       clearTimeout(expressTimeout);
       showExpressError(currentStage,e.message||'Connection lost');
       busy=false;
+    }finally{
+      // Safety net: ensure busy and timeout are always cleaned up even if the
+      // stream closes without an express_done or error event (e.g. network drop).
+      busy=false;
+      clearTimeout(expressTimeout);
     }
   }
 
   function retryExpressStage(stage){
+    // stage param retained for future partial-retry logic
     busy=false;
     // For simplicity, retry restarts the full express chain.
     // Completed stages will complete faster due to research cache.
