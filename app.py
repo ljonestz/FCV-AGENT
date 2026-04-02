@@ -1979,6 +1979,286 @@ def _stream_stage(messages, max_tokens, stage_num):
     _stream_stage._last_result = ''.join(collected)
 
 
+@app.route('/api/run-express', methods=['POST'])
+def run_express():
+    """Run all 3 stages in a single SSE stream for express mode."""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'Invalid request.'}), 400
+
+        documents = data.get('documents', [])
+        if not documents:
+            return jsonify({'error': 'Please upload at least one project document.'}), 400
+
+        MAX_ASSISTANT_CHARS = 40000
+
+        def generate():
+            # ── Variables that persist across stages ──
+            stage1_output = ''
+            stage2_output = ''
+            doc_type = 'Unknown'
+            research_brief_text = ''
+            research_country = ''
+            conversation_history = []
+
+            try:
+                # ════════════════════════════════════════════════════════════
+                # STAGE 1 — Context & Extraction
+                # ════════════════════════════════════════════════════════════
+                yield f"data: {json.dumps({'stage_start': 1})}\n\n"
+
+                project_docs = [d for d in documents if not d.get('isContext')]
+                context_docs = [d for d in documents if d.get('isContext')]
+
+                # Pre-extract raw text for all docs
+                doc_parts = []
+                for doc in project_docs:
+                    name = doc.get('name', 'document')
+                    file_type = doc.get('type', 'text')
+                    raw = doc.get('content', '')
+                    if file_type == 'pdf':
+                        text, page_count = extract_pdf_text(raw, name)
+                    else:
+                        text = raw[:MAX_DOC_CHARS]
+                        page_count = 0
+                    doc_parts.append({'label': 'PROJECT DOCUMENT', 'name': name,
+                                      'raw_text': text[:MAX_DOC_CHARS], 'page_count': page_count})
+                for doc in context_docs:
+                    name = doc.get('name', 'document')
+                    file_type = doc.get('type', 'text')
+                    raw = doc.get('content', '')
+                    if file_type == 'pdf':
+                        text, page_count = extract_pdf_text(raw, name)
+                    else:
+                        text = raw[:MAX_DOC_CHARS]
+                        page_count = 0
+                    doc_parts.append({'label': 'CONTEXT DOCUMENT', 'name': name,
+                                      'raw_text': text[:MAX_DOC_CHARS], 'page_count': page_count})
+
+                # ── Web research phase ──
+                try:
+                    first_doc_text = doc_parts[0]['raw_text'] if doc_parts else ''
+                    yield f"data: {json.dumps({'research_status': 'extracting_country'})}\n\n"
+                    fast = get_fast_client()
+                    with ThreadPoolExecutor(max_workers=2) as pool:
+                        country_future = pool.submit(extract_country_name, first_doc_text, fast)
+                        sector_future = pool.submit(extract_sector_name, first_doc_text, fast)
+                        research_country = country_future.result()
+                        research_sector = sector_future.result()
+
+                    cache_key = f"{research_country.lower().strip()}::{research_sector.lower().strip()}"
+                    if cache_key in _research_cache:
+                        research_data = _research_cache[cache_key]
+                        research_brief_text = research_data['brief']
+                        yield f"data: {json.dumps({'research_status': 'cached', 'country': research_country})}\n\n"
+                    else:
+                        yield f"data: {json.dumps({'research_status': 'searching', 'country': research_country})}\n\n"
+                        research_data = run_fcv_web_research(research_country, research_sector, get_research_client())
+                        research_brief_text = research_data['brief']
+                        _research_cache[cache_key] = research_data
+
+                    yield f"data: {json.dumps({'research_status': 'complete', 'country': research_country, 'brief': research_brief_text})}\n\n"
+                except Exception:
+                    research_brief_text = ''
+                    yield f"data: {json.dumps({'research_status': 'error', 'country': research_country})}\n\n"
+
+                # ── Assemble Stage 1 content_parts ──
+                content_parts = []
+                context_sep_added = False
+                for dp in doc_parts:
+                    if dp['label'] == 'CONTEXT DOCUMENT' and not context_sep_added:
+                        content_parts.append({"type": "text", "text": "\n\n--- CONTEXTUAL DOCUMENTS ---\n"})
+                        context_sep_added = True
+                    if len(dp['raw_text']) > STAGE1_EXTRACT_THRESHOLD:
+                        dp_name = dp['name']
+                        yield f"data: {json.dumps({'preprocess': 'Extracting FCV content from ' + dp_name + '...'})}\n\n"
+                        final_text = extract_fcv_content_haiku(dp['raw_text'], dp['name'], get_research_client())
+                    else:
+                        final_text = dp['raw_text']
+                    suffix = f" ({dp['page_count']} pages)" if dp['page_count'] else ""
+                    content_parts.append({"type": "text", "text": f"=== {dp['label']}: {dp['name']}{suffix} ===\n\n{final_text}"})
+
+                if research_brief_text:
+                    content_parts.append({"type": "text", "text": (
+                        "\n\n--- AUTOMATED FCV WEB RESEARCH (supplemental — uploaded documents take precedence) ---\n"
+                        "The following is an automated research brief compiled from public sources via web search. "
+                        "It is supplemental only. Where uploaded contextual documents address the same topic, "
+                        "those documents take precedence. Use these findings to fill gaps not covered by uploads, "
+                        "or to supplement with more recent or different perspectives. "
+                        "Label all findings drawn from this source as [From: web research / source type].\n\n"
+                        + research_brief_text +
+                        "\n--- END AUTOMATED WEB RESEARCH ---\n"
+                    )})
+
+                content_parts.append({"type": "text", "text": (
+                    "\n\n--- WBG FCV Sensitivity and Responsiveness Guide (always included) ---\n" + FCV_GUIDE +
+                    "\n\n--- FCV Operational Playbook — Diagnostics Phase (always included) ---\n" + PLAYBOOK_DIAGNOSTICS +
+                    "\n\n--- WBG FCV Strategy Refresh Framework (always included) ---\n" + FCV_REFRESH_FRAMEWORK
+                )})
+
+                stage1_prompt = get_prompt_for_stage(1)
+                content_parts.append({"type": "text", "text": stage1_prompt})
+
+                stage1_messages = [{"role": "user", "content": content_parts}]
+
+                # ── Stream Stage 1 ──
+                yield f"data: {json.dumps({'status': 'preparing_analysis'})}\n\n"
+                for event in _stream_stage(stage1_messages, 8000, 1):
+                    yield event
+                stage1_output = _stream_stage._last_result
+
+                # Extract doc_type from Stage 1 output
+                dt_match = re.search(r'%%%DOC_TYPE:\s*([^%\n]+)%%%', stage1_output)
+                if dt_match:
+                    doc_type = dt_match.group(1).strip()
+
+                # Build truncated history for next stages
+                conversation_history = [
+                    {"role": "user", "content": "[Stage 1 — project documents and FCV context analysed]"},
+                    {"role": "assistant", "content": stage1_output[:MAX_ASSISTANT_CHARS] if len(stage1_output) > MAX_ASSISTANT_CHARS else stage1_output}
+                ]
+
+                # ── Stage 1 done event ──
+                yield f"data: {json.dumps({'stage_done': 1, 'result': stage1_output, 'history': conversation_history, 'research_brief': research_brief_text, 'research_country': research_country, 'doc_type': doc_type})}\n\n"
+
+                # ════════════════════════════════════════════════════════════
+                # STAGE 2 — FCV Assessment
+                # ════════════════════════════════════════════════════════════
+                yield f"data: {json.dumps({'stage_start': 2})}\n\n"
+
+                stage2_prompt = get_prompt_for_stage(2)
+                doc_type_ctx = build_doc_type_context(doc_type, 2)
+                if doc_type_ctx:
+                    stage2_prompt = doc_type_ctx + "\n\n" + stage2_prompt
+                stage2_prompt = (
+                    stage2_prompt +
+                    "\n\n--- WBG FCV Operational Manual (12 Recommendations, 25 Key Questions, 3 Key Elements) ---\n" +
+                    FCV_OPERATIONAL_MANUAL +
+                    "\n\n--- WBG FCV Strategy Refresh Framework (4 Shifts) ---\n" +
+                    FCV_REFRESH_FRAMEWORK +
+                    "\n\n--- WBG FCV Sensitivity and Responsiveness Guide ---\n" +
+                    FCV_GUIDE
+                )
+
+                # Build messages: prior context + Stage 2 prompt
+                stage2_messages = [
+                    {"role": "user", "content": f"Prior FCV analysis context:\n\nStage 1 output:\n{conversation_history[1]['content']}\n\nUse this as the basis for the next stage."},
+                    {"role": "assistant", "content": "Understood. I will build on this prior analysis."},
+                    {"role": "user", "content": stage2_prompt}
+                ]
+
+                # ── Stream Stage 2 ──
+                for event in _stream_stage(stage2_messages, 16000, 2):
+                    yield event
+                stage2_output = _stream_stage._last_result
+
+                # Parse Stage 2 output
+                stage2_ratings = extract_stage2_ratings(stage2_output)
+                under_hood = extract_under_hood(stage2_output)
+                s2_parse_error = under_hood.get('error', False) or stage2_ratings.get('error', False)
+                s2_parse_error_msg = under_hood.get('message', '') or stage2_ratings.get('message', '')
+
+                # Update conversation history
+                s2_truncated = stage2_output[:MAX_ASSISTANT_CHARS] if len(stage2_output) > MAX_ASSISTANT_CHARS else stage2_output
+                conversation_history.extend([
+                    {"role": "user", "content": stage2_prompt},
+                    {"role": "assistant", "content": s2_truncated}
+                ])
+                if len(conversation_history) > 20:
+                    conversation_history = conversation_history[-20:]
+
+                # ── Stage 2 done event ──
+                yield f"data: {json.dumps({'stage_done': 2, 'result': stage2_output, 'display_text': under_hood.get('display_text', stage2_output), 'history': conversation_history, 'sensitivity_rating': stage2_ratings.get('sensitivity_rating', ''), 'responsiveness_rating': stage2_ratings.get('responsiveness_rating', ''), 'under_hood': {'recs_table': under_hood.get('recs_table', ''), 'dnh_checklist': under_hood.get('dnh_checklist', ''), 'questions_map': under_hood.get('questions_map', ''), 'evidence_trail': under_hood.get('evidence_trail', '')}, 'parse_error': s2_parse_error, 'parse_error_message': s2_parse_error_msg})}\n\n"
+
+                # ════════════════════════════════════════════════════════════
+                # STAGE 3 — Recommendations Note
+                # ════════════════════════════════════════════════════════════
+                yield f"data: {json.dumps({'stage_start': 3})}\n\n"
+
+                stage3_prompt = get_prompt_for_stage(3)
+                doc_type_ctx = build_doc_type_context(doc_type, 3)
+                if doc_type_ctx:
+                    stage3_prompt = doc_type_ctx + "\n\n" + stage3_prompt
+
+                # Stage-aware playbook injection
+                stage_config = STAGE_GUIDANCE_MAP.get(doc_type, STAGE_GUIDANCE_MAP.get('Unknown', {}))
+                playbook_phase = stage_config.get('playbook_phase', 'Preparation')
+                if playbook_phase == 'Implementation':
+                    playbook = PLAYBOOK_IMPLEMENTATION
+                elif playbook_phase == 'Closing':
+                    playbook = PLAYBOOK_CLOSING
+                else:
+                    playbook = PLAYBOOK_PREPARATION
+                if doc_type == 'ISR':
+                    playbook = PLAYBOOK_IMPLEMENTATION + "\n\n" + PLAYBOOK_CLOSING
+
+                timing_opts = stage_config.get('timing_options', ['Preparation'])
+                timing_str = ' / '.join(timing_opts) if isinstance(timing_opts, list) else str(timing_opts)
+
+                try:
+                    stage3_prompt = stage3_prompt.format(
+                        doc_type=doc_type,
+                        timing_emphasis=timing_str,
+                        playbook_guidance=playbook
+                    )
+                except KeyError:
+                    pass
+
+                stage3_prompt = (
+                    stage3_prompt +
+                    "\n\n--- WBG FCV Strategy Refresh Framework (4 Shifts) ---\n" +
+                    FCV_REFRESH_FRAMEWORK
+                )
+
+                # Build Stage 3 messages from conversation history
+                stage3_messages = conversation_history + [
+                    {"role": "user", "content": stage3_prompt}
+                ]
+
+                # ── Stream Stage 3 ──
+                for event in _stream_stage(stage3_messages, 16000, 3):
+                    yield event
+                stage3_output = _stream_stage._last_result
+
+                # Parse Stage 3 output
+                uploaded_doc_names = [doc.get('name', '') for doc in documents if doc.get('name')]
+                parsed = extract_priorities(stage3_output, uploaded_doc_names)
+                stage3_output_clean = clean_stage3_output(stage3_output)
+                from datetime import date
+                header = DO_NO_HARM_HEADER.format(date=date.today().strftime('%d %B %Y'))
+                stage3_output_clean = header + stage3_output_clean
+
+                # Final conversation history
+                s3_truncated = stage3_output[:MAX_ASSISTANT_CHARS] if len(stage3_output) > MAX_ASSISTANT_CHARS else stage3_output
+                conversation_history.append({"role": "user", "content": stage3_prompt})
+                conversation_history.append({"role": "assistant", "content": s3_truncated})
+                if len(conversation_history) > 20:
+                    conversation_history = conversation_history[-20:]
+
+                # ── Stage 3 done event ──
+                yield f"data: {json.dumps({'stage_done': 3, 'result': stage3_output_clean, 'history': conversation_history, 'priorities': parsed.get('priorities', []), 'fcv_rating': parsed.get('fcv_rating', ''), 'fcv_responsiveness_rating': parsed.get('fcv_responsiveness_rating', ''), 'sensitivity_summary': parsed.get('sensitivity_summary', ''), 'responsiveness_summary': parsed.get('responsiveness_summary', ''), 'risk_exposure': parsed.get('risk_exposure'), 'gap_table': extract_gap_table(stage3_output), 'parse_error': parsed.get('error', False), 'parse_error_message': parsed.get('message', '')})}\n\n"
+
+                # ── Express complete ──
+                yield f"data: {json.dumps({'express_done': True})}\n\n"
+
+            except Exception as e:
+                # Determine which stage failed based on what's been completed
+                failed_stage = 1
+                if stage1_output and not stage2_output:
+                    failed_stage = 2
+                elif stage2_output:
+                    failed_stage = 3
+                yield f"data: {json.dumps({'error': str(e), 'failed_stage': failed_stage})}\n\n"
+
+        return Response(stream_with_context(generate()),
+                        mimetype='text/event-stream',
+                        headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'})
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/api/run-deeper', methods=['POST'])
 def run_deeper():
     """Handle Go Deeper requests for priority cards.
