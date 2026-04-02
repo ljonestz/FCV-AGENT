@@ -2682,7 +2682,7 @@
               if(stage===3) localStorage.setItem('stage3_timestamp', Date.now());
               // For Stage 2, use display_text (stripped of delimiters) if provided by backend
               const renderResult = (stage===2 && p.display_text) ? p.display_text : p.result;
-              // Stage 1: extract docType + research data before calling onComplete (Stage 3 needs docType)
+              // Stage 1: extract docType + research data
               if(stage===1){
                 const dtMatch=p.result&&p.result.match(/%%%DOC_TYPE:\s*([^%\n]+)%%%/);if(dtMatch){docType=dtMatch[1].trim();updateDocTypeBadge();}
                 if(p.research_brief) researchBrief=p.research_brief;
