@@ -2574,6 +2574,17 @@
               const el=document.getElementById('s-out');
               if(el&&rsMsg)el.innerHTML=`<div style="display:flex;align-items:center;gap:10px;color:var(--muted);font-style:italic;padding:12px 0"><svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;animation:spin 1s linear infinite;flex-shrink:0"><circle cx="12" cy="12" r="10" stroke-opacity=".25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-opacity="1"/></svg>${rsMsg}</div>`;
             }
+            if(p.status==='preparing_analysis'){
+              const paMsg='Generating analysis\u2026';
+              if(analysisMode==='express'&&stage===1){
+                const epSum=document.getElementById('ep-summary-1');
+                if(epSum)epSum.innerHTML='<div class="ep-stage-spinner"><div class="ep-spinner-dot"></div><div class="ep-spinner-dot"></div><div class="ep-spinner-dot"></div><span>'+paMsg+'</span></div>';
+              }
+              const el=document.getElementById('s-out');
+              if(el)el.innerHTML=`<div style="display:flex;align-items:center;gap:10px;color:var(--muted);font-style:italic;padding:12px 0"><svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;animation:spin 1s linear infinite;flex-shrink:0"><circle cx="12" cy="12" r="10" stroke-opacity=".25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-opacity="1"/></svg>${paMsg}</div>`;
+            }
+            // keepalive events are sent by the backend every 20 s to prevent proxy timeouts — no UI update needed
+            if(p.keepalive){/* silent — connection is alive */}
             if(p.preprocess){
               const ppMsg=esc(p.preprocess);
               if(analysisMode==='express'&&stage===1){
