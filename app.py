@@ -244,7 +244,6 @@ Where does the project document's own risk picture align with or diverge from th
 - Always clearly signal which Part and section you are in
 - Note when information is ambiguous, absent, or contradictory
 - Be specific — generic statements about fragility are not useful
-- **Length:** Keep Part A and Part B combined to approximately 1,000–1,500 words. Be concise and evidence-focused; do not pad sections where evidence is thin.
 
 ---
 
@@ -1768,17 +1767,9 @@ def run_stage():
                     content_parts.append({"type": "text", "text": stage_prompt})
                     messages.append({"role": "user", "content": content_parts})
 
-                # Keepalive ping before opening the LLM stream — prevents Render's proxy
-                # from closing the SSE connection during the silent context-build phase.
-                yield f"data: {json.dumps({'status': 'preparing_analysis'})}\n\n"
-
-                # Stage-appropriate token limits: Stage 1 output doesn't need 16k tokens;
-                # reducing it halves worst-case generation time for the extraction stage.
-                stage_max_tokens = 8000 if stage == 1 else 16000
-
                 with get_client().messages.stream(
                     model="claude-sonnet-4-20250514",
-                    max_tokens=stage_max_tokens,
+                    max_tokens=16000,
                     messages=messages
                 ) as stream:
                     for text_chunk in stream.text_stream:
