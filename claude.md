@@ -63,7 +63,7 @@ background_docs.py     # 8 constants: FCV_GUIDE, FCV_OPERATIONAL_MANUAL, FCV_REF
                        #   PLAYBOOK_CLOSING, STAGE_GUIDANCE_MAP
 prompts.json           # Session-specific prompt overrides (persisted per session)
 requirements.txt       # Python dependencies (Flask, Anthropic SDK, pypdf, python-docx)
-Procfile              # Render deployment config
+Procfile              # Render deployment config (gunicorn + gevent; see Section 8.2)
 .gitignore            # Git ignore rules
 static/               # Static assets (if any)
 ```
@@ -793,6 +793,22 @@ POST /api/run-stage
               risk_exposure: {risks_to, risks_from},
               parse_error, parse_error_message}
 
+# Express mode route (single SSE endpoint for all 3 stages)
+POST /api/run-express
+  Input: {documents[]}
+  Output: SSE stream with events:
+    stage_start: {stage_start: N} — before each stage begins
+    research_status: {research_status, country} — during Stage 1 web research
+    preprocess: {preprocess: message} — during Stage 1 doc extraction
+    chunk: {chunk: text, stage: N} — streaming LLM text for each stage
+    stage_done: {stage_done: N, result, history, ...stage-specific data} — after each stage completes
+    keepalive: {keepalive: true} — every 20s if no data sent
+    error: {error: message, failed_stage: N} — if a stage fails
+    express_done: {express_done: true} — all 3 stages completed
+  Notes: Runs Stage 1→2→3 in a single SSE connection. Reuses all existing parsing
+    functions. Keepalive pings cover web research gaps and inter-stage transitions.
+    Frontend runExpress() connects to this endpoint and dispatches on event types.
+
 # Go Deeper route (replaces /api/run-explorer)
 POST /api/run-deeper
   Input: {priority_index, tab, priority_title, priority_body, history[],
@@ -1064,6 +1080,8 @@ python3 app.py
 2. Create a new Web Service, select your repo + branch
 3. Render reads the `Procfile` and `requirements.txt`
 4. Deploy automatically on push to that branch
+
+**Production server:** gunicorn + gevent (`--worker-class gevent --timeout 600`). This is required for long-running SSE connections (Express mode, Stage 1 web research). Flask dev server (`python3 app.py`) is still used for local development only — do not use it in production.
 
 **Environment variables needed (set in Render dashboard):**
 - `ANTHROPIC_API_KEY` — your Claude API key (required)
