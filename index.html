@@ -1520,7 +1520,7 @@
   .stepper-clickable .step{cursor:pointer;transition:transform .15s ease}
   .stepper-clickable .step:hover{transform:translateY(-2px)}
   .stepper-clickable .step.current .step-num{background:var(--wbg-cyan);color:#fff;box-shadow:0 0 0 4px rgba(0,157,218,.15)}
-  .stepper-hint{text-align:center;font-size:11px;color:#9CA3AF;margin-top:-8px;margin-bottom:12px}
+  .stepper-hint{display:none;text-align:center;font-size:11px;color:#9CA3AF;padding:10px 24px 12px}
   .rerun-banner{display:flex;align-items:center;gap:12px;padding:14px 20px;background:#FFFBEB;border:1px solid #FDE68A;border-radius:6px;margin-bottom:16px}
   .rerun-banner-icon{font-size:18px;flex-shrink:0}
   .rerun-banner-text{flex:1;font-size:12px;color:#92400E;line-height:1.5}
@@ -1730,6 +1730,7 @@
     <div class="step" id="step-2"><span class="step-num">2</span><span class="step-label">Assessment</span></div>
     <div class="step" id="step-3"><span class="step-num">3</span><span class="step-label">Recommendations</span></div>
   </nav>
+  <div id="stepper-hint" class="stepper-hint" aria-live="polite"></div>
 </div>
 
 <!-- ══ EXPRESS PROGRESS SCREEN ══ -->
@@ -3259,9 +3260,9 @@
     const wrap=document.getElementById('stepper-wrap');
     wrap.classList.add('stepper-clickable');
     let hint=document.getElementById('stepper-hint');
-    if(!hint){
-      hint=document.createElement('div');hint.id='stepper-hint';hint.className='stepper-hint';
-      hint.textContent='Click any stage above to review its output';wrap.after(hint);
+    if(hint){
+      hint.textContent='Click any stage above to review its output';
+      hint.style.display='block';
     }
     for(let i=1;i<=3;i++){
       const step=document.getElementById('step-'+i);
@@ -3271,7 +3272,11 @@
 
   function disableClickableStepper(){
     document.getElementById('stepper-wrap').classList.remove('stepper-clickable');
-    const hint=document.getElementById('stepper-hint');if(hint)hint.remove();
+    const hint=document.getElementById('stepper-hint');
+    if(hint){
+      hint.textContent='';
+      hint.style.display='none';
+    }
     for(let i=1;i<=3;i++){const s=document.getElementById('step-'+i);if(s)s.onclick=null;}
   }
 
