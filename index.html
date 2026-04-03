@@ -700,7 +700,7 @@
       display:flex;align-items:center;justify-content:center;
       font-size:10px;font-weight:700;color:var(--muted);margin:0 auto 3px;transition:all .15s;
     }
-    .ps-label{font-size:9px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.02em;line-height:1.35;word-break:break-word;white-space:normal;}
+    .ps-label{font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.02em;line-height:1.35;max-height:3.9em;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;word-break:break-word;white-space:normal;}
     .ps-step.active{background:var(--wbg-navy);}
     .ps-step.active .ps-num{background:var(--wbg-blue);color:#fff;}
     .ps-step.active .ps-label{color:rgba(255,255,255,.8);}
@@ -2099,7 +2099,7 @@
     2:{t:'Stage 2 of 3 · FCV Assessment',
        b:'<strong>What you are reading:</strong> This is the LLM structured assessment of the project FCV sensitivity and responsiveness across key dimensions. It shows how the AI is weighing the evidence and forming its judgements. Review the ratings and reasoning carefully — if a dimension seems underweighted, overweighted, or is missing important context, use the query box below to adjust before moving on.'},
     3:{t:'Stage 3 of 3 · Recommendations Note — ready to copy',
-       b:'<strong>What you are reading:</strong> This is the LLM-generated Recommendations Note for the Task Team Leader, drawing on the analysis from the previous two stages. Review it carefully before use — treat it as a well-informed draft, not a final expert assessment. You can still refine specific sections using the query box. When satisfied, click <strong>Copy all</strong> and paste into your Word document.'}
+       b:''}
   };
 
   function setupZone(zoneId, inputId, arr, type) {
@@ -2968,7 +2968,7 @@
       const _pre=_sp[0]||result;
       const _rest=_sp[1]||'';
       const _stageBadge = docType && docType !== 'Unknown' ? `<div class="stage-awareness-badge">Recommendations tailored for <strong>${esc(docType)}</strong> stage</div>` : '';
-      _outBodyContent=buildSRDefinitionBox(true)+_stageBadge+md(_pre)+renderRiskExposure(stageRiskExposure)+md(_rest)+renderSRCards(stageSensitivitySummary,stageResponsivenessSummary)+'<div id="priorities-intro"></div>';
+      _outBodyContent=_stageBadge+md(_pre)+renderRiskExposure(stageRiskExposure)+md(_rest)+renderSRCards(stageSensitivitySummary,stageResponsivenessSummary)+'<div id="priorities-intro"></div>';
     }else{
       const cleanResult = stage===1 ? result.replace(/\n*%%%DOC_TYPE:[^%\n]*%%%\n*/g,'') : result;
       const srDefPrefix = stage===2 ? buildSRDefinitionBox() + buildTagLegend() : '';
@@ -2980,9 +2980,6 @@
         <div style="flex:1">
           <div style="display:flex;align-items:center;gap:10px">
             <div class="stage-title">${NAMES[stage]}</div>
-            <button class="view-prompt-link ${sessionPrompts[stage]?'modified':''}" onclick="openPromptModal(${stage})" title="${sessionPrompts[stage]?'Prompt modified for this session':'View the prompt used for this stage'}">
-              ${sessionPrompts[stage]?'⚑ prompt (modified)':'view prompt'}
-            </button>
           </div>
           <div class="stage-sub">${isFollowOn?'Updated based on your input':isLast?'Recommendations Note generated':SUBS[stage]}</div>
         </div>
