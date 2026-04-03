@@ -1780,13 +1780,13 @@
     <span>Elapsed:</span>
     <span class="elapsed" id="ep-elapsed">0:00</span>
     <span>&middot;</span>
-    <span>Estimated total: 4&ndash;5 minutes</span>
+    <span id="ep-estimate">Estimated total: 4&ndash;5 minutes</span>
   </div>
   <div class="ep-message-card" id="ep-message-card">
     <div class="ep-message-icon" id="ep-message-icon">&#9749;</div>
     <div class="ep-message-text" id="ep-message-text">"Go grab a coffee &mdash; this will take a few minutes."</div>
   </div>
-  <div class="ep-bottom-note">Keep this tab open. You&rsquo;ll be able to review each stage&rsquo;s findings once the analysis is complete.</div>
+  <div class="ep-bottom-note">Do not close or refresh this tab.</div>
 </div>
 
 <!-- ══ MAIN ══ -->
@@ -3347,7 +3347,12 @@
     {icon:'🌍',text:'In FCV settings, nothing good happens quickly.'},
     {icon:'📚',text:'We\'re drawing on the FCV Playbook for insights on relevant practices and operational tools.'},
     {icon:'🎯',text:'Stage 3 aligns recommendations with core priorities from the WBG FCV Strategy.'},
-    {icon:'💡',text:'Tip: You can review each stage\'s findings once the analysis is complete.'}
+    {icon:'💡',text:'Tip: You can review each stage\'s findings once the analysis is complete.'},
+    {icon:'🔍',text:'Searching trusted sources for country-specific FCV context.'},
+    {icon:'📋',text:'Cross-referencing against 12 OST operational standards.'},
+    {icon:'🏛️',text:'Aligning recommendations with WBG FCV Strategy priorities.'},
+    {icon:'📐',text:'Tailoring guidance to your project\'s lifecycle stage.'},
+    {icon:'🧰',text:'Drawing on FCV Playbook for operational tools and flexibilities.'}
   ];
 
   // Silently write express checkpoint to localStorage; fails gracefully if quota exceeded
@@ -3395,6 +3400,11 @@
     const secs=Math.floor((Date.now()-epStartTime)/1000);
     const m=Math.floor(secs/60),s=secs%60;
     document.getElementById('ep-elapsed').textContent=m+':'+(s<10?'0':'')+s;
+    const est=document.getElementById('ep-estimate');
+    if(est){
+      if(secs>420)est.textContent='Almost done \u2014 finalising';
+      else if(secs>300)est.textContent='Taking a little longer than usual';
+    }
   }
 
   function showEpMessage(idx){
