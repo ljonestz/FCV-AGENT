@@ -112,17 +112,25 @@ def _check_citations(priority: dict, uploaded_doc_names: list) -> list:
 def extract_stage2_ratings(stage2_output):
     """Extract sensitivity and responsiveness ratings from Stage 2 output.
     Looks for %%%STAGE2_RATINGS_START%%%...%%%STAGE2_RATINGS_END%%% block.
+    Also extracts %%%RATING_REASONING_START%%%...%%%RATING_REASONING_END%%% if present.
     """
     pattern = r'%%%STAGE2_RATINGS_START%%%(.*?)%%%STAGE2_RATINGS_END%%%'
     match = re.search(pattern, stage2_output, re.DOTALL)
     if not match:
         return {'error': True, 'message': 'No ratings block found in Stage 2 output'}
+    # Extract rating reasoning block (optional — for auditing)
+    reasoning = ''
+    reasoning_pattern = r'%%%RATING_REASONING_START%%%(.*?)%%%RATING_REASONING_END%%%'
+    reasoning_match = re.search(reasoning_pattern, stage2_output, re.DOTALL)
+    if reasoning_match:
+        reasoning = reasoning_match.group(1).strip()
     try:
         ratings = json.loads(match.group(1).strip())
         return {
             'error': False,
             'sensitivity_rating': ratings.get('sensitivity_rating', 'Unknown'),
-            'responsiveness_rating': ratings.get('responsiveness_rating', 'Unknown')
+            'responsiveness_rating': ratings.get('responsiveness_rating', 'Unknown'),
+            'rating_reasoning': reasoning
         }
     except json.JSONDecodeError as e:
         return {'error': True, 'message': f'Failed to parse ratings JSON: {str(e)}'}
@@ -733,7 +741,7 @@ The FCV ratings, summaries, and risk exposure paragraphs you have written in the
 }}}}
 %%%JSON_END%%%
 
-IMPORTANT: The JSON block must come AFTER all narrative text. Do not include any explanatory text inside the JSON block itself. Use exact field names as shown. The `tag` field must be exactly "[S]", "[R]", or "[S+R]" (with square brackets). The `fcv_rating` and `fcv_responsiveness_rating` must be exactly one of: "Extremely Low" | "Very Low" | "Low" | "Adequate" | "Well Embedded" | "Very Well Embedded". The `refresh_shift` field must be exactly one of: "Shift A: Anticipate" | "Shift B: Differentiate" | "Shift C: Jobs & private sector" | "Shift D: Enhanced toolkit". The `who_acts` field is semicolon-separated (e.g. "TTL; ESF Team"). The `when` field must be exactly one of: "Identification" | "Preparation" | "Appraisal" | "Implementation" | "Restructuring".
+IMPORTANT: The JSON block must come AFTER all narrative text. Do not include any explanatory text inside the JSON block itself. Use exact field names as shown. The `tag` field must be exactly "[S]", "[R]", or "[S+R]" (with square brackets). For `fcv_rating` and `fcv_responsiveness_rating`: use the sensitivity and responsiveness ratings from Stage 2 exactly as provided in the conversation history. Copy them into the JSON fields without modification. Do not re-assess or override the Stage 2 ratings. The `refresh_shift` field must be exactly one of: "Shift A: Anticipate" | "Shift B: Differentiate" | "Shift C: Jobs & private sector" | "Shift D: Enhanced toolkit". The `who_acts` field is semicolon-separated (e.g. "TTL; ESF Team"). The `when` field must be exactly one of: "Identification" | "Preparation" | "Appraisal" | "Implementation" | "Restructuring".
 
 Now produce the FCV Support Note following this exact structure.''',
 
@@ -1962,6 +1970,7 @@ def run_stage():
                     done_data['display_text'] = under_hood.get('display_text', full_text)
                     done_data['sensitivity_rating'] = stage2_ratings.get('sensitivity_rating', '')
                     done_data['responsiveness_rating'] = stage2_ratings.get('responsiveness_rating', '')
+                    done_data['rating_reasoning'] = stage2_ratings.get('rating_reasoning', '')
                     done_data['under_hood'] = {
                         'recs_table': under_hood.get('recs_table', ''),
                         'dnh_checklist': under_hood.get('dnh_checklist', ''),
@@ -2232,7 +2241,7 @@ def run_express():
                     conversation_history = conversation_history[-20:]
 
                 # ── Stage 2 done event ──
-                yield f"data: {json.dumps({'stage_done': 2, 'result': stage2_output, 'display_text': under_hood.get('display_text', stage2_output), 'history': conversation_history, 'sensitivity_rating': stage2_ratings.get('sensitivity_rating', ''), 'responsiveness_rating': stage2_ratings.get('responsiveness_rating', ''), 'under_hood': {'recs_table': under_hood.get('recs_table', ''), 'dnh_checklist': under_hood.get('dnh_checklist', ''), 'questions_map': under_hood.get('questions_map', ''), 'evidence_trail': under_hood.get('evidence_trail', '')}, 'parse_error': s2_parse_error, 'parse_error_message': s2_parse_error_msg})}\n\n"
+                yield f"data: {json.dumps({'stage_done': 2, 'result': stage2_output, 'display_text': under_hood.get('display_text', stage2_output), 'history': conversation_history, 'sensitivity_rating': stage2_ratings.get('sensitivity_rating', ''), 'responsiveness_rating': stage2_ratings.get('responsiveness_rating', ''), 'rating_reasoning': stage2_ratings.get('rating_reasoning', ''), 'under_hood': {'recs_table': under_hood.get('recs_table', ''), 'dnh_checklist': under_hood.get('dnh_checklist', ''), 'questions_map': under_hood.get('questions_map', ''), 'evidence_trail': under_hood.get('evidence_trail', '')}, 'parse_error': s2_parse_error, 'parse_error_message': s2_parse_error_msg})}\n\n"
 
                 # ════════════════════════════════════════════════════════════
                 # STAGE 3 — Recommendations Note
