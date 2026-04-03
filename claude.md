@@ -2,7 +2,7 @@
 
 > **Claude Code Maintenance Instruction:** After every substantial change to this app (new features, prompt changes, new delimiters, UI additions, architectural decisions), update this `claude.md` file to reflect the change before committing. Keep section 1.3 (Stage pipeline), section 3 (Prompt Architecture), section 4 (Frontend), and section 5.3 (Priority Parsing) accurate at all times.
 >
-> **Version note:** This file was updated for v7.4 (express mode single-endpoint). If sections reference "Stage 4" or "Explorer" without qualification, that is legacy content from v6.0 — check whether it has been superseded.
+> **Version note:** This file was updated for v7.5 (UX polish). If sections reference "Stage 4" or "Explorer" without qualification, that is legacy content from v6.0 — check whether it has been superseded.
 
 ---
 
@@ -18,7 +18,7 @@ The tool explicitly distinguishes two concepts:
 
 The 4 FCV Strategy Shifts (Anticipate / Differentiate / Jobs & Private Sector / Enhanced Toolkit) are **cross-cutting** — they apply to both sensitivity and responsiveness findings and are tagged inline as "FCV Strategy Shift: X".
 
-Every prompt output tags recommendations, mitigations, and priorities as [S], [R], or [S+R]. These are assigned dynamically per-finding based on how the project implements each measure — not pre-assigned per recommendation. S/R definitions are shown to the user in a "Key Definitions" box at the top of Stage 2 and Stage 3 output, and on the landing page.
+Every prompt output tags recommendations, mitigations, and priorities as [S], [R], or [S+R]. These are assigned dynamically per-finding based on how the project implements each measure — not pre-assigned per recommendation. S/R definitions are shown to the user in a "Key Definitions" box at the top of Stage 2 output and on the landing page. Stage 3 shows the tag legend only (no full definition box).
 
 **Key goal:** Move from broad, vague recommendations ("service delivery needs to be targeted so it doesn't contribute to grievance") to specific, location-aware, operationally grounded, stage-aware suggestions ("historically, Nzerekore, Kindia, and Kankan have been excluded from service delivery; focus on these regions to rebuild state-society relationships — action required before PAD appraisal").
 
@@ -35,12 +35,26 @@ Every prompt output tags recommendations, mitigations, and priorities as [S], [R
 - S/R tags dynamically assigned per-finding (not pre-assigned per-rec); shifts cross-cutting (not boxed under responsiveness)
 - DNH repositioned after themes, before synthesis
 - Under the Hood panels renamed to plain-language questions with OST Manual subtitles; Panel 1 gains S/R Tag column
-- S/R definition box shown at top of Stage 2 (with tag legend) and Stage 3 output
+- S/R definition box shown at top of Stage 2 (with tag legend); removed from Stage 3 in v7.5
 - S/R definitions added to landing page hero section
 - Stage 3 `recommendation` replaced by structured `actions` array — each action has `document_element`, `guidance` (2–4 sentences), and `suggested_language` (2–3 sentences of ready-to-paste PAD text). Rendered as individual action cards with "Suggested text:" label. "Where in the PAD" chips removed (action titles already identify document elements).
 - Stage 3 no longer includes inline `[From: ...]` citation tags — clean peer-review memo
 - "Go Deeper" reduced to 2 tabs: "Evidence trail" (instant, default) + "Link to FCV Playbook" (LLM call). "Other options" (alternatives) tab removed
 - Deeper Playbook prompt rewritten to focus on Playbook quotes, operational tools, WBG teams/resources, and policy hooks
+
+**New in v7.5 (UX polish):**
+- File upload zones restyled with custom "Browse files" buttons (no raw browser file input)
+- Mode card badges: Express shows "DEFAULT" only; Step-by-Step has no badge (was "RECOMMENDED")
+- Hero text condensed from 3 sentences to 2
+- Session bar hides "No active session" text on initial load; shows session info only when meaningful
+- Express progress: smart time estimate (updates message after 5 min / 7 min overruns)
+- Express progress: 12 rotating messages (was 7) — mix of casual and informative
+- Express progress: bottom note shortened to "Do not close or refresh this tab."
+- Stage 3 instruction callout condensed to single title line (removed verbose "What you are reading" body)
+- S/R definition box removed from Stage 3 output (kept at Stage 2 only)
+- "view prompt" link removed from stage headings (accessible via "View / Edit Prompts" in session bar)
+- Priority stepper text bumped from 9px to 10px with 3-line clamp and ellipsis
+- Workflow section label spacing adjusted (padding-left: 6px)
 
 ---
 
@@ -749,8 +763,8 @@ Both modes use identical prompts, code paths, and output quality. Express mode i
 - `.ep-stepper` — 3-node horizontal stepper with circle status, connectors
 - `.ep-progress-bar` / `.ep-progress-fill` — 3px bar advancing 33%/66%/100%
 - `.ep-stage-card` × 3 — status cards (pending/active/done) with 1-line summary after completion
-- `.ep-timer` — "Elapsed: X:XX · Estimated total: 4–5 minutes"
-- `.ep-message-card` — rotating message card, cycles every 15s via `setInterval`; 6 messages in `EP_MESSAGES[]`
+- `.ep-timer` — "Elapsed: X:XX · Estimated total: 4–5 minutes" (auto-updates to "Taking a little longer than usual" after 5 min, "Almost done — finalising" after 7 min)
+- `.ep-message-card` — rotating message card, cycles every 15s via `setInterval`; 12 messages in `EP_MESSAGES[]` (mix of casual and informative)
 
 **Progress screen JS functions:**
 - `showExpressProgress()` / `hideExpressProgress()` — show/hide screen, start/stop timer + message rotation intervals
@@ -1390,8 +1404,8 @@ If you find gaps in this documentation, or if new design decisions emerge, updat
 
 ---
 
-**Last updated:** 2026-04-02
-**Current version:** FCV Project Screener 7.4 (dual-mode workflow: Express Analysis + Step-by-Step; progress screen; post-express stage navigation; session v2 format)
+**Last updated:** 2026-04-03
+**Current version:** FCV Project Screener 7.5 (UX polish: styled uploads, smart timer, condensed output, refined landing page)
 **Current Claude model:** claude-sonnet-4-20250514
 **Architecture:** Flask 3.0.3 backend + vanilla JS frontend + Anthropic SDK integration
 **Design system:** WB Digital Look & Feel Style Guide — Open Sans, WB palette (#009FDA/#002244/#111827), RAG status colours. Reference: https://geospatial-commons.github.io/WB-Design-Guidelines/chapters/design-system.html
