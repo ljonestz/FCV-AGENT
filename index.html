@@ -3745,6 +3745,7 @@ ${md(execSummary)}`;
 
   const LEVELS = ['Extremely Low','Very Low','Low','Adequate','Well Embedded','Very Well Embedded'];
   const LEVEL_COLORS = {1:'#C0392B',2:'#E07B00',3:'#D97706',4:'#0072BB',5:'#1A7A4A',6:'#0d5c36'};
+  const RESP_LEVEL_COLORS = {1:'#C0392B',2:'#E07B00',3:'#D97706',4:'#E07B00',5:'#1A7A4A',6:'#0d5c36'};
   const ARC_LEN = 141.37;
   const NEED_LABELS = {
     'Extremely Low':'Critical redesign needed',
@@ -3819,7 +3820,7 @@ ${md(execSummary)}`;
 
     // Responsiveness Gauge
     const respLevel = LEVELS.findIndex(l => l.toLowerCase() === (fcvResponsivenessRating||'').toLowerCase()) + 1;
-    const respColor = LEVEL_COLORS[respLevel] || '#e8edf2';
+    const respColor = RESP_LEVEL_COLORS[respLevel] || '#e8edf2';
     const respArc = document.getElementById('fcv-resp-arc-fill');
     const respLeaf = document.getElementById('fcv-resp-leaf-path');
     const respLabel = document.getElementById('fcv-resp-rating-label');
