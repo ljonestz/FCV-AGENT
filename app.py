@@ -384,11 +384,71 @@ Format: "**[Gap title] [S]:** [specific evidence and risk]"
 # Status Terminology
 Use ONLY these terms: "Strongly addressed" / "Partially addressed" / "Weakly addressed" / "Not addressed"
 
+# Rating Rubric — FOLLOW THIS FORMULA, DO NOT USE YOUR GENERAL IMPRESSION
+
+## Sensitivity Rating
+Count how many of the 12 OST recommendations are rated "Strongly addressed" or "Partially addressed" in your Under the Hood recs table (Panel 1). "Weakly addressed" and "Not addressed" do NOT count.
+
+| S-relevant recs addressed | Baseline Rating |
+|---|---|
+| 0–2 | Extremely Low |
+| 3–4 | Very Low |
+| 5–6 | Low |
+| 7–8 | Adequate |
+| 9–10 | Well Embedded |
+| 11–12 | Very Well Embedded |
+
+Then apply quality gates (most restrictive cap wins):
+- If 3 or more Do No Harm principles are rated "Not addressed" in Panel 2 → cap sensitivity at Low
+- If the project contains no conflict or security analysis → cap sensitivity at Adequate
+- If the project has no geographic specificity in targeting or beneficiary selection → cap sensitivity at Adequate
+
+## Responsiveness Rating
+Count how many of the 4 FCV Refresh shifts (Anticipate, Differentiate, Jobs & Private Sector, Enhanced Toolkit) are actively addressed with concrete, specific measures in the project design — not just passing mentions.
+
+| Shifts addressed + active measures | Baseline Rating |
+|---|---|
+| 0 shifts, no active measures | Extremely Low |
+| 1 shift, minimal measures | Very Low |
+| 1–2 shifts, some concrete measures | Low |
+| 2–3 shifts, concrete measures with specificity | Adequate |
+| 3–4 shifts, strong embedded measures | Well Embedded |
+| 4 shifts, deeply embedded throughout design | Very Well Embedded |
+
+Then apply quality gates:
+- If zero FCV Refresh shifts are aligned → cap responsiveness at Very Low
+- If no adaptive M&E for FCV dynamics exists → cap responsiveness at Low
+
+## Rating Reasoning Block
+Before emitting the ratings JSON, emit the following reasoning block showing your step-by-step scoring. This block is stripped from display but used for auditing.
+
+%%%RATING_REASONING_START%%%
+SENSITIVITY SCORING:
+- Recs addressed (Strongly or Partially): [list rec numbers and status] → count: X/12
+- Baseline from count: [rating]
+- Quality gate checks:
+  - DNH principles rated "Not addressed": [count]/8 → [cap at Low / no cap]
+  - Conflict/security analysis present: [yes/no] → [cap at Adequate / no cap]
+  - Geographic specificity in targeting: [yes/no] → [cap at Adequate / no cap]
+- Most restrictive cap: [rating or "none — baseline stands"]
+- FINAL SENSITIVITY RATING: [rating]
+
+RESPONSIVENESS SCORING:
+- Shifts addressed: [list which shifts with brief evidence] → count: X/4
+- Active root-cause measures: [1-2 sentence summary]
+- Baseline from shifts + measures: [rating]
+- Quality gate checks:
+  - Any shift alignment: [yes/no] → [cap at Very Low / no cap]
+  - Adaptive M&E for FCV: [yes/no] → [cap at Low / no cap]
+- Most restrictive cap: [rating or "none — baseline stands"]
+- FINAL RESPONSIVENESS RATING: [rating]
+%%%RATING_REASONING_END%%%
+
 # Ratings Block
-After the TTL-facing narrative, emit this block on its own line:
+After the rating reasoning block, emit this block on its own line:
 
 %%%STAGE2_RATINGS_START%%%
-{"sensitivity_rating": "[rating]", "responsiveness_rating": "[rating]"}
+{"sensitivity_rating": "[FINAL SENSITIVITY RATING from above]", "responsiveness_rating": "[FINAL RESPONSIVENESS RATING from above]"}
 %%%STAGE2_RATINGS_END%%%
 
 Rating scale (use exactly one of): Extremely Low | Very Low | Low | Adequate | Well Embedded | Very Well Embedded
@@ -841,6 +901,7 @@ Collegial, practical, peer-to-peer — the same register as the Recommendations 
 
 def clean_stage2_output(text):
     """Strip delimiter blocks from Stage 2 output for display."""
+    text = re.sub(r'%%%RATING_REASONING_START%%%.*?%%%RATING_REASONING_END%%%', '', text, flags=re.DOTALL)
     text = re.sub(r'%%%STAGE2_RATINGS_START%%%.*?%%%STAGE2_RATINGS_END%%%', '', text, flags=re.DOTALL)
     text = re.sub(r'%%%UNDER_HOOD_START%%%.*?%%%UNDER_HOOD_END%%%', '', text, flags=re.DOTALL)
     return text.strip()
