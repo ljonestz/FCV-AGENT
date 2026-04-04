@@ -1017,10 +1017,16 @@ def clean_stage2_output(stage2_output):
 9. On malformed JSON: return `{error: True, message: ...}` — NOT silent failure
 
 **Stage 2 parsing in `extract_stage2_ratings()` and `extract_under_hood()`:**
-1. `extract_stage2_ratings()`: finds `%%%STAGE2_RATINGS_START/END%%%`, parses compact JSON `{sensitivity_rating, responsiveness_rating}`
+1. `extract_stage2_ratings()`: finds `%%%STAGE2_RATINGS_START/END%%%`, parses compact JSON `{sensitivity_rating, responsiveness_rating}`; also extracts `%%%RATING_REASONING_START/END%%%` block (optional, for auditing) into `rating_reasoning` field
 2. `extract_under_hood()`: finds `%%%UNDER_HOOD_START/END%%%`, extracts 4 named sub-blocks via inner delimiters
 3. Both called from Stage 2 SSE done handler in `/api/run-stage`
-4. Results returned in SSE done event payload; stored in localStorage by frontend
+4. Results returned in SSE done event payload (including `rating_reasoning`); stored in localStorage by frontend
+
+**Rating Rubric (v7.5):** Stage 2 prompt contains a structured scoring rubric that drives ratings:
+- **Sensitivity:** Count of 12 OST recs rated "Strongly/Partially addressed" → 6-tier baseline. Quality gates cap the rating if 3+ DNH gaps, no conflict analysis, or no geographic specificity.
+- **Responsiveness:** Count of 4 FCV Refresh shifts actively addressed → 6-tier baseline. Quality gates cap if zero shift alignment or no adaptive M&E.
+- **Reasoning block:** `%%%RATING_REASONING_START/END%%%` captures step-by-step scoring logic; stripped from display by `clean_stage2_output()`.
+- **Stage 3 inheritance:** Stage 3 copies Stage 2 ratings verbatim into its JSON — no independent rating generation.
 
 ---
 
