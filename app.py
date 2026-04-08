@@ -1781,6 +1781,8 @@ def run_stage():
         else:
             messages = []
 
+        extraction_warnings = []  # Populated in stage 1 doc loop; empty for stages 2+
+
         if stage == 1:
             documents = data.get('documents', [])
             if not documents:
