@@ -1725,7 +1725,7 @@ def detect_document_type_route():
             extraction_status = 'empty'
         else:
             extraction_status = 'ok'
-        word_count = len(text.split()) if extraction_status == 'ok' else 0
+        word_count = len(text.split()) if extraction_status != 'failed' else 0
         doc_type = detect_document_type_from_text(text, get_client()) if extraction_status == 'ok' else 'Unknown'
         return jsonify({
             'document_type': doc_type,
