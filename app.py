@@ -23,6 +23,10 @@ try:
     from docx import Document as DocxDocument
 except ImportError:
     DocxDocument = None
+try:
+    from pptx import Presentation
+except ImportError:
+    Presentation = None
 
 # ── Constants ────────────────────────────────────────────────────────────────
 
@@ -1361,6 +1365,40 @@ def extract_docx_text(b64_data, name):
                 f'\n\n[DOCX read limit reached at {MAX_DOC_CHARS // 1000}k chars.]'
             )
         return full_text, len(doc.paragraphs)
+    except Exception as e:
+        return f'[Could not extract text from {name}: {str(e)}]', 0
+
+
+def extract_pptx_text(b64_data, name):
+    """Extract text from a .pptx file sent as base64."""
+    if Presentation is None:
+        return f'[python-pptx not installed — cannot extract {name}]', 0
+    try:
+        pptx_bytes = base64.standard_b64decode(b64_data)
+        prs = Presentation(io.BytesIO(pptx_bytes))
+        parts = []
+        for slide_num, slide in enumerate(prs.slides, 1):
+            slide_texts = []
+            for shape in slide.shapes:
+                if shape.has_text_frame:
+                    for para in shape.text_frame.paragraphs:
+                        text = para.text.strip()
+                        if text:
+                            slide_texts.append(text)
+                if shape.has_table:
+                    for row in shape.table.rows:
+                        cells = [cell.text.strip() for cell in row.cells if cell.text.strip()]
+                        if cells:
+                            slide_texts.append(' | '.join(cells))
+            if slide_texts:
+                parts.append(f'[Slide {slide_num}]\n' + '\n'.join(slide_texts))
+        full_text = '\n\n'.join(parts)
+        slide_count = len(prs.slides)
+        if len(full_text) > MAX_DOC_CHARS:
+            full_text = full_text[:MAX_DOC_CHARS] + (
+                f'\n\n[PPTX read limit reached at {MAX_DOC_CHARS // 1000}k chars of {slide_count} slides.]'
+            )
+        return full_text, slide_count
     except Exception as e:
         return f'[Could not extract text from {name}: {str(e)}]', 0
 
