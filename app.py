@@ -1719,7 +1719,7 @@ def detect_document_type_route():
         else:
             return jsonify({'error': 'doc_text or doc_b64 required'}), 400
         # Detect empty extraction (e.g. scanned PDF, corrupted file)
-        if text.startswith('[Could not extract'):
+        if text.startswith('[Could not extract') or text.startswith('[python-'):
             extraction_status = 'failed'
         elif len(text.strip()) < 100:
             extraction_status = 'empty'
