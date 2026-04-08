@@ -19,6 +19,10 @@ try:
     from pypdf import PdfReader
 except ImportError:
     PdfReader = None
+try:
+    from docx import Document as DocxDocument
+except ImportError:
+    DocxDocument = None
 
 # ── Constants ────────────────────────────────────────────────────────────────
 
@@ -1331,6 +1335,32 @@ def extract_pdf_text(b64_data, name):
                 f'\n\n[PDF read limit reached at {MAX_DOC_CHARS//1000}k chars of {page_count} pages.]'
             )
         return full_text, page_count
+    except Exception as e:
+        return f'[Could not extract text from {name}: {str(e)}]', 0
+
+
+def extract_docx_text(b64_data, name):
+    """Extract text from a .docx file sent as base64."""
+    if DocxDocument is None:
+        return f'[python-docx not installed — cannot extract {name}]', 0
+    try:
+        doc_bytes = base64.standard_b64decode(b64_data)
+        doc = DocxDocument(io.BytesIO(doc_bytes))
+        parts = []
+        for para in doc.paragraphs:
+            if para.text.strip():
+                parts.append(para.text)
+        for table in doc.tables:
+            for row in table.rows:
+                cells = [cell.text.strip() for cell in row.cells if cell.text.strip()]
+                if cells:
+                    parts.append(' | '.join(cells))
+        full_text = '\n\n'.join(parts)
+        if len(full_text) > MAX_DOC_CHARS:
+            full_text = full_text[:MAX_DOC_CHARS] + (
+                f'\n\n[DOCX read limit reached at {MAX_DOC_CHARS // 1000}k chars.]'
+            )
+        return full_text, len(doc.paragraphs)
     except Exception as e:
         return f'[Could not extract text from {name}: {str(e)}]', 0
 
