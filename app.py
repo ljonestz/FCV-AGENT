@@ -1695,23 +1695,38 @@ def detect_document_type_route():
     """Classify an uploaded project document into a standard WBG document type.
 
     Accepts either:
-    - {'doc_text': '<plain text>'}  for text/DOCX files
-    - {'doc_b64': '<base64>', 'doc_name': '<filename>'}  for PDF files
+    - {'doc_text': '<plain text>'}  for plain text
+    - {'doc_b64': '<base64>', 'doc_name': '<filename>'}  for PDF files (legacy/default)
+    - {'doc_b64': '<base64>', 'doc_name': '<filename>', 'file_type': 'docx'}  for DOCX files
+    - {'doc_b64': '<base64>', 'doc_name': '<filename>', 'file_type': 'pptx'}  for PPTX files
     """
     try:
         data = request.get_json()
         if not data:
             return jsonify({'error': 'Request body required'}), 400
-        if 'doc_b64' in data:
-            # PDF: extract text first, then classify
+        file_type = data.get('file_type', 'pdf' if 'doc_b64' in data else 'text')
+        if file_type == 'pdf' and 'doc_b64' in data:
+            text, _ = extract_pdf_text(data['doc_b64'], data.get('doc_name', 'document.pdf'))
+        elif file_type == 'docx' and 'doc_b64' in data:
+            text, _ = extract_docx_text(data['doc_b64'], data.get('doc_name', 'document.docx'))
+        elif file_type == 'pptx' and 'doc_b64' in data:
+            text, _ = extract_pptx_text(data['doc_b64'], data.get('doc_name', 'document.pptx'))
+        elif 'doc_b64' in data:
+            # Legacy fallback: assume PDF if doc_b64 present without file_type
             text, _ = extract_pdf_text(data['doc_b64'], data.get('doc_name', 'document.pdf'))
         elif 'doc_text' in data:
             text = data['doc_text']
         else:
             return jsonify({'error': 'doc_text or doc_b64 required'}), 400
-        doc_type = detect_document_type_from_text(text, get_client())
-        word_count = len(text.split()) if not text.startswith('[Could not extract') else 0
-        extraction_status = 'failed' if text.startswith('[Could not extract') else 'ok'
+        # Detect empty extraction (e.g. scanned PDF, corrupted file)
+        if text.startswith('[Could not extract'):
+            extraction_status = 'failed'
+        elif len(text.strip()) < 100:
+            extraction_status = 'empty'
+        else:
+            extraction_status = 'ok'
+        word_count = len(text.split()) if extraction_status == 'ok' else 0
+        doc_type = detect_document_type_from_text(text, get_client()) if extraction_status == 'ok' else 'Unknown'
         return jsonify({
             'document_type': doc_type,
             'word_count': word_count,
