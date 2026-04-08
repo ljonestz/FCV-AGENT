@@ -1775,6 +1775,10 @@ def run_stage():
                 raw = doc.get('content', '')
                 if file_type == 'pdf':
                     text, page_count = extract_pdf_text(raw, name)
+                elif file_type == 'docx':
+                    text, page_count = extract_docx_text(raw, name)
+                elif file_type == 'pptx':
+                    text, page_count = extract_pptx_text(raw, name)
                 else:
                     text = raw[:MAX_DOC_CHARS]
                     page_count = 0
@@ -1786,6 +1790,10 @@ def run_stage():
                 raw = doc.get('content', '')
                 if file_type == 'pdf':
                     text, page_count = extract_pdf_text(raw, name)
+                elif file_type == 'docx':
+                    text, page_count = extract_docx_text(raw, name)
+                elif file_type == 'pptx':
+                    text, page_count = extract_pptx_text(raw, name)
                 else:
                     text = raw[:MAX_DOC_CHARS]
                     page_count = 0
@@ -2174,6 +2182,10 @@ def run_express():
                     raw = doc.get('content', '')
                     if file_type == 'pdf':
                         text, page_count = extract_pdf_text(raw, name)
+                    elif file_type == 'docx':
+                        text, page_count = extract_docx_text(raw, name)
+                    elif file_type == 'pptx':
+                        text, page_count = extract_pptx_text(raw, name)
                     else:
                         text = raw[:MAX_DOC_CHARS]
                         page_count = 0
@@ -2185,6 +2197,10 @@ def run_express():
                     raw = doc.get('content', '')
                     if file_type == 'pdf':
                         text, page_count = extract_pdf_text(raw, name)
+                    elif file_type == 'docx':
+                        text, page_count = extract_docx_text(raw, name)
+                    elif file_type == 'pptx':
+                        text, page_count = extract_pptx_text(raw, name)
                     else:
                         text = raw[:MAX_DOC_CHARS]
                         page_count = 0
