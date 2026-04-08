@@ -1795,7 +1795,6 @@ def run_stage():
             # No separate LLM extraction step — Stage 1 Sonnet handles FCV
             # extraction directly in Part A of its output.
             doc_parts = []  # list of dicts: {label, name, raw_text, page_count}
-            extraction_warnings = []
             for doc in project_docs:
                 name = doc.get('name', 'document')
                 file_type = doc.get('type', 'text')
