@@ -1423,6 +1423,15 @@ def extract_pptx_text(b64_data, name):
 # FCV extraction directly in Part A. Large docs are truncated to MAX_DOC_CHARS.
 
 
+def _check_extraction(text: str, name: str):
+    """Return a warning string if extracted text is empty or an error, else None."""
+    if text.startswith('[Could not extract') or text.startswith('[python-'):
+        return f'{name}: could not extract text — may be scanned or password-protected'
+    if len(text.strip()) < 100:
+        return f'{name}: very little text extracted — may be a scanned document'
+    return None
+
+
 def extract_country_name(project_doc_text: str, api_client) -> str:
     """Extract the country name from the first portion of a project document.
     Uses Haiku (trivial classification task). Timeout handled by httpx client.
@@ -1784,6 +1793,7 @@ def run_stage():
             # No separate LLM extraction step — Stage 1 Sonnet handles FCV
             # extraction directly in Part A of its output.
             doc_parts = []  # list of dicts: {label, name, raw_text, page_count}
+            extraction_warnings = []
             for doc in project_docs:
                 name = doc.get('name', 'document')
                 file_type = doc.get('type', 'text')
@@ -1799,6 +1809,9 @@ def run_stage():
                     page_count = 0
                 doc_parts.append({'label': 'PROJECT DOCUMENT', 'name': name,
                                   'raw_text': text[:MAX_DOC_CHARS], 'page_count': page_count})
+                warning = _check_extraction(text, name)
+                if warning:
+                    extraction_warnings.append(warning)
             for doc in context_docs:
                 name = doc.get('name', 'document')
                 file_type = doc.get('type', 'text')
@@ -1814,6 +1827,9 @@ def run_stage():
                     page_count = 0
                 doc_parts.append({'label': 'CONTEXT DOCUMENT', 'name': name,
                                   'raw_text': text[:MAX_DOC_CHARS], 'page_count': page_count})
+                warning = _check_extraction(text, name)
+                if warning:
+                    extraction_warnings.append(warning)
 
             stage_prompt = prompt_override if prompt_override else get_prompt_for_stage(1)
             doc_type_ctx = build_doc_type_context(document_type, 1)
@@ -1885,6 +1901,8 @@ def run_stage():
             research_country = ''
             try:
                 yield f"data: {json.dumps({'ping': True})}\n\n"
+                for w in extraction_warnings:
+                    yield f"data: {json.dumps({'extraction_warning': w})}\n\n"
 
                 # ── Stage 1: build content_parts, run web research ──
                 if stage == 1:
@@ -2191,6 +2209,7 @@ def run_express():
 
                 # Pre-extract raw text for all docs
                 doc_parts = []
+                extraction_warnings_express = []
                 for doc in project_docs:
                     name = doc.get('name', 'document')
                     file_type = doc.get('type', 'text')
@@ -2206,6 +2225,9 @@ def run_express():
                         page_count = 0
                     doc_parts.append({'label': 'PROJECT DOCUMENT', 'name': name,
                                       'raw_text': text[:MAX_DOC_CHARS], 'page_count': page_count})
+                    warning = _check_extraction(text, name)
+                    if warning:
+                        extraction_warnings_express.append(warning)
                 for doc in context_docs:
                     name = doc.get('name', 'document')
                     file_type = doc.get('type', 'text')
@@ -2221,6 +2243,11 @@ def run_express():
                         page_count = 0
                     doc_parts.append({'label': 'CONTEXT DOCUMENT', 'name': name,
                                       'raw_text': text[:MAX_DOC_CHARS], 'page_count': page_count})
+                    warning = _check_extraction(text, name)
+                    if warning:
+                        extraction_warnings_express.append(warning)
+                for w in extraction_warnings_express:
+                    yield f"data: {json.dumps({'extraction_warning': w})}\n\n"
 
                 # ── Web research phase ──
                 try:

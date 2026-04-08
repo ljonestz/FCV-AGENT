@@ -2412,6 +2412,16 @@
             updateExpressStage(currentStage,'active',null);
           }
 
+          // ── Extraction warning (scanned / unreadable doc) ──
+          else if(p.extraction_warning){
+            const sd=document.getElementById('stage-disp');
+            const warnDiv=document.createElement('div');
+            warnDiv.className='callout warn ani';
+            warnDiv.innerHTML=`<div class="callout-icon">⚠️</div><div class="callout-body"><strong>Document warning:</strong> ${p.extraction_warning}. Consider uploading a text-based version for better results.</div>`;
+            const loadCard=sd?sd.querySelector('.load-card'):null;
+            if(sd){if(loadCard)sd.insertBefore(warnDiv,loadCard);else sd.prepend(warnDiv);}
+          }
+
           // ── Research status (Stage 1) ──
           else if(p.research_status){
             let rsMsg='';
@@ -2641,6 +2651,14 @@
             if(p.truncation_warnings){
               // Store warnings to render after renderOut fires
               window._truncWarnings = p.truncation_warnings;
+            }
+            if(p.extraction_warning){
+              const sd=document.getElementById('stage-disp');
+              const warnDiv=document.createElement('div');
+              warnDiv.className='callout warn ani';
+              warnDiv.innerHTML=`<div class="callout-icon">⚠️</div><div class="callout-body"><strong>Document warning:</strong> ${p.extraction_warning}. Consider uploading a text-based version for better results.</div>`;
+              const loadCard=sd?sd.querySelector('.load-card'):null;
+              if(sd){if(loadCard)sd.insertBefore(warnDiv,loadCard);else sd.prepend(warnDiv);}
             }
             if(p.research_status){
               let rsMsg='';
