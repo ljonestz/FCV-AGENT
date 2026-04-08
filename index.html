@@ -2185,7 +2185,9 @@
       let metaHtml = '';
       if (meta) {
         if (meta.extraction_status === 'failed') {
-          metaHtml = `<span class="chip-meta chip-meta-error">Could not extract text — may be scanned or password-protected. Try uploading a DOCX version.</span>`;
+          metaHtml = `<span class="chip-meta chip-meta-error">Could not extract text — may be scanned or password-protected. Try uploading a text-based version.</span>`;
+        } else if (meta.extraction_status === 'empty') {
+          metaHtml = `<span class="chip-meta chip-meta-error">Very little text extracted — this may be a scanned document. Try uploading a text-based version.</span>`;
         } else {
           const wc = meta.word_count > 0 ? `~${meta.word_count.toLocaleString()} words` : '';
           const dt = meta.doc_type && meta.doc_type !== 'Unknown' ? meta.doc_type : '';
