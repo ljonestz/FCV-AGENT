@@ -1348,23 +1348,38 @@ def extract_docx_text(b64_data, name):
     if DocxDocument is None:
         return f'[python-docx not installed — cannot extract {name}]', 0
     try:
+        from docx.oxml.ns import qn
+        from docx.table import Table as DocxTable
+        from docx.text.paragraph import Paragraph as DocxParagraph
         doc_bytes = base64.standard_b64decode(b64_data)
         doc = DocxDocument(io.BytesIO(doc_bytes))
         parts = []
-        for para in doc.paragraphs:
-            if para.text.strip():
-                parts.append(para.text)
-        for table in doc.tables:
-            for row in table.rows:
-                cells = [cell.text.strip() for cell in row.cells if cell.text.strip()]
-                if cells:
-                    parts.append(' | '.join(cells))
+        # Iterate body children in document order to preserve paragraph/table interleaving
+        for child in doc.element.body:
+            if child.tag == qn('w:p'):
+                para = DocxParagraph(child, doc)
+                if para.text.strip():
+                    parts.append(para.text)
+            elif child.tag == qn('w:tbl'):
+                table = DocxTable(child, doc)
+                for row in table.rows:
+                    # Deduplicate on _tc identity to avoid merged-cell repetition
+                    seen = set()
+                    cells = []
+                    for cell in row.cells:
+                        if id(cell._tc) not in seen:
+                            seen.add(id(cell._tc))
+                            t = cell.text.strip()
+                            if t:
+                                cells.append(t)
+                    if cells:
+                        parts.append(' | '.join(cells))
         full_text = '\n\n'.join(parts)
         if len(full_text) > MAX_DOC_CHARS:
             full_text = full_text[:MAX_DOC_CHARS] + (
                 f'\n\n[DOCX read limit reached at {MAX_DOC_CHARS // 1000}k chars.]'
             )
-        return full_text, len(doc.paragraphs)
+        return full_text, len(parts)
     except Exception as e:
         return f'[Could not extract text from {name}: {str(e)}]', 0
 
@@ -1377,6 +1392,7 @@ def extract_pptx_text(b64_data, name):
         pptx_bytes = base64.standard_b64decode(b64_data)
         prs = Presentation(io.BytesIO(pptx_bytes))
         parts = []
+        # Notes slides excluded — presenter-only content, not part of the document body
         for slide_num, slide in enumerate(prs.slides, 1):
             slide_texts = []
             for shape in slide.shapes:
