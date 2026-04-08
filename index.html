@@ -2351,7 +2351,7 @@
       const ft=detectFileType(file.name);
       const r=new FileReader();
       if(isBinaryType(ft)){r.onload=e=>res({name:file.name,type:ft,content:e.target.result.split(',')[1],isContext:isCtx});r.readAsDataURL(file)}
-      else{r.onload=e=>res({name:file.name,type:'text',content:e.target.result,isContext:isCtx});r.readAsText(file)}
+      else{r.onload=e=>res({name:file.name,type:ft,content:e.target.result,isContext:isCtx});r.readAsText(file)}
       r.onerror=()=>rej(new Error('Could not read '+file.name));
     });
 
@@ -2581,7 +2581,7 @@
           const ft=detectFileType(file.name);
           const r=new FileReader();
           if(isBinaryType(ft)){r.onload=e=>res({name:file.name,type:ft,content:e.target.result.split(',')[1],isContext:isCtx});r.readAsDataURL(file)}
-          else{r.onload=e=>res({name:file.name,type:'text',content:e.target.result,isContext:isCtx});r.readAsText(file)}
+          else{r.onload=e=>res({name:file.name,type:ft,content:e.target.result,isContext:isCtx});r.readAsText(file)}
           r.onerror=()=>rej(new Error('Could not read '+file.name));
         });
         payload.documents=[
