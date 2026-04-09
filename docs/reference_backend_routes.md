@@ -72,31 +72,40 @@ POST /api/run-followon
 
 ## Document Handling
 
-**Large document pre-processing:**
+**Supported formats:** PDF (`.pdf`), Word (`.docx`), PowerPoint (`.pptx`), plain text (`.txt`, `.md`). Legacy binary formats (`.doc`, `.ppt`) are not supported.
+
+**Frontend → backend flow:**
+- Binary files (PDF, DOCX, PPTX) are read as `DataURL` (base64) via `FileReader.readAsDataURL()` and sent with `type: 'pdf'|'docx'|'pptx'`
+- Text files are sent as plain text with `type: 'text'`
+- File type detection via `detectFileType()` in `index.html`
+
+**Extraction functions (all return `(text: str, count: int)`):**
 ```python
-if len(doc_content) > MAX_DOC_CHARS:
-    # Use LLM to extract FCV-relevant content
-    # Returns: extracted_text, page_count, truncation_warning
+extract_pdf_text(b64_data, name)   # pypdf — page-by-page text extraction
+extract_docx_text(b64_data, name)  # python-docx — body-order traversal, merged-cell dedup
+extract_pptx_text(b64_data, name)  # python-pptx — slide-labelled text + table extraction
 ```
 
-**PDF extraction:**
+**`extract_docx_text()` details:**
+- Iterates `doc.element.body` children in document order (preserves paragraph/table interleaving)
+- Deduplicates merged table cells via `id(cell._tc)` identity check
+- Notes slides excluded from PPTX extraction (presenter-only content)
+
+**Extraction quality check (`_check_extraction(text, name)`):**
+- Returns a warning string if text starts with `[Could not extract` or `[python-` (error), or if `len(text.strip()) < 100` (near-empty / scanned doc)
+- Returns `None` if extraction looks valid
+- Warnings collected in `extraction_warnings[]` list, yielded as SSE `extraction_warning` events early in `generate()`
+
+**`/api/detect-document-type` — extraction_status values:**
+- `'ok'` — text extracted successfully (>= 100 chars)
+- `'empty'` — extracted but near-zero text (scanned/image PDF)
+- `'failed'` — extraction error (corrupt, password-protected, library missing)
+
+**Size limits:**
 ```python
-# Uses pypdf library
-extracted_text, page_count = extract_pdf_text(base64_content, filename)
+MAX_DOC_CHARS = 500_000       # Hard cap per document after extraction
+STAGE1_MAX_DOC_CHARS = 60_000 # Truncation before sending to Claude (Stage 1)
 ```
-
-**Extraction steps in `extract_pdf_text()`:**
-1. Decode base64 PDF content from frontend
-2. Use PyPDF to read PDF pages
-3. Extract text from each page sequentially
-4. Return: (extracted_text, page_count)
-5. Handle errors gracefully with fallback messages
-
-**Large document condensation in `extract_fcv_content()`:**
-1. Check if document length exceeds EXTRACT_THRESHOLD (150,000 chars)
-2. If yes, use Claude API to summarize FCV-relevant content
-3. Preserve key information while reducing size
-4. Append truncation warning to user output
 
 ---
 
