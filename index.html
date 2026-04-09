@@ -1783,7 +1783,7 @@
     <span>Elapsed:</span>
     <span class="elapsed" id="ep-elapsed">0:00</span>
     <span>&middot;</span>
-    <span id="ep-estimate">Estimated total: 4&ndash;5 minutes</span>
+    <span id="ep-estimate">Estimated total: 5&ndash;7 minutes</span>
   </div>
   <div class="ep-message-card" id="ep-message-card">
     <div class="ep-message-icon" id="ep-message-icon">&#9749;</div>
@@ -1858,7 +1858,7 @@
           <div class="mode-badge mode-badge-default">Default</div>
           <div class="mode-title">Express Analysis</div>
           <div class="mode-desc">Runs all stages automatically. Get your full Recommendations Note in one go. Review intermediate findings after.</div>
-          <div class="mode-time">&#9201; ~4&ndash;5 min &middot; No interaction needed</div>
+          <div class="mode-time">&#9201; ~5&ndash;7 min &middot; No interaction needed</div>
         </div>
         <div class="mode-card" id="mode-stepbystep" onclick="selectMode('stepbystep')">
           <div class="mode-radio"></div>
@@ -3434,8 +3434,8 @@
     document.getElementById('ep-elapsed').textContent=m+':'+(s<10?'0':'')+s;
     const est=document.getElementById('ep-estimate');
     if(est){
-      if(secs>420)est.textContent='Almost done \u2014 finalising';
-      else if(secs>300)est.textContent='Taking a little longer than usual';
+      if(secs>540)est.textContent='Almost done \u2014 finalising';
+      else if(secs>420)est.textContent='Taking a little longer than usual';
     }
   }
 
