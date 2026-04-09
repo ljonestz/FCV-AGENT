@@ -28,6 +28,7 @@ Every prompt output tags findings as [S], [R], or [S+R], assigned dynamically pe
 - **v7.2** — Stage 2 dynamic thematic narrative; actions[] array replaces recommendation string; Go Deeper 2-tab panel; Stage 3 clean memo (no inline citations)
 - **v7.4** — Express Analysis mode (single SSE endpoint for all 3 stages)
 - **v7.5** — UX polish: styled uploads, smart timer, condensed output, refined landing page; S/R definition box removed from Stage 3; rating rubric with reasoning block
+- **v7.6** — Document format fixes: DOCX properly parsed via python-docx (base64, reading-order-aware, merged-cell dedup); PPTX support added via python-pptx; silent extraction failures surfaced as chip warnings and SSE banners
 
 ---
 
@@ -37,7 +38,7 @@ Every prompt output tags findings as [S], [R], or [S+R], assigned dynamically pe
 - **Backend:** Python Flask 3.0.3 + Anthropic Claude API (`claude-sonnet-4-20250514`)
 - **Frontend:** HTML + vanilla JavaScript + Markdown rendering
 - **Hosting:** Render.com (gunicorn + gevent)
-- **Document processing:** PDF text extraction (pypdf) + LLM-assisted summarization for large docs
+- **Document processing:** PDF (pypdf), DOCX (python-docx), PPTX (python-pptx) text extraction; all binary formats sent as base64 from browser
 - **Session management:** Browser localStorage + JSON-serialized conversation history
 
 ### 1.2 Core Files
@@ -48,7 +49,7 @@ background_docs.py  # 8 constants: FCV_GUIDE, FCV_OPERATIONAL_MANUAL, FCV_REFRES
                     #   PLAYBOOK_DIAGNOSTICS, PLAYBOOK_PREPARATION, PLAYBOOK_IMPLEMENTATION,
                     #   PLAYBOOK_CLOSING, STAGE_GUIDANCE_MAP
 prompts.json        # Session-specific prompt overrides (empty by default)
-requirements.txt    # Flask, anthropic, pypdf, python-docx, gunicorn, gevent
+requirements.txt    # Flask, anthropic, pypdf, python-docx, python-pptx, gunicorn, gevent
 Procfile            # Render deployment config
 ```
 
@@ -356,7 +357,8 @@ Citation hallucination guard: Stage 3 prompt explicitly prohibits fabricating do
 
 - **localStorage scope:** Browser-specific; no team sharing or long-term archival
 - **Rate limiting:** LLM calls are not rate-limited; high-volume use could hit API throttles
-- **Large PDFs:** >500k chars truncated; very large projects may lose nuance
+- **Large documents:** >500k chars truncated; very large projects may lose nuance. Scanned/image-only PDFs extract to near-zero text — a warning is shown but analysis still runs.
+- **DOCX/PPTX:** Modern formats only (.docx, .pptx). Legacy binary formats (.doc, .ppt) are not supported.
 - **Research cache:** In-process memory; lost on server restart
 - **Mobile:** Desktop-optimized; mobile experience limited
 
@@ -400,6 +402,8 @@ Citation hallucination guard: Stage 3 prompt explicitly prohibits fabricating do
 | Symptom | Check |
 |---|---|
 | Stage 1 hangs on large PDF | LLM summarizing (expected, 30–60s). Check `MAX_DOC_CHARS`. |
+| DOCX/PPTX shows "could not extract" | Check python-docx/python-pptx are installed (`pip install -r requirements.txt`). Only .docx/.pptx supported — not .doc/.ppt. |
+| Scanned PDF shows blank Stage 1 | Expected — extraction warning banner shown. User should upload a text-based version. |
 | Stage 2 ratings seem off | Review via Admin modal; refine Stage 2 prompt and re-run |
 | Under the Hood panels missing | Look for `%%%UNDER_HOOD_START%%%` in Stage 2 output; check for yellow parse error banner |
 | Go Deeper Trail shows nothing | Check `localStorage.stage2_under_hood` has content; verify `priority.fcv_dimension` matches dimension in recs table |
@@ -433,7 +437,7 @@ FCV-AGENT/
 
 ---
 
-**Last updated:** 2026-04-05
-**Current version:** FCV Project Screener v7.5
+**Last updated:** 2026-04-09
+**Current version:** FCV Project Screener v7.6
 **Claude model:** `claude-sonnet-4-20250514`
 **Stack:** Flask 3.0.3 + vanilla JS + Anthropic SDK + gunicorn/gevent on Render
