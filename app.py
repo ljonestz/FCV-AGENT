@@ -1758,6 +1758,7 @@ def run_stage():
             return jsonify({'error': 'Invalid request.'}), 400
 
         stage = int(data.get('stage', 1))
+        assessment_id = data.get('assessment_id') or str(uuid.uuid4())
         conversation_history = data.get('history', [])
         user_message = data.get('user_message', '').strip()
         prompt_override = data.get('prompt_override', '').strip()  # session-only override from frontend
@@ -2124,6 +2125,25 @@ def run_stage():
                 yield f"data: {json.dumps({'error': 'Invalid API key.'})}\n\n"
             except Exception as e:
                 yield f"data: {json.dumps({'error': str(e)})}\n\n"
+
+        def generate():
+            event_queue = queue.Queue()
+            sentinel = object()
+
+            def run_workflow():
+                try:
+                    for event in workflow_events():
+                        event_queue.put(event)
+                finally:
+                    event_queue.put(sentinel)
+
+            ASSESSMENT_EXECUTOR.submit(run_workflow)
+
+            while True:
+                item = event_queue.get()
+                if item is sentinel:
+                    break
+                yield item
 
         return Response(stream_with_context(generate()), mimetype='text/event-stream',
                         headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'})
