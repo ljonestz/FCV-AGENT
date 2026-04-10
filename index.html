@@ -4729,5 +4729,96 @@ ${md(execSummary)}`;
   }
 
 </script>
+<script>
+  (function () {
+    const TAB_KEY = 'fcv_active_assessment_id';
+    const INDEX_KEY = 'fcv_assessment_index';
+    const SESSION_KEYS = new Set([
+      'fcv_session',
+      'fcv_analysis_mode',
+      'fcv_express_stageOutputs',
+      'fcv_express_stageHists',
+      'stage2_under_hood'
+    ]);
+
+    function makeId() {
+      if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+      return 'assessment-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+    }
+
+    function getAssessmentId() {
+      let id = sessionStorage.getItem(TAB_KEY);
+      if (!id) {
+        id = makeId();
+        sessionStorage.setItem(TAB_KEY, id);
+      }
+      return id;
+    }
+
+    function scopedKey(key) {
+      return SESSION_KEYS.has(key) ? `fcv:${getAssessmentId()}:${key}` : key;
+    }
+
+    function trackAssessment(id) {
+      try {
+        const raw = localStorage.getItem(INDEX_KEY);
+        const items = raw ? JSON.parse(raw) : [];
+        if (!items.includes(id)) {
+          items.unshift(id);
+          localStorage.setItem(INDEX_KEY, JSON.stringify(items.slice(0, 20)));
+        }
+      } catch (_) {}
+    }
+
+    trackAssessment(getAssessmentId());
+
+    const storageProto = Storage.prototype;
+    const originalGetItem = storageProto.getItem;
+    const originalSetItem = storageProto.setItem;
+    const originalRemoveItem = storageProto.removeItem;
+
+    storageProto.getItem = function (key) {
+      return originalGetItem.call(this, scopedKey(key));
+    };
+
+    storageProto.setItem = function (key, value) {
+      return originalSetItem.call(this, scopedKey(key), value);
+    };
+
+    storageProto.removeItem = function (key) {
+      return originalRemoveItem.call(this, scopedKey(key));
+    };
+
+    const originalFetch = window.fetch.bind(window);
+    window.fetch = function (input, init) {
+      const url = typeof input === 'string' ? input : (input && input.url) || '';
+      const target = ['/api/run-express', '/api/run-stage', '/api/run-deeper', '/api/run-followon'];
+      const shouldInject = target.some(path => url.includes(path));
+
+      if (!shouldInject || !init || !init.body || typeof init.body !== 'string') {
+        return originalFetch(input, init);
+      }
+
+      try {
+        const body = JSON.parse(init.body);
+        if (!body.assessment_id) {
+          body.assessment_id = getAssessmentId();
+        }
+        trackAssessment(body.assessment_id);
+        return originalFetch(input, { ...init, body: JSON.stringify(body) });
+      } catch (_) {
+        return originalFetch(input, init);
+      }
+    };
+
+    window.getCurrentAssessmentId = getAssessmentId;
+    window.startNewAssessmentSession = function () {
+      const id = makeId();
+      sessionStorage.setItem(TAB_KEY, id);
+      trackAssessment(id);
+      return id;
+    };
+  })();
+</script>
 </body>
 </html>

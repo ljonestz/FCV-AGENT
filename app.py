@@ -4,6 +4,7 @@ import json
 import base64
 import queue
 import threading
+import uuid
 from datetime import date
 from concurrent.futures import ThreadPoolExecutor
 from flask import Flask, request, jsonify, send_from_directory, Response, stream_with_context
@@ -35,6 +36,8 @@ STAGE1_MAX_DOC_CHARS = 60_000       # Docs are truncated to this before Stage 1 
                                      # no blocking pre-stage calls, no proxy timeout risk
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "fcv-admin-2024")
 PROMPTS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'prompts.json')
+ASSESSMENT_WORKERS = max(2, int(os.environ.get("ASSESSMENT_WORKERS", "4")))
+ASSESSMENT_EXECUTOR = ThreadPoolExecutor(max_workers=ASSESSMENT_WORKERS)
 
 # ── Research cache (in-process, keyed by country name) ───────────────────────
 _research_cache: dict = {}  # key: country.lower() → {brief, country, sources}
@@ -1755,6 +1758,7 @@ def run_stage():
             return jsonify({'error': 'Invalid request.'}), 400
 
         stage = int(data.get('stage', 1))
+        assessment_id = data.get('assessment_id') or str(uuid.uuid4())
         conversation_history = data.get('history', [])
         user_message = data.get('user_message', '').strip()
         prompt_override = data.get('prompt_override', '').strip()  # session-only override from frontend
@@ -1896,11 +1900,12 @@ def run_stage():
 
             messages.append({"role": "user", "content": stage_prompt})
 
-        def generate():
+        def workflow_events():
             collected = []
             research_brief_text = ''
             research_country = ''
             try:
+                yield f"data: {json.dumps({'assessment_id': assessment_id})}\n\n"
                 yield f"data: {json.dumps({'ping': True})}\n\n"
                 for w in extraction_warnings:
                     yield f"data: {json.dumps({'extraction_warning': w})}\n\n"
@@ -2121,6 +2126,25 @@ def run_stage():
             except Exception as e:
                 yield f"data: {json.dumps({'error': str(e)})}\n\n"
 
+        def generate():
+            event_queue = queue.Queue()
+            sentinel = object()
+
+            def run_workflow():
+                try:
+                    for event in workflow_events():
+                        event_queue.put(event)
+                finally:
+                    event_queue.put(sentinel)
+
+            ASSESSMENT_EXECUTOR.submit(run_workflow)
+
+            while True:
+                item = event_queue.get()
+                if item is sentinel:
+                    break
+                yield item
+
         return Response(stream_with_context(generate()), mimetype='text/event-stream',
                         headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'})
 
@@ -2185,6 +2209,7 @@ def run_express():
             return jsonify({'error': 'Invalid request.'}), 400
 
         documents = data.get('documents', [])
+        assessment_id = data.get('assessment_id') or str(uuid.uuid4())
         if not documents:
             return jsonify({'error': 'Please upload at least one project document.'}), 400
 
@@ -2464,6 +2489,25 @@ def run_express():
                 elif stage2_output:
                     failed_stage = 3
                 yield f"data: {json.dumps({'error': str(e), 'failed_stage': failed_stage})}\n\n"
+
+        def generate():
+            event_queue = queue.Queue()
+            sentinel = object()
+
+            def run_workflow():
+                try:
+                    for event in workflow_events():
+                        event_queue.put(event)
+                finally:
+                    event_queue.put(sentinel)
+
+            ASSESSMENT_EXECUTOR.submit(run_workflow)
+
+            while True:
+                item = event_queue.get()
+                if item is sentinel:
+                    break
+                yield item
 
         return Response(stream_with_context(generate()),
                         mimetype='text/event-stream',

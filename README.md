@@ -35,6 +35,12 @@ python app.py
 
 Open `http://localhost:5000` in your browser.
 
+## Concurrency
+
+The app now isolates browser state per assessment tab and injects an `assessment_id` into analysis requests so parallel assessments do not overwrite each other in the same browser profile.
+
+Express Analysis is also executed off the request thread via the app's assessment executor. Combined with multi-worker gunicorn settings in `Procfile`, this allows multiple users and multiple browser sessions to run assessments concurrently with less blocking than the earlier single-session setup.
+
 ## Deployment
 
 Deployed on [Render.com](https://render.com). Connect the GitHub repo, set `ANTHROPIC_API_KEY` in the Render dashboard environment variables, and Render will use the `Procfile` automatically.

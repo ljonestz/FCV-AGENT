@@ -51,6 +51,7 @@
 - `escHtml()` / `escAttr()` — HTML escaping
 - `formatDate()` — human-readable timestamps
 - `saveSession()` / `loadSession()` — localStorage serialization
+- Browser session storage is now automatically namespaced by per-tab `assessment_id` via a storage/fetch shim appended at the end of `index.html`
 
 ---
 

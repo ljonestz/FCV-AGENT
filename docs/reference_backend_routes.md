@@ -25,8 +25,9 @@ POST /api/run-stage
 
 # Express mode route (single SSE endpoint for all 3 stages)
 POST /api/run-express
-  Input: {documents[]}
+  Input: {documents[], assessment_id}
   Output: SSE stream with events:
+    assessment_id: {assessment_id}
     stage_start: {stage_start: N}
     research_status: {research_status, country}
     preprocess: {preprocess: message}
@@ -35,8 +36,9 @@ POST /api/run-express
     keepalive: {keepalive: true}  — every 20s if no data sent
     error: {error: message, failed_stage: N}
     express_done: {express_done: true}
-  Notes: Runs Stage 1→2→3 in a single SSE connection. Keepalive pings cover
-    web research gaps and inter-stage transitions.
+  Notes: Runs Stage 1→2→3 in a single SSE connection. The workflow now executes
+    on the background assessment executor and streams its events back to the
+    client. Keepalive pings cover web research gaps and inter-stage transitions.
 
 # Go Deeper route
 POST /api/run-deeper
