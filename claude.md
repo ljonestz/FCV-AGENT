@@ -29,6 +29,7 @@ Every prompt output tags findings as [S], [R], or [S+R], assigned dynamically pe
 - **v7.4** — Express Analysis mode (single SSE endpoint for all 3 stages)
 - **v7.5** — UX polish: styled uploads, smart timer, condensed output, refined landing page; S/R definition box removed from Stage 3; rating rubric with reasoning block
 - **v7.6** — Document format fixes: DOCX properly parsed via python-docx (base64, reading-order-aware, merged-cell dedup); PPTX support added via python-pptx; silent extraction failures surfaced as chip warnings and SSE banners
+- **v7.7** — Concurrency hardening: per-tab assessment IDs in the frontend, assessment-aware request payloads, express workflow execution moved onto the background assessment executor, and multi-worker gunicorn defaults for better parallel use
 
 ---
 
@@ -38,8 +39,9 @@ Every prompt output tags findings as [S], [R], or [S+R], assigned dynamically pe
 - **Backend:** Python Flask 3.0.3 + Anthropic Claude API (`claude-sonnet-4-20250514`)
 - **Frontend:** HTML + vanilla JavaScript + Markdown rendering
 - **Hosting:** Render.com (gunicorn + gevent)
+- **Concurrency model:** Per-tab assessment IDs in the browser; Express runs emitted from a background assessment executor; multi-worker gunicorn in production
 - **Document processing:** PDF (pypdf), DOCX (python-docx), PPTX (python-pptx) text extraction; all binary formats sent as base64 from browser
-- **Session management:** Browser localStorage + JSON-serialized conversation history
+- **Session management:** Browser storage namespaced by per-tab assessment ID + JSON-serialized conversation history
 
 ### 1.2 Core Files
 ```
