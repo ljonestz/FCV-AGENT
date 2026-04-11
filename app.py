@@ -385,6 +385,16 @@ The 12 recommendations:
 11. Consider pros/cons of impact evaluations
 12. Put an FCV twist in ICRs
 
+## Instrument Awareness — CRITICAL
+{instrument_guidance}
+
+When assessing this project, apply the instrument-specific knowledge above. For each of the 12 OST recommendations:
+- If a recommendation is NOT APPLICABLE to this instrument type, mark it as "N/A — not applicable to [instrument]" in the Under the Hood table. N/A recommendations do NOT count toward or against the rating.
+- Only assess recommendations that are relevant to this instrument's capabilities and scope.
+- The rating denominator becomes: applicable recs addressed / applicable recs (NOT addressed / 12).
+
+Apply the same logic to DNH principles — some manifest differently under different instruments (e.g., DPOs work through policy, not direct service delivery, so beneficiary-level DNH assessment differs).
+
 ## 25 Key Questions
 Answer each where evidence permits, noting which are answerable and which have evidence gaps.
 
@@ -498,6 +508,8 @@ Then apply quality gates (most restrictive cap wins):
 - If the project contains no conflict or security analysis → cap sensitivity at Adequate
 - If the project has no geographic specificity in targeting or beneficiary selection → cap sensitivity at Adequate
 
+IMPORTANT: When counting "recs addressed", exclude any recommendations marked "N/A — not applicable to [instrument]" or "Beyond scope" from BOTH the numerator AND denominator. The rating is based only on applicable, in-scope recommendations.
+
 ## Responsiveness Rating
 Count how many of the 4 FCV Refresh shifts (Anticipate, Differentiate, Jobs & Private Sector, Enhanced Toolkit) are actively addressed with concrete, specific measures in the project design — not just passing mentions.
 
@@ -513,6 +525,8 @@ Count how many of the 4 FCV Refresh shifts (Anticipate, Differentiate, Jobs & Pr
 Then apply quality gates:
 - If zero FCV Refresh shifts are aligned → cap responsiveness at Very Low
 - If no adaptive M&E for FCV dynamics exists → cap responsiveness at Low
+
+IMPORTANT: When counting shifts addressed, do not penalise for shifts that are structurally outside the instrument's scope (e.g., do not penalise a DPO for lacking Enhanced Toolkit operational flexibilities that are IPF-specific).
 
 ## Rating Reasoning Block
 Before emitting the ratings JSON, emit the following reasoning block showing your step-by-step scoring. This block is stripped from display but used for auditing.
@@ -596,6 +610,28 @@ After the ratings block, emit ALL of the following between delimiters. These are
 %%%EVIDENCE_TRAIL_END%%%
 
 %%%UNDER_HOOD_END%%%
+
+# TEMPORAL ANCHORING — CRITICAL
+{temporal_guardrail}
+Assess this project by the standards, policies, and events available as of the preparation/approval period identified above. Do NOT penalise for:
+- Events that occurred AFTER the document was prepared (coups, crises, policy changes)
+- Policy frameworks that did not exist at the time of preparation (e.g., do not reference ESF for a project using OP/BP safeguards, or vice versa)
+- Knowledge that was not reasonably available to the team at preparation time
+Post-preparation developments may be noted as context but must NOT affect the assessment ratings.
+
+# PDO AND SCOPE BOUNDING — CRITICAL
+Evaluate FCV integration WITHIN the stated PDO, Theory of Change, and Results Framework scope as extracted in Stage 1.
+- If an OST recommendation falls outside the operation's stated scope, mark it as "Beyond scope" in the Under the Hood table rather than "Weakly addressed" or "Not addressed". Beyond-scope items do NOT count toward or against the rating.
+- Do not penalise a national project for lacking regional-level activities.
+- Do not penalise an IPF for lacking DPO-style policy conditionality.
+- Do not penalise a deliberately narrow project for not covering all possible FCV dimensions.
+- Do not recommend things beyond the PDO/scope and then rate the project low for not doing them.
+
+# SIMPLICITY RECOGNITION
+A deliberately simple, fit-for-purpose design with fewer components, a lean results framework, and narrow scope may be an intentional and appropriate FCV strategy — particularly for IPF in high-fragility settings where implementation capacity is limited, or where the team plans a follow-on AF to scale up. Do not penalise lean design. Assess whether the design elements that ARE present are FCV-informed, not whether every possible FCV element is included. If you identify a deliberately lean design, note this in the rating reasoning and adjust the denominator accordingly.
+
+# LOGICAL CONSISTENCY
+Before finalising your output, review your findings for internal contradictions. If you identify tension between findings (e.g., a project both addresses resource scarcity AND potentially intensifies competition for resources), explicitly reconcile the tension with reasoning rather than stating both flatly. Acknowledge nuance — real FCV analysis often holds tensions — but explain your reasoning so the reader understands your analytical logic.
 
 # Important Guidelines
 - The TTL-facing narrative must be self-contained and readable without the Under the Hood panels
