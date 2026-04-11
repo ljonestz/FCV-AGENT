@@ -481,6 +481,48 @@ Output format — a standalone section titled "## Do No Harm":
 Line 1: "**Do No Harm: [X] of 8 principles addressed | [Y] partial | [Z] not addressed**"
 Then 2–4 sentences highlighting the most critical DNH issues for this specific project.
 
+## Supplementary FCV Dimensions (after Do No Harm, before Synthesis)
+
+Assess the following supplementary dimensions. Rate each as: Addressed / Partially addressed / Not addressed. Include a 1-2 sentence finding for each. These supplement the 12 OST recommendations and inform Stage 3 priorities but do not directly affect the Sensitivity/Responsiveness ratings.
+
+### Gender and GBV in FCV Context
+- Does the project document acknowledge heightened GBV risk in the FCV context (displacement, militarisation, breakdown of social norms)?
+- Are women explicitly included as a targeted beneficiary group, or is inclusion assumed by default (which in FCV contexts often means exclusion)?
+- Does the GRM include safe reporting channels accessible to women and girls (anonymity, female staff, distance reporting)?
+- For IPFs with physical infrastructure: is there a GBV risk assessment for construction-phase worker-community interaction?
+If 3 or more items are "Not addressed" in a high-fragility or displacement context, flag as a priority gap for Stage 3.
+
+### Climate-FCV Nexus
+If the country/region has documented climate-conflict linkages (e.g., Sahel pastoralist-farmer conflict, Horn of Africa drought-displacement):
+- Does the project's risk analysis acknowledge climate as a fragility driver (not just an environmental risk)?
+- Does the project design include climate-resilience provisions that are conflict-sensitive (e.g., equitable water access, climate-proof livelihoods)?
+- Does the SORT risk matrix reflect climate-related fragility risks?
+Flag gaps but do not penalise if the project's PDO is not climate-related.
+
+### Political Economy Analysis Quality
+When assessing OST Rec 1 (use of diagnostic risk analysis), go beyond presence/absence and assess quality:
+- Does the analysis name specific actors — not just "armed groups" but identifiable factions, patronage networks, or reform-blocking elites?
+- Does it identify who controls implementation pathways (procurement, contractor selection, beneficiary lists) and whether those actors have incentives to undermine the project?
+- Is the political economy of service delivery in the sector addressed (who profits from the dysfunctional status quo)?
+Downgrade OST Rec 1 from "Strongly addressed" to "Partially addressed" if the conflict analysis exists but lacks actor-level specificity.
+
+### HDP Nexus Coordination
+- Does the project document reference any joint analysis with humanitarian partners (OCHA, UNHCR, WFP, ICRC) or UN peace missions?
+- Is there geographic deconfliction — awareness of where humanitarian operations are active to avoid duplication or gaps?
+- Is there sequencing logic — how development activities relate to humanitarian presence (e.g., transitioning from NGO delivery to government systems)?
+If absent in a context where IDP populations or active humanitarian operations are documented, flag as a gap.
+
+### IDA FCV Envelope Appropriateness
+- Does the project financing reference any IDA FCV Envelope allocations (PRA, RECA, TAA, WHR, PSW)?
+- If the project appears to qualify for an FCV Envelope window but none is referenced, note this for Stage 3 Horizon Considerations.
+
+### Digital and Technology Risks
+Where digital tools are used (mobile platforms, biometric data, GPS tracking, remote sensing):
+- Does the document include a data protection framework or reference WBG data privacy standards?
+- Is there a risk that data collected could be used to target beneficiaries (e.g., ethnic or displacement data in a conflict setting)?
+- Have digital access barriers for marginalised populations been considered (connectivity, literacy, gender)?
+Score as a qualitative flag rather than a rating modifier.
+
 ## Synthesis (after Do No Harm)
 
 Two clearly labelled paragraphs (80–100 words each):
@@ -611,6 +653,7 @@ After the ratings block, emit ALL of the following between delimiters. These are
 | # | Key Question | Answerable? | Finding | Source |
 |---|---|---|---|---|
 [One row for EACH of the 25 key questions from the FCV Operational Manual. For each: state Yes/Partial/No, finding or gap, and source.]
+[After the 25 questions, add rows for the 6 supplementary dimensions: Gender/GBV, Climate-FCV Nexus, PEA Quality, HDP Nexus, IDA FCV Envelope, Digital/Technology Risks. Same format: Yes/Partial/No, finding, source.]
 %%%QUESTIONS_MAP_END%%%
 
 %%%EVIDENCE_TRAIL_START%%%
