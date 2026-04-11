@@ -817,11 +817,12 @@ WB_INSTRUMENT_GUIDE = {
             "HEIS (hands-on expanded implementation support for procurement); "
             "TPM (third-party monitoring where direct supervision is impossible); "
             "Geospatial monitoring (GEMS, GIS, geo-localization, satellite imagery, remote sensing); "
-            "Phased disbursement (conditions tied to tranches); "
+            "Phased/staged implementation design (structuring components so later phases can be refined "
+            "based on lessons from earlier implementation, operationalised through the POM); "
             "Unallocated funds (budget reserve for flexibility); "
             "Framework approach (umbrella design, details in POM); "
-            "Para 12 efficiencies (higher retroactive financing up to 40%, increased PPA up to $10M, "
-            "condensed procedures) for projects in countries with urgent need or capacity constraints; "
+            "Para 11 and 12 efficiencies (Para 11: urgent need of assistance; Para 12: capacity constraints — "
+            "higher retroactive financing up to 40%, increased PPA up to $10M, condensed procedures); "
             "CLD (community and local development) for participatory approaches; "
             "Alternative implementation arrangements (UN agencies, NGOs, community-driven mechanisms)."
         ),
@@ -895,16 +896,21 @@ WB_INSTRUMENT_GUIDE = {
             "Program Action Plans can embed FCV risk mitigation; "
             "Verification protocols can include TPM and independent verification agents; "
             "Scalable DLIs allow adaptive targets based on evolving FCV context; "
-            "Integrated Fiduciary and E&S Systems Assessment (IFSA/ESSA) can flag FCV risks."
+            "Integrated Fiduciary Systems Assessment (IFSA, covering procurement and FM systems) and "
+            "Environmental and Social Systems Assessment (ESSA, covering E&S systems) — these are "
+            "separate assessments that can each flag FCV risks in government systems."
         ),
         "not_applicable": (
             "PforR does NOT: finance specific procurement packages or civil works directly "
             "(those are financed through the government program using country systems); "
-            "provide CERC or emergency response components (IPF-specific); "
-            "use HEIS for procurement (country systems are used). "
-            "When assessing PforR, do NOT penalise for: absence of specific procurement plans "
-            "(country systems are used), lack of project-level PIU (program uses existing "
-            "institutional structures), or absence of component-level budget breakdowns."
+            "provide CERC or emergency response components (CERC is IPF-specific and has no "
+            "PforR equivalent — the closest analog is modification of DLIs or contingency DLIs); "
+            "use HEIS for procurement (country systems are used); "
+            "apply the ESF or old OP/BP safeguards (PforR uses ESSA for E&S systems assessment). "
+            "When assessing PforR, do NOT penalise for: absence of CERC, absence of specific "
+            "procurement plans (country systems are used), lack of project-level PIU (program "
+            "uses existing institutional structures), absence of component-level budget breakdowns, "
+            "or absence of ESCP/SEP/ESS compliance (these are IPF/ESF instruments, not PforR)."
         ),
         "typical_structure": (
             "Program scope definition, DLIs (5-10 typically), Program Action Plan, "
@@ -941,9 +947,11 @@ WB_INSTRUMENT_GUIDE = {
         "description": (
             "DPOs provide budget support to governments in exchange for policy and institutional "
             "reforms (prior actions). They finance the government's general budget, not specific "
-            "investment activities. DPOs are used when policy reform is the primary development "
-            "objective. Less common in FCV settings due to reform capacity requirements, but "
-            "used for governance reform, macro-fiscal stability, and enabling environment work."
+            "investment activities. DPOs are governed by OP/BP 8.60 and require a satisfactory "
+            "macroeconomic framework — a binding eligibility condition often difficult to certify "
+            "in active conflict or post-crisis settings. Less common in FCV settings due to reform "
+            "capacity requirements and the macro precondition, but used for governance reform, "
+            "macro-fiscal stability, and enabling environment work."
         ),
         "fcv_levers": (
             "Prior actions can target FCV-relevant reforms (governance transparency, "
@@ -956,13 +964,16 @@ WB_INSTRUMENT_GUIDE = {
         "not_applicable": (
             "DPO does NOT: finance specific investment activities, civil works, goods, or services "
             "(those are IPF); use CERC, HEIS, TPM, or GEMS (these are IPF operational tools); "
+            "apply the ESF (ESS1-ESS10), ESSA, ESCP, or SEP — DPOs are governed by OP/BP 8.60 "
+            "and use Poverty and Social Impact Analysis (PSIA) instead; "
             "have a results framework with project-level intermediate indicators in the IPF sense; "
             "have PIU, procurement plans, or component-level implementation arrangements. "
+            "The ESF transition date of October 2018 does NOT apply to DPOs. "
             "When assessing DPO, do NOT penalise for: absence of CERC or emergency components, "
             "lack of TPM or geospatial monitoring, absence of project-level beneficiary targeting, "
-            "or missing community engagement/GRM mechanisms (DPOs work through policy, not "
-            "direct service delivery). DPO-specific questions (OST Manual Q16-Q19) apply; "
-            "IPF-specific questions do not."
+            "missing community engagement/GRM mechanisms, or absence of ESCP/SEP/ESS compliance "
+            "(DPOs work through policy, not direct service delivery). "
+            "DPO-specific questions (OST Manual Q16-Q19) apply; IPF-specific questions do not."
         ),
         "typical_structure": (
             "Prior actions (policy/regulatory changes the government must complete before "
@@ -998,10 +1009,12 @@ WB_INSTRUMENT_GUIDE = {
     "TA": {
         "name": "Technical Assistance / Advisory Services and Analytics",
         "description": (
-            "TA (often delivered as Advisory Services and Analytics — ASA) provides knowledge, "
-            "analytical work, and capacity building without direct lending. TA can be grant-funded "
-            "(trust funds) or funded through the Bank's administrative budget. In FCV contexts, "
-            "TA supports diagnostics, institutional assessments, and preparation for lending operations."
+            "TA encompasses two distinct modalities: (1) Bank-Executed Advisory Services and Analytics "
+            "(ASA), funded through the Bank's administrative budget with different fiduciary "
+            "requirements than lending; and (2) Recipient-Executed Technical Assistance, often "
+            "financed through trust funds, which follows IPF-equivalent policies. Both provide "
+            "knowledge, analytical work, and capacity building. In FCV contexts, TA supports "
+            "diagnostics, institutional assessments, and preparation for lending operations."
         ),
         "fcv_levers": (
             "FCV diagnostics and analytics (RRA, sector-specific FCV assessments); "
@@ -1015,7 +1028,9 @@ WB_INSTRUMENT_GUIDE = {
             "support; have the operational flexibilities of IPF (no CERC, HEIS, TPM, GEMS); "
             "require E&S instruments (ESIA, ESCP) unless it involves pilot activities; "
             "have a results framework in the lending-operation sense. "
-            "When assessing TA, do NOT apply lending-operation assessment criteria. "
+            "When assessing TA, do NOT penalise for: absence of CERC, formal GRM, ESCP, "
+            "ISR DO/IP ratings, procurement compliance documentation, or results framework "
+            "in the IPF sense. Do NOT apply lending-operation assessment criteria. "
             "Focus on: analytical quality, FCV-relevance of findings, actionability of "
             "recommendations, and contribution to future lending operation design."
         ),
