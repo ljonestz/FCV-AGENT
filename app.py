@@ -148,6 +148,50 @@ def extract_stage2_ratings(stage2_output):
         return {'error': True, 'message': f'Failed to parse ratings JSON: {str(e)}'}
 
 
+def extract_instrument_type(stage1_output: str) -> str:
+    """Extract instrument type from Stage 1 output.
+    Looks for %%%INSTRUMENT_TYPE: ...%%% line.
+    Falls back to 'Unknown' if not found.
+    """
+    m = re.search(r'%%%INSTRUMENT_TYPE:\s*([^%]+)%%%', stage1_output)
+    if not m:
+        return 'Unknown'
+    result = m.group(1).strip()
+    valid = {'IPF', 'PforR', 'DPO', 'TA', 'MPA', 'IPF-DDO', 'Unknown'}
+    return result if result in valid else 'Unknown'
+
+
+def extract_temporal_context(stage1_output: str) -> dict:
+    """Extract temporal context from Stage 1 output.
+    Looks for %%%TEMPORAL_CONTEXT_START%%%...%%%TEMPORAL_CONTEXT_END%%% block.
+    Returns dict with approval_date, closing_date, safeguards_framework, other_temporal_markers.
+    """
+    pattern = r'%%%TEMPORAL_CONTEXT_START%%%(.*?)%%%TEMPORAL_CONTEXT_END%%%'
+    m = re.search(pattern, stage1_output, re.DOTALL)
+    if not m:
+        return {
+            'approval_date': 'Unknown',
+            'closing_date': 'Unknown',
+            'safeguards_framework': 'Unknown',
+            'other_temporal_markers': 'None identified',
+            'error': True
+        }
+    block = m.group(1).strip()
+    ctx = {'error': False}
+    for field in ['approval_date', 'closing_date', 'safeguards_framework', 'other_temporal_markers']:
+        fm = re.search(rf'{field}:\s*(.+)', block)
+        ctx[field] = fm.group(1).strip() if fm else 'Unknown'
+    return ctx
+
+
+def extract_horizon_considerations(stage3_output: str) -> str:
+    """Extract Horizon Considerations section from Stage 3 output.
+    Returns the text content or empty string if not found.
+    """
+    m = re.search(r'%%%HORIZON_START%%%(.*?)%%%HORIZON_END%%%', stage3_output, re.DOTALL)
+    return m.group(1).strip() if m else ''
+
+
 def extract_under_hood(stage2_output):
     """Extract Under the Hood analytical panels from Stage 2 output.
     Finds %%%UNDER_HOOD_START%%%...%%%UNDER_HOOD_END%%% and sub-blocks.
@@ -974,6 +1018,8 @@ def clean_stage3_output(text):
     text = re.sub(r'%%%JSON_START%%%.*?%%%JSON_END%%%', '', text, flags=re.DOTALL)
     # Strip FCV Risk Exposure narrative (rendered separately as risk-exposure card)
     text = re.sub(r'%%%RISK_NARRATIVE_START%%%.*?%%%RISK_NARRATIVE_END%%%', '', text, flags=re.DOTALL)
+    # Strip Horizon Considerations block (rendered separately as collapsible panel)
+    text = re.sub(r'%%%HORIZON_START%%%.*?%%%HORIZON_END%%%', '', text, flags=re.DOTALL)
     # Strip priority narrative section (field labels duplicated in JSON cards;
     # also strips FCV Sensitivity/Responsiveness summaries which are shown as SR cards)
     text = re.sub(r'%%%PRIORITIES_START%%%.*', '', text, flags=re.DOTALL)
@@ -1394,6 +1440,31 @@ def get_glossary_for_prompt() -> str:
     for key, entry in FCV_GLOSSARY.items():
         lines.append(f"**{entry['term']}:** {entry['definition']}\n")
     return '\n'.join(lines)
+
+
+def _build_temporal_guardrail(temporal_ctx: dict) -> str:
+    """Build a temporal anchoring guardrail string from extracted temporal context."""
+    if not temporal_ctx or temporal_ctx.get('error'):
+        return (
+            "Temporal context could not be determined from the document. "
+            "Apply current standards but note this limitation."
+        )
+    parts = []
+    ad = temporal_ctx.get('approval_date', 'Unknown')
+    cd = temporal_ctx.get('closing_date', 'Unknown')
+    sf = temporal_ctx.get('safeguards_framework', 'Unknown')
+    tm = temporal_ctx.get('other_temporal_markers', 'None identified')
+    if ad != 'Unknown':
+        parts.append(f"Project approval/preparation date: {ad}")
+    if cd != 'Unknown':
+        parts.append(f"Project closing date: {cd}")
+    if sf != 'Unknown':
+        parts.append(f"Safeguards framework: {sf}")
+    if tm != 'None identified':
+        parts.append(f"Other temporal markers: {tm}")
+    if not parts:
+        return "Temporal context could not be determined."
+    return "TEMPORAL CONTEXT (from document):\n" + "\n".join(parts)
 
 
 # ── PDF helper ───────────────────────────────────────────────────────────────
