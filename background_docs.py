@@ -906,6 +906,25 @@ WB_INSTRUMENT_GUIDE = {
             "Do not reference ESF standards when assessing a project that uses old OP/BPs, "
             "and vice versa."
         ),
+        "ost_applicability": (
+            "All 12 OST recommendations are FULLY APPLICABLE to IPF. "
+            "Additional IPF-specific FCV checks: (1) Is there a CERC component? In high-risk FCV, "
+            "absence should be flagged. (2) Is HEIS or UN direct engagement planned for weak-capacity "
+            "areas? (3) Has Para 11/12 been triggered and documented? (4) Is PIU design appropriate "
+            "for FCV (lean, embedded, with alternative channels)? (5) Is ESF/OP-BP framework correctly "
+            "identified from Concept Decision date?"
+        ),
+        "dnh_applicability": (
+            "All 8 DNH principles are FULLY APPLICABLE to IPF. "
+            "Assess directly against all principles at the beneficiary and community level."
+        ),
+        "recent_changes": (
+            "January 2026 IPF Procedure: TTLs now present their own projects at Board; new Exceptional "
+            "Pause Mechanism for ops delayed by coups/conflict. 2025 OpsEE Agenda: concept documents "
+            "capped at 10 pages, appraisal at 25 pages; Agile Agenda Template replaces response matrix. "
+            "Track 1 available for SORT Low/Moderate IPFs (FCV projects typically Substantial/High, so "
+            "Track 2 remains the norm). ESF streamlining 2024-2025: 10+6 simplification actions."
+        ),
     },
     "PforR": {
         "name": "Program-for-Results",
@@ -968,6 +987,24 @@ WB_INSTRUMENT_GUIDE = {
             "PforR uses the Environmental and Social Systems Assessment (ESSA), not the "
             "ESF or old OP/BPs. This is a distinct assessment framework. "
             "Do not apply ESF ESS standards to PforR projects."
+        ),
+        "ost_applicability": (
+            "Recs 1-5, 9-10, 12 are FULLY APPLICABLE (adapted to program-level). "
+            "Recs 6 (digital tools) and 7 (M&E capacity): PARTIALLY APPLICABLE — assess through "
+            "government system functionality via ESSA/IFSA, not project-level mechanisms. "
+            "Rec 8 (M&E budgeting): PARTIALLY APPLICABLE — budgeting is through the government "
+            "program, not a separate project M&E budget. "
+            "Rec 11 (impact evaluation): APPLICABLE but as a consideration, not a requirement. "
+            "Additional PforR-specific checks: DLI design for FCV (scalable/contingent DLIs); "
+            "IFSA must address FCV-specific fiduciary risks in country systems; ESSA must assess "
+            "system performance under FCV stress; IVA access to program areas must be feasible."
+        ),
+        "dnh_applicability": (
+            "Principles 2, 3, 5, 6, 7 are FULLY APPLICABLE (assessed through government systems). "
+            "Principles 1 (targeting) and 4 (geographic equity): MODIFIED — assess through the ESSA "
+            "and program design, not project-level targeting criteria. "
+            "Principle 8 (GRM): MODIFIED — assess whether the ESSA evaluates government GRM "
+            "functionality, not whether the project establishes its own GRM."
         ),
     },
     "DPO": {
@@ -1038,6 +1075,35 @@ WB_INSTRUMENT_GUIDE = {
             "DPOs use environmental and poverty/social analysis, not ESF or old OP/BPs. "
             "Do not apply ESF standards or IPF safeguards frameworks to DPO assessments."
         ),
+        "ost_applicability": (
+            "Recs 1-4 are FULLY APPLICABLE (adapted to policy reform context). "
+            "Rec 5 (RF and M&E): PARTIALLY APPLICABLE — DPOs use a policy matrix and results "
+            "indicators, not a standard RF. Assess whether results indicators capture reform outcomes. "
+            "Recs 6 (digital tools), 7 (M&E capacity), 8 (M&E budgeting): NOT APPLICABLE — DPOs "
+            "do not have project-level M&E systems or digital monitoring tools. "
+            "Rec 9 (citizen-state communications): PARTIALLY APPLICABLE — assess through transparency "
+            "of reform process and public communication of policy changes. "
+            "Recs 10 (adapt frequently), 11 (impact evaluation): PARTIALLY APPLICABLE — adaptation "
+            "happens through programmatic series design, not mid-project restructuring. "
+            "Rec 12 (ICR): APPLICABLE at series close. "
+            "DPO-specific checks (OST Manual Q16-Q19): each prior action must be assessed for "
+            "conflict sensitivity, elite capture risk, alignment with FCV drivers, and institutional "
+            "sustainability."
+        ),
+        "dnh_applicability": (
+            "Principles 2, 3, 6, 7 are FULLY APPLICABLE (at policy level). "
+            "Principle 1 (targeting): MODIFIED — assess distributional effects of reforms on "
+            "conflict-affected populations via PSIA, not beneficiary-level targeting. "
+            "Principle 4 (geographic equity): MODIFIED — assess whether reforms benefit or "
+            "disadvantage specific regions/groups disproportionately. "
+            "Principle 5 (elite capture): FULLY APPLICABLE and critical — assess whether reforms "
+            "create opportunities for vested interests. "
+            "Principle 8 (GRM): NOT APPLICABLE — DPOs do not establish project-level GRMs."
+        ),
+        "recent_changes": (
+            "2025: Concept Review removed for 2nd+ operations in programmatic DPF series. "
+            "Updated PAD/PD templates mandatory from October 14, 2024 for Decision Meeting documents."
+        ),
     },
     "TA": {
         "name": "Technical Assistance / Advisory Services and Analytics",
@@ -1081,6 +1147,17 @@ WB_INSTRUMENT_GUIDE = {
         "preparation_process": "Concept note, terms of reference, funding arrangement.",
         "supervision_process": "Deliverable-based supervision. No ISR or MTR.",
         "policy_transitions": "N/A — TA does not trigger safeguards policies.",
+        "ost_applicability": (
+            "Recs 1-2 (diagnostics, stakeholder analysis): APPLICABLE if the TA produces FCV analysis. "
+            "Recs 3-12: NOT APPLICABLE — TA does not have a ToC, PDO, RF, M&E system, or ICR in the "
+            "lending-operation sense. Assess TA on: analytical quality, FCV-relevance of findings, "
+            "actionability of recommendations, and contribution to future lending operation design."
+        ),
+        "dnh_applicability": (
+            "Principles 6 (security of staff) and 7 (unintended consequences of analytical findings): "
+            "APPLICABLE. All other principles: NOT APPLICABLE in their standard form — TA does not "
+            "have beneficiaries, geographic targeting, procurement, or GRMs."
+        ),
     },
     "MPA": {
         "name": "Multiphase Programmatic Approach",
@@ -1178,6 +1255,26 @@ WB_INSTRUMENT_GUIDE = {
             "risk for a subsequent phase to High or Substantial, Board approval is required "
             "regardless of standard RVP delegation."
         ),
+        "ost_applicability": (
+            "Apply the underlying instrument's OST applicability table at the PHASE level. "
+            "At the PROGRAM level, additional checks: (1) Is the learning agenda FCV-specific "
+            "(conflict sensitivity checkpoints, adaptive management triggers) or formulaic? "
+            "(2) Do phase transition criteria include context-based factors (security, political "
+            "economy) or only financial targets? (3) Has the PrDO been designed with enough "
+            "flexibility for FCV trajectory changes? (4) Does each subsequent phase document "
+            "substantive lessons learned with demonstrable design changes?"
+        ),
+        "dnh_applicability": (
+            "Apply per phase according to the underlying instrument. At the program level: "
+            "assess whether the program framework identifies inter-phase DNH risks (e.g., "
+            "geographic expansion in Phase 2 to conflict-affected areas requires fresh DNH "
+            "assessment, not just carry-forward from Phase 1)."
+        ),
+        "recent_changes": (
+            "March 2026: Removed option to submit MPA Expression of Interest exception request; "
+            "updated co-financing processing with ADB. May 2024: clarified STATCOM requirements "
+            "for regional MPA programs. Phase 2+ approval by RVP — no Board step expected."
+        ),
     },
     "IPF-DDO": {
         "name": "Investment Project Financing with Deferred Drawdown Option",
@@ -1258,6 +1355,21 @@ WB_INSTRUMENT_GUIDE = {
             "standalone loan; CERC is embedded in an active IPF and activated post-crisis; "
             "OP 8.00 is reactive and processed after the crisis. Do not criticise an IPF-DDO "
             "for not having CERC-like flexibility — they are different instruments."
+        ),
+        "ost_applicability": (
+            "PRE-TRIGGER: Recs 1 (diagnostics), 4 (risk alignment), 10 (adapt frequently) are "
+            "FULLY APPLICABLE. Recs 5, 6, 7, 8 (M&E, digital tools, capacity, budgeting): "
+            "PARTIALLY APPLICABLE — assess preparedness systems, not delivery systems. "
+            "Recs 2, 3, 9, 11, 12: NOT APPLICABLE pre-trigger. "
+            "POST-TRIGGER: Converts to standard IPF — apply full IPF OST applicability. "
+            "DDO-specific checks: trigger design (vagueness risk, political manipulation risk); "
+            "positive expenditure list (appropriateness and coverage); preparedness activities "
+            "(substantive or nominal)."
+        ),
+        "dnh_applicability": (
+            "PRE-TRIGGER: Principle 7 (unintended consequences of preparedness activities) is "
+            "APPLICABLE. All others: LIMITED applicability pre-trigger since no beneficiaries "
+            "are being served. POST-TRIGGER: Full IPF DNH applicability applies."
         ),
     },
 }
