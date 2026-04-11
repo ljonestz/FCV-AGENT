@@ -2069,6 +2069,21 @@ def run_stage():
             # Stage 2 (merged assessment) needs reference material for the 12 OST recs,
             # 25 key questions, 3 key elements, FCV Refresh shifts, and S/R definitions.
             if stage == 2:
+                # Get instrument type and temporal context from request (passed from Stage 1 via frontend)
+                instrument_type = data.get('instrument_type', 'Unknown')
+                instrument_slice = get_instrument_slice(instrument_type)
+                temporal_ctx = data.get('temporal_context', {})
+                temporal_guardrail = _build_temporal_guardrail(temporal_ctx)
+
+                # Format instrument and temporal placeholders in prompt
+                # Uses .replace() instead of .format() because Stage 2 prompt contains
+                # literal { } in JSON-like rating blocks that would break .format()
+                try:
+                    stage_prompt = stage_prompt.replace('{instrument_guidance}', instrument_slice)
+                    stage_prompt = stage_prompt.replace('{temporal_guardrail}', temporal_guardrail)
+                except Exception:
+                    pass
+
                 stage_prompt = (
                     stage_prompt +
                     "\n\n--- WBG FCV Operational Manual (12 Recommendations, 25 Key Questions, 3 Key Elements) ---\n" +
@@ -2076,7 +2091,9 @@ def run_stage():
                     "\n\n--- WBG FCV Strategy Refresh Framework (4 Shifts) ---\n" +
                     FCV_REFRESH_FRAMEWORK +
                     "\n\n--- WBG FCV Sensitivity and Responsiveness Guide ---\n" +
-                    FCV_GUIDE
+                    FCV_GUIDE +
+                    "\n\n--- FCV Glossary (Key Term Definitions) ---\n" +
+                    get_glossary_for_prompt()
                 )
 
             # Stage 3 (Recommendations Note) needs stage-awareness injection
@@ -2097,12 +2114,20 @@ def run_stage():
                 timing_opts = stage_config.get('timing_options', ['Preparation'])
                 timing_str = ' / '.join(timing_opts) if isinstance(timing_opts, list) else str(timing_opts)
 
+                # Get instrument type and temporal context from request (passed from Stage 1 via frontend)
+                instrument_type = data.get('instrument_type', 'Unknown')
+                instrument_slice = get_instrument_slice(instrument_type)
+                temporal_ctx = data.get('temporal_context', {})
+                temporal_guardrail = _build_temporal_guardrail(temporal_ctx)
+
                 # Format the prompt with stage-awareness placeholders
                 try:
                     stage_prompt = stage_prompt.format(
                         doc_type=doc_type,
                         timing_emphasis=timing_str,
-                        playbook_guidance=playbook
+                        playbook_guidance=playbook,
+                        instrument_guidance=instrument_slice,
+                        temporal_guardrail=temporal_guardrail,
                     )
                 except KeyError:
                     pass  # If format fails, use prompt as-is
@@ -2194,10 +2219,17 @@ def run_stage():
                             "\n--- END AUTOMATED WEB RESEARCH ---\n"
                         )})
 
+                    # Brief instrument recognition guide for Stage 1 identification
+                    _instrument_recognition = "\n".join([
+                        f"- **{k}** ({v['name']}): {v['description'][:200]}..."
+                        for k, v in WB_INSTRUMENT_GUIDE.items()
+                    ])
+
                     content_parts.append({"type": "text", "text": (
                         "\n\n--- WBG FCV Sensitivity and Responsiveness Guide (always included) ---\n" + FCV_GUIDE +
                         "\n\n--- FCV Operational Playbook — Diagnostics Phase (always included) ---\n" + PLAYBOOK_DIAGNOSTICS +
-                        "\n\n--- WBG FCV Strategy Refresh Framework (always included) ---\n" + FCV_REFRESH_FRAMEWORK
+                        "\n\n--- WBG FCV Strategy Refresh Framework (always included) ---\n" + FCV_REFRESH_FRAMEWORK +
+                        "\n\n--- WBG Instrument Types (for identification) ---\n" + _instrument_recognition
                     )})
                     content_parts.append({"type": "text", "text": stage_prompt})
                     messages.append({"role": "user", "content": content_parts})
@@ -2281,6 +2313,8 @@ def run_stage():
                     gap_table = extract_gap_table(full_text)
                     parse_error = parsed.get('error', False)
                     parse_error_message = parsed.get('message', '')
+                    full_text_raw = full_text  # Preserve raw output before cleaning
+                    horizon = extract_horizon_considerations(full_text_raw)
                     full_text = clean_stage3_output(full_text)
                     from datetime import date
                     header = DO_NO_HARM_HEADER.format(date=date.today().strftime('%d %B %Y'))
@@ -2291,6 +2325,8 @@ def run_stage():
                 # outputs from history, so carrying the full documents/research/guides forward
                 # would send huge payloads unnecessarily on every Stage 2/3 call.
                 if stage == 1:
+                    _instrument_type = extract_instrument_type(full_text)
+                    _temporal_context = extract_temporal_context(full_text)
                     updated_messages = [
                         {"role": "user", "content": "[Stage 1 — project documents and FCV context analysed]"},
                         {"role": "assistant", "content": full_text}
@@ -2310,6 +2346,8 @@ def run_stage():
                     'parse_error_message': parse_error_message,
                     'research_brief': research_brief_text if stage == 1 else None,
                     'research_country': research_country if stage == 1 else None,
+                    'instrument_type': _instrument_type if stage == 1 else None,
+                    'temporal_context': _temporal_context if stage == 1 else None,
                 }
 
                 if stage == 2:
@@ -2334,6 +2372,7 @@ def run_stage():
                     done_data['risk_exposure'] = risk_exposure
                     done_data['sensitivity_summary'] = sensitivity_summary
                     done_data['responsiveness_summary'] = responsiveness_summary
+                    done_data['horizon_considerations'] = horizon
 
                 yield f"data: {json.dumps(done_data)}\n\n"
 
@@ -2431,7 +2470,7 @@ def run_express():
 
         MAX_ASSISTANT_CHARS = 40000
 
-        def generate():
+        def workflow_events():
             # ── Variables that persist across stages ──
             stage1_output = ''
             stage2_output = ''
@@ -2547,10 +2586,17 @@ def run_express():
                         "\n--- END AUTOMATED WEB RESEARCH ---\n"
                     )})
 
+                # Brief instrument recognition guide for Stage 1 identification
+                _instrument_recognition = "\n".join([
+                    f"- **{k}** ({v['name']}): {v['description'][:200]}..."
+                    for k, v in WB_INSTRUMENT_GUIDE.items()
+                ])
+
                 content_parts.append({"type": "text", "text": (
                     "\n\n--- WBG FCV Sensitivity and Responsiveness Guide (always included) ---\n" + FCV_GUIDE +
                     "\n\n--- FCV Operational Playbook — Diagnostics Phase (always included) ---\n" + PLAYBOOK_DIAGNOSTICS +
-                    "\n\n--- WBG FCV Strategy Refresh Framework (always included) ---\n" + FCV_REFRESH_FRAMEWORK
+                    "\n\n--- WBG FCV Strategy Refresh Framework (always included) ---\n" + FCV_REFRESH_FRAMEWORK +
+                    "\n\n--- WBG Instrument Types (for identification) ---\n" + _instrument_recognition
                 )})
 
                 stage1_prompt = get_prompt_for_stage(1)
@@ -2569,6 +2615,10 @@ def run_express():
                 if dt_match:
                     doc_type = dt_match.group(1).strip()
 
+                # Extract instrument type and temporal context from Stage 1 output
+                instrument_type = extract_instrument_type(stage1_output)
+                temporal_context = extract_temporal_context(stage1_output)
+
                 # Build truncated history for next stages
                 conversation_history = [
                     {"role": "user", "content": "[Stage 1 — project documents and FCV context analysed]"},
@@ -2576,7 +2626,7 @@ def run_express():
                 ]
 
                 # ── Stage 1 done event ──
-                yield f"data: {json.dumps({'stage_done': 1, 'result': stage1_output, 'history': conversation_history, 'research_brief': research_brief_text, 'research_country': research_country, 'doc_type': doc_type})}\n\n"
+                yield f"data: {json.dumps({'stage_done': 1, 'result': stage1_output, 'history': conversation_history, 'research_brief': research_brief_text, 'research_country': research_country, 'doc_type': doc_type, 'instrument_type': instrument_type, 'temporal_context': temporal_context})}\n\n"
 
                 # ════════════════════════════════════════════════════════════
                 # STAGE 2 — FCV Assessment
@@ -2587,6 +2637,16 @@ def run_express():
                 doc_type_ctx = build_doc_type_context(doc_type, 2)
                 if doc_type_ctx:
                     stage2_prompt = doc_type_ctx + "\n\n" + stage2_prompt
+
+                # Inject instrument slice and temporal guardrail into Stage 2 prompt
+                instrument_slice = get_instrument_slice(instrument_type)
+                temporal_guardrail = _build_temporal_guardrail(temporal_context)
+                try:
+                    stage2_prompt = stage2_prompt.replace('{instrument_guidance}', instrument_slice)
+                    stage2_prompt = stage2_prompt.replace('{temporal_guardrail}', temporal_guardrail)
+                except Exception:
+                    pass
+
                 stage2_prompt = (
                     stage2_prompt +
                     "\n\n--- WBG FCV Operational Manual (12 Recommendations, 25 Key Questions, 3 Key Elements) ---\n" +
@@ -2594,7 +2654,9 @@ def run_express():
                     "\n\n--- WBG FCV Strategy Refresh Framework (4 Shifts) ---\n" +
                     FCV_REFRESH_FRAMEWORK +
                     "\n\n--- WBG FCV Sensitivity and Responsiveness Guide ---\n" +
-                    FCV_GUIDE
+                    FCV_GUIDE +
+                    "\n\n--- FCV Glossary (Key Term Definitions) ---\n" +
+                    get_glossary_for_prompt()
                 )
 
                 # Build messages: prior context + Stage 2 prompt
@@ -2652,11 +2714,17 @@ def run_express():
                 timing_opts = stage_config.get('timing_options', ['Preparation'])
                 timing_str = ' / '.join(timing_opts) if isinstance(timing_opts, list) else str(timing_opts)
 
+                # Inject instrument slice and temporal guardrail into Stage 3 prompt
+                instrument_slice_s3 = get_instrument_slice(instrument_type)
+                temporal_guardrail_s3 = _build_temporal_guardrail(temporal_context)
+
                 try:
                     stage3_prompt = stage3_prompt.format(
                         doc_type=doc_type,
                         timing_emphasis=timing_str,
-                        playbook_guidance=playbook
+                        playbook_guidance=playbook,
+                        instrument_guidance=instrument_slice_s3,
+                        temporal_guardrail=temporal_guardrail_s3,
                     )
                 except KeyError:
                     pass
@@ -2680,6 +2748,7 @@ def run_express():
                 # Parse Stage 3 output
                 uploaded_doc_names = [doc.get('name', '') for doc in documents if doc.get('name')]
                 parsed = extract_priorities(stage3_output, uploaded_doc_names)
+                horizon = extract_horizon_considerations(stage3_output)
                 stage3_output_clean = clean_stage3_output(stage3_output)
                 header = DO_NO_HARM_HEADER.format(date=date.today().strftime('%d %B %Y'))
                 stage3_output_clean = header + stage3_output_clean
@@ -2692,7 +2761,7 @@ def run_express():
                     conversation_history = conversation_history[-20:]
 
                 # ── Stage 3 done event ──
-                yield f"data: {json.dumps({'stage_done': 3, 'result': stage3_output_clean, 'history': conversation_history, 'priorities': parsed.get('priorities', []), 'fcv_rating': parsed.get('fcv_rating', ''), 'fcv_responsiveness_rating': parsed.get('fcv_responsiveness_rating', ''), 'sensitivity_summary': parsed.get('sensitivity_summary', ''), 'responsiveness_summary': parsed.get('responsiveness_summary', ''), 'risk_exposure': parsed.get('risk_exposure'), 'gap_table': extract_gap_table(stage3_output), 'parse_error': parsed.get('error', False), 'parse_error_message': parsed.get('message', '')})}\n\n"
+                yield f"data: {json.dumps({'stage_done': 3, 'result': stage3_output_clean, 'history': conversation_history, 'priorities': parsed.get('priorities', []), 'fcv_rating': parsed.get('fcv_rating', ''), 'fcv_responsiveness_rating': parsed.get('fcv_responsiveness_rating', ''), 'sensitivity_summary': parsed.get('sensitivity_summary', ''), 'responsiveness_summary': parsed.get('responsiveness_summary', ''), 'risk_exposure': parsed.get('risk_exposure'), 'gap_table': extract_gap_table(stage3_output), 'parse_error': parsed.get('error', False), 'parse_error_message': parsed.get('message', ''), 'horizon_considerations': horizon})}\n\n"
 
                 # ── Express complete ──
                 yield f"data: {json.dumps({'express_done': True})}\n\n"
