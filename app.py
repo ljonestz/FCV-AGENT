@@ -13,7 +13,8 @@ import httpx
 from background_docs import (
     FCV_GUIDE, FCV_OPERATIONAL_MANUAL, FCV_REFRESH_FRAMEWORK,
     PLAYBOOK_DIAGNOSTICS, PLAYBOOK_PREPARATION, PLAYBOOK_IMPLEMENTATION,
-    PLAYBOOK_CLOSING, STAGE_GUIDANCE_MAP
+    PLAYBOOK_CLOSING, STAGE_GUIDANCE_MAP,
+    WB_INSTRUMENT_GUIDE, FCV_GLOSSARY
 )
 import io
 try:
@@ -1323,6 +1324,47 @@ def get_stage_name(stage):
     return names.get(str(stage), f"Stage {stage}")
 
 
+def get_instrument_slice(instrument_type: str) -> str:
+    """Return a formatted text block with instrument-specific knowledge.
+
+    Used for prompt injection — only the relevant instrument's knowledge
+    is included, keeping token usage to ~2,000 tokens per stage.
+    Falls back to IPF if instrument type is unknown.
+    """
+    instrument = instrument_type.upper() if instrument_type else 'IPF'
+    # Normalise common variations
+    normalise = {'INVESTMENT PROJECT FINANCING': 'IPF', 'PROGRAM FOR RESULTS': 'PFORR',
+                 'DEVELOPMENT POLICY OPERATION': 'DPO', 'TECHNICAL ASSISTANCE': 'TA',
+                 'PROGRAM-FOR-RESULTS': 'PFORR', 'P4R': 'PFORR'}
+    instrument = normalise.get(instrument, instrument)
+    if instrument not in WB_INSTRUMENT_GUIDE:
+        instrument = 'IPF'  # Default to most common instrument
+
+    entry = WB_INSTRUMENT_GUIDE[instrument]
+    parts = [
+        f"## World Bank Instrument: {entry['name']} ({instrument})",
+        f"\n**What it is:** {entry['description']}",
+        f"\n**FCV-relevant operational levers:** {entry['fcv_levers']}",
+        f"\n**NOT applicable to this instrument (do not penalise for absence):** {entry['not_applicable']}",
+        f"\n**Typical structure:** {entry['typical_structure']}",
+        f"\n**Common FCV considerations:** {entry['common_fcv_considerations']}",
+    ]
+    if entry.get('policy_transitions'):
+        parts.append(f"\n**Policy transitions:** {entry['policy_transitions']}")
+    return '\n'.join(parts)
+
+
+def get_glossary_for_prompt() -> str:
+    """Return a compact glossary string for prompt injection (Stage 2).
+
+    Includes only term + definition (not measurement/source) to stay concise.
+    """
+    lines = ["## FCV Glossary — Key Term Definitions\n"]
+    for key, entry in FCV_GLOSSARY.items():
+        lines.append(f"**{entry['term']}:** {entry['definition']}\n")
+    return '\n'.join(lines)
+
+
 # ── PDF helper ───────────────────────────────────────────────────────────────
 
 def extract_pdf_text(b64_data, name):
@@ -1700,6 +1742,12 @@ def reset_prompts():
 def get_default_prompts():
     """Always returns hardcoded defaults — used by the frontend prompt viewer."""
     return jsonify(DEFAULT_PROMPTS)
+
+
+@app.route('/api/glossary', methods=['GET'])
+def get_glossary():
+    """Return the FCV glossary as JSON for frontend tooltips."""
+    return jsonify(FCV_GLOSSARY)
 
 
 @app.route('/api/detect-document-type', methods=['POST'])
