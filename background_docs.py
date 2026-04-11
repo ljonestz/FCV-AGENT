@@ -127,12 +127,12 @@ FCV contexts have high political/stakeholder risks, low institutional capacity, 
 RF and M&E based on specific FCV environment, building on existing systems. Choose relevant indicators, appropriate data collection instruments, address baseline data gaps, handle ethical considerations. Tailor indicators to FCV sensitivities.
 
 **Rec 6 — Use innovative and digital tools** [Shift D: Enhanced Toolkit]
-GEMS (satellite/mobile for remote supervision), TPM (independent verification by NGOs/research organisations), digital data collection. Selection should match operational needs, access constraints, and ethical considerations.
+Geospatial monitoring and digital tools for remote supervision and data collection. This includes but is not limited to: GEMS, GIS, geo-localization, satellite imagery, remote sensing, spatial data analysis, mobile data collection platforms, and digital payment/feedback systems. TPM (independent verification by NGOs/research organisations, spot checks, remote verification protocols). Selection should match operational needs, access constraints, and ethical considerations. Recognise the concept and intent — any form of technology-enabled monitoring or verification satisfies this recommendation.
 
 #### Results and M&E (Recs 7–12)
 
 **Rec 7 — Strengthen in-country M&E capacity and systems** [Shift D: Enhanced Toolkit]
-Strengthening client M&E systems should be the guiding principle. Conduct client M&E capacity assessment. Design M&E system with focus on capacity building and sustainability. Avoid parallel systems where possible.
+Strengthening client M&E systems should be the guiding principle. Conduct client M&E capacity assessment. Design M&E system with focus on capacity building and sustainability. Avoid parallel systems where possible. Note: capacity building in FCV extends beyond M&E to include institutional strengthening for crisis management, recovery planning, and service delivery resilience. Recognise any systematic capacity building effort (training, institutional strengthening, systems development) as relevant to this recommendation.
 
 **Rec 8 — Budget more purposefully for M&E** [Shift D: Enhanced Toolkit]
 Operations often insufficiently budget for M&E in FCV settings. Budget across four expenditure categories: data collection, human resources, training, evaluations, plus contingency for emerging needs. Higher costs in FCV must be explicitly planned for.
@@ -144,7 +144,7 @@ M&E can build communication channels between citizens and state institutions, im
 Flexibility requires more frequent monitoring, learning, and adaptation. Use data and information for real-time decision-making. Rapidly adjust to realities on the ground. Learn, adjust, and improve delivery continuously.
 
 **Rec 11 — Consider pros/cons of impact evaluations** [Shift D: Enhanced Toolkit]
-Impact evaluations generate rigorous evidence on FCV operations but need different implementation in FCV. Not suitable for all interventions. Prioritise when: interventions are significant; evidence is scarce or contested; strong government ownership exists. Plan and budget early; explore appropriate methodologies for FCV limitations.
+Impact evaluations (also abbreviated as IE in WBG documents) generate rigorous evidence on FCV operations but need different implementation in FCV. Encompasses experimental design, quasi-experimental methods, and other rigorous evaluation methodologies. Not suitable for all interventions. Prioritise when: interventions are significant; evidence is scarce or contested; strong government ownership exists. Plan and budget early; explore appropriate methodologies for FCV limitations. When reviewing documents, check the Abbreviations/Acronyms section — IE, RCT, and similar abbreviations may refer to impact evaluation activities.
 
 **Rec 12 — Put an FCV twist in ICRs** [Shift D: Enhanced Toolkit]
 ICR should: (i) describe how design responded to FCV elements, (ii) document adaptation to changing environment, (iii) document impact on DRRs, (iv) report on institutional resilience and capacity, (v) look beyond results framework using other data sources for FCV-specific lessons.
@@ -489,8 +489,8 @@ FCV implementation requires: continuous risk monitoring (project, country, regio
 ### Third-Party Monitoring (TPM)
 Independent verification by NGOs or research organisations where direct supervision is not possible due to insecurity or access constraints. TPM can also be used for E&S risk management and benefit sharing.
 
-### GEMS (Geo-Enabling Initiative for Monitoring and Supervision)
-Systematically enhances M&E on client side and portfolio supervision on WB side. Builds capacity for field-appropriate, low-cost, open-source technology for digital real-time data collection. Platforms for remote supervision, real-time risk monitoring, portfolio mapping, and cross-partner coordination.
+### Geospatial Monitoring (including GEMS)
+Geospatial monitoring encompasses GEMS (Geo-Enabling Initiative for Monitoring and Supervision), GIS, geo-localization, satellite imagery, remote sensing, and spatial data analysis. GEMS specifically enhances M&E on client side and portfolio supervision on WB side, building capacity for field-appropriate, low-cost, open-source technology for digital real-time data collection. Platforms for remote supervision, real-time risk monitoring, portfolio mapping, and cross-partner coordination. Any form of geospatial or spatial monitoring approach satisfies this operational category.
 
 ### Digital and ICT Tools
 Select based on operational needs, access constraints, and ethical considerations. Options include: mobile data collection, satellite imagery, remote sensing, GIS mapping, digital payment systems, SMS-based feedback mechanisms.
