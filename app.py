@@ -226,6 +226,14 @@ Location-specific information from the project document: specific regions, provi
 ### Data Gaps in the Project Document
 FCV-relevant information that appears missing or inadequately addressed in the project document specifically.
 
+### PDO, Theory of Change, and Scope Markers
+Extract the following from the project document:
+- The Project Development Objective (PDO) statement — quote it exactly as written
+- The Theory of Change (ToC) summary — key causal chain from activities to outcomes
+- Results Framework scope — what indicators are tracked, what geographic/thematic scope they cover
+- Any explicit scope boundaries stated in the document (e.g., "this is a national project", "focused on X regions")
+These will be used in subsequent stages to bound the assessment to the project's stated scope.
+
 ### Playbook-Guided Extraction
 In addition to the above, specifically flag:
 - Whether the project references or uses a Risk and Resilience Assessment (RRA) or equivalent FCV diagnostic
@@ -274,10 +282,33 @@ Where does the project document's own risk picture align with or diverge from th
 
 ---
 
-# Document Type
-At the very end of your response, after all sections, output a single classifier line:
+# Abbreviation and Concept Recognition
+If the document contains an Abbreviations/Acronyms section or table, parse it and use those definitions throughout your analysis. When encountering abbreviations in the document text (e.g., IE for Impact Evaluation, GIS for Geographic Information System), resolve them using the document's own definitions.
+
+When assessing against FCV recommendations, recognise the concept and intent, not just specific terms. Each recommendation represents a principle that can be fulfilled through multiple approaches. For example:
+- Geospatial monitoring includes: GEMS, GIS, geo-localization, satellite imagery, remote sensing, spatial analysis, geo-referenced mapping
+- Independent verification includes: TPM, third-party monitoring, independent spot checks, remote verification
+- Impact evaluation includes: IE, rigorous evaluation, experimental design, quasi-experimental methods, RCT
+- Capacity building includes: crisis management capacity, institutional strengthening for resilience, recovery planning — not just M&E capacity
+- Digital tools includes: geospatial platforms, mobile data collection, digital GRM, remote monitoring, SMS feedback — not limited to any single platform
+
+# Instrument Type and Temporal Context Extraction
+At the very end of your response, after all narrative sections, output these classifier blocks in order:
+
 %%%DOC_TYPE: [exactly one of: PCN / PID / PAD / AF / Restructuring / ISR / Unknown]%%%
-Identify what type of World Bank project document was uploaded as the primary project document.''',
+Identify what type of World Bank project document was uploaded as the primary project document.
+
+%%%INSTRUMENT_TYPE: [exactly one of: IPF / PforR / DPO / TA / MPA / IPF-DDO / Unknown]%%%
+Identify the World Bank financing instrument. Look for: "Investment Project Financing" or component-based design (IPF); "Program-for-Results" or DLI references (PforR); "Development Policy" or prior actions (DPO); "Technical Assistance" or ASA (TA); "Multiphase Programmatic Approach" or phase references (MPA); "Deferred Drawdown" or trigger mechanism (IPF-DDO). If the Data Sheet specifies the instrument, use that.
+
+%%%TEMPORAL_CONTEXT_START%%%
+approval_date: [Board approval date or preparation date if PCN/PID, in format YYYY-MM or "Unknown"]
+closing_date: [Project closing date if available, in format YYYY-MM or "Unknown"]
+safeguards_framework: [One of: ESF / OP-BP / ESSA / PSIA / Unknown — determined from the document, NOT assumed]
+other_temporal_markers: [Any restructuring dates, AF dates, or other significant temporal markers, or "None identified"]
+%%%TEMPORAL_CONTEXT_END%%%
+
+CRITICAL: Determine the safeguards framework from the DOCUMENT ITSELF (Data Sheet, text references to specific OPs or ESS standards), not from the approval date. If the document references OP/BP 4.01, 4.12, etc., the framework is OP-BP. If it references ESS1-ESS10, ESCP, ESRS, the framework is ESF. If it references ESSA, the framework is ESSA (PforR). If it references PSIA, the framework is PSIA (DPO).''',
 
 "2": '''# Role
 You are an expert FCV analyst conducting a comprehensive FCV assessment for the World Bank Group. You have deep expertise in the WBG FCV Strategy, the Operational Screening Tool (OST), and the FCV Refresh (January 2026). You are assessing a project based on the Stage 1 context and extraction analysis.
