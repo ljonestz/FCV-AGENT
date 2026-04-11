@@ -777,3 +777,92 @@ STAGE_GUIDANCE_MAP = {
         ]
     }
 }
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 9. WB_INSTRUMENT_GUIDE — Instrument-specific knowledge for assessment (~8,000 tokens total)
+# Last verified: 2026-04
+# Policy-sensitive fields: ESF framework (post-Oct 2018), procurement framework, IDA allocation
+# Review trigger: Update when WBG operational policies change
+# ─────────────────────────────────────────────────────────────────────────────
+
+WB_INSTRUMENT_GUIDE = {
+    "IPF": {
+        "name": "Investment Project Financing",
+        "description": (
+            "IPF supports governments in financing specific investment activities — civil works, "
+            "goods, services, capacity building, and institutional strengthening. It is the most "
+            "common WBG lending instrument in FCV settings. IPF finances discrete project activities "
+            "with defined components, not policy reforms or budget support. Projects have a fixed "
+            "closing date and results framework tied to specific deliverables."
+        ),
+        "fcv_levers": (
+            "CERC (zero-dollar emergency component, activatable without Board restructuring); "
+            "HEIS (hands-on expanded implementation support for procurement); "
+            "TPM (third-party monitoring where direct supervision is impossible); "
+            "Geospatial monitoring (GEMS, GIS, geo-localization, satellite imagery, remote sensing); "
+            "Phased disbursement (conditions tied to tranches); "
+            "Unallocated funds (budget reserve for flexibility); "
+            "Framework approach (umbrella design, details in POM); "
+            "Para 12 efficiencies (higher retroactive financing up to 40%, increased PPA up to $10M, "
+            "condensed procedures) for projects in countries with urgent need or capacity constraints; "
+            "CLD (community and local development) for participatory approaches; "
+            "Alternative implementation arrangements (UN agencies, NGOs, community-driven mechanisms)."
+        ),
+        "not_applicable": (
+            "IPF CANNOT: set policy conditionality or prior actions (that is DPO); "
+            "use results-based disbursement linked to Disbursement-Linked Indicators (that is PforR); "
+            "finance recurrent government expenditures or budget support; "
+            "mandate government policy or regulatory reform as a condition of disbursement. "
+            "When assessing an IPF, do NOT penalise for: absence of policy dialogue mechanisms, "
+            "lack of DPO-style reform conditionality, absence of DLIs or program-level results-based "
+            "financing, or failure to address macro-level governance reform. These are structurally "
+            "outside the IPF instrument's scope."
+        ),
+        "typical_structure": (
+            "Components (typically 2-5) funding specific activities: infrastructure, service delivery, "
+            "capacity building, project management. Each component has a budget allocation. "
+            "Results Framework with PDO-level and intermediate indicators. "
+            "Implementation arrangements: PIU or embedded government unit, procurement plan, "
+            "FM arrangements, E&S instruments (ESIA, ESCP, SEP, LMP). "
+            "Standard PAD sections: Strategic Context, Project Description, Implementation "
+            "Arrangements, Assessment Summary, plus Annexes."
+        ),
+        "common_fcv_considerations": (
+            "IPFs in FCV settings commonly face: weak PIU capacity requiring HEIS or alternative "
+            "implementation partners; security constraints limiting supervision (TPM, GEMS needed); "
+            "elite capture risk in procurement and beneficiary targeting; need for adaptive design "
+            "(CERC, unallocated funds, phased implementation); community engagement challenges "
+            "requiring conflict-sensitive stakeholder engagement; fiduciary risk requiring "
+            "enhanced FM arrangements. A deliberately simple IPF design (few components, lean RF, "
+            "narrow geographic scope) may be an intentional and appropriate FCV strategy — "
+            "particularly where implementation capacity is limited or where the team plans "
+            "a follow-on AF to scale up. Do not penalise lean design."
+        ),
+        "preparation_process": (
+            "PCN (Concept Note) -> QER (Quality Enhancement Review) -> Appraisal -> "
+            "Decision Review/ROC -> Board approval. Key decision points for FCV integration: "
+            "PCN stage (embed FCV in ToC and design); QER (confirm FCV elements); "
+            "Appraisal (finalise E&S instruments, confirm implementation arrangements). "
+            "Para 12 projects may use condensed procedures with accelerated timelines."
+        ),
+        "supervision_process": (
+            "Regular ISR reporting (typically every 6 months). MTR usually at project midpoint. "
+            "Restructuring available for component changes, reallocation, indicator revision, "
+            "geographic refocusing, closing date extension. AF for scaling up or addressing gaps. "
+            "In FCV: more frequent supervision missions recommended; GEMS/TPM for remote monitoring; "
+            "adaptive management through repurposing (within project description) or restructuring."
+        ),
+        "policy_transitions": (
+            "Projects approved before October 1, 2018 use the old Operational Safeguards framework "
+            "(OP/BP 4.01, 4.04, 4.10, 4.11, 4.12, 4.36, 4.37, 7.50). Projects approved on or after "
+            "October 1, 2018 use the Environmental and Social Framework (ESF) with ESS1-ESS10. "
+            "The ESF was approved by the Board on August 4, 2016 and applies to all IPF projects "
+            "with Concept Notes cleared from October 1, 2018 onwards. The two systems run in "
+            "parallel — AFs to pre-ESF projects continue under old safeguards until the parent "
+            "project closes. The document's Data Sheet is authoritative for which framework applies. "
+            "Do not reference ESF standards when assessing a project that uses old OP/BPs, "
+            "and vice versa."
+        ),
+    },
+}
