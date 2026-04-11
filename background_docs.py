@@ -1019,3 +1019,228 @@ WB_INSTRUMENT_GUIDE = {
         "policy_transitions": "N/A — TA does not trigger safeguards policies.",
     },
 }
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 10. FCV_GLOSSARY — Key FCV terms for prompt grounding and frontend tooltips
+# Last verified: 2026-04
+# Sources: WBG FCV Strategy, OST Manual, FCV Playbook, OECD, UNDP, UNHCR
+# ─────────────────────────────────────────────────────────────────────────────
+
+FCV_GLOSSARY = {
+    "elite_capture": {
+        "term": "Elite Capture",
+        "definition": (
+            "The process by which public resources, services, or decision-making "
+            "are co-opted by politically connected or economically powerful groups "
+            "at the expense of intended beneficiaries. In FCV settings, elite capture "
+            "can undermine project effectiveness and exacerbate grievances."
+        ),
+        "measurement": (
+            "Assessed through: procurement irregularity patterns, geographic distribution "
+            "of benefits vs. need, beneficiary selection audits, stakeholder complaints, "
+            "third-party monitoring of resource allocation."
+        ),
+        "source": "WBG FCV Operational Manual; OECD States of Fragility"
+    },
+    "social_cohesion": {
+        "term": "Social Cohesion",
+        "definition": (
+            "The quality and strength of relationships between groups in society, "
+            "characterised by trust, shared identity, and willingness to cooperate "
+            "for mutual benefit. In FCV contexts, weakened social cohesion is both "
+            "a driver and consequence of fragility and conflict."
+        ),
+        "measurement": (
+            "Assessed through: inter-group trust surveys, participation in community "
+            "organisations, perceptions of equity and inclusion, frequency of inter-group "
+            "cooperation or conflict incidents."
+        ),
+        "source": "WBG FCV Strategy; UNDP Social Cohesion Framework"
+    },
+    "conflict_analysis": {
+        "term": "Conflict Analysis",
+        "definition": (
+            "Systematic examination of the profile, causes, actors, and dynamics of "
+            "conflict in a given context. In WBG operations, typically conducted through "
+            "Risk and Resilience Assessments (RRAs) that identify drivers of fragility "
+            "and sources of resilience."
+        ),
+        "measurement": (
+            "Quality assessed by: specificity to sector/geography, identification of "
+            "root causes vs. symptoms, analysis of key actors and incentives, "
+            "actionability of findings for project design."
+        ),
+        "source": "WBG FCV Operational Playbook — Diagnostics Phase"
+    },
+    "do_no_harm": {
+        "term": "Do No Harm",
+        "definition": (
+            "The principle that development interventions should not inadvertently "
+            "exacerbate conflict, reinforce power asymmetries, or undermine sources "
+            "of resilience. Requires active analysis of how project activities interact "
+            "with existing FCV dynamics."
+        ),
+        "measurement": (
+            "Assessed against 8 principles: conflict-sensitive targeting, avoiding power "
+            "asymmetry reinforcement, preventing inter-group tension exacerbation, equitable "
+            "geographic distribution, elite capture safeguards, staff/beneficiary security, "
+            "unintended consequence monitoring, accessible grievance mechanisms."
+        ),
+        "source": "WBG FCV Operational Manual — 8 Do No Harm Principles"
+    },
+    "third_party_monitoring": {
+        "term": "Third-Party Monitoring (TPM)",
+        "definition": (
+            "Independent verification of project activities by NGOs or research organisations "
+            "where direct World Bank supervision is not possible due to insecurity or access "
+            "constraints. TPM provides objective assessment of implementation progress, "
+            "fiduciary compliance, and E&S risk management."
+        ),
+        "measurement": (
+            "Assessed by: independence and credibility of monitoring agent, coverage of "
+            "project areas, frequency of monitoring visits, actionability of findings."
+        ),
+        "source": "WBG FCV Operational Manual — Rec 6; FCV Playbook — Implementation"
+    },
+    "grievance_redress_mechanism": {
+        "term": "Grievance Redress Mechanism (GRM)",
+        "definition": (
+            "A system through which project-affected people can raise concerns, complaints, "
+            "or grievances about a project and receive a response. In FCV settings, GRMs "
+            "should go beyond compliance to actively build state-citizen trust and "
+            "institutional accountability."
+        ),
+        "measurement": (
+            "Assessed by: accessibility to all groups including marginalised populations, "
+            "anonymity protections, response timeliness, feedback loop closure, "
+            "integration of findings into adaptive management."
+        ),
+        "source": "WBG ESF ESS10; FCV Operational Manual"
+    },
+    "cerc": {
+        "term": "Contingency Emergency Response Component (CERC)",
+        "definition": (
+            "A zero-dollar financing component included in IPF projects that can be "
+            "rapidly activated during crises without Board restructuring. Enables swift "
+            "fund reallocation from other components to finance emergency response activities."
+        ),
+        "measurement": "Presence/absence in project design; activation readiness.",
+        "source": "WBG IPF Policy; FCV Operational Playbook — Preparation"
+    },
+    "heis": {
+        "term": "Hands-on Expanded Implementation Support (HEIS)",
+        "definition": (
+            "Direct procurement support provided by WBG staff to implementing agencies "
+            "in FCV settings, bypassing standard timelines. HEIS provides physical "
+            "assistance with procurement processes but does not substitute for "
+            "Borrower decision-making authority."
+        ),
+        "measurement": "Presence/absence in implementation arrangements; scope of support.",
+        "source": "WBG FCV Operational Manual; FCV Playbook — Preparation"
+    },
+    "geospatial_monitoring": {
+        "term": "Geospatial Monitoring",
+        "definition": (
+            "The use of geographic and spatial technologies for project monitoring and "
+            "supervision. Encompasses GEMS (Geo-Enabling initiative for Monitoring and "
+            "Supervision), GIS, geo-localization, satellite imagery, remote sensing, "
+            "and spatial data analysis. Enables remote supervision where direct access "
+            "is constrained by insecurity."
+        ),
+        "measurement": (
+            "Assessed by: integration into M&E framework, spatial coverage, "
+            "frequency of data collection, use for decision-making."
+        ),
+        "source": "WBG FCV Operational Manual — Rec 6; FCV Playbook — Implementation"
+    },
+    "rra": {
+        "term": "Risk and Resilience Assessment (RRA)",
+        "definition": (
+            "The WBG's primary diagnostic tool for understanding FCV drivers and sources "
+            "of resilience. Conducted in collaboration with the FCV Group to facilitate "
+            "holistic understanding and provide differentiated, strategically relevant "
+            "recommendations for country engagement and project design."
+        ),
+        "measurement": (
+            "Quality assessed by: comprehensiveness of driver/resilience analysis, "
+            "sector relevance, geographic specificity, actionability for operations."
+        ),
+        "source": "WBG FCV Operational Playbook — Diagnostics Phase"
+    },
+    "forced_displacement": {
+        "term": "Forced Displacement",
+        "definition": (
+            "The involuntary movement of people from their homes due to conflict, "
+            "violence, persecution, or disaster. Includes refugees (crossing international "
+            "borders), internally displaced persons (IDPs, within borders), and host "
+            "communities affected by displacement. WBG takes a development approach "
+            "focusing on medium-to-long-term challenges."
+        ),
+        "measurement": (
+            "Assessed by: displacement population estimates, host community impact, "
+            "integration of displaced populations in project targeting, "
+            "durable solutions considered."
+        ),
+        "source": "WBG FCV Policy Para 9; Joint Data Center (JDC); 2023 WDR"
+    },
+    "fcv_sensitivity": {
+        "term": "FCV Sensitivity",
+        "definition": (
+            "The degree to which a project is aware of and designed for the FCV context. "
+            "Demonstrates contextual awareness of FCV drivers, conflict-informed design, "
+            "Do No Harm principles, and FCV-adapted operations. Shorthand: does the project "
+            "avoid making things worse?"
+        ),
+        "measurement": (
+            "Assessed against 12 OST recommendations and 8 Do No Harm principles. "
+            "Rating scale: Extremely Low to Very Well Embedded."
+        ),
+        "source": "WBG FCV Strategy; FCV Operational Manual"
+    },
+    "fcv_responsiveness": {
+        "term": "FCV Responsiveness",
+        "definition": (
+            "The degree to which a project actively works to change the FCV situation. "
+            "Addresses root causes of fragility, builds resilience, leverages FCV tools "
+            "for transformative impact, and connects outcomes to stability and peace "
+            "dividends. Shorthand: does the project actively help make fragility better?"
+        ),
+        "measurement": (
+            "Assessed against 4 FCV Refresh strategic shifts (Anticipate, Differentiate, "
+            "Jobs & Private Sector, Enhanced Toolkit). Rating scale: Extremely Low to "
+            "Very Well Embedded."
+        ),
+        "source": "WBG FCV Strategy Refresh (January 2026)"
+    },
+    "fcv_refresh_shifts": {
+        "term": "FCV Refresh Strategic Shifts",
+        "definition": (
+            "Four cross-cutting strategic directions from the WBG FCV Strategy Refresh "
+            "(January 2026): Shift A — Anticipate (forward-looking risk monitoring); "
+            "Shift B — Differentiate (tailor to FCV classification); "
+            "Shift C — Jobs & Private Sector (economic livelihoods as stability pathway); "
+            "Shift D — Enhanced Toolkit & Partnerships (operational flexibilities and HDP nexus)."
+        ),
+        "measurement": (
+            "Assessed by: number and depth of shifts actively addressed in project design; "
+            "whether shifts are merely mentioned or embedded with concrete measures."
+        ),
+        "source": "WBG FCV Strategy Refresh (January 2026)"
+    },
+    "impact_evaluation": {
+        "term": "Impact Evaluation (IE)",
+        "definition": (
+            "Rigorous evaluation using experimental or quasi-experimental methods to "
+            "measure the causal impact of a project or intervention. In FCV settings, "
+            "IEs face additional challenges (insecurity, displacement, data gaps) but "
+            "generate critical evidence on what works. Also referred to as 'IE' in "
+            "WBG documents."
+        ),
+        "measurement": (
+            "Assessed by: appropriateness of methodology for FCV constraints, "
+            "government ownership, budget allocation, early planning in project cycle."
+        ),
+        "source": "WBG FCV Operational Manual — Rec 11; FCV Playbook — Closing"
+    },
+}
