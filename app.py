@@ -388,12 +388,22 @@ The 12 recommendations:
 ## Instrument Awareness — CRITICAL
 {instrument_guidance}
 
-When assessing this project, apply the instrument-specific knowledge above. For each of the 12 OST recommendations:
-- If a recommendation is NOT APPLICABLE to this instrument type, mark it as "N/A — not applicable to [instrument]" in the Under the Hood table. N/A recommendations do NOT count toward or against the rating.
-- Only assess recommendations that are relevant to this instrument's capabilities and scope.
-- The rating denominator becomes: applicable recs addressed / applicable recs (NOT addressed / 12).
+When assessing this project, apply the instrument-specific knowledge above.
 
-Apply the same logic to DNH principles — some manifest differently under different instruments (e.g., DPOs work through policy, not direct service delivery, so beneficiary-level DNH assessment differs).
+MANDATORY PRE-SCORING CHECK: Before scoring EACH of the 12 OST recommendations, ask yourself: "Is this recommendation structurally available to this instrument type?" Refer to the instrument's NOT_APPLICABLE list above. If the recommendation is not applicable:
+- Mark it as "N/A — not applicable to [instrument]" in the Under the Hood table
+- Do NOT score it, do NOT reference it in the rating calculation
+- N/A recommendations are excluded from BOTH numerator AND denominator
+The rating denominator becomes: applicable recs addressed / applicable recs (NOT addressed / 12).
+
+For IPF-DDOs: assess preparedness and trigger-readiness rather than disbursement pace. Do not penalise zero disbursement if the trigger has not been activated.
+For TA instruments: do not score OST recommendations that require a Results Framework, ESCP, or M&E system — these are structurally absent.
+For MPA Phase 2+: treat cross-references to Phase 1 documents as satisfying requirements for standalone conflict analysis and institutional arrangements.
+
+Apply the same logic to DNH principles — some manifest differently under different instruments. For example:
+- DPOs work through policy, not direct service delivery — DNH Principle 8 (GRM) does not apply; Principles 1, 4, 5 apply in modified form (assess through policy distributional effects, not beneficiary-level targeting)
+- PforR works through country systems — assess DNH through the ESSA and government system functionality, not through project-level mechanisms
+Do not apply a binary pass/fail against the IPF standard for non-IPF instruments.
 
 ## 25 Key Questions
 Answer each where evidence permits, noting which are answerable and which have evidence gaps.
@@ -616,8 +626,11 @@ After the ratings block, emit ALL of the following between delimiters. These are
 Assess this project by the standards, policies, and events available as of the preparation/approval period identified above. Do NOT penalise for:
 - Events that occurred AFTER the document was prepared (coups, crises, policy changes)
 - Policy frameworks that did not exist at the time of preparation (e.g., do not reference ESF for a project using OP/BP safeguards, or vice versa)
-- Knowledge that was not reasonably available to the team at preparation time
 Post-preparation developments may be noted as context but must NOT affect the assessment ratings.
+
+EXCEPTION — "should have known": The temporal guardrail protects against POST-preparation events, NOT against publicly available information that EXISTED at preparation time. If a risk was documented in sources such as ACLED, ICG, or UN reports at the time of document preparation and the project document makes no reference to it, this remains a legitimate gap to flag.
+
+DUAL-FRAMEWORK PROJECTS: If the project has undergone AF after October 1, 2018, apply ESF standards ONLY to activities introduced or scaled in the AF paper. Assess original project activities against the safeguards framework applicable at original approval. Note the dual-framework situation explicitly in your assessment.
 
 # PDO AND SCOPE BOUNDING — CRITICAL
 Evaluate FCV integration WITHIN the stated PDO, Theory of Change, and Results Framework scope as extracted in Stage 1.
@@ -627,11 +640,33 @@ Evaluate FCV integration WITHIN the stated PDO, Theory of Change, and Results Fr
 - Do not penalise a deliberately narrow project for not covering all possible FCV dimensions.
 - Do not recommend things beyond the PDO/scope and then rate the project low for not doing them.
 
+IMPORTANT: "Beyond scope" applies ONLY to objectives not reflected in the PDO or Results Framework — NOT to how the project is delivered. The following are ALWAYS within scope regardless of PDO breadth: beneficiary targeting criteria, implementation arrangements, GRM design, safeguards compliance, risk mitigation measures, and M&E methodology. Do not mark these as "Beyond scope." At least 3 of the 4-5 Stage 3 priorities must be directly addressable in the current document.
+
 # SIMPLICITY RECOGNITION
-A deliberately simple, fit-for-purpose design with fewer components, a lean results framework, and narrow scope may be an intentional and appropriate FCV strategy — particularly for IPF in high-fragility settings where implementation capacity is limited, or where the team plans a follow-on AF to scale up. Do not penalise lean design. Assess whether the design elements that ARE present are FCV-informed, not whether every possible FCV element is included. If you identify a deliberately lean design, note this in the rating reasoning and adjust the denominator accordingly.
+A deliberately simple, fit-for-purpose design may be an intentional and appropriate FCV strategy. If the project is an IPF in a high-fragility or active-conflict setting with fewer than 5 components and a narrow geographic scope, apply this 3-point test:
+(a) Does the document explicitly justify the lean design as an FCV strategy (e.g., references to phased approach, AF to scale up, capacity constraints)?
+(b) Does the budget-per-beneficiary ratio appear appropriately concentrated (not spread thin)?
+(c) Are implementation arrangements matched to actual state capacity (not over-ambitious)?
+If all three hold, add a qualitative note — "Lean design assessed as fit-for-purpose" — and do not use breadth of coverage as a negative factor in ratings. Assess whether the design elements that ARE present are FCV-informed, not whether every possible FCV element is included.
 
 # LOGICAL CONSISTENCY
-Before finalising your output, review your findings for internal contradictions. If you identify tension between findings (e.g., a project both addresses resource scarcity AND potentially intensifies competition for resources), explicitly reconcile the tension with reasoning rather than stating both flatly. Acknowledge nuance — real FCV analysis often holds tensions — but explain your reasoning so the reader understands your analytical logic.
+Before finalising ratings, perform a consistency check:
+(1) Do your S/R tags for individual recommendations align with your overall Sensitivity and Responsiveness ratings?
+(2) Does any finding under [R] contradict a finding under [S]?
+(3) Does your assessment of adaptive management provisions match your assessment of M&E quality?
+If contradictions exist, explicitly state the tension and provide a reasoned reconciliation in the rating reasoning. Do not suppress contradictions — surface them as nuance. Acknowledge that real FCV analysis often holds tensions, but explain your analytical logic.
+
+# CONCEPT EQUIVALENCE TABLE — use when looking for evidence
+Do not require exact terminology. Accept these conceptual equivalents:
+- TPM / Third-party monitoring / Independent verification agent / Remote monitoring / Spot checks / IVA
+- GEMS / Geospatial monitoring / Satellite imagery / GIS-based supervision / Remote sensing / Geo-localization
+- CERC / Contingency Emergency Response Component / Emergency component / Crisis response window
+- HEIS / Hands-on implementation support / Enhanced fiduciary support / Direct procurement assistance
+- Social cohesion / Inter-community relations / Trust-building / Group tensions / Intergroup dynamics
+- Elite capture / Resource diversion / Capture by powerful groups / Patronage / Fiduciary risk from political elites
+- GRM / Grievance mechanism / Feedback and response mechanism / Complaint handling / Community helpline
+- Impact evaluation / IE / RCT / Rigorous evaluation / Quasi-experimental methods
+- Adaptive management / Learning loops / Course correction / Context monitoring / Crisis response protocols
 
 # Important Guidelines
 - The TTL-facing narrative must be self-contained and readable without the Under the Hood panels
