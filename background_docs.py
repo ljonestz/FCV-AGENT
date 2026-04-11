@@ -1244,3 +1244,38 @@ FCV_GLOSSARY = {
         "source": "WBG FCV Operational Manual — Rec 11; FCV Playbook — Closing"
     },
 }
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 11. WB_PROCESS_GUIDE — Implementation process knowledge (stub for Phase 4)
+# Last verified: 2026-04
+# Review trigger: To be populated with MTR/ISR/AF/Restructuring/ICR process knowledge
+# ─────────────────────────────────────────────────────────────────────────────
+
+WB_PROCESS_GUIDE = {
+    "MTR": {
+        "purpose": "Mid-Term Review — assesses project performance at midpoint and recommends adjustments.",
+        "scope": "To be expanded with detailed process knowledge in Phase 4.",
+        "fcv_considerations": "To be expanded.",
+    },
+    "ISR": {
+        "purpose": "Implementation Status and Results Report — periodic progress assessment.",
+        "scope": "To be expanded.",
+        "fcv_considerations": "To be expanded.",
+    },
+    "AF": {
+        "purpose": "Additional Financing — scales up or addresses gaps in existing projects.",
+        "scope": "To be expanded.",
+        "fcv_considerations": "To be expanded.",
+    },
+    "Restructuring": {
+        "purpose": "Restructuring Paper — modifies project design during implementation.",
+        "scope": "To be expanded.",
+        "fcv_considerations": "To be expanded.",
+    },
+    "ICR": {
+        "purpose": "Implementation Completion Report — assesses project results at closing.",
+        "scope": "To be expanded.",
+        "fcv_considerations": "To be expanded.",
+    },
+}
