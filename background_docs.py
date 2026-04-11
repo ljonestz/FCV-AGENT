@@ -4,6 +4,8 @@
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 1. FCV_GUIDE — Core FCV framework and screening questions (~3,000 tokens)
+# Last verified: 2026-04
+# Policy-sensitive: FCV Refresh shifts (Jan 2026), FCV country classification
 # ─────────────────────────────────────────────────────────────────────────────
 
 FCV_GUIDE = """## WBG FCV Framework — Sensitivity, Responsiveness, and Strategic Shifts
@@ -91,6 +93,8 @@ When rating FCV sensitivity or responsiveness, use these levels:
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 2. FCV_OPERATIONAL_MANUAL — 12 Recommendations + 25 Key Questions (~5,000 tokens)
+# Last verified: 2026-04
+# Policy-sensitive: 12 OST recommendations, 25 key questions, operational flexibilities
 # ─────────────────────────────────────────────────────────────────────────────
 
 FCV_OPERATIONAL_MANUAL = """## WBG FCV Operational Manual — Core Framework for FCV-Sensitive Project Design
@@ -220,6 +224,8 @@ Operations can strengthen social cohesion by: addressing regional/inter-group in
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 3. FCV_REFRESH_FRAMEWORK — Strategy Refresh detail (~1,500 tokens)
+# Last verified: 2026-04
+# Policy-sensitive: 4 strategic shifts, FCV country classification scheme
 # ─────────────────────────────────────────────────────────────────────────────
 
 FCV_REFRESH_FRAMEWORK = """## WBG FCV Strategy Refresh Framework (January 2026)
@@ -284,6 +290,8 @@ The refreshed country engagement approach in FCS contexts adds six FCV-specific 
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 4. PLAYBOOK_DIAGNOSTICS — Analytics and diagnostics phase (~2,000 tokens)
+# Last verified: 2026-04
+# Policy-sensitive: RRA methodology, data sources
 # ─────────────────────────────────────────────────────────────────────────────
 
 PLAYBOOK_DIAGNOSTICS = """## FCV Operational Playbook — Diagnostics Phase
@@ -355,6 +363,8 @@ Joint IFC-World Bank product to identify private sector opportunities and constr
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 5. PLAYBOOK_PREPARATION — Project preparation in FCV (~3,000 tokens)
+# Last verified: 2026-04
+# Policy-sensitive: Para 12, ESF (post-Oct 2018), procurement framework
 # ─────────────────────────────────────────────────────────────────────────────
 
 PLAYBOOK_PREPARATION = """## FCV Operational Playbook — Project Preparation Phase
@@ -462,6 +472,8 @@ Non-UN third parties (INGOs, local CSOs, regional entities): Determine eligibili
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 6. PLAYBOOK_IMPLEMENTATION — Implementation in FCV (~2,500 tokens)
+# Last verified: 2026-04
+# Policy-sensitive: Para 12, ESF, TPM, GEMS
 # ─────────────────────────────────────────────────────────────────────────────
 
 PLAYBOOK_IMPLEMENTATION = """## FCV Operational Playbook — Implementation Phase
@@ -561,6 +573,8 @@ In FCV settings, integrity risks are elevated. Recommendations: publicise bid in
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 7. PLAYBOOK_CLOSING — Project closing and ICR (~1,500 tokens)
+# Last verified: 2026-04
+# Policy-sensitive: ICR methodology, impact evaluation guidance
 # ─────────────────────────────────────────────────────────────────────────────
 
 PLAYBOOK_CLOSING = """## FCV Operational Playbook — Project Closing Phase
@@ -638,6 +652,8 @@ The ICR should:
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 8. STAGE_GUIDANCE_MAP — Maps doc types to playbook phases (~800 tokens)
+# Last verified: 2026-04
+# Policy-sensitive: Document type classifications, stage-specific flexibilities
 # ─────────────────────────────────────────────────────────────────────────────
 
 STAGE_GUIDANCE_MAP = {
