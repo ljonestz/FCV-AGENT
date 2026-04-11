@@ -88,6 +88,20 @@ When rating FCV sensitivity or responsiveness, use these levels:
 - **Targeting and focus on exclusion** — Geographic and social group targeting documented
 - **Institutional capacity building** — Core governance and M&E system strengthening
 - **Commitment to learning and budget** — Learning perspective for failures; protected preparation/supervision budgets
+
+### VII. Cross-Cutting Concepts for FCV Assessment
+
+**HDP Nexus (Humanitarian-Development-Peace):** FCV Refresh Shift D names HDP nexus coordination as a strategic priority. Assess whether projects in acute crisis or forced displacement contexts document engagement with humanitarian actors, alignment with Humanitarian Response Plans, or participation in joint needs assessments. Absence of HDP nexus reference in an acute crisis context should be flagged.
+
+**IDA FCV Envelope:** The full set of IDA FCV Envelope windows: Prevention and Resilience Allocation (PRA), Remaining Engaged during Conflict Allocation (RECA), Turnaround Allocation (TAA), Window for Host Communities and Refugees (WHR), and Private Sector Window (PSW). Recognise references to these in project documents and assess whether design is appropriate for the specific financing window.
+
+**Political Economy Analysis (PEA):** A systematic assessment of actors, interests, incentives, and power dynamics. Goes beyond conflict analysis to inform design decisions around implementation arrangements, beneficiary targeting, and institutional reform sequencing. Recognise PEA as a form of conflict-sensitive analytics alongside formal RRAs.
+
+**Non-State Actor Engagement:** In environments with significant non-state actors (armed groups, community militias, clan structures), assess whether project documents acknowledge risks and constraints of operating alongside or through such actors. Governed by OPCS guidance on engagement with security sector and non-state actors.
+
+**Adaptive Management:** Structured, evidence-based course correction during implementation without requiring formal restructuring. Assess whether M&E systems and implementation support plans include mechanisms for adaptive management (learning loops, crisis response protocols, context monitoring systems) rather than treating course-correction as purely a restructuring event.
+
+**FCV Country Classification (Refresh):** The January 2026 FCV Strategy Refresh replaces the backward-looking FCS harmonised list with a forward-looking classification: Conflict-affected, At-risk, Forced displacement, Criminal violence, and Compound risk, with a traffic-light system (Green/Amber/Red). Countries may be FCV-relevant without appearing on the legacy FCS list. Do not treat FCS list membership as the sole trigger for FCV analysis.
 """
 
 
@@ -203,8 +217,8 @@ ICR should: (i) describe how design responded to FCV elements, (ii) document ada
 - **Alternative implementation**: UN agencies, INGOs, community-driven mechanisms as implementing partners.
 - **Framework approach**: Umbrella framework with details agreed in Project Operations Manual.
 - **Condensed procedures**: Consolidated preparation stages, shorter turnaround times (3 days vs. 5 for comments, 10 days vs. 18 for Board submission).
-- **Higher retroactive financing**: Up to 40% (vs. standard 20%) for Para 12 projects.
-- **Increased PPA**: Up to US$10M (vs. standard US$6M) for Para 12 projects.
+- **Higher retroactive financing**: Up to 40% (vs. standard 20%) for projects meeting Para 11/12 conditions, subject to CD approval. Do not treat retroactive financing above 20% as anomalous in FCV — it is an intended flexibility.
+- **Increased PPA**: Up to US$10M (vs. standard US$6M) for Para 11/12 projects.
 - **RRO** (Rapid Response Option): Repurpose up to 10% of undisbursed IPF/PforR portfolio within a fiscal year.
 
 ### Questions for Selecting Operational Interventions (Box 1)
