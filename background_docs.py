@@ -865,4 +865,157 @@ WB_INSTRUMENT_GUIDE = {
             "and vice versa."
         ),
     },
+    "PforR": {
+        "name": "Program-for-Results",
+        "description": (
+            "PforR links disbursement to achievement of measurable results (Disbursement-Linked "
+            "Indicators/DLIs) rather than to specific expenditures. It finances government programs "
+            "using country systems. PforR is less common in FCV settings due to capacity requirements "
+            "but can be effective where government systems have minimum functionality."
+        ),
+        "fcv_levers": (
+            "DLIs can be designed to incentivise FCV-sensitive outcomes (e.g., service delivery "
+            "in conflict-affected areas, inclusive targeting, institutional strengthening); "
+            "Program Action Plans can embed FCV risk mitigation; "
+            "Verification protocols can include TPM and independent verification agents; "
+            "Scalable DLIs allow adaptive targets based on evolving FCV context; "
+            "Integrated Fiduciary and E&S Systems Assessment (IFSA/ESSA) can flag FCV risks."
+        ),
+        "not_applicable": (
+            "PforR does NOT: finance specific procurement packages or civil works directly "
+            "(those are financed through the government program using country systems); "
+            "provide CERC or emergency response components (IPF-specific); "
+            "use HEIS for procurement (country systems are used). "
+            "When assessing PforR, do NOT penalise for: absence of specific procurement plans "
+            "(country systems are used), lack of project-level PIU (program uses existing "
+            "institutional structures), or absence of component-level budget breakdowns."
+        ),
+        "typical_structure": (
+            "Program scope definition, DLIs (5-10 typically), Program Action Plan, "
+            "IFSA/ESSA, Verification Protocol. DLIs define what the government must achieve "
+            "for disbursement. Results are verified before funds are released."
+        ),
+        "common_fcv_considerations": (
+            "PforR in FCV requires: minimum government system capacity for program execution; "
+            "robust verification mechanisms (independent agents, TPM) given weak oversight; "
+            "DLIs that are achievable in volatile contexts (not over-ambitious); "
+            "ESSA that addresses FCV-specific E&S risks through government systems; "
+            "risk that government capacity deteriorates during implementation. "
+            "PforR may be inappropriate where state capacity is very low or where "
+            "government legitimacy is contested."
+        ),
+        "preparation_process": (
+            "Similar to IPF but with Program Systems Assessment (PSA) replacing "
+            "standard appraisal. IFSA and ESSA are mandatory. DLI design and "
+            "verification protocol are critical preparation outputs."
+        ),
+        "supervision_process": (
+            "DLI verification drives disbursement. Independent Verification Agent (IVA) "
+            "confirms achievement. Program Action Plan implementation monitored. "
+            "Mid-term review assesses DLI achievability and program trajectory."
+        ),
+        "policy_transitions": (
+            "PforR uses the Environmental and Social Systems Assessment (ESSA), not the "
+            "ESF or old OP/BPs. This is a distinct assessment framework. "
+            "Do not apply ESF ESS standards to PforR projects."
+        ),
+    },
+    "DPO": {
+        "name": "Development Policy Operation",
+        "description": (
+            "DPOs provide budget support to governments in exchange for policy and institutional "
+            "reforms (prior actions). They finance the government's general budget, not specific "
+            "investment activities. DPOs are used when policy reform is the primary development "
+            "objective. Less common in FCV settings due to reform capacity requirements, but "
+            "used for governance reform, macro-fiscal stability, and enabling environment work."
+        ),
+        "fcv_levers": (
+            "Prior actions can target FCV-relevant reforms (governance transparency, "
+            "anti-corruption, resource revenue management, security sector governance, "
+            "social protection expansion to FCV-affected populations); "
+            "Policy dialogue on FCV drivers (elite capture, exclusion, institutional legitimacy); "
+            "Programmatic DPO series can sequence reforms over time, building capacity gradually; "
+            "Trigger matrix for indicative prior actions provides flexibility across series."
+        ),
+        "not_applicable": (
+            "DPO does NOT: finance specific investment activities, civil works, goods, or services "
+            "(those are IPF); use CERC, HEIS, TPM, or GEMS (these are IPF operational tools); "
+            "have a results framework with project-level intermediate indicators in the IPF sense; "
+            "have PIU, procurement plans, or component-level implementation arrangements. "
+            "When assessing DPO, do NOT penalise for: absence of CERC or emergency components, "
+            "lack of TPM or geospatial monitoring, absence of project-level beneficiary targeting, "
+            "or missing community engagement/GRM mechanisms (DPOs work through policy, not "
+            "direct service delivery). DPO-specific questions (OST Manual Q16-Q19) apply; "
+            "IPF-specific questions do not."
+        ),
+        "typical_structure": (
+            "Prior actions (policy/regulatory changes the government must complete before "
+            "disbursement), results indicators (expected outcomes of reforms), "
+            "policy matrix (for programmatic series showing reform trajectory), "
+            "macroeconomic framework assessment, environmental and poverty/social analysis."
+        ),
+        "common_fcv_considerations": (
+            "DPOs in FCV require: analysis of reform context including vested interests, "
+            "elite capture risks, and political economy of policy change; assessment of "
+            "whether prior actions are conflict-sensitive and won't exacerbate fragility; "
+            "realistic expectations about reform pace in FCV settings; "
+            "attention to distributional impacts of policy reforms on vulnerable groups. "
+            "Key risk: policy reforms can shift power dynamics and trigger backlash "
+            "from groups that benefit from the status quo."
+        ),
+        "preparation_process": (
+            "Prior actions agreed with government; macroeconomic assessment; "
+            "environmental and poverty/social analysis. No ESF/ESIA — DPOs use "
+            "environmental and poverty/social impact analysis instead."
+        ),
+        "supervision_process": (
+            "Disbursement upon completion of prior actions (single-tranche or multi-tranche). "
+            "Programmatic series: annual operations with evolving prior actions. "
+            "Policy dialogue is continuous. No ISR in the IPF sense — "
+            "Implementation Completion Report at series end."
+        ),
+        "policy_transitions": (
+            "DPOs use environmental and poverty/social analysis, not ESF or old OP/BPs. "
+            "Do not apply ESF standards or IPF safeguards frameworks to DPO assessments."
+        ),
+    },
+    "TA": {
+        "name": "Technical Assistance / Advisory Services and Analytics",
+        "description": (
+            "TA (often delivered as Advisory Services and Analytics — ASA) provides knowledge, "
+            "analytical work, and capacity building without direct lending. TA can be grant-funded "
+            "(trust funds) or funded through the Bank's administrative budget. In FCV contexts, "
+            "TA supports diagnostics, institutional assessments, and preparation for lending operations."
+        ),
+        "fcv_levers": (
+            "FCV diagnostics and analytics (RRA, sector-specific FCV assessments); "
+            "Institutional capacity assessment and strengthening design; "
+            "Stakeholder mapping and political economy analysis; "
+            "Design support for upcoming lending operations in FCV settings; "
+            "Knowledge exchange and peer learning on FCV-sensitive approaches."
+        ),
+        "not_applicable": (
+            "TA does NOT: provide financing for investment activities, policy reform, or budget "
+            "support; have the operational flexibilities of IPF (no CERC, HEIS, TPM, GEMS); "
+            "require E&S instruments (ESIA, ESCP) unless it involves pilot activities; "
+            "have a results framework in the lending-operation sense. "
+            "When assessing TA, do NOT apply lending-operation assessment criteria. "
+            "Focus on: analytical quality, FCV-relevance of findings, actionability of "
+            "recommendations, and contribution to future lending operation design."
+        ),
+        "typical_structure": (
+            "Terms of reference, deliverables (reports, diagnostics, training), "
+            "timeline, budget (usually from trust funds or Bank budget). "
+            "No PAD, no components, no procurement plan in the IPF sense."
+        ),
+        "common_fcv_considerations": (
+            "TA in FCV: access constraints for field work; security considerations for "
+            "consultants and data collection; political sensitivity of analytical findings; "
+            "need for conflict-sensitive research methods; stakeholder engagement in "
+            "contexts where trust is low."
+        ),
+        "preparation_process": "Concept note, terms of reference, funding arrangement.",
+        "supervision_process": "Deliverable-based supervision. No ISR or MTR.",
+        "policy_transitions": "N/A — TA does not trigger safeguards policies.",
+    },
 }
