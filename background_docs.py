@@ -1068,6 +1068,184 @@ WB_INSTRUMENT_GUIDE = {
         "supervision_process": "Deliverable-based supervision. No ISR or MTR.",
         "policy_transitions": "N/A — TA does not trigger safeguards policies.",
     },
+    "MPA": {
+        "name": "Multiphase Programmatic Approach",
+        "description": (
+            "The MPA is a financing modality introduced in July 2017 to replace the Adaptable "
+            "Program Loan (APL). It allows countries to structure IPF or PforR operations as a "
+            "long-term program (typically 8-10 years) composed of smaller, sequentially or "
+            "simultaneously linked phases, each with its own legal agreement and financing. "
+            "The Board approves the overall program framework and financing envelope together "
+            "with Phase 1; Management (at RVP level) approves subsequent phases. As of FY24, "
+            "there were 46 MPA programs in the pipeline. Increasingly the instrument of choice "
+            "in complex FCV settings because it allows adaptive learning between phases."
+        ),
+        "fcv_levers": (
+            "Structured inter-phase learning — each subsequent phase PAD must include a dedicated "
+            "section on lessons learned from preceding phases and document how they were incorporated "
+            "(mandatory, not optional); "
+            "Adaptive program design — between phases, teams can modify the Program Development "
+            "Objective (PrDO), change activities/scope/targets, add or drop phases, seek AF for "
+            "a phase, or change the instrument for the next phase (e.g., IPF to PforR); "
+            "Differentiated implementation arrangements by phase — subsequent phases can use "
+            "different institutional and implementation arrangements if the FCV context warrants; "
+            "Phased financing matched to absorptive capacity — avoids large undisbursed balances "
+            "in volatile FCV environments; "
+            "Program-level conflict analysis and E&S risk framing in Phase 1 PAD, with subsequent "
+            "phases updating rather than rebuilding from scratch; "
+            "Faster processing for subsequent phases — no formal Concept Review meeting required; "
+            "Regional MPA design — can span multiple borrowers for multi-country FCV responses; "
+            "PrDO can be modified if the FCV trajectory changes materially."
+        ),
+        "not_applicable": (
+            "Phase 2+ PADs should NOT be penalised for: not containing a standalone comprehensive "
+            "conflict analysis if Phase 1/program framework contains one and the subsequent phase "
+            "provides a meaningful update; omitting full program-level institutional arrangements "
+            "(they reference Phase 1); having a less detailed theory of change (the program-level "
+            "ToC is in Phase 1 — subsequent phases should be consistent with it, not rebuild it); "
+            "not having a full program-level results framework (they have phase-level PDO indicators "
+            "while PrDO-level outcomes sit in the program framework). "
+            "The tool should not penalise an MPA for not having CERC if the program framework has "
+            "built-in adaptive mechanisms (phase redesign, phase addition/dropping). "
+            "Phase 1 PADs approved under old safeguards should NOT be assessed against ESF. "
+            "Phase-level ISRs should NOT be penalised for absence of program-level aggregate "
+            "reporting — ISRs are phase-specific."
+        ),
+        "typical_structure": (
+            "Phase 1 PAD (also the Program Framework Document): PAD Datasheet covering Program "
+            "and Phase 1; PrDO and Phase 1 PDO; Program ToC and causal chain; Program framework "
+            "(estimated phases, sequencing, proposed DOs, estimated financing, instrument choice); "
+            "Phase 1 components and implementation arrangements; Learning agenda; Program-level "
+            "and Phase 1 results frameworks; SORT for Phase 1 plus overall program risks; "
+            "E&S risk identification for Phase 1 with flags for future phases. "
+            "Subsequent Phase PADs: Update on overall MPA performance; lessons learned from "
+            "preceding phases and how incorporated; phase-specific PDO, components, implementation "
+            "arrangements; updated PrDO indicators if needed; updated context; phase-specific SORT."
+        ),
+        "common_fcv_considerations": (
+            "Why preferred in FCV: long-term framework that anticipates redesign between phases "
+            "matches the uncertainty of FCV environments better than standalone IPF. "
+            "Common FCV-specific pitfalls: (1) weak learning agendas that are formulaic rather "
+            "than FCV-specific — should include conflict sensitivity checkpoints and adaptive "
+            "management triggers; (2) overly rigid PrDO that assumes stable trajectory; "
+            "(3) phase transition criteria based purely on disbursement/output targets rather "
+            "than context-based criteria (security conditions, political economy factors); "
+            "(4) treating the program framework as fixed when the MPA policy explicitly allows "
+            "changes to PrDO, instrument, scope, and phase number; (5) insufficient distinction "
+            "between program-level risk and phase-level risk. "
+            "Good FCV MPA: explicit FCV analysis linked to PrDO; FCV-specific learning agenda; "
+            "each phase documents FCV context changes and design responses; implementation "
+            "arrangements designed to adjust based on evolving capacity and security. "
+            "Weak FCV MPA: FCV analysis confined to risk section; generic learning agenda; "
+            "subsequent phases copy-paste context from Phase 1; no evidence FCV trajectory "
+            "factored into phase transition decisions."
+        ),
+        "preparation_process": (
+            "Phase 1: Standard Track 2 IPF/PforR processing. Requires Concept Review meeting. "
+            "Board approves program framework, overall financing envelope, and Phase 1. "
+            "Subsequent phases: May not require formal Concept Review (Concept Memorandum instead). "
+            "PAD circulated to Board for information only — RVP approves. Exception: if E&S risk "
+            "is High or Substantial, Board approval required for that phase. "
+            "MPA program must be effective before subsequent phase can be submitted for approval."
+        ),
+        "supervision_process": (
+            "All phases follow standard IPF/PforR ISR procedures. ISRs are phase-specific — no "
+            "separately mandated program-level ISR. MTRs conducted at phase level. "
+            "Phase transition assessments embedded in subsequent phase PAD preparation — teams "
+            "must document program performance and lessons learned. "
+            "In FCV settings, a program-level review at mid-phase is good practice as a phase "
+            "transition readiness assessment."
+        ),
+        "policy_transitions": (
+            "ESF vs. old safeguards determined by the Concept Decision date of EACH INDIVIDUAL "
+            "PHASE, not the date of program approval. A Phase 1 with pre-October 2018 Concept "
+            "Decision uses old safeguards; a Phase 2 with post-October 2018 Concept Decision "
+            "uses ESF — even within the same MPA. If an FCV-driven context change elevates E&S "
+            "risk for a subsequent phase to High or Substantial, Board approval is required "
+            "regardless of standard RVP delegation."
+        ),
+    },
+    "IPF-DDO": {
+        "name": "Investment Project Financing with Deferred Drawdown Option",
+        "description": (
+            "The IPF-DDO is a contingent financing instrument where the Bank commits financing "
+            "but disbursement is deferred until a pre-specified trigger event occurs. Unlike "
+            "standard IPF where disbursement follows procurement, the IPF-DDO makes the entire "
+            "committed amount available for immediate drawdown once the trigger is met. Used for "
+            "anticipatory financing — protecting specific projects or institutions against defined "
+            "shocks. Can generate development outcomes even if the trigger never occurs, through "
+            "preparedness activities in the non-disbursement period. Currently rare but growing "
+            "following formalisation in the Crisis Preparedness and Response Toolkit."
+        ),
+        "fcv_levers": (
+            "Pre-positioned financing for anticipated shocks — commits financing before a crisis "
+            "occurs, unlike reactive instruments (CERC, OP 8.00); "
+            "Flexible trigger design — can be parametric, institutional, political, or contractual; "
+            "Preparedness activities regardless of disbursement — maintains engagement and reform "
+            "dialogue even if trigger is not met; "
+            "IDA 50% allocation benefit — for crisis/emergency preparedness IPF-DDOs, IDA covers "
+            "50% from General Pool, reducing opportunity cost of committing PBA to contingency; "
+            "Five-year drawdown period renewable for up to three additional years — sustained "
+            "contingency buffer without repeated processing; "
+            "Full immediate disbursement on trigger — entire committed amount, not phased."
+        ),
+        "not_applicable": (
+            "Do NOT penalise an IPF-DDO for: absence of detailed procurement plans or implementation "
+            "schedules if disbursement has not been triggered (pre-trigger is a preparedness phase); "
+            "having a narrow, contingent set of eligible expenditures (this is by design); "
+            "slow disbursement if trigger has not been met (disbursement rate is not meaningful "
+            "pre-trigger — assess preparedness progress instead); "
+            "not having standard component descriptions (PAD structured around preparedness "
+            "activities, trigger mechanism, and positive list of eligible expenditures); "
+            "results framework framed around preparedness milestones rather than service delivery "
+            "outputs (the PDO may be partially achieved by having financing available). "
+            "Post-trigger ISRs are a different analytical object — once drawn, standard IPF FCV "
+            "screening criteria apply fully."
+        ),
+        "typical_structure": (
+            "IPF-DDO PAD includes: PDO framed around both preparedness and response objectives; "
+            "Trigger mechanism section (nature of trigger, declaring authority, verification, "
+            "drawdown process); Positive list of eligible expenditures (established at appraisal); "
+            "Preparedness activities section (capacity building, systems, protocols, readiness drills); "
+            "Pricing/financial terms (0.50% standby fee on undisbursed IBRD balances); "
+            "Results framework with both pre-trigger and post-trigger indicators; "
+            "Full ESF applies (ESCP, ESRS) covering both preparedness and anticipated post-trigger "
+            "activities."
+        ),
+        "common_fcv_considerations": (
+            "Most useful in FCV scenarios: prevention/deterrence (backstop against institutional "
+            "failure that could exacerbate instability); escalation risk (pre-positioned financing "
+            "for rapid response to security deterioration); crisis preparedness in transition "
+            "settings (backstop institutions against fiscal shock of conflict relapse); protection "
+            "of specific institutions in fragile states. "
+            "Common design weaknesses: triggers too vague or subject to political manipulation; "
+            "positive lists too narrow or too broad; nominal preparedness activities that deliver "
+            "no value if trigger is never met; failure to design E&S arrangements for post-trigger "
+            "activities."
+        ),
+        "preparation_process": (
+            "Standard IPF preparation and Board approval — no abbreviated processing. Full E&S "
+            "due diligence required. Trigger mechanism and positive list must be established at "
+            "appraisal and approved by the Board. For IDA, the 50% allocation benefit requires "
+            "Management confirmation of crisis/emergency preparedness objective at appraisal."
+        ),
+        "supervision_process": (
+            "Pre-trigger: standard ISR procedures assessing preparedness progress, trigger condition "
+            "monitoring, and institutional readiness. Post-trigger: transitions to standard IPF "
+            "implementation modality with full disbursement/procurement/E&S assessment. "
+            "Drawdown period renewable once for up to three additional years."
+        ),
+        "policy_transitions": (
+            "Full ESF applies based on Concept Decision date. The E&S framework must address "
+            "both preparedness and anticipated post-trigger activities at appraisal — even if "
+            "post-trigger activities may never occur. A conditional or scenario-based E&S framework "
+            "is appropriate, not a weakness. "
+            "Key distinction from other contingency instruments: IPF-DDO is a pre-positioned "
+            "standalone loan; CERC is embedded in an active IPF and activated post-crisis; "
+            "OP 8.00 is reactive and processed after the crisis. Do not criticise an IPF-DDO "
+            "for not having CERC-like flexibility — they are different instruments."
+        ),
+    },
 }
 
 
