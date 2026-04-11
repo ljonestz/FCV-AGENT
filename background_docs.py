@@ -1485,6 +1485,187 @@ FCV_GLOSSARY = {
         ),
         "source": "WBG FCV Operational Manual — Rec 11; FCV Playbook — Closing"
     },
+    "mpa": {
+        "term": "Multiphase Programmatic Approach (MPA)",
+        "definition": (
+            "A financing modality approved in 2017 allowing long-term engagements to be "
+            "structured as a series of linked IPF or PforR phases. The Board approves the "
+            "overall program and Phase 1; Management approves subsequent phases. Particularly "
+            "suited to FCV settings requiring sustained, adaptive engagement over 8-10 year "
+            "timeframes. Replaced the Adaptable Program Loan (APL)."
+        ),
+        "measurement": "Assess inter-phase learning, adaptive design, and FCV context responsiveness.",
+        "source": "MPA Board Paper July 2017; MPA Bank Guidance"
+    },
+    "hdp_nexus": {
+        "term": "HDP Nexus (Humanitarian-Development-Peace)",
+        "definition": (
+            "The intersection of Humanitarian, Development, and Peace action. In FCV contexts, "
+            "effective engagement requires deliberate coordination between humanitarian responders "
+            "(UNHCR, WFP, OCHA), development actors (World Bank, bilateral donors), and "
+            "peace/political actors (UN political missions, regional bodies). The FCV Strategy "
+            "Refresh identifies nexus coordination as a core operational priority."
+        ),
+        "measurement": (
+            "Assessed by: documented engagement with humanitarian actors, alignment with "
+            "Humanitarian Response Plans, participation in joint needs assessments."
+        ),
+        "source": "WBG FCV Strategy Refresh — Shift D"
+    },
+    "sort": {
+        "term": "Systematic Operations Risk-rating Tool (SORT)",
+        "definition": (
+            "The Bank's structured risk matrix used in ISRs and PADs to rate the severity of "
+            "political, governance, macroeconomic, sector, technical, fiduciary, E&S, and "
+            "stakeholder risks. In FCV settings, SORT ratings should reflect actual conflict "
+            "risk, not just standard sector risk profiles."
+        ),
+        "measurement": "Risk dimensions rated individually; overall risk profile assessed.",
+        "source": "WBG Operations Manual"
+    },
+    "do_ip_ratings": {
+        "term": "DO / IP Ratings",
+        "definition": (
+            "The Development Objective (DO) and Implementation Progress (IP) ratings in ISRs. "
+            "DO assesses likelihood of PDO achievement; IP assesses whether implementation is "
+            "on track. Both use a six-point scale from Highly Satisfactory to Highly "
+            "Unsatisfactory. Important: a project can have high IP (delivering as planned) but "
+            "low DO (if the plan is no longer appropriate for the context)."
+        ),
+        "measurement": "Six-point scale: HS / S / MS / MU / U / HU.",
+        "source": "WBG ISR Guidelines"
+    },
+    "dli": {
+        "term": "Disbursement-Linked Indicator (DLI)",
+        "definition": (
+            "The core financing mechanism for PforR operations. Funds disburse when agreed "
+            "results indicators are verified by an Independent Verification Agent (IVA). In "
+            "FCV settings, DLI design must account for the possibility that targets may be "
+            "unachievable due to context rather than government effort. Contingent DLIs can "
+            "be designed with security or context triggers."
+        ),
+        "measurement": "Achievement verified by IVA; disbursement linked to verified results.",
+        "source": "PforR Policy"
+    },
+    "pea": {
+        "term": "Political Economy Analysis (PEA)",
+        "definition": (
+            "A systematic assessment of the actors, interests, incentives, and power dynamics "
+            "shaping a country or sector's political landscape. Goes beyond conflict analysis "
+            "to inform project design decisions around implementation arrangements, beneficiary "
+            "targeting, and institutional reform sequencing. A form of conflict-sensitive "
+            "analytics recognised alongside formal RRAs."
+        ),
+        "measurement": (
+            "Assessed by: identification of key actors and incentives, analysis of power "
+            "dynamics, actionability for project design decisions."
+        ),
+        "source": "WBG FCV Operational Playbook; OECD governance guidance"
+    },
+    "adaptive_management": {
+        "term": "Adaptive Management",
+        "definition": (
+            "A structured approach to project implementation in which evidence gathered during "
+            "implementation is used to make deliberate course corrections — adjusting activities, "
+            "targeting, or implementation arrangements — without necessarily triggering formal "
+            "restructuring. A key principle for FCV operations where context volatility makes "
+            "original designs rapidly outdated."
+        ),
+        "measurement": (
+            "Assessed by: presence of learning loops, crisis response protocols, context "
+            "monitoring systems, and evidence of actual course corrections during implementation."
+        ),
+        "source": "WBG FCV Operational Playbook; FCV Strategy Refresh"
+    },
+    "ida_fcv_envelope": {
+        "term": "IDA FCV Envelope",
+        "definition": (
+            "The set of IDA allocations specifically for FCV-affected countries: Prevention "
+            "and Resilience Allocation (PRA, for countries at risk of conflict); Remaining "
+            "Engaged during Conflict Allocation (RECA, for countries in active conflict); "
+            "Turnaround Allocation (TAA, for post-conflict recovery); Window for Host "
+            "Communities and Refugees (WHR); and Private Sector Window (PSW, for de-risking "
+            "private investment in FCV settings)."
+        ),
+        "measurement": "Eligibility category determines available financing and flexibilities.",
+        "source": "IDA Replenishment Documents; WBG FCV Strategy"
+    },
+    "non_state_actors": {
+        "term": "Non-State Actors",
+        "definition": (
+            "Armed groups, customary authorities, community militias, clan structures, or other "
+            "non-governmental entities that exercise de facto authority or control in areas where "
+            "Bank-financed projects operate. Engagement with non-state actors in Bank operations "
+            "is governed by specific OPCS guidance and requires explicit risk assessment under "
+            "FCV Policy Para 18."
+        ),
+        "measurement": (
+            "Assessed by: acknowledgement of non-state actor presence, risk assessment for "
+            "engagement, enhanced due diligence framework documentation."
+        ),
+        "source": "WBG FCV Policy Para 18; OPCS Operational Staff FAQs"
+    },
+    "de_facto_government": {
+        "term": "De Facto Government (OP 7.30)",
+        "definition": (
+            "A government that has come to power through unconstitutional means. Bank engagement "
+            "with de facto governments is governed by OP 7.30, which requires specific Board "
+            "notification and management approval. Relevant for FCV portfolios in countries "
+            "experiencing coups or contested transitions of power."
+        ),
+        "measurement": "Applicability determined by political events; OP 7.30 invocation documented.",
+        "source": "WBG OP 7.30"
+    },
+    "escp": {
+        "term": "Environmental and Social Commitment Plan (ESCP)",
+        "definition": (
+            "The binding agreement between the Bank and borrower under the ESF, specifying "
+            "the E&S measures, standards, and timeframes the borrower commits to during project "
+            "implementation. In FCV settings, ESCPs may include provisions for adaptive management "
+            "of E&S risks given context volatility. Applies to IPF projects with Concept Decision "
+            "dates on or after October 1, 2018. Does NOT apply to DPOs or PforR."
+        ),
+        "measurement": "Compliance assessed through ISR E&S performance ratings.",
+        "source": "WBG Environmental and Social Framework (ESF)"
+    },
+    "essa": {
+        "term": "Environmental and Social Systems Assessment (ESSA)",
+        "definition": (
+            "The assessment conducted for PforR operations of the government's existing E&S "
+            "systems, evaluating their adequacy relative to Bank core principles. PforR does "
+            "not apply the ESF; the ESSA determines whether country systems are sufficient or "
+            "require strengthening through Program Action Plans. Distinct from the ESCP/ESRS "
+            "used for IPF under the ESF."
+        ),
+        "measurement": "System adequacy assessed against Bank core principles; gap-filling via PAP.",
+        "source": "PforR Policy"
+    },
+    "taa": {
+        "term": "Turnaround Allocation (TAA)",
+        "definition": (
+            "One of the IDA FCV Envelope windows, designed for countries emerging from conflict "
+            "or fragility and beginning a recovery trajectory. TAA provides enhanced IDA "
+            "allocations to countries demonstrating reform momentum during post-conflict "
+            "transitions."
+        ),
+        "measurement": "Eligibility assessed by IDA based on country trajectory indicators.",
+        "source": "IDA Replenishment Documents"
+    },
+    "peace_dividend": {
+        "term": "Peace Dividend",
+        "definition": (
+            "Development outcomes — typically economic (jobs, market access, income) or social "
+            "(trust, social cohesion, reconciliation) — that are attributable in part to reduced "
+            "conflict or improved stability. An important concept in FCV project theory of change "
+            "documentation, signalling that the project is designed to generate and sustain "
+            "peace-enabling conditions, not just deliver services."
+        ),
+        "measurement": (
+            "Assessed by: whether the project ToC explicitly links outcomes to stability or "
+            "peace conditions; whether results indicators capture stability-related changes."
+        ),
+        "source": "WBG FCV Strategy; WDR 2011"
+    },
 }
 
 
