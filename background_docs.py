@@ -1482,28 +1482,271 @@ FCV_GLOSSARY = {
 
 WB_PROCESS_GUIDE = {
     "MTR": {
-        "purpose": "Mid-Term Review — assesses project performance at midpoint and recommends adjustments.",
-        "scope": "To be expanded with detailed process knowledge in Phase 4.",
-        "fcv_considerations": "To be expanded.",
+        "purpose": (
+            "The Mid-Term Review (MTR) is an enhanced implementation support exercise conducted "
+            "collaboratively between the Bank and borrower at approximately the midpoint of "
+            "implementation (typically ~2.5 years after effectiveness for a 5-year project). "
+            "It comprehensively reassesses the project's theory of change, continued relevance "
+            "of the PDO, progress toward results, and whether corrective action including "
+            "restructuring is needed. Not mandatory for every operation but is standard practice. "
+            "In FCV settings where disbursement is slower, an early MTR is often more valuable."
+        ),
+        "scope": (
+            "The MTR can recommend: restructuring (PDO change, component redesign, reallocation, "
+            "RF revision, closing date extension); activation of flexibilities (CERC, HEIS); "
+            "changes to implementation arrangements; target revision; or partial cancellation. "
+            "The MTR itself cannot approve restructuring — it generates the evidence base and "
+            "agreed recommendations that drive a separate formal restructuring package."
+        ),
+        "key_policies": (
+            "Governed by the IPF Directive on Implementation Support. Produces an MTR ISR cleared "
+            "by the Practice Manager and Country Director. MTR findings presented at a decision "
+            "meeting attended by the Task Team, Practice Manager, Country Director, and "
+            "counterpart officials."
+        ),
+        "typical_documents": (
+            "Implementation progress report from borrower/PMU; MTR aide-memoire; MTR ISR with "
+            "updated ratings; agreed action matrix / accelerated action plan; updated results "
+            "framework with actuals against targets; procurement, FM, and E&S compliance reports; "
+            "for FCV operations: TPM or GEMS reports if direct access is constrained."
+        ),
+        "fcv_considerations": (
+            "The MTR is the single most important checkpoint for FCV adaptation. Key questions: "
+            "Has the conflict/fragility context changed materially since appraisal? Is the ToC "
+            "still valid given current political economy? Are targets still achievable or should "
+            "they be recalibrated or geographically refocused? Are implementation arrangements "
+            "still appropriate or have security conditions forced a shift to alternative "
+            "implementers (UN, NGOs, CDDs)? Have FCV-relevant outcomes (social cohesion, "
+            "institutional trust, access equity) been measured? Is the GRM functional? Should "
+            "CERC be added/activated or HEIS initiated? "
+            "In FCV settings, MTR missions often rely on remote review (TPM, GEMS, phone/video "
+            "interviews) — do not penalise for access constraints if remote verification is explained."
+        ),
+        "common_pitfalls": (
+            "MTRs in FCV frequently: (a) delay past the optimal intervention point waiting for "
+            "disbursement to reach 50%; (b) avoid recommending restructuring due to institutional "
+            "reluctance; (c) fail to update the conflict analysis, treating FCV context as static; "
+            "(d) produce action plans that are technically sound but politically unrealistic; "
+            "(e) miss elite capture in beneficiary data, presenting aggregate progress that "
+            "masks exclusion of conflict-affected groups."
+        ),
+        "backward_forward_look": (
+            "Backward: Assess whether original design assumptions held; document adaptations and "
+            "whether they were timely; evaluate whether FCV-relevant intermediate outcomes were "
+            "tracked (community participation rates, geographic equity of delivery). "
+            "Forward: Recommend specific restructuring actions; identify 2-3 most critical risks "
+            "to PDO achievement; confirm whether existing FCV levers (CERC, TPM, HEIS, geospatial) "
+            "are adequate or need to be introduced/strengthened."
+        ),
     },
     "ISR": {
-        "purpose": "Implementation Status and Results Report — periodic progress assessment.",
-        "scope": "To be expanded.",
-        "fcv_considerations": "To be expanded.",
+        "purpose": (
+            "The Implementation Status and Results Report (ISR) is the Bank's primary internal "
+            "and external reporting tool for projects in implementation. Produced approximately "
+            "every six months by the task team, covering implementation progress, fiduciary "
+            "compliance, E&S performance, and progress toward the PDO. ISRs are publicly "
+            "disclosed. For higher-risk or FCV projects, more frequent updates may be warranted."
+        ),
+        "scope": (
+            "ISRs carry two primary summary ratings: Development Objective (DO) rating assessing "
+            "likelihood of PDO achievement, and Implementation Progress (IP) rating assessing "
+            "whether implementation is on track. Both use a six-point scale: Highly Satisfactory "
+            "(HS) / Satisfactory (S) / Moderately Satisfactory (MS) / Moderately Unsatisfactory "
+            "(MU) / Unsatisfactory (U) / Highly Unsatisfactory (HU). Additional sub-ratings "
+            "cover FM, Procurement, M&E, and E&S Performance. Risk ratings captured through "
+            "SORT (Systematic Operations Risk-rating Tool)."
+        ),
+        "key_policies": (
+            "A rating of MU or below should trigger active corrective action. Two consecutive "
+            "MU ratings on DO, or a single U/HU, typically triggers review that may result in "
+            "restructuring, escalation to CD/RVP, or in extreme cases, misprocurement declaration "
+            "or suspension. ISR ratings in FCV portfolios are systematically lower than average."
+        ),
+        "typical_documents": (
+            "ISR report with narrative and ratings; SORT risk matrix; results framework progress "
+            "data; aide-memoire from supervision missions; for FCV: TPM reports, GEMS data, "
+            "GRM complaint summaries."
+        ),
+        "fcv_considerations": (
+            "Key questions for ISR assessment in FCV: Are DO/IP ratings calibrated to FCV context "
+            "(MS in active conflict may be a strong outcome)? Is there genuinely updated conflict "
+            "analysis or is FCV language copy-pasted from PAD? Are beneficiary data disaggregated "
+            "by displacement status, ethnicity, or geographic area? Is M&E functioning or are "
+            "results based on implementing agency self-reporting without verification? Are TPM "
+            "or GEMS reports referenced? Is the GRM operational with complaint trends reported? "
+            "Teams sometimes maintain artificially optimistic ratings to avoid escalation — flag "
+            "ISRs where ratings are static across multiple periods in a volatile context."
+        ),
+        "common_pitfalls": (
+            "A do-nothing ISR in an FCV context where context has changed is itself a red flag. "
+            "Flag: persistent gap between disbursement pace and results; DO/IP divergence not "
+            "explained; absence of FCV narrative update across multiple cycles; no reference to "
+            "access constraints when country context involves insecurity."
+        ),
+        "backward_forward_look": (
+            "Backward: Assess whether FCV risks have materialised since last ISR; whether "
+            "adaptations were made in response. Forward: Flag emerging risks for next reporting "
+            "period; recommend whether restructuring or MTR should be triggered."
+        ),
     },
     "AF": {
-        "purpose": "Additional Financing — scales up or addresses gaps in existing projects.",
-        "scope": "To be expanded.",
-        "fcv_considerations": "To be expanded.",
+        "purpose": (
+            "Additional Financing (AF) provides supplementary funding to a well-performing project "
+            "under implementation. Appropriate when: financing gap or cost overrun; scaling up "
+            "successful activities within same PDO; or modified activities requiring additional "
+            "funds alongside restructuring. Preferred over a new operation when institutional "
+            "arrangements, PDO, and borrower are the same and the original project has demonstrated "
+            "capacity. In FCV settings, AF is attractive because it scales up a proven platform "
+            "rapidly, avoiding the long preparation timeline of a new operation."
+        ),
+        "scope": (
+            "AF must be consistent with the original PDO (changing PDO requires simultaneous "
+            "Level 1 restructuring). AF can: add components, scale up existing components, extend "
+            "geographic coverage, add financing categories, adjust targets, update RF. For ESF "
+            "projects, AF scaling up activities requires updated E&S assessments, revised ESCP "
+            "and SEP. For pre-ESF projects, AF for cost overruns continues under original "
+            "safeguards; AF for new/scaled activities triggers ESF application."
+        ),
+        "key_policies": (
+            "If AF does not change PDO or trigger new E&S risk category change, Country Director "
+            "can approve. If AF involves PDO change or Level 1 restructuring, RVP approves. "
+            "Board approval not required for AF in most circumstances since 2017 policy changes."
+        ),
+        "typical_documents": (
+            "AF Project Paper with sections on changes and rationale; updated results framework; "
+            "updated ESCP and SORT; for scaled activities: updated E&S assessments, revised SEP."
+        ),
+        "fcv_considerations": (
+            "AF is an important mechanism for mid-course FCV correction. Use AF to: introduce "
+            "CERC if not included at appraisal; add TPM if access is now constrained; scale up "
+            "CLD/CDD components showing social cohesion impacts; introduce HEIS if procurement "
+            "capacity has deteriorated; expand geographic coverage to conflict-affected areas "
+            "excluded at design. The tool should assess whether AF documents acknowledge the "
+            "changed FCV context since original approval and whether the additional financing "
+            "addresses those changes."
+        ),
+        "common_pitfalls": (
+            "AF in FCV frequently: fails to update conflict analysis from appraisal; scales up "
+            "without assessing whether implementation arrangements remain appropriate for current "
+            "security; misses opportunity to introduce FCV levers (CERC, HEIS, TPM) absent from "
+            "original design; fails to adjust beneficiary targeting for displacement patterns "
+            "that shifted since original appraisal."
+        ),
+        "backward_forward_look": (
+            "Backward: Assess original project performance, what worked, what FCV assumptions "
+            "proved wrong. Forward: How does AF design address gaps identified during "
+            "implementation? Are new/scaled activities appropriate for current FCV context?"
+        ),
     },
     "Restructuring": {
-        "purpose": "Restructuring Paper — modifies project design during implementation.",
-        "scope": "To be expanded.",
-        "fcv_considerations": "To be expanded.",
+        "purpose": (
+            "Restructuring modifies a project during implementation to respond to changed "
+            "circumstances, correct design flaws, or adjust targets. Since 2017 policy "
+            "streamlining, restructurings are classified as Level 1 (limited Board cases only — "
+            "e.g., safeguard category change to Category A, use of Alternative Procurement "
+            "Arrangements, guarantee expiration extension; all other former Level 1 changes "
+            "including PDO changes are now delegated to RVP) and Level 2 (Country Director "
+            "approval for all other changes). Exception: closing date extensions of 2+ years "
+            "cumulative require RVP approval."
+        ),
+        "scope": (
+            "Restructuring can change: PDO (Level 1/RVP), components, sub-components, financing "
+            "allocations, disbursement categories, implementing agencies, results indicators and "
+            "targets, closing dates, procurement methods, geographic scope. Cannot change: the "
+            "borrower, the lending instrument type, or legal agreement structure without amendment. "
+            "Important: PDO changes do NOT require Board approval since 2017 — the tool should "
+            "not state otherwise."
+        ),
+        "key_policies": (
+            "For ESF projects, restructuring changing design impacting E&S risk requires: updated "
+            "ESCP, potentially revised SEP, new/updated E&S assessments. For pre-ESF projects, "
+            "restructuring triggering a new safeguard policy requires Level 1 process."
+        ),
+        "typical_documents": (
+            "Restructuring Paper with proposed changes and rationale; updated results framework; "
+            "updated SORT; for significant changes: updated E&S documentation."
+        ),
+        "fcv_considerations": (
+            "Most common FCV restructuring triggers: deteriorating security forcing geographic "
+            "refocus; government capacity collapse requiring implementing agency change (e.g., "
+            "shift to UN); targets unachievable due to conflict not implementation failure; "
+            "need to add CERC post-appraisal; closing date extensions due to insecurity delays. "
+            "The tool should assess whether restructuring packages: include updated conflict "
+            "analysis justifying changes; explicitly address whether PDO remains achievable; "
+            "strengthen rather than simply reduce FCV ambition (not just dropping hard-to-reach "
+            "beneficiaries without explaining adaptive rationale)."
+        ),
+        "common_pitfalls": (
+            "Restructuring in FCV frequently: drops conflict-affected areas or groups to improve "
+            "ratings without explaining Do No Harm implications; revises targets downward without "
+            "acknowledging PDO achievability impact; fails to update implementation arrangements "
+            "to reflect who is actually doing the work; processes multiple small restructurings "
+            "rather than comprehensive redesign, resulting in accumulated RF incoherence."
+        ),
+        "backward_forward_look": (
+            "Backward: What changed in the FCV context that necessitates restructuring? Was the "
+            "original design flawed or did context deteriorate? Forward: Is the restructured "
+            "design appropriate for the current and projected FCV context? Are the revised "
+            "targets realistic?"
+        ),
     },
     "ICR": {
-        "purpose": "Implementation Completion Report — assesses project results at closing.",
-        "scope": "To be expanded.",
-        "fcv_considerations": "To be expanded.",
+        "purpose": (
+            "The Implementation Completion and Results Report (ICR) is the Bank's mandatory "
+            "self-evaluation at project closing, prepared by the task team within six months "
+            "of the closing date. Serves accountability (did the project achieve its objectives?) "
+            "and learning (what lessons inform future operations?). Subsequently reviewed by the "
+            "Independent Evaluation Group (IEG), which produces an ICR Review (ICRR) that may "
+            "revise the team's ratings. For FCV projects, IEG applies specific FCV guidance "
+            "from its ICR Review Manual (updated November 2025)."
+        ),
+        "scope": (
+            "The ICR assesses: Relevance of PDO; Achievement of PDO (Efficacy); Efficiency; "
+            "Overall Outcome rating; Bank Performance; Borrower Performance. Ratings use a "
+            "six-point scale (HS through HU). For projects with PDO changes mid-implementation, "
+            "a split evaluation is required — rating performance against original and revised "
+            "PDOs separately, weighted by disbursement."
+        ),
+        "key_policies": (
+            "Governed by ICR Guidelines and IEG ICR Review Manual. The ICR must be submitted "
+            "within six months of closing. IEG reviews all ICRs and may revise ratings. "
+            "For FCV projects, IEG applies specific FCV assessment criteria."
+        ),
+        "typical_documents": (
+            "ICR report with structured sections: Context at Appraisal, Significant Changes, "
+            "Relevance of PDO, Efficacy, Efficiency, Bank Performance, Borrower Performance, "
+            "Risk to Development Outcome, Lessons Learned. Supporting data: final results "
+            "framework data, financial summary, beneficiary survey results if available."
+        ),
+        "fcv_considerations": (
+            "Per IEG guidance, ICRs for FCV projects must include: FCV storyline (context at "
+            "appraisal and how it evolved during implementation); DRR documentation (explicit "
+            "mapping of interventions against Drivers of Resilience and Risk); ToC reconstruction "
+            "(all versions of the ToC with rationale for changes); adaptation narrative (what "
+            "adaptations made, whether timely and adequate — explicitly assessed by IEG); "
+            "capacity and access narrative (how insecurity affected implementation, data "
+            "collection, and results verification, including alternative methods used). "
+            "Effective FCV ICRs also document: which FCV levers worked as intended; political "
+            "economy dynamics affecting implementation; how targeting held up against elite "
+            "capture; GRM functionality; interaction with HDP nexus actors."
+        ),
+        "common_pitfalls": (
+            "IEG evidence shows recurring problems: (a) generic FCV language not engaging with "
+            "specific conflict dynamics; (b) over-attribution of positive outcomes in complex "
+            "causal environments; (c) under-documentation of adaptations — listing what changed "
+            "but not why or how; (d) results from self-reporting agencies without independent "
+            "verification; (e) lessons too general to be usable; (f) failure to honestly account "
+            "for elite capture, geographic exclusion, or DNH failures; (g) no IEG-accessible "
+            "data trail because M&E systems collapsed mid-project. "
+            "Flag ICRs that: claim S or above without credible data trail; lack FCV-contextual "
+            "narrative; present conflict-area results without explaining verification methodology; "
+            "describe adaptations without explaining rationale or assessing adequacy."
+        ),
+        "backward_forward_look": (
+            "Primarily backward-looking: What was achieved? What worked and what didn't? "
+            "What FCV lessons should be captured? Forward element: Risk to Development Outcome "
+            "assessment — are results sustainable given the FCV context? What institutional "
+            "capacity was built? What lessons should inform successor operations?"
+        ),
     },
 }
