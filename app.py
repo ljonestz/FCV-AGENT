@@ -14,7 +14,7 @@ from background_docs import (
     FCV_GUIDE, FCV_OPERATIONAL_MANUAL, FCV_REFRESH_FRAMEWORK,
     PLAYBOOK_DIAGNOSTICS, PLAYBOOK_PREPARATION, PLAYBOOK_IMPLEMENTATION,
     PLAYBOOK_CLOSING, STAGE_GUIDANCE_MAP,
-    WB_INSTRUMENT_GUIDE, FCV_GLOSSARY, WB_PROCESS_GUIDE
+    WB_INSTRUMENT_GUIDE, FCV_GLOSSARY, WB_PROCESS_GUIDE, FCS_LIST
 )
 import io
 try:
@@ -2925,6 +2925,8 @@ def run_stage():
                     FCV_REFRESH_FRAMEWORK +
                     "\n\n--- WBG FCV Sensitivity and Responsiveness Guide ---\n" +
                     FCV_GUIDE +
+                    "\n\n--- World Bank FCS Country List (2015–Present) ---\n" +
+                    FCS_LIST +
                     "\n\n--- FCV Glossary (Key Term Definitions) ---\n" +
                     get_glossary_for_prompt()
                 )
@@ -3113,6 +3115,7 @@ def run_stage():
                         "\n\n--- WBG FCV Sensitivity and Responsiveness Guide (always included) ---\n" + FCV_GUIDE +
                         "\n\n--- FCV Operational Playbook — Diagnostics Phase (always included) ---\n" + PLAYBOOK_DIAGNOSTICS +
                         "\n\n--- WBG FCV Strategy Refresh Framework (always included) ---\n" + FCV_REFRESH_FRAMEWORK +
+                        "\n\n--- World Bank FCS Country List (2015–Present) ---\n" + FCS_LIST +
                         "\n\n--- WBG Instrument Types (for identification) ---\n" + _instrument_recognition
                     )})
                     content_parts.append({"type": "text", "text": stage_prompt})
@@ -3494,6 +3497,7 @@ def run_express():
                     "\n\n--- WBG FCV Sensitivity and Responsiveness Guide (always included) ---\n" + FCV_GUIDE +
                     "\n\n--- FCV Operational Playbook — Diagnostics Phase (always included) ---\n" + PLAYBOOK_DIAGNOSTICS +
                     "\n\n--- WBG FCV Strategy Refresh Framework (always included) ---\n" + FCV_REFRESH_FRAMEWORK +
+                    "\n\n--- World Bank FCS Country List (2015–Present) ---\n" + FCS_LIST +
                     "\n\n--- WBG Instrument Types (for identification) ---\n" + _instrument_recognition
                 )})
 
@@ -3592,6 +3596,8 @@ def run_express():
                         FCV_REFRESH_FRAMEWORK +
                         "\n\n--- WBG FCV Sensitivity and Responsiveness Guide ---\n" +
                         FCV_GUIDE +
+                        "\n\n--- World Bank FCS Country List (2015–Present) ---\n" +
+                        FCS_LIST +
                         "\n\n--- FCV Glossary (Key Term Definitions) ---\n" +
                         get_glossary_for_prompt()
                     )

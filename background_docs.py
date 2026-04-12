@@ -106,7 +106,92 @@ When rating FCV sensitivity or responsiveness, use these levels:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 2. FCV_OPERATIONAL_MANUAL — 12 Recommendations + 25 Key Questions (~5,000 tokens)
+# 2. FCS_LIST — World Bank FCS Country List 2015–Present
+# Last verified: 2026-04 (FY2026 list)
+# Use: Cross-check FCS classification in Stage 1 Part B and Stage 2 ratings
+# ─────────────────────────────────────────────────────────────────────────────
+
+FCS_LIST = """## World Bank Fragile and Conflict-affected Situations (FCS) List — 2015 to Present
+
+Source: World Bank FCS list (fiscal year reporting, 2015–FY2026).
+Use this list to verify whether the project country is or has been classified as FCS, and for how long.
+A country on the FCS list is eligible for enhanced operational flexibilities and IDA FCV Envelope financing (PRA / RECA / TAA, subject to additional eligibility criteria).
+
+### Currently on the FCS List (FY2026 / "Present")
+Afghanistan, Burkina Faso, Burundi, Cameroon, Central African Republic, Chad, Comoros,
+Congo (Democratic Republic of), Congo (Republic of), Eritrea, Ethiopia, Guinea-Bissau,
+Haiti, Iraq, Kiribati, Kosovo, Lebanon, Libya, Mali, Marshall Islands,
+Micronesia (Federated States of), Mozambique, Myanmar, Niger, Nigeria, Papua New Guinea,
+São Tomé and Príncipe, Solomon Islands, Somalia, South Sudan, Sudan, Syrian Arab Republic,
+Timor-Leste, Tuvalu, Ukraine, Venezuela (RB), West Bank and Gaza, Yemen (Republic of), Zimbabwe
+
+### Year of FCS Entry (for countries currently on the list)
+| Country | On FCS list since |
+|---|---|
+| Afghanistan | 2015 |
+| Burkina Faso | 2020 |
+| Burundi | 2015 |
+| Cameroon | 2020 |
+| Central African Republic | 2015 |
+| Chad | 2015 |
+| Comoros | 2015 |
+| Congo, Democratic Republic of | 2015 |
+| Congo, Republic of | 2015 |
+| Eritrea | 2015 |
+| Ethiopia | 2022 |
+| Guinea-Bissau | 2015 |
+| Haiti | 2015 |
+| Iraq | 2015 |
+| Kiribati | 2015 |
+| Kosovo | 2015 |
+| Lebanon | 2015 |
+| Libya | 2015 |
+| Mali | 2015 |
+| Marshall Islands | 2015 |
+| Micronesia, Federated States of | 2015 |
+| Mozambique | 2021 |
+| Myanmar | 2015 |
+| Niger | 2020 |
+| Nigeria | 2020 |
+| Papua New Guinea | 2020 |
+| São Tomé and Príncipe | 2024 |
+| Solomon Islands | 2015 |
+| Somalia | 2015 |
+| South Sudan | 2015 |
+| Sudan | 2015 |
+| Syrian Arab Republic | 2015 |
+| Timor-Leste | 2015 |
+| Tuvalu | 2015 |
+| Ukraine | 2023 |
+| Venezuela, RB | 2020 |
+| West Bank and Gaza | 2015 |
+| Yemen, Republic of | 2015 |
+| Zimbabwe | 2015 |
+
+### Graduated from FCS List (appeared on list 2015–present but no longer classified FCS)
+| Country | Years on FCS list | Notes |
+|---|---|---|
+| Côte d'Ivoire | 2015–2019 | Graduated FY2020 |
+| Djibouti | 2015–2019 | Graduated FY2020 |
+| Gambia, The | 2015–2021 | Graduated FY2022 |
+| Liberia | 2015–2019 | Graduated FY2020 |
+| Madagascar | 2015–2018 | Graduated FY2019 |
+| Togo | 2015–2019 | Graduated FY2020 |
+| Armenia | 2022 only | One-year classification; removed FY2023 |
+| Azerbaijan | 2022 only | One-year classification; removed FY2023 |
+| Lao PDR | 2021 only | One-year classification; removed FY2022 |
+
+### Usage Notes for Analysis
+- If the project country is currently on the FCS list, confirm FCS status and note the year of entry.
+- If a country has been on the FCS list since 2015, this represents over a decade of chronic fragility — flag this in analysis.
+- If a country entered recently (e.g., Ethiopia 2022, Ukraine 2023, São Tomé 2024), flag the recency and likely drivers.
+- If the country graduated from the FCS list, acknowledge the trajectory and any residual fragility risk.
+- FCS classification is a necessary but not sufficient condition for IDA FCV Envelope eligibility — additional CPIA and conflict criteria apply.
+- Do not assume FCS = conflict. FCS encompasses fragility (weak institutions, political instability) as well as active conflict situations.
+"""
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 3. FCV_OPERATIONAL_MANUAL — 12 Recommendations + 25 Key Questions (~5,000 tokens)
 # Last verified: 2026-04
 # Policy-sensitive: 12 OST recommendations, 25 key questions, operational flexibilities
 # ─────────────────────────────────────────────────────────────────────────────
