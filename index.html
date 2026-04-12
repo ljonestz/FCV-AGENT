@@ -1436,6 +1436,31 @@
     margin-right: 4px; margin-bottom: 2px;
   }
 
+  /* ── Stage 1 Part A / Part B visual sections ─────────────────────────────── */
+  .s1-section-header {
+    display:flex;align-items:center;gap:8px;
+    font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;
+    padding:9px 14px;border-radius:6px;margin:22px 0 12px;
+  }
+  .s1-section-header:first-child { margin-top:0; }
+  .s1-header-a { background:#e3f2fd;color:#1565c0;border-left:3px solid #1565c0; }
+  .s1-header-b { background:#e8f5e9;color:#2e7d32;border-left:3px solid #43a047;margin-top:32px; }
+  .s1-part-body > p:first-child {
+    font-size:14px;line-height:1.75;color:#1e2d3d;
+    background:#f9fafb;border-left:3px solid #cbd5e0;
+    padding:10px 14px;border-radius:0 6px 6px 0;margin-bottom:16px;
+  }
+
+  /* ── Finalized PAD retrospective notice (Stage 3) ─────────────────────────── */
+  .finalized-pad-notice {
+    display:flex;align-items:flex-start;gap:12px;
+    background:#fff8e1;border:1px solid #f9a825;border-left:4px solid #f9a825;
+    border-radius:8px;padding:14px 16px;margin-bottom:14px;
+    font-size:13px;line-height:1.55;color:#5d4037;
+  }
+  .fpn-icon { flex-shrink:0;margin-top:1px;color:#e65100; }
+  .fpn-body strong { display:block;margin-bottom:4px;color:#4a3000;font-weight:700; }
+
   /* ── Stage-awareness badge (shown on Stage 3 output) ─────────────────────── */
   .stage-awareness-badge {
     background: #e3f2fd; color: #1565c0; padding: 8px 16px;
@@ -3226,6 +3251,37 @@
     }
   }
 
+  function isFinalizedPAD() {
+    if (docType !== 'PAD') return false;
+    const ad = temporalContext && temporalContext.approval_date;
+    if (!ad || ad === 'Unknown') return false;
+    const d = new Date(ad.length >= 7 ? ad.slice(0,7) + '-01' : ad);
+    return !isNaN(d.getTime()) && d < new Date();
+  }
+
+  function renderStage1(text) {
+    // Split on "## Part B" heading (handles "## Part B:", "## Part B —", etc.)
+    const splitRe = /\n(#{1,3}\s*Part B[:\s\u2014][^\n]*\n)/i;
+    const m = splitRe.exec(text);
+    if (!m) return md(text); // fallback: render as-is
+
+    let partA = text.slice(0, m.index);
+    let partB = text.slice(m.index + m[0].length);
+
+    // Strip the "## Part A: ..." heading — replaced by the styled badge below
+    partA = partA.replace(/^#{1,3}\s*Part A[:\s\u2014][^\n]*\n+/im, '');
+
+    const iconDoc = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="flex-shrink:0"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`;
+    const iconGlobe = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>`;
+
+    return (
+      `<div class="s1-section-header s1-header-a">${iconDoc}&nbsp;Part A — From your document only</div>` +
+      `<div class="s1-part-body">${md(partA.trim())}</div>` +
+      `<div class="s1-section-header s1-header-b">${iconGlobe}&nbsp;Part B — Wider context &amp; research</div>` +
+      `<div class="s1-part-body">${md(partB.trim())}</div>`
+    );
+  }
+
   function renderOut(stage,result,isFollowOn){
     const isLast=stage===3;
     const hasSidebar=stage>=2;
@@ -3236,11 +3292,19 @@
       const _pre=_sp[0]||result;
       const _rest=_sp[1]||'';
       const _stageBadge = docType && docType !== 'Unknown' ? `<div class="stage-awareness-badge">Recommendations tailored for <strong>${esc(docType)}</strong> stage</div>` : '';
-      _outBodyContent=_stageBadge+md(_pre)+renderRiskExposure(stageRiskExposure)+md(_rest)+renderSRCards(stageSensitivitySummary,stageResponsivenessSummary)+'<div id="priorities-intro"></div>';
+      const _padNotice = isFinalizedPAD() ? `<div class="finalized-pad-notice">
+        <div class="fpn-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+        <div class="fpn-body"><strong>Retrospective screening — finalized PAD</strong>This document was Board-approved in ${esc(temporalContext.approval_date)}. The recommendations below represent the guidance this tool would have provided had the document been reviewed prior to appraisal. They are framed as if the project is still in the design stage and can be used for retrospective peer review, benchmarking, or to inform future similar projects.</div>
+      </div>` : '';
+      _outBodyContent=_padNotice+_stageBadge+md(_pre)+renderRiskExposure(stageRiskExposure)+md(_rest)+renderSRCards(stageSensitivitySummary,stageResponsivenessSummary)+'<div id="priorities-intro"></div>';
     }else{
       const cleanResult = stage===1 ? result.replace(/\n*%%%DOC_TYPE:[^%\n]*%%%\n*/g,'') : result;
-      const srDefPrefix = stage===2 ? buildSRDefinitionBox() + buildTagLegend() : '';
-      _outBodyContent = srDefPrefix + md(cleanResult);
+      if(stage===1){
+        _outBodyContent = renderStage1(cleanResult);
+      }else{
+        const srDefPrefix = stage===2 ? buildSRDefinitionBox() + buildTagLegend() : '';
+        _outBodyContent = srDefPrefix + md(cleanResult);
+      }
     }
     document.getElementById('stage-disp').innerHTML=`
       <div class="stage-hdr ani">
@@ -3768,10 +3832,13 @@
 
     // Build a Word-compatible HTML document
     const dateStr = new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
+    const padNoticeHtml = isFinalizedPAD()
+      ? `<div style="background:#fff8e1;border-left:4pt solid #f9a825;padding:10pt 14pt;margin:12pt 0;font-size:10pt;color:#5d4037"><strong>Retrospective screening — finalized PAD.</strong> This document was Board-approved in ${esc(temporalContext.approval_date)}. The recommendations below represent the guidance this tool would have provided had the document been reviewed prior to appraisal. They are framed as if the project is still in the design stage and can be used for retrospective peer review, benchmarking, or to inform future similar projects.</div>`
+      : '';
     let body = `<h1>FCV Recommendations Note</h1>
 <p style="color:#666;font-size:9pt"><em>Generated by WBG FCV Project Screener · ${dateStr}</em></p>
 <hr>
-<h2>Executive Summary · Project-Wide Considerations</h2>
+${padNoticeHtml}<h2>Executive Summary · Project-Wide Considerations</h2>
 ${md(execSummary)}`;
 
     if(stageThreePriorities.length){

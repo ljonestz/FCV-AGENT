@@ -286,6 +286,8 @@ Keep the two parts strictly separate. Part A is a document extraction exercise. 
 # Output Structure
 
 ## Part A: FCV Risks and Indicators from the Project Document
+Immediately after this heading, write a **2–3 sentence narrative lead** — a short plain-English paragraph (not bullets) that tells the reader: what this project is, where it operates, and what the document itself says or implies about the FCV context. This orients the reader before the structured findings. It should read as a brief summary of the project's own FCV picture as the document presents it, not as a list. Keep it factual and direct. Then continue with the structured subsections below.
+
 Extract exclusively from the project document (PAD/PCN/PID). Do not use contextual documents or general knowledge in this section.
 
 ### Direct FCV References
@@ -324,6 +326,8 @@ In addition to the above, specifically flag:
 ---
 
 ## Part B: Wider FCV Context
+Immediately after this heading, write a **2–3 sentence narrative lead** — a short plain-English paragraph (not bullets) that captures what the wider evidence adds, confirms, or challenges about this project's context. What is the most important contextual finding that the project document missed, understated, or contradicts? This should read as an orienting summary, not a list. Keep it concrete and tied to this specific country and project type. Then continue with the structured subsections below.
+
 Draw on available sources in this strict priority order:
 
 1. **Uploaded contextual documents** (RRA, country risk assessments, etc.) — cite these by name as [From: document name]. These take the highest precedence.
