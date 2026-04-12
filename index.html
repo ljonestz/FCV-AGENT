@@ -553,6 +553,10 @@
     .research-brief-panel.open .research-brief-body{display:block}
     .research-brief-notice{display:flex;align-items:flex-start;gap:7px;font-size:12px;color:var(--muted);font-style:italic;margin:12px 0 14px;padding:9px 12px;background:rgba(0,159,218,.06);border-radius:6px;line-height:1.5;border-left:3px solid var(--wbg-cyan)}
     .research-brief-content{font-size:13.5px;line-height:1.65}
+    .temporal-context-panel{background:#f0f7ff;border:1px solid #b3d4fc;border-radius:8px;padding:12px 16px;margin:12px 0;font-size:13px;color:#1a3a5c;display:flex;flex-wrap:wrap;gap:16px;align-items:center}
+    .temporal-context-panel .tc-item{display:flex;align-items:center;gap:4px}
+    .temporal-context-panel .tc-label{font-weight:600;font-size:11px;text-transform:uppercase;color:#5a7a9a;margin-right:2px}
+    .temporal-context-panel .tc-value{font-weight:500}
     .trunc-warn-area{background:#fff7ed;border:1.5px solid #fed7aa;border-radius:var(--radius);padding:14px 18px;margin-bottom:14px}
     .trunc-warn-hdr{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:#c2410c;margin-bottom:8px}
     .trunc-warn-item{font-size:12.5px;color:#7c2d12;margin-bottom:4px;line-height:1.55;padding-left:4px}
@@ -815,6 +819,15 @@
     .deeper-trail,.deeper-playbook{font-size:14px;line-height:1.6;}
     .deeper-loading{font-size:13px;color:var(--muted);padding:10px 0;display:flex;align-items:center;gap:8px;}
 
+    .horizon-panel{background:#fafbfc;border:1px dashed #c0c8d0;border-radius:8px;margin:24px 0 16px 0;padding:0;}
+    .horizon-panel summary{padding:12px 16px;font-size:14px;font-weight:600;color:#5a6a7a;cursor:pointer;list-style:none;}
+    .horizon-panel summary::-webkit-details-marker{display:none;}
+    .horizon-panel summary::before{content:'\25B6';display:inline-block;margin-right:8px;font-size:10px;transition:transform 0.2s;}
+    .horizon-panel[open] summary::before{transform:rotate(90deg);}
+    .horizon-panel .horizon-body{padding:4px 16px 16px 16px;font-size:13px;color:#444;line-height:1.6;}
+    .horizon-panel .horizon-body p{margin:8px 0;}
+    .horizon-panel .horizon-disclaimer{font-size:11px;font-style:italic;color:#888;margin-bottom:8px;}
+
     .priorities-intro{margin-bottom:14px;}
     .priorities-section-hdr{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--s4);margin:20px 0 10px;padding-bottom:6px;border-bottom:2px solid var(--s4);}
     .pi-lead{font-size:15px;color:var(--text);line-height:1.6;margin:0 0 10px;}
@@ -827,6 +840,8 @@
     .pi-risk-m{background:#dbeafe;color:#1d4ed8;}
     .pi-risk-l{background:#d1fae5;color:#065f46;}
     .pi-footer{font-size:13px;color:var(--muted);margin:0;line-height:1.5;}
+    .sr-legend{display:flex;flex-direction:column;gap:5px;margin:0 0 12px;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:6px;}
+    .sr-legend-item{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--text);line-height:1.5;}
 
     /* Priority overview widget (replaces Risk Overview) */
     .pov-widget{padding:12px 14px;}
@@ -1421,6 +1436,31 @@
     margin-right: 4px; margin-bottom: 2px;
   }
 
+  /* ── Stage 1 Part A / Part B visual sections ─────────────────────────────── */
+  .s1-section-header {
+    display:flex;align-items:center;gap:8px;
+    font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;
+    padding:9px 14px;border-radius:6px;margin:22px 0 12px;
+  }
+  .s1-section-header:first-child { margin-top:0; }
+  .s1-header-a { background:#e3f2fd;color:#1565c0;border-left:3px solid #1565c0; }
+  .s1-header-b { background:#e8f5e9;color:#2e7d32;border-left:3px solid #43a047;margin-top:32px; }
+  .s1-part-body > p:first-child {
+    font-size:14px;line-height:1.75;color:#1e2d3d;
+    background:#f9fafb;border-left:3px solid #cbd5e0;
+    padding:10px 14px;border-radius:0 6px 6px 0;margin-bottom:16px;
+  }
+
+  /* ── Finalized PAD retrospective notice (Stage 3) ─────────────────────────── */
+  .finalized-pad-notice {
+    display:flex;align-items:flex-start;gap:12px;
+    background:#fff8e1;border:1px solid #f9a825;border-left:4px solid #f9a825;
+    border-radius:8px;padding:14px 16px;margin-bottom:14px;
+    font-size:13px;line-height:1.55;color:#5d4037;
+  }
+  .fpn-icon { flex-shrink:0;margin-top:1px;color:#e65100; }
+  .fpn-body strong { display:block;margin-bottom:4px;color:#4a3000;font-weight:700; }
+
   /* ── Stage-awareness badge (shown on Stage 3 output) ─────────────────────── */
   .stage-awareness-badge {
     background: #e3f2fd; color: #1565c0; padding: 8px 16px;
@@ -1465,6 +1505,44 @@
   .mode-title{font-size:14px;font-weight:700;color:var(--wbg-navy);margin-bottom:4px;padding-right:24px}
   .mode-desc{font-size:12px;color:var(--wbg-gray-500);line-height:1.5;margin-bottom:10px}
   .mode-time{font-size:11px;color:#9CA3AF;font-weight:600;display:flex;align-items:center;gap:5px;margin-top:auto;padding-top:8px}
+
+  /* ── Review Type Selector ── */
+  .review-type-section{padding:20px 32px 0}
+  .review-type-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--wbg-navy);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+  .review-type-label svg{color:var(--wbg-cyan)}
+  .review-type-cards{display:flex;gap:12px;align-items:stretch}
+  .review-type-card{flex:1;border-radius:6px;padding:14px 16px;cursor:pointer;transition:all .2s ease;position:relative;border:1.5px solid var(--wbg-gray-100);background:var(--wbg-gray-50);display:flex;flex-direction:column}
+  .review-type-card:hover{border-color:#B0C4D8}
+  .review-type-card.selected{border-color:var(--wbg-cyan);background:#fff;box-shadow:0 0 0 1px rgba(0,157,218,.1)}
+  .review-type-radio{width:16px;height:16px;border-radius:50%;border:2px solid var(--border);position:absolute;top:14px;right:14px;transition:all .2s}
+  .review-type-card.selected .review-type-radio{border-color:var(--wbg-cyan);background:var(--wbg-cyan);box-shadow:inset 0 0 0 2.5px #fff}
+  .review-type-badge{display:inline-block;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;padding:2px 7px;border-radius:3px;margin-bottom:6px;background:var(--wbg-gray-100);color:var(--wbg-gray-500)}
+  .review-type-title{font-size:13px;font-weight:700;color:var(--wbg-navy);margin-bottom:3px;padding-right:22px}
+  .review-type-desc{font-size:12px;color:var(--wbg-gray-500);line-height:1.4;margin-bottom:6px}
+  .review-type-docs{font-size:11px;color:#5a7a9a;font-style:italic;margin-top:auto;padding-top:4px}
+  .review-type-card-disabled{opacity:.5;cursor:not-allowed;pointer-events:none;}
+  @media(max-width:640px){.review-type-cards{flex-direction:column}}
+
+  /* ── Implementation coming-soon note ── */
+  .impl-soon-note{display:flex;align-items:center;gap:5px;padding:6px 32px 2px;font-size:11px;color:#9CA3AF}
+  .impl-soon-note svg{flex-shrink:0;color:#bae6fd}
+
+  /* ── Optional Context Box ── */
+  .context-box-section{margin:16px 32px 0}
+  .context-box-toggle{width:100%;display:flex;align-items:center;gap:8px;padding:10px 14px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;color:#0369a1;text-align:left;line-height:1;transition:background .15s,border-color .15s}
+  .context-box-toggle:hover{background:#e0f2fe;border-color:#7dd3fc}
+  .context-box-toggle.open{border-radius:6px 6px 0 0;border-bottom-color:transparent}
+  .context-box-toggle .toggle-chevron{margin-left:auto;flex-shrink:0;transition:transform .2s}
+  .context-box-toggle.open .toggle-chevron{transform:rotate(180deg)}
+  .context-box-body{padding:12px 14px 14px;background:#f8fafc;border:1px solid #bae6fd;border-top:none;border-radius:0 0 6px 6px}
+  .context-box-hint{font-size:12px;color:var(--muted);margin:0 0 10px;line-height:1.5}
+  .context-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+  .context-chip{font-size:11px;padding:4px 10px;border-radius:12px;border:1px solid #bae6fd;background:#fff;color:#0369a1;cursor:pointer;transition:border-color .15s,background .15s,color .15s;text-align:left;line-height:1.45;font-family:inherit}
+  .context-chip:hover{border-color:#009FDA;background:#e0f2fe}
+  .context-chip.active{border-color:#009FDA;background:#e0f2fe;font-weight:600}
+  .context-textarea{width:100%;box-sizing:border-box;height:88px;resize:vertical;padding:9px 12px;font-size:13px;font-family:inherit;color:var(--text);border:1px solid #bae6fd;border-radius:6px;line-height:1.5;display:block;background:#fff;transition:border-color .15s,box-shadow .15s}
+  .context-textarea:focus{outline:none;border-color:#009FDA;box-shadow:0 0 0 2px rgba(0,157,218,.1)}
+  .context-textarea::placeholder{color:#9CA3AF}
 
   /* ── Express Progress Screen ── */
   .express-progress{display:none;max-width:680px;width:100%;margin:0 auto;padding:48px 32px 40px}
@@ -1536,6 +1614,30 @@
   .stage-nav-btn.primary{background:var(--wbg-cyan);border-color:var(--wbg-cyan);color:#fff}
   .stage-nav-btn.primary:hover{background:#0088C7}
   @media(max-width:640px){.mode-cards{flex-direction:column}}
+  /* ── Glossary tooltips ────────────────────────────────────────────────────── */
+  .glossary-term {
+    border-bottom: 1px dotted #5a7a9a;
+    cursor: help;
+    position: relative;
+  }
+  .glossary-tooltip {
+    display: none;
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    background: #1a3a5c;
+    color: #fff;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    line-height: 1.4;
+    max-width: 320px;
+    min-width: 200px;
+    z-index: 1000;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    pointer-events: none;
+  }
+  .glossary-term:hover .glossary-tooltip { display: block; }
 </style>
 </head>
 <body>
@@ -1698,16 +1800,6 @@
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="2" style="flex-shrink:0;margin-top:2px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
       <span style="font-size:12.5px;color:rgba(255,255,255,.72);line-height:1.5;">Output is generated by an LLM and should be approached with care. It is not a replacement for expert analysis and should be used as a supplementary input only.</span>
     </div>
-    <div class="hero-sr-defs">
-      <div class="hero-sr-item">
-        <span class="hero-sr-badge hero-sr-s">S</span>
-        <div><strong>FCV Sensitivity</strong> — Is the project <em>aware of and designed for</em> the FCV context?</div>
-      </div>
-      <div class="hero-sr-item">
-        <span class="hero-sr-badge hero-sr-r">R</span>
-        <div><strong>FCV Responsiveness</strong> — Does the project <em>actively work to change</em> the FCV situation?</div>
-      </div>
-    </div>
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:0;">
       <button class="btn" onclick="document.getElementById('onboarding-modal').style.display='flex'" style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.3);color:#fff;font-size:13px;padding:9px 18px;border-radius:6px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
@@ -1715,11 +1807,9 @@
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="7 17 17 7"/><polyline points="7 7 17 7 17 17"/></svg>
       </button>
     </div>
-    <div class="hero-chips" style="margin-top:18px;">
-      <span class="hero-chip"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Three-stage analysis</span>
-      <span class="hero-chip"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> Web-informed risk context</span>
-      <span class="hero-chip"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> OST Manual · FCV Strategy · Playbook embedded</span>
-      <span class="hero-chip"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Refineable at each stage</span>
+    <div style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:6px;padding:10px 14px;max-width:560px;margin-top:18px;display:flex;align-items:flex-start;gap:8px;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="2.5" style="flex-shrink:0;margin-top:2px" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+      <span style="font-size:12.5px;color:rgba(255,255,255,.72);line-height:1.5;"><strong style="color:rgba(255,255,255,.9)">Pre-loaded:</strong> OST Manual on FCV Sensitivity and Responsiveness, WBG FCV Strategy, and FCV Playbook — no upload needed. Country-specific risk documents (e.g. RRA, risk summaries) should be uploaded separately per project.</span>
     </div>
   </div>
 </div>
@@ -1813,11 +1903,16 @@
       </div>
     </div>
 
+    <div class="impl-soon-note">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      Currently covers design-stage documents (PCN · PID · PAD). Implementation review (MTR · ISR) — coming soon.
+    </div>
+
     <form id="upload-form" onsubmit="return false">
     <div class="upload-zones">
       <div class="zone-wrap">
         <div class="zone-lbl"><span class="zone-dot p"></span>Project Document</div>
-        <p class="zone-hint">Supported document types: <strong>PCN</strong> (Project Concept Note) · <strong>PID</strong> (Project Information Document) · <strong>PAD</strong> (Project Appraisal Document) · <strong>AF</strong> (Additional Financing) · <strong>Restructuring Paper</strong> · <strong>ISR</strong> (Implementation Status Report). The tool detects the document type automatically and tailors its analysis to the project stage.</p>
+        <p class="zone-hint" id="zone-hint-primary">Upload your primary project document (PCN, PID, PAD, AF, Restructuring Paper, or ISR). For a stronger assessment, also upload supporting documents such as the RRA, technical studies, PPSD, or stakeholder analysis as contextual documents below. The tool works best with 1–3 documents. Documents over 150k characters will be automatically condensed.</p>
         <div class="drop-zone" id="dp">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--border)" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
           <p style="margin-bottom:4px">Drag &amp; drop, or</p>
@@ -1828,7 +1923,7 @@
 
       <div class="zone-wrap">
         <div class="zone-lbl"><span class="zone-dot c"></span>Contextual Documents</div>
-        <p class="zone-hint">Aim to upload 1–2 documents with detailed FCV insights for the country or region (e.g. RRA, country risk report). If none uploaded, trusted online sources will supplement the analysis.</p>
+        <p class="zone-hint" id="zone-hint-context">Upload 1–2 documents with FCV context for the country or region (e.g., RRA, country risk assessment, conflict analysis). If none uploaded, the tool will search trusted online sources to supplement. The more context provided, the more specific the assessment.</p>
         <div class="drop-zone" id="dc">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--border)" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
           <p style="margin-bottom:4px">Drag &amp; drop, or</p>
@@ -1869,13 +1964,23 @@
       </div>
     </div>
 
-    <div class="builtin-notice">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
-      <span><strong>Pre-loaded:</strong> OST Manual on FCV Sensitivity and Responsiveness, WBG FCV Strategy, and FCV Playbook — no upload needed. Country-specific risk documents (e.g. RRA, risk summaries) should be uploaded separately per project.</span>
-    </div>
-    <div class="confidential-notice">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2.5" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-      <div><strong>Confidentiality reminder:</strong> Do not upload classified, confidential, or otherwise restricted documents. Only upload materials approved for use with external AI processing systems.</div>
+    <!-- ══ OPTIONAL CONTEXT BOX ══ -->
+    <div class="context-box-section" id="context-box-section">
+      <button class="context-box-toggle" id="context-toggle" type="button" onclick="toggleContextBox()" aria-expanded="false" aria-controls="context-box-body">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+        Want to add further context or framing?
+        <span style="font-size:11px;font-weight:400;color:#7dd3fc;margin-left:2px">— optional</span>
+        <svg class="toggle-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="context-box-body" id="context-box-body" hidden>
+        <p class="context-box-hint">Add anything that should shape the assessment — peer review comments, a specific FCV angle, or recent country developments. This is passed to the AI at the start of analysis.</p>
+        <p class="context-box-hint" style="margin-top:-4px;color:#7dd3fc;font-size:11px">Examples — click to use:</p>
+        <div class="context-chips">
+          <button type="button" class="context-chip" onclick="applyContextChip(this)" data-text="Peer reviewers have flagged that the FCV sensitivity analysis needs strengthening — please pay particular attention to Do No Harm risks and community exclusion dynamics in your assessment.">Peer reviewers flagged FCV sensitivity needs strengthening — focus on Do No Harm and exclusion</button>
+          <button type="button" class="context-chip" onclick="applyContextChip(this)" data-text="Conflict or security conditions have changed since the project was prepared. Please factor this into the assessment and flag where the current design may need updating to reflect the changed situation on the ground.">Security or conflict conditions have changed since project preparation</button>
+        </div>
+        <textarea id="user-context" class="context-textarea" aria-label="Additional context for the analysis" placeholder="e.g. The team needs to strengthen the Do No Harm analysis before the next peer review. Please focus on exclusion risks, grievance mechanisms, and conflict-sensitive targeting…" oninput="syncContextChips(this.value)"></textarea>
+      </div>
     </div>
 
     <div class="upload-foot">
@@ -1888,6 +1993,7 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
       </button>
     </div>
+
   </div>
 
   <!-- Analysis panel -->
@@ -1909,8 +2015,22 @@
   let pF=[],cF=[],hist=[],curS=0,busy=false;
   let sessionName='';
   let docType='Unknown';
+  let instrumentType='Unknown';
+  let horizonConsiderations='';
+  let temporalContext={};
   let analysisMode='express';
+  let reviewMode='design';
+  let processType='Unknown';
   // Stage 3 (Recommendations) state is declared in the Stage 3 section below
+
+  // ── Glossary ───────────────────────────────────────────────────────────────
+  let fcvGlossary = {};
+  (async function loadGlossary(){
+    try {
+      const r = await fetch('/api/glossary');
+      if(r.ok) fcvGlossary = await r.json();
+    } catch(e) { /* silent — tooltips just won't appear */ }
+  })();
 
   // ── Mode selection ────────────────────────────────────────────────────────
   function selectMode(mode){
@@ -1918,6 +2038,61 @@
     document.getElementById('mode-express').classList.toggle('selected',mode==='express');
     document.getElementById('mode-stepbystep').classList.toggle('selected',mode==='stepbystep');
     localStorage.setItem('fcv_analysis_mode',mode);
+  }
+
+  // ── Review type selection (Design vs Implementation) ─────────────────────
+  function selectReviewMode(mode){
+    reviewMode=mode;
+    const rtd=document.getElementById('rt-design');
+    const rti=document.getElementById('rt-implementation');
+    if(rtd)rtd.classList.toggle('selected',mode==='design');
+    if(rti)rti.classList.toggle('selected',mode==='implementation');
+    const ph1=document.getElementById('zone-hint-primary');
+    const ph2=document.getElementById('zone-hint-context');
+    const startBtn=document.getElementById('start-btn');
+    if(ph1){
+      ph1.textContent=mode==='implementation'
+        ? 'Upload the MTR or ISR document to be reviewed. The tool will detect whether this is an MTR or ISR and apply the appropriate review framework. Documents over 150k characters will be automatically condensed.'
+        : 'Upload your primary project document (PCN, PID, PAD, AF, Restructuring Paper, or ISR). For a stronger assessment, also upload supporting documents such as the RRA, technical studies, PPSD, or stakeholder analysis as contextual documents below. The tool works best with 1\u20133 documents. Documents over 150k characters will be automatically condensed.';
+    }
+    if(ph2){
+      ph2.textContent=mode==='implementation'
+        ? 'Upload 1\u20132 documents providing implementation context (e.g., previous ISR, stakeholder feedback, progress reports, or country risk updates). The more context provided, the more grounded the course-correction recommendations.'
+        : 'Upload 1\u20132 documents with FCV context for the country or region (e.g., RRA, country risk assessment, conflict analysis). If none uploaded, the tool will search trusted online sources to supplement. The more context provided, the more specific the assessment.';
+    }
+    if(startBtn){
+      startBtn.innerHTML=(mode==='implementation'
+        ? 'Begin Implementation Review'
+        : 'Begin FCV Analysis')+
+        ' <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>';
+    }
+    localStorage.setItem('fcv_review_mode',mode);
+  }
+
+  // ── Optional context box ─────────────────────────────────────────────────
+  function toggleContextBox(){
+    const body=document.getElementById('context-box-body');
+    const toggle=document.getElementById('context-toggle');
+    const opening=body.hidden;
+    body.hidden=!opening;
+    toggle.classList.toggle('open',opening);
+    toggle.setAttribute('aria-expanded',String(opening));
+    if(opening)document.getElementById('user-context').focus();
+  }
+
+  function applyContextChip(el){
+    const ta=document.getElementById('user-context');
+    if(!ta)return;
+    const alreadyActive=el.classList.contains('active');
+    document.querySelectorAll('.context-chip').forEach(c=>c.classList.remove('active'));
+    if(alreadyActive){ta.value='';return;}
+    el.classList.add('active');
+    ta.value=el.dataset.text;
+    ta.focus();
+  }
+
+  function syncContextChips(val){
+    document.querySelectorAll('.context-chip').forEach(c=>c.classList.toggle('active',c.dataset.text===val));
   }
 
   // ── Onboarding ──────────────────────────────────────────────────────────────
@@ -1941,6 +2116,8 @@
   initOnboarding();
   // Restore mode preference
   (function(){const m=localStorage.getItem('fcv_analysis_mode');if(m==='stepbystep')selectMode('stepbystep');})();
+  // Always reset to design review — implementation review is not yet live
+  localStorage.removeItem('fcv_review_mode');
 
   // Express resume: check for partial express state on page load
   (function(){
@@ -2359,10 +2536,14 @@
 
     let payload;
     try{
-      payload={documents:[
-        ...await Promise.all(pF.map(f=>readF(f,false))),
-        ...await Promise.all(cF.map(f=>readF(f,true)))
-      ]};
+      payload={
+        documents:[
+          ...await Promise.all(pF.map(f=>readF(f,false))),
+          ...await Promise.all(cF.map(f=>readF(f,true)))
+        ],
+        review_mode:reviewMode,
+        user_context:(document.getElementById('user-context')?.value||'').trim()
+      };
     }catch(e){
       showExpressError(1,'Could not read documents: '+(e.message||e));
       busy=false;return;
@@ -2465,7 +2646,10 @@
               if(p.doc_type&&p.doc_type!=='Unknown'){docType=p.doc_type;updateDocTypeBadge();}
               if(p.research_brief)researchBrief=p.research_brief;
               if(p.research_country)researchCountry=p.research_country;
-              const summary1=(docType!=='Unknown'?docType:'Document')+' stage \u00B7 Context extracted';
+              if(p.instrument_type)instrumentType=p.instrument_type;
+              if(p.temporal_context)temporalContext=p.temporal_context;
+              if(p.process_type&&p.process_type!=='Unknown')processType=p.process_type;
+              const summary1=(reviewMode==='implementation'?(processType!=='Unknown'?processType:'Process')+' detected':docType!=='Unknown'?docType:'Document')+' \u00B7 Context extracted';
               updateExpressStage(1,'done',summary1);
               epSafeStore(stageOutputs,stageHists,'1');
             }
@@ -2492,6 +2676,7 @@
               if(p.fcv_rating)fcvRating=p.fcv_rating;
               if(p.fcv_responsiveness_rating)fcvResponsivenessRating=p.fcv_responsiveness_rating;
               if(p.priorities)stageThreePriorities=p.priorities;
+              if(p.horizon_considerations)horizonConsiderations=p.horizon_considerations;
               localStorage.setItem('stage3_timestamp',Date.now());
               updateExpressStage(3,'done','Complete');
               epSafeStore(stageOutputs,stageHists,'3');
@@ -2517,6 +2702,7 @@
             if(stageThreePriorities&&stageThreePriorities.length)initStage3UI();
             // stage2_under_hood already written by the stage_done handler for stage 2 — no redundant write needed here
             enableClickableStepper();
+            if(instrumentType!=='Unknown'||temporalContext.approval_date||processType!=='Unknown')injectTemporalContextPanel();
             localStorage.removeItem('fcv_express_stageOutputs');
             localStorage.removeItem('fcv_express_stageHists');
             localStorage.removeItem('fcv_express_curS');
@@ -2570,19 +2756,17 @@
         <div>
           <div class="stage-title">${NAMES[stage]}</div>
           <div class="stage-sub">${followOn?'Refining…':SUBS[stage]}</div>
-          ${(stage===1&&!followOn)?`<div class="stage-sub" style="margin-top:3px;color:#b45309">⏱ This stage can take 1–2 minutes — please wait for everything to load before reading or interacting</div>`:''}
         </div>
       </div>
-      ${(stage===1&&!followOn)?`<div class="stage-wait-notice"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span><strong>Please wait until Stage 1 finishes loading</strong> before reading or interacting with the output. This stage includes automated FCV web research and may take 1–2 minutes to complete.</span></div>`:''}
       <div class="load-card">
         <div class="spinner" role="status" aria-label="Loading"></div>
         <div class="load-title">${followOn?'Updating output…':'Generating '+SHORT[stage]+'…'}</div>
-        <p class="load-sub">${stage===1 ? 'Stage 1 includes automated FCV web research — this can take 1–2 minutes. Please wait.' : stage===3 ? 'Generating the full Recommendations Note — this may take 1–2 minutes.' : 'This usually takes 20–60 seconds.'}</p>
+        <p class="load-sub" id="load-sub-msg">${stage===1 ? 'Stage 1 includes automated FCV web research and may take 2\u20134 minutes. The output will appear in full once complete \u2014 please wait.' : stage===3 ? 'Generating the full Recommendations Note. This may take 1\u20132 minutes \u2014 the full output will appear when ready.' : 'This usually takes 30\u201360 seconds. The full output will appear when ready.'}</p>
         <div class="load-tags"><span class="load-tag">Reading documents</span><span class="load-tag">Applying FCV lens</span><span class="load-tag">Drawing on web context</span></div>
       </div>`;
 
     try{
-      const payload={stage,history:hist,user_message:followOn||'',document_type:docType};
+      const payload={stage,history:hist,user_message:followOn||'',document_type:docType,instrument_type:instrumentType,temporal_context:temporalContext,review_mode:reviewMode,process_type:processType,user_context:(document.getElementById('user-context')?.value||'').trim()};
       // Attach session prompt override if user has edited this stage's prompt
       if(sessionPrompts[stage]){
         payload.prompt_override = sessionPrompts[stage];
@@ -2621,25 +2805,8 @@
 
       const reader=res.body.getReader(),dec=new TextDecoder();
       let buf='',streamed='';
-
-      document.getElementById('stage-disp').innerHTML=`
-        <div class="stage-hdr ani">
-          <div class="stage-badge ${COL[stage]}">${stage}</div>
-          <div>
-            <div class="stage-title">${NAMES[stage]}</div>
-            <div class="stage-sub">Generating…</div>
-            ${(stage===3)?`<div class="stage-sub" style="margin-top:3px;color:#b45309">⏱ Please wait for the full output to finish rendering before reading or interacting</div>`:''}
-          </div>
-        </div>
-        ${(stage===3)?`<div class="stage-wait-notice"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span><strong>Stage 3 is generating — please wait for the full output to finish rendering</strong> before reading or interacting with the Recommendations Note. This can take 1–2 minutes.</span></div>`:''}
-        <div class="callout info ani">
-          <div class="callout-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
-          <div class="callout-body"><strong>${CALLS[stage].t}</strong>${CALLS[stage].b}</div>
-        </div>
-        <div class="out-card">
-          <div class="out-hdr"><div class="out-hdr-l"><span class="dot live"></span>Generating output</div></div>
-          <div class="out-body" id="s-out" aria-live="polite"></div>
-        </div>`;
+      // Stream is buffered — the load card stays visible until p.done fires.
+      // Status messages (research, preprocess) update the load-sub-msg text instead of streaming to DOM.
 
       while(true){
         const{done,value}=await reader.read();if(done)break;
@@ -2682,9 +2849,9 @@
                 const epSum=document.getElementById('ep-summary-1');
                 if(epSum)epSum.innerHTML='<div class="ep-stage-spinner"><div class="ep-spinner-dot"></div><div class="ep-spinner-dot"></div><div class="ep-spinner-dot"></div><span>'+rsMsg+'</span></div>';
               }
-              // Also update step-by-step s-out
-              const el=document.getElementById('s-out');
-              if(el&&rsMsg)el.innerHTML=`<div style="display:flex;align-items:center;gap:10px;color:var(--muted);font-style:italic;padding:12px 0"><svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;animation:spin 1s linear infinite;flex-shrink:0"><circle cx="12" cy="12" r="10" stroke-opacity=".25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-opacity="1"/></svg>${rsMsg}</div>`;
+              // Update load-sub-msg with research status
+              const loadSub=document.getElementById('load-sub-msg');
+              if(loadSub&&rsMsg)loadSub.textContent=rsMsg;
             }
             if(p.status==='preparing_analysis'){
               const paMsg='Generating analysis\u2026';
@@ -2692,20 +2859,21 @@
                 const epSum=document.getElementById('ep-summary-1');
                 if(epSum)epSum.innerHTML='<div class="ep-stage-spinner"><div class="ep-spinner-dot"></div><div class="ep-spinner-dot"></div><div class="ep-spinner-dot"></div><span>'+paMsg+'</span></div>';
               }
-              const el=document.getElementById('s-out');
-              if(el)el.innerHTML=`<div style="display:flex;align-items:center;gap:10px;color:var(--muted);font-style:italic;padding:12px 0"><svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;animation:spin 1s linear infinite;flex-shrink:0"><circle cx="12" cy="12" r="10" stroke-opacity=".25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-opacity="1"/></svg>${paMsg}</div>`;
+              const loadSub2=document.getElementById('load-sub-msg');
+              if(loadSub2)loadSub2.textContent=paMsg;
             }
             // keepalive events are sent by the backend every 20 s to prevent proxy timeouts — no UI update needed
             if(p.keepalive){/* silent — connection is alive */}
             if(p.preprocess){
-              const ppMsg=esc(p.preprocess);
+              const ppMsg=p.preprocess;
               if(analysisMode==='express'&&stage===1){
                 const epSum=document.getElementById('ep-summary-1');
-                if(epSum)epSum.innerHTML='<div class="ep-stage-spinner"><div class="ep-spinner-dot"></div><div class="ep-spinner-dot"></div><div class="ep-spinner-dot"></div><span>'+ppMsg+'</span></div>';
+                if(epSum)epSum.innerHTML='<div class="ep-stage-spinner"><div class="ep-spinner-dot"></div><div class="ep-spinner-dot"></div><div class="ep-spinner-dot"></div><span>'+esc(ppMsg)+'</span></div>';
               }
-              const el=document.getElementById('s-out');if(el)el.innerHTML=`<div style="display:flex;align-items:center;gap:10px;color:var(--muted);font-style:italic;padding:12px 0"><svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;animation:spin 1s linear infinite;flex-shrink:0"><circle cx="12" cy="12" r="10" stroke-opacity=".25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-opacity="1"/></svg>${ppMsg}</div>`;
+              const loadSub3=document.getElementById('load-sub-msg');
+              if(loadSub3)loadSub3.textContent=ppMsg;
             }
-            if(p.chunk){streamed+=p.chunk;const el=document.getElementById('s-out');if(el)el.innerHTML=md(streamed)}
+            if(p.chunk){streamed+=p.chunk;} // Buffer only — full output rendered on p.done via renderOut()
             if(p.done){clearTimeout(_stageTimeoutId);hist=p.history||hist;curS=stage;stageOutputs[stage]=p.result;stageHists[stage]=hist.slice();updateSessionBar();
               // Stage 2: capture ratings and under_hood data
               if(stage===2){
@@ -2725,10 +2893,15 @@
                 const dtMatch=p.result&&p.result.match(/%%%DOC_TYPE:\s*([^%\n]+)%%%/);if(dtMatch){docType=dtMatch[1].trim();updateDocTypeBadge();}
                 if(p.research_brief) researchBrief=p.research_brief;
                 if(p.research_country) researchCountry=p.research_country;
+                if(p.instrument_type)instrumentType=p.instrument_type;
+                if(p.temporal_context)temporalContext=p.temporal_context;
+                if(p.process_type&&p.process_type!=='Unknown')processType=p.process_type;
               }
               renderOut(stage,renderResult,followOn);setStepper(stage,'done');
+              enableClickableStepper();
               // Research brief panel (step-by-step only — express skips rendering)
               if(stage===1&&researchBrief) injectResearchBriefPanel(researchBrief,researchCountry);
+              if(stage===1&&(instrumentType!=='Unknown'||temporalContext.approval_date||processType!=='Unknown')) injectTemporalContextPanel();
               // Stage 2: show parse error banner and update sidebar
               if(stage===2){
                 if(p.parse_error){
@@ -2749,6 +2922,7 @@
               // Priority cards + sidebar for Stage 3 (Recommendations)
               if(stage===3 && p.priorities && p.priorities.length){
                 stageThreePriorities=p.priorities;
+                if(p.horizon_considerations)horizonConsiderations=p.horizon_considerations;
                 // Clear Go Deeper caches so stale results don't reappear for new Stage 3 run
                 currentDeeperTab = {};
                 for(var i=0;i<10;i++){
@@ -2828,6 +3002,36 @@
       // Insert after the callout (direct child of disp), before the main output layout
       const callout = disp.querySelector('.callout');
       if (callout) { callout.insertAdjacentElement('afterend', panel); } else { disp.appendChild(panel); }
+    }
+  }
+
+  function injectTemporalContextPanel(){
+    const disp=document.getElementById('stage-disp');
+    if(!disp)return;
+    const existing=document.getElementById('temporal-context-panel');
+    if(existing)existing.remove();
+    const tc=temporalContext||{};
+    const items=[];
+    if(reviewMode==='implementation'&&processType&&processType!=='Unknown'){
+      items.push('<span class="tc-item"><span class="tc-label">Review type:</span> <span class="tc-value">'+esc(processType)+'</span></span>');
+    }
+    if(instrumentType&&instrumentType!=='Unknown')items.push('<span class="tc-item"><span class="tc-label">Instrument:</span> <span class="tc-value">'+esc(instrumentType)+'</span></span>');
+    if(tc.approval_date&&tc.approval_date!=='Unknown')items.push('<span class="tc-item"><span class="tc-label">Approved:</span> <span class="tc-value">'+esc(tc.approval_date)+'</span></span>');
+    if(tc.closing_date&&tc.closing_date!=='Unknown')items.push('<span class="tc-item"><span class="tc-label">Closing:</span> <span class="tc-value">'+esc(tc.closing_date)+'</span></span>');
+    if(tc.safeguards_framework&&tc.safeguards_framework!=='Unknown')items.push('<span class="tc-item"><span class="tc-label">Safeguards:</span> <span class="tc-value">'+esc(tc.safeguards_framework)+'</span></span>');
+    if(!items.length)return;
+    items.push('<span class="tc-item" style="font-style:italic;color:#5a7a9a;font-size:12px">'+(reviewMode==='implementation'?'Assessment anchored to implementation period':'Assessment anchored to preparation period')+'</span>');
+    const panel=document.createElement('div');
+    panel.id='temporal-context-panel';
+    panel.className='temporal-context-panel ani';
+    panel.innerHTML=items.join('');
+    // Insert after the research brief panel if present, otherwise after the callout, otherwise append
+    const resPanel=document.getElementById('research-brief-panel');
+    if(resPanel&&resPanel.parentNode===disp){disp.insertBefore(panel,resPanel.nextSibling);}
+    else{
+      const callout=disp.querySelector('.callout');
+      if(callout){callout.insertAdjacentElement('afterend',panel);}
+      else{disp.appendChild(panel);}
     }
   }
 
@@ -2989,6 +3193,95 @@
       </div>`;
   }
 
+  // ── Glossary term annotation ──────────────────────────────────────────────
+  function annotateGlossaryTerms(containerEl){
+    if(!containerEl || !Object.keys(fcvGlossary).length) return;
+    // Build a map of display terms to definitions
+    const termMap = {};
+    for(const [key, entry] of Object.entries(fcvGlossary)){
+      const term = entry.term;
+      // Add the main term and common short forms
+      termMap[term] = entry.definition;
+      // Also match without parenthetical (e.g., "Elite Capture" from "Elite Capture (EC)")
+      const short = term.replace(/\s*\([^)]+\)\s*$/, '').trim();
+      if(short !== term) termMap[short] = entry.definition;
+    }
+    // Sort by length descending so longer terms match first
+    const sortedTerms = Object.keys(termMap).sort((a,b) => b.length - a.length);
+    // Only annotate text nodes, skip already-annotated spans and code/pre blocks
+    const walker = document.createTreeWalker(containerEl, NodeFilter.SHOW_TEXT, {
+      acceptNode: function(node) {
+        const parent = node.parentElement;
+        if(!parent) return NodeFilter.FILTER_REJECT;
+        if(parent.classList && parent.classList.contains('glossary-term')) return NodeFilter.FILTER_REJECT;
+        if(parent.closest('.glossary-term, code, pre, .glossary-tooltip')) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const textNodes = [];
+    let n;
+    while(n = walker.nextNode()) textNodes.push(n);
+    // Limit to first occurrence of each term to avoid over-annotation
+    const annotated = new Set();
+    for(const node of textNodes){
+      const text = node.textContent;
+      for(const term of sortedTerms){
+        if(annotated.has(term)) continue;
+        const idx = text.toLowerCase().indexOf(term.toLowerCase());
+        if(idx === -1) continue;
+        // Found a match — wrap it
+        const before = text.substring(0, idx);
+        const match = text.substring(idx, idx + term.length);
+        const after = text.substring(idx + term.length);
+        const span = document.createElement('span');
+        span.className = 'glossary-term';
+        span.textContent = match;
+        const tooltip = document.createElement('span');
+        tooltip.className = 'glossary-tooltip';
+        tooltip.textContent = termMap[term];
+        span.appendChild(tooltip);
+        const parent = node.parentNode;
+        if(before) parent.insertBefore(document.createTextNode(before), node);
+        parent.insertBefore(span, node);
+        if(after) parent.insertBefore(document.createTextNode(after), node);
+        parent.removeChild(node);
+        annotated.add(term);
+        break; // move to next text node after modifying this one
+      }
+    }
+  }
+
+  function isFinalizedPAD() {
+    if (docType !== 'PAD') return false;
+    const ad = temporalContext && temporalContext.approval_date;
+    if (!ad || ad === 'Unknown') return false;
+    const d = new Date(ad.length >= 7 ? ad.slice(0,7) + '-01' : ad);
+    return !isNaN(d.getTime()) && d < new Date();
+  }
+
+  function renderStage1(text) {
+    // Split on "## Part B" heading (handles "## Part B:", "## Part B —", etc.)
+    const splitRe = /\n(#{1,3}\s*Part B[:\s\u2014][^\n]*\n)/i;
+    const m = splitRe.exec(text);
+    if (!m) return md(text); // fallback: render as-is
+
+    let partA = text.slice(0, m.index);
+    let partB = text.slice(m.index + m[0].length);
+
+    // Strip the "## Part A: ..." heading — replaced by the styled badge below
+    partA = partA.replace(/^#{1,3}\s*Part A[:\s\u2014][^\n]*\n+/im, '');
+
+    const iconDoc = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="flex-shrink:0"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`;
+    const iconGlobe = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>`;
+
+    return (
+      `<div class="s1-section-header s1-header-a">${iconDoc}&nbsp;Part A — From your document only</div>` +
+      `<div class="s1-part-body">${md(partA.trim())}</div>` +
+      `<div class="s1-section-header s1-header-b">${iconGlobe}&nbsp;Part B — Wider context &amp; research</div>` +
+      `<div class="s1-part-body">${md(partB.trim())}</div>`
+    );
+  }
+
   function renderOut(stage,result,isFollowOn){
     const isLast=stage===3;
     const hasSidebar=stage>=2;
@@ -2999,11 +3292,19 @@
       const _pre=_sp[0]||result;
       const _rest=_sp[1]||'';
       const _stageBadge = docType && docType !== 'Unknown' ? `<div class="stage-awareness-badge">Recommendations tailored for <strong>${esc(docType)}</strong> stage</div>` : '';
-      _outBodyContent=_stageBadge+md(_pre)+renderRiskExposure(stageRiskExposure)+md(_rest)+renderSRCards(stageSensitivitySummary,stageResponsivenessSummary)+'<div id="priorities-intro"></div>';
+      const _padNotice = isFinalizedPAD() ? `<div class="finalized-pad-notice">
+        <div class="fpn-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+        <div class="fpn-body"><strong>Retrospective screening — finalized PAD</strong>This document was Board-approved in ${esc(temporalContext.approval_date)}. The recommendations below represent the guidance this tool would have provided had the document been reviewed prior to appraisal. They are framed as if the project is still in the design stage and can be used for retrospective peer review, benchmarking, or to inform future similar projects.</div>
+      </div>` : '';
+      _outBodyContent=_padNotice+_stageBadge+md(_pre)+renderRiskExposure(stageRiskExposure)+md(_rest)+renderSRCards(stageSensitivitySummary,stageResponsivenessSummary)+'<div id="priorities-intro"></div>';
     }else{
       const cleanResult = stage===1 ? result.replace(/\n*%%%DOC_TYPE:[^%\n]*%%%\n*/g,'') : result;
-      const srDefPrefix = stage===2 ? buildSRDefinitionBox() + buildTagLegend() : '';
-      _outBodyContent = srDefPrefix + md(cleanResult);
+      if(stage===1){
+        _outBodyContent = renderStage1(cleanResult);
+      }else{
+        const srDefPrefix = stage===2 ? buildSRDefinitionBox() + buildTagLegend() : '';
+        _outBodyContent = srDefPrefix + md(cleanResult);
+      }
     }
     document.getElementById('stage-disp').innerHTML=`
       <div class="stage-hdr ani">
@@ -3059,6 +3360,9 @@
         ${hasSidebar?`<aside class="fcv-sidebar" id="fcv-sidebar">${sidebarHtml()}</aside>`:''}
       </div>
       `;
+
+    // Annotate glossary terms with hover tooltips
+    setTimeout(function(){ annotateGlossaryTerms(document.getElementById('out-txt')); }, 100);
 
     // Mark Stage 3 (Recommendations) so CSS can remove the .out-body scroll constraint
     if(isLast) document.getElementById('stage-disp').classList.add('s3-active');
@@ -3397,6 +3701,14 @@
   function showExpressProgress(){
     document.getElementById('ep-accent').style.display='block';
     document.getElementById('express-progress').classList.add('visible');
+    // Update stage card titles based on review mode
+    const implTitles=['Stage 1 \u2014 Context &amp; Process Detection','Stage 2 \u2014 Implementation Assessment','Stage 3 \u2014 Course-Correction Note'];
+    const designTitles=['Stage 1 \u2014 Context &amp; Extraction','Stage 2 \u2014 FCV Assessment','Stage 3 \u2014 Recommendations Note'];
+    const titles=reviewMode==='implementation'?implTitles:designTitles;
+    for(let i=1;i<=3;i++){
+      const titleEl=document.getElementById('ep-title-'+i);
+      if(titleEl)titleEl.innerHTML=titles[i-1];
+    }
     for(let i=1;i<=3;i++){
       document.getElementById('ep-card-'+i).className='ep-stage-card pending';
       document.getElementById('ep-title-'+i).className='ep-stage-title pending';
@@ -3446,6 +3758,11 @@
   }
 
   function getStageActivityText(stage){
+    if(reviewMode==='implementation'){
+      if(stage===1)return'Extracting implementation context and detecting review process\u2026';
+      if(stage===2)return'Assessing FCV performance against operational standards\u2026';
+      if(stage===3)return'Generating course-correction recommendations\u2026';
+    }
     if(stage===1)return'Extracting FCV context from your documents\u2026';
     if(stage===2)return'Analysing sensitivity, responsiveness, and Do No Harm\u2026';
     if(stage===3)return'Generating your Recommendations Note\u2026';
@@ -3515,10 +3832,13 @@
 
     // Build a Word-compatible HTML document
     const dateStr = new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
+    const padNoticeHtml = isFinalizedPAD()
+      ? `<div style="background:#fff8e1;border-left:4pt solid #f9a825;padding:10pt 14pt;margin:12pt 0;font-size:10pt;color:#5d4037"><strong>Retrospective screening — finalized PAD.</strong> This document was Board-approved in ${esc(temporalContext.approval_date)}. The recommendations below represent the guidance this tool would have provided had the document been reviewed prior to appraisal. They are framed as if the project is still in the design stage and can be used for retrospective peer review, benchmarking, or to inform future similar projects.</div>`
+      : '';
     let body = `<h1>FCV Recommendations Note</h1>
 <p style="color:#666;font-size:9pt"><em>Generated by WBG FCV Project Screener · ${dateStr}</em></p>
 <hr>
-<h2>Executive Summary · Project-Wide Considerations</h2>
+${padNoticeHtml}<h2>Executive Summary · Project-Wide Considerations</h2>
 ${md(execSummary)}`;
 
     if(stageThreePriorities.length){
@@ -3529,7 +3849,7 @@ ${md(execSummary)}`;
         const tagLabel = pr.tag === '[S]' ? 'Sensitivity' : pr.tag === '[R]' ? 'Responsiveness' : pr.tag === '[S+R]' ? 'Sensitivity + Responsiveness' : '';
         body += `<div style="margin-top:22pt;border-top:1pt solid #1a3a5c;padding-top:14pt">
 <h3 style="color:#1a3a5c;margin-bottom:4pt">Priority ${i+1} · ${esc(title)}</h3>
-<p style="font-size:9pt;color:#555;margin-top:0">${pr.dimension?`<strong>Dimension:</strong> ${esc(pr.dimension)} &nbsp;|&nbsp; `:''}${pr.risk_level?`<strong>Risk Level:</strong> <span style="color:${riskColor}">${esc(pr.risk_level)}</span> &nbsp;`:''}${tagLabel?`<strong>Focus:</strong> ${esc(tagLabel)}`:''}${pr.refresh_shift?` &nbsp;|&nbsp; <strong>Shift:</strong> ${esc(pr.refresh_shift)}`:''}
+<p style="font-size:9pt;color:#555;margin-top:0">${pr.dimension?`<strong>Dimension:</strong> ${esc(pr.dimension)} &nbsp;|&nbsp; `:''}${pr.risk_level?`<strong>Priority Level:</strong> <span style="color:${riskColor}">Priority: ${esc(pr.risk_level)}</span> &nbsp;`:''}${tagLabel?`<strong>Focus:</strong> ${esc(tagLabel)}`:''}${pr.refresh_shift?` &nbsp;|&nbsp; <strong>FCV Refresh Shift:</strong> ${esc(pr.refresh_shift)}`:''}
 </p>`;
         if(pr.the_gap) body += `<p><strong>The Gap:</strong><br>${esc(pr.the_gap)}</p>`;
         if(pr.why_it_matters) body += `<p><strong>Why It Matters:</strong><br>${esc(pr.why_it_matters)}</p>`;
@@ -3872,7 +4192,7 @@ ${md(execSummary)}`;
           <div class="pov-num ${isDone?'done':isActive?'active':''}">${isDone?'✓':i+1}</div>
           <div class="pov-label">${esc(label)}</div>
           <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">
-            ${pr.risk_level?`<span class="pov-risk ${riskCls}">${esc(pr.risk_level)}</span>`:''}
+            ${pr.risk_level?`<span class="pov-risk ${riskCls}">Priority: ${esc(pr.risk_level)}</span>`:''}
             ${pr.tag?renderSRTagBadge(pr.tag,true):''}
           </div>
         </div>`;
@@ -3883,6 +4203,13 @@ ${md(execSummary)}`;
 
   // ── Priority stepper & card rendering ────────────────────────────────────
 
+  const shiftTooltips = {
+    'Shift A: Anticipate': 'FCV Refresh Shift A: Forward-looking risk monitoring and early engagement',
+    'Shift B: Differentiate': 'FCV Refresh Shift B: Tailored approach based on FCV classification',
+    'Shift C: Jobs & private sector': 'FCV Refresh Shift C: Economic livelihoods as pathway to stability',
+    'Shift D: Enhanced toolkit': 'FCV Refresh Shift D: Operational flexibilities and HDP nexus partnerships',
+  };
+
   function initStage3UI(){
     if(!stageThreePriorities.length) return;
     currentPriority = 0;
@@ -3890,6 +4217,27 @@ ${md(execSummary)}`;
     renderPriorityStepper();
     showPriority(0);
     updateSidebar();
+    // Render Horizon Considerations panel if available
+    if(horizonConsiderations && horizonConsiderations.trim()){
+      renderHorizonPanel(horizonConsiderations);
+    }
+  }
+
+  function renderHorizonPanel(text){
+    const container=document.getElementById('out-txt');
+    if(!container)return;
+    const existing=document.getElementById('horizon-panel');
+    if(existing)existing.remove();
+    const panel=document.createElement('details');
+    panel.id='horizon-panel';
+    panel.className='horizon-panel ani';
+    const rendered=typeof md!=='undefined'?md.render(text):text.replace(/\n/g,'<br>');
+    panel.innerHTML='<summary>Horizon Considerations — Beyond-Scope Observations</summary>'
+      +'<div class="horizon-body">'
+      +'<p class="horizon-disclaimer">These observations fall outside the project\'s stated PDO/scope but may be relevant for the team\'s broader awareness. They do not affect the FCV ratings above.</p>'
+      +rendered
+      +'</div>';
+    container.appendChild(panel);
   }
 
   function renderPrioritiesIntro(){
@@ -3909,7 +4257,11 @@ ${md(execSummary)}`;
       </div>`;
     }).join('');
     el.innerHTML = `<div class="priorities-section-hdr">Priority Actions for the Task Team</div><div class="priorities-intro ani">
-      <p class="pi-lead">Based on a three-stage assessment of the project documents, <strong>${n} priority ${n === 1 ? 'action has' : 'actions have'} been identified</strong> to strengthen FCV-sensitivity <span class="sr-tag sensitivity" style="font-size:9px;padding:1px 5px;vertical-align:middle">S</span> and responsiveness <span class="sr-tag responsiveness" style="font-size:9px;padding:1px 5px;vertical-align:middle">R</span> in the design and delivery of this project:</p>
+      <p class="pi-lead">Based on a three-stage assessment of the project documents, <strong>${n} priority ${n === 1 ? 'action has' : 'actions have'} been identified</strong> to strengthen FCV sensitivity and responsiveness in the design and delivery of this project:</p>
+      <div class="sr-legend">
+        <div class="sr-legend-item"><span class="sr-tag sensitivity" style="font-size:9px;padding:1px 6px;flex-shrink:0">S</span><span><strong>FCV Sensitivity</strong> — is the project <em>aware of and designed for</em> the FCV context?</span></div>
+        <div class="sr-legend-item"><span class="sr-tag responsiveness" style="font-size:9px;padding:1px 6px;flex-shrink:0">R</span><span><strong>FCV Responsiveness</strong> — does the project <em>actively work to change</em> the FCV situation?</span></div>
+      </div>
       <div class="pi-list">${listItems}</div>
       <p class="pi-footer">Toggle through the panels below to explore each priority action and concrete implementation options in more detail.</p>
     </div>`;
@@ -3921,7 +4273,7 @@ ${md(execSummary)}`;
     el.innerHTML = stageThreePriorities.map((pr, i) => {
       const fullTitle = pr.title.replace(/^Priority\s+\d+\s*[·•]\s*/i,'');
       const riskCls = pr.risk_level==='High'?'ps-risk-h':pr.risk_level==='Medium'?'ps-risk-m':'ps-risk-l';
-      const riskLbl = pr.risk_level==='High'?'HIGH':pr.risk_level==='Medium'?'MED':pr.risk_level==='Low'?'LOW':'';
+      const riskLbl = pr.risk_level==='High'?'Priority: High':pr.risk_level==='Medium'?'Priority: Medium':pr.risk_level==='Low'?'Priority: Low':'';
       return `<div class="ps-step ${i===currentPriority?'active':''}" id="ps-${i}" onclick="showPriority(${i})" title="${esc(pr.title)}">
         <div class="ps-num">${i+1}</div>
         <div class="ps-label">${esc(fullTitle)}</div>
@@ -3995,9 +4347,9 @@ ${md(execSummary)}`;
             <div class="pc-hdr-eyebrow">Priority ${idx+1} of ${n} · ${esc(pr.dimension||'')}${renderSRTagBadge(pr.tag||'')}</div>
             <div class="pc-hdr-title">${md(pr.title.replace(/^Priority\s+\d+\s*[·•]\s*/i,''))}</div>
             <div class="pc-hdr-chips">
-              <span class="pc-chip ${riskClass}">Risk: ${esc(pr.risk_level||'—')}</span>
+              <span class="pc-chip ${riskClass}">Priority: ${esc(pr.risk_level||'—')}</span>
               ${pr.dimension ? `<span class="pc-chip">${esc(pr.dimension)}</span>` : ''}
-              ${pr.refresh_shift ? `<span class="shift-badge" title="${esc(pr.refresh_shift)}">${esc(pr.refresh_shift.replace('Shift ',''))}</span>` : ''}
+              ${pr.refresh_shift ? `<span class="shift-badge" title="${esc(shiftTooltips[pr.refresh_shift] || pr.refresh_shift)}">${esc('FCV Refresh ' + pr.refresh_shift)}</span>` : ''}
             </div>
             ${(pr.who_acts||pr.when||pr.resources) ? `<div class="pc-meta-row">
               ${pr.who_acts ? `<span class="pc-meta-chip"><strong>Who:</strong> ${(pr.who_acts||'').split(';').map(w=>w.trim()).filter(Boolean).map(w=>'<span class="who-chip">'+esc(w)+'</span>').join(' ')}</span>` : ''}
