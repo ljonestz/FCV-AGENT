@@ -544,23 +544,30 @@ Use ONLY these terms: "Strongly addressed" / "Partially addressed" / "Weakly add
 # Rating Rubric — FOLLOW THIS FORMULA, DO NOT USE YOUR GENERAL IMPRESSION
 
 ## Sensitivity Rating
-Count how many of the 12 OST recommendations are rated "Strongly addressed" or "Partially addressed" in your Under the Hood recs table (Panel 1). "Weakly addressed" and "Not addressed" do NOT count.
+Score each applicable OST recommendation using this point system:
+- "Strongly addressed" = 1.0 point
+- "Partially addressed" = 1.0 point
+- "Weakly addressed" = 0.5 points (the project engages with the issue, even if insufficiently)
+- "Not addressed" = 0 points
+- "N/A" or "Beyond scope" = excluded from both numerator and denominator
 
-| S-relevant recs addressed | Baseline Rating |
+Calculate the score as a percentage: total points / number of applicable recommendations × 100.
+
+| Score (%) | Baseline Rating |
 |---|---|
-| 0–2 | Extremely Low |
-| 3–4 | Very Low |
-| 5–6 | Low |
-| 7–8 | Adequate |
-| 9–10 | Well Embedded |
-| 11–12 | Very Well Embedded |
+| 0–15% | Extremely Low |
+| 16–30% | Very Low |
+| 31–50% | Low |
+| 51–70% | Adequate |
+| 71–85% | Well Embedded |
+| 86–100% | Very Well Embedded |
 
 Then apply quality gates (most restrictive cap wins):
 - If 3 or more Do No Harm principles are rated "Not addressed" in Panel 2 → cap sensitivity at Low
-- If the project contains no conflict or security analysis → cap sensitivity at Adequate
+- If the project contains no conflict or security analysis AND operates in a context with active conflict or high crime → cap sensitivity at Adequate
 - If the project has no geographic specificity in targeting or beneficiary selection → cap sensitivity at Adequate
 
-IMPORTANT: When counting "recs addressed", exclude any recommendations marked "N/A — not applicable to [instrument]" or "Beyond scope" from BOTH the numerator AND denominator. The rating is based only on applicable, in-scope recommendations.
+Note: the absence of conflict analysis is a less severe gap for projects in at-risk or criminal violence contexts than for projects in active conflict settings. Apply this gate proportionally.
 
 ## Responsiveness Rating
 Count how many of the 4 FCV Refresh shifts (Anticipate, Differentiate, Jobs & Private Sector, Enhanced Toolkit) are actively addressed with concrete, specific measures in the project design — not just passing mentions.
@@ -576,7 +583,7 @@ Count how many of the 4 FCV Refresh shifts (Anticipate, Differentiate, Jobs & Pr
 
 Then apply quality gates:
 - If zero FCV Refresh shifts are aligned → cap responsiveness at Very Low
-- If no adaptive M&E for FCV dynamics exists → cap responsiveness at Low
+- If no adaptive M&E for FCV dynamics exists → cap responsiveness at Adequate (not Low — the absence of adaptive M&E is a gap but should not override strong evidence of responsiveness across multiple shifts)
 
 IMPORTANT: When counting shifts addressed, do not penalise for shifts that are structurally outside the instrument's scope (e.g., do not penalise a DPO for lacking Enhanced Toolkit operational flexibilities that are IPF-specific).
 
@@ -585,11 +592,14 @@ Before emitting the ratings JSON, emit the following reasoning block showing you
 
 %%%RATING_REASONING_START%%%
 SENSITIVITY SCORING:
-- Recs addressed (Strongly or Partially): [list rec numbers and status] → count: X/12
-- Baseline from count: [rating]
+- Recs scored (list each applicable rec with status and points):
+  [Rec N: status = X points] for each applicable recommendation
+  Strongly/Partially = 1.0, Weakly = 0.5, Not addressed = 0, N/A/Beyond scope = excluded
+- Total points: X / Y applicable recs = Z%
+- Baseline from percentage: [rating]
 - Quality gate checks:
   - DNH principles rated "Not addressed": [count]/8 → [cap at Low / no cap]
-  - Conflict/security analysis present: [yes/no] → [cap at Adequate / no cap]
+  - Conflict/security analysis present: [yes/no], context severity: [active conflict / high crime / at-risk] → [cap or no cap]
   - Geographic specificity in targeting: [yes/no] → [cap at Adequate / no cap]
 - Most restrictive cap: [rating or "none — baseline stands"]
 - FINAL SENSITIVITY RATING: [rating]
@@ -600,7 +610,7 @@ RESPONSIVENESS SCORING:
 - Baseline from shifts + measures: [rating]
 - Quality gate checks:
   - Any shift alignment: [yes/no] → [cap at Very Low / no cap]
-  - Adaptive M&E for FCV: [yes/no] → [cap at Low / no cap]
+  - Adaptive M&E for FCV: [yes/no] → [cap at Adequate / no cap]
 - Most restrictive cap: [rating or "none — baseline stands"]
 - FINAL RESPONSIVENESS RATING: [rating]
 %%%RATING_REASONING_END%%%
@@ -2326,7 +2336,7 @@ def run_stage():
                 # a queue with a 20-second timeout.  If no chunk arrives in 20 s a
                 # keepalive event is sent, preventing any proxy from closing the SSE
                 # connection during Sonnet's time-to-first-token phase.
-                _stage_max_tokens = 8000 if stage == 1 else 16000
+                _stage_max_tokens = 8000 if stage == 1 else (20000 if stage == 3 else 16000)
                 _stream_q: queue.Queue = queue.Queue()
 
                 def _run_stream() -> None:
@@ -2824,7 +2834,7 @@ def run_express():
                 ]
 
                 # ── Stream Stage 3 ──
-                for event in _stream_stage(stage3_messages, 16000, 3):
+                for event in _stream_stage(stage3_messages, 20000, 3):
                     yield event
                 stage3_output = _stream_stage._last_result
 
