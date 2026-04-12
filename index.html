@@ -2749,6 +2749,7 @@
                 if(p.temporal_context)temporalContext=p.temporal_context;
               }
               renderOut(stage,renderResult,followOn);setStepper(stage,'done');
+              enableClickableStepper();
               // Research brief panel (step-by-step only — express skips rendering)
               if(stage===1&&researchBrief) injectResearchBriefPanel(researchBrief,researchCountry);
               if(stage===1&&(instrumentType!=='Unknown'||temporalContext.approval_date)) injectTemporalContextPanel();
@@ -3580,7 +3581,7 @@ ${md(execSummary)}`;
         const tagLabel = pr.tag === '[S]' ? 'Sensitivity' : pr.tag === '[R]' ? 'Responsiveness' : pr.tag === '[S+R]' ? 'Sensitivity + Responsiveness' : '';
         body += `<div style="margin-top:22pt;border-top:1pt solid #1a3a5c;padding-top:14pt">
 <h3 style="color:#1a3a5c;margin-bottom:4pt">Priority ${i+1} · ${esc(title)}</h3>
-<p style="font-size:9pt;color:#555;margin-top:0">${pr.dimension?`<strong>Dimension:</strong> ${esc(pr.dimension)} &nbsp;|&nbsp; `:''}${pr.risk_level?`<strong>Risk Level:</strong> <span style="color:${riskColor}">${esc(pr.risk_level)}</span> &nbsp;`:''}${tagLabel?`<strong>Focus:</strong> ${esc(tagLabel)}`:''}${pr.refresh_shift?` &nbsp;|&nbsp; <strong>Shift:</strong> ${esc(pr.refresh_shift)}`:''}
+<p style="font-size:9pt;color:#555;margin-top:0">${pr.dimension?`<strong>Dimension:</strong> ${esc(pr.dimension)} &nbsp;|&nbsp; `:''}${pr.risk_level?`<strong>FCV Risk Level:</strong> <span style="color:${riskColor}">FCV Risk: ${esc(pr.risk_level)}</span> &nbsp;`:''}${tagLabel?`<strong>Focus:</strong> ${esc(tagLabel)}`:''}${pr.refresh_shift?` &nbsp;|&nbsp; <strong>FCV Refresh Shift:</strong> ${esc(pr.refresh_shift)}`:''}
 </p>`;
         if(pr.the_gap) body += `<p><strong>The Gap:</strong><br>${esc(pr.the_gap)}</p>`;
         if(pr.why_it_matters) body += `<p><strong>Why It Matters:</strong><br>${esc(pr.why_it_matters)}</p>`;
@@ -3923,7 +3924,7 @@ ${md(execSummary)}`;
           <div class="pov-num ${isDone?'done':isActive?'active':''}">${isDone?'✓':i+1}</div>
           <div class="pov-label">${esc(label)}</div>
           <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">
-            ${pr.risk_level?`<span class="pov-risk ${riskCls}">${esc(pr.risk_level)}</span>`:''}
+            ${pr.risk_level?`<span class="pov-risk ${riskCls}">FCV Risk: ${esc(pr.risk_level)}</span>`:''}
             ${pr.tag?renderSRTagBadge(pr.tag,true):''}
           </div>
         </div>`;
@@ -3933,6 +3934,13 @@ ${md(execSummary)}`;
   }
 
   // ── Priority stepper & card rendering ────────────────────────────────────
+
+  const shiftTooltips = {
+    'Shift A: Anticipate': 'FCV Refresh Shift A: Forward-looking risk monitoring and early engagement',
+    'Shift B: Differentiate': 'FCV Refresh Shift B: Tailored approach based on FCV classification',
+    'Shift C: Jobs & private sector': 'FCV Refresh Shift C: Economic livelihoods as pathway to stability',
+    'Shift D: Enhanced toolkit': 'FCV Refresh Shift D: Operational flexibilities and HDP nexus partnerships',
+  };
 
   function initStage3UI(){
     if(!stageThreePriorities.length) return;
@@ -3993,7 +4001,7 @@ ${md(execSummary)}`;
     el.innerHTML = stageThreePriorities.map((pr, i) => {
       const fullTitle = pr.title.replace(/^Priority\s+\d+\s*[·•]\s*/i,'');
       const riskCls = pr.risk_level==='High'?'ps-risk-h':pr.risk_level==='Medium'?'ps-risk-m':'ps-risk-l';
-      const riskLbl = pr.risk_level==='High'?'HIGH':pr.risk_level==='Medium'?'MED':pr.risk_level==='Low'?'LOW':'';
+      const riskLbl = pr.risk_level==='High'?'FCV Risk: High':pr.risk_level==='Medium'?'FCV Risk: Medium':pr.risk_level==='Low'?'FCV Risk: Low':'';
       return `<div class="ps-step ${i===currentPriority?'active':''}" id="ps-${i}" onclick="showPriority(${i})" title="${esc(pr.title)}">
         <div class="ps-num">${i+1}</div>
         <div class="ps-label">${esc(fullTitle)}</div>
@@ -4067,9 +4075,9 @@ ${md(execSummary)}`;
             <div class="pc-hdr-eyebrow">Priority ${idx+1} of ${n} · ${esc(pr.dimension||'')}${renderSRTagBadge(pr.tag||'')}</div>
             <div class="pc-hdr-title">${md(pr.title.replace(/^Priority\s+\d+\s*[·•]\s*/i,''))}</div>
             <div class="pc-hdr-chips">
-              <span class="pc-chip ${riskClass}">Risk: ${esc(pr.risk_level||'—')}</span>
+              <span class="pc-chip ${riskClass}">FCV Risk: ${esc(pr.risk_level||'—')}</span>
               ${pr.dimension ? `<span class="pc-chip">${esc(pr.dimension)}</span>` : ''}
-              ${pr.refresh_shift ? `<span class="shift-badge" title="${esc(pr.refresh_shift)}">${esc(pr.refresh_shift.replace('Shift ',''))}</span>` : ''}
+              ${pr.refresh_shift ? `<span class="shift-badge" title="${esc(shiftTooltips[pr.refresh_shift] || pr.refresh_shift)}">${esc('FCV Refresh ' + pr.refresh_shift)}</span>` : ''}
             </div>
             ${(pr.who_acts||pr.when||pr.resources) ? `<div class="pc-meta-row">
               ${pr.who_acts ? `<span class="pc-meta-chip"><strong>Who:</strong> ${(pr.who_acts||'').split(';').map(w=>w.trim()).filter(Boolean).map(w=>'<span class="who-chip">'+esc(w)+'</span>').join(' ')}</span>` : ''}
