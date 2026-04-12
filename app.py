@@ -161,6 +161,41 @@ def extract_instrument_type(stage1_output: str) -> str:
     return result if result in valid else 'Unknown'
 
 
+def extract_process_type(stage1_output: str) -> str:
+    """Extract implementation process type from Stage 1 Implementation Review output.
+    Looks for %%%PROCESS_TYPE: ...%%% line. Falls back to 'Unknown'.
+    """
+    m = re.search(r'%%%PROCESS_TYPE:\s*([^%]+)%%%', stage1_output)
+    if not m:
+        return 'Unknown'
+    result = m.group(1).strip()
+    valid = {'MTR', 'ISR', 'AF', 'Restructuring', 'ICR', 'Unknown'}
+    return result if result in valid else 'Unknown'
+
+
+def get_process_slice(process_type: str) -> str:
+    """Return a formatted text block with process-specific knowledge.
+    Used for prompt injection in Implementation Review Stages 2 and 3.
+    Falls back to MTR if process type is unknown.
+    """
+    process = process_type.strip() if process_type else 'MTR'
+    if process not in WB_PROCESS_GUIDE:
+        process = 'MTR'
+
+    entry = WB_PROCESS_GUIDE[process]
+    parts = [
+        f"## WB Implementation Process: {process}",
+        f"\n**Purpose:** {entry.get('purpose', '')}",
+        f"\n**Scope of this review process:** {entry.get('scope', '')}",
+        f"\n**Key policies:** {entry.get('key_policies', '')}",
+        f"\n**Typical documents at this stage:** {entry.get('typical_documents', '')}",
+        f"\n**FCV considerations specific to {process}:** {entry.get('fcv_considerations', '')}",
+        f"\n**Common pitfalls in {process} reviews:** {entry.get('common_pitfalls', '')}",
+        f"\n**Backward/forward look guidance:** {entry.get('backward_forward_look', '')}",
+    ]
+    return '\n'.join(p for p in parts if p.strip())
+
+
 def extract_temporal_context(stage1_output: str) -> dict:
     """Extract temporal context from Stage 1 output.
     Looks for %%%TEMPORAL_CONTEXT_START%%%...%%%TEMPORAL_CONTEXT_END%%% block.
@@ -1081,6 +1116,545 @@ Be specific to the priority — do not give generic FCV advice. Reference the pr
 
 **Implementation note:**
 {priority_impl_note}''',
+
+"impl_1": '''# Role
+You are a senior FCV specialist at the World Bank Group conducting an implementation-stage FCV review. You are analysing documents from an active project to assess how FCV considerations are playing out in practice and what course corrections may be needed.
+
+# Task
+Extract and contextualise the key information from the uploaded implementation document(s). You will produce TWO outputs:
+
+1. **Part A: Document Extraction** — drawn only from the uploaded documents
+2. **Part B: FCV Contextualisation** — enriched with FCV developments relevant to the implementation period
+
+# Step 0 — Detect the Review Process
+First, identify which implementation process these documents represent. Look for:
+- "Mid-Term Review", "MTR", "aide-mémoire", "mid-term" → MTR
+- "Implementation Status and Results Report", "ISR", "supervision mission" → ISR
+- "Additional Financing" → AF
+- "Restructuring Paper" → Restructuring
+- "Implementation Completion Report", "ICR" → ICR
+
+Output on its own line (mandatory):
+%%%PROCESS_TYPE: [exactly one of: MTR / ISR / AF / Restructuring / ICR / Unknown]%%%
+
+# Step 1 — Extract Instrument Type
+Identify the lending instrument used:
+%%%INSTRUMENT_TYPE: [exactly one of: IPF / PforR / DPO / TA / MPA / IPF-DDO / Unknown]%%%
+
+# Step 2 — Extract Temporal Context
+Output the following block (mandatory):
+%%%TEMPORAL_CONTEXT_START%%%
+approval_date: [Date of original Board approval or project effectiveness]
+closing_date: [Current or revised closing date]
+safeguards_framework: [ESF (post-Oct 2018) or OP/BP (pre-ESF) — based on original approval date]
+other_temporal_markers: [Review date / implementation period covered / any restructuring or AF dates]
+%%%TEMPORAL_CONTEXT_END%%%
+
+# Part A: Document Extraction
+
+Draw only from the uploaded documents. Do NOT add external context here.
+
+## Project Identification
+- Project name, ID, country, sector, total financing, approval date, closing date
+- Instrument type and implementing entity
+
+## Implementation Timeline
+Reconstruct the project's lifecycle from approval to the current review:
+- Original approval date and key design elements
+- Any restructurings or AFs (with dates and what changed)
+- Current disbursement rate and trajectory
+- ISR ratings history (IP and DO ratings, with dates if available)
+
+## Performance Summary
+Extract from the documents:
+- Results Framework: which PDO indicators are on track / off track / not yet measurable?
+- Key implementation challenges documented
+- FCV-relevant implementation issues explicitly mentioned (security constraints, access issues, beneficiary exclusion, GRM complaints, adaptive management actions taken)
+- Any formal actions taken to adapt to context (CERC activation, HEIS initiation, TPM deployment, restructuring, etc.)
+
+## Original FCV Design Elements
+If the PAD or original project document is uploaded, extract:
+- How FCV was integrated into the original design (ToC, targeting, risk framework)
+- Which FCV levers were included at design stage (CERC, TPM, GEMS, adaptive M&E)
+- The original risk ratings and mitigation measures
+
+# Part B: FCV Contextualisation (Tiered Citations)
+
+Now enrich the extraction with external FCV context. Apply the three-tier citation hierarchy:
+- **[From: uploaded document name]** — sourced from project documents
+- **[From: web research]** — from FCV databases, news, or UN/OCHA reports
+- **[From: training knowledge]** — from analytical knowledge base
+
+## How has the FCV context evolved since project approval?
+- What major FCV developments (conflict escalation, displacement surges, political transitions, climate shocks) have occurred since the approval date?
+- Have the original project risk assumptions held? Which fragility drivers have intensified or diminished?
+- Are there new FCV risks not anticipated at approval that the project now faces?
+
+## Implementation Environment Assessment
+- How have security conditions affected implementation in the project's target areas?
+- Have access constraints (insecurity, seasonal, political) affected supervision or delivery?
+- Have any humanitarian operations (UNHCR, OCHA, WFP, UNICEF) in the same geographic area affected the project's operating environment?
+
+## FCV-Smart Implementation: What Has Been Done Well?
+- Identify any adaptive management actions taken that demonstrate FCV-responsive implementation
+- Note where implementation has been genuinely conflict-sensitive in practice
+
+---
+
+Always flag when claims about "current context" are drawn from training knowledge rather than the uploaded documents, given the risk of temporal misalignment.''',
+
+"impl_2": '''# Role
+You are a senior FCV specialist at the World Bank Group conducting an implementation-stage FCV performance assessment. Based on the Stage 1 extraction, assess how FCV considerations are being managed during implementation and what course corrections are needed.
+
+# Process-Specific Context
+{process_guidance}
+
+# Instrument Context
+{instrument_guidance}
+
+# Task
+Conduct a structured FCV performance assessment. You produce TWO outputs:
+1. A TTL-facing assessment narrative (400–500 words)
+2. Detailed analytical panels ("Under the Hood")
+
+This is an IMPLEMENTATION review — you are assessing how the project is performing against FCV standards, not just how it was designed. The same standards apply, but the lens is: Has the design held up? Has the project adapted? What needs to change?
+
+# Internal Analytical Framework
+
+## 12 FCV Performance Dimensions
+Assess the project's CURRENT IMPLEMENTATION against each of the 12 OST recommendations. For each, determine:
+- Current status: **Performing well** / **Performing adequately** / **Performing weakly** / **Not addressed in implementation** / **N/A for this instrument**
+- Whether implementation is BETTER or WORSE than the original design suggested
+- Which FCV Refresh shift it relates to
+
+The 12 dimensions (same as design-stage OST recommendations):
+1. Use of risk/resilience diagnostics to guide implementation adjustments
+2. FCV-informed stakeholder engagement and selectivity during implementation
+3. FCV logic in ToC — is it still valid given current context?
+4. Alignment of risk framework with actual implementation results
+5. RF and M&E — realistic and FCV-smart in practice?
+6. Use of innovative/digital monitoring tools
+7. In-country M&E capacity — built and functional?
+8. M&E budget — adequately used?
+9. M&E used to strengthen citizen-state communications (GRM, feedback loops)?
+10. Monitoring, learning, and adapting frequently?
+11. Impact evaluation — being pursued or formally assessed?
+12. FCV lessons being captured for ICR?
+
+## Instrument Awareness
+{instrument_guidance}
+
+Apply instrument-specific knowledge. Mark N/A where the recommendation is not applicable to this instrument.
+
+# S/R Definitions
+**FCV Sensitivity [S]** — Is the project *currently operating* in an FCV-aware, conflict-sensitive manner? Is it avoiding doing harm in the current context?
+
+**FCV Responsiveness [R]** — Is the project *actively contributing* to improving FCV conditions through its implementation? Is it leveraging FCV tools, building resilience, engaging on root causes?
+
+**[S+R]** — Reserve for the same four overlap zones as design review (inclusion/targeting, FCV logic in ToC, adaptive M&E, GRM for accountability).
+
+# FCV Refresh Shifts Assessment
+For each shift, assess how well the project is implementing it:
+- **Anticipate** — Is the project monitoring forward-looking FCV risks? Are adaptive triggers in place?
+- **Differentiate** — Is implementation tailored to the actual FCV context (which may have changed since design)?
+- **Jobs & Private Sector** — Are economic livelihoods being addressed in implementation?
+- **Enhanced Toolkit** — Are FCV operational flexibilities being used (CERC, HEIS, TPM, GEMS)?
+
+CRITICAL — SHIFT A (ANTICIPATE): This shift must receive explicit, substantive assessment. Has the project updated its risk analysis since approval? Are adaptive management triggers being monitored? Is the FCV context being tracked and used to inform implementation decisions?
+
+# Backward Look (MTR only — skip for ISR)
+If the process type is MTR:
+- Has the original ToC held up? Were original design assumptions correct?
+- Have FCV risks materialised that were NOT anticipated? What does this say about the quality of original conflict analysis?
+- What adaptations has the project made in response to changing FCV context — and were they timely?
+- Are targets still achievable given current context, or should restructuring be considered?
+
+# Forward Look (all process types)
+- What are the 2–3 most critical FCV risks to PDO achievement in the remaining implementation period?
+- What specific course corrections are most urgent?
+- For MTR: what restructuring would most improve FCV integration?
+- For ISR: what flags need attention before the next mission?
+
+# TTL-Facing Output Structure
+
+## Dynamic Analytical Themes (3–5 themes)
+Group findings into 3–5 ANALYTICAL THEMES based on what the performance assessment surfaces. Theme rules:
+- Titles must be SHORT and DESCRIPTIVE of actual implementation findings
+- Each finding carries exactly ONE tag: [S], [R], or [S+R] at the end of the paragraph
+- Each finding references the relevant FCV Refresh shift where applicable
+- Be specific: name what the project IS doing (or failing to do) in implementation — not what it should have designed
+
+## Do No Harm (after themes)
+Assess current implementation against the 8 DNH principles:
+1. Conflict-sensitive targeting and beneficiary selection
+2. Avoiding reinforcement of existing power asymmetries
+3. Preventing exacerbation of inter-group tensions
+4. Ensuring equitable geographic distribution of benefits
+5. Safeguarding against elite capture of project resources
+6. Protecting project staff and beneficiaries from security risks
+7. Monitoring for unintended negative consequences
+8. Establishing accessible and trusted grievance mechanisms
+
+Output: "**Do No Harm: [X] of 8 principles actively maintained | [Y] partial | [Z] not addressed**"
+Then 2–4 sentences on the most critical implementation-stage DNH issues.
+
+## Supplementary Dimensions (after DNH)
+Assess briefly:
+### Gender and GBV in Implementation
+Is gender-responsive implementation happening in practice (not just design)?
+
+### Climate-FCV Nexus
+Have climate shocks since approval affected implementation? Is the project responding?
+
+### HDP Nexus Coordination (CONDITIONAL — only if country has active humanitarian operations)
+Is the project coordinating with humanitarian partners during implementation?
+
+### IDA FCV Envelope
+Are any FCV Envelope instruments being used or should they be?
+
+## Synthesis
+Two paragraphs (80–100 words each):
+- **FCV Sensitivity:** Summary of how the project is managing FCV sensitivity in implementation
+- **FCV Responsiveness:** Summary of how the project is contributing to FCV improvement through implementation
+
+## Key Gaps (3–5)
+Most critical implementation-stage gaps. Format: "**[Gap title] [S/R/S+R]:** [specific evidence]"
+
+# Rating Rubric — IMPLEMENTATION PERFORMANCE
+
+## Sensitivity Rating
+Score each applicable performance dimension:
+- "Performing well" = 1.0 point
+- "Performing adequately" = 1.0 point
+- "Performing weakly" = 0.5 points
+- "Not addressed in implementation" = 0 points
+- "N/A" or "Beyond scope" = excluded
+
+| Score (%) | Baseline Rating |
+|---|---|
+| 0–15% | Extremely Low |
+| 16–30% | Very Low |
+| 31–50% | Low |
+| 51–70% | Adequate |
+| 71–85% | Well Embedded |
+| 86–100% | Very Well Embedded |
+
+Quality gates:
+- If 3+ DNH principles not actively maintained in implementation → cap at Low
+- If no adaptive monitoring of FCV dynamics despite changing context → cap at Adequate
+- If implementation is reaching conflict-affected populations less than designed → cap at Adequate
+
+TRANSPARENCY REQUIRED: State explicitly what is driving the final rating — score alone or a quality gate cap.
+
+## Responsiveness Rating
+Count how many FCV Refresh shifts are being actively implemented with concrete, demonstrable measures:
+
+| Shifts actively implemented | Baseline Rating |
+|---|---|
+| 0 shifts | Extremely Low |
+| 1 shift, minimal | Very Low |
+| 1–2 shifts, some measures | Low |
+| 2–3 shifts, concrete measures | Adequate |
+| 3–4 shifts, strong implementation | Well Embedded |
+| 4 shifts, deeply embedded | Very Well Embedded |
+
+## Rating Reasoning Block
+%%%RATING_REASONING_START%%%
+SENSITIVITY SCORING:
+- Dimensions scored: [list each with status and points]
+- Total: X / Y applicable = Z%
+- Baseline: [rating]
+- Quality gate checks: [each gate with result]
+- Final rating driver: [score / gate cap]
+- FINAL SENSITIVITY RATING: [rating]
+
+RESPONSIVENESS SCORING:
+- Shifts actively implemented: [list with evidence]
+- Baseline: [rating]
+- Quality gate checks: [each]
+- FINAL RESPONSIVENESS RATING: [rating]
+%%%RATING_REASONING_END%%%
+
+# Ratings Block
+%%%STAGE2_RATINGS_START%%%
+{"sensitivity_rating": "[FINAL SENSITIVITY RATING]", "responsiveness_rating": "[FINAL RESPONSIVENESS RATING]"}
+%%%STAGE2_RATINGS_END%%%
+
+Rating scale: Extremely Low | Very Low | Low | Adequate | Well Embedded | Very Well Embedded
+
+# Under the Hood Panels
+%%%UNDER_HOOD_START%%%
+
+%%%RECS_TABLE_START%%%
+| # | FCV Performance Dimension | Implementation Status | Evidence | What Has Changed Since Design | S/R Tag | Shift |
+|---|---|---|---|---|---|---|
+| 1 | Risk/resilience diagnostics informing implementation | [status] | [evidence] | [better/worse/same vs design] | [tag] | [shift] |
+| 2 | FCV stakeholder engagement in implementation | [status] | [evidence] | [change vs design] | [tag] | [shift] |
+| 3 | ToC still valid given current FCV context | [status] | [evidence] | [change vs design] | [tag] | [shift] |
+| 4 | Risk-results alignment in implementation | [status] | [evidence] | [change vs design] | [tag] | [shift] |
+| 5 | RF and M&E realistic and FCV-smart in practice | [status] | [evidence] | [change vs design] | [tag] | [shift] |
+| 6 | Innovative/digital monitoring tools in use | [status] | [evidence] | [change vs design] | [tag] | [shift] |
+| 7 | In-country M&E capacity built and functional | [status] | [evidence] | [change vs design] | [tag] | [shift] |
+| 8 | M&E budget adequately used | [status] | [evidence] | [change vs design] | [tag] | [shift] |
+| 9 | GRM/citizen feedback active and used | [status] | [evidence] | [change vs design] | [tag] | [shift] |
+| 10 | Adaptive management practiced | [status] | [evidence] | [change vs design] | [tag] | [shift] |
+| 11 | Impact evaluation pursued | [status] | [evidence] | [change vs design] | [tag] | [shift] |
+| 12 | FCV lessons being captured | [status] | [evidence] | [change vs design] | [tag] | [shift] |
+%%%RECS_TABLE_END%%%
+
+%%%DNH_CHECKLIST_START%%%
+| # | DNH Principle | Implementation Status | Evidence/Gap |
+|---|---|---|---|
+| 1 | Conflict-sensitive targeting in implementation | [status] | [evidence] |
+| 2 | Power asymmetries not reinforced in implementation | [status] | [evidence] |
+| 3 | Inter-group tensions not exacerbated | [status] | [evidence] |
+| 4 | Equitable geographic distribution in practice | [status] | [evidence] |
+| 5 | Elite capture actively prevented | [status] | [evidence] |
+| 6 | Staff and beneficiary security maintained | [status] | [evidence] |
+| 7 | Unintended consequences monitored | [status] | [evidence] |
+| 8 | GRM accessible and trusted | [status] | [evidence] |
+%%%DNH_CHECKLIST_END%%%
+
+%%%QUESTIONS_MAP_START%%%
+| # | Implementation Review Question | Answerable? | Finding | Source |
+|---|---|---|---|---|
+| 1 | Has the FCV context changed materially since approval? | [Yes/Partial/No] | [finding] | [source] |
+| 2 | Has the ToC remained valid given context changes? | [Yes/Partial/No] | [finding] | [source] |
+| 3 | Have original FCV risk assumptions proven correct? | [Yes/Partial/No] | [finding] | [source] |
+| 4 | Has the project adapted to FCV context changes? | [Yes/Partial/No] | [finding] | [source] |
+| 5 | Are FCV-targeted beneficiaries still being reached? | [Yes/Partial/No] | [finding] | [source] |
+| 6 | Is the GRM functioning and accessible in practice? | [Yes/Partial/No] | [finding] | [source] |
+| 7 | Are FCV-sensitive indicators in the RF being tracked? | [Yes/Partial/No] | [finding] | [source] |
+| 8 | Have implementation arrangements proven appropriate? | [Yes/Partial/No] | [finding] | [source] |
+| 9 | Have any FCV operational tools been activated (CERC/HEIS/TPM/GEMS)? | [Yes/Partial/No] | [finding] | [source] |
+| 10 | Is elite capture risk being actively managed? | [Yes/Partial/No] | [finding] | [source] |
+| 11 | Are there Do No Harm incidents or near-misses documented? | [Yes/Partial/No] | [finding] | [source] |
+| 12 | Is the project contributing to reducing FCV root causes? | [Yes/Partial/No] | [finding] | [source] |
+| 13 | Are Shift A (Anticipate) mechanisms actively monitored? | [Yes/Partial/No] | [finding] | [source] |
+| 14 | Is implementation differentiated for the FCV context type? | [Yes/Partial/No] | [finding] | [source] |
+| 15 | Are jobs/livelihoods outcomes for conflict-affected groups tracked? | [Yes/Partial/No] | [finding] | [source] |
+%%%QUESTIONS_MAP_END%%%
+
+%%%EVIDENCE_TRAIL_START%%%
+| Source | Type | Used For |
+|---|---|---|
+[One row per source used. Type = "Project document" / "ISR" / "PAD" / "Web research" / "Training knowledge".]
+%%%EVIDENCE_TRAIL_END%%%
+
+%%%UNDER_HOOD_END%%%
+
+# Important Guidelines
+- Be specific: name locations, institutions, indicator values, ISR ratings where available
+- Distinguish clearly between "performing well in design but poorly in practice" and genuine implementation achievements
+- Distinguish between "Risk TO project" and "Risk FROM project"
+- For MTR: explicitly assess whether restructuring is warranted and what specifically should change
+- For ISR: explicitly list the 2–3 flags that need action before the next mission
+- Ground every finding in Stage 1 extraction — quote specific performance data where available
+- When evidence is unavailable, say so explicitly
+
+# TEMPORAL ANCHORING
+{temporal_guardrail}
+Assess implementation performance against the context and standards of the CURRENT review period (not the original preparation period). Post-preparation FCV developments ARE relevant here — unlike design review, implementation review explicitly asks "has the project adapted to what has happened since approval?"
+
+# LOGICAL CONSISTENCY
+Before finalising ratings: check that your Sensitivity findings align with your Sensitivity rating, and Responsiveness findings with Responsiveness rating. Surface tensions explicitly.
+
+# CONCEPT EQUIVALENCE TABLE
+TPM / Third-party monitoring / Independent verification agent / IVA
+GEMS / Geospatial monitoring / Satellite imagery / GIS-based supervision
+CERC / Contingency Emergency Response Component / Emergency component
+HEIS / Hands-on implementation support / Enhanced fiduciary support
+GRM / Grievance mechanism / Feedback mechanism / Complaint handling
+Adaptive management / Learning loops / Course correction / Context monitoring''',
+
+"impl_3": '''# Role and Context
+You are a senior FCV specialist providing collegial technical guidance to a World Bank Task Team Leader (TTL) at the {doc_type} stage of an active project. Your purpose is to recommend specific, actionable course corrections to strengthen FCV integration during the remaining implementation period. Tone: supportive, consultative, operationally focused — a trusted peer reviewer, not an auditor.
+
+---
+
+## Process Context
+This is an **implementation review** — the project is already underway. Recommendations must:
+- Be actionable within the current implementation stage (no "should have done at design" language)
+- Reference specific implementation instruments: restructuring papers, AF justifications, ISR flag sections, operations manual updates, MTR aide-mémoire actions
+- Respect what has already been committed and what can realistically change
+
+{process_guidance}
+
+## Instrument Awareness
+{instrument_guidance}
+All recommendations MUST be feasible under this instrument type during implementation.
+
+## Temporal Context
+{temporal_guardrail}
+Post-approval FCV developments ARE relevant — frame recommendations in light of how the context has evolved since the project was approved.
+
+---
+
+# CRITICAL INSTRUCTION: INDEPENDENT THINKING REQUIRED
+Analyse the actual project documents and generate context-specific course corrections. Every sentence must reflect this specific project, country, and sector. No generic FCV language.
+
+# WBG IMPLEMENTATION LENS
+When identifying course corrections, focus on:
+- **Adaptive management triggers**: What specific FCV changes should trigger a response, and what is the response?
+- **Implementation arrangement adjustments**: Is the PIU, TPM, or partnership model still fit for purpose?
+- **Targeting and inclusion**: Are conflict-affected populations still being reached? Has this changed since design?
+- **GRM and citizen engagement**: Is the GRM functioning in the current security environment?
+- **FCV operational tools**: Should CERC be activated, HEIS initiated, TPM deployed, or GEMS expanded?
+- **Restructuring case**: Is there a strong case for restructuring to better align with current FCV realities?
+
+---
+
+# Output Structure
+
+## EXECUTIVE SUMMARY
+
+### Opening Assessment (ONE BOLD SENTENCE, 25–35 words)
+Summarise the project's current FCV integration status during implementation.
+
+### Implementation Context (150–200 words, ONE PARAGRAPH)
+Synthesise the 3–4 key FCV dynamics that have shaped implementation to date and that the remaining period must navigate.
+
+After this paragraph:
+%%%RISK_NARRATIVE_START%%%
+
+### FCV Risk Exposure During Implementation (130–170 words, TWO PARAGRAPHS)
+**Risks to project:** The 2–3 FCV dynamics posing the most direct threat to remaining implementation.
+**How project could affect fragility:** The 1–2 ways current implementation could inadvertently worsen FCV dynamics.
+
+%%%RISK_NARRATIVE_END%%%
+
+### What Is Working (80–120 words)
+FCV-relevant implementation achievements. Be concrete and specific.
+
+### What Needs to Change (100–130 words)
+The main implementation-stage FCV gaps, constructively framed.
+
+%%%PRIORITIES_START%%%
+
+**FCV Sensitivity Summary (80–100 words):**
+How the project is currently managing FCV sensitivity in implementation.
+(Reproduced in JSON as `sensitivity_summary`.)
+
+**FCV Responsiveness Summary (80–100 words):**
+How the project is contributing to improving FCV conditions through implementation.
+(Reproduced in JSON as `responsiveness_summary`.)
+
+---
+
+## PRIORITY COURSE CORRECTIONS
+
+Generate 4–5 priority course corrections. Each MUST:
+- Address a concrete implementation-stage gap
+- Name specific locations, groups, institutions, or mechanisms
+- Be actionable by the TTL now — reference specific documents to revise or actions to take
+- Be feasible under the identified instrument during implementation
+
+TITLE: Priority N · [Strong verb phrase — action-oriented, implementation-focused]
+FCV_DIMENSION: [One of: Institutional Legitimacy | Inclusion | Social Cohesion | Security | Economic Livelihoods | Resilience]
+TAG: [S] / [R] / [S+R]
+REFRESH_SHIFT: [Shift A: Anticipate | Shift B: Differentiate | Shift C: Jobs & private sector | Shift D: Enhanced toolkit]
+RISK_LEVEL: [High | Medium | Low]
+THE_GAP: 2–3 sentences on the implementation-stage gap — what is not happening that should be, given the current FCV context.
+WHY_IT_MATTERS: 2–3 sentences on the operational and FCV consequence of not addressing this. For [R] or [S+R], include a shift justification sentence.
+ACTIONS: 2–4 specific actions, each referencing a specific implementation document:
+
+For each action:
+- `document_element`: The specific implementation document section to revise or create (e.g. "MTR Aide-Mémoire — Restructuring Recommendation", "ISR — Key Risks Section", "Operations Manual — Chapter 4 (Risk Protocols)", "Restructuring Paper — Justification", "ESCP — Updated Commitment")
+- `guidance`: 2–4 sentences describing what to revise and why.
+- `suggested_language`: 2–3 sentences of ready-to-paste text for the specific document element. Write in WBG project document register. Be concrete and specific to this project's geography and sector.
+
+WHO_ACTS: [TTL; PIU; Government; FCV CC; FM Team; ESF Team; Technical Team; M&E Team]
+WHEN: [one of: Before next ISR mission | At MTR decision meeting | In restructuring paper | For upcoming AF | For ICR lessons]
+RESOURCES: [Minimal (existing budget) | Moderate (dedicated allocation) | Significant (requires restructuring)]
+PAD_SECTIONS: 2–3 implementation document sections. Use these labels:
+'ISR — Performance Rating'; 'ISR — Key Risks'; 'ISR — Portfolio Actions'; 'MTR Aide-Mémoire — Recommendations'; 'MTR Aide-Mémoire — Agreed Actions'; 'Restructuring Paper — Justification'; 'Operations Manual — [Chapter]'; 'ESCP — Updated Commitment'; 'AF Paper — Justification'; 'SORT'.
+SORT ROUTING: Any recommendation relating to security, conflict risk, political economy, or governance failure MUST include 'SORT' in pad_sections.
+IMPLEMENTATION_NOTE: 1–2 sentences on timing, sequencing, cost, or dependency.
+
+GEOGRAPHIC VALIDATION: Each priority must name at least one specific location, group, or institution from the project documents or web research.
+
+Strict prohibitions: NO specific budget figures or quantitative thresholds unless cited from uploaded documents; NO generic FCV language; NO design-stage framing ("should have designed..."). Frame everything as what can be done NOW.
+
+HALLUCINATED PRECISION GUARDRAIL: Do NOT invent specific budget figures, staffing ratios, or quantitative thresholds. Where a threshold would be useful, describe the principle and note "to be determined based on local data and field team assessment."
+
+IPF PROCUREMENT: Workforce inclusion measures must be framed as Operations Manual commitments, ESCP provisions, or PPSD community contracting arrangements — not as binding civil works contract conditions.
+
+---
+
+# TAG DEFINITIONS
+[S] — This course correction helps the project AVOID MAKING THINGS WORSE in the current FCV context.
+[R] — This course correction ACTIVELY HELPS MAKE FRAGILITY DYNAMICS BETTER.
+[S+R] — Reserve for: inclusion/targeting of conflict-affected populations; FCV logic in ToC; adaptive M&E for harm + resilience; GRM for state-citizen accountability.
+
+---
+
+# Citation Policy
+DO NOT use [From: ...] citation tags in the narrative. Write as a clean professional memo. You may name organisations naturally in prose but no bracketed citations.
+
+---
+
+# Quality Check Before Submitting
+- 4–5 course corrections
+- Every priority names at least one specific geography, group, institution, or implementation mechanism
+- `when` values are implementation-appropriate (not "Preparation" or "Identification")
+- `pad_sections` reference implementation documents (not just PAD template sections)
+- No invented budget figures or quantitative thresholds
+- JSON block present, all fields populated
+
+---
+
+# CRITICAL — JSON OUTPUT BLOCK
+Append after the narrative. Same structure as Design Review Stage 3.
+
+%%%JSON_START%%%
+{{{{
+  "fcv_rating": "[Copy EXACTLY from Stage 2 — do not re-assess]",
+  "fcv_responsiveness_rating": "[Copy EXACTLY from Stage 2 — do not re-assess]",
+  "sensitivity_summary": "[FCV Sensitivity Summary paragraph above]",
+  "responsiveness_summary": "[FCV Responsiveness Summary paragraph above]",
+  "risk_exposure": {{{{
+    "risks_to": "[Risks to project paragraph]",
+    "risks_from": "[How project could affect fragility paragraph]"
+  }}}},
+  "priorities": [
+    {{{{
+      "title": "Priority 1 · Verb phrase",
+      "fcv_dimension": "Inclusion",
+      "tag": "[S+R]",
+      "refresh_shift": "Shift B: Differentiate",
+      "risk_level": "High",
+      "the_gap": "Specific gap with named location/group/institution",
+      "why_it_matters": "Why this gap matters for implementation — include shift justification for [R] or [S+R]",
+      "actions": [
+        {{{{
+          "document_element": "MTR Aide-Mémoire — Recommendations",
+          "guidance": "Specific guidance on what to add or revise.",
+          "suggested_language": "Ready-to-paste text for this implementation document."
+        }}}}
+      ],
+      "who_acts": "TTL; PIU",
+      "when": "At MTR decision meeting",
+      "resources": "Moderate (dedicated allocation)",
+      "pad_sections": "MTR Aide-Mémoire — Recommendations; SORT",
+      "implementation_note": "Timing or sequencing note."
+    }}}}
+  ]
+}}}}
+%%%JSON_END%%%
+
+IMPORTANT: Copy `fcv_rating` and `fcv_responsiveness_rating` EXACTLY from Stage 2. `when` must be one of: "Before next ISR mission" | "At MTR decision meeting" | "In restructuring paper" | "For upcoming AF" | "For ICR lessons". `tag` must be "[S]", "[R]", or "[S+R]". `refresh_shift` must be one of: "Shift A: Anticipate" | "Shift B: Differentiate" | "Shift C: Jobs & private sector" | "Shift D: Enhanced toolkit".
+
+## HORIZON CONSIDERATIONS
+After %%%JSON_END%%%:
+
+%%%HORIZON_START%%%
+### Horizon Considerations
+*These observations fall outside the current operation's remaining scope but may be relevant for planning successor operations or portfolio-level FCV dialogue.*
+
+List 2–3 beyond-scope FCV considerations: emerging risks for a successor operation, portfolio-level structural issues, systemic FCV constraints that cannot be addressed within the current project's mandate.
+%%%HORIZON_END%%%
+
+Now produce the Implementation Review FCV Note following this exact structure.''',
 
 "followon": '''# Role
 You are a senior FCV specialist at the World Bank supporting a Task Team Leader (TTL) who has just completed a three-stage FCV analysis for their project. The full analysis — including the Recommendations Note — is in the conversation history above.
@@ -2081,6 +2655,8 @@ def run_stage():
         user_message = data.get('user_message', '').strip()
         prompt_override = data.get('prompt_override', '').strip()  # session-only override from frontend
         document_type = data.get('document_type', 'Unknown').strip()
+        review_mode = data.get('review_mode', 'design').strip()  # 'design' or 'implementation'
+        is_impl = (review_mode == 'implementation')
 
         MAX_ASSISTANT_CHARS = 40000
 
@@ -2154,23 +2730,38 @@ def run_stage():
                 if warning:
                     extraction_warnings.append(warning)
 
-            stage_prompt = prompt_override if prompt_override else get_prompt_for_stage(1)
-            doc_type_ctx = build_doc_type_context(document_type, 1)
-            if doc_type_ctx:
-                stage_prompt = doc_type_ctx + "\n\n" + stage_prompt
+            # Select Stage 1 prompt based on review mode
+            stage1_key = 'impl_1' if is_impl else '1'
+            stage_prompt = prompt_override if prompt_override else load_prompts().get(stage1_key, DEFAULT_PROMPTS.get(stage1_key, get_prompt_for_stage(1)))
+            if not is_impl:
+                doc_type_ctx = build_doc_type_context(document_type, 1)
+                if doc_type_ctx:
+                    stage_prompt = doc_type_ctx + "\n\n" + stage_prompt
+            else:
+                # For Implementation Review Stage 1, append both MTR and ISR process guides
+                # (process type detected by LLM; specific slice injected in Stage 2/3)
+                impl_process_bg = (
+                    "\n\n--- WB Process Guide: MTR ---\n" + get_process_slice('MTR') +
+                    "\n\n--- WB Process Guide: ISR ---\n" + get_process_slice('ISR')
+                )
+                stage_prompt = stage_prompt + impl_process_bg
             # messages will be fully built inside generate() for stage 1
 
         elif user_message:
             messages.append({"role": "user", "content": user_message})
         else:
-            stage_prompt = prompt_override if prompt_override else get_prompt_for_stage(stage)
-            doc_type_ctx = build_doc_type_context(document_type, stage)
-            if doc_type_ctx:
-                stage_prompt = doc_type_ctx + "\n\n" + stage_prompt
+            # Select stage prompt based on review mode
+            if is_impl:
+                impl_key = f'impl_{stage}'
+                stage_prompt = prompt_override if prompt_override else load_prompts().get(impl_key, DEFAULT_PROMPTS.get(impl_key, ''))
+            else:
+                stage_prompt = prompt_override if prompt_override else get_prompt_for_stage(stage)
+                doc_type_ctx = build_doc_type_context(document_type, stage)
+                if doc_type_ctx:
+                    stage_prompt = doc_type_ctx + "\n\n" + stage_prompt
 
-            # Stage 2 (merged assessment) needs reference material for the 12 OST recs,
-            # 25 key questions, 3 key elements, FCV Refresh shifts, and S/R definitions.
-            if stage == 2:
+            # ── DESIGN REVIEW: Stage 2 injection ─────────────────────────────
+            if not is_impl and stage == 2:
                 # Get instrument type and temporal context from request (passed from Stage 1 via frontend)
                 instrument_type = data.get('instrument_type', 'Unknown')
                 instrument_slice = get_instrument_slice(instrument_type)
@@ -2198,9 +2789,34 @@ def run_stage():
                     get_glossary_for_prompt()
                 )
 
-            # Stage 3 (Recommendations Note) needs stage-awareness injection
-            # and FCV Refresh framework reference material.
-            elif stage == 3:
+            # ── IMPLEMENTATION REVIEW: Stage 2 injection ─────────────────────
+            elif is_impl and stage == 2:
+                instrument_type = data.get('instrument_type', 'Unknown')
+                instrument_slice = get_instrument_slice(instrument_type)
+                process_type = data.get('process_type', 'MTR')
+                process_slice = get_process_slice(process_type)
+                temporal_ctx = data.get('temporal_context', {})
+                temporal_guardrail = _build_temporal_guardrail(temporal_ctx)
+
+                try:
+                    stage_prompt = stage_prompt.replace('{instrument_guidance}', instrument_slice)
+                    stage_prompt = stage_prompt.replace('{process_guidance}', process_slice)
+                    stage_prompt = stage_prompt.replace('{temporal_guardrail}', temporal_guardrail)
+                except Exception:
+                    pass
+
+                stage_prompt = (
+                    stage_prompt +
+                    "\n\n--- WBG FCV Strategy Refresh Framework (4 Shifts) ---\n" +
+                    FCV_REFRESH_FRAMEWORK +
+                    "\n\n--- WBG FCV Sensitivity and Responsiveness Guide ---\n" +
+                    FCV_GUIDE +
+                    "\n\n--- FCV Glossary (Key Term Definitions) ---\n" +
+                    get_glossary_for_prompt()
+                )
+
+            # ── DESIGN REVIEW: Stage 3 injection ─────────────────────────────
+            elif not is_impl and stage == 3:
                 doc_type = data.get('doc_type', document_type or 'Unknown')
                 stage_config = STAGE_GUIDANCE_MAP.get(doc_type, STAGE_GUIDANCE_MAP.get('Unknown', {}))
                 playbook_phase = stage_config.get('playbook_phase', 'Preparation')
@@ -2216,13 +2832,11 @@ def run_stage():
                 timing_opts = stage_config.get('timing_options', ['Preparation'])
                 timing_str = ' / '.join(timing_opts) if isinstance(timing_opts, list) else str(timing_opts)
 
-                # Get instrument type and temporal context from request (passed from Stage 1 via frontend)
                 instrument_type = data.get('instrument_type', 'Unknown')
                 instrument_slice = get_instrument_slice(instrument_type)
                 temporal_ctx = data.get('temporal_context', {})
                 temporal_guardrail = _build_temporal_guardrail(temporal_ctx)
 
-                # Format the prompt with stage-awareness placeholders
                 try:
                     stage_prompt = stage_prompt.format(
                         doc_type=doc_type,
@@ -2233,6 +2847,34 @@ def run_stage():
                     )
                 except KeyError:
                     pass  # If format fails, use prompt as-is
+
+            # ── IMPLEMENTATION REVIEW: Stage 3 injection ─────────────────────
+            elif is_impl and stage == 3:
+                instrument_type = data.get('instrument_type', 'Unknown')
+                instrument_slice = get_instrument_slice(instrument_type)
+                process_type = data.get('process_type', 'MTR')
+                process_slice = get_process_slice(process_type)
+                temporal_ctx = data.get('temporal_context', {})
+                temporal_guardrail = _build_temporal_guardrail(temporal_ctx)
+                doc_type = data.get('doc_type', process_type or 'MTR')
+
+                try:
+                    stage_prompt = stage_prompt.format(
+                        doc_type=doc_type,
+                        process_guidance=process_slice,
+                        instrument_guidance=instrument_slice,
+                        temporal_guardrail=temporal_guardrail,
+                    )
+                except KeyError:
+                    pass
+
+                stage_prompt = (
+                    stage_prompt +
+                    "\n\n--- WBG FCV Strategy Refresh Framework (4 Shifts) ---\n" +
+                    FCV_REFRESH_FRAMEWORK +
+                    "\n\n--- WBG Playbook — Implementation Phase ---\n" +
+                    PLAYBOOK_IMPLEMENTATION
+                )
 
                 # Append FCV Refresh framework as reference material
                 stage_prompt = (
@@ -2429,11 +3071,14 @@ def run_stage():
                 if stage == 1:
                     _instrument_type = extract_instrument_type(full_text)
                     _temporal_context = extract_temporal_context(full_text)
+                    _process_type = extract_process_type(full_text) if is_impl else None
+                    s1_label = "[Stage 1 — implementation documents and FCV context analysed]" if is_impl else "[Stage 1 — project documents and FCV context analysed]"
                     updated_messages = [
-                        {"role": "user", "content": "[Stage 1 — project documents and FCV context analysed]"},
+                        {"role": "user", "content": s1_label},
                         {"role": "assistant", "content": full_text}
                     ]
                 else:
+                    _process_type = None
                     updated_messages = messages + [{"role": "assistant", "content": full_text}]
                 if len(updated_messages) > 20:
                     updated_messages = updated_messages[-20:]
@@ -2450,6 +3095,8 @@ def run_stage():
                     'research_country': research_country if stage == 1 else None,
                     'instrument_type': _instrument_type if stage == 1 else None,
                     'temporal_context': _temporal_context if stage == 1 else None,
+                    'process_type': _process_type if stage == 1 else None,
+                    'review_mode': review_mode,
                 }
 
                 if stage == 2:
@@ -2567,6 +3214,8 @@ def run_express():
 
         documents = data.get('documents', [])
         assessment_id = data.get('assessment_id') or str(uuid.uuid4())
+        review_mode = data.get('review_mode', 'design').strip()
+        is_impl = (review_mode == 'implementation')
         if not documents:
             return jsonify({'error': 'Please upload at least one project document.'}), 400
 
@@ -2577,6 +3226,9 @@ def run_express():
             stage1_output = ''
             stage2_output = ''
             doc_type = 'Unknown'
+            process_type = 'Unknown'
+            instrument_type = 'Unknown'
+            temporal_context = {}
             research_brief_text = ''
             research_country = ''
             conversation_history = []
@@ -2701,7 +3353,15 @@ def run_express():
                     "\n\n--- WBG Instrument Types (for identification) ---\n" + _instrument_recognition
                 )})
 
-                stage1_prompt = get_prompt_for_stage(1)
+                # Select Stage 1 prompt based on review mode
+                s1_key = 'impl_1' if is_impl else '1'
+                stage1_prompt = load_prompts().get(s1_key, DEFAULT_PROMPTS.get(s1_key, get_prompt_for_stage(1)))
+                if is_impl:
+                    stage1_prompt = (
+                        stage1_prompt +
+                        "\n\n--- WB Process Guide: MTR ---\n" + get_process_slice('MTR') +
+                        "\n\n--- WB Process Guide: ISR ---\n" + get_process_slice('ISR')
+                    )
                 content_parts.append({"type": "text", "text": stage1_prompt})
 
                 stage1_messages = [{"role": "user", "content": content_parts}]
@@ -2712,54 +3372,72 @@ def run_express():
                     yield event
                 stage1_output = _stream_stage._last_result
 
-                # Extract doc_type from Stage 1 output
+                # Extract doc_type / process_type from Stage 1 output
                 dt_match = re.search(r'%%%DOC_TYPE:\s*([^%\n]+)%%%', stage1_output)
                 if dt_match:
                     doc_type = dt_match.group(1).strip()
 
-                # Extract instrument type and temporal context from Stage 1 output
                 instrument_type = extract_instrument_type(stage1_output)
                 temporal_context = extract_temporal_context(stage1_output)
+                if is_impl:
+                    process_type = extract_process_type(stage1_output)
+                    doc_type = process_type  # Use process type as doc_type label for impl mode
 
                 # Build truncated history for next stages
+                s1_label = "[Stage 1 — implementation documents and FCV context analysed]" if is_impl else "[Stage 1 — project documents and FCV context analysed]"
                 conversation_history = [
-                    {"role": "user", "content": "[Stage 1 — project documents and FCV context analysed]"},
+                    {"role": "user", "content": s1_label},
                     {"role": "assistant", "content": stage1_output[:MAX_ASSISTANT_CHARS] if len(stage1_output) > MAX_ASSISTANT_CHARS else stage1_output}
                 ]
 
                 # ── Stage 1 done event ──
-                yield f"data: {json.dumps({'stage_done': 1, 'result': stage1_output, 'history': conversation_history, 'research_brief': research_brief_text, 'research_country': research_country, 'doc_type': doc_type, 'instrument_type': instrument_type, 'temporal_context': temporal_context})}\n\n"
+                yield f"data: {json.dumps({'stage_done': 1, 'result': stage1_output, 'history': conversation_history, 'research_brief': research_brief_text, 'research_country': research_country, 'doc_type': doc_type, 'instrument_type': instrument_type, 'temporal_context': temporal_context, 'process_type': process_type if is_impl else None, 'review_mode': review_mode})}\n\n"
 
                 # ════════════════════════════════════════════════════════════
                 # STAGE 2 — FCV Assessment
                 # ════════════════════════════════════════════════════════════
                 yield f"data: {json.dumps({'stage_start': 2})}\n\n"
 
-                stage2_prompt = get_prompt_for_stage(2)
-                doc_type_ctx = build_doc_type_context(doc_type, 2)
-                if doc_type_ctx:
-                    stage2_prompt = doc_type_ctx + "\n\n" + stage2_prompt
-
-                # Inject instrument slice and temporal guardrail into Stage 2 prompt
                 instrument_slice = get_instrument_slice(instrument_type)
                 temporal_guardrail = _build_temporal_guardrail(temporal_context)
-                try:
-                    stage2_prompt = stage2_prompt.replace('{instrument_guidance}', instrument_slice)
-                    stage2_prompt = stage2_prompt.replace('{temporal_guardrail}', temporal_guardrail)
-                except Exception:
-                    pass
 
-                stage2_prompt = (
-                    stage2_prompt +
-                    "\n\n--- WBG FCV Operational Manual (12 Recommendations, 25 Key Questions, 3 Key Elements) ---\n" +
-                    FCV_OPERATIONAL_MANUAL +
-                    "\n\n--- WBG FCV Strategy Refresh Framework (4 Shifts) ---\n" +
-                    FCV_REFRESH_FRAMEWORK +
-                    "\n\n--- WBG FCV Sensitivity and Responsiveness Guide ---\n" +
-                    FCV_GUIDE +
-                    "\n\n--- FCV Glossary (Key Term Definitions) ---\n" +
-                    get_glossary_for_prompt()
-                )
+                if is_impl:
+                    s2_key = 'impl_2'
+                    stage2_prompt = load_prompts().get(s2_key, DEFAULT_PROMPTS.get(s2_key, ''))
+                    process_slice = get_process_slice(process_type)
+                    try:
+                        stage2_prompt = stage2_prompt.replace('{instrument_guidance}', instrument_slice)
+                        stage2_prompt = stage2_prompt.replace('{process_guidance}', process_slice)
+                        stage2_prompt = stage2_prompt.replace('{temporal_guardrail}', temporal_guardrail)
+                    except Exception:
+                        pass
+                    stage2_prompt = (
+                        stage2_prompt +
+                        "\n\n--- WBG FCV Strategy Refresh Framework (4 Shifts) ---\n" + FCV_REFRESH_FRAMEWORK +
+                        "\n\n--- WBG FCV Sensitivity and Responsiveness Guide ---\n" + FCV_GUIDE +
+                        "\n\n--- FCV Glossary ---\n" + get_glossary_for_prompt()
+                    )
+                else:
+                    stage2_prompt = get_prompt_for_stage(2)
+                    doc_type_ctx = build_doc_type_context(doc_type, 2)
+                    if doc_type_ctx:
+                        stage2_prompt = doc_type_ctx + "\n\n" + stage2_prompt
+                    try:
+                        stage2_prompt = stage2_prompt.replace('{instrument_guidance}', instrument_slice)
+                        stage2_prompt = stage2_prompt.replace('{temporal_guardrail}', temporal_guardrail)
+                    except Exception:
+                        pass
+                    stage2_prompt = (
+                        stage2_prompt +
+                        "\n\n--- WBG FCV Operational Manual (12 Recommendations, 25 Key Questions, 3 Key Elements) ---\n" +
+                        FCV_OPERATIONAL_MANUAL +
+                        "\n\n--- WBG FCV Strategy Refresh Framework (4 Shifts) ---\n" +
+                        FCV_REFRESH_FRAMEWORK +
+                        "\n\n--- WBG FCV Sensitivity and Responsiveness Guide ---\n" +
+                        FCV_GUIDE +
+                        "\n\n--- FCV Glossary (Key Term Definitions) ---\n" +
+                        get_glossary_for_prompt()
+                    )
 
                 # Build messages: prior context + Stage 2 prompt
                 stage2_messages = [
@@ -2792,50 +3470,67 @@ def run_express():
                 yield f"data: {json.dumps({'stage_done': 2, 'result': stage2_output, 'display_text': under_hood.get('display_text', stage2_output), 'history': conversation_history, 'sensitivity_rating': stage2_ratings.get('sensitivity_rating', ''), 'responsiveness_rating': stage2_ratings.get('responsiveness_rating', ''), 'rating_reasoning': stage2_ratings.get('rating_reasoning', ''), 'under_hood': {'recs_table': under_hood.get('recs_table', ''), 'dnh_checklist': under_hood.get('dnh_checklist', ''), 'questions_map': under_hood.get('questions_map', ''), 'evidence_trail': under_hood.get('evidence_trail', '')}, 'parse_error': s2_parse_error, 'parse_error_message': s2_parse_error_msg})}\n\n"
 
                 # ════════════════════════════════════════════════════════════
-                # STAGE 3 — Recommendations Note
+                # STAGE 3 — Recommendations / Course-Correction Note
                 # ════════════════════════════════════════════════════════════
                 yield f"data: {json.dumps({'stage_start': 3})}\n\n"
 
-                stage3_prompt = get_prompt_for_stage(3)
-                doc_type_ctx = build_doc_type_context(doc_type, 3)
-                if doc_type_ctx:
-                    stage3_prompt = doc_type_ctx + "\n\n" + stage3_prompt
-
-                # Stage-aware playbook injection
-                stage_config = STAGE_GUIDANCE_MAP.get(doc_type, STAGE_GUIDANCE_MAP.get('Unknown', {}))
-                playbook_phase = stage_config.get('playbook_phase', 'Preparation')
-                if playbook_phase == 'Implementation':
-                    playbook = PLAYBOOK_IMPLEMENTATION
-                elif playbook_phase == 'Closing':
-                    playbook = PLAYBOOK_CLOSING
-                else:
-                    playbook = PLAYBOOK_PREPARATION
-                if doc_type == 'ISR':
-                    playbook = PLAYBOOK_IMPLEMENTATION + "\n\n" + PLAYBOOK_CLOSING
-
-                timing_opts = stage_config.get('timing_options', ['Preparation'])
-                timing_str = ' / '.join(timing_opts) if isinstance(timing_opts, list) else str(timing_opts)
-
-                # Inject instrument slice and temporal guardrail into Stage 3 prompt
                 instrument_slice_s3 = get_instrument_slice(instrument_type)
                 temporal_guardrail_s3 = _build_temporal_guardrail(temporal_context)
 
-                try:
-                    stage3_prompt = stage3_prompt.format(
-                        doc_type=doc_type,
-                        timing_emphasis=timing_str,
-                        playbook_guidance=playbook,
-                        instrument_guidance=instrument_slice_s3,
-                        temporal_guardrail=temporal_guardrail_s3,
+                if is_impl:
+                    s3_key = 'impl_3'
+                    stage3_prompt = load_prompts().get(s3_key, DEFAULT_PROMPTS.get(s3_key, ''))
+                    process_slice_s3 = get_process_slice(process_type)
+                    try:
+                        stage3_prompt = stage3_prompt.format(
+                            doc_type=process_type,
+                            process_guidance=process_slice_s3,
+                            instrument_guidance=instrument_slice_s3,
+                            temporal_guardrail=temporal_guardrail_s3,
+                        )
+                    except KeyError:
+                        pass
+                    stage3_prompt = (
+                        stage3_prompt +
+                        "\n\n--- WBG FCV Strategy Refresh Framework (4 Shifts) ---\n" + FCV_REFRESH_FRAMEWORK +
+                        "\n\n--- WBG Playbook — Implementation Phase ---\n" + PLAYBOOK_IMPLEMENTATION
                     )
-                except KeyError:
-                    pass
+                else:
+                    stage3_prompt = get_prompt_for_stage(3)
+                    doc_type_ctx = build_doc_type_context(doc_type, 3)
+                    if doc_type_ctx:
+                        stage3_prompt = doc_type_ctx + "\n\n" + stage3_prompt
 
-                stage3_prompt = (
-                    stage3_prompt +
-                    "\n\n--- WBG FCV Strategy Refresh Framework (4 Shifts) ---\n" +
-                    FCV_REFRESH_FRAMEWORK
-                )
+                    stage_config = STAGE_GUIDANCE_MAP.get(doc_type, STAGE_GUIDANCE_MAP.get('Unknown', {}))
+                    playbook_phase = stage_config.get('playbook_phase', 'Preparation')
+                    if playbook_phase == 'Implementation':
+                        playbook = PLAYBOOK_IMPLEMENTATION
+                    elif playbook_phase == 'Closing':
+                        playbook = PLAYBOOK_CLOSING
+                    else:
+                        playbook = PLAYBOOK_PREPARATION
+                    if doc_type == 'ISR':
+                        playbook = PLAYBOOK_IMPLEMENTATION + "\n\n" + PLAYBOOK_CLOSING
+
+                    timing_opts = stage_config.get('timing_options', ['Preparation'])
+                    timing_str = ' / '.join(timing_opts) if isinstance(timing_opts, list) else str(timing_opts)
+
+                    try:
+                        stage3_prompt = stage3_prompt.format(
+                            doc_type=doc_type,
+                            timing_emphasis=timing_str,
+                            playbook_guidance=playbook,
+                            instrument_guidance=instrument_slice_s3,
+                            temporal_guardrail=temporal_guardrail_s3,
+                        )
+                    except KeyError:
+                        pass
+
+                    stage3_prompt = (
+                        stage3_prompt +
+                        "\n\n--- WBG FCV Strategy Refresh Framework (4 Shifts) ---\n" +
+                        FCV_REFRESH_FRAMEWORK
+                    )
 
                 # Build Stage 3 messages from conversation history
                 stage3_messages = conversation_history + [

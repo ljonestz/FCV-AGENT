@@ -1479,6 +1479,22 @@
   .mode-desc{font-size:12px;color:var(--wbg-gray-500);line-height:1.5;margin-bottom:10px}
   .mode-time{font-size:11px;color:#9CA3AF;font-weight:600;display:flex;align-items:center;gap:5px;margin-top:auto;padding-top:8px}
 
+  /* ── Review Type Selector ── */
+  .review-type-section{padding:20px 32px 0}
+  .review-type-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--wbg-navy);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+  .review-type-label svg{color:var(--wbg-cyan)}
+  .review-type-cards{display:flex;gap:12px;align-items:stretch}
+  .review-type-card{flex:1;border-radius:6px;padding:14px 16px;cursor:pointer;transition:all .2s ease;position:relative;border:1.5px solid var(--wbg-gray-100);background:var(--wbg-gray-50);display:flex;flex-direction:column}
+  .review-type-card:hover{border-color:#B0C4D8}
+  .review-type-card.selected{border-color:var(--wbg-cyan);background:#fff;box-shadow:0 0 0 1px rgba(0,157,218,.1)}
+  .review-type-radio{width:16px;height:16px;border-radius:50%;border:2px solid var(--border);position:absolute;top:14px;right:14px;transition:all .2s}
+  .review-type-card.selected .review-type-radio{border-color:var(--wbg-cyan);background:var(--wbg-cyan);box-shadow:inset 0 0 0 2.5px #fff}
+  .review-type-badge{display:inline-block;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;padding:2px 7px;border-radius:3px;margin-bottom:6px;background:var(--wbg-gray-100);color:var(--wbg-gray-500)}
+  .review-type-title{font-size:13px;font-weight:700;color:var(--wbg-navy);margin-bottom:3px;padding-right:22px}
+  .review-type-desc{font-size:12px;color:var(--wbg-gray-500);line-height:1.4;margin-bottom:6px}
+  .review-type-docs{font-size:11px;color:#5a7a9a;font-style:italic;margin-top:auto;padding-top:4px}
+  @media(max-width:640px){.review-type-cards{flex-direction:column}}
+
   /* ── Express Progress Screen ── */
   .express-progress{display:none;max-width:680px;width:100%;margin:0 auto;padding:48px 32px 40px}
   .express-progress.visible{display:block}
@@ -1850,11 +1866,34 @@
       </div>
     </div>
 
+    <!-- ══ REVIEW TYPE SELECTION ══ -->
+    <div class="review-type-section" id="review-type-section">
+      <div class="review-type-label">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        What are you reviewing?
+      </div>
+      <div class="review-type-cards">
+        <div class="review-type-card selected" id="rt-design" onclick="selectReviewMode('design')">
+          <div class="review-type-radio"></div>
+          <div class="review-type-badge">Default</div>
+          <div class="review-type-title">Design Review</div>
+          <div class="review-type-desc">Assess how well a project in preparation or appraisal integrates FCV considerations.</div>
+          <div class="review-type-docs">Documents: PCN &middot; PID &middot; PAD &middot; AF &middot; Restructuring Paper</div>
+        </div>
+        <div class="review-type-card" id="rt-implementation" onclick="selectReviewMode('implementation')">
+          <div class="review-type-radio"></div>
+          <div class="review-type-title">Implementation Review</div>
+          <div class="review-type-desc">Assess FCV performance during implementation and recommend course corrections.</div>
+          <div class="review-type-docs">Documents: MTR Report &middot; ISR &middot; Progress Reports</div>
+        </div>
+      </div>
+    </div>
+
     <form id="upload-form" onsubmit="return false">
     <div class="upload-zones">
       <div class="zone-wrap">
         <div class="zone-lbl"><span class="zone-dot p"></span>Project Document</div>
-        <p class="zone-hint">Upload your primary project document (PCN, PID, PAD, AF, Restructuring Paper, or ISR). For a stronger assessment, also upload supporting documents such as the RRA, technical studies, PPSD, or stakeholder analysis as contextual documents below. The tool works best with 1–3 documents. Documents over 150k characters will be automatically condensed.</p>
+        <p class="zone-hint" id="zone-hint-primary">Upload your primary project document (PCN, PID, PAD, AF, Restructuring Paper, or ISR). For a stronger assessment, also upload supporting documents such as the RRA, technical studies, PPSD, or stakeholder analysis as contextual documents below. The tool works best with 1–3 documents. Documents over 150k characters will be automatically condensed.</p>
         <div class="drop-zone" id="dp">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--border)" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
           <p style="margin-bottom:4px">Drag &amp; drop, or</p>
@@ -1865,7 +1904,7 @@
 
       <div class="zone-wrap">
         <div class="zone-lbl"><span class="zone-dot c"></span>Contextual Documents</div>
-        <p class="zone-hint">Upload 1–2 documents with FCV context for the country or region (e.g., RRA, country risk assessment, conflict analysis). If none uploaded, the tool will search trusted online sources to supplement. The more context provided, the more specific the assessment.</p>
+        <p class="zone-hint" id="zone-hint-context">Upload 1–2 documents with FCV context for the country or region (e.g., RRA, country risk assessment, conflict analysis). If none uploaded, the tool will search trusted online sources to supplement. The more context provided, the more specific the assessment.</p>
         <div class="drop-zone" id="dc">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--border)" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
           <p style="margin-bottom:4px">Drag &amp; drop, or</p>
@@ -1950,6 +1989,8 @@
   let horizonConsiderations='';
   let temporalContext={};
   let analysisMode='express';
+  let reviewMode='design';
+  let processType='Unknown';
   // Stage 3 (Recommendations) state is declared in the Stage 3 section below
 
   // ── Glossary ───────────────────────────────────────────────────────────────
@@ -1967,6 +2008,33 @@
     document.getElementById('mode-express').classList.toggle('selected',mode==='express');
     document.getElementById('mode-stepbystep').classList.toggle('selected',mode==='stepbystep');
     localStorage.setItem('fcv_analysis_mode',mode);
+  }
+
+  // ── Review type selection (Design vs Implementation) ─────────────────────
+  function selectReviewMode(mode){
+    reviewMode=mode;
+    document.getElementById('rt-design').classList.toggle('selected',mode==='design');
+    document.getElementById('rt-implementation').classList.toggle('selected',mode==='implementation');
+    const ph1=document.getElementById('zone-hint-primary');
+    const ph2=document.getElementById('zone-hint-context');
+    const startBtn=document.getElementById('start-btn');
+    if(ph1){
+      ph1.textContent=mode==='implementation'
+        ? 'Upload the MTR or ISR document to be reviewed. The tool will detect whether this is an MTR or ISR and apply the appropriate review framework. Documents over 150k characters will be automatically condensed.'
+        : 'Upload your primary project document (PCN, PID, PAD, AF, Restructuring Paper, or ISR). For a stronger assessment, also upload supporting documents such as the RRA, technical studies, PPSD, or stakeholder analysis as contextual documents below. The tool works best with 1\u20133 documents. Documents over 150k characters will be automatically condensed.';
+    }
+    if(ph2){
+      ph2.textContent=mode==='implementation'
+        ? 'Upload 1\u20132 documents providing implementation context (e.g., previous ISR, stakeholder feedback, progress reports, or country risk updates). The more context provided, the more grounded the course-correction recommendations.'
+        : 'Upload 1\u20132 documents with FCV context for the country or region (e.g., RRA, country risk assessment, conflict analysis). If none uploaded, the tool will search trusted online sources to supplement. The more context provided, the more specific the assessment.';
+    }
+    if(startBtn){
+      startBtn.innerHTML=(mode==='implementation'
+        ? 'Begin Implementation Review'
+        : 'Begin FCV Analysis')+
+        ' <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>';
+    }
+    localStorage.setItem('fcv_review_mode',mode);
   }
 
   // ── Onboarding ──────────────────────────────────────────────────────────────
@@ -1990,6 +2058,8 @@
   initOnboarding();
   // Restore mode preference
   (function(){const m=localStorage.getItem('fcv_analysis_mode');if(m==='stepbystep')selectMode('stepbystep');})();
+  // Restore review type preference
+  (function(){const r=localStorage.getItem('fcv_review_mode');if(r==='implementation')selectReviewMode('implementation');})();
 
   // Express resume: check for partial express state on page load
   (function(){
@@ -2408,10 +2478,13 @@
 
     let payload;
     try{
-      payload={documents:[
-        ...await Promise.all(pF.map(f=>readF(f,false))),
-        ...await Promise.all(cF.map(f=>readF(f,true)))
-      ]};
+      payload={
+        documents:[
+          ...await Promise.all(pF.map(f=>readF(f,false))),
+          ...await Promise.all(cF.map(f=>readF(f,true)))
+        ],
+        review_mode:reviewMode
+      };
     }catch(e){
       showExpressError(1,'Could not read documents: '+(e.message||e));
       busy=false;return;
@@ -2516,7 +2589,8 @@
               if(p.research_country)researchCountry=p.research_country;
               if(p.instrument_type)instrumentType=p.instrument_type;
               if(p.temporal_context)temporalContext=p.temporal_context;
-              const summary1=(docType!=='Unknown'?docType:'Document')+' stage \u00B7 Context extracted';
+              if(p.process_type&&p.process_type!=='Unknown')processType=p.process_type;
+              const summary1=(reviewMode==='implementation'?(processType!=='Unknown'?processType:'Process')+' detected':docType!=='Unknown'?docType:'Document')+' \u00B7 Context extracted';
               updateExpressStage(1,'done',summary1);
               epSafeStore(stageOutputs,stageHists,'1');
             }
@@ -2569,7 +2643,7 @@
             if(stageThreePriorities&&stageThreePriorities.length)initStage3UI();
             // stage2_under_hood already written by the stage_done handler for stage 2 — no redundant write needed here
             enableClickableStepper();
-            if(instrumentType!=='Unknown'||temporalContext.approval_date)injectTemporalContextPanel();
+            if(instrumentType!=='Unknown'||temporalContext.approval_date||processType!=='Unknown')injectTemporalContextPanel();
             localStorage.removeItem('fcv_express_stageOutputs');
             localStorage.removeItem('fcv_express_stageHists');
             localStorage.removeItem('fcv_express_curS');
@@ -2635,7 +2709,7 @@
       </div>`;
 
     try{
-      const payload={stage,history:hist,user_message:followOn||'',document_type:docType,instrument_type:instrumentType,temporal_context:temporalContext};
+      const payload={stage,history:hist,user_message:followOn||'',document_type:docType,instrument_type:instrumentType,temporal_context:temporalContext,review_mode:reviewMode,process_type:processType};
       // Attach session prompt override if user has edited this stage's prompt
       if(sessionPrompts[stage]){
         payload.prompt_override = sessionPrompts[stage];
@@ -2780,12 +2854,13 @@
                 if(p.research_country) researchCountry=p.research_country;
                 if(p.instrument_type)instrumentType=p.instrument_type;
                 if(p.temporal_context)temporalContext=p.temporal_context;
+                if(p.process_type&&p.process_type!=='Unknown')processType=p.process_type;
               }
               renderOut(stage,renderResult,followOn);setStepper(stage,'done');
               enableClickableStepper();
               // Research brief panel (step-by-step only — express skips rendering)
               if(stage===1&&researchBrief) injectResearchBriefPanel(researchBrief,researchCountry);
-              if(stage===1&&(instrumentType!=='Unknown'||temporalContext.approval_date)) injectTemporalContextPanel();
+              if(stage===1&&(instrumentType!=='Unknown'||temporalContext.approval_date||processType!=='Unknown')) injectTemporalContextPanel();
               // Stage 2: show parse error banner and update sidebar
               if(stage===2){
                 if(p.parse_error){
@@ -2896,12 +2971,15 @@
     if(existing)existing.remove();
     const tc=temporalContext||{};
     const items=[];
+    if(reviewMode==='implementation'&&processType&&processType!=='Unknown'){
+      items.push('<span class="tc-item"><span class="tc-label">Review type:</span> <span class="tc-value">'+esc(processType)+'</span></span>');
+    }
     if(instrumentType&&instrumentType!=='Unknown')items.push('<span class="tc-item"><span class="tc-label">Instrument:</span> <span class="tc-value">'+esc(instrumentType)+'</span></span>');
     if(tc.approval_date&&tc.approval_date!=='Unknown')items.push('<span class="tc-item"><span class="tc-label">Approved:</span> <span class="tc-value">'+esc(tc.approval_date)+'</span></span>');
     if(tc.closing_date&&tc.closing_date!=='Unknown')items.push('<span class="tc-item"><span class="tc-label">Closing:</span> <span class="tc-value">'+esc(tc.closing_date)+'</span></span>');
     if(tc.safeguards_framework&&tc.safeguards_framework!=='Unknown')items.push('<span class="tc-item"><span class="tc-label">Safeguards:</span> <span class="tc-value">'+esc(tc.safeguards_framework)+'</span></span>');
     if(!items.length)return;
-    items.push('<span class="tc-item" style="font-style:italic;color:#5a7a9a;font-size:12px">Assessment anchored to preparation period</span>');
+    items.push('<span class="tc-item" style="font-style:italic;color:#5a7a9a;font-size:12px">'+(reviewMode==='implementation'?'Assessment anchored to implementation period':'Assessment anchored to preparation period')+'</span>');
     const panel=document.createElement('div');
     panel.id='temporal-context-panel';
     panel.className='temporal-context-panel ani';
@@ -3543,6 +3621,14 @@
   function showExpressProgress(){
     document.getElementById('ep-accent').style.display='block';
     document.getElementById('express-progress').classList.add('visible');
+    // Update stage card titles based on review mode
+    const implTitles=['Stage 1 \u2014 Context &amp; Process Detection','Stage 2 \u2014 Implementation Assessment','Stage 3 \u2014 Course-Correction Note'];
+    const designTitles=['Stage 1 \u2014 Context &amp; Extraction','Stage 2 \u2014 FCV Assessment','Stage 3 \u2014 Recommendations Note'];
+    const titles=reviewMode==='implementation'?implTitles:designTitles;
+    for(let i=1;i<=3;i++){
+      const titleEl=document.getElementById('ep-title-'+i);
+      if(titleEl)titleEl.innerHTML=titles[i-1];
+    }
     for(let i=1;i<=3;i++){
       document.getElementById('ep-card-'+i).className='ep-stage-card pending';
       document.getElementById('ep-title-'+i).className='ep-stage-title pending';
@@ -3592,6 +3678,11 @@
   }
 
   function getStageActivityText(stage){
+    if(reviewMode==='implementation'){
+      if(stage===1)return'Extracting implementation context and detecting review process\u2026';
+      if(stage===2)return'Assessing FCV performance against operational standards\u2026';
+      if(stage===3)return'Generating course-correction recommendations\u2026';
+    }
     if(stage===1)return'Extracting FCV context from your documents\u2026';
     if(stage===2)return'Analysing sensitivity, responsiveness, and Do No Harm\u2026';
     if(stage===3)return'Generating your Recommendations Note\u2026';
