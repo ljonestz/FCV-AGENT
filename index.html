@@ -819,6 +819,15 @@
     .deeper-trail,.deeper-playbook{font-size:14px;line-height:1.6;}
     .deeper-loading{font-size:13px;color:var(--muted);padding:10px 0;display:flex;align-items:center;gap:8px;}
 
+    .horizon-panel{background:#fafbfc;border:1px dashed #c0c8d0;border-radius:8px;margin:24px 0 16px 0;padding:0;}
+    .horizon-panel summary{padding:12px 16px;font-size:14px;font-weight:600;color:#5a6a7a;cursor:pointer;list-style:none;}
+    .horizon-panel summary::-webkit-details-marker{display:none;}
+    .horizon-panel summary::before{content:'\25B6';display:inline-block;margin-right:8px;font-size:10px;transition:transform 0.2s;}
+    .horizon-panel[open] summary::before{transform:rotate(90deg);}
+    .horizon-panel .horizon-body{padding:4px 16px 16px 16px;font-size:13px;color:#444;line-height:1.6;}
+    .horizon-panel .horizon-body p{margin:8px 0;}
+    .horizon-panel .horizon-disclaimer{font-size:11px;font-style:italic;color:#888;margin-bottom:8px;}
+
     .priorities-intro{margin-bottom:14px;}
     .priorities-section-hdr{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--s4);margin:20px 0 10px;padding-bottom:6px;border-bottom:2px solid var(--s4);}
     .pi-lead{font-size:15px;color:var(--text);line-height:1.6;margin:0 0 10px;}
@@ -1914,6 +1923,7 @@
   let sessionName='';
   let docType='Unknown';
   let instrumentType='Unknown';
+  let horizonConsiderations='';
   let temporalContext={};
   let analysisMode='express';
   // Stage 3 (Recommendations) state is declared in the Stage 3 section below
@@ -2500,6 +2510,7 @@
               if(p.fcv_rating)fcvRating=p.fcv_rating;
               if(p.fcv_responsiveness_rating)fcvResponsivenessRating=p.fcv_responsiveness_rating;
               if(p.priorities)stageThreePriorities=p.priorities;
+              if(p.horizon_considerations)horizonConsiderations=p.horizon_considerations;
               localStorage.setItem('stage3_timestamp',Date.now());
               updateExpressStage(3,'done','Complete');
               epSafeStore(stageOutputs,stageHists,'3');
@@ -2761,6 +2772,7 @@
               // Priority cards + sidebar for Stage 3 (Recommendations)
               if(stage===3 && p.priorities && p.priorities.length){
                 stageThreePriorities=p.priorities;
+                if(p.horizon_considerations)horizonConsiderations=p.horizon_considerations;
                 // Clear Go Deeper caches so stale results don't reappear for new Stage 3 run
                 currentDeeperTab = {};
                 for(var i=0;i<10;i++){
@@ -3929,6 +3941,27 @@ ${md(execSummary)}`;
     renderPriorityStepper();
     showPriority(0);
     updateSidebar();
+    // Render Horizon Considerations panel if available
+    if(horizonConsiderations && horizonConsiderations.trim()){
+      renderHorizonPanel(horizonConsiderations);
+    }
+  }
+
+  function renderHorizonPanel(text){
+    const container=document.getElementById('out-txt');
+    if(!container)return;
+    const existing=document.getElementById('horizon-panel');
+    if(existing)existing.remove();
+    const panel=document.createElement('details');
+    panel.id='horizon-panel';
+    panel.className='horizon-panel ani';
+    const rendered=typeof md!=='undefined'?md.render(text):text.replace(/\n/g,'<br>');
+    panel.innerHTML='<summary>Horizon Considerations — Beyond-Scope Observations</summary>'
+      +'<div class="horizon-body">'
+      +'<p class="horizon-disclaimer">These observations fall outside the project\'s stated PDO/scope but may be relevant for the team\'s broader awareness. They do not affect the FCV ratings above.</p>'
+      +rendered
+      +'</div>';
+    container.appendChild(panel);
   }
 
   function renderPrioritiesIntro(){
