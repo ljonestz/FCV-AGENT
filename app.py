@@ -258,6 +258,7 @@ def extract_under_hood(stage2_output):
 
     display_text = stage2_output
     display_text = re.sub(r'%%%STAGE2_RATINGS_START%%%.*?%%%STAGE2_RATINGS_END%%%', '', display_text, flags=re.DOTALL)
+    display_text = re.sub(r'%%%RATING_REASONING_START%%%.*?%%%RATING_REASONING_END%%%', '', display_text, flags=re.DOTALL)
     display_text = re.sub(r'%%%UNDER_HOOD_START%%%.*?%%%UNDER_HOOD_END%%%', '', display_text, flags=re.DOTALL)
     display_text = display_text.strip()
 
@@ -2282,8 +2283,17 @@ def get_glossary_for_prompt() -> str:
     return '\n'.join(lines)
 
 
-def _build_temporal_guardrail(temporal_ctx: dict) -> str:
-    """Build a temporal anchoring guardrail string from extracted temporal context."""
+_DESIGN_STAGE_DOCS = {'PCN', 'PID', 'PAD', 'AF', 'Restructuring'}
+
+
+def _build_temporal_guardrail(temporal_ctx: dict, doc_type: str = 'Unknown') -> str:
+    """Build a temporal anchoring guardrail string from extracted temporal context.
+
+    For design-stage documents (PCN/PID/PAD/AF/Restructuring) the function always
+    returns preparation-phase framing regardless of whether the approval date is in
+    the past.  A PAD with a historic approval date is still a PAD — the date is
+    metadata, not a lifecycle trigger.
+    """
     if not temporal_ctx or temporal_ctx.get('error'):
         return (
             "Temporal context could not be determined from the document. "
@@ -2304,7 +2314,22 @@ def _build_temporal_guardrail(temporal_ctx: dict) -> str:
         parts.append(f"Other temporal markers: {tm}")
     if not parts:
         return "Temporal context could not be determined."
-    return "TEMPORAL CONTEXT (from document):\n" + "\n".join(parts)
+
+    base = "TEMPORAL CONTEXT (from document):\n" + "\n".join(parts)
+
+    # For design-stage documents, enforce preparation-phase framing unconditionally.
+    # A past approval date does NOT make a PAD an implementation-review document.
+    if doc_type in _DESIGN_STAGE_DOCS:
+        base += (
+            f"\n\nDOCUMENT TYPE PRIMACY: This is a {doc_type} (design-stage document). "
+            "Use PREPARATION phase framing throughout. "
+            "Do NOT generate implementation-review framing, progress assessments, elapsed-time "
+            "statistics, or any content that treats this document as if the project were already "
+            "under implementation. The approval/preparation date above is documentary metadata — "
+            "it does not change the lifecycle phase or review scope."
+        )
+
+    return base
 
 
 # ── PDF helper ───────────────────────────────────────────────────────────────
@@ -2877,7 +2902,7 @@ def run_stage():
                 instrument_type = data.get('instrument_type', 'Unknown')
                 instrument_slice = get_instrument_slice(instrument_type)
                 temporal_ctx = data.get('temporal_context', {})
-                temporal_guardrail = _build_temporal_guardrail(temporal_ctx)
+                temporal_guardrail = _build_temporal_guardrail(temporal_ctx, document_type)
 
                 # Format instrument and temporal placeholders in prompt
                 # Uses .replace() instead of .format() because Stage 2 prompt contains
@@ -2907,7 +2932,7 @@ def run_stage():
                 process_type = data.get('process_type', 'MTR')
                 process_slice = get_process_slice(process_type)
                 temporal_ctx = data.get('temporal_context', {})
-                temporal_guardrail = _build_temporal_guardrail(temporal_ctx)
+                temporal_guardrail = _build_temporal_guardrail(temporal_ctx, document_type)
 
                 try:
                     stage_prompt = stage_prompt.replace('{instrument_guidance}', instrument_slice)
@@ -2946,7 +2971,7 @@ def run_stage():
                 instrument_type = data.get('instrument_type', 'Unknown')
                 instrument_slice = get_instrument_slice(instrument_type)
                 temporal_ctx = data.get('temporal_context', {})
-                temporal_guardrail = _build_temporal_guardrail(temporal_ctx)
+                temporal_guardrail = _build_temporal_guardrail(temporal_ctx, doc_type)
 
                 try:
                     stage_prompt = stage_prompt.format(
@@ -2966,7 +2991,7 @@ def run_stage():
                 process_type = data.get('process_type', 'MTR')
                 process_slice = get_process_slice(process_type)
                 temporal_ctx = data.get('temporal_context', {})
-                temporal_guardrail = _build_temporal_guardrail(temporal_ctx)
+                temporal_guardrail = _build_temporal_guardrail(temporal_ctx, process_type)
                 doc_type = data.get('doc_type', process_type or 'MTR')
 
                 try:
@@ -3527,7 +3552,7 @@ def run_express():
                 yield f"data: {json.dumps({'stage_start': 2})}\n\n"
 
                 instrument_slice = get_instrument_slice(instrument_type)
-                temporal_guardrail = _build_temporal_guardrail(temporal_context)
+                temporal_guardrail = _build_temporal_guardrail(temporal_context, doc_type)
 
                 if is_impl:
                     s2_key = 'impl_2'
@@ -3603,7 +3628,7 @@ def run_express():
                 yield f"data: {json.dumps({'stage_start': 3})}\n\n"
 
                 instrument_slice_s3 = get_instrument_slice(instrument_type)
-                temporal_guardrail_s3 = _build_temporal_guardrail(temporal_context)
+                temporal_guardrail_s3 = _build_temporal_guardrail(temporal_context, doc_type)
 
                 if is_impl:
                     s3_key = 'impl_3'
