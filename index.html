@@ -1496,6 +1496,22 @@
   .review-type-card-disabled{opacity:.5;cursor:not-allowed;pointer-events:none;}
   @media(max-width:640px){.review-type-cards{flex-direction:column}}
 
+  /* ── Optional Context Box ── */
+  .context-box-section{margin:0 32px;border-top:1px solid var(--border)}
+  .context-box-toggle{width:100%;display:flex;align-items:center;gap:8px;padding:12px 0;background:none;border:none;cursor:pointer;font-size:13px;font-weight:600;color:var(--muted);text-align:left;line-height:1}
+  .context-box-toggle:hover{color:var(--wbg-navy)}
+  .context-box-toggle .toggle-chevron{margin-left:auto;flex-shrink:0;transition:transform .2s}
+  .context-box-toggle.open .toggle-chevron{transform:rotate(180deg)}
+  .context-box-body{padding-bottom:16px}
+  .context-box-hint{font-size:12px;color:var(--muted);margin:0 0 10px;line-height:1.5}
+  .context-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+  .context-chip{font-size:11px;padding:4px 10px;border-radius:12px;border:1px solid var(--border);background:#f9fafb;color:var(--muted);cursor:pointer;transition:border-color .15s,background .15s,color .15s;text-align:left;line-height:1.45;font-family:inherit}
+  .context-chip:hover{border-color:#009FDA;color:var(--wbg-navy);background:#f0f9ff}
+  .context-chip.active{border-color:#009FDA;background:#f0f9ff;color:var(--wbg-navy);font-weight:600}
+  .context-textarea{width:100%;box-sizing:border-box;height:88px;resize:vertical;padding:9px 12px;font-size:13px;font-family:inherit;color:var(--text);border:1px solid var(--border);border-radius:6px;line-height:1.5;display:block;transition:border-color .15s,box-shadow .15s}
+  .context-textarea:focus{outline:none;border-color:#009FDA;box-shadow:0 0 0 2px rgba(0,157,218,.1)}
+  .context-textarea::placeholder{color:#9CA3AF}
+
   /* ── Express Progress Screen ── */
   .express-progress{display:none;max-width:680px;width:100%;margin:0 auto;padding:48px 32px 40px}
   .express-progress.visible{display:block}
@@ -1946,6 +1962,26 @@
       </div>
     </div>
 
+    <!-- ══ OPTIONAL CONTEXT BOX ══ -->
+    <div class="context-box-section" id="context-box-section">
+      <button class="context-box-toggle" id="context-toggle" type="button" onclick="toggleContextBox()" aria-expanded="false" aria-controls="context-box-body">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+        Add context or focus areas for the analysis
+        <span style="font-size:11px;font-weight:400;color:#9CA3AF;margin-left:2px">— optional</span>
+        <svg class="toggle-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="context-box-body" id="context-box-body" hidden>
+        <p class="context-box-hint">Add anything that should shape the assessment — peer review comments, a specific FCV angle, recent country developments. This is passed directly to the AI at the start of the analysis.</p>
+        <div class="context-chips">
+          <button type="button" class="context-chip" onclick="applyContextChip(this)" data-text="Peer reviewers have flagged that the FCV sensitivity analysis needs strengthening — please pay particular attention to Do No Harm risks and community exclusion dynamics in your assessment.">Peer review: strengthen Do No Harm / exclusion focus</button>
+          <button type="button" class="context-chip" onclick="applyContextChip(this)" data-text="Conflict or security conditions have deteriorated since the project was prepared. Please factor this into the assessment and flag where the current design may need updating to reflect the changed situation on the ground.">Security conditions have deteriorated since preparation</button>
+          <button type="button" class="context-chip" onclick="applyContextChip(this)" data-text="This project operates in an area with significant displacement — please assess whether displaced and host community dynamics are adequately differentiated in the design, and flag any risks of harm to displaced groups from project activities.">Displacement context: differentiate displaced and host communities</button>
+          <button type="button" class="context-chip" onclick="applyContextChip(this)" data-text="There are specific concerns about elite capture — please assess whether benefit targeting criteria, community management structures, and grievance mechanisms are robust enough to prevent capture by locally powerful groups in this context.">Concern about elite capture in targeting or community structures</button>
+        </div>
+        <textarea id="user-context" class="context-textarea" aria-label="Additional context for the analysis" placeholder="e.g. The team has received feedback that FCV mainstreaming needs strengthening. Please focus the assessment on whether conflict-sensitive targeting and grievance mechanisms are adequately addressed for this context…" oninput="syncContextChips(this.value)"></textarea>
+      </div>
+    </div>
+
     <div class="builtin-notice">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
       <span><strong>Pre-loaded:</strong> OST Manual on FCV Sensitivity and Responsiveness, WBG FCV Strategy, and FCV Playbook — no upload needed. Country-specific risk documents (e.g. RRA, risk summaries) should be uploaded separately per project.</span>
@@ -2036,6 +2072,32 @@
         ' <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>';
     }
     localStorage.setItem('fcv_review_mode',mode);
+  }
+
+  // ── Optional context box ─────────────────────────────────────────────────
+  function toggleContextBox(){
+    const body=document.getElementById('context-box-body');
+    const toggle=document.getElementById('context-toggle');
+    const opening=body.hidden;
+    body.hidden=!opening;
+    toggle.classList.toggle('open',opening);
+    toggle.setAttribute('aria-expanded',String(opening));
+    if(opening)document.getElementById('user-context').focus();
+  }
+
+  function applyContextChip(el){
+    const ta=document.getElementById('user-context');
+    if(!ta)return;
+    const alreadyActive=el.classList.contains('active');
+    document.querySelectorAll('.context-chip').forEach(c=>c.classList.remove('active'));
+    if(alreadyActive){ta.value='';return;}
+    el.classList.add('active');
+    ta.value=el.dataset.text;
+    ta.focus();
+  }
+
+  function syncContextChips(val){
+    document.querySelectorAll('.context-chip').forEach(c=>c.classList.toggle('active',c.dataset.text===val));
   }
 
   // ── Onboarding ──────────────────────────────────────────────────────────────
@@ -2484,7 +2546,8 @@
           ...await Promise.all(pF.map(f=>readF(f,false))),
           ...await Promise.all(cF.map(f=>readF(f,true)))
         ],
-        review_mode:reviewMode
+        review_mode:reviewMode,
+        user_context:(document.getElementById('user-context')?.value||'').trim()
       };
     }catch(e){
       showExpressError(1,'Could not read documents: '+(e.message||e));
@@ -2708,7 +2771,7 @@
       </div>`;
 
     try{
-      const payload={stage,history:hist,user_message:followOn||'',document_type:docType,instrument_type:instrumentType,temporal_context:temporalContext,review_mode:reviewMode,process_type:processType};
+      const payload={stage,history:hist,user_message:followOn||'',document_type:docType,instrument_type:instrumentType,temporal_context:temporalContext,review_mode:reviewMode,process_type:processType,user_context:(document.getElementById('user-context')?.value||'').trim()};
       // Attach session prompt override if user has edited this stage's prompt
       if(sessionPrompts[stage]){
         payload.prompt_override = sessionPrompts[stage];

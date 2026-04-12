@@ -2657,6 +2657,7 @@ def run_stage():
         document_type = data.get('document_type', 'Unknown').strip()
         review_mode = data.get('review_mode', 'design').strip()  # 'design' or 'implementation'
         is_impl = (review_mode == 'implementation')
+        user_context = data.get('user_context', '').strip()  # optional user-supplied context
 
         MAX_ASSISTANT_CHARS = 40000
 
@@ -2745,6 +2746,18 @@ def run_stage():
                     "\n\n--- WB Process Guide: ISR ---\n" + get_process_slice('ISR')
                 )
                 stage_prompt = stage_prompt + impl_process_bg
+
+            # Inject optional user-supplied context into Stage 1 prompt
+            if user_context:
+                stage_prompt = stage_prompt + (
+                    "\n\n---\n**ADDITIONAL CONTEXT PROVIDED BY THE TASK TEAM:**\n"
+                    "The following context, focus areas, or recent developments have been provided "
+                    "by the user and should inform your analysis. Please factor these into both "
+                    "Part A and Part B of your output, and ensure they shape the emphasis and "
+                    "priorities throughout:\n\n"
+                    + user_context +
+                    "\n---"
+                )
             # messages will be fully built inside generate() for stage 1
 
         elif user_message:
@@ -3216,6 +3229,7 @@ def run_express():
         assessment_id = data.get('assessment_id') or str(uuid.uuid4())
         review_mode = data.get('review_mode', 'design').strip()
         is_impl = (review_mode == 'implementation')
+        user_context = data.get('user_context', '').strip()  # optional user-supplied context
         if not documents:
             return jsonify({'error': 'Please upload at least one project document.'}), 400
 
@@ -3361,6 +3375,17 @@ def run_express():
                         stage1_prompt +
                         "\n\n--- WB Process Guide: MTR ---\n" + get_process_slice('MTR') +
                         "\n\n--- WB Process Guide: ISR ---\n" + get_process_slice('ISR')
+                    )
+                # Inject optional user-supplied context
+                if user_context:
+                    stage1_prompt = stage1_prompt + (
+                        "\n\n---\n**ADDITIONAL CONTEXT PROVIDED BY THE TASK TEAM:**\n"
+                        "The following context, focus areas, or recent developments have been provided "
+                        "by the user and should inform your analysis. Please factor these into both "
+                        "Part A and Part B of your output, and ensure they shape the emphasis and "
+                        "priorities throughout:\n\n"
+                        + user_context +
+                        "\n---"
                     )
                 content_parts.append({"type": "text", "text": stage1_prompt})
 
