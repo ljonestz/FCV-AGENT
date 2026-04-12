@@ -30,6 +30,17 @@ Every prompt output tags findings as [S], [R], or [S+R], assigned dynamically pe
 - **v7.5** — UX polish: styled uploads, smart timer, condensed output, refined landing page; S/R definition box removed from Stage 3; rating rubric with reasoning block
 - **v7.6** — Document format fixes: DOCX properly parsed via python-docx (base64, reading-order-aware, merged-cell dedup); PPTX support added via python-pptx; silent extraction failures surfaced as chip warnings and SSE banners
 - **v7.7** — Concurrency hardening: per-tab assessment IDs in the frontend, assessment-aware request payloads, express workflow execution moved onto the background assessment executor, and multi-worker gunicorn defaults for better parallel use
+- **v8.0** — Major knowledge base and prompt quality overhaul (branch `feat/v8-knowledge-base`, merged 2026-04):
+  - **Knowledge base:** 6 instrument entries (IPF/PforR/DPO/TA/MPA/IPF-DDO) + 5 process guides (MTR/ISR/AF/Restructuring/ICR) + 29 glossary terms + FCS country list (2015–present)
+  - **Prompt quality:** WB LLM quality review integrated — SEA/SH as 9th DNH principle, gender-FCV trigger block (7 conditions), lifecycle guardrails (SORT/ESF/SEP/ESCP minimum set for PAD), instrument routing guardrail per doc type, mandatory priority cards for gender and SEA/SH flags
+  - **Temporal anchoring fix:** `_build_temporal_guardrail(temporal_ctx, doc_type)` now takes `doc_type`; PAD/PCN/PID/AF/Restructuring documents always receive preparation-phase framing regardless of whether approval date is in the past — prevents implementation-review hallucination cascade in Stages 2–3
+  - **Stage 1 UX:** Prompt now requires 2–3 sentence narrative lead paragraph at top of each Part. Frontend `renderStage1()` parses Part A/B split and renders with styled section badges ("From your document only" / "Wider context & research"); narrative lead paragraph visually distinguished
+  - **Finalized PAD notice:** `isFinalizedPAD()` detects uploaded PADs with past approval dates; amber retrospective notice injected in Stage 3 output and downloaded report
+  - **FCS cross-checking:** `FCS_LIST` constant added to `background_docs.py` (39 current members, year of entry, 9 graduated countries); injected into Stage 1 and Stage 2 prompts so LLM verifies classification against authoritative list
+  - **Implementation review locked off:** `fcv_review_mode` localStorage restore IIFE removed; app always defaults to design review mode on load; implementation review preserved in backend for future activation
+  - **Rating recalibration:** Percentage-based thresholds, partial credit for Weakly addressed, softened responsiveness cap
+  - **Optional context box:** User can supply framing before analysis (peer review notes, changed conflict conditions)
+  - **Step-by-step:** Load-first mode (full output on completion, not progressive streaming)
 
 ---
 
@@ -47,9 +58,10 @@ Every prompt output tags findings as [S], [R], or [S+R], assigned dynamically pe
 ```
 app.py              # Flask backend, all prompts (DEFAULT_PROMPTS), routes, document processing
 index.html          # Single-page frontend UI (Stage 1–3, Go Deeper, Express mode, prompt modal)
-background_docs.py  # 8 constants: FCV_GUIDE, FCV_OPERATIONAL_MANUAL, FCV_REFRESH_FRAMEWORK,
+background_docs.py  # 9 constants: FCV_GUIDE, FCV_OPERATIONAL_MANUAL, FCV_REFRESH_FRAMEWORK,
                     #   PLAYBOOK_DIAGNOSTICS, PLAYBOOK_PREPARATION, PLAYBOOK_IMPLEMENTATION,
-                    #   PLAYBOOK_CLOSING, STAGE_GUIDANCE_MAP
+                    #   PLAYBOOK_CLOSING, STAGE_GUIDANCE_MAP, FCS_LIST
+                    #   + WB_INSTRUMENT_GUIDE, FCV_GLOSSARY, WB_PROCESS_GUIDE (helpers)
 prompts.json        # Session-specific prompt overrides (empty by default)
 requirements.txt    # Flask, anthropic, pypdf, python-docx, python-pptx, gunicorn, gevent
 Procfile            # Render deployment config
@@ -65,11 +77,19 @@ STAGE 1 — Context & Extraction
 ├─ Automated web research: extract_country_name() + extract_sector_name() → 9-search brief
 │  (cached by "country::sector"; shown as collapsible dropdown above Stage 1 output)
 ├─ Three-tier citation: Tier 1 uploaded docs → Tier 2 web research → Tier 3 training knowledge
-├─ Output: Part A (doc extract only) + Part B (contextualized, tiered citations)
-├─ Final line: %%%DOC_TYPE: [PCN/PID/PAD/AF/Restructuring/ISR/Unknown]%%%
-│  (stripped from display; frontend sets docType state for Stage 3 stage-awareness)
+├─ Output: 2–3 sentence narrative lead (required) then structured bullets — for EACH of:
+│    Part A (doc extract only) and Part B (contextualized, tiered citations)
+├─ Frontend: renderStage1() parses Part A/B split; renders with styled section badges
+│  (blue "From your document only" / green "Wider context & research"); narrative lead
+│  styled as tinted callout above bullets
+├─ Classifier lines (stripped from display by clean_stage1_output(); kept in history):
+│  %%%DOC_TYPE: [PCN/PID/PAD/AF/Restructuring/ISR/Unknown]%%%
+│  %%%INSTRUMENT_TYPE: [IPF/PforR/DPO/TA/MPA/IPF-DDO/Unknown]%%%
+│  %%%TEMPORAL_CONTEXT_START%%%...%%%TEMPORAL_CONTEXT_END%%% → approval_date, closing_date,
+│    safeguards_framework, other_temporal_markers
+│  (parsed by frontend; passed to Stage 2/3 requests as instrument_type, temporal_context)
 ├─ Large docs: >150k chars → LLM condensation; >500k chars → truncation
-└─ Prompt constants: FCV_GUIDE, PLAYBOOK_DIAGNOSTICS, FCV_REFRESH_FRAMEWORK
+└─ Prompt constants: FCV_GUIDE, PLAYBOOK_DIAGNOSTICS, FCV_REFRESH_FRAMEWORK, FCS_LIST
 
 STAGE 2 — FCV Assessment
 ├─ Input: Stage 1 output (conversation history)
@@ -81,19 +101,28 @@ STAGE 2 — FCV Assessment
 │  %%%RATING_REASONING_START/END%%% → reasoning block (auditing only)
 │  %%%UNDER_HOOD_START/END%%% → 4 sub-blocks:
 │    %%%RECS_TABLE_START/END%%%    — 12-rec table with S/R Tag column
-│    %%%DNH_CHECKLIST_START/END%%% — 8-principle DNH checklist
+│    %%%DNH_CHECKLIST_START/END%%% — 9-principle DNH checklist (principle 9 = SEA/SH)
 │    %%%QUESTIONS_MAP_START/END%%% — 25 key questions with findings
 │    %%%EVIDENCE_TRAIL_START/END%%% — sources and citation tiers
 ├─ Under Hood text stored in localStorage "stage2_under_hood" → used by Go Deeper Tab 1
-├─ Rating rubric: Sensitivity = OST recs count → 6-tier (quality gates apply);
-│  Responsiveness = FCV Refresh shifts count → 6-tier (quality gates apply)
+├─ Rating rubric: Sensitivity = OST recs % addressed → 6-tier (percentage-based, partial credit
+│  for Weakly addressed, quality gates apply); Responsiveness = FCV Refresh shifts count → 6-tier
 │  Stage 3 inherits Stage 2 ratings verbatim — no independent re-rating
-└─ Prompt constants: FCV_OPERATIONAL_MANUAL, FCV_REFRESH_FRAMEWORK, FCV_GUIDE
+├─ SEA/SH flag: seash_standalone_flag: TRUE → mandatory SEA/SH priority card in Stage 3
+├─ Gender flag: gender_fcv_flag: TRUE (any of 7 trigger conditions) → mandatory gender card
+└─ Prompt constants: FCV_OPERATIONAL_MANUAL, FCV_REFRESH_FRAMEWORK, FCV_GUIDE, FCS_LIST
 
 STAGE 3 — Recommendations Note (stage-aware)
 ├─ Input: Stages 1–2 history + doc_type + uploaded_doc_names
 ├─ Stage-awareness: PCN/PID → PLAYBOOK_PREPARATION; PAD → PLAYBOOK_PREPARATION;
 │  AF/Restructuring → PLAYBOOK_IMPLEMENTATION; ISR → PLAYBOOK_IMPLEMENTATION+CLOSING
+├─ Temporal guardrail: _build_temporal_guardrail(temporal_ctx, doc_type) — for design-stage
+│  docs (PAD/PCN/PID/AF/Restructuring), always returns preparation-phase framing regardless
+│  of whether approval date is in the past. Prevents implementation-review hallucination.
+├─ Finalized PAD notice: isFinalizedPAD() detects PAD with past approval date → amber
+│  retrospective banner injected in output and downloaded report
+├─ Instrument routing guardrail: per-doc-type constraints injected into prompt
+├─ PAD minimum instrument reference set: SORT, ESS1, SEA/SH AP, SEP/ESS10, ESCP, OM, PPSD, RF
 ├─ Output: narrative memo + %%%JSON_START%%%...%%%JSON_END%%% block
 │  JSON top-level: fcv_rating, fcv_responsiveness_rating, sensitivity_summary,
 │    responsiveness_summary, risk_exposure {risks_to, risks_from}, priorities[]
@@ -439,7 +468,7 @@ FCV-AGENT/
 
 ---
 
-**Last updated:** 2026-04-09
-**Current version:** FCV Project Screener v7.6
+**Last updated:** 2026-04-12
+**Current version:** FCV Project Screener v8.0
 **Claude model:** `claude-sonnet-4-20250514`
 **Stack:** Flask 3.0.3 + vanilla JS + Anthropic SDK + gunicorn/gevent on Render
