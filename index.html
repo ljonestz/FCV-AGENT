@@ -1493,6 +1493,7 @@
   .review-type-title{font-size:13px;font-weight:700;color:var(--wbg-navy);margin-bottom:3px;padding-right:22px}
   .review-type-desc{font-size:12px;color:var(--wbg-gray-500);line-height:1.4;margin-bottom:6px}
   .review-type-docs{font-size:11px;color:#5a7a9a;font-style:italic;margin-top:auto;padding-top:4px}
+  .review-type-card-disabled{opacity:.5;cursor:not-allowed;pointer-events:none;}
   @media(max-width:640px){.review-type-cards{flex-direction:column}}
 
   /* ── Express Progress Screen ── */
@@ -1880,10 +1881,10 @@
           <div class="review-type-desc">Assess how well a project in preparation or appraisal integrates FCV considerations.</div>
           <div class="review-type-docs">Documents: PCN &middot; PID &middot; PAD &middot; AF &middot; Restructuring Paper</div>
         </div>
-        <div class="review-type-card" id="rt-implementation" onclick="selectReviewMode('implementation')">
-          <div class="review-type-radio"></div>
+        <div class="review-type-card review-type-card-disabled" id="rt-implementation" aria-disabled="true">
+          <div class="review-type-badge" style="background:#dbeafe;color:#1e40af">In development</div>
           <div class="review-type-title">Implementation Review</div>
-          <div class="review-type-desc">Assess FCV performance during implementation and recommend course corrections.</div>
+          <div class="review-type-desc">Assess FCV performance during MTR or ISR and recommend course corrections. Coming in a future release.</div>
           <div class="review-type-docs">Documents: MTR Report &middot; ISR &middot; Progress Reports</div>
         </div>
       </div>
@@ -2697,14 +2698,12 @@
         <div>
           <div class="stage-title">${NAMES[stage]}</div>
           <div class="stage-sub">${followOn?'Refining…':SUBS[stage]}</div>
-          ${(stage===1&&!followOn)?`<div class="stage-sub" style="margin-top:3px;color:#b45309">⏱ This stage can take 1–2 minutes — please wait for everything to load before reading or interacting</div>`:''}
         </div>
       </div>
-      ${(stage===1&&!followOn)?`<div class="stage-wait-notice"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span><strong>Please wait until Stage 1 finishes loading</strong> before reading or interacting with the output. This stage includes automated FCV web research and may take 1–2 minutes to complete.</span></div>`:''}
       <div class="load-card">
         <div class="spinner" role="status" aria-label="Loading"></div>
         <div class="load-title">${followOn?'Updating output…':'Generating '+SHORT[stage]+'…'}</div>
-        <p class="load-sub">${stage===1 ? 'Stage 1 includes automated FCV web research — this can take 1–2 minutes. Please wait.' : stage===3 ? 'Generating the full Recommendations Note — this may take 1–2 minutes.' : 'This usually takes 20–60 seconds.'}</p>
+        <p class="load-sub" id="load-sub-msg">${stage===1 ? 'Stage 1 includes automated FCV web research and may take 2\u20134 minutes. The output will appear in full once complete \u2014 please wait.' : stage===3 ? 'Generating the full Recommendations Note. This may take 1\u20132 minutes \u2014 the full output will appear when ready.' : 'This usually takes 30\u201360 seconds. The full output will appear when ready.'}</p>
         <div class="load-tags"><span class="load-tag">Reading documents</span><span class="load-tag">Applying FCV lens</span><span class="load-tag">Drawing on web context</span></div>
       </div>`;
 
@@ -2748,25 +2747,8 @@
 
       const reader=res.body.getReader(),dec=new TextDecoder();
       let buf='',streamed='';
-
-      document.getElementById('stage-disp').innerHTML=`
-        <div class="stage-hdr ani">
-          <div class="stage-badge ${COL[stage]}">${stage}</div>
-          <div>
-            <div class="stage-title">${NAMES[stage]}</div>
-            <div class="stage-sub">Generating…</div>
-            ${(stage===3)?`<div class="stage-sub" style="margin-top:3px;color:#b45309">⏱ Please wait for the full output to finish rendering before reading or interacting</div>`:''}
-          </div>
-        </div>
-        ${(stage===3)?`<div class="stage-wait-notice"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span><strong>Stage 3 is generating — please wait for the full output to finish rendering</strong> before reading or interacting with the Recommendations Note. This can take 1–2 minutes.</span></div>`:''}
-        <div class="callout info ani">
-          <div class="callout-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
-          <div class="callout-body"><strong>${CALLS[stage].t}</strong>${CALLS[stage].b}</div>
-        </div>
-        <div class="out-card">
-          <div class="out-hdr"><div class="out-hdr-l"><span class="dot live"></span>Generating output</div></div>
-          <div class="out-body" id="s-out" aria-live="polite"></div>
-        </div>`;
+      // Stream is buffered — the load card stays visible until p.done fires.
+      // Status messages (research, preprocess) update the load-sub-msg text instead of streaming to DOM.
 
       while(true){
         const{done,value}=await reader.read();if(done)break;
@@ -2809,9 +2791,9 @@
                 const epSum=document.getElementById('ep-summary-1');
                 if(epSum)epSum.innerHTML='<div class="ep-stage-spinner"><div class="ep-spinner-dot"></div><div class="ep-spinner-dot"></div><div class="ep-spinner-dot"></div><span>'+rsMsg+'</span></div>';
               }
-              // Also update step-by-step s-out
-              const el=document.getElementById('s-out');
-              if(el&&rsMsg)el.innerHTML=`<div style="display:flex;align-items:center;gap:10px;color:var(--muted);font-style:italic;padding:12px 0"><svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;animation:spin 1s linear infinite;flex-shrink:0"><circle cx="12" cy="12" r="10" stroke-opacity=".25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-opacity="1"/></svg>${rsMsg}</div>`;
+              // Update load-sub-msg with research status
+              const loadSub=document.getElementById('load-sub-msg');
+              if(loadSub&&rsMsg)loadSub.textContent=rsMsg;
             }
             if(p.status==='preparing_analysis'){
               const paMsg='Generating analysis\u2026';
@@ -2819,20 +2801,21 @@
                 const epSum=document.getElementById('ep-summary-1');
                 if(epSum)epSum.innerHTML='<div class="ep-stage-spinner"><div class="ep-spinner-dot"></div><div class="ep-spinner-dot"></div><div class="ep-spinner-dot"></div><span>'+paMsg+'</span></div>';
               }
-              const el=document.getElementById('s-out');
-              if(el)el.innerHTML=`<div style="display:flex;align-items:center;gap:10px;color:var(--muted);font-style:italic;padding:12px 0"><svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;animation:spin 1s linear infinite;flex-shrink:0"><circle cx="12" cy="12" r="10" stroke-opacity=".25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-opacity="1"/></svg>${paMsg}</div>`;
+              const loadSub2=document.getElementById('load-sub-msg');
+              if(loadSub2)loadSub2.textContent=paMsg;
             }
             // keepalive events are sent by the backend every 20 s to prevent proxy timeouts — no UI update needed
             if(p.keepalive){/* silent — connection is alive */}
             if(p.preprocess){
-              const ppMsg=esc(p.preprocess);
+              const ppMsg=p.preprocess;
               if(analysisMode==='express'&&stage===1){
                 const epSum=document.getElementById('ep-summary-1');
-                if(epSum)epSum.innerHTML='<div class="ep-stage-spinner"><div class="ep-spinner-dot"></div><div class="ep-spinner-dot"></div><div class="ep-spinner-dot"></div><span>'+ppMsg+'</span></div>';
+                if(epSum)epSum.innerHTML='<div class="ep-stage-spinner"><div class="ep-spinner-dot"></div><div class="ep-spinner-dot"></div><div class="ep-spinner-dot"></div><span>'+esc(ppMsg)+'</span></div>';
               }
-              const el=document.getElementById('s-out');if(el)el.innerHTML=`<div style="display:flex;align-items:center;gap:10px;color:var(--muted);font-style:italic;padding:12px 0"><svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;animation:spin 1s linear infinite;flex-shrink:0"><circle cx="12" cy="12" r="10" stroke-opacity=".25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-opacity="1"/></svg>${ppMsg}</div>`;
+              const loadSub3=document.getElementById('load-sub-msg');
+              if(loadSub3)loadSub3.textContent=ppMsg;
             }
-            if(p.chunk){streamed+=p.chunk;const el=document.getElementById('s-out');if(el)el.innerHTML=md(streamed)}
+            if(p.chunk){streamed+=p.chunk;} // Buffer only — full output rendered on p.done via renderOut()
             if(p.done){clearTimeout(_stageTimeoutId);hist=p.history||hist;curS=stage;stageOutputs[stage]=p.result;stageHists[stage]=hist.slice();updateSessionBar();
               // Stage 2: capture ratings and under_hood data
               if(stage===2){
@@ -3766,7 +3749,7 @@ ${md(execSummary)}`;
         const tagLabel = pr.tag === '[S]' ? 'Sensitivity' : pr.tag === '[R]' ? 'Responsiveness' : pr.tag === '[S+R]' ? 'Sensitivity + Responsiveness' : '';
         body += `<div style="margin-top:22pt;border-top:1pt solid #1a3a5c;padding-top:14pt">
 <h3 style="color:#1a3a5c;margin-bottom:4pt">Priority ${i+1} · ${esc(title)}</h3>
-<p style="font-size:9pt;color:#555;margin-top:0">${pr.dimension?`<strong>Dimension:</strong> ${esc(pr.dimension)} &nbsp;|&nbsp; `:''}${pr.risk_level?`<strong>FCV Risk Level:</strong> <span style="color:${riskColor}">FCV Risk: ${esc(pr.risk_level)}</span> &nbsp;`:''}${tagLabel?`<strong>Focus:</strong> ${esc(tagLabel)}`:''}${pr.refresh_shift?` &nbsp;|&nbsp; <strong>FCV Refresh Shift:</strong> ${esc(pr.refresh_shift)}`:''}
+<p style="font-size:9pt;color:#555;margin-top:0">${pr.dimension?`<strong>Dimension:</strong> ${esc(pr.dimension)} &nbsp;|&nbsp; `:''}${pr.risk_level?`<strong>Priority Level:</strong> <span style="color:${riskColor}">Priority: ${esc(pr.risk_level)}</span> &nbsp;`:''}${tagLabel?`<strong>Focus:</strong> ${esc(tagLabel)}`:''}${pr.refresh_shift?` &nbsp;|&nbsp; <strong>FCV Refresh Shift:</strong> ${esc(pr.refresh_shift)}`:''}
 </p>`;
         if(pr.the_gap) body += `<p><strong>The Gap:</strong><br>${esc(pr.the_gap)}</p>`;
         if(pr.why_it_matters) body += `<p><strong>Why It Matters:</strong><br>${esc(pr.why_it_matters)}</p>`;
@@ -4109,7 +4092,7 @@ ${md(execSummary)}`;
           <div class="pov-num ${isDone?'done':isActive?'active':''}">${isDone?'✓':i+1}</div>
           <div class="pov-label">${esc(label)}</div>
           <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">
-            ${pr.risk_level?`<span class="pov-risk ${riskCls}">FCV Risk: ${esc(pr.risk_level)}</span>`:''}
+            ${pr.risk_level?`<span class="pov-risk ${riskCls}">Priority: ${esc(pr.risk_level)}</span>`:''}
             ${pr.tag?renderSRTagBadge(pr.tag,true):''}
           </div>
         </div>`;
@@ -4186,7 +4169,7 @@ ${md(execSummary)}`;
     el.innerHTML = stageThreePriorities.map((pr, i) => {
       const fullTitle = pr.title.replace(/^Priority\s+\d+\s*[·•]\s*/i,'');
       const riskCls = pr.risk_level==='High'?'ps-risk-h':pr.risk_level==='Medium'?'ps-risk-m':'ps-risk-l';
-      const riskLbl = pr.risk_level==='High'?'FCV Risk: High':pr.risk_level==='Medium'?'FCV Risk: Medium':pr.risk_level==='Low'?'FCV Risk: Low':'';
+      const riskLbl = pr.risk_level==='High'?'Priority: High':pr.risk_level==='Medium'?'Priority: Medium':pr.risk_level==='Low'?'Priority: Low':'';
       return `<div class="ps-step ${i===currentPriority?'active':''}" id="ps-${i}" onclick="showPriority(${i})" title="${esc(pr.title)}">
         <div class="ps-num">${i+1}</div>
         <div class="ps-label">${esc(fullTitle)}</div>
@@ -4260,7 +4243,7 @@ ${md(execSummary)}`;
             <div class="pc-hdr-eyebrow">Priority ${idx+1} of ${n} · ${esc(pr.dimension||'')}${renderSRTagBadge(pr.tag||'')}</div>
             <div class="pc-hdr-title">${md(pr.title.replace(/^Priority\s+\d+\s*[·•]\s*/i,''))}</div>
             <div class="pc-hdr-chips">
-              <span class="pc-chip ${riskClass}">FCV Risk: ${esc(pr.risk_level||'—')}</span>
+              <span class="pc-chip ${riskClass}">Priority: ${esc(pr.risk_level||'—')}</span>
               ${pr.dimension ? `<span class="pc-chip">${esc(pr.dimension)}</span>` : ''}
               ${pr.refresh_shift ? `<span class="shift-badge" title="${esc(shiftTooltips[pr.refresh_shift] || pr.refresh_shift)}">${esc('FCV Refresh ' + pr.refresh_shift)}</span>` : ''}
             </div>
