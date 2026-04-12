@@ -387,6 +387,16 @@ safeguards_framework: [One of: ESF / OP-BP / ESSA / PSIA / Unknown — determine
 other_temporal_markers: [Any restructuring dates, AF dates, or other significant temporal markers, or "None identified"]
 %%%TEMPORAL_CONTEXT_END%%%
 
+DOCUMENT TYPE PRIMACY RULE
+The document type identified above (PCN / PID / PAD / AF / Restructuring / ISR / Unknown) is the authoritative lifecycle classifier. Do not modify or override it based on dates.
+
+A PAD with an approval date in the past is still a PAD. It is a design-review document, not an implementation-review document. A PCN prepared years ago is still a PCN. Do not infer project phase from dates — the document type determines the phase, always.
+
+Pass the following to downstream stages:
+- document_type: [detected type]
+- lifecycle_phase: [as determined by the document type — do not modify based on dates]
+- temporal_override_applied: FALSE [set to TRUE only if you detected a date-based inference conflict and suppressed it]
+
 CRITICAL: Determine the safeguards framework from the DOCUMENT ITSELF (Data Sheet, text references to specific OPs or ESS standards), not from the approval date. If the document references OP/BP 4.01, 4.12, etc., the framework is OP-BP. If it references ESS1-ESS10, ESCP, ESRS, the framework is ESF. If it references ESSA, the framework is ESSA (PforR). If it references PSIA, the framework is PSIA (DPO).''',
 
 "2": '''# Role
@@ -504,7 +514,7 @@ Format each finding as a paragraph. At the end of each finding paragraph, place 
 
 ## Do No Harm (after all themes, before synthesis)
 
-Assess the project against these 8 Do No Harm principles:
+Assess the project against these 9 Do No Harm principles:
 1. Conflict-sensitive targeting and beneficiary selection
 2. Avoiding reinforcement of existing power asymmetries
 3. Preventing exacerbation of inter-group tensions
@@ -513,9 +523,10 @@ Assess the project against these 8 Do No Harm principles:
 6. Protecting project staff and beneficiaries from security risks
 7. Monitoring for unintended negative consequences
 8. Establishing accessible and trusted grievance mechanisms
+9. SEA/SH risk management in conflict contexts — for projects operating in conflict-affected areas, or involving contractor workforces, or with female-majority beneficiaries or community workers, assess: (a) Is the SEA/SH risk formally classified (Low / Moderate / High / Very High) and consistent with the conflict context? (b) If risk is High or Very High, does the ESCP include a time-bound commitment to develop and implement a standalone SEA/SH Action Plan? (c) Are GRM reporting channels anonymous/confidential and accessible to women with mobility restrictions? (d) Does the ESS2 Labour Management Procedure address contractor screening for prior SEA/SH incidents and pre-deployment training? (e) Is there a Results Framework indicator for SEA/SH monitoring? Set seash_standalone_flag: TRUE if risk is High or Very High, or if any of the five elements above is absent or inadequate. Pass this flag to Stage 3.
 
 Output format — a standalone section titled "## Do No Harm":
-Line 1: "**Do No Harm: [X] of 8 principles addressed | [Y] partial | [Z] not addressed**"
+Line 1: "**Do No Harm: [X] of 9 principles addressed | [Y] partial | [Z] not addressed**"
 Then 2–4 sentences highlighting the most critical DNH issues for this specific project.
 
 ## Supplementary FCV Dimensions (after Do No Harm, before Synthesis)
@@ -526,8 +537,8 @@ Assess the following supplementary dimensions. Rate each as: Addressed / Partial
 - Does the project document acknowledge heightened GBV risk in the FCV context (displacement, militarisation, breakdown of social norms)?
 - Are women explicitly included as a targeted beneficiary group, or is inclusion assumed by default (which in FCV contexts often means exclusion)?
 - Does the GRM include safe reporting channels accessible to women and girls (anonymity, female staff, distance reporting)?
-- For IPFs with physical infrastructure: is there a GBV risk assessment for construction-phase worker-community interaction?
-If 3 or more items are "Not addressed" in a high-fragility or displacement context, flag as a priority gap for Stage 3.
+- For IPFs with physical infrastructure or contractor workforces: is there a GBV/SEA/SH risk assessment for construction-phase worker-community interaction?
+Note: the dedicated Gender-FCV Trigger Check block below (mandatory, run after supplementary dimensions) governs when a priority card is generated. Do not apply a numerical threshold here — the trigger block fires on any single qualifying condition.
 
 ### Climate-FCV Nexus
 If the country/region has documented climate-conflict linkages (e.g., Sahel pastoralist-farmer conflict, Horn of Africa drought-displacement):
@@ -555,6 +566,29 @@ If absent in a qualifying context, flag as a gap.
 ### IDA FCV Envelope Appropriateness
 - Does the project financing reference any IDA FCV Envelope allocations (PRA, RECA, TAA, WHR, PSW)?
 - If the project appears to qualify for an FCV Envelope window but none is referenced, note this for Stage 3 Horizon Considerations.
+
+## GENDER-FCV TRIGGER CHECK — MANDATORY (run after all supplementary dimensions, before Synthesis)
+
+Evaluate the following trigger conditions against the Stage 1 context extraction. A single presence of any one condition is sufficient to fire the trigger — do not require multiple conditions.
+
+Trigger conditions:
+1. The project has female-specific or female-majority beneficiaries (women, girls, mothers, female community workers, female-headed households)
+2. The project operates in areas with active or recent armed conflict, displacement, or post-conflict transition
+3. The project involves community-level workers who are predominantly female (health extension workers, community health volunteers, social workers, teachers)
+4. The project involves physical service delivery or case management with female beneficiaries in insecure or access-constrained areas
+5. The project involves contractor or subcontractor workforces in conflict-affected areas
+6. The project addresses health, education, social protection, or gender-based violence directly or indirectly
+7. The SORT rates Gender as Substantial or High, or the project document references SEA/SH as a risk
+
+If any single trigger condition is met, set gender_fcv_flag: TRUE and produce a brief Gender-FCV Assessment block covering:
+- Gap description: How does the FCV context specifically alter gender dynamics relevant to this project — including whether violence, displacement, or service disruption has a disproportionate gender impact?
+- SEA/SH classification: Is the SEA/SH risk classification in the project document consistent with the conflict context and beneficiary profile? Is it formally classified?
+- Worker safety: Does the project assess the specific risks faced by female community workers operating in insecure or access-constrained areas?
+- GRM access: Does the project's GRM design include safe, confidential reporting channels accessible to women and girls in conflict-affected settings?
+
+Pass gender_fcv_flag: TRUE and this Gender-FCV Assessment block to Stage 3. Stage 3 will generate a mandatory standalone priority card on gender-FCV intersectionality.
+
+If no trigger conditions are met, set gender_fcv_flag: FALSE and note which conditions were evaluated and why none fired. Do not generate the standalone card.
 
 ## Synthesis (after Do No Harm)
 
@@ -596,7 +630,7 @@ Calculate the score as a percentage: total points / number of applicable recomme
 | 86–100% | Very Well Embedded |
 
 Then apply quality gates (most restrictive cap wins):
-- If 3 or more Do No Harm principles are rated "Not addressed" in Panel 2 → cap sensitivity at Low
+- If 3 or more of the 9 Do No Harm principles are rated "Not addressed" in Panel 2 → cap sensitivity at Low
 - If the project contains no conflict or security analysis AND operates in a context with active conflict or high crime → cap sensitivity at Adequate
 - If the project has no geographic specificity in targeting or beneficiary selection → cap sensitivity at Adequate
 
@@ -633,7 +667,7 @@ SENSITIVITY SCORING:
 - Total points: X / Y applicable recs = Z%
 - Baseline from percentage: [rating]
 - Quality gate checks:
-  - DNH principles rated "Not addressed": [count]/8 → [cap at Low / no cap]
+  - DNH principles rated "Not addressed": [count]/9 → [cap at Low / no cap]
   - Conflict/security analysis present: [yes/no], context severity: [active conflict / high crime / at-risk] → [cap or no cap]
   - Geographic specificity in targeting: [yes/no] → [cap at Adequate / no cap]
 - Most restrictive cap: [rating or "none — baseline stands"]
@@ -692,6 +726,7 @@ After the ratings block, emit ALL of the following between delimiters. These are
 | 6 | Protecting project staff and beneficiaries from security risks | [status] | [evidence/gap] |
 | 7 | Monitoring for unintended negative consequences | [status] | [evidence/gap] |
 | 8 | Establishing accessible and trusted grievance mechanisms | [status] | [evidence/gap] |
+| 9 | SEA/SH risk management in conflict contexts (risk classification / Action Plan / GRM channels / LMP provisions / RF indicator) | [status] | [evidence/gap — seash_standalone_flag: TRUE if any element absent or risk rated High/Very High] |
 %%%DNH_CHECKLIST_END%%%
 
 %%%QUESTIONS_MAP_START%%%
@@ -788,6 +823,36 @@ All recommendations MUST be feasible under this instrument type. Do not suggest 
 ## Temporal Anchoring
 {temporal_guardrail}
 Do NOT criticise the document for lacking information about events or policies that post-date its preparation. Frame post-preparation developments as "looking ahead" considerations, not gaps.
+
+TEMPORAL OVERRIDE GUARD — READ FIRST
+Do not use the project approval date, signing date, or effectiveness date to modify lifecycle framing. The authoritative lifecycle classifier is the document_type passed from Stage 1. If document_type is PAD, PID, or PCN, generate design-stage output only. Do not generate implementation-review framing (do not reference MTR Aide-Mémoire, ISR actions, or "within X days of effectiveness") for any design-stage document type. The dates in the project document do not override the document type.
+
+---
+
+INSTRUMENT ROUTING GUARDRAIL — MANDATORY
+Before generating any priority card, identify the detected document type from Stage 1. Apply these constraints:
+- PCN stage: Do not reference ESCP, SEP, PPSD, or SORT as actionable instruments. Use: 'Project Description', 'Preliminary PDO', 'Concept Note Risk Section'. Frame actions as design considerations, not document revisions.
+- PID stage: ESCP and SEP are being drafted — reference them as documents being developed, not finalized. PPSD and SORT are in preparation. Results Framework is preliminary.
+- PAD stage: The full instrument set is available: SORT, ESCP, SEP, PPSD, Results Framework, Operations Manual, Financing Agreement covenants. MTR Aide-Mémoire and ISR do not exist yet — do NOT reference them as action targets.
+- AF stage: Only instruments modified or introduced by the AF are actionable. Original project instruments remain under their original safeguards framework.
+- Restructuring: Only instruments being changed in the restructuring are modifiable. Reference only the components and instruments being restructured.
+
+Violation check: Before outputting each priority card, verify that the pad_sections field references only instruments available at the detected document stage. Remove any MTR or ISR references from PAD-stage cards.
+
+---
+
+MINIMUM INSTRUMENT REFERENCE REQUIREMENT — PAD STAGE ONLY
+For any output where the detected document type is PAD, the following instruments must each be referenced at least once across the full set of priority cards:
+- SORT — assess whether Political and Governance, Social, and Macroeconomic risk ratings and their mitigation measures reflect the FCV dynamics identified in this analysis
+- ESS1 — confirm whether the social assessment includes a conflict sensitivity analysis covering conflict-affected communities
+- SEA/SH Action Plan — required reference for any project with elevated SEA/SH risk or operating in conflict-affected areas with female beneficiaries or contractor workforces
+- SEP / ESS10 — assess the SEP and GRM design for conflict-sensitivity and gender-sensitivity; at least one priority must reference the SEP or GRM
+- ESCP — any operationally critical FCV mitigation must be checked for inclusion as a time-bound ESCP commitment
+- Operations Manual — any recommendation involving community engagement, GRM design, or communication in insecure areas must reference the Operations Manual
+- PPSD — any recommendation involving procurement modality (NGOs, UN agencies, direct selection, framework agreements) must reference the PPSD
+- Results Framework — every operationally critical mitigation measure must be assessed for whether a tracking indicator exists in the Results Framework
+
+This list is a floor, not a ceiling. Additional instruments may be referenced as appropriate.
 
 ---
 
@@ -927,6 +992,21 @@ Apply the following definitions strictly. [S+R] must be earned — do not use it
 [R] — FCV Responsiveness. This priority ACTIVELY HELPS MAKE FRAGILITY DYNAMICS BETTER. It addresses root causes of fragility, builds resilience, leverages FCV tools for transformative impact, or connects project outcomes to stability and peace dividends. Linked to one or more FCV Refresh shifts: Anticipate (early warning, classification awareness), Differentiate (calibrate to FCV context type), Jobs & Private Sector (economic livelihoods as stability pathways), Enhanced Toolkit (CERC, HEIS, TPM, GEMS, FCV-appropriate implementation).
 
 [S+R] — Reserve ONLY for priorities that genuinely serve both functions simultaneously. The four overlap zones: (1) inclusion/targeting of conflict-affected populations — avoids exclusion harm (S) AND addresses exclusion as a root driver (R); (2) embedding FCV logic substantively in the ToC/PDO; (3) adaptive M&E that monitors harm AND adapts for resilience; (4) GRM designed to strengthen state-citizen accountability. If in doubt, assign [S] or [R].
+
+---
+
+# MANDATORY PRIORITY CARDS
+
+Gender-FCV Card Rule: If gender_fcv_flag: TRUE was passed from Stage 2, a Gender-FCV priority card is mandatory and must appear in the output, in addition to the standard 4-5 priorities. This card must address: how the FCV context specifically alters gender dynamics for this project, SEA/SH risk classification adequacy, GRM access for women and girls in conflict-affected settings, and safety risks for female community workers. Document locations must name the relevant ESCP commitment, SEP section, and Operations Manual section. Explicitly reference the SEA/SH Action Plan (required under ESS2 and ESS4 for elevated-risk projects) and recommend engagement with the Bank's SEA/SH Secretariat and Gender Group.
+
+SEA/SH Standalone Card Rule: If seash_standalone_flag: TRUE was passed from Stage 2, generate a dedicated SEA/SH priority card. This card must not be merged with the Gender-FCV card — they address different things. The card must include:
+- Gap description: the specific SEA/SH elements that are absent or inadequate, as identified in Stage 2 (risk classification, Action Plan, GRM design, LMP provisions, monitoring indicators)
+- Why it matters: reference ESS4 (Community Health and Safety) as the governing standard; note that elevated SEA/SH risk in conflict settings requires a formally documented and monitored Action Plan
+- Actions: map to the five elements of the Stage 2 check — risk classification, Action Plan, GRM design for SEA/SH reporting, ESS2/LMP worker provisions, and Results Framework monitoring indicator
+- Document locations: ESCP (commitment on Action Plan delivery), SEP (GRM design section), Operations Manual (worker protection provisions)
+- Named standards: ESS2, ESS4, and ESS10 explicitly; recommend engagement with the Bank's SEA/SH Secretariat and the Gender Group
+
+The SEA/SH card and the GRM card may both appear in the output — they address different things. Do not merge them.
 
 ---
 
@@ -1730,6 +1810,24 @@ Always check and comment on:
 # Tone
 Collegial, practical, peer-to-peer — the same register as the Recommendations Note.'''}
 
+
+
+def clean_stage1_output(text):
+    """Strip machine-readable classifier blocks from Stage 1 output for display.
+
+    Strips %%%DOC_TYPE%%%,  %%%INSTRUMENT_TYPE%%%,  %%%TEMPORAL_CONTEXT_START/END%%%,
+    and %%%PROCESS_TYPE%%% lines — these are parsed by the backend before this function
+    is called and should not appear in the TTL-facing output.
+    The raw text (with delimiters) is preserved in conversation history so downstream
+    stages can re-parse if needed.
+    """
+    text = re.sub(r'%%%DOC_TYPE:[^%\n]*%%%\n?', '', text)
+    text = re.sub(r'%%%INSTRUMENT_TYPE:[^%\n]*%%%\n?', '', text)
+    text = re.sub(r'%%%PROCESS_TYPE:[^%\n]*%%%\n?', '', text)
+    text = re.sub(r'%%%TEMPORAL_CONTEXT_START%%%.*?%%%TEMPORAL_CONTEXT_END%%%\n?', '', text, flags=re.DOTALL)
+    # Clean up extra blank lines left by removal
+    text = re.sub(r'\n{3,}', '\n\n', text).strip()
+    return text
 
 
 def clean_stage2_output(text):
@@ -3097,9 +3195,12 @@ def run_stage():
                     updated_messages = updated_messages[-20:]
 
                 # Build done event payload
+                # For Stage 1: strip classifier delimiter blocks from display text only;
+                # history retains the raw output so downstream stages can re-parse.
+                display_full_text = clean_stage1_output(full_text) if stage == 1 else full_text
                 done_data = {
                     'done': True,
-                    'result': full_text,
+                    'result': display_full_text,
                     'history': updated_messages,
                     'stage': stage,
                     'parse_error': parse_error,
@@ -3416,7 +3517,9 @@ def run_express():
                 ]
 
                 # ── Stage 1 done event ──
-                yield f"data: {json.dumps({'stage_done': 1, 'result': stage1_output, 'history': conversation_history, 'research_brief': research_brief_text, 'research_country': research_country, 'doc_type': doc_type, 'instrument_type': instrument_type, 'temporal_context': temporal_context, 'process_type': process_type if is_impl else None, 'review_mode': review_mode})}\n\n"
+                # Strip classifier delimiter tags from display output; history retains raw text.
+                stage1_display = clean_stage1_output(stage1_output)
+                yield f"data: {json.dumps({'stage_done': 1, 'result': stage1_display, 'history': conversation_history, 'research_brief': research_brief_text, 'research_country': research_country, 'doc_type': doc_type, 'instrument_type': instrument_type, 'temporal_context': temporal_context, 'process_type': process_type if is_impl else None, 'review_mode': review_mode})}\n\n"
 
                 # ════════════════════════════════════════════════════════════
                 # STAGE 2 — FCV Assessment
