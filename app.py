@@ -444,6 +444,8 @@ The 4 shifts apply to BOTH sensitivity and responsiveness findings. They are str
 
 Tag findings with the relevant shift where applicable. A sensitivity finding can reference any shift; a responsiveness finding can reference any shift.
 
+CRITICAL — SHIFT A (ANTICIPATE) MUST BE EXPLICITLY RATED: Shift A is frequently underdeveloped in AI assessments. You MUST produce a named finding for Shift A (Anticipate) in the TTL-facing narrative — not just a passing mention. For any project operating in a fragile or conflict-affected context, assess: Does the project design include forward-looking risk classification (beyond static risk ratings)? Are early warning or adaptive trigger mechanisms embedded? Does the M&E framework capture leading indicators of context change? Rate Shift A explicitly. If not addressed, this is a gap — name it as one.
+
 # TTL-Facing Output Structure
 
 Write a thematic narrative assessment (400–500 words total for themes + DNH + synthesis). Use clear, accessible language for non-specialist TTLs.
@@ -507,21 +509,17 @@ When assessing OST Rec 1 (use of diagnostic risk analysis), go beyond presence/a
 Downgrade OST Rec 1 from "Strongly addressed" to "Partially addressed" if the conflict analysis exists but lacks actor-level specificity.
 
 ### HDP Nexus Coordination
+**CONDITIONAL: Only assess this dimension if the country has documented active humanitarian operations, significant IDP populations, or an active UN peace mission. For countries without a documented heavy humanitarian presence, skip this dimension — do not flag its absence as a gap.**
+
+If the condition is met:
 - Does the project document reference any joint analysis with humanitarian partners (OCHA, UNHCR, WFP, ICRC) or UN peace missions?
 - Is there geographic deconfliction — awareness of where humanitarian operations are active to avoid duplication or gaps?
 - Is there sequencing logic — how development activities relate to humanitarian presence (e.g., transitioning from NGO delivery to government systems)?
-If absent in a context where IDP populations or active humanitarian operations are documented, flag as a gap.
+If absent in a qualifying context, flag as a gap.
 
 ### IDA FCV Envelope Appropriateness
 - Does the project financing reference any IDA FCV Envelope allocations (PRA, RECA, TAA, WHR, PSW)?
 - If the project appears to qualify for an FCV Envelope window but none is referenced, note this for Stage 3 Horizon Considerations.
-
-### Digital and Technology Risks
-Where digital tools are used (mobile platforms, biometric data, GPS tracking, remote sensing):
-- Does the document include a data protection framework or reference WBG data privacy standards?
-- Is there a risk that data collected could be used to target beneficiaries (e.g., ethnic or displacement data in a conflict setting)?
-- Have digital access barriers for marginalised populations been considered (connectivity, literacy, gender)?
-Score as a qualitative flag rather than a rating modifier.
 
 ## Synthesis (after Do No Harm)
 
@@ -568,6 +566,8 @@ Then apply quality gates (most restrictive cap wins):
 - If the project has no geographic specificity in targeting or beneficiary selection → cap sensitivity at Adequate
 
 Note: the absence of conflict analysis is a less severe gap for projects in at-risk or criminal violence contexts than for projects in active conflict settings. Apply this gate proportionally.
+
+TRANSPARENCY REQUIRED: In the Rating Reasoning Block, explicitly state what is driving the final Sensitivity rating — is it the percentage score alone, or is a quality gate cap overriding it? Write: "Final rating driven by: [score / DNH cap / conflict analysis cap / geographic specificity cap]." This must be visible in the reasoning block so the TTL can understand why the rating is what it is.
 
 ## Responsiveness Rating
 Count how many of the 4 FCV Refresh shifts (Anticipate, Differentiate, Jobs & Private Sector, Enhanced Toolkit) are actively addressed with concrete, specific measures in the project design — not just passing mentions.
@@ -663,7 +663,7 @@ After the ratings block, emit ALL of the following between delimiters. These are
 | # | Key Question | Answerable? | Finding | Source |
 |---|---|---|---|---|
 [One row for EACH of the 25 key questions from the FCV Operational Manual. For each: state Yes/Partial/No, finding or gap, and source.]
-[After the 25 questions, add rows for the 6 supplementary dimensions: Gender/GBV, Climate-FCV Nexus, PEA Quality, HDP Nexus, IDA FCV Envelope, Digital/Technology Risks. Same format: Yes/Partial/No, finding, source.]
+[After the 25 questions, add rows for the supplementary dimensions assessed above: Gender/GBV, Climate-FCV Nexus, PEA Quality, IDA FCV Envelope, and HDP Nexus (only if the country has documented active humanitarian operations or IDP populations — skip row otherwise). Same format: Yes/Partial/No, finding, source.]
 %%%QUESTIONS_MAP_END%%%
 
 %%%EVIDENCE_TRAIL_START%%%
@@ -866,6 +866,7 @@ WHEN: [One of: Identification | Preparation | Appraisal | Implementation | Restr
 RESOURCES: [One of: Minimal (existing budget) | Moderate (dedicated allocation) | Significant (requires restructuring)]
 PAD_SECTIONS: A semicolon-separated list of 2-3 specific PAD document sections. Use these exact labels from the current WBG PAD template:
 For ESF-era PADs: 'Country Context', 'Sectoral and Institutional Context', 'Theory of Change', 'PDO', 'Project Components', 'Implementation Arrangements', 'Results Framework', 'SORT', 'Citizen Engagement', 'ESCP', 'Annex — Gender', 'Annex — Grievance Redress Mechanism', 'Annex — Financial Management', 'Annex — Procurement'.
+SORT ROUTING: Any recommendation that relates to conflict risk, political instability, security, social tensions, or governance failure MUST include 'SORT' as one of its pad_sections. The SORT (Systematic Operations Risk-Rating Tool) is the primary home for FCV risk findings in a PAD — it is where the risk rating and risk-mitigation measures are formally documented. Do not omit SORT for security or political-economy recommendations.
 For PCNs: 'Project Description', 'Preliminary PDO', 'Concept Note Risk Section'.
 For ESCP commitments: reference specific ESCP table columns (Commitment, Action, Timing, Responsibility).
 Do not use generic labels like 'safeguards section' or 'risk management annex'.
@@ -874,6 +875,10 @@ IMPLEMENTATION_NOTE: 1-2 sentences flagging a practical sequencing point, cost i
 GEOGRAPHIC VALIDATION: Before finalising each priority, check: does the `the_gap` field name at least one specific location, group, or institution drawn from the uploaded documents or web research? If not, revise it. If no specific geography is available in your sources, name the administrative level at which the project operates (e.g., county, district, commune) and note that sub-national detail is missing.
 
 Strict prohibitions: NO specific percentages or dollar amounts; NO generic language; NO criticism for post-preparation events. The `actions` field is a structured array (see JSON block below); all other fields use flowing prose.
+
+HALLUCINATED PRECISION GUARDRAIL: Do NOT include specific budget figures, staffing ratios, or quantitative thresholds (e.g., "allocate $150,000", "hire 3 FTE", "trigger at 10% displacement") unless the figure is directly cited from the uploaded project document or explicitly stated in the reference materials. Where a threshold or cost estimate would be useful, write it as a principle and label it: "the team should determine an appropriate threshold based on local data" rather than inventing a specific number. AI-generated figures read as authoritative but have no empirical basis and can mislead a TTL in budget or procurement exercises.
+
+IPF PROCUREMENT COMPLIANCE: All employment, targeting, and hiring recommendations must be feasible under standard IPF procurement rules (Procurement Regulations for IPF Borrowers). Mandatory employment quotas as binding civil works contract conditions are NOT standard under IPF — they require PPSD justification and specific community contracting provisions. Do not draft recommendations that read as binding contractual employment requirements. Instead, frame workforce inclusion measures as: community contracting provisions in the PPSD, labour influx management provisions in the ESCP, or PIU-level operational commitments in the Operations Manual. If you are uncertain whether a measure requires non-standard procurement justification, frame it as an "Operations Manual commitment" rather than a contract specification.
 
 ---
 
@@ -1587,6 +1592,10 @@ def get_instrument_slice(instrument_type: str) -> str:
     ]
     if entry.get('policy_transitions'):
         parts.append(f"\n**Policy transitions:** {entry['policy_transitions']}")
+    if entry.get('cdd_sub_modality'):
+        parts.append(f"\n**Community-Driven Development (CDD) sub-modality — FCV risks:** {entry['cdd_sub_modality']}")
+    if entry.get('non_state_actor_engagement'):
+        parts.append(f"\n**Non-state actor engagement (Para 18):** {entry['non_state_actor_engagement']}")
     return '\n'.join(parts)
 
 
