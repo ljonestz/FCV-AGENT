@@ -2116,8 +2116,8 @@
   initOnboarding();
   // Restore mode preference
   (function(){const m=localStorage.getItem('fcv_analysis_mode');if(m==='stepbystep')selectMode('stepbystep');})();
-  // Restore review type preference
-  (function(){const r=localStorage.getItem('fcv_review_mode');if(r==='implementation')selectReviewMode('implementation');})();
+  // Always reset to design review — implementation review is not yet live
+  localStorage.removeItem('fcv_review_mode');
 
   // Express resume: check for partial express state on page load
   (function(){
