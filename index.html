@@ -1524,8 +1524,8 @@
   @media(max-width:640px){.review-type-cards{flex-direction:column}}
 
   /* ── Implementation coming-soon note ── */
-  .impl-soon-note{display:flex;align-items:center;gap:5px;padding:6px 32px 2px;font-size:11px;color:#9CA3AF}
-  .impl-soon-note svg{flex-shrink:0;color:#bae6fd}
+  .impl-soon-note{display:flex;align-items:center;gap:8px;margin:0 32px 8px;padding:8px 14px;background:#fffbeb;border:1px solid #fcd34d;border-radius:6px;font-size:12px;color:#92400e;font-weight:500}
+  .impl-soon-note svg{flex-shrink:0;color:#f59e0b}
 
   /* ── Optional Context Box ── */
   .context-box-section{margin:16px 32px 0}
@@ -1905,14 +1905,14 @@
 
     <div class="impl-soon-note">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-      Currently covers design-stage documents (PCN · PID · PAD). Implementation review (MTR · ISR) — coming soon.
+      This tool currently assesses pre-appraisal design documents (PCN · PID · PAD). Support for implementation review documents (MTR · ISR) is coming soon.
     </div>
 
     <form id="upload-form" onsubmit="return false">
     <div class="upload-zones">
       <div class="zone-wrap">
         <div class="zone-lbl"><span class="zone-dot p"></span>Project Document</div>
-        <p class="zone-hint" id="zone-hint-primary">Upload your primary project document (PCN, PID, PAD, AF, Restructuring Paper, or ISR). For a stronger assessment, also upload supporting documents such as the RRA, technical studies, PPSD, or stakeholder analysis as contextual documents below. The tool works best with 1–3 documents. Documents over 150k characters will be automatically condensed.</p>
+        <p class="zone-hint" id="zone-hint-primary">Upload your primary project document (PCN, PID, or PAD). Documents over 150k characters will be automatically condensed.</p>
         <div class="drop-zone" id="dp">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--border)" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
           <p style="margin-bottom:4px">Drag &amp; drop, or</p>
@@ -1923,7 +1923,7 @@
 
       <div class="zone-wrap">
         <div class="zone-lbl"><span class="zone-dot c"></span>Contextual Documents</div>
-        <p class="zone-hint" id="zone-hint-context">Upload 1–2 documents with FCV context for the country or region (e.g., RRA, country risk assessment, conflict analysis). If none uploaded, the tool will search trusted online sources to supplement. The more context provided, the more specific the assessment.</p>
+        <p class="zone-hint" id="zone-hint-context">Upload 1–3 documents with FCV context for the country or region — e.g., RRA, country risk assessment, conflict analysis, technical studies, PPSD, or stakeholder analysis. If none uploaded, the tool will search trusted online sources to supplement. The more context provided, the more specific the assessment.</p>
         <div class="drop-zone" id="dc">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--border)" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
           <p style="margin-bottom:4px">Drag &amp; drop, or</p>
@@ -3919,11 +3919,11 @@ ${md(execSummary)}`;
 </style></head>
 <body>${body}</body></html>`;
 
-    const blob = new Blob([html], {type:'application/msword'});
+    const blob = new Blob([html], {type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'FCV-Recommendations-Note-' + new Date().toISOString().slice(0,10) + '.doc';
+    a.download = 'FCV-Recommendations-Note-' + new Date().toISOString().slice(0,10) + '.docx';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

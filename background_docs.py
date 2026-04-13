@@ -1496,7 +1496,89 @@ WB_INSTRUMENT_GUIDE = {
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 10. FCV_GLOSSARY — Key FCV terms for prompt grounding and frontend tooltips
+# 10. FCV_INSTRUMENT_CALIBRATION — FCV-specific operational nuances by instrument
+# Last verified: 2026-04
+# Source: WBG internal LLM review (April 2026); WBG operational practice
+# Purpose: Grounding context for instrument-aware FCV assessment; injected into Stage 2
+# ─────────────────────────────────────────────────────────────────────────────
+
+FCV_INSTRUMENT_CALIBRATION = """
+## FCV Instrument Calibration Notes — Operational Grounding Context
+
+These notes capture FCV-specific operational nuances that are often missed in standard instrument assessments. Use as grounding context when applying the OST framework and DNH principles to specific instrument types.
+
+---
+
+### DPF/DPO — Budget Support FCV Calibration
+
+**Dominant failure mode — policy reversal:**
+The primary FCV-specific risk in budget support is not implementation failure (as in IPF) but policy reversal — the government reverses agreed reforms under pressure from vested interests, political instability, or conflict dynamics. This is structurally more likely in FCV settings. Assess whether the operation has realistic safeguards against reversal (e.g., programmatic conditionality that reduces reversal incentives, political economy analysis of reform sustainability).
+
+**Adjustment sequencing gap (critical DNH pathway):**
+In FCV settings, fiscal adjustment measures (subsidy removal, price liberalisation, civil service rationalisation) typically affect vulnerable populations immediately, while compensatory safety net mechanisms take months or years to operationalise. This sequencing gap is a primary conflict escalation pathway — economic stress without compensatory relief has historically contributed to social unrest in fragile states. Assess whether the policy matrix sequences protective prior actions before or concurrent with adjustment measures. Absence of this sequencing analysis is a material FCV gap.
+
+**Programmatic series risk:**
+Each operation in a programmatic DPO series compounds exposure. If political conditions shift between the first and second operation, the Bank may face difficult choices about whether to proceed. Assess whether the design includes realistic off-ramps or trigger flexibility to accommodate FCV-driven disruption.
+
+**Scope of prior actions in FCV settings:**
+Empirically, prior actions in FCV DPOs concentrate heavily on basic state functioning — public financial management, civil registration, statistical capacity, basic service delivery regulation — rather than ambitious structural reform. This is appropriate given limited institutional capacity. The assessment should calibrate expectations accordingly: absence of ambitious reform conditionality in FCV DPOs is often a deliberate and sound design choice, not a gap.
+
+**Cat DDO trigger design:**
+Catastrophe Deferred Drawdown Options (Cat DDOs) link disbursement to an emergency declaration or crisis trigger. In FCV contexts, political contingency matters: the capacity and willingness of governments to formally declare an emergency — and the political implications of doing so — varies significantly. Assess whether the trigger design is operationally realistic given the country's institutional and political context.
+
+**Post-conflict DPF exception:**
+A post-conflict exception exists in OP/BP 8.60 that can relax the macroeconomic framework requirement, but it is rarely formally operationalized in project documents. Most DPOs in FCS countries work in fragile but not active-conflict settings. Where a post-conflict exception may apply, flag it as an underutilised design option.
+
+---
+
+### FCV Envelope — Eligibility and Operational Nuances
+
+**Annual review requirement (frequently missed):**
+IDA FCV Envelope eligibility is NOT automatic — countries must submit annual FCV Review Notes demonstrating continued eligibility and the government's commitment to prevention and resilience. Failure to submit or inadequate submissions can result in loss of allocation. This has occurred in practice (e.g., Mali). When reviewing FCV Envelope operations, assess whether the country's annual review trajectory is factored into the operation's medium-term resource projections.
+
+**Extended Data Pathway (EDP) — low-awareness provision:**
+The EDP allows a country to access Prevention and Resilience Allocation (PRA) even when conflict intensity exceeds standard fatality thresholds, provided meaningful conflict prevention remains feasible and the government demonstrates commitment. This is not widely documented and requires a compelling case with Management approval. Flag EDP as a potential option in countries that exceed standard PRA thresholds but where prevention work remains meaningful.
+
+**Eligibility logic — not a ladder:**
+RECA, TAA, and PRA are not a graduated ladder from more conflict to less conflict. Each has distinct eligibility logic:
+- PRA: country at risk of conflict or with low-level fragility; government committed to prevention
+- RECA: active high-intensity conflict; government present but limited operational capacity; continued engagement is feasible and valuable
+- TAA: post-conflict recovery trajectory; government demonstrating commitment to turnaround
+A country may move between windows, but eligibility is formally determined through the annual FCV review process, not automatically assigned based on conflict data.
+
+**FCS graduation:**
+Graduation from the FCS list does not mean exit from fragility. Structural drivers of fragility (weak institutions, horizontal inequalities, climate vulnerability) persist for years after graduation. Graduated countries may remain eligible for certain FCV-sensitive approaches even without FCS designation. Do not treat graduation as meaning the FCV risk picture has normalised.
+
+---
+
+### RRA — Process vs. Document
+
+**RRA as a consultative process:**
+The Risk and Resilience Assessment's primary value is the structured consultative process it generates within the Country Management Unit and with key stakeholders — not just the written output. The consultative process builds shared understanding of FCV dynamics across the Bank team, government counterparts, and sometimes civil society. An RRA conducted with broad consultation but a thin written product may be more valuable operationally than a detailed report produced without meaningful engagement.
+
+**Confidentiality:**
+RRAs are often partially or fully confidential — particularly sections on political economy, elite networks, and security actor analysis. Project documents may not cite the RRA directly even when it has substantially shaped design choices. Do not penalise a project document for failing to cite the RRA if contextual evidence suggests the analysis has informed the design.
+
+**Geographic scope:**
+RRAs can be subnational or regional (covering border zones, displacement corridors, or specific conflict-affected areas) rather than country-level. Where a project has a subnational focus, a subnational RRA or FCV annex may be more relevant than the national RRA. Assess whether the relevant geographic unit has been covered by an appropriate diagnostic.
+
+---
+
+### Trust Funds and ASA — Alternatives Where Lending Is Constrained
+
+**Trust funds as primary vehicle in acute conflict:**
+Where lending is constrained by OP 7.30 (de facto government situations), active conflict, or suspension of operations, trust funds are the primary vehicle for continued WBG engagement. Approximately 83% of FY20-24 WBG trust fund disbursements went to fragile and conflict-affected countries. When assessing operations in settings where lending viability is uncertain, consider whether a trust fund modality has been evaluated as an alternative or complement.
+
+**ASA as the most unconstrained entry point:**
+Advisory Services and Analytics (ASA) can continue in contexts where lending is suspended — they do not require a government borrower relationship in the same way. ASA is also the most politically flexible instrument for engaging on sensitive topics (governance, security sector, political economy). A key systemic gap is the absence of formal feedback loops from ASA findings into the lending pipeline — completed ASA work on FCV dynamics may not be systematically incorporated into subsequent project designs.
+
+**Trust fund governance:**
+Recipient-executed trust funds follow IPF-equivalent policies and fiduciary requirements. Bank-executed ASA follows the Bank's own administrative procedures. Both require conflict-sensitivity review. Do not treat trust fund or ASA operations as exempt from FCV assessment simply because they are smaller or advisory in nature.
+"""
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 11. FCV_GLOSSARY — Key FCV terms for prompt grounding and frontend tooltips
 # Last verified: 2026-04
 # Sources: WBG FCV Strategy, OST Manual, FCV Playbook, OECD, UNDP, UNHCR
 # ─────────────────────────────────────────────────────────────────────────────
@@ -1902,7 +1984,7 @@ FCV_GLOSSARY = {
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 11. WB_PROCESS_GUIDE — Implementation process knowledge (stub for Phase 4)
+# 12. WB_PROCESS_GUIDE — Implementation process knowledge (stub for Phase 4)
 # Last verified: 2026-04
 # Review trigger: To be populated with MTR/ISR/AF/Restructuring/ICR process knowledge
 # ─────────────────────────────────────────────────────────────────────────────

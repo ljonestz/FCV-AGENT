@@ -14,7 +14,8 @@ from background_docs import (
     FCV_GUIDE, FCV_OPERATIONAL_MANUAL, FCV_REFRESH_FRAMEWORK,
     PLAYBOOK_DIAGNOSTICS, PLAYBOOK_PREPARATION, PLAYBOOK_IMPLEMENTATION,
     PLAYBOOK_CLOSING, STAGE_GUIDANCE_MAP,
-    WB_INSTRUMENT_GUIDE, FCV_GLOSSARY, WB_PROCESS_GUIDE, FCS_LIST
+    WB_INSTRUMENT_GUIDE, FCV_GLOSSARY, WB_PROCESS_GUIDE, FCS_LIST,
+    FCV_INSTRUMENT_CALIBRATION
 )
 import io
 try:
@@ -364,6 +365,12 @@ Where does the project document's own risk picture align with or diverge from th
 - Be specific — generic statements about fragility are not useful
 - **Length:** Keep Part A and Part B combined to approximately 1,000–1,500 words. Be concise and evidence-focused; do not pad sections where evidence is thin.
 
+CITATION DISCIPLINE FOR PART B — MANDATORY:
+When drawing on training knowledge (not retrieved from uploaded documents or web research), label it as: [From: general knowledge — [source type, e.g. conflict datasets, UN reporting]]. NEVER present training knowledge as if it were retrieved or real-time data. Specifically:
+- WRONG: [From: training knowledge - ACLED data] — this implies retrieved data that was not fetched
+- CORRECT: [From: general knowledge — ACLED/conflict datasets]
+Only cite specific numerical values, statistics, or dated events if they appear in your web research results or uploaded documents. If drawing on general patterns or analytical knowledge about a country, label it clearly as general knowledge.
+
 ---
 
 # Abbreviation and Concept Recognition
@@ -529,6 +536,9 @@ Assess the project against these 9 Do No Harm principles:
 7. Monitoring for unintended negative consequences
 8. Establishing accessible and trusted grievance mechanisms
 9. SEA/SH risk management in conflict contexts — for projects operating in conflict-affected areas, or involving contractor workforces, or with female-majority beneficiaries or community workers, assess: (a) Is the SEA/SH risk formally classified (Low / Moderate / High / Very High) and consistent with the conflict context? (b) If risk is High or Very High, does the ESCP include a time-bound commitment to develop and implement a standalone SEA/SH Action Plan? (c) Are GRM reporting channels anonymous/confidential and accessible to women with mobility restrictions? (d) Does the ESS2 Labour Management Procedure address contractor screening for prior SEA/SH incidents and pre-deployment training? (e) Is there a Results Framework indicator for SEA/SH monitoring? Set seash_standalone_flag: TRUE if risk is High or Very High, or if any of the five elements above is absent or inadequate. Pass this flag to Stage 3.
+
+FOR BUDGET SUPPORT INSTRUMENTS (DPF/DPO/DPL) ONLY — Additional DNH assessment (run after principle 9):
+Adjustment Sequencing Risk: Assess whether prior actions or triggers create a window of exposure where reform costs (subsidy removal, price liberalisation, tariff reform, civil service rationalisation) are imposed BEFORE compensatory safety net mechanisms are operational. In FCV contexts, this sequencing gap is a primary conflict escalation pathway — adjustment costs hit FCV-affected populations first, before protective measures are in place. Assess: (a) Does the policy matrix sequence safety net or social protection prior actions before or concurrent with fiscal adjustment measures? (b) Is there a PSIA that explicitly models distributional impacts of reform on conflict-affected or vulnerable populations? (c) Do any prior actions risk triggering political backlash from vested interests in ways that could destabilise the operating environment? This is the most important DNH dimension for budget support in FCV settings — weight it accordingly in the DNH summary line.
 
 Output format — a standalone section titled "## Do No Harm":
 Line 1: "**Do No Harm: [X] of 9 principles addressed | [Y] partial | [Z] not addressed**"
@@ -841,6 +851,14 @@ Before generating any priority card, identify the detected document type from St
 - PAD stage: The full instrument set is available: SORT, ESCP, SEP, PPSD, Results Framework, Operations Manual, Financing Agreement covenants. MTR Aide-Mémoire and ISR do not exist yet — do NOT reference them as action targets.
 - AF stage: Only instruments modified or introduced by the AF are actionable. Original project instruments remain under their original safeguards framework.
 - Restructuring: Only instruments being changed in the restructuring are modifiable. Reference only the components and instruments being restructured.
+
+DPF/DPO INSTRUMENT EXCLUSIONS — when instrument_type is DPF, DPO, or DPL, the following are EXCLUDED from all priority cards:
+- ESCP (Environmental and Social Commitment Plan): IPF-only instrument. DPFs are governed by OP/BP 8.60 — use "environmental and poverty/social analysis" or "PSIA" framing instead.
+- ESS1–ESS10 (Environmental and Social Standards): IPF-only framework. DPFs do not apply the ESF.
+- SORT as an adaptive management or monitoring dashboard: SORT is a preparation-phase risk tool. Do not recommend it as an implementation monitoring mechanism.
+- DLIs (Disbursement-Linked Indicators): DPF-specific instrument is prior action policy conditions, not DLIs. Do not recommend DLIs for DPF operations.
+- Project-level GRMs, SEPs, LMPs: DPOs work through policy, not direct service delivery. Reference policy transparency and public communication mechanisms instead.
+DPF/DPO FRAMING — frame all DPF/DPO priority cards around: conflict-sensitivity of individual prior actions, reform sequencing risk (adjustment costs before safety nets), policy reversal risk from vested interests, distributional effects of reforms on FCV-affected populations, and macroeconomic transmission to vulnerable groups.
 
 Violation check: Before outputting each priority card, verify that the pad_sections field references only instruments available at the detected document stage. Remove any MTR or ISR references from PAD-stage cards.
 
@@ -2587,6 +2605,7 @@ def run_fcv_web_research(country: str, sector: str, api_client) -> dict:
         brief = '\n'.join(brief_parts).strip()
         return {'brief': brief, 'country': country}
     except Exception as e:
+        print(f"[WebResearch ERROR] {type(e).__name__}: {e}", flush=True)
         return {
             'brief': f'*Web research for {country} could not be completed — proceeding without supplemental research.*',
             'country': country
@@ -2927,6 +2946,8 @@ def run_stage():
                     FCV_GUIDE +
                     "\n\n--- World Bank FCS Country List (2015–Present) ---\n" +
                     FCS_LIST +
+                    "\n\n--- FCV Instrument Calibration Notes (Operational Grounding) ---\n" +
+                    FCV_INSTRUMENT_CALIBRATION +
                     "\n\n--- FCV Glossary (Key Term Definitions) ---\n" +
                     get_glossary_for_prompt()
                 )
@@ -3598,6 +3619,8 @@ def run_express():
                         FCV_GUIDE +
                         "\n\n--- World Bank FCS Country List (2015–Present) ---\n" +
                         FCS_LIST +
+                        "\n\n--- FCV Instrument Calibration Notes (Operational Grounding) ---\n" +
+                        FCV_INSTRUMENT_CALIBRATION +
                         "\n\n--- FCV Glossary (Key Term Definitions) ---\n" +
                         get_glossary_for_prompt()
                     )
