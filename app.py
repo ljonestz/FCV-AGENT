@@ -339,7 +339,8 @@ Always clearly label which source tier you are drawing from at each point, and a
 
 ### FCV Classification Context
 - Note if the country appears on the FCS (Fragile and Conflict-affected Situations) list
-- If FCS, note eligibility category for FCV Envelope financing (PRA — Prevention and Resilience Allocation; RECA — Remaining Engaged during Conflict Allocation; TAA — Turn Around Allocation)
+- If FCS, note this classification and its implications for project design and operational flexibilities
+- DO NOT make any explicit statement about whether the country is or is not eligible for IDA FCV Envelope financing windows (PRA, RECA, TAA, WHR). Eligibility depends on multiple criteria beyond FCS classification — including CPIA scores, conflict intensity thresholds, annual FCV review submissions, and Management determinations — and any eligibility statement risks being incorrect and undermining trust in the output. Simply note relevant FCV Envelope instruments if they appear in the project document, without drawing eligibility conclusions.
 - Assess which FCV Refresh strategic shift(s) are most relevant to this project context:
   - Shift A (Anticipate): Is there evidence of forward-looking risk monitoring?
   - Shift B (Differentiate): Is the approach tailored to the specific FCV classification?

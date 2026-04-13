@@ -115,7 +115,7 @@ FCS_LIST = """## World Bank Fragile and Conflict-affected Situations (FCS) List 
 
 Source: World Bank FCS list (fiscal year reporting, 2015–FY2026).
 Use this list to verify whether the project country is or has been classified as FCS, and for how long.
-A country on the FCS list is eligible for enhanced operational flexibilities and IDA FCV Envelope financing (PRA / RECA / TAA, subject to additional eligibility criteria).
+A country on the FCS list may access enhanced operational flexibilities. IDA FCV Envelope financing (PRA / RECA / TAA) eligibility depends on multiple criteria beyond FCS classification — including CPIA scores, conflict intensity, annual FCV review submissions, and Management determinations. Do not draw eligibility conclusions from FCS status alone.
 
 ### Currently on the FCS List (FY2026 / "Present")
 Afghanistan, Burkina Faso, Burundi, Cameroon, Central African Republic, Chad, Comoros,
@@ -186,7 +186,7 @@ Timor-Leste, Tuvalu, Ukraine, Venezuela (RB), West Bank and Gaza, Yemen (Republi
 - If a country has been on the FCS list since 2015, this represents over a decade of chronic fragility — flag this in analysis.
 - If a country entered recently (e.g., Ethiopia 2022, Ukraine 2023, São Tomé 2024), flag the recency and likely drivers.
 - If the country graduated from the FCS list, acknowledge the trajectory and any residual fragility risk.
-- FCS classification is a necessary but not sufficient condition for IDA FCV Envelope eligibility — additional CPIA and conflict criteria apply.
+- IDA FCV Envelope eligibility is complex and multi-criteria — do not draw eligibility conclusions from FCS status alone, and do not state in outputs whether a country is or is not eligible for any Envelope window.
 - Do not assume FCS = conflict. FCS encompasses fragility (weak institutions, political instability) as well as active conflict situations.
 """
 
