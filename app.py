@@ -2658,14 +2658,14 @@ def get_fast_client():
 _research_client = None
 
 def get_research_client():
-    """Client for web research only. 45s total — limits the silent window before
-    the keepalive stream starts. On timeout, research is skipped gracefully.
+    """Client for web research only. 120s total — web search with 4 uses can take
+    60-90s on Render. On timeout, research is skipped gracefully.
     """
     global _research_client
     if _research_client is None:
         _research_client = anthropic.Anthropic(
             api_key=os.environ.get("ANTHROPIC_API_KEY"),
-            timeout=httpx.Timeout(timeout=45.0, connect=10.0)
+            timeout=httpx.Timeout(timeout=120.0, connect=10.0)
         )
     return _research_client
 
