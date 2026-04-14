@@ -3022,6 +3022,14 @@ def run_stage():
                 except KeyError:
                     pass  # If format fails, use prompt as-is
 
+                stage_prompt = (
+                    stage_prompt +
+                    "\n\n--- WBG FCV Strategy Refresh Framework (4 Shifts) ---\n" +
+                    FCV_REFRESH_FRAMEWORK +
+                    "\n\n--- CPF Integration Guide (use when CPF was uploaded as a contextual document) ---\n" +
+                    CPF_INTEGRATION_GUIDE
+                )
+
             # ── IMPLEMENTATION REVIEW: Stage 3 injection ─────────────────────
             elif is_impl and stage == 3:
                 instrument_type = data.get('instrument_type', 'Unknown')
@@ -3726,7 +3734,9 @@ def run_express():
                     stage3_prompt = (
                         stage3_prompt +
                         "\n\n--- WBG FCV Strategy Refresh Framework (4 Shifts) ---\n" +
-                        FCV_REFRESH_FRAMEWORK
+                        FCV_REFRESH_FRAMEWORK +
+                        "\n\n--- CPF Integration Guide (use when CPF was uploaded as a contextual document) ---\n" +
+                        CPF_INTEGRATION_GUIDE
                     )
 
                 # Build Stage 3 messages from conversation history
