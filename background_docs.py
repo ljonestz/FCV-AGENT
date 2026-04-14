@@ -318,6 +318,56 @@ ICR should: (i) describe how design responded to FCV elements, (ii) document ada
 
 ### Strengthening Social Cohesion (Box 2)
 Operations can strengthen social cohesion by: addressing regional/inter-group inequities; having positive impacts on groups vulnerable to mobilisation (ex-combatants, unemployed youth); bolstering state legitimacy through local service delivery; addressing grievances (e.g. education in native language); promoting inclusion of marginalised groups; improving inter-group dialogue.
+
+---
+
+### Peace & Inclusion Lens Dimensions
+Source: Good Practice Note on Peace and Inclusion Lenses (December 2022)
+
+The following dimensions supplement the 12 OST recommendations. They add operational depth for project-level FCV sensitivity screening — drawing on accumulated experience applying conflict filters and peace lenses across WBG portfolios. Use these as a lens when generating thematic findings in Stage 2, particularly for dimensions not fully captured by the 12 recs above.
+
+**1. Geographic targeting against RRA-identified divides**
+Where an RRA (or equivalent diagnostic) identifies subnational fault lines — regional, ethnic, urban/rural — the project's geographic footprint should be assessed against those divides. Projects that concentrate benefits in historically favoured areas without justification risk entrenching exclusion and fuelling grievance. Assess: Does the project's targeting map align with or cut across the RRA-identified divides? Are historically marginalised areas explicitly included? Does the project design account for differential access and absorption capacity across these zones?
+
+**2. Social cohesion and reconciliation**
+Beyond the Box 2 items above, assess explicitly: Does the project create opportunities for inter-group interaction that could improve relations? Does it risk entrenching parallel community structures (e.g. a new dispute mechanism displacing trusted traditional institutions)? Could implementation inadvertently reinforce group hierarchies? Projects that work through or alongside existing sources of resilience — traditional institutions, community dispute resolution, local leaders — are more likely to bolster rather than undermine cohesion.
+
+**3. Project-cycle-specific application**
+Peace and inclusion considerations have the greatest impact when applied at the earliest stages of project design (concept and appraisal), not retrofitted at MTR or restructuring. For each priority recommendation, flag whether it should be embedded at: Concept Note stage (design parameters), PAD appraisal (instrument commitments, ESCP, SEP), MTR (course corrections, indicator revisions), or Restructuring (scope changes, component redesign).
+
+**4. Stakeholder engagement with conflict actors and non-beneficiaries**
+Standard ESF stakeholder engagement focuses on affected communities and beneficiaries. In conflict-affected settings, additionally assess: Are non-beneficiaries identified, and is the risk of grievance from exclusion mitigated? Are conflict actors (including non-state armed groups, ethnic armed organisations) identified and, where feasible and appropriate, engaged during consultation? Are local languages used in consultations? Are feedback mechanisms accessible to groups facing active insecurity or mobility constraints?
+
+**5. Unintended consequences — structured screening**
+Before finalising any priority recommendation, check explicitly for both negative and positive unintended consequences:
+- **Negative:** Could the project inadvertently increase horizontal inequality (by concentrating resources in one area or group)? Undermine state legitimacy (by working through actors seen as illegitimate, or undermining popular state functions)? Exacerbate grievances (e.g. related to natural resource exploitation, cultural imposition, or land access)? Weaken existing resilience (by displacing community structures or traditional institutions)?
+- **Positive:** Could the project — even without a formal FCV objective — bolster cohesion (through cross-group collaboration), strengthen state legitimacy (by visibly delivering public goods), address grievances (e.g. inclusive curricula, equitable service delivery), or reduce vulnerability to mobilisation (e.g. through employment, particularly of youth and ex-combatants)?
+
+---
+
+### Strategic DRR Framing
+Source: Good Practice Note on FCV Sensitive Program and Portfolio Analysis (July 2022)
+
+The following contextual framing supplements the OST recommendations. It provides a strategic lens for interpreting project-level findings — particularly for structuring recommendations in Stage 3. Use it to situate project-level gaps within the broader landscape of FCV drivers, risks, and resilience factors.
+
+**Drivers-Risks-Resilience (DRR) mapping**
+Individual project findings should be interpreted in relation to the country's FCV landscape: the key drivers of fragility and conflict (e.g. land disputes, ethnic exclusion, weak institutions, criminal violence), the key risks to the project from FCV (e.g. insecurity disrupting implementation, political volatility undermining reform), and the key resilience factors the project could leverage or strengthen (e.g. community institutions, diaspora networks, local economic networks, state legitimacy in some regions). Frame Stage 3 recommendations by asking: does this recommendation help address a DRR? Does it protect the project from a DRR? Does it leverage a resilience factor?
+
+**4 P's recommendation structure**
+Where applicable, frame recommendations around the 4 P's of the FCV Strategy implementation model:
+- **Policies** — regulatory or reform recommendations (e.g. conflict-sensitive prior actions, governance reforms)
+- **Programming** — project design and targeting recommendations (e.g. component adjustments, targeting criteria, safeguard frameworks)
+- **Partnerships** — HDP nexus, UN agency, NGO, and community-based actor recommendations
+- **Personnel** — staffing, capacity building, security, and talent recommendations (e.g. FCV-specialist TTL, in-country FCV focal point, contractor security protocols)
+This is a framing lens — it does not require a separate JSON field. Use it to shape narrative framing and the `guidance` field within actions.
+
+**Strategic vs. operational distinction**
+Distinguish between: (a) recommendations that are strategic — requiring portfolio-level decisions, CPF alignment, or government policy engagement; and (b) recommendations that are operational — addressable within the project's current scope, instruments, and timeline. Flag strategic recommendations in the `implementation_note` field (e.g. "This is a strategic consideration that goes beyond this project's scope — flag for CPF dialogue").
+
+**Positive and negative unintended consequences — project-level**
+When assessing a project, consider both directions:
+- Could the project inadvertently worsen fragility? (Increase inequality, undermine legitimacy, exacerbate grievances, weaken resilience — see structured screening above)
+- Could the project — without an explicit FCV objective — contribute positively? (Bolster cohesion, strengthen institutions, address root causes, reduce vulnerability) If so, flag this as a responsiveness opportunity even if the project is primarily coded as FCV Sensitive.
 """
 
 
