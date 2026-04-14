@@ -15,7 +15,7 @@ from background_docs import (
     PLAYBOOK_DIAGNOSTICS, PLAYBOOK_PREPARATION, PLAYBOOK_IMPLEMENTATION,
     PLAYBOOK_CLOSING, STAGE_GUIDANCE_MAP,
     WB_INSTRUMENT_GUIDE, FCV_GLOSSARY, WB_PROCESS_GUIDE, FCS_LIST,
-    FCV_INSTRUMENT_CALIBRATION
+    FCV_INSTRUMENT_CALIBRATION, CPF_INTEGRATION_GUIDE
 )
 import io
 try:
@@ -72,7 +72,7 @@ _REQUIRED_PRIORITY_FIELDS = [
     'title', 'fcv_dimension', 'tag', 'refresh_shift', 'risk_level',
     'the_gap', 'why_it_matters', 'actions',
     'who_acts', 'when', 'resources',
-    'pad_sections', 'implementation_note'
+    'pad_sections', 'implementation_note', 'cpf_alignment'
 ]
 
 _SPECIFICITY_STOPWORDS = frozenset({
