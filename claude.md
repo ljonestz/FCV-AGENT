@@ -23,6 +23,8 @@ Every prompt output tags findings as [S], [R], or [S+R], assigned dynamically pe
 
 **Key goal:** Move from broad, vague recommendations to specific, location-aware, operationally grounded, stage-aware suggestions (e.g., "historically, Nzerekore, Kindia, and Kankan have been excluded from service delivery — focus on these regions before PAD appraisal").
 
+**Analytical backbone:** WBG FCV Strategy Refresh, FCV Operational Manual (OST, enriched with Peace & Inclusion Lens dimensions and Strategic DRR Framing from Good Practice Notes), FCV Operational Playbook, and Good Practice Notes on Peace & Inclusion Lenses and FCV-Sensitive Programming. When a Country Partnership Framework (CPF) is uploaded as a contextual document, Stage 3 recommendations include a `cpf_alignment` field linking priorities to CPF outcomes.
+
 **Version history:**
 - **v7.0** — Redesigned from 4 stages to 3; full 12 OST recs + 25 key questions; FCV Playbook integration; Under the Hood panels; refresh_shift field
 - **v7.2** — Stage 2 dynamic thematic narrative; actions[] array replaces recommendation string; Go Deeper 2-tab panel; Stage 3 clean memo (no inline citations)
@@ -41,6 +43,21 @@ Every prompt output tags findings as [S], [R], or [S+R], assigned dynamically pe
   - **Rating recalibration:** Percentage-based thresholds, partial credit for Weakly addressed, softened responsiveness cap
   - **Optional context box:** User can supply framing before analysis (peer review notes, changed conflict conditions)
   - **Step-by-step:** Load-first mode (full output on completion, not progressive streaming)
+- **v8.1** — WBG LLM review batch + web research fix (branch `fix/wbllm-review-batch`, merged 2026-04-13):
+  - **Instrument calibration:** New `FCV_INSTRUMENT_CALIBRATION` constant in `background_docs.py` — DPF failure modes (policy reversal, adjustment sequencing, programmatic series risk, Cat DDO scrutiny), FCV Envelope nuances (EDP, annual review requirement, eligibility logic), RRA as consultative process, trust funds and ASA as alternatives
+  - **DPF guardrail (Stage 3):** ESCP, ESF standards, SORT-as-monitoring, and DLIs are now explicitly excluded for DPF/DPO instruments; recommendations framed around prior action conflict-sensitivity and reform sequencing instead
+  - **Adjustment sequencing DNH (Stage 2):** New budget-support-specific DNH check on reform cost/safety net sequencing gap — flagged as the primary DNH pathway for DPF operations in FCV settings
+  - **Citation discipline (Stage 1):** Part B now required to label training knowledge as `[From: general knowledge — ...]` not `[From: training knowledge - ...]`
+  - **FCV Envelope eligibility guardrail:** Stage 1 prompt and `FCS_LIST` constant updated to prohibit explicit eligibility determinations for IDA FCV Envelope windows (PRA/RECA/TAA) — eligibility is multi-criteria and determinations risk being incorrect
+  - **Web research timeout:** Research client timeout increased 45s → 120s; error now logged as `[WebResearch ERROR]` in Render logs
+  - **Upload UI:** Project zone now lists PCN/PID/PAD only; contextual zone updated with PPSD/technical studies examples; "implementation coming soon" notice upgraded to amber banner
+  - **Download:** Reports default to `.docx`
+- **v8.2** — GPN integration + CPF upload support (branch `feat/v8.2-gpn-cpf-integration`, merged 2026-04-14):
+  - **GPN enrichment:** `FCV_OPERATIONAL_MANUAL` enriched with two Good Practice Note subsections — "Peace & Inclusion Lens Dimensions" (5 dimensions: geographic targeting against RRA divides, social cohesion/reconciliation, project-cycle-specific application, conflict actor engagement, unintended consequences screening) and "Strategic DRR Framing" (DRR mapping, 4 P's framework, strategic vs operational distinction)
+  - **CPF upload:** Country Partnership Framework accepted as named contextual upload; Stage 1 extracts automatically; Stage 3 adds `cpf_alignment` field (null if no CPF; string linking to CPF outcome if present)
+  - **CPF_INTEGRATION_GUIDE:** New constant in `background_docs.py` injected into Stage 3 prompt (both step-by-step and express paths)
+  - **Source attribution:** Good Practice Notes listed alongside OST Manual, Playbook, and Strategy in all 4 UI locations (onboarding modal, limitations note, pre-loaded sources banner, express progress screen)
+  - **Architecture map:** `docs/fcv-agent-knowledge-architecture.html` — shareable HTML showing knowledge sources → pipeline stages → outputs
 
 ---
 
@@ -58,10 +75,10 @@ Every prompt output tags findings as [S], [R], or [S+R], assigned dynamically pe
 ```
 app.py              # Flask backend, all prompts (DEFAULT_PROMPTS), routes, document processing
 index.html          # Single-page frontend UI (Stage 1–3, Go Deeper, Express mode, prompt modal)
-background_docs.py  # 9 constants: FCV_GUIDE, FCV_OPERATIONAL_MANUAL, FCV_REFRESH_FRAMEWORK,
+background_docs.py  # 10 constants: FCV_GUIDE, FCV_OPERATIONAL_MANUAL, FCV_REFRESH_FRAMEWORK,
                     #   PLAYBOOK_DIAGNOSTICS, PLAYBOOK_PREPARATION, PLAYBOOK_IMPLEMENTATION,
-                    #   PLAYBOOK_CLOSING, STAGE_GUIDANCE_MAP, FCS_LIST
-                    #   + WB_INSTRUMENT_GUIDE, FCV_GLOSSARY, WB_PROCESS_GUIDE (helpers)
+                    #   PLAYBOOK_CLOSING, STAGE_GUIDANCE_MAP, FCS_LIST, CPF_INTEGRATION_GUIDE
+                    #   + WB_INSTRUMENT_GUIDE, FCV_GLOSSARY, WB_PROCESS_GUIDE, FCV_INSTRUMENT_CALIBRATION (helpers)
 prompts.json        # Session-specific prompt overrides (empty by default)
 requirements.txt    # Flask, anthropic, pypdf, python-docx, python-pptx, gunicorn, gevent
 Procfile            # Render deployment config
@@ -128,11 +145,12 @@ STAGE 3 — Recommendations Note (stage-aware)
 │    responsiveness_summary, risk_exposure {risks_to, risks_from}, priorities[]
 │  Each priority: title, fcv_dimension, tag, refresh_shift, risk_level, the_gap,
 │    why_it_matters, actions[] (document_element + guidance + suggested_language),
-│    who_acts, when, resources, pad_sections, implementation_note
+│    who_acts, when, resources, pad_sections, implementation_note,
+│    cpf_alignment (null if no CPF uploaded; string linking to CPF outcome if CPF present)
 ├─ clean_stage3_output(): strips JSON block, risk narrative, and everything from
 │  %%%PRIORITIES_START%%% onwards — all shown as cards from JSON
 ├─ Citation policy: ONLY cite docs from Stage 1 [From: name]. Never fabricate titles.
-└─ Prompt constants: stage-appropriate PLAYBOOK + FCV_REFRESH_FRAMEWORK
+└─ Prompt constants: stage-appropriate PLAYBOOK + FCV_REFRESH_FRAMEWORK + CPF_INTEGRATION_GUIDE
 
 FOLLOW-ON (Stage 3 bottom card)
 ├─ POST /api/run-followon — full history + user message → SSE response appended below card
@@ -468,7 +486,7 @@ FCV-AGENT/
 
 ---
 
-**Last updated:** 2026-04-12
-**Current version:** FCV Project Screener v8.0
+**Last updated:** 2026-04-14
+**Current version:** FCV Project Screener v8.2
 **Claude model:** `claude-sonnet-4-20250514`
 **Stack:** Flask 3.0.3 + vanilla JS + Anthropic SDK + gunicorn/gevent on Render
