@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FCV Project Screener — Knowledge Architecture Map</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Open Sans', sans-serif; background: #F7F8FA; color: #111827; padding: 32px; }
+  h1 { font-size: 22px; font-weight: 700; color: #002244; margin-bottom: 4px; }
+  .subtitle { font-size: 13px; color: #6B7280; margin-bottom: 32px; }
+  .map-container { display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap; }
+
+  /* Column styles */
+  .col { display: flex; flex-direction: column; gap: 12px; }
+  .col-sources { width: 340px; }
+  .col-pipeline { width: 380px; }
+  .col-output { width: 280px; }
+  .col-header { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: #6B7280; margin-bottom: 4px; padding-left: 4px; }
+
+  /* Cards */
+  .card { background: #fff; border-radius: 8px; padding: 14px 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); border-left: 4px solid #E5E7EB; }
+  .card-title { font-size: 13px; font-weight: 700; color: #002244; margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
+  .card-body { font-size: 11.5px; color: #4B5563; line-height: 1.5; }
+  .card-tokens { font-size: 10px; color: #9CA3AF; margin-top: 6px; }
+  .card-new { border-left-color: #F59E0B; }
+  .card-new .card-title::after { content: 'NEW'; font-size: 9px; background: #FEF3C7; color: #92400E; padding: 1px 6px; border-radius: 3px; font-weight: 700; }
+  .card-enriched { border-left-color: #3B82F6; }
+  .card-enriched .card-title::after { content: 'ENRICHED'; font-size: 9px; background: #DBEAFE; color: #1E40AF; padding: 1px 6px; border-radius: 3px; font-weight: 700; }
+
+  /* Source category colors */
+  .cat-strategy { border-left-color: #002244; }
+  .cat-operational { border-left-color: #009FDA; }
+  .cat-playbook { border-left-color: #1A9850; }
+  .cat-instrument { border-left-color: #7C3AED; }
+  .cat-reference { border-left-color: #9CA3AF; }
+  .cat-user { border-left-color: #F59E0B; }
+
+  /* Pipeline cards */
+  .stage-card { background: #fff; border-radius: 10px; padding: 18px 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid #E5E7EB; }
+  .stage-num { font-size: 11px; font-weight: 700; color: #009FDA; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 4px; }
+  .stage-title { font-size: 15px; font-weight: 700; color: #002244; margin-bottom: 8px; }
+  .stage-desc { font-size: 11.5px; color: #4B5563; line-height: 1.5; margin-bottom: 10px; }
+  .stage-sources { display: flex; flex-wrap: wrap; gap: 4px; }
+  .source-chip { font-size: 10px; padding: 2px 8px; border-radius: 4px; background: #EEF0F3; color: #374151; font-weight: 600; }
+  .source-chip.new { background: #FEF3C7; color: #92400E; }
+  .source-chip.enriched { background: #DBEAFE; color: #1E40AF; }
+
+  /* Arrow connectors */
+  .arrow-down { text-align: center; color: #D1D5DB; font-size: 20px; line-height: 1; }
+
+  /* Output cards */
+  .output-card { background: #fff; border-radius: 8px; padding: 14px 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); border-left: 4px solid #009FDA; }
+  .output-card.new-output { border-left-color: #F59E0B; }
+  .output-title { font-size: 12px; font-weight: 700; color: #002244; margin-bottom: 4px; }
+  .output-body { font-size: 11px; color: #6B7280; line-height: 1.4; }
+
+  /* Legend */
+  .legend { margin-top: 32px; display: flex; gap: 20px; flex-wrap: wrap; padding: 16px; background: #fff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+  .legend-title { font-size: 11px; font-weight: 700; color: #6B7280; text-transform: uppercase; letter-spacing: 0.8px; width: 100%; margin-bottom: 4px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #4B5563; }
+  .legend-swatch { width: 16px; height: 4px; border-radius: 2px; }
+
+  /* Category labels */
+  .cat-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: #9CA3AF; margin-top: 8px; margin-bottom: 2px; padding-left: 4px; }
+  .cat-label:first-child { margin-top: 0; }
+
+  /* Footer */
+  .footer { margin-top: 24px; font-size: 10px; color: #9CA3AF; text-align: center; }
+
+  /* Responsive */
+  @media (max-width: 1100px) { .map-container { flex-direction: column; align-items: stretch; } .col { width: 100% !important; } }
+</style>
+</head>
+<body>
+
+<h1>FCV Project Screener &mdash; Knowledge Architecture</h1>
+<p class="subtitle">How knowledge sources, user documents, and the 3-stage pipeline connect. Version 8.2 (April 2026)</p>
+
+<div class="map-container">
+
+  <!-- COLUMN 1: Knowledge Sources -->
+  <div class="col col-sources">
+    <div class="col-header">Knowledge Sources (embedded at deploy)</div>
+
+    <div class="cat-label">Strategy & Framework</div>
+
+    <div class="card cat-strategy">
+      <div class="card-title">FCV_GUIDE</div>
+      <div class="card-body">Core S/R definitions, 4 Refresh shifts, FCV classification scheme, screening questions, rating scale</div>
+      <div class="card-tokens">~3,000 tokens &middot; Stages 1, 2</div>
+    </div>
+
+    <div class="card cat-strategy">
+      <div class="card-title">FCV_REFRESH_FRAMEWORK</div>
+      <div class="card-body">Strategy Refresh detail: 4 shifts (Anticipate, Differentiate, Jobs & PS, Enhanced Toolkit), country engagement layers, shift-to-project mapping</div>
+      <div class="card-tokens">~1,500 tokens &middot; Stages 1, 2, 3</div>
+    </div>
+
+    <div class="card cat-strategy">
+      <div class="card-title">FCS_LIST</div>
+      <div class="card-body">39 current FCS members (year of entry), 9 graduated countries. Cross-checks country classification</div>
+      <div class="card-tokens">~1,000 tokens &middot; Stages 1, 2</div>
+    </div>
+
+    <div class="cat-label">Operational Manual & Good Practice Notes</div>
+
+    <div class="card cat-operational card-enriched">
+      <div class="card-title">FCV_OPERATIONAL_MANUAL</div>
+      <div class="card-body">
+        <strong>Core:</strong> 12 OST recommendations, 25 key questions, 3 key elements, Box 1 & 2, operational flexibilities<br>
+        <strong>Peace & Inclusion Lens dims:</strong> Geographic targeting against RRA divides, social cohesion & reconciliation, project-cycle application, conflict actor engagement, unintended consequences<br>
+        <strong>Strategic DRR framing:</strong> Drivers-Risks-Resilience mapping, 4 P's (Policies, Programming, Partnerships, Personnel), strategic vs. operational recs
+      </div>
+      <div class="card-tokens">~6,000 tokens &middot; Stage 2</div>
+    </div>
+
+    <div class="card cat-operational">
+      <div class="card-title">FCV_INSTRUMENT_CALIBRATION</div>
+      <div class="card-body">DPF failure modes, FCV Envelope nuances, RRA as process, trust funds & ASA</div>
+      <div class="card-tokens">~800 tokens &middot; Stage 2</div>
+    </div>
+
+    <div class="cat-label">FCV Operational Playbook</div>
+
+    <div class="card cat-playbook">
+      <div class="card-title">PLAYBOOK_DIAGNOSTICS</div>
+      <div class="card-body">RRA methodology, analytics, data sources</div>
+      <div class="card-tokens">~2,000 tokens &middot; Stage 1</div>
+    </div>
+
+    <div class="card cat-playbook">
+      <div class="card-title">PLAYBOOK_PREPARATION</div>
+      <div class="card-body">Preparation-phase operational guidance</div>
+      <div class="card-tokens">~2,000 tokens &middot; Stage 3 (PCN/PID/PAD)</div>
+    </div>
+
+    <div class="card cat-playbook">
+      <div class="card-title">PLAYBOOK_IMPLEMENTATION</div>
+      <div class="card-body">Implementation-phase guidance</div>
+      <div class="card-tokens">~2,000 tokens &middot; Stage 3 (AF/Restr./ISR)</div>
+    </div>
+
+    <div class="card cat-playbook">
+      <div class="card-title">PLAYBOOK_CLOSING</div>
+      <div class="card-body">ICR and closing guidance</div>
+      <div class="card-tokens">~1,000 tokens &middot; Stage 3 (ISR)</div>
+    </div>
+
+    <div class="cat-label">Instrument & Process Reference</div>
+
+    <div class="card cat-instrument">
+      <div class="card-title">WB_INSTRUMENT_GUIDE</div>
+      <div class="card-body">IPF, PforR, DPO, TA, MPA, IPF-DDO instrument definitions and constraints</div>
+      <div class="card-tokens">dict &middot; Stage 1 (per type)</div>
+    </div>
+
+    <div class="card cat-instrument">
+      <div class="card-title">WB_PROCESS_GUIDE</div>
+      <div class="card-body">MTR, ISR, AF, Restructuring, ICR lifecycle guidance</div>
+      <div class="card-tokens">dict &middot; Stage 1</div>
+    </div>
+
+    <div class="card cat-reference">
+      <div class="card-title">FCV_GLOSSARY</div>
+      <div class="card-body">29 FCV terms and definitions</div>
+      <div class="card-tokens">dict &middot; tooltips/lookup</div>
+    </div>
+
+    <div class="card cat-reference card-new">
+      <div class="card-title">CPF_INTEGRATION_GUIDE</div>
+      <div class="card-body">What a CPF is, how to extract outcomes, how to populate cpf_alignment field, citation rules</div>
+      <div class="card-tokens">~400 tokens &middot; Stage 3</div>
+    </div>
+  </div>
+
+  <!-- COLUMN 2: Pipeline -->
+  <div class="col col-pipeline">
+    <div class="col-header">3-Stage Pipeline</div>
+
+    <div class="stage-card">
+      <div class="stage-num">Stage 1</div>
+      <div class="stage-title">Context & Extraction</div>
+      <div class="stage-desc">
+        Extracts FCV-relevant content from the project document (Part A) and contextualises with uploaded contextual docs + automated web research (Part B). Classifies doc type, instrument type, and temporal context.
+      </div>
+      <div style="font-size:11px;font-weight:600;color:#6B7280;margin-bottom:4px;">Knowledge injected:</div>
+      <div class="stage-sources">
+        <span class="source-chip">FCV_GUIDE</span>
+        <span class="source-chip">PLAYBOOK_DIAGNOSTICS</span>
+        <span class="source-chip">FCV_REFRESH</span>
+        <span class="source-chip">FCS_LIST</span>
+        <span class="source-chip">WB_INSTRUMENT_GUIDE</span>
+        <span class="source-chip">FCV_GLOSSARY</span>
+        <span class="source-chip">WB_PROCESS_GUIDE</span>
+      </div>
+      <div style="font-size:11px;font-weight:600;color:#6B7280;margin-top:8px;margin-bottom:4px;">User documents:</div>
+      <div class="stage-sources">
+        <span class="source-chip" style="background:#FEF3C7;color:#92400E;">Project doc (required)</span>
+        <span class="source-chip" style="background:#FEF3C7;color:#92400E;">Contextual docs incl. CPF</span>
+        <span class="source-chip" style="background:#ECFDF5;color:#065F46;">Web research (auto)</span>
+      </div>
+    </div>
+
+    <div class="arrow-down">&darr;</div>
+
+    <div class="stage-card">
+      <div class="stage-num">Stage 2</div>
+      <div class="stage-title">FCV Assessment</div>
+      <div class="stage-desc">
+        Applies 12 OST recommendations + 25 key questions + Peace & Inclusion Lens dimensions + DRR framing to produce thematic narrative, DNH traffic-light, S/R ratings, and Under the Hood analysis. Internal engine — TTL sees themes, not framework.
+      </div>
+      <div style="font-size:11px;font-weight:600;color:#6B7280;margin-bottom:4px;">Knowledge injected:</div>
+      <div class="stage-sources">
+        <span class="source-chip enriched">FCV_OPERATIONAL_MANUAL</span>
+        <span class="source-chip">FCV_REFRESH</span>
+        <span class="source-chip">FCV_GUIDE</span>
+        <span class="source-chip">FCS_LIST</span>
+        <span class="source-chip">INSTRUMENT_CALIBRATION</span>
+      </div>
+    </div>
+
+    <div class="arrow-down">&darr;</div>
+
+    <div class="stage-card">
+      <div class="stage-num">Stage 3</div>
+      <div class="stage-title">Recommendations Note</div>
+      <div class="stage-desc">
+        Generates stage-aware narrative memo + structured priority cards with actions, suggested language, and CPF alignment. Lifecycle-aware: PCN/PAD get preparation framing; AF/ISR get implementation framing.
+      </div>
+      <div style="font-size:11px;font-weight:600;color:#6B7280;margin-bottom:4px;">Knowledge injected:</div>
+      <div class="stage-sources">
+        <span class="source-chip">PLAYBOOK (stage-matched)</span>
+        <span class="source-chip">FCV_REFRESH</span>
+        <span class="source-chip">FCV_GUIDE</span>
+        <span class="source-chip new">CPF_INTEGRATION_GUIDE</span>
+      </div>
+    </div>
+
+    <div class="arrow-down">&darr;</div>
+
+    <div class="stage-card" style="border: 1px dashed #D1D5DB; background: #FAFAFA;">
+      <div class="stage-num" style="color:#6B7280;">Follow-on</div>
+      <div class="stage-title" style="font-size:13px;">Go Deeper &middot; Follow-on Queries</div>
+      <div class="stage-desc">
+        Per-priority deep dives (Evidence Trail from Stage 2 data; FCV Playbook via LLM call) and post-analysis tasks (peer review notes, expanded recommendations).
+      </div>
+    </div>
+  </div>
+
+  <!-- COLUMN 3: Outputs -->
+  <div class="col col-output">
+    <div class="col-header">Key Outputs</div>
+
+    <div class="output-card">
+      <div class="output-title">Part A / Part B Split</div>
+      <div class="output-body">Stage 1. Document-only extraction vs. contextualised analysis with tiered citations</div>
+    </div>
+
+    <div class="output-card">
+      <div class="output-title">Thematic Narrative</div>
+      <div class="output-body">Stage 2. 3-5 dynamic themes + DNH traffic-light + S/R synthesis</div>
+    </div>
+
+    <div class="output-card">
+      <div class="output-title">S/R Ratings</div>
+      <div class="output-body">Stage 2. Sensitivity (6-tier, OST %) + Responsiveness (6-tier, Refresh shifts)</div>
+    </div>
+
+    <div class="output-card">
+      <div class="output-title">Under the Hood</div>
+      <div class="output-body">Stage 2. 12-rec table, 9-principle DNH, 25 questions, evidence trail</div>
+    </div>
+
+    <div class="output-card">
+      <div class="output-title">Priority Cards (JSON)</div>
+      <div class="output-body">Stage 3. title, dimension, tag, shift, risk, gap, why, actions[], who, when, resources, pad_sections</div>
+    </div>
+
+    <div class="output-card new-output">
+      <div class="output-title">CPF Alignment</div>
+      <div class="output-body">Stage 3. Per-priority link to CPF outcome (when CPF uploaded). Renders as conditional zone in priority cards</div>
+    </div>
+
+    <div class="output-card">
+      <div class="output-title">Horizon Considerations</div>
+      <div class="output-body">Stage 3. Beyond-scope FCV observations for team awareness</div>
+    </div>
+
+    <div class="output-card">
+      <div class="output-title">DOCX Report</div>
+      <div class="output-body">Download. Full narrative + priority cards + CPF alignment + methodology note citing all sources</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Legend -->
+<div class="legend">
+  <div class="legend-title">Legend</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:#002244;"></div> Strategy & framework</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:#009FDA;"></div> Operational manual & GPNs</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:#1A9850;"></div> FCV Playbook (phase-specific)</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:#7C3AED;"></div> Instrument & process reference</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:#9CA3AF;"></div> Reference / glossary</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:#F59E0B;"></div> New in v8.2</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:#3B82F6;"></div> Enriched in v8.2</div>
+</div>
+
+<div class="footer">
+  FCV Project Screener v8.2 &middot; Knowledge architecture map &middot; April 2026<br>
+  Analytical backbone: WBG FCV Strategy Refresh, FCV Operational Manual (OST), FCV Operational Playbook,<br>
+  Good Practice Notes on Peace & Inclusion Lenses and FCV-Sensitive Programming
+</div>
+
+</body>
+</html>
