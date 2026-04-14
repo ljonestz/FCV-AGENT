@@ -764,6 +764,9 @@
     .pc-zone.zone-why{background:#fff;}
     .pc-zone.zone-why .pc-zone-title{color:var(--muted);}
     .pc-zone.zone-why .pc-zone-icon{background:var(--off-white);}
+    .pc-zone.zone-cpf{background:rgba(0,159,218,0.04);border-left:3px solid rgba(0,159,218,0.35);}
+    .pc-zone.zone-cpf .pc-zone-title{color:#007baa;}
+    .pc-zone.zone-cpf .pc-zone-icon{background:rgba(0,159,218,0.12);}
     .pc-zone.zone-act{background:#f8fffe;}
     .pc-zone.zone-act .pc-zone-title{color:var(--s4);}
     .pc-zone.zone-act .pc-zone-icon{background:#e8f7ef;}
@@ -4375,6 +4378,14 @@ ${md(execSummary)}`;
           </div>
           <div class="pc-zone-body">${esc((pr.why_it_matters||'') + (pr.why_fcv_matters ? ' ' + pr.why_fcv_matters : ''))}</div>
         </div>
+        <!-- Zone: CPF Alignment (conditional — only shown when cpf_alignment is non-null) -->
+        ${pr.cpf_alignment ? `<div class="pc-zone zone-cpf">
+          <div class="pc-zone-title">
+            <div class="pc-zone-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>
+            CPF Alignment
+          </div>
+          <div class="pc-zone-body">${esc(pr.cpf_alignment)}</div>
+        </div>` : ''}
         <!-- Zone 3: How to act (from JSON — always available) -->
         <div class="pc-zone zone-act" id="zone-act-${idx}">
           <div class="pc-zone-title">
