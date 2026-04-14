@@ -2579,6 +2579,7 @@
     const reader=res.body.getReader(),dec=new TextDecoder();
     let buf='';
     let currentStage=1;
+    let _expressDone=false;
 
     try{
       while(true){
@@ -2710,8 +2711,12 @@
             localStorage.removeItem('fcv_express_stageHists');
             localStorage.removeItem('fcv_express_curS');
             busy=false;
+            _expressDone=true;
+            reader.cancel();
+            break; // break for-of loop
           }
         }
+        if(_expressDone)break; // break while loop immediately after express_done
       }
     }catch(e){
       clearTimeout(expressTimeout);
@@ -3542,11 +3547,14 @@
     busy = true;
     const messages = buildFollowOnMessages(msg);
     let accumulated = '';
+    const _followonAbort = new AbortController();
+    const _followonTimeout = setTimeout(() => _followonAbort.abort(new Error('Follow-on timed out after 5 minutes.')), 5 * 60 * 1000);
     try {
       const res = await fetch('/api/run-followon', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({messages})
+        body: JSON.stringify({messages}),
+        signal: _followonAbort.signal
       });
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
@@ -3562,15 +3570,19 @@
             try{
               const d = JSON.parse(line.slice(6));
               if(d.chunk){ accumulated += d.chunk; const outEl = document.getElementById('followon-stream-out'); if(outEl) outEl.innerHTML = md(accumulated); }
-              if(d.done) break;
+              if(d.done){ clearTimeout(_followonTimeout); break; }
             }catch{}
           }
         }
       }
+      clearTimeout(_followonTimeout);
       const hdrEl = resultArea.querySelector('.out-hdr-l');
       if(hdrEl) hdrEl.innerHTML = '<span class="dot done"></span>Follow-on response';
     } catch(e){
-      resultArea.innerHTML = `<div class="callout err ani"><div class="callout-body">Follow-on request failed. Please try again.</div></div>`;
+      clearTimeout(_followonTimeout);
+      const errMsg = e.name === 'AbortError' ? 'Follow-on timed out — please try again.' : 'Follow-on request failed. Please try again.';
+      const ra = document.getElementById('followon-result-area');
+      if(ra) ra.innerHTML = `<div class="callout err ani"><div class="callout-body">${errMsg}</div></div>`;
     } finally {
       busy = false;
     }
