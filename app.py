@@ -469,6 +469,9 @@ Answer each where evidence permits, noting which are answerable and which have e
 ## 3 Key Elements
 Evaluate: (1) Flexible Operational Design, (2) Tailored Implementation & Partnerships, (3) Strengthened Implementation Support
 
+## Peace & Inclusion Lens — Supplementary Screening
+When generating thematic findings, also apply the Peace & Inclusion Lens dimensions from the enriched FCV Operational Manual (injected below): geographic targeting against RRA-identified subnational divides, social cohesion and reconciliation dynamics, project-cycle-specific application considerations, stakeholder inclusion of conflict actors and non-beneficiaries, and the structured positive/negative unintended consequences screening. Do not expose these dimensions as separate framework labels in the TTL-facing output — integrate them into the thematic narrative as analytical depth.
+
 # S/R Definitions — CRITICAL
 
 **FCV Sensitivity [S]** — Is the project *aware of and designed for* the FCV context?
