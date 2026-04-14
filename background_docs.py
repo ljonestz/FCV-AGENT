@@ -1628,7 +1628,41 @@ Recipient-executed trust funds follow IPF-equivalent policies and fiduciary requ
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 11. FCV_GLOSSARY — Key FCV terms for prompt grounding and frontend tooltips
+# 11. CPF_INTEGRATION_GUIDE — How to use Country Partnership Framework content
+# Last verified: 2026-04
+# Source: WBG CPF methodology; v8.2 design spec
+# Purpose: Tells Stage 3 LLM how to use CPF content when uploaded; injected
+#          into Stage 3 system prompt unconditionally (the constant itself
+#          handles the "if CPF was uploaded" logic)
+# ─────────────────────────────────────────────────────────────────────────────
+
+CPF_INTEGRATION_GUIDE = """## Country Partnership Framework (CPF) Integration Guide
+
+### What is a CPF?
+The Country Partnership Framework (CPF) is the World Bank Group's primary country-level strategic engagement document, typically covering a 5–6 year period. It defines the overarching goals, outcomes, and priority areas for all WBG activities in a country — across IDA/IBRD, IFC, and MIGA. Every World Bank project operates under the strategic umbrella of the current CPF. CPFs are structured around a small number of high-level outcomes (typically 3–5), each anchored on specific WBG platforms or sectoral priorities.
+
+### When CPF content is available in Stage 1
+If the user has uploaded a CPF among the contextual documents, Stage 1 will have extracted its key outcomes, sectoral priorities, and any FCV-related commitments. In Stage 3, use this extracted content to:
+1. Identify the CPF's stated outcomes and the FCV-specific commitments or differentiated approach described in the CPF
+2. For each priority recommendation, assess whether implementing that recommendation would strengthen a specific CPF outcome — either by making the project more effective at contributing to the outcome, or by reducing FCV risks that could undermine the outcome
+3. Populate the `cpf_alignment` JSON field with a 1–2 sentence statement linking the recommendation to the relevant CPF outcome. Be specific: name the outcome by number or title as stated in the CPF.
+
+### How to reference CPF content
+- Cite the CPF by its formal title and period (e.g., "Niger CPF FY26–FY31") when mentioning it in narrative text
+- Reference specific CPF outcomes by their number or name as stated in the CPF document
+- Do NOT fabricate CPF content — only reference outcomes and language that was actually extracted from an uploaded CPF in Stage 1
+- If a recommendation does not clearly strengthen any CPF outcome, set `cpf_alignment` to `null` — do not force a weak or speculative connection
+- If no CPF was uploaded (i.e., no CPF appears in the Stage 1 contextual documents list), set `cpf_alignment` to `null` for all priorities
+
+### Tone for CPF alignment statements
+CPF alignment statements should be concise and forward-looking — framing the recommendation as an opportunity to strengthen country-level outcomes, not a compliance requirement. For example:
+- "This recommendation strengthens CPF Outcome 1 (Healthier, Better Educated and Skilled Population) by ensuring that education service delivery reaches conflict-affected communities in Diffa and Tillabéri — areas explicitly flagged as priority zones in the CPF's differentiated approach."
+- "Addressing the SEA/SH gap directly supports CPF Outcome 3 (Improved Agricultural Productivity and Food Security) by ensuring that female smallholders and female agricultural extension workers can participate safely in project activities — a prerequisite for achieving the CPF's gender-sensitive agricultural targets."
+"""
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 12. FCV_GLOSSARY — Key FCV terms for prompt grounding and frontend tooltips
 # Last verified: 2026-04
 # Sources: WBG FCV Strategy, OST Manual, FCV Playbook, OECD, UNDP, UNHCR
 # ─────────────────────────────────────────────────────────────────────────────
