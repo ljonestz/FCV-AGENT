@@ -17,8 +17,10 @@ VALID_JSON_FIXTURE = '''Some narrative text here.
   "fcv_responsiveness_rating": "Low",
   "sensitivity_summary": "The project has adequate sensitivity.",
   "responsiveness_summary": "Responsiveness is limited.",
-  "risk_to_project": "Insecurity in the north of Karamoja poses delivery risk.",
-  "risk_from_project": "Benefit capture risk in Moroto district.",
+  "risk_exposure": {
+    "risks_to": "Insecurity in the north of Karamoja poses delivery risk.",
+    "risks_from": "Benefit capture risk in Moroto district."
+  },
   "priorities": [
     {
       "number": 1,
