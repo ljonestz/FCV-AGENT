@@ -1453,6 +1453,8 @@
     background:#f9fafb;border-left:3px solid #cbd5e0;
     padding:10px 14px;border-radius:0 6px 6px 0;margin-bottom:16px;
   }
+  /* Inline S/R term tooltips — applied by wrapSRTerms() to all stage output */
+  .sr-term { border-bottom:1px dotted #94a3b8;cursor:help; }
   /* Explicit lead callout — applied by JS to first prose paragraph regardless of preceding headings */
   .s1-lead-callout {
     font-size:14px;line-height:1.75;color:#1e2d3d;
@@ -3112,6 +3114,18 @@
         '</div>';
   }
 
+  // Wraps "FCV Sensitivity" and "FCV Responsiveness" in tooltip spans wherever they appear in rendered HTML
+  const SR_TERM_S_TIP = 'FCV Sensitivity: is the project aware of and designed for the FCV context? Contextual awareness, conflict-informed design, Do No Harm, FCV-adapted operations.';
+  const SR_TERM_R_TIP = 'FCV Responsiveness: does the project actively work to change the FCV situation? Addresses root causes, builds resilience, leverages FCV tools for transformative impact.';
+  function wrapSRTerms(html) {
+    // Only wrap plain text occurrences — skip those already inside a tag attribute (title=, class=, etc.)
+    return html
+      .replace(/(?<!title="[^"]{0,500})FCV Sensitivity(?=[^"<]*(?:<[^>]+>|$))/g,
+        `<span class="sr-term" title="${SR_TERM_S_TIP}">FCV Sensitivity</span>`)
+      .replace(/(?<!title="[^"]{0,500})FCV Responsiveness(?=[^"<]*(?:<[^>]+>|$))/g,
+        `<span class="sr-term" title="${SR_TERM_R_TIP}">FCV Responsiveness</span>`);
+  }
+
   function renderSRTagBadge(tag, compact) {
     if (!tag) return '';
     const cls = tag === '[S]' ? 'sensitivity' : tag === '[R]' ? 'responsiveness' : 'both';
@@ -3343,14 +3357,14 @@
         <div class="fpn-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
         <div class="fpn-body"><strong>Retrospective screening — finalized PAD</strong>This document was Board-approved in ${esc(temporalContext.approval_date)}. The recommendations below represent the guidance this tool would have provided had the document been reviewed prior to appraisal. They are framed as if the project is still in the design stage and can be used for retrospective peer review, benchmarking, or to inform future similar projects.</div>
       </div>` : '';
-      _outBodyContent=_padNotice+_stageBadge+md(_pre)+renderRiskExposure(stageRiskExposure)+md(_rest)+renderSRCards(stageSensitivitySummary,stageResponsivenessSummary)+'<div id="priorities-intro"></div>';
+      _outBodyContent=wrapSRTerms(_padNotice+_stageBadge+md(_pre)+renderRiskExposure(stageRiskExposure)+md(_rest)+renderSRCards(stageSensitivitySummary,stageResponsivenessSummary))+'<div id="priorities-intro"></div>';
     }else{
       const cleanResult = stage===1 ? result.replace(/\n*%%%DOC_TYPE:[^%\n]*%%%\n*/g,'') : result;
       if(stage===1){
-        _outBodyContent = renderStage1(cleanResult);
+        _outBodyContent = wrapSRTerms(renderStage1(cleanResult));
       }else{
         const srDefPrefix = stage===2 ? buildSRDefinitionBox() + buildTagLegend() : '';
-        _outBodyContent = srDefPrefix + md(cleanResult);
+        _outBodyContent = wrapSRTerms(srDefPrefix + md(cleanResult));
       }
     }
     document.getElementById('stage-disp').innerHTML=`
@@ -4176,7 +4190,7 @@ ${md(execSummary)}`;
       <!-- Sensitivity Gauge -->
       <div class="sidebar-widget">
         <div class="sidebar-widget-fcv">
-          <div class="sidebar-widget-label">FCV Sensitivity</div>
+          <div class="sidebar-widget-label sr-term" title="FCV Sensitivity: is the project aware of and designed for the FCV context? Contextual awareness, conflict-informed design, Do No Harm, FCV-adapted operations.">FCV Sensitivity</div>
           <svg viewBox="0 0 120 80" width="120" height="80" style="display:block;margin:0 auto -4px">
             <path d="M15 70 A45 45 0 0 1 105 70" fill="none" stroke="#e8edf2" stroke-width="11" stroke-linecap="round"/>
             <path id="fcv-arc-fill" d="M15 70 A45 45 0 0 1 105 70" fill="none" stroke="#e8edf2" stroke-width="11" stroke-linecap="round" stroke-dasharray="0 141.37"/>
@@ -4191,7 +4205,7 @@ ${md(execSummary)}`;
       <!-- Responsiveness Gauge -->
       <div class="sidebar-widget">
         <div class="sidebar-widget-fcv">
-          <div class="sidebar-widget-label">FCV Responsiveness</div>
+          <div class="sidebar-widget-label sr-term" title="FCV Responsiveness: does the project actively work to change the FCV situation? Addresses root causes, builds resilience, leverages FCV tools for transformative impact.">FCV Responsiveness</div>
           <svg viewBox="0 0 120 80" width="120" height="80" style="display:block;margin:0 auto -4px">
             <path d="M15 70 A45 45 0 0 1 105 70" fill="none" stroke="#e8edf2" stroke-width="11" stroke-linecap="round"/>
             <path id="fcv-resp-arc-fill" d="M15 70 A45 45 0 0 1 105 70" fill="none" stroke="#e8edf2" stroke-width="11" stroke-linecap="round" stroke-dasharray="0 141.37"/>

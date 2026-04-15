@@ -553,7 +553,7 @@ Then 2–4 sentences highlighting the most critical DNH issues for this specific
 
 ## Supplementary FCV Dimensions (after Do No Harm, before Synthesis)
 
-Assess the following supplementary dimensions. Rate each as: Addressed / Partially addressed / Not addressed. Include a 1-2 sentence finding for each. These supplement the 12 OST recommendations and inform Stage 3 priorities but do not directly affect the Sensitivity/Responsiveness ratings.
+Assess the following supplementary dimensions internally. Rate each as: Addressed / Partially addressed / Not addressed. **Only include a dimension in the TTL-facing narrative if it is rated "Partially addressed" or "Not addressed" — i.e., only flag it if it is a gap or concern. Do not report dimensions that are adequately addressed; their absence from the narrative implies adequacy.** Include a 1-2 sentence finding for each dimension you do report. These supplement the 12 OST recommendations and inform Stage 3 priorities but do not directly affect the Sensitivity/Responsiveness ratings.
 
 ### Gender and GBV in FCV Context
 - Does the project document acknowledge heightened GBV risk in the FCV context (displacement, militarisation, breakdown of social norms)?
@@ -585,10 +585,6 @@ If the condition is met:
 - Is there sequencing logic — how development activities relate to humanitarian presence (e.g., transitioning from NGO delivery to government systems)?
 If absent in a qualifying context, flag as a gap.
 
-### IDA FCV Envelope Appropriateness
-- Does the project financing reference any IDA FCV Envelope allocations (PRA, RECA, TAA, WHR, PSW)?
-- If the project appears to qualify for an FCV Envelope window but none is referenced, note this for Stage 3 Horizon Considerations.
-
 ## GENDER-FCV TRIGGER CHECK — MANDATORY (run after all supplementary dimensions, before Synthesis)
 
 Evaluate the following trigger conditions against the Stage 1 context extraction. A single presence of any one condition is sufficient to fire the trigger — do not require multiple conditions.
@@ -602,15 +598,14 @@ Trigger conditions:
 6. The project addresses health, education, social protection, or gender-based violence directly or indirectly
 7. The SORT rates Gender as Substantial or High, or the project document references SEA/SH as a risk
 
-If any single trigger condition is met, set gender_fcv_flag: TRUE and produce a brief Gender-FCV Assessment block covering:
-- Gap description: How does the FCV context specifically alter gender dynamics relevant to this project — including whether violence, displacement, or service disruption has a disproportionate gender impact?
-- SEA/SH classification: Is the SEA/SH risk classification in the project document consistent with the conflict context and beneficiary profile? Is it formally classified?
-- Worker safety: Does the project assess the specific risks faced by female community workers operating in insecure or access-constrained areas?
-- GRM access: Does the project's GRM design include safe, confidential reporting channels accessible to women and girls in conflict-affected settings?
+If any single trigger condition is met, set gender_fcv_flag: TRUE. Do NOT produce a separate Gender-FCV narrative section in the TTL-facing output — gender findings are integrated into the relevant analytical themes above. Instead, include a compact Gender-FCV note in the Under the Hood Questions Map table (as a supplementary row), covering:
+- Whether the SEA/SH risk classification is consistent with the conflict context
+- Whether the GRM includes safe, confidential channels accessible to women and girls
+- Whether female community workers' specific security risks are addressed
 
-Pass gender_fcv_flag: TRUE and this Gender-FCV Assessment block to Stage 3. Stage 3 will generate a mandatory standalone priority card on gender-FCV intersectionality.
+Pass gender_fcv_flag: TRUE to Stage 3 via the flag only. Stage 3 will generate a mandatory standalone priority card.
 
-If no trigger conditions are met, set gender_fcv_flag: FALSE and note which conditions were evaluated and why none fired. Do not generate the standalone card.
+If no trigger conditions are met, set gender_fcv_flag: FALSE. Do not add any gender row to the Under the Hood table.
 
 ## Synthesis (after Do No Harm)
 
@@ -755,13 +750,15 @@ After the ratings block, emit ALL of the following between delimiters. These are
 | # | Key Question | Answerable? | Finding | Source |
 |---|---|---|---|---|
 [One row for EACH of the 25 key questions from the FCV Operational Manual. For each: state Yes/Partial/No, finding or gap, and source.]
-[After the 25 questions, add rows for the supplementary dimensions assessed above: Gender/GBV, Climate-FCV Nexus, PEA Quality, IDA FCV Envelope, and HDP Nexus (only if the country has documented active humanitarian operations or IDP populations — skip row otherwise). Same format: Yes/Partial/No, finding, source.]
+[After the 25 questions, add rows for supplementary dimensions: Climate-FCV Nexus, PEA Quality, and (if country qualifies) HDP Nexus. If gender_fcv_flag: TRUE, also add a Gender-FCV row. Skip IDA FCV Envelope — this is not assessed at project level. Same format: Yes/Partial/No, finding, source.]
 %%%QUESTIONS_MAP_END%%%
 
 %%%EVIDENCE_TRAIL_START%%%
 | Source | Type | Used For |
 |---|---|---|
 [One row per source. Type = "Project document" / "Contextual document" / "Web research" / "Embedded guidance" / "Training knowledge".]
+[MANDATORY: If the Peace & Inclusion Lens dimensions (geographic targeting, social cohesion, conflict actor engagement, unintended consequences screening) informed any finding, add a row: "Good Practice Notes — Peace & Inclusion Lens" / "Embedded guidance" / [which themes or findings it informed].]
+[MANDATORY: If the Strategic DRR Framing dimensions (DRR mapping, 4 P's framework) informed any finding, add a row: "Good Practice Notes — Strategic DRR Framing" / "Embedded guidance" / [which themes or findings it informed].]
 %%%EVIDENCE_TRAIL_END%%%
 
 %%%UNDER_HOOD_END%%%
