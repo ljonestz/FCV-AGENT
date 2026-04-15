@@ -287,7 +287,7 @@ Keep the two parts strictly separate. Part A is a document extraction exercise. 
 # Output Structure
 
 ## Part A: FCV Risks and Indicators from the Project Document
-Immediately after this heading, write a **2–3 sentence narrative lead** — a short plain-English paragraph (not bullets) that tells the reader: what this project is, where it operates, and what the document itself says or implies about the FCV context. This orients the reader before the structured findings. It should read as a brief summary of the project's own FCV picture as the document presents it, not as a list. Keep it factual and direct. Then continue with the structured subsections below.
+Immediately after this heading, write a **2–3 sentence narrative lead** — a short plain-English paragraph (not bullets) that tells the reader: what this project is, where it operates, and what the document itself says or implies about the FCV context. This orients the reader before the structured findings. It should read as a brief summary of the project's own FCV picture as the document presents it, not as a list. Keep it factual and direct. **IMPORTANT: Do NOT open with a document title heading or the project name — the project name is displayed separately in the interface. The narrative paragraph must be the very first thing after the Part A heading.** Then continue with the structured subsections below.
 
 Extract exclusively from the project document (PAD/PCN/PID). Do not use contextual documents or general knowledge in this section.
 
@@ -355,6 +355,9 @@ Risks that commonly affect projects of this type in this context — from contex
 
 ### Alignment or Gaps Between the Project Document and Wider Context
 Where does the project document's own risk picture align with or diverge from the contextual documents and wider FCV landscape? What is missing or underweighted?
+
+### Synthesis
+Close Part B with a **1–2 sentence synthesis statement** that connects the document's own FCV picture (from Part A) with the wider context findings. This should capture the single most important takeaway about how the project is positioned relative to its FCV environment — e.g., "Taken together, these factors suggest that [project name] is operating in a more contested environment than its design currently reflects" or "The project's own risk framing broadly aligns with the wider context, but underweights [specific dynamic] which could affect [specific project element]." Do not repeat bullet points — this is a forward-pointing synthesis.
 
 ---
 
@@ -2815,6 +2818,8 @@ def run_stage():
         review_mode = data.get('review_mode', 'design').strip()  # 'design' or 'implementation'
         is_impl = (review_mode == 'implementation')
         user_context = data.get('user_context', '').strip()  # optional user-supplied context
+        # Uploaded doc names passed by frontend (used for CPF detection in Stage 3)
+        uploaded_doc_names_payload = [n for n in data.get('uploaded_doc_names', []) if n]
 
         MAX_ASSISTANT_CHARS = 40000
 
@@ -2963,6 +2968,21 @@ def run_stage():
                     get_glossary_for_prompt()
                 )
 
+                # CPF Q3 conditionality: tell LLM whether a CPF is available
+                _cpf_terms_s2 = ['cpf', 'country partnership framework', 'partnership framework']
+                _cpf_present_s2 = any(any(t in n.lower() for t in _cpf_terms_s2) for n in uploaded_doc_names_payload)
+                if _cpf_present_s2:
+                    stage_prompt = stage_prompt + (
+                        "\n\nNOTE on Key Question 3 (CPF linkage): A Country Partnership Framework was uploaded "
+                        "as a contextual document. Use the CPF content extracted in Stage 1 to answer this question."
+                    )
+                else:
+                    stage_prompt = stage_prompt + (
+                        "\n\nNOTE on Key Question 3 (CPF linkage): No CPF was uploaded or identified in Stage 1. "
+                        "Mark this question as 'Not assessed — CPF not available for this run' rather than "
+                        "attempting to answer from general knowledge."
+                    )
+
             # ── IMPLEMENTATION REVIEW: Stage 2 injection ─────────────────────
             elif is_impl and stage == 2:
                 instrument_type = data.get('instrument_type', 'Unknown')
@@ -3029,6 +3049,19 @@ def run_stage():
                     "\n\n--- CPF Integration Guide (use when CPF was uploaded as a contextual document) ---\n" +
                     CPF_INTEGRATION_GUIDE
                 )
+
+                # CPF explicit signal: if a CPF is detected in uploaded docs, tell the LLM
+                _cpf_terms = ['cpf', 'country partnership framework', 'partnership framework']
+                _cpf_docs = [n for n in uploaded_doc_names_payload if any(t in n.lower() for t in _cpf_terms)]
+                if _cpf_docs:
+                    stage_prompt = (
+                        stage_prompt +
+                        f"\n\nIMPORTANT — CPF UPLOADED: The following Country Partnership Framework document was "
+                        f"uploaded and extracted in Stage 1: {', '.join(_cpf_docs)}. "
+                        f"You MUST populate the `cpf_alignment` field for every priority recommendation where a "
+                        f"clear linkage to a CPF outcome can be identified. Do not default to null — refer to the "
+                        f"CPF content in Stage 1 to find relevant CPF outcomes."
+                    )
 
             # ── IMPLEMENTATION REVIEW: Stage 3 injection ─────────────────────
             elif is_impl and stage == 3:
@@ -3738,6 +3771,20 @@ def run_express():
                         "\n\n--- CPF Integration Guide (use when CPF was uploaded as a contextual document) ---\n" +
                         CPF_INTEGRATION_GUIDE
                     )
+
+                    # CPF explicit signal: if a CPF is detected in uploaded docs, tell the LLM
+                    _cpf_terms_ex = ['cpf', 'country partnership framework', 'partnership framework']
+                    _cpf_docs_ex = [doc.get('name', '') for doc in documents
+                                    if any(t in doc.get('name', '').lower() for t in _cpf_terms_ex)]
+                    if _cpf_docs_ex:
+                        stage3_prompt = (
+                            stage3_prompt +
+                            f"\n\nIMPORTANT — CPF UPLOADED: The following Country Partnership Framework document was "
+                            f"uploaded and extracted in Stage 1: {', '.join(_cpf_docs_ex)}. "
+                            f"You MUST populate the `cpf_alignment` field for every priority recommendation where a "
+                            f"clear linkage to a CPF outcome can be identified. Do not default to null — refer to the "
+                            f"CPF content in Stage 1 to find relevant CPF outcomes."
+                        )
 
                 # Build Stage 3 messages from conversation history
                 stage3_messages = conversation_history + [

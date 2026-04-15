@@ -1647,6 +1647,8 @@ If the user has uploaded a CPF among the contextual documents, Stage 1 will have
 2. For each priority recommendation, assess whether implementing that recommendation would strengthen a specific CPF outcome — either by making the project more effective at contributing to the outcome, or by reducing FCV risks that could undermine the outcome
 3. Populate the `cpf_alignment` JSON field with a 1–2 sentence statement linking the recommendation to the relevant CPF outcome. Be specific: name the outcome by number or title as stated in the CPF.
 
+**Expectation when a CPF is uploaded:** You should be able to identify a CPF outcome linkage for the majority of priority recommendations. Only use `null` where there is genuinely no connection — not as a default. A well-used CPF will inform at least half of the `cpf_alignment` fields.
+
 ### How to reference CPF content
 - Cite the CPF by its formal title and period (e.g., "Niger CPF FY26–FY31") when mentioning it in narrative text
 - Reference specific CPF outcomes by their number or name as stated in the CPF document

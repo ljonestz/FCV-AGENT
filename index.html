@@ -1453,6 +1453,20 @@
     background:#f9fafb;border-left:3px solid #cbd5e0;
     padding:10px 14px;border-radius:0 6px 6px 0;margin-bottom:16px;
   }
+  /* Explicit lead callout — applied by JS to first prose paragraph regardless of preceding headings */
+  .s1-lead-callout {
+    font-size:14px;line-height:1.75;color:#1e2d3d;
+    background:#f9fafb;border-left:3px solid #cbd5e0;
+    padding:10px 14px;border-radius:0 6px 6px 0;margin-bottom:16px;
+  }
+  /* Part A/B transition divider */
+  .s1-transition {
+    display:flex;align-items:center;gap:10px;margin:28px 0 4px;color:#94a3b8;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+  }
+  .s1-transition::before,.s1-transition::after { content:'';flex:1;height:1px;background:#e2e8f0; }
+  /* Tighten paragraph spacing inside Part A/B bodies */
+  .s1-part-body p { margin-bottom:0.6em; }
+  .s1-part-body h2,.s1-part-body h3 { margin-top:16px;margin-bottom:6px; }
 
   /* ── Finalized PAD retrospective notice (Stage 3) ─────────────────────────── */
   .finalized-pad-notice {
@@ -2347,8 +2361,12 @@
     if (type === 'p') {
       pF = pF.filter(f => f.name !== name);
       docType = 'Unknown';  // reset; will be detected from Stage 1 output
+      const inp = document.getElementById('ip');
+      if (inp) inp.value = '';  // reset native input so subsequent uploads work
     } else {
       cF = cF.filter(f => f.name !== name);
+      const inp = document.getElementById('ic');
+      if (inp) inp.value = '';  // reset native input so subsequent uploads work
     }
     delete fileMetadata[name];
     renderChips();
@@ -2774,7 +2792,7 @@
       </div>`;
 
     try{
-      const payload={stage,history:hist,user_message:followOn||'',document_type:docType,instrument_type:instrumentType,temporal_context:temporalContext,review_mode:reviewMode,process_type:processType,user_context:(document.getElementById('user-context')?.value||'').trim()};
+      const payload={stage,history:hist,user_message:followOn||'',document_type:docType,instrument_type:instrumentType,temporal_context:temporalContext,review_mode:reviewMode,process_type:processType,user_context:(document.getElementById('user-context')?.value||'').trim(),uploaded_doc_names:[...pF.map(f=>f.name),...cF.map(f=>f.name)]};
       // Attach session prompt override if user has edited this stage's prompt
       if(sessionPrompts[stage]){
         payload.prompt_override = sessionPrompts[stage];
@@ -2980,8 +2998,10 @@
       const _emsg=(e&&e.message)||'An error occurred';
       if(analysisMode==='express'){showExpressError(stage,_emsg);}
       else{showErr(_emsg,stage);}
-      document.getElementById('stage-disp').innerHTML=''}
-    busy=false;
+      const _disp=document.getElementById('stage-disp');if(_disp)_disp.innerHTML='';
+    }finally{
+      busy=false;
+    }
   }
 
   function injectResearchBriefPanel(brief, country) {
@@ -3282,11 +3302,30 @@
     const iconDoc = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="flex-shrink:0"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`;
     const iconGlobe = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>`;
 
+    // Render Part A and Part B markdown
+    const partAHtml = md(partA.trim());
+    const partBHtml = md(partB.trim());
+
+    // Apply explicit lead callout to the first <p> in each part,
+    // regardless of whether a heading precedes it (CSS :first-child fails in that case)
+    function applyLeadCallout(html) {
+      // Find first <p> tag and wrap its content in .s1-lead-callout
+      return html.replace(/(<p>)([\s\S]*?)(<\/p>)/, (_, open, content, close) => {
+        return `<div class="s1-lead-callout">${content}</div>`;
+      });
+    }
+
+    const partAFinal = applyLeadCallout(partAHtml);
+    const partBFinal = applyLeadCallout(partBHtml);
+
+    const transition = `<div class="s1-transition">How this compares with wider FCV context</div>`;
+
     return (
       `<div class="s1-section-header s1-header-a">${iconDoc}&nbsp;Part A — From your document only</div>` +
-      `<div class="s1-part-body">${md(partA.trim())}</div>` +
+      `<div class="s1-part-body">${partAFinal}</div>` +
+      transition +
       `<div class="s1-section-header s1-header-b">${iconGlobe}&nbsp;Part B — Wider context &amp; research</div>` +
-      `<div class="s1-part-body">${md(partB.trim())}</div>`
+      `<div class="s1-part-body">${partBFinal}</div>`
     );
   }
 
@@ -3532,6 +3571,10 @@
   }
 
   async function doFollowOn(){
+    // Safety: if busy is stuck from a completed stage run, reset it.
+    // The follow-on card only renders when Stage 3 is done, so no stage
+    // stream can legitimately be running when this function is reached.
+    if(busy && curS === 3) busy = false;
     const el = document.getElementById('rfn');
     const msg = el?.value.trim();
     if(!msg || busy) return;
