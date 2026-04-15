@@ -3,9 +3,9 @@
 > **Maintenance instruction:** After every substantial change (new features, prompt changes, new delimiters, UI additions, architectural decisions), update this file AND the relevant reference doc before committing. Keep section 1.3 (Stage pipeline), section 3 (Prompt Architecture), and section 5.3 (Priority Parsing) accurate at all times.
 >
 > **Reference files** (detailed specs moved here to keep this file under 40k):
-> - `docs/reference_prompt_architecture.md` — per-stage prompt specs, delimiter schemas, parsing details
-> - `docs/reference_frontend_functions.md` — JS function list, Express mode architecture, removed items
-> - `docs/reference_backend_routes.md` — all routes, SSE event shapes, parsing function signatures
+> - `docs/reference/reference_prompt_architecture.md` — per-stage prompt specs, delimiter schemas, parsing details
+> - `docs/reference/reference_frontend_functions.md` — JS function list, Express mode architecture, removed items
+> - `docs/reference/reference_backend_routes.md` — all routes, SSE event shapes, parsing function signatures
 
 ---
 
@@ -58,13 +58,35 @@ Every prompt output tags findings as [S], [R], or [S+R], assigned dynamically pe
   - **CPF_INTEGRATION_GUIDE:** New constant in `background_docs.py` injected into Stage 3 prompt (both step-by-step and express paths)
   - **Source attribution:** Good Practice Notes listed alongside OST Manual, Playbook, and Strategy in all 4 UI locations (onboarding modal, limitations note, pre-loaded sources banner, express progress screen)
   - **Architecture map:** `docs/fcv-agent-knowledge-architecture.html` — shareable HTML showing knowledge sources → pipeline stages → outputs
+  - **Stage 3 timeout fix (2026-04-15):** Three-part fix for "BodyStreamBuffer was aborted" on Stage 3 in Express mode — (1) Express frontend now resets the abort timer to a fresh 8-minute budget when `stage_start:3` fires, rather than using whatever remains of the global 10-minute budget; (2) both Express and Step-by-Step backends now store a compact label for each stage's user prompt in `conversation_history` instead of the full 80k-char prompt, halving the Stage 3 API input size; (3) model updated from deprecated `claude-sonnet-4-20250514` to `claude-sonnet-4-6` across all call sites. Step-by-step Stage 3 timeout also raised from 6 → 8 minutes to match Express.
+
+---
+
+## Repository Structure
+
+### What's in the public GitHub repo
+The repo contains only what's needed to understand, deploy, and maintain the app:
+- Core app files: `app.py`, `background_docs.py`, `index.html`
+- `docs/reference/` — detailed specs for prompts, routes, and frontend functions
+- `docs/fcv-agent-knowledge-architecture.html` — shareable knowledge architecture diagram
+- `tests/` — unit tests for priority extraction
+- Deployment files: `requirements.txt`, `Procfile`, `.gitignore`, `README.md`
+
+### What's kept locally only (not in the repo)
+These folders exist on the development machine but are gitignored — do not commit them:
+- `app_feedback/` — internal review documents, colleague feedback, test PDFs
+- `docs/superpowers/` — implementation plans and design specs from development sessions
+- `.claude/` — local Claude Code configuration
+- `.superpowers/` — brainstorming session artifacts
+- `AGENTS.md` — internal agent instructions
+- Session handoff notes (e.g. `docs/*SESSION_HANDOFF*`) and dev mockups (`docs/mockup_*`)
 
 ---
 
 ## 1. Project Architecture
 
 ### 1.1 Tech Stack
-- **Backend:** Python Flask 3.0.3 + Anthropic Claude API (`claude-sonnet-4-20250514`)
+- **Backend:** Python Flask 3.0.3 + Anthropic Claude API (`claude-sonnet-4-6`)
 - **Frontend:** HTML + vanilla JavaScript + Markdown rendering
 - **Hosting:** Render.com (gunicorn + gevent)
 - **Concurrency model:** Per-tab assessment IDs in the browser; Express runs emitted from a background assessment executor; multi-worker gunicorn in production
@@ -165,7 +187,7 @@ GO DEEPER (per-priority, Stage 3 only — 2 tabs)
 ```
 
 > **Full prompt schemas, delimiter formats, and parsing function signatures:**
-> → `docs/reference_prompt_architecture.md`
+> → `docs/reference/reference_prompt_architecture.md`
 
 ---
 
@@ -230,7 +252,7 @@ DEFAULT_PROMPTS = {
 | 3 | Stages 1–2 history + doc_type | Narrative memo + JSON priorities block | Stage-appropriate PLAYBOOK + FCV_REFRESH_FRAMEWORK |
 
 > **Full per-stage specs, JSON schemas, and delimiter formats:**
-> → `docs/reference_prompt_architecture.md`
+> → `docs/reference/reference_prompt_architecture.md`
 
 ### 3.3 Key Modification Workflows
 
@@ -284,7 +306,7 @@ DEFAULT_PROMPTS = {
 - DNH is NOT shown as a standalone checklist in Stage 3
 
 > **Full JS function list, Express mode functions, and removed items:**
-> → `docs/reference_frontend_functions.md`
+> → `docs/reference/reference_frontend_functions.md`
 
 ---
 
@@ -323,7 +345,7 @@ Finds `%%%JSON_START%%%...%%%JSON_END%%%`, parses via `json.loads()`, validates 
 - On `extract_under_hood()` failure: `parse_error: true` in SSE event; yellow banner shown; Stage 3 still proceeds
 
 > **Full route specs, SSE event shapes, parsing function signatures:**
-> → `docs/reference_backend_routes.md`
+> → `docs/reference/reference_backend_routes.md`
 
 ---
 
@@ -333,7 +355,9 @@ Finds `%%%JSON_START%%%...%%%JSON_END%%%`, parses via `json.loads()`, validates 
 All stage and Go Deeper requests use Server-Sent Events. Frontend renders text progressively. Session history preserved even if a stream fails mid-way.
 
 ### 6.2 Conversation History
-Full history passed to each stage so LLM maintains context. Stored in localStorage. Allows session recovery on page reload.
+History passed to each stage so the LLM maintains context. Stored in localStorage. Allows session recovery on page reload.
+
+**Compact-label pattern (critical for performance):** Each stage stores a compact user label in `conversation_history` instead of the full prompt with injected background constants. The full prompt is used for the API call but is replaced with a label like `"[Stage 2 — analysis prompt with operational guidance injected]"` before being saved to history. This prevents 80k+ chars of background docs from accumulating in the Stage 3 (and follow-on) API call inputs, which would otherwise cause slow time-to-first-token and risk hitting Render's 10-minute proxy timeout. Stage 1 has always done this; Stages 2 and 3 were updated in v8.2. Each stage re-injects its own fresh background docs — the assistant outputs are what matters for continuity.
 
 ### 6.3 Under the Hood → Go Deeper Flow
 Stage 2 emits `%%%UNDER_HOOD_START/END%%%` delimiter block. After Stage 2 completes, frontend stores this in `localStorage.stage2_under_hood`. Go Deeper Tab 1 (Evidence trail) reads this directly — no API call, renders instantly.
@@ -471,22 +495,34 @@ Citation hallucination guard: Stage 3 prompt explicitly prohibits fabricating do
 FCV-AGENT/
 ├── app.py                        # Flask backend + DEFAULT_PROMPTS + all routes
 ├── index.html                    # Single-page frontend (~4000+ lines)
-├── background_docs.py            # 8 background doc constants
-├── prompts.json                  # Session-specific overrides (empty by default)
+├── background_docs.py            # Knowledge base constants (10 background doc strings)
+├── prompts.json                  # Session-specific prompt overrides (empty by default)
 ├── requirements.txt
 ├── Procfile
-├── CLAUDE.md                     # This file
+├── README.md                     # Deployment guide for IT
+├── CLAUDE.md                     # This file — developer reference
 ├── docs/
-│   ├── reference_prompt_architecture.md   # Detailed prompt specs + delimiter schemas
-│   ├── reference_frontend_functions.md    # JS function list + Express mode
-│   └── reference_backend_routes.md        # Routes + SSE shapes + parsing signatures
-└── memory/
-    └── reference_wb_design_system.md      # WB colour palette + typography reference
+│   ├── reference/
+│   │   ├── reference_prompt_architecture.md   # Detailed prompt specs + delimiter schemas
+│   │   ├── reference_frontend_functions.md    # JS function list + Express mode
+│   │   └── reference_backend_routes.md        # Routes + SSE shapes + parsing signatures
+│   └── fcv-agent-knowledge-architecture.html  # Shareable knowledge pipeline diagram
+└── tests/
+    ├── __init__.py
+    └── test_extract_priorities.py
+```
+
+Local-only (gitignored — see `.gitignore` and the Repository Structure section above):
+```
+app_feedback/      # Internal feedback documents
+docs/superpowers/  # Dev plans and specs
+.claude/           # Local Claude Code config
+.superpowers/      # Brainstorming session artifacts
 ```
 
 ---
 
-**Last updated:** 2026-04-14
+**Last updated:** 2026-04-15
 **Current version:** FCV Project Screener v8.2
-**Claude model:** `claude-sonnet-4-20250514`
+**Claude model:** `claude-sonnet-4-6`
 **Stack:** Flask 3.0.3 + vanilla JS + Anthropic SDK + gunicorn/gevent on Render

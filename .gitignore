@@ -22,3 +22,19 @@ desktop.ini
 # Temp
 *.tmp
 *.log
+
+# Internal development artifacts — local only, not for public repo
+docs/superpowers/
+app_feedback/
+.superpowers/
+.claude/
+AGENTS.md
+
+# Internal session documents
+docs/*SESSION_HANDOFF*
+docs/HANDOFF_*
+docs/IMPLEMENTATION_REVIEW_DESIGN.md
+docs/mockup_*
+
+# Test/CI cache
+.pytest_cache/
