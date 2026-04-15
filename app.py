@@ -3814,9 +3814,12 @@ def run_express():
                             stage3_prompt +
                             "\n\nIMPORTANT — CPF PRESENT: A Country Partnership Framework was identified "
                             "(either by filename or from Stage 1 content). "
-                            "You MUST populate the `cpf_alignment` field for every priority recommendation where a "
-                            "clear linkage to a CPF outcome can be identified. Do not default to null — refer to the "
-                            "CPF content in Stage 1 to find relevant CPF outcomes."
+                            "NOTE: Stage 2 Key Question 3 assesses whether the project document explicitly references "
+                            "the CPF — but that finding does NOT mean the CPF is unavailable. The CPF content was "
+                            "extracted in Stage 1 and is in your conversation context. Use that content directly to "
+                            "assess cpf_alignment for each priority. You MUST populate the `cpf_alignment` field for "
+                            "every priority where a clear linkage to a CPF outcome can be identified. Do not default "
+                            "to null — null means genuinely no connection, not 'the project document didn't mention the CPF.'"
                         )
 
                 # Build Stage 3 messages from conversation history
