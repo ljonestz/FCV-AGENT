@@ -3317,7 +3317,13 @@ def run_stage():
                     ]
                 else:
                     _process_type = None
-                    updated_messages = messages + [{"role": "assistant", "content": full_text}]
+                    # Replace the last user message (stage prompt with injected background docs)
+                    # with a compact label so downstream stages don't carry 80k+ chars of
+                    # constants forward. The next stage re-injects its own fresh background
+                    # docs; assistant outputs in history are what matter for continuity.
+                    compact_label = f"[Stage {stage} — analysis prompt with operational guidance injected]"
+                    compact_messages = messages[:-1] + [{"role": "user", "content": compact_label}]
+                    updated_messages = compact_messages + [{"role": "assistant", "content": full_text}]
                 if len(updated_messages) > 20:
                     updated_messages = updated_messages[-20:]
 

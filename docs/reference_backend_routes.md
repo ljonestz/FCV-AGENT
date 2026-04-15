@@ -107,7 +107,29 @@ extract_pptx_text(b64_data, name)  # python-pptx — slide-labelled text + table
 ```python
 MAX_DOC_CHARS = 500_000       # Hard cap per document after extraction
 STAGE1_MAX_DOC_CHARS = 60_000 # Truncation before sending to Claude (Stage 1)
+MAX_ASSISTANT_CHARS = 40_000  # Truncation applied to assistant turns stored in conversation_history
 ```
+
+---
+
+## Conversation History — Compact-Label Pattern
+
+Both `/api/run-stage` (step-by-step) and `/api/run-express` (express) store a **compact label** for each stage's user turn in `conversation_history` instead of the full prompt with injected background constants.
+
+**Why:** The Stage 2 prompt with all injected constants is ~85k chars (~21k tokens). Storing it in history means Stage 3 carries this as dead weight in its API call input — it was causing slow time-to-first-token and intermittent "BodyStreamBuffer was aborted" timeouts on Render.
+
+**Pattern:**
+```
+Stage 1 user turn: "[Stage 1 — project documents and FCV context analysed]"
+Stage 2 user turn: "[Stage 2 — analysis prompt with operational guidance injected]"
+Stage 3 user turn: "[Stage 3 — analysis prompt with operational guidance injected]"
+```
+
+Each stage re-injects its own fresh background docs into the API call. The history only needs the **assistant outputs** for continuity — the compact labels preserve the conversation turn structure without inflating the token count.
+
+**Implementation:**
+- Express: `conversation_history.extend([{"role": "user", "content": compact_label}, {"role": "assistant", "content": s2_truncated}])` (not `stage2_prompt`)
+- Step-by-step: `compact_messages = messages[:-1] + [{"role": "user", "content": compact_label}]` before building `updated_messages`
 
 ---
 

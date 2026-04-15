@@ -2820,10 +2820,11 @@
         ];
       }
 
-      // Abort if backend hangs: Stage 1 = 8 min (includes web research), Stages 2-3 = 6 min
+      // Abort if backend hangs: Stage 1 = 8 min (includes web research), Stage 2 = 6 min, Stage 3 = 8 min (longest output)
       const _stageAbort=new AbortController();
-      const _stageTimeoutMs=stage===1?8*60*1000:6*60*1000;
-      const _stageTimeoutId=setTimeout(()=>_stageAbort.abort(new Error('Stage '+stage+' timed out after '+(stage===1?'8':'6')+' minutes. The AI service may be slow — please retry.')),_stageTimeoutMs);
+      const _stageTimeoutMs=stage===1?8*60*1000:stage===3?8*60*1000:6*60*1000;
+      const _stageTimeoutLabel=stage===1?'8':stage===3?'8':'6';
+      const _stageTimeoutId=setTimeout(()=>_stageAbort.abort(new Error('Stage '+stage+' timed out after '+_stageTimeoutLabel+' minutes. The AI service may be slow — please retry.')),_stageTimeoutMs);
 
       let res;
       try{
