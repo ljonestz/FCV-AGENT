@@ -2624,7 +2624,7 @@ def run_fcv_web_research(country: str, sector: str, api_client) -> dict:
     prompt = FCV_RESEARCH_PROMPT.format(country=country, sector=sector)
     try:
         resp = api_client.beta.messages.create(
-            model="claude-sonnet-4-20250514",
+            model="claude-sonnet-4-6",
             max_tokens=5500,
             tools=[{
                 "type": "web_search_20250305",
@@ -3231,7 +3231,7 @@ def run_stage():
                 def _run_stream() -> None:
                     try:
                         with get_client().messages.stream(
-                            model="claude-sonnet-4-20250514",
+                            model="claude-sonnet-4-6",
                             max_tokens=_stage_max_tokens,
                             messages=messages
                         ) as _s:
@@ -3414,7 +3414,7 @@ def _stream_stage(messages, max_tokens, stage_num):
     def _run():
         try:
             with get_client().messages.stream(
-                model="claude-sonnet-4-20250514",
+                model="claude-sonnet-4-6",
                 max_tokens=max_tokens,
                 messages=messages
             ) as s:
@@ -3731,10 +3731,13 @@ def run_express():
                 s2_parse_error = under_hood.get('error', False) or stage2_ratings.get('error', False)
                 s2_parse_error_msg = under_hood.get('message', '') or stage2_ratings.get('message', '')
 
-                # Update conversation history
+                # Update conversation history — store compact Stage 2 label (not full prompt) so
+                # Stage 3 doesn't carry 80k+ chars of background constants into its API call.
+                # Stage 3 re-injects its own fresh background docs; the S2 assistant output is
+                # what matters for continuity.
                 s2_truncated = stage2_output[:MAX_ASSISTANT_CHARS] if len(stage2_output) > MAX_ASSISTANT_CHARS else stage2_output
                 conversation_history.extend([
-                    {"role": "user", "content": stage2_prompt},
+                    {"role": "user", "content": "[Stage 2 — FCV assessment with operational guidance injected]"},
                     {"role": "assistant", "content": s2_truncated}
                 ])
                 if len(conversation_history) > 20:
@@ -3988,7 +3991,7 @@ def run_deeper():
             try:
                 yield f"data: {json.dumps({'ping': True})}\n\n"
                 with get_client().messages.stream(
-                    model="claude-sonnet-4-20250514",
+                    model="claude-sonnet-4-6",
                     max_tokens=4000,
                     messages=messages
                 ) as stream:
@@ -4038,7 +4041,7 @@ def run_followon():
             try:
                 yield f"data: {json.dumps({'ping': True})}\n\n"
                 with get_client().messages.stream(
-                    model="claude-sonnet-4-20250514",
+                    model="claude-sonnet-4-6",
                     max_tokens=4000,
                     system=prompt,
                     messages=trimmed_messages

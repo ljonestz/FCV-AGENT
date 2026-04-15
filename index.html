@@ -2573,7 +2573,7 @@
     }
 
     const expressAbort=new AbortController();
-    const expressTimeout=setTimeout(()=>expressAbort.abort(new Error('Express analysis timed out after 10 minutes.')),10*60*1000);
+    let expressTimeout=setTimeout(()=>expressAbort.abort(new Error('Express analysis timed out after 10 minutes (Stages 1 & 2).')),10*60*1000);
 
     let res;
     try{
@@ -2617,6 +2617,12 @@
           if(p.stage_start){
             currentStage=p.stage_start;
             updateExpressStage(currentStage,'active',null);
+            // Reset the abort timer when Stage 3 begins so it gets its own 8-minute budget
+            // regardless of how long Stages 1 & 2 took.
+            if(p.stage_start===3){
+              clearTimeout(expressTimeout);
+              expressTimeout=setTimeout(()=>expressAbort.abort(new Error('Stage 3 timed out after 8 minutes. The AI service may be slow — please retry.')),8*60*1000);
+            }
           }
 
           // ── Extraction warning (scanned / unreadable doc) ──
