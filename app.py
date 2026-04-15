@@ -2323,15 +2323,18 @@ def _detect_cpf_present(uploaded_names: list, conversation_history: list) -> boo
     """Detect whether a Country Partnership Framework is present.
 
     Two-pass detection:
-      1. Filename check — fast, works when the file has a standard CPF name.
+      1. Filename check — normalises hyphens/underscores to spaces before matching,
+         so 'Sierra-Leone-Country-Partnership-Framework-...pdf' is caught correctly.
       2. Stage 1 content fallback — scans assistant messages in conversation_history
          for 'CPF' or 'Country Partnership Framework'.  Catches CPFs uploaded under
          non-standard filenames (e.g. 'Niger_FY26_Strategy.pdf').
     """
     cpf_terms = ['cpf', 'country partnership framework', 'partnership framework']
-    # Pass 1: filename
-    if any(any(t in n.lower() for t in cpf_terms) for n in uploaded_names):
-        return True
+    # Pass 1: filename (normalise hyphens and underscores to spaces first)
+    for n in uploaded_names:
+        normalised = n.lower().replace('-', ' ').replace('_', ' ')
+        if any(t in normalised for t in cpf_terms):
+            return True
     # Pass 2: Stage 1 content
     for msg in conversation_history:
         if msg.get('role') == 'assistant':
@@ -3074,9 +3077,12 @@ def run_stage():
                         stage_prompt +
                         "\n\nIMPORTANT — CPF PRESENT: A Country Partnership Framework was identified "
                         "(either by filename or from Stage 1 content). "
-                        "You MUST populate the `cpf_alignment` field for every priority recommendation where a "
-                        "clear linkage to a CPF outcome can be identified. Do not default to null — refer to the "
-                        "CPF content in Stage 1 to find relevant CPF outcomes."
+                        "NOTE: Stage 2 Key Question 3 assesses whether the project document explicitly references "
+                        "the CPF — but that finding does NOT mean the CPF is unavailable. The CPF content was "
+                        "extracted in Stage 1 and is in your conversation context. Use that content directly to "
+                        "assess cpf_alignment for each priority. You MUST populate the `cpf_alignment` field for "
+                        "every priority where a clear linkage to a CPF outcome can be identified. Do not default "
+                        "to null — null means genuinely no connection, not 'the project document didn't mention the CPF.'"
                     )
 
             # ── IMPLEMENTATION REVIEW: Stage 3 injection ─────────────────────
