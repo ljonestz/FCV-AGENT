@@ -3677,6 +3677,24 @@ def run_express():
                         get_glossary_for_prompt()
                     )
 
+                # CPF Q3 conditionality for express Stage 2
+                _cpf_terms_s2_ex = ['cpf', 'country partnership framework', 'partnership framework']
+                _cpf_present_s2_ex = any(
+                    any(t in doc.get('name', '').lower() for t in _cpf_terms_s2_ex)
+                    for doc in documents
+                )
+                if _cpf_present_s2_ex:
+                    stage2_prompt = stage2_prompt + (
+                        "\n\nNOTE on Key Question 3 (CPF linkage): A Country Partnership Framework was uploaded "
+                        "as a contextual document. Use the CPF content extracted in Stage 1 to answer this question."
+                    )
+                else:
+                    stage2_prompt = stage2_prompt + (
+                        "\n\nNOTE on Key Question 3 (CPF linkage): No CPF was uploaded or identified in Stage 1. "
+                        "Mark this question as 'Not assessed — CPF not available for this run' rather than "
+                        "attempting to answer from general knowledge."
+                    )
+
                 # Build messages: prior context + Stage 2 prompt
                 stage2_messages = [
                     {"role": "user", "content": f"Prior FCV analysis context:\n\nStage 1 output:\n{conversation_history[1]['content']}\n\nUse this as the basis for the next stage."},
