@@ -2988,7 +2988,7 @@ def run_stage():
                 )
 
                 # CPF Q3 conditionality: tell LLM whether a CPF is available
-                _cpf_present_s2 = _detect_cpf_present(uploaded_doc_names_payload, hist)
+                _cpf_present_s2 = _detect_cpf_present(uploaded_doc_names_payload, conversation_history)
                 if _cpf_present_s2:
                     stage_prompt = stage_prompt + (
                         "\n\nNOTE on Key Question 3 (CPF linkage): A Country Partnership Framework was uploaded "
@@ -3069,7 +3069,7 @@ def run_stage():
                 )
 
                 # CPF explicit signal: content-aware detection
-                if _detect_cpf_present(uploaded_doc_names_payload, hist):
+                if _detect_cpf_present(uploaded_doc_names_payload, conversation_history):
                     stage_prompt = (
                         stage_prompt +
                         "\n\nIMPORTANT — CPF PRESENT: A Country Partnership Framework was identified "
