@@ -473,7 +473,7 @@ Answer each where evidence permits, noting which are answerable and which have e
 Evaluate: (1) Flexible Operational Design, (2) Tailored Implementation & Partnerships, (3) Strengthened Implementation Support
 
 ## Peace & Inclusion Lens — Supplementary Screening
-When generating thematic findings, also apply the Peace & Inclusion Lens dimensions from the enriched FCV Operational Manual (injected below): geographic targeting against RRA-identified subnational divides, social cohesion and reconciliation dynamics, project-cycle-specific application considerations, stakeholder inclusion of conflict actors and non-beneficiaries, and the structured positive/negative unintended consequences screening. Do not expose these dimensions as separate framework labels in the TTL-facing output — integrate them into the thematic narrative as analytical depth.
+When generating thematic findings, also apply the Peace & Inclusion Lens dimensions from the enriched FCV Operational Manual (injected below): geographic targeting against RRA-identified subnational divides, social cohesion and reconciliation dynamics, project-cycle-specific application considerations, stakeholder inclusion of conflict actors and non-beneficiaries, and the structured positive/negative unintended consequences screening. Integrate findings into themes naturally — do not use these as section headings. **However, where a finding draws directly on one of these dimensions, add a brief inline attribution at the end of that sentence: `(Good Practice Notes — Peace & Inclusion Lens)`.** This makes the source visible without disrupting the narrative.
 
 # S/R Definitions — CRITICAL
 
@@ -989,7 +989,7 @@ ACTIONS: Provide 2-4 specific actions to address this gap. Each action identifie
 
 For each action, provide:
 - `document_element`: The specific document component to revise (e.g. "ESCP Commitment (new)", "Stakeholder Engagement Plan (Annex 5)", "Results Framework — Intermediate Indicator")
-- `guidance`: 2-3 sentences (up to 4 for complex actions) describing what to add or revise and why. Be specific: name the concrete content to include (e.g. which indicators, which stakeholder groups, which risk triggers). Enough detail that the TTL knows exactly what "good" looks like without needing to interpret.
+- `guidance`: 2-3 sentences (up to 4 for complex actions) describing what to add or revise and why. Be specific: name the concrete content to include (e.g. which indicators, which stakeholder groups, which risk triggers). Enough detail that the TTL knows exactly what "good" looks like without needing to interpret. **CPF linkage (optional):** If a CPF was uploaded and this specific action would directly help strengthen a named CPF priority or outcome (as identified in the CPF content extracted in Stage 1), add a single sentence at the end of the guidance: "This would also help advance [CPF outcome/priority name as stated in the CPF]." Only add this where a genuine, specific linkage exists — do not force it for every action, and do not fabricate CPF outcome names.
 - `suggested_language`: 2-3 sentences of ready-to-paste draft text for the specific document element named above. Write in formal WBG project document register. Be concrete and specific to this project's context, geography, sector, and implementation arrangements — the TTL should be able to insert this into the PAD section or commitment with minimal editing. Name specific actors, locations, mechanisms, or thresholds where possible rather than using placeholder language.
 When drafting suggested language for a Results Framework indicator, provide the full specification: (1) indicator name; (2) unit of measurement; (3) proposed baseline and target; (4) data source; (5) collection frequency; (6) if the project is in an access-constrained context, a one-sentence data contingency (e.g., 'In the event of access restrictions, TPM/remote verification will be used'). Do not produce indicator names alone.
 WHO_ACTS: [Semicolon-separated from: TTL; PIU; Government; FCV CC; FM Team; ESF Team; Technical Team; M&E Team]
@@ -2319,6 +2319,28 @@ def get_glossary_for_prompt() -> str:
 _DESIGN_STAGE_DOCS = {'PCN', 'PID', 'PAD', 'AF', 'Restructuring'}
 
 
+def _detect_cpf_present(uploaded_names: list, conversation_history: list) -> bool:
+    """Detect whether a Country Partnership Framework is present.
+
+    Two-pass detection:
+      1. Filename check — fast, works when the file has a standard CPF name.
+      2. Stage 1 content fallback — scans assistant messages in conversation_history
+         for 'CPF' or 'Country Partnership Framework'.  Catches CPFs uploaded under
+         non-standard filenames (e.g. 'Niger_FY26_Strategy.pdf').
+    """
+    cpf_terms = ['cpf', 'country partnership framework', 'partnership framework']
+    # Pass 1: filename
+    if any(any(t in n.lower() for t in cpf_terms) for n in uploaded_names):
+        return True
+    # Pass 2: Stage 1 content
+    for msg in conversation_history:
+        if msg.get('role') == 'assistant':
+            content = msg.get('content', '')
+            if 'CPF' in content or 'Country Partnership Framework' in content:
+                return True
+    return False
+
+
 def _build_temporal_guardrail(temporal_ctx: dict, doc_type: str = 'Unknown') -> str:
     """Build a temporal anchoring guardrail string from extracted temporal context.
 
@@ -2966,8 +2988,7 @@ def run_stage():
                 )
 
                 # CPF Q3 conditionality: tell LLM whether a CPF is available
-                _cpf_terms_s2 = ['cpf', 'country partnership framework', 'partnership framework']
-                _cpf_present_s2 = any(any(t in n.lower() for t in _cpf_terms_s2) for n in uploaded_doc_names_payload)
+                _cpf_present_s2 = _detect_cpf_present(uploaded_doc_names_payload, hist)
                 if _cpf_present_s2:
                     stage_prompt = stage_prompt + (
                         "\n\nNOTE on Key Question 3 (CPF linkage): A Country Partnership Framework was uploaded "
@@ -3047,17 +3068,15 @@ def run_stage():
                     CPF_INTEGRATION_GUIDE
                 )
 
-                # CPF explicit signal: if a CPF is detected in uploaded docs, tell the LLM
-                _cpf_terms = ['cpf', 'country partnership framework', 'partnership framework']
-                _cpf_docs = [n for n in uploaded_doc_names_payload if any(t in n.lower() for t in _cpf_terms)]
-                if _cpf_docs:
+                # CPF explicit signal: content-aware detection
+                if _detect_cpf_present(uploaded_doc_names_payload, hist):
                     stage_prompt = (
                         stage_prompt +
-                        f"\n\nIMPORTANT — CPF UPLOADED: The following Country Partnership Framework document was "
-                        f"uploaded and extracted in Stage 1: {', '.join(_cpf_docs)}. "
-                        f"You MUST populate the `cpf_alignment` field for every priority recommendation where a "
-                        f"clear linkage to a CPF outcome can be identified. Do not default to null — refer to the "
-                        f"CPF content in Stage 1 to find relevant CPF outcomes."
+                        "\n\nIMPORTANT — CPF PRESENT: A Country Partnership Framework was identified "
+                        "(either by filename or from Stage 1 content). "
+                        "You MUST populate the `cpf_alignment` field for every priority recommendation where a "
+                        "clear linkage to a CPF outcome can be identified. Do not default to null — refer to the "
+                        "CPF content in Stage 1 to find relevant CPF outcomes."
                     )
 
             # ── IMPLEMENTATION REVIEW: Stage 3 injection ─────────────────────
@@ -3674,13 +3693,9 @@ def run_express():
                         get_glossary_for_prompt()
                     )
 
-                # CPF Q3 conditionality for express Stage 2
-                _cpf_terms_s2_ex = ['cpf', 'country partnership framework', 'partnership framework']
-                _cpf_present_s2_ex = any(
-                    any(t in doc.get('name', '').lower() for t in _cpf_terms_s2_ex)
-                    for doc in documents
-                )
-                if _cpf_present_s2_ex:
+                # CPF Q3 conditionality for express Stage 2 — content-aware detection
+                _doc_names_ex = [doc.get('name', '') for doc in documents]
+                if _detect_cpf_present(_doc_names_ex, conversation_history):
                     stage2_prompt = stage2_prompt + (
                         "\n\nNOTE on Key Question 3 (CPF linkage): A Country Partnership Framework was uploaded "
                         "as a contextual document. Use the CPF content extracted in Stage 1 to answer this question."
@@ -3787,18 +3802,15 @@ def run_express():
                         CPF_INTEGRATION_GUIDE
                     )
 
-                    # CPF explicit signal: if a CPF is detected in uploaded docs, tell the LLM
-                    _cpf_terms_ex = ['cpf', 'country partnership framework', 'partnership framework']
-                    _cpf_docs_ex = [doc.get('name', '') for doc in documents
-                                    if any(t in doc.get('name', '').lower() for t in _cpf_terms_ex)]
-                    if _cpf_docs_ex:
+                    # CPF explicit signal: content-aware detection
+                    if _detect_cpf_present(_doc_names_ex, conversation_history):
                         stage3_prompt = (
                             stage3_prompt +
-                            f"\n\nIMPORTANT — CPF UPLOADED: The following Country Partnership Framework document was "
-                            f"uploaded and extracted in Stage 1: {', '.join(_cpf_docs_ex)}. "
-                            f"You MUST populate the `cpf_alignment` field for every priority recommendation where a "
-                            f"clear linkage to a CPF outcome can be identified. Do not default to null — refer to the "
-                            f"CPF content in Stage 1 to find relevant CPF outcomes."
+                            "\n\nIMPORTANT — CPF PRESENT: A Country Partnership Framework was identified "
+                            "(either by filename or from Stage 1 content). "
+                            "You MUST populate the `cpf_alignment` field for every priority recommendation where a "
+                            "clear linkage to a CPF outcome can be identified. Do not default to null — refer to the "
+                            "CPF content in Stage 1 to find relevant CPF outcomes."
                         )
 
                 # Build Stage 3 messages from conversation history
