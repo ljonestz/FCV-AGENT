@@ -4070,7 +4070,12 @@ def run_express():
                         snippets_text_e2 += f"### {snip['title']}\nSource: {snip['source']}\n\n{snip['content']}\n\n---\n"
                     stage2_prompt = stage2_prompt + snippets_text_e2
                 stage2_prompt = stage2_prompt + (
-                    "\n\n**REQUIRED: After ratings, append %%%CATEGORY_LENS_START%%%...%%%CATEGORY_LENS_END%%% block.**"
+                    "\n\n**REQUIRED: After your thematic analysis and ratings blocks, append this block:**\n"
+                    "%%%CATEGORY_LENS_START%%%\n"
+                    f"classification: {confirmed_category_e2}\n"
+                    "calibration_note: [1-2 sentences explaining what this category means for the ratings calibration]\n"
+                    "key_emphasis: [comma-separated list of the 3-5 areas given heightened emphasis in this analysis]\n"
+                    "%%%CATEGORY_LENS_END%%%"
                 )
 
                 # Build messages: prior context + Stage 2 prompt
