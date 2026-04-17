@@ -228,6 +228,211 @@ def extract_horizon_considerations(stage3_output: str) -> str:
     return m.group(1).strip() if m else ''
 
 
+def classify_country(country_name: str) -> dict:
+    """Deterministic FCV Strategy category pre-check.
+
+    Checks OP 7.30 list first (In Crisis), then FCS list (Conflict-Affected).
+    Returns {category, confidence, reasoning} where category may be None
+    (signalling the LLM should infer At Risk / In Transition / General from Stage 1 context).
+    """
+    if not country_name or country_name.strip().lower() in ('unknown', ''):
+        return {'category': None, 'confidence': None, 'reasoning': None}
+
+    name = country_name.strip()
+    name_lower = name.lower()
+
+    # OP 7.30 check — In Crisis (highest precedence)
+    for op_country in OP730_COUNTRIES:
+        if op_country.lower() in name_lower or name_lower in op_country.lower():
+            return {
+                'category': 'In Crisis',
+                'confidence': 'high',
+                'reasoning': (
+                    f'{name} is on the OP 7.30 list — the Bank cannot work through or finance '
+                    f'the government. Analysis calibrated for in-crisis engagement.'
+                )
+            }
+
+    # FCS list check — Conflict-Affected
+    for fcs_country in FCS_COUNTRIES_CURRENT:
+        if fcs_country.lower() == name_lower or name_lower in fcs_country.lower():
+            return {
+                'category': 'Conflict-Affected',
+                'confidence': 'high',
+                'reasoning': (
+                    f'{name} is on the World Bank FCS list. Government-led delivery is '
+                    f'expected; analysis calibrated for conflict-affected engagement.'
+                )
+            }
+
+    # No deterministic match — LLM should infer
+    return {'category': None, 'confidence': None, 'reasoning': None}
+
+
+def extract_country_classification(stage1_output: str) -> dict:
+    """Extract country classification from Stage 1 output.
+
+    Looks for %%%COUNTRY_CLASSIFICATION_START%%%...%%%COUNTRY_CLASSIFICATION_END%%%.
+    Returns dict with category, confidence, reasoning, error.
+    """
+    pattern = r'%%%COUNTRY_CLASSIFICATION_START%%%(.*?)%%%COUNTRY_CLASSIFICATION_END%%%'
+    m = re.search(pattern, stage1_output, re.DOTALL)
+    if not m:
+        return {
+            'category': 'General',
+            'confidence': 'low',
+            'reasoning': 'No classification block found in Stage 1 output.',
+            'error': True
+        }
+    block = m.group(1).strip()
+    result = {'error': False}
+    for field in ('category', 'confidence', 'reasoning'):
+        fm = re.search(rf'{field}:\s*(.+)', block)
+        result[field] = fm.group(1).strip() if fm else 'Unknown'
+    # Validate category
+    valid_categories = {'In Crisis', 'Conflict-Affected', 'At Risk', 'In Transition', 'General'}
+    if result.get('category') not in valid_categories:
+        result['category'] = 'General'
+    return result
+
+
+def extract_context_flags(stage1_output: str) -> dict:
+    """Extract boolean context flags from Stage 1 output.
+
+    Looks for %%%CONTEXT_FLAGS_START%%%...%%%CONTEXT_FLAGS_END%%%.
+    Returns dict of {flag_name: bool}. All default to False on error.
+    """
+    _all_flags = [
+        'cerc_mentioned', 'tpi_mentioned', 'rra_referenced', 'security_risks_noted',
+        'displacement_context', 'private_sector_focus', 'vulnerable_groups',
+        'emergency_component', 'procurement_issues', 'fiduciary_risks',
+        'cpf_uploaded', 'scd_mentioned', 'prevention', 'early_warning',
+        'armed_forces_mentioned',
+    ]
+    pattern = r'%%%CONTEXT_FLAGS_START%%%(.*?)%%%CONTEXT_FLAGS_END%%%'
+    m = re.search(pattern, stage1_output, re.DOTALL)
+    if not m:
+        return {f: False for f in _all_flags} | {'error': True}
+    block = m.group(1).strip()
+    result = {'error': False}
+    for flag in _all_flags:
+        fm = re.search(rf'{flag}:\s*(true|false)', block, re.IGNORECASE)
+        result[flag] = (fm.group(1).lower() == 'true') if fm else False
+    return result
+
+
+def extract_sector_context(stage1_output: str) -> dict:
+    """Extract sector context from Stage 1 output.
+
+    Looks for %%%SECTOR_CONTEXT_START%%%...%%%SECTOR_CONTEXT_END%%%.
+    Returns dict with primary_sector, secondary_sectors (list).
+    """
+    pattern = r'%%%SECTOR_CONTEXT_START%%%(.*?)%%%SECTOR_CONTEXT_END%%%'
+    m = re.search(pattern, stage1_output, re.DOTALL)
+    if not m:
+        return {'primary_sector': 'Unknown', 'secondary_sectors': [], 'error': True}
+    block = m.group(1).strip()
+    pm = re.search(r'primary_sector:\s*(.+)', block)
+    sm = re.search(r'secondary_sectors:\s*(.+)', block)
+    primary = pm.group(1).strip() if pm else 'Unknown'
+    secondary_raw = sm.group(1).strip() if sm else ''
+    secondary = [s.strip() for s in secondary_raw.split(',') if s.strip()] if secondary_raw else []
+    return {'primary_sector': primary, 'secondary_sectors': secondary, 'error': False}
+
+
+def select_secondary_knowledge(
+    country_category: str,
+    instrument_type: str,
+    doc_type: str,
+    sector: str,
+    context_flags: dict
+) -> list:
+    """Select relevant secondary knowledge snippets for injection into Stage 2/3 prompts.
+
+    Trigger logic:
+    - OR within a field (country_category, instrument, sector, flags, doc_type)
+    - AND across populated fields
+    - Empty trigger list = wildcard (any value matches)
+    - Snippets with empty content are excluded
+
+    Returns list of dicts: [{id, title, source, content}], ordered by relevance score.
+    Capped at 5 snippets or ~5,000 tokens (estimated as len(content)//4).
+    """
+    MAX_SNIPPETS = 5
+    MAX_TOKENS_ESTIMATE = 5000
+
+    sector_lower = (sector or '').lower()
+    cat = (country_category or 'General').strip()
+
+    scored = []
+    for sid, snippet in SECONDARY_KNOWLEDGE.items():
+        content = snippet.get('content', '')
+        if not content:  # Skip unpopulated stubs
+            continue
+
+        triggers = snippet['triggers']
+        score = 0
+        match = True
+
+        # Check each populated trigger field (AND logic across fields)
+        if triggers['country_category']:
+            if cat in triggers['country_category']:
+                score += 2  # category match is highest priority
+            else:
+                match = False
+
+        if match and triggers['instrument']:
+            if instrument_type in triggers['instrument']:
+                score += 1
+            else:
+                match = False
+
+        if match and triggers['sector']:
+            if any(s.lower() in sector_lower or sector_lower in s.lower()
+                   for s in triggers['sector']):
+                score += 1
+            else:
+                match = False
+
+        if match and triggers['flags']:
+            flag_match = any(context_flags.get(f, False) for f in triggers['flags'])
+            if flag_match:
+                score += 1
+            else:
+                match = False
+
+        if match and triggers['doc_type']:
+            if doc_type in triggers['doc_type']:
+                score += 1
+            else:
+                match = False
+
+        if match:
+            scored.append((score, sid, snippet))
+
+    # Sort by score descending, then by id for determinism
+    scored.sort(key=lambda x: (-x[0], x[1]))
+
+    # Cap at MAX_SNIPPETS and token estimate
+    selected = []
+    total_tokens = 0
+    for score, sid, snippet in scored:
+        if len(selected) >= MAX_SNIPPETS:
+            break
+        token_estimate = len(snippet['content']) // 4
+        if total_tokens + token_estimate > MAX_TOKENS_ESTIMATE:
+            break
+        selected.append({
+            'id': sid,
+            'title': snippet['title'],
+            'source': snippet['source'],
+            'content': snippet['content'],
+        })
+        total_tokens += token_estimate
+
+    return selected
+
+
 def extract_under_hood(stage2_output):
     """Extract Under the Hood analytical panels from Stage 2 output.
     Finds %%%UNDER_HOOD_START%%%...%%%UNDER_HOOD_END%%% and sub-blocks.
