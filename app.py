@@ -149,6 +149,24 @@ def extract_stage2_ratings(stage2_output):
         return {'error': True, 'message': f'Failed to parse ratings JSON: {str(e)}'}
 
 
+def extract_category_lens(stage2_output: str) -> dict:
+    """Extract category lens block from Stage 2 output.
+
+    Looks for %%%CATEGORY_LENS_START%%%...%%%CATEGORY_LENS_END%%%.
+    Returns {classification, calibration_note, key_emphasis, error}.
+    """
+    pattern = r'%%%CATEGORY_LENS_START%%%(.*?)%%%CATEGORY_LENS_END%%%'
+    m = re.search(pattern, stage2_output, re.DOTALL)
+    if not m:
+        return {'error': True, 'classification': 'General', 'calibration_note': '', 'key_emphasis': ''}
+    block = m.group(1).strip()
+    result = {'error': False}
+    for field in ('classification', 'calibration_note', 'key_emphasis'):
+        fm = re.search(rf'{field}:\s*(.+)', block)
+        result[field] = fm.group(1).strip() if fm else ''
+    return result
+
+
 def extract_instrument_type(stage1_output: str) -> str:
     """Extract instrument type from Stage 1 output.
     Looks for %%%INSTRUMENT_TYPE: ...%%% line.
@@ -2121,6 +2139,8 @@ def clean_stage2_output(text):
     text = re.sub(r'%%%RATING_REASONING_START%%%.*?%%%RATING_REASONING_END%%%', '', text, flags=re.DOTALL)
     text = re.sub(r'%%%STAGE2_RATINGS_START%%%.*?%%%STAGE2_RATINGS_END%%%', '', text, flags=re.DOTALL)
     text = re.sub(r'%%%UNDER_HOOD_START%%%.*?%%%UNDER_HOOD_END%%%', '', text, flags=re.DOTALL)
+    # NEW: strip category lens block
+    text = re.sub(r'%%%CATEGORY_LENS_START%%%.*?%%%CATEGORY_LENS_END%%%', '', text, flags=re.DOTALL)
     return text.strip()
 
 
@@ -3224,6 +3244,62 @@ def run_stage():
                         "attempting to answer from general knowledge."
                     )
 
+                # ── DIFFERENTIATED APPROACH INJECTION ────────────────────────────
+                # Get confirmed classification from frontend (TTL may have adjusted it)
+                country_classification_s2 = data.get('country_classification', {})
+                confirmed_category = (
+                    country_classification_s2.get('category', 'General')
+                    if isinstance(country_classification_s2, dict) else 'General'
+                )
+                context_flags_s2 = data.get('context_flags', {})
+                sector_context_s2 = data.get('sector_context', {})
+                primary_sector = (
+                    sector_context_s2.get('primary_sector', 'Unknown')
+                    if isinstance(sector_context_s2, dict) else 'Unknown'
+                )
+
+                # Select secondary snippets
+                secondary_snippets_s2 = select_secondary_knowledge(
+                    country_category=confirmed_category,
+                    instrument_type=instrument_type,
+                    doc_type=document_type,
+                    sector=primary_sector,
+                    context_flags=context_flags_s2 if isinstance(context_flags_s2, dict) else {}
+                )
+
+                # Inject differentiated approach constant
+                category_lens_intro = (
+                    f"\n\n--- FCV Strategy Differentiated Approach (confirmed category: {confirmed_category}) ---\n"
+                    f"Apply the screening lens, rating calibration, and recommendation framing for the "
+                    f"'{confirmed_category}' category as specified below.\n\n"
+                )
+                stage_prompt = stage_prompt + category_lens_intro + DIFFERENTIATED_APPROACHES
+
+                # Inject selected secondary snippets
+                if secondary_snippets_s2:
+                    snippets_text = "\n\n--- ADDITIONAL FCV PLAYBOOK CONTEXT (auto-selected for this project) ---\n"
+                    snippets_text += (
+                        "The following operational context from the FCV Playbook has been auto-selected based on "
+                        "this project's country category, instrument type, and document characteristics. "
+                        "Use this material to give more specific, grounded guidance where you identify significant gaps. "
+                        "Do NOT treat this as an additional checklist or expand the scope of expectations. "
+                        "Only reference this material where it directly strengthens a finding you would have made anyway, "
+                        "or where a gap is significant enough to warrant attention.\n\n"
+                    )
+                    for snip in secondary_snippets_s2:
+                        snippets_text += f"### {snip['title']}\nSource: {snip['source']}\n\n{snip['content']}\n\n---\n"
+                    stage_prompt = stage_prompt + snippets_text
+
+                # Require category lens output block
+                stage_prompt = stage_prompt + (
+                    "\n\n**REQUIRED: After your thematic analysis and ratings blocks, append this block:**\n"
+                    "%%%CATEGORY_LENS_START%%%\n"
+                    f"classification: {confirmed_category}\n"
+                    "calibration_note: [1-2 sentences explaining what this category means for the ratings calibration]\n"
+                    "key_emphasis: [comma-separated list of the 3-5 areas given heightened emphasis in this analysis]\n"
+                    "%%%CATEGORY_LENS_END%%%"
+                )
+
             # ── IMPLEMENTATION REVIEW: Stage 2 injection ─────────────────────
             elif is_impl and stage == 2:
                 instrument_type = data.get('instrument_type', 'Unknown')
@@ -3493,6 +3569,7 @@ def run_stage():
                 parse_error_message = ''
                 stage2_ratings = {}
                 under_hood = {}
+                category_lens = {}
                 _country_classification = {}
                 _context_flags = {}
                 _sector_context = {}
@@ -3501,6 +3578,7 @@ def run_stage():
                     # Stage 2: extract ratings and Under the Hood panels
                     stage2_ratings = extract_stage2_ratings(full_text)
                     under_hood = extract_under_hood(full_text)
+                    category_lens = extract_category_lens(full_text)
                     parse_error = under_hood.get('error', False) or stage2_ratings.get('error', False)
                     parse_error_message = under_hood.get('message', '') or stage2_ratings.get('message', '')
 
@@ -3589,6 +3667,7 @@ def run_stage():
                         'questions_map': under_hood.get('questions_map', ''),
                         'evidence_trail': under_hood.get('evidence_trail', ''),
                     }
+                    done_data['category_lens'] = category_lens
 
                 elif stage == 3:
                     # Stage 3: include priorities, ratings, summaries, risk exposure
@@ -3959,6 +4038,41 @@ def run_express():
                         "attempting to answer from general knowledge."
                     )
 
+                # ── DIFFERENTIATED APPROACH INJECTION (express) ──────────────
+                confirmed_category_e2 = (
+                    country_classification.get('category', 'General')
+                    if isinstance(country_classification, dict) else 'General'
+                )
+                primary_sector_e2 = (
+                    sector_context.get('primary_sector', 'Unknown')
+                    if isinstance(sector_context, dict) else 'Unknown'
+                )
+                secondary_snippets_e2 = select_secondary_knowledge(
+                    country_category=confirmed_category_e2,
+                    instrument_type=instrument_type,
+                    doc_type=doc_type,
+                    sector=primary_sector_e2,
+                    context_flags=context_flags if isinstance(context_flags, dict) else {}
+                )
+                category_lens_intro_e2 = (
+                    f"\n\n--- FCV Strategy Differentiated Approach (category: {confirmed_category_e2}) ---\n"
+                    f"Apply the screening lens, rating calibration, and recommendation framing for the "
+                    f"'{confirmed_category_e2}' category as specified below.\n\n"
+                )
+                stage2_prompt = stage2_prompt + category_lens_intro_e2 + DIFFERENTIATED_APPROACHES
+                if secondary_snippets_e2:
+                    snippets_text_e2 = "\n\n--- ADDITIONAL FCV PLAYBOOK CONTEXT (auto-selected) ---\n"
+                    snippets_text_e2 += (
+                        "The following operational context from the FCV Playbook has been auto-selected. "
+                        "Use to sharpen existing findings only — do NOT expand the checklist.\n\n"
+                    )
+                    for snip in secondary_snippets_e2:
+                        snippets_text_e2 += f"### {snip['title']}\nSource: {snip['source']}\n\n{snip['content']}\n\n---\n"
+                    stage2_prompt = stage2_prompt + snippets_text_e2
+                stage2_prompt = stage2_prompt + (
+                    "\n\n**REQUIRED: After ratings, append %%%CATEGORY_LENS_START%%%...%%%CATEGORY_LENS_END%%% block.**"
+                )
+
                 # Build messages: prior context + Stage 2 prompt
                 stage2_messages = [
                     {"role": "user", "content": f"Prior FCV analysis context:\n\nStage 1 output:\n{conversation_history[1]['content']}\n\nUse this as the basis for the next stage."},
@@ -3974,6 +4088,7 @@ def run_express():
                 # Parse Stage 2 output
                 stage2_ratings = extract_stage2_ratings(stage2_output)
                 under_hood = extract_under_hood(stage2_output)
+                category_lens_e2 = extract_category_lens(stage2_output)
                 s2_parse_error = under_hood.get('error', False) or stage2_ratings.get('error', False)
                 s2_parse_error_msg = under_hood.get('message', '') or stage2_ratings.get('message', '')
 
@@ -3990,7 +4105,7 @@ def run_express():
                     conversation_history = conversation_history[-20:]
 
                 # ── Stage 2 done event ──
-                yield f"data: {json.dumps({'stage_done': 2, 'result': stage2_output, 'display_text': under_hood.get('display_text', stage2_output), 'history': conversation_history, 'sensitivity_rating': stage2_ratings.get('sensitivity_rating', ''), 'responsiveness_rating': stage2_ratings.get('responsiveness_rating', ''), 'rating_reasoning': stage2_ratings.get('rating_reasoning', ''), 'under_hood': {'recs_table': under_hood.get('recs_table', ''), 'dnh_checklist': under_hood.get('dnh_checklist', ''), 'questions_map': under_hood.get('questions_map', ''), 'evidence_trail': under_hood.get('evidence_trail', '')}, 'parse_error': s2_parse_error, 'parse_error_message': s2_parse_error_msg})}\n\n"
+                yield f"data: {json.dumps({'stage_done': 2, 'result': stage2_output, 'display_text': under_hood.get('display_text', stage2_output), 'history': conversation_history, 'sensitivity_rating': stage2_ratings.get('sensitivity_rating', ''), 'responsiveness_rating': stage2_ratings.get('responsiveness_rating', ''), 'rating_reasoning': stage2_ratings.get('rating_reasoning', ''), 'under_hood': {'recs_table': under_hood.get('recs_table', ''), 'dnh_checklist': under_hood.get('dnh_checklist', ''), 'questions_map': under_hood.get('questions_map', ''), 'evidence_trail': under_hood.get('evidence_trail', '')}, 'category_lens': category_lens_e2, 'parse_error': s2_parse_error, 'parse_error_message': s2_parse_error_msg})}\n\n"
 
                 # ════════════════════════════════════════════════════════════
                 # STAGE 3 — Recommendations / Course-Correction Note
