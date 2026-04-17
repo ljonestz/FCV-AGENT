@@ -2584,6 +2584,22 @@ All new operations for de facto governments require LEGAM consultation before co
 - For new operations under preparation, ensure the concept note flags the de facto status and records the LEGAM consultation outcome.
 - Do not cite OP 7.30 status as a reason to skip ESF, procurement, or fiduciary requirements — all standards apply in full.
 - Country Director has discretion on timing of new approvals; CMU should monitor international recognition signals (UN seat, regional body positions) as leading indicators.
+
+### Alternative Delivery Channels Under OP 7.30
+When the Bank cannot work through a de facto government — because effective control is absent, legal framework is insufficient, or the government cannot ensure project implementation — the following implementation channels are permissible under existing OPSPF flexibilities:
+- **UN agencies and specialised funds** (UNICEF, WFP, UNHCR, IOM, UNDP): Most commonly used; robust accountability, procurement, and reporting systems. The Key Resources Note identifies Dominique Kayser as the OPCS focal point for UN agency use under OP 7.30.
+- **International NGOs (INGOs)**: Use where UN presence is limited or community-level delivery is critical; requires direct contracting justification and documented comparative assessment.
+- **Regional organisations**: African Union, ECOWAS, and similar bodies where operational capacity in-country is confirmed.
+- **Community-driven platforms**: Community Development Committees, cooperatives, faith-based organisations for last-mile delivery in areas inaccessible to government or UN systems.
+
+Channel selection must be documented with a comparative assessment of implementation capacity, cost-efficiency, and sustainability potential. WFA (Victor Ordonez, Senior Finance Officer) and OPSPR (Samuel Haile Selassie) are subject matter experts for fiduciary and procurement aspects of alternative channel use. Precedent exists from Burkina Faso and Mali OP 7.30 assessments — consult LEGAM (Matthieu Bonvoisin for Burkina Faso; Marouan Maalouf for Mali) for case-specific guidance.
+
+### Phase-Out and Sustainability Planning
+All TPI-delivered activities must include a realistic phase-out and handover plan addressing:
+- Which delivery pathway is intended to sustain services after Bank engagement ends.
+- Capacity-building within local institutions (municipalities, community councils) that can eventually receive transferred functions.
+- Timeline and triggers for transitioning from TPI to government or community management.
+- Risk: failing to include a phase-out strategy results in aid dependency and undermines long-term service sustainability — a specific concern under OP 7.30 contexts where institutional capacity is often severely degraded.
 """,
     },
     "tpi_service_delivery": {
@@ -2725,6 +2741,15 @@ CERC (within an existing IPF) and stand-alone emergency IPFs both operate under 
 
 ### Country Director Authorities
 Under OP 8.00, the Country Director may approve temporary adjustments to cost-sharing limits and may invoke streamlined review procedures. These are administrative flexibilities, not waivers of fiduciary, environmental, or social standards.
+
+### Accelerated Processing Timelines
+OP 8.00 enables significantly faster processing than standard IPF procedures. The 2024-revised Policy (OPS5.08-POL.125) emphasises that speed, flexibility, and simplicity are policy-backed, not merely aspirational:
+- **Quality review:** Condensed under emergency procedures — typically 3-5 days depending on complexity and crisis category (vs. standard multi-week review cycles).
+- **Board submission:** Expedited in genuine emergencies; Country Director authority within delegated limits can bypass standard Board submission entirely for smaller operations.
+- **Retroactive financing:** Expenditures incurred before formal Bank approval may be eligible for retroactive financing (up to 20% of loan amount) to allow immediate response before the approval process concludes.
+- **Cost-sharing adjustments:** Country Director may approve temporary increases to cost-sharing limits across all Bank-financed operations in the country without seeking Board approval.
+
+Note: The Policy does not specify a universal number of days — exact timelines depend on the emergency category, instrument size, and whether Country Director delegated authority applies. The key distinction from a standard compressed IPF is that the acceleration is explicitly policy-backed under OP 8.00, not simply a matter of effort or management discretion.
 """,
     },
     "operational_flexibilities": {
