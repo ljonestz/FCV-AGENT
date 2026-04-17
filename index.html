@@ -557,6 +557,16 @@
     .temporal-context-panel .tc-item{display:flex;align-items:center;gap:4px}
     .temporal-context-panel .tc-label{font-weight:600;font-size:11px;text-transform:uppercase;color:#5a7a9a;margin-right:2px}
     .temporal-context-panel .tc-value{font-weight:500}
+    .classification-widget{border:1px solid #E5E7EB;border-radius:8px;margin:16px 0;background:#F9FAFB;overflow:hidden;}
+    .cw-header{display:flex;align-items:center;gap:8px;padding:10px 16px;background:#EEF0F3;font-size:13px;font-weight:600;color:#374151;}
+    .cw-body{padding:12px 16px;}
+    .cw-intro{margin:0 0 8px;font-size:13px;color:#374151;}
+    .cw-select-row{display:flex;align-items:center;gap:12px;margin-bottom:8px;}
+    .cw-select{padding:6px 10px;border:1px solid #D1D5DB;border-radius:4px;font-size:13px;font-weight:600;background:#fff;cursor:pointer;border-left-width:3px;}
+    .cw-confidence-note{font-size:11px;color:#6B7280;}
+    .cw-reasoning{margin:0 0 6px;font-size:12px;color:#4B5563;font-style:italic;}
+    .cw-disclaimer{margin:0;font-size:11px;color:#9CA3AF;}
+    .cw-footer{padding:10px 16px;border-top:1px solid #E5E7EB;}
     .trunc-warn-area{background:#fff7ed;border:1.5px solid #fed7aa;border-radius:var(--radius);padding:14px 18px;margin-bottom:14px}
     .trunc-warn-hdr{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:#c2410c;margin-bottom:8px}
     .trunc-warn-item{font-size:12.5px;color:#7c2d12;margin-bottom:4px;line-height:1.55;padding-left:4px}
@@ -2040,6 +2050,10 @@
   let analysisMode='express';
   let reviewMode='design';
   let processType='Unknown';
+  let countryClassification={};
+  let contextFlags={};
+  let sectorContext={};
+  let stageAppliedSnippets=[];
   // Stage 3 (Recommendations) state is declared in the Stage 3 section below
 
   // ── Glossary ───────────────────────────────────────────────────────────────
@@ -2800,7 +2814,7 @@
       </div>`;
 
     try{
-      const payload={stage,history:hist,user_message:followOn||'',document_type:docType,instrument_type:instrumentType,temporal_context:temporalContext,review_mode:reviewMode,process_type:processType,user_context:(document.getElementById('user-context')?.value||'').trim(),uploaded_doc_names:[...pF.map(f=>f.name),...cF.map(f=>f.name)]};
+      const payload={stage,history:hist,user_message:followOn||'',document_type:docType,instrument_type:instrumentType,temporal_context:temporalContext,review_mode:reviewMode,process_type:processType,user_context:(document.getElementById('user-context')?.value||'').trim(),uploaded_doc_names:[...pF.map(f=>f.name),...cF.map(f=>f.name)],country_classification:countryClassification,context_flags:contextFlags,sector_context:sectorContext};
       // Attach session prompt override if user has edited this stage's prompt
       if(sessionPrompts[stage]){
         payload.prompt_override = sessionPrompts[stage];
@@ -2931,12 +2945,18 @@
                 if(p.instrument_type)instrumentType=p.instrument_type;
                 if(p.temporal_context)temporalContext=p.temporal_context;
                 if(p.process_type&&p.process_type!=='Unknown')processType=p.process_type;
+                if(p.country_classification){countryClassification=p.country_classification;localStorage.setItem('country_classification',JSON.stringify(countryClassification));}
+                if(p.context_flags)contextFlags=p.context_flags;
+                if(p.sector_context)sectorContext=p.sector_context;
               }
               renderOut(stage,renderResult,followOn);setStepper(stage,'done');
               enableClickableStepper();
               // Research brief panel (step-by-step only — express skips rendering)
               if(stage===1&&researchBrief) injectResearchBriefPanel(researchBrief,researchCountry);
               if(stage===1&&(instrumentType!=='Unknown'||temporalContext.approval_date||processType!=='Unknown')) injectTemporalContextPanel();
+              if(stage===1&&countryClassification&&countryClassification.category&&analysisMode!=='express'){
+                renderClassificationWidget(countryClassification);
+              }
               // Stage 2: show parse error banner and update sidebar
               if(stage===2){
                 if(p.parse_error){
@@ -3070,6 +3090,65 @@
       if(callout){callout.insertAdjacentElement('afterend',panel);}
       else{disp.appendChild(panel);}
     }
+  }
+
+  function renderClassificationWidget(classification){
+    const cat=classification.category||'General';
+    const confidence=classification.confidence||'moderate';
+    const reasoning=classification.reasoning||'Classification inferred from project context.';
+    const categoryColors={'In Crisis':'#D73027','Conflict-Affected':'#E87B20','At Risk':'#F5A623','In Transition':'#4A90E2','General':'#6B7280'};
+    const color=categoryColors[cat]||'#6B7280';
+    const confidenceNote=confidence==='high'?'Determined from FCS/OP 7.30 list':'Inferred from project context — confirm or adjust';
+    const categories=['In Crisis','Conflict-Affected','At Risk','In Transition','General'];
+    const optionsHtml=categories.map(c=>`<option value="${esc(c)}"${c===cat?' selected':''}>${esc(c)}</option>`).join('');
+
+    // Remove any existing widget first
+    const existing=document.getElementById('classification-widget');
+    if(existing)existing.remove();
+
+    const widget=document.createElement('div');
+    widget.id='classification-widget';
+    widget.className='classification-widget ani';
+    widget.innerHTML=`
+      <div class="cw-header">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span>FCV Strategy Classification</span>
+      </div>
+      <div class="cw-body">
+        <p class="cw-intro">Based on the analysis, this project's country context is placed within the Strategy's:</p>
+        <div class="cw-select-row">
+          <select id="cw-category-select" class="cw-select" style="border-left:3px solid ${color}">${optionsHtml}</select>
+          <span class="cw-confidence-note">${esc(confidenceNote)}</span>
+        </div>
+        <p class="cw-reasoning">${esc(reasoning)}</p>
+        <p class="cw-disclaimer">This is the analysis's working judgment for calibrating Stages 2 and 3 — not an official WBG designation.</p>
+      </div>
+      <div class="cw-footer">
+        <button class="btn btn-primary" onclick="confirmClassification()">Confirm &amp; Continue to Assessment &#x2192;</button>
+      </div>
+    `;
+
+    const stageDisp=document.getElementById('stage-disp');
+    if(stageDisp)stageDisp.appendChild(widget);
+
+    document.getElementById('cw-category-select').addEventListener('change',function(){
+      this.style.borderLeftColor=categoryColors[this.value]||'#6B7280';
+    });
+
+    // Hide the normal Stage 2 run button until TTL confirms the classification
+    const actArea=document.getElementById('act-area');
+    if(actArea)actArea.style.display='none';
+  }
+
+  function confirmClassification(){
+    const select=document.getElementById('cw-category-select');
+    if(!select)return;
+    countryClassification={...countryClassification,category:select.value,confirmed:true};
+    localStorage.setItem('country_classification',JSON.stringify(countryClassification));
+    const widget=document.getElementById('classification-widget');
+    if(widget)widget.style.display='none';
+    const actArea=document.getElementById('act-area');
+    if(actArea)actArea.style.display='';
   }
 
   function buildSRDefinitionBox(compact) {
