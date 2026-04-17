@@ -2347,3 +2347,428 @@ WB_PROCESS_GUIDE = {
         ),
     },
 }
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# OP 7.30 COUNTRIES — De facto governments; Bank cannot work through government
+# Last verified: 2026-04 (verify against OPCS guidance before release)
+# ─────────────────────────────────────────────────────────────────────────────
+
+OP730_COUNTRIES = [
+    "Afghanistan",
+    "Myanmar",
+    "Sudan",
+    "Yemen",
+]
+# Note: Syria may be transitioning to In Transition status — review before finalising.
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# FCS_COUNTRIES_CURRENT — Frozenset for O(1) membership checks
+# Derived from FCS_LIST constant above (FY2026 / current)
+# ─────────────────────────────────────────────────────────────────────────────
+
+FCS_COUNTRIES_CURRENT = frozenset([
+    "Afghanistan", "Burkina Faso", "Burundi", "Cameroon", "Central African Republic",
+    "Chad", "Comoros", "Congo (Democratic Republic of)", "Congo (Republic of)",
+    "Eritrea", "Ethiopia", "Guinea-Bissau", "Haiti", "Iraq", "Kiribati", "Kosovo",
+    "Lebanon", "Libya", "Mali", "Marshall Islands", "Micronesia (Federated States of)",
+    "Mozambique", "Myanmar", "Niger", "Nigeria", "Papua New Guinea",
+    "São Tomé and Príncipe", "Solomon Islands", "Somalia", "South Sudan", "Sudan",
+    "Syrian Arab Republic", "Timor-Leste", "Tuvalu", "Ukraine", "Venezuela (RB)",
+    "West Bank and Gaza", "Yemen (Republic of)", "Zimbabwe",
+])
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# DIFFERENTIATED_APPROACHES — Per-category screening lens, calibration, framing
+# Source: WBG FCV Strategy Refresh (April 2026 operationalisation update)
+# Injected into Stage 2 and Stage 3 prompts alongside confirmed country category
+# ~2,500 tokens
+# ─────────────────────────────────────────────────────────────────────────────
+
+DIFFERENTIATED_APPROACHES = """## WBG FCV Strategy — Differentiated Country Engagement Approach
+
+Source: WBG FCV Strategy Refresh Operationalisation Plan (April 2026)
+
+The FCV Strategy Refresh introduces a forward-looking FCV country classification scheme to replace the backward-looking FCS list. The four categories — In Crisis, In Transition, Conflict-Affected, and At Risk — each require a differentiated analytical lens, rating calibration, and recommendation framing.
+
+**IMPORTANT — Classification as analytical judgment:** When referencing a country's category, always frame it as the analysis's working judgment about where the country fits within the Strategy's differentiated approach — not as an official institutional designation. Use language such as: "Based on [evidence], this analysis places [country] within the 'Conflict-Affected' category of the FCV Strategy's differentiated approach." Never state: "[Country] is a [category] country."
+
+---
+
+### Category 1: Countries in Crisis
+
+**Definition:** Countries where the Bank cannot work through (finance) the government, typically triggered by OP 7.30 (Dealings with De Facto Governments). Active armed conflict or political crisis has severely disrupted state institutions.
+
+**Current examples:** Afghanistan, Myanmar, Sudan, Yemen.
+
+#### Stage 2 Screening Lens — In Crisis
+
+Emphasise these dimensions when assessing against the 12 OST recommendations and 25 key questions:
+
+- **Delivery modality** (Recs 1, 2, 8): Government may not be the primary implementation partner. Assess whether the project has identified institutionally sustainable local delivery pathways — UN agencies, INGOs, community-driven mechanisms, private sector platforms. Is TPI selection based on the ability to sustain services and build local capacity, not just deliver outputs?
+- **Do No Harm and safeguards** (DNH principles, Rec 4, ESF): In constrained environments, the risk of inadvertent harm increases. Is the project's safeguard design realistic given limited state oversight? Is the GRM accessible when government institutions are non-functional?
+- **Realistic ambition** (Recs 3, 5): Trajectories are unpredictable. PDOs must be achievable under volatile conditions. M&E systems must function without government statistical infrastructure. Do not penalise a project for the absence of ambitious institutional reform targets — assess whether ambition is calibrated to what is achievable.
+- **Operational flexibilities** (Rec 9): CERC, HEIS, TPM, unallocated funds, phased disbursement — use of these is expected, not optional, in In Crisis contexts. Their absence is a significant gap.
+- **Security and access** (Rec 4, SORT): Security risks must be explicitly managed. Is there a portfolio-level security risk management approach? Are staff and beneficiary access protocols documented?
+
+#### Rating Calibration — In Crisis
+
+- **Sensitivity:** Assess against delivery modality adequacy, Do No Harm, and operational flexibility use. Do NOT penalise for absence of government-led institutional strengthening — this is structurally impossible in an In Crisis context. A project that demonstrates strong TPI partnerships, realistic M&E, and explicit DNH safeguards should be rated as adequately sensitive even if government ownership is minimal.
+- **Responsiveness:** Responsiveness expectations are substantially lowered. Without government engagement, the project cannot drive trajectory-shifting actions. Credit responsiveness for: (a) preserving development gains, (b) protecting vulnerable populations, (c) maintaining service delivery channels that could support future state reconstruction, (d) explicit contributions to resilience even if modest.
+
+#### Stage 3 Recommendation Framing — In Crisis
+
+Recommendations must focus on:
+- **Delivery pathway adequacy**: Are TPI selection criteria documented? Is there a sustainability and phase-out strategy for TPI-delivered services?
+- **Preserving development gains**: What mechanisms protect project investments against further deterioration?
+- **Service delivery trade-offs**: Explicitly assess the three-way trade-off between Effectiveness (maintaining outcomes), Do No Harm (avoiding harm/capture), and Potential to Last (building durable systems). In In Crisis contexts, Potential to Last may be the weakest leg — flag this explicitly.
+- **Avoiding over-ambitious government engagement**: Do not recommend government capacity building as a core outcome when the government is the source of the crisis.
+
+---
+
+### Category 2: Countries in Transition
+
+**Definition:** Countries recently emerged from protracted crisis (OP 7.30 or prolonged civil war), where a turning point or window of opportunity exists, and where there is a coalition of partners prepared to support reconstruction and reform. Very few countries qualify at any given time.
+
+**Current examples:** Syria (potential). This list is intentionally small and should be confirmed with the FCV Group.
+
+#### Stage 2 Screening Lens — In Transition
+
+Emphasise:
+- **Window of opportunity assessment** (Recs 1, 3): Does the project design recognise and leverage the political/institutional opening? Is there a coalition of partners coordinated around the transition moment?
+- **Phase-out from crisis modalities**: Is the project transitioning from TPI to government delivery? Is there a realistic timeline for increasing government ownership?
+- **Sustainable delivery pathways**: Are the delivery channels building toward durable, locally owned systems?
+- **Fragility relapse risk** (Rec 4): Transitions are reversible. Does the M&E system include early warning indicators that would trigger adaptation if conditions deteriorate?
+
+#### Rating Calibration — In Transition
+
+- **Sensitivity:** Similar to Conflict-Affected but with additional credit for design elements that explicitly leverage the transitional moment (e.g., inclusion of returning displaced populations, institutional legitimacy-building through service delivery).
+- **Responsiveness:** Higher responsiveness expectations than In Crisis — trajectory-shifting actions are possible if government commitment is emerging. Credit engagement with peace dividends, state legitimacy, and institutional reconstruction.
+
+#### Stage 3 Recommendation Framing — In Transition
+
+- Recommendations should name the specific transitional opportunity being leveraged.
+- Flag fragility relapse risks explicitly and recommend adaptive management provisions.
+- Recommend partnership with security and political actors where the WBG has comparative advantage (e.g., public finance management linked to security sector reform).
+
+---
+
+### Category 3: Conflict-Affected Countries
+
+**Definition:** Countries with functioning governments where conflict and insecurity are widespread enough to hamper national development progress, typically corresponding to the World Bank FCS list (excluding OP 7.30 countries).
+
+**Current examples:** ~35 current FCS list countries not on OP 7.30 list, including Nigeria, Somalia, DRC, Ukraine, Haiti, etc.
+
+#### Stage 2 Screening Lens — Conflict-Affected
+
+This is the most common category and the core use case for the FCV Screener.
+
+Emphasise:
+- **Government commitment to trajectory-shifting actions** (Recs 1–3): Does the project align with government-level commitments to address FCV drivers? Are reforms or investments sequenced to reduce fragility over time?
+- **DRR alignment** (Rec 1): Are the project's Drivers-Risks-Resilience specifically identified for the sector and subnational geography? Are recommendations grounded in the RRA?
+- **Subnational targeting** (Rec 2, Peace & Inclusion Lens): Subnational variation in conflict intensity is the defining characteristic of most Conflict-Affected countries. Is the project's geographic footprint mapped against subnational conflict dynamics? Are historically excluded areas explicitly included?
+- **Operational flexibilities** (Rec 9): CERCs, HEIS, phased disbursement, alternative implementation are available and expected to be considered.
+- **Institutional strengthening** (Recs 7, 9): Even under fragility, government delivery is the expected model. Does the project build, not bypass, government capacity?
+
+#### Rating Calibration — Conflict-Affected
+
+- **Sensitivity:** Full sensitivity expectations apply. Adjustments: (a) partial credit where government capacity constraints explain weaker implementation modalities; (b) subnational variation is expected — projects that concentrate on high-conflict subnational areas may rate higher than those with uniform national coverage.
+- **Responsiveness:** Full responsiveness expectations apply. Credit for trajectory-shifting actions — reforms, institutional strengthening, peace dividends — that go beyond service delivery and engage with FCV drivers.
+
+#### Stage 3 Recommendation Framing — Conflict-Affected
+
+- Recommendations must name specific geography, mechanism, and entry points (not broad policy suggestions).
+- Trajectory-shifting actions should be explicitly connected to FCV drivers identified in Part B.
+- Reference the applicable WBG instrument and lifecycle stage when recommending operational changes.
+- Operational flexibility recommendations should reference the specific mechanism (e.g., "Add a zero-dollar CERC to allow rapid reallocation if conflict escalates in [specific region]").
+
+---
+
+### Category 4: Countries at Risk
+
+**Definition:** Countries not currently on the FCS list but with elevated fragility indicators, emerging instability, or escalating conflict risk — where proactive prevention-oriented engagement can have the highest impact.
+
+**Identification signals (LLM-inferred):** Recent coup or political instability; escalating subnational violence; neighboring FCS country spillovers; high youth unemployment and grievance indicators; weak institutional legitimacy; Stage 1 web research flags conflict risk.
+
+#### Stage 2 Screening Lens — At Risk
+
+Emphasise:
+- **Anticipation and prevention design** (Shift A, Recs 1, 4, 10): Does the project design incorporate early warning? Are M&E indicators sensitive to emerging conflict dynamics? Is risk monitoring proactive rather than reactive?
+- **Institutional strengthening before crisis** (Recs 2, 7, 9): At Risk contexts are an opportunity to build resilience before crisis materialises. Does the project strengthen institutions, grievance mechanisms, and social cohesion proactively?
+- **SORT and risk integration** (Rec 4): Risk ratings should reflect emerging instability. Is SORT updated for FCV risks? Does the results framework include conflict-sensitive indicators?
+- **Prevention entry points** (Recs 2, 3): Does the project explicitly target drivers of potential escalation — e.g., exclusion of particular groups, regional inequity, governance deficits?
+
+#### Rating Calibration — At Risk
+
+- **Sensitivity:** Adjusted upward for prevention quality. A project that explicitly integrates conflict risk monitoring, includes early warning indicators, and targets prevention entry points should rate more highly on sensitivity than one that merely acknowledges a stable operating environment.
+- **Responsiveness:** Credit responsiveness for prevention-oriented design choices — even if the country is not currently in active conflict, investments that strengthen resilience pathways and reduce escalation risk demonstrate responsiveness to the FCV dynamic.
+
+#### Stage 3 Recommendation Framing — At Risk
+
+- Recommendations should identify specific prevention entry points — the mechanisms, institutions, or dynamics that, if addressed now, would reduce escalation risk.
+- Early warning integration in M&E should be framed as a practical design addition (e.g., "Add two conflict-sensitive outcome indicators to the results framework, drawing on the ACLED subnational conflict dataset for [country]").
+- Institutional strengthening recommendations should be framed as resilience investments, not just capacity building.
+
+---
+
+### Delivery Modality Assumptions by Category
+
+| Category | Government as primary partner | TPI/UN/NGO expected | Key flexibilities |
+|---|---|---|---|
+| In Crisis | No — assess alternative pathways | Yes — assess sustainability/phase-out | CERC, HEIS, TPM, alt. implementation |
+| In Transition | Partially — emerging government role | Transitioning out of TPI | CERC, phased approach |
+| Conflict-Affected | Yes — government-led expected | Where government capacity is absent in specific areas | Full suite: CERC, HEIS, TPM, phased disbursement |
+| At Risk | Yes — standard government-led | Rarely, unless subnational pockets | CERC, SORT, adaptive M&E |
+
+---
+
+### Classification Output Requirements (Stage 1)
+
+The Stage 1 output must include a `%%%COUNTRY_CLASSIFICATION_START/END%%%` delimiter block with:
+- `category`: one of In Crisis, Conflict-Affected, At Risk, In Transition (or General if insufficient evidence)
+- `confidence`: high (deterministic from FCS/OP7.30 lists) or moderate (LLM-inferred)
+- `reasoning`: 1–2 sentences citing evidence from the project document or web research
+
+This block is parsed by the backend and used to calibrate Stages 2 and 3. It is stripped from the TTL-facing output.
+"""
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SECONDARY_KNOWLEDGE — Conditionally injected FCV Playbook snippets
+# Structure: {snippet_id: {title, source, triggers, content}}
+# Trigger logic: OR within a field, AND across populated fields. Empty = wildcard.
+# Content populated in Batches 3 and 4 (see implementation plan).
+# ─────────────────────────────────────────────────────────────────────────────
+
+SECONDARY_KNOWLEDGE = {
+    "op730_engagement": {
+        "title": "OP 7.30 Engagement — De Facto Governments",
+        "source": "FCV Playbook — OP 7.30 (Dealings with De Facto Governments) and Key Resources Note",
+        "triggers": {
+            "country_category": ["In Crisis"],
+            "instrument": [],
+            "sector": [],
+            "flags": [],
+            "doc_type": [],
+        },
+        "content": "",  # CONTENT PENDING — Batch 3 distillation
+    },
+    "tpi_service_delivery": {
+        "title": "Service Delivery in Protracted Conflict and Violence",
+        "source": "FCV Playbook — How to Calibrate Support to Service Delivery in Protracted Conflict and Violence Contexts (Nov 2025)",
+        "triggers": {
+            "country_category": ["In Crisis", "In Transition"],
+            "instrument": [],
+            "sector": ["service delivery", "health", "education", "water", "social protection"],
+            "flags": ["tpi_mentioned"],
+            "doc_type": [],
+        },
+        "content": "",  # CONTENT PENDING — Batch 3 distillation
+    },
+    "cerc_guidance": {
+        "title": "Contingency Emergency Response Component (CERC) Guidance",
+        "source": "FCV Playbook — Bank Guidance: Contingent Emergency Response Components",
+        "triggers": {
+            "country_category": ["In Crisis", "Conflict-Affected"],
+            "instrument": ["IPF"],
+            "sector": [],
+            "flags": ["cerc_mentioned", "emergency_component"],
+            "doc_type": [],
+        },
+        "content": "",  # CONTENT PENDING — Batch 3 distillation
+    },
+    "rapid_response": {
+        "title": "Rapid Response to Crises and Emergencies",
+        "source": "FCV Playbook — Bank Policy: Rapid Response to Crises and Emergencies (2024 revision, OPS5.08-POL.125)",
+        "triggers": {
+            "country_category": ["In Crisis"],
+            "instrument": [],
+            "sector": [],
+            "flags": ["emergency_component", "cerc_mentioned"],
+            "doc_type": [],
+        },
+        "content": "",  # CONTENT PENDING — Batch 3 distillation
+    },
+    "operational_flexibilities": {
+        "title": "Operational Flexibilities Available in FCV Settings",
+        "source": "FCV Playbook — OPSPF Policy: Operational Flexibilities That Can Be Leveraged in FCV Settings",
+        "triggers": {
+            "country_category": ["In Crisis", "Conflict-Affected"],
+            "instrument": [],
+            "sector": [],
+            "flags": [],
+            "doc_type": [],
+        },
+        "content": "",  # CONTENT PENDING — Batch 3 distillation
+    },
+    "esf_security_personnel": {
+        "title": "Security Personnel Risk Management (ESF)",
+        "source": "FCV Playbook — ESF Good Practice Note: Assessing and Managing Risks of Security Personnel",
+        "triggers": {
+            "country_category": [],
+            "instrument": ["IPF", "PforR"],
+            "sector": [],
+            "flags": ["security_risks_noted", "armed_forces_mentioned"],
+            "doc_type": [],
+        },
+        "content": "",  # CONTENT PENDING — Batch 3 distillation
+    },
+    "rra_methodology": {
+        "title": "Risk and Resilience Assessment (RRA) Methodology",
+        "source": "FCV Playbook — Methodology Note: Risk and Resilience Assessments",
+        "triggers": {
+            "country_category": [],
+            "instrument": [],
+            "sector": [],
+            "flags": ["rra_referenced", "rra_absent"],
+            "doc_type": [],
+        },
+        "content": "",  # CONTENT PENDING — Batch 3 distillation
+    },
+    "esf_framework_core": {
+        "title": "Environmental and Social Framework (ESF) — FCV-Relevant Standards",
+        "source": "FCV Playbook — World Bank Environmental and Social Framework (ESF)",
+        "triggers": {
+            "country_category": [],
+            "instrument": ["IPF", "PforR"],
+            "sector": [],
+            "flags": [],
+            "doc_type": ["PAD", "PCN", "PID"],
+        },
+        "content": "",  # CONTENT PENDING — Batch 4 distillation
+    },
+    "esf_vulnerable_groups": {
+        "title": "Vulnerable and Disadvantaged Groups — ESF Directive",
+        "source": "FCV Playbook — Bank Directive: Addressing Risks and Impacts on Disadvantaged or Vulnerable Individuals or Groups",
+        "triggers": {
+            "country_category": [],
+            "instrument": [],
+            "sector": [],
+            "flags": ["vulnerable_groups", "displacement_context"],
+            "doc_type": [],
+        },
+        "content": "",  # CONTENT PENDING — Batch 4 distillation
+    },
+    "sort_guidance": {
+        "title": "SORT Risk Rating in FCV Settings",
+        "source": "FCV Playbook — Bank Guidance: Systematic Operations Risk-Rating Tool (SORT)",
+        "triggers": {
+            "country_category": ["At Risk"],
+            "instrument": [],
+            "sector": [],
+            "flags": [],
+            "doc_type": [],
+        },
+        "content": "",  # CONTENT PENDING — Batch 4 distillation
+    },
+    "dpf_policy_fcv": {
+        "title": "Development Policy Financing in FCV Contexts",
+        "source": "FCV Playbook — Bank Policy: Development Policy Financing",
+        "triggers": {
+            "country_category": [],
+            "instrument": ["DPO", "DPF"],
+            "sector": [],
+            "flags": [],
+            "doc_type": [],
+        },
+        "content": "",  # CONTENT PENDING — Batch 4 distillation
+    },
+    "ipf_policy_fcv": {
+        "title": "IPF in Situations of Urgent Need or Capacity Constraints",
+        "source": "FCV Playbook — Bank Procedure: Preparation of IPF in Situations of Urgent Need (OPS5.03-PROC.254)",
+        "triggers": {
+            "country_category": ["In Crisis", "Conflict-Affected"],
+            "instrument": ["IPF"],
+            "sector": [],
+            "flags": [],
+            "doc_type": [],
+        },
+        "content": "",  # CONTENT PENDING — Batch 4 distillation
+    },
+    "procurement_fcv": {
+        "title": "Procurement in Urgent Need / FCV Settings",
+        "source": "FCV Playbook — Bank Guidance: Procurement in Situations of Urgent Need or Capacity Constraints",
+        "triggers": {
+            "country_category": ["In Crisis", "Conflict-Affected"],
+            "instrument": ["IPF"],
+            "sector": [],
+            "flags": ["procurement_issues"],
+            "doc_type": [],
+        },
+        "content": "",  # CONTENT PENDING — Batch 4 distillation
+    },
+    "fm_fcv": {
+        "title": "Financial Management in FCV-Affected Operations",
+        "source": "FCV Playbook — Bank Directive: Financial Management in Bank-Financed Operations",
+        "triggers": {
+            "country_category": [],
+            "instrument": [],
+            "sector": [],
+            "flags": ["fiduciary_risks"],
+            "doc_type": [],
+        },
+        "content": "",  # CONTENT PENDING — Batch 4 distillation
+    },
+    "icr_fcv": {
+        "title": "ICR Guidance — FCV Lens for Completion Reporting",
+        "source": "FCV Playbook — Bank Guidance: Implementation Completion and Results Report for IPF Operations",
+        "triggers": {
+            "country_category": [],
+            "instrument": [],
+            "sector": [],
+            "flags": [],
+            "doc_type": ["ISR", "ICR"],
+        },
+        "content": "",  # CONTENT PENDING — Batch 4 distillation
+    },
+    "scd_cpf_process": {
+        "title": "Country Engagement Process — SCD, CPF, and FCV Integration",
+        "source": "FCV Playbook — WBG Country Engagement Directive; IEG SCD-CPF Evaluation",
+        "triggers": {
+            "country_category": [],
+            "instrument": [],
+            "sector": [],
+            "flags": ["cpf_uploaded", "scd_mentioned"],
+            "doc_type": [],
+        },
+        "content": "",  # CONTENT PENDING — Batch 4 distillation
+    },
+    "wdr_security_jobs": {
+        "title": "Security-Justice-Jobs Nexus (WDR 2011)",
+        "source": "FCV Playbook — World Development Report 2011: Conflict, Security, and Development",
+        "triggers": {
+            "country_category": ["In Crisis", "Conflict-Affected"],
+            "instrument": [],
+            "sector": ["jobs", "private sector", "social protection", "governance"],
+            "flags": ["private_sector_focus"],
+            "doc_type": [],
+        },
+        "content": "",  # CONTENT PENDING — Batch 4 distillation
+    },
+    "pathways_prevention": {
+        "title": "Prevention and Inclusion Pathways (Pathways for Peace)",
+        "source": "FCV Playbook — Pathways for Peace: Inclusive Approaches to Preventing Violent Conflict (UN-WB, 2018)",
+        "triggers": {
+            "country_category": ["At Risk"],
+            "instrument": [],
+            "sector": [],
+            "flags": ["prevention", "early_warning"],
+            "doc_type": [],
+        },
+        "content": "",  # CONTENT PENDING — Batch 4 distillation
+    },
+    "country_engagement_eval": {
+        "title": "Country Engagement Quality — IEG Findings",
+        "source": "FCV Playbook — IEG: Early-Stage Assessment of the SCD and CPF Process (2017)",
+        "triggers": {
+            "country_category": [],
+            "instrument": [],
+            "sector": [],
+            "flags": ["cpf_uploaded"],
+            "doc_type": [],
+        },
+        "content": "",  # CONTENT PENDING — Batch 4 distillation
+    },
+}
