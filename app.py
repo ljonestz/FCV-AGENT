@@ -3615,7 +3615,6 @@ def run_stage():
                 _country_classification = {}
                 _context_flags = {}
                 _sector_context = {}
-                secondary_snippets_s3 = []
 
                 if stage == 2:
                     # Stage 2: extract ratings and Under the Hood panels

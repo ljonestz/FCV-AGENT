@@ -2899,7 +2899,7 @@ If allegations of GBV or SEA involving security personnel arise during implement
             "country_category": [],
             "instrument": [],
             "sector": [],
-            "flags": ["rra_referenced", "rra_absent"],
+            "flags": ["rra_referenced"],
             "doc_type": [],
         },
         "content": """## Risk and Resilience Assessment (RRA) Methodology — Guidance for WBG Teams
