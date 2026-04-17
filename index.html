@@ -567,6 +567,12 @@
     .cw-reasoning{margin:0 0 6px;font-size:12px;color:#4B5563;font-style:italic;}
     .cw-disclaimer{margin:0;font-size:11px;color:#9CA3AF;}
     .cw-footer{padding:10px 16px;border-top:1px solid #E5E7EB;}
+    .category-lens-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;background:#EEF0F3;border-radius:4px;font-size:11px;color:#4B5563;margin-bottom:12px;}
+    .clb-help{color:#9CA3AF;cursor:help;font-size:12px;}
+    .classification-framing-para p{background:#F0F7FF;border-left:3px solid #4A90E2;padding:10px 14px;border-radius:0 4px 4px 0;font-size:13px;color:#1D4ED8;margin-bottom:16px;}
+    .zone-act-cat-relevance{border-top:1px solid #F3F4F6;padding-top:8px;margin-top:8px;}
+    .applied-snippets-attr{margin:16px 0;padding:10px 14px;background:#F9FAFB;border:1px solid #E5E7EB;border-radius:6px;font-size:12px;color:#4B5563;}
+    .asa-source{font-size:11px;color:#9CA3AF;}
     .trunc-warn-area{background:#fff7ed;border:1.5px solid #fed7aa;border-radius:var(--radius);padding:14px 18px;margin-bottom:14px}
     .trunc-warn-hdr{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:#c2410c;margin-bottom:8px}
     .trunc-warn-item{font-size:12.5px;color:#7c2d12;margin-bottom:4px;line-height:1.55;padding-left:4px}
@@ -2693,7 +2699,12 @@
               if(p.instrument_type)instrumentType=p.instrument_type;
               if(p.temporal_context)temporalContext=p.temporal_context;
               if(p.process_type&&p.process_type!=='Unknown')processType=p.process_type;
-              const summary1=(reviewMode==='implementation'?(processType!=='Unknown'?processType:'Process')+' detected':docType!=='Unknown'?docType:'Document')+' \u00B7 Context extracted';
+              if(p.country_classification){countryClassification=p.country_classification;localStorage.setItem('country_classification',JSON.stringify(countryClassification));}
+              if(p.context_flags)contextFlags=p.context_flags;
+              if(p.sector_context)sectorContext=p.sector_context;
+              const cat=countryClassification.category||'General';
+              const catSuffix=cat&&cat!=='General'?' \u00B7 '+esc(cat):'';
+              const summary1=(reviewMode==='implementation'?(processType!=='Unknown'?processType:'Process')+' detected':docType!=='Unknown'?docType:'Document')+catSuffix+' \u00B7 Context extracted';
               updateExpressStage(1,'done',summary1);
               epSafeStore(stageOutputs,stageHists,'1');
             }
@@ -2721,6 +2732,7 @@
               if(p.fcv_responsiveness_rating)fcvResponsivenessRating=p.fcv_responsiveness_rating;
               if(p.priorities)stageThreePriorities=p.priorities;
               if(p.horizon_considerations)horizonConsiderations=p.horizon_considerations;
+              if(p.applied_snippets)stageAppliedSnippets=p.applied_snippets;
               localStorage.setItem('stage3_timestamp',Date.now());
               updateExpressStage(3,'done','Complete');
               epSafeStore(stageOutputs,stageHists,'3');
@@ -2744,6 +2756,7 @@
             curS=3;setStepper(3,'done');
             renderOut(3,stageOutputs[3],false);
             if(stageThreePriorities&&stageThreePriorities.length)initStage3UI();
+            renderAppliedSnippetsAttribution();
             // stage2_under_hood already written by the stage_done handler for stage 2 — no redundant write needed here
             enableClickableStepper();
             if(instrumentType!=='Unknown'||temporalContext.approval_date||processType!=='Unknown')injectTemporalContextPanel();
@@ -2930,7 +2943,7 @@
                 if(p.responsiveness_rating){ fcvResponsivenessRating=p.responsiveness_rating; }
                 if(p.under_hood){ stage2UnderHood=p.under_hood; localStorage.setItem('stage2_under_hood', JSON.stringify(p.under_hood)); }
               }
-              if(stage===3){stageGapTable=p.gap_table||null;stageRiskExposure=p.risk_exposure||null;stageSensitivitySummary=p.sensitivity_summary||'';stageResponsivenessSummary=p.responsiveness_summary||'';if(p.fcv_rating)fcvRating=p.fcv_rating;if(p.fcv_responsiveness_rating)fcvResponsivenessRating=p.fcv_responsiveness_rating;}
+              if(stage===3){stageGapTable=p.gap_table||null;stageRiskExposure=p.risk_exposure||null;stageSensitivitySummary=p.sensitivity_summary||'';stageResponsivenessSummary=p.responsiveness_summary||'';if(p.fcv_rating)fcvRating=p.fcv_rating;if(p.fcv_responsiveness_rating)fcvResponsivenessRating=p.fcv_responsiveness_rating;if(p.applied_snippets)stageAppliedSnippets=p.applied_snippets;}
               // Write timestamps BEFORE renderOut so the consistency check inside renderOut reads the current run's value
               // Stage 2 completion also clears any previously dismissed banner on Stage 3
               if(stage===2){ localStorage.setItem('stage2_timestamp', Date.now()); localStorage.removeItem('stage3_consistency_dismissed'); }
@@ -2990,6 +3003,7 @@
                 explorerHistory=[];
                 updateSidebar();
                 populateExplorerDropdown(p.priorities);
+                renderAppliedSnippetsAttribution();
               }
               if(stage===3 && p.parse_error){
                 const outEl = document.getElementById('s-out');
@@ -3149,6 +3163,20 @@
     if(widget)widget.style.display='none';
     const actArea=document.getElementById('act-area');
     if(actArea)actArea.style.display='';
+  }
+
+  function renderAppliedSnippetsAttribution(){
+    const existing=document.getElementById('applied-snippets-attr');
+    if(existing)existing.remove();
+    if(!stageAppliedSnippets||!stageAppliedSnippets.length)return;
+    const el=document.createElement('div');
+    el.id='applied-snippets-attr';
+    el.className='applied-snippets-attr ani';
+    el.innerHTML=`<strong>Additional FCV Playbook context applied in this analysis:</strong><ul style="margin:6px 0 0;padding-left:18px">${
+      stageAppliedSnippets.map(s=>`<li>${esc(s.title||s.id||'')} <span class="asa-source">(${esc(s.source||'')})</span></li>`).join('')
+    }</ul>`;
+    const stageDisp=document.getElementById('stage-disp');
+    if(stageDisp)stageDisp.appendChild(el);
   }
 
   function buildSRDefinitionBox(compact) {
@@ -3443,14 +3471,23 @@
         <div class="fpn-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
         <div class="fpn-body"><strong>Retrospective screening — finalized PAD</strong>This document was Board-approved in ${esc(temporalContext.approval_date)}. The recommendations below represent the guidance this tool would have provided had the document been reviewed prior to appraisal. They are framed as if the project is still in the design stage and can be used for retrospective peer review, benchmarking, or to inform future similar projects.</div>
       </div>` : '';
-      _outBodyContent=wrapSRTerms(_padNotice+_stageBadge+md(_pre)+renderRiskExposure(stageRiskExposure)+md(_rest)+renderSRCards(stageSensitivitySummary,stageResponsivenessSummary))+'<div id="priorities-intro"></div>';
+      function styleClassificationFraming(html){
+        return html.replace(/(<p>)((?:Based on|This analysis places)[^<]*<\/p>)/,'<div class="classification-framing-para">$1$2</div>');
+      }
+      const _preHtml = styleClassificationFraming(md(_pre));
+      _outBodyContent=wrapSRTerms(_padNotice+_stageBadge+_preHtml+renderRiskExposure(stageRiskExposure)+md(_rest)+renderSRCards(stageSensitivitySummary,stageResponsivenessSummary))+'<div id="priorities-intro"></div>';
     }else{
       const cleanResult = stage===1 ? result.replace(/\n*%%%DOC_TYPE:[^%\n]*%%%\n*/g,'') : result;
       if(stage===1){
         _outBodyContent = wrapSRTerms(renderStage1(cleanResult));
       }else{
         const srDefPrefix = stage===2 ? buildSRDefinitionBox() + buildTagLegend() : '';
-        _outBodyContent = wrapSRTerms(srDefPrefix + md(cleanResult));
+        let catBadge = '';
+        if(stage===2){
+          const cat=countryClassification.category;
+          catBadge=cat&&cat!=='General'?`<div class="category-lens-badge">Analysis calibrated for: <strong>${esc(cat)}</strong> context <span class="clb-help" title="The screening lens, rating calibration, and recommendation framing have been adjusted for this country category per the FCV Strategy's differentiated approach.">\u24d8</span></div>`:'';
+        }
+        _outBodyContent = wrapSRTerms(catBadge + srDefPrefix + md(cleanResult));
       }
     }
     document.getElementById('stage-disp').innerHTML=`
@@ -3993,11 +4030,16 @@
     const padNoticeHtml = isFinalizedPAD()
       ? `<div style="background:#fff8e1;border-left:4pt solid #f9a825;padding:10pt 14pt;margin:12pt 0;font-size:10pt;color:#5d4037"><strong>Retrospective screening — finalized PAD.</strong> This document was Board-approved in ${esc(temporalContext.approval_date)}. The recommendations below represent the guidance this tool would have provided had the document been reviewed prior to appraisal. They are framed as if the project is still in the design stage and can be used for retrospective peer review, benchmarking, or to inform future similar projects.</div>`
       : '';
+    const cat=countryClassification.category||'General';
+    const catReasoning=countryClassification.reasoning||'';
+    const classificationSection=cat&&cat!=='General'
+      ?`<div style="background:#f0f7ff;border-left:3pt solid #4a90e2;padding:8pt 12pt;margin:10pt 0;font-size:9.5pt"><strong>FCV Strategy Classification:</strong> This analysis places the project's country context within the '<strong>${esc(cat)}</strong>' category of the WBG FCV Strategy's differentiated approach. ${esc(catReasoning)}<br><em style="color:#555;font-size:9pt">This is the analysis's working judgment for calibrating the assessment — not an official WBG designation.</em></div>`
+      :'';
     let body = `<h1>FCV Recommendations Note</h1>
 <p style="color:#666;font-size:9pt"><em>Generated by WBG FCV Project Screener · ${dateStr}</em></p>
 <p style="color:#888;font-size:8.5pt;font-style:italic">Analytical framework: WBG FCV Strategy Refresh, FCV Operational Manual (OST), FCV Operational Playbook, and Good Practice Notes on Peace &amp; Inclusion Lenses and FCV-Sensitive Programming. AI-assisted output — verify before operational use.</p>
 <hr>
-${padNoticeHtml}<h2>Executive Summary · Project-Wide Considerations</h2>
+${padNoticeHtml}${classificationSection}<h2>Executive Summary · Project-Wide Considerations</h2>
 ${md(execSummary)}`;
 
     if(stageThreePriorities.length){
@@ -4013,6 +4055,7 @@ ${md(execSummary)}`;
         if(pr.the_gap) body += `<p><strong>The Gap:</strong><br>${esc(pr.the_gap)}</p>`;
         if(pr.why_it_matters) body += `<p><strong>Why It Matters:</strong><br>${esc(pr.why_it_matters)}</p>`;
         if(pr.cpf_alignment) body += `<p><strong>CPF Alignment:</strong><br>${esc(pr.cpf_alignment)}</p>`;
+        if(pr.country_category_relevance) body += `<p><strong>Differentiated approach note:</strong><br>${esc(pr.country_category_relevance)}</p>`;
         if(pr.actions && pr.actions.length > 0){
           body += `<p><strong>Essential Action${pr.actions.length > 1 ? 's' : ''}:</strong></p>`;
           pr.actions.forEach(act => {
@@ -4577,6 +4620,11 @@ ${md(execSummary)}`;
             ${pr.implementation_note ? `<div class="zone-act-section zone-act-impl">
               <div class="zone-act-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> Implementation consideration</div>
               <div class="pc-zone-body">${esc(pr.implementation_note)}</div>
+            </div>` : ''}
+            <!-- Differentiated approach note -->
+            ${pr.country_category_relevance ? `<div class="zone-act-section zone-act-cat-relevance">
+              <div class="zone-act-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> Differentiated approach note</div>
+              <div class="pc-zone-body">${esc(pr.country_category_relevance)}</div>
             </div>` : ''}
           </div>
           <!-- Go Deeper 3-tab section (lazy-loaded on expand) -->
