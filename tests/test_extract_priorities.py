@@ -158,6 +158,14 @@ class TestExtractPrioritiesJsonPath:
                 f"Unexpected specificity warning on: {pr['title']}"
             )
 
+    def test_country_category_relevance_optional(self):
+        """country_category_relevance should be present on each priority (may be None or empty string)."""
+        result = extract_priorities(VALID_JSON_FIXTURE)
+        for pr in result['priorities']:
+            assert 'country_category_relevance' in pr, (
+                f"Missing country_category_relevance on priority: {pr.get('title', '?')}"
+            )
+
 
 # ── Error-path tests ──────────────────────────────────────────────────────────
 

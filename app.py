@@ -72,7 +72,8 @@ _REQUIRED_PRIORITY_FIELDS = [
     'title', 'fcv_dimension', 'tag', 'refresh_shift', 'risk_level',
     'the_gap', 'why_it_matters', 'actions',
     'who_acts', 'when', 'resources',
-    'pad_sections', 'implementation_note', 'cpf_alignment'
+    'pad_sections', 'implementation_note', 'cpf_alignment',
+    'country_category_relevance',  # NEW — optional string or null
 ]
 
 _SPECIFICITY_STOPWORDS = frozenset({
@@ -3381,6 +3382,47 @@ def run_stage():
                         "to null — null means genuinely no connection, not 'the project document didn't mention the CPF.'"
                     )
 
+                # ── DIFFERENTIATED APPROACH INJECTION (Stage 3) ──────────────────
+                country_classification_s3 = data.get('country_classification', {})
+                confirmed_category_s3 = (
+                    country_classification_s3.get('category', 'General')
+                    if isinstance(country_classification_s3, dict) else 'General'
+                )
+                context_flags_s3 = data.get('context_flags', {})
+                sector_context_s3 = data.get('sector_context', {})
+                primary_sector_s3 = (
+                    sector_context_s3.get('primary_sector', 'Unknown')
+                    if isinstance(sector_context_s3, dict) else 'Unknown'
+                )
+
+                secondary_snippets_s3 = select_secondary_knowledge(
+                    country_category=confirmed_category_s3,
+                    instrument_type=instrument_type,
+                    doc_type=doc_type,
+                    sector=primary_sector_s3,
+                    context_flags=context_flags_s3 if isinstance(context_flags_s3, dict) else {}
+                )
+
+                category_framing_s3 = (
+                    f"\n\n--- FCV Strategy Differentiated Approach (Stage 3 framing — category: {confirmed_category_s3}) ---\n"
+                    f"Frame recommendations, ratings, and the narrative memo according to the '{confirmed_category_s3}' "
+                    f"category guidance below. The framing paragraph at the top of the memo must state that "
+                    f"this analysis places the country within the '{confirmed_category_s3}' category of the "
+                    f"FCV Strategy's differentiated approach — as analytical judgment, not an official designation.\n\n"
+                )
+                stage_prompt = stage_prompt + category_framing_s3 + DIFFERENTIATED_APPROACHES
+
+                if secondary_snippets_s3:
+                    snippets_text_s3 = "\n\n--- ADDITIONAL FCV PLAYBOOK CONTEXT (auto-selected for Stage 3) ---\n"
+                    snippets_text_s3 += (
+                        "The following operational context from the FCV Playbook has been auto-selected. "
+                        "Use to make specific recommendations more operationally grounded. "
+                        "Do NOT expand the scope of recommendations — enrich quality only.\n\n"
+                    )
+                    for snip in secondary_snippets_s3:
+                        snippets_text_s3 += f"### {snip['title']}\nSource: {snip['source']}\n\n{snip['content']}\n\n---\n"
+                    stage_prompt = stage_prompt + snippets_text_s3
+
             # ── IMPLEMENTATION REVIEW: Stage 3 injection ─────────────────────
             elif is_impl and stage == 3:
                 instrument_type = data.get('instrument_type', 'Unknown')
@@ -3573,6 +3615,7 @@ def run_stage():
                 _country_classification = {}
                 _context_flags = {}
                 _sector_context = {}
+                secondary_snippets_s3 = []
 
                 if stage == 2:
                     # Stage 2: extract ratings and Under the Hood panels
@@ -3679,6 +3722,10 @@ def run_stage():
                     done_data['sensitivity_summary'] = sensitivity_summary
                     done_data['responsiveness_summary'] = responsiveness_summary
                     done_data['horizon_considerations'] = horizon
+                    done_data['applied_snippets'] = [
+                        {'id': s['id'], 'title': s['title'], 'source': s['source']}
+                        for s in secondary_snippets_s3
+                    ]
 
                 yield f"data: {json.dumps(done_data)}\n\n"
 
@@ -4119,6 +4166,7 @@ def run_express():
 
                 instrument_slice_s3 = get_instrument_slice(instrument_type)
                 temporal_guardrail_s3 = _build_temporal_guardrail(temporal_context, doc_type)
+                secondary_snippets_s3e = []  # initialised here; populated in design-review path below
 
                 if is_impl:
                     s3_key = 'impl_3'
@@ -4191,6 +4239,40 @@ def run_express():
                             "to null — null means genuinely no connection, not 'the project document didn't mention the CPF.'"
                         )
 
+                    # ── DIFFERENTIATED APPROACH INJECTION (Stage 3, express) ──
+                    confirmed_category_s3e = (
+                        country_classification.get('category', 'General')
+                        if isinstance(country_classification, dict) else 'General'
+                    )
+                    primary_sector_s3e = (
+                        sector_context.get('primary_sector', 'Unknown')
+                        if isinstance(sector_context, dict) else 'Unknown'
+                    )
+                    secondary_snippets_s3e = select_secondary_knowledge(
+                        country_category=confirmed_category_s3e,
+                        instrument_type=instrument_type,
+                        doc_type=doc_type,
+                        sector=primary_sector_s3e,
+                        context_flags=context_flags if isinstance(context_flags, dict) else {}
+                    )
+                    category_framing_s3e = (
+                        f"\n\n--- FCV Strategy Differentiated Approach (Stage 3, express — category: {confirmed_category_s3e}) ---\n"
+                        f"Frame recommendations according to the '{confirmed_category_s3e}' category guidance below. "
+                        f"The framing paragraph at the top of the memo must state that this analysis places the "
+                        f"country within the '{confirmed_category_s3e}' category of the FCV Strategy's differentiated "
+                        f"approach — as analytical judgment, not an official designation.\n\n"
+                    )
+                    stage3_prompt = stage3_prompt + category_framing_s3e + DIFFERENTIATED_APPROACHES
+                    if secondary_snippets_s3e:
+                        snippets_text_s3e = "\n\n--- ADDITIONAL FCV PLAYBOOK CONTEXT (auto-selected for Stage 3) ---\n"
+                        snippets_text_s3e += (
+                            "The following operational context from the FCV Playbook has been auto-selected. "
+                            "Use to enrich Stage 3 recommendations. Do NOT expand scope.\n\n"
+                        )
+                        for snip in secondary_snippets_s3e:
+                            snippets_text_s3e += f"### {snip['title']}\nSource: {snip['source']}\n\n{snip['content']}\n\n---\n"
+                        stage3_prompt = stage3_prompt + snippets_text_s3e
+
                 # Build Stage 3 messages from conversation history
                 stage3_messages = conversation_history + [
                     {"role": "user", "content": stage3_prompt}
@@ -4217,7 +4299,7 @@ def run_express():
                     conversation_history = conversation_history[-20:]
 
                 # ── Stage 3 done event ──
-                yield f"data: {json.dumps({'stage_done': 3, 'result': stage3_output_clean, 'history': conversation_history, 'priorities': parsed.get('priorities', []), 'fcv_rating': parsed.get('fcv_rating', ''), 'fcv_responsiveness_rating': parsed.get('fcv_responsiveness_rating', ''), 'sensitivity_summary': parsed.get('sensitivity_summary', ''), 'responsiveness_summary': parsed.get('responsiveness_summary', ''), 'risk_exposure': parsed.get('risk_exposure'), 'gap_table': extract_gap_table(stage3_output), 'parse_error': parsed.get('error', False), 'parse_error_message': parsed.get('message', ''), 'horizon_considerations': horizon})}\n\n"
+                yield f"data: {json.dumps({'stage_done': 3, 'result': stage3_output_clean, 'history': conversation_history, 'priorities': parsed.get('priorities', []), 'fcv_rating': parsed.get('fcv_rating', ''), 'fcv_responsiveness_rating': parsed.get('fcv_responsiveness_rating', ''), 'sensitivity_summary': parsed.get('sensitivity_summary', ''), 'responsiveness_summary': parsed.get('responsiveness_summary', ''), 'risk_exposure': parsed.get('risk_exposure'), 'gap_table': extract_gap_table(stage3_output), 'parse_error': parsed.get('error', False), 'parse_error_message': parsed.get('message', ''), 'horizon_considerations': horizon, 'applied_snippets': [{'id': s['id'], 'title': s['title'], 'source': s['source']} for s in secondary_snippets_s3e]})}\n\n"
 
                 # ── Express complete ──
                 yield f"data: {json.dumps({'express_done': True})}\n\n"
