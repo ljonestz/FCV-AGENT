@@ -2553,7 +2553,38 @@ SECONDARY_KNOWLEDGE = {
             "flags": [],
             "doc_type": [],
         },
-        "content": "",  # CONTENT PENDING — Batch 3 distillation
+        "content": """## OP 7.30 Engagement — De Facto Governments — Operational Guidance for WBG Teams
+
+### What Triggers OP 7.30
+OP 7.30 applies when a government comes to power through coup, revolution, or usurpation, or when a constitution has been suspended and civil governance has broken down. The Bank does not recognise or disapprove of such governments — the lending decision is purely technical, not a political endorsement.
+
+### Continuing Existing Operations
+The Bank may continue disbursing under active projects if five criteria are met:
+1. The de facto government exercises effective control over the territory and population.
+2. It recognises past obligations incurred by predecessor governments.
+3. It is willing to assume obligations under the existing legal agreement.
+4. It can ensure adequate implementation of the project.
+5. It has authorised a representative with signing authority for withdrawals.
+
+If any criterion is not met, disbursements must be suspended pending LEGAM advice.
+
+### Approving New Operations
+For new lending, the Country Director must weigh five factors before proceeding:
+1. Legal and political risks for the Bank under the Articles of Agreement.
+2. Whether the government exercises effective, stable control.
+3. Whether it recognises and is willing to assume prior obligations.
+4. The degree of recognition by neighbouring countries and the international community.
+5. The position of other international organisations (UN, regional MDBs) already in the country.
+
+All new operations for de facto governments require LEGAM consultation before concept review.
+
+### Operational Implications for Project Teams
+- Suspend disbursements immediately upon a change-of-government event; seek LEGAM clearance before resuming.
+- For active projects, document the five continuing-operations criteria in a formal country-team memo.
+- For new operations under preparation, ensure the concept note flags the de facto status and records the LEGAM consultation outcome.
+- Do not cite OP 7.30 status as a reason to skip ESF, procurement, or fiduciary requirements — all standards apply in full.
+- Country Director has discretion on timing of new approvals; CMU should monitor international recognition signals (UN seat, regional body positions) as leading indicators.
+""",
     },
     "tpi_service_delivery": {
         "title": "Service Delivery in Protracted Conflict and Violence",
@@ -2565,7 +2596,44 @@ SECONDARY_KNOWLEDGE = {
             "flags": ["tpi_mentioned"],
             "doc_type": [],
         },
-        "content": "",  # CONTENT PENDING — Batch 3 distillation
+        "content": """## Service Delivery in Protracted Conflict and Violence — Operational Guidance for WBG Teams
+
+### What Counts as a PCV Context
+Protracted Conflict and Violence (PCV) contexts are defined by three co-occurring conditions: extended duration of active or residual violence, chronic political and institutional instability, and prolonged vulnerability of the affected population. As of 2025, 26 countries qualify. Standard development service-delivery models consistently underperform in PCV contexts, requiring deliberate calibration.
+
+### The PCV Diagnostic Framework: Rivalry — Fragmentation — Scarcity
+Three structural constraints shape service delivery failure in PCV contexts:
+
+**Rivalry** — Multiple actors hold rival claims to territorial or institutional authority. This manifests as violent disruption of services, gatekeeping by armed or political actors, and elite capture of delivery systems. Key question: Who controls access to service points, and for whose benefit?
+
+**Fragmentation** — Institutional lines are unclear or contested: parallel systems (government, NGO, informal), weak inter-agency coordination, unclear accountability chains. Key question: Which actor is actually responsible for this service, and who fills gaps when it fails?
+
+**Scarcity** — Chronic underinvestment has hollowed out system capacity: staffing gaps, supply shortages, broken infrastructure. Scarcity is often politically manufactured (deliberate under-resourcing of opposition areas). Key question: Is the resource gap structural, or is it a governance choice?
+
+### Three Calibrated Objectives
+Teams must calibrate project objectives along three independent spectrums:
+
+**Effectiveness (EFF):** prevent collapse → preserve functionality → maintain continuity → restore → expand → improve quality.
+**Do No Harm (DNH):** protect providers and beneficiaries → minimise instrumentalisation → avoid market/institutional distortions → protect neutrality → conflict-sensitive access → peace-enhancing effects.
+**Potential to Last (PTL):** maintain institutional continuity → strengthen frontline capacity → transfer responsibility → build local ownership → align to national systems → institutionalise.
+
+Not every project needs to advance on all three. A project in active conflict may only be able to aim for EFF continuity and DNH protection; a post-conflict project may prioritise PTL ownership.
+
+### Three Design Levers
+**WHAT** — the service content: consider simplifying to high-impact core services; use results chains that do not assume stable institutional backing.
+**WHERE / TO WHOM** — targeting: RRA-informed geographic prioritisation; avoid inadvertent exclusion of conflict-affected areas; assess who benefits and who is left out.
+**WHO delivers** — delivery actor choice:
+- Third-party implementers (TPI/NGOs): speed and neutrality, but erodes government capacity and may create dependency.
+- Government: aligns with systemic capacity building, but may be slow, politically constrained, or perceived as partisan.
+- Hybrid: graduated handover from TPI to government with explicit capacity-building milestones.
+
+No single model is universally correct. The delivery actor choice must be derived from the Rivalry-Fragmentation-Scarcity analysis, not defaulted to institutional preference.
+
+### When to Apply This Framework
+- **Preparation phase:** use at PCN/PID to determine whether a standard service delivery model is feasible, or whether PCV calibration is required.
+- **Implementation:** use at MTRs/ISRs when delivery is consistently underperforming to diagnose whether the cause is PCV structural constraints rather than implementation failure.
+- **Evaluation:** use at ICR/PCR to assess whether objectives were appropriately calibrated to context, and document lessons for future PCV programming.
+""",
     },
     "cerc_guidance": {
         "title": "Contingency Emergency Response Component (CERC) Guidance",
@@ -2577,7 +2645,43 @@ SECONDARY_KNOWLEDGE = {
             "flags": ["cerc_mentioned", "emergency_component"],
             "doc_type": [],
         },
-        "content": "",  # CONTENT PENDING — Batch 3 distillation
+        "content": """## Contingency Emergency Response Component (CERC) — Operational Guidance for WBG Teams
+
+### What CERC Is
+A CERC is a dedicated component within an IPF operation that enables swift reallocation of loan proceeds in response to a declared crisis or emergency, without requiring full project restructuring before funds flow. CERCs are typically zero-dollar at approval and activated only when an eligible event occurs.
+
+### What CERC Can and Cannot Finance
+CERC-eligible expenditures: civil works, goods, non-consulting services, consulting services, training, and operating costs needed for emergency response.
+CERC cannot finance: humanitarian assistance, food aid, or cash transfers to affected populations. These require separate humanitarian instruments.
+
+### Four Required Preparation Actions (Before Project Approval)
+Project teams must embed four elements at preparation stage, not after a crisis strikes:
+1. **CERC Annex to the Project Operations Manual (POM):** activation criteria (what event qualifies), implementation arrangements (who manages, which entity), eligible expenditure categories, and disbursement conditions.
+2. **CERC-ESMF or CERC section in the project ESMF:** environmental and social screening framework tailored to emergency response activities.
+3. **CERC-PPSD section:** pre-approved procurement strategies for likely emergency goods and services (framework agreements, direct contracting thresholds, use of HEIS).
+4. **Legal Agreement provisions:** separate CERC disbursement category with its own conditions precedent and special account if required.
+
+Failure to prepare these ex ante is the most common cause of CERC activation delays.
+
+### Activation Process
+Activation requires: (1) a declaration of emergency by the competent national authority (or alternative trigger such as a UN Flash Appeal or certified statement of facts if national institutions have collapsed); (2) a formal Borrower request to the Bank; (3) an Emergency Action Plan listing activities, costs, implementation modalities, procurement plan, and E&S implications; (4) Bank approval.
+Formal restructuring is processed within three months of activation — it is not a prerequisite to fund flow.
+
+### Financial Management Under CERC
+Three FM principles govern CERC operations:
+- **Agility:** streamlined ex ante controls with reliance on ex post verification; simplified reporting during the emergency period.
+- **Capacity:** implementation responsibility may be shifted to a more capable entity if the standard PIU is overwhelmed.
+- **Flexibility:** Bank FM requirements are maintained but applied proportionately to the emergency context.
+
+### Procurement Under CERC
+- Standard prior-review thresholds are waived for CERC activities; ex post review applies.
+- Framework Agreements (pre-qualified suppliers and price schedules) are the primary tool for speed — these must be established before a crisis.
+- HEIS (Hands-on Expanded Implementation Support) available for high-risk contexts.
+- CERC-PPSD prepared at project design specifies the procurement approach for each likely expenditure category.
+
+### Common Failure Modes to Flag in Screening
+If the project document mentions a CERC component but lacks: (a) a CERC Annex to the POM, (b) a CERC-PPSD, or (c) framework agreements — flag this as a gap requiring attention before Board approval. An unprepared CERC provides false assurance of emergency readiness.
+""",
     },
     "rapid_response": {
         "title": "Rapid Response to Crises and Emergencies",
@@ -2589,7 +2693,39 @@ SECONDARY_KNOWLEDGE = {
             "flags": ["emergency_component", "cerc_mentioned"],
             "doc_type": [],
         },
-        "content": "",  # CONTENT PENDING — Batch 3 distillation
+        "content": """## Rapid Response to Crises and Emergencies — Operational Guidance for WBG Teams
+
+### Scope and Purpose (OP 8.00 / OPS5.08-POL.125)
+OP 8.00 governs the Bank's response to major adverse economic or social impacts caused by actual or imminent natural or man-made crises, including conflict, disease outbreaks, economic shocks, and natural disasters. It applies to both stand-alone emergency IPFs and to CERC activations within existing projects.
+
+### Four Guiding Principles
+1. **Scale threshold:** Emergency response applies only to major adverse impacts — not incremental deterioration. A significant shock to livelihoods, essential services, or economic activity is the threshold.
+2. **Comparative advantage:** Focus Bank resources on its core development and economic competencies (infrastructure, service systems, fiscal management, livelihoods). Humanitarian relief and food distribution are UN and NGO mandates, not Bank mandates.
+3. **Coordination:** Bank activities must be coordinated with UN agencies, other MDBs, bilateral donors, and the Borrower's own response mechanisms. Do not duplicate or crowd out humanitarian coordination.
+4. **Governance and fiduciary oversight:** Streamlined procedures must still preserve proportionate oversight. Speed does not mean absence of fiduciary control.
+
+### Eligible Emergency Response Objectives
+OP 8.00 permits Bank financing for the following objectives in crisis contexts:
+- Rebuilding physical and productive assets lost to the crisis.
+- Restoring production capacity, trade, and economic activity.
+- Preserving or restoring essential public services (health, education, water, social protection).
+- Maintaining or rebuilding human, institutional, and social capital — explicitly including support to refugees, IDPs, and ex-combatants.
+- Facilitating peace-building and social cohesion activities that address drivers of the crisis.
+- Strengthening disaster risk management (DRM) capacity and early warning systems.
+- Mitigating the risk and impact of future emergencies.
+
+### What OP 8.00 Does Not Cover
+OP 8.00 is not a substitute for addressing long-term structural economic issues (fiscal reform, structural adjustment, macro-stabilisation). Those require DPO instruments or sustained programmatic lending, not emergency IPFs. Conflating emergency response with development policy reform is a common misapplication.
+
+### Trust Funds and Coordination
+Trust funds frequently play a critical role in rapid response — the Bank can administer pooled funds with specific donor requirements, enabling coordinated financing while maintaining oversight. In FCV contexts, trust fund coordination with UNHCR, WFP, and bilateral donors is often more important than the Bank's own lending volume.
+
+### Relationship to CERC
+CERC (within an existing IPF) and stand-alone emergency IPFs both operate under OP 8.00. The key distinction: CERC is prepared in advance as a project component; a stand-alone emergency IPF is prepared after the crisis event. For FCV-affected countries, CERC is preferred because activation is faster and the institutional context is already established. If a project lacks a CERC and a crisis occurs, a new emergency IPF under OP 8.00 is the fallback — but it requires a full preparation cycle (typically 2-6 months even under emergency procedures).
+
+### Country Director Authorities
+Under OP 8.00, the Country Director may approve temporary adjustments to cost-sharing limits and may invoke streamlined review procedures. These are administrative flexibilities, not waivers of fiduciary, environmental, or social standards.
+""",
     },
     "operational_flexibilities": {
         "title": "Operational Flexibilities Available in FCV Settings",
@@ -2601,7 +2737,35 @@ SECONDARY_KNOWLEDGE = {
             "flags": [],
             "doc_type": [],
         },
-        "content": "",  # CONTENT PENDING — Batch 3 distillation
+        "content": """## Operational Flexibilities Available in FCV Settings — Guidance for WBG Teams
+
+### Principle: Bank Policies Are Fit-for-Purpose
+The Bank's operational policies are designed to accommodate the constraints of FCV contexts through explicit flexibilities. These flexibilities are not waivers of standards — they are alternative compliance pathways that maintain objectives while adapting procedures to fragile, conflict-affected, or violent settings.
+
+### Financial Management Flexibilities
+In FCV and crisis contexts, the following FM adaptations are available:
+- **Simplified reporting:** reduced frequency or scope of interim financial reports during active emergency or high-insecurity periods, subject to task team documentation.
+- **Advance disbursements:** higher advances to the designated account to pre-position funds when supply chains are disrupted and procurement lead times are long.
+- **Alternative fiduciary agents:** where national PIU capacity is inadequate or security prevents standard oversight, a UN agency, NGO, or qualified third-party fiduciary agent may be designated as implementing entity.
+- **Ex post review emphasis:** reduced ex ante prior review for procurement; greater reliance on ex post sampling, with thresholds adjusted proportionate to risk.
+- **Streamlined audit:** simplified audit scope or use of alternative assurance mechanisms (e.g., UN agency financial reporting) where national audit systems are non-functional.
+
+### Procurement Flexibilities
+- **Direct contracting:** permissible for emergency procurement of specific goods or services without competitive bidding, provided conditions of urgency or sole-source justification are documented.
+- **Framework agreements:** pre-qualified supplier lists with established price schedules, enabling call-off contracts without full re-tendering each time. Must be established before the need arises.
+- **HEIS (Hands-on Expanded Implementation Support):** Bank staff directly assist in procurement processes where Borrower capacity is too weak to manage independently.
+- **Relaxed packaging requirements:** smaller contract packages permitted where local market fragmentation or insecurity limits competition.
+- **International procurement thresholds:** lowered where domestic market cannot deliver, or raised where local sourcing is preferable for stabilisation reasons.
+
+### Environmental and Social Flexibilities
+- **Phased E&S instruments:** ESIA/ESMF may be prepared in phases — a framework at project approval with site-specific assessments completed before each sub-project commences, rather than upfront.
+- **Simplified ESCP commitments:** ESCP for emergency operations may focus on the highest-priority E&S risks (e.g., security personnel, GBV/SEA, community engagement) rather than full-scope standards, with a clear plan to expand scope as conditions stabilise.
+- **Alternative stakeholder engagement:** SEP/ESS10 consultation requirements adapted to conflict-affected populations — remote, indirect, or community-representative approaches where direct public consultation is unsafe.
+- **Retrospective E&S assessment:** for retroactive financing under OP 8.00, E&S due diligence conducted on completed activities to verify compliance rather than requiring ex ante assessment.
+
+### When to Invoke Flexibilities
+Flexibilities must be explicitly requested, documented, and approved through the standard project preparation or restructuring process — they do not apply automatically. Teams should identify which flexibilities are needed at concept stage, include them in the PAD/PID risk section, and ensure legal agreement provisions reflect them. OPCS guidance and regional procurement and FM advisers should be consulted before invoking non-standard arrangements.
+""",
     },
     "esf_security_personnel": {
         "title": "Security Personnel Risk Management (ESF)",
@@ -2613,7 +2777,49 @@ SECONDARY_KNOWLEDGE = {
             "flags": ["security_risks_noted", "armed_forces_mentioned"],
             "doc_type": [],
         },
-        "content": "",  # CONTENT PENDING — Batch 3 distillation
+        "content": """## Security Personnel Risk Management (ESF) — Operational Guidance for WBG Teams
+
+### When This Guidance Applies
+This guidance applies to any project where the Borrower engages government security forces (military, police, gendarmerie) or private security companies to protect project workers, sites, assets, or activities. It applies to both IPF and PforR instruments. The relevant ESF standards are ESS1 (human security in ESIA Annex 1 item 5(e)), ESS4 paragraphs 24–27, and ESS9 for FIs.
+
+### Security Risk Assessment (SRA) — Required at ESIA Stage
+The Borrower must conduct an SRA as part of the ESIA. The SRA must cover:
+- Country and regional context: conflict dynamics, active armed groups, state security actor conduct.
+- National and local security issues directly relevant to project area.
+- External threats to project workers and facilities (not just community threats).
+- Community safety risks generated by the project's presence or activities.
+- Risks to workers from security personnel conduct (excessive force, extortion, harassment).
+- Preliminary recommendations on prevention and mitigation of identified risks.
+- Gender dimensions: women's employment opportunities in security roles; gender-specific security risks for female workers and community members.
+- Institutional and legal analysis: applicable national laws governing security force conduct.
+
+### Proportionality Principle
+Security personnel may use force only for preventive or defensive purposes, proportional to the nature and level of the threat. The Bank explicitly prohibits sanctioning the use of force for any purpose other than prevention and defence of an immediate, specific threat. Project documents must not include language that could be interpreted as authorising offensive security operations.
+
+### Vetting Requirement
+All security personnel — government and private — must be vetted before deployment. Vetting must verify that individuals are not implicated in past human rights abuses or violations. Background check procedures must be documented and retained by the Borrower. Where national vetting systems are inadequate, the Borrower must implement supplementary checks.
+
+### Code of Conduct
+A Code of Conduct governing security personnel behaviour is mandatory for all projects engaging security workers. It must cover: proportionate use of force; prohibition of harassment, extortion, and unauthorised search; GBV/SEA prevention; incident reporting requirements; and consequences for violations.
+
+### Security Management Plan (SMP)
+A full SMP is required for high-risk projects. The SMP must address:
+- **Private security management:** vetting process, Code of Conduct, training, supervision, incident reporting, escalation procedures.
+- **Public security management:** MoU or binding agreement with the relevant security authority committing to Code of Conduct compliance, proportional force policy, incident reporting to the Borrower, and Bank notification for serious incidents.
+- **Use-of-force policy:** explicit statement of permissible and prohibited actions.
+- **Weapons management:** inventory, storage, access controls.
+- **Grievance mechanism:** accessible to project workers and community members for reporting security-related concerns.
+For low-risk projects, SMP key commitments may be incorporated directly into the ESCP rather than a standalone plan.
+
+### GBV and SEA Obligations
+If allegations of GBV or SEA involving security personnel arise during implementation, Bank Management must be alerted immediately. An expert in GBV/SEA must be involved in the response. This is a non-negotiable escalation requirement — it applies regardless of whether the allegation is against private or government security actors.
+
+### Supervision Requirements
+- ISR must note any material changes in the security situation or security personnel arrangements.
+- SMP must be reviewed at each supervision mission for high-risk projects.
+- For high-risk projects, an independent security audit should be commissioned at mid-term review.
+- Security personnel must not be present during community engagement meetings, consultations, or grievance hearings. Community engagement must be independent of security arrangements.
+""",
     },
     "rra_methodology": {
         "title": "Risk and Resilience Assessment (RRA) Methodology",
@@ -2625,7 +2831,48 @@ SECONDARY_KNOWLEDGE = {
             "flags": ["rra_referenced", "rra_absent"],
             "doc_type": [],
         },
-        "content": "",  # CONTENT PENDING — Batch 3 distillation
+        "content": """## Risk and Resilience Assessment (RRA) Methodology — Guidance for WBG Teams
+
+### What an RRA Is
+The Risk and Resilience Assessment is the World Bank Group's primary analytic tool for understanding fragility, conflict, and violence in a country context. It identifies the structural drivers and proximate risks of FCV and maps the sources of resilience that interventions can build upon. RRAs are commissioned at the country level, not the project level.
+
+### When an RRA Is Required
+RRAs are mandatory under IDA19 and IDA20 commitments for all FCS countries receiving a new Country Partnership Framework (CPF), Country Engagement Note (CEN), or Performance and Learning Review (PLR). For non-FCS countries, RRAs are strongly recommended where conflict or fragility dynamics are significant.
+
+### Three Core Content Sections
+**Section 1 — Understanding Drivers and Resilience:**
+Analyses structural factors and key arenas of contestation — (1) Power, Economics, and Governance; (2) Environment, Land, Resources, and Climate; (3) Service Delivery; (4) Security and Justice — to identify 3–5 primary drivers of FCV, key factors and sources of resilience, and potential risks and shocks.
+
+**Section 2 — FCV-Sensitive Portfolio Analysis:**
+Maps the existing WBG portfolio against identified drivers, resilience factors, and risks. Assesses portfolio coherence against six FCV areas of special emphasis: human capital, macroeconomic stability and jobs, community preparedness, justice and rule of law, and security sector engagement. Documents lessons learned from previous country programming.
+
+**Section 3 — Responding to FCV:**
+Provides strategic direction recommendations (what WBG engagement should prioritise and avoid), operational focus areas (which sectors, geographies, and instruments are most appropriate), and operational effectiveness recommendations (how to adapt implementation to the FCV context).
+
+### Six-Step Process
+1. **Inception/Concept Note:** FCV Group Manager approves the concept; Country Director chairs the steering committee. ADM responsibility: FCV Group Manager.
+2. **Desk Review and Portfolio Mapping:** literature review, data compilation, initial portfolio mapping against drivers/resilience.
+3. **Consultations and Risk and Resilience Workshop:** in-country consultations with government, civil society, private sector; structured workshop to test and validate findings.
+4. **Draft, Quality Enhancement Review (QER), and Decision Meeting:** peer reviewer required; Country Director decides on classification (public vs. official use only) and strategic recommendations.
+5. **Dissemination:** sharing with government, development partners, and (if public) broader stakeholders.
+6. **Integration:** RRA TTL should sit on SCD and CPF/CEN preparation teams to ensure findings are directly incorporated.
+
+### Team Composition
+RRAs require: an FCV Group TTL or co-TTL, CMU staff with country knowledge, relevant GP specialists (Health, Education, Urban, Agriculture, etc.), and IFC/MIGA engagement where private sector is relevant. A country or regional expert is essential. A peer reviewer is required at the Decision Meeting. The TTL should ideally be in-country for the consultation phase.
+
+### Length and Format
+20–30 pages plus annexes. The recommended classification is "Official Use Only" — not public — given the sensitivity of conflict analysis in active FCV contexts. The Country Director makes the final classification decision at the Decision Meeting.
+
+### Critical Boundaries — What an RRA Is Not
+- **Not a predictive tool:** RRAs describe structural conditions and dynamics, not forecast specific events.
+- **Not a political economy analysis:** RRAs do not assess individual political actors, parties, or government figures. They analyse structural conditions.
+- **Not project-specific:** RRAs inform portfolio strategy and CPF design. They do not replace project-level ESIA, SRA, or conflict-sensitivity analysis.
+- **Not an eligibility determination:** RRAs are a consultative analytic process. They explicitly do not determine eligibility for IDA FCV Envelope windows (PRA, RECA, TAA) — eligibility is a multi-criteria decision made through a separate process.
+
+### Project-Level Implications
+If an RRA exists for the country, project teams must: (1) confirm findings are reflected in the project's contextual analysis; (2) verify that project design responds to the RRA's operational recommendations; (3) note in the PAD/PCN/PID whether RRA findings have been updated since the last CPF cycle and whether any significant new conflict dynamics have emerged.
+If no RRA exists and the country has significant FCV dynamics, flag this as a portfolio gap — the project's own Stage 1 contextual analysis cannot substitute for a country-level RRA.
+""",
     },
     "esf_framework_core": {
         "title": "Environmental and Social Framework (ESF) — FCV-Relevant Standards",
