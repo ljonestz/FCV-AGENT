@@ -618,7 +618,50 @@ Pass the following to downstream stages:
 - lifecycle_phase: [as determined by the document type — do not modify based on dates]
 - temporal_override_applied: FALSE [set to TRUE only if you detected a date-based inference conflict and suppressed it]
 
-CRITICAL: Determine the safeguards framework from the DOCUMENT ITSELF (Data Sheet, text references to specific OPs or ESS standards), not from the approval date. If the document references OP/BP 4.01, 4.12, etc., the framework is OP-BP. If it references ESS1-ESS10, ESCP, ESRS, the framework is ESF. If it references ESSA, the framework is ESSA (PforR). If it references PSIA, the framework is PSIA (DPO).''',
+CRITICAL: Determine the safeguards framework from the DOCUMENT ITSELF (Data Sheet, text references to specific OPs or ESS standards), not from the approval date. If the document references OP/BP 4.01, 4.12, etc., the framework is OP-BP. If it references ESS1-ESS10, ESCP, ESRS, the framework is ESF. If it references ESSA, the framework is ESSA (PforR). If it references PSIA, the framework is PSIA (DPO).
+
+---
+
+**REQUIRED CLASSIFIER OUTPUTS (append after your analysis, stripped from display):**
+
+After completing Part A and Part B, append these three blocks exactly as shown:
+
+%%%COUNTRY_CLASSIFICATION_START%%%
+category: [In Crisis | Conflict-Affected | At Risk | In Transition | General]
+confidence: [high | moderate]
+reasoning: [1-2 sentences citing evidence from the document or web research]
+%%%COUNTRY_CLASSIFICATION_END%%%
+
+%%%SECTOR_CONTEXT_START%%%
+primary_sector: [main sector of the operation]
+secondary_sectors: [comma-separated secondary sectors, or leave blank]
+%%%SECTOR_CONTEXT_END%%%
+
+%%%CONTEXT_FLAGS_START%%%
+cerc_mentioned: [true/false]
+tpi_mentioned: [true/false]
+rra_referenced: [true/false]
+security_risks_noted: [true/false]
+displacement_context: [true/false]
+private_sector_focus: [true/false]
+vulnerable_groups: [true/false]
+emergency_component: [true/false]
+procurement_issues: [true/false]
+fiduciary_risks: [true/false]
+cpf_uploaded: [true/false]
+scd_mentioned: [true/false]
+prevention: [true/false]
+early_warning: [true/false]
+armed_forces_mentioned: [true/false]
+%%%CONTEXT_FLAGS_END%%%
+
+For the country classification:
+- If the country is on the OP 7.30 list (Afghanistan, Myanmar, Sudan, Yemen): set category = In Crisis, confidence = high.
+- If the country is on the World Bank FCS list (see the FCS Country List injected below): set category = Conflict-Affected, confidence = high.
+- If the country is not on either list but web research or the document indicates elevated conflict risk: set category = At Risk, confidence = moderate.
+- If the country recently exited OP 7.30 and shows signs of a transitional window: set category = In Transition, confidence = moderate.
+- Otherwise: set category = General.
+''',
 
 "2": '''# Role
 You are an expert FCV analyst conducting a comprehensive FCV assessment for the World Bank Group. You have deep expertise in the WBG FCV Strategy, the Operational Screening Tool (OST), and the FCV Refresh (January 2026). You are assessing a project based on the Stage 1 context and extraction analysis.
@@ -2064,6 +2107,10 @@ def clean_stage1_output(text):
     text = re.sub(r'%%%INSTRUMENT_TYPE:[^%\n]*%%%\n?', '', text)
     text = re.sub(r'%%%PROCESS_TYPE:[^%\n]*%%%\n?', '', text)
     text = re.sub(r'%%%TEMPORAL_CONTEXT_START%%%.*?%%%TEMPORAL_CONTEXT_END%%%\n?', '', text, flags=re.DOTALL)
+    # NEW: strip country classification, sector context, and context flags blocks
+    text = re.sub(r'%%%COUNTRY_CLASSIFICATION_START%%%.*?%%%COUNTRY_CLASSIFICATION_END%%%\n?', '', text, flags=re.DOTALL)
+    text = re.sub(r'%%%SECTOR_CONTEXT_START%%%.*?%%%SECTOR_CONTEXT_END%%%\n?', '', text, flags=re.DOTALL)
+    text = re.sub(r'%%%CONTEXT_FLAGS_START%%%.*?%%%CONTEXT_FLAGS_END%%%\n?', '', text, flags=re.DOTALL)
     # Clean up extra blank lines left by removal
     text = re.sub(r'\n{3,}', '\n\n', text).strip()
     return text
@@ -3384,6 +3431,8 @@ def run_stage():
                         "\n\n--- FCV Operational Playbook — Diagnostics Phase (always included) ---\n" + PLAYBOOK_DIAGNOSTICS +
                         "\n\n--- WBG FCV Strategy Refresh Framework (always included) ---\n" + FCV_REFRESH_FRAMEWORK +
                         "\n\n--- World Bank FCS Country List (2015–Present) ---\n" + FCS_LIST +
+                        "\n\n--- OP 7.30 Countries (In Crisis — Bank cannot work through government) ---\n" +
+                        "Current OP 7.30 countries: " + ", ".join(OP730_COUNTRIES) + "\n" +
                         "\n\n--- WBG Instrument Types (for identification) ---\n" + _instrument_recognition
                     )})
                     content_parts.append({"type": "text", "text": stage_prompt})
@@ -3444,6 +3493,9 @@ def run_stage():
                 parse_error_message = ''
                 stage2_ratings = {}
                 under_hood = {}
+                _country_classification = {}
+                _context_flags = {}
+                _sector_context = {}
 
                 if stage == 2:
                     # Stage 2: extract ratings and Under the Hood panels
@@ -3483,6 +3535,9 @@ def run_stage():
                     _instrument_type = extract_instrument_type(full_text)
                     _temporal_context = extract_temporal_context(full_text)
                     _process_type = extract_process_type(full_text) if is_impl else None
+                    _country_classification = extract_country_classification(full_text)
+                    _context_flags = extract_context_flags(full_text)
+                    _sector_context = extract_sector_context(full_text)
                     s1_label = "[Stage 1 — implementation documents and FCV context analysed]" if is_impl else "[Stage 1 — project documents and FCV context analysed]"
                     updated_messages = [
                         {"role": "user", "content": s1_label},
@@ -3516,6 +3571,9 @@ def run_stage():
                     'instrument_type': _instrument_type if stage == 1 else None,
                     'temporal_context': _temporal_context if stage == 1 else None,
                     'process_type': _process_type if stage == 1 else None,
+                    'country_classification': _country_classification if stage == 1 else None,
+                    'context_flags': _context_flags if stage == 1 else None,
+                    'sector_context': _sector_context if stage == 1 else None,
                     'review_mode': review_mode,
                 }
 
@@ -3650,6 +3708,9 @@ def run_express():
             process_type = 'Unknown'
             instrument_type = 'Unknown'
             temporal_context = {}
+            country_classification = {}
+            context_flags = {}
+            sector_context = {}
             research_brief_text = ''
             research_country = ''
             conversation_history = []
@@ -3772,6 +3833,8 @@ def run_express():
                     "\n\n--- FCV Operational Playbook — Diagnostics Phase (always included) ---\n" + PLAYBOOK_DIAGNOSTICS +
                     "\n\n--- WBG FCV Strategy Refresh Framework (always included) ---\n" + FCV_REFRESH_FRAMEWORK +
                     "\n\n--- World Bank FCS Country List (2015–Present) ---\n" + FCS_LIST +
+                    "\n\n--- OP 7.30 Countries (In Crisis — Bank cannot work through government) ---\n" +
+                    "Current OP 7.30 countries: " + ", ".join(OP730_COUNTRIES) + "\n" +
                     "\n\n--- WBG Instrument Types (for identification) ---\n" + _instrument_recognition
                 )})
 
@@ -3812,6 +3875,10 @@ def run_express():
 
                 instrument_type = extract_instrument_type(stage1_output)
                 temporal_context = extract_temporal_context(stage1_output)
+                # NEW: extract classification, sector, flags
+                country_classification = extract_country_classification(stage1_output)
+                context_flags = extract_context_flags(stage1_output)
+                sector_context = extract_sector_context(stage1_output)
                 if is_impl:
                     process_type = extract_process_type(stage1_output)
                     doc_type = process_type  # Use process type as doc_type label for impl mode
@@ -3826,7 +3893,7 @@ def run_express():
                 # ── Stage 1 done event ──
                 # Strip classifier delimiter tags from display output; history retains raw text.
                 stage1_display = clean_stage1_output(stage1_output)
-                yield f"data: {json.dumps({'stage_done': 1, 'result': stage1_display, 'history': conversation_history, 'research_brief': research_brief_text, 'research_country': research_country, 'doc_type': doc_type, 'instrument_type': instrument_type, 'temporal_context': temporal_context, 'process_type': process_type if is_impl else None, 'review_mode': review_mode})}\n\n"
+                yield f"data: {json.dumps({'stage_done': 1, 'result': stage1_display, 'history': conversation_history, 'research_brief': research_brief_text, 'research_country': research_country, 'doc_type': doc_type, 'instrument_type': instrument_type, 'temporal_context': temporal_context, 'process_type': process_type if is_impl else None, 'country_classification': country_classification, 'context_flags': context_flags, 'sector_context': sector_context, 'review_mode': review_mode})}\n\n"
 
                 # ════════════════════════════════════════════════════════════
                 # STAGE 2 — FCV Assessment
