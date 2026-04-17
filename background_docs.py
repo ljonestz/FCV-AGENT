@@ -368,6 +368,34 @@ Distinguish between: (a) recommendations that are strategic — requiring portfo
 When assessing a project, consider both directions:
 - Could the project inadvertently worsen fragility? (Increase inequality, undermine legitimacy, exacerbate grievances, weaken resilience — see structured screening above)
 - Could the project — without an explicit FCV objective — contribute positively? (Bolster cohesion, strengthen institutions, address root causes, reduce vulnerability) If so, flag this as a responsiveness opportunity even if the project is primarily coded as FCV Sensitive.
+
+---
+
+### OST — Common Failure Modes and Strong Implementation Examples
+
+**Rec 1 (Conflict Analysis in Design):** Failure mode: DRRs appear in the PAD context section but do not influence the ToC, PDO, or component design — the project acknowledges FCV context but does not adapt to it. Strong: The project's targeting criteria explicitly reference the RRA's marginalised sub-districts, and a component is specifically designed to address a DRR-identified resilience gap.
+
+**Rec 2 (Do No Harm):** Failure mode: DNH checklist completed during preparation but not tracked during implementation — no mechanism to detect unintended harm once the project is active. Strong: Adaptive M&E includes quarterly DNH indicators; TTL has authority to adjust component design without restructuring if harm is detected.
+
+**Rec 3 (Conflict-Sensitive Design):** Failure mode: Generic beneficiary targeting not adapted to conflict dynamics — services go to accessible areas, bypassing communities with highest grievances. Strong: Geographic targeting explicitly uses conflict-risk map; implementation sequencing is planned to reduce inter-community competition.
+
+**Rec 4 (Social Cohesion):** Failure mode: Social cohesion treated as a PDO statement, not operationalised into activities or M&E indicators. Strong: Community consultations are structured as joint sessions across conflict-divided groups; cohesion tracked via validated survey instrument at midterm.
+
+**Rec 5 (State-Building and Legitimacy):** Failure mode: All service delivery runs through central government systems, bypassing local government in areas where central government is distrusted. Strong: Graduated handover — initial TPI delivery transitions to local government as trust and capacity build; transition milestones are in the PAD.
+
+**Rec 6 (Inclusion and Voice):** Failure mode: Beneficiary lists drawn from existing community structures that replicate exclusion patterns. Strong: Beneficiary identification uses independent community mapping to identify systematically excluded groups not represented in formal structures.
+
+**Rec 7 (Grievance Mechanisms):** Failure mode: GRM designed at national level, inaccessible to conflict-affected communities without government intermediation. Strong: Local grievance intake points operated by neutral third parties; response timelines enforced; GRM data used to adapt project design.
+
+**Rec 8 (Adaptive Management):** Failure mode: M&E framework locked at PAD stage — no mechanism to adapt activities based on changing conflict conditions. Strong: ISR includes conflict-sensitivity review; TTL has documented trigger points for activating contingency plans.
+
+**Rec 9 (Coordination with Humanitarian/Development Nexus):** Failure mode: No engagement with humanitarian actors operating in the project area — duplicated activities, conflicting community expectations. Strong: Joint mapping with OCHA/UNHCR before project design; handover/transition plan for humanitarian activities that the project will sustain.
+
+**Rec 10 (Gender and FCV):** Failure mode: Gender analysis conducted but not linked to FCV dynamics — identifies gender gaps without explaining how conflict drives them. Strong: Gender analysis specifically maps how conflict-related displacement, loss of documentation, and gender-based violence affect women's access to the project's services.
+
+**Rec 11 (Peace Dividends / Responsiveness):** Failure mode: No mechanism to signal WBG engagement as a peace dividend — project is invisible to communities as a conflict-response initiative. Strong: Community communication strategy explicitly links project to peace-building objectives; conflict-affected communities are named beneficiaries in project communications.
+
+**Rec 12 (Sustainability):** Failure mode: Exit strategy assumes government capacity that does not yet exist in post-conflict context. Strong: Sustainability plan maps current capacity gaps and includes a sequenced capacity-building pathway; sustainability benchmarks are in the Results Framework.
 """
 
 
@@ -507,6 +535,24 @@ The FCV Group provides knowledge and data on global and situation-specific compo
 
 ### Country Private Sector Diagnostic (CPSD)
 Joint IFC-World Bank product to identify private sector opportunities and constraints. In FCS contexts: detailed analysis of business environment, sector potential, investment risks. IFC piloting conflict-sensitive approaches and applying "fragility lens" in CPSDs.
+
+### WDR 2011 — Foundational Institutional Framing
+Source: World Development Report 2011: Conflict, Security, and Development (Ch. 1-3) — gap-fill
+
+**Security-Justice-Jobs nexus:** WDR 2011 identifies three interdependent prerequisites for sustained peace: (1) security — a modicum of physical safety for citizens, (2) justice — rule of law and equitable access to services, and (3) jobs and economic opportunity — particularly for youth. These three are not sequential — they must be addressed simultaneously. Project design that addresses only one leg (e.g., service delivery without attention to security constraints or governance accountability) may achieve limited impact.
+
+**Institutional transformation takes time:** Average time for countries to exit fragility is 2-3 generations (40-60 years). This has two implications for project design: (a) do not expect single projects to transform institutions — target incremental strengthening; (b) project timeframes should be realistically long, with adaptive management provisions.
+
+**Repeated reform cycles matter more than single reforms:** Institutional change in fragile contexts comes through repeated cycles of reform, learning, and adaptation — not single "big bang" changes. Projects should embed learning loops, not just baseline-endline measurement.
+
+### Pathways for Peace — Prevention and Inclusion Framing
+Source: Pathways for Peace: Inclusive Approaches to Preventing Violent Conflict (UN-WB, 2018) — gap-fill
+
+**Prevention is cost-effective:** The cost of conflict prevention is a fraction of the cost of response and reconstruction. In At Risk countries, the business case for prevention-oriented project design is strong — the cost of embedding conflict-sensitive indicators is minimal relative to the cost of redesigning failed projects after violence escalates.
+
+**Inclusion as conflict prevention:** Systematic exclusion of groups from economic opportunity, public services, and political voice is one of the most consistent predictors of conflict escalation. Inclusion is not merely an equity objective — it is a structural conflict prevention mechanism. Projects that improve service access for previously excluded groups are directly addressing a conflict driver.
+
+**Multi-level analysis:** Conflict dynamics operate simultaneously at local (community, sub-district), national (political, institutional), and regional (cross-border, spillover) levels. Project design often focuses on one level — ensure DRRs capture dynamics at all relevant levels, particularly local dynamics that may not appear in national-level analysis.
 """
 
 
