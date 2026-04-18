@@ -235,3 +235,31 @@ class TestCitationCheck:
         result = extract_priorities(fixture)
         unverified = result['priorities'][0]['unverified_citations']
         assert len(unverified) == 0
+
+
+# ── FCS classification regression tests ─────────────────────────────────────
+
+from app import classify_country
+
+class TestClassifyCountry:
+
+    def test_short_name_match(self):
+        """Short name that exactly matches FCS list entry."""
+        result = classify_country("Ethiopia")
+        assert result['category'] is not None, "Ethiopia should match the FCS list"
+
+    def test_long_form_name_match(self):
+        """Long-form name where FCS entry is a substring of the extracted name."""
+        result = classify_country("Federal Democratic Republic of Ethiopia")
+        assert result['category'] is not None, \
+            "Long-form 'Federal Democratic Republic of Ethiopia' should match via bidirectional check"
+
+    def test_non_fcs_country(self):
+        """Country not on FCS list returns no deterministic match."""
+        result = classify_country("Canada")
+        assert result['category'] is None, "Canada should not match the FCS list"
+
+    def test_case_insensitive(self):
+        """Matching should be case-insensitive."""
+        result = classify_country("ethiopia")
+        assert result['category'] is not None, "Lowercase 'ethiopia' should still match"

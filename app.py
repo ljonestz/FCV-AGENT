@@ -274,7 +274,7 @@ def classify_country(country_name: str) -> dict:
 
     # FCS list check — Conflict-Affected
     for fcs_country in FCS_COUNTRIES_CURRENT:
-        if fcs_country.lower() == name_lower or name_lower in fcs_country.lower():
+        if fcs_country.lower() == name_lower or name_lower in fcs_country.lower() or fcs_country.lower() in name_lower:
             return {
                 'category': 'Conflict-Affected',
                 'confidence': 'high',
