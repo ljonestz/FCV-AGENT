@@ -485,6 +485,7 @@ def extract_under_hood(stage2_output):
     display_text = re.sub(r'%%%STAGE2_RATINGS_START%%%.*?%%%STAGE2_RATINGS_END%%%', '', display_text, flags=re.DOTALL)
     display_text = re.sub(r'%%%RATING_REASONING_START%%%.*?%%%RATING_REASONING_END%%%', '', display_text, flags=re.DOTALL)
     display_text = re.sub(r'%%%UNDER_HOOD_START%%%.*?%%%UNDER_HOOD_END%%%', '', display_text, flags=re.DOTALL)
+    display_text = re.sub(r'%%%CATEGORY_LENS_START%%%.*?%%%CATEGORY_LENS_END%%%', '', display_text, flags=re.DOTALL)
     display_text = display_text.strip()
 
     return {

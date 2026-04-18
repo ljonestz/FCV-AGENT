@@ -3822,6 +3822,7 @@
     renderOut(stage,renderResult,false);
     if(stage===2&&stage2UnderHood){buildUnderHoodPanels(stage2UnderHood);updateSidebar();}
     if(stage===3&&stageThreePriorities&&stageThreePriorities.length)initStage3UI();
+    if(stage===3)renderAppliedSnippetsAttribution();
     if(stage<3&&analysisMode==='express')injectRerunBanner(stage);
     injectStageNavArrows(stage);
     updateSessionBar();
