@@ -3182,9 +3182,6 @@
         <p class="cw-reasoning">${esc(reasoning)}</p>
         <p class="cw-disclaimer">This is the analysis's working judgment for calibrating Stages 2 and 3 — not an official WBG designation.</p>
       </div>
-      <div class="cw-footer">
-        <button class="btn btn-primary" onclick="confirmClassification()">Confirm &amp; Continue to Assessment &#x2192;</button>
-      </div>
     `;
 
     const outTxtEl=document.getElementById('out-txt');
@@ -3193,22 +3190,9 @@
 
     document.getElementById('cw-category-select').addEventListener('change',function(){
       this.style.borderLeftColor=categoryColors[this.value]||'#6B7280';
+      countryClassification={...countryClassification, category:this.value, confirmed:true};
+      localStorage.setItem('country_classification',JSON.stringify(countryClassification));
     });
-
-    // Hide the normal Stage 2 run button until TTL confirms the classification
-    const actArea=document.getElementById('act-area');
-    if(actArea)actArea.style.display='none';
-  }
-
-  function confirmClassification(){
-    const select=document.getElementById('cw-category-select');
-    if(!select)return;
-    countryClassification={...countryClassification,category:select.value,confirmed:true};
-    localStorage.setItem('country_classification',JSON.stringify(countryClassification));
-    const widget=document.getElementById('classification-widget');
-    if(widget)widget.style.display='none';
-    const actArea=document.getElementById('act-area');
-    if(actArea)actArea.style.display='';
   }
 
   function renderAppliedSnippetsAttribution(){
