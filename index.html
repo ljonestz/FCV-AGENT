@@ -427,6 +427,8 @@
     .load-sub{font-size:13px;color:var(--muted)}
     .load-tags{margin-top:16px;display:flex;justify-content:center;gap:6px;flex-wrap:wrap}
     .load-tag{font-size:11px;padding:3px 10px;background:var(--off-white);border-radius:20px;color:var(--muted);border:1px solid var(--border)}
+    .sbs-load-timer{font-size:12px;color:#6B7280;margin-top:14px;font-variant-numeric:tabular-nums}
+    .sbs-load-message{font-size:12px;color:#374151;margin-top:6px;font-style:italic;min-height:18px;transition:opacity .4s}
     .stage-wait-notice{
       display:flex;align-items:flex-start;gap:9px;
       background:#fffbeb;border:1px solid #fcd34d;border-radius:6px;
@@ -2060,6 +2062,7 @@
   let contextFlags={};
   let sectorContext={};
   let stageAppliedSnippets=[];
+  let sbsTimerInterval=null,sbsMessageInterval=null,sbsStartTime=null,sbsMessageIdx=0;
   // Stage 3 (Recommendations) state is declared in the Stage 3 section below
 
   // ── Glossary ───────────────────────────────────────────────────────────────
@@ -2806,6 +2809,39 @@
     }
   }
 
+  // ── Step-by-step loading timer + rotating messages ─────────────────────
+  const SBS_STAGE_MESSAGES={
+    1:['Reading your project document...','Searching for country-level FCV context...','Applying three-tier citation framework...','Checking FCS classification list...','Extracting Part A \u2014 document-only findings...','Building Part B \u2014 wider context & research...','Cross-referencing web research with document content...','Verifying temporal context and lifecycle stage...'],
+    2:['Running 12 OST diagnostic checks...','Applying Do No Harm checklist (9 principles)...','Checking 25 key diagnostic questions...','Tagging FCV Sensitivity vs. Responsiveness findings...','Applying FCV Strategy Refresh lenses...','Calibrating for country category context...','Synthesising thematic narrative...','Generating ratings and reasoning block...'],
+    3:['Generating priority actions...','Applying stage-aware lifecycle framing...','Checking instrument-specific guardrails...','Linking priorities to CPF outcomes (if uploaded)...','Applying FCV Playbook preparation guidance...','Verifying specificity \u2014 geography, mechanism, entry points...','Generating actionable language for each priority...','Finalising recommendations note...']
+  };
+  function startSbsLoadingTimers(stageNum){
+    sbsStartTime=Date.now();sbsMessageIdx=0;
+    const msgs=SBS_STAGE_MESSAGES[stageNum]||SBS_STAGE_MESSAGES[1];
+    const hints={1:'2\u20134 min',2:'1\u20133 min',3:'2\u20134 min'};
+    const hint=hints[stageNum]||'1\u20133 min';
+    const timerEl=document.getElementById('sbs-elapsed');
+    const msgEl=document.getElementById('sbs-message');
+    if(msgEl&&msgs.length)msgEl.textContent=msgs[0];
+    sbsTimerInterval=setInterval(()=>{
+      if(!timerEl)return;
+      const elapsed=Math.floor((Date.now()-sbsStartTime)/1000);
+      const m=Math.floor(elapsed/60),s=elapsed%60;
+      timerEl.textContent=m+':'+String(s).padStart(2,'0')+' elapsed \u00B7 Stage '+stageNum+' typically takes '+hint;
+    },1000);
+    sbsMessageInterval=setInterval(()=>{
+      if(!msgEl)return;
+      sbsMessageIdx=(sbsMessageIdx+1)%msgs.length;
+      msgEl.style.opacity='0';
+      setTimeout(()=>{msgEl.textContent=msgs[sbsMessageIdx];msgEl.style.opacity='1';},400);
+    },8000);
+  }
+  function clearSbsLoadingTimers(){
+    if(sbsTimerInterval){clearInterval(sbsTimerInterval);sbsTimerInterval=null;}
+    if(sbsMessageInterval){clearInterval(sbsMessageInterval);sbsMessageInterval=null;}
+    sbsStartTime=null;
+  }
+
   async function runStage(stage,followOn=null){
     if(busy)return;
     busy=true;curS=stage;
@@ -2824,7 +2860,10 @@
         <div class="load-title">${followOn?'Updating output…':'Generating '+SHORT[stage]+'…'}</div>
         <p class="load-sub" id="load-sub-msg">${stage===1 ? 'Stage 1 includes automated FCV web research and may take 2\u20134 minutes. The output will appear in full once complete \u2014 please wait.' : stage===3 ? 'Generating the full Recommendations Note. This may take 1\u20132 minutes \u2014 the full output will appear when ready.' : 'This usually takes 30\u201360 seconds. The full output will appear when ready.'}</p>
         <div class="load-tags"><span class="load-tag">Reading documents</span><span class="load-tag">Applying FCV lens</span><span class="load-tag">Drawing on web context</span></div>
+        <div id="sbs-elapsed" class="sbs-load-timer"></div>
+        <div id="sbs-message" class="sbs-load-message"></div>
       </div>`;
+    if(analysisMode!=='express')startSbsLoadingTimers(stage);
 
     try{
       const payload={stage,history:hist,user_message:followOn||'',document_type:docType,instrument_type:instrumentType,temporal_context:temporalContext,review_mode:reviewMode,process_type:processType,user_context:(document.getElementById('user-context')?.value||'').trim(),uploaded_doc_names:[...pF.map(f=>f.name),...cF.map(f=>f.name)],country_classification:countryClassification,context_flags:contextFlags,sector_context:sectorContext};
@@ -2936,7 +2975,7 @@
               if(loadSub3)loadSub3.textContent=ppMsg;
             }
             if(p.chunk){streamed+=p.chunk;} // Buffer only — full output rendered on p.done via renderOut()
-            if(p.done){clearTimeout(_stageTimeoutId);hist=p.history||hist;curS=stage;stageOutputs[stage]=p.result;stageHists[stage]=hist.slice();updateSessionBar();
+            if(p.done){clearTimeout(_stageTimeoutId);clearSbsLoadingTimers();hist=p.history||hist;curS=stage;stageOutputs[stage]=p.result;stageHists[stage]=hist.slice();updateSessionBar();
               // Stage 2: capture ratings and under_hood data
               if(stage===2){
                 if(p.sensitivity_rating){ fcvRating=p.sensitivity_rating; }
@@ -3037,7 +3076,7 @@
         }
       }
     }catch(e){
-      clearTimeout(_stageTimeoutId);
+      clearTimeout(_stageTimeoutId);clearSbsLoadingTimers();
       const _emsg=(e&&e.message)||'An error occurred';
       if(analysisMode==='express'){showExpressError(stage,_emsg);}
       else{showErr(_emsg,stage);}
