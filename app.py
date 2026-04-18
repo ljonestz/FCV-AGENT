@@ -562,6 +562,15 @@ Draw on available sources in this strict priority order:
 
 Always clearly label which source tier you are drawing from at each point, and always name the specific organisation or report rather than using generic descriptors.
 
+SOURCE CREDIBILITY FLAGGING (Part B only):
+Not all sources carry equal weight in FCV contexts. Where you draw on web research or training knowledge, label the source type inline using one of these tags after the [From: ...] citation:
+- [Data: high-quality] — established conflict/fragility datasets and authoritative analytical products: ACLED, ND-GAIN, UNODC, World Bank data portals, OECD States of Fragility, UN OCHA, Fragile States Index, ICG reports, Human Rights Watch reports
+- [Data: secondary] — government statistics, national reports, regional body publications (quality varies; note where data may be dated or contested)
+- [Source: news/media] — journalistic sources (useful for recent events, lower reliability for structural claims)
+- [Source: general knowledge] — your training knowledge (use with the existing "From: general knowledge" label)
+
+DATA GAP FLAGGING: If a key FCV dimension (e.g. conflict intensity, displacement figures, governance quality, humanitarian access, gender-based violence prevalence) has no reliable recent data available from your research or training knowledge, note this explicitly in the relevant subsection: "Note: No reliable recent [dimension] data was identified — the task team should verify with [suggested source type, e.g. OCHA, RRA, ACLED]." Do not omit a dimension just because data is scarce — flag the gap so the TTL knows where to look.
+
 ### FCV Classification Context
 - Note if the country appears on the FCS (Fragile and Conflict-affected Situations) list
 - If FCS, note this classification and its implications for project design and operational flexibilities
