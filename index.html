@@ -385,7 +385,7 @@
     .out-body h1{font-family:'Open Sans',sans-serif;font-weight:700;font-size:18px;margin:1.3em 0 .4em;color:var(--text)}
     .out-body h2{font-family:'Open Sans',sans-serif;font-weight:700;font-size:15px;margin:1.2em 0 .35em;border-bottom:1px solid var(--border);padding-bottom:5px;color:var(--text)}
     .out-body h3{font-size:10px;font-weight:600;margin:1em 0 .3em;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
-    .out-body p{margin-bottom:.7em}
+    .out-body p{margin-bottom:.75em}
     .out-body strong{font-weight:700}
     .out-body em{font-style:italic;color:#3a4a5a}
     .out-body ul,.out-body ol{margin:.4em 0 .7em 1.4em}
@@ -3251,9 +3251,9 @@
 
   function buildUnderHoodPanels(underHood) {
     var panels = [
-        { key: 'recs_table', title: 'How well does the project integrate FCV considerations?', subtitle: '12 operational standards from the OST Manual, assessed with status and evidence' },
-        { key: 'dnh_checklist', title: 'Could this project unintentionally cause harm?', subtitle: '8 Do No Harm principles from the OST Manual, checked against the project design' },
-        { key: 'questions_map', title: 'What did we look for \u2014 and what was missing?', subtitle: '25 diagnostic questions from the OST Manual used to probe the project' },
+        { key: 'recs_table', title: 'How well does the project integrate FCV considerations?', subtitle: '12 operational standards drawn from the OST Manual, FCV Strategy Refresh, and FCV Playbook' },
+        { key: 'dnh_checklist', title: 'Could this project unintentionally cause harm?', subtitle: '9 Do No Harm principles from the OST Manual and FCV Operational Playbook' },
+        { key: 'questions_map', title: 'What did we look for \u2014 and what was missing?', subtitle: '25 diagnostic questions drawn from the OST Manual, FCV Strategy Refresh, and FCV Playbook' },
         { key: 'evidence_trail', title: 'Where did this analysis come from?', subtitle: 'Sources, types, and what each contributed to this assessment' }
     ];
     return '<div class="under-hood-section">' +
@@ -3301,6 +3301,10 @@
   function renderSRCards(sensitivityText, responsivenessText) {
     if (!sensitivityText && !responsivenessText) return '';
     return `
+      <div class="sr-legend">
+        <div class="sr-legend-item"><span class="sr-tag sensitivity" style="font-size:9px;padding:1px 6px;flex-shrink:0">S</span><span><strong>FCV Sensitivity</strong> — is the project <em>aware of and designed for</em> the FCV context?</span></div>
+        <div class="sr-legend-item"><span class="sr-tag responsiveness" style="font-size:9px;padding:1px 6px;flex-shrink:0">R</span><span><strong>FCV Responsiveness</strong> — does the project <em>actively work to change</em> the FCV situation?</span></div>
+      </div>
       <div class="sensitivity-responsiveness-grid">
         <div class="sr-card sensitivity">
           <div class="sr-card-label">FCV SENSITIVITY</div>
@@ -4502,10 +4506,6 @@ ${md(execSummary)}`;
     }).join('');
     el.innerHTML = `<div class="priorities-section-hdr">Priority Actions for the Task Team</div><div class="priorities-intro ani">
       <p class="pi-lead">Based on a three-stage assessment of the project documents, <strong>${n} priority ${n === 1 ? 'action has' : 'actions have'} been identified</strong> to strengthen FCV sensitivity and responsiveness in the design and delivery of this project:</p>
-      <div class="sr-legend">
-        <div class="sr-legend-item"><span class="sr-tag sensitivity" style="font-size:9px;padding:1px 6px;flex-shrink:0">S</span><span><strong>FCV Sensitivity</strong> — is the project <em>aware of and designed for</em> the FCV context?</span></div>
-        <div class="sr-legend-item"><span class="sr-tag responsiveness" style="font-size:9px;padding:1px 6px;flex-shrink:0">R</span><span><strong>FCV Responsiveness</strong> — does the project <em>actively work to change</em> the FCV situation?</span></div>
-      </div>
       <div class="pi-list">${listItems}</div>
       <p class="pi-footer">Toggle through the panels below to explore each priority action and concrete implementation options in more detail.</p>
     </div>`;
