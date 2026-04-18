@@ -61,6 +61,30 @@ GET /how-it-works               # Workflow explanation page
 GET /admin                      # Admin panel (prompts modal)
 GET /api/default-prompts        # Get default prompts for reference
 
+# DOCX download route (v9.1)
+POST /api/download-report
+  Input: {
+    "summary": "<markdown string — Stage 3 executive summary>",
+    "priorities": [ ...stageThreePriorities array... ],
+    "metadata": {
+      "date_str": "18 April 2026",
+      "classification_category": "Conflict-Affected",
+      "classification_reasoning": "...",
+      "finalized_pad": false,
+      "finalized_pad_approval_date": null
+    }
+  }
+  Output: Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document
+          Content-Disposition: attachment; filename="FCV-Recommendations-Note-YYYY-MM-DD.docx"
+  Notes:
+    - Builds a true DOCX binary using python-docx (not HTML masquerading as .docx)
+    - Helpers: _md_to_docx_para(doc, text) — handles **bold**, *italic*, - bullets line-by-line
+    -          _safe_run(para) — safe para.runs[0] access
+    - Document structure: Title → subtitle → disclaimer → HR → optional finalized-PAD notice →
+        optional classification box → Exec Summary → HR → Strategic Priorities (Heading 3 per
+        priority, metadata line, gap/actions/who/timing, implementation note)
+    - Frontend: downloadReport() POSTs JSON payload; receives blob; triggers browser save
+
 # Follow-on post-analysis route (Stage 3 bottom card)
 POST /api/run-followon
   Input: {messages[]} — full conversationHistory + user message
@@ -220,4 +244,4 @@ def clean_stage2_output(stage2_output):
 
 ---
 
-*Last updated: 2026-04-05 — split from CLAUDE.md v7.5*
+*Last updated: 2026-04-18 — added /api/download-report (v9.1)*

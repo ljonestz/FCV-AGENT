@@ -55,6 +55,17 @@
 
 ---
 
+## Classification Widget (v9.0/v9.1)
+
+- **`renderClassificationWidget()`** — renders narrative-format classification widget at top of Stage 1 output
+  - Uses `researchCountry` global (populated during web research) as `countryLabel`; falls back to `'this project's country context'`
+  - Narrative: "This analysis places [country] within the [category] category of the FCV Strategy's differentiated approach. [reasoning] This is an analytical working judgement, not an official WBG designation."
+  - Dropdown `onchange` auto-saves: `countryClassification = {..., category: this.value, confirmed: true}` + `localStorage.setItem('country_classification', ...)`
+  - No Confirm button — dropdown change applies immediately
+- **`confirmClassification()`** — REMOVED in v9.1. Was: click handler for confirm button. Functionality absorbed into dropdown `onchange`.
+
+---
+
 ## Removed Items (v7.0 — for historical reference)
 
 - **`/api/run-explorer` route** — replaced by `/api/run-deeper`
@@ -69,12 +80,15 @@
 
 ---
 
-## Download Behaviour
+## Download Behaviour (v9.1)
 
-- **`downloadReport()`** always includes all core priority content from JSON: `actions[]` (with per-action guidance + suggested_language), `refresh_shift`, `implementation_note`, `who_acts`, `when`, `resources`
+- **`downloadReport()`** POSTs JSON payload to `/api/download-report`; backend returns a true DOCX binary via python-docx
+  - Payload: `{summary, priorities, metadata: {date_str, classification_category, classification_reasoning, finalized_pad, finalized_pad_approval_date}}`
+  - Receive `blob` → create object URL → trigger `<a>` download → revoke URL
+  - On failure: `alert()` with error message
+  - Previous behaviour (HTML-masquerading-as-.docx blob) removed entirely
 - Does NOT require Go Deeper to have been opened — no click-through needed before downloading
-- Optionally appends `goFurtherItems` (alternatives tab content) if Go Deeper was already opened
-- `pad_sections` rendered as `<code>` chips in the Word export
+- DOCX includes: `action_timing` coloured pills, `refresh_shift`, `who_acts`, `when`, `resources`, `implementation_note`
 
 ---
 
@@ -144,4 +158,4 @@ Both modes use identical prompts, code paths, and output quality. Express is a f
 
 ---
 
-*Last updated: 2026-04-05 — split from CLAUDE.md v7.5*
+*Last updated: 2026-04-18 — downloadReport() backend switch, confirmClassification() removal, classification widget narrative format (v9.1)*
