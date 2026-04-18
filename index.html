@@ -1450,6 +1450,12 @@
     border: 1px solid #c8e6c9; display: inline-block;
   }
 
+  /* ── Timing pill (action_timing field on priorities) ──────────────────── */
+  .timing-pill{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;margin-left:4px}
+  .timing-pre-appraisal{background:#FEF3C7;color:#92400E;border:1px solid #FDE68A}
+  .timing-next-series{background:#EDE9FE;color:#5B21B6;border:1px solid #DDD6FE}
+  .timing-supervision{background:#F0FDF4;color:#166534;border:1px solid #BBF7D0}
+
   /* ── Who-chip (multi-value who_acts) ─────────────────────────────────────── */
   .who-chip {
     background: #f0f0f0; color: #333; padding: 2px 8px;
@@ -4125,6 +4131,7 @@ ${md(execSummary)}`;
             body += `<strong>Who acts:</strong> ${whoChips.map(w=>esc(w)).join(' · ')} &nbsp;`;
           }
           if(pr.when) body += `<strong>When:</strong> ${esc(pr.when)} &nbsp;`;
+          if(pr.action_timing){const timingMap={'pre-appraisal':'Act before Board','next-series':'Feed into next series','supervision':'Supervision / monitoring only'};body += `<strong>Timing:</strong> ${esc(timingMap[pr.action_timing]||pr.action_timing)} &nbsp;`;}
           if(pr.resources){
             const baseRes=(pr.resources||'').split('(')[0].trim();
             const tip=resTooltips[baseRes]||'';
@@ -4594,6 +4601,7 @@ ${md(execSummary)}`;
               <span class="pc-chip ${riskClass}">Priority: ${esc(pr.risk_level||'—')}</span>
               ${pr.dimension ? `<span class="pc-chip">${esc(pr.dimension)}</span>` : ''}
               ${pr.refresh_shift ? `<span class="shift-badge" title="${esc(shiftTooltips[pr.refresh_shift] || pr.refresh_shift)}">${esc('FCV Refresh ' + pr.refresh_shift)}</span>` : ''}
+              ${(()=>{const tl={'pre-appraisal':{label:'Act before Board',cls:'timing-pre-appraisal'},'next-series':{label:'Next in series',cls:'timing-next-series'},'supervision':{label:'Supervision / monitoring',cls:'timing-supervision'}};const t=tl[pr.action_timing];return t?`<span class="timing-pill ${t.cls}">${t.label}</span>`:'';})()}
             </div>
             ${(pr.who_acts||pr.when||pr.resources) ? `<div class="pc-meta-row">
               ${pr.who_acts ? `<span class="pc-meta-chip"><strong>Who:</strong> ${(pr.who_acts||'').split(';').map(w=>w.trim()).filter(Boolean).map(w=>'<span class="who-chip">'+esc(w)+'</span>').join(' ')}</span>` : ''}

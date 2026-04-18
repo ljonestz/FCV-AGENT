@@ -71,9 +71,9 @@ _REQUIRED_TOP_FIELDS = [
 _REQUIRED_PRIORITY_FIELDS = [
     'title', 'fcv_dimension', 'tag', 'refresh_shift', 'risk_level',
     'the_gap', 'why_it_matters', 'actions',
-    'who_acts', 'when', 'resources',
+    'who_acts', 'when', 'action_timing', 'resources',
     'pad_sections', 'implementation_note', 'cpf_alignment',
-    'country_category_relevance',  # NEW — optional string or null
+    'country_category_relevance',
 ]
 
 _SPECIFICITY_STOPWORDS = frozenset({
@@ -1113,6 +1113,8 @@ All recommendations MUST be feasible under this instrument type. Do not suggest 
 {temporal_guardrail}
 Do NOT criticise the document for lacking information about events or policies that post-date its preparation. Frame post-preparation developments as "looking ahead" considerations, not gaps.
 
+SORT RATING GUARDRAIL: Do NOT prescribe specific SORT ratings (e.g. "rate Governance as High" or "this should be rated Substantial"). Instead, flag risk exposure using language like "consider whether the current [SORT dimension] rating adequately reflects [X risk factor identified in this analysis]". SORT ratings are the TTL's determination informed by the full project team — this tool identifies FCV dynamics to consider, not the rating itself.
+
 TEMPORAL OVERRIDE GUARD — READ FIRST
 Do not use the project approval date, signing date, or effectiveness date to modify lifecycle framing. The authoritative lifecycle classifier is the document_type passed from Stage 1. If document_type is PAD, PID, or PCN, generate design-stage output only. Do not generate implementation-review framing (do not reference MTR Aide-Mémoire, ISR actions, or "within X days of effectiveness") for any design-stage document type. The dates in the project document do not override the document type.
 
@@ -1255,6 +1257,8 @@ ACTIONS: Provide 2-4 specific actions to address this gap. Each action identifie
 
 4 P's FRAMING: Where applicable, shape the narrative framing of actions around the 4 P's of WBG FCV Strategy implementation — Policies (regulatory or reform recommendations), Programming (project design and targeting), Partnerships (HDP nexus, UN agencies, NGOs, community actors), Personnel (staffing, capacity, security). This is a framing lens that shapes the content of `guidance` fields and narrative prose — it does not require a separate JSON field or label in the output.
 
+DONOR/HDP COORDINATION: For the top 1-2 priorities (by risk_level), include a brief note (1-2 lines) in the `implementation_note` field identifying relevant HDP nexus partner types or coordination entry points — UN agencies, IMF, bilateral donors, humanitarian actors — where the WBG FCV Strategy explicitly commits to partnership. Be specific to the country and sector: name the likely coordination forum or partner type, not just "coordinate with partners". For DPF/DPO operations, note relevant IMF programme alignment or donor coordination groups.
+
 For each action, provide:
 - `document_element`: The specific document component to revise (e.g. "ESCP Commitment (new)", "Stakeholder Engagement Plan (Annex 5)", "Results Framework — Intermediate Indicator")
 - `guidance`: 2-3 sentences (up to 4 for complex actions) describing what to add or revise and why. Be specific: name the concrete content to include (e.g. which indicators, which stakeholder groups, which risk triggers). Enough detail that the TTL knows exactly what "good" looks like without needing to interpret. **CPF linkage (optional):** If a CPF was uploaded and this specific action would directly help strengthen a named CPF priority or outcome (as identified in the CPF content extracted in Stage 1), add a single sentence at the end of the guidance: "This would also help advance [CPF outcome/priority name as stated in the CPF]." Only add this where a genuine, specific linkage exists — do not force it for every action, and do not fabricate CPF outcome names.
@@ -1262,6 +1266,10 @@ For each action, provide:
 When drafting suggested language for a Results Framework indicator, provide the full specification: (1) indicator name; (2) unit of measurement; (3) proposed baseline and target; (4) data source; (5) collection frequency; (6) if the project is in an access-constrained context, a one-sentence data contingency (e.g., 'In the event of access restrictions, TPM/remote verification will be used'). Do not produce indicator names alone.
 WHO_ACTS: [Semicolon-separated from: TTL; PIU; Government; FCV CC; FM Team; ESF Team; Technical Team; M&E Team]
 WHEN: [One of: Identification | Preparation | Appraisal | Implementation | Restructuring — must be appropriate for {doc_type} stage]
+ACTION_TIMING: [One of: pre-appraisal | next-series | supervision]
+  - pre-appraisal: must be addressed before Board presentation or appraisal sign-off
+  - next-series: relevant input for the next operation in a programmatic series (especially for DPF/DPO)
+  - supervision: monitoring or early-warning signal; no preparation action required now, but should be flagged for supervision planning
 RESOURCES: [One of: Minimal (existing budget) | Moderate (dedicated allocation) | Significant (requires restructuring)]
 PAD_SECTIONS: A semicolon-separated list of 2-3 specific PAD document sections. Use these exact labels from the current WBG PAD template:
 For ESF-era PADs: 'Country Context', 'Sectoral and Institutional Context', 'Theory of Change', 'PDO', 'Project Components', 'Implementation Arrangements', 'Results Framework', 'SORT', 'Citizen Engagement', 'ESCP', 'Annex — Gender', 'Annex — Grievance Redress Mechanism', 'Annex — Financial Management', 'Annex — Procurement'.
@@ -1272,6 +1280,8 @@ Do not use generic labels like 'safeguards section' or 'risk management annex'.
 IMPLEMENTATION_NOTE: 1-2 sentences flagging a practical sequencing point, cost implication, or dependency. Be concrete: name the timing, actor, or cost range where known.
 
 GEOGRAPHIC VALIDATION: Before finalising each priority, check: does the `the_gap` field name at least one specific location, group, or institution drawn from the uploaded documents or web research? If not, revise it. If no specific geography is available in your sources, name the administrative level at which the project operates (e.g., county, district, commune) and note that sub-national detail is missing.
+
+COUNTRY CATEGORY RELEVANCE (MANDATORY): For each priority, populate `country_category_relevance` with a 1-2 sentence note explaining why this priority is particularly relevant given the country's FCV category (Conflict-Affected / At Risk / In Transition / General). What does the specific category imply for how this priority should be approached differently than in a stable-country context? For example, in a Conflict-Affected context, a GRM recommendation matters because access is contested and trust in state institutions is low; in an At Risk context, the same recommendation matters because early-warning signals require proactive engagement before grievances escalate. Do NOT leave this field empty.
 
 CPF ALIGNMENT: If a Country Partnership Framework (CPF) was uploaded by the user among the contextual documents in Stage 1, it will appear in the Stage 1 output under contextual sources. For each priority recommendation, identify whether implementing that recommendation would strengthen a specific CPF outcome. Populate the `cpf_alignment` JSON field with a 1–2 sentence statement naming the specific CPF outcome (by number or title as stated in the CPF) and explaining how this recommendation supports it. If no CPF was uploaded, or if no clear linkage exists for a given priority, set `cpf_alignment` to `null` — do not fabricate connections. Refer to the CPF Integration Guide (injected below) for tone and citation guidance.
 
@@ -1337,7 +1347,7 @@ The SEA/SH card and the GRM card may both appear in the output — they address 
 - JSON block is present at the end, wrapped in %%%JSON_START%%% / %%%JSON_END%%%
 - All 6 top-level JSON fields are populated (fcv_rating, fcv_responsiveness_rating, sensitivity_summary, responsiveness_summary, risk_exposure, priorities)
 - Each priority's pad_sections, actions (including per-action suggested_language), and implementation_note are specific to this project — not generic placeholders
-- Each priority JSON object has all 14 fields: title, fcv_dimension, tag, refresh_shift, risk_level, the_gap, why_it_matters, actions, who_acts, when, resources, pad_sections, implementation_note, cpf_alignment
+- Each priority JSON object has all 16 fields: title, fcv_dimension, tag, refresh_shift, risk_level, the_gap, why_it_matters, actions, who_acts, when, action_timing, resources, pad_sections, country_category_relevance, implementation_note, cpf_alignment
 - No generic or templated language anywhere
 - All `when` values are appropriate for the {doc_type} stage
 
@@ -1382,6 +1392,8 @@ The FCV ratings, summaries, and risk exposure paragraphs you have written in the
       "when": "Preparation",
       "resources": "Moderate (dedicated allocation)",
       "pad_sections": "Annex 5: Stakeholder Engagement Plan; ESCP Commitment #4",
+      "action_timing": "pre-appraisal",
+      "country_category_relevance": "In a Conflict-Affected context, this priority matters because...",
       "implementation_note": "1-2 sentences on timing, cost, sequencing, or key dependency",
       "cpf_alignment": "This recommendation strengthens CPF Outcome 1 (Healthier, Better Educated and Skilled Population) by ensuring FCV-sensitive targeting reaches conflict-affected communities."
     }}}}
@@ -2283,6 +2295,11 @@ def extract_priorities(text: str, uploaded_doc_names: list = None) -> dict:
                 act.setdefault('document_element', '')
                 act.setdefault('guidance', '')
                 act.setdefault('suggested_language', '')
+
+        # Validate action_timing enum
+        _valid_timings = {'pre-appraisal', 'next-series', 'supervision'}
+        if pr.get('action_timing') not in _valid_timings:
+            pr['action_timing'] = None
 
         # Post-parse checks — check specificity across gap + all action guidance
         actions_text = ' '.join(
