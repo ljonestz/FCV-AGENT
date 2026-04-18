@@ -3181,8 +3181,9 @@
       </div>
     `;
 
-    const stageDisp=document.getElementById('stage-disp');
-    if(stageDisp)stageDisp.appendChild(widget);
+    const outTxtEl=document.getElementById('out-txt');
+    if(outTxtEl){outTxtEl.insertBefore(widget,outTxtEl.firstChild);}
+    else{const stageDisp=document.getElementById('stage-disp');if(stageDisp)stageDisp.appendChild(widget);}
 
     document.getElementById('cw-category-select').addEventListener('change',function(){
       this.style.borderLeftColor=categoryColors[this.value]||'#6B7280';
