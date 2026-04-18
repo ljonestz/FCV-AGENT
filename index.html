@@ -385,7 +385,7 @@
     .out-body h1{font-family:'Open Sans',sans-serif;font-weight:700;font-size:18px;margin:1.3em 0 .4em;color:var(--text)}
     .out-body h2{font-family:'Open Sans',sans-serif;font-weight:700;font-size:15px;margin:1.2em 0 .35em;border-bottom:1px solid var(--border);padding-bottom:5px;color:var(--text)}
     .out-body h3{font-size:10px;font-weight:600;margin:1em 0 .3em;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
-    .out-body p{margin-bottom:.75em}
+    .out-body p { margin-top: 0; margin-bottom: 0.5em; }
     .out-body strong{font-weight:700}
     .out-body em{font-style:italic;color:#3a4a5a}
     .out-body ul,.out-body ol{margin:.4em 0 .7em 1.4em}
@@ -1965,7 +1965,7 @@
 
       <div class="zone-wrap">
         <div class="zone-lbl"><span class="zone-dot c"></span>Contextual Documents</div>
-        <p class="zone-hint" id="zone-hint-context">Upload any contextual documents (max 3) that can provide useful country context as an optional area of enhancement. Prioritise adding the latest CPF or RRA if available. Note that a web search will be carried out using trusted sources to gather background information on country FCV context and any sectoral considerations.</p>
+        <p class="zone-hint" id="zone-hint-context"><span style="font-weight:700;text-decoration:underline">Users are strongly encouraged to upload the latest Country Partnership Framework (CPF).</span> If available, you may also upload the Systematic Country Diagnostic (SCD), Rapid Risk Assessment (RRA), or 1&ndash;2 other relevant contextual documents (max 3 total). A web search will supplement the analysis with trusted public sources where no contextual documents are uploaded.</p>
         <div class="drop-zone" id="dc">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--border)" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
           <p style="margin-bottom:4px">Drag &amp; drop, or</p>
@@ -2823,7 +2823,7 @@
   function startSbsLoadingTimers(stageNum){
     sbsStartTime=Date.now();sbsMessageIdx=0;
     const msgs=SBS_STAGE_MESSAGES[stageNum]||SBS_STAGE_MESSAGES[1];
-    const hints={1:'2\u20134 min',2:'1\u20133 min',3:'2\u20134 min'};
+    const hints={1:'2\u20134 min',2:'3\u20135 min',3:'4\u20136 min'};
     const hint=hints[stageNum]||'1\u20133 min';
     const timerEl=document.getElementById('sbs-elapsed');
     const msgEl=document.getElementById('sbs-message');
