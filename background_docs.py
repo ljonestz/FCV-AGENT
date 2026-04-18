@@ -1670,6 +1670,32 @@ Advisory Services and Analytics (ASA) can continue in contexts where lending is 
 
 **Trust fund governance:**
 Recipient-executed trust funds follow IPF-equivalent policies and fiduciary requirements. Bank-executed ASA follows the Bank's own administrative procedures. Both require conflict-sensitivity review. Do not treat trust fund or ASA operations as exempt from FCV assessment simply because they are smaller or advisory in nature.
+
+---
+
+### Cat DDO (Catastrophe Deferred Drawdown Option) — FCV-Adjacent Contexts
+
+**What it is:**
+A contingent credit line that provides immediate liquidity upon declaration of a national emergency (natural disaster, public health, or — in some country programmes — conflict escalation). Funds are pre-approved and drawn when triggers fire, not when the project is processed.
+
+**FCV relevance:**
+Cat DDO is increasingly relevant in FCV-adjacent and fragile contexts where multiple shocks interact: climate events trigger displacement; economic shocks stress social services; political instability can compound disaster response capacity. In FCV contexts, the Cat DDO trigger design is critical — triggers calibrated only for natural disasters may miss the compound shock scenarios most likely to materialise.
+
+**Key questions to raise in FCV contexts:**
+
+1. **Trigger design breadth:** Do the triggers cover the realistic shock scenarios for this country? In FCV contexts this should include: (a) flooding/cyclone/earthquake, (b) disease outbreak with humanitarian consequences, (c) economic shock with social cohesion risk (sharp FX depreciation, commodity price collapse), (d) political instability escalation affecting service delivery capacity. Flag if triggers appear too narrow (natural disaster only) for a country with compound FCV risk.
+
+2. **Drawdown speed vs. absorptive capacity:** FCV governments often have weak PFM systems. Rapid drawdown may outpace the government's ability to deploy funds effectively. Check whether the Cat DDO includes a PFM readiness assessment and a deployment plan. Flag if no deployment plan or PFM assessment is referenced.
+
+3. **CERC integration:** Cat DDO and CERC (Contingency Emergency Response Component) serve overlapping purposes. If a project has both, ensure the triggers are complementary, not duplicative. Cat DDO = budget support liquidity; CERC = project-level reallocation. Note if both mechanisms exist without clear differentiation.
+
+4. **Fiduciary safeguards under crisis:** FCV Cat DDO drawdowns often occur when governance is already under stress. Check whether the legal agreement includes minimum fiduciary requirements that remain enforceable during emergencies.
+
+5. **Political economy of triggers:** In fragile states, emergency declarations are politically sensitive. Assess whether the government has the institutional capacity and political will to declare emergencies in a timely way. Delayed triggers can negate the speed advantage of the instrument.
+
+**Calibration notes for FCV screening:**
+- Flag if Cat DDO is proposed without parallel investment in crisis response systems (liquidity without capacity is high-risk in FCV contexts).
+- Where a Cat DDO component exists alongside an IPF, ensure the FCV assessment covers both the investment and contingent components — do not treat the Cat DDO as outside scope.
 """
 
 
