@@ -4402,9 +4402,9 @@
     panel.id='horizon-panel';
     panel.className='horizon-panel ani';
     const rendered=typeof md!=='undefined'?md.render(text):text.replace(/\n/g,'<br>');
-    panel.innerHTML='<summary>Horizon Considerations — Beyond-Scope Observations</summary>'
+    panel.innerHTML='<summary>Watch List for Supervision — Risks to Monitor During Implementation</summary>'
       +'<div class="horizon-body">'
-      +'<p class="horizon-disclaimer">These observations fall outside the project\'s stated PDO/scope but may be relevant for the team\'s broader awareness. They do not affect the FCV ratings above.</p>'
+      +'<p class="horizon-disclaimer">These are FCV risks or dynamics the team cannot act on now but should monitor during implementation. They do not affect the FCV ratings above.</p>'
       +rendered
       +'</div>';
     container.appendChild(panel);

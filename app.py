@@ -1419,24 +1419,24 @@ The FCV ratings, summaries, and risk exposure paragraphs you have written in the
 
 IMPORTANT: The JSON block must come AFTER all narrative text. Do not include any explanatory text inside the JSON block itself. Use exact field names as shown. The `tag` field must be exactly "[S]", "[R]", or "[S+R]" (with square brackets). For `fcv_rating` and `fcv_responsiveness_rating`: use the sensitivity and responsiveness ratings from Stage 2 exactly as provided in the conversation history. Copy them into the JSON fields without modification. Do not re-assess or override the Stage 2 ratings. The `refresh_shift` field must be exactly one of: "Shift A: Anticipate" | "Shift B: Differentiate" | "Shift C: Jobs & private sector" | "Shift D: Enhanced toolkit". The `who_acts` field is semicolon-separated (e.g. "TTL; ESF Team"). The `when` field must be exactly one of: "Identification" | "Preparation" | "Appraisal" | "Implementation" | "Restructuring". The `cpf_alignment` field must be either a string (1–2 sentences) or JSON null — never the string "null" or "Not identified".
 
-## HORIZON CONSIDERATIONS (after the JSON block)
+## WATCH LIST FOR SUPERVISION (after the JSON block)
 
 After the %%%JSON_END%%% block, add a separate section:
 
-### Horizon Considerations
-*These observations fall outside the project's stated PDO/scope but may be relevant for the team's broader awareness. They do not affect the FCV ratings above.*
+### Watch List for Supervision
+*These are FCV risks or dynamics the team cannot act on now but should monitor during implementation. They do not affect the FCV ratings above.*
 
-List 2-4 beyond-scope FCV considerations that the team should be aware of. These may include:
-- Legitimate FCV concerns that fall outside the current operation's mandate
-- Analytical tensions from Stage 2 that could not be fully reconciled
-- Emerging risks that may become relevant in future operations or restructuring
-- Cross-sectoral FCV dynamics that affect the project environment but are beyond its scope
+List 2-4 risks or dynamics to track during implementation. Each item must:
+- Identify a specific FCV risk or dynamic that is beyond the current preparation scope but relevant to implementation
+- Name the WBG vehicle through which it should be tracked — one of: ISR risk flag, Mid-Term Review agenda item, RRA update, or restructuring trigger
+- Be written as a brief paragraph (2-3 sentences)
 
-Format each as a brief paragraph (2-3 sentences). Do NOT include these in the JSON block or priority cards — they are narrative-only.
+Do NOT include vague or catch-all observations. If you cannot name a specific tracking vehicle for an item, omit it.
+Do NOT include these in the JSON block or priority cards — they are narrative-only.
 
 Wrap this section in delimiters:
 %%%HORIZON_START%%%
-[Your horizon considerations here]
+[Your watch list items here]
 %%%HORIZON_END%%%
 
 Now produce the FCV Support Note following this exact structure.''',
@@ -2054,14 +2054,24 @@ Append after the narrative. Same structure as Design Review Stage 3.
 
 IMPORTANT: Copy `fcv_rating` and `fcv_responsiveness_rating` EXACTLY from Stage 2. `when` must be one of: "Before next ISR mission" | "At MTR decision meeting" | "In restructuring paper" | "For upcoming AF" | "For ICR lessons". `tag` must be "[S]", "[R]", or "[S+R]". `refresh_shift` must be one of: "Shift A: Anticipate" | "Shift B: Differentiate" | "Shift C: Jobs & private sector" | "Shift D: Enhanced toolkit".
 
-## HORIZON CONSIDERATIONS
-After %%%JSON_END%%%:
+## WATCH LIST FOR SUPERVISION (after the JSON block)
 
+After the %%%JSON_END%%% block, add a separate section:
+
+### Watch List for Supervision
+*These are FCV risks or dynamics the team cannot act on now but should monitor during implementation. They do not affect the FCV ratings above.*
+
+List 2-4 risks or dynamics to track during implementation. Each item must:
+- Identify a specific FCV risk or dynamic that is beyond the current preparation scope but relevant to implementation
+- Name the WBG vehicle through which it should be tracked — one of: ISR risk flag, Mid-Term Review agenda item, RRA update, or restructuring trigger
+- Be written as a brief paragraph (2-3 sentences)
+
+Do NOT include vague or catch-all observations. If you cannot name a specific tracking vehicle for an item, omit it.
+Do NOT include these in the JSON block or priority cards — they are narrative-only.
+
+Wrap this section in delimiters:
 %%%HORIZON_START%%%
-### Horizon Considerations
-*These observations fall outside the current operation's remaining scope but may be relevant for planning successor operations or portfolio-level FCV dialogue.*
-
-List 2–3 beyond-scope FCV considerations: emerging risks for a successor operation, portfolio-level structural issues, systemic FCV constraints that cannot be addressed within the current project's mandate.
+[Your watch list items here]
 %%%HORIZON_END%%%
 
 Now produce the Implementation Review FCV Note following this exact structure.''',
