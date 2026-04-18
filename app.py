@@ -924,22 +924,24 @@ Note: the absence of conflict analysis is a less severe gap for projects in at-r
 TRANSPARENCY REQUIRED: In the Rating Reasoning Block, explicitly state what is driving the final Sensitivity rating — is it the percentage score alone, or is a quality gate cap overriding it? Write: "Final rating driven by: [score / DNH cap / conflict analysis cap / geographic specificity cap]." This must be visible in the reasoning block so the TTL can understand why the rating is what it is.
 
 ## Responsiveness Rating
-Count how many of the 4 FCV Refresh shifts (Anticipate, Differentiate, Jobs & Private Sector, Enhanced Toolkit) are actively addressed with concrete, specific measures in the project design — not just passing mentions.
+Assess the depth and breadth of the project's active engagement with FCV root causes and the quality of that engagement, using the 4 FCV Refresh shifts (Anticipate, Differentiate, Jobs & Private Sector, Enhanced Toolkit) as QUALITATIVE LENSES — not as a scoring checklist to tick off.
 
-| Shifts addressed + active measures | Baseline Rating |
+For each shift, make a qualitative judgement: does the project show genuine, embedded alignment with this strategic direction, or is it absent/superficial? A project can show deep alignment with one shift and complete absence of another. The rating reflects overall responsiveness quality, informed by the shift lenses but not mechanically derived from counting how many are "addressed".
+
+| Overall responsiveness quality | Baseline Rating |
 |---|---|
-| 0 shifts, no active measures | Extremely Low |
-| 1 shift, minimal measures | Very Low |
-| 1–2 shifts, some concrete measures | Low |
-| 2–3 shifts, concrete measures with specificity | Adequate |
-| 3–4 shifts, strong embedded measures | Well Embedded |
-| 4 shifts, deeply embedded throughout design | Very Well Embedded |
+| No active engagement with FCV root causes | Extremely Low |
+| Marginal engagement — one shift touched superficially | Very Low |
+| Limited engagement — some concrete measures aligned with 1-2 shifts, but shallow | Low |
+| Meaningful engagement — concrete, specific measures across 2-3 shifts with evidence of intentional design | Adequate |
+| Strong engagement — deeply embedded measures across multiple shifts, with clear theory of change linking project to FCV outcomes | Well Embedded |
+| Exceptional — all relevant shifts are deeply integrated throughout the design with specificity and operational detail | Very Well Embedded |
 
-Then apply quality gates:
-- If zero FCV Refresh shifts are aligned → cap responsiveness at Very Low
+Quality gates:
+- If zero shifts show any active engagement → cap responsiveness at Very Low
 - If no adaptive M&E for FCV dynamics exists → cap responsiveness at Adequate (not Low — the absence of adaptive M&E is a gap but should not override strong evidence of responsiveness across multiple shifts)
 
-IMPORTANT: When counting shifts addressed, do not penalise for shifts that are structurally outside the instrument's scope (e.g., do not penalise a DPO for lacking Enhanced Toolkit operational flexibilities that are IPF-specific).
+IMPORTANT: Not all shifts are equally relevant to every instrument or sector. Do not penalise for shifts that are structurally outside the instrument's scope (e.g., do not penalise a DPO for lacking Enhanced Toolkit operational flexibilities that are IPF-specific). Assess what IS within scope.
 
 ## Rating Reasoning Block
 Before emitting the ratings JSON, emit the following reasoning block showing your step-by-step scoring. This block is stripped from display but used for auditing.
