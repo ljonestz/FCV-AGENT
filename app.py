@@ -571,10 +571,14 @@ Not all sources carry equal weight in FCV contexts. Where you draw on web resear
 
 DATA GAP FLAGGING: If a key FCV dimension (e.g. conflict intensity, displacement figures, governance quality, humanitarian access, gender-based violence prevalence) has no reliable recent data available from your research or training knowledge, note this explicitly in the relevant subsection: "Note: No reliable recent [dimension] data was identified — the task team should verify with [suggested source type, e.g. OCHA, RRA, ACLED]." Do not omit a dimension just because data is scarce — flag the gap so the TTL knows where to look.
 
+  COUNTRY-SPECIFIC FACT FLAGGING (Part B only):
+  Any country-specific factual claim that cannot be directly verified from the uploaded project document must be flagged inline with [Verify: ...]. This applies to: named institutions or government bodies, named legislation or legal instruments, specific electoral or political events and dates, named officials or political figures. Example: "The National Revenue Authority [Verify: confirm restructuring date with country team] underwent reforms in 2023." Claims clearly sourced from the uploaded document are exempt from this requirement. This flag is a TTL advisory — it does not indicate the claim is wrong, only that it should be checked before operational use.
+
 ### FCV Classification Context
 - Note if the country appears on the FCS (Fragile and Conflict-affected Situations) list
 - If FCS, note this classification and its implications for project design and operational flexibilities
 - DO NOT make any explicit statement about whether the country is or is not eligible for IDA FCV Envelope financing windows (PRA, RECA, TAA, WHR). Eligibility depends on multiple criteria beyond FCS classification — including CPIA scores, conflict intensity thresholds, annual FCV review submissions, and Management determinations — and any eligibility statement risks being incorrect and undermining trust in the output. Simply note relevant FCV Envelope instruments if they appear in the project document, without drawing eligibility conclusions.
+- IDA FCV ENVELOPE ADVISORY (Conflict-Affected and Situations of Fragility categories only): If the country is classified as Conflict-Affected or Situations of Fragility, add a brief advisory note at the end of Part B — after the synthesis statement — in the following format: "Note for the Task Team: Given [country]'s FCV profile, the team may wish to discuss whether this operation could benefit from IDA FCV Envelope financing windows (PRA, RECA, TAA). Eligibility involves a multi-criteria assessment conducted by the FCV Group — this note is not a determination, but a prompt to raise the conversation with your regional FCV coordinator." Do NOT add this advisory for At Risk or Non-FCS countries.
 - Assess which FCV Refresh strategic shift(s) are most relevant to this project context:
   - Shift A (Anticipate): Is there evidence of forward-looking risk monitoring?
   - Shift B (Differentiate): Is the approach tailored to the specific FCV classification?
@@ -601,6 +605,7 @@ Close Part B with a **1–2 sentence synthesis statement** that connects the doc
 - Always clearly signal which Part and section you are in
 - Note when information is ambiguous, absent, or contradictory
 - Be specific — generic statements about fragility are not useful
+- **Format:** Write analytical observations as prose paragraphs (2–4 sentences per subsection), not bullet lists. Bullets are permitted only for genuinely enumerable items (e.g. a list of named prior actions, a list of specific geographic locations, a list of dated events). Do NOT default to bullet points for contextual analysis, risk characterisation, or FCV findings. Each subsection body should read as coherent narrative, not a structured extract.
 - **Length:** Keep Part A and Part B combined to approximately 1,000–1,500 words. Be concise and evidence-focused; do not pad sections where evidence is thin.
 
 CITATION DISCIPLINE FOR PART B — MANDATORY:
