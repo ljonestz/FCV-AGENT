@@ -2981,7 +2981,26 @@ If no RRA exists and the country has significant FCV dynamics, flag this as a po
             "flags": [],
             "doc_type": ["PAD", "PCN", "PID"],
         },
-        "content": "",  # CONTENT PENDING — Batch 4 distillation
+        "content": """## Environmental and Social Framework (ESF) — FCV-Relevant Standards
+
+### Priority Standards in FCV Settings
+ESS1 (Assessment and Management of Environmental and Social Risks and Impacts) is the foundational standard and the most FCV-critical: it governs risk classification, the mitigation hierarchy, ESCP design, and differentiated measures for vulnerable groups. ESS4 (Community Health and Safety) is equally critical in FCV contexts because it covers security personnel conduct, community exposure to project-related conflict risk, and emergency preparedness. ESS10 (Stakeholder Engagement and Information Disclosure) drives GRM design and meaningful consultation requirements — both of which are structurally challenging when state access is limited or communities distrust government channels. ESS2 is relevant in FCV settings specifically for its security personnel provisions: Borrowers must assess risks from security arrangements, prohibit use of force except in proportion to threat, vet contracted security workers for past abuses, and seek to ensure government security forces deployed to the project act consistently with these standards.
+
+### Proportionality Principle and FCV Application
+The ESF explicitly acknowledges that where Borrowers face "urgent need because of natural or man-made disaster or conflict" or "capacity constraints because of fragility," the Bank will apply proportionate standards and timelines. Technical feasibility is defined to explicitly account for "security, governance, capacity and operational reliability" — meaning reduced state capacity in FCV settings is a recognised basis for adaptive compliance pathways, not a waiver. FCV CC reviewers should watch for whether proportionality is used as a genuine adaptation or as a rationale to reduce safeguard scope without justification. Risk classification must take into account "considerations relating to stability, conflict or security" and is subject to ongoing review during implementation.
+
+### ESCP Minimum Requirements in FCV Contexts
+The Environmental and Social Commitment Plan (ESCP) is the legally binding instrument recording what the Borrower has committed to do, and by when. For FCV projects, the ESCP must at minimum: commit to conducting the E&S assessment (including SEP and stakeholder engagement plan); specify differentiated measures for disadvantaged or vulnerable groups identified in the assessment; set timeframes for plans that cannot be completed before appraisal; address security arrangements for project personnel and property; and include contractor management provisions requiring all contractors to meet ESS requirements. For PADs, draft ESCP must be disclosed before appraisal. FCV reviewers should check whether the ESCP includes realistic implementation timelines given conflict-reduced state capacity, and whether it names specific sub-national areas with distinct risk profiles.
+
+### Stakeholder Engagement When State Access Is Limited
+ESS10 requires a Stakeholder Engagement Plan (SEP) proportionate to risks and impacts, disclosed before appraisal. In FCV settings, where community representatives may not legitimately speak for affected populations (due to displacement, coercion, or capture by conflict actors), ESS10 requires the Borrower to make "reasonable efforts to verify" that community representatives genuinely represent the views of affected individuals. Consultation must be "free of external manipulation, interference, coercion, discrimination and intimidation" — conditions that are structurally difficult in conflict-affected settings and require dedicated verification steps. Where project location is not yet known (common in FCV programming), ESS10 allows a framework SEP outlining principles and a collaborative engagement strategy to be prepared in lieu of a site-specific plan.
+
+### GRM Design Requirements
+The ESF's grievance mechanism requirements are a minimum floor, not a design ceiling. The mechanism must be accessible and inclusive, culturally appropriate, at no cost to complainants, free from retribution, and must allow anonymous complaints. It must maintain a written log of all grievances; advertise the expected timeline for acknowledgement, response and resolution; and provide an appeals pathway. In FCV settings, the GRM must be designed to function when formal institutions are absent, distrusted, or captured — this typically means community-based or third-party-operated reception points, mobile or digital submission channels, and explicit provisions for SEA/SH complaints with separate, confidential processing. A GRM designed only around government channels will not meet the "accessible and inclusive" requirement in high-conflict contexts.
+
+### FCV CC Reviewer Checklist — ESF Section of a PAD
+First checks: (1) Is the SORT risk rating consistent with ESF-identified risks, particularly community conflict, security arrangements, and land/displacement risks? (2) Does the ESCP include a realistic timeline given Borrower capacity? (3) Does the SEP identify disadvantaged or vulnerable groups specifically (IDPs, host communities, women, ethnic minorities) and specify differentiated engagement methods for each? (4) Is the GRM designed to operate independently of government institutions? (5) Does the security arrangements section exist — and if security forces are involved, are ESS2/ESS4 conduct standards cited? Common gaps: SEP relies on government-led consultations without alternative channels; GRM is a phone number at a ministry; ESCP timelines assume pre-conflict state institutional capacity.
+""",
     },
     "esf_vulnerable_groups": {
         "title": "Vulnerable and Disadvantaged Groups — ESF Directive",
@@ -2993,11 +3012,30 @@ If no RRA exists and the country has significant FCV dynamics, flag this as a po
             "flags": ["vulnerable_groups", "displacement_context"],
             "doc_type": [],
         },
-        "content": "",  # CONTENT PENDING — Batch 4 distillation
+        "content": """## Vulnerable and Disadvantaged Groups in FCV Operations — ESF Guidance
+
+### ESF Definition and Who Qualifies
+The ESF defines "disadvantaged or vulnerable" as those more likely to be adversely affected by project impacts and/or more limited in their ability to take advantage of project benefits. Such individuals or groups are also more likely to be excluded from, or unable to fully participate in, mainstream consultation processes — and therefore require specific measures and assistance. The definition explicitly covers: age (elderly and minors, including those separated from family or community); disability; gender; ethnicity; religion; economic status; and persons separated from family or community support networks. In FCV settings, this definition encompasses conflict-affected populations as a category, including IDPs, refugees, returnees, host communities under stress, women and girls in insecure settings, youth at risk of recruitment, and former combatants in reintegration.
+
+### Enhanced Due Diligence Requirements
+Where the E&S assessment identifies specific individuals or groups as disadvantaged or vulnerable, ESS1 requires the Borrower to propose and implement "differentiated measures so that adverse impacts do not fall disproportionately on the disadvantaged or vulnerable, and they are not disadvantaged in sharing any development benefits." ESS10 reinforces this: the SEP must describe "differentiated measures to allow the effective participation" of vulnerable groups, and "dedicated approaches and an increased level of resources may be needed." This is not aspirational — it is a required commitment in the ESCP. FCV reviewers should check that the PAD identifies specific vulnerable subgroups and names concrete mechanisms (e.g., separate consultation sessions, intermediary NGOs, mobile outreach), not just general language about "inclusive engagement."
+
+### IDP and Refugee Populations — Specific Protections and Limits
+ESS5 (Involuntary Resettlement) explicitly states that it does not apply to "management of refugees from, or persons internally displaced by, natural disasters, conflict, crime or violence." This is a critical distinction: ESS5 protections apply to project-induced displacement, not to pre-existing displacement caused by conflict. However, ESS1, ESS4, and ESS10 still apply fully to IDPs and refugees as project-affected parties: their specific vulnerabilities must be assessed, they must be included in the SEP, and differentiated measures must address their limited ability to participate in standard consultation processes (due to mobility, fear, document status, or lack of representation in formal structures). Projects operating in IDP/refugee settings should demonstrate in the PAD how they distinguish between project-affected IDPs and those displaced by conflict, and how they avoid generating new displacement pressure through land acquisition or service access restrictions.
+
+### Women and Girls in Conflict — ESF Requirements
+ESS2 explicitly lists women as vulnerable workers requiring protection. ESS10 requires that information disclosure and consultation account for "specific information needs" including "gender." The broader ESF framework, read alongside Bank Good Practice Notes on SEA/SH, requires that where conflict conditions elevate SEA/SH risk — including through influx of construction workers, engagement of security forces, or disruption of community protection norms — the project must have explicit mitigation measures. The minimum ESF requirement is that the GRM include a mechanism to receive SEA/SH complaints confidentially and route them to a competent authority outside the project management chain. FCV reviewers should look for whether the gender analysis in the PAD is conflict-aware (i.e., addresses how conflict has changed gender dynamics, access to services, and protection risks) rather than generic gender mainstreaming language.
+
+### Host Communities and Displacement Dynamics
+Where a project operates in areas hosting displaced populations, ESS5 recognises that host communities are directly affected and must receive explicit attention in resettlement and livelihood planning. The broader ESF requires that host community impacts be assessed under ESS1 and that host communities are included in the SEP. In FCV settings, host communities often face compounding stress — reduced access to land, water, and services due to displacement influx — and project activities that do not account for this dynamic risk exacerbating intercommunal tension. FCV reviewers should check that the PAD's social analysis identifies host community stress and that the SEP treats host communities as a distinct stakeholder group with potentially divergent interests from displaced populations.
+
+### Integrating Vulnerability Assessment into Project Design
+The ESF requires that vulnerability be identified during the E&S assessment (ESS1) and that differentiated measures be embedded in the ESCP — not added on as parallel annexes. The common failure mode in FCV projects is that vulnerability assessments are conducted as separate social analyses (poverty assessments or gender action plans) that do not feed into project design choices or implementation arrangements. Meaningful consultation with conflict-affected vulnerable groups, under ESS10, requires "free of coercion" conditions, prior disclosure of information in accessible formats, and a feedback loop that demonstrably shapes project design — not post-hoc consultation to validate already-decided designs. FCV reviewers should ask: where did the vulnerability assessment change a project design decision? If the answer is nowhere, the assessment was not integrated.
+""",
     },
     "sort_guidance": {
-        "title": "SORT Risk Rating in FCV Settings",
-        "source": "FCV Playbook — Bank Guidance: Systematic Operations Risk-Rating Tool (SORT)",
+        "title": "FCV-Sensitive Portfolio Analysis",
+        "source": "FCV Playbook — Good Practice Note: FCV-Sensitive Program and Portfolio Analysis",
         "triggers": {
             "country_category": ["At Risk"],
             "instrument": [],
@@ -3005,7 +3043,26 @@ If no RRA exists and the country has significant FCV dynamics, flag this as a po
             "flags": [],
             "doc_type": [],
         },
-        "content": "",  # CONTENT PENDING — Batch 4 distillation
+        "content": """## FCV-Sensitive Portfolio Analysis — Guidance for WBG Teams
+
+### What This Tool Is and Where It Fits
+The FCV-Sensitive Program and Portfolio Analysis is a core component of the Risk and Resilience Assessment (RRA) methodology, positioned as a bridge between the RRA's diagnosis of FCV drivers and resilience factors (Section 1) and its operational recommendations (Section 3). It can also be conducted as a standalone product — for example, as an input into a PRA portfolio recalibration exercise or where an RRA update is not scheduled. The tool examines the full WBG country portfolio and programme to assess the extent to which engagements are FCV-sensitive: aware of FCV dynamics, adapted to account for them, not inadvertently worsening them, and where possible actively addressing them.
+
+### FCV Sensitivity — What It Means at Portfolio Level
+FCV sensitivity at portfolio level means more than individual project design quality. It requires the portfolio as a whole to: (a) demonstrate awareness of how FCV dynamics affect Bank engagement across sectors and instruments; (b) use operational flexibilities and FCV-relevant tools where appropriate; (c) not inadvertently contribute to fragility drivers or undermine resilience; (d) where possible, actively address FCV sources and impacts; and (e) balance higher-risk FCV-focused operations against other developmental engagements. Even technically successful projects can inadvertently exacerbate fragility — by targeting one region and increasing perceptions of exclusion, by working through non-state actors in ways that undermine state legitimacy, or by supporting policy reforms that amplify grievances. The Portfolio Analysis is designed to surface these dynamics at scale.
+
+### Two Levels of Analysis — Strategic and Project
+The FCV Portfolio Analysis operates at two levels simultaneously. The strategic analysis examines the overall country programme and pipeline against the FCV Strategy's four engagement pillars and four principles, asking: what is the Bank's mode of engagement on FCV in this country, and how has it shifted over time? How is FCV engagement reflected in the SCD and CPF? Are there portfolio-wide challenges affecting operational effectiveness? The project analysis selects 5-10 active or recently closed operations for in-depth review — prioritising those with FCV objectives, those working in conflict-affected areas or with vulnerable groups, and those identified as having positive or negative FCV impacts.
+
+### Key Questions for Project-Level FCV Sensitivity Review
+For each project selected for in-depth analysis, the Portfolio Analysis team examines: whether PDO objectives and results frameworks reflect FCV drivers and resilience factors; whether beneficiary targeting accounts for inclusion of FCV-affected groups and conflict-affected areas; whether operational flexibilities have been used (simplified FM/procurement, hands-on implementation support, Peace and Inclusion Lens, conflict analysis); whether M&E and GRM arrangements are adapted for FCV conditions; and whether there are unintended consequences — positive or negative — on FCV dynamics. The purpose is explicitly not to evaluate project performance but to generate transferable lessons.
+
+### Using the 4 P's Framework for Recommendations
+Recommendations from an FCV Portfolio Analysis are structured around the four P's: Policies (strategic and operational policies guiding engagement); Programming (design and delivery of lending and ASA); Partnerships (engagement with government, UN, NGOs, private sector, bilateral donors); and Personnel (staffing, skill mix, continuity, security arrangements). This framework prevents recommendations from defaulting to project-level design tweaks and instead prompts systemic reflection — whether the CMU has adequate FCV-specialist capacity, whether partnership arrangements support sustained engagement during conflict, or whether corporate policies create barriers to adaptive programming.
+
+### How TTLs and FCV CCs Should Use This Tool
+For TTLs, the FCV Portfolio Analysis is most relevant when: preparing a new project in a country where an RRA or Portfolio Analysis has been recently conducted — the findings should directly inform design choices on targeting, instrument selection, and risk management; conducting a Mid-Term Review or preparing an Additional Financing; or preparing a PLR or new CPF. FCV CCs conducting peer reviews should check whether the project team has engaged with recent RRA and Portfolio Analysis findings, and whether the project's FCV sensitivity rationale is grounded in those findings — not generic. A project that claims FCV sensitivity without referencing the country's specific FCV drivers, conflict-affected areas, or resilience factors as identified in the RRA/Portfolio Analysis is not making the case adequately.
+""",
     },
     "dpf_policy_fcv": {
         "title": "Development Policy Financing in FCV Contexts",
@@ -3017,7 +3074,29 @@ If no RRA exists and the country has significant FCV dynamics, flag this as a po
             "flags": [],
             "doc_type": [],
         },
-        "content": "",  # CONTENT PENDING — Batch 4 distillation
+        "content": """## Development Policy Financing in FCV Contexts — Guidance for WBG Teams
+
+### What DPF Is and Why It Works Differently in FCV Settings
+Development Policy Financing supports a country's program of policy and institutional actions through budget support disbursed against prior actions. In FCV settings, the instrument carries distinct risks: reform costs often fall on vulnerable populations before compensating safety nets exist, programmatic series are disrupted by volatility, and the structural reform agenda may still be emerging at the time of Board approval. DPF in FCV contexts is therefore justified on an exceptional basis, with the Program Document required to describe when and how standard design considerations (distributional effects, fiduciary arrangements, environmental impacts) will be addressed if they cannot be fully resolved upfront.
+
+### Prior Actions and Conflict-Sensitivity
+Prior actions are the policy and institutional steps a government must have completed before DPF disbursement. In FCV settings, each prior action requires explicit conflict-sensitivity review: does the reform reduce access to services for conflict-affected or marginalised populations, shift resource allocation in ways that exacerbate inter-group grievances, or signal state alignment with particular conflict actors? TTLs and FCV CCs should assess whether prior actions related to fiscal consolidation, subsidy removal, civil service reform, or natural resource governance are sequenced against the government's capacity to manage distributional effects. If a prior action involves policy changes affecting livelihoods in conflict-affected areas, the Program Document must describe mitigation measures or sequencing adjustments.
+
+### Adjustment Sequencing Risk — The Primary DNH Pathway for DPF in FCV Settings
+The most significant Do No Harm risk in DPF operations is adjustment sequencing: the gap between when reform costs are imposed (reduced subsidies, public sector wage bills cut, user fees introduced) and when safety net or service delivery compensations are operational. In fragile settings, this gap is not a temporary transitional inconvenience — it is a potential driver of grievance, mobilisation, and violence. FCV CCs should flag any DPF prior action that imposes fiscal or structural adjustment costs on vulnerable groups without a credible, funded, operational safety net already in place. Poverty and Social Impact Analysis (PSIA) is the primary analytical tool for assessing this risk; its absence or inadequacy for prior actions affecting vulnerable populations is a red flag.
+
+### Programmatic Series Risks in Volatile Environments
+DPF is often structured as a programmatic series — a sequence of 2-4 operations linked by indicative triggers. In FCV contexts, programmatic series carry specific risks: government changes, conflict escalation, or macro framework deterioration can break the series mid-way, leaving a partial reform agenda in place without the sequenced compensating measures. TTLs should assess whether indicative triggers for subsequent operations are realistic given political economy volatility, and whether any single-tranche operation could stand alone if the series collapses. Programmatic series in FCS countries should include explicit contingency framing in the Program Document.
+
+### Contingent Credit for Crisis Response — Cat DDO
+The Catastrophe Deferred Drawdown Option (Cat DDO) allows a country to pre-position a disbursement facility triggered by declaration of a natural disaster or state of emergency. For FCV-affected countries facing recurring shocks — climate-related displacement, disease outbreaks, rapid conflict escalation — Cat DDO offers a structured liquidity buffer. Cat DDO is available to both IBRD and IDA countries and can be renewed multiple times. TTLs should consider whether Cat DDO structure is more appropriate than a standard single-tranche operation when the primary risk is a shock to fiscal capacity rather than a structural reform gap.
+
+### Monitoring and Fiduciary Arrangements — SORT, Not ESF/ESCP
+Unlike IPF, DPF does not carry Environmental and Social Framework (ESF) or ESCP requirements. Social and environmental risk in DPF is managed through: (1) PSIA for poverty/social impacts of specific prior actions; (2) country environmental and public financial management systems assessment; and (3) SORT for overall program risk. FCV CCs should understand this boundary clearly: recommending ESCP covenants, ESS requirements, or SEA/SH Action Plans for a DPF operation reflects a misunderstanding of the instrument. The relevant FCV flags for DPF are: adequacy of PSIA, conflict-sensitivity of prior actions, reform sequencing against safety nets, and the robustness of the country's PFM system for tracing use of budget support funds.
+
+### What TTLs and FCV CCs Should Flag When Reviewing a DPF
+Priority flags when reviewing a DPF in an FCV context: (1) prior actions that impose fiscal adjustment without funded safety nets — raise adjustment sequencing risk explicitly; (2) reforms affecting natural resource governance, subsidy structures, or public payroll in areas with active grievance dynamics — require PSIA; (3) programmatic series in countries with recent or ongoing conflict — assess whether trigger design is realistic and whether each operation could stand alone; (4) absence of IMF program or Fund Relations Note raising macroeconomic concerns; (5) use of budget support in post-conflict situations where PFM systems are weak — scrutinise the fiduciary arrangements section; (6) prior actions requiring legislative passage in governments with limited political cohesion — assess implementation risk explicitly.
+""",
     },
     "ipf_policy_fcv": {
         "title": "IPF in Situations of Urgent Need or Capacity Constraints",
@@ -3029,11 +3108,33 @@ If no RRA exists and the country has significant FCV dynamics, flag this as a po
             "flags": [],
             "doc_type": [],
         },
-        "content": "",  # CONTENT PENDING — Batch 4 distillation
+        "content": """## IPF in Situations of Urgent Need or Capacity Constraints — Guidance for WBG Teams
+
+### What This Pathway Is and When It Applies
+Bank Procedure OPS5.03-PROC.254 (effective July 2024) provides the processing steps for IPF operations invoking paragraph 12 of the IPF Policy. This pathway is available when the borrower is (i) in urgent need of assistance because of a natural or man-made disaster or conflict, or (ii) experiencing capacity constraints because of fragility or specific vulnerabilities. It applies to both IBRD and IDA operations. For FCS settings, this is the primary mechanism for accelerated preparation — teams should consider it from the earliest stage of project identification.
+
+### Eligibility Criteria — What Qualifies
+Four triggers exist under paragraph 12. First, urgent need due to a natural or man-made disaster. Second, urgent need due to conflict — covering conflict-affected countries (experiencing or at risk of violence in the past five to ten years) and post-conflict countries. Third, capacity constraints due to fragility — covering either a Fragile State (harmonised CPIA of 3.2 or below, or three or more years of UN or regional peacekeeping mission) or Fragility within a Non-Fragile Country (subnational areas with very low capacity, unstable conditions, and limited state presence). Fourth, capacity constraints due to specific vulnerabilities for Small States only. Teams must specify in the identification memorandum which of these four triggers applies and document the justification.
+
+### Processing Differences — Condensed Procedures
+Under Condensed Procedures, the normally sequential stages of identification, preparation, and appraisal are consolidated into a single Decision Review before which all package elements must be ready: draft PAD, Appraisal-stage PID, Appraisal-stage ESRS, draft ESCP and SEP, draft Legal Agreements, and draft DFIL. Turnaround times are shortened: reviewers receive three business days (not five) to comment; Board submission is due ten business days (not eighteen) before Board presentation. The CD chairs the Decision Review, which records ESRC, SORT rating, Paris Alignment, and any exceptions. "Fragility within a Non-Fragile Country" requires RVP-level approval (not just CD), reflecting the higher evidence bar required to establish subnational fragility.
+
+### Safeguard, Legal, and FM Flexibilities
+Environmental and social requirements are not waived but can be phased: the ESCP and SEP must be disclosed no later than Decision Review (not before appraisal). The Appraisal-stage ESRS must still be prepared and cleared by the RSA and ES Practice Managers. For fiduciary matters, paragraph 12(a) of the IPF Policy enables deferral of certain FM arrangements and special procurement arrangements. IDA projects under this pathway are subject to the Mandatory Direct Payment Pilot for contracts procured through international open or limited competition — exemptions require approval from the Director, OPSPF.
+
+### CERC Eligibility
+A Contingency Emergency Response Component (CERC) may be incorporated into an operation processed under this procedure, activatable when a crisis is declared. This provides additional flexibility for FCS contexts where security or access conditions can shift rapidly during implementation. Whether to include a CERC should be considered at the Decision Review stage and reflected in the SORT risk discussion.
+
+### When to Use This Pathway vs. Standard Preparation
+Teams should use Condensed Procedures when country or project circumstances require faster Board presentation than standard processing allows, when fiduciary or safeguard flexibility is needed to reflect limited government capacity, or when the project is responding to an active conflict or post-conflict transition. Using this pathway does not lower the analytical bar for FCV context analysis — the PAD must still demonstrate conflict-informed design.
+
+### Key Red Flags for FCV CC Reviewers
+The compressed timeline raises the risk of insufficient conflict analysis in the PAD before Decision Review — check that the narrative reflects the security context, not just the sectoral rationale. Subnational fragility eligibility requires RVP-level approval, and weak documentation of localised fragility is a common gap. FM deferral under this pathway should not be treated as a substitute for fiduciary risk mitigation — the ESCP and SEP still require quality E&S due diligence even under condensed timelines.
+""",
     },
     "procurement_fcv": {
         "title": "Procurement in Urgent Need / FCV Settings",
-        "source": "FCV Playbook — Bank Guidance: Procurement in Situations of Urgent Need or Capacity Constraints",
+        "source": "FCV Playbook — Bank Guidance: Procurement in Situations of Urgent Need or Capacity Constraints (OPS5.05-GUID.177)",
         "triggers": {
             "country_category": ["In Crisis", "Conflict-Affected"],
             "instrument": ["IPF"],
@@ -3041,7 +3142,37 @@ If no RRA exists and the country has significant FCV dynamics, flag this as a po
             "flags": ["procurement_issues"],
             "doc_type": [],
         },
-        "content": "",  # CONTENT PENDING — Batch 4 distillation
+        "content": """## Procurement in Situations of Urgent Need or Capacity Constraints — Guidance for WBG Teams
+
+### What This Guidance Covers
+Bank Guidance OPS5.05-GUID.177 (effective March 2019) provides operational detail on how to design and execute procurement in Fragile, Capacity-Constrained, Conflict, and Emergency (FCCE) situations — covering projects that invoke paragraph 12 of Section III of the IPF Policy. FCCE procurement applies across three situation types: sudden onset (unforeseen events — earthquakes, floods); gradual onset (anticipated crises — cyclone season preparation); and continuous crisis (prolonged war, fragility, ongoing violence). For most FCV-affected countries, the relevant type is continuous crisis, which has specific procurement design implications.
+
+### Core Principle: Fit-for-Purpose, Not Standard
+The fundamental principle for FCCE procurement is fitness for purpose: procurement arrangements must be designed to match the specific operational context, supply chain realities, and political economy of the situation — not adapted from a standard country-stable template. The PPSD (Project Procurement Strategy for Development) is required even in FCCE settings, but a simplified template is available and its completion may be deferred to implementation when conditions prevent upfront preparation. The Procurement Plan forms part of the legal agreement and must be updated as conditions change.
+
+### Key Procurement Flexibilities Available in FCCE Settings
+In immediate response and conflict situations, the following flexibilities are available and should be used proactively:
+- **Direct Selection**: Permitted when competitive procurement timelines would prevent delivery of essential goods or services. Documented in the PPSD. No prior review required in the immediate response phase.
+- **National procurement arrangements**: The Bank may accept Borrower procurement procedures where consistent with the Bank's Core Procurement Principles — regardless of whether these meet standard procurement Regulations.
+- **UN Agency execution**: Procurement can be implemented by UN agencies (UNICEF, WFP, UNOPS, UNDP, etc.) using their own procedures under Alternative Procurement Arrangements (APA). Recommended when UN has better supply chain access or field presence.
+- **Procurement agents**: Third-party procurement agents acceptable when government capacity is too limited for direct execution.
+- **Framework agreements**: Pre-positioned supply arrangements for emergency goods and services. The Bank maintains framework agreements with UN agencies; Borrowers can establish country-level frameworks for recurring needs.
+- **Hands-on Expanded Implementation Support (HEIS)**: Bank provides intensified procurement support in the field, including directly executing start-up procurement activities as a grant from PPF or trust funds.
+- **Increased advance payments**: Up to 40% of contract price (with bank guarantee), compared to lower standard thresholds.
+- **Simplified bid and performance security**: Bid securing declarations substitute for bid securities; performance security not mandatory for goods contracts and small works.
+
+### Reduced Competition Thresholds in FCV Settings
+FCCE situations carry adjusted competition thresholds: no prior review is normally required during immediate response and recovery; Request for Quotations (RFQ) threshold is unlimited; National Competition threshold is set at 5x standard thresholds during response/recovery, 3x during reconstruction. Standstill periods are not required in the response phase. These flexibilities allow faster procurement cycles but require compensating accountability through increased post-review, third-party monitoring, and transparent procurement tracking.
+
+### Oversight in FCCE Settings: Post-Review and Third-Party Monitoring
+The Bank's oversight shift in FCCE settings moves from prior review (approvals before contracting) to post-review (sample checks after the fact) plus independent assurance. This means: increased procurement post-review rates; use of supreme audit institutions or independent third-party assurance providers; remote sensing and third-party monitors (TPMs) for needs assessment and supervision where physical access is impossible. Community participation in procurement is explicitly encouraged in continuous crisis settings. Response to Borrower prior-review requests must be provided within 6 hours in immediate response situations.
+
+### PPSD Design Requirements for FCCE Projects — What TTLs Need to Check
+A PPSD for an FCCE project must: (a) understand the prevailing political economy and geographic spread of conflict; (b) map supply chain constraints (last-mile delivery, market fragmentation, transport bottlenecks); (c) use procurement approaches suited to the situation and that will deliver the best outcomes; (d) consider framework agreements where feasible; (e) track the procurement cycle to identify bottleneck approval processes on the Borrower side; (f) be short, simple, and fit for purpose — not a comprehensive procurement strategy borrowed from a stable-country context. TTLs should flag if a PAD's PPSD appears to be a template copy-paste that does not address specific conflict-driven supply chain realities.
+
+### Preparedness Phase — What Should Be in Place Before a Crisis
+For projects in countries at risk of crisis escalation, procurement preparedness measures should include: pre-qualified supplier lists; framework agreements for common emergency goods and services; pre-positioned stocks; capacity-building for emergency procurement staff; inclusion of a CERC component to enable rapid reallocation. Projects that omit these preparedness measures in at-risk country contexts are less resilient to crisis escalation and will require emergency restructuring. FCV CCs should check whether CERC inclusion has been considered and, if rejected, whether the justification addresses the risk of escalation.
+""",
     },
     "fm_fcv": {
         "title": "Financial Management in FCV-Affected Operations",
@@ -3053,7 +3184,29 @@ If no RRA exists and the country has significant FCV dynamics, flag this as a po
             "flags": ["fiduciary_risks"],
             "doc_type": [],
         },
-        "content": "",  # CONTENT PENDING — Batch 4 distillation
+        "content": """## Financial Management in Bank-Financed Operations — Guidance for WBG Teams
+
+### What This Directive Covers and Its Relevance for FCV Operations
+The Bank Directive on Financial Management (FM) in Bank-financed operations sets out the mandatory FM framework applicable across IPF, DPF, and PforR operations. Its core principles — reliance on country systems where acceptable, fit-for-purpose arrangements, accredited FMS oversight throughout the project cycle, and mandatory external audit — have direct implications for how FM is structured in fragile and conflict-affected settings. TTLs and FCV CCs should understand this framework to assess whether FM arrangements in a project are adequate for the FCV context or represent a fiduciary risk.
+
+### The Country Systems Principle and Its Limits in FCV Settings
+The Directive requires FM arrangements to be "to the extent possible reliant on country systems." In practice, FCV-affected countries frequently have public financial management systems too weak, fragmented, or compromised to anchor FM arrangements for a Bank operation without additional safeguards. Where country systems are used, the FMS is responsible for assessing whether they provide "reasonable assurance that operation proceeds are used for intended purposes." In FCV settings, TTLs should expect this assessment to identify gaps requiring ring-fenced or supplementary arrangements: dedicated project accounts, third-party oversight, simplified documentation thresholds, or remote disbursement mechanisms.
+
+### FM Risk Ratings in FCV Contexts
+FM risk ratings (Substantial or High) in FCV-affected operations are typically driven by: weak country PFM systems (budget execution, internal audit, financial reporting); limited availability of qualified government accountants and auditors; security constraints preventing supervision and site visits; and fragmented implementation arrangements (multiple implementation units, geographic dispersion, community-level cash management). FCV CCs should review whether the FM risk rating in a project's PAD reflects these contextual drivers or has been underweighted — Substantial FM risk with minimal mitigation measures in an FCS country is a red flag.
+
+### Roles and Accountability — The FMS Throughout the Project Cycle
+The Directive makes the Financial Management Specialist (FMS) responsible for FM-related risk assessment, proposing appropriate FM arrangements, monitoring risk mitigation, and reviewing Interim Financial Reports (IFRs) and audit reports. For FCV operations, this means the FMS — not the TTL alone — carries accountability for flagging fiduciary deterioration during implementation. IFR review is mandatory; audit report review is mandatory. TTLs working in FCV contexts should ensure their FMS has adequate time allocation and is capable of conducting meaningful implementation support given security constraints.
+
+### Fit-for-Purpose FM Arrangements in Fragile Settings
+The Directive empowers regional Practice Managers for FM (PMFMs) to "promote implementation of innovative FM arrangements, which are fit for purpose." This is the authorising provision for simplified, adapted, or emergency FM arrangements — including: simplified Statement of Expenditure (SOE) reporting; higher cash advance thresholds; use of mobile money or digital payment platforms; third-party monitoring for fiduciary assurance; and community-based FM with simplified record-keeping. FCV CCs and TTLs should push back on overly complex FM requirements that replicate stable-country procedures in FCV contexts — the Directive explicitly supports adaptation.
+
+### Audit Requirements — Non-Negotiable Even in FCV Settings
+External audit is a mandatory requirement that cannot be waived on grounds of FCV context alone. Where audit firm capacity is genuinely absent in-country — a real constraint in some FCS countries — the acceptable response is to engage an internationally accredited firm operating remotely or in-country, not to defer or eliminate the audit requirement. Outstanding or unsatisfactory audit reports are one of the specified conditions under which the Bank will not extend a Loan Closing Date.
+
+### Key Fiduciary Red Flags for TTLs in FCV Operations
+Escalate to the FMS immediately when you see: (1) delayed or missing IFR submissions; (2) unresolved prior-period audit qualifications; (3) FM arrangements relying entirely on government systems in an FCS country without independent verification mechanisms; (4) large cash advance balances held at community or sub-national level without reconciliation; (5) FM risk rated Moderate in a country classified as FCS — almost certainly an underestimate that requires justification.
+""",
     },
     "icr_fcv": {
         "title": "ICR Guidance — FCV Lens for Completion Reporting",
@@ -3065,7 +3218,39 @@ If no RRA exists and the country has significant FCV dynamics, flag this as a po
             "flags": [],
             "doc_type": ["ISR", "ICR"],
         },
-        "content": "",  # CONTENT PENDING — Batch 4 distillation
+        "content": """## FCV Lens for M&E, Completion, and Adaptive Management — Guidance for WBG Teams
+
+### Designing for FCV from the Start: Theory of Change and PDO
+The theory of change in an FCV project must reflect Drivers of Fragility, Sources of Resilience, and Risk Factors. All three types of expected outcomes should be visible: development access outcomes (health services, road connectivity); institution-building outcomes (fiscal transparency, Ministry capacity); and fragility-driver-linked outcomes (reduced inequalities in service access due to conflict). The PDO should reference FCV dimensions at a level that is realistic and attributable within the project's life — rather than "bring peace and stability," use "improve presence and functioning of local government services" or "increase market access to SMEs, including refugees and internally displaced persons." Include DRR elements in project assumptions and update them when context changes.
+
+### Results Framework — FCV-Smart Indicators
+Keep the results framework realistic and adapted to the FCV context. Baseline data will often be absent; national statistics may be unreliable or non-existent. Disaggregate all results indicators by FCV-relevant categories (geographic area, population group, displacement status). Budget purposefully for M&E in FCV settings — costs are higher than in stable contexts due to insecurity, limited access, third-party monitoring requirements, and rapid phone surveys. Engage M&E staff early, at project identification rather than after the design is fixed.
+
+### Adaptive Management — More Frequent Reviews Required
+The theory of change and its assumptions should be revisited regularly. In volatile FCV contexts, while the PDO may remain constant, the path toward it changes. Key adaptive management questions to track at each ISR: Is the theory of change still relevant? Are results framework indicators still correct? Are targets still realistic given context changes? Are M&E capacity-building activities being implemented and budgeted? Are data sufficiently disaggregated by geography, population group, and FCV context? Use Grievance Redress Mechanisms and citizen feedback loops as M&E inputs — not just safeguards tools.
+
+### Eight FCV-Specific Requirements for Project Completion Reports
+When preparing an ICR for a project in an FCV setting:
+
+**1. Link design to fragility drivers.** Describe how the theory of change, PDO, and indicators were linked to fragility drivers and resilience factors at design stage, especially if an RRA was available.
+
+**2. Document context changes and adaptation.** Document key events — including changes to FCV drivers — that influenced project performance, and show how the project adapted. Include all versions of the theory of change.
+
+**3. Report impact on fragility dynamics.** Report available information on the project's impact on FCV drivers and resilience, whether at PDO, intermediate, or higher level. Signal differences between areas of contribution versus clear attribution.
+
+**4. Report institutional resilience gains.** Even when not an explicit PDO objective, document improvements to core state functions: M&E institutional capacity, budget transparency, accountability to beneficiaries. These are FCV contributions.
+
+**5. Link lower-level outcomes to fragility.** Describe how lower-level outcomes contributed to higher-level FCV objectives — for example, "improved access to local conflict resolution mechanisms" linked to "bringing social cohesion to conflict-affected populations."
+
+**6. Use alternative data when indicator data are unavailable.** Seek alternative sources proactively — qualitative assessment, rapid surveys, beneficiary interviews — and cite all sources explicitly.
+
+**7. Capture FCV-specific lessons.** Document what worked, what failed, what entry points were most effective, and how context shaped implementation. These inform future projects in comparable settings.
+
+**8. Start early.** Preparations for completion reporting should begin well before the closing date. Small rapid evaluations on FCV-specific topics take time to commission. Retrofitting data for undocumented achievements is avoidable if tracking starts early.
+
+### Attribution and Rating in FCV Completion Reports
+Where conflict or external shocks disrupted implementation, document those factors explicitly and distinguish between shortfalls caused by project design versus context factors beyond the team's control. Institutional resilience gains and state legitimacy contributions count toward efficacy even when not included in the original PDO statement.
+""",
     },
     "scd_cpf_process": {
         "title": "Country Engagement Process — SCD, CPF, and FCV Integration",
@@ -3077,7 +3262,29 @@ If no RRA exists and the country has significant FCV dynamics, flag this as a po
             "flags": ["cpf_uploaded", "scd_mentioned"],
             "doc_type": [],
         },
-        "content": "",  # CONTENT PENDING — Batch 4 distillation
+        "content": """## Country Engagement — SCD, CPF, and FCV Integration — Guidance for WBG Teams
+
+### The SCD: What It Must Do in FCV Contexts
+The Systematic Country Diagnostic is the World Bank Group's own analytical product, prepared upstream of the CPF to identify binding constraints and priority areas for achieving the twin goals. In FCV-affected and fragile states, the SCD must engage seriously with political economy and governance constraints. SCDs that drew on fragility assessments (equivalent to the RRA) produced substantially stronger CPFs. Where an RRA or fragility assessment exists, the SCD should explicitly reference it and align its priority framing. Key requirements in FCV contexts: identify and analyse fragility drivers as primary factors in the pathway to high-level outcomes; disaggregate analysis by geography and population group including displaced and host communities; document knowledge and data gaps explicitly.
+
+### The CPF: Four Additional Considerations for FCS Countries
+**Fragility must be woven through, not boxed off.** The best CPFs integrate fragility analysis into the main body of objectives and the results framework. CPFs that address fragility only in a dedicated section or annex — separate from the core program logic — fail to translate that analysis into operational choices. Fragility drivers should be visible in the selectivity rationale, the portfolio logic, and the risk section.
+
+**Results frameworks must reflect the FCV operating environment.** Baseline data availability should be assessed at CPF preparation, and a specific plan to address data gaps should be included. Where household survey data are unavailable or outdated, the CPF should propose analytical work to fill this gap.
+
+**Risk analysis requires FCV-specific framing.** For FCS countries, SORT ratings are consistently higher in political/governance and institutional capacity categories, but risk descriptions in CPFs are often generic. Risk mitigation should be embedded in the portfolio design itself — not a separate narrative section. The CPF should also discuss what the World Bank Group will do if key risks materialise.
+
+**Portfolio-level coherence matters more than project-level sensitivity.** A common weakness is failure of CPFs to explain divergences between SCD priorities and the actual portfolio. TTLs preparing new operations in a country mid-CPF cycle should check whether the SCD-CPF alignment table explains why their sector was or was not a priority.
+
+### Country Engagement Notes (CENs): Use in FCV Contexts
+A Country Engagement Note replaces the CPF when country conditions are in crisis — active conflict or political transition — or when the World Bank Group lacks sufficient knowledge to define a medium-term program. Fragility or predictable instability is not in itself sufficient justification for a CEN. A CEN is warranted when active conflict or political transition makes medium-term programming unrealistic, or when the World Bank Group has just re-engaged after a prolonged hiatus. Where possible, the CEN must include poverty, gender, fragility, and other assessments; it must include benchmarks and indicators to allow performance tracking; and it should fill knowledge gaps in preparation for a subsequent full SCD-CPF cycle.
+
+### Performance and Learning Review (PLR)
+The PLR occurs at the midpoint of the CPF period (approximately every two years) and is the primary vehicle for surfacing portfolio-level FCV concerns that cut across individual projects: changes to the operating environment, gaps between SCD priorities and current portfolio composition, and updated fragility assessments that warrant adjustment. TTLs should use the PLR to flag changes in conflict dynamics that the original CPF did not anticipate.
+
+### What Project TTLs Need to Know: SCD-CPF-Project Linkage
+When designing a new operation in an FCS country: (1) Read the current SCD to understand the fragility drivers the CPF was designed to address. If the SCD pre-dates a significant change in the conflict context, flag this to the CMU. (2) Check whether the CPF risk section flags the sector or geographic area your project is working in. (3) Confirm that the PDO and theory of change connect to at least one CPF objective. (4) Where the CPF does not cover a key fragility driver identified in the SCD, flag this gap through the next PLR. (5) For operations in countries with a CEN rather than a CPF, invest in additional project-level fragility analysis — the analytical base is shallower.
+""",
     },
     "wdr_security_jobs": {
         "title": "Security-Justice-Jobs Nexus (WDR 2011)",
@@ -3089,7 +3296,37 @@ If no RRA exists and the country has significant FCV dynamics, flag this as a po
             "flags": ["private_sector_focus"],
             "doc_type": [],
         },
-        "content": "",  # CONTENT PENDING — Batch 4 distillation
+        "content": """## Security, Justice, and Jobs Nexus (WDR 2011) — Key Frameworks for FCV Analysis
+
+### Core Diagnostic: Why Violence Repeats
+The World Development Report 2011 on Conflict, Security, and Development establishes why countries cycle through repeated violence. Violence recurs not because of poverty alone, but because of the interaction between external and internal stresses (economic shocks, food price volatility, trafficking networks, demographic pressures) and weak or illegitimate institutions that cannot absorb or mediate those stresses. Countries with above-average governance indicators for their income level have a 30-45% lower risk of civil conflict onset within five to ten years. Citizens in conflict surveys consistently cite unemployment, injustice, inequality, and corruption — not ethnic or religious identity — as the primary drivers of their participation in or tolerance of violence.
+
+### The Three Core Elements: Citizen Security, Justice, and Jobs
+**Citizen security** means credible state capacity to protect civilians from physical harm, enforce the law without impunity, and prevent criminal and armed groups from operating freely. Security sector reform must be paced carefully — fast reform can destabilise patronage networks and trigger spoiler violence, but inadequate security leaves all other reforms unimplementable.
+
+**Justice** means institutions that resolve disputes fairly, hold perpetrators accountable regardless of status, protect human rights, and are perceived as legitimate by all social groups. Formal justice institutions often need to be built in parallel with or sequenced after informal or hybrid justice mechanisms.
+
+**Jobs** provide sustainable economic opportunities that give young men and women a tangible stake in the legal order. Unemployment predominantly drives participation in rebel movements and gangs. "Best-fit" economic institutions — technically imperfect but adapted to local conditions — matter more than model reforms. The private sector's role in creating jobs should be supported through early signals to investors (transparency in financial management, predictable contract enforcement) even before formal institutions are robust.
+
+Single-sector interventions routinely fail: security operations without justice create impunity; justice without jobs leaves youth with no alternative to violence; jobs programs without security are captured or undermined by armed actors.
+
+### The 20-Year Institution-Building Horizon
+Building institutions from "fragile state today" to "functioning institutionalised state" historically takes 15-30 years even for the fastest reformers. This is not pessimism — it is a planning reality. It means WBG projects must prioritise "best-fit" institutions over model institutions, early tangible results over comprehensive reform, and sustained engagement over short-term interventions.
+
+### Confidence-Building as a Precondition
+Before institutional transformation is possible, confidence must be restored. In situations of low trust, stakeholders will not collaborate until they believe a positive outcome is possible. Confidence-building requires:
+- **Inclusive-enough coalitions**: Not all-inclusive, but broad enough to include parties necessary for initial transformation. Women's organisations have repeatedly proven critical (Liberia Women's Initiative, Nepal).
+- **Early results that signal a real break with the past**: Visible action against corruption, protection from violence for marginalised groups, delivery of basic services in excluded areas.
+- **Locking in change**: Mechanisms demonstrating commitments will not be reversed (anti-corruption legislation, civilian oversight of security forces, independent audit bodies).
+
+### Operational Implications for WBG Operations
+For TTLs designing operations in conflict or post-conflict settings:
+- **Sequence across all three pillars**: A water project cannot be separated from justice (who controls allocation?) or security (who can access it?). Map explicitly how the intervention interacts with security and justice dynamics.
+- **Target excluded groups**: Geographic, ethnic, or religious exclusion from services and opportunities is both a driver of violence and an indicator of institutional failure. Service delivery that reaches historically excluded populations is a justice and security intervention.
+- **Avoid "premature load-bearing"**: Rushing governance reforms (elections, decentralisation, privatisation) before basic security and confidence exist can increase instability.
+- **Build in adaptive management**: Design projects to learn from each cycle and adapt, rather than treating initial conditions as stable.
+- **External stresses require external action**: Drug trafficking, spillover conflict, and illicit financial flows require regional and global responses — project-level interventions cannot compensate for unaddressed external stresses.
+""",
     },
     "pathways_prevention": {
         "title": "Prevention and Inclusion Pathways (Pathways for Peace)",
@@ -3101,7 +3338,37 @@ If no RRA exists and the country has significant FCV dynamics, flag this as a po
             "flags": ["prevention", "early_warning"],
             "doc_type": [],
         },
-        "content": "",  # CONTENT PENDING — Batch 4 distillation
+        "content": """## Prevention and Inclusion Pathways (Pathways for Peace, 2018) — Key Frameworks for FCV Analysis
+
+### The Prevention Dividend
+Pathways for Peace, the 2018 joint UN-World Bank study, opens with a foundational economic argument: prevention is dramatically more cost-effective than crisis response. A civil conflict costs the average developing country roughly 30 years of GDP growth. By 2030, more than half of the world's poor will live in countries affected by high levels of violence if current trends continue. The study finds that prevention works — many countries have successfully managed high-risk situations and avoided descents into violence (Tunisia, Colombia, Ghana, Indonesia, Kenya, Niger) — but these successes receive far less international attention and resources than post-conflict reconstruction.
+
+### Core Framework: Pathways, Actors, and Structural Factors
+Every society forges a trajectory through the constant interaction of actors, institutions, and structural factors over time, facing ongoing tensions between forces pushing toward violence and those sustaining peace. Prevention means shifting the pathway away from violence before grievances harden.
+
+**Structural factors** are long-term conditions that create the underlying risk environment: inequality, exclusion from political power and economic opportunity, land tenure insecurity, demographic pressures, climate-related resource stress, weak rule of law, history of violence.
+
+**Institutions** are the formal and informal rules governing political contestation, resource allocation, security provision, and justice. When institutions systematically exclude groups — by geography, ethnicity, gender, or religion — they create fertile ground for mobilising group grievances to violence.
+
+**Actors** navigate and shape pathways. Prevention depends critically on the choices made by specific actors — political leaders, civil society, private sector, religious and traditional leaders, youth organisations, regional bodies, and international partners.
+
+### Why People Fight: Exclusion, Inequality, and Perceived Injustice
+The study identifies exclusion as the primary mobilising mechanism for violence. Horizontal inequality — perceived inequality between ethnic, regional, or religious groups — often matters more than aggregate measured inequality. State repression (torture, extrajudicial killings, forced disappearances) significantly elevates conflict risk. Youth exclusion is central: with 60% of Africa's population under 25, societies that offer routes for youth participation in political and economic life experience less violence. Gender inequality and high levels of gender-based violence are associated with increased vulnerability to civil war. Economic growth reduces violence risk but does not eliminate it — when growth excludes specific groups or occurs without governance improvements, it can accelerate contestation over resources.
+
+### Arenas of Contestation
+Violence concentrates in specific arenas: power and governance (who controls the state, how power transitions are managed); land and natural resources (unclear tenure, environmental stress, resource wealth); service delivery (failure to provide services equitably signals that the state does not recognise marginalised communities); and security and justice (weak forces, impunity, inaccessible justice institutions).
+
+### Operational Implications for WBG Operations
+**Risk-informed development**: All operations in fragile, conflict-affected, or at-risk countries should be designed with conflict sensitivity. Project design should explicitly assess which groups are excluded from benefits, how resource allocation decisions interact with horizontal inequality, and what grievances exist in the project area.
+
+**Inclusive institutions**: The quality of inclusion in key institutions matters as much as their capacity. Security sector reform that includes previously excluded groups signals a fundamental shift. Justice programs that improve access for marginalised populations address both structural and actor dimensions of prevention.
+
+**Supporting national prevention architectures**: Countries like Kenya, Indonesia, and Ghana have built formal peace committees, early warning mechanisms, and conflict mediation capacities. WBG programs can support strengthening of these national architectures through governance programs, justice reforms, and social cohesion investments.
+
+**Differentiated engagement by risk level**: For "At Risk" countries, prioritise structural drivers of exclusion and invest in prevention-oriented design features even in sector projects. For low-risk countries, mainstream risk-informed development and inclusive institutions. Projects timed around political transitions should include scenario planning for different pathway outcomes with adaptive triggers.
+
+**Regional and global factors**: Climate change and resource stress are growing structural risk factors. Projects in water, agriculture, and land management in climate-vulnerable FCV settings should be assessed for their prevention dividend, not just their development returns.
+""",
     },
     "country_engagement_eval": {
         "title": "Country Engagement Quality — IEG Findings",
@@ -3113,6 +3380,28 @@ If no RRA exists and the country has significant FCV dynamics, flag this as a po
             "flags": ["cpf_uploaded"],
             "doc_type": [],
         },
-        "content": "",  # CONTENT PENDING — Batch 4 distillation
+        "content": """## Country Engagement Quality — IEG Evaluation Findings
+
+### What This Evaluation Covers
+The 2017 IEG early-stage assessment reviewed the first 22 CPFs and their associated Systematic Country Diagnostics through April 2016. Because country-level results were not yet available, the evaluation focused on process and document quality. Its findings are relevant to TTLs and FCV CCs as a baseline for what the SCD-CPF model does well, where it underperforms, and what the FCV-specific gaps are.
+
+### What Works: SCD Value-Added
+SCDs have added substantial value to country engagement, are well received by governments and development partners, and in most cases provided a strong or reasonable analytical basis for identifying constraints and opportunities. In fragile countries, IEG found that where a fragility assessment existed and was recent, both the SCD and CPF made good use of it — and this availability made it measurably easier to integrate FCV considerations into the country strategy. The presence of an RRA or fragility assessment before SCD preparation is therefore an important quality enabler for FCV-relevant country engagement.
+
+### What Doesn't Work: Selectivity, Specificity, and CPF Alignment Gaps
+Despite strong analytical foundations, SCDs frequently identified too many priorities — reducing their usefulness in driving CPF selectivity. CPFs often did not explicitly explain divergences from SCD priorities. In FCV settings this gap is especially consequential: a CPF that absorbs SCD conflict analysis but does not adjust the program mix or phasing undermines the value of the diagnostic.
+
+### Results Frameworks: Chronic Weaknesses
+Results frameworks were consistently rated as the weakest element of the CPF process. Chains between Bank program activities and outcomes were truncated or implicit. Indicators were drawn mainly from the existing portfolio rather than from SCD strategic priorities. Non-lending advisory services were poorly integrated and often not reflected in results matrices at all. For FCV CCs reviewing projects in CPF countries, this means that the absence of FCV-related indicators in a results framework does not necessarily mean FCV is absent from the strategy — it may simply reflect a structural weakness in how CPFs translate analysis into metrics.
+
+### Risk Assessment Weaknesses: SORT at Country Level
+All CPFs used the SORT, but IEG found risk assessments to be generic, with risk mitigation strategies often vague. SORT was designed primarily for project-level use rather than country-level risk analysis. For FCV contexts, SORT country-risk ratings in a CPF should be read critically — conservative or vague risk ratings do not reliably signal that FCV dimensions have been adequately analysed.
+
+### FCV-Specific Finding: Fragility Assessment Integration
+IEG reviewed fragility assessment integration in six fragile-country CPFs/CENs. Where assessments were available and recent, SCDs and CPFs integrated fragility well — explicitly referencing drivers of conflict, subnational dynamics, land tenure insecurities, governance failures, and regional spillovers. Where CENs were prepared before fragility assessments were completed, integration was absent. CENs frequently lacked monitoring frameworks and gave insufficient attention to how knowledge gaps would be addressed before the country graduated to a full SCD-CPF cycle.
+
+### Implications for TTLs and FCV CCs
+When reviewing a project in a CPF country, check whether the CPF was informed by a recent fragility or RRA. If not, the SCD may have analysed conflict drivers but the CPF program may not reflect them. Where the CPF predates the project, treat the CPF's risk ratings as potentially stale and supplement with current FCV context analysis. Alignment claims in project documents should specify which CPF objectives are being addressed and how the project's design responds to the conflict dynamics the SCD identified — not just that the project falls within a CPF focus area.
+""",
     },
 }
