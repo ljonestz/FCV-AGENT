@@ -59,7 +59,7 @@
 
 - **`renderClassificationWidget()`** — renders narrative-format classification widget at top of Stage 1 output
   - Uses `researchCountry` global (populated during web research) as `countryLabel`; falls back to `'this project's country context'`
-  - Narrative: "This analysis places [country] within the [category] category of the FCV Strategy's differentiated approach. [reasoning] This is an analytical working judgement, not an official WBG designation."
+  - Narrative: "This analysis places [country] within the [category] category of the FCV Strategy's differentiated approach. [reasoning] This is a subjective judgement on the part of this AI tool and does not constitute an official WBG classification."
   - Dropdown `onchange` auto-saves: `countryClassification = {..., category: this.value, confirmed: true}` + `localStorage.setItem('country_classification', ...)`
   - No Confirm button — dropdown change applies immediately
 - **`confirmClassification()`** — REMOVED in v9.1. Was: click handler for confirm button. Functionality absorbed into dropdown `onchange`.
