@@ -958,7 +958,7 @@ STAGE_GUIDANCE_MAP = {
     },
     "ICR": {
         "playbook_phase": "Closing",
-        "timing_options": ["During implementation"],
+        "timing_options": ["At project closing"],
         "framing": "Implementation Completion Report — assess FCV storyline, adaptation to changing environment, impact on DRRs, institutional resilience, and FCV-specific lessons.",
         "key_flexibilities": [],
         "pad_section_examples": [
