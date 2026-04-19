@@ -2686,6 +2686,9 @@ All TPI-delivered activities must include a realistic phase-out and handover pla
         },
         "content": """## Service Delivery in Protracted Conflict and Violence — Operational Guidance for WBG Teams
 
+### Instrument Scope
+This guidance applies primarily to **IPF operations** designing or delivering services in protracted conflict and violence (PCV) contexts. For PforR operations, the relevant design framework is whole-of-program assessment through the ESSA and Fiduciary Systems Assessment — whole-program delivery systems differ from project-level TPI calibration. Third-Party Implementer (TPI) frameworks are not applicable to DPF operations (which operate through government budget support, not direct service delivery).
+
 ### What Counts as a PCV Context
 Protracted Conflict and Violence (PCV) contexts are defined by three co-occurring conditions: extended duration of active or residual violence, chronic political and institutional instability, and prolonged vulnerability of the affected population. As of 2025, 26 countries qualify. Standard development service-delivery models consistently underperform in PCV contexts, requiring deliberate calibration.
 
@@ -2836,6 +2839,9 @@ Note: The Policy does not specify a universal number of days — exact timelines
         },
         "content": """## Operational Flexibilities Available in FCV Settings — Guidance for WBG Teams
 
+### Instrument Scope Note
+The flexibilities described below differ by instrument. **Financial management and procurement flexibilities** (simplified reporting, advance disbursements, direct contracting, HEIS) apply to **IPF operations** under the FM Manual (OPS5.05-GUID.180) and Procurement Regulations. **Environmental and social flexibilities** (phased E&S instruments, simplified ESCP, alternative SEP) apply to **IPF only** — the ESF does not apply to DPF or PforR. For **PforR**, environmental and social risk is managed through the Environmental and Social Systems Assessment (ESSA) and Fiduciary Systems Assessment (FSA); IPF-specific E&S instruments are not applicable. For **DPF**, social and environmental risk is addressed through PSIA for specific prior actions and country PFM system assessments — there is no ESCP, SEP, or SORT-based E&S standard applicable to DPF.
+
 ### Principle: Bank Policies Are Fit-for-Purpose
 The Bank's operational policies are designed to accommodate the constraints of FCV contexts through explicit flexibilities. These flexibilities are not waivers of standards — they are alternative compliance pathways that maintain objectives while adapting procedures to fragile, conflict-affected, or violent settings.
 
@@ -2869,15 +2875,18 @@ Flexibilities must be explicitly requested, documented, and approved through the
         "source": "FCV Playbook — ESF Good Practice Note: Assessing and Managing Risks of Security Personnel",
         "triggers": {
             "country_category": [],
-            "instrument": ["IPF", "PforR"],
+            "instrument": ["IPF"],
             "sector": [],
             "flags": ["security_risks_noted", "armed_forces_mentioned"],
             "doc_type": [],
         },
         "content": """## Security Personnel Risk Management (ESF) — Operational Guidance for WBG Teams
 
-### When This Guidance Applies
-This guidance applies to any project where the Borrower engages government security forces (military, police, gendarmerie) or private security companies to protect project workers, sites, assets, or activities. It applies to both IPF and PforR instruments. The relevant ESF standards are ESS1 (human security in ESIA Annex 1 item 5(e)), ESS4 paragraphs 24–27, and ESS9 for FIs.
+### Instrument Scope
+The Environmental and Social Framework (ESF) applies to **IPF operations** with a Project Concept Note (PCN) dated October 1, 2018 or later. It does **NOT** apply to DPF or PforR. For PforR operations, security-related risks involving armed actors or project security arrangements are managed through the Environmental and Social Systems Assessment (ESSA) process and the Fiduciary Systems Assessment (FSA) — not through ESF standards. Teams preparing PforR operations should refer to the ESSA methodology for assessing whether government security systems meet adequate standards.
+
+### When This ESF Guidance Applies
+This guidance applies to any IPF operation where the Borrower engages government security forces (military, police, gendarmerie) or private security companies to protect project workers, sites, assets, or activities. The relevant ESF standards are ESS1 (human security in ESIA Annex 1 item 5(e)), ESS4 paragraphs 24–27, and ESS9 for FIs.
 
 ### Security Risk Assessment (SRA) — Required at ESIA Stage
 The Borrower must conduct an SRA as part of the ESIA. The SRA must cover:
@@ -2976,12 +2985,15 @@ If no RRA exists and the country has significant FCV dynamics, flag this as a po
         "source": "FCV Playbook — World Bank Environmental and Social Framework (ESF)",
         "triggers": {
             "country_category": [],
-            "instrument": ["IPF", "PforR"],
+            "instrument": ["IPF"],
             "sector": [],
             "flags": [],
             "doc_type": ["PAD", "PCN", "PID"],
         },
         "content": """## Environmental and Social Framework (ESF) — FCV-Relevant Standards
+
+### Instrument Scope
+The Environmental and Social Framework (ESF) applies to **IPF operations** with a Project Concept Note dated October 1, 2018 or later. It does **NOT** apply to DPF or PforR. For **DPF**, environmental and social risk management is addressed through Poverty and Social Impact Analysis (PSIA) for prior actions affecting vulnerable groups, and SORT ratings — there is no ESCP, SEP, or ESS obligation. For **PforR**, environmental and social risks are assessed through the Environmental and Social Systems Assessment (ESSA), which evaluates government program systems rather than applying the Bank's own ESF standards directly.
 
 ### Priority Standards in FCV Settings
 ESS1 (Assessment and Management of Environmental and Social Risks and Impacts) is the foundational standard and the most FCV-critical: it governs risk classification, the mitigation hierarchy, ESCP design, and differentiated measures for vulnerable groups. ESS4 (Community Health and Safety) is equally critical in FCV contexts because it covers security personnel conduct, community exposure to project-related conflict risk, and emergency preparedness. ESS10 (Stakeholder Engagement and Information Disclosure) drives GRM design and meaningful consultation requirements — both of which are structurally challenging when state access is limited or communities distrust government channels. ESS2 is relevant in FCV settings specifically for its security personnel provisions: Borrowers must assess risks from security arrangements, prohibit use of force except in proportion to threat, vet contracted security workers for past abuses, and seek to ensure government security forces deployed to the project act consistently with these standards.
@@ -3007,12 +3019,15 @@ First checks: (1) Is the SORT risk rating consistent with ESF-identified risks, 
         "source": "FCV Playbook — Bank Directive: Addressing Risks and Impacts on Disadvantaged or Vulnerable Individuals or Groups",
         "triggers": {
             "country_category": [],
-            "instrument": [],
+            "instrument": ["IPF"],
             "sector": [],
             "flags": ["vulnerable_groups", "displacement_context"],
             "doc_type": [],
         },
         "content": """## Vulnerable and Disadvantaged Groups in FCV Operations — ESF Guidance
+
+### Instrument Scope
+The ESF definition of disadvantaged or vulnerable individuals and groups, and the associated enhanced due diligence requirements, apply to **IPF operations** only. For **PforR** operations, vulnerable and marginalised populations are addressed through the Environmental and Social Systems Assessment (ESSA), which evaluates whether government program systems adequately identify and protect vulnerable groups — the ESF's specific standards do not apply directly. For **DPF** operations, impacts on vulnerable groups are addressed through Poverty and Social Impact Analysis (PSIA) when prior actions have distributional consequences affecting vulnerable populations.
 
 ### ESF Definition and Who Qualifies
 The ESF defines "disadvantaged or vulnerable" as those more likely to be adversely affected by project impacts and/or more limited in their ability to take advantage of project benefits. Such individuals or groups are also more likely to be excluded from, or unable to fully participate in, mainstream consultation processes — and therefore require specific measures and assistance. The definition explicitly covers: age (elderly and minors, including those separated from family or community); disability; gender; ethnicity; religion; economic status; and persons separated from family or community support networks. In FCV settings, this definition encompasses conflict-affected populations as a category, including IDPs, refugees, returnees, host communities under stress, women and girls in insecure settings, youth at risk of recruitment, and former combatants in reintegration.
@@ -3034,34 +3049,49 @@ The ESF requires that vulnerability be identified during the E&S assessment (ESS
 """,
     },
     "sort_guidance": {
-        "title": "FCV-Sensitive Portfolio Analysis",
-        "source": "FCV Playbook — Good Practice Note: FCV-Sensitive Program and Portfolio Analysis",
+        "title": "SORT Risk Rating — Guidance for WBG Teams",
+        "source": "WBG Systematic Operations Risk-Rating Tool (SORT) Guidance — OPS5.06-GUID.147, July 2021",
         "triggers": {
-            "country_category": ["At Risk"],
+            "country_category": [],
             "instrument": [],
             "sector": [],
             "flags": [],
-            "doc_type": [],
+            "doc_type": ["PAD", "PCN", "PID"],
         },
-        "content": """## FCV-Sensitive Portfolio Analysis — Guidance for WBG Teams
+        "content": """## SORT Risk Rating — Guidance for WBG Teams
 
-### What This Tool Is and Where It Fits
-The FCV-Sensitive Program and Portfolio Analysis is a core component of the Risk and Resilience Assessment (RRA) methodology, positioned as a bridge between the RRA's diagnosis of FCV drivers and resilience factors (Section 1) and its operational recommendations (Section 3). It can also be conducted as a standalone product — for example, as an input into a PRA portfolio recalibration exercise or where an RRA update is not scheduled. The tool examines the full WBG country portfolio and programme to assess the extent to which engagements are FCV-sensitive: aware of FCV dynamics, adapted to account for them, not inadvertently worsening them, and where possible actively addressing them.
+### What SORT Is
+The Systematic Operations Risk-Rating Tool (SORT) is the World Bank's mandatory risk assessment framework for all lending operations. It is not a pass/fail checklist — it is an analytical instrument that helps TTLs and management articulate the risks involved in pursuing a development outcome, and those involved in not engaging at all. SORT ratings are assigned at concept review and appraisal, and updated at each ISR during implementation. The FCV Screener does not prescribe specific SORT ratings; instead, it helps teams consider whether the current or proposed rating adequately reflects the operational context.
 
-### FCV Sensitivity — What It Means at Portfolio Level
-FCV sensitivity at portfolio level means more than individual project design quality. It requires the portfolio as a whole to: (a) demonstrate awareness of how FCV dynamics affect Bank engagement across sectors and instruments; (b) use operational flexibilities and FCV-relevant tools where appropriate; (c) not inadvertently contribute to fragility drivers or undermine resilience; (d) where possible, actively address FCV sources and impacts; and (e) balance higher-risk FCV-focused operations against other developmental engagements. Even technically successful projects can inadvertently exacerbate fragility — by targeting one region and increasing perceptions of exclusion, by working through non-state actors in ways that undermine state legitimacy, or by supporting policy reforms that amplify grievances. The Portfolio Analysis is designed to surface these dynamics at scale.
+### Nine Risk Categories
+SORT assesses nine risk categories. Each is rated: Low, Moderate, Substantial, or High.
 
-### Two Levels of Analysis — Strategic and Project
-The FCV Portfolio Analysis operates at two levels simultaneously. The strategic analysis examines the overall country programme and pipeline against the FCV Strategy's four engagement pillars and four principles, asking: what is the Bank's mode of engagement on FCV in this country, and how has it shifted over time? How is FCV engagement reflected in the SCD and CPF? Are there portfolio-wide challenges affecting operational effectiveness? The project analysis selects 5-10 active or recently closed operations for in-depth review — prioritising those with FCV objectives, those working in conflict-affected areas or with vulnerable groups, and those identified as having positive or negative FCV impacts.
+1. **Political and Governance** — risks from political instability, weak governance, conflict, security threats, and de facto governance constraints. In FCV settings this is almost always Substantial or High; it explicitly covers security risks including armed actor interference with project activities.
+2. **Macroeconomic** — risks from macroeconomic volatility, fiscal weakness, exchange rate instability, or debt sustainability. In FCV contexts, this category is also the prerequisite for DPF operations: an adequate macroeconomic framework must be confirmed before DPF board approval.
+3. **Sector Strategies and Policies** — adequacy of sector policy framework to achieve the PDO; whether government strategies are FCV-adapted.
+4. **Technical Design** — risks to project design: complexity, sequencing, third-party supervision constraints, technology appropriateness. In FCV contexts, this covers risks from limited oversight access and dependence on alternative delivery actors.
+5. **Institutional Capacity for Implementation and Sustainability** — risks from weak implementing agency capacity; high staff turnover; limited fiduciary or project management capability.
+6. **Fiduciary** — financial management and procurement risks. Assessed against two frameworks: (i) IPF: residual risk based on FM and procurement arrangements in place; (ii) PforR: integrated Fiduciary Systems Assessment covering government procurement, financial management, and accountability systems; (iii) DPF: assessment of budget and foreign exchange management adequacy rather than project-level fiduciary controls.
+7. **Environment and Social** — in **IPF operations**, E&S risk is rated on an **inherent** (pre-mitigation) basis at concept stage and appraisal, unlike all other categories which are assessed as residual risk after mitigation measures are in place. This distinction matters: a project operating in a conflict-affected area with internally displaced populations has inherent E&S risk that must be rated based on the scale and severity of potential impacts before ESF measures are applied. For **PforR**, E&S risk is assessed through the ESSA — the government's program systems are evaluated for adequacy rather than applying the Bank's ESF standards directly.
+8. **Stakeholders** — risks from opposition by, or inadequate engagement with, affected communities, civil society, or government counterparts. In FCV settings, community distrust of state actors is a primary driver of stakeholder risk.
+9. **Other** — any material risk not captured above, including climate and disaster risk.
 
-### Key Questions for Project-Level FCV Sensitivity Review
-For each project selected for in-depth analysis, the Portfolio Analysis team examines: whether PDO objectives and results frameworks reflect FCV drivers and resilience factors; whether beneficiary targeting accounts for inclusion of FCV-affected groups and conflict-affected areas; whether operational flexibilities have been used (simplified FM/procurement, hands-on implementation support, Peace and Inclusion Lens, conflict analysis); whether M&E and GRM arrangements are adapted for FCV conditions; and whether there are unintended consequences — positive or negative — on FCV dynamics. The purpose is explicitly not to evaluate project performance but to generate transferable lessons.
+### High vs. Substantial — A Critical Distinction
+A High rating is reserved for the riskiest operations and is intended to be used sparingly. It signals that even with substantial mitigation, residual risk remains above the level typically acceptable for Bank operations. A Substantial rating signals that the risk requires careful management and close monitoring but does not preclude proceeding. In FCV contexts, Substantial ratings in Political/Governance, Institutional Capacity, and Environment and Social are common and expected — they are not reasons to downgrade ambition. High ratings should reflect genuine evidence of extreme risk, not be a default for any FCV operation.
 
-### Using the 4 P's Framework for Recommendations
-Recommendations from an FCV Portfolio Analysis are structured around the four P's: Policies (strategic and operational policies guiding engagement); Programming (design and delivery of lending and ASA); Partnerships (engagement with government, UN, NGOs, private sector, bilateral donors); and Personnel (staffing, skill mix, continuity, security arrangements). This framework prevents recommendations from defaulting to project-level design tweaks and instead prompts systemic reflection — whether the CMU has adequate FCV-specialist capacity, whether partnership arrangements support sustained engagement during conflict, or whether corporate policies create barriers to adaptive programming.
+### Residual vs. Inherent Risk
+For all categories except Environment and Social in IPF operations, SORT measures **residual** risk — the risk that remains after proposed mitigation measures are in place. For E&S in IPF (at concept and appraisal), risk is measured on an **inherent** basis — the risk of harm before mitigation, scaled to the potential significance of impacts. This means E&S ratings must reflect the contextual severity of environmental and social impacts (displacement, community conflict, SEA/SH exposure) independent of what the ESCP commits to do about them.
 
-### How TTLs and FCV CCs Should Use This Tool
-For TTLs, the FCV Portfolio Analysis is most relevant when: preparing a new project in a country where an RRA or Portfolio Analysis has been recently conducted — the findings should directly inform design choices on targeting, instrument selection, and risk management; conducting a Mid-Term Review or preparing an Additional Financing; or preparing a PLR or new CPF. FCV CCs conducting peer reviews should check whether the project team has engaged with recent RRA and Portfolio Analysis findings, and whether the project's FCV sensitivity rationale is grounded in those findings — not generic. A project that claims FCV sensitivity without referencing the country's specific FCV drivers, conflict-affected areas, or resilience factors as identified in the RRA/Portfolio Analysis is not making the case adequately.
+### Instrument-Specific SORT Considerations
+- **IPF:** All nine categories apply. Fiduciary is split into FM and Procurement sub-ratings. E&S is inherent at concept/appraisal.
+- **PforR:** Fiduciary risk reflects the FSA findings on government systems. E&S risk reflects ESSA findings. Political/Governance and Macroeconomic categories are particularly important.
+- **DPF:** Macroeconomic is a precondition — an inadequate framework blocks board approval regardless of other risk ratings. FM assessment focuses on country PFM systems and budget/FX management, not project-level controls. ESF/ESCP requirements do not apply; E&S risk is managed through PSIA.
+
+### FCV-Specific Risk Considerations
+**Political/Governance** ratings in FCV settings should explicitly address security risks to project activities — armed actor interference, staff security constraints, and access limitations are legitimate drivers of High or Substantial ratings and should be described in the rating narrative. **Technical Design** should flag third-party supervision constraints and any reliance on alternative implementation arrangements (NGOs, UN agencies) that reduce the Bank's direct oversight. **Stakeholder** risk in conflict-affected settings should address the risk of community perception of project alignment with a conflict party, which is a genuine implementation risk. For PforR, the ESSA assessment should explicitly address whether government program systems risk exacerbating social conflict — this is a required element of the ESSA for PforR operations in FCV contexts.
+
+### Risk-Reward Framing
+SORT guidance explicitly encourages teams to articulate both the risks of engaging and the risks of not engaging in an FCV context. A project in an FCS country may carry Substantial or High risk across multiple categories — but the risk of non-engagement (deteriorating services, lost institutional capacity, weakened government legitimacy) may be equally significant. TTLs preparing projects in FCV settings should ensure the SORT narrative reflects this framing, not merely a list of risk mitigation measures. FCV CC reviewers should check that High or Substantial SORT ratings are accompanied by a genuine engagement rationale — and that Moderate ratings in FCV contexts are well-justified rather than optimistic defaults.
 """,
     },
     "dpf_policy_fcv": {
@@ -3176,7 +3206,7 @@ For projects in countries at risk of crisis escalation, procurement preparedness
     },
     "fm_fcv": {
         "title": "Financial Management in FCV-Affected Operations",
-        "source": "FCV Playbook — Bank Directive: Financial Management in Bank-Financed Operations",
+        "source": "WBG FM Directive (all instruments) + FM Manual OPS5.05-GUID.180, re-issued September 2021 (IPF only)",
         "triggers": {
             "country_category": [],
             "instrument": [],
@@ -3186,23 +3216,29 @@ For projects in countries at risk of crisis escalation, procurement preparedness
         },
         "content": """## Financial Management in Bank-Financed Operations — Guidance for WBG Teams
 
-### What This Directive Covers and Its Relevance for FCV Operations
-The Bank Directive on Financial Management (FM) in Bank-financed operations sets out the mandatory FM framework applicable across IPF, DPF, and PforR operations. Its core principles — reliance on country systems where acceptable, fit-for-purpose arrangements, accredited FMS oversight throughout the project cycle, and mandatory external audit — have direct implications for how FM is structured in fragile and conflict-affected settings. TTLs and FCV CCs should understand this framework to assess whether FM arrangements in a project are adequate for the FCV context or represent a fiduciary risk.
+### Instrument Scope — Two Layers of FM Guidance
+Financial management in World Bank operations is governed by two overlapping instruments. The **FM Directive** sets mandatory principles for all lending instruments (IPF, DPF, PforR). The **FM Manual** (OPS5.05-GUID.180, effective March 2010, re-issued September 2021) provides detailed operational requirements and applies to **IPF only** — it does not apply to DPF or PforR. For **DPF**, FM assessment focuses on country public financial management systems and budget/FX management adequacy, not project-level FM controls. For **PforR**, FM is assessed through the integrated Fiduciary Systems Assessment (FSA), which evaluates government program systems rather than establishing Bank-managed FM arrangements. The sections below draw on both layers; where guidance is IPF-specific, this is noted.
+
+### Risk-Based Approach to FM Design (IPF)
+The FM Manual establishes a risk-based framework: FM arrangements are designed proportionate to assessed risk. **Inherent risk** (country PFM system quality, governance environment, sector-specific FM risks) combined with **control risk** (adequacy of specific FM controls proposed for the project) determines **residual FM risk**. In FCV settings, inherent risk is typically Substantial or High — but this does not mean FM arrangements must be maximally complex. The Manual's authorising principle is that arrangements must be "simple, practicable, and cost-effective." This is the explicit basis for simplified FM in FCV contexts: lower complexity is permitted — and preferred — when it supports reliable fiduciary assurance without imposing administrative burdens that exceed Borrower capacity.
 
 ### The Country Systems Principle and Its Limits in FCV Settings
-The Directive requires FM arrangements to be "to the extent possible reliant on country systems." In practice, FCV-affected countries frequently have public financial management systems too weak, fragmented, or compromised to anchor FM arrangements for a Bank operation without additional safeguards. Where country systems are used, the FMS is responsible for assessing whether they provide "reasonable assurance that operation proceeds are used for intended purposes." In FCV settings, TTLs should expect this assessment to identify gaps requiring ring-fenced or supplementary arrangements: dedicated project accounts, third-party oversight, simplified documentation thresholds, or remote disbursement mechanisms.
+The Directive requires FM arrangements to be "to the extent possible reliant on country systems." The FM Manual operationalises this: where country systems provide reasonable assurance, they should be used; where they do not, special-purpose implementing entities (PIUs) are permissible — including dedicated PIUs with ring-fenced accounts, third-party fiduciary agents, or UN agency FM arrangements. In practice, FCV-affected countries frequently have PFM systems too weak, fragmented, or compromised to anchor project FM without supplementary safeguards. TTLs should expect the FMS's country systems assessment to identify the gap, and the FM arrangements section of the PAD should explain the adaptation.
+
+### Interim Financial Reporting (IPF)
+Under the FM Manual, the Borrower must submit Interim Financial Reports (IFRs) within an agreed period after the end of each reporting period — typically 45 days. The IFR format, periodicity, and scope are agreed during negotiations and recorded in the legal agreement. In FCV contexts, the FM Manual explicitly acknowledges that simplified IFR formats may be appropriate where reporting capacity is limited. However, the submission obligation itself cannot be deferred — late or missing IFRs are a fiduciary red flag and may trigger enhanced supervision. TTLs should ensure the IFR obligation is realistic given the implementing entity's capacity and that the FMS has reviewed draft IFRs before submission.
 
 ### FM Risk Ratings in FCV Contexts
-FM risk ratings (Substantial or High) in FCV-affected operations are typically driven by: weak country PFM systems (budget execution, internal audit, financial reporting); limited availability of qualified government accountants and auditors; security constraints preventing supervision and site visits; and fragmented implementation arrangements (multiple implementation units, geographic dispersion, community-level cash management). FCV CCs should review whether the FM risk rating in a project's PAD reflects these contextual drivers or has been underweighted — Substantial FM risk with minimal mitigation measures in an FCS country is a red flag.
+FM risk ratings (Substantial or High) in FCV-affected operations are typically driven by: weak country PFM systems; limited availability of qualified government accountants and auditors; security constraints preventing supervision and site visits; and fragmented implementation arrangements (multiple IUs, geographic dispersion, community-level cash management). FCV CCs should review whether the FM risk rating in a project's PAD reflects these contextual drivers or has been underweighted — Substantial FM risk with minimal mitigation measures in an FCS country is a red flag.
 
 ### Roles and Accountability — The FMS Throughout the Project Cycle
-The Directive makes the Financial Management Specialist (FMS) responsible for FM-related risk assessment, proposing appropriate FM arrangements, monitoring risk mitigation, and reviewing Interim Financial Reports (IFRs) and audit reports. For FCV operations, this means the FMS — not the TTL alone — carries accountability for flagging fiduciary deterioration during implementation. IFR review is mandatory; audit report review is mandatory. TTLs working in FCV contexts should ensure their FMS has adequate time allocation and is capable of conducting meaningful implementation support given security constraints.
+The Directive makes the Financial Management Specialist (FMS) responsible for FM-related risk assessment, proposing appropriate FM arrangements, monitoring risk mitigation, and reviewing IFRs and audit reports. For FCV operations, the FMS — not the TTL alone — carries accountability for flagging fiduciary deterioration during implementation. TTLs working in FCV contexts should ensure their FMS has adequate time allocation and is capable of conducting meaningful implementation support given security constraints; remote FM supervision protocols must be agreed in advance.
 
 ### Fit-for-Purpose FM Arrangements in Fragile Settings
-The Directive empowers regional Practice Managers for FM (PMFMs) to "promote implementation of innovative FM arrangements, which are fit for purpose." This is the authorising provision for simplified, adapted, or emergency FM arrangements — including: simplified Statement of Expenditure (SOE) reporting; higher cash advance thresholds; use of mobile money or digital payment platforms; third-party monitoring for fiduciary assurance; and community-based FM with simplified record-keeping. FCV CCs and TTLs should push back on overly complex FM requirements that replicate stable-country procedures in FCV contexts — the Directive explicitly supports adaptation.
+The Directive empowers regional Practice Managers for FM (PMFMs) to "promote implementation of innovative FM arrangements, which are fit for purpose." The FM Manual reinforces this with its "simple, practicable, and cost-effective" principle. Together, these provisions authorise: simplified Statement of Expenditure (SOE) reporting; higher cash advance thresholds; mobile money or digital payment platforms; third-party monitoring for fiduciary assurance; and community-based FM with simplified record-keeping. FCV CCs and TTLs should push back on overly complex FM requirements that replicate stable-country procedures in FCV contexts — both the Directive and the Manual explicitly support adaptation.
 
 ### Audit Requirements — Non-Negotiable Even in FCV Settings
-External audit is a mandatory requirement that cannot be waived on grounds of FCV context alone. Where audit firm capacity is genuinely absent in-country — a real constraint in some FCS countries — the acceptable response is to engage an internationally accredited firm operating remotely or in-country, not to defer or eliminate the audit requirement. Outstanding or unsatisfactory audit reports are one of the specified conditions under which the Bank will not extend a Loan Closing Date.
+External audit is a mandatory requirement that cannot be waived on grounds of FCV context. No FCV exception exists. Where audit firm capacity is genuinely absent in-country — a real constraint in some FCS countries — the acceptable response is to engage an internationally accredited firm operating remotely or in-country, not to defer or eliminate the audit requirement. Outstanding or unsatisfactory audit reports are one of the specified conditions under which the Bank will not extend a Loan Closing Date.
 
 ### Key Fiduciary Red Flags for TTLs in FCV Operations
 Escalate to the FMS immediately when you see: (1) delayed or missing IFR submissions; (2) unresolved prior-period audit qualifications; (3) FM arrangements relying entirely on government systems in an FCS country without independent verification mechanisms; (4) large cash advance balances held at community or sub-national level without reconciliation; (5) FM risk rated Moderate in a country classified as FCS — almost certainly an underestimate that requires justification.
@@ -3210,46 +3246,42 @@ Escalate to the FMS immediately when you see: (1) delayed or missing IFR submiss
     },
     "icr_fcv": {
         "title": "ICR Guidance — FCV Lens for Completion Reporting",
-        "source": "FCV Playbook — Bank Guidance: Implementation Completion and Results Report for IPF Operations",
+        "source": "WBG ICR Guidance — OPS5.03-GUID.161, December 2021 (current)",
         "triggers": {
             "country_category": [],
-            "instrument": [],
+            "instrument": ["IPF"],
             "sector": [],
             "flags": [],
             "doc_type": ["ISR", "ICR"],
         },
-        "content": """## FCV Lens for M&E, Completion, and Adaptive Management — Guidance for WBG Teams
+        "content": """## Implementation Completion Report (ICR) in FCV Settings — Guidance for WBG Teams
 
-### Designing for FCV from the Start: Theory of Change and PDO
-The theory of change in an FCV project must reflect Drivers of Fragility, Sources of Resilience, and Risk Factors. All three types of expected outcomes should be visible: development access outcomes (health services, road connectivity); institution-building outcomes (fiscal transparency, Ministry capacity); and fragility-driver-linked outcomes (reduced inequalities in service access due to conflict). The PDO should reference FCV dimensions at a level that is realistic and attributable within the project's life — rather than "bring peace and stability," use "improve presence and functioning of local government services" or "increase market access to SMEs, including refugees and internally displaced persons." Include DRR elements in project assumptions and update them when context changes.
+### Instrument Scope
+The Implementation Completion and Results Report (ICR) framework described here applies to **IPF operations only** (OPS5.03-GUID.161, December 2021). DPF operations have a separate Implementation Completion and Results Report framework. PforR operations have their own completion reporting requirements. TTLs preparing completion reports for non-IPF instruments should not use this guidance as a template.
 
-### Results Framework — FCV-Smart Indicators
-Keep the results framework realistic and adapted to the FCV context. Baseline data will often be absent; national statistics may be unreliable or non-existent. Disaggregate all results indicators by FCV-relevant categories (geographic area, population group, displacement status). Budget purposefully for M&E in FCV settings — costs are higher than in stable contexts due to insecurity, limited access, third-party monitoring requirements, and rapid phone surveys. Engage M&E staff early, at project identification rather than after the design is fixed.
+### Appendix L — When It Applies
+Appendix L of the ICR Guidelines applies when an operation was on the **FCS list for any year from Board Approval to Closing Date** — including operations that entered FCS classification mid-implementation. It provides a structured framework for documenting conflict-specific implementation experience. Completion reports for qualifying operations must include Appendix L; omitting it when the country was on the FCS list at any point during implementation is a compliance gap.
 
-### Adaptive Management — More Frequent Reviews Required
-The theory of change and its assumptions should be revisited regularly. In volatile FCV contexts, while the PDO may remain constant, the path toward it changes. Key adaptive management questions to track at each ISR: Is the theory of change still relevant? Are results framework indicators still correct? Are targets still realistic given context changes? Are M&E capacity-building activities being implemented and budgeted? Are data sufficiently disaggregated by geography, population group, and FCV context? Use Grievance Redress Mechanisms and citizen feedback loops as M&E inputs — not just safeguards tools.
+### Rating Scales and the FCV Implication
+ICR Guidance uses a **four-point Efficacy scale** (High / Substantial / Modest / Negligible) and a matching four-point scale for Relevance and Efficiency. The six-point Overall Outcome rating combines these assessments. For Overall Outcome to be rated Moderately Satisfactory or above, Efficacy must be High or Substantial. This matters in FCV contexts because conflict-related disruption frequently reduces outputs below planned targets — but this does not automatically justify a lower Efficacy rating if the causal logic remains valid and outcomes were achieved proportionate to what conditions permitted.
 
-### Eight FCV-Specific Requirements for Project Completion Reports
-When preparing an ICR for a project in an FCV setting:
+### Split Rating Methodology for Revised PDOs
+When a PDO was revised during implementation — a common occurrence in FCV operations where context shifts made original objectives unachievable or inappropriately narrow — the ICR must apply a **split rating methodology**: separate Efficacy ratings are prepared for the pre-revision and post-revision periods, weighted by disbursement shares in each period. Teams should track the disbursement split from the moment of PDO revision so that the ICR calculation is not reconstructed from incomplete records.
 
-**1. Link design to fragility drivers.** Describe how the theory of change, PDO, and indicators were linked to fragility drivers and resilience factors at design stage, especially if an RRA was available.
+### Conflict as an External Factor in Efficacy Assessment
+Conflict, insecurity, and political disruption count as **external factors in the Efficacy assessment** — they are documented in the "Key Factors during Implementation" section. There is no automatic rating forgiveness for conflict disruption; however, conflict is a recognised external factor outside the government's direct control, and Efficacy ratings must distinguish between shortfalls caused by project design choices versus those caused by conflict-induced circumstances the team could not reasonably have anticipated or managed. The ICR must make this distinction explicit — a generic statement that "conflict affected implementation" is insufficient.
 
-**2. Document context changes and adaptation.** Document key events — including changes to FCV drivers — that influenced project performance, and show how the project adapted. Include all versions of the theory of change.
+### FCV-Specific M&E Data Gaps
+ICR Guidance explicitly permits a range of alternative data sources for FCV operations where standard indicator data are incomplete or unreliable: **qualitative data** (field notes, case studies, beneficiary testimonies), **triangulation** across multiple secondary sources, **secondary data** from UN agencies or NGOs, **commissioned rapid evaluations**, and **retrospective data retrofitting** for results that were achieved but not tracked. All alternative sources must be cited explicitly. The ICR must also explain why standard M&E data were absent or incomplete — whether due to insecurity, displacement, data system breakdown, or inadequate M&E design — so that lessons for future design are captured.
 
-**3. Report impact on fragility dynamics.** Report available information on the project's impact on FCV drivers and resilience, whether at PDO, intermediate, or higher level. Signal differences between areas of contribution versus clear attribution.
+### Optional Institutional Capacity Objective
+FCV projects can include an assessment of **institutional capacity strengthening** as an implicit third Efficacy objective even when it was not explicitly stated in the PDO, provided that strengthening state functions or M&E capacity was a material project activity. This is not a default addition but an option available when evidence exists and the project genuinely contributed to institutional resilience. It must be framed as a contribution, not attributed as a direct PDO outcome. FCV CC reviewers should flag this option when projects have invested substantially in PIU capacity, subnational government systems, or civil registration and vital statistics infrastructure.
 
-**4. Report institutional resilience gains.** Even when not an explicit PDO objective, document improvements to core state functions: M&E institutional capacity, budget transparency, accountability to beneficiaries. These are FCV contributions.
+### Lessons — FCV-Specific Requirements
+Lessons in an FCV ICR must be context-specific: drawn from the implementation experience in this particular FCV setting, not generic "M&E in fragile states" advice. They should be oriented toward **fragility constraints** — what implementation model worked given armed actor presence, what procurement pathway proved resilient to supply chain disruption, what community engagement approach maintained trust with conflict-affected populations. Generic lessons such as "strong M&E is important in fragile settings" or "government ownership matters" do not meet the standard. The ICR must identify at least one lesson relevant to future project design in comparable FCV contexts.
 
-**5. Link lower-level outcomes to fragility.** Describe how lower-level outcomes contributed to higher-level FCV objectives — for example, "improved access to local conflict resolution mechanisms" linked to "bringing social cohesion to conflict-affected populations."
-
-**6. Use alternative data when indicator data are unavailable.** Seek alternative sources proactively — qualitative assessment, rapid surveys, beneficiary interviews — and cite all sources explicitly.
-
-**7. Capture FCV-specific lessons.** Document what worked, what failed, what entry points were most effective, and how context shaped implementation. These inform future projects in comparable settings.
-
-**8. Start early.** Preparations for completion reporting should begin well before the closing date. Small rapid evaluations on FCV-specific topics take time to commission. Retrofitting data for undocumented achievements is avoidable if tracking starts early.
-
-### Attribution and Rating in FCV Completion Reports
-Where conflict or external shocks disrupted implementation, document those factors explicitly and distinguish between shortfalls caused by project design versus context factors beyond the team's control. Institutional resilience gains and state legitimacy contributions count toward efficacy even when not included in the original PDO statement.
+### Preparation — Start Early
+ICR preparation in FCV settings requires more lead time than in stable contexts. Commissioned rapid evaluations on FCV-specific topics (community perception, access change, institutional resilience) take months to complete. Baseline reconstruction for undocumented achievements is avoidable if systematic tracking begins early. Teams should begin ICR preparation at least 12 months before the closing date for FCS operations, and ensure the M&E budget includes a closing-phase evaluation component.
 """,
     },
     "scd_cpf_process": {
