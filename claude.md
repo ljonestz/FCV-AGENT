@@ -61,10 +61,14 @@ Every prompt output tags findings as [S], [R], or [S+R], assigned dynamically pe
   - **Stage 3 timeout fix (2026-04-15):** Three-part fix for "BodyStreamBuffer was aborted" on Stage 3 in Express mode — (1) Express frontend now resets the abort timer to a fresh 8-minute budget when `stage_start:3` fires, rather than using whatever remains of the global 10-minute budget; (2) both Express and Step-by-Step backends now store a compact label for each stage's user prompt in `conversation_history` instead of the full 80k-char prompt, halving the Stage 3 API input size; (3) model updated from deprecated `claude-sonnet-4-20250514` to `claude-sonnet-4-6` across all call sites. Step-by-step Stage 3 timeout also raised from 6 → 8 minutes to match Express.
 - **v9.0** — Differentiated knowledge architecture (branch `feat/v9-differentiated-approaches`, 2026-04-17):
   - **Country classification:** Stage 1 prompt outputs `%%%COUNTRY_CLASSIFICATION_START/END%%%` block (category, confidence, reasoning); `extract_country_classification()` parses it; `classify_country()` cross-references FCS list with bidirectional name matching
-  - **Classification widget:** Rendered at top of Stage 1 output using `researchCountry` and classification reasoning; narrative format ("This analysis places [country] within the [category] category…"); dropdown override auto-saves on change; no confirmation step required
+  - **Classification widget:** Rendered at top of Stage 1 output using `researchCountry` and classification reasoning; narrative format ("This analysis places [country] within the [category] category…"); always ends with caveat: "This is a subjective judgement on the part of this AI tool and does not constitute an official WBG classification."; dropdown override auto-saves on change; no confirmation step required
   - **Secondary knowledge snippets:** `select_secondary_knowledge()` picks category-specific knowledge snippets from `background_docs.py`; injected into Stages 2 and 3 prompts for differentiated framing
   - **`country_category_relevance` field:** Added to Stage 3 priority JSON — explains why each priority is particularly relevant for this country's specific FCV category
   - **DIFFERENTIATED_APPROACHES constant:** New knowledge constant in `background_docs.py` injected into Stages 2 and 3
+- **v9.2** — Classification caveat and background_docs policy corrections (branch `feat/v9-differentiated-approaches`, 2026-04-19):
+  - **Classification widget caveat:** Narrative now always ends with "This is a subjective judgement on the part of this AI tool and does not constitute an official WBG classification." — consistent with Stage 1 AI disclaimer framing
+  - **background_docs.py — ICR timing:** `STAGE_GUIDANCE_MAP["ICR"]["timing_options"]` corrected from `"During implementation"` to `"At project closing"`
+  - **background_docs.py — Para 12 naming:** Removed all incorrect "Para 11" / "Para 11/12" references; standardised to "Paragraph 12 of Section III of the IPF Policy" with correct two-situation description (urgent need; capacity constraints); clarified Para 12 is NOT required for Framework Approach, Phased Implementation, or Unallocated Funds
 - **v9.1** — UX, prompt quality, and bug fixes (branch `feat/v9-differentiated-approaches`, 2026-04-18):
   - **DOCX download fix:** `downloadReport()` now POSTs to new `/api/download-report` route; backend generates a true python-docx binary (not HTML masquerading as .docx). New helpers: `_md_to_docx_para()` (markdown→docx paragraphs), `_safe_run()` (safe runs[0] access)
   - **Stage 1 prompt — prose narrative:** Body content now required to be prose paragraphs (2–4 sentences per subsection); bullets restricted to genuinely enumerable items only
@@ -555,7 +559,7 @@ docs/superpowers/  # Dev plans and specs
 
 ---
 
-**Last updated:** 2026-04-18
-**Current version:** FCV Project Screener v9.1
+**Last updated:** 2026-04-19
+**Current version:** FCV Project Screener v9.2
 **Claude model:** `claude-sonnet-4-6`
 **Stack:** Flask 3.0.3 + vanilla JS + Anthropic SDK + gunicorn/gevent on Render
