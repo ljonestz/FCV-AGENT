@@ -302,8 +302,8 @@ ICR should: (i) describe how design responded to FCV elements, (ii) document ada
 - **Alternative implementation**: UN agencies, INGOs, community-driven mechanisms as implementing partners.
 - **Framework approach**: Umbrella framework with details agreed in Project Operations Manual.
 - **Condensed procedures**: Consolidated preparation stages, shorter turnaround times (3 days vs. 5 for comments, 10 days vs. 18 for Board submission).
-- **Higher retroactive financing**: Up to 40% (vs. standard 20%) for projects meeting Para 11/12 conditions, subject to CD approval. Do not treat retroactive financing above 20% as anomalous in FCV — it is an intended flexibility.
-- **Increased PPA**: Up to US$10M (vs. standard US$6M) for Para 11/12 projects.
+- **Higher retroactive financing**: Up to 40% (vs. standard 20%) for projects meeting Para 12 conditions, subject to CD approval. Do not treat retroactive financing above 20% as anomalous in FCV — it is an intended flexibility.
+- **Increased PPA**: Up to US$10M (vs. standard US$6M) for Para 12 projects.
 - **RRO** (Rapid Response Option): Repurpose up to 10% of undisbursed IPF/PforR portfolio within a fiscal year.
 
 ### Questions for Selecting Operational Interventions (Box 1)
@@ -858,7 +858,7 @@ STAGE_GUIDANCE_MAP = {
         "framing": "Early design — focus on embedding FCV elements into ToC, PDO, stakeholder analysis, and operational approach before the design is locked.",
         "key_flexibilities": [
             "CERC", "HEIS", "Phased implementation", "Unallocated funds",
-            "Framework approach", "CLD", "Para 12 condensed procedures",
+            "Framework approach", "CLD", "Para 12 condensed procedures (IPF Policy Section III)",
             "Higher retroactive financing (40%)", "Increased PPA ($10M)"
         ],
         "pad_section_examples": [
@@ -1016,8 +1016,14 @@ WB_INSTRUMENT_GUIDE = {
             "based on lessons from earlier implementation, operationalised through the POM); "
             "Unallocated funds (budget reserve for flexibility); "
             "Framework approach (umbrella design, details in POM); "
-            "Para 11 and 12 efficiencies (Para 11: urgent need of assistance; Para 12: capacity constraints — "
-            "higher retroactive financing up to 40%, increased PPA up to $10M, condensed procedures); "
+            "Paragraph 12 of Section III of the IPF Policy efficiencies — covers two distinct situations: "
+            "(i) urgent need of assistance (natural disaster, conflict, or crisis); and (ii) capacity "
+            "constraints (fragility or limited borrower capacity). Both unlock: higher retroactive "
+            "financing up to 40% (vs. standard 20%), increased Project Preparation Advance up to "
+            "US$10M (vs. standard US$6M), and condensed procedures (consolidated preparation stages, "
+            "Decision Review before appraisal, shortened comment periods). Note: Para 12 is NOT required "
+            "to access Framework Approach, Phased Implementation, or Unallocated Funds — those are "
+            "standard design flexibilities available to all FCV operations without invoking Para 12; "
             "CLD (community and local development) for participatory approaches; "
             "Alternative implementation arrangements (UN agencies, NGOs, community-driven mechanisms); "
             "OP 8.00 (Rapid Response to Crises and Emergencies — streamlined preparation, simplified "
@@ -1091,7 +1097,7 @@ WB_INSTRUMENT_GUIDE = {
             "All 12 OST recommendations are FULLY APPLICABLE to IPF. "
             "Additional IPF-specific FCV checks: (1) Is there a CERC component? In high-risk FCV, "
             "absence should be flagged. (2) Is HEIS or UN direct engagement planned for weak-capacity "
-            "areas? (3) Has Para 11/12 been triggered and documented? (4) Is PIU design appropriate "
+            "areas? (3) Has Para 12 been triggered and documented where applicable? (4) Is PIU design appropriate "
             "for FCV (lean, embedded, with alternative channels)? (5) Is ESF/OP-BP framework correctly "
             "identified from Concept Decision date?"
         ),
