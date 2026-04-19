@@ -59,6 +59,26 @@ Every prompt output tags findings as [S], [R], or [S+R], assigned dynamically pe
   - **Source attribution:** Good Practice Notes listed alongside OST Manual, Playbook, and Strategy in all 4 UI locations (onboarding modal, limitations note, pre-loaded sources banner, express progress screen)
   - **Architecture map:** `docs/fcv-agent-knowledge-architecture.html` — shareable HTML showing knowledge sources → pipeline stages → outputs
   - **Stage 3 timeout fix (2026-04-15):** Three-part fix for "BodyStreamBuffer was aborted" on Stage 3 in Express mode — (1) Express frontend now resets the abort timer to a fresh 8-minute budget when `stage_start:3` fires, rather than using whatever remains of the global 10-minute budget; (2) both Express and Step-by-Step backends now store a compact label for each stage's user prompt in `conversation_history` instead of the full 80k-char prompt, halving the Stage 3 API input size; (3) model updated from deprecated `claude-sonnet-4-20250514` to `claude-sonnet-4-6` across all call sites. Step-by-step Stage 3 timeout also raised from 6 → 8 minutes to match Express.
+- **v9.0** — Differentiated knowledge architecture (branch `feat/v9-differentiated-approaches`, 2026-04-17):
+  - **Country classification:** Stage 1 prompt outputs `%%%COUNTRY_CLASSIFICATION_START/END%%%` block (category, confidence, reasoning); `extract_country_classification()` parses it; `classify_country()` cross-references FCS list with bidirectional name matching
+  - **Classification widget:** Rendered at top of Stage 1 output using `researchCountry` and classification reasoning; narrative format ("This analysis places [country] within the [category] category…"); dropdown override auto-saves on change; no confirmation step required
+  - **Secondary knowledge snippets:** `select_secondary_knowledge()` picks category-specific knowledge snippets from `background_docs.py`; injected into Stages 2 and 3 prompts for differentiated framing
+  - **`country_category_relevance` field:** Added to Stage 3 priority JSON — explains why each priority is particularly relevant for this country's specific FCV category
+  - **DIFFERENTIATED_APPROACHES constant:** New knowledge constant in `background_docs.py` injected into Stages 2 and 3
+- **v9.1** — UX, prompt quality, and bug fixes (branch `feat/v9-differentiated-approaches`, 2026-04-18):
+  - **DOCX download fix:** `downloadReport()` now POSTs to new `/api/download-report` route; backend generates a true python-docx binary (not HTML masquerading as .docx). New helpers: `_md_to_docx_para()` (markdown→docx paragraphs), `_safe_run()` (safe runs[0] access)
+  - **Stage 1 prompt — prose narrative:** Body content now required to be prose paragraphs (2–4 sentences per subsection); bullets restricted to genuinely enumerable items only
+  - **Stage 1 prompt — country-specific fact flagging:** Part B must tag unverifiable country-specific claims (named institutions, legislation, political events, officials) with `[Verify: ...]` inline
+  - **Stage 1 prompt — IDA FCV Envelope advisory:** For Conflict-Affected and Situations of Fragility countries, adds a brief end-of-Part-B advisory prompting TTL to discuss PRA/RECA/TAA eligibility with regional FCV coordinator (not an eligibility determination)
+  - **Stage 2 prompt — Refresh shifts as qualitative lenses:** FCV Strategy Refresh shifts explicitly framed as analytical lenses for strategic alignment, not a scoring checklist
+  - **Stage 3 prompt — Watch List for Supervision:** "Horizon Considerations" section renamed and reframed as "Watch List for Supervision"; each item must name a specific WBG tracking vehicle (ISR risk flag, MTR agenda item, RRA update, restructuring trigger); panel heading in frontend updated to match
+  - **Stage 3 priorities — `action_timing` field:** New enum field (`pre-appraisal` / `next-series` / `supervision`) with coloured pill in UI and included in DOCX download
+  - **SORT guardrail:** Stage 3 prompt now prohibits prescribing specific SORT ratings; frames risk exposure as "consider whether the current rating adequately reflects X"
+  - **Source credibility flagging:** Stage 1 Part B labels source type inline (`[Data: high-quality]`, `[Data: secondary]`, `[Source: news/media]`); data gap flagging for missing FCV dimensions
+  - **Classification confirm button removed:** Dropdown auto-applies on change via `onchange` listener; `confirmClassification()` function deleted; act-area no longer hidden
+  - **Step-by-step loading timers:** Elapsed timer and rotating stage-specific messages added; hints updated to reflect real durations (Stage 2: 3–5 min, Stage 3: 4–6 min)
+  - **Paragraph spacing fix:** `.out-body p` CSS set to `margin-top: 0; margin-bottom: 0.5em` to eliminate double gaps in Stage 1 output
+  - **CPF upload encouragement:** Contextual zone hint updated with bold/underlined CPF prompt; SCD removed; RRA mentioned as secondary option
 
 ---
 
@@ -116,8 +136,14 @@ STAGE 1 — Context & Extraction
 ├─ Automated web research: extract_country_name() + extract_sector_name() → 9-search brief
 │  (cached by "country::sector"; shown as collapsible dropdown above Stage 1 output)
 ├─ Three-tier citation: Tier 1 uploaded docs → Tier 2 web research → Tier 3 training knowledge
-├─ Output: 2–3 sentence narrative lead (required) then structured bullets — for EACH of:
+├─ Output: 2–3 sentence narrative lead (required) then PROSE PARAGRAPHS (not bullets) — for EACH of:
 │    Part A (doc extract only) and Part B (contextualized, tiered citations)
+│    Bullets restricted to genuinely enumerable items only (named locations, dates, prior actions)
+├─ Country-specific fact flagging: Part B tags unverifiable claims (named institutions, legislation,
+│    political events, officials) inline with [Verify: ...]; claims from uploaded docs are exempt
+├─ IDA FCV Envelope advisory: for Conflict-Affected and Situations of Fragility countries, end-of-
+│    Part-B advisory prompts TTL to discuss PRA/RECA/TAA eligibility with regional FCV coordinator
+│    (not a determination — coexists with existing eligibility guardrail)
 ├─ Frontend: renderStage1() parses Part A/B split; renders with styled section badges
 │  (blue "From your document only" / green "Wider context & research"); narrative lead
 │  styled as tinted callout above bullets
@@ -165,10 +191,16 @@ STAGE 3 — Recommendations Note (stage-aware)
 ├─ Output: narrative memo + %%%JSON_START%%%...%%%JSON_END%%% block
 │  JSON top-level: fcv_rating, fcv_responsiveness_rating, sensitivity_summary,
 │    responsiveness_summary, risk_exposure {risks_to, risks_from}, priorities[]
-│  Each priority: title, fcv_dimension, tag, refresh_shift, risk_level, the_gap,
+│  Each priority: title, fcv_dimension, tag, refresh_shift, action_timing, risk_level, the_gap,
 │    why_it_matters, actions[] (document_element + guidance + suggested_language),
 │    who_acts, when, resources, pad_sections, implementation_note,
 │    cpf_alignment (null if no CPF uploaded; string linking to CPF outcome if CPF present)
+│    action_timing: pre-appraisal | next-series | supervision — rendered as coloured pill
+├─ Watch List for Supervision: final section (replaces "Horizon Considerations"); each item names
+│    a specific WBG tracking vehicle (ISR risk flag, MTR agenda item, RRA update, restructuring
+│    trigger); items without a named vehicle excluded; framed as risks to monitor, not act on now
+├─ SORT guardrail: prompt prohibits prescribing specific SORT ratings; frames risk exposure as
+│    "consider whether current rating adequately reflects X"
 ├─ clean_stage3_output(): strips JSON block, risk narrative, and everything from
 │  %%%PRIORITIES_START%%% onwards — all shown as cards from JSON
 ├─ Citation policy: ONLY cite docs from Stage 1 [From: name]. Never fabricate titles.
@@ -320,6 +352,7 @@ DEFAULT_PROMPTS = {
 | POST | `/api/run-express` | Express mode (all 3 stages, single SSE) |
 | POST | `/api/run-deeper` | Go Deeper tab content |
 | POST | `/api/run-followon` | Follow-on post-analysis queries |
+| POST | `/api/download-report` | Generate true DOCX binary via python-docx |
 | GET/POST | `/api/admin/prompts` | Prompt management |
 | GET | `/` | Main app |
 | GET | `/health` | Health check |
@@ -522,7 +555,7 @@ docs/superpowers/  # Dev plans and specs
 
 ---
 
-**Last updated:** 2026-04-15
-**Current version:** FCV Project Screener v8.2
+**Last updated:** 2026-04-18
+**Current version:** FCV Project Screener v9.1
 **Claude model:** `claude-sonnet-4-6`
 **Stack:** Flask 3.0.3 + vanilla JS + Anthropic SDK + gunicorn/gevent on Render
