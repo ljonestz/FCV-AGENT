@@ -38,3 +38,6 @@ docs/mockup_*
 
 # Test/CI cache
 .pytest_cache/
+
+# Git worktrees
+.worktrees/
