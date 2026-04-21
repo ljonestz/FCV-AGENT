@@ -65,6 +65,19 @@ Every prompt output tags findings as [S], [R], or [S+R], assigned dynamically pe
   - **Secondary knowledge snippets:** `select_secondary_knowledge()` picks category-specific knowledge snippets from `background_docs.py`; injected into Stages 2 and 3 prompts for differentiated framing
   - **`country_category_relevance` field:** Added to Stage 3 priority JSON — explains why each priority is particularly relevant for this country's specific FCV category
   - **DIFFERENTIATED_APPROACHES constant:** New knowledge constant in `background_docs.py` injected into Stages 2 and 3
+- **v9.3** — MAI feedback improvements: knowledge base calibration, prompt quality, action_timing expansion (branch `feat/v9.3-mai-feedback-improvements`, 2026-04-21):
+  - **Knowledge base — CERC calibration:** `FCV_INSTRUMENT_CALIBRATION` extended with CERC FCV notes: frame as "worth actively exploring" not required; emergency-to-emergency redirect risk; slow activation in FCV (practitioner experience, not formally evaluated); OP 7.30 trigger unavailability and OPCS clearance requirement
+  - **Knowledge base — PforR calibration:** IVA access breakdown risk; DLI misalignment in low-governance; disbursement cliff (no CERC equivalent); ESSA limitations; OP 7.30 incompatibility ("effectively unusable"); phase transition risk in MPAs
+  - **Knowledge base — MPA calibration:** Phase financing NOT guaranteed; electoral cycle exposure; institutional continuity assumption; OP 7.30 phase governance; combined MPA+PforR failure modes
+  - **`action_timing` enum expanded to 5 values:** `flag-for-preparation` | `required-before-appraisal` | `required-before-board` | `next-series` | `supervision`; backward-compat remap: `pre-appraisal` → `required-before-appraisal`; UI pills and DOCX timing_map updated to match
+  - **Stage 1 prompt — RRA cross-reference:** 3-case RRA fallback instruction before IDA FCV Envelope advisory: Case 1 (RRA uploaded — scenario cross-check with sub-items a/b/c), Case 2 (RRA known but not uploaded — invite upload), Case 3 (no RRA — note absence, summarise risk drivers)
+  - **Stage 2 prompt — new supplementary dimensions:** SORT Adequacy Check (conditional on SORT table; reference ranges for 3 FCV categories; inherent vs residual E&S check); Forced Displacement (conditional on material displacement in doc); DNH: Economic Inclusion and Private Sector Harm Risk (conditional on private sector/skills + suppression context)
+  - **Stage 2 prompt — enhanced dimensions:** Climate-FCV Nexus: stricter 3-condition trigger requiring documented country-specific climate-fragility pathway; HDP Nexus Coordination: narrowed to geographic+sectoral overlap, not country-level co-presence; added WBG comparative advantage framing
+  - **Stage 3 prompt — PCN/PID calibration:** Stage Awareness expanded with differentiated rules (PCN = strategic risks only; PID = strategic + design/M&E; no PPSD/ESCP/SEA-SH AP requirements at PID); front-loaded work rule; action_timing guidance for PCN/PID stages
+  - **Stage 3 prompt — CERC framing rule:** Inserted after instrument feasibility guardrail; frames CERC as "explore with OPCS focal points"; names redirect risk; explicit OP 7.30 trigger caveat
+  - **Stage 3 prompt — Conditionality leverage guardrail:** ECA-type access mechanisms and reform DLIs with weak political economy compliance; theory-of-leverage framing; carve-out for routine fiduciary prior actions
+  - **Stage 3 prompt — terminology rule:** 4 required replacements for non-WBG due diligence terminology (IDD, IDD protocol, private sector screening, implementing partner vetting)
+  - **Stage 3 prompt — paired risk + systemic risk framing:** Strengths section requires embedded risk/limiting factor for top 3-4 strengths; systemic risk rule distinguishes externally-driven risks (monitoring) from design-addressable risks (recommendations)
 - **v9.2** — Classification caveat and background_docs policy corrections (branch `feat/v9-differentiated-approaches`, 2026-04-19):
   - **Classification widget caveat:** Narrative now always ends with "This is a subjective judgement on the part of this AI tool and does not constitute an official WBG classification." — consistent with Stage 1 AI disclaimer framing
   - **background_docs.py — ICR timing:** `STAGE_GUIDANCE_MAP["ICR"]["timing_options"]` corrected from `"During implementation"` to `"At project closing"`
@@ -199,7 +212,7 @@ STAGE 3 — Recommendations Note (stage-aware)
 │    why_it_matters, actions[] (document_element + guidance + suggested_language),
 │    who_acts, when, resources, pad_sections, implementation_note,
 │    cpf_alignment (null if no CPF uploaded; string linking to CPF outcome if CPF present)
-│    action_timing: pre-appraisal | next-series | supervision — rendered as coloured pill
+│    action_timing: flag-for-preparation | required-before-appraisal | required-before-board | next-series | supervision — rendered as coloured pill
 ├─ Watch List for Supervision: final section (replaces "Horizon Considerations"); each item names
 │    a specific WBG tracking vehicle (ISR risk flag, MTR agenda item, RRA update, restructuring
 │    trigger); items without a named vehicle excluded; framed as risks to monitor, not act on now
@@ -559,7 +572,7 @@ docs/superpowers/  # Dev plans and specs
 
 ---
 
-**Last updated:** 2026-04-19
-**Current version:** FCV Project Screener v9.2
+**Last updated:** 2026-04-21
+**Current version:** FCV Project Screener v9.3
 **Claude model:** `claude-sonnet-4-6`
 **Stack:** Flask 3.0.3 + vanilla JS + Anthropic SDK + gunicorn/gevent on Render
