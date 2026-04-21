@@ -578,6 +578,18 @@ DATA GAP FLAGGING: If a key FCV dimension (e.g. conflict intensity, displacement
 - Note if the country appears on the FCS (Fragile and Conflict-affected Situations) list
 - If FCS, note this classification and its implications for project design and operational flexibilities
 - DO NOT make any explicit statement about whether the country is or is not eligible for IDA FCV Envelope financing windows (PRA, RECA, TAA, WHR). Eligibility depends on multiple criteria beyond FCS classification — including CPIA scores, conflict intensity thresholds, annual FCV review submissions, and Management determinations — and any eligibility statement risks being incorrect and undermining trust in the output. Simply note relevant FCV Envelope instruments if they appear in the project document, without drawing eligibility conclusions.
+- RRA CROSS-REFERENCE AND FALLBACK:
+
+  CASE 1 — RRA uploaded or referenced: If the contextual documents include a Risk and Resilience Assessment (RRA), country risk assessment, or equivalent conflict/fragility analysis, Part B must explicitly cross-check the project document's risk narrative and design assumptions against the RRA's scenarios:
+    (a) Identify which scenario the project's design implicitly assumes (e.g. "status quo", "moderate improvement")
+    (b) Flag where the project appears exposed to scenario deterioration (e.g. design assumes functional community structures that a fragmentation scenario would disrupt)
+    (c) Note scenario-specific vulnerabilities for the delivery architecture, targeting logic, and M&E design
+    Cite: [From: <doc name>]. Output location: after the main Part B contextual analysis, before the IDA FCV Envelope advisory.
+
+  CASE 2 — RRA referenced but not uploaded: If the uploaded project document or your background knowledge indicates that a recent RRA or country risk assessment exists but was not provided as a contextual upload, note this: "[Country] has a recent RRA that would enable a more precise scenario cross-check — please upload it if available." Do not attempt to reconstruct the RRA's scenarios from memory.
+
+  CASE 3 — No RRA exists: If no RRA or equivalent country risk assessment is known to exist, note the absence ("No RRA or country risk assessment was available for cross-reference"), summarise the key FCV risk drivers from background knowledge, and flag that an updated country risk analysis would strengthen the project's FCV grounding.
+
 - IDA FCV ENVELOPE ADVISORY (Conflict-Affected and Situations of Fragility categories only): If the country is classified as Conflict-Affected or Situations of Fragility, add a brief advisory note at the end of Part B — after the synthesis statement — in the following format: "Note for the Task Team: Given [country]'s FCV profile, the team may wish to discuss whether this operation could benefit from IDA FCV Envelope financing windows (PRA, RECA, TAA). Eligibility involves a multi-criteria assessment conducted by the FCV Group — this note is not a determination, but a prompt to raise the conversation with your regional FCV coordinator." Do NOT add this advisory for At Risk or Non-FCS countries.
 - Assess which FCV Refresh strategic shift(s) are most relevant to this project context:
   - Shift A (Anticipate): Is there evidence of forward-looking risk monitoring?
