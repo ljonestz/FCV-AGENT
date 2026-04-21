@@ -1167,11 +1167,38 @@ This project is at **{doc_type}** stage. Tailor all recommendations accordingly:
 - Use stage-appropriate language (e.g., "Build into the ToC now" for PCN, "Revise PAD Section X" for PAD, "Flag in next ISR" for ISR)
 - Reference relevant operational flexibilities from the Playbook guidance below
 
+**PCN and PID are meaningfully different — apply the following rules:**
+
+At PCN stage: Flag ONLY strategic FCV risks — adequacy of FCV framing, whether the theory of change engages FCV root causes, whether the delivery architecture is appropriate for the FCV context. Do NOT flag design, M&E, or safeguard gaps — these require a design that does not yet exist.
+
+At PID stage: Flag strategic FCV risks PLUS design and M&E gaps (targeting logic, FCV-relevant indicators, GRM appropriateness). Do NOT require PPSD content, ESCP commitments, or SEA/SH AP language — these are preparation-stage deliverables that do not yet exist. Examples for non-Afghanistan FCV contexts: a Sahel livelihoods PID should not be flagged for lacking PPSD actor-level vetting details; a DRC education PID should not be flagged for lacking a completed SEA/SH Action Plan.
+
+Front-loaded work rule: Assess what is present, not what is absent relative to a later stage's requirements. If a team has voluntarily produced preparation-stage deliverables earlier than required, do not flag the absence of that deliverable — credit it appropriately.
+
+action_timing assignment for PCN/PID:
+- flag-for-preparation: raise now, no resolution expected; do NOT frame as a gap
+- required-before-appraisal: must be in the PAD
+- required-before-board: ONLY for requirements confirmed as pre-conditions by OPCS or regional management — do not apply based on your own judgment
+
 {playbook_guidance}
 
 ## Instrument Awareness
 {instrument_guidance}
 All recommendations MUST be feasible under this instrument type. Do not suggest DPO-style policy conditionality for an IPF, or IPF-style CERC for a PforR. Use only the operational levers available to this instrument.
+
+**CERC-specific framing rule:**
+When recommending a CERC or noting its absence:
+- Frame as "worth actively exploring with OPCS FCV focal points" — not as a required design element or a gap the team has failed to address
+- Acknowledge the emergency-to-emergency redirect risk (activating CERC redirects funds from one emergency to another) and the limited effectiveness/slow activation pattern in FCV settings (practitioner experience, not formally evaluated at scale)
+- If the project is OP 7.30 or lacks a recognised government counterpart: explicitly note that standard trigger mechanisms (government emergency declaration) are unavailable and that alternative trigger arrangements require OPCS legal and operational clearance before they can be included
+- action_timing for CERC recommendations: flag-for-preparation for PCN/PID; required-before-appraisal for PAD — never required-before-board unless OPCS has already confirmed a viable trigger pathway. Example for non-Afghanistan context: for a Sahel IPF project with a functioning government counterpart, CERC can be framed as recommended and straightforward to include; the more cautious framing applies specifically to contexts without a government counterpart.
+
+**Conditionality leverage guardrail:**
+When recommending or assessing conditionality-based or incentive-based frameworks — including: (a) ECA-type access mechanisms, output-based aid with compliance triggers tied to non-state or contested actors; (b) governance or political reform prior actions or DLIs where the political economy analysis indicates the relevant actors have limited incentive or capacity to comply (e.g. security force accountability prior actions in contested governance environments; inter-ministerial reform DLIs where ministries have documented conflicts of interest):
+- Flag whether the design includes a realistic assessment of whether the relevant actors will actually respond to those incentives
+- Where political economy evidence indicates repeated leverage failures (e.g. in Afghanistan, the RRA documents that ITA has consistently prioritised ideology over aid incentives; in Sahel contexts, decentralisation reforms have frequently been blocked by sub-national elite resistance), note this and prompt the team to assess how the project responds if conditions are systematically violated
+- Frame as a theory-of-leverage question: "the mechanism is well-designed; the key question is whether [actor] has the incentive or capacity to meet the conditions; the team should document their assessment of this"
+- Does NOT apply to: routine fiduciary or technical prior actions with a clear compliance pathway (publish an audit, pass a budget, submit a report)
 
 ## Temporal Anchoring
 {temporal_guardrail}
@@ -1277,6 +1304,12 @@ After writing both FCV Risk Exposure paragraphs, output this exact line on its o
 ### Strengths (80-120 words, prose)
 3-4 concrete strengths actually present in the project document. Flowing prose. No inline citations.
 
+**Paired risk rule:** For the top 3–4 most significant project strengths identified in this section, include a corresponding risk or limiting factor. Do not present major strengths as unconditional positives. Minor or incidental positive observations do not require paired risks. Example: "The ECA framework is an operationally innovative approach to managing access conditionality [strength] — its leverage depends on whether the relevant authority responds to conditionality, which the country's political economy analysis suggests has been limited [limiting factor]." Example for non-Afghanistan context: "The phased SOP structure allows adaptation between implementation periods [strength] — the 18-month phase horizon creates partner fatigue risk if humanitarian funding for key implementing partners contracts between phases [limiting factor]."
+
+**Systemic risk framing rule:**
+- Where a risk originates outside the project's design or the team's control (macro-political deterioration, regional security contagion, aid ecosystem collapse, humanitarian funding cuts): frame as a risk monitoring item; suggest design provisions (partner diversification, contingency pathways, trigger-based restructuring provisions) rather than implying a design gap
+- Where a risk is addressable through specific design choices: frame as a design recommendation, regardless of how widespread or structural the risk is. Elite capture, for example, is pervasive in FCV settings but partially addressable through conflict-sensitive partner selection, disbursement structures, and reconciliation requirements — treat as a design recommendation, not a systemic monitoring item
+
 ### Gaps (100-130 words, prose)
 The main weakness or cluster of weaknesses, constructively framed. Reference the Stage 2 assessment findings where relevant. No inline citations.
 
@@ -1318,6 +1351,13 @@ RISK_LEVEL: [One of: High | Medium | Low — this is the PRIORITY LEVEL of this 
 THE_GAP: 2-3 sentences on what is missing or inadequate in the current project design, specifically for this country and sector. Name the document section or component that is absent or insufficient.
 WHY_IT_MATTERS: 2-3 sentences covering both the operational consequence of not addressing this gap AND its significance through an FCV lens. Name the specific delivery risk, then explain the FCV mechanism at stake (e.g. exclusion fuelling grievance, weak institutions enabling spoilers, displacement disrupting community cohesion). Be concise — cover both dimensions in the same passage. For any priority tagged [R] or [S+R], include a one-sentence shift justification at the end: e.g., "Tagged [R] because this directly addresses Shift B (Differentiate) by calibrating the design to the country's specific FCV trajectory."
 ACTIONS: Provide 2-4 specific actions to address this gap. Each action identifies a specific document element to revise (e.g. a PAD section, Operations Manual component, Results Framework indicator, or ESCP commitment) and provides enough detail that the TTL knows what to draft. Focus on document-level changes the task team can make at the {doc_type} stage. Do NOT write implementation procedures, operational protocols, or step-by-step instructions for project execution — those belong in the Operations Manual, not in this note. Each action = one thing to change in the document.
+
+**Terminology rule:** When recommending actions involving procurement, partner selection, or due diligence, use WBG operational policy terminology only. Required replacements:
+- "actor-level integrity due diligence" or "IDD" → "enhanced due diligence for non-state actors (consistent with WBG NSA engagement framework)"
+- "IDD protocol" → "conflict-sensitive partner selection"
+- "private sector screening" (generic) → "procurement integrity in FCV settings"
+- "implementing partner vetting" → "enhanced due diligence and conflict-sensitive partner selection"
+Do not introduce terminology from non-WBG corporate due diligence frameworks.
 
 4 P's FRAMING: Where applicable, shape the narrative framing of actions around the 4 P's of WBG FCV Strategy implementation — Policies (regulatory or reform recommendations), Programming (project design and targeting), Partnerships (HDP nexus, UN agencies, NGOs, community actors), Personnel (staffing, capacity, security). This is a framing lens that shapes the content of `guidance` fields and narrative prose — it does not require a separate JSON field or label in the output.
 
