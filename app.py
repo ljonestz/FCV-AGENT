@@ -880,7 +880,7 @@ If the condition is met:
 Flag as a gap if the project is silent on displacement in a context where it is material to the sector and geographic scope. Do not flag this dimension if displacement is genuinely not material to the project's design.
 
 ### Climate-FCV Nexus
-**CONDITIONAL: Assess this dimension if (a) the country has documented climate-conflict linkages (e.g. Sahel pastoralist-farmer conflict, Horn of Africa drought-displacement, Central Asia glacial melt and water stress) OR (b) the project covers natural resource management, agriculture, water, WASH, or infrastructure sectors in a conflict-affected setting, OR (c) climate vulnerability is explicitly mentioned in the uploaded document. Skip for projects in sectors and contexts where climate-conflict linkage is not documented.**
+**CONDITIONAL: Assess this dimension if (a) the country has documented climate-conflict linkages (e.g. Sahel pastoralist-farmer conflict, Horn of Africa drought-displacement, Central Asia glacial melt and water stress) OR (b) the project covers natural resource management, agriculture, water, WASH, or infrastructure sectors AND the project document or web research identifies a documented climate-fragility pathway in this specific country (e.g. resource competition, climate-driven displacement, seasonal conflict cycles linked to rainfall variability) OR (c) climate vulnerability is explicitly mentioned in the uploaded document. Skip for projects in sectors and contexts where no climate-conflict linkage is documented for the specific country.**
 
 If the condition is met:
 - Does the project's risk analysis acknowledge climate as a fragility driver (not just an environmental risk)?
@@ -937,7 +937,7 @@ Pass gender_fcv_flag: TRUE to Stage 3 via the flag only. Stage 3 will generate a
 
 If no trigger conditions are met, set gender_fcv_flag: FALSE. Do not add any gender row to the Under the Hood table.
 
-## Synthesis (after Do No Harm)
+## Synthesis
 
 Two clearly labelled paragraphs (80–100 words each):
 - "**FCV Sensitivity:**" — Summarise sensitivity findings across all themes
@@ -1301,10 +1301,10 @@ These two paragraphs will also be reproduced faithfully in the JSON block as `ri
 After writing both FCV Risk Exposure paragraphs, output this exact line on its own line before continuing:
 %%%RISK_NARRATIVE_END%%%
 
-### Strengths (80-120 words, prose)
+### Strengths (80-150 words, prose)
 3-4 concrete strengths actually present in the project document. Flowing prose. No inline citations.
 
-**Paired risk rule:** For the top 3–4 most significant project strengths identified in this section, include a corresponding risk or limiting factor. Do not present major strengths as unconditional positives. Minor or incidental positive observations do not require paired risks. Example: "The ECA framework is an operationally innovative approach to managing access conditionality [strength] — its leverage depends on whether the relevant authority responds to conditionality, which the country's political economy analysis suggests has been limited [limiting factor]." Example for non-Afghanistan context: "The phased SOP structure allows adaptation between implementation periods [strength] — the 18-month phase horizon creates partner fatigue risk if humanitarian funding for key implementing partners contracts between phases [limiting factor]."
+**Paired risk rule:** For the top 3–4 most significant project strengths identified in this section, embed a corresponding risk or limiting factor in the same prose sentence (not as a separate list). Do not present major strengths as unconditional positives. Minor or incidental positive observations do not require paired risks. Example: "The ECA framework is an operationally innovative approach to managing access conditionality [strength] — its leverage depends on whether the relevant authority responds to conditionality, which the country's political economy analysis suggests has been limited [limiting factor]." Example for non-Afghanistan context: "The phased SOP structure allows adaptation between implementation periods [strength] — the 18-month phase horizon creates partner fatigue risk if humanitarian funding for key implementing partners contracts between phases [limiting factor]."
 
 **Systemic risk framing rule:**
 - Where a risk originates outside the project's design or the team's control (macro-political deterioration, regional security contagion, aid ecosystem collapse, humanitarian funding cuts): frame as a risk monitoring item; suggest design provisions (partner diversification, contingency pathways, trigger-based restructuring provisions) rather than implying a design gap
