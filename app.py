@@ -1282,10 +1282,12 @@ For each action, provide:
 When drafting suggested language for a Results Framework indicator, provide the full specification: (1) indicator name; (2) unit of measurement; (3) proposed baseline and target; (4) data source; (5) collection frequency; (6) if the project is in an access-constrained context, a one-sentence data contingency (e.g., 'In the event of access restrictions, TPM/remote verification will be used'). Do not produce indicator names alone.
 WHO_ACTS: [Semicolon-separated from: TTL; PIU; Government; FCV CC; FM Team; ESF Team; Technical Team; M&E Team]
 WHEN: [One of: Identification | Preparation | Appraisal | Implementation | Restructuring — must be appropriate for {doc_type} stage]
-ACTION_TIMING: [One of: pre-appraisal | next-series | supervision]
-  - pre-appraisal: must be addressed before Board presentation or appraisal sign-off
+ACTION_TIMING: [One of: flag-for-preparation | required-before-appraisal | required-before-board | next-series | supervision]
+  - flag-for-preparation: raise now so the team is aware during preparation; do NOT frame as a current gap or require resolution at this stage. Use for all PCN-stage items and PID items that belong to PAD-level delivery.
+  - required-before-appraisal: must be substantively addressed and reflected in the PAD before appraisal sign-off
+  - required-before-board: reserve ONLY for critical safeguard or fiduciary requirements confirmed as pre-conditions by OPCS or regional management — do not apply based on your own judgment
   - next-series: relevant input for the next operation in a programmatic series (especially for DPF/DPO)
-  - supervision: monitoring or early-warning signal; no preparation action required now, but should be flagged for supervision planning
+  - supervision: monitoring or early-warning signal; no preparation action required now, flag for supervision planning
 RESOURCES: [One of: Minimal (existing budget) | Moderate (dedicated allocation) | Significant (requires restructuring)]
 PAD_SECTIONS: A semicolon-separated list of 2-3 specific PAD document sections. Use these exact labels from the current WBG PAD template:
 For ESF-era PADs: 'Country Context', 'Sectoral and Institutional Context', 'Theory of Change', 'PDO', 'Project Components', 'Implementation Arrangements', 'Results Framework', 'SORT', 'Citizen Engagement', 'ESCP', 'Annex — Gender', 'Annex — Grievance Redress Mechanism', 'Annex — Financial Management', 'Annex — Procurement'.
@@ -1408,7 +1410,7 @@ The FCV ratings, summaries, and risk exposure paragraphs you have written in the
       "when": "Preparation",
       "resources": "Moderate (dedicated allocation)",
       "pad_sections": "Annex 5: Stakeholder Engagement Plan; ESCP Commitment #4",
-      "action_timing": "pre-appraisal",
+      "action_timing": "required-before-appraisal",
       "country_category_relevance": "In a Conflict-Affected context, this priority matters because...",
       "implementation_note": "1-2 sentences on timing, cost, sequencing, or key dependency",
       "cpf_alignment": "This recommendation strengthens CPF Outcome 1 (Healthier, Better Educated and Skilled Population) by ensuring FCV-sensitive targeting reaches conflict-affected communities."
@@ -2362,9 +2364,16 @@ def extract_priorities(text: str, uploaded_doc_names: list = None) -> dict:
                 act.setdefault('guidance', '')
                 act.setdefault('suggested_language', '')
 
-        # Validate action_timing enum
-        _valid_timings = {'pre-appraisal', 'next-series', 'supervision'}
-        if pr.get('action_timing') not in _valid_timings:
+        # Validate action_timing enum (v9.3: expanded to 5 values; remap legacy 'pre-appraisal')
+        _timing_remap = {'pre-appraisal': 'required-before-appraisal'}
+        _valid_timings = {
+            'flag-for-preparation', 'required-before-appraisal',
+            'required-before-board', 'next-series', 'supervision'
+        }
+        raw_timing = pr.get('action_timing')
+        if raw_timing in _timing_remap:
+            pr['action_timing'] = _timing_remap[raw_timing]
+        elif raw_timing not in _valid_timings:
             pr['action_timing'] = None
 
         # Post-parse checks — check specificity across gap + all action guidance
