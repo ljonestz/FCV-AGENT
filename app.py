@@ -4471,9 +4471,12 @@ def run_express():
                 header = DO_NO_HARM_HEADER.format(date=date.today().strftime('%d %B %Y'))
                 stage3_output_clean = header + stage3_output_clean
 
-                # Final conversation history
+                # Final conversation history — store compact label (not full stage3_prompt) so
+                # follow-on API calls don't carry 40k+ chars of background constants forward.
+                # The S3 assistant output is what matters for continuity; the prompt is re-injected
+                # fresh on each follow-on call. (Same pattern as S1/S2 compact labels above.)
                 s3_truncated = stage3_output[:MAX_ASSISTANT_CHARS] if len(stage3_output) > MAX_ASSISTANT_CHARS else stage3_output
-                conversation_history.append({"role": "user", "content": stage3_prompt})
+                conversation_history.append({"role": "user", "content": "[Stage 3 — recommendations and priority analysis with FCV guidance injected]"})
                 conversation_history.append({"role": "assistant", "content": s3_truncated})
                 if len(conversation_history) > 20:
                     conversation_history = conversation_history[-20:]
