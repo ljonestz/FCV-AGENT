@@ -4688,9 +4688,12 @@ def download_report():
             _safe_run(h2b).font.color.rgb = RGBColor(0x1a, 0x3a, 0x5c)
 
             timing_map = {
-                'pre-appraisal': 'Act before Board',
+                'flag-for-preparation': 'Flag for preparation',
+                'required-before-appraisal': 'Required before appraisal',
+                'required-before-board': 'Required before Board',
                 'next-series': 'Feed into next series',
-                'supervision': 'Supervision / monitoring only'
+                'supervision': 'Supervision / monitoring only',
+                'pre-appraisal': 'Required before appraisal',   # backward compat
             }
             tag_labels = {
                 '[S]': 'Sensitivity', '[R]': 'Responsiveness', '[S+R]': 'Sensitivity + Responsiveness'
