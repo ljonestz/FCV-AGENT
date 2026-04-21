@@ -849,6 +849,20 @@ Then 2–4 sentences highlighting the most critical DNH issues for this specific
 
 Assess the following supplementary dimensions internally. Rate each as: Addressed / Partially addressed / Not addressed. **Only include a dimension in the TTL-facing narrative if it is rated "Partially addressed" or "Not addressed" — i.e., only flag it if it is a gap or concern. Do not report dimensions that are adequately addressed; their absence from the narrative implies adequacy.** Include a 1-2 sentence finding for each dimension you do report. These supplement the 12 OST recommendations and inform Stage 3 priorities but do not directly affect the Sensitivity/Responsiveness ratings.
 
+### SORT Adequacy Check
+**CONDITIONAL: Only assess this dimension if the project document includes a SORT risk rating table or references specific SORT ratings.**
+
+If the condition is met, assess whether the SORT ratings appear commensurate with the FCV context described in the project document. The following reference ranges reflect FCS portfolio data and operational practice — they are directional signals, not formally prescribed floors. No single WBG document prescribes SORT floors by FCV category; frame any flag as a question for the team to address, not a prescribed correction.
+
+Reference signals by FCV context category:
+- OP 7.30 / Category 1 In Crisis: Political & Governance and Institutional Capacity ratings below High, or an Overall rating below Substantial, are likely to require explicit justification. Portfolio data shows ~48% of FCS operations carry High P&G ratings. Fiduciary should typically be High given third-party delivery chain exposure.
+- Situations of Fragility (active conflict, functioning government): P&G = Substantial to High baseline; IC = Substantial baseline; Overall = Substantial or High.
+- At-Risk contexts: P&G = Moderate to Substantial; Overall = Substantial expected.
+
+Additional check — inherent vs. residual: E&S risk under IPF is rated on an inherent (pre-mitigation) basis, while all other SORT categories reflect residual risk. Because inherent ratings do not account for mitigation, E&S ratings should typically be higher than a residual approach would produce. If E&S is rated Low or Moderate in a high-insecurity FCV context, flag whether the team has confirmed they applied the inherent standard rather than inadvertently applying a residual assessment.
+
+DO NOT prescribe specific SORT ratings. Frame flags as: "consider whether the current [P&G/IC/Overall] rating adequately reflects [X risk] given the context described; FCS portfolio data suggests [High/Substantial] is typical for this context type."
+
 ### Gender and GBV in FCV Context
 - Does the project document acknowledge heightened GBV risk in the FCV context (displacement, militarisation, breakdown of social norms)?
 - Are women explicitly included as a targeted beneficiary group, or is inclusion assumed by default (which in FCV contexts often means exclusion)?
@@ -856,12 +870,33 @@ Assess the following supplementary dimensions internally. Rate each as: Addresse
 - For IPFs with physical infrastructure or contractor workforces: is there a GBV/SEA/SH risk assessment for construction-phase worker-community interaction?
 Note: the dedicated Gender-FCV Trigger Check block below (mandatory, run after supplementary dimensions) governs when a priority card is generated. Do not apply a numerical threshold here — the trigger block fires on any single qualifying condition.
 
+### Forced Displacement
+**CONDITIONAL: Only assess this dimension if the uploaded project document describes displacement as a material operational factor — such as displaced or returnee populations as a named target group, geographic areas of high displacement concentration as implementation zones, or service systems explicitly serving returnee flows. Displacement mentioned only as background context does not trigger this dimension.**
+
+If the condition is met:
+- Does the project address how displaced and returnee populations are included in or affected by targeting, delivery design, and service access?
+- Are the specific vulnerabilities of displaced populations (documentation gaps, exclusion from community-based systems, trauma, disrupted livelihoods) reflected in the project design?
+- Does the Results Framework include disaggregated indicators for displaced/returnee populations where material?
+Flag as a gap if the project is silent on displacement in a context where it is material to the sector and geographic scope. Do not flag this dimension if displacement is genuinely not material to the project's design.
+
 ### Climate-FCV Nexus
-If the country/region has documented climate-conflict linkages (e.g., Sahel pastoralist-farmer conflict, Horn of Africa drought-displacement):
+**CONDITIONAL: Assess this dimension if (a) the country has documented climate-conflict linkages (e.g. Sahel pastoralist-farmer conflict, Horn of Africa drought-displacement, Central Asia glacial melt and water stress) OR (b) the project covers natural resource management, agriculture, water, WASH, or infrastructure sectors in a conflict-affected setting, OR (c) climate vulnerability is explicitly mentioned in the uploaded document. Skip for projects in sectors and contexts where climate-conflict linkage is not documented.**
+
+If the condition is met:
 - Does the project's risk analysis acknowledge climate as a fragility driver (not just an environmental risk)?
-- Does the project design include climate-resilience provisions that are conflict-sensitive (e.g., equitable water access, climate-proof livelihoods)?
-- Does the SORT risk matrix reflect climate-related fragility risks?
+- Does the design address how climate shocks (drought, flood, resource scarcity-driven displacement) interact with fragility dynamics — or does it treat climate and conflict as separate risk dimensions?
+- Does the project include climate-resilience provisions that are conflict-sensitive (e.g. equitable water access across social groups, climate-proof livelihoods that do not exacerbate inter-group competition)?
+- Does the SORT risk matrix reflect climate-related fragility risks (not just environmental/sector risks)?
 Flag gaps but do not penalise if the project's PDO is not climate-related.
+
+### DNH: Economic Inclusion and Private Sector Harm Risk
+**CONDITIONAL: Only assess this dimension if Stage 1 identifies private sector engagement, skills training, or economic inclusion components AND the country context includes active suppression of target group participation (e.g. women's economic participation is suppressed by law, policy, or social enforcement) or political targeting of economic actors.**
+
+If the condition is met, assess whether the design addresses exposure, retaliation, or backlash risks for intended beneficiaries. This is a distinct DNH pathway from SEA/SH and must be assessed separately:
+- Do participants in skills training or economic inclusion programs face safety or retaliation risks from authorities, armed actors, or community members opposed to their participation?
+- Does the project design include risk mitigation for participants (e.g. discrete intake, remote delivery, anonymised records, rapid exit protocols for implementing partners)?
+- If the project involves male-dominated contractor workforces alongside female beneficiaries, is the interaction risk assessed separately from the economic inclusion risk?
+Flag as a DNH gap if the design is silent on these pathways in a context where they are triggered.
 
 ### Political Economy Analysis Quality
 When assessing OST Rec 1 (use of diagnostic risk analysis), go beyond presence/absence and assess quality:
@@ -871,13 +906,14 @@ When assessing OST Rec 1 (use of diagnostic risk analysis), go beyond presence/a
 Downgrade OST Rec 1 from "Strongly addressed" to "Partially addressed" if the conflict analysis exists but lacks actor-level specificity.
 
 ### HDP Nexus Coordination
-**CONDITIONAL: Only assess this dimension if the country has documented active humanitarian operations, significant IDP populations, or an active UN peace mission. For countries without a documented heavy humanitarian presence, skip this dimension — do not flag its absence as a gap.**
+**CONDITIONAL: Only assess this dimension if the country is classified as Situations of Fragility or In Crisis AND the project's geographic and sectoral scope overlaps with areas or sub-sectors where humanitarian actors are documented as actively operational. Country-level co-presence of humanitarian actors is NOT sufficient to trigger this dimension — the overlap must be geographic and sectoral (e.g. health project in a province with active OCHA operations; livelihoods project in a district with WFP cash transfer programs). A rural roads project in a fragile state does not trigger this dimension even if humanitarian actors operate somewhere in the country.**
 
-If the condition is met:
-- Does the project document reference any joint analysis with humanitarian partners (OCHA, UNHCR, WFP, ICRC) or UN peace missions?
-- Is there geographic deconfliction — awareness of where humanitarian operations are active to avoid duplication or gaps?
-- Is there sequencing logic — how development activities relate to humanitarian presence (e.g., transitioning from NGO delivery to government systems)?
-If absent in a qualifying context, flag as a gap.
+If the condition is met, the WBG's comparative advantage at the HDP nexus rests on multi-year predictable financing, systems orientation, and sectors outside humanitarian mandates. Duplication or crowding out occurs when development financing replicates humanitarian service delivery through the same implementing partners without building systems or addressing structural drivers. Assess:
+- Does the project document show evidence of consultation with OCHA, UNHCR, WFP, or relevant cluster leads during design?
+- Is there sector and geographic mapping against humanitarian actor presence (OCHA 5W data or equivalent)?
+- Is there an explicit theory of change explaining what the development modality adds that humanitarian actors cannot provide (multi-year financing, systems building, institutional strengthening)?
+- Is there handover planning for any services the development project will eventually sustain?
+Flag a nexus coherence gap if the project is silent on all of these dimensions in a sector and geography where humanitarian actors are actively operational. If humanitarian actors are referenced in passing but there is no deconfliction or theory-of-leverage logic, flag as "Partially addressed."
 
 ## GENDER-FCV TRIGGER CHECK — MANDATORY (run after all supplementary dimensions, before Synthesis)
 
