@@ -263,3 +263,37 @@ class TestClassifyCountry:
         """Matching should be case-insensitive."""
         result = classify_country("ethiopia")
         assert result['category'] is not None, "Lowercase 'ethiopia' should still match"
+
+
+# ── FCV_INSTRUMENT_CALIBRATION content tests ─────────────────────────────────
+
+from background_docs import FCV_INSTRUMENT_CALIBRATION
+
+class TestInstrumentCalibrationContent:
+
+    def test_cerc_calibration_block_present(self):
+        assert 'CERC — FCV Calibration' in FCV_INSTRUMENT_CALIBRATION
+
+    def test_cerc_emergency_redirect_risk(self):
+        assert 'not usually advised for emergency operations' in FCV_INSTRUMENT_CALIBRATION
+
+    def test_cerc_op730_trigger_caveat(self):
+        assert 'OPCS legal and operational clearance' in FCV_INSTRUMENT_CALIBRATION
+
+    def test_cerc_effectiveness_qualified_as_practitioner(self):
+        assert 'practitioner experience' in FCV_INSTRUMENT_CALIBRATION
+
+    def test_pforr_calibration_block_present(self):
+        assert 'PforR — FCV Calibration' in FCV_INSTRUMENT_CALIBRATION
+
+    def test_pforr_iva_access_risk(self):
+        assert 'IVA' in FCV_INSTRUMENT_CALIBRATION
+
+    def test_pforr_op730_incompatibility(self):
+        assert 'effectively unusable' in FCV_INSTRUMENT_CALIBRATION
+
+    def test_mpa_calibration_block_present(self):
+        assert 'MPA — FCV Calibration' in FCV_INSTRUMENT_CALIBRATION
+
+    def test_mpa_phase_financing_not_guaranteed(self):
+        assert 'NOT guaranteed' in FCV_INSTRUMENT_CALIBRATION
