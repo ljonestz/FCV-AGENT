@@ -4160,15 +4160,11 @@
       body += `<div class="finalized-pad-notice"><div class="fpn-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div><div class="fpn-body"><strong>Retrospective screening — finalized PAD.</strong> This document was Board-approved in ${esc(temporalContext.approval_date)}. Recommendations are framed as if the project is still in the design stage.</div></div>`;
     }
 
-    // ── Classification framing ──
-    if(countryClassification.category && countryClassification.category !== 'General'){
-      const cl = `This analysis places the project's country context within the '${countryClassification.category}' category of the WBG FCV Strategy's differentiated approach. ${countryClassification.reasoning||''}`;
-      body += `<div class="classification-framing-para"><p>${esc(cl)}</p><p style="font-size:12px;color:#666;font-style:italic;margin-top:4px">This is a subjective judgement on the part of this AI tool and does not constitute an official WBG classification.</p></div>`;
-    }
-
     // ── Narrative (exec summary, operational context, strengths, gaps) ──
+    // The LLM narrative opens with "This analysis places [country]..." — no duplicate block needed.
     if(summarybody){
       body += `<div class="out-body exp-narrative">${wrapSRTerms(md(summarybody))}</div>`;
+      body += `<p style="font-size:11px;color:#666;font-style:italic;margin-top:0;margin-bottom:16px;padding:0 4px">This is a subjective judgement on the part of this AI tool and does not constitute an official WBG classification.</p>`;
     }
 
     // ── Risk Exposure ──

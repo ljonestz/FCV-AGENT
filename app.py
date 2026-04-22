@@ -2442,7 +2442,10 @@ def _add_md_table(doc, md_text: str):
 
     n_cols = len(header_cells)
     table = doc.add_table(rows=1 + len(data_rows), cols=n_cols)
-    table.style = 'Table Grid'
+    try:
+        table.style = 'Table Grid'
+    except Exception:
+        pass
 
     # Header row
     hdr_cells = table.rows[0].cells
@@ -4786,7 +4789,6 @@ def download_report():
     """Generate a DOCX mirroring the full Stage 3 web output structure."""
     from docx import Document as DocxDocument
     from docx.shared import Pt, RGBColor, Inches
-    from docx.enum.text import WD_ALIGN_PARAGRAPH
     import io
 
     data = request.get_json(force=True)
@@ -4899,24 +4901,18 @@ def download_report():
             notice.runs[0].bold = True
             notice.runs[0].font.color.rgb = AMBER
 
-        # ── Classification box ──
-        if cat and cat != 'General':
-            _add_single_para('FCV Strategy Classification:', bold=True, space_after=1)
-            _add_single_para(
-                f"This analysis places the project's country context within the '{cat}' category "
-                f"of the WBG FCV Strategy's differentiated approach. {cat_reasoning}",
-                space_before=0, space_after=2
-            )
-            _add_single_para(
-                "This is the analysis's working judgment for calibrating the assessment — not an official WBG designation.",
-                size=9, color=WB_GRAY, italic=True, space_before=0, space_after=8
-            )
-
         # ── Main narrative (executive summary, operational context, strengths, gaps) ──
         # The summary text uses markdown headings (## / ###) and body paragraphs.
         # _md_to_docx_para handles headings, skips ---, handles bold/italic.
+        # The LLM narrative opens with "This analysis places [country]..." — no duplicate box needed.
         if summary:
             _md_to_docx_para(doc, summary)
+
+        # ── AI caveat (appended after the LLM's classification paragraph) ──
+        _add_single_para(
+            'This is a subjective judgement on the part of this AI tool and does not constitute an official WBG classification.',
+            size=9, color=WB_GRAY, italic=True, space_before=0, space_after=8
+        )
 
         # ── FCV Risk Exposure ──
         risks_to = risk_exposure.get('risks_to', '')
@@ -4958,7 +4954,10 @@ def download_report():
 
             # Summary table: #, Priority Action, Priority Level, FCV Focus, Timing
             tbl = doc.add_table(rows=1 + len(priorities), cols=5)
-            tbl.style = 'Table Grid'
+            try:
+                tbl.style = 'Table Grid'
+            except Exception:
+                pass
             hdr = tbl.rows[0].cells
             for j, col_hdr in enumerate(['#', 'Priority Action', 'Priority Level', 'FCV Focus', 'Timing']):
                 p = hdr[j].paragraphs[0]
