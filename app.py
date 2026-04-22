@@ -4753,18 +4753,28 @@ def download_report():
             notice.paragraph_format.space_before = Pt(6)
 
         # ── Classification box ──
+        # Each paragraph is a single run so all parsers (including WBG LLM) can read it.
         if cat and cat != 'General':
-            cl = doc.add_paragraph()
-            r1 = cl.add_run('FCV Strategy Classification: ')
-            r1.bold = True
-            r2 = cl.add_run(f'This analysis places the project\'s country context within the '
-                            f'\'{cat}\' category of the WBG FCV Strategy\'s differentiated approach. '
-                            f'{cat_reasoning}  ')
-            r3 = cl.add_run('This is the analysis\'s working judgment for calibrating the assessment '
-                            '- not an official WBG designation.')
-            r3.italic = True
-            r3.font.size = Pt(9)
-            r3.font.color.rgb = RGBColor(0x55, 0x55, 0x55)
+            cl_label = doc.add_paragraph()
+            cl_label.add_run('FCV Strategy Classification:').bold = True
+            cl_label.paragraph_format.space_after = Pt(1)
+
+            cl_text = doc.add_paragraph(
+                f'This analysis places the project\'s country context within the '
+                f'\'{cat}\' category of the WBG FCV Strategy\'s differentiated approach. '
+                f'{cat_reasoning}'
+            )
+            cl_text.paragraph_format.space_before = Pt(0)
+            cl_text.paragraph_format.space_after = Pt(2)
+
+            cl_caveat = doc.add_paragraph(
+                'This is the analysis\'s working judgment for calibrating the assessment '
+                '- not an official WBG designation.'
+            )
+            cl_caveat.runs[0].italic = True
+            cl_caveat.runs[0].font.size = Pt(9)
+            cl_caveat.runs[0].font.color.rgb = RGBColor(0x55, 0x55, 0x55)
+            cl_caveat.paragraph_format.space_before = Pt(0)
 
         # ── Executive Summary ──
         h2 = doc.add_heading('Executive Summary · Project-Wide Considerations', level=2)
@@ -4791,12 +4801,15 @@ def download_report():
             }
 
             def add_field(label, value):
+                # Split into two single-run paragraphs so DOCX parsers that read only
+                # the first <w:r> per <w:p> do not lose the content value.
                 if not value:
                     return
-                p = doc.add_paragraph()
-                r = p.add_run(f'{label}: ')
-                r.bold = True
-                p.add_run(str(value))
+                lp = doc.add_paragraph()
+                lp.add_run(f'{label}:').bold = True
+                lp.paragraph_format.space_after = Pt(1)
+                vp = doc.add_paragraph(str(value))
+                vp.paragraph_format.space_before = Pt(0)
 
             for i, pr in enumerate(priorities):
                 title = re.sub(r'^Priority\s+\d+\s*[·•]\s*', '', pr.get('title', ''), flags=re.IGNORECASE)
@@ -4831,22 +4844,21 @@ def download_report():
                     ah = doc.add_paragraph()
                     ah.add_run(f'Essential Action{"s" if len(actions) > 1 else ""}:').bold = True
                     for act in actions:
-                        ap = doc.add_paragraph(style='Normal')
-                        ap.paragraph_format.left_indent = Inches(0.3)
+                        # Each paragraph is a single run so all DOCX parsers read it fully.
                         if act.get('document_element'):
-                            r = ap.add_run(act['document_element'] + ': ')
-                            r.bold = True
+                            ep = doc.add_paragraph()
+                            ep.add_run(f'{act["document_element"]}:').bold = True
+                            ep.paragraph_format.space_after = Pt(1)
                         if act.get('guidance'):
-                            ap.add_run(act['guidance'])
+                            gp = doc.add_paragraph(act['guidance'])
+                            gp.paragraph_format.space_before = Pt(0)
                         if act.get('suggested_language'):
-                            sl = doc.add_paragraph(style='Normal')
-                            sl.paragraph_format.left_indent = Inches(0.3)
-                            r2 = sl.add_run('Suggested text: ')
-                            r2.bold = True
-                            r2.font.color.rgb = RGBColor(0x8a, 0x7a, 0x20)
-                            r3 = sl.add_run(act['suggested_language'])
-                            r3.italic = True
-                            r3.font.color.rgb = RGBColor(0x4a, 0x4a, 0x4a)
+                            slp = doc.add_paragraph()
+                            slp.add_run('Suggested text:').bold = True
+                            slp.paragraph_format.space_after = Pt(1)
+                            slt = doc.add_paragraph(act['suggested_language'])
+                            slt.runs[0].italic = True
+                            slt.paragraph_format.space_before = Pt(0)
 
                 if pr.get('implementation_note'):
                     add_field('Implementation consideration', pr['implementation_note'])
