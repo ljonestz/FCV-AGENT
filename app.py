@@ -2342,19 +2342,49 @@ def extract_gap_table(text):
     return table
 
 
-def _md_to_docx_para(doc, text: str):
+def _md_to_docx_para(doc, text: str, heading_color=None):
     """
-    Add a paragraph to a python-docx Document, handling basic markdown:
-    **bold**, *italic*, and leading '- ' bullet items.
-    Does not return a value.
+    Add paragraphs to a python-docx Document, handling markdown:
+      # / ## / ### headings → Word Heading 1/2/3 paragraphs (single run)
+      ---            → skipped (handled by paragraph spacing)
+      **bold**       → bold run
+      *italic*       → italic run
+      - / * bullets  → List Bullet style
+      plain text     → Normal style
+
+    Single-run paragraphs are used wherever possible so that DOCX parsers
+    that read only the first <w:r> per <w:p> can read all content.
+    Heading paragraphs always have exactly one run.
+    Plain body paragraphs (no bold/italic) also have exactly one run.
     """
     from docx.shared import Pt
+    WB_NAVY = RGBColor(0x1a, 0x3a, 0x5c)
+    color = heading_color or WB_NAVY
 
     lines = text.split('\n')
     for line in lines:
         line = line.rstrip()
         if not line:
             continue
+
+        # Horizontal rule — skip; paragraph spacing provides visual separation
+        if line.strip() == '---':
+            continue
+
+        # Headings — always single-run paragraphs
+        heading_matched = False
+        for level, prefix in [(3, '### '), (2, '## '), (1, '# ')]:
+            if line.startswith(prefix):
+                heading_text = line[len(prefix):].strip()
+                h = doc.add_heading(heading_text, level=level)
+                if h.runs:
+                    h.runs[0].font.color.rgb = color
+                heading_matched = True
+                break
+        if heading_matched:
+            continue
+
+        # Bullets and body text
         is_bullet = line.startswith('- ') or line.startswith('* ')
         clean = line[2:] if is_bullet else line
 
@@ -2364,17 +2394,76 @@ def _md_to_docx_para(doc, text: str):
         except KeyError:
             para = doc.add_paragraph()
 
-        # Parse inline bold/italic
-        pattern = re.compile(r'(\*\*(.+?)\*\*|\*(.+?)\*|([^*]+))')
-        for m in pattern.finditer(clean):
-            if m.group(2):  # **bold**
-                run = para.add_run(m.group(2))
-                run.bold = True
-            elif m.group(3):  # *italic*
-                run = para.add_run(m.group(3))
-                run.italic = True
-            elif m.group(4):  # plain text
-                para.add_run(m.group(4))
+        # If no inline formatting: use a single run (fully parser-readable)
+        if '**' not in clean and '*' not in clean:
+            para.add_run(clean)
+        else:
+            # Mixed bold/italic: multiple runs (exec summary first-sentence bolding)
+            pattern = re.compile(r'(\*\*(.+?)\*\*|\*(.+?)\*|([^*]+))')
+            for m in pattern.finditer(clean):
+                if m.group(2):  # **bold**
+                    run = para.add_run(m.group(2))
+                    run.bold = True
+                elif m.group(3):  # *italic*
+                    run = para.add_run(m.group(3))
+                    run.italic = True
+                elif m.group(4):  # plain text
+                    para.add_run(m.group(4))
+
+
+def _add_md_table(doc, md_text: str):
+    """Parse a markdown table from md_text and add it as a python-docx Table.
+
+    Expects pipe-delimited rows. Header row is detected by the separator row
+    (---|---|---). Returns True if a table was found and added, else False.
+    Each cell uses a single run so DOCX parsers read the full content.
+    """
+    from docx.shared import Pt
+    WB_NAVY = RGBColor(0x1a, 0x3a, 0x5c)
+
+    lines = [l.strip() for l in md_text.strip().split('\n') if l.strip()]
+    # Find the separator row
+    sep_idx = None
+    for i, l in enumerate(lines):
+        if re.match(r'^\|[\s\-:]+\|', l):
+            sep_idx = i
+            break
+    if sep_idx is None or sep_idx == 0:
+        return False
+
+    def parse_row(line):
+        return [c.strip() for c in line.strip('|').split('|')]
+
+    header_cells = parse_row(lines[sep_idx - 1])
+    data_rows = [parse_row(l) for l in lines[sep_idx + 1:] if l.startswith('|')]
+
+    if not header_cells or not data_rows:
+        return False
+
+    n_cols = len(header_cells)
+    table = doc.add_table(rows=1 + len(data_rows), cols=n_cols)
+    table.style = 'Table Grid'
+
+    # Header row
+    hdr_cells = table.rows[0].cells
+    for j, text in enumerate(header_cells[:n_cols]):
+        p = hdr_cells[j].paragraphs[0]
+        p.clear()
+        run = p.add_run(text)
+        run.bold = True
+        run.font.size = Pt(9)
+        run.font.color.rgb = WB_NAVY
+
+    # Data rows
+    for i, row_data in enumerate(data_rows):
+        row_cells = table.rows[i + 1].cells
+        for j, text in enumerate(row_data[:n_cols]):
+            p = row_cells[j].paragraphs[0]
+            p.clear()
+            run = p.add_run(text)
+            run.font.size = Pt(9)
+
+    return True
 
 
 def _safe_run(para):
@@ -4694,14 +4783,22 @@ def run_followon():
 
 @app.route('/api/download-report', methods=['POST'])
 def download_report():
-    """Generate a true DOCX from the Stage 3 report data."""
+    """Generate a DOCX mirroring the full Stage 3 web output structure."""
     from docx import Document as DocxDocument
     from docx.shared import Pt, RGBColor, Inches
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
     import io
 
     data = request.get_json(force=True)
     summary = data.get('summary', '')
     priorities = data.get('priorities', [])
+    sensitivity_summary = data.get('sensitivity_summary', '')
+    responsiveness_summary = data.get('responsiveness_summary', '')
+    fcv_rating = data.get('fcv_rating', '')
+    fcv_resp_rating = data.get('fcv_responsiveness_rating', '')
+    risk_exposure = data.get('risk_exposure') or {}
+    horizon = data.get('horizon_considerations', '')
+    under_hood = data.get('under_hood') or {}
     meta = data.get('metadata', {})
 
     date_str = meta.get('date_str', '')
@@ -4709,6 +4806,69 @@ def download_report():
     cat_reasoning = meta.get('classification_reasoning', '')
     finalized_pad = meta.get('finalized_pad', False)
     approval_date = meta.get('finalized_pad_approval_date', '')
+
+    WB_NAVY = RGBColor(0x1a, 0x3a, 0x5c)
+    WB_GRAY = RGBColor(0x55, 0x55, 0x55)
+    WB_LGRAY = RGBColor(0x88, 0x88, 0x88)
+    AMBER = RGBColor(0x92, 0x40, 0x00)
+
+    timing_map = {
+        'flag-for-preparation': 'Flag for preparation',
+        'required-before-appraisal': 'Required before appraisal',
+        'required-before-board': 'Required before Board',
+        'next-series': 'Feed into next series',
+        'supervision': 'Supervision / monitoring only',
+        'pre-appraisal': 'Required before appraisal',
+    }
+    tag_labels = {
+        '[S]': 'Sensitivity', '[R]': 'Responsiveness', '[S+R]': 'Sensitivity + Responsiveness'
+    }
+
+    # ── Strip DO_NO_HARM_HEADER if still present (belt-and-suspenders) ──
+    summary = re.sub(r'^---\s*\n[\s\S]*?---\s*\n+', '', summary).strip()
+
+    # ── Extract project title from first # heading in summary ──
+    project_title = 'FCV Recommendations Note'
+    title_match = re.match(r'^#\s+(.+)$', summary, re.MULTILINE)
+    if title_match:
+        project_title = title_match.group(1).strip()
+        # Remove the title line and any following blank line from summary body
+        summary = summary[title_match.end():].lstrip('\n').strip()
+
+    def _add_section_heading(text, level=2):
+        h = doc.add_heading(text, level=level)
+        if h.runs:
+            h.runs[0].font.color.rgb = WB_NAVY
+        return h
+
+    def _add_single_para(text, size=None, color=None, bold=False, italic=False, space_before=None, space_after=None):
+        """Add a single-run paragraph. Always one run → fully parser-readable."""
+        p = doc.add_paragraph(str(text))
+        if p.runs:
+            r = p.runs[0]
+            if size:
+                r.font.size = Pt(size)
+            if color:
+                r.font.color.rgb = color
+            if bold:
+                r.bold = True
+            if italic:
+                r.italic = True
+        if space_before is not None:
+            p.paragraph_format.space_before = Pt(space_before)
+        if space_after is not None:
+            p.paragraph_format.space_after = Pt(space_after)
+        return p
+
+    def add_field(label, value):
+        """Two single-run paragraphs: bold label line then plain value line."""
+        if not value:
+            return
+        lp = doc.add_paragraph()
+        lp.add_run(f'{label}:').bold = True
+        lp.paragraph_format.space_after = Pt(1)
+        vp = doc.add_paragraph(str(value))
+        vp.paragraph_format.space_before = Pt(0)
 
     try:
         doc = DocxDocument()
@@ -4720,91 +4880,117 @@ def download_report():
             section.left_margin = Inches(1.2)
             section.right_margin = Inches(1.2)
 
-        # ── Title ──
-        title_para = doc.add_heading('FCV Recommendations Note', level=1)
-        _safe_run(title_para).font.color.rgb = RGBColor(0x1a, 0x3a, 0x5c)
+        # ── Project title (from LLM output # heading) ──
+        title_para = doc.add_heading(project_title, level=1)
+        if title_para.runs:
+            title_para.runs[0].font.color.rgb = WB_NAVY
 
-        # ── Subtitle ──
-        sub = doc.add_paragraph(f'Generated by WBG FCV Project Screener · {date_str}')
-        _safe_run(sub).font.size = Pt(9)
-        _safe_run(sub).font.color.rgb = RGBColor(0x66, 0x66, 0x66)
-        _safe_run(sub).italic = True
-
-        # ── Disclaimer ──
-        disc = doc.add_paragraph(
-            'Analytical framework: WBG FCV Strategy Refresh, FCV Operational Manual (OST), '
-            'FCV Operational Playbook, and Good Practice Notes on Peace & Inclusion Lenses and '
-            'FCV-Sensitive Programming. AI-assisted output - verify before operational use.'
-        )
-        _safe_run(disc).font.size = Pt(8.5)
-        _safe_run(disc).italic = True
-        _safe_run(disc).font.color.rgb = RGBColor(0x88, 0x88, 0x88)
+        # ── Date and brief disclaimer (one line each) ──
+        _add_single_para(f'Generated by WBG FCV Project Screener · {date_str}', size=9, color=RGBColor(0x66, 0x66, 0x66), italic=True, space_after=1)
+        _add_single_para('AI-assisted output. Analytical framework: WBG FCV Strategy Refresh, FCV Operational Manual, FCV Playbook, Good Practice Notes. Verify before operational use.', size=8.5, color=WB_LGRAY, italic=True, space_before=0, space_after=6)
 
         # ── Finalized PAD notice ──
         if finalized_pad and approval_date:
-            notice = doc.add_paragraph()
-            run = notice.add_run(
-                f'Retrospective screening - finalized PAD. This document was Board-approved in '
+            notice = doc.add_paragraph(
+                f'Retrospective screening — finalized PAD. This document was Board-approved in '
                 f'{approval_date}. The recommendations below represent the guidance this tool would '
                 f'have provided had the document been reviewed prior to appraisal.'
             )
-            run.bold = True
-            run.font.color.rgb = RGBColor(0x5d, 0x40, 0x37)
-            notice.paragraph_format.space_before = Pt(6)
+            notice.runs[0].bold = True
+            notice.runs[0].font.color.rgb = AMBER
 
         # ── Classification box ──
         if cat and cat != 'General':
-            cl = doc.add_paragraph()
-            r1 = cl.add_run('FCV Strategy Classification: ')
-            r1.bold = True
-            r2 = cl.add_run(f'This analysis places the project\'s country context within the '
-                            f'\'{cat}\' category of the WBG FCV Strategy\'s differentiated approach. '
-                            f'{cat_reasoning}  ')
-            r3 = cl.add_run('This is the analysis\'s working judgment for calibrating the assessment '
-                            '- not an official WBG designation.')
-            r3.italic = True
-            r3.font.size = Pt(9)
-            r3.font.color.rgb = RGBColor(0x55, 0x55, 0x55)
+            _add_single_para('FCV Strategy Classification:', bold=True, space_after=1)
+            _add_single_para(
+                f"This analysis places the project's country context within the '{cat}' category "
+                f"of the WBG FCV Strategy's differentiated approach. {cat_reasoning}",
+                space_before=0, space_after=2
+            )
+            _add_single_para(
+                "This is the analysis's working judgment for calibrating the assessment — not an official WBG designation.",
+                size=9, color=WB_GRAY, italic=True, space_before=0, space_after=8
+            )
 
-        # ── Executive Summary ──
-        h2 = doc.add_heading('Executive Summary · Project-Wide Considerations', level=2)
-        _safe_run(h2).font.color.rgb = RGBColor(0x1a, 0x3a, 0x5c)
-
+        # ── Main narrative (executive summary, operational context, strengths, gaps) ──
+        # The summary text uses markdown headings (## / ###) and body paragraphs.
+        # _md_to_docx_para handles headings, skips ---, handles bold/italic.
         if summary:
             _md_to_docx_para(doc, summary)
 
-        # ── Strategic Priorities ──
+        # ── FCV Risk Exposure ──
+        risks_to = risk_exposure.get('risks_to', '')
+        risks_from = risk_exposure.get('risks_from', '')
+        if risks_to or risks_from:
+            _add_section_heading('FCV Risk Exposure')
+            if risks_to:
+                _add_single_para('How FCV risks could affect this project:', bold=True, space_after=1)
+                _add_single_para(risks_to, space_before=0)
+            if risks_from:
+                _add_single_para('How this project could affect FCV dynamics:', bold=True, space_after=1)
+                _add_single_para(risks_from, space_before=0)
+
+        # ── FCV Sensitivity ──
+        if sensitivity_summary or fcv_rating:
+            _add_section_heading('FCV Sensitivity')
+            if fcv_rating:
+                _add_single_para(fcv_rating, bold=True, color=WB_NAVY, space_after=2)
+            if sensitivity_summary:
+                _md_to_docx_para(doc, sensitivity_summary)
+
+        # ── FCV Responsiveness ──
+        if responsiveness_summary or fcv_resp_rating:
+            _add_section_heading('FCV Responsiveness')
+            if fcv_resp_rating:
+                _add_single_para(fcv_resp_rating, bold=True, color=WB_NAVY, space_after=2)
+            if responsiveness_summary:
+                _md_to_docx_para(doc, responsiveness_summary)
+
+        # ── Priority Actions for the Task Team (summary table) ──
         if priorities:
-            h2b = doc.add_heading('Strategic Priorities', level=2)
-            _safe_run(h2b).font.color.rgb = RGBColor(0x1a, 0x3a, 0x5c)
+            _add_section_heading('Priority Actions for the Task Team')
+            _add_single_para(
+                f'Based on a three-stage assessment of the project documents, {len(priorities)} priority '
+                f'action{"s have" if len(priorities) != 1 else " has"} been identified to strengthen '
+                f'FCV sensitivity and responsiveness in the design and delivery of this project.',
+                space_after=6
+            )
 
-            timing_map = {
-                'flag-for-preparation': 'Flag for preparation',
-                'required-before-appraisal': 'Required before appraisal',
-                'required-before-board': 'Required before Board',
-                'next-series': 'Feed into next series',
-                'supervision': 'Supervision / monitoring only',
-                'pre-appraisal': 'Required before appraisal',   # backward compat
-            }
-            tag_labels = {
-                '[S]': 'Sensitivity', '[R]': 'Responsiveness', '[S+R]': 'Sensitivity + Responsiveness'
-            }
-
-            def add_field(label, value):
-                if not value:
-                    return
-                p = doc.add_paragraph()
-                r = p.add_run(f'{label}: ')
+            # Summary table: #, Priority Action, Priority Level, FCV Focus, Timing
+            tbl = doc.add_table(rows=1 + len(priorities), cols=5)
+            tbl.style = 'Table Grid'
+            hdr = tbl.rows[0].cells
+            for j, col_hdr in enumerate(['#', 'Priority Action', 'Priority Level', 'FCV Focus', 'Timing']):
+                p = hdr[j].paragraphs[0]
+                p.clear()
+                r = p.add_run(col_hdr)
                 r.bold = True
-                p.add_run(str(value))
+                r.font.size = Pt(9)
+                r.font.color.rgb = WB_NAVY
 
             for i, pr in enumerate(priorities):
-                title = re.sub(r'^Priority\s+\d+\s*[·•]\s*', '', pr.get('title', ''), flags=re.IGNORECASE)
+                row = tbl.rows[i + 1].cells
+                pr_title = re.sub(r'^Priority\s+\d+\s*[·•]\s*', '', pr.get('title', ''), flags=re.IGNORECASE)
+                timing_val = timing_map.get(pr.get('action_timing', ''), pr.get('action_timing', ''))
+                tag_val = tag_labels.get(pr.get('tag', ''), pr.get('tag', ''))
 
-                h3 = doc.add_heading(f'Priority {i+1} · {title}', level=3)
-                _safe_run(h3).font.color.rgb = RGBColor(0x1a, 0x3a, 0x5c)
+                for j, txt in enumerate([str(i+1), pr_title, pr.get('risk_level',''), tag_val, timing_val]):
+                    p = row[j].paragraphs[0]
+                    p.clear()
+                    run = p.add_run(txt)
+                    run.font.size = Pt(9)
 
-                # Metadata line
+        # ── Individual Priority Cards ──
+        if priorities:
+            _add_section_heading('Strategic Priorities')
+
+            for i, pr in enumerate(priorities):
+                pr_title = re.sub(r'^Priority\s+\d+\s*[·•]\s*', '', pr.get('title', ''), flags=re.IGNORECASE)
+                h3 = doc.add_heading(f'Priority {i+1} · {pr_title}', level=3)
+                if h3.runs:
+                    h3.runs[0].font.color.rgb = WB_NAVY
+
+                # Metadata line — single run
                 meta_parts = []
                 if pr.get('fcv_dimension'):
                     meta_parts.append(f'Dimension: {pr["fcv_dimension"]}')
@@ -4817,9 +5003,7 @@ def download_report():
                 if pr.get('action_timing') and pr['action_timing'] in timing_map:
                     meta_parts.append(f'Timing: {timing_map[pr["action_timing"]]}')
                 if meta_parts:
-                    mp = doc.add_paragraph(' | '.join(meta_parts))
-                    _safe_run(mp).font.size = Pt(9)
-                    _safe_run(mp).font.color.rgb = RGBColor(0x55, 0x55, 0x55)
+                    _add_single_para(' | '.join(meta_parts), size=9, color=WB_GRAY)
 
                 add_field('The Gap', pr.get('the_gap'))
                 add_field('Why It Matters', pr.get('why_it_matters'))
@@ -4831,27 +5015,25 @@ def download_report():
                     ah = doc.add_paragraph()
                     ah.add_run(f'Essential Action{"s" if len(actions) > 1 else ""}:').bold = True
                     for act in actions:
-                        ap = doc.add_paragraph(style='Normal')
-                        ap.paragraph_format.left_indent = Inches(0.3)
                         if act.get('document_element'):
-                            r = ap.add_run(act['document_element'] + ': ')
-                            r.bold = True
+                            ep = doc.add_paragraph()
+                            ep.add_run(f'{act["document_element"]}:').bold = True
+                            ep.paragraph_format.space_after = Pt(1)
                         if act.get('guidance'):
-                            ap.add_run(act['guidance'])
+                            gp = doc.add_paragraph(act['guidance'])
+                            gp.paragraph_format.space_before = Pt(0)
                         if act.get('suggested_language'):
-                            sl = doc.add_paragraph(style='Normal')
-                            sl.paragraph_format.left_indent = Inches(0.3)
-                            r2 = sl.add_run('Suggested text: ')
-                            r2.bold = True
-                            r2.font.color.rgb = RGBColor(0x8a, 0x7a, 0x20)
-                            r3 = sl.add_run(act['suggested_language'])
-                            r3.italic = True
-                            r3.font.color.rgb = RGBColor(0x4a, 0x4a, 0x4a)
+                            slp = doc.add_paragraph()
+                            slp.add_run('Suggested text:').bold = True
+                            slp.paragraph_format.space_after = Pt(1)
+                            slt = doc.add_paragraph(act['suggested_language'])
+                            slt.runs[0].italic = True
+                            slt.paragraph_format.space_before = Pt(0)
 
                 if pr.get('implementation_note'):
                     add_field('Implementation consideration', pr['implementation_note'])
 
-                # Who/When/Resources footer
+                # Who/When/Resources footer — single run
                 footer_parts = []
                 if pr.get('who_acts'):
                     footer_parts.append(f'Who acts: {pr["who_acts"]}')
@@ -4860,9 +5042,44 @@ def download_report():
                 if pr.get('resources'):
                     footer_parts.append(f'Resources: {pr["resources"]}')
                 if footer_parts:
-                    fp = doc.add_paragraph(' · '.join(footer_parts))
-                    _safe_run(fp).font.size = Pt(9)
-                    _safe_run(fp).font.color.rgb = RGBColor(0x55, 0x55, 0x55)
+                    _add_single_para(' · '.join(footer_parts), size=9, color=WB_GRAY)
+
+        # ── Watch List for Supervision ──
+        if horizon:
+            _add_section_heading('Watch List for Supervision')
+            _md_to_docx_para(doc, horizon)
+
+        # ── Annex: Stage 2 Assessment Tables ──
+        recs_table = under_hood.get('recs_table', '')
+        dnh_checklist = under_hood.get('dnh_checklist', '')
+        questions_map = under_hood.get('questions_map', '')
+
+        if recs_table or dnh_checklist or questions_map:
+            doc.add_page_break()
+            annex_title = doc.add_heading('Annex: Stage 2 Assessment Tables', level=1)
+            if annex_title.runs:
+                annex_title.runs[0].font.color.rgb = WB_NAVY
+
+            _add_single_para(
+                'The following tables represent the internal analytical framework used to produce the Stage 2 assessment. '
+                'They are provided for transparency and peer review purposes.',
+                size=9, color=WB_GRAY, italic=True, space_after=10
+            )
+
+            if recs_table:
+                _add_section_heading('FCV Operational Standards Assessment (12 Recommendations)', level=2)
+                if not _add_md_table(doc, recs_table):
+                    _md_to_docx_para(doc, recs_table)
+
+            if dnh_checklist:
+                _add_section_heading('Do No Harm Checklist (9 Principles)', level=2)
+                if not _add_md_table(doc, dnh_checklist):
+                    _md_to_docx_para(doc, dnh_checklist)
+
+            if questions_map:
+                _add_section_heading('Diagnostic Questions Assessment (25 Questions)', level=2)
+                if not _add_md_table(doc, questions_map):
+                    _md_to_docx_para(doc, questions_map)
 
         # ── Write to buffer ──
         buf = io.BytesIO()
