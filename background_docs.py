@@ -1702,6 +1702,79 @@ Cat DDO is increasingly relevant in FCV-adjacent and fragile contexts where mult
 **Calibration notes for FCV screening:**
 - Flag if Cat DDO is proposed without parallel investment in crisis response systems (liquidity without capacity is high-risk in FCV contexts).
 - Where a Cat DDO component exists alongside an IPF, ensure the FCV assessment covers both the investment and contingent components — do not treat the Cat DDO as outside scope.
+
+---
+
+### CERC — FCV Calibration Notes
+
+**Appropriate use signal:**
+CERC remains worth flagging as a gap in FCV settings. The zero-dollar structure imposes no upfront cost commitment and can be valuable if well-designed with FCV-appropriate triggers. The app should continue to flag CERC absence — but must shift from "required" to "worth actively exploring with OPCS FCV focal points."
+
+**Emergency-to-emergency redirect risk:**
+WBG guidance explicitly cautions that CERC is "not usually advised for emergency operations" because activation redirects funds from one emergency response to another. In settings where the baseline is already humanitarian (e.g. OP 7.30 contexts), this risk is material and should be named in any recommendation.
+
+**FCV-specific effectiveness limits:**
+Operational experience suggests CERCs may be slow to activate in FCV settings due to complex trigger mechanisms in low-governance environments. This has not been formally evaluated at scale but reflects documented practitioner experience — frame it as such, not as a formally established WBG finding.
+
+**OP 7.30 trigger mechanism caveat:**
+In OP 7.30 settings, the standard CERC trigger (government emergency declaration) is unavailable — there is no recognised counterpart to make the declaration. Alternative workarounds (e.g. UN OCHA statements as trigger proxies) are operationally creative but are NOT formally covered in WBG CERC guidance. Any such mechanism requires specific OPCS legal and operational clearance. Recommendations involving alternative triggers must be framed as "explore with OPCS FCV focal points" — not as a design gap the team has failed to address.
+
+**Calibration guidance for FCV screening:**
+- Frame CERC recommendations as "worth actively exploring" not "required"
+- Always name the emergency-to-emergency redirect risk
+- For OP 7.30 contexts: explicitly note standard trigger unavailability and OPCS clearance requirement
+- action_timing for CERC: flag-for-preparation (PCN/PID) or required-before-appraisal (PAD) — never required-before-board unless OPCS has confirmed a viable trigger pathway
+
+---
+
+### PforR — FCV Calibration Notes
+
+**DLI verification breakdown:**
+PforR disburses only upon verified DLI achievement, requiring Independent Verification Agents (IVAs) who can safely access program areas. In conflict settings, IVA access is frequently constrained by insecurity, checkpoint restrictions, or hostility from armed actors. When IVAs cannot verify, disbursements halt regardless of actual on-the-ground results. Remote or digital verification alone does not reliably remedy this in high-insecurity settings.
+
+**DLI misalignment in low-governance environments:**
+DLIs can embed false assumptions about what ministries can deliver when institutional capacity is degraded — particularly those requiring inter-ministerial coordination, regulatory action, or reliable data collection. The result is systematic under-disbursement and forced restructuring.
+
+**Disbursement cliff (no CERC equivalent):**
+PforR disburses upon verified achievement, not upon expenditure. There is no contingency reallocation mechanism equivalent to CERC within PforR. The only formal remedy for shock-disrupted DLI achievement is restructuring — creating cash flow gaps that FCV implementing agencies may not be able to absorb.
+
+**ESSA limitations in low-accountability contexts:**
+PforR uses the Environmental and Social Systems Assessment, which evaluates the government's own E&S systems. In settings where those systems have collapsed or are controlled by actors with incentives to suppress adverse information, ESSA's mitigating value is structurally limited. PforR does not have access to CERC, HEIS, or standard ESCP instruments.
+
+**OP 7.30 incompatibility:**
+In true OP 7.30 contexts, PforR is effectively unusable. The instrument disburses against government program expenditures, which requires a government counterpart to disburse. Without a counterpart, there is no program to support and no ESSA to conduct. Flag PforR as contraindicated in OP 7.30 contexts, and as requiring explicit justification in any context where government capacity is severely degraded.
+
+**Phase transition risk in MPAs:**
+PforR-based MPAs compound these problems: subsequent phases require demonstrated DLI achievement before financing is committed. Conflict disruption causing DLI underachievement can block transitions to phases the country urgently needs.
+
+**Calibration guidance for FCV screening:**
+- Flag if IVA access arrangements are not specified for insecure areas
+- Check whether DLIs require inter-ministerial coordination the government can realistically deliver
+- Flag absence of disbursement-cliff contingency in FCV contexts
+- In OP 7.30 contexts: flag PforR as contraindicated; note ESSA cannot function without a counterpart
+- For PforR-based MPAs: flag phase transition vulnerability explicitly
+
+---
+
+### MPA — FCV Calibration Notes
+
+**Phase transition as structural vulnerability:**
+The MPA's core mechanism — management-approved subsequent phases contingent on satisfactory prior-phase progress — requires a review and approval process without major disruption. Three failure pathways in FCV: (1) conflict-caused implementation problems may block Phase 2 or pressure over-optimistic performance ratings; (2) financing for subsequent phases is NOT guaranteed by the original Board approval — contingent on IDA allocation, IBRD/IDA terms, and country borrowing limits; (3) where national parliaments must approve each phase as a separate borrowing (up to 18 months), phase gaps compound institutional continuity problems.
+
+**Electoral cycle exposure:**
+An MPA spanning the typical 8–10 year horizon will cross multiple election cycles. In FCV settings, political transitions — including irregular ones — are more frequent and more disruptive. Each transition creates renewed risk of changes in government ownership, leadership appointments, and willingness to honour prior phase commitments.
+
+**Institutional continuity assumption:**
+MPA relies on implementing institutions maintaining sufficient capacity and legitimacy across the program horizon. In fragile settings, ministry restructuring, staff turnover, and erosion of institutional knowledge between phases are documented risks.
+
+**OP 7.30 phase governance:**
+MPA is generally the preferred long-term instrument in complex FCV settings. In OP 7.30 contexts, the standard phase governance logic (government ownership of the PrDO, government budget integration for phase planning) requires alternative arrangements that must be explicitly documented. Teams should address: (a) what happens if Phase 1 performance review is disrupted by conflict — is there a phase gap protocol? (b) Is the implementing institution expected to maintain continuity across the program horizon, and is that assumption realistic?
+
+**Calibration guidance for FCV screening:**
+- Flag if the design does not address what happens when Phase 1 DLI achievement is disrupted
+- Flag if financing for subsequent phases is presented as guaranteed
+- For OP 7.30 contexts: flag if phase governance logic assumes a government counterpart that doesn't exist
+- Note that an MPA using PforR phases combines both MPA and PforR failure modes — assess both sets of risks
 """
 
 

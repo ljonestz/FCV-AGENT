@@ -578,6 +578,18 @@ DATA GAP FLAGGING: If a key FCV dimension (e.g. conflict intensity, displacement
 - Note if the country appears on the FCS (Fragile and Conflict-affected Situations) list
 - If FCS, note this classification and its implications for project design and operational flexibilities
 - DO NOT make any explicit statement about whether the country is or is not eligible for IDA FCV Envelope financing windows (PRA, RECA, TAA, WHR). Eligibility depends on multiple criteria beyond FCS classification — including CPIA scores, conflict intensity thresholds, annual FCV review submissions, and Management determinations — and any eligibility statement risks being incorrect and undermining trust in the output. Simply note relevant FCV Envelope instruments if they appear in the project document, without drawing eligibility conclusions.
+- RRA CROSS-REFERENCE AND FALLBACK:
+
+  CASE 1 — RRA uploaded or referenced: If the contextual documents include a Risk and Resilience Assessment (RRA), country risk assessment, or equivalent conflict/fragility analysis, Part B must explicitly cross-check the project document's risk narrative and design assumptions against the RRA's scenarios:
+    (a) Identify which scenario the project's design implicitly assumes (e.g. "status quo", "moderate improvement")
+    (b) Flag where the project appears exposed to scenario deterioration (e.g. design assumes functional community structures that a fragmentation scenario would disrupt)
+    (c) Note scenario-specific vulnerabilities for the delivery architecture, targeting logic, and M&E design
+    Cite: [From: <doc name>]. Output location: after the main Part B contextual analysis, before the IDA FCV Envelope advisory.
+
+  CASE 2 — RRA referenced but not uploaded: If the uploaded project document or your background knowledge indicates that a recent RRA or country risk assessment exists but was not provided as a contextual upload, note this: "[Country] has a recent RRA that would enable a more precise scenario cross-check — please upload it if available." Do not attempt to reconstruct the RRA's scenarios from memory.
+
+  CASE 3 — No RRA exists: If no RRA or equivalent country risk assessment is known to exist, note the absence ("No RRA or country risk assessment was available for cross-reference"), summarise the key FCV risk drivers from background knowledge, and flag that an updated country risk analysis would strengthen the project's FCV grounding.
+
 - IDA FCV ENVELOPE ADVISORY (Conflict-Affected and Situations of Fragility categories only): If the country is classified as Conflict-Affected or Situations of Fragility, add a brief advisory note at the end of Part B — after the synthesis statement — in the following format: "Note for the Task Team: Given [country]'s FCV profile, the team may wish to discuss whether this operation could benefit from IDA FCV Envelope financing windows (PRA, RECA, TAA). Eligibility involves a multi-criteria assessment conducted by the FCV Group — this note is not a determination, but a prompt to raise the conversation with your regional FCV coordinator." Do NOT add this advisory for At Risk or Non-FCS countries.
 - Assess which FCV Refresh strategic shift(s) are most relevant to this project context:
   - Shift A (Anticipate): Is there evidence of forward-looking risk monitoring?
@@ -837,6 +849,20 @@ Then 2–4 sentences highlighting the most critical DNH issues for this specific
 
 Assess the following supplementary dimensions internally. Rate each as: Addressed / Partially addressed / Not addressed. **Only include a dimension in the TTL-facing narrative if it is rated "Partially addressed" or "Not addressed" — i.e., only flag it if it is a gap or concern. Do not report dimensions that are adequately addressed; their absence from the narrative implies adequacy.** Include a 1-2 sentence finding for each dimension you do report. These supplement the 12 OST recommendations and inform Stage 3 priorities but do not directly affect the Sensitivity/Responsiveness ratings.
 
+### SORT Adequacy Check
+**CONDITIONAL: Only assess this dimension if the project document includes a SORT risk rating table or references specific SORT ratings.**
+
+If the condition is met, assess whether the SORT ratings appear commensurate with the FCV context described in the project document. The following reference ranges reflect FCS portfolio data and operational practice — they are directional signals, not formally prescribed floors. No single WBG document prescribes SORT floors by FCV category; frame any flag as a question for the team to address, not a prescribed correction.
+
+Reference signals by FCV context category:
+- OP 7.30 / Category 1 In Crisis: Political & Governance and Institutional Capacity ratings below High, or an Overall rating below Substantial, are likely to require explicit justification. Portfolio data shows ~48% of FCS operations carry High P&G ratings. Fiduciary should typically be High given third-party delivery chain exposure.
+- Situations of Fragility (active conflict, functioning government): P&G = Substantial to High baseline; IC = Substantial baseline; Overall = Substantial or High.
+- At-Risk contexts: P&G = Moderate to Substantial; Overall = Substantial expected.
+
+Additional check — inherent vs. residual: E&S risk under IPF is rated on an inherent (pre-mitigation) basis, while all other SORT categories reflect residual risk. Because inherent ratings do not account for mitigation, E&S ratings should typically be higher than a residual approach would produce. If E&S is rated Low or Moderate in a high-insecurity FCV context, flag whether the team has confirmed they applied the inherent standard rather than inadvertently applying a residual assessment.
+
+DO NOT prescribe specific SORT ratings. Frame flags as: "consider whether the current [P&G/IC/Overall] rating adequately reflects [X risk] given the context described; FCS portfolio data suggests [High/Substantial] is typical for this context type."
+
 ### Gender and GBV in FCV Context
 - Does the project document acknowledge heightened GBV risk in the FCV context (displacement, militarisation, breakdown of social norms)?
 - Are women explicitly included as a targeted beneficiary group, or is inclusion assumed by default (which in FCV contexts often means exclusion)?
@@ -844,12 +870,33 @@ Assess the following supplementary dimensions internally. Rate each as: Addresse
 - For IPFs with physical infrastructure or contractor workforces: is there a GBV/SEA/SH risk assessment for construction-phase worker-community interaction?
 Note: the dedicated Gender-FCV Trigger Check block below (mandatory, run after supplementary dimensions) governs when a priority card is generated. Do not apply a numerical threshold here — the trigger block fires on any single qualifying condition.
 
+### Forced Displacement
+**CONDITIONAL: Only assess this dimension if the uploaded project document describes displacement as a material operational factor — such as displaced or returnee populations as a named target group, geographic areas of high displacement concentration as implementation zones, or service systems explicitly serving returnee flows. Displacement mentioned only as background context does not trigger this dimension.**
+
+If the condition is met:
+- Does the project address how displaced and returnee populations are included in or affected by targeting, delivery design, and service access?
+- Are the specific vulnerabilities of displaced populations (documentation gaps, exclusion from community-based systems, trauma, disrupted livelihoods) reflected in the project design?
+- Does the Results Framework include disaggregated indicators for displaced/returnee populations where material?
+Flag as a gap if the project is silent on displacement in a context where it is material to the sector and geographic scope. Do not flag this dimension if displacement is genuinely not material to the project's design.
+
 ### Climate-FCV Nexus
-If the country/region has documented climate-conflict linkages (e.g., Sahel pastoralist-farmer conflict, Horn of Africa drought-displacement):
+**CONDITIONAL: Assess this dimension if (a) the country has documented climate-conflict linkages (e.g. Sahel pastoralist-farmer conflict, Horn of Africa drought-displacement, Central Asia glacial melt and water stress) OR (b) the project covers natural resource management, agriculture, water, WASH, or infrastructure sectors AND the project document or web research identifies a documented climate-fragility pathway in this specific country (e.g. resource competition, climate-driven displacement, seasonal conflict cycles linked to rainfall variability) OR (c) climate vulnerability is explicitly mentioned in the uploaded document. Skip for projects in sectors and contexts where no climate-conflict linkage is documented for the specific country.**
+
+If the condition is met:
 - Does the project's risk analysis acknowledge climate as a fragility driver (not just an environmental risk)?
-- Does the project design include climate-resilience provisions that are conflict-sensitive (e.g., equitable water access, climate-proof livelihoods)?
-- Does the SORT risk matrix reflect climate-related fragility risks?
+- Does the design address how climate shocks (drought, flood, resource scarcity-driven displacement) interact with fragility dynamics — or does it treat climate and conflict as separate risk dimensions?
+- Does the project include climate-resilience provisions that are conflict-sensitive (e.g. equitable water access across social groups, climate-proof livelihoods that do not exacerbate inter-group competition)?
+- Does the SORT risk matrix reflect climate-related fragility risks (not just environmental/sector risks)?
 Flag gaps but do not penalise if the project's PDO is not climate-related.
+
+### DNH: Economic Inclusion and Private Sector Harm Risk
+**CONDITIONAL: Only assess this dimension if Stage 1 identifies private sector engagement, skills training, or economic inclusion components AND the country context includes active suppression of target group participation (e.g. women's economic participation is suppressed by law, policy, or social enforcement) or political targeting of economic actors.**
+
+If the condition is met, assess whether the design addresses exposure, retaliation, or backlash risks for intended beneficiaries. This is a distinct DNH pathway from SEA/SH and must be assessed separately:
+- Do participants in skills training or economic inclusion programs face safety or retaliation risks from authorities, armed actors, or community members opposed to their participation?
+- Does the project design include risk mitigation for participants (e.g. discrete intake, remote delivery, anonymised records, rapid exit protocols for implementing partners)?
+- If the project involves male-dominated contractor workforces alongside female beneficiaries, is the interaction risk assessed separately from the economic inclusion risk?
+Flag as a DNH gap if the design is silent on these pathways in a context where they are triggered.
 
 ### Political Economy Analysis Quality
 When assessing OST Rec 1 (use of diagnostic risk analysis), go beyond presence/absence and assess quality:
@@ -859,13 +906,14 @@ When assessing OST Rec 1 (use of diagnostic risk analysis), go beyond presence/a
 Downgrade OST Rec 1 from "Strongly addressed" to "Partially addressed" if the conflict analysis exists but lacks actor-level specificity.
 
 ### HDP Nexus Coordination
-**CONDITIONAL: Only assess this dimension if the country has documented active humanitarian operations, significant IDP populations, or an active UN peace mission. For countries without a documented heavy humanitarian presence, skip this dimension — do not flag its absence as a gap.**
+**CONDITIONAL: Only assess this dimension if the country is classified as Situations of Fragility or In Crisis AND the project's geographic and sectoral scope overlaps with areas or sub-sectors where humanitarian actors are documented as actively operational. Country-level co-presence of humanitarian actors is NOT sufficient to trigger this dimension — the overlap must be geographic and sectoral (e.g. health project in a province with active OCHA operations; livelihoods project in a district with WFP cash transfer programs). A rural roads project in a fragile state does not trigger this dimension even if humanitarian actors operate somewhere in the country.**
 
-If the condition is met:
-- Does the project document reference any joint analysis with humanitarian partners (OCHA, UNHCR, WFP, ICRC) or UN peace missions?
-- Is there geographic deconfliction — awareness of where humanitarian operations are active to avoid duplication or gaps?
-- Is there sequencing logic — how development activities relate to humanitarian presence (e.g., transitioning from NGO delivery to government systems)?
-If absent in a qualifying context, flag as a gap.
+If the condition is met, the WBG's comparative advantage at the HDP nexus rests on multi-year predictable financing, systems orientation, and sectors outside humanitarian mandates. Duplication or crowding out occurs when development financing replicates humanitarian service delivery through the same implementing partners without building systems or addressing structural drivers. Assess:
+- Does the project document show evidence of consultation with OCHA, UNHCR, WFP, or relevant cluster leads during design?
+- Is there sector and geographic mapping against humanitarian actor presence (OCHA 5W data or equivalent)?
+- Is there an explicit theory of change explaining what the development modality adds that humanitarian actors cannot provide (multi-year financing, systems building, institutional strengthening)?
+- Is there handover planning for any services the development project will eventually sustain?
+Flag a nexus coherence gap if the project is silent on all of these dimensions in a sector and geography where humanitarian actors are actively operational. If humanitarian actors are referenced in passing but there is no deconfliction or theory-of-leverage logic, flag as "Partially addressed."
 
 ## GENDER-FCV TRIGGER CHECK — MANDATORY (run after all supplementary dimensions, before Synthesis)
 
@@ -889,7 +937,7 @@ Pass gender_fcv_flag: TRUE to Stage 3 via the flag only. Stage 3 will generate a
 
 If no trigger conditions are met, set gender_fcv_flag: FALSE. Do not add any gender row to the Under the Hood table.
 
-## Synthesis (after Do No Harm)
+## Synthesis
 
 Two clearly labelled paragraphs (80–100 words each):
 - "**FCV Sensitivity:**" — Summarise sensitivity findings across all themes
@@ -1119,11 +1167,38 @@ This project is at **{doc_type}** stage. Tailor all recommendations accordingly:
 - Use stage-appropriate language (e.g., "Build into the ToC now" for PCN, "Revise PAD Section X" for PAD, "Flag in next ISR" for ISR)
 - Reference relevant operational flexibilities from the Playbook guidance below
 
+**PCN and PID are meaningfully different — apply the following rules:**
+
+At PCN stage: Flag ONLY strategic FCV risks — adequacy of FCV framing, whether the theory of change engages FCV root causes, whether the delivery architecture is appropriate for the FCV context. Do NOT flag design, M&E, or safeguard gaps — these require a design that does not yet exist.
+
+At PID stage: Flag strategic FCV risks PLUS design and M&E gaps (targeting logic, FCV-relevant indicators, GRM appropriateness). Do NOT require PPSD content, ESCP commitments, or SEA/SH AP language — these are preparation-stage deliverables that do not yet exist. Examples for non-Afghanistan FCV contexts: a Sahel livelihoods PID should not be flagged for lacking PPSD actor-level vetting details; a DRC education PID should not be flagged for lacking a completed SEA/SH Action Plan.
+
+Front-loaded work rule: Assess what is present, not what is absent relative to a later stage's requirements. If a team has voluntarily produced preparation-stage deliverables earlier than required, do not flag the absence of that deliverable — credit it appropriately.
+
+action_timing assignment for PCN/PID:
+- flag-for-preparation: raise now, no resolution expected; do NOT frame as a gap
+- required-before-appraisal: must be in the PAD
+- required-before-board: ONLY for requirements confirmed as pre-conditions by OPCS or regional management — do not apply based on your own judgment
+
 {playbook_guidance}
 
 ## Instrument Awareness
 {instrument_guidance}
 All recommendations MUST be feasible under this instrument type. Do not suggest DPO-style policy conditionality for an IPF, or IPF-style CERC for a PforR. Use only the operational levers available to this instrument.
+
+**CERC-specific framing rule:**
+When recommending a CERC or noting its absence:
+- Frame as "worth actively exploring with OPCS FCV focal points" — not as a required design element or a gap the team has failed to address
+- Acknowledge the emergency-to-emergency redirect risk (activating CERC redirects funds from one emergency to another) and the limited effectiveness/slow activation pattern in FCV settings (practitioner experience, not formally evaluated at scale)
+- If the project is OP 7.30 or lacks a recognised government counterpart: explicitly note that standard trigger mechanisms (government emergency declaration) are unavailable and that alternative trigger arrangements require OPCS legal and operational clearance before they can be included
+- action_timing for CERC recommendations: flag-for-preparation for PCN/PID; required-before-appraisal for PAD — never required-before-board unless OPCS has already confirmed a viable trigger pathway. Example for non-Afghanistan context: for a Sahel IPF project with a functioning government counterpart, CERC can be framed as recommended and straightforward to include; the more cautious framing applies specifically to contexts without a government counterpart.
+
+**Conditionality leverage guardrail:**
+When recommending or assessing conditionality-based or incentive-based frameworks — including: (a) ECA-type access mechanisms, output-based aid with compliance triggers tied to non-state or contested actors; (b) governance or political reform prior actions or DLIs where the political economy analysis indicates the relevant actors have limited incentive or capacity to comply (e.g. security force accountability prior actions in contested governance environments; inter-ministerial reform DLIs where ministries have documented conflicts of interest):
+- Flag whether the design includes a realistic assessment of whether the relevant actors will actually respond to those incentives
+- Where political economy evidence indicates repeated leverage failures (e.g. in Afghanistan, the RRA documents that ITA has consistently prioritised ideology over aid incentives; in Sahel contexts, decentralisation reforms have frequently been blocked by sub-national elite resistance), note this and prompt the team to assess how the project responds if conditions are systematically violated
+- Frame as a theory-of-leverage question: "the mechanism is well-designed; the key question is whether [actor] has the incentive or capacity to meet the conditions; the team should document their assessment of this"
+- Does NOT apply to: routine fiduciary or technical prior actions with a clear compliance pathway (publish an audit, pass a budget, submit a report)
 
 ## Temporal Anchoring
 {temporal_guardrail}
@@ -1226,8 +1301,14 @@ These two paragraphs will also be reproduced faithfully in the JSON block as `ri
 After writing both FCV Risk Exposure paragraphs, output this exact line on its own line before continuing:
 %%%RISK_NARRATIVE_END%%%
 
-### Strengths (80-120 words, prose)
+### Strengths (80-150 words, prose)
 3-4 concrete strengths actually present in the project document. Flowing prose. No inline citations.
+
+**Paired risk rule:** For the top 3–4 most significant project strengths identified in this section, embed a corresponding risk or limiting factor in the same prose sentence (not as a separate list). Do not present major strengths as unconditional positives. Minor or incidental positive observations do not require paired risks. Example: "The ECA framework is an operationally innovative approach to managing access conditionality [strength] — its leverage depends on whether the relevant authority responds to conditionality, which the country's political economy analysis suggests has been limited [limiting factor]." Example for non-Afghanistan context: "The phased SOP structure allows adaptation between implementation periods [strength] — the 18-month phase horizon creates partner fatigue risk if humanitarian funding for key implementing partners contracts between phases [limiting factor]."
+
+**Systemic risk framing rule:**
+- Where a risk originates outside the project's design or the team's control (macro-political deterioration, regional security contagion, aid ecosystem collapse, humanitarian funding cuts): frame as a risk monitoring item; suggest design provisions (partner diversification, contingency pathways, trigger-based restructuring provisions) rather than implying a design gap
+- Where a risk is addressable through specific design choices: frame as a design recommendation, regardless of how widespread or structural the risk is. Elite capture, for example, is pervasive in FCV settings but partially addressable through conflict-sensitive partner selection, disbursement structures, and reconciliation requirements — treat as a design recommendation, not a systemic monitoring item
 
 ### Gaps (100-130 words, prose)
 The main weakness or cluster of weaknesses, constructively framed. Reference the Stage 2 assessment findings where relevant. No inline citations.
@@ -1271,6 +1352,13 @@ THE_GAP: 2-3 sentences on what is missing or inadequate in the current project d
 WHY_IT_MATTERS: 2-3 sentences covering both the operational consequence of not addressing this gap AND its significance through an FCV lens. Name the specific delivery risk, then explain the FCV mechanism at stake (e.g. exclusion fuelling grievance, weak institutions enabling spoilers, displacement disrupting community cohesion). Be concise — cover both dimensions in the same passage. For any priority tagged [R] or [S+R], include a one-sentence shift justification at the end: e.g., "Tagged [R] because this directly addresses Shift B (Differentiate) by calibrating the design to the country's specific FCV trajectory."
 ACTIONS: Provide 2-4 specific actions to address this gap. Each action identifies a specific document element to revise (e.g. a PAD section, Operations Manual component, Results Framework indicator, or ESCP commitment) and provides enough detail that the TTL knows what to draft. Focus on document-level changes the task team can make at the {doc_type} stage. Do NOT write implementation procedures, operational protocols, or step-by-step instructions for project execution — those belong in the Operations Manual, not in this note. Each action = one thing to change in the document.
 
+**Terminology rule:** When recommending actions involving procurement, partner selection, or due diligence, use WBG operational policy terminology only. Required replacements:
+- "actor-level integrity due diligence" or "IDD" → "enhanced due diligence for non-state actors (consistent with WBG NSA engagement framework)"
+- "IDD protocol" → "conflict-sensitive partner selection"
+- "private sector screening" (generic) → "procurement integrity in FCV settings"
+- "implementing partner vetting" → "enhanced due diligence and conflict-sensitive partner selection"
+Do not introduce terminology from non-WBG corporate due diligence frameworks.
+
 4 P's FRAMING: Where applicable, shape the narrative framing of actions around the 4 P's of WBG FCV Strategy implementation — Policies (regulatory or reform recommendations), Programming (project design and targeting), Partnerships (HDP nexus, UN agencies, NGOs, community actors), Personnel (staffing, capacity, security). This is a framing lens that shapes the content of `guidance` fields and narrative prose — it does not require a separate JSON field or label in the output.
 
 DONOR/HDP COORDINATION: For the top 1-2 priorities (by risk_level), include a brief note (1-2 lines) in the `implementation_note` field identifying relevant HDP nexus partner types or coordination entry points — UN agencies, IMF, bilateral donors, humanitarian actors — where the WBG FCV Strategy explicitly commits to partnership. Be specific to the country and sector: name the likely coordination forum or partner type, not just "coordinate with partners". For DPF/DPO operations, note relevant IMF programme alignment or donor coordination groups.
@@ -1282,10 +1370,12 @@ For each action, provide:
 When drafting suggested language for a Results Framework indicator, provide the full specification: (1) indicator name; (2) unit of measurement; (3) proposed baseline and target; (4) data source; (5) collection frequency; (6) if the project is in an access-constrained context, a one-sentence data contingency (e.g., 'In the event of access restrictions, TPM/remote verification will be used'). Do not produce indicator names alone.
 WHO_ACTS: [Semicolon-separated from: TTL; PIU; Government; FCV CC; FM Team; ESF Team; Technical Team; M&E Team]
 WHEN: [One of: Identification | Preparation | Appraisal | Implementation | Restructuring — must be appropriate for {doc_type} stage]
-ACTION_TIMING: [One of: pre-appraisal | next-series | supervision]
-  - pre-appraisal: must be addressed before Board presentation or appraisal sign-off
+ACTION_TIMING: [One of: flag-for-preparation | required-before-appraisal | required-before-board | next-series | supervision]
+  - flag-for-preparation: raise now so the team is aware during preparation; do NOT frame as a current gap or require resolution at this stage. Use for all PCN-stage items and PID items that belong to PAD-level delivery.
+  - required-before-appraisal: must be substantively addressed and reflected in the PAD before appraisal sign-off
+  - required-before-board: reserve ONLY for critical safeguard or fiduciary requirements confirmed as pre-conditions by OPCS or regional management — do not apply based on your own judgment
   - next-series: relevant input for the next operation in a programmatic series (especially for DPF/DPO)
-  - supervision: monitoring or early-warning signal; no preparation action required now, but should be flagged for supervision planning
+  - supervision: monitoring or early-warning signal; no preparation action required now, flag for supervision planning
 RESOURCES: [One of: Minimal (existing budget) | Moderate (dedicated allocation) | Significant (requires restructuring)]
 PAD_SECTIONS: A semicolon-separated list of 2-3 specific PAD document sections. Use these exact labels from the current WBG PAD template:
 For ESF-era PADs: 'Country Context', 'Sectoral and Institutional Context', 'Theory of Change', 'PDO', 'Project Components', 'Implementation Arrangements', 'Results Framework', 'SORT', 'Citizen Engagement', 'ESCP', 'Annex — Gender', 'Annex — Grievance Redress Mechanism', 'Annex — Financial Management', 'Annex — Procurement'.
@@ -1408,7 +1498,7 @@ The FCV ratings, summaries, and risk exposure paragraphs you have written in the
       "when": "Preparation",
       "resources": "Moderate (dedicated allocation)",
       "pad_sections": "Annex 5: Stakeholder Engagement Plan; ESCP Commitment #4",
-      "action_timing": "pre-appraisal",
+      "action_timing": "required-before-appraisal",
       "country_category_relevance": "In a Conflict-Affected context, this priority matters because...",
       "implementation_note": "1-2 sentences on timing, cost, sequencing, or key dependency",
       "cpf_alignment": "This recommendation strengthens CPF Outcome 1 (Healthier, Better Educated and Skilled Population) by ensuring FCV-sensitive targeting reaches conflict-affected communities."
@@ -2362,9 +2452,16 @@ def extract_priorities(text: str, uploaded_doc_names: list = None) -> dict:
                 act.setdefault('guidance', '')
                 act.setdefault('suggested_language', '')
 
-        # Validate action_timing enum
-        _valid_timings = {'pre-appraisal', 'next-series', 'supervision'}
-        if pr.get('action_timing') not in _valid_timings:
+        # Validate action_timing enum (v9.3: expanded to 5 values; remap legacy 'pre-appraisal')
+        _timing_remap = {'pre-appraisal': 'required-before-appraisal'}
+        _valid_timings = {
+            'flag-for-preparation', 'required-before-appraisal',
+            'required-before-board', 'next-series', 'supervision'
+        }
+        raw_timing = pr.get('action_timing')
+        if raw_timing in _timing_remap:
+            pr['action_timing'] = _timing_remap[raw_timing]
+        elif raw_timing not in _valid_timings:
             pr['action_timing'] = None
 
         # Post-parse checks — check specificity across gap + all action guidance
@@ -4374,9 +4471,12 @@ def run_express():
                 header = DO_NO_HARM_HEADER.format(date=date.today().strftime('%d %B %Y'))
                 stage3_output_clean = header + stage3_output_clean
 
-                # Final conversation history
+                # Final conversation history — store compact label (not full stage3_prompt) so
+                # follow-on API calls don't carry 40k+ chars of background constants forward.
+                # The S3 assistant output is what matters for continuity; the prompt is re-injected
+                # fresh on each follow-on call. (Same pattern as S1/S2 compact labels above.)
                 s3_truncated = stage3_output[:MAX_ASSISTANT_CHARS] if len(stage3_output) > MAX_ASSISTANT_CHARS else stage3_output
-                conversation_history.append({"role": "user", "content": stage3_prompt})
+                conversation_history.append({"role": "user", "content": "[Stage 3 — recommendations and priority analysis with FCV guidance injected]"})
                 conversation_history.append({"role": "assistant", "content": s3_truncated})
                 if len(conversation_history) > 20:
                     conversation_history = conversation_history[-20:]
@@ -4679,9 +4779,12 @@ def download_report():
             _safe_run(h2b).font.color.rgb = RGBColor(0x1a, 0x3a, 0x5c)
 
             timing_map = {
-                'pre-appraisal': 'Act before Board',
+                'flag-for-preparation': 'Flag for preparation',
+                'required-before-appraisal': 'Required before appraisal',
+                'required-before-board': 'Required before Board',
                 'next-series': 'Feed into next series',
-                'supervision': 'Supervision / monitoring only'
+                'supervision': 'Supervision / monitoring only',
+                'pre-appraisal': 'Required before appraisal',   # backward compat
             }
             tag_labels = {
                 '[S]': 'Sensitivity', '[R]': 'Responsiveness', '[S+R]': 'Sensitivity + Responsiveness'

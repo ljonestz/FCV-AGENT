@@ -263,3 +263,107 @@ class TestClassifyCountry:
         """Matching should be case-insensitive."""
         result = classify_country("ethiopia")
         assert result['category'] is not None, "Lowercase 'ethiopia' should still match"
+
+
+# ── FCV_INSTRUMENT_CALIBRATION content tests ─────────────────────────────────
+
+from background_docs import FCV_INSTRUMENT_CALIBRATION
+
+class TestInstrumentCalibrationContent:
+
+    def test_cerc_calibration_block_present(self):
+        assert 'CERC — FCV Calibration' in FCV_INSTRUMENT_CALIBRATION
+
+    def test_cerc_emergency_redirect_risk(self):
+        assert 'not usually advised for emergency operations' in FCV_INSTRUMENT_CALIBRATION
+
+    def test_cerc_op730_trigger_caveat(self):
+        assert 'OPCS legal and operational clearance' in FCV_INSTRUMENT_CALIBRATION
+
+    def test_cerc_effectiveness_qualified_as_practitioner(self):
+        assert 'practitioner experience' in FCV_INSTRUMENT_CALIBRATION
+
+    def test_pforr_calibration_block_present(self):
+        assert 'PforR — FCV Calibration' in FCV_INSTRUMENT_CALIBRATION
+
+    def test_pforr_iva_access_risk(self):
+        assert 'IVA' in FCV_INSTRUMENT_CALIBRATION
+
+    def test_pforr_op730_incompatibility(self):
+        assert 'effectively unusable' in FCV_INSTRUMENT_CALIBRATION
+
+    def test_mpa_calibration_block_present(self):
+        assert 'MPA — FCV Calibration' in FCV_INSTRUMENT_CALIBRATION
+
+    def test_mpa_phase_financing_not_guaranteed(self):
+        assert 'NOT guaranteed' in FCV_INSTRUMENT_CALIBRATION
+
+
+# ── action_timing enum tests ─────────────────────────────────────────────────
+
+def _make_timing_fixture(timing_value: str) -> str:
+    """Return a minimal valid Stage 3 output with the given action_timing value."""
+    priority = {
+        "number": 1,
+        "title": "Priority 1 · Test priority in Karamoja",
+        "fcv_dimension": "Inclusion",
+        "tag": "[S]",
+        "refresh_shift": "Shift A: Anticipate",
+        "risk_level": "High",
+        "the_gap": "Gap in Moroto district targeting.",
+        "why_it_matters": "Exclusion of IDPs in Kotido risks grievance.",
+        "actions": [{"document_element": "PAD Annex 2", "guidance": "Add IDP targeting criteria.", "suggested_language": ""}],
+        "who_acts": "TTL",
+        "when": "Preparation",
+        "action_timing": timing_value,
+        "resources": "Minimal (existing budget)",
+        "pad_sections": "Annex 2",
+        "country_category_relevance": "Relevant in conflict-affected context.",
+        "implementation_note": "Address at design stage.",
+        "cpf_alignment": None
+    }
+    payload = {
+        "fcv_rating": "Adequate",
+        "fcv_responsiveness_rating": "Low",
+        "sensitivity_summary": "Adequate sensitivity.",
+        "responsiveness_summary": "Low responsiveness.",
+        "risk_exposure": {"risks_to": "Insecurity risk.", "risks_from": "Elite capture risk."},
+        "priorities": [priority]
+    }
+    return f"Narrative.\n%%%JSON_START%%%\n{json.dumps(payload)}\n%%%JSON_END%%%"
+
+
+class TestActionTiming:
+
+    def test_flag_for_preparation_accepted(self):
+        result = extract_priorities(_make_timing_fixture('flag-for-preparation'))
+        assert result['priorities'][0]['action_timing'] == 'flag-for-preparation'
+
+    def test_required_before_appraisal_accepted(self):
+        result = extract_priorities(_make_timing_fixture('required-before-appraisal'))
+        assert result['priorities'][0]['action_timing'] == 'required-before-appraisal'
+
+    def test_required_before_board_accepted(self):
+        result = extract_priorities(_make_timing_fixture('required-before-board'))
+        assert result['priorities'][0]['action_timing'] == 'required-before-board'
+
+    def test_next_series_accepted(self):
+        result = extract_priorities(_make_timing_fixture('next-series'))
+        assert result['priorities'][0]['action_timing'] == 'next-series'
+
+    def test_supervision_accepted(self):
+        result = extract_priorities(_make_timing_fixture('supervision'))
+        assert result['priorities'][0]['action_timing'] == 'supervision'
+
+    def test_pre_appraisal_remapped_to_required_before_appraisal(self):
+        """Backward compat: old 'pre-appraisal' value from cached sessions maps to new name."""
+        result = extract_priorities(_make_timing_fixture('pre-appraisal'))
+        assert result['priorities'][0]['action_timing'] == 'required-before-appraisal'
+
+    def test_invalid_timing_nulled(self):
+        result = extract_priorities(_make_timing_fixture('invalid-value'))
+        assert result['priorities'][0]['action_timing'] is None
+
+    def test_empty_timing_nulled(self):
+        result = extract_priorities(_make_timing_fixture(''))
+        assert result['priorities'][0]['action_timing'] is None
