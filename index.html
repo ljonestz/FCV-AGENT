@@ -4057,17 +4057,33 @@
   }
 
   function downloadReport(){
-    const execSummary = stageOutputs[3] || '';
+    let execSummary = stageOutputs[3] || '';
     if(!execSummary && !stageThreePriorities.length){ alert('No Stage 3 output available to download.'); return; }
+
+    // Strip the AI disclaimer header that was prepended for display — not needed in the DOCX
+    execSummary = execSummary.replace(/^---\s*\n[\s\S]*?---\s*\n+/, '').trim();
 
     const dateStr = new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
     const cat = countryClassification.category || '';
     const catReasoning = countryClassification.reasoning || '';
     const finPAD = isFinalizedPAD();
 
+    // Retrieve Stage 2 Under the Hood tables for annex
+    let underHood = stage2UnderHood;
+    if(!underHood){
+      try{ underHood = JSON.parse(localStorage.getItem('stage2_under_hood')||'{}'); }catch(e){ underHood={}; }
+    }
+
     const payload = {
       summary: execSummary,
       priorities: stageThreePriorities,
+      sensitivity_summary: stageSensitivitySummary || '',
+      responsiveness_summary: stageResponsivenessSummary || '',
+      fcv_rating: fcvRating || '',
+      fcv_responsiveness_rating: fcvResponsivenessRating || '',
+      risk_exposure: stageRiskExposure || null,
+      horizon_considerations: horizonConsiderations || '',
+      under_hood: underHood || {},
       metadata: {
         date_str: dateStr,
         classification_category: cat,
