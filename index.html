@@ -2059,13 +2059,13 @@
           <div class="mode-badge mode-badge-default">Default</div>
           <div class="mode-title">Express Analysis</div>
           <div class="mode-desc">Runs all stages automatically. Get your full Recommendations Note in one go. Review intermediate findings after.</div>
-          <div class="mode-time">&#9201; ~5&ndash;7 min &middot; No interaction needed</div>
+          <div class="mode-time">&#9201; ~10&ndash;12 min &middot; No interaction needed</div>
         </div>
         <div class="mode-card" id="mode-stepbystep" onclick="selectMode('stepbystep')">
           <div class="mode-radio"></div>
           <div class="mode-title">Step-by-Step</div>
           <div class="mode-desc">Guide the analysis stage by stage. Review findings, add local knowledge, and refine before proceeding.</div>
-          <div class="mode-time">&#9201; ~8&ndash;12 min &middot; Full control</div>
+          <div class="mode-time">&#9201; ~10&ndash;15 min &middot; Full control</div>
         </div>
       </div>
     </div>
@@ -2921,7 +2921,7 @@
   function startSbsLoadingTimers(stageNum){
     sbsStartTime=Date.now();sbsMessageIdx=0;
     const msgs=SBS_STAGE_MESSAGES[stageNum]||SBS_STAGE_MESSAGES[1];
-    const hints={1:'2\u20134 min',2:'3\u20135 min',3:'4\u20136 min'};
+    const hints={1:'3\u20135 min',2:'2\u20134 min',3:'4\u20136 min'};
     const hint=hints[stageNum]||'1\u20133 min';
     const timerEl=document.getElementById('sbs-elapsed');
     const msgEl=document.getElementById('sbs-message');
@@ -2961,7 +2961,7 @@
       <div class="load-card">
         <div class="spinner" role="status" aria-label="Loading"></div>
         <div class="load-title">${followOn?'Updating output…':'Generating '+SHORT[stage]+'…'}</div>
-        <p class="load-sub" id="load-sub-msg">${stage===1 ? 'Stage 1 includes automated FCV web research and may take 2\u20134 minutes. The output will appear in full once complete \u2014 please wait.' : stage===3 ? 'Generating the full Recommendations Note. This may take 1\u20132 minutes \u2014 the full output will appear when ready.' : 'This usually takes 30\u201360 seconds. The full output will appear when ready.'}</p>
+        <p class="load-sub" id="load-sub-msg">${stage===1 ? 'Stage 1 includes automated FCV web research and may take 3\u20135 minutes. The output will appear in full once complete \u2014 please wait.' : stage===3 ? 'Generating the full Recommendations Note. This may take 4\u20136 minutes \u2014 the full output will appear when ready.' : 'This usually takes 2\u20134 minutes. The full output will appear when ready.'}</p>
         <div class="load-tags"><span class="load-tag">Reading documents</span><span class="load-tag">Applying FCV lens</span><span class="load-tag">Drawing on web context</span></div>
         <div id="sbs-elapsed" class="sbs-load-timer"></div>
         <div id="sbs-message" class="sbs-load-message"></div>
