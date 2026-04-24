@@ -249,7 +249,7 @@
     .zone-dot.p{background:#7C3AED}
     .zone-dot.c{background:#0891b2}
     .zone-dot.pack{background:#4f46e5}
-    .zone-hint{font-size:12px;color:var(--muted)}
+    .zone-hint{font-size:12px;color:var(--muted);flex:1}
     .zone-chips{display:flex;flex-wrap:nowrap;gap:5px;margin-top:2px;overflow:hidden}
     .zone-chip{font-size:11px;padding:2px 8px;border-radius:10px;border:1px solid;white-space:nowrap;flex-shrink:0}
     .zone-chip.p{background:#f5f3ff;color:#5b21b6;border-color:rgba(124,58,237,0.2)}
@@ -260,7 +260,7 @@
       border:1.5px dashed var(--border);border-radius:var(--radius-sm);
       padding:18px 12px;cursor:pointer;
       transition:all .18s ease;background:var(--off-white);
-      text-align:center;height:110px;flex-shrink:0;
+      text-align:center;height:110px;min-height:110px;max-height:110px;flex-shrink:0;
       display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;
     }
     .drop-zone:hover,.drop-zone.over{border-color:var(--wbg-blue);background:#eef7fc}
@@ -1997,7 +1997,7 @@
         <div class="zone-inner">
           <span class="zone-status-badge optional">Optional</span>
           <div class="zone-lbl"><span class="zone-dot pack"></span>Additional Project Package Documents</div>
-          <p class="zone-hint" id="zone-hint-package">Companion instruments — most useful at PID or PAD stage. Sharpens Part A extraction. Limit: 3 documents.</p>
+          <p class="zone-hint" id="zone-hint-package">Option to add any accompanying pre-appraisal documents. Limit: 2 documents.</p>
           <div class="drop-zone" id="dpack">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--border)" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
             <p style="margin-bottom:4px">Drag &amp; drop, or</p>
@@ -2010,7 +2010,6 @@
             <span class="zone-chip pack">ESCP</span>
             <span class="zone-chip pack">SEP</span>
             <span class="zone-chip pack">PPSD</span>
-            <span class="zone-chip pack">SORT</span>
           </div>
         </div>
       </div>
@@ -2034,7 +2033,6 @@
             <span class="zone-chip c">CPF</span>
             <span class="zone-chip c">RRA</span>
             <span class="zone-chip c">SCD</span>
-            <span class="zone-chip c">Pol. economy analysis</span>
           </div>
         </div>
       </div>
