@@ -3387,13 +3387,16 @@ def run_stage():
             if not documents:
                 return jsonify({'error': 'Please upload at least one project document.'}), 400
 
-            project_docs = [d for d in documents if not d.get('isContext')]
-            context_docs = [d for d in documents if d.get('isContext')]
+            project_docs = [d for d in documents if d.get('docRole') == 'primary'
+                            or (not d.get('docRole') and not d.get('isContext'))]
+            package_docs  = [d for d in documents if d.get('docRole') == 'package']
+            context_docs  = [d for d in documents if d.get('docRole') == 'context'
+                             or (not d.get('docRole') and d.get('isContext'))]
 
             # Pre-extract raw text for all docs; truncate to MAX_DOC_CHARS.
             # No separate LLM extraction step — Stage 1 Sonnet handles FCV
             # extraction directly in Part A of its output.
-            doc_parts = []  # list of dicts: {label, name, raw_text, page_count}
+            doc_parts = []  # list of dicts: {label, name, raw_text, page_count, char_limit}
             for doc in project_docs:
                 name = doc.get('name', 'document')
                 file_type = doc.get('type', 'text')
@@ -3408,7 +3411,8 @@ def run_stage():
                     text = raw[:MAX_DOC_CHARS]
                     page_count = 0
                 doc_parts.append({'label': 'PROJECT DOCUMENT', 'name': name,
-                                  'raw_text': text[:MAX_DOC_CHARS], 'page_count': page_count})
+                                  'raw_text': text[:MAX_DOC_CHARS], 'page_count': page_count,
+                                  'char_limit': STAGE1_MAX_DOC_CHARS})
                 warning = _check_extraction(text, name)
                 if warning:
                     extraction_warnings.append(warning)
@@ -3426,7 +3430,27 @@ def run_stage():
                     text = raw[:MAX_DOC_CHARS]
                     page_count = 0
                 doc_parts.append({'label': 'CONTEXT DOCUMENT', 'name': name,
-                                  'raw_text': text[:MAX_DOC_CHARS], 'page_count': page_count})
+                                  'raw_text': text[:MAX_DOC_CHARS], 'page_count': page_count,
+                                  'char_limit': STAGE1_CONTEXT_DOC_CHARS})
+                warning = _check_extraction(text, name)
+                if warning:
+                    extraction_warnings.append(warning)
+            for doc in package_docs:
+                name = doc.get('name', 'document')
+                file_type = doc.get('type', 'text')
+                raw = doc.get('content', '')
+                if file_type == 'pdf':
+                    text, page_count = extract_pdf_text(raw, name)
+                elif file_type == 'docx':
+                    text, page_count = extract_docx_text(raw, name)
+                elif file_type == 'pptx':
+                    text, page_count = extract_pptx_text(raw, name)
+                else:
+                    text = raw[:MAX_DOC_CHARS]
+                    page_count = 0
+                doc_parts.append({'label': 'PACKAGE INSTRUMENT', 'name': name,
+                                  'raw_text': text[:MAX_DOC_CHARS], 'page_count': page_count,
+                                  'char_limit': STAGE1_PACKAGE_DOC_CHARS})
                 warning = _check_extraction(text, name)
                 if warning:
                     extraction_warnings.append(warning)
@@ -3749,6 +3773,7 @@ def run_stage():
                 if stage == 1:
                     content_parts = []
                     context_sep_added = False
+                    package_sep_added = False
 
                     # ── Automated FCV Web Research Phase ──────────────────────
                     # Country+sector extraction run in parallel via Haiku (~2-3s)
@@ -3784,15 +3809,19 @@ def run_stage():
                     # Documents are truncated to STAGE1_MAX_DOC_CHARS — no LLM extraction,
                     # no additional blocking API calls before the keepalive stream starts.
                     for dp in doc_parts:
+                        if dp['label'] == 'PACKAGE INSTRUMENT' and not package_sep_added:
+                            content_parts.append({"type": "text", "text": "\n\n--- PROJECT PACKAGE INSTRUMENTS ---\n"})
+                            package_sep_added = True
                         if dp['label'] == 'CONTEXT DOCUMENT' and not context_sep_added:
                             content_parts.append({"type": "text", "text": "\n\n--- CONTEXTUAL DOCUMENTS ---\n"})
                             context_sep_added = True
 
                         raw = dp['raw_text']
-                        if len(raw) > STAGE1_MAX_DOC_CHARS:
+                        limit = dp.get('char_limit', STAGE1_MAX_DOC_CHARS)
+                        if len(raw) > limit:
                             final_text = (
-                                raw[:STAGE1_MAX_DOC_CHARS] +
-                                f"\n\n[Document truncated to {STAGE1_MAX_DOC_CHARS:,} characters for analysis]"
+                                raw[:limit] +
+                                f"\n\n[Document truncated to {limit:,} characters for analysis]"
                             )
                         else:
                             final_text = raw
