@@ -2079,7 +2079,7 @@
 
 <script>
   // ── State ──────────────────────────────────────────────────────────────────
-  let pF=[],cF=[],hist=[],curS=0,busy=false;
+  let pF=[],pkF=[],cF=[],hist=[],curS=0,busy=false;
   let sessionName='';
   let docType='Unknown';
   let instrumentType='Unknown';
@@ -2382,6 +2382,7 @@
   }
 
   setupZone('dp', 'ip', pF, 'p');
+  setupZone('dpack', 'ipack', pkF, 'pack');
   setupZone('dc', 'ic', cF, 'c');
 
   // Polling fallback: detect files even if the browser suppresses change/input events
@@ -2390,9 +2391,13 @@
   setInterval(function(){
     let changed = false;
     const ip = document.getElementById('ip');
+    const ipack = document.getElementById('ipack');
     const ic = document.getElementById('ic');
     if(ip && ip.files && ip.files.length > 0){
       Array.from(ip.files).forEach(f=>{ if(!pF.find(x=>x.name===f.name)){pF.push(f);changed=true;} });
+    }
+    if(ipack && ipack.files && ipack.files.length > 0){
+      Array.from(ipack.files).forEach(f=>{ if(pkF.length < 3 && !pkF.find(x=>x.name===f.name)){pkF.push(f);changed=true;} });
     }
     if(ic && ic.files && ic.files.length > 0){
       Array.from(ic.files).forEach(f=>{ if(!cF.find(x=>x.name===f.name)){cF.push(f);changed=true;} });
@@ -2401,14 +2406,27 @@
   }, 600);
 
   function addFiles(files, arr, type) {
+    const MAX_PACK = 3;
     let added = 0;
+    let skipped = 0;
     files.forEach(f => {
+      if (type === 'pack' && arr.length >= MAX_PACK) {
+        skipped++;
+        return;
+      }
       if (!arr.find(x => x.name === f.name)) {
         arr.push(f);
         added++;
         fetchFileMetadata(f);
       }
     });
+    if (skipped > 0) {
+      const hint = document.getElementById('zone-hint-package');
+      if (hint) {
+        hint.style.color = '#b45309';
+        hint.textContent = 'Project package limit reached (3 documents). Remove a file to add another.';
+      }
+    }
     if (added > 0) renderChips();
   }
 
@@ -2418,6 +2436,16 @@
       docType = 'Unknown';  // reset; will be detected from Stage 1 output
       const inp = document.getElementById('ip');
       if (inp) inp.value = '';  // reset native input so subsequent uploads work
+    } else if (type === 'pack') {
+      pkF = pkF.filter(f => f.name !== name);
+      const inp = document.getElementById('ipack');
+      if (inp) inp.value = '';
+      // Reset cap warning when file removed
+      const hint = document.getElementById('zone-hint-package');
+      if (hint && pkF.length < 3) {
+        hint.style.color = '';
+        hint.textContent = 'Optional — most useful at PID or PAD stage, when companion documents exist. If you\'re at PCN stage, you likely won\'t have anything to upload here yet. Adding these can sharpen the analysis but is never required. Limit: 3 documents.';
+      }
     } else {
       cF = cF.filter(f => f.name !== name);
       const inp = document.getElementById('ic');
@@ -2430,7 +2458,7 @@
   function renderChips() {
     const el = document.getElementById('chips');
     el.innerHTML = '';
-    const all = [...pF.map(f => ({f, t:'p'})), ...cF.map(f => ({f, t:'c'}))];
+    const all = [...pF.map(f => ({f, t:'p'})), ...pkF.map(f => ({f, t:'pack'})), ...cF.map(f => ({f, t:'c'}))];
     all.forEach(({f, t}) => {
       const chip = document.createElement('div');
       chip.className = `chip ${t}`;
@@ -2455,6 +2483,11 @@
     });
     document.getElementById('dp').classList.toggle('has', pF.length > 0);
     document.getElementById('dc').classList.toggle('has', cF.length > 0);
+    // Show/hide Zone 2 empty-state note and has-pack state
+    const emptyNote = document.getElementById('zone-hint-package-empty');
+    if (emptyNote) emptyNote.style.display = pkF.length === 0 ? '' : 'none';
+    const dpackZone = document.getElementById('dpack');
+    if (dpackZone) dpackZone.classList.toggle('has-pack', pkF.length > 0);
     // Clear any debug/error text once files are confirmed present
     if(all.length > 0){
       const log = document.getElementById('debug-log');
