@@ -2371,7 +2371,7 @@ def _md_to_docx_para(doc, text: str, heading_color=None):
     Heading paragraphs always have exactly one run.
     Plain body paragraphs (no bold/italic) also have exactly one run.
     """
-    from docx.shared import Pt
+    from docx.shared import Pt, RGBColor
     WB_NAVY = RGBColor(0x1a, 0x3a, 0x5c)
     color = heading_color or WB_NAVY
 
@@ -2432,7 +2432,7 @@ def _add_md_table(doc, md_text: str):
     (---|---|---). Returns True if a table was found and added, else False.
     Each cell uses a single run so DOCX parsers read the full content.
     """
-    from docx.shared import Pt
+    from docx.shared import Pt, RGBColor
     WB_NAVY = RGBColor(0x1a, 0x3a, 0x5c)
 
     lines = [l.strip() for l in md_text.strip().split('\n') if l.strip()]
