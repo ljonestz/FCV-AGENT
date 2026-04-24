@@ -3942,11 +3942,10 @@ def run_stage():
 
                 elif stage == 3:
                     # Stage 3 (Recommendations Note): extract priorities + ratings
-                    uploaded_doc_names = [
-                        doc.get('name', '') for doc in data.get('documents', [])
-                        if doc.get('name')
-                    ]
-                    parsed = extract_priorities(full_text, uploaded_doc_names)
+                    # Use uploaded_doc_names_payload (parsed from frontend's uploaded_doc_names
+                    # array at request start) — includes all zones (primary, package, context).
+                    # data.get('documents', []) is empty at Stage 3 in step-by-step mode.
+                    parsed = extract_priorities(full_text, uploaded_doc_names_payload)
                     priorities = parsed.get('priorities', [])
                     fcv_rating = parsed.get('fcv_rating', '')
                     fcv_responsiveness_rating = parsed.get('fcv_responsiveness_rating', '')
