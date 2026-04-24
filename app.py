@@ -37,6 +37,8 @@ except ImportError:
 MAX_DOC_CHARS = 500_000       # Max chars extracted from any single document
 STAGE1_MAX_DOC_CHARS = 60_000       # Docs are truncated to this before Stage 1 — no LLM extraction,
                                      # no blocking pre-stage calls, no proxy timeout risk
+STAGE1_PACKAGE_DOC_CHARS = 25_000   # Per Zone 2 companion instrument char limit
+STAGE1_CONTEXT_DOC_CHARS = 30_000   # Per Zone 3 country context doc char limit
 PROMPTS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'prompts.json')
 ASSESSMENT_WORKERS = max(2, int(os.environ.get("ASSESSMENT_WORKERS", "4")))
 ASSESSMENT_EXECUTOR = ThreadPoolExecutor(max_workers=ASSESSMENT_WORKERS)
