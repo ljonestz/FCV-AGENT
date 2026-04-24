@@ -4161,8 +4161,11 @@ def run_express():
                 # ════════════════════════════════════════════════════════════
                 yield f"data: {json.dumps({'stage_start': 1})}\n\n"
 
-                project_docs = [d for d in documents if not d.get('isContext')]
-                context_docs = [d for d in documents if d.get('isContext')]
+                project_docs = [d for d in documents if d.get('docRole') == 'primary'
+                                or (not d.get('docRole') and not d.get('isContext'))]
+                package_docs  = [d for d in documents if d.get('docRole') == 'package']
+                context_docs  = [d for d in documents if d.get('docRole') == 'context'
+                                 or (not d.get('docRole') and d.get('isContext'))]
 
                 # Pre-extract raw text for all docs
                 doc_parts = []
@@ -4181,7 +4184,8 @@ def run_express():
                         text = raw[:MAX_DOC_CHARS]
                         page_count = 0
                     doc_parts.append({'label': 'PROJECT DOCUMENT', 'name': name,
-                                      'raw_text': text[:MAX_DOC_CHARS], 'page_count': page_count})
+                                      'raw_text': text[:MAX_DOC_CHARS], 'page_count': page_count,
+                                      'char_limit': STAGE1_MAX_DOC_CHARS})
                     warning = _check_extraction(text, name)
                     if warning:
                         extraction_warnings_express.append(warning)
@@ -4199,7 +4203,27 @@ def run_express():
                         text = raw[:MAX_DOC_CHARS]
                         page_count = 0
                     doc_parts.append({'label': 'CONTEXT DOCUMENT', 'name': name,
-                                      'raw_text': text[:MAX_DOC_CHARS], 'page_count': page_count})
+                                      'raw_text': text[:MAX_DOC_CHARS], 'page_count': page_count,
+                                      'char_limit': STAGE1_CONTEXT_DOC_CHARS})
+                    warning = _check_extraction(text, name)
+                    if warning:
+                        extraction_warnings_express.append(warning)
+                for doc in package_docs:
+                    name = doc.get('name', 'document')
+                    file_type = doc.get('type', 'text')
+                    raw = doc.get('content', '')
+                    if file_type == 'pdf':
+                        text, page_count = extract_pdf_text(raw, name)
+                    elif file_type == 'docx':
+                        text, page_count = extract_docx_text(raw, name)
+                    elif file_type == 'pptx':
+                        text, page_count = extract_pptx_text(raw, name)
+                    else:
+                        text = raw[:MAX_DOC_CHARS]
+                        page_count = 0
+                    doc_parts.append({'label': 'PACKAGE INSTRUMENT', 'name': name,
+                                      'raw_text': text[:MAX_DOC_CHARS], 'page_count': page_count,
+                                      'char_limit': STAGE1_PACKAGE_DOC_CHARS})
                     warning = _check_extraction(text, name)
                     if warning:
                         extraction_warnings_express.append(warning)
@@ -4236,17 +4260,23 @@ def run_express():
                 # ── Assemble Stage 1 content_parts ──
                 content_parts = []
                 context_sep_added = False
+                package_sep_added = False
                 for dp in doc_parts:
+                    if dp['label'] == 'PACKAGE INSTRUMENT' and not package_sep_added:
+                        content_parts.append({"type": "text", "text": "\n\n--- PROJECT PACKAGE INSTRUMENTS ---\n"})
+                        package_sep_added = True
                     if dp['label'] == 'CONTEXT DOCUMENT' and not context_sep_added:
                         content_parts.append({"type": "text", "text": "\n\n--- CONTEXTUAL DOCUMENTS ---\n"})
                         context_sep_added = True
-                    if len(dp['raw_text']) > STAGE1_MAX_DOC_CHARS:
+                    raw = dp['raw_text']
+                    limit = dp.get('char_limit', STAGE1_MAX_DOC_CHARS)
+                    if len(raw) > limit:
                         final_text = (
-                            dp['raw_text'][:STAGE1_MAX_DOC_CHARS] +
-                            f"\n\n[Document truncated to {STAGE1_MAX_DOC_CHARS:,} characters for analysis]"
+                            raw[:limit] +
+                            f"\n\n[Document truncated to {limit:,} characters for analysis]"
                         )
                     else:
-                        final_text = dp['raw_text']
+                        final_text = raw
                     suffix = f" ({dp['page_count']} pages)" if dp['page_count'] else ""
                     content_parts.append({"type": "text", "text": f"=== {dp['label']}: {dp['name']}{suffix} ===\n\n{final_text}"})
 
@@ -4324,7 +4354,18 @@ def run_express():
                     doc_type = process_type  # Use process type as doc_type label for impl mode
 
                 # Build truncated history for next stages
-                s1_label = "[Stage 1 — implementation documents and FCV context analysed]" if is_impl else "[Stage 1 — project documents and FCV context analysed]"
+                _s1_primary_names = [dp['name'] for dp in doc_parts if dp['label'] == 'PROJECT DOCUMENT']
+                _s1_package_names = [dp['name'] for dp in doc_parts if dp['label'] == 'PACKAGE INSTRUMENT']
+                _s1_context_names = [dp['name'] for dp in doc_parts if dp['label'] == 'CONTEXT DOCUMENT']
+                _s1_base = "[Stage 1 — implementation documents and FCV context analysed]" if is_impl \
+                           else "[Stage 1 — project documents and FCV context analysed]"
+                _s1_parts = [f"Primary: {_s1_primary_names[0]}" if _s1_primary_names else ""]
+                if _s1_package_names:
+                    _s1_parts.append(f"Package: {', '.join(_s1_package_names)}")
+                if _s1_context_names:
+                    _s1_parts.append(f"Country context: {', '.join(_s1_context_names)}")
+                _s1_suffix = ". ".join(p for p in _s1_parts if p)
+                s1_label = (f"{_s1_base} {_s1_suffix}".strip()) if _s1_suffix else _s1_base
                 conversation_history = [
                     {"role": "user", "content": s1_label},
                     {"role": "assistant", "content": stage1_output[:MAX_ASSISTANT_CHARS] if len(stage1_output) > MAX_ASSISTANT_CHARS else stage1_output}
