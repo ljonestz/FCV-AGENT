@@ -2635,11 +2635,11 @@
     showExpressProgress();updateExpressStage(1,'active',null);
 
     // Read files for upload payload
-    const readF=(file,isCtx)=>new Promise((res,rej)=>{
+    const readF=(file,isCtx,role)=>new Promise((res,rej)=>{
       const ft=detectFileType(file.name);
       const r=new FileReader();
-      if(isBinaryType(ft)){r.onload=e=>res({name:file.name,type:ft,content:e.target.result.split(',')[1],isContext:isCtx});r.readAsDataURL(file)}
-      else{r.onload=e=>res({name:file.name,type:ft,content:e.target.result,isContext:isCtx});r.readAsText(file)}
+      if(isBinaryType(ft)){r.onload=e=>res({name:file.name,type:ft,content:e.target.result.split(',')[1],isContext:isCtx,docRole:role});r.readAsDataURL(file)}
+      else{r.onload=e=>res({name:file.name,type:ft,content:e.target.result,isContext:isCtx,docRole:role});r.readAsText(file)}
       r.onerror=()=>rej(new Error('Could not read '+file.name));
     });
 
@@ -2647,8 +2647,9 @@
     try{
       payload={
         documents:[
-          ...await Promise.all(pF.map(f=>readF(f,false))),
-          ...await Promise.all(cF.map(f=>readF(f,true)))
+          ...await Promise.all(pF.map(f=>readF(f,false,'primary'))),
+          ...await Promise.all(pkF.map(f=>readF(f,true,'package'))),
+          ...await Promise.all(cF.map(f=>readF(f,true,'context')))
         ],
         review_mode:reviewMode,
         user_context:(document.getElementById('user-context')?.value||'').trim()
@@ -2929,23 +2930,24 @@
     if(analysisMode!=='express')startSbsLoadingTimers(stage);
 
     try{
-      const payload={stage,history:hist,user_message:followOn||'',document_type:docType,instrument_type:instrumentType,temporal_context:temporalContext,review_mode:reviewMode,process_type:processType,user_context:(document.getElementById('user-context')?.value||'').trim(),uploaded_doc_names:[...pF.map(f=>f.name),...cF.map(f=>f.name)],country_classification:countryClassification,context_flags:contextFlags,sector_context:sectorContext};
+      const payload={stage,history:hist,user_message:followOn||'',document_type:docType,instrument_type:instrumentType,temporal_context:temporalContext,review_mode:reviewMode,process_type:processType,user_context:(document.getElementById('user-context')?.value||'').trim(),uploaded_doc_names:[...pF.map(f=>f.name),...pkF.map(f=>f.name),...cF.map(f=>f.name)],country_classification:countryClassification,context_flags:contextFlags,sector_context:sectorContext};
       // Attach session prompt override if user has edited this stage's prompt
       if(sessionPrompts[stage]){
         payload.prompt_override = sessionPrompts[stage];
       }
 
       if(stage===1){
-        const readF=(file,isCtx)=>new Promise((res,rej)=>{
+        const readF=(file,isCtx,role)=>new Promise((res,rej)=>{
           const ft=detectFileType(file.name);
           const r=new FileReader();
-          if(isBinaryType(ft)){r.onload=e=>res({name:file.name,type:ft,content:e.target.result.split(',')[1],isContext:isCtx});r.readAsDataURL(file)}
-          else{r.onload=e=>res({name:file.name,type:ft,content:e.target.result,isContext:isCtx});r.readAsText(file)}
+          if(isBinaryType(ft)){r.onload=e=>res({name:file.name,type:ft,content:e.target.result.split(',')[1],isContext:isCtx,docRole:role});r.readAsDataURL(file)}
+          else{r.onload=e=>res({name:file.name,type:ft,content:e.target.result,isContext:isCtx,docRole:role});r.readAsText(file)}
           r.onerror=()=>rej(new Error('Could not read '+file.name));
         });
         payload.documents=[
-          ...await Promise.all(pF.map(f=>readF(f,false))),
-          ...await Promise.all(cF.map(f=>readF(f,true)))
+          ...await Promise.all(pF.map(f=>readF(f,false,'primary'))),
+          ...await Promise.all(pkF.map(f=>readF(f,true,'package'))),
+          ...await Promise.all(cF.map(f=>readF(f,true,'context')))
         ];
       }
 
