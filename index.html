@@ -236,24 +236,36 @@
     .upload-intro-text h2{font-family:'Open Sans',sans-serif;font-weight:700;font-size:18px;color:var(--text);margin-bottom:4px}
     .upload-intro-text p{font-size:14px;color:var(--muted);line-height:1.55}
 
-    .upload-zones{display:grid;grid-template-columns:1fr 1fr;gap:18px;padding:20px 32px;border-bottom:1px solid var(--border)}
-    .zone-wrap{display:flex;flex-direction:column;gap:7px}
+    .upload-zones{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;padding:20px 32px;border-bottom:1px solid var(--border);align-items:stretch}
+    .zone-wrap{display:flex;flex-direction:column;border-radius:12px;border:1px solid var(--border);background:#fff;overflow:hidden}
+    .zone-wrap.zone-p{background:linear-gradient(155deg,#f5f3ff 0%,#fff 55%);border:1.5px solid rgba(124,58,237,0.2);box-shadow:0 2px 10px rgba(124,58,237,0.07)}
+    .zone-inner{display:flex;flex-direction:column;gap:8px;padding:18px 20px;flex:1}
+    .zone-status-badge{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:3px 10px;border-radius:20px;width:fit-content;margin-bottom:2px}
+    .zone-status-badge.required{background:#7C3AED;color:#fff}
+    .zone-status-badge.optional{background:#ede9fe;color:#4338ca}
+    .zone-status-badge.encouraged{background:#ecfeff;color:#0e7490}
     .zone-lbl{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text)}
     .zone-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-    .zone-dot.p{background:var(--wbg-blue)}
-    .zone-dot.c{background:#1a7a4a}
-    .zone-hint{font-size:12px;color:var(--muted)}
+    .zone-dot.p{background:#7C3AED}
+    .zone-dot.c{background:#0891b2}
+    .zone-dot.pack{background:#4f46e5}
+    .zone-hint{font-size:12px;color:var(--muted);flex:1}
+    .zone-chips{display:flex;flex-wrap:nowrap;gap:5px;margin-top:2px;overflow:hidden}
+    .zone-chip{font-size:11px;padding:2px 8px;border-radius:10px;border:1px solid;white-space:nowrap;flex-shrink:0}
+    .zone-chip.p{background:#f5f3ff;color:#5b21b6;border-color:rgba(124,58,237,0.2)}
+    .zone-chip.pack{background:#ede9fe;color:#3730a3;border-color:rgba(79,70,229,0.2)}
+    .zone-chip.c{background:#ecfeff;color:#155e75;border-color:rgba(8,145,178,0.2)}
 
     .drop-zone{
-      border:2px dashed var(--border);border-radius:var(--radius-sm);
-      padding:20px 12px;cursor:pointer;
+      border:1.5px dashed var(--border);border-radius:var(--radius-sm);
+      padding:18px 12px;cursor:pointer;
       transition:all .18s ease;background:var(--off-white);
-      text-align:center;min-height:100px;
+      text-align:center;height:110px;min-height:110px;max-height:110px;flex-shrink:0;
       display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;
-      margin-top:auto;
     }
     .drop-zone:hover,.drop-zone.over{border-color:var(--wbg-blue);background:#eef7fc}
     .drop-zone.has{border-color:#1a7a4a;background:#f0f9f4}
+    .drop-zone.has-pack{border-color:#4f46e5;background:#f0f0ff}
     .drop-zone p{font-size:13px;color:var(--muted)}
     .drop-zone strong{color:var(--wbg-blue)}
     .drop-zone.has p,.drop-zone.has strong{color:#1a7a4a}
@@ -268,6 +280,7 @@
     }
     .chip.p{background:#e8f4fc;color:#004e7c;border:1px solid rgba(0,159,218,.25)}
     .chip.c{background:#f0f9f4;color:#1a5c38;border:1px solid rgba(26,122,74,.25)}
+    .chip.pack{background:#ede9fe;color:#3730a3;border:1px solid rgba(79,70,229,.25)}
     .chip-main{display:flex;align-items:center;gap:5px;width:100%}
     .chip-main span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .chip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -482,7 +495,8 @@
       .hero h1{font-size:24px}
       .stepper-wrap{padding:0 16px}
       .main{padding:20px 16px 80px}
-      .upload-zones{grid-template-columns:1fr;padding:16px 20px}
+      .upload-zones{grid-template-columns:1fr;grid-template-rows:auto;padding:16px 20px;align-items:unset}
+      .upload-zones .zone-wrap:nth-child(1),.upload-zones .zone-wrap:nth-child(2),.upload-zones .zone-wrap:nth-child(3){grid-column:1;grid-row:auto}
       .upload-intro,.upload-foot,.chips{padding-left:20px;padding-right:20px}
       .builtin-notice{margin:0 20px 14px}
       .out-body{padding:18px 18px}
@@ -1917,13 +1931,13 @@
     <span>Elapsed:</span>
     <span class="elapsed" id="ep-elapsed">0:00</span>
     <span>&middot;</span>
-    <span id="ep-estimate">Estimated total: 5&ndash;7 minutes</span>
+    <span id="ep-estimate">Estimated total: 10&ndash;12 minutes</span>
   </div>
   <div class="ep-message-card" id="ep-message-card">
     <div class="ep-message-icon" id="ep-message-icon">&#9749;</div>
-    <div class="ep-message-text" id="ep-message-text">"Go grab a coffee &mdash; this will take a few minutes."</div>
+    <div class="ep-message-text" id="ep-message-text">"Go grab a coffee &mdash; this will take around 10 minutes."</div>
   </div>
-  <div class="ep-bottom-note">Do not close or refresh this tab.</div>
+  <div class="ep-bottom-note">Keep this tab open and your device awake &mdash; you can switch to other apps or browser tabs, but do not close this tab or let your device sleep.</div>
 </div>
 
 <!-- ══ MAIN ══ -->
@@ -1943,7 +1957,7 @@
       </div>
       <div class="upload-intro-text">
         <h2>Upload Project Documents</h2>
-        <p>Upload the project document to be assessed, and optionally add contextual documents providing FCV insights for the country or region. Where no contextual documents are uploaded, the tool supplements analysis with trusted online sources.</p>
+        <p>Upload the project document to be assessed. Optionally add companion appraisal instruments (ESCP, SEP, PPSD, SORT) as a project package to sharpen the analysis, and country context documents for broader FCV insights. Web research supplements the analysis where no country context is uploaded.</p>
       </div>
     </div>
 
@@ -1954,27 +1968,75 @@
 
     <form id="upload-form" onsubmit="return false">
     <div class="upload-zones">
-      <div class="zone-wrap">
-        <div class="zone-lbl"><span class="zone-dot p"></span>Project Document</div>
-        <p class="zone-hint" id="zone-hint-primary">Upload your primary project document (PCN, PID, or PAD). Documents over 150k characters will be automatically condensed.</p>
-        <div class="drop-zone" id="dp">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--border)" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-          <p style="margin-bottom:4px">Drag &amp; drop, or</p>
-          <button type="button" class="browse-btn" onclick="document.getElementById('ip').click()">Browse files</button>
-          <input type="file" id="ip" name="project_doc" multiple accept=".pdf,.txt,.docx,.pptx,.md">
+
+      <!-- Zone 1: Project Document — Required -->
+      <div class="zone-wrap zone-p">
+        <div class="zone-inner">
+          <span class="zone-status-badge required">
+            <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            Required
+          </span>
+          <div class="zone-lbl"><span class="zone-dot p"></span>Project Document</div>
+          <p class="zone-hint" id="zone-hint-primary">Upload your primary project document (PCN, PID, or PAD). This anchors all three stages of the analysis.</p>
+          <div class="drop-zone" id="dp">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--border)" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            <p style="margin-bottom:4px">Drag &amp; drop, or</p>
+            <button type="button" class="browse-btn" style="background:#7C3AED" onclick="document.getElementById('ip').click()">Browse files</button>
+            <input type="file" id="ip" name="project_doc" multiple accept=".pdf,.txt,.docx,.pptx,.md">
+          </div>
+          <div class="zone-chips">
+            <span class="zone-chip p">PCN</span>
+            <span class="zone-chip p">PID</span>
+            <span class="zone-chip p">PAD</span>
+          </div>
         </div>
       </div>
 
+      <!-- Zone 2: Project Package — Optional -->
       <div class="zone-wrap">
-        <div class="zone-lbl"><span class="zone-dot c"></span>Contextual Documents</div>
-        <p class="zone-hint" id="zone-hint-context"><span style="font-weight:700;text-decoration:underline">Users are strongly encouraged to upload the latest Country Partnership Framework (CPF).</span> You may also add the RRA or 1&ndash;2 other contextual documents (max 3 total). A web search will supplement the analysis where no contextual documents are uploaded.</p>
-        <div class="drop-zone" id="dc">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--border)" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
-          <p style="margin-bottom:4px">Drag &amp; drop, or</p>
-          <button type="button" class="browse-btn" onclick="document.getElementById('ic').click()">Browse files</button>
-          <input type="file" id="ic" name="context_doc" multiple accept=".pdf,.txt,.docx,.pptx,.md">
+        <div class="zone-inner">
+          <span class="zone-status-badge optional">Optional</span>
+          <div class="zone-lbl"><span class="zone-dot pack"></span>Additional Project Package Documents</div>
+          <p class="zone-hint" id="zone-hint-package">Option to add any accompanying pre-appraisal documents. Limit: 2 documents.</p>
+          <div class="drop-zone" id="dpack">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--border)" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            <p style="margin-bottom:4px">Drag &amp; drop, or</p>
+            <button type="button" class="browse-btn" style="background:#4f46e5" onclick="document.getElementById('ipack').click()">Browse files</button>
+            <input type="file" id="ipack" name="package_doc" multiple accept=".pdf,.txt,.docx,.pptx,.md">
+          </div>
+          <p class="zone-hint" id="zone-hint-package-empty" style="display:none"></p>
+          <div class="zone-chips">
+            <span class="zone-chip pack">ESRS</span>
+            <span class="zone-chip pack">ESCP</span>
+            <span class="zone-chip pack">SEP</span>
+            <span class="zone-chip pack">PPSD</span>
+          </div>
         </div>
       </div>
+
+      <!-- Zone 3: Contextual Documents — Encouraged -->
+      <div class="zone-wrap">
+        <div class="zone-inner">
+          <span class="zone-status-badge encouraged">
+            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+            Encouraged
+          </span>
+          <div class="zone-lbl"><span class="zone-dot c"></span>Contextual Documents</div>
+          <p class="zone-hint" id="zone-hint-context"><span style="font-weight:700;text-decoration:underline">Upload the latest CPF.</span> You may also add the RRA or other contextual documents (max 3 total). Web search will supplement where nothing is uploaded.</p>
+          <div class="drop-zone" id="dc">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--border)" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+            <p style="margin-bottom:4px">Drag &amp; drop, or</p>
+            <button type="button" class="browse-btn" style="background:#0891b2" onclick="document.getElementById('ic').click()">Browse files</button>
+            <input type="file" id="ic" name="context_doc" multiple accept=".pdf,.txt,.docx,.pptx,.md">
+          </div>
+          <div class="zone-chips">
+            <span class="zone-chip c">CPF</span>
+            <span class="zone-chip c">RRA</span>
+            <span class="zone-chip c">SCD</span>
+          </div>
+        </div>
+      </div>
+
     </div>
     </form>
 
@@ -2056,7 +2118,7 @@
 
 <script>
   // ── State ──────────────────────────────────────────────────────────────────
-  let pF=[],cF=[],hist=[],curS=0,busy=false;
+  let pF=[],pkF=[],cF=[],hist=[],curS=0,busy=false;
   let sessionName='';
   let docType='Unknown';
   let instrumentType='Unknown';
@@ -2359,6 +2421,7 @@
   }
 
   setupZone('dp', 'ip', pF, 'p');
+  setupZone('dpack', 'ipack', pkF, 'pack');
   setupZone('dc', 'ic', cF, 'c');
 
   // Polling fallback: detect files even if the browser suppresses change/input events
@@ -2367,9 +2430,13 @@
   setInterval(function(){
     let changed = false;
     const ip = document.getElementById('ip');
+    const ipack = document.getElementById('ipack');
     const ic = document.getElementById('ic');
     if(ip && ip.files && ip.files.length > 0){
       Array.from(ip.files).forEach(f=>{ if(!pF.find(x=>x.name===f.name)){pF.push(f);changed=true;} });
+    }
+    if(ipack && ipack.files && ipack.files.length > 0){
+      Array.from(ipack.files).forEach(f=>{ if(pkF.length < 3 && !pkF.find(x=>x.name===f.name)){pkF.push(f);changed=true;} });
     }
     if(ic && ic.files && ic.files.length > 0){
       Array.from(ic.files).forEach(f=>{ if(!cF.find(x=>x.name===f.name)){cF.push(f);changed=true;} });
@@ -2378,14 +2445,27 @@
   }, 600);
 
   function addFiles(files, arr, type) {
+    const MAX_PACK = 3;
     let added = 0;
+    let skipped = 0;
     files.forEach(f => {
+      if (type === 'pack' && arr.length >= MAX_PACK) {
+        skipped++;
+        return;
+      }
       if (!arr.find(x => x.name === f.name)) {
         arr.push(f);
         added++;
         fetchFileMetadata(f);
       }
     });
+    if (skipped > 0) {
+      const hint = document.getElementById('zone-hint-package');
+      if (hint) {
+        hint.style.color = '#b45309';
+        hint.textContent = 'Project package limit reached (3 documents). Remove a file to add another.';
+      }
+    }
     if (added > 0) renderChips();
   }
 
@@ -2395,6 +2475,16 @@
       docType = 'Unknown';  // reset; will be detected from Stage 1 output
       const inp = document.getElementById('ip');
       if (inp) inp.value = '';  // reset native input so subsequent uploads work
+    } else if (type === 'pack') {
+      pkF = pkF.filter(f => f.name !== name);
+      const inp = document.getElementById('ipack');
+      if (inp) inp.value = '';
+      // Reset cap warning when file removed
+      const hint = document.getElementById('zone-hint-package');
+      if (hint && pkF.length < 3) {
+        hint.style.color = '';
+        hint.textContent = 'Optional — most useful at PID or PAD stage, when companion documents exist. If you\'re at PCN stage, you likely won\'t have anything to upload here yet. Adding these can sharpen the analysis but is never required. Limit: 3 documents.';
+      }
     } else {
       cF = cF.filter(f => f.name !== name);
       const inp = document.getElementById('ic');
@@ -2407,7 +2497,7 @@
   function renderChips() {
     const el = document.getElementById('chips');
     el.innerHTML = '';
-    const all = [...pF.map(f => ({f, t:'p'})), ...cF.map(f => ({f, t:'c'}))];
+    const all = [...pF.map(f => ({f, t:'p'})), ...pkF.map(f => ({f, t:'pack'})), ...cF.map(f => ({f, t:'c'}))];
     all.forEach(({f, t}) => {
       const chip = document.createElement('div');
       chip.className = `chip ${t}`;
@@ -2432,6 +2522,11 @@
     });
     document.getElementById('dp').classList.toggle('has', pF.length > 0);
     document.getElementById('dc').classList.toggle('has', cF.length > 0);
+    // Show/hide Zone 2 empty-state note and has-pack state
+    const emptyNote = document.getElementById('zone-hint-package-empty');
+    if (emptyNote) emptyNote.style.display = pkF.length === 0 ? '' : 'none';
+    const dpackZone = document.getElementById('dpack');
+    if (dpackZone) dpackZone.classList.toggle('has-pack', pkF.length > 0);
     // Clear any debug/error text once files are confirmed present
     if(all.length > 0){
       const log = document.getElementById('debug-log');
@@ -2579,11 +2674,11 @@
     showExpressProgress();updateExpressStage(1,'active',null);
 
     // Read files for upload payload
-    const readF=(file,isCtx)=>new Promise((res,rej)=>{
+    const readF=(file,isCtx,role)=>new Promise((res,rej)=>{
       const ft=detectFileType(file.name);
       const r=new FileReader();
-      if(isBinaryType(ft)){r.onload=e=>res({name:file.name,type:ft,content:e.target.result.split(',')[1],isContext:isCtx});r.readAsDataURL(file)}
-      else{r.onload=e=>res({name:file.name,type:ft,content:e.target.result,isContext:isCtx});r.readAsText(file)}
+      if(isBinaryType(ft)){r.onload=e=>res({name:file.name,type:ft,content:e.target.result.split(',')[1],isContext:isCtx,docRole:role});r.readAsDataURL(file)}
+      else{r.onload=e=>res({name:file.name,type:ft,content:e.target.result,isContext:isCtx,docRole:role});r.readAsText(file)}
       r.onerror=()=>rej(new Error('Could not read '+file.name));
     });
 
@@ -2591,8 +2686,9 @@
     try{
       payload={
         documents:[
-          ...await Promise.all(pF.map(f=>readF(f,false))),
-          ...await Promise.all(cF.map(f=>readF(f,true)))
+          ...await Promise.all(pF.map(f=>readF(f,false,'primary'))),
+          ...await Promise.all(pkF.map(f=>readF(f,true,'package'))),
+          ...await Promise.all(cF.map(f=>readF(f,true,'context')))
         ],
         review_mode:reviewMode,
         user_context:(document.getElementById('user-context')?.value||'').trim()
@@ -2873,23 +2969,24 @@
     if(analysisMode!=='express')startSbsLoadingTimers(stage);
 
     try{
-      const payload={stage,history:hist,user_message:followOn||'',document_type:docType,instrument_type:instrumentType,temporal_context:temporalContext,review_mode:reviewMode,process_type:processType,user_context:(document.getElementById('user-context')?.value||'').trim(),uploaded_doc_names:[...pF.map(f=>f.name),...cF.map(f=>f.name)],country_classification:countryClassification,context_flags:contextFlags,sector_context:sectorContext};
+      const payload={stage,history:hist,user_message:followOn||'',document_type:docType,instrument_type:instrumentType,temporal_context:temporalContext,review_mode:reviewMode,process_type:processType,user_context:(document.getElementById('user-context')?.value||'').trim(),uploaded_doc_names:[...pF.map(f=>f.name),...pkF.map(f=>f.name),...cF.map(f=>f.name)],country_classification:countryClassification,context_flags:contextFlags,sector_context:sectorContext};
       // Attach session prompt override if user has edited this stage's prompt
       if(sessionPrompts[stage]){
         payload.prompt_override = sessionPrompts[stage];
       }
 
       if(stage===1){
-        const readF=(file,isCtx)=>new Promise((res,rej)=>{
+        const readF=(file,isCtx,role)=>new Promise((res,rej)=>{
           const ft=detectFileType(file.name);
           const r=new FileReader();
-          if(isBinaryType(ft)){r.onload=e=>res({name:file.name,type:ft,content:e.target.result.split(',')[1],isContext:isCtx});r.readAsDataURL(file)}
-          else{r.onload=e=>res({name:file.name,type:ft,content:e.target.result,isContext:isCtx});r.readAsText(file)}
+          if(isBinaryType(ft)){r.onload=e=>res({name:file.name,type:ft,content:e.target.result.split(',')[1],isContext:isCtx,docRole:role});r.readAsDataURL(file)}
+          else{r.onload=e=>res({name:file.name,type:ft,content:e.target.result,isContext:isCtx,docRole:role});r.readAsText(file)}
           r.onerror=()=>rej(new Error('Could not read '+file.name));
         });
         payload.documents=[
-          ...await Promise.all(pF.map(f=>readF(f,false))),
-          ...await Promise.all(cF.map(f=>readF(f,true)))
+          ...await Promise.all(pF.map(f=>readF(f,false,'primary'))),
+          ...await Promise.all(pkF.map(f=>readF(f,true,'package'))),
+          ...await Promise.all(cF.map(f=>readF(f,true,'context')))
         ];
       }
 
@@ -3449,7 +3546,7 @@
     return !isNaN(d.getTime()) && d < new Date();
   }
 
-  function renderStage1(text) {
+  function renderStage1(text, hasPackage) {
     // Split on "## Part B" heading (handles "## Part B:", "## Part B —", etc.)
     const splitRe = /\n(#{1,3}\s*Part B[:\s\u2014][^\n]*\n)/i;
     const m = splitRe.exec(text);
@@ -3483,7 +3580,7 @@
     const transition = `<div class="s1-transition">How this compares with wider FCV context</div>`;
 
     return (
-      `<div class="s1-section-header s1-header-a">${iconDoc}&nbsp;Part A — From your document only</div>` +
+      `<div class="s1-section-header s1-header-a">${iconDoc}&nbsp;Part A — ${hasPackage ? 'From your project package' : 'From your project document'}</div>` +
       `<div class="s1-part-body">${partAFinal}</div>` +
       transition +
       `<div class="s1-section-header s1-header-b">${iconGlobe}&nbsp;Part B — Wider context &amp; research</div>` +
@@ -3513,7 +3610,7 @@
     }else{
       const cleanResult = stage===1 ? result.replace(/\n*%%%DOC_TYPE:[^%\n]*%%%\n*/g,'') : result;
       if(stage===1){
-        _outBodyContent = wrapSRTerms(renderStage1(cleanResult));
+        _outBodyContent = wrapSRTerms(renderStage1(cleanResult, pkF.length > 0));
       }else{
         const srDefPrefix = stage===2 ? buildSRDefinitionBox() + buildTagLegend() : '';
         let catBadge = '';
@@ -3547,7 +3644,7 @@
             <div class="out-hdr">
               <div class="out-hdr-l"><span class="dot done"></span>${NAMES[stage]}</div>
               <div style="display:flex;gap:8px;align-items:center">
-                ${isLast?`<button class="btn btn-ghost btn-sm" onclick="downloadReport()" title="Download full report as a Word document (.docx)">
+                ${isLast?`<button class="btn btn-ghost btn-sm" onclick="downloadReport(this)" title="Download full report as a Word document (.docx)">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                   Download .docx
                 </button>
@@ -4060,24 +4157,24 @@
     if(epMessageInterval){clearInterval(epMessageInterval);epMessageInterval=null;}
   }
 
-  function downloadReport(){
+  function downloadReport(btn){
     let execSummary = stageOutputs[3] || '';
     if(!execSummary && !stageThreePriorities.length){ alert('No Stage 3 output available to download.'); return; }
 
     // Strip the AI disclaimer header that was prepended for display — not needed in the DOCX
     execSummary = execSummary.replace(/^---\s*\n[\s\S]*?---\s*\n+/, '').trim();
 
+    // Immediate button feedback
+    const origHTML = btn ? btn.innerHTML : null;
+    if(btn){ btn.disabled = true; btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite"><path d="M21 12a9 9 0 1 1-6.22-8.56"/></svg> Preparing\u2026'; }
+
     const dateStr = new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
     const cat = countryClassification.category || '';
     const catReasoning = countryClassification.reasoning || '';
     const finPAD = isFinalizedPAD();
 
-    // Retrieve Stage 2 Under the Hood tables for annex
-    let underHood = stage2UnderHood;
-    if(!underHood){
-      try{ underHood = JSON.parse(localStorage.getItem('stage2_under_hood')||'{}'); }catch(e){ underHood={}; }
-    }
-
+    // under_hood annex tables intentionally excluded — they are large markdown tables
+    // (~50KB) that cause slow python-docx table generation. Core analysis is complete without them.
     const payload = {
       summary: execSummary,
       priorities: stageThreePriorities,
@@ -4087,7 +4184,6 @@
       fcv_responsiveness_rating: fcvResponsivenessRating || '',
       risk_exposure: stageRiskExposure || null,
       horizon_considerations: horizonConsiderations || '',
-      under_hood: underHood || {},
       metadata: {
         date_str: dateStr,
         classification_category: cat,
@@ -4103,7 +4199,7 @@
       body: JSON.stringify(payload)
     })
     .then(r => {
-      if(!r.ok) throw new Error('Download failed: ' + r.status);
+      if(!r.ok) return r.json().then(j => { throw new Error((j.detail || j.error || 'Download failed') + ' (HTTP ' + r.status + ')'); });
       return r.blob();
     })
     .then(blob => {
@@ -4115,8 +4211,10 @@
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
+      if(btn){ btn.disabled = false; btn.innerHTML = origHTML; }
     })
     .catch(err => {
+      if(btn){ btn.disabled = false; btn.innerHTML = origHTML; }
       alert('Could not generate the Word document. Please try again.\n\n' + err.message);
     });
   }

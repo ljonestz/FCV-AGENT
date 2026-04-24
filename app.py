@@ -37,6 +37,8 @@ except ImportError:
 MAX_DOC_CHARS = 500_000       # Max chars extracted from any single document
 STAGE1_MAX_DOC_CHARS = 60_000       # Docs are truncated to this before Stage 1 — no LLM extraction,
                                      # no blocking pre-stage calls, no proxy timeout risk
+STAGE1_PACKAGE_DOC_CHARS = 25_000   # Per Zone 2 companion instrument char limit
+STAGE1_CONTEXT_DOC_CHARS = 30_000   # Per Zone 3 country context doc char limit
 PROMPTS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'prompts.json')
 ASSESSMENT_WORKERS = max(2, int(os.environ.get("ASSESSMENT_WORKERS", "4")))
 ASSESSMENT_EXECUTOR = ThreadPoolExecutor(max_workers=ASSESSMENT_WORKERS)
@@ -504,17 +506,29 @@ You are an expert FCV (Fragility, Conflict, and Violence) analyst for the World 
 # Task
 Analyse the provided documents and produce a structured FCV assessment in two clearly separated parts:
 
-- **Part A** draws exclusively on the **project document** (PAD, PCN, or PID). Extract everything FCV-relevant from that document alone — do not bring in outside knowledge here.
-- **Part B** draws on the **contextual documents uploaded** (such as the RRA, country risk assessments, or other supporting materials) AND your training knowledge of reputable sources (UN, ICG, World Bank, ACLED, Fragile States Index, etc.). Be explicit about which source you are drawing on at any point.
+- **Part A** draws only from your **project package** — the primary document ([PROJECT DOCUMENT] sections) and any companion instruments uploaded ([PACKAGE INSTRUMENT] sections). Extract everything FCV-relevant from these documents alone. Do not use general knowledge, web research, or country context documents here. Extract what the documents say — do not assess adequacy or cross-reference against country context; that is Stage 2's role. Cite each source by name: [From: filename].
+- **Part B** draws on the **country context documents uploaded** ([CONTEXT DOCUMENT] sections, such as the RRA or CPF) AND your training knowledge of reputable sources (UN, ICG, World Bank, ACLED, Fragile States Index, etc.). Be explicit about which source you are drawing on at any point.
 
-Keep the two parts strictly separate. Part A is a document extraction exercise. Part B is a contextual enrichment exercise.
+Keep the two parts strictly separate. Part A is a project package extraction exercise. Part B is a contextual enrichment exercise.
 
 # Output Structure
 
 ## Part A: FCV Risks and Indicators from the Project Document
 Immediately after this heading, write a **2–3 sentence narrative lead** — a short plain-English paragraph (not bullets) that tells the reader: what this project is, where it operates, and what the document itself says or implies about the FCV context. This orients the reader before the structured findings. It should read as a brief summary of the project's own FCV picture as the document presents it, not as a list. Keep it factual and direct. **IMPORTANT: Do NOT open with a document title heading or the project name — the project name is displayed separately in the interface. The narrative paragraph must be the very first thing after the Part A heading.** Then continue with the structured subsections below.
 
-Extract exclusively from the project document (PAD/PCN/PID). Do not use contextual documents or general knowledge in this section.
+Extract exclusively from the project package — the primary document (PAD/PCN/PID) and any [PACKAGE INSTRUMENT] sections. Do not use [CONTEXT DOCUMENT] sections or general knowledge in Part A.
+
+**If [PACKAGE INSTRUMENT] sections are present**, extract FCV-relevant content from each. The LLM infers document type from the filename and content. Apply these extraction rules by type — but note that stage availability affects what content to expect:
+
+- **SORT** (available at all stages; early ratings are indicative): Extract risk ratings as stated, by category. Note any TTL commentary on risk drivers. Do not assess whether ratings are adequate — Stage 2 will do this.
+- **ESCP** (PID onwards; final at PAD): Extract material E&S commitments listed. Note whether SEA/SH action plan, conflict-sensitive GRM, or FCV-specific provisions are explicitly included or absent.
+- **SEP** (PID onwards; final at PAD): Extract stakeholder categories identified. Note whether conflict-affected, displaced, or marginalised populations are explicitly named.
+- **PPSD** (PID onwards): Extract implementation channel (government / UN / NGO / contractor). Note third-party implementation, OP 7.30 arrangements, or sole-sourcing justifications.
+- **ESRS** (PAD stage): Extract E&S risk classification assigned (Moderate / Substantial / High) and which Environmental and Social Standards are flagged as applicable. Note any FCV-specific E&S risks identified.
+- **Technical assessment** (PID onwards): Extract sector-specific FCV risks or constraints. Note findings on institutional capacity, geographic exclusion, or conflict-affected service delivery.
+- **Any other instrument**: Extract whatever is FCV-relevant — implementation arrangements, risk flags, commitments, or gaps — and cite the document by name.
+
+**Guard:** Do not score, evaluate, or cross-reference package instruments against country context in Part A. That is Stage 2's role. Extract only what is stated.
 
 ### Direct FCV References
 Explicit mentions of: fragility, conflict, or violence; security concerns; post-conflict or crisis contexts; social cohesion challenges; displacement, refugees, or IDPs; organised crime, trafficking, or illicit activities.
@@ -2357,7 +2371,7 @@ def _md_to_docx_para(doc, text: str, heading_color=None):
     Heading paragraphs always have exactly one run.
     Plain body paragraphs (no bold/italic) also have exactly one run.
     """
-    from docx.shared import Pt
+    from docx.shared import Pt, RGBColor
     WB_NAVY = RGBColor(0x1a, 0x3a, 0x5c)
     color = heading_color or WB_NAVY
 
@@ -2418,7 +2432,7 @@ def _add_md_table(doc, md_text: str):
     (---|---|---). Returns True if a table was found and added, else False.
     Each cell uses a single run so DOCX parsers read the full content.
     """
-    from docx.shared import Pt
+    from docx.shared import Pt, RGBColor
     WB_NAVY = RGBColor(0x1a, 0x3a, 0x5c)
 
     lines = [l.strip() for l in md_text.strip().split('\n') if l.strip()]
@@ -3385,13 +3399,16 @@ def run_stage():
             if not documents:
                 return jsonify({'error': 'Please upload at least one project document.'}), 400
 
-            project_docs = [d for d in documents if not d.get('isContext')]
-            context_docs = [d for d in documents if d.get('isContext')]
+            project_docs = [d for d in documents if d.get('docRole') == 'primary'
+                            or (not d.get('docRole') and not d.get('isContext'))]
+            package_docs  = [d for d in documents if d.get('docRole') == 'package']
+            context_docs  = [d for d in documents if d.get('docRole') == 'context'
+                             or (not d.get('docRole') and d.get('isContext'))]
 
             # Pre-extract raw text for all docs; truncate to MAX_DOC_CHARS.
             # No separate LLM extraction step — Stage 1 Sonnet handles FCV
             # extraction directly in Part A of its output.
-            doc_parts = []  # list of dicts: {label, name, raw_text, page_count}
+            doc_parts = []  # list of dicts: {label, name, raw_text, page_count, char_limit}
             for doc in project_docs:
                 name = doc.get('name', 'document')
                 file_type = doc.get('type', 'text')
@@ -3406,7 +3423,8 @@ def run_stage():
                     text = raw[:MAX_DOC_CHARS]
                     page_count = 0
                 doc_parts.append({'label': 'PROJECT DOCUMENT', 'name': name,
-                                  'raw_text': text[:MAX_DOC_CHARS], 'page_count': page_count})
+                                  'raw_text': text[:MAX_DOC_CHARS], 'page_count': page_count,
+                                  'char_limit': STAGE1_MAX_DOC_CHARS})
                 warning = _check_extraction(text, name)
                 if warning:
                     extraction_warnings.append(warning)
@@ -3424,7 +3442,27 @@ def run_stage():
                     text = raw[:MAX_DOC_CHARS]
                     page_count = 0
                 doc_parts.append({'label': 'CONTEXT DOCUMENT', 'name': name,
-                                  'raw_text': text[:MAX_DOC_CHARS], 'page_count': page_count})
+                                  'raw_text': text[:MAX_DOC_CHARS], 'page_count': page_count,
+                                  'char_limit': STAGE1_CONTEXT_DOC_CHARS})
+                warning = _check_extraction(text, name)
+                if warning:
+                    extraction_warnings.append(warning)
+            for doc in package_docs:
+                name = doc.get('name', 'document')
+                file_type = doc.get('type', 'text')
+                raw = doc.get('content', '')
+                if file_type == 'pdf':
+                    text, page_count = extract_pdf_text(raw, name)
+                elif file_type == 'docx':
+                    text, page_count = extract_docx_text(raw, name)
+                elif file_type == 'pptx':
+                    text, page_count = extract_pptx_text(raw, name)
+                else:
+                    text = raw[:MAX_DOC_CHARS]
+                    page_count = 0
+                doc_parts.append({'label': 'PACKAGE INSTRUMENT', 'name': name,
+                                  'raw_text': text[:MAX_DOC_CHARS], 'page_count': page_count,
+                                  'char_limit': STAGE1_PACKAGE_DOC_CHARS})
                 warning = _check_extraction(text, name)
                 if warning:
                     extraction_warnings.append(warning)
@@ -3747,6 +3785,7 @@ def run_stage():
                 if stage == 1:
                     content_parts = []
                     context_sep_added = False
+                    package_sep_added = False
 
                     # ── Automated FCV Web Research Phase ──────────────────────
                     # Country+sector extraction run in parallel via Haiku (~2-3s)
@@ -3782,15 +3821,19 @@ def run_stage():
                     # Documents are truncated to STAGE1_MAX_DOC_CHARS — no LLM extraction,
                     # no additional blocking API calls before the keepalive stream starts.
                     for dp in doc_parts:
+                        if dp['label'] == 'PACKAGE INSTRUMENT' and not package_sep_added:
+                            content_parts.append({"type": "text", "text": "\n\n--- PROJECT PACKAGE INSTRUMENTS ---\n"})
+                            package_sep_added = True
                         if dp['label'] == 'CONTEXT DOCUMENT' and not context_sep_added:
                             content_parts.append({"type": "text", "text": "\n\n--- CONTEXTUAL DOCUMENTS ---\n"})
                             context_sep_added = True
 
                         raw = dp['raw_text']
-                        if len(raw) > STAGE1_MAX_DOC_CHARS:
+                        limit = dp.get('char_limit', STAGE1_MAX_DOC_CHARS)
+                        if len(raw) > limit:
                             final_text = (
-                                raw[:STAGE1_MAX_DOC_CHARS] +
-                                f"\n\n[Document truncated to {STAGE1_MAX_DOC_CHARS:,} characters for analysis]"
+                                raw[:limit] +
+                                f"\n\n[Document truncated to {limit:,} characters for analysis]"
                             )
                         else:
                             final_text = raw
@@ -3899,11 +3942,10 @@ def run_stage():
 
                 elif stage == 3:
                     # Stage 3 (Recommendations Note): extract priorities + ratings
-                    uploaded_doc_names = [
-                        doc.get('name', '') for doc in data.get('documents', [])
-                        if doc.get('name')
-                    ]
-                    parsed = extract_priorities(full_text, uploaded_doc_names)
+                    # Use uploaded_doc_names_payload (parsed from frontend's uploaded_doc_names
+                    # array at request start) — includes all zones (primary, package, context).
+                    # data.get('documents', []) is empty at Stage 3 in step-by-step mode.
+                    parsed = extract_priorities(full_text, uploaded_doc_names_payload)
                     priorities = parsed.get('priorities', [])
                     fcv_rating = parsed.get('fcv_rating', '')
                     fcv_responsiveness_rating = parsed.get('fcv_responsiveness_rating', '')
@@ -3931,7 +3973,18 @@ def run_stage():
                     _country_classification = extract_country_classification(full_text)
                     _context_flags = extract_context_flags(full_text)
                     _sector_context = extract_sector_context(full_text)
-                    s1_label = "[Stage 1 — implementation documents and FCV context analysed]" if is_impl else "[Stage 1 — project documents and FCV context analysed]"
+                    _s1_primary_names = [dp['name'] for dp in doc_parts if dp['label'] == 'PROJECT DOCUMENT']
+                    _s1_package_names = [dp['name'] for dp in doc_parts if dp['label'] == 'PACKAGE INSTRUMENT']
+                    _s1_context_names = [dp['name'] for dp in doc_parts if dp['label'] == 'CONTEXT DOCUMENT']
+                    _s1_base = "[Stage 1 — implementation documents and FCV context analysed]" if is_impl \
+                               else "[Stage 1 — project documents and FCV context analysed]"
+                    _s1_parts = [f"Primary: {_s1_primary_names[0]}" if _s1_primary_names else ""]
+                    if _s1_package_names:
+                        _s1_parts.append(f"Package: {', '.join(_s1_package_names)}")
+                    if _s1_context_names:
+                        _s1_parts.append(f"Country context: {', '.join(_s1_context_names)}")
+                    _s1_suffix = ". ".join(p for p in _s1_parts if p)
+                    s1_label = (f"{_s1_base} {_s1_suffix}".strip()) if _s1_suffix else _s1_base
                     updated_messages = [
                         {"role": "user", "content": s1_label},
                         {"role": "assistant", "content": full_text}
@@ -4119,8 +4172,11 @@ def run_express():
                 # ════════════════════════════════════════════════════════════
                 yield f"data: {json.dumps({'stage_start': 1})}\n\n"
 
-                project_docs = [d for d in documents if not d.get('isContext')]
-                context_docs = [d for d in documents if d.get('isContext')]
+                project_docs = [d for d in documents if d.get('docRole') == 'primary'
+                                or (not d.get('docRole') and not d.get('isContext'))]
+                package_docs  = [d for d in documents if d.get('docRole') == 'package']
+                context_docs  = [d for d in documents if d.get('docRole') == 'context'
+                                 or (not d.get('docRole') and d.get('isContext'))]
 
                 # Pre-extract raw text for all docs
                 doc_parts = []
@@ -4139,7 +4195,8 @@ def run_express():
                         text = raw[:MAX_DOC_CHARS]
                         page_count = 0
                     doc_parts.append({'label': 'PROJECT DOCUMENT', 'name': name,
-                                      'raw_text': text[:MAX_DOC_CHARS], 'page_count': page_count})
+                                      'raw_text': text[:MAX_DOC_CHARS], 'page_count': page_count,
+                                      'char_limit': STAGE1_MAX_DOC_CHARS})
                     warning = _check_extraction(text, name)
                     if warning:
                         extraction_warnings_express.append(warning)
@@ -4157,7 +4214,27 @@ def run_express():
                         text = raw[:MAX_DOC_CHARS]
                         page_count = 0
                     doc_parts.append({'label': 'CONTEXT DOCUMENT', 'name': name,
-                                      'raw_text': text[:MAX_DOC_CHARS], 'page_count': page_count})
+                                      'raw_text': text[:MAX_DOC_CHARS], 'page_count': page_count,
+                                      'char_limit': STAGE1_CONTEXT_DOC_CHARS})
+                    warning = _check_extraction(text, name)
+                    if warning:
+                        extraction_warnings_express.append(warning)
+                for doc in package_docs:
+                    name = doc.get('name', 'document')
+                    file_type = doc.get('type', 'text')
+                    raw = doc.get('content', '')
+                    if file_type == 'pdf':
+                        text, page_count = extract_pdf_text(raw, name)
+                    elif file_type == 'docx':
+                        text, page_count = extract_docx_text(raw, name)
+                    elif file_type == 'pptx':
+                        text, page_count = extract_pptx_text(raw, name)
+                    else:
+                        text = raw[:MAX_DOC_CHARS]
+                        page_count = 0
+                    doc_parts.append({'label': 'PACKAGE INSTRUMENT', 'name': name,
+                                      'raw_text': text[:MAX_DOC_CHARS], 'page_count': page_count,
+                                      'char_limit': STAGE1_PACKAGE_DOC_CHARS})
                     warning = _check_extraction(text, name)
                     if warning:
                         extraction_warnings_express.append(warning)
@@ -4194,17 +4271,23 @@ def run_express():
                 # ── Assemble Stage 1 content_parts ──
                 content_parts = []
                 context_sep_added = False
+                package_sep_added = False
                 for dp in doc_parts:
+                    if dp['label'] == 'PACKAGE INSTRUMENT' and not package_sep_added:
+                        content_parts.append({"type": "text", "text": "\n\n--- PROJECT PACKAGE INSTRUMENTS ---\n"})
+                        package_sep_added = True
                     if dp['label'] == 'CONTEXT DOCUMENT' and not context_sep_added:
                         content_parts.append({"type": "text", "text": "\n\n--- CONTEXTUAL DOCUMENTS ---\n"})
                         context_sep_added = True
-                    if len(dp['raw_text']) > STAGE1_MAX_DOC_CHARS:
+                    raw = dp['raw_text']
+                    limit = dp.get('char_limit', STAGE1_MAX_DOC_CHARS)
+                    if len(raw) > limit:
                         final_text = (
-                            dp['raw_text'][:STAGE1_MAX_DOC_CHARS] +
-                            f"\n\n[Document truncated to {STAGE1_MAX_DOC_CHARS:,} characters for analysis]"
+                            raw[:limit] +
+                            f"\n\n[Document truncated to {limit:,} characters for analysis]"
                         )
                     else:
-                        final_text = dp['raw_text']
+                        final_text = raw
                     suffix = f" ({dp['page_count']} pages)" if dp['page_count'] else ""
                     content_parts.append({"type": "text", "text": f"=== {dp['label']}: {dp['name']}{suffix} ===\n\n{final_text}"})
 
@@ -4282,7 +4365,18 @@ def run_express():
                     doc_type = process_type  # Use process type as doc_type label for impl mode
 
                 # Build truncated history for next stages
-                s1_label = "[Stage 1 — implementation documents and FCV context analysed]" if is_impl else "[Stage 1 — project documents and FCV context analysed]"
+                _s1_primary_names = [dp['name'] for dp in doc_parts if dp['label'] == 'PROJECT DOCUMENT']
+                _s1_package_names = [dp['name'] for dp in doc_parts if dp['label'] == 'PACKAGE INSTRUMENT']
+                _s1_context_names = [dp['name'] for dp in doc_parts if dp['label'] == 'CONTEXT DOCUMENT']
+                _s1_base = "[Stage 1 — implementation documents and FCV context analysed]" if is_impl \
+                           else "[Stage 1 — project documents and FCV context analysed]"
+                _s1_parts = [f"Primary: {_s1_primary_names[0]}" if _s1_primary_names else ""]
+                if _s1_package_names:
+                    _s1_parts.append(f"Package: {', '.join(_s1_package_names)}")
+                if _s1_context_names:
+                    _s1_parts.append(f"Country context: {', '.join(_s1_context_names)}")
+                _s1_suffix = ". ".join(p for p in _s1_parts if p)
+                s1_label = (f"{_s1_base} {_s1_suffix}".strip()) if _s1_suffix else _s1_base
                 conversation_history = [
                     {"role": "user", "content": s1_label},
                     {"role": "assistant", "content": stage1_output[:MAX_ASSISTANT_CHARS] if len(stage1_output) > MAX_ASSISTANT_CHARS else stage1_output}
