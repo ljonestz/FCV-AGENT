@@ -1946,7 +1946,7 @@
       </div>
       <div class="upload-intro-text">
         <h2>Upload Project Documents</h2>
-        <p>Upload the project document to be assessed, and optionally add contextual documents providing FCV insights for the country or region. Where no contextual documents are uploaded, the tool supplements analysis with trusted online sources.</p>
+        <p>Upload the project document to be assessed. Optionally add companion appraisal instruments (ESCP, SEP, PPSD, SORT) as a project package to sharpen the analysis, and country context documents for broader FCV insights. Web research supplements the analysis where no country context is uploaded.</p>
       </div>
     </div>
 
@@ -1965,6 +1965,26 @@
           <p style="margin-bottom:4px">Drag &amp; drop, or</p>
           <button type="button" class="browse-btn" onclick="document.getElementById('ip').click()">Browse files</button>
           <input type="file" id="ip" name="project_doc" multiple accept=".pdf,.txt,.docx,.pptx,.md">
+        </div>
+      </div>
+
+      <div class="zone-wrap">
+        <div class="zone-lbl"><span class="zone-dot pack"></span>Project Package <span style="font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0;font-size:11px;margin-left:4px">— optional</span></div>
+        <p class="zone-hint" id="zone-hint-package">Optional — most useful at PID or PAD stage, when companion documents exist. If you're at PCN stage, you likely won't have anything to upload here yet. Adding these can sharpen the analysis but is never required. Limit: 3 documents.</p>
+        <div class="drop-zone" id="dpack">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--border)" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          <p style="margin-bottom:4px">Drag &amp; drop, or</p>
+          <button type="button" class="browse-btn" style="background:#4f46e5" onclick="document.getElementById('ipack').click()">Browse files</button>
+          <input type="file" id="ipack" name="package_doc" multiple accept=".pdf,.txt,.docx,.pptx,.md">
+        </div>
+        <p class="zone-hint" id="zone-hint-package-empty" style="font-style:italic;margin-top:4px">No project package documents uploaded — the app will work from your primary document and any country context provided.</p>
+        <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:4px">
+          <span style="font-size:11px;padding:2px 8px;border-radius:10px;background:#ede9fe;color:#3730a3;border:1px solid rgba(79,70,229,.2)">ESRS</span>
+          <span style="font-size:11px;padding:2px 8px;border-radius:10px;background:#ede9fe;color:#3730a3;border:1px solid rgba(79,70,229,.2)">ESCP</span>
+          <span style="font-size:11px;padding:2px 8px;border-radius:10px;background:#ede9fe;color:#3730a3;border:1px solid rgba(79,70,229,.2)">SEP</span>
+          <span style="font-size:11px;padding:2px 8px;border-radius:10px;background:#ede9fe;color:#3730a3;border:1px solid rgba(79,70,229,.2)">PPSD</span>
+          <span style="font-size:11px;padding:2px 8px;border-radius:10px;background:#ede9fe;color:#3730a3;border:1px solid rgba(79,70,229,.2)">SORT</span>
+          <span style="font-size:11px;padding:2px 8px;border-radius:10px;background:#ede9fe;color:#3730a3;border:1px solid rgba(79,70,229,.2)">Technical assessment</span>
         </div>
       </div>
 
