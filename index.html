@@ -3507,7 +3507,7 @@
     return !isNaN(d.getTime()) && d < new Date();
   }
 
-  function renderStage1(text) {
+  function renderStage1(text, hasPackage) {
     // Split on "## Part B" heading (handles "## Part B:", "## Part B —", etc.)
     const splitRe = /\n(#{1,3}\s*Part B[:\s\u2014][^\n]*\n)/i;
     const m = splitRe.exec(text);
@@ -3541,7 +3541,7 @@
     const transition = `<div class="s1-transition">How this compares with wider FCV context</div>`;
 
     return (
-      `<div class="s1-section-header s1-header-a">${iconDoc}&nbsp;Part A — From your document only</div>` +
+      `<div class="s1-section-header s1-header-a">${iconDoc}&nbsp;Part A — ${hasPackage ? 'From your project package' : 'From your project document'}</div>` +
       `<div class="s1-part-body">${partAFinal}</div>` +
       transition +
       `<div class="s1-section-header s1-header-b">${iconGlobe}&nbsp;Part B — Wider context &amp; research</div>` +
@@ -3571,7 +3571,7 @@
     }else{
       const cleanResult = stage===1 ? result.replace(/\n*%%%DOC_TYPE:[^%\n]*%%%\n*/g,'') : result;
       if(stage===1){
-        _outBodyContent = wrapSRTerms(renderStage1(cleanResult));
+        _outBodyContent = wrapSRTerms(renderStage1(cleanResult, pkF.length > 0));
       }else{
         const srDefPrefix = stage===2 ? buildSRDefinitionBox() + buildTagLegend() : '';
         let catBadge = '';
