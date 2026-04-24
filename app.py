@@ -3962,7 +3962,18 @@ def run_stage():
                     _country_classification = extract_country_classification(full_text)
                     _context_flags = extract_context_flags(full_text)
                     _sector_context = extract_sector_context(full_text)
-                    s1_label = "[Stage 1 — implementation documents and FCV context analysed]" if is_impl else "[Stage 1 — project documents and FCV context analysed]"
+                    _s1_primary_names = [dp['name'] for dp in doc_parts if dp['label'] == 'PROJECT DOCUMENT']
+                    _s1_package_names = [dp['name'] for dp in doc_parts if dp['label'] == 'PACKAGE INSTRUMENT']
+                    _s1_context_names = [dp['name'] for dp in doc_parts if dp['label'] == 'CONTEXT DOCUMENT']
+                    _s1_base = "[Stage 1 — implementation documents and FCV context analysed]" if is_impl \
+                               else "[Stage 1 — project documents and FCV context analysed]"
+                    _s1_parts = [f"Primary: {_s1_primary_names[0]}" if _s1_primary_names else ""]
+                    if _s1_package_names:
+                        _s1_parts.append(f"Package: {', '.join(_s1_package_names)}")
+                    if _s1_context_names:
+                        _s1_parts.append(f"Country context: {', '.join(_s1_context_names)}")
+                    _s1_suffix = ". ".join(p for p in _s1_parts if p)
+                    s1_label = (f"{_s1_base} {_s1_suffix}".strip()) if _s1_suffix else _s1_base
                     updated_messages = [
                         {"role": "user", "content": s1_label},
                         {"role": "assistant", "content": full_text}
