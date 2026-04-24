@@ -3644,7 +3644,7 @@
             <div class="out-hdr">
               <div class="out-hdr-l"><span class="dot done"></span>${NAMES[stage]}</div>
               <div style="display:flex;gap:8px;align-items:center">
-                ${isLast?`<button class="btn btn-ghost btn-sm" onclick="downloadReport()" title="Download full report as a Word document (.docx)">
+                ${isLast?`<button class="btn btn-ghost btn-sm" onclick="downloadReport(this)" title="Download full report as a Word document (.docx)">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                   Download .docx
                 </button>
@@ -4157,24 +4157,24 @@
     if(epMessageInterval){clearInterval(epMessageInterval);epMessageInterval=null;}
   }
 
-  function downloadReport(){
+  function downloadReport(btn){
     let execSummary = stageOutputs[3] || '';
     if(!execSummary && !stageThreePriorities.length){ alert('No Stage 3 output available to download.'); return; }
 
     // Strip the AI disclaimer header that was prepended for display — not needed in the DOCX
     execSummary = execSummary.replace(/^---\s*\n[\s\S]*?---\s*\n+/, '').trim();
 
+    // Immediate button feedback
+    const origHTML = btn ? btn.innerHTML : null;
+    if(btn){ btn.disabled = true; btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite"><path d="M21 12a9 9 0 1 1-6.22-8.56"/></svg> Preparing\u2026'; }
+
     const dateStr = new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
     const cat = countryClassification.category || '';
     const catReasoning = countryClassification.reasoning || '';
     const finPAD = isFinalizedPAD();
 
-    // Retrieve Stage 2 Under the Hood tables for annex
-    let underHood = stage2UnderHood;
-    if(!underHood){
-      try{ underHood = JSON.parse(localStorage.getItem('stage2_under_hood')||'{}'); }catch(e){ underHood={}; }
-    }
-
+    // under_hood annex tables intentionally excluded — they are large markdown tables
+    // (~50KB) that cause slow python-docx table generation. Core analysis is complete without them.
     const payload = {
       summary: execSummary,
       priorities: stageThreePriorities,
@@ -4184,7 +4184,6 @@
       fcv_responsiveness_rating: fcvResponsivenessRating || '',
       risk_exposure: stageRiskExposure || null,
       horizon_considerations: horizonConsiderations || '',
-      under_hood: underHood || {},
       metadata: {
         date_str: dateStr,
         classification_category: cat,
@@ -4200,7 +4199,7 @@
       body: JSON.stringify(payload)
     })
     .then(r => {
-      if(!r.ok) throw new Error('Download failed: ' + r.status);
+      if(!r.ok) return r.json().then(j => { throw new Error((j.detail || j.error || 'Download failed') + ' (HTTP ' + r.status + ')'); });
       return r.blob();
     })
     .then(blob => {
@@ -4212,8 +4211,10 @@
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
+      if(btn){ btn.disabled = false; btn.innerHTML = origHTML; }
     })
     .catch(err => {
+      if(btn){ btn.disabled = false; btn.innerHTML = origHTML; }
       alert('Could not generate the Word document. Please try again.\n\n' + err.message);
     });
   }
