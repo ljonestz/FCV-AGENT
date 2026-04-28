@@ -1831,7 +1831,7 @@
 
 <!-- Onboarding modal -->
 <div id="onboarding-modal" class="modal-bg" style="display:none" role="dialog" aria-modal="true" aria-label="How this tool works">
-  <div class="modal" style="max-width:940px">
+  <div class="modal" style="max-width:680px">
     <div class="modal-hdr" style="padding:24px 32px 20px">
       <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:var(--wbg-cyan);margin-bottom:8px;display:flex;align-items:center;gap:8px"><span style="display:inline-block;width:16px;height:2px;background:var(--wbg-cyan)"></span>WBG FCV Analytics Unit</div>
       <h2 style="font-size:24px;margin-bottom:6px">FCV Project Screener</h2>
@@ -1839,11 +1839,42 @@
     </div>
     <div class="modal-body" style="padding:0;max-height:84vh;overflow-y:auto">
 
-      <!-- How it works — 3-stage flow -->
-      <div style="padding:20px 28px 24px;border-bottom:1px solid var(--border)">
-        <p class="hiw-lead">Upload your project document and — without any further input — the screener reads it, researches the country context, checks it against WBG standards, and delivers specific, actionable recommendations. Here is what happens at each step.</p>
+      <!-- Compact intro -->
+      <div style="padding:20px 32px;border-bottom:1px solid var(--border)">
+        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:10px">What this tool does</div>
+        <p style="font-size:14px;line-height:1.65;color:var(--text)">This tool uses an AI language model to screen draft WBG project documents — PCNs, PIDs, PADs, Additional Financing, and Restructuring Papers — for FCV dynamics. It generates structured recommendations on how to strengthen FCV sensitivity and responsiveness, drawing on the WBG FCV Strategy Refresh, the OST Manual, the FCV Operational Playbook, and Good Practice Notes on Peace &amp; Inclusion Lenses and FCV-Sensitive Programming.</p>
+        <p style="font-size:14px;line-height:1.65;color:var(--text);margin-top:10px">The tool automatically detects document type and adjusts the depth, framing, and tone of its analysis accordingly. It is designed to support — not replace — expert FCV analysis, and works best as a starting point for peer review conversations between FCV specialists and Task Team Leaders.</p>
+      </div>
 
-        <div class="hiw-grid">
+      <!-- Compact 3-stage cards -->
+      <div style="padding:20px 32px;border-bottom:1px solid var(--border)">
+        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:14px">How to use it — three stages</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+          <div style="border:1px solid var(--border);border-radius:6px;padding:12px 14px;border-top:3px solid var(--s1)">
+            <div style="font-size:11px;font-weight:700;color:var(--s1);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Stage 1 · Context &amp; Extraction</div>
+            <p style="font-size:12.5px;color:var(--text);line-height:1.55">Upload your project document. The tool auto-detects the document type, runs live web research on the country context, and extracts all FCV-relevant content. Review what it finds and correct anything before proceeding.</p>
+          </div>
+          <div style="border:1px solid var(--border);border-radius:6px;padding:12px 14px;border-top:3px solid var(--s2)">
+            <div style="font-size:11px;font-weight:700;color:var(--s2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Stage 2 · FCV Assessment</div>
+            <p style="font-size:12.5px;color:var(--text);line-height:1.55">The AI assesses the project's FCV sensitivity and responsiveness using the OST framework — 12 recommendations, 25 key questions, and a 9-point Do No Harm checklist. Detailed analytical evidence is available in expandable “Under the Hood” panels.</p>
+          </div>
+          <div style="border:1px solid var(--border);border-radius:6px;padding:12px 14px;border-top:3px solid var(--s3)">
+            <div style="font-size:11px;font-weight:700;color:var(--s3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Stage 3 · Recommendations Note</div>
+            <p style="font-size:12.5px;color:var(--text);line-height:1.55">A memo addressed to the TTL with priority cards tailored to the project's lifecycle stage. Each priority includes specific actions, suggested PAD language, and timing. Optional “Go Deeper” panels provide Playbook references and an evidence trail.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Expandable: How it works in detail -->
+      <details style="border-bottom:1px solid var(--border)">
+        <summary style="padding:14px 32px;font-size:13px;font-weight:600;color:#009FDA;cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          How this tool works in detail
+        </summary>
+        <div style="padding:20px 28px 24px">
+          <p class="hiw-lead">Upload your project document and — without any further input — the screener reads it, researches the country context, checks it against WBG standards, and delivers specific, actionable recommendations. Here is what happens at each step.</p>
+
+          <div class="hiw-grid">
 
           <!-- Stage 1 -->
           <div class="hiw-card">
@@ -2012,7 +2043,8 @@
           </div>
         </div><!-- /hiw-strip -->
 
-      </div>
+        </div>
+      </details>
 
       <div style="padding:20px 32px;border-bottom:1px solid var(--border)">
         <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:10px">Refining the analysis</div>
