@@ -1696,6 +1696,76 @@
     pointer-events: none;
   }
   .glossary-term:hover .glossary-tooltip { display: block; }
+
+  /* ── How It Works — 3-stage flow (onboarding modal) ──────────────── */
+  .hiw-lead { font-size:13.5px; color:var(--text); line-height:1.72; margin-bottom:20px; }
+  .hiw-grid { display:grid; grid-template-columns:1fr 44px 1fr 44px 1fr; align-items:start; }
+  .hiw-card {
+    background:#fff; border-radius:10px;
+    box-shadow:0 1px 3px rgba(0,34,68,.05),0 4px 16px rgba(0,34,68,.08);
+    display:flex; flex-direction:column; overflow:hidden;
+    transition:transform .28s cubic-bezier(.2,.8,.2,1),box-shadow .28s cubic-bezier(.2,.8,.2,1);
+    cursor:default;
+  }
+  .hiw-card:hover { transform:translateY(-4px); box-shadow:0 2px 6px rgba(0,34,68,.07),0 14px 36px rgba(0,34,68,.13); }
+  .hiw-card-bar { height:4px; flex-shrink:0; position:relative; overflow:hidden; }
+  .hiw-card-bar::after {
+    content:''; position:absolute; top:0; left:-35%; width:55%; height:100%;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.45),transparent);
+    animation:hiwShine 3.8s ease-in-out infinite;
+  }
+  @keyframes hiwShine { 0%,100%{left:-35%;opacity:0} 50%{left:105%;opacity:1} }
+  .hiw-card-body { padding:16px 18px 0; }
+  .hiw-card-tag-row { display:flex; align-items:center; gap:7px; margin-bottom:9px; }
+  .hiw-badge { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.09em; padding:2px 8px; border-radius:4px; }
+  .hiw-badge-num { font-size:10px; color:var(--muted); font-weight:600; }
+  .hiw-card-title-wrap { position:relative; margin-bottom:10px; }
+  .hiw-wm { position:absolute; top:-16px; right:-2px; font-size:76px; font-weight:800; line-height:1; letter-spacing:-.08em; opacity:.04; pointer-events:none; user-select:none; color:#111; }
+  .hiw-card-title { font-size:13px; font-weight:700; color:var(--wbg-navy); line-height:1.32; position:relative; }
+  .hiw-narrative { font-size:12px; color:#374151; line-height:1.72; margin-bottom:14px; }
+  .hiw-narrative strong { color:var(--wbg-navy); font-weight:600; }
+  .hiw-stat { border-radius:7px; margin:0 18px 14px; padding:11px 14px; }
+  .hiw-stat-row { display:flex; align-items:center; gap:12px; }
+  .hiw-stat-num { font-size:44px; font-weight:800; line-height:1; letter-spacing:-.05em; flex-shrink:0; font-variant-numeric:tabular-nums; }
+  .hiw-stat-right { flex:1; min-width:0; }
+  .hiw-stat-lbl { font-size:11px; font-weight:700; color:var(--wbg-navy); margin-bottom:2px; line-height:1.3; }
+  .hiw-stat-sub { font-size:10.5px; color:var(--muted); line-height:1.5; }
+  .hiw-bar-track { margin-top:7px; height:3px; background:rgba(0,0,0,.07); border-radius:2px; overflow:hidden; }
+  .hiw-bar { height:100%; border-radius:2px; width:0; transition:width 1.5s cubic-bezier(.4,0,.2,1) .3s; }
+  .hiw-details { padding:0 18px 14px; display:flex; flex-direction:column; gap:9px; }
+  .hiw-detail { display:flex; gap:8px; align-items:flex-start; }
+  .hiw-detail-text { font-size:11.5px; color:#4B5563; line-height:1.62; }
+  .hiw-detail-text strong { color:var(--wbg-navy); font-weight:600; }
+  .hiw-bridge { padding:9px 18px 12px; margin-top:auto; border-top:1px solid var(--border); font-size:11px; color:var(--muted); font-style:italic; line-height:1.6; }
+  .hiw-conn { display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding-top:52px; }
+  .hiw-conn-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+  .hiw-conn-label { margin-top:4px; font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.13em; color:#94A3B8; }
+  .hiw-strip {
+    margin-top:18px; background:var(--wbg-navy); border-radius:10px; padding:20px 24px;
+    display:grid; grid-template-columns:1fr 1px 1fr; gap:20px;
+    position:relative; overflow:hidden;
+  }
+  .hiw-strip::before { content:''; position:absolute; top:-70px; right:-70px; width:280px; height:280px; background:radial-gradient(circle,rgba(0,159,218,.2) 0%,transparent 62%); pointer-events:none; }
+  .hiw-strip-div { background:rgba(255,255,255,.1); }
+  .hiw-strip-sec { position:relative; z-index:1; }
+  .hiw-strip-eye { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.14em; color:var(--wbg-blue); margin-bottom:4px; }
+  .hiw-strip-head { font-size:13px; font-weight:700; color:#fff; margin-bottom:3px; }
+  .hiw-strip-sub { font-size:11px; color:rgba(255,255,255,.45); line-height:1.55; margin-bottom:12px; }
+  .hiw-src-tags { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:12px; }
+  .hiw-src-tag { font-size:10.5px; font-weight:600; padding:3px 10px; border-radius:4px; background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.14); color:rgba(255,255,255,.8); }
+  .hiw-strip-counts { display:flex; gap:18px; flex-wrap:wrap; }
+  .hiw-strip-num { font-size:26px; font-weight:800; color:var(--wbg-blue); line-height:1; letter-spacing:-.03em; font-variant-numeric:tabular-nums; }
+  .hiw-strip-lbl { font-size:9.5px; text-transform:uppercase; letter-spacing:.07em; color:rgba(255,255,255,.38); margin-top:2px; }
+  .hiw-out-list { display:flex; flex-direction:column; gap:8px; }
+  .hiw-out-row { display:flex; gap:9px; font-size:12px; color:rgba(255,255,255,.72); line-height:1.5; }
+  .hiw-out-pip { width:5px; height:5px; border-radius:50%; background:#7C3AED; flex-shrink:0; margin-top:5px; }
+  @media (max-width:680px) {
+    .hiw-grid { grid-template-columns:1fr; }
+    .hiw-conn { flex-direction:row; padding:10px 0; justify-content:center; gap:8px; }
+    .hiw-conn svg { display:none; }
+    .hiw-strip { grid-template-columns:1fr; }
+    .hiw-strip-div { display:none; }
+  }
 </style>
 </head>
 <body>
@@ -1761,37 +1831,187 @@
 
 <!-- Onboarding modal -->
 <div id="onboarding-modal" class="modal-bg" style="display:none" role="dialog" aria-modal="true" aria-label="How this tool works">
-  <div class="modal" style="max-width:680px">
+  <div class="modal" style="max-width:940px">
     <div class="modal-hdr" style="padding:24px 32px 20px">
       <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:var(--wbg-cyan);margin-bottom:8px;display:flex;align-items:center;gap:8px"><span style="display:inline-block;width:16px;height:2px;background:var(--wbg-cyan)"></span>WBG FCV Analytics Unit</div>
       <h2 style="font-size:24px;margin-bottom:6px">FCV Project Screener</h2>
       <p style="font-size:14px;font-style:italic;color:rgba(255,255,255,.6)">A tool for screening WBG projects for recommendations to strengthen FCV sensitivity and responsiveness</p>
     </div>
-    <div class="modal-body" style="padding:0;max-height:72vh;overflow-y:auto">
+    <div class="modal-body" style="padding:0;max-height:84vh;overflow-y:auto">
 
-      <div style="padding:20px 32px;border-bottom:1px solid var(--border)">
-        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:10px">What this tool does</div>
-        <p style="font-size:14px;line-height:1.65;color:var(--text)">This tool uses an AI language model (LLM) to screen draft WBG project documents — such as PCNs and PADs — for FCV dynamics. It generates structured recommendations on how to strengthen FCV sensitivity and responsiveness, drawing on the WBG FCV Strategy Refresh, the OST Manual on FCV Sensitivity and Responsiveness, the FCV Operational Playbook, and Good Practice Notes on Peace &amp; Inclusion Lenses and FCV-Sensitive Programming — alongside the uploaded documents and the AI's broader knowledge of the country and sector context.</p>
-        <p style="font-size:14px;line-height:1.65;color:var(--text);margin-top:10px">The tool is designed to support — not replace — expert FCV analysis. It works best as a starting point for peer review conversations between FCV specialists and Task Team Leaders.</p>
-        <p style="font-size:14px;line-height:1.65;color:var(--text);margin-top:10px">The tool automatically detects the type of project document uploaded — PCN, PID, PAD, Additional Financing, Restructuring Paper, or ISR — and adjusts the depth, framing, and tone of its analysis accordingly. A concept note triggers broader, more exploratory research; an ISR produces operationally-focused supervision priorities.</p>
-      </div>
+      <!-- How it works — 3-stage flow -->
+      <div style="padding:20px 28px 24px;border-bottom:1px solid var(--border)">
+        <p class="hiw-lead">Upload your project document and — without any further input — the screener reads it, researches the country context, checks it against WBG standards, and delivers specific, actionable recommendations. Here is what happens at each step.</p>
 
-      <div style="padding:20px 32px;border-bottom:1px solid var(--border)">
-        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:14px">How to use it — three stages</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
-          <div style="border:1px solid var(--border);border-radius:6px;padding:12px 14px;border-top:3px solid var(--s1)">
-            <div style="font-size:11px;font-weight:700;color:var(--s1);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Stage 1 · Context & Extraction</div>
-            <p style="font-size:12.5px;color:var(--text);line-height:1.55">Upload your project document — PCN, PID, PAD, Additional Financing, Restructuring Paper, or ISR. The tool auto-detects the document type, runs automated web research on the country context, and extracts all FCV-relevant content. Review what it finds and correct anything before proceeding.</p>
+        <div class="hiw-grid">
+
+          <!-- Stage 1 -->
+          <div class="hiw-card">
+            <div class="hiw-card-bar" style="background:linear-gradient(90deg,#009FDA,#0080B3)"></div>
+            <div class="hiw-card-body">
+              <div class="hiw-card-tag-row">
+                <span class="hiw-badge" style="background:#EFF9FF;color:#0080B3">Stage 1</span>
+                <span class="hiw-badge-num">of 3</span>
+              </div>
+              <div class="hiw-card-title-wrap">
+                <span class="hiw-wm">1</span>
+                <div class="hiw-card-title">Read your document and research the country</div>
+              </div>
+              <p class="hiw-narrative">You upload your project document — a PCN, PID, PAD, or similar. The screener reads every section carefully and runs live web searches on the project country: conflict conditions, fragility trends, key risks. You can see exactly where every piece of information came from.</p>
+            </div>
+            <div class="hiw-stat" style="background:#EFF9FF">
+              <div class="hiw-stat-row">
+                <span class="hiw-stat-num" style="color:#009FDA" data-hiw-target="9">9</span>
+                <div class="hiw-stat-right">
+                  <div class="hiw-stat-lbl">web searches run in parallel</div>
+                  <div class="hiw-stat-sub">Conflict · fragility drivers · sector dynamics</div>
+                  <div class="hiw-bar-track"><div class="hiw-bar" style="background:#009FDA" data-hiw-width="20"></div></div>
+                </div>
+              </div>
+            </div>
+            <div class="hiw-details">
+              <div class="hiw-detail">
+                <svg style="flex-shrink:0;margin-top:1px" width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6.5" stroke="#009FDA" stroke-width="1"/><path d="M4 7l2 2 4-3.5" stroke="#009FDA" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <div class="hiw-detail-text"><strong>Works with any WBG project document</strong> — PCN, PID, PAD, Additional Financing, or Restructuring Paper. Add a SORT table, ESCP, or RRA for sharper analysis.</div>
+              </div>
+              <div class="hiw-detail">
+                <svg style="flex-shrink:0;margin-top:1px" width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6.5" stroke="#009FDA" stroke-width="1"/><path d="M4 7l2 2 4-3.5" stroke="#009FDA" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <div class="hiw-detail-text"><strong>Three tiers of evidence, clearly labelled.</strong> Uploaded documents carry the most weight. Live web research adds current context. AI background knowledge fills gaps — always marked separately.</div>
+              </div>
+              <div class="hiw-detail">
+                <svg style="flex-shrink:0;margin-top:1px" width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6.5" stroke="#009FDA" stroke-width="1"/><path d="M4 7l2 2 4-3.5" stroke="#009FDA" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <div class="hiw-detail-text"><strong>Country classification built in.</strong> The project country is placed within the WBG's four FCV categories, shaping everything that follows.</div>
+              </div>
+            </div>
+            <div class="hiw-bridge">With a full picture of your document and country context in hand, the analysis begins.</div>
           </div>
-          <div style="border:1px solid var(--border);border-radius:6px;padding:12px 14px;border-top:3px solid var(--s2)">
-            <div style="font-size:11px;font-weight:700;color:var(--s2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Stage 2 · FCV Assessment</div>
-            <p style="font-size:12.5px;color:var(--text);line-height:1.55">The AI assesses the project's FCV sensitivity and responsiveness using the full OST framework — 12 recommendations, 25 key questions, and a Do No Harm checklist. Detailed analytical evidence is available in expandable "Under the Hood" panels.</p>
+
+          <!-- Connector 1→2 -->
+          <div class="hiw-conn">
+            <div class="hiw-conn-dot" style="background:#009FDA"></div>
+            <svg width="2" height="34" viewBox="0 0 2 34" fill="none"><line x1="1" y1="0" x2="1" y2="34" stroke="url(#hg12)" stroke-width="2" stroke-dasharray="3 2.5" stroke-linecap="round"/><defs><linearGradient id="hg12" x1="0" y1="0" x2="0" y2="1" gradientUnits="objectBoundingBox"><stop offset="0%" stop-color="#009FDA"/><stop offset="100%" stop-color="#16A34A"/></linearGradient></defs></svg>
+            <svg width="10" height="7" viewBox="0 0 10 7" fill="none"><path d="M1 1l4 5 4-5" stroke="#94A3B8" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+            <span class="hiw-conn-label">then</span>
           </div>
-          <div style="border:1px solid var(--border);border-radius:6px;padding:12px 14px;border-top:3px solid var(--s3)">
-            <div style="font-size:11px;font-weight:700;color:var(--s3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Stage 3 · Recommendations Note</div>
-            <p style="font-size:12.5px;color:var(--text);line-height:1.55">A collegial peer-review memo addressed to the TTL with strategic priority cards tailored to the project's lifecycle stage. Each priority includes specific actions, PAD language, and implementation guidance. Optional "Go Deeper" panels provide alternative approaches and Playbook references.</p>
+
+          <!-- Stage 2 -->
+          <div class="hiw-card">
+            <div class="hiw-card-bar" style="background:linear-gradient(90deg,#16A34A,#15803D)"></div>
+            <div class="hiw-card-body">
+              <div class="hiw-card-tag-row">
+                <span class="hiw-badge" style="background:#F0FDF4;color:#15803D">Stage 2</span>
+                <span class="hiw-badge-num">of 3</span>
+              </div>
+              <div class="hiw-card-title-wrap">
+                <span class="hiw-wm">2</span>
+                <div class="hiw-card-title">Check your project against WBG standards</div>
+              </div>
+              <p class="hiw-narrative">The screener checks against four sets of WBG guidance — the OST Manual, FCV Strategy Refresh, FCV Playbook, and Good Practice Notes. It also makes a key distinction: is the project <strong>sensitive to</strong> the FCV context (aware of it, designed around it), or <strong>responsive to</strong> it (actively working to change it)? Both are rated separately.</p>
+            </div>
+            <div class="hiw-stat" style="background:#F0FDF4">
+              <div class="hiw-stat-row">
+                <span class="hiw-stat-num" style="color:#16A34A" data-hiw-target="46">46</span>
+                <div class="hiw-stat-right">
+                  <div class="hiw-stat-lbl">standards and questions checked</div>
+                  <div class="hiw-stat-sub">12 OST standards · 25 diagnostic questions · 9 Do No Harm</div>
+                  <div class="hiw-bar-track"><div class="hiw-bar" style="background:#16A34A" data-hiw-width="100"></div></div>
+                </div>
+              </div>
+            </div>
+            <div class="hiw-details">
+              <div class="hiw-detail">
+                <svg style="flex-shrink:0;margin-top:1px" width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6.5" stroke="#16A34A" stroke-width="1"/><path d="M4 7l2 2 4-3.5" stroke="#16A34A" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <div class="hiw-detail-text"><strong>Do No Harm comes first.</strong> A 9-point checklist asks whether the project could inadvertently make things worse through resource flows, inclusion gaps, or unaddressed risks.</div>
+              </div>
+              <div class="hiw-detail">
+                <svg style="flex-shrink:0;margin-top:1px" width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6.5" stroke="#16A34A" stroke-width="1"/><path d="M4 7l2 2 4-3.5" stroke="#16A34A" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <div class="hiw-detail-text"><strong>Nothing hidden.</strong> Every standard checked and every question asked is visible in expandable panels — so you can see exactly what was found.</div>
+              </div>
+            </div>
+            <div class="hiw-bridge">From this assessment, the most important gaps are turned into specific recommendations.</div>
           </div>
-        </div>
+
+          <!-- Connector 2→3 -->
+          <div class="hiw-conn">
+            <div class="hiw-conn-dot" style="background:#16A34A"></div>
+            <svg width="2" height="34" viewBox="0 0 2 34" fill="none"><line x1="1" y1="0" x2="1" y2="34" stroke="url(#hg23)" stroke-width="2" stroke-dasharray="3 2.5" stroke-linecap="round"/><defs><linearGradient id="hg23" x1="0" y1="0" x2="0" y2="1" gradientUnits="objectBoundingBox"><stop offset="0%" stop-color="#16A34A"/><stop offset="100%" stop-color="#7C3AED"/></linearGradient></defs></svg>
+            <svg width="10" height="7" viewBox="0 0 10 7" fill="none"><path d="M1 1l4 5 4-5" stroke="#94A3B8" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+            <span class="hiw-conn-label">then</span>
+          </div>
+
+          <!-- Stage 3 -->
+          <div class="hiw-card">
+            <div class="hiw-card-bar" style="background:linear-gradient(90deg,#7C3AED,#6D28D9)"></div>
+            <div class="hiw-card-body">
+              <div class="hiw-card-tag-row">
+                <span class="hiw-badge" style="background:#F5F3FF;color:#6D28D9">Stage 3</span>
+                <span class="hiw-badge-num">of 3</span>
+              </div>
+              <div class="hiw-card-title-wrap">
+                <span class="hiw-wm">3</span>
+                <div class="hiw-card-title">Get recommendations for your specific document</div>
+              </div>
+              <p class="hiw-narrative">The output is a memo for the Task Team Leader — clear, specific, and tied to the document you uploaded. Every recommendation names a particular section: the PDO, the results framework, the environmental commitments. It says what to change, suggests exact wording, and tells you when to act.</p>
+            </div>
+            <div class="hiw-stat" style="background:#F5F3FF">
+              <div class="hiw-stat-row">
+                <span class="hiw-stat-num" style="color:#7C3AED" data-hiw-target="5">5</span>
+                <div class="hiw-stat-right">
+                  <div class="hiw-stat-lbl">prioritised recommendations on average</div>
+                  <div class="hiw-stat-sub">Each linked to a document section, timeline, and suggested wording</div>
+                  <div class="hiw-bar-track"><div class="hiw-bar" style="background:#7C3AED" data-hiw-width="55"></div></div>
+                </div>
+              </div>
+            </div>
+            <div class="hiw-details">
+              <div class="hiw-detail">
+                <svg style="flex-shrink:0;margin-top:1px" width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6.5" stroke="#7C3AED" stroke-width="1"/><path d="M4 7l2 2 4-3.5" stroke="#7C3AED" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <div class="hiw-detail-text"><strong>Calibrated to your document type.</strong> A PCN gets strategic framing; a PAD gets section-by-section guidance. Every recommendation has a timing — before appraisal, at board, or in supervision.</div>
+              </div>
+              <div class="hiw-detail">
+                <svg style="flex-shrink:0;margin-top:1px" width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6.5" stroke="#7C3AED" stroke-width="1"/><path d="M4 7l2 2 4-3.5" stroke="#7C3AED" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <div class="hiw-detail-text"><strong>Ready to download and share.</strong> Export the full recommendations note as a Word document for review, annotation, or circulation.</div>
+              </div>
+            </div>
+            <div class="hiw-bridge">The full recommendations note is ready to download and share.</div>
+          </div>
+
+        </div><!-- /hiw-grid -->
+
+        <!-- Knowledge strip -->
+        <div class="hiw-strip">
+          <div class="hiw-strip-sec">
+            <div class="hiw-strip-eye">Knowledge engine</div>
+            <div class="hiw-strip-head">Built on WBG operational guidance</div>
+            <div class="hiw-strip-sub">Four authoritative sources loaded into every analysis.</div>
+            <div class="hiw-src-tags">
+              <span class="hiw-src-tag">OST Operational Manual</span>
+              <span class="hiw-src-tag">FCV Strategy Refresh</span>
+              <span class="hiw-src-tag">FCV Playbook</span>
+              <span class="hiw-src-tag">Good Practice Notes</span>
+            </div>
+            <div class="hiw-strip-counts">
+              <div><div class="hiw-strip-num" data-hiw-target="12">12</div><div class="hiw-strip-lbl">OST standards</div></div>
+              <div><div class="hiw-strip-num" data-hiw-target="25">25</div><div class="hiw-strip-lbl">Diagnostic questions</div></div>
+              <div><div class="hiw-strip-num" data-hiw-target="9">9</div><div class="hiw-strip-lbl">Do No Harm principles</div></div>
+              <div><div class="hiw-strip-num" data-hiw-target="4">4</div><div class="hiw-strip-lbl">Strategy shifts</div></div>
+            </div>
+          </div>
+          <div class="hiw-strip-div"></div>
+          <div class="hiw-strip-sec">
+            <div class="hiw-strip-eye">What you get</div>
+            <div class="hiw-strip-head">A memo you can act on immediately</div>
+            <div class="hiw-strip-sub">Every output is tied to your document — not a generic FCV checklist.</div>
+            <div class="hiw-out-list">
+              <div class="hiw-out-row"><div class="hiw-out-pip"></div>Sensitivity and responsiveness ratings, with full reasoning shown</div>
+              <div class="hiw-out-row"><div class="hiw-out-pip"></div>Prioritised recommendations, each linked to a document section</div>
+              <div class="hiw-out-row"><div class="hiw-out-pip"></div>Suggested language you can paste directly into your document</div>
+              <div class="hiw-out-row"><div class="hiw-out-pip"></div>A watch list of risks to monitor through supervision</div>
+              <div class="hiw-out-row"><div class="hiw-out-pip"></div>Downloadable as a Word document for review and circulation</div>
+            </div>
+          </div>
+        </div><!-- /hiw-strip -->
+
       </div>
 
       <div style="padding:20px 32px;border-bottom:1px solid var(--border)">
@@ -5656,6 +5876,52 @@ ${body}
       return id;
     };
   })();
+</script>
+
+<script>
+/* ── How It Works — counter + bar animations, triggered when modal opens ── */
+(function () {
+  var _hiwDone = false;
+
+  function easeOut(t) { return 1 - Math.pow(1 - t, 3); }
+
+  function countUp(el) {
+    var target = parseInt(el.dataset.hiwTarget, 10);
+    var dur = 1100, start = performance.now();
+    function tick(now) {
+      var p = Math.min((now - start) / dur, 1);
+      el.textContent = Math.round(easeOut(p) * target);
+      if (p < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }
+
+  function runHiwAnimations() {
+    if (_hiwDone) return;
+    _hiwDone = true;
+    document.querySelectorAll('[data-hiw-target]').forEach(function (el) {
+      setTimeout(function () { countUp(el); }, 80);
+    });
+    document.querySelectorAll('[data-hiw-width]').forEach(function (el) {
+      setTimeout(function () { el.style.width = el.dataset.hiwWidth + '%'; }, 350);
+    });
+  }
+
+  /* Watch for the onboarding modal becoming visible */
+  var modal = document.getElementById('onboarding-modal');
+  if (modal) {
+    new MutationObserver(function (mutations) {
+      mutations.forEach(function (m) {
+        if (m.attributeName === 'style' && modal.style.display !== 'none') {
+          setTimeout(runHiwAnimations, 120);
+        }
+      });
+    }).observe(modal, { attributes: true });
+
+    /* Also fire if the modal is already visible on load (e.g. first-visit auto-show) */
+    if (modal.style.display !== 'none') setTimeout(runHiwAnimations, 200);
+  }
+})();
 </script>
 </body>
 </html>

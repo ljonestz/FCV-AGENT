@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Option F — Flowing Narrative</title>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy:   #002244;
+    --blue:   #009FDA;
+    --text:   #111827;
+    --muted:  #6B7280;
+    --border: #E5E7EB;
+    --bg:     #F0F4F8;
+    --white:  #ffffff;
+    --s1: #009FDA;
+    --s2: #16A34A;
+    --s3: #7C3AED;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Open Sans', sans-serif; background: #EEF2F7; color: var(--text); }
+
+  /* ── Wrapper ── */
+  .section { max-width: 1020px; margin: 0 auto; padding: 56px 24px 64px; }
+
+  /* ── Eyebrow + Headline ── */
+  .eyebrow {
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .14em; color: var(--blue);
+    display: flex; align-items: center; gap: 8px; margin-bottom: 12px;
+  }
+  .eyebrow::before { content:''; width:20px; height:2px; background:var(--blue); flex-shrink:0; }
+
+  .headline {
+    font-size: 26px; font-weight: 700; color: var(--navy);
+    line-height: 1.25; max-width: 660px; margin-bottom: 10px;
+  }
+
+  .lead {
+    font-size: 15px; color: var(--muted); line-height: 1.75;
+    max-width: 660px; margin-bottom: 44px;
+  }
+
+  /* ── Flow timeline header ── */
+  .flow-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+    position: relative;
+  }
+
+  .flow-step-label {
+    flex: 1;
+    display: flex; flex-direction: column; align-items: center;
+    text-align: center;
+  }
+  .flow-step-circle {
+    width: 48px; height: 48px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; font-weight: 700; color: #fff;
+    margin-bottom: 6px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.15);
+  }
+  .flow-step-name {
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .09em; color: var(--muted);
+  }
+
+  .flow-arrow {
+    flex-shrink: 0; width: 48px;
+    display: flex; flex-direction: column; align-items: center;
+    gap: 4px; margin-bottom: 20px;
+  }
+  .flow-arrow-line {
+    width: 100%; height: 2px;
+    background: linear-gradient(to right, var(--from-c), var(--to-c));
+  }
+  .flow-arrow-label {
+    font-size: 10px; font-weight: 600; color: var(--muted);
+    text-transform: uppercase; letter-spacing: .06em;
+  }
+
+  /* ── Cards row ── */
+  .cards-row {
+    display: grid;
+    grid-template-columns: 1fr 40px 1fr 40px 1fr;
+    gap: 0;
+    align-items: stretch;
+  }
+  @media (max-width: 700px) {
+    .cards-row { grid-template-columns: 1fr; }
+    .card-arrow { display: none; }
+  }
+
+  /* Arrow column between cards */
+  .card-arrow {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: flex-start;
+    padding-top: 36px;
+    gap: 6px;
+  }
+  .arrow-track {
+    width: 2px;
+    flex: 1;
+    background: linear-gradient(to bottom, var(--from-c, #CBD5E1), var(--to-c, #CBD5E1));
+    position: relative;
+  }
+  .arrow-head {
+    font-size: 18px; color: var(--muted);
+  }
+  .then-label {
+    font-size: 9px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .1em; color: var(--muted);
+    writing-mode: vertical-lr;
+    text-orientation: mixed;
+    transform: rotate(180deg);
+    flex: 1;
+  }
+
+  /* ── Stage card ── */
+  .stage-card {
+    background: var(--white);
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex; flex-direction: column;
+    box-shadow: 0 2px 12px rgba(0,0,0,.07);
+    transition: box-shadow .2s, transform .15s;
+  }
+  .stage-card:hover {
+    box-shadow: 0 6px 24px rgba(0,0,0,.12);
+    transform: translateY(-2px);
+  }
+
+  /* Top accent */
+  .card-accent {
+    height: 5px;
+    background: var(--stage-color);
+  }
+
+  /* Stage number + title area */
+  .card-head {
+    padding: 20px 20px 0;
+  }
+  .card-step-row {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 12px;
+  }
+  .card-num {
+    font-size: 42px; font-weight: 700;
+    color: var(--stage-color); line-height: 1;
+    letter-spacing: -2px;
+    opacity: .15;
+    margin-right: 2px;
+  }
+  .card-step-meta { display: flex; flex-direction: column; }
+  .card-step-tag {
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .1em; color: var(--stage-color);
+  }
+  .card-title {
+    font-size: 15px; font-weight: 700; color: var(--navy);
+    line-height: 1.3; margin-top: 2px;
+  }
+
+  /* Stage narrative */
+  .card-narrative {
+    padding: 0 20px 16px;
+    font-size: 13px; color: var(--text);
+    line-height: 1.75;
+  }
+  .card-narrative strong { color: var(--navy); }
+
+  /* Stat highlight box */
+  .card-stat {
+    margin: 0 20px 16px;
+    background: var(--stat-bg);
+    border-radius: 8px;
+    padding: 12px 14px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .stat-big {
+    font-size: 38px; font-weight: 700;
+    color: var(--stage-color); line-height: 1;
+    letter-spacing: -1px; flex-shrink: 0;
+  }
+  .stat-desc { font-size: 12px; color: var(--muted); line-height: 1.45; }
+  .stat-desc strong { display: block; font-size: 13px; color: var(--text); margin-bottom: 2px; }
+
+  /* Separator */
+  .card-sep { height: 1px; background: var(--border); margin: 0 20px 14px; }
+
+  /* Detail items */
+  .card-details { padding: 0 20px 20px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+  .detail-item { display: flex; align-items: flex-start; gap: 8px; }
+  .detail-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--stage-color); flex-shrink: 0; margin-top: 5px;
+    opacity: .6;
+  }
+  .detail-text { font-size: 12.5px; color: var(--text); line-height: 1.6; }
+  .detail-text strong { color: var(--navy); }
+
+  /* "Then" bridge tag at bottom of card */
+  .card-bridge {
+    margin: auto 20px 0;
+    padding: 10px 0 16px;
+    border-top: 1px solid var(--border);
+    font-size: 12px; color: var(--muted);
+    font-style: italic; line-height: 1.5;
+  }
+
+  /* ── Bottom strip: knowledge + output ── */
+  .bottom-strip {
+    margin-top: 28px;
+    background: var(--navy);
+    border-radius: 12px;
+    padding: 24px 28px;
+    display: grid;
+    grid-template-columns: 1fr 1px 1fr;
+    gap: 24px;
+    align-items: start;
+  }
+  @media (max-width: 600px) { .bottom-strip { grid-template-columns: 1fr; } .strip-divider { display: none; } }
+
+  .strip-divider { background: rgba(255,255,255,.12); width: 1px; }
+
+  .strip-label {
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .12em; color: var(--blue); margin-bottom: 5px;
+  }
+  .strip-title {
+    font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 4px;
+  }
+  .strip-sub {
+    font-size: 12px; color: rgba(255,255,255,.55); margin-bottom: 14px; line-height: 1.55;
+  }
+  .strip-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+  .strip-tag {
+    font-size: 11px; font-weight: 600;
+    padding: 3px 10px; border-radius: 4px;
+    background: rgba(255,255,255,.1); color: rgba(255,255,255,.85);
+    border: 1px solid rgba(255,255,255,.18);
+  }
+  .strip-counts { display: flex; gap: 20px; flex-wrap: wrap; }
+  .strip-count { display: flex; flex-direction: column; }
+  .strip-count-num { font-size: 26px; font-weight: 700; color: var(--blue); line-height: 1; }
+  .strip-count-label { font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: rgba(255,255,255,.5); margin-top: 2px; }
+
+  .output-items { display: flex; flex-direction: column; gap: 8px; }
+  .output-item { display: flex; align-items: flex-start; gap: 8px; font-size: 12.5px; color: rgba(255,255,255,.8); line-height: 1.5; }
+  .output-item::before {
+    content: ''; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--s3); flex-shrink: 0; margin-top: 4px;
+  }
+
+  /* ── Caveat ── */
+  .caveat {
+    margin-top: 16px;
+    padding: 12px 18px;
+    background: rgba(0,159,218,.07);
+    border-left: 3px solid var(--blue);
+    border-radius: 0 6px 6px 0;
+    font-size: 12.5px; color: var(--text); line-height: 1.65;
+  }
+  .caveat strong { color: var(--navy); }
+
+  /* Card colours */
+  .s1card { --stage-color: var(--s1); --stat-bg: #EBF8FF; }
+  .s2card { --stage-color: var(--s2); --stat-bg: #F0FDF4; }
+  .s3card { --stage-color: var(--s3); --stat-bg: #F5F3FF; }
+</style>
+</head>
+<body>
+<div class="section">
+
+  <!-- ── Header ── -->
+  <div class="eyebrow">How it works</div>
+  <h2 class="headline">Upload a document. Walk away with a clear set of recommendations.</h2>
+  <p class="lead">
+    The screener takes your project document and — without any further input — reads it, researches the country context, checks it against WBG standards, and tells you exactly what needs strengthening and where. Here is what happens at each stage.
+  </p>
+
+  <!-- ── Cards row ── -->
+  <div class="cards-row">
+
+    <!-- Stage 1 -->
+    <div class="stage-card s1card">
+      <div class="card-accent"></div>
+      <div class="card-head">
+        <div class="card-step-row">
+          <span class="card-num">1</span>
+          <div class="card-step-meta">
+            <span class="card-step-tag">Stage 1</span>
+            <span class="card-title">Read your document and research the country</span>
+          </div>
+        </div>
+      </div>
+      <p class="card-narrative">
+        You upload your project document — a PCN, PID, PAD, or similar. The screener reads every section of it carefully. At the same time, it runs a set of web searches to find out what is happening right now in the project country: conflict conditions, fragility trends, key risks. You get to see exactly where every piece of information comes from.
+      </p>
+      <div class="card-stat">
+        <span class="stat-big">9</span>
+        <div class="stat-desc">
+          <strong>web searches run in parallel</strong>
+          Conflict conditions · fragility drivers · sector dynamics
+        </div>
+      </div>
+      <div class="card-sep"></div>
+      <div class="card-details">
+        <div class="detail-item">
+          <div class="detail-dot"></div>
+          <div class="detail-text"><strong>Works with any WBG project document</strong> — PCN, PID, PAD, Additional Financing, or Restructuring Paper. Add companion instruments like an ESCP or SORT for a sharper analysis.</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-dot"></div>
+          <div class="detail-text"><strong>Three layers of evidence.</strong> Your uploaded documents carry the most weight. Live web research adds current context. The AI's own knowledge fills gaps — and is always labelled separately.</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-dot"></div>
+          <div class="detail-text"><strong>Country classification built in.</strong> The screener places the project country within the WBG's four FCV categories and uses this to shape everything that follows.</div>
+        </div>
+      </div>
+      <div class="card-bridge">
+        With a full picture of your document and country context in hand, the analysis begins.
+      </div>
+    </div>
+
+    <!-- Arrow 1 → 2 -->
+    <div class="card-arrow" style="--from-c:var(--s1); --to-c:var(--s2)">
+      <div class="arrow-head">↓</div>
+      <div class="then-label">then</div>
+    </div>
+
+    <!-- Stage 2 -->
+    <div class="stage-card s2card">
+      <div class="card-accent" style="background:var(--s2)"></div>
+      <div class="card-head">
+        <div class="card-step-row">
+          <span class="card-num" style="color:var(--s2)">2</span>
+          <div class="card-step-meta">
+            <span class="card-step-tag" style="color:var(--s2)">Stage 2</span>
+            <span class="card-title">Check your project against WBG standards</span>
+          </div>
+        </div>
+      </div>
+      <p class="card-narrative">
+        The screener checks your project against four sets of WBG guidance — the OST Manual, the FCV Strategy Refresh, the FCV Playbook, and Good Practice Notes on peace and inclusion. It works through dozens of standards and questions. It also makes a distinction that matters: is the project <strong>sensitive to</strong> the FCV context (aware of it and designed around it), or is it <strong>responsive to</strong> it (actively trying to change it)? These are assessed and rated separately.
+      </p>
+      <div class="card-stat">
+        <span class="stat-big" style="color:var(--s2)">46</span>
+        <div class="stat-desc">
+          <strong>standards and questions checked</strong>
+          12 OST standards · 25 diagnostic questions · 9 Do No Harm principles
+        </div>
+      </div>
+      <div class="card-sep"></div>
+      <div class="card-details">
+        <div class="detail-item">
+          <div class="detail-dot" style="background:var(--s2)"></div>
+          <div class="detail-text"><strong>Do No Harm comes first.</strong> A 9-point checklist asks whether the project could inadvertently make things worse — through how resources flow, who is included, or what risks go unaddressed.</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-dot" style="background:var(--s2)"></div>
+          <div class="detail-text"><strong>Sensitivity vs responsiveness — a critical distinction.</strong> A project can be conflict-aware without actively addressing root causes. The screener rates both separately and explains the difference.</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-dot" style="background:var(--s2)"></div>
+          <div class="detail-text"><strong>Nothing is hidden.</strong> All the working — every standard checked, every question asked — is visible in expandable "Under the Hood" panels.</div>
+        </div>
+      </div>
+      <div class="card-bridge">
+        From this assessment, the most important gaps are identified and turned into specific recommendations.
+      </div>
+    </div>
+
+    <!-- Arrow 2 → 3 -->
+    <div class="card-arrow" style="--from-c:var(--s2); --to-c:var(--s3)">
+      <div class="arrow-head">↓</div>
+      <div class="then-label">then</div>
+    </div>
+
+    <!-- Stage 3 -->
+    <div class="stage-card s3card">
+      <div class="card-accent" style="background:var(--s3)"></div>
+      <div class="card-head">
+        <div class="card-step-row">
+          <span class="card-num" style="color:var(--s3)">3</span>
+          <div class="card-step-meta">
+            <span class="card-step-tag" style="color:var(--s3)">Stage 3</span>
+            <span class="card-title">Get recommendations for your specific document</span>
+          </div>
+        </div>
+      </div>
+      <p class="card-narrative">
+        The output is a memo written for the Task Team Leader — clear, specific, and directly tied to the document you uploaded. Every recommendation points to a particular section: the PDO, the results framework, the environmental commitments. It says what to add or change, and even suggests the exact wording. It also tells you when to act.
+      </p>
+      <div class="card-stat">
+        <span class="stat-big" style="color:var(--s3)">5</span>
+        <div class="stat-desc">
+          <strong>action timing categories</strong>
+          Flag for preparation · before appraisal · before board · next series · supervision
+        </div>
+      </div>
+      <div class="card-sep"></div>
+      <div class="card-details">
+        <div class="detail-item">
+          <div class="detail-dot" style="background:var(--s3)"></div>
+          <div class="detail-text"><strong>Specific, not generic.</strong> Instead of "consider conflict risks", you get: "In the results framework, add an indicator to track displacement trends in [region] — see PDO indicator 4."</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-dot" style="background:var(--s3)"></div>
+          <div class="detail-text"><strong>Adapted to the country context.</strong> Recommendations reflect the specific FCV category of the project country — what works in a post-conflict state looks different from what works in a country at fragility risk.</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-dot" style="background:var(--s3)"></div>
+          <div class="detail-text"><strong>A starting point for expert review.</strong> Download as a Word document, share with the TTL, and use as the basis for a peer review conversation.</div>
+        </div>
+      </div>
+      <div class="card-bridge">
+        The full recommendations note is ready to download and share.
+      </div>
+    </div>
+
+  </div><!-- /cards-row -->
+
+  <!-- ── Knowledge + Output strip ── -->
+  <div class="bottom-strip">
+    <div>
+      <div class="strip-label">Pre-loaded — no upload needed</div>
+      <div class="strip-title">What the screener knows</div>
+      <div class="strip-sub">Four WBG knowledge sources are built into every run. You never need to upload them.</div>
+      <div class="strip-tags">
+        <span class="strip-tag">WBG FCV Strategy Refresh</span>
+        <span class="strip-tag">OST Manual</span>
+        <span class="strip-tag">FCV Playbook</span>
+        <span class="strip-tag">Good Practice Notes</span>
+        <span class="strip-tag">FCS Country List</span>
+      </div>
+      <div class="strip-counts">
+        <div class="strip-count"><span class="strip-count-num">12</span><span class="strip-count-label">OST standards</span></div>
+        <div class="strip-count"><span class="strip-count-num">25</span><span class="strip-count-label">Key questions</span></div>
+        <div class="strip-count"><span class="strip-count-num">9</span><span class="strip-count-label">DNH principles</span></div>
+        <div class="strip-count"><span class="strip-count-num">4</span><span class="strip-count-label">Strategy shifts</span></div>
+      </div>
+    </div>
+    <div class="strip-divider"></div>
+    <div>
+      <div class="strip-label">What you get</div>
+      <div class="strip-title">A structured recommendations note</div>
+      <div class="strip-sub">A peer-review memo, evidenced and specific — ready to download and share with the team.</div>
+      <div class="output-items">
+        <div class="output-item">Recommendations tied to specific sections of your document</div>
+        <div class="output-item">Suggested language — ready to adapt for the PAD</div>
+        <div class="output-item">Each recommendation timed — preparation, appraisal, or supervision</div>
+        <div class="output-item">Full analytical evidence trail ("Under the Hood")</div>
+        <div class="output-item">Downloadable as a Word document (.docx)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Caveat ── -->
+  <div class="caveat">
+    <strong>A starting point, not a verdict.</strong> This is an AI tool — its output is designed to support expert peer review, not replace it. Every recommendation should be reviewed and validated before it goes anywhere near a project document.
+  </div>
+
+</div>
+</body>
+</html>
