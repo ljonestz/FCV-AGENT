@@ -370,16 +370,15 @@ DEFAULT_PROMPTS = {
 | POST | `/api/run-deeper` | Go Deeper tab content |
 | POST | `/api/run-followon` | Follow-on post-analysis queries |
 | POST | `/api/download-report` | Generate true DOCX binary via python-docx |
-| GET/POST | `/api/admin/prompts` | Prompt management |
+| GET | `/api/default-prompts` | Return current DEFAULT_PROMPTS dict |
 | GET | `/` | Main app |
 | GET | `/health` | Health check |
 
 ### 5.2 Key Constants & Limits
 
 ```python
-MAX_DOC_CHARS = 500_000       # Docs larger than this get LLM summarization
-EXTRACT_THRESHOLD = 150_000   # Docs larger than this are condensed via LLM before analysis
-ADMIN_PASSWORD = "fcv-admin-2024"  # from env var ADMIN_PASSWORD
+MAX_DOC_CHARS = 500_000        # Hard cap on chars extracted from any single document
+STAGE1_MAX_DOC_CHARS = 60_000  # Docs truncated to this before Stage 1 (no LLM extraction)
 PROMPTS_FILE = 'prompts.json'
 ```
 
@@ -463,7 +462,7 @@ python3 app.py   # http://localhost:5000
 ### Render.com
 - Connect GitHub repo → Render reads `Procfile` + `requirements.txt`
 - **Production server:** gunicorn + gevent (`--worker-class gevent --timeout 600`) — required for long-running SSE
-- **Env vars:** `ANTHROPIC_API_KEY` (required), `ADMIN_PASSWORD` (optional, default: "fcv-admin-2024")
+- **Env vars:** `ANTHROPIC_API_KEY` (required)
 - Auto-deploys on push to connected branch
 
 ---
