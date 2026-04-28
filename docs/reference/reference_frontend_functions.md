@@ -8,25 +8,22 @@
 ## Key JavaScript Functions
 
 ### Stage management
-- `goToStage(n)` — advance to stage n
-- `onStageComplete()` — callback when LLM finishes streaming output
+- `runStage(stage, followOn=null)` — async; sends stage request to `/api/run-stage`; `followOn` used by Express mode
 - `updateSessionBar()` — refresh progress indicator
 
 ### Stage 1
 - `addDocument()` — trigger file upload
 - `removeDocument(idx)` — remove doc from list
-- `submitStageInput()` — send docs + user refinement to `/api/run-stage`
-- `renderStage1Output()` — display Part A and Part B
+- `renderStage1(text, hasPackage)` — display Part A and Part B with styled section badges
 
 ### Stage 3 priorities + Go Deeper
 - `initStage3UI()` — parse priorities from JSON, build stepper, show Priority 1
 - `showPriority(idx)` — render full priority card with zone-act layout from JSON (refresh_shift badge, actions[] loop with per-action guidance + suggested text, implementation note); no auto-load of Go Deeper
-- `handleGoDeeper(el, idx)` — ontoggle handler for `<details class="go-deeper">`; initialises 2 tab buttons on first open
-- `switchGoDeeperTab(idx, tabName)` — swaps active tab; loads content if not cached
-  - `tabName: "trail"` → calls `loadDeeperTrail(idx)` (no API call — filters localStorage)
-  - `tabName: "playbook"` → calls `loadDeeperPlaybook(idx)`
-- `loadDeeperTrail(idx)` — no API call; reads `localStorage.stage2_under_hood`; filters by `priority.fcv_dimension`; renders matching OST recs/questions instantly
-- `loadDeeperPlaybook(idx)` — SSE call to `/api/run-deeper?tab=playbook_refs`; caches in `deeper_{idx}_playbook`
+- `handleDeeperToggle(detailsEl, idx)` — ontoggle handler for `<details class="go-deeper">`; initialises 2 tab buttons on first open
+- `loadDeeperTab(idx, tab)` — dispatches to correct loader based on `tab`:
+  - `tab: "trail"` → calls `loadAnalyticalTrail(idx)` (no API call — filters localStorage)
+  - `tab: "playbook_refs"` → SSE call to `/api/run-deeper?tab=playbook_refs`; caches in `deeper_{idx}_playbook`
+- `loadAnalyticalTrail(idx)` — no API call; reads `localStorage.stage2_under_hood`; filters by `priority.fcv_dimension`; renders matching OST recs/questions instantly
 - `cancelGoDeeper()` — aborts in-flight SSE request via `goDeeperAbortController`
 - `renderGoFurtherHtml(parsed)` — renders `parsed.goFurtherItems` as `.beyond-item` cards (legacy alternatives tab)
 - `renderPriorityStepper()` — build horizontal step indicator; compact S/R badge + refresh_shift below risk badge on each tab
@@ -70,13 +67,13 @@
 
 - **`/api/run-explorer` route** — replaced by `/api/run-deeper`
 - **`DEFAULT_PROMPTS["4"]` and `DEFAULT_PROMPTS["explorer"]`** — replaced by `"3"`, `"deeper"`, `"deeper_playbook"`
-- **`loadExplorerForPriority()`, `handleBeyondToggle()`, `cancelExplorer()`** — replaced by `loadDeeperPlaybook()`, `handleGoDeeper()`, `cancelGoDeeper()`
+- **`loadExplorerForPriority()`, `handleBeyondToggle()`, `cancelExplorer()`** — replaced by `loadDeeperTab()`, `handleDeeperToggle()`, `cancelGoDeeper()`
 - **`explorerAbortController`, `explorerCache`** — replaced by `goDeeperAbortController` + per-tab cache keys
 - **`renderAboveAndBeyondHtml()`** — renamed/replaced by `renderGoFurtherHtml()`
 - **`clean_stage4_output()`** — renamed `clean_stage3_output()`
 - **`initStage4UI()`** — renamed `initStage3UI()`
 - **`DEFAULT_PROMPTS["3"]`** (was `"4"`)
-- **`pc-followup` inline "Ask →" input** — previously removed; remains dead code
+- **`pc-followup` CSS, `explorerHistory` variable, `submitPriorityFollowup()`, `prefillFollowup()`** — removed (dead code; called `/api/run-explorer` which no longer exists)
 
 ---
 
@@ -158,4 +155,4 @@ Both modes use identical prompts, code paths, and output quality. Express is a f
 
 ---
 
-*Last updated: 2026-04-18 — downloadReport() backend switch, confirmClassification() removal, classification widget narrative format (v9.1)*
+*Last updated: 2026-04-28 — corrected function names (runStage, renderStage1, handleDeeperToggle, loadAnalyticalTrail, loadDeeperTab); removed dead pc-followup code and explorerHistory*

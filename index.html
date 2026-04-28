@@ -53,7 +53,7 @@
     body{font-family:'Open Sans',sans-serif;background:var(--color-bg,#F7F8FA);color:var(--color-text,#111827);min-height:100vh;line-height:1.6;font-size:14px}
     h1,h2,h3{font-family:'Open Sans',sans-serif;letter-spacing:-0.02em;font-weight:700}
     .out-body h1,.out-body h2,.stage-title,.stage-badge,.pc-num-badge,.pc-hdr-title,.upload-intro-text h2{font-family:'Open Sans',sans-serif!important}
-    .btn,.refine-in,.prompt-edit,.pc-followup-input{font-family:'Open Sans',sans-serif}
+    .btn,.refine-in,.prompt-edit{font-family:'Open Sans',sans-serif}
 
     /* ── Skip link ── */
     .skip{position:absolute;top:-50px;left:0;background:var(--wbg-blue);color:#fff;padding:8px 16px;z-index:200;border-radius:0 0 4px 0;font-size:13px;text-decoration:none;transition:top .2s}
@@ -1275,32 +1275,6 @@
     .fcv-gf-item-body p:last-child {
       margin-bottom: 0;
     }
-
-    /* Follow-up zone */
-    .pc-followup{
-      padding:12px 22px 14px;background:var(--off-white);border-top:1px solid var(--border);
-      display:flex;align-items:center;gap:9px;
-    }
-    .pc-followup-label{font-size:11px;color:var(--muted);font-weight:600;white-space:nowrap;}
-    .pc-followup-input{
-      flex:1;border:1.5px solid var(--border);border-radius:var(--radius-sm);
-      padding:7px 10px;font-family:inherit;font-size:13px;color:var(--text);
-      background:#fff;transition:border-color .15s;
-    }
-    .pc-followup-input:focus{outline:none;border-color:var(--wbg-blue);}
-    .pc-followup-input::placeholder{color:#9aabb8;}
-    .pc-followup-btn{
-      padding:7px 14px;background:var(--wbg-navy);color:#fff;border:none;
-      border-radius:var(--radius-sm);font-family:inherit;font-size:12px;
-      font-weight:600;cursor:pointer;white-space:nowrap;transition:background .15s;
-    }
-    .pc-followup-btn:hover{background:#003366;}
-    .pc-followup-answer{
-      display:none;padding:12px 22px 14px;
-      background:#fff;border-top:1px solid var(--border);
-      font-size:13px;line-height:1.7;color:var(--text);
-    }
-    .pc-followup-answer.visible{display:block;}
 
     /* Priority nav prev/next */
     .pc-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;}
@@ -3363,7 +3337,6 @@
                   // Also clear legacy explorer cache keys
                   localStorage.removeItem('explorer_priority_'+i);
                 }
-                explorerHistory=[];
                 updateSidebar();
                 populateExplorerDropdown(p.priorities);
                 renderAppliedSnippetsAttribution();
@@ -4784,7 +4757,6 @@ ${body}
   let currentDeeperTab = {};  // {priorityIndex: 'alternatives'|'trail'|'playbook'}
   let deeperAbortController = null;  // AbortController for cancelling in-flight Go Deeper fetch
   let fileMetadata = {};   // {filename: {word_count, doc_type, extraction_status}}
-  let explorerHistory = []; // for follow-up queries
   let fcvRating = '';
   let fcvResponsivenessRating = '';
 
@@ -5709,61 +5681,7 @@ ${body}
     if(el) el.classList.toggle('open');
   }
 
-  function prefillFollowup(idx, text){
-    const inp = document.getElementById(`pc-followup-input-${idx}`);
-    if(inp){ inp.value = `Tell me more about ${text}`; inp.focus(); inp.scrollIntoView({behavior:'smooth',block:'nearest'}); }
-  }
 
-  // ── Follow-up queries ─────────────────────────────────────────────────────
-
-  async function submitPriorityFollowup(idx){
-    const inp = document.getElementById(`pc-followup-input-${idx}`);
-    const ansEl = document.getElementById(`pc-followup-answer-${idx}`);
-    if(!inp || !ansEl) return;
-    const msg = inp.value.trim();
-    if(!msg) return;
-    inp.value = '';
-
-    const pr = stageThreePriorities[idx];
-    // Build messages: use explorer history if available, otherwise build from stage history
-    let messages;
-    if(explorerHistory.length){
-      messages = [...explorerHistory, {role:'user', content:msg}];
-    } else {
-      const context = hist.filter(m=>m.role==='assistant').map((m,i)=>`Stage ${i+1} output:\n${m.content}`).join('\n\n---\n\n');
-      messages = [
-        {role:'user', content:`Context from prior FCV analysis:\n\n${context}\n\nNow answer the following question about the priority "${pr.title}":`},
-        {role:'assistant', content:'Understood. I will answer based on the prior FCV analysis.'},
-        {role:'user', content:msg}
-      ];
-    }
-
-    ansEl.className = 'pc-followup-answer visible';
-    ansEl.innerHTML = '<em style="color:var(--muted)">Generating…</em>';
-
-    try {
-      const res = await fetch('/api/run-explorer', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({follow_up_messages: messages}) });
-      if(!res.ok) throw new Error('Server error '+res.status);
-      const reader = res.body.getReader(), dec = new TextDecoder();
-      let buf = '', streamed = '';
-      while(true){
-        const {done,value} = await reader.read(); if(done) break;
-        buf += dec.decode(value,{stream:true});
-        const lines = buf.split('\n'); buf = lines.pop();
-        for(const line of lines){
-          if(!line.startsWith('data: ')) continue;
-          try{
-            const p = JSON.parse(line.slice(6));
-            if(p.error) throw new Error(p.error);
-            if(p.chunk){ streamed += p.chunk; ansEl.innerHTML = md(streamed); }
-            if(p.done){
-              explorerHistory = [...messages, {role:'assistant', content:p.result}];
-            }
-          } catch(e){ if(e.message!=='Unexpected end of JSON input') ansEl.innerHTML=`<span style="color:#b91c1c">Error: ${esc(e.message)}</span>`; }
-        }
-      }
-    } catch(e){ ansEl.innerHTML = `<span style="color:#b91c1c">Error: ${esc(e.message)}</span>`; }
-  }
 
   // ── Populate priorities when Stage 3 completes ────────────────────────────
 

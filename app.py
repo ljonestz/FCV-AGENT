@@ -57,7 +57,7 @@ This Recommendations Note was produced by an LLM-assisted screening tool. It is 
 
 """
 
-# ── Stage 4 JSON parsing constants ───────────────────────────────────────────
+# ── Stage 3 JSON parsing constants ───────────────────────────────────────────
 
 CITATION_ORG_WHITELIST = {
     "World Bank", "ACLED", "UNODC", "ICG", "UNHCR", "WFP", "OCHA",
@@ -2309,7 +2309,7 @@ def clean_stage3_output(text):
     # Strip priority narrative section (field labels duplicated in JSON cards;
     # also strips FCV Sensitivity/Responsiveness summaries which are shown as SR cards)
     text = re.sub(r'%%%PRIORITIES_START%%%.*', '', text, flags=re.DOTALL)
-    # Fallback: strip legacy delimiter blocks from old-format Stage 4 outputs
+    # Fallback: strip legacy delimiter blocks from old-format outputs
     text = re.sub(r'%%%PRIORITY_START%%%.*?%%%PRIORITY_END%%%', '', text, flags=re.DOTALL)
     text = re.sub(r'%%%FCV_RATING:[^%]*%%%\n?', '', text)
     text = re.sub(r'%%%FCV_RESPONSIVENESS_RATING:[^%]*%%%\n?', '', text)
@@ -2328,7 +2328,7 @@ def clean_stage3_output(text):
 
 
 def extract_gap_table(text):
-    """Parse %%%GAP_TABLE_START%%% / %%%GAP_TABLE_END%%% block from Stage 4 output."""
+    """Parse %%%GAP_TABLE_START%%% / %%%GAP_TABLE_END%%% block from legacy output."""
     m = re.search(r'%%%GAP_TABLE_START%%%(.*?)%%%GAP_TABLE_END%%%', text, re.DOTALL)
     if not m:
         return None
