@@ -5,6 +5,7 @@ import base64
 import queue
 import threading
 import uuid
+import time
 from datetime import date
 from concurrent.futures import ThreadPoolExecutor
 from flask import Flask, request, jsonify, send_from_directory, Response, stream_with_context
@@ -40,11 +41,62 @@ STAGE1_MAX_DOC_CHARS = 60_000       # Docs are truncated to this before Stage 1 
 STAGE1_PACKAGE_DOC_CHARS = 25_000   # Per Zone 2 companion instrument char limit
 STAGE1_CONTEXT_DOC_CHARS = 30_000   # Per Zone 3 country context doc char limit
 PROMPTS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'prompts.json')
+DEFAULT_PRIOR_ASSISTANT_CHARS = 40_000
+STAGE3_PRIOR_ASSISTANT_CHARS = 24_000
+STAGE_STREAM_TIMEOUT_SECONDS = {1: 480, 2: 420, 3: 540}
 ASSESSMENT_WORKERS = max(2, int(os.environ.get("ASSESSMENT_WORKERS", "4")))
 ASSESSMENT_EXECUTOR = ThreadPoolExecutor(max_workers=ASSESSMENT_WORKERS)
 
 # ── Research cache (in-process, keyed by country name) ───────────────────────
 _research_cache: dict = {}  # key: country.lower() → {brief, country, sources}
+
+
+def _truncate_stage_context(text: str, limit: int, suffix: str) -> str:
+    """Bound prior-stage text carried into downstream LLM calls."""
+    if not isinstance(text, str):
+        text = ''
+    if len(text) <= limit:
+        return text
+    return text[:limit].rstrip() + f"\n{suffix}"
+
+
+def _assistant_limit_for_stage(stage: int) -> int:
+    return STAGE3_PRIOR_ASSISTANT_CHARS if stage == 3 else DEFAULT_PRIOR_ASSISTANT_CHARS
+
+
+def collect_prior_assistant_outputs(conversation_history, stage: int) -> list[str]:
+    """Return prior assistant outputs, compacted for the next requested stage."""
+    limit = _assistant_limit_for_stage(stage)
+    suffix = (
+        "...[truncated for Stage 3 context]"
+        if stage == 3 else
+        "...[truncated]"
+    )
+    outputs = []
+    for message in conversation_history:
+        if message.get('role') != 'assistant':
+            continue
+        content = message.get('content', '')
+        outputs.append(_truncate_stage_context(content, limit, suffix))
+    return outputs
+
+
+def compact_history_for_stage(conversation_history, stage: int) -> list[dict]:
+    """Preserve dialogue turns while bounding assistant text for Stage 3 calls."""
+    limit = _assistant_limit_for_stage(stage)
+    suffix = (
+        "...[truncated for Stage 3 context]"
+        if stage == 3 else
+        "...[truncated]"
+    )
+    compacted = []
+    for message in conversation_history:
+        role = message.get('role')
+        content = message.get('content', '')
+        if role == 'assistant':
+            content = _truncate_stage_context(content, limit, suffix)
+        compacted.append({'role': role, 'content': content})
+    return compacted
 
 DO_NO_HARM_HEADER = """---
 **AI-Generated Output — For Review Purposes Only**
@@ -3371,15 +3423,7 @@ def run_stage():
         # Uploaded doc names passed by frontend (used for CPF detection in Stage 3)
         uploaded_doc_names_payload = [n for n in data.get('uploaded_doc_names', []) if n]
 
-        MAX_ASSISTANT_CHARS = 40000
-
-        prior_outputs = []
-        for m in conversation_history:
-            if m['role'] == 'assistant':
-                c = m['content'] if isinstance(m['content'], str) else ''
-                if len(c) > MAX_ASSISTANT_CHARS:
-                    c = c[:MAX_ASSISTANT_CHARS] + '\n...[truncated]'
-                prior_outputs.append(c)
+        prior_outputs = collect_prior_assistant_outputs(conversation_history, stage)
 
         if prior_outputs:
             context = "\n\n---\n\n".join(
@@ -3899,11 +3943,19 @@ def run_stage():
 
                 threading.Thread(target=_run_stream, daemon=True).start()
 
+                _stream_start_ts = time.monotonic()
                 while True:
                     try:
                         _kind, _payload = _stream_q.get(timeout=20)
                     except queue.Empty:
-                        yield f"data: {json.dumps({'keepalive': True})}\n\n"
+                        _elapsed = int(time.monotonic() - _stream_start_ts)
+                        _limit = STAGE_STREAM_TIMEOUT_SECONDS.get(stage, 540)
+                        if _elapsed >= _limit:
+                            raise TimeoutError(
+                                f"Stage {stage} exceeded {_limit // 60} minutes without completing. "
+                                "Please retry with fewer/smaller uploaded documents or switch to step-by-step."
+                            )
+                        yield f"data: {json.dumps({'keepalive': True, 'stage': stage, 'elapsed_seconds': _elapsed})}\n\n"
                         continue
                     if _kind == 'chunk':
                         collected.append(_payload)
@@ -4115,11 +4167,19 @@ def _stream_stage(messages, max_tokens, stage_num):
     t = threading.Thread(target=_run, daemon=True)
     t.start()
 
+    stream_start_ts = time.monotonic()
     while True:
         try:
             kind, payload = stream_q.get(timeout=20)
         except _q.Empty:
-            yield f"data: {json.dumps({'keepalive': True})}\n\n"
+            elapsed = int(time.monotonic() - stream_start_ts)
+            limit = STAGE_STREAM_TIMEOUT_SECONDS.get(stage_num, 540)
+            if elapsed >= limit:
+                raise TimeoutError(
+                    f"Stage {stage_num} exceeded {limit // 60} minutes without completing. "
+                    "Please retry with fewer/smaller uploaded documents or switch to step-by-step."
+                )
+            yield f"data: {json.dumps({'keepalive': True, 'stage': stage_num, 'elapsed_seconds': elapsed})}\n\n"
             continue
         if kind == 'chunk':
             collected.append(payload)
@@ -4149,7 +4209,7 @@ def run_express():
         if not documents:
             return jsonify({'error': 'Please upload at least one project document.'}), 400
 
-        MAX_ASSISTANT_CHARS = 40000
+        MAX_ASSISTANT_CHARS = DEFAULT_PRIOR_ASSISTANT_CHARS
 
         def workflow_events():
             # ── Variables that persist across stages ──
@@ -4345,9 +4405,11 @@ def run_express():
 
                 # ── Stream Stage 1 ──
                 yield f"data: {json.dumps({'status': 'preparing_analysis'})}\n\n"
+                print(f"[Express {assessment_id}] Stage 1 stream starting", flush=True)
                 for event in _stream_stage(stage1_messages, 8000, 1):
                     yield event
                 stage1_output = _stream_stage._last_result
+                print(f"[Express {assessment_id}] Stage 1 complete chars={len(stage1_output)}", flush=True)
 
                 # Extract doc_type / process_type from Stage 1 output
                 dt_match = re.search(r'%%%DOC_TYPE:\s*([^%\n]+)%%%', stage1_output)
@@ -4499,9 +4561,11 @@ def run_express():
                 ]
 
                 # ── Stream Stage 2 ──
+                print(f"[Express {assessment_id}] Stage 2 stream starting", flush=True)
                 for event in _stream_stage(stage2_messages, 16000, 2):
                     yield event
                 stage2_output = _stream_stage._last_result
+                print(f"[Express {assessment_id}] Stage 2 complete chars={len(stage2_output)}", flush=True)
 
                 # Parse Stage 2 output
                 stage2_ratings = extract_stage2_ratings(stage2_output)
@@ -4514,7 +4578,10 @@ def run_express():
                 # Stage 3 doesn't carry 80k+ chars of background constants into its API call.
                 # Stage 3 re-injects its own fresh background docs; the S2 assistant output is
                 # what matters for continuity.
-                s2_truncated = stage2_output[:MAX_ASSISTANT_CHARS] if len(stage2_output) > MAX_ASSISTANT_CHARS else stage2_output
+                s2_truncated = (
+                    stage2_output[:STAGE3_PRIOR_ASSISTANT_CHARS] + '\n...[truncated for Stage 3 context]'
+                    if len(stage2_output) > STAGE3_PRIOR_ASSISTANT_CHARS else stage2_output
+                )
                 conversation_history.extend([
                     {"role": "user", "content": "[Stage 2 — FCV assessment with operational guidance injected]"},
                     {"role": "assistant", "content": s2_truncated}
@@ -4640,14 +4707,18 @@ def run_express():
                         stage3_prompt = stage3_prompt + snippets_text_s3e
 
                 # Build Stage 3 messages from conversation history
-                stage3_messages = conversation_history + [
+                stage3_history = compact_history_for_stage(conversation_history, 3)
+                stage3_messages = stage3_history + [
                     {"role": "user", "content": stage3_prompt}
                 ]
 
                 # ── Stream Stage 3 ──
+                yield f"data: {json.dumps({'progress': 'stage3_stream_start', 'stage': 3, 'message': 'Opening Stage 3 model stream'})}\n\n"
+                print(f"[Express {assessment_id}] Stage 3 stream starting prompt_chars={len(stage3_prompt)} history_turns={len(stage3_history)}", flush=True)
                 for event in _stream_stage(stage3_messages, 20000, 3):
                     yield event
                 stage3_output = _stream_stage._last_result
+                print(f"[Express {assessment_id}] Stage 3 complete chars={len(stage3_output)}", flush=True)
 
                 # Parse Stage 3 output
                 uploaded_doc_names = [doc.get('name', '') for doc in documents if doc.get('name')]

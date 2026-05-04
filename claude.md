@@ -78,6 +78,11 @@ Every prompt output tags findings as [S], [R], or [S+R], assigned dynamically pe
   - **Stage 3 prompt — Conditionality leverage guardrail:** ECA-type access mechanisms and reform DLIs with weak political economy compliance; theory-of-leverage framing; carve-out for routine fiduciary prior actions
   - **Stage 3 prompt — terminology rule:** 4 required replacements for non-WBG due diligence terminology (IDD, IDD protocol, private sector screening, implementing partner vetting)
   - **Stage 3 prompt — paired risk + systemic risk framing:** Strengths section requires embedded risk/limiting factor for top 3-4 strengths; systemic risk rule distinguishes externally-driven risks (monitoring) from design-addressable risks (recommendations)
+- **v9.4** — Stage 3 Express reliability patch (branch `fix/stage3-express-freeze`, 2026-05-04):
+  - **Stage 3 payload compaction:** prior assistant outputs are trimmed to `STAGE3_PRIOR_ASSISTANT_CHARS` when building Stage 3 context, reducing long time-to-first-token risk after v9.x knowledge additions.
+  - **Visible Express heartbeat:** backend keepalives now include stage and elapsed seconds; frontend updates the active Stage 3 card instead of silently ignoring heartbeats.
+  - **Premature stream close handling:** Express now shows a clear error if the SSE stream closes before `express_done`, rather than leaving the progress screen active.
+  - **Render diagnostics:** Express logs stage stream start/completion markers with assessment IDs so Render logs show whether Stage 3 actually started, completed, or timed out.
 - **v9.2** — Classification caveat and background_docs policy corrections (branch `feat/v9-differentiated-approaches`, 2026-04-19):
   - **Classification widget caveat:** Narrative now always ends with "This is a subjective judgement on the part of this AI tool and does not constitute an official WBG classification." — consistent with Stage 1 AI disclaimer framing
   - **background_docs.py — ICR timing:** `STAGE_GUIDANCE_MAP["ICR"]["timing_options"]` corrected from `"During implementation"` to `"At project closing"`
@@ -571,7 +576,7 @@ docs/superpowers/  # Dev plans and specs
 
 ---
 
-**Last updated:** 2026-04-21
-**Current version:** FCV Project Screener v9.3
+**Last updated:** 2026-05-04
+**Current version:** FCV Project Screener v9.4
 **Claude model:** `claude-sonnet-4-6`
 **Stack:** Flask 3.0.3 + vanilla JS + Anthropic SDK + gunicorn/gevent on Render

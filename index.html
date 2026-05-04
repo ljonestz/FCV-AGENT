@@ -3015,8 +3015,20 @@
             // Chunks arrive with p.stage — buffered but not rendered during express progress
           }
 
+          // ── Backend progress updates ──
+          else if(p.progress){
+            const st=p.stage||currentStage;
+            updateExpressStageMessage(st,p.message||getStageActivityText(st));
+          }
+
           // ── Keepalive ──
-          else if(p.keepalive){/* silent */}
+          else if(p.keepalive){
+            const st=p.stage||currentStage;
+            if(st===currentStage){
+              const elapsed=p.elapsed_seconds!=null?' · '+formatElapsedShort(p.elapsed_seconds)+' on this stage':'';
+              updateExpressStageMessage(st,getStageActivityText(st)+elapsed);
+            }
+          }
 
           // ── Stage done ──
           else if(p.stage_done){
@@ -3102,6 +3114,10 @@
           }
         }
         if(_expressDone)break; // break while loop immediately after express_done
+      }
+      if(!_expressDone){
+        clearTimeout(expressTimeout);
+        showExpressError(currentStage,'Connection closed before the analysis completed. Render may have restarted the service or closed the stream; retry after confirming the service is running with gunicorn/gevent.');
       }
     }catch(e){
       clearTimeout(expressTimeout);
@@ -4323,6 +4339,19 @@
     if(stage===2)return'Analysing sensitivity, responsiveness, and Do No Harm\u2026';
     if(stage===3)return'Generating your Recommendations Note\u2026';
     return'Processing\u2026';
+  }
+
+  function formatElapsedShort(seconds){
+    seconds=Math.max(0,Number(seconds)||0);
+    const m=Math.floor(seconds/60),s=seconds%60;
+    return m+':'+String(s).padStart(2,'0');
+  }
+
+  function updateExpressStageMessage(stage,message){
+    const sum=document.getElementById('ep-summary-'+stage);
+    if(!sum)return;
+    sum.innerHTML='<div class="ep-stage-spinner"><div class="ep-spinner-dot"></div><div class="ep-spinner-dot"></div><div class="ep-spinner-dot"></div><span>'+esc(message)+'</span></div>';
+    sum.style.color='';
   }
 
   function updateExpressStage(stage,status,summary){

@@ -31,9 +31,10 @@ POST /api/run-express
     stage_start: {stage_start: N}
     research_status: {research_status, country}
     preprocess: {preprocess: message}
+    progress: {progress, stage, message}
     chunk: {chunk: text, stage: N}
     stage_done: {stage_done: N, result, history, ...stage-specific data}
-    keepalive: {keepalive: true}  — every 20s if no data sent
+    keepalive: {keepalive: true, stage: N, elapsed_seconds: N}  — every 20s if no data sent
     error: {error: message, failed_stage: N}
     express_done: {express_done: true}
   Notes: Runs Stage 1→2→3 in a single SSE connection. The workflow now executes
@@ -140,7 +141,7 @@ MAX_ASSISTANT_CHARS = 40_000  # Truncation applied to assistant turns stored in 
 
 Both `/api/run-stage` (step-by-step) and `/api/run-express` (express) store a **compact label** for each stage's user turn in `conversation_history` instead of the full prompt with injected background constants.
 
-**Why:** The Stage 2 prompt with all injected constants is ~85k chars (~21k tokens). Storing it in history means Stage 3 carries this as dead weight in its API call input — it was causing slow time-to-first-token and intermittent "BodyStreamBuffer was aborted" timeouts on Render.
+**Why:** The Stage 2 prompt with all injected constants is ~85k chars (~21k tokens). Storing it in history means Stage 3 carries this as dead weight in its API call input — it was causing slow time-to-first-token and intermittent "BodyStreamBuffer was aborted" timeouts on Render. Stage 3 also compacts prior assistant outputs to `STAGE3_PRIOR_ASSISTANT_CHARS` before opening the model stream so v9.x knowledge additions do not push the call into long silent waits.
 
 **Pattern:**
 ```
@@ -244,4 +245,4 @@ def clean_stage2_output(stage2_output):
 
 ---
 
-*Last updated: 2026-04-18 — added /api/download-report (v9.1)*
+*Last updated: 2026-05-04 — added Stage 3 history compaction and Express heartbeat telemetry (v9.4)*

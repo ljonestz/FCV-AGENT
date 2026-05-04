@@ -108,7 +108,8 @@ Both modes use identical prompts, code paths, and output quality. Express is a f
 2. POSTs to `/api/run-express`; reads SSE stream via `fetch()` + `ReadableStream`
 3. Sets a global 10-minute `AbortController` timeout for Stages 1 & 2; when `stage_start:3` fires, resets to a fresh 8-minute timeout for Stage 3
 4. After `express_done` event: hides progress, calls `renderOut(3, ...)`, calls `enableClickableStepper()`, cleans up express localStorage keys
-5. On failure: `showExpressError(stage, msg)` shows red card with "Retry" and "Switch to step-by-step" options
+5. Handles backend `progress` and `keepalive` events by updating the active stage card with elapsed stage time, so Stage 3 does not appear frozen during silent model waits
+6. On failure or premature stream close: `showExpressError(stage, msg)` shows red card with "Retry" and "Switch to step-by-step" options
 
 **Abort timeout budget (Express):**
 - Stages 1 + 2 combined: 10 minutes from request start (`let expressTimeout`)
@@ -155,4 +156,4 @@ Both modes use identical prompts, code paths, and output quality. Express is a f
 
 ---
 
-*Last updated: 2026-04-28 — corrected function names (runStage, renderStage1, handleDeeperToggle, loadAnalyticalTrail, loadDeeperTab); removed dead pc-followup code and explorerHistory*
+*Last updated: 2026-05-04 — added visible Express keepalive/progress handling and premature stream-close errors (v9.4)*
