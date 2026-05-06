@@ -33,12 +33,16 @@ POST /api/run-express
     preprocess: {preprocess: message}
     chunk: {chunk: text, stage: N}
     stage_done: {stage_done: N, result, history, ...stage-specific data}
-    keepalive: {keepalive: true}  — every 20s if no data sent
+    keepalive: {keepalive: true, stage: N}  - every 20s if no data sent
     error: {error: message, failed_stage: N}
     express_done: {express_done: true}
   Notes: Runs Stage 1→2→3 in a single SSE connection. The workflow now executes
     on the background assessment executor and streams its events back to the
     client. Keepalive pings cover web research gaps and inter-stage transitions.
+    The backend stream helper enforces per-stage wall-clock limits (Stage 1:
+    8 min, Stage 2: 6 min, Stage 3: 8 min) so a provider stream that keeps the
+    SSE alive without completing returns a clear stage error instead of running
+    indefinitely.
 
 # Go Deeper route
 POST /api/run-deeper

@@ -4,6 +4,7 @@ import json
 import base64
 import queue
 import threading
+import time
 import uuid
 from datetime import date
 from concurrent.futures import ThreadPoolExecutor
@@ -39,6 +40,12 @@ STAGE1_MAX_DOC_CHARS = 60_000       # Docs are truncated to this before Stage 1 
                                      # no blocking pre-stage calls, no proxy timeout risk
 STAGE1_PACKAGE_DOC_CHARS = 25_000   # Per Zone 2 companion instrument char limit
 STAGE1_CONTEXT_DOC_CHARS = 30_000   # Per Zone 3 country context doc char limit
+STREAM_KEEPALIVE_SECONDS = 20
+STAGE_STREAM_TIMEOUTS = {
+    1: 8 * 60,
+    2: 6 * 60,
+    3: 8 * 60,
+}
 PROMPTS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'prompts.json')
 ASSESSMENT_WORKERS = max(2, int(os.environ.get("ASSESSMENT_WORKERS", "4")))
 ASSESSMENT_EXECUTOR = ThreadPoolExecutor(max_workers=ASSESSMENT_WORKERS)
@@ -3772,7 +3779,6 @@ def run_stage():
             messages.append({"role": "user", "content": stage_prompt})
 
         def workflow_events():
-            collected = []
             research_brief_text = ''
             research_country = ''
             try:
@@ -3882,38 +3888,15 @@ def run_stage():
                 # keepalive event is sent, preventing any proxy from closing the SSE
                 # connection during Sonnet's time-to-first-token phase.
                 _stage_max_tokens = 8000 if stage == 1 else (20000 if stage == 3 else 16000)
-                _stream_q: queue.Queue = queue.Queue()
+                for event in _stream_stage(
+                    messages,
+                    _stage_max_tokens,
+                    stage,
+                    max_seconds=_stage_timeout_seconds(stage),
+                ):
+                    yield event
 
-                def _run_stream() -> None:
-                    try:
-                        with get_client().messages.stream(
-                            model="claude-sonnet-4-6",
-                            max_tokens=_stage_max_tokens,
-                            messages=messages
-                        ) as _s:
-                            for _chunk in _s.text_stream:
-                                _stream_q.put(('chunk', _chunk))
-                        _stream_q.put(('done', None))
-                    except Exception as _e:
-                        _stream_q.put(('error', str(_e)))
-
-                threading.Thread(target=_run_stream, daemon=True).start()
-
-                while True:
-                    try:
-                        _kind, _payload = _stream_q.get(timeout=20)
-                    except queue.Empty:
-                        yield f"data: {json.dumps({'keepalive': True})}\n\n"
-                        continue
-                    if _kind == 'chunk':
-                        collected.append(_payload)
-                        yield f"data: {json.dumps({'chunk': _payload})}\n\n"
-                    elif _kind == 'done':
-                        break
-                    elif _kind == 'error':
-                        raise Exception(_payload)
-
-                full_text = ''.join(collected)
+                full_text = _stream_stage._last_result
 
                 # Post-processing: extract structured data from delimited blocks
                 priorities = []
@@ -4085,7 +4068,27 @@ def run_stage():
         return jsonify({'error': str(e)}), 500
 
 
-def _stream_stage(messages, max_tokens, stage_num):
+def _stage_timeout_seconds(stage_num):
+    return STAGE_STREAM_TIMEOUTS.get(stage_num, STAGE_STREAM_TIMEOUTS[3])
+
+
+def _stage_timeout_message(stage_num, max_seconds):
+    minutes = max_seconds / 60
+    minute_label = str(int(minutes)) if minutes.is_integer() else f"{minutes:.1f}"
+    return (
+        f"Stage {stage_num} timed out after {minute_label} minutes while waiting "
+        "for the AI service. Please retry; if it repeats, reduce optional context "
+        "or run the stages step by step."
+    )
+
+
+def _stream_stage(
+    messages,
+    max_tokens,
+    stage_num,
+    max_seconds=None,
+    keepalive_interval=STREAM_KEEPALIVE_SECONDS,
+):
     """Run one Anthropic streaming call with keepalive pings.
 
     Yields SSE-formatted strings:
@@ -4098,6 +4101,9 @@ def _stream_stage(messages, max_tokens, stage_num):
     import queue as _q
     collected = []
     stream_q = _q.Queue()
+    started_at = time.monotonic()
+    if max_seconds is None:
+        max_seconds = _stage_timeout_seconds(stage_num)
 
     def _run():
         try:
@@ -4116,10 +4122,22 @@ def _stream_stage(messages, max_tokens, stage_num):
     t.start()
 
     while True:
+        elapsed = time.monotonic() - started_at
+        if max_seconds is not None and elapsed >= max_seconds:
+            _stream_stage._last_result = ''.join(collected)
+            raise TimeoutError(_stage_timeout_message(stage_num, max_seconds))
+
+        wait_seconds = keepalive_interval
+        if max_seconds is not None:
+            wait_seconds = min(keepalive_interval, max(0.001, max_seconds - elapsed))
         try:
-            kind, payload = stream_q.get(timeout=20)
+            kind, payload = stream_q.get(timeout=wait_seconds)
         except _q.Empty:
-            yield f"data: {json.dumps({'keepalive': True})}\n\n"
+            elapsed = time.monotonic() - started_at
+            if max_seconds is not None and elapsed >= max_seconds:
+                _stream_stage._last_result = ''.join(collected)
+                raise TimeoutError(_stage_timeout_message(stage_num, max_seconds))
+            yield f"data: {json.dumps({'keepalive': True, 'stage': stage_num})}\n\n"
             continue
         if kind == 'chunk':
             collected.append(payload)
@@ -4127,6 +4145,7 @@ def _stream_stage(messages, max_tokens, stage_num):
         elif kind == 'done':
             break
         elif kind == 'error':
+            _stream_stage._last_result = ''.join(collected)
             raise Exception(payload)
 
     # Store collected text so the caller can access it after iteration

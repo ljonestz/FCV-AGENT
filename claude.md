@@ -78,7 +78,10 @@ Every prompt output tags findings as [S], [R], or [S+R], assigned dynamically pe
   - **Stage 3 prompt — Conditionality leverage guardrail:** ECA-type access mechanisms and reform DLIs with weak political economy compliance; theory-of-leverage framing; carve-out for routine fiduciary prior actions
   - **Stage 3 prompt — terminology rule:** 4 required replacements for non-WBG due diligence terminology (IDD, IDD protocol, private sector screening, implementing partner vetting)
   - **Stage 3 prompt — paired risk + systemic risk framing:** Strengths section requires embedded risk/limiting factor for top 3-4 strengths; systemic risk rule distinguishes externally-driven risks (monitoring) from design-addressable risks (recommendations)
-- **v9.2** — Classification caveat and background_docs policy corrections (branch `feat/v9-differentiated-approaches`, 2026-04-19):
+- **v9.4** - Stream timeout hardening (branch `fix/stage3-stream-timeout`, 2026-05-06):
+  - **Backend stream timeout:** `_stream_stage()` now enforces server-side stage wall-clock limits (Stage 1: 8 min, Stage 2: 6 min, Stage 3: 8 min) in addition to frontend abort timers. This prevents Stage 3 provider stalls from sending keepalives indefinitely and leaving Express or Step-by-Step runs stuck on the loading screen.
+  - **Shared stream helper:** Step-by-Step now uses the same queue-based `_stream_stage()` helper as Express, so keepalive and timeout behavior is consistent across both modes.
+- **v9.2** - Classification caveat and background_docs policy corrections (branch `feat/v9-differentiated-approaches`, 2026-04-19):
   - **Classification widget caveat:** Narrative now always ends with "This is a subjective judgement on the part of this AI tool and does not constitute an official WBG classification." — consistent with Stage 1 AI disclaimer framing
   - **background_docs.py — ICR timing:** `STAGE_GUIDANCE_MAP["ICR"]["timing_options"]` corrected from `"During implementation"` to `"At project closing"`
   - **background_docs.py — Para 12 naming:** Removed all incorrect "Para 11" / "Para 11/12" references; standardised to "Paragraph 12 of Section III of the IPF Policy" with correct two-situation description (urgent need; capacity constraints); clarified Para 12 is NOT required for Framework Approach, Phased Implementation, or Unallocated Funds
@@ -403,6 +406,8 @@ Finds `%%%JSON_START%%%...%%%JSON_END%%%`, parses via `json.loads()`, validates 
 ### 6.1 SSE Streaming
 All stage and Go Deeper requests use Server-Sent Events. Frontend renders text progressively. Session history preserved even if a stream fails mid-way.
 
+Core stage streams use `_stream_stage()`, which runs the Anthropic stream in a background thread, sends keepalive events every 20 seconds during quiet periods, and enforces backend wall-clock limits: Stage 1 = 8 minutes, Stage 2 = 6 minutes, Stage 3 = 8 minutes. If the provider stream stays open without completing, the backend returns a stage error rather than keeping the Render request alive indefinitely.
+
 ### 6.2 Conversation History
 History passed to each stage so the LLM maintains context. Stored in localStorage. Allows session recovery on page reload.
 
@@ -529,6 +534,7 @@ Citation hallucination guard: Stage 3 prompt explicitly prohibits fabricating do
 | Stage 2 ratings seem off | Review via Admin modal; refine Stage 2 prompt and re-run |
 | Under the Hood panels missing | Look for `%%%UNDER_HOOD_START%%%` in Stage 2 output; check for yellow parse error banner |
 | Go Deeper Trail shows nothing | Check `localStorage.stage2_under_hood` has content; verify `priority.fcv_dimension` matches dimension in recs table |
+| Stage 3 loading runs indefinitely | Check for backend timeout errors from `_stream_stage()` and confirm `STAGE_STREAM_TIMEOUTS[3]` is active. If it repeats, inspect Stage 3 prompt size and Stage 1/2 history payloads. |
 | Stage 3 missing `refresh_shift` | Check `DEFAULT_PROMPTS["3"]` includes `refresh_shift` in JSON schema |
 
 **Debug steps:**
@@ -571,7 +577,7 @@ docs/superpowers/  # Dev plans and specs
 
 ---
 
-**Last updated:** 2026-04-21
-**Current version:** FCV Project Screener v9.3
+**Last updated:** 2026-05-06
+**Current version:** FCV Project Screener v9.4
 **Claude model:** `claude-sonnet-4-6`
 **Stack:** Flask 3.0.3 + vanilla JS + Anthropic SDK + gunicorn/gevent on Render
