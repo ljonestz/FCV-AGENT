@@ -468,7 +468,15 @@ python3 app.py   # http://localhost:5000
 - Connect GitHub repo → Render reads `Procfile` + `requirements.txt`
 - **Production server:** gunicorn + gevent (`--worker-class gevent --timeout 600`) — required for long-running SSE
 - **Env vars:** `ANTHROPIC_API_KEY` (required)
-- Auto-deploys on push to connected branch
+- Auto-deploys on push/merge to connected branch
+
+### GitHub Security & Branch Workflow
+- `main` is protected: changes should go through pull requests, with 1 approving review required before merge.
+- Branch protection dismisses stale approvals, requires conversation resolution, applies to admins, and blocks force pushes and branch deletion.
+- GitHub Advanced Security features enabled for this public repo: Dependabot vulnerability alerts, Dependabot security updates, secret scanning, and push protection.
+- `.github/dependabot.yml` schedules weekly dependency update checks for Python (`requirements.txt`) and GitHub Actions.
+- `.github/workflows/codeql.yml` runs CodeQL Python analysis on PRs to `main`, pushes to `main`, and weekly on Monday.
+- After the first CodeQL run is stable on `main`, consider adding the CodeQL check as a required status check in branch protection.
 
 ---
 
@@ -554,6 +562,10 @@ FCV-AGENT/
 ├── prompts.json                  # Session-specific prompt overrides (empty by default)
 ├── requirements.txt
 ├── Procfile
+├── .github/
+│   ├── dependabot.yml            # Weekly dependency update configuration
+│   └── workflows/
+│       └── codeql.yml            # CodeQL Python security scanning
 ├── README.md                     # Deployment guide for IT
 ├── CLAUDE.md                     # This file — developer reference
 ├── docs/
@@ -577,7 +589,7 @@ docs/superpowers/  # Dev plans and specs
 
 ---
 
-**Last updated:** 2026-05-06
+**Last updated:** 2026-05-12
 **Current version:** FCV Project Screener v9.4
 **Claude model:** `claude-sonnet-4-6`
 **Stack:** Flask 3.0.3 + vanilla JS + Anthropic SDK + gunicorn/gevent on Render
