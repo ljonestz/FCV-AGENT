@@ -2352,6 +2352,7 @@
   let temporalContext={};
   let changeTypes={};
   let midCycleWatch=[];
+  let dpfWatch=[];
   let analysisMode='express';
   let reviewMode='design';
   let processType='Unknown';
@@ -3066,7 +3067,7 @@
               if(p.fcv_rating)fcvRating=p.fcv_rating;
               if(p.fcv_responsiveness_rating)fcvResponsivenessRating=p.fcv_responsiveness_rating;
               if(p.priorities)stageThreePriorities=p.priorities;
-              if(p.mid_cycle_watch)midCycleWatch=p.mid_cycle_watch;
+              if(p.mid_cycle_watch)midCycleWatch=p.mid_cycle_watch;if(p.dpf_watch)dpfWatch=p.dpf_watch;
               if(p.horizon_considerations)horizonConsiderations=p.horizon_considerations;
               if(p.applied_snippets)stageAppliedSnippets=p.applied_snippets;
               localStorage.setItem('stage3_timestamp',Date.now());
@@ -3316,7 +3317,7 @@
                 if(p.responsiveness_rating){ fcvResponsivenessRating=p.responsiveness_rating; }
                 if(p.under_hood){ stage2UnderHood=p.under_hood; localStorage.setItem('stage2_under_hood', JSON.stringify(p.under_hood)); }
               }
-              if(stage===3){stageGapTable=p.gap_table||null;stageRiskExposure=p.risk_exposure||null;stageSensitivitySummary=p.sensitivity_summary||'';stageResponsivenessSummary=p.responsiveness_summary||'';midCycleWatch=p.mid_cycle_watch||[];if(p.fcv_rating)fcvRating=p.fcv_rating;if(p.fcv_responsiveness_rating)fcvResponsivenessRating=p.fcv_responsiveness_rating;if(p.applied_snippets)stageAppliedSnippets=p.applied_snippets;}
+              if(stage===3){stageGapTable=p.gap_table||null;stageRiskExposure=p.risk_exposure||null;stageSensitivitySummary=p.sensitivity_summary||'';stageResponsivenessSummary=p.responsiveness_summary||'';midCycleWatch=p.mid_cycle_watch||[];dpfWatch=p.dpf_watch||[];if(p.fcv_rating)fcvRating=p.fcv_rating;if(p.fcv_responsiveness_rating)fcvResponsivenessRating=p.fcv_responsiveness_rating;if(p.applied_snippets)stageAppliedSnippets=p.applied_snippets;}
               // Write timestamps BEFORE renderOut so the consistency check inside renderOut reads the current run's value
               // Stage 2 completion also clears any previously dismissed banner on Stage 3
               if(stage===2){ localStorage.setItem('stage2_timestamp', Date.now()); localStorage.removeItem('stage3_consistency_dismissed'); }
@@ -3365,7 +3366,7 @@
               if(stage===3 && p.priorities && p.priorities.length){
                 stageThreePriorities=p.priorities;
                 if(p.horizon_considerations)horizonConsiderations=p.horizon_considerations;
-                if(p.mid_cycle_watch)midCycleWatch=p.mid_cycle_watch;
+                if(p.mid_cycle_watch)midCycleWatch=p.mid_cycle_watch;if(p.dpf_watch)dpfWatch=p.dpf_watch;
                 // Clear Go Deeper caches so stale results don't reappear for new Stage 3 run
                 currentDeeperTab = {};
                 for(var i=0;i<10;i++){
@@ -4415,6 +4416,7 @@
       fcv_responsiveness_rating: fcvResponsivenessRating || '',
       risk_exposure: stageRiskExposure || null,
       mid_cycle_watch: midCycleWatch || [],
+      dpf_watch: dpfWatch || [],
       horizon_considerations: horizonConsiderations || '',
       metadata: {
         date_str: dateStr,
@@ -4536,6 +4538,12 @@
     if(Array.isArray(midCycleWatch) && midCycleWatch.length){
       body += `<h2 class="exp-section-hdr">Mid-Cycle FCV Watch</h2>
         <ul class="horizon-body">${midCycleWatch.map(w=>`<li>${esc(w)}</li>`).join('')}</ul>`;
+    }
+
+    // DPF FCV Watch (Development Policy Financing)
+    if(Array.isArray(dpfWatch) && dpfWatch.length){
+      body += `<h2 class="exp-section-hdr">DPF FCV Watch</h2>
+        <ul class="horizon-body">${dpfWatch.map(w=>`<li>${esc(w)}</li>`).join('')}</ul>`;
     }
 
     // ── Watch List ──

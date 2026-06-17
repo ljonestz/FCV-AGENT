@@ -1661,6 +1661,108 @@ FCV-blind or uses the additional financing to course-correct.
 """
 
 
+DPF_MODULE_GUIDE = """
+## Development Policy Financing (DPF/DPO) Module — FCV Screening Guide
+
+Source grounding: Development Policy Financing Policy **OPS5.02-POL.120** (effective
+1 February 2024), which cross-references **OP 2.30** (Development Cooperation and
+Conflict). Use this guide as advisory screening support only. Do not make eligibility,
+financing-source, macroeconomic-adequacy, or approval determinations - direct the task
+team to verify procedural and macro questions with the country economist, OPCS, the IMF
+Fund Relations team, LEG, and FM as relevant.
+
+### Unit of analysis: prior actions, not components
+DPF is appraised through **prior actions** - the policy and institutional measures the
+country has taken as a condition of disbursement (OPS5.02-POL.120 para 16), set out in
+the **Program Document (PD)** alongside the **Letter of Development Policy (LDP)**.
+Programmatic operations add **indicative triggers** for later operations in the series
+(para 17); financing flows in tranches. There is **no PAD, ESCP, ESF, DLI, or IPF-style
+results framework** - do NOT screen a DPF for those instruments and do not penalise their
+absence. Screen each prior action; then synthesise at the program level.
+
+### Per prior action, assess
+- **Conflict-sensitivity:** does the reform create or mitigate grievance; who are the
+  distributional winners and losers; does it affect conflict-affected groups or regions?
+- **Reform sequencing:** are reform costs (subsidy, price, tariff, civil-service, SOE)
+  sequenced with compensating measures and safety nets? An unmitigated reform-cost /
+  safety-net sequencing gap is the primary Do-No-Harm pathway for budget support in FCV.
+- **Reversibility and political economy:** elite capture, patronage, and durability of
+  the reform in fragile or contested institutions.
+
+### Headline check 1 - Macroeconomic framework / IMF coordination (para 8)
+Macroeconomic adequacy is a precondition for DPF; the IMF Fund Relations Note is annexed
+to the PD. Screen whether the PD's macroeconomic assessment reflects FCV fiscal
+vulnerabilities (debt distress, narrow fiscal space for mitigation, revenue fragility),
+whether IMF coordination or programme status is in place, and flag **programme-lapse** and
+**data-reliability** risks. This macro / IMF finding is the signature DPF-FCV result and
+should be foregrounded - phrased as a question for the country economist, not a verdict.
+
+### Headline check 2 - Conflict-exception adequacy (Paragraph 38-39)
+"Countries Affected by Conflict" is a defined term (para 3p, cross-referencing OP 2.30).
+For conflict-affected, fast-tracked operations, OPS5.02-POL.120 Paragraph 38 and 39 allow
+design considerations (distributional effects, environment, fiduciary, stakeholder
+consultation) to be addressed on an exceptional basis, but the PD must describe **when and
+how** they will be addressed. Screen whether the PD credibly states this, or whether the
+deferred considerations are silently waived. Keep advisory.
+
+### Harm screen - PSIA + crisis/conflict design-consideration check (replaces ESF/DNH)
+- **PSIA adequacy (para 13):** does the PD analyse poverty, social, and distributional
+  impacts on poor and vulnerable groups - including conflict-affected populations - and
+  describe country systems to mitigate adverse effects?
+- **Paragraph 38-39 conflict-exception check** (above) where the operation is conflict-affected.
+- **Fiduciary in weak governance (paras 21-24):** foreign-exchange / central-bank and
+  PFM / budget control environment.
+
+### Series handling
+Detect the operation's position (standalone vs programmatic; tranche n of m). For
+programmatic series, assess in series context: indicative triggers (para 17), the
+**24-month programmatic-lapse risk**, and policy-reversal risk between operations in FCV.
+`next-series` is the apt action_timing for trigger-stage recommendations.
+
+### IBRD vs IDA differentiated framing
+**IDA**-FCS DPF (the most common case) vs **IBRD**-eligible countries with subnational
+conflict. Detect the financing source and frame accordingly; do not assume IDA.
+
+### Cat DDO sub-branch (if detected)
+A Catastrophe Deferred Drawdown Option (Cat DDO) links disbursement to a catastrophe or
+state-of-emergency declaration (paras 26-28; scalable Cat DDO financing delegated to
+Management, para 40). Screen: trigger-design adequacy in a fragile setting; payout
+governance where state capacity is contested; value as pre-arranged anticipatory finance
+vs slow activation risk in FCV; and the climate / disaster-risk-management linkage.
+
+### Output framing (Stage 3)
+Use **Program Document sections** (Program Description / Prior Actions; Poverty and Social
+Impacts; Environmental Aspects; Macroeconomic Policy / Fund Relations; Results) rather than
+PAD sections; suggested language targets the **PD, policy matrix, or LDP**. DPF reference
+set: Prior Actions, Policy Matrix, PSIA, Program Document, LDP, Results Indicators, Fund
+Relations Note (Cat DDO: trigger / parametric design). Foreground the macro/IMF and
+conflict-exception findings; close with a DPF watch list.
+"""
+
+
+DPF_POLICY_AREA_CHECKLIST = """
+## DPF FCV Policy-Area Coverage Checklist (PSIA hybrid - coverage prompt)
+
+For each prior action, note which sensitive policy area it touches and whether the PD
+analyses the FCV-relevant distributional / grievance / political-economy effects. This is
+a coverage aid, not a scoring grid - narrative judgement governs.
+
+- **Subsidy / price / tariff reform** -> price-shock unrest and grievance; sequencing with
+  compensatory transfers; geographic concentration of affected households.
+- **Civil-service / public-sector wage / SOE reform** -> patronage networks, stability,
+  regional or group exclusion.
+- **Tax / revenue measures** -> incidence on poor and conflict-affected households; informal
+  economy; perceived fairness.
+- **Trade / market liberalisation** -> winners and losers across regions and conflict lines.
+- **Social protection** -> adequacy, coverage of displaced and conflict-affected groups,
+  delivery through contested territory.
+- **Land / natural-resource / sector governance** -> contested ownership, displacement,
+  resource-conflict drivers.
+- **Security-sector / justice / governance** -> OP 2.30 sensitivity; do-no-harm in the
+  conflict actor landscape.
+"""
+
+
 FCV_INSTRUMENT_CALIBRATION = """
 ## FCV Instrument Calibration Notes — Operational Grounding Context
 
