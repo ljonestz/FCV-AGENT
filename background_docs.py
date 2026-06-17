@@ -1763,6 +1763,75 @@ a coverage aid, not a scoring grid - narrative judgement governs.
 """
 
 
+P4R_MODULE_GUIDE = """
+## Program-for-Results (PforR / P4R) Module - FCV Screening Guide
+
+Source grounding: Program-for-Results Financing Policy **OPS5.09**, cross-referencing
+**OP 7.30** (Dealings with De Facto Governments). Use this guide as advisory screening
+support only. Do not make instrument-eligibility, OP 7.30, or disbursement determinations -
+direct the task team to verify instrument choice and feasibility with the regional FCV
+coordinator, OPCS, and the verification team.
+
+### Unit of analysis: DLIs + verification protocols, not components
+P4R disburses against **verified results**, not inputs. The spine is the
+**Disbursement-Linked Indicators (DLIs)** and their **Verification Protocols**, disbursed
+through a government **program** within a defined **program boundary** (Program Scope), with
+a **Program Action Plan (PAP)** and an **ESSA** operating through the country **ESMS** -
+NOT ESF/ESS/ESCP. Results are checked by an **Independent Verification Agent (IVA)**. The
+PAD datasheet declares FCV status directly (Fragile State / Fragile within a non-fragile
+Country / Conflict) - treat those checkboxes as a Tier-1 classification anchor. Do not
+screen a P4R for ESF/ESCP/DLI-absence; screen each DLI, then synthesise at program level.
+
+### Per DLI, assess
+- **Conflict-sensitivity:** does the incentivised result create or mitigate grievance; who
+  are the distributional winners and losers; effect on conflict-affected groups?
+- **Verifiability / IVA access:** can the result be verified where conflict limits access?
+  Is the verification protocol robust to contested-area conditions?
+- **Geographic inclusion:** does the DLI / program boundary include or exclude
+  conflict-affected regions?
+
+### Headline check - disbursement under conflict (the signature P4R-FCV finding)
+Stress-test first: "Can this actually disburse in this context?" Results-based disbursement
+means that if the IVA cannot verify results in contested areas, **financing does not flow** -
+a **disbursement cliff** with no CERC-style rapid-response valve. Foreground IVA verification
+access and disbursement-cliff exposure ahead of the rest of the assessment.
+
+### Harm screen - ESSA/ESMS country systems + GRM (replaces ESF/DNH)
+- **ESSA adequacy:** do borrower E&S systems function in conflict-affected areas; are gaps
+  addressed in the PAP?
+- **ESMS establishment and capacity** (the covenant to set up the system).
+- **GRM functionality** where state legitimacy is contested.
+- **Excluded-activities check:** P4R excludes high-value / high-risk (Category-A-equivalent)
+  activities - appropriate, or does it leave conflict-relevant harms unaddressed or push them
+  outside the boundary?
+
+### DLI-realism and program-boundary checks
+- **DLI realism:** are targets and timelines achievable under conflict-related disruption;
+  binary vs scalable disbursement thresholds; can the program pause and adjust without
+  forfeiting funds?
+- **Program-boundary / exclusions:** is the boundary clearly defined relative to
+  conflict-affected areas; do excluded high-risk activities border the financed ones?
+
+### Instrument-feasibility advisory (FCV settings)
+Surface as advisory, never a determination: OP 7.30 limits, no rapid-response valve, and
+disbursement-cliff exposure can make P4R demanding or "effectively unusable" in some conflict
+settings given its reliance on government systems and low-capacity FCS constraints - suggest
+discussing instrument choice (a complementary IPF component / TA, or a different instrument)
+with the regional FCV coordinator.
+
+### Hybrid P4R + IPF component
+If the datasheet flags an IPF component, run the IPF spine on that component and the P4R spine
+on the program, then synthesise a combined assessment.
+
+### Output framing (Stage 3)
+Use **PforR PAD sections** (Program Scope / boundary; DLIs and Verification Protocols; ESSA;
+PAP; Results Framework); suggested language targets **DLI / verification-protocol / PAP /
+results-indicator** text. P4R reference set: DLIs, Verification Protocol, IVA arrangements,
+ESSA, ESMS, PAP, POM, Results Framework. Foreground the disbursement-under-conflict finding;
+close with a P4R watch list.
+"""
+
+
 FCV_INSTRUMENT_CALIBRATION = """
 ## FCV Instrument Calibration Notes — Operational Grounding Context
 
