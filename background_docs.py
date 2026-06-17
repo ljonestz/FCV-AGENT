@@ -1832,6 +1832,90 @@ close with a P4R watch list.
 """
 
 
+REGIONAL_CROSSBORDER_LENS = """
+## Multi-Country / Regional Layer - Cross-Border FCV Lens
+
+This layer is an orthogonal country_scope dimension that composes with whichever base
+instrument module(s) the operation uses (regional IPF / DPF / P4R / MPA). It triggers when
+an operation finances two or more borrower countries. A single-country operation that merely
+references neighbours stays single-country. Use as advisory screening support only; FCV
+financing-window pointers are for team follow-up, never eligibility determinations.
+
+### Per-country, then regional synthesis
+- Extract the country set; classify **each** country with the 4-category scheme (In Crisis /
+  In Transition / Conflict-affected / At Risk) plus the FY26 FCS Conflict/Fragility split.
+- Add a **spillover / host-pressure flag** for non-FCS countries under refugee or border
+  pressure (beyond the FCS-list check).
+- Produce per-country findings, then a **regional synthesis** that carries the cross-border
+  priorities a single-country screen cannot surface.
+
+### Cross-border lens (the distinctive layer)
+- **Spillovers and contagion** across borders.
+- **Displacement / refugee flows** and host-community dynamics.
+- **Regional conflict systems** (shared armed actors, cross-border trafficking, contested frontiers).
+- **Transboundary resources** (water, pasture, energy) as cooperation or conflict drivers.
+- **Differential fragility** across the set, where uniform design would mis-fit.
+- **Inter-country political-sensitivity** dimension.
+
+### Regional implementing-entity check
+National government vs a regional body (IGAD, ECOWAS, TDB) - scrutinise governance, fiduciary,
+and FCV-management capacity for cross-border delivery.
+
+### Weighted roll-up and scope tagging
+Roll up per-country Sensitivity/Responsiveness with a **fragility / exposure-weighted** scheme
+(NOT a flat average) so a fragile minority is not masked by stable majorities. Tag every
+priority by **priority_scope**: country-specific vs regional / cross-border.
+
+### Research scaling (no silent caps)
+Per-country research is cached per country. For large regional sets, research the FCV / fragile
+countries in full first, then stable ones, and **disclose** any cap applied - never silently
+truncate.
+
+### Advisory - FCV financing-window signalling
+IDA Regional Window, Crisis Response Window (CRW), and Window for Host Communities and Refugees
+(WHR) may be worth team follow-up - advisory only, never an eligibility determination.
+"""
+
+
+MPA_MODULE_GUIDE = """
+## MPA (Multiphase Programmatic Approach) Wrapper - FCV Screening Guide
+
+The MPA is a program-and-phase **wrapper, not a new analytical spine**: each phase is itself an
+IPF, DPF, or P4R operation. Route each phase to its base-instrument module and add the MPA
+program layer on top. Composes with the multi-country layer for regional MPAs. Advisory only -
+never determine approval authority, phase eligibility, or financing.
+
+### Structure and approval authority
+The Board approves the **program framework + financing envelope with Phase 1** (the Phase-1 PAD
+doubles as the Program Framework Document); **Management (RVP) approves subsequent phases**.
+Phases may be sequential or simultaneous; financing for later phases is **not guaranteed**.
+Detect the phase and set the expected document set / output register accordingly.
+
+### Phase awareness and carve-outs (correctness layer)
+Detect Phase-1 (framework) vs subsequent phase and suppress false-positive "gaps" for
+subsequent-phase documents on content that legitimately lives in the Phase-1 framework:
+standalone conflict analysis, program-level institutional arrangements, program theory of
+change, the full standalone results framework, CERC absence (adaptive phase redesign serves the
+equivalent function), ESF (applies per-phase by Concept Decision date), and aggregate ISR
+reporting (ISRs are phase-specific).
+
+### Distinctive MPA FCV lens - adaptive sequencing (opportunity) + continuity (risk)
+Opportunity / responsiveness levers: genuine incorporation of lessons learned between phases;
+adaptive redesign as the FCV context evolves; phased financing matched to volatile absorptive
+capacity; differentiated implementation arrangements per phase. Risk: are **phase-transition
+triggers** achievable under conflict volatility; the **institutional-continuity assumption**
+over a long horizon (coup / electoral / conflict discontinuity); **financing-not-guaranteed**
+risk that conflict-affected later phases are dropped; and **PrDO drift** away from
+conflict-affected populations across phases. Include a **cross-phase FCV-drift check** - a
+country entering FCS status between phases; is the adaptive design robust to it?
+
+### Output framing
+Use MPA framework sections (PrDO; Program ToC; Program Framework - phases / sequencing /
+financing / instruments; Phase PDO; phase-transition triggers; Learning Agenda) composed with
+the phase's base-instrument sections. `next-series` action_timing maps to "next phase".
+"""
+
+
 FCV_INSTRUMENT_CALIBRATION = """
 ## FCV Instrument Calibration Notes — Operational Grounding Context
 

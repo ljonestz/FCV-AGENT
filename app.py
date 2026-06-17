@@ -23,7 +23,8 @@ from background_docs import (
     FCS_COUNTRY_CATEGORIES, DIFFERENTIATED_APPROACHES, SECONDARY_KNOWLEDGE,
     RESTRUCTURING_GUIDE, AF_GUIDE,
     DPF_MODULE_GUIDE, DPF_POLICY_AREA_CHECKLIST,
-    P4R_MODULE_GUIDE
+    P4R_MODULE_GUIDE,
+    REGIONAL_CROSSBORDER_LENS, MPA_MODULE_GUIDE
 )
 import io
 try:
@@ -485,6 +486,9 @@ class AnalysisState:
     prior_actions: list[str] = field(default_factory=list)
     dlis: list[str] = field(default_factory=list)
     has_ipf_component: bool = False
+    is_mpa: bool = False
+    implementing_entity: str | None = None
+    approval_authority: str | None = None
     active_modules: list[str] = field(default_factory=list)
     intersection: dict[str, Any] = field(default_factory=dict)
 
@@ -501,13 +505,21 @@ class AnalysisState:
         doc_type = intake.get("doc_type", payload.get("document_type", "Unknown")) or "Unknown"
         instrument = intake.get("instrument", payload.get("instrument_type", "Unknown")) or "Unknown"
         country_scope = intake.get("country_scope", payload.get("country_scope", "single")) or "single"
+        if isinstance(countries, list) and len(countries) >= 2:
+            country_scope = "multi"
         active_modules = list(intake.get("active_modules", payload.get("active_modules", [])) or [])
+        if country_scope == "multi" and "multi_country_layer" not in active_modules:
+            active_modules.append("multi_country_layer")
         if doc_type in {"AF", "Restructuring"} and "mid_cycle_overlay" not in active_modules:
             active_modules.append("mid_cycle_overlay")
         if str(instrument).strip().upper() == "DPO" and "dpf_module" not in active_modules:
             active_modules.append("dpf_module")
         if str(instrument).strip().upper() in {"PFORR", "P4R", "PROGRAM-FOR-RESULTS"} and "p4r_module" not in active_modules:
             active_modules.append("p4r_module")
+        is_mpa_raw = intake.get("is_mpa", payload.get("is_mpa", False))
+        is_mpa = is_mpa_raw if isinstance(is_mpa_raw, bool) else str(is_mpa_raw).strip().lower() in {"true", "yes", "1"}
+        if is_mpa and "mpa_wrapper" not in active_modules:
+            active_modules.append("mpa_wrapper")
         prior_actions = intake.get("prior_actions", payload.get("prior_actions", [])) or []
         if isinstance(prior_actions, str):
             prior_actions = [c.strip() for c in re.split(r'[;\n]', prior_actions) if c.strip()]
@@ -533,6 +545,9 @@ class AnalysisState:
             prior_actions=prior_actions if isinstance(prior_actions, list) else [],
             dlis=dlis if isinstance(dlis, list) else [],
             has_ipf_component=has_ipf_component,
+            is_mpa=is_mpa,
+            implementing_entity=intake.get("implementing_entity", payload.get("implementing_entity")),
+            approval_authority=intake.get("approval_authority", payload.get("approval_authority")),
             active_modules=active_modules,
             intersection=dict(intake.get("intersection", payload.get("intersection", {})) or {}),
         )
@@ -1027,6 +1042,187 @@ def get_p4r_slice(instrument: str) -> str:
         "\n\n--- Program-for-Results (P4R/PforR) Module Guide ---\n"
         + P4R_MODULE_GUIDE
     )
+
+
+def extract_country_set(stage1_output: str) -> dict[str, Any]:
+    """Extract the multi-country / regional country set from a %%%COUNTRY_SET_START/END%%% block."""
+    empty = {"error": True, "countries": [], "is_multi_country": False, "regional_pdo": False, "implementing_entity": ""}
+    m = re.search(r'%%%COUNTRY_SET_START%%%(.*?)%%%COUNTRY_SET_END%%%', stage1_output or '', re.DOTALL | re.IGNORECASE)
+    if not m:
+        return empty
+    block = m.group(1).strip()
+    countries_raw = ""
+    regional_raw = ""
+    implementing_entity = ""
+    try:
+        parsed = json.loads(block)
+        cc = parsed.get("countries", [])
+        countries_raw = "; ".join(cc) if isinstance(cc, list) else str(cc or "")
+        regional_raw = str(parsed.get("regional_pdo", "") or "")
+        implementing_entity = str(parsed.get("implementing_entity", "") or "")
+    except (json.JSONDecodeError, ValueError, TypeError):
+        for line in block.splitlines():
+            if ':' not in line:
+                continue
+            key, value = line.split(':', 1)
+            key = key.strip().lower()
+            value = value.strip()
+            if key == "countries":
+                countries_raw = value
+            elif key == "regional_pdo":
+                regional_raw = value
+            elif key == "implementing_entity":
+                implementing_entity = value
+    countries = [c.strip() for c in re.split(r'[;\n]', countries_raw) if c.strip()]
+    return {
+        "error": False,
+        "countries": countries,
+        "is_multi_country": len(countries) >= 2,
+        "regional_pdo": str(regional_raw).strip().lower() in {"true", "yes", "1"},
+        "implementing_entity": implementing_entity,
+    }
+
+
+def classify_country_set(countries: list) -> list:
+    """Classify each country in a regional set; flag non-FCS spillover/host-pressure candidates."""
+    results = []
+    for name in countries or []:
+        cls = classify_country(name)
+        fcs_status = None
+        for canon, cat in FCS_COUNTRY_CATEGORIES.items():
+            if canon.lower() == str(name).strip().lower():
+                fcs_status = cat
+                break
+        is_fcs = bool(cls.get("category")) or fcs_status is not None
+        results.append({
+            "name": name,
+            "category": cls.get("category"),
+            "confidence": cls.get("confidence"),
+            "fcs_status": fcs_status or ("FCS" if cls.get("category") else "Non-FCS"),
+            "spillover_candidate": not is_fcs,
+        })
+    return results
+
+
+def weighted_rollup(country_ratings: list) -> dict:
+    """Fragility/exposure-weighted roll-up of per-country S/R so a fragile minority is not masked."""
+    if not country_ratings:
+        return {"sensitivity_score": 0.0, "responsiveness_score": 0.0, "method": "empty", "weights": []}
+
+    def _weight(item):
+        cat = str(item.get("category") or "").lower()
+        fcs = str(item.get("fcs_status") or "").lower()
+        if "in crisis" in cat or "conflict" in cat or fcs == "conflict":
+            return 3.0
+        if "fragil" in cat or "transition" in cat or "at risk" in cat or fcs == "fragility":
+            return 2.0
+        return 1.0
+
+    total_w = 0.0
+    s_acc = 0.0
+    r_acc = 0.0
+    weights = []
+    for item in country_ratings:
+        w = _weight(item)
+        weights.append({"name": item.get("name"), "weight": w})
+        total_w += w
+        s_acc += w * float(item.get("sensitivity_score", 0) or 0)
+        r_acc += w * float(item.get("responsiveness_score", 0) or 0)
+    return {
+        "sensitivity_score": round(s_acc / total_w, 3) if total_w else 0.0,
+        "responsiveness_score": round(r_acc / total_w, 3) if total_w else 0.0,
+        "method": "fragility_exposure_weighted",
+        "weights": weights,
+    }
+
+
+def get_regional_slice(country_scope: str) -> str:
+    """Return the cross-border lens for multi-country / regional operations."""
+    if str(country_scope).strip().lower() != "multi":
+        return ""
+    return "\n\n--- Multi-Country / Regional Cross-Border Lens ---\n" + REGIONAL_CROSSBORDER_LENS
+
+
+def extract_mpa_context(stage1_output: str) -> dict[str, Any]:
+    """Extract MPA phase context from a %%%MPA_CONTEXT_START/END%%% block."""
+    empty = {"error": True, "is_mpa": False, "phase": "", "base_instrument": "", "regional_mpa": False, "approval_authority": "", "phase_transition_triggers": []}
+    m = re.search(r'%%%MPA_CONTEXT_START%%%(.*?)%%%MPA_CONTEXT_END%%%', stage1_output or '', re.DOTALL | re.IGNORECASE)
+    if not m:
+        return empty
+    block = m.group(1).strip()
+    is_mpa_raw = ""
+    phase = ""
+    base_instrument = ""
+    regional_raw = ""
+    triggers_raw = ""
+    try:
+        parsed = json.loads(block)
+        is_mpa_raw = str(parsed.get("is_mpa", "") or "")
+        phase = str(parsed.get("phase", "") or "")
+        base_instrument = str(parsed.get("base_instrument", "") or "")
+        regional_raw = str(parsed.get("regional_mpa", "") or "")
+        tt = parsed.get("phase_transition_triggers", [])
+        triggers_raw = "; ".join(tt) if isinstance(tt, list) else str(tt or "")
+    except (json.JSONDecodeError, ValueError, TypeError):
+        for line in block.splitlines():
+            if ':' not in line:
+                continue
+            key, value = line.split(':', 1)
+            key = key.strip().lower()
+            value = value.strip()
+            if key == "is_mpa":
+                is_mpa_raw = value
+            elif key == "phase":
+                phase = value
+            elif key == "base_instrument":
+                base_instrument = value
+            elif key == "regional_mpa":
+                regional_raw = value
+            elif key in {"phase_transition_triggers", "triggers"}:
+                triggers_raw = value
+    is_mpa = str(is_mpa_raw).strip().lower() in {"true", "yes", "1"}
+    triggers = [x.strip() for x in re.split(r'[;\n]', triggers_raw) if x.strip()]
+    phase_l = phase.lower()
+    is_phase1 = ("framework" in phase_l) or (phase_l.strip() in {"", "phase 1", "phase1", "1"})
+    if not is_mpa:
+        approval_authority = ""
+    elif is_phase1:
+        approval_authority = "Board (Program Framework + Phase 1) - advisory; verify with OPCS"
+    else:
+        approval_authority = "Management / RVP (subsequent phase) - advisory; verify with OPCS"
+    return {
+        "error": False,
+        "is_mpa": is_mpa,
+        "phase": phase,
+        "base_instrument": base_instrument,
+        "regional_mpa": str(regional_raw).strip().lower() in {"true", "yes", "1"},
+        "approval_authority": approval_authority,
+        "phase_transition_triggers": triggers,
+    }
+
+
+def mpa_carve_outs(phase: str) -> list:
+    """NOT_APPLICABLE gap suppressions for MPA subsequent phases (empty for Phase 1 / framework)."""
+    phase_l = str(phase or "").lower()
+    is_phase1 = ("framework" in phase_l) or (phase_l.strip() in {"", "phase 1", "phase1", "1"})
+    if is_phase1:
+        return []
+    return [
+        "standalone_conflict_analysis",
+        "program_institutional_arrangements",
+        "program_theory_of_change",
+        "standalone_results_framework",
+        "cerc_absence",
+        "esf_program_level",
+        "aggregate_isr",
+    ]
+
+
+def get_mpa_slice(is_mpa) -> str:
+    """Return MPA wrapper guidance for prompt injection when the operation is an MPA."""
+    if not is_mpa:
+        return ""
+    return "\n\n--- MPA (Multiphase Programmatic Approach) Wrapper Guide ---\n" + MPA_MODULE_GUIDE
 
 
 def get_process_slice(process_type: str) -> str:
@@ -1557,6 +1753,24 @@ dlis: [semicolon-separated list of the disbursement-linked indicators, each summ
 verification: [one-clause summary of the verification protocol / IVA arrangement]
 %%%DLIS_END%%%
 
+Always output this country-set block. List every borrower / beneficiary country the operation actually finances (from the datasheet Project Beneficiary(ies), a regional PDO, or multiple financing agreements). A single-country operation that merely references neighbours lists only the financed country.
+
+%%%COUNTRY_SET_START%%%
+countries: [semicolon-separated list of financed borrower/beneficiary countries]
+regional_pdo: [true / false]
+implementing_entity: [national government ministry, or a regional body such as IGAD / ECOWAS / TDB if cross-border delivery]
+%%%COUNTRY_SET_END%%%
+
+If the operation is a Multiphase Programmatic Approach (MPA), also output this block; otherwise set is_mpa to false.
+
+%%%MPA_CONTEXT_START%%%
+is_mpa: [true / false]
+phase: [Phase 1 (framework) / Phase 2 / Phase 3 / ... ]
+base_instrument: [IPF / DPF / PforR - the instrument this phase actually is]
+regional_mpa: [true / false]
+phase_transition_triggers: [semicolon-separated triggers for moving to the next phase; empty if none stated]
+%%%MPA_CONTEXT_END%%%
+
 DOCUMENT TYPE PRIMACY RULE
 The document type identified above (PCN / PID / PAD / AF / Restructuring / ISR / Unknown) is the authoritative lifecycle classifier. Do not modify or override it based on dates.
 
@@ -1637,6 +1851,12 @@ Harm screen = **PSIA adequacy (para 13)** plus the Paragraph 38-39 check (a hybr
 If INSTRUMENT_TYPE is PforR, apply the injected P4R Module Guide. The unit of analysis is **DLIs and their verification protocols** from the Stage 1 `%%%DLIS_START%%%` block - NOT components, ESF/ESCP, or input-based design (do not screen for or penalise those). For each DLI assess conflict-sensitivity (distributional winners/losers, conflict-affected groups), verifiability / IVA access in contested areas, and geographic inclusion relative to the program boundary. Run the headline check first:
 1. **Disbursement under conflict (signature P4R-FCV finding)** - can this actually disburse here? If the Independent Verification Agent (IVA) cannot verify results in contested areas, financing does not flow - a disbursement cliff with no CERC-style rapid-response valve. Foreground IVA verification access and disbursement-cliff exposure.
 Then: DLI-realism (targets/timelines under disruption; binary vs scalable thresholds; pause-and-adjust without forfeiting funds); program-boundary / exclusions (boundary relative to conflict-affected areas; excluded high-risk activities bordering financed ones). Harm screen = **ESSA / ESMS country-systems functionality + GRM** in contested settings (replacing ESF/DNH); check whether the PAP addresses the gaps. If an IPF component is flagged, run the IPF spine on that component and synthesise. Add the instrument-feasibility advisory (OP 7.30 limits, government-systems-capacity in low-capacity FCS) as a question for the regional FCV coordinator - advisory only, never a determination.
+
+## Multi-Country / Regional Overlay (composes with any instrument)
+If the Stage 1 `%%%COUNTRY_SET_START%%%` block lists two or more financed countries, apply the injected cross-border lens. Classify each country (4-category + FY26 FCS Conflict/Fragility) and flag non-FCS countries under refugee / border pressure as spillover / host-pressure candidates. Produce per-country findings, then a **regional synthesis** carrying the **cross-border** priorities (spillovers, displacement / refugee flows, regional conflict systems, transboundary resources, differential fragility, inter-country political sensitivity). Check the regional implementing entity (national vs IGAD / ECOWAS / TDB). Roll up Sensitivity/Responsiveness with a fragility / exposure-**weighted** scheme (not a flat average) so a fragile minority is not masked. FCV financing-window pointers (Regional Window, CRW, WHR) are advisory only.
+
+## MPA Wrapper Overlay (if the operation is an MPA)
+If the Stage 1 `%%%MPA_CONTEXT_START%%%` block flags an MPA, apply the injected MPA wrapper guide. Route the phase to its base instrument and add the program layer. Detect Phase-1 (framework) vs subsequent phase and apply the carve-outs - do NOT flag subsequent-phase documents for content that legitimately lives in the Phase-1 framework (standalone conflict analysis, program institutional arrangements, program theory of change, full results framework, CERC absence, program-level ESF, aggregate ISR). Apply the adaptive-sequencing (opportunity) + institutional-continuity (risk) lens, the cross-phase FCV-drift check, and assess whether phase-transition triggers are achievable under conflict volatility. Approval authority (Board for Phase 1 / IBRD; RVP for subsequent) is advisory.
 
 # Internal Analytical Framework
 You MUST assess the project against ALL of the following (from the FCV Operational Manual), but do NOT expose this framework directly in the TTL-facing narrative. Use it to drive your thematic analysis.
@@ -2125,6 +2345,12 @@ If INSTRUMENT_TYPE is PforR, write instrument-true recommendations anchored to *
 - Anchor to the P4R reference set: DLIs, Verification Protocol, IVA arrangements, ESSA, ESMS, PAP, POM, Results Framework.
 Foreground the **disbursement-under-conflict** finding (IVA verification access + disbursement-cliff exposure) as a priority where material. Ground harm findings in ESSA/ESMS country-systems functionality and GRM in contested areas. Where the operation is demanding under OP 7.30 or low-capacity government systems, include the instrument-feasibility advisory (consider a complementary IPF component / TA or a different instrument) - advisory only. Close the narrative with a section titled **P4R FCV Watch** covering disbursement-cliff and IVA-access watch items, program-boundary exclusions, and ESSA/GRM follow-through. Also populate top-level JSON field `p4r_watch` as an array of short strings. Never determine instrument eligibility, OP 7.30 status, or disbursement.
 
+## Multi-Country / Regional Overlay (composes with any instrument)
+If two or more financed countries were detected, write **per-country** priorities plus a **regional synthesis** section carrying the **cross-border** priorities. Tag every priority with `priority_scope`: "country-specific" or "regional". Surface cross-border risks no single country owns (e.g. a refugee-corridor spillover). Roll up ratings with a fragility / exposure-weighted scheme (not a flat average). Note the regional implementing-entity capacity where relevant. Close the narrative with a **Regional FCV Watch** section and populate top-level JSON field `regional_watch` as an array of short strings. FCV financing-window pointers (Regional Window / CRW / WHR) are advisory; if research was capped for a large country set, disclose it.
+
+## MPA Wrapper Overlay (if the operation is an MPA)
+If an MPA was detected, anchor recommendations to MPA framework sections (PrDO; Program ToC; Program Framework; Phase PDO; phase-transition triggers; Learning Agenda) composed with the phase's base-instrument sections. Suppress subsequent-phase carve-out false positives. Foreground phase-transition-trigger feasibility under conflict, the institutional-continuity assumption, financing-not-guaranteed risk for conflict-affected later phases, and PrDO drift. `next-series` action_timing maps to "next phase". Approval-authority framing is advisory.
+
 {playbook_guidance}
 
 ## Instrument Awareness
@@ -2396,7 +2622,7 @@ The SEA/SH card and the GRM card may both appear in the output — they address 
 - For any [R] or [S+R] priority, `why_it_matters` includes the shift justification sentence
 - No [From: ...] citation tags appear anywhere in the narrative or JSON fields
 - JSON block is present at the end, wrapped in %%%JSON_START%%% / %%%JSON_END%%%
-- All 9 top-level JSON fields are populated (fcv_rating, fcv_responsiveness_rating, sensitivity_summary, responsiveness_summary, risk_exposure, mid_cycle_watch, dpf_watch, p4r_watch, priorities)
+- All 10 top-level JSON fields are populated (fcv_rating, fcv_responsiveness_rating, sensitivity_summary, responsiveness_summary, risk_exposure, mid_cycle_watch, dpf_watch, p4r_watch, regional_watch, priorities)
 - Each priority's pad_sections, actions (including per-action suggested_language), and implementation_note are specific to this project — not generic placeholders
 - Each priority JSON object has all 19 fields: title, fcv_dimension, tag, refresh_shift, risk_level, the_gap, why_it_matters, actions, who_acts, when, action_timing, resources, pad_sections, country_category_relevance, implementation_note, cpf_alignment, change_type, restructuring_level, priority_scope
 - No generic or templated language anywhere
@@ -2421,6 +2647,7 @@ The FCV ratings, summaries, and risk exposure paragraphs you have written in the
   "mid_cycle_watch": ["Use only for AF/Restructuring; otherwise return an empty array"],
   "dpf_watch": ["Use only for DPF/DPO; otherwise return an empty array"],
   "p4r_watch": ["Use only for PforR/P4R; otherwise return an empty array"],
+  "regional_watch": ["Use only for multi-country / regional operations; otherwise return an empty array"],
   "priorities": [
     {{{{
       "title": "Priority 1 · Short descriptive phrase",
@@ -3209,6 +3436,8 @@ def clean_stage1_output(text):
     text = re.sub(r'%%%CHANGE_TYPE_START%%%.*?%%%CHANGE_TYPE_END%%%\n?', '', text, flags=re.DOTALL)
     text = re.sub(r'%%%PRIOR_ACTIONS_START%%%.*?%%%PRIOR_ACTIONS_END%%%\n?', '', text, flags=re.DOTALL)
     text = re.sub(r'%%%DLIS_START%%%.*?%%%DLIS_END%%%\n?', '', text, flags=re.DOTALL)
+    text = re.sub(r'%%%COUNTRY_SET_START%%%.*?%%%COUNTRY_SET_END%%%\n?', '', text, flags=re.DOTALL)
+    text = re.sub(r'%%%MPA_CONTEXT_START%%%.*?%%%MPA_CONTEXT_END%%%\n?', '', text, flags=re.DOTALL)
     # NEW: strip country classification, sector context, and context flags blocks
     text = re.sub(r'%%%COUNTRY_CLASSIFICATION_START%%%.*?%%%COUNTRY_CLASSIFICATION_END%%%\n?', '', text, flags=re.DOTALL)
     text = re.sub(r'%%%SECTOR_CONTEXT_START%%%.*?%%%SECTOR_CONTEXT_END%%%\n?', '', text, flags=re.DOTALL)
@@ -3449,6 +3678,7 @@ def extract_priorities(text: str, uploaded_doc_names: list = None) -> dict:
         'mid_cycle_watch': [],
         'dpf_watch': [],
         'p4r_watch': [],
+        'regional_watch': [],
     }
 
     m = re.search(r'%%%JSON_START%%%(.*?)%%%JSON_END%%%', text, re.DOTALL)
@@ -3553,6 +3783,7 @@ def extract_priorities(text: str, uploaded_doc_names: list = None) -> dict:
         'mid_cycle_watch': data.get('mid_cycle_watch', []),
         'dpf_watch': data.get('dpf_watch', []),
         'p4r_watch': data.get('p4r_watch', []),
+        'regional_watch': data.get('regional_watch', []),
     }
 
 
@@ -4517,6 +4748,12 @@ def run_stage():
                 p4r_slice = get_p4r_slice(instrument_type)
                 if p4r_slice:
                     stage_prompt = stage_prompt + p4r_slice
+                regional_slice = get_regional_slice(data.get('country_scope', 'single'))
+                if regional_slice:
+                    stage_prompt = stage_prompt + regional_slice
+                mpa_slice = get_mpa_slice(data.get('is_mpa'))
+                if mpa_slice:
+                    stage_prompt = stage_prompt + mpa_slice
 
                 # CPF Q3 conditionality: tell LLM whether a CPF is available
                 _cpf_present_s2 = _detect_cpf_present(uploaded_doc_names_payload, conversation_history)
@@ -4663,6 +4900,12 @@ def run_stage():
                 p4r_slice = get_p4r_slice(instrument_type)
                 if p4r_slice:
                     stage_prompt = stage_prompt + p4r_slice
+                regional_slice = get_regional_slice(data.get('country_scope', 'single'))
+                if regional_slice:
+                    stage_prompt = stage_prompt + regional_slice
+                mpa_slice = get_mpa_slice(data.get('is_mpa'))
+                if mpa_slice:
+                    stage_prompt = stage_prompt + mpa_slice
 
                 # CPF explicit signal: content-aware detection
                 if _detect_cpf_present(uploaded_doc_names_payload, conversation_history):
@@ -4895,9 +5138,12 @@ def run_stage():
                 _change_types = {}
                 _prior_actions = {}
                 _dlis = {}
+                _country_set = {}
+                _mpa_context = {}
                 mid_cycle_watch = []
                 dpf_watch = []
                 p4r_watch = []
+                regional_watch = []
 
                 if stage == 2:
                     # Stage 2: extract ratings and Under the Hood panels
@@ -4922,6 +5168,7 @@ def run_stage():
                     mid_cycle_watch = parsed.get('mid_cycle_watch', [])
                     dpf_watch = parsed.get('dpf_watch', [])
                     p4r_watch = parsed.get('p4r_watch', [])
+                    regional_watch = parsed.get('regional_watch', [])
                     gap_table = extract_gap_table(full_text)
                     parse_error = parsed.get('error', False)
                     parse_error_message = parsed.get('message', '')
@@ -4946,6 +5193,8 @@ def run_stage():
                     _change_types = extract_change_types(full_text)
                     _prior_actions = extract_prior_actions(full_text)
                     _dlis = extract_dlis(full_text)
+                    _country_set = extract_country_set(full_text)
+                    _mpa_context = extract_mpa_context(full_text)
                     _s1_primary_names = [dp['name'] for dp in doc_parts if dp['label'] == 'PROJECT DOCUMENT']
                     _s1_package_names = [dp['name'] for dp in doc_parts if dp['label'] == 'PACKAGE INSTRUMENT']
                     _s1_context_names = [dp['name'] for dp in doc_parts if dp['label'] == 'CONTEXT DOCUMENT']
@@ -4996,6 +5245,10 @@ def run_stage():
                     'change_types': _change_types if stage == 1 else None,
                     'prior_actions': _prior_actions if stage == 1 else None,
                     'dlis': _dlis if stage == 1 else None,
+                    'country_set': _country_set if stage == 1 else None,
+                    'mpa_context': _mpa_context if stage == 1 else None,
+                    'country_scope': (('multi' if (isinstance(_country_set, dict) and _country_set.get('is_multi_country')) else 'single') if stage == 1 else None),
+                    'is_mpa': ((_mpa_context.get('is_mpa', False) if isinstance(_mpa_context, dict) else False) if stage == 1 else None),
                     'review_mode': review_mode,
                 }
 
@@ -5025,6 +5278,7 @@ def run_stage():
                     done_data['mid_cycle_watch'] = mid_cycle_watch
                     done_data['dpf_watch'] = dpf_watch
                     done_data['p4r_watch'] = p4r_watch
+                    done_data['regional_watch'] = regional_watch
                     done_data['horizon_considerations'] = horizon
                     done_data['applied_snippets'] = [
                         {'id': s['id'], 'title': s['title'], 'source': s['source']}
@@ -5386,6 +5640,10 @@ def run_express():
                 change_types = extract_change_types(stage1_output)
                 prior_actions = extract_prior_actions(stage1_output)
                 dlis = extract_dlis(stage1_output)
+                country_set = extract_country_set(stage1_output)
+                mpa_context = extract_mpa_context(stage1_output)
+                _cscope_x = 'multi' if country_set.get('is_multi_country') else 'single'
+                _is_mpa_x = mpa_context.get('is_mpa', False)
                 if is_impl:
                     process_type = extract_process_type(stage1_output)
                     doc_type = process_type  # Use process type as doc_type label for impl mode
@@ -5411,7 +5669,7 @@ def run_express():
                 # ── Stage 1 done event ──
                 # Strip classifier delimiter tags from display output; history retains raw text.
                 stage1_display = clean_stage1_output(stage1_output)
-                yield f"data: {json.dumps({'stage_done': 1, 'result': stage1_display, 'history': conversation_history, 'research_brief': research_brief_text, 'research_country': research_country, 'doc_type': doc_type, 'instrument_type': instrument_type, 'temporal_context': temporal_context, 'process_type': process_type if is_impl else None, 'country_classification': country_classification, 'context_flags': context_flags, 'sector_context': sector_context, 'change_types': change_types, 'prior_actions': prior_actions, 'dlis': dlis, 'review_mode': review_mode})}\n\n"
+                yield f"data: {json.dumps({'stage_done': 1, 'result': stage1_display, 'history': conversation_history, 'research_brief': research_brief_text, 'research_country': research_country, 'doc_type': doc_type, 'instrument_type': instrument_type, 'temporal_context': temporal_context, 'process_type': process_type if is_impl else None, 'country_classification': country_classification, 'context_flags': context_flags, 'sector_context': sector_context, 'change_types': change_types, 'prior_actions': prior_actions, 'dlis': dlis, 'country_set': country_set, 'mpa_context': mpa_context, 'country_scope': _cscope_x, 'is_mpa': _is_mpa_x, 'review_mode': review_mode})}\n\n"
 
                 # ════════════════════════════════════════════════════════════
                 # STAGE 2 — FCV Assessment
@@ -5487,6 +5745,12 @@ def run_express():
                 p4r_slice = get_p4r_slice(instrument_type)
                 if p4r_slice:
                     stage2_prompt = stage2_prompt + p4r_slice
+                regional_slice = get_regional_slice(_cscope_x)
+                if regional_slice:
+                    stage2_prompt = stage2_prompt + regional_slice
+                mpa_slice = get_mpa_slice(_is_mpa_x)
+                if mpa_slice:
+                    stage2_prompt = stage2_prompt + mpa_slice
 
                 confirmed_category_e2 = (
                     country_classification.get('category', 'General')
@@ -5636,6 +5900,12 @@ def run_express():
                     p4r_slice = get_p4r_slice(instrument_type)
                     if p4r_slice:
                         stage3_prompt = stage3_prompt + p4r_slice
+                    regional_slice = get_regional_slice(_cscope_x)
+                    if regional_slice:
+                        stage3_prompt = stage3_prompt + regional_slice
+                    mpa_slice = get_mpa_slice(_is_mpa_x)
+                    if mpa_slice:
+                        stage3_prompt = stage3_prompt + mpa_slice
 
                     # CPF explicit signal: content-aware detection
                     if _detect_cpf_present(_doc_names_ex, conversation_history):
@@ -5714,7 +5984,7 @@ def run_express():
                     conversation_history = conversation_history[-20:]
 
                 # ── Stage 3 done event ──
-                yield f"data: {json.dumps({'stage_done': 3, 'result': stage3_output_clean, 'history': conversation_history, 'priorities': parsed.get('priorities', []), 'fcv_rating': parsed.get('fcv_rating', ''), 'fcv_responsiveness_rating': parsed.get('fcv_responsiveness_rating', ''), 'sensitivity_summary': parsed.get('sensitivity_summary', ''), 'responsiveness_summary': parsed.get('responsiveness_summary', ''), 'risk_exposure': parsed.get('risk_exposure'), 'mid_cycle_watch': parsed.get('mid_cycle_watch', []), 'dpf_watch': parsed.get('dpf_watch', []), 'p4r_watch': parsed.get('p4r_watch', []), 'gap_table': extract_gap_table(stage3_output), 'parse_error': parsed.get('error', False), 'parse_error_message': parsed.get('message', ''), 'horizon_considerations': horizon, 'applied_snippets': [{'id': s['id'], 'title': s['title'], 'source': s['source']} for s in secondary_snippets_s3e]})}\n\n"
+                yield f"data: {json.dumps({'stage_done': 3, 'result': stage3_output_clean, 'history': conversation_history, 'priorities': parsed.get('priorities', []), 'fcv_rating': parsed.get('fcv_rating', ''), 'fcv_responsiveness_rating': parsed.get('fcv_responsiveness_rating', ''), 'sensitivity_summary': parsed.get('sensitivity_summary', ''), 'responsiveness_summary': parsed.get('responsiveness_summary', ''), 'risk_exposure': parsed.get('risk_exposure'), 'mid_cycle_watch': parsed.get('mid_cycle_watch', []), 'dpf_watch': parsed.get('dpf_watch', []), 'p4r_watch': parsed.get('p4r_watch', []), 'regional_watch': parsed.get('regional_watch', []), 'gap_table': extract_gap_table(stage3_output), 'parse_error': parsed.get('error', False), 'parse_error_message': parsed.get('message', ''), 'horizon_considerations': horizon, 'applied_snippets': [{'id': s['id'], 'title': s['title'], 'source': s['source']} for s in secondary_snippets_s3e]})}\n\n"
 
                 # ── Express complete ──
                 yield f"data: {json.dumps({'express_done': True})}\n\n"
@@ -5942,6 +6212,7 @@ def download_report():
     mid_cycle_watch = data.get('mid_cycle_watch') or []
     dpf_watch = data.get('dpf_watch') or []
     p4r_watch = data.get('p4r_watch') or []
+    regional_watch = data.get('regional_watch') or []
     horizon = data.get('horizon_considerations', '')
     under_hood = data.get('under_hood') or {}
     meta = data.get('metadata', {})
@@ -6206,6 +6477,11 @@ def download_report():
         if p4r_watch:
             _add_section_heading('P4R FCV Watch')
             for item in p4r_watch:
+                _add_single_para(str(item), space_after=3)
+
+        if regional_watch:
+            _add_section_heading('Regional FCV Watch')
+            for item in regional_watch:
                 _add_single_para(str(item), space_after=3)
 
         if horizon:
