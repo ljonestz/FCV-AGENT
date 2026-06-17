@@ -1916,6 +1916,43 @@ the phase's base-instrument sections. `next-series` action_timing maps to "next 
 """
 
 
+INTERSECTION_SYNTHESIS_GUIDE = """
+## Intersection / Composition Synthesis Guide (multi-dimension operations)
+
+An operation can hit several dimensions at once - instrument (IPF/DPF/P4R), doc-type / lifecycle
+(new lending vs mid-cycle AF/restructuring), country scope (single vs multi-country/regional), and
+the MPA wrapper. These **compose into one analysis**; they are not separate screens. Produce a
+**single coherent memo**, not stacked sections that repeat each other.
+
+### Layering
+- **Base spine = the instrument module** (IPF components / DPF prior actions / P4R DLIs). The spine
+  always owns the **unit of analysis**; overlays augment it, never replace it.
+- **Mid-cycle overlay** (AF/restructuring) reads the change-lens (context-change since approval +
+  conflict-sensitivity of the change) **onto the instrument's own unit** - e.g. a DPF AF reads the
+  prior-action set through both the DPF lens and the mid-cycle lens. Do not duplicate.
+- **Multi-country overlay** adds per-country analysis + cross-border lens + weighted roll-up.
+- **MPA wrapper** adds phase / approval-authority / FCV-drift and routes each phase to its base instrument.
+
+### Single synthesis
+Merge all active layers into one **deduplicated, scope-tagged** set of priority cards, one rating,
+and one watch list. If two layers would generate the same recommendation, **deduplicate** it and tag
+the broadest applicable `priority_scope`.
+
+### Precedence rules (conflict resolution)
+- **Temporal framing:** if mid-cycle is active, its live-project, Tier-1 framing governs (overrides
+  new-lending preparation framing).
+- **Rating:** if multi-country is active, the fragility/exposure-weighted roll-up governs the headline rating.
+- **Output register:** if mid-cycle is active, the restructuring level (Board-memo vs team-advisory) sets the format.
+- **Unit of analysis:** always the instrument module's unit; overlays augment it.
+
+### Bloat guardrail (no silent truncation)
+Inject only each active layer's essential slice; preserve the compact-label history. If a heavy
+combination (e.g. regional MPA AF) would exceed the context budget, cap overlays by priority
+(instrument spine > mid-cycle overlay > multi-country per-country detail) and **disclose** what was
+bounded - never silently drop a dimension.
+"""
+
+
 FCV_INSTRUMENT_CALIBRATION = """
 ## FCV Instrument Calibration Notes — Operational Grounding Context
 

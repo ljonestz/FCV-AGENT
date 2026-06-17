@@ -112,6 +112,12 @@ Every prompt output tags findings as [S], [R], or [S+R], assigned dynamically pe
   - **State:** `AnalysisState` sets country_scope=multi for >=2 countries and adds `multi_country_layer`; adds `mpa_wrapper` when is_mpa; carries is_mpa / implementing_entity / approval_authority
   - **Stage 2/3 overlays + output:** per-country + regional synthesis; `priority_scope` country-specific vs regional; top-level `regional_watch` + Regional FCV Watch section (DOCX + HTML); slices injected at Stage 2/3 (step-by-step via echoed country_scope/is_mpa; express via Stage-1 extraction locals)
   - **Tests:** `tests/test_mpa_multicountry_phase45.py` (13 tests); full suite 118 passed; no prior-phase regression
+- **v9.9** - Phase 6 intersection matrix / multi-dimension composition (branch `feat/phase6-intersection`, base Phase 4+5 `feat/phase45-mpa-multicountry` / PR #28, 2026-06-17):
+  - **Composition router:** `build_composition_plan(state)` selects the base instrument spine (IPF/DPF/P4R) and the active overlays (mid_cycle, multi_country) + MPA wrapper from `AnalysisState.active_modules`, and resolves **precedence**: mid-cycle live-project framing governs temporal; fragility-weighted roll-up governs rating when multi-country; restructuring level sets the output register; the instrument unit of analysis always governs. Backward-compatible (plain IPF -> no overlays)
+  - **Single synthesis:** `dedupe_and_scope_priorities()` merges/dedupes priorities by normalised title and ensures a `priority_scope` on each
+  - **Bounded injection (no silent truncation):** `bounded_injection_plan()` caps overlays by priority (instrument spine never dropped: instrument > mid-cycle > MPA > multi-country detail) and returns a disclosure string when anything is bounded
+  - **Knowledge + prompt:** `INTERSECTION_SYNTHESIS_GUIDE` (layering, single coherent memo, precedence, bloat guardrail); Stage 3 prompt gains a Composition & Synthesis section; Stage 3 (both routes) injects the guide when `build_composition_plan(...).is_intersection` (>=2 active layers)
+  - **Tests:** `tests/test_intersection_phase6.py` (8 tests); full suite 126 passed; no prior-phase regression. Completes the Phase 0-6 expansion (mid-cycle, DPF, P4R, MPA, multi-country, intersection) on the registry foundation
 - **v9.2** - Classification caveat and background_docs policy corrections (branch `feat/v9-differentiated-approaches`, 2026-04-19):
   - **Classification widget caveat:** Narrative now always ends with "This is a subjective judgement on the part of this AI tool and does not constitute an official WBG classification." — consistent with Stage 1 AI disclaimer framing
   - **background_docs.py — ICR timing:** `STAGE_GUIDANCE_MAP["ICR"]["timing_options"]` corrected from `"During implementation"` to `"At project closing"`
@@ -609,6 +615,6 @@ docs/superpowers/  # Dev plans and specs
 ---
 
 **Last updated:** 2026-06-17
-**Current version:** FCV Project Screener v9.8
+**Current version:** FCV Project Screener v9.9
 **Claude model:** `claude-sonnet-4-6`
 **Stack:** Flask 3.0.3 + vanilla JS + Anthropic SDK + gunicorn/gevent on Render

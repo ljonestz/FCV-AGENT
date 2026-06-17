@@ -24,7 +24,8 @@ from background_docs import (
     RESTRUCTURING_GUIDE, AF_GUIDE,
     DPF_MODULE_GUIDE, DPF_POLICY_AREA_CHECKLIST,
     P4R_MODULE_GUIDE,
-    REGIONAL_CROSSBORDER_LENS, MPA_MODULE_GUIDE
+    REGIONAL_CROSSBORDER_LENS, MPA_MODULE_GUIDE,
+    INTERSECTION_SYNTHESIS_GUIDE
 )
 import io
 try:
@@ -1225,6 +1226,115 @@ def get_mpa_slice(is_mpa) -> str:
     return "\n\n--- MPA (Multiphase Programmatic Approach) Wrapper Guide ---\n" + MPA_MODULE_GUIDE
 
 
+# ── Phase 6: intersection-matrix composition ──────────────────────────────────
+
+LAYER_INJECTION_PRIORITY = [
+    "instrument_spine",
+    "mid_cycle_overlay",
+    "mpa_wrapper",
+    "multi_country_layer",
+]
+
+
+def build_composition_plan(state) -> dict:
+    """Compose the active dimensions into a single layered plan with precedence rules.
+
+    Base spine = the instrument module (owns the unit of analysis); mid-cycle and
+    multi-country are overlays; MPA is a wrapper. Backward-compatible: a plain
+    single-country IPF op returns no overlays / no wrapper.
+    """
+    instrument = str(getattr(state, "instrument", "") or "").strip().upper()
+    spine = {
+        "DPO": "DPF prior-action spine",
+        "PFORR": "P4R DLI / verification spine",
+        "P4R": "P4R DLI / verification spine",
+    }.get(instrument, "IPF component spine")
+
+    active = list(getattr(state, "active_modules", []) or [])
+    overlays = []
+    if "mid_cycle_overlay" in active:
+        overlays.append("mid_cycle_overlay")
+    if "multi_country_layer" in active:
+        overlays.append("multi_country_layer")
+    wrapper = "mpa_wrapper" if "mpa_wrapper" in active else None
+
+    mid_cycle = "mid_cycle_overlay" in active
+    multi = "multi_country_layer" in active
+    precedence = {
+        "unit_of_analysis": spine,
+        "temporal": (
+            "mid-cycle live-project (Tier-1) framing governs"
+            if mid_cycle else
+            "instrument default (preparation framing for new lending)"
+        ),
+        "rating": (
+            "fragility/exposure-weighted roll-up governs the headline rating"
+            if multi else "single-country"
+        ),
+        "output_register": (
+            f"restructuring level: {getattr(state, 'restructuring_level', None) or 'Unknown'}"
+            if mid_cycle else "standard recommendations note"
+        ),
+    }
+
+    active_layers = ["instrument_spine"] + overlays + ([wrapper] if wrapper else [])
+    return {
+        "spine": spine,
+        "overlays": overlays,
+        "wrapper": wrapper,
+        "precedence": precedence,
+        "active_layers": active_layers,
+        "active_layer_count": len(active_layers),
+        "is_intersection": len(active_layers) > 1,
+    }
+
+
+def dedupe_and_scope_priorities(priorities, default_scope: str = "country-specific") -> list:
+    """Merge/dedupe priorities by normalised title and ensure each carries a priority_scope."""
+    seen = set()
+    result = []
+    for pr in priorities or []:
+        if not isinstance(pr, dict):
+            continue
+        title = str(pr.get("title", "")).strip()
+        norm = re.sub(r'^priority\s+\d+\s*[-:.·]\s*', '', title.lower()).strip()
+        norm = re.sub(r'\s+', ' ', norm)
+        if norm and norm in seen:
+            continue
+        if norm:
+            seen.add(norm)
+        item = dict(pr)
+        if not item.get("priority_scope"):
+            item["priority_scope"] = default_scope
+        result.append(item)
+    return result
+
+
+def bounded_injection_plan(layers, budget: int, costs=None) -> dict:
+    """Cap overlay injection by priority with disclosure; the instrument spine is never dropped."""
+    costs = costs or {}
+    ordered = sorted(
+        layers,
+        key=lambda l: LAYER_INJECTION_PRIORITY.index(l) if l in LAYER_INJECTION_PRIORITY else 99,
+    )
+    included, dropped, spent = [], [], 0
+    for layer in ordered:
+        cost = int(costs.get(layer, 0))
+        if layer == "instrument_spine" or spent + cost <= budget:
+            included.append(layer)
+            spent += cost
+        else:
+            dropped.append(layer)
+    disclosure = ""
+    if dropped:
+        disclosure = (
+            "Composition note: to stay within the context budget, overlay detail for the following "
+            "dimension(s) was bounded and not fully injected: " + ", ".join(dropped) + ". These "
+            "dimensions remain flagged; request a focused single-dimension re-run for full depth."
+        )
+    return {"included": included, "dropped": dropped, "spent": spent, "budget": budget, "disclosure": disclosure}
+
+
 def get_process_slice(process_type: str) -> str:
     """Return a formatted text block with process-specific knowledge.
     Used for prompt injection in Implementation Review Stages 2 and 3.
@@ -2350,6 +2460,9 @@ If two or more financed countries were detected, write **per-country** prioritie
 
 ## MPA Wrapper Overlay (if the operation is an MPA)
 If an MPA was detected, anchor recommendations to MPA framework sections (PrDO; Program ToC; Program Framework; Phase PDO; phase-transition triggers; Learning Agenda) composed with the phase's base-instrument sections. Suppress subsequent-phase carve-out false positives. Foreground phase-transition-trigger feasibility under conflict, the institutional-continuity assumption, financing-not-guaranteed risk for conflict-affected later phases, and PrDO drift. `next-series` action_timing maps to "next phase". Approval-authority framing is advisory.
+
+## Composition & Synthesis (multi-dimension operations)
+When more than one dimension is active (instrument + mid-cycle and/or multi-country and/or MPA), produce a **single coherent** memo - not stacked sections that repeat each other. The instrument module owns the unit of analysis; mid-cycle and multi-country are overlays; MPA is a wrapper. **Deduplicate** any priority that more than one layer would generate and tag each with the broadest applicable `priority_scope`. Apply the **precedence** rules: mid-cycle live-project framing governs the temporal framing; the fragility-weighted roll-up governs the headline rating when multi-country is active; the restructuring level sets the output register; the instrument's unit of analysis always governs. If overlay detail had to be bounded for length, disclose it rather than silently dropping a dimension.
 
 {playbook_guidance}
 
@@ -4906,6 +5019,9 @@ def run_stage():
                 mpa_slice = get_mpa_slice(data.get('is_mpa'))
                 if mpa_slice:
                     stage_prompt = stage_prompt + mpa_slice
+                _comp_plan = build_composition_plan(AnalysisState.from_payload(data))
+                if _comp_plan['is_intersection']:
+                    stage_prompt = stage_prompt + "\n\n--- Intersection / Composition Synthesis Guide ---\n" + INTERSECTION_SYNTHESIS_GUIDE
 
                 # CPF explicit signal: content-aware detection
                 if _detect_cpf_present(uploaded_doc_names_payload, conversation_history):
@@ -5906,6 +6022,15 @@ def run_express():
                     mpa_slice = get_mpa_slice(_is_mpa_x)
                     if mpa_slice:
                         stage3_prompt = stage3_prompt + mpa_slice
+                    _comp_state_x = AnalysisState.from_payload({"structured_intake": {
+                        "instrument": instrument_type,
+                        "doc_type": doc_type,
+                        "countries": (country_set.get('countries', []) if isinstance(country_set, dict) else []),
+                        "is_mpa": _is_mpa_x,
+                    }})
+                    _comp_plan_x = build_composition_plan(_comp_state_x)
+                    if _comp_plan_x['is_intersection']:
+                        stage3_prompt = stage3_prompt + "\n\n--- Intersection / Composition Synthesis Guide ---\n" + INTERSECTION_SYNTHESIS_GUIDE
 
                     # CPF explicit signal: content-aware detection
                     if _detect_cpf_present(_doc_names_ex, conversation_history):
