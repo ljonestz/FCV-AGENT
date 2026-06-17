@@ -106,6 +106,12 @@ Every prompt output tags findings as [S], [R], or [S+R], assigned dynamically pe
   - **Stage 3:** P4R-aware output (PforR PAD sections; DLI / verification-protocol / PAP language; P4R reference set); top-level `p4r_watch` array + P4R FCV Watch section in DOCX and HTML exports
   - **Knowledge:** `P4R_MODULE_GUIDE` in `background_docs.py`, grounded in OPS5.09 + OP 7.30; injected via `get_p4r_slice()`
   - **Tests:** `tests/test_p4r_phase3.py` (9 tests); full suite 105 passed; no IPF/mid-cycle/DPF regression
+- **v9.8** - Phases 4+5 MPA wrapper + Multi-country / regional layer (branch `feat/phase45-mpa-multicountry`, base Phase 3 `feat/phase3-p4r` / PR #27, 2026-06-17):
+  - **Multi-country / regional (orthogonal country_scope layer):** Stage 1 emits `%%%COUNTRY_SET_START%%%...%%%COUNTRY_SET_END%%%` (countries; regional_pdo; implementing_entity); `extract_country_set()` parses it (>=2 financed countries -> multi). `classify_country_set()` classifies each country (4-category + FY26 FCS) and flags non-FCS spillover/host-pressure candidates. `weighted_rollup()` does a fragility/exposure-weighted S/R roll-up (conflict x3, fragility x2) so a fragile minority is not masked. `REGIONAL_CROSSBORDER_LENS` + `get_regional_slice()`; cross-border lens, regional implementing-entity check (IGAD/ECOWAS/TDB), advisory financing-window pointers (Regional Window/CRW/WHR)
+  - **MPA wrapper:** Stage 1 emits `%%%MPA_CONTEXT_START%%%...%%%MPA_CONTEXT_END%%%` (is_mpa; phase; base_instrument; regional_mpa; phase_transition_triggers); `extract_mpa_context()` derives approval authority (Board for Phase 1 / RVP for subsequent - advisory); `mpa_carve_outs()` suppresses subsequent-phase false positives (CERC/ESF/program-ToC/etc.); `MPA_MODULE_GUIDE` + `get_mpa_slice()`; adaptive-sequencing + institutional-continuity lens, cross-phase FCV-drift; routes each phase to its base instrument
+  - **State:** `AnalysisState` sets country_scope=multi for >=2 countries and adds `multi_country_layer`; adds `mpa_wrapper` when is_mpa; carries is_mpa / implementing_entity / approval_authority
+  - **Stage 2/3 overlays + output:** per-country + regional synthesis; `priority_scope` country-specific vs regional; top-level `regional_watch` + Regional FCV Watch section (DOCX + HTML); slices injected at Stage 2/3 (step-by-step via echoed country_scope/is_mpa; express via Stage-1 extraction locals)
+  - **Tests:** `tests/test_mpa_multicountry_phase45.py` (13 tests); full suite 118 passed; no prior-phase regression
 - **v9.2** - Classification caveat and background_docs policy corrections (branch `feat/v9-differentiated-approaches`, 2026-04-19):
   - **Classification widget caveat:** Narrative now always ends with "This is a subjective judgement on the part of this AI tool and does not constitute an official WBG classification." — consistent with Stage 1 AI disclaimer framing
   - **background_docs.py — ICR timing:** `STAGE_GUIDANCE_MAP["ICR"]["timing_options"]` corrected from `"During implementation"` to `"At project closing"`
@@ -603,6 +609,6 @@ docs/superpowers/  # Dev plans and specs
 ---
 
 **Last updated:** 2026-06-17
-**Current version:** FCV Project Screener v9.7
+**Current version:** FCV Project Screener v9.8
 **Claude model:** `claude-sonnet-4-6`
 **Stack:** Flask 3.0.3 + vanilla JS + Anthropic SDK + gunicorn/gevent on Render
