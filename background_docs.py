@@ -1577,6 +1577,90 @@ WB_INSTRUMENT_GUIDE = {
 # Purpose: Grounding context for instrument-aware FCV assessment; injected into Stage 2
 # ─────────────────────────────────────────────────────────────────────────────
 
+RESTRUCTURING_GUIDE = """
+## IPF Restructuring Mid-Cycle Guide
+
+Use this guide only as advisory screening support. Do not make restructuring-level,
+approval-authority, eligibility, or waiver determinations. Direct the task team to
+verify procedural questions with OPCS, LEG, and regional management.
+
+### Change-type taxonomy for FCV screening
+- PDO change: Level 2 / RVP or CD-DD advisory signal in this audit-resolved build.
+  Reassess whether the revised PDO still addresses the FCV drivers identified at
+  approval, and whether conflict-affected groups are quietly diluted or dropped.
+- Component add/drop and scope / geographic change: Level 2 advisory signal. Check
+  whether the change shifts resources away from high-FCV areas or adds activities
+  with new harm pathways in contested locations.
+- Results framework change: Level 2 advisory signal. Check whether FCV-sensitive
+  indicators, grievance tracking, displacement markers, access constraints, or
+  inclusion measures are weakened or removed.
+- Closing-date extension: Level 2 advisory signal. Ask whether delays reflect
+  conflict, access, security, or capacity constraints and whether the revised date
+  is realistic under current FCV conditions.
+- Reallocation: Level 2 advisory signal. Check whether funds move away from
+  FCV-responsive activities or create distributional grievance risks.
+- Executing-agency change: Level 2 advisory signal. Check legitimacy, access,
+  conflict-actor exposure, perceived partiality, and capacity in contested areas.
+- E&S risk re-rating: Level 2 advisory signal. Check whether the re-rating reflects
+  conflict-driven SEA/SH, displacement, security, labour influx, or stakeholder risks.
+- Alternative Procurement Arrangements: narrow Level 1 / Board case.
+- Bank Guarantee expiration-date extension: narrow Level 1 / Board case.
+
+### Required FCV checks for each detected change
+Run two linked checks for every change type:
+1. Context-change since approval: what FCV dynamics changed since approval, and are
+   those changes evidenced in the paper, uploaded ISR/RRA/CPF, or tier-labelled
+   public research?
+2. Conflict-sensitivity of the change: does the proposed change reduce, ignore, or
+   worsen inclusion, legitimacy, social cohesion, security, livelihoods, or resilience
+   risks?
+
+### PDO change branch
+For PDO change, run a Theory-of-Change reassessment. Apply an essence test: does the
+revised PDO still preserve what the project originally promised in FCV terms? Apply
+a conflict-population check: are conflict-affected or displaced groups diluted into
+generic beneficiary language? If the proposed change fundamentally alters the
+project's essence, flag that Board involvement or cancel-and-replace may be more
+appropriate than routine restructuring, but keep this advisory.
+
+### Reappraisal trigger branch
+If significant scope, new activities, or new geography are added, flag possible
+reappraisal obligations, including Paris Alignment implications for new activities.
+Phrase this as "verify whether reappraisal is required" rather than a determination.
+"""
+
+
+AF_GUIDE = """
+## Additional Financing Mid-Cycle Guide
+
+Use this guide only as advisory screening support. Do not determine AF eligibility,
+waiver status, delegated authority, or approval level.
+
+### Core AF checks
+- Anchor analysis in the AF Project Paper, especially changes, rationale,
+  implementation progress, lessons learned, and revised Results Framework.
+- If the original PAD/PCN is uploaded, compare FCV-load-bearing elements only:
+  PDO, targeting and geography, Results Framework indicators, risk profile, and
+  implementation arrangements.
+- If an ISR is uploaded, use IP/DO ratings and risk flags as Tier-1 evidence for the
+  AF well-performing-project check.
+
+### Well-performing-project / waiver advisory
+AF normally expects IP and DO ratings of MS+ over the relevant period. In FCV settings,
+ratings may reflect security or access disruption rather than design failure. If the
+paper or ISR suggests ratings below MS+, ask whether the ratings are FCV-affected and
+whether an RVP-approved exception or waiver is in train. Do not state that a waiver is
+required or available unless the uploaded documents say so.
+
+### FCV value-add
+AF is a mid-course opportunity to correct FCV blind spots, update risk analysis,
+adapt targeting, restore conflict-sensitive indicators, adjust implementation
+arrangements, and scale only those design elements that remain conflict-sensitive
+under current conditions. Assess whether the AF simply scales a design that was
+FCV-blind or uses the additional financing to course-correct.
+"""
+
+
 FCV_INSTRUMENT_CALIBRATION = """
 ## FCV Instrument Calibration Notes — Operational Grounding Context
 
@@ -2321,17 +2405,20 @@ WB_PROCESS_GUIDE = {
             "rapidly, avoiding the long preparation timeline of a new operation."
         ),
         "scope": (
-            "AF must be consistent with the original PDO (changing PDO requires simultaneous "
-            "Level 1 restructuring). AF can: add components, scale up existing components, extend "
+            "AF is usually expected to remain consistent with the original PDO; if the AF also "
+            "changes the PDO, treat that as a simultaneous Level 2 restructuring advisory signal "
+            "for OPCS/regional management verification. AF can: add components, scale up existing components, extend "
             "geographic coverage, add financing categories, adjust targets, update RF. For ESF "
             "projects, AF scaling up activities requires updated E&S assessments, revised ESCP "
             "and SEP. For pre-ESF projects, AF for cost overruns continues under original "
             "safeguards; AF for new/scaled activities triggers ESF application."
         ),
         "key_policies": (
-            "If AF does not change PDO or trigger new E&S risk category change, Country Director "
-            "can approve. If AF involves PDO change or Level 1 restructuring, RVP approves. "
-            "Board approval not required for AF in most circumstances since 2017 policy changes."
+            "AF procedural routing is advisory in this tool. If uploaded documents indicate weak "
+            "IP/DO ratings, ask whether ratings are FCV-affected and whether an RVP-approved "
+            "exception or waiver is in train. If AF involves PDO, scope, RF, closing-date, "
+            "reallocation, executing-agency, or E&S risk re-rating changes, flag the relevant "
+            "mid-cycle change type and direct the team to verify approval routing with OPCS."
         ),
         "typical_documents": (
             "AF Project Paper with sections on changes and rationale; updated results framework; "
@@ -2362,21 +2449,23 @@ WB_PROCESS_GUIDE = {
     "Restructuring": {
         "purpose": (
             "Restructuring modifies a project during implementation to respond to changed "
-            "circumstances, correct design flaws, or adjust targets. Since 2017 policy "
-            "streamlining, restructurings are classified as Level 1 (limited Board cases only — "
-            "e.g., safeguard category change to Category A, use of Alternative Procurement "
-            "Arrangements, guarantee expiration extension; all other former Level 1 changes "
-            "including PDO changes are now delegated to RVP) and Level 2 (Country Director "
-            "approval for all other changes). Exception: closing date extensions of 2+ years "
-            "cumulative require RVP approval."
+            "circumstances, correct design flaws, or adjust targets. Restructuring level and "
+            "approval authority are advisory in this tool, not determinations: direct the team "
+            "to verify routing with OPCS. As an audit-resolved screening convention, Level 1 is "
+            "narrow and limited to a small set of cases such as use of Alternative Procurement "
+            "Arrangements and Bank Guarantee expiration-date extension. PDO change, "
+            "scope/component change, results framework change, closing-date extension, "
+            "reallocation, executing-agency change, and E&S risk re-rating are treated as Level 2 "
+            "(RVP or CD-DD) advisory signals, not Level 1."
         ),
         "scope": (
-            "Restructuring can change: PDO (Level 1/RVP), components, sub-components, financing "
-            "allocations, disbursement categories, implementing agencies, results indicators and "
-            "targets, closing dates, procurement methods, geographic scope. Cannot change: the "
-            "borrower, the lending instrument type, or legal agreement structure without amendment. "
-            "Important: PDO changes do NOT require Board approval since 2017 — the tool should "
-            "not state otherwise."
+            "Restructuring can change: PDO, components, sub-components, financing allocations, "
+            "disbursement categories, implementing agencies, results indicators and targets, "
+            "closing dates, procurement methods, geographic scope. Cannot change: the borrower, "
+            "the lending instrument type, or legal agreement structure without amendment. "
+            "Important: a PDO change is a Level 2 / RVP or CD-DD advisory signal in this build, "
+            "not a Level 1 change; the tool flags it for OPCS verification rather than asserting "
+            "an approval authority."
         ),
         "key_policies": (
             "For ESF projects, restructuring changing design impacting E&S risk requires: updated "

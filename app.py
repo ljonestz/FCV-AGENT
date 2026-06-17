@@ -20,7 +20,8 @@ from background_docs import (
     WB_INSTRUMENT_GUIDE, FCV_GLOSSARY, WB_PROCESS_GUIDE, FCS_LIST,
     FCV_INSTRUMENT_CALIBRATION, CPF_INTEGRATION_GUIDE,
     OP730_COUNTRIES, FCS_COUNTRIES_CURRENT, FCS_COUNTRY_ALIASES,
-    FCS_COUNTRY_CATEGORIES, DIFFERENTIATED_APPROACHES, SECONDARY_KNOWLEDGE
+    FCS_COUNTRY_CATEGORIES, DIFFERENTIATED_APPROACHES, SECONDARY_KNOWLEDGE,
+    RESTRUCTURING_GUIDE, AF_GUIDE
 )
 import io
 try:
@@ -117,6 +118,31 @@ POLICY_REGISTRY: dict[str, PolicyRegistryEntry] = {
         ati_designation="Official Use Only",
         summary="Verify with OPCS before changing or hard-coding the OST recommendation set.",
         needs_verification=True,
+    ),
+    "ipf_restructuring_level_guide": PolicyRegistryEntry(
+        key="ipf_restructuring_level_guide",
+        title="IPF restructuring level and change-type guidance",
+        catalogue_id="IPF-RESTRUCTURING-GUIDE",
+        source="Phase 1 audit-resolved mid-cycle handover; verify procedural edge cases with OPCS",
+        last_updated="2026-06-17",
+        ati_designation="Public / OPCS verification fallback",
+        summary=(
+            "Mid-cycle overlay uses Level 1 only for APA and Bank Guarantee expiration-date "
+            "extension; PDO, scope, RF, closing date, reallocation, executing-agency, and "
+            "E&S risk re-rating changes are Level 2 / RVP or CD-DD advisory signals."
+        ),
+    ),
+    "additional_financing_guide": PolicyRegistryEntry(
+        key="additional_financing_guide",
+        title="Additional Financing FCV screening guidance",
+        catalogue_id="AF-MID-CYCLE-GUIDE",
+        source="Phase 1 audit-resolved mid-cycle handover; verify eligibility edge cases with OPCS",
+        last_updated="2026-06-17",
+        ati_designation="Public / OPCS verification fallback",
+        summary=(
+            "AF screening is advisory, change-focused, and anchored to the AF Project Paper, "
+            "original PAD/PCN where uploaded, and latest ISR where uploaded."
+        ),
     ),
 }
 
@@ -253,6 +279,46 @@ MODULE_REGISTRY: dict[tuple[str, str, str], ModuleConfig] = {
     for doc_type in ("PCN", "PID", "PAD", "AF", "Restructuring", "ISR", "Unknown")
 }
 
+for _mid_cycle_doc_type in ("AF", "Restructuring"):
+    MODULE_REGISTRY[_module_key(_mid_cycle_doc_type, "IPF", "single")] = ModuleConfig(
+        key=_module_key(_mid_cycle_doc_type, "IPF", "single"),
+        rubric=IPF_DEFAULT_RUBRIC,
+        legacy_instrument="IPF",
+        knowledge_keys=(
+            "FCV_OPERATIONAL_MANUAL",
+            "FCV_GUIDE",
+            "FCV_INSTRUMENT_CALIBRATION",
+            "RESTRUCTURING_GUIDE",
+            "AF_GUIDE",
+        ),
+        intake_fields=(
+            "instrument",
+            "doc_type",
+            "countries",
+            "parent_operation",
+            "change_types",
+            "restructuring_level",
+            "original_pad_or_pcn",
+            "latest_isr",
+        ),
+        output_fields=(
+            "fcv_rating",
+            "fcv_responsiveness_rating",
+            "priorities",
+            "change_type",
+            "restructuring_level",
+            "priority_scope",
+            "mid_cycle_watch",
+        ),
+        guardrails=(
+            "compact_label_history",
+            "tier1_citation_discipline",
+            "advisory_procedural_language",
+            "mid_cycle_overlay",
+            "mid_cycle_live_project_tier1_anchoring",
+        ),
+    )
+
 
 def select_module(doc_type: str = "Unknown", instrument: str = "Unknown", country_scope: str = "single") -> ModuleConfig:
     """Select analysis module, defaulting to the existing IPF single-country path."""
@@ -274,6 +340,7 @@ class AnalysisState:
     countries: list[dict[str, Any]] = field(default_factory=list)
     phase: str | None = None
     restructuring_level: str | None = None
+    change_types: list[str] = field(default_factory=list)
     parent_operation: str | None = None
     active_modules: list[str] = field(default_factory=list)
     intersection: dict[str, Any] = field(default_factory=dict)
@@ -285,15 +352,25 @@ class AnalysisState:
         countries = intake.get("countries", payload.get("countries", [])) or []
         if isinstance(countries, str):
             countries = [{"name": c.strip()} for c in countries.split(",") if c.strip()]
+        change_types = intake.get("change_types", payload.get("change_types", [])) or []
+        if isinstance(change_types, str):
+            change_types = [c.strip() for c in re.split(r'[;,]', change_types) if c.strip()]
+        doc_type = intake.get("doc_type", payload.get("document_type", "Unknown")) or "Unknown"
+        instrument = intake.get("instrument", payload.get("instrument_type", "Unknown")) or "Unknown"
+        country_scope = intake.get("country_scope", payload.get("country_scope", "single")) or "single"
+        active_modules = list(intake.get("active_modules", payload.get("active_modules", [])) or [])
+        if doc_type in {"AF", "Restructuring"} and "mid_cycle_overlay" not in active_modules:
+            active_modules.append("mid_cycle_overlay")
         return cls(
-            instrument=intake.get("instrument", payload.get("instrument_type", "Unknown")) or "Unknown",
-            doc_type=intake.get("doc_type", payload.get("document_type", "Unknown")) or "Unknown",
-            country_scope=intake.get("country_scope", payload.get("country_scope", "single")) or "single",
+            instrument=instrument,
+            doc_type=doc_type,
+            country_scope=country_scope,
             countries=countries if isinstance(countries, list) else [],
             phase=intake.get("phase", payload.get("phase")),
             restructuring_level=intake.get("restructuring_level", payload.get("restructuring_level")),
+            change_types=change_types if isinstance(change_types, list) else [],
             parent_operation=intake.get("parent_operation", payload.get("parent_operation")),
-            active_modules=list(intake.get("active_modules", payload.get("active_modules", [])) or []),
+            active_modules=active_modules,
             intersection=dict(intake.get("intersection", payload.get("intersection", {})) or {}),
         )
 
@@ -327,7 +404,8 @@ _REQUIRED_PRIORITY_FIELDS = [
     'the_gap', 'why_it_matters', 'actions',
     'who_acts', 'when', 'action_timing', 'resources',
     'pad_sections', 'implementation_note', 'cpf_alignment',
-    'country_category_relevance',
+    'country_category_relevance', 'change_type', 'restructuring_level',
+    'priority_scope',
 ]
 
 _SPECIFICITY_STOPWORDS = frozenset({
@@ -447,6 +525,186 @@ def extract_process_type(stage1_output: str) -> str:
     return result if result in valid else 'Unknown'
 
 
+CHANGE_TYPE_CANONICAL = {
+    "pdo": "PDO change",
+    "pdo change": "PDO change",
+    "project development objective": "PDO change",
+    "component add/drop": "Component add/drop",
+    "component change": "Component add/drop",
+    "components": "Component add/drop",
+    "scope": "Scope / geographic change",
+    "scope change": "Scope / geographic change",
+    "geographic": "Scope / geographic change",
+    "geographic change": "Scope / geographic change",
+    "geography": "Scope / geographic change",
+    "results framework": "Results framework change",
+    "results framework change": "Results framework change",
+    "rf": "Results framework change",
+    "indicator": "Results framework change",
+    "closing date": "Closing-date extension",
+    "closing-date": "Closing-date extension",
+    "closing date extension": "Closing-date extension",
+    "extension": "Closing-date extension",
+    "reallocation": "Reallocation",
+    "funds reallocation": "Reallocation",
+    "executing agency": "Executing-agency change",
+    "executing-agency": "Executing-agency change",
+    "implementing agency": "Executing-agency change",
+    "e&s": "E&S risk re-rating",
+    "environmental and social": "E&S risk re-rating",
+    "risk re-rating": "E&S risk re-rating",
+    "alternative procurement arrangements": "Alternative Procurement Arrangements",
+    "apa": "Alternative Procurement Arrangements",
+    "bank guarantee": "Bank Guarantee expiration-date extension",
+    "bank guarantee expiration": "Bank Guarantee expiration-date extension",
+    "af": "AF scale-up / top-up",
+    "additional financing": "AF scale-up / top-up",
+    "scale-up": "AF scale-up / top-up",
+    "top-up": "AF scale-up / top-up",
+    "cost overrun": "Cost-overrun / financing gap",
+    "cost-overrun": "Cost-overrun / financing gap",
+    "financing gap": "Cost-overrun / financing gap",
+}
+
+LEVEL_1_CHANGE_TYPES = {
+    "Alternative Procurement Arrangements",
+    "Bank Guarantee expiration-date extension",
+}
+
+LEVEL_2_CHANGE_TYPES = {
+    "PDO change",
+    "Component add/drop",
+    "Scope / geographic change",
+    "Results framework change",
+    "Closing-date extension",
+    "Reallocation",
+    "Executing-agency change",
+    "E&S risk re-rating",
+}
+
+
+def _canonical_change_type(raw: str) -> str | None:
+    value = re.sub(r'\s+', ' ', str(raw or '').strip().lower())
+    value = value.strip(' .:-')
+    if not value:
+        return None
+    if value in CHANGE_TYPE_CANONICAL:
+        return CHANGE_TYPE_CANONICAL[value]
+    for needle, canonical in sorted(CHANGE_TYPE_CANONICAL.items(), key=lambda kv: len(kv[0]), reverse=True):
+        if re.search(rf'\b{re.escape(needle)}\b', value):
+            return canonical
+    return str(raw).strip()
+
+
+def derive_restructuring_level(change_types: list[str] | tuple[str, ...] | str) -> dict[str, str | None]:
+    """Derive advisory restructuring level from detected change types.
+
+    Procedural language remains advisory; TTLs should verify edge cases with OPCS.
+    """
+    if isinstance(change_types, str):
+        raw_types = [c.strip() for c in re.split(r'[;,]', change_types) if c.strip()]
+    else:
+        raw_types = list(change_types or [])
+    canonical = []
+    for item in raw_types:
+        mapped = _canonical_change_type(item)
+        if mapped and mapped not in canonical:
+            canonical.append(mapped)
+
+    if any(item in LEVEL_2_CHANGE_TYPES for item in canonical):
+        reasons = [item for item in canonical if item in LEVEL_2_CHANGE_TYPES]
+        return {
+            "level": "Level 2",
+            "authority": "RVP / CD-DD",
+            "reason": (
+                "Detected Level 2 change type(s): "
+                + ", ".join(reasons)
+                + ". PDO change is treated as Level 2 in this audit-resolved build; "
+                "verify procedural edge cases with OPCS."
+            ),
+        }
+    if canonical and all(item in LEVEL_1_CHANGE_TYPES for item in canonical):
+        return {
+            "level": "Level 1",
+            "authority": "Board",
+            "reason": (
+                "Only narrow Level 1 change type(s) detected: "
+                + ", ".join(canonical)
+                + ". Treat as advisory and verify with OPCS."
+            ),
+        }
+    if canonical:
+        return {
+            "level": "Unknown",
+            "authority": "Verify with OPCS",
+            "reason": "Detected change type(s) do not map cleanly to Level 1 or Level 2: " + ", ".join(canonical),
+        }
+    return {"level": None, "authority": None, "reason": "No restructuring change types detected."}
+
+
+def extract_change_types(stage1_output: str) -> dict[str, Any]:
+    """Extract mid-cycle change types from %%%CHANGE_TYPE_START/END%%% block."""
+    pattern = r'%%%CHANGE_TYPE_START%%%(.*?)%%%CHANGE_TYPE_END%%%'
+    m = re.search(pattern, stage1_output or '', re.DOTALL | re.IGNORECASE)
+    if not m:
+        return {
+            "error": True,
+            "change_types": [],
+            "restructuring_level": None,
+            "restructuring_authority": None,
+            "rationale": "",
+        }
+
+    block = m.group(1).strip()
+    change_types: list[str] = []
+    level_hint = ""
+    rationale = ""
+
+    try:
+        parsed = json.loads(block)
+        raw_change_types = parsed.get("change_types", [])
+        if isinstance(raw_change_types, str):
+            raw_change_types = re.split(r'[;,]', raw_change_types)
+        level_hint = str(parsed.get("restructuring_level", "") or "")
+        rationale = str(parsed.get("rationale", "") or "")
+    except (json.JSONDecodeError, ValueError, TypeError):
+        raw_line = ""
+        for line in block.splitlines():
+            if ':' not in line:
+                continue
+            key, value = line.split(':', 1)
+            key = key.strip().lower()
+            value = value.strip()
+            if key in {"change_types", "change_type"}:
+                raw_line = value
+            elif key == "restructuring_level":
+                level_hint = value
+            elif key == "rationale":
+                rationale = value
+        raw_change_types = re.split(r'[;,]', raw_line)
+
+    for raw in raw_change_types:
+        canonical = _canonical_change_type(str(raw))
+        if canonical and canonical not in change_types:
+            change_types.append(canonical)
+
+    derived = derive_restructuring_level(change_types)
+    level = level_hint if level_hint in {"Level 1", "Level 2"} else derived["level"]
+    authority = derived["authority"]
+    if level == "Level 1":
+        authority = "Board"
+    elif level == "Level 2":
+        authority = "RVP / CD-DD"
+
+    return {
+        "error": False,
+        "change_types": change_types,
+        "restructuring_level": level,
+        "restructuring_authority": authority,
+        "rationale": rationale or derived["reason"],
+    }
+
+
 def get_process_slice(process_type: str) -> str:
     """Return a formatted text block with process-specific knowledge.
     Used for prompt injection in Implementation Review Stages 2 and 3.
@@ -468,6 +726,23 @@ def get_process_slice(process_type: str) -> str:
         f"\n**Backward/forward look guidance:** {entry.get('backward_forward_look', '')}",
     ]
     return '\n'.join(p for p in parts if p.strip())
+
+
+def get_mid_cycle_slice(doc_type: str) -> str:
+    """Return mid-cycle overlay guidance for AF and Restructuring documents."""
+    if doc_type == "AF":
+        return (
+            "\n\n--- Additional Financing Mid-Cycle Guide ---\n"
+            + AF_GUIDE
+            + "\n\n--- Restructuring Change-Type Guide (use if AF also changes scope/PDO/RF) ---\n"
+            + RESTRUCTURING_GUIDE
+        )
+    if doc_type == "Restructuring":
+        return (
+            "\n\n--- Restructuring Mid-Cycle Guide ---\n"
+            + RESTRUCTURING_GUIDE
+        )
+    return ""
 
 
 def extract_temporal_context(stage1_output: str) -> dict:
@@ -930,6 +1205,14 @@ safeguards_framework: [One of: ESF / OP-BP / ESSA / PSIA / Unknown — determine
 other_temporal_markers: [Any restructuring dates, AF dates, or other significant temporal markers, or "None identified"]
 %%%TEMPORAL_CONTEXT_END%%%
 
+If DOC_TYPE is AF or Restructuring, also output this mid-cycle change block. If the document is not AF or Restructuring, output an empty change_types value and restructuring_level: Unknown.
+
+%%%CHANGE_TYPE_START%%%
+change_types: [semicolon-separated labels drawn from: PDO change; Component add/drop; Scope / geographic change; Results framework change; Closing-date extension; Reallocation; Executing-agency change; E&S risk re-rating; Alternative Procurement Arrangements; Bank Guarantee expiration-date extension; AF scale-up / top-up; Cost-overrun / financing gap]
+restructuring_level: [Level 1 / Level 2 / Unknown]
+rationale: [1-2 sentences explaining the detected change types and why the level is advisory]
+%%%CHANGE_TYPE_END%%%
+
 DOCUMENT TYPE PRIMACY RULE
 The document type identified above (PCN / PID / PAD / AF / Restructuring / ISR / Unknown) is the authoritative lifecycle classifier. Do not modify or override it based on dates.
 
@@ -992,6 +1275,13 @@ You are an expert FCV analyst conducting a comprehensive FCV assessment for the 
 Using the Stage 1 analysis, conduct a comprehensive FCV assessment of this project. You will produce TWO outputs:
 1. A TTL-facing assessment narrative (the main output)
 2. Detailed analytical panels for specialist review ("Under the Hood")
+
+## Mid-Cycle Overlay (AF / Restructuring only)
+If Stage 1 identifies DOC_TYPE as AF or Restructuring, apply the mid-cycle overlay from the injected AF / Restructuring guide. Use the `%%%CHANGE_TYPE_START%%%` block from Stage 1 as the change taxonomy. For each detected change type, run the two linked checks:
+1. **context-change since approval** - what FCV dynamics changed since approval, and what evidence supports that from the paper, uploaded ISR/RRA/CPF, or tier-labelled public research?
+2. **conflict-sensitivity of the change** - does the proposed change reduce, ignore, or worsen inclusion, legitimacy, social cohesion, security, livelihoods, or resilience risks?
+
+For AF, add the well-performing-project / waiver advisory only as a question for the TTL: ask whether ratings are FCV-affected and whether an RVP-approved exception or waiver is in train if uploaded ISR or paper evidence suggests this may matter. For PDO change, run the ToC reassessment and conflict-population check. For significant new scope, new activities, or new geography, flag a possible reappraisal-trigger question. Keep all procedural language advisory; never state eligibility, waiver, or approval authority as a determination.
 
 # Internal Analytical Framework
 You MUST assess the project against ALL of the following (from the FCV Operational Manual), but do NOT expose this framework directly in the TTL-facing narrative. Use it to drive your thematic analysis.
@@ -1456,6 +1746,15 @@ action_timing assignment for PCN/PID:
 - required-before-appraisal: must be in the PAD
 - required-before-board: ONLY for requirements confirmed as pre-conditions by OPCS or regional management — do not apply based on your own judgment
 
+## Mid-Cycle Overlay (AF / Restructuring only)
+If Stage 1 identified AF or Restructuring, use the injected AF / Restructuring guide and the Stage 1 `%%%CHANGE_TYPE_START%%%` block. Format the note by level:
+- AF and Level 1: Board-memo-ready register aligned to the Project Paper / Restructuring Paper.
+- Level 2: team-facing advisory note for the TTL and management decision process.
+
+Every mid-cycle priority must be change-aware. Populate `change_type`, `restructuring_level`, and `priority_scope` in the JSON priority object. Use `priority_scope: "mid-cycle"` unless the recommendation is only a supervision watch item. Close the narrative with a section titled **Mid-Cycle FCV Watch** covering context-shift flags, cross-change synthesis, advisory procedural nudges, and supervision watch-list items. Also populate top-level JSON field `mid_cycle_watch` as an array of short strings.
+
+For each detected change type, ground the priority in the two linked checks: context-change since approval and conflict-sensitivity of the change. For AF, include the well-performing-project / waiver question only as advisory. For PDO change, include the ToC essence test and conflict-population check. For significant new scope, activities, or geography, flag a possible reappraisal-trigger question. Do not make eligibility, waiver, approval-authority, or restructuring-level determinations.
+
 {playbook_guidance}
 
 ## Instrument Awareness
@@ -1727,9 +2026,9 @@ The SEA/SH card and the GRM card may both appear in the output — they address 
 - For any [R] or [S+R] priority, `why_it_matters` includes the shift justification sentence
 - No [From: ...] citation tags appear anywhere in the narrative or JSON fields
 - JSON block is present at the end, wrapped in %%%JSON_START%%% / %%%JSON_END%%%
-- All 6 top-level JSON fields are populated (fcv_rating, fcv_responsiveness_rating, sensitivity_summary, responsiveness_summary, risk_exposure, priorities)
+- All 7 top-level JSON fields are populated (fcv_rating, fcv_responsiveness_rating, sensitivity_summary, responsiveness_summary, risk_exposure, mid_cycle_watch, priorities)
 - Each priority's pad_sections, actions (including per-action suggested_language), and implementation_note are specific to this project — not generic placeholders
-- Each priority JSON object has all 16 fields: title, fcv_dimension, tag, refresh_shift, risk_level, the_gap, why_it_matters, actions, who_acts, when, action_timing, resources, pad_sections, country_category_relevance, implementation_note, cpf_alignment
+- Each priority JSON object has all 19 fields: title, fcv_dimension, tag, refresh_shift, risk_level, the_gap, why_it_matters, actions, who_acts, when, action_timing, resources, pad_sections, country_category_relevance, implementation_note, cpf_alignment, change_type, restructuring_level, priority_scope
 - No generic or templated language anywhere
 - All `when` values are appropriate for the {doc_type} stage
 
@@ -1749,6 +2048,7 @@ The FCV ratings, summaries, and risk exposure paragraphs you have written in the
     "risks_to": "The Risks to project paragraph from the FCV Risk Exposure section above",
     "risks_from": "The How project could affect fragility paragraph from the FCV Risk Exposure section above"
   }}}},
+  "mid_cycle_watch": ["Use only for AF/Restructuring; otherwise return an empty array"],
   "priorities": [
     {{{{
       "title": "Priority 1 · Short descriptive phrase",
@@ -1756,6 +2056,9 @@ The FCV ratings, summaries, and risk exposure paragraphs you have written in the
       "tag": "[S+R]",
       "refresh_shift": "Shift B: Differentiate",
       "risk_level": "High",
+      "change_type": "Results framework change",
+      "restructuring_level": "Level 2",
+      "priority_scope": "mid-cycle",
       "the_gap": "Specific gap with named location/group/institution",
       "why_it_matters": "Why this gap matters for this project, including shift justification for [R] or [S+R] tags",
       "actions": [
@@ -2531,6 +2834,7 @@ def clean_stage1_output(text):
     text = re.sub(r'%%%INSTRUMENT_TYPE:[^%\n]*%%%\n?', '', text)
     text = re.sub(r'%%%PROCESS_TYPE:[^%\n]*%%%\n?', '', text)
     text = re.sub(r'%%%TEMPORAL_CONTEXT_START%%%.*?%%%TEMPORAL_CONTEXT_END%%%\n?', '', text, flags=re.DOTALL)
+    text = re.sub(r'%%%CHANGE_TYPE_START%%%.*?%%%CHANGE_TYPE_END%%%\n?', '', text, flags=re.DOTALL)
     # NEW: strip country classification, sector context, and context flags blocks
     text = re.sub(r'%%%COUNTRY_CLASSIFICATION_START%%%.*?%%%COUNTRY_CLASSIFICATION_END%%%\n?', '', text, flags=re.DOTALL)
     text = re.sub(r'%%%SECTOR_CONTEXT_START%%%.*?%%%SECTOR_CONTEXT_END%%%\n?', '', text, flags=re.DOTALL)
@@ -2768,6 +3072,7 @@ def extract_priorities(text: str, uploaded_doc_names: list = None) -> dict:
         'sensitivity_summary': '',
         'responsiveness_summary': '',
         'risk_exposure': {'risks_to': '', 'risks_from': ''},
+        'mid_cycle_watch': [],
     }
 
     m = re.search(r'%%%JSON_START%%%(.*?)%%%JSON_END%%%', text, re.DOTALL)
@@ -2869,6 +3174,7 @@ def extract_priorities(text: str, uploaded_doc_names: list = None) -> dict:
             'risks_to': risks_to,
             'risks_from': risks_from,
         },
+        'mid_cycle_watch': data.get('mid_cycle_watch', []),
     }
 
 
@@ -3138,7 +3444,8 @@ def get_glossary_for_prompt() -> str:
     return '\n'.join(lines)
 
 
-_DESIGN_STAGE_DOCS = {'PCN', 'PID', 'PAD', 'AF', 'Restructuring'}
+_DESIGN_STAGE_DOCS = {'PCN', 'PID', 'PAD'}
+_MID_CYCLE_DOCS = {'AF', 'Restructuring'}
 
 
 def _detect_cpf_present(uploaded_names: list, conversation_history: list) -> bool:
@@ -3169,10 +3476,11 @@ def _detect_cpf_present(uploaded_names: list, conversation_history: list) -> boo
 def _build_temporal_guardrail(temporal_ctx: dict, doc_type: str = 'Unknown') -> str:
     """Build a temporal anchoring guardrail string from extracted temporal context.
 
-    For design-stage documents (PCN/PID/PAD/AF/Restructuring) the function always
+    For design-stage documents (PCN/PID/PAD) the function always
     returns preparation-phase framing regardless of whether the approval date is in
     the past.  A PAD with a historic approval date is still a PAD — the date is
-    metadata, not a lifecycle trigger.
+    metadata, not a lifecycle trigger. AF and Restructuring use a separate
+    mid-cycle live-project framing.
     """
     if not temporal_ctx or temporal_ctx.get('error'):
         return (
@@ -3196,6 +3504,21 @@ def _build_temporal_guardrail(temporal_ctx: dict, doc_type: str = 'Unknown') -> 
         return "Temporal context could not be determined."
 
     base = "TEMPORAL CONTEXT (from document):\n" + "\n".join(parts)
+
+    if doc_type in _MID_CYCLE_DOCS:
+        base += (
+            f"\n\nMID-CYCLE LIVE-PROJECT FRAMING: This is a {doc_type} mid-cycle document. "
+            "Reason about the live project only where the AF Project Paper or Restructuring Paper "
+            "provides Tier-1 evidence, especially its Implementation Progress & Status, Rationale, "
+            "and Proposed Changes sections. If the original PAD/PCN, latest ISR, RRA, or CPF was "
+            "uploaded, use it as uploaded Tier-1 context for targeted comparison. Do NOT invent "
+            "implementation facts, ratings, disbursement history, waiver status, or project-specific "
+            "events not present in the uploaded documents. Public web research may inform context-change "
+            "since approval, but must be tier-labelled and treated as verification support rather than "
+            "project implementation evidence. Procedural points must remain advisory and should direct "
+            "the team to verify with OPCS or regional management."
+        )
+        return base
 
     # For design-stage documents, enforce preparation-phase framing unconditionally.
     # A past approval date does NOT make a PAD an implementation-review document.
@@ -3737,6 +4060,9 @@ def run_stage():
                 doc_type_ctx = build_doc_type_context(document_type, 1)
                 if doc_type_ctx:
                     stage_prompt = doc_type_ctx + "\n\n" + stage_prompt
+                mid_cycle_slice = get_mid_cycle_slice(document_type)
+                if mid_cycle_slice:
+                    stage_prompt = stage_prompt + mid_cycle_slice
             else:
                 # For Implementation Review Stage 1, append both MTR and ISR process guides
                 # (process type detected by LLM; specific slice injected in Stage 2/3)
@@ -3804,6 +4130,9 @@ def run_stage():
                     "\n\n--- FCV Glossary (Key Term Definitions) ---\n" +
                     get_glossary_for_prompt()
                 )
+                mid_cycle_slice = get_mid_cycle_slice(document_type)
+                if mid_cycle_slice:
+                    stage_prompt = stage_prompt + mid_cycle_slice
 
                 # CPF Q3 conditionality: tell LLM whether a CPF is available
                 _cpf_present_s2 = _detect_cpf_present(uploaded_doc_names_payload, conversation_history)
@@ -3941,6 +4270,9 @@ def run_stage():
                     "\n\n--- CPF Integration Guide (use when CPF was uploaded as a contextual document) ---\n" +
                     CPF_INTEGRATION_GUIDE
                 )
+                mid_cycle_slice = get_mid_cycle_slice(doc_type)
+                if mid_cycle_slice:
+                    stage_prompt = stage_prompt + mid_cycle_slice
 
                 # CPF explicit signal: content-aware detection
                 if _detect_cpf_present(uploaded_doc_names_payload, conversation_history):
@@ -4170,6 +4502,8 @@ def run_stage():
                 _country_classification = {}
                 _context_flags = {}
                 _sector_context = {}
+                _change_types = {}
+                mid_cycle_watch = []
 
                 if stage == 2:
                     # Stage 2: extract ratings and Under the Hood panels
@@ -4191,6 +4525,7 @@ def run_stage():
                     risk_exposure = parsed.get('risk_exposure', None)
                     sensitivity_summary = parsed.get('sensitivity_summary', '')
                     responsiveness_summary = parsed.get('responsiveness_summary', '')
+                    mid_cycle_watch = parsed.get('mid_cycle_watch', [])
                     gap_table = extract_gap_table(full_text)
                     parse_error = parsed.get('error', False)
                     parse_error_message = parsed.get('message', '')
@@ -4212,6 +4547,7 @@ def run_stage():
                     _country_classification = extract_country_classification(full_text)
                     _context_flags = extract_context_flags(full_text)
                     _sector_context = extract_sector_context(full_text)
+                    _change_types = extract_change_types(full_text)
                     _s1_primary_names = [dp['name'] for dp in doc_parts if dp['label'] == 'PROJECT DOCUMENT']
                     _s1_package_names = [dp['name'] for dp in doc_parts if dp['label'] == 'PACKAGE INSTRUMENT']
                     _s1_context_names = [dp['name'] for dp in doc_parts if dp['label'] == 'CONTEXT DOCUMENT']
@@ -4259,6 +4595,7 @@ def run_stage():
                     'country_classification': _country_classification if stage == 1 else None,
                     'context_flags': _context_flags if stage == 1 else None,
                     'sector_context': _sector_context if stage == 1 else None,
+                    'change_types': _change_types if stage == 1 else None,
                     'review_mode': review_mode,
                 }
 
@@ -4285,6 +4622,7 @@ def run_stage():
                     done_data['risk_exposure'] = risk_exposure
                     done_data['sensitivity_summary'] = sensitivity_summary
                     done_data['responsiveness_summary'] = responsiveness_summary
+                    done_data['mid_cycle_watch'] = mid_cycle_watch
                     done_data['horizon_considerations'] = horizon
                     done_data['applied_snippets'] = [
                         {'id': s['id'], 'title': s['title'], 'source': s['source']}
@@ -4598,6 +4936,13 @@ def run_express():
                 # Select Stage 1 prompt based on review mode
                 s1_key = 'impl_1' if is_impl else '1'
                 stage1_prompt = load_prompts().get(s1_key, DEFAULT_PROMPTS.get(s1_key, get_prompt_for_stage(1)))
+                if not is_impl:
+                    doc_type_ctx = build_doc_type_context(doc_type, 1)
+                    if doc_type_ctx:
+                        stage1_prompt = doc_type_ctx + "\n\n" + stage1_prompt
+                    mid_cycle_slice = get_mid_cycle_slice(doc_type)
+                    if mid_cycle_slice:
+                        stage1_prompt = stage1_prompt + mid_cycle_slice
                 if is_impl:
                     stage1_prompt = (
                         stage1_prompt +
@@ -4636,6 +4981,7 @@ def run_express():
                 country_classification = extract_country_classification(stage1_output)
                 context_flags = extract_context_flags(stage1_output)
                 sector_context = extract_sector_context(stage1_output)
+                change_types = extract_change_types(stage1_output)
                 if is_impl:
                     process_type = extract_process_type(stage1_output)
                     doc_type = process_type  # Use process type as doc_type label for impl mode
@@ -4661,7 +5007,7 @@ def run_express():
                 # ── Stage 1 done event ──
                 # Strip classifier delimiter tags from display output; history retains raw text.
                 stage1_display = clean_stage1_output(stage1_output)
-                yield f"data: {json.dumps({'stage_done': 1, 'result': stage1_display, 'history': conversation_history, 'research_brief': research_brief_text, 'research_country': research_country, 'doc_type': doc_type, 'instrument_type': instrument_type, 'temporal_context': temporal_context, 'process_type': process_type if is_impl else None, 'country_classification': country_classification, 'context_flags': context_flags, 'sector_context': sector_context, 'review_mode': review_mode})}\n\n"
+                yield f"data: {json.dumps({'stage_done': 1, 'result': stage1_display, 'history': conversation_history, 'research_brief': research_brief_text, 'research_country': research_country, 'doc_type': doc_type, 'instrument_type': instrument_type, 'temporal_context': temporal_context, 'process_type': process_type if is_impl else None, 'country_classification': country_classification, 'context_flags': context_flags, 'sector_context': sector_context, 'change_types': change_types, 'review_mode': review_mode})}\n\n"
 
                 # ════════════════════════════════════════════════════════════
                 # STAGE 2 — FCV Assessment
@@ -4728,6 +5074,10 @@ def run_express():
                     )
 
                 # ── DIFFERENTIATED APPROACH INJECTION (express) ──────────────
+                mid_cycle_slice = get_mid_cycle_slice(doc_type)
+                if mid_cycle_slice:
+                    stage2_prompt = stage2_prompt + mid_cycle_slice
+
                 confirmed_category_e2 = (
                     country_classification.get('category', 'General')
                     if isinstance(country_classification, dict) else 'General'
@@ -4867,6 +5217,10 @@ def run_express():
                         CPF_INTEGRATION_GUIDE
                     )
 
+                    mid_cycle_slice = get_mid_cycle_slice(doc_type)
+                    if mid_cycle_slice:
+                        stage3_prompt = stage3_prompt + mid_cycle_slice
+
                     # CPF explicit signal: content-aware detection
                     if _detect_cpf_present(_doc_names_ex, conversation_history):
                         stage3_prompt = (
@@ -4944,7 +5298,7 @@ def run_express():
                     conversation_history = conversation_history[-20:]
 
                 # ── Stage 3 done event ──
-                yield f"data: {json.dumps({'stage_done': 3, 'result': stage3_output_clean, 'history': conversation_history, 'priorities': parsed.get('priorities', []), 'fcv_rating': parsed.get('fcv_rating', ''), 'fcv_responsiveness_rating': parsed.get('fcv_responsiveness_rating', ''), 'sensitivity_summary': parsed.get('sensitivity_summary', ''), 'responsiveness_summary': parsed.get('responsiveness_summary', ''), 'risk_exposure': parsed.get('risk_exposure'), 'gap_table': extract_gap_table(stage3_output), 'parse_error': parsed.get('error', False), 'parse_error_message': parsed.get('message', ''), 'horizon_considerations': horizon, 'applied_snippets': [{'id': s['id'], 'title': s['title'], 'source': s['source']} for s in secondary_snippets_s3e]})}\n\n"
+                yield f"data: {json.dumps({'stage_done': 3, 'result': stage3_output_clean, 'history': conversation_history, 'priorities': parsed.get('priorities', []), 'fcv_rating': parsed.get('fcv_rating', ''), 'fcv_responsiveness_rating': parsed.get('fcv_responsiveness_rating', ''), 'sensitivity_summary': parsed.get('sensitivity_summary', ''), 'responsiveness_summary': parsed.get('responsiveness_summary', ''), 'risk_exposure': parsed.get('risk_exposure'), 'mid_cycle_watch': parsed.get('mid_cycle_watch', []), 'gap_table': extract_gap_table(stage3_output), 'parse_error': parsed.get('error', False), 'parse_error_message': parsed.get('message', ''), 'horizon_considerations': horizon, 'applied_snippets': [{'id': s['id'], 'title': s['title'], 'source': s['source']} for s in secondary_snippets_s3e]})}\n\n"
 
                 # ── Express complete ──
                 yield f"data: {json.dumps({'express_done': True})}\n\n"
@@ -5169,6 +5523,7 @@ def download_report():
     fcv_rating = data.get('fcv_rating', '')
     fcv_resp_rating = data.get('fcv_responsiveness_rating', '')
     risk_exposure = data.get('risk_exposure') or {}
+    mid_cycle_watch = data.get('mid_cycle_watch') or []
     horizon = data.get('horizon_considerations', '')
     under_hood = data.get('under_hood') or {}
     meta = data.get('metadata', {})
@@ -5371,6 +5726,12 @@ def download_report():
                     meta_parts.append(f'FCV Strategy 2026-2030: {pr["refresh_shift"]}')
                 if pr.get('action_timing') and pr['action_timing'] in timing_map:
                     meta_parts.append(f'Timing: {timing_map[pr["action_timing"]]}')
+                if pr.get('change_type'):
+                    meta_parts.append(f'Change: {pr["change_type"]}')
+                if pr.get('restructuring_level'):
+                    meta_parts.append(f'Restructuring level: {pr["restructuring_level"]}')
+                if pr.get('priority_scope'):
+                    meta_parts.append(f'Scope: {pr["priority_scope"]}')
                 if meta_parts:
                     _add_single_para(' | '.join(meta_parts), size=9, color=WB_GRAY)
 
@@ -5414,6 +5775,11 @@ def download_report():
                     _add_single_para(' · '.join(footer_parts), size=9, color=WB_GRAY)
 
         # ── Watch List for Supervision ──
+        if mid_cycle_watch:
+            _add_section_heading('Mid-Cycle FCV Watch')
+            for item in mid_cycle_watch:
+                _add_single_para(str(item), space_after=3)
+
         if horizon:
             _add_section_heading('Watch List for Supervision')
             _md_to_docx_para(doc, horizon)

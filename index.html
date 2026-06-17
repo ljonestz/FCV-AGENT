@@ -2350,6 +2350,8 @@
   let instrumentType='Unknown';
   let horizonConsiderations='';
   let temporalContext={};
+  let changeTypes={};
+  let midCycleWatch=[];
   let analysisMode='express';
   let reviewMode='design';
   let processType='Unknown';
@@ -3034,6 +3036,7 @@
               if(p.country_classification){countryClassification=p.country_classification;localStorage.setItem('country_classification',JSON.stringify(countryClassification));}
               if(p.context_flags)contextFlags=p.context_flags;
               if(p.sector_context)sectorContext=p.sector_context;
+              if(p.change_types)changeTypes=p.change_types;
               const cat=countryClassification.category||'General';
               const catSuffix=cat&&cat!=='General'?' \u00B7 '+esc(cat):'';
               const summary1=(reviewMode==='implementation'?(processType!=='Unknown'?processType:'Process')+' detected':docType!=='Unknown'?docType:'Document')+catSuffix+' \u00B7 Context extracted';
@@ -3063,6 +3066,7 @@
               if(p.fcv_rating)fcvRating=p.fcv_rating;
               if(p.fcv_responsiveness_rating)fcvResponsivenessRating=p.fcv_responsiveness_rating;
               if(p.priorities)stageThreePriorities=p.priorities;
+              if(p.mid_cycle_watch)midCycleWatch=p.mid_cycle_watch;
               if(p.horizon_considerations)horizonConsiderations=p.horizon_considerations;
               if(p.applied_snippets)stageAppliedSnippets=p.applied_snippets;
               localStorage.setItem('stage3_timestamp',Date.now());
@@ -3195,7 +3199,7 @@
     if(analysisMode!=='express')startSbsLoadingTimers(stage);
 
     try{
-      const payload={stage,history:hist,user_message:followOn||'',document_type:docType,instrument_type:instrumentType,temporal_context:temporalContext,review_mode:reviewMode,process_type:processType,user_context:(document.getElementById('user-context')?.value||'').trim(),uploaded_doc_names:[...pF.map(f=>f.name),...pkF.map(f=>f.name),...cF.map(f=>f.name)],country_classification:countryClassification,context_flags:contextFlags,sector_context:sectorContext};
+      const payload={stage,history:hist,user_message:followOn||'',document_type:docType,instrument_type:instrumentType,temporal_context:temporalContext,change_types:changeTypes,review_mode:reviewMode,process_type:processType,user_context:(document.getElementById('user-context')?.value||'').trim(),uploaded_doc_names:[...pF.map(f=>f.name),...pkF.map(f=>f.name),...cF.map(f=>f.name)],country_classification:countryClassification,context_flags:contextFlags,sector_context:sectorContext};
       // Attach session prompt override if user has edited this stage's prompt
       if(sessionPrompts[stage]){
         payload.prompt_override = sessionPrompts[stage];
@@ -3312,7 +3316,7 @@
                 if(p.responsiveness_rating){ fcvResponsivenessRating=p.responsiveness_rating; }
                 if(p.under_hood){ stage2UnderHood=p.under_hood; localStorage.setItem('stage2_under_hood', JSON.stringify(p.under_hood)); }
               }
-              if(stage===3){stageGapTable=p.gap_table||null;stageRiskExposure=p.risk_exposure||null;stageSensitivitySummary=p.sensitivity_summary||'';stageResponsivenessSummary=p.responsiveness_summary||'';if(p.fcv_rating)fcvRating=p.fcv_rating;if(p.fcv_responsiveness_rating)fcvResponsivenessRating=p.fcv_responsiveness_rating;if(p.applied_snippets)stageAppliedSnippets=p.applied_snippets;}
+              if(stage===3){stageGapTable=p.gap_table||null;stageRiskExposure=p.risk_exposure||null;stageSensitivitySummary=p.sensitivity_summary||'';stageResponsivenessSummary=p.responsiveness_summary||'';midCycleWatch=p.mid_cycle_watch||[];if(p.fcv_rating)fcvRating=p.fcv_rating;if(p.fcv_responsiveness_rating)fcvResponsivenessRating=p.fcv_responsiveness_rating;if(p.applied_snippets)stageAppliedSnippets=p.applied_snippets;}
               // Write timestamps BEFORE renderOut so the consistency check inside renderOut reads the current run's value
               // Stage 2 completion also clears any previously dismissed banner on Stage 3
               if(stage===2){ localStorage.setItem('stage2_timestamp', Date.now()); localStorage.removeItem('stage3_consistency_dismissed'); }
@@ -3330,6 +3334,7 @@
                 if(p.country_classification){countryClassification=p.country_classification;localStorage.setItem('country_classification',JSON.stringify(countryClassification));}
                 if(p.context_flags)contextFlags=p.context_flags;
                 if(p.sector_context)sectorContext=p.sector_context;
+                if(p.change_types)changeTypes=p.change_types;
               }
               renderOut(stage,renderResult,followOn);setStepper(stage,'done');
               enableClickableStepper();
@@ -3360,6 +3365,7 @@
               if(stage===3 && p.priorities && p.priorities.length){
                 stageThreePriorities=p.priorities;
                 if(p.horizon_considerations)horizonConsiderations=p.horizon_considerations;
+                if(p.mid_cycle_watch)midCycleWatch=p.mid_cycle_watch;
                 // Clear Go Deeper caches so stale results don't reappear for new Stage 3 run
                 currentDeeperTab = {};
                 for(var i=0;i<10;i++){
@@ -4408,6 +4414,7 @@
       fcv_rating: fcvRating || '',
       fcv_responsiveness_rating: fcvResponsivenessRating || '',
       risk_exposure: stageRiskExposure || null,
+      mid_cycle_watch: midCycleWatch || [],
       horizon_considerations: horizonConsiderations || '',
       metadata: {
         date_str: dateStr,
@@ -4525,6 +4532,12 @@
       });
     }
 
+    // ── Mid-Cycle FCV Watch (AF / Restructuring) ──
+    if(Array.isArray(midCycleWatch) && midCycleWatch.length){
+      body += `<h2 class="exp-section-hdr">Mid-Cycle FCV Watch</h2>
+        <ul class="horizon-body">${midCycleWatch.map(w=>`<li>${esc(w)}</li>`).join('')}</ul>`;
+    }
+
     // ── Watch List ──
     if(horizonConsiderations && horizonConsiderations.trim()){
       body += `<h2 class="exp-section-hdr">Watch List for Supervision</h2>
@@ -4614,6 +4627,9 @@ ${body}
             <span class="pc-chip ${riskCls}">Priority: ${esc(pr.risk_level||'—')}</span>
             ${pr.refresh_shift?`<span class="shift-badge">${esc('FCV Strategy 2026-2030 '+pr.refresh_shift)}</span>`:''}
             ${tEntry?`<span class="timing-pill ${tEntry.c}">${esc(tEntry.l)}</span>`:''}
+            ${pr.change_type?`<span class="pc-chip">Change: ${esc(pr.change_type)}</span>`:''}
+            ${pr.restructuring_level?`<span class="pc-chip">${esc(pr.restructuring_level)}</span>`:''}
+            ${pr.priority_scope?`<span class="pc-chip">Scope: ${esc(pr.priority_scope)}</span>`:''}
           </div>
           ${(pr.who_acts||pr.when||pr.resources)?`<div class="pc-meta-row">
             ${pr.who_acts?`<span class="pc-meta-chip"><strong>Who:</strong> ${esc(pr.who_acts)}</span>`:''}
@@ -5046,6 +5062,9 @@ ${body}
               ${pr.dimension ? `<span class="pc-chip">${esc(pr.dimension)}</span>` : ''}
               ${pr.refresh_shift ? `<span class="shift-badge" title="${esc(shiftTooltips[pr.refresh_shift] || pr.refresh_shift)}">${esc('FCV Strategy 2026-2030 ' + pr.refresh_shift)}</span>` : ''}
               ${(()=>{const tl={'flag-for-preparation':{label:'Flag for preparation',cls:'timing-flag-for-preparation'},'required-before-appraisal':{label:'Required before appraisal',cls:'timing-required-before-appraisal'},'required-before-board':{label:'Required before Board',cls:'timing-required-before-board'},'next-series':{label:'Next in series',cls:'timing-next-series'},'supervision':{label:'Supervision / monitoring',cls:'timing-supervision'},'pre-appraisal':{label:'Required before appraisal',cls:'timing-required-before-appraisal'}};const t=tl[pr.action_timing];return t?`<span class="timing-pill ${t.cls}">${t.label}</span>`:'';})()}
+              ${pr.change_type ? `<span class="pc-chip">Change: ${esc(pr.change_type)}</span>` : ''}
+              ${pr.restructuring_level ? `<span class="pc-chip">${esc(pr.restructuring_level)}</span>` : ''}
+              ${pr.priority_scope ? `<span class="pc-chip">Scope: ${esc(pr.priority_scope)}</span>` : ''}
             </div>
             ${(pr.who_acts||pr.when||pr.resources) ? `<div class="pc-meta-row">
               ${pr.who_acts ? `<span class="pc-meta-chip"><strong>Who:</strong> ${(pr.who_acts||'').split(';').map(w=>w.trim()).filter(Boolean).map(w=>'<span class="who-chip">'+esc(w)+'</span>').join(' ')}</span>` : ''}
