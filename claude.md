@@ -98,6 +98,14 @@ Every prompt output tags findings as [S], [R], or [S+R], assigned dynamically pe
   - **Stage 3:** DPF-aware output (Program Document sections / policy matrix / LDP; DPF reference set; `next-series` timing); top-level `dpf_watch` array + DPF FCV Watch section in DOCX and HTML exports
   - **Knowledge:** `DPF_MODULE_GUIDE` + `DPF_POLICY_AREA_CHECKLIST` in `background_docs.py`, grounded in OPS5.02-POL.120 + OP 2.30; injected via `get_dpf_slice()`
   - **Tests:** `tests/test_dpf_phase2.py` (9 tests); full suite 96 passed; no IPF/mid-cycle regression
+- **v9.7** - Phase 3 P4R/PforR instrument module (branch `feat/phase3-p4r`, base Phase 2 `feat/phase2-dpf` / PR #26, 2026-06-17):
+  - **DLI + verification spine:** Stage 1 emits `%%%DLIS_START%%%...%%%DLIS_END%%%` (ipf_component; program_boundary; fcs_status; dlis; verification) when INSTRUMENT_TYPE is PforR; parsed by `extract_dlis()`; stripped from display by `clean_stage1_output()`
+  - **P4R rubric:** `P4R_RUBRIC` (DLI conflict-sensitivity / IVA-verifiability / geographic inclusion / ESSA-ESMS / GRM / disbursement-cliff) via the Phase 0 `score_sr()` interface
+  - **Registry/state:** `MODULE_REGISTRY` entries for `(PCN|PID|PAD|Unknown, PFORR, single)` with `p4r_dli_verification_spine` / `p4r_no_esf_escp` / `p4r_disbursement_under_conflict_headline` / `p4r_instrument_feasibility_advisory` guardrails; `AnalysisState` carries dlis / has_ipf_component, auto-adds `p4r_module`
+  - **Stage 2 overlay:** DLI unit (no ESF/ESCP); headline = disbursement under conflict (IVA verification access + disbursement cliff, no CERC valve); DLI-realism; program-boundary/exclusions; ESSA/ESMS + GRM harm screen; OP 7.30 / government-systems feasibility advisory; IPF-component dual-spine
+  - **Stage 3:** P4R-aware output (PforR PAD sections; DLI / verification-protocol / PAP language; P4R reference set); top-level `p4r_watch` array + P4R FCV Watch section in DOCX and HTML exports
+  - **Knowledge:** `P4R_MODULE_GUIDE` in `background_docs.py`, grounded in OPS5.09 + OP 7.30; injected via `get_p4r_slice()`
+  - **Tests:** `tests/test_p4r_phase3.py` (9 tests); full suite 105 passed; no IPF/mid-cycle/DPF regression
 - **v9.2** - Classification caveat and background_docs policy corrections (branch `feat/v9-differentiated-approaches`, 2026-04-19):
   - **Classification widget caveat:** Narrative now always ends with "This is a subjective judgement on the part of this AI tool and does not constitute an official WBG classification." — consistent with Stage 1 AI disclaimer framing
   - **background_docs.py — ICR timing:** `STAGE_GUIDANCE_MAP["ICR"]["timing_options"]` corrected from `"During implementation"` to `"At project closing"`
@@ -595,6 +603,6 @@ docs/superpowers/  # Dev plans and specs
 ---
 
 **Last updated:** 2026-06-17
-**Current version:** FCV Project Screener v9.6
+**Current version:** FCV Project Screener v9.7
 **Claude model:** `claude-sonnet-4-6`
 **Stack:** Flask 3.0.3 + vanilla JS + Anthropic SDK + gunicorn/gevent on Render
