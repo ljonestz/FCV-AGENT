@@ -81,6 +81,15 @@ Every prompt output tags findings as [S], [R], or [S+R], assigned dynamically pe
 - **v9.4** - Stream timeout hardening (branch `fix/stage3-stream-timeout`, 2026-05-06):
   - **Backend stream timeout:** `_stream_stage()` now enforces server-side stage wall-clock limits (Stage 1: 8 min, Stage 2: 6 min, Stage 3: 8 min) in addition to frontend abort timers. This prevents Stage 3 provider stalls from sending keepalives indefinitely and leaving Express or Step-by-Step runs stuck on the loading screen.
   - **Shared stream helper:** Step-by-Step now uses the same queue-based `_stream_stage()` helper as Express, so keepalive and timeout behavior is consistent across both modes.
+- **v9.5** - Phase 1 mid-cycle overlay: Additional Financing & Restructuring (branch `feat/phase1-mid-cycle`, base Phase 0 `8389f39` / PR #24, 2026-06-17):
+  - **Change-type block:** Stage 1 emits `%%%CHANGE_TYPE_START%%%...%%%CHANGE_TYPE_END%%%` (change_types; restructuring_level; rationale) for AF/Restructuring; stripped from display by `clean_stage1_output()`. Parsed by `extract_change_types()`; level derived by `derive_restructuring_level()`
+  - **Audit-resolved restructuring level:** PDO change = Level 2 / RVP or CD-DD advisory signal (NOT Level 1). Level 1 is narrow: Alternative Procurement Arrangements and Bank Guarantee expiration-date extension only. Routing is advisory - verify with OPCS, no determinations. `RESTRUCTURING_GUIDE` + `AF_GUIDE` constants added; stale `WB_PROCESS_GUIDE[Restructuring]` Level-1 text corrected
+  - **Mid-cycle temporal guardrail:** `_build_temporal_guardrail(temporal_ctx, doc_type)` returns MID-CYCLE LIVE-PROJECT FRAMING (Tier-1 anchored) for AF/Restructuring vs preparation framing for PCN/PID/PAD
+  - **Registry/state:** `MODULE_REGISTRY` specialization for AF/Restructuring IPF single with `mid_cycle_overlay` guardrail + change_type output; `AnalysisState` carries change_types/restructuring_level
+  - **Stage 2 overlay:** two linked checks per change - context-change since approval + conflict-sensitivity; AF waiver advisory; PDO ToC reassessment; reappraisal-trigger advisory
+  - **Stage 3 priorities:** new change_type, restructuring_level, priority_scope fields + top-level mid_cycle_watch; Board-memo vs team-advisory register (7 top-level / 19 per-priority JSON fields)
+  - **Export parity:** `/api/download-report` (DOCX) and `downloadHTML()` both render change/level/scope chips and a Mid-Cycle FCV Watch section
+  - **Tests:** `tests/test_mid_cycle_phase1.py` (7 tests); full suite 87 passed; no IPF single-country regression
 - **v9.2** - Classification caveat and background_docs policy corrections (branch `feat/v9-differentiated-approaches`, 2026-04-19):
   - **Classification widget caveat:** Narrative now always ends with "This is a subjective judgement on the part of this AI tool and does not constitute an official WBG classification." — consistent with Stage 1 AI disclaimer framing
   - **background_docs.py — ICR timing:** `STAGE_GUIDANCE_MAP["ICR"]["timing_options"]` corrected from `"During implementation"` to `"At project closing"`
@@ -577,7 +586,7 @@ docs/superpowers/  # Dev plans and specs
 
 ---
 
-**Last updated:** 2026-05-06
-**Current version:** FCV Project Screener v9.4
+**Last updated:** 2026-06-17
+**Current version:** FCV Project Screener v9.5
 **Claude model:** `claude-sonnet-4-6`
 **Stack:** Flask 3.0.3 + vanilla JS + Anthropic SDK + gunicorn/gevent on Render
