@@ -90,6 +90,14 @@ Every prompt output tags findings as [S], [R], or [S+R], assigned dynamically pe
   - **Stage 3 priorities:** new change_type, restructuring_level, priority_scope fields + top-level mid_cycle_watch; Board-memo vs team-advisory register (7 top-level / 19 per-priority JSON fields)
   - **Export parity:** `/api/download-report` (DOCX) and `downloadHTML()` both render change/level/scope chips and a Mid-Cycle FCV Watch section
   - **Tests:** `tests/test_mid_cycle_phase1.py` (7 tests); full suite 87 passed; no IPF single-country regression
+- **v9.6** - Phase 2 DPF/DPO instrument module (branch `feat/phase2-dpf`, base Phase 1 `feat/phase1-mid-cycle` / PR #25, 2026-06-17):
+  - **Prior-action spine:** Stage 1 emits `%%%PRIOR_ACTIONS_START%%%...%%%PRIOR_ACTIONS_END%%%` (financing_source IBRD/IDA; series_position; cat_ddo; prior_actions; indicative_triggers) when INSTRUMENT_TYPE is DPO; parsed by `extract_prior_actions()`; stripped from display by `clean_stage1_output()`
+  - **DPF rubric:** `DPF_RUBRIC` (prior-action conflict-sensitivity / reform-sequencing / PSIA / conflict-exception / macro-fiscal / political-economy) via the Phase 0 `score_sr()` interface - replaces the 12-OST '% addressed' rubric for DPF
+  - **Registry/state:** `MODULE_REGISTRY` entries for `(PCN|PID|PAD|Unknown, DPO, single)` with `dpf_prior_action_spine` / `dpf_no_esf_escp_dli` / `dpf_macro_imf_headline` guardrails; `AnalysisState` carries financing_source / series_position / cat_ddo / prior_actions and auto-adds `dpf_module`
+  - **Stage 2 overlay:** prior-action unit (no ESF/ESCP/DLI); headline 1 = macro framework / IMF coordination (para 8); headline 2 = conflict-exception adequacy (Paragraph 38-39); PSIA hybrid harm screen; series 24-month lapse / reversal; IBRD vs IDA; Cat DDO sub-branch
+  - **Stage 3:** DPF-aware output (Program Document sections / policy matrix / LDP; DPF reference set; `next-series` timing); top-level `dpf_watch` array + DPF FCV Watch section in DOCX and HTML exports
+  - **Knowledge:** `DPF_MODULE_GUIDE` + `DPF_POLICY_AREA_CHECKLIST` in `background_docs.py`, grounded in OPS5.02-POL.120 + OP 2.30; injected via `get_dpf_slice()`
+  - **Tests:** `tests/test_dpf_phase2.py` (9 tests); full suite 96 passed; no IPF/mid-cycle regression
 - **v9.2** - Classification caveat and background_docs policy corrections (branch `feat/v9-differentiated-approaches`, 2026-04-19):
   - **Classification widget caveat:** Narrative now always ends with "This is a subjective judgement on the part of this AI tool and does not constitute an official WBG classification." — consistent with Stage 1 AI disclaimer framing
   - **background_docs.py — ICR timing:** `STAGE_GUIDANCE_MAP["ICR"]["timing_options"]` corrected from `"During implementation"` to `"At project closing"`
@@ -587,6 +595,6 @@ docs/superpowers/  # Dev plans and specs
 ---
 
 **Last updated:** 2026-06-17
-**Current version:** FCV Project Screener v9.5
+**Current version:** FCV Project Screener v9.6
 **Claude model:** `claude-sonnet-4-6`
 **Stack:** Flask 3.0.3 + vanilla JS + Anthropic SDK + gunicorn/gevent on Render

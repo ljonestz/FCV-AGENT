@@ -21,7 +21,8 @@ from background_docs import (
     FCV_INSTRUMENT_CALIBRATION, CPF_INTEGRATION_GUIDE,
     OP730_COUNTRIES, FCS_COUNTRIES_CURRENT, FCS_COUNTRY_ALIASES,
     FCS_COUNTRY_CATEGORIES, DIFFERENTIATED_APPROACHES, SECONDARY_KNOWLEDGE,
-    RESTRUCTURING_GUIDE, AF_GUIDE
+    RESTRUCTURING_GUIDE, AF_GUIDE,
+    DPF_MODULE_GUIDE, DPF_POLICY_AREA_CHECKLIST
 )
 import io
 try:
@@ -208,6 +209,33 @@ IPF_DEFAULT_RUBRIC = Rubric(
 )
 
 
+DPF_RUBRIC = Rubric(
+    name="DPF prior-action / PSIA",
+    dimensions=(
+        "prior_action_conflict_sensitivity",
+        "reform_sequencing",
+        "psia_adequacy",
+        "conflict_exception_adequacy",
+        "macro_fiscal_fragility",
+        "political_economy_reversibility",
+    ),
+    sensitivity_thresholds=(
+        ("Strong", 0.80),
+        ("Adequate", 0.60),
+        ("Partial", 0.40),
+        ("Low", 0.20),
+        ("Extremely Low", 0.0),
+    ),
+    responsiveness_thresholds=(
+        ("Strong", 0.80),
+        ("Adequate", 0.60),
+        ("Partial", 0.40),
+        ("Low", 0.0),
+    ),
+    quality_gates=("psia_adequacy_cap", "conflict_exception_cap", "macro_framework_cap"),
+)
+
+
 def _rating_from_thresholds(score: float, thresholds: tuple[tuple[str, float], ...]) -> str:
     for label, floor in thresholds:
         if score >= floor:
@@ -319,6 +347,47 @@ for _mid_cycle_doc_type in ("AF", "Restructuring"):
         ),
     )
 
+# Phase 2 — DPF/DPO instrument module: prior-action spine, PSIA harm screen, no ESF/DLI.
+for _dpf_doc_type in ("PCN", "PID", "PAD", "Unknown"):
+    MODULE_REGISTRY[_module_key(_dpf_doc_type, "DPO", "single")] = ModuleConfig(
+        key=_module_key(_dpf_doc_type, "DPO", "single"),
+        rubric=DPF_RUBRIC,
+        legacy_instrument="DPO",
+        knowledge_keys=(
+            "DPF_MODULE_GUIDE",
+            "DPF_POLICY_AREA_CHECKLIST",
+            "FCV_GUIDE",
+            "FCV_INSTRUMENT_CALIBRATION",
+        ),
+        intake_fields=(
+            "instrument",
+            "doc_type",
+            "countries",
+            "financing_source",
+            "series_position",
+            "cat_ddo",
+            "prior_operation_pd",
+            "imf_relations",
+        ),
+        output_fields=(
+            "fcv_rating",
+            "fcv_responsiveness_rating",
+            "priorities",
+            "prior_action",
+            "program_document_sections",
+            "dpf_watch",
+        ),
+        guardrails=(
+            "compact_label_history",
+            "tier1_citation_discipline",
+            "advisory_procedural_language",
+            "dpf_prior_action_spine",
+            "dpf_no_esf_escp_dli",
+            "dpf_macro_imf_headline",
+            "dpf_conflict_exception_check",
+        ),
+    )
+
 
 def select_module(doc_type: str = "Unknown", instrument: str = "Unknown", country_scope: str = "single") -> ModuleConfig:
     """Select analysis module, defaulting to the existing IPF single-country path."""
@@ -342,6 +411,10 @@ class AnalysisState:
     restructuring_level: str | None = None
     change_types: list[str] = field(default_factory=list)
     parent_operation: str | None = None
+    financing_source: str | None = None
+    series_position: str | None = None
+    cat_ddo: bool = False
+    prior_actions: list[str] = field(default_factory=list)
     active_modules: list[str] = field(default_factory=list)
     intersection: dict[str, Any] = field(default_factory=dict)
 
@@ -361,6 +434,13 @@ class AnalysisState:
         active_modules = list(intake.get("active_modules", payload.get("active_modules", [])) or [])
         if doc_type in {"AF", "Restructuring"} and "mid_cycle_overlay" not in active_modules:
             active_modules.append("mid_cycle_overlay")
+        if str(instrument).strip().upper() == "DPO" and "dpf_module" not in active_modules:
+            active_modules.append("dpf_module")
+        prior_actions = intake.get("prior_actions", payload.get("prior_actions", [])) or []
+        if isinstance(prior_actions, str):
+            prior_actions = [c.strip() for c in re.split(r'[;\n]', prior_actions) if c.strip()]
+        cat_ddo_raw = intake.get("cat_ddo", payload.get("cat_ddo", False))
+        cat_ddo = cat_ddo_raw if isinstance(cat_ddo_raw, bool) else str(cat_ddo_raw).strip().lower() in {"true", "yes", "1"}
         return cls(
             instrument=instrument,
             doc_type=doc_type,
@@ -370,6 +450,10 @@ class AnalysisState:
             restructuring_level=intake.get("restructuring_level", payload.get("restructuring_level")),
             change_types=change_types if isinstance(change_types, list) else [],
             parent_operation=intake.get("parent_operation", payload.get("parent_operation")),
+            financing_source=intake.get("financing_source", payload.get("financing_source")),
+            series_position=intake.get("series_position", payload.get("series_position")),
+            cat_ddo=cat_ddo,
+            prior_actions=prior_actions if isinstance(prior_actions, list) else [],
             active_modules=active_modules,
             intersection=dict(intake.get("intersection", payload.get("intersection", {})) or {}),
         )
@@ -703,6 +787,100 @@ def extract_change_types(stage1_output: str) -> dict[str, Any]:
         "restructuring_authority": authority,
         "rationale": rationale or derived["reason"],
     }
+
+
+def _normalise_financing_source(raw: str) -> str:
+    text = (raw or "").strip().upper()
+    if "IBRD" in text:
+        return "IBRD"
+    if "IDA" in text:
+        return "IDA"
+    return "Unknown"
+
+
+def extract_prior_actions(stage1_output: str) -> dict[str, Any]:
+    """Extract the DPF prior-action spine from a %%%PRIOR_ACTIONS_START/END%%% block.
+
+    Returns financing source (IBRD/IDA), series position, Cat DDO flag, the prior-action
+    list, and indicative triggers. Mirrors extract_change_types(): tolerant of JSON or
+    simple ``key: value`` lines, with semicolon-separated lists.
+    """
+    empty = {
+        "error": True,
+        "financing_source": "Unknown",
+        "series_position": "",
+        "is_programmatic": False,
+        "cat_ddo": False,
+        "prior_actions": [],
+        "indicative_triggers": [],
+    }
+    pattern = r'%%%PRIOR_ACTIONS_START%%%(.*?)%%%PRIOR_ACTIONS_END%%%'
+    m = re.search(pattern, stage1_output or '', re.DOTALL | re.IGNORECASE)
+    if not m:
+        return empty
+
+    block = m.group(1).strip()
+    financing_raw = ""
+    series_position = ""
+    cat_ddo_raw = ""
+    prior_actions_raw = ""
+    triggers_raw = ""
+
+    try:
+        parsed = json.loads(block)
+        financing_raw = str(parsed.get("financing_source", "") or "")
+        series_position = str(parsed.get("series_position", "") or "")
+        cat_ddo_raw = str(parsed.get("cat_ddo", "") or "")
+        pa = parsed.get("prior_actions", [])
+        prior_actions_raw = "; ".join(pa) if isinstance(pa, list) else str(pa or "")
+        tr = parsed.get("indicative_triggers", [])
+        triggers_raw = "; ".join(tr) if isinstance(tr, list) else str(tr or "")
+    except (json.JSONDecodeError, ValueError, TypeError):
+        for line in block.splitlines():
+            if ':' not in line:
+                continue
+            key, value = line.split(':', 1)
+            key = key.strip().lower()
+            value = value.strip()
+            if key == "financing_source":
+                financing_raw = value
+            elif key == "series_position":
+                series_position = value
+            elif key == "cat_ddo":
+                cat_ddo_raw = value
+            elif key in {"prior_actions", "prior_action"}:
+                prior_actions_raw = value
+            elif key in {"indicative_triggers", "triggers"}:
+                triggers_raw = value
+
+    prior_actions = [p.strip() for p in re.split(r'[;\n]', prior_actions_raw) if p.strip()]
+    indicative_triggers = [t.strip() for t in re.split(r'[;\n]', triggers_raw) if t.strip()]
+    cat_ddo = str(cat_ddo_raw).strip().lower() in {"true", "yes", "1"}
+    is_programmatic = bool(
+        re.search(r'programmatic|\bof\b|tranche|operation\s*\d', series_position, re.IGNORECASE)
+    ) and "standalone" not in series_position.lower()
+
+    return {
+        "error": False,
+        "financing_source": _normalise_financing_source(financing_raw),
+        "series_position": series_position,
+        "is_programmatic": is_programmatic,
+        "cat_ddo": cat_ddo,
+        "prior_actions": prior_actions,
+        "indicative_triggers": indicative_triggers,
+    }
+
+
+def get_dpf_slice(instrument: str) -> str:
+    """Return DPF/DPO module guidance for prompt injection (instrument == DPO)."""
+    if str(instrument).strip().upper() != "DPO":
+        return ""
+    return (
+        "\n\n--- Development Policy Financing (DPF/DPO) Module Guide ---\n"
+        + DPF_MODULE_GUIDE
+        + "\n\n--- DPF FCV Policy-Area Coverage Checklist ---\n"
+        + DPF_POLICY_AREA_CHECKLIST
+    )
 
 
 def get_process_slice(process_type: str) -> str:
@@ -1213,6 +1391,16 @@ restructuring_level: [Level 1 / Level 2 / Unknown]
 rationale: [1-2 sentences explaining the detected change types and why the level is advisory]
 %%%CHANGE_TYPE_END%%%
 
+If INSTRUMENT_TYPE is DPO (Development Policy Financing), also output this prior-action block. DPF is appraised through prior actions (not components, ESF, or DLIs), so extract them from the Program Document / policy matrix. If the operation is not a DPF/DPO, output empty values.
+
+%%%PRIOR_ACTIONS_START%%%
+financing_source: [IBRD / IDA / Unknown]
+series_position: [Standalone / Programmatic (operation n of m)]
+cat_ddo: [true / false — true only if this is a Catastrophe Deferred Drawdown Option]
+prior_actions: [semicolon-separated list of the prior actions, each summarised in one clause]
+indicative_triggers: [semicolon-separated indicative triggers for later operations in a programmatic series; empty if standalone]
+%%%PRIOR_ACTIONS_END%%%
+
 DOCUMENT TYPE PRIMACY RULE
 The document type identified above (PCN / PID / PAD / AF / Restructuring / ISR / Unknown) is the authoritative lifecycle classifier. Do not modify or override it based on dates.
 
@@ -1282,6 +1470,12 @@ If Stage 1 identifies DOC_TYPE as AF or Restructuring, apply the mid-cycle overl
 2. **conflict-sensitivity of the change** - does the proposed change reduce, ignore, or worsen inclusion, legitimacy, social cohesion, security, livelihoods, or resilience risks?
 
 For AF, add the well-performing-project / waiver advisory only as a question for the TTL: ask whether ratings are FCV-affected and whether an RVP-approved exception or waiver is in train if uploaded ISR or paper evidence suggests this may matter. For PDO change, run the ToC reassessment and conflict-population check. For significant new scope, new activities, or new geography, flag a possible reappraisal-trigger question. Keep all procedural language advisory; never state eligibility, waiver, or approval authority as a determination.
+
+## DPF / DPO Overlay (Development Policy Financing only)
+If INSTRUMENT_TYPE is DPO, apply the injected DPF Module Guide and policy-area checklist. The unit of analysis is **prior actions** from the Stage 1 `%%%PRIOR_ACTIONS_START%%%` block - NOT components, ESF/ESCP, or DLIs (do not screen for or penalise the absence of those). For each prior action, assess conflict-sensitivity (distributional winners/losers, conflict-affected groups), reform sequencing (reform cost vs safety-net), and reversibility / political economy. Then run two headline checks:
+1. **Macroeconomic framework / IMF coordination (para 8)** - does the PD's macroeconomic assessment reflect FCV fiscal vulnerabilities; is IMF coordination or programme status in place; flag programme-lapse and data-reliability risks. Foreground this macro / IMF finding; phrase it for the country economist, not as a determination.
+2. **Conflict-exception adequacy (Paragraph 38-39)**, if the country is conflict-affected - does the PD describe when and how the deferred design considerations (distributional, environmental, fiduciary, consultation) will be addressed, or are they silently waived?
+Harm screen = **PSIA adequacy (para 13)** plus the Paragraph 38-39 check (a hybrid of the policy-area coverage checklist and narrative), replacing the ESF/DNH safeguards screen. For programmatic series, assess indicative-trigger reversal risk and the 24-month programmatic-lapse risk. Differentiate IBRD vs IDA framing. If a Cat DDO is detected, add the Cat DDO sub-branch (trigger design, payout governance, anticipatory-finance value, climate/DRM linkage). Keep all procedural and macro language advisory.
 
 # Internal Analytical Framework
 You MUST assess the project against ALL of the following (from the FCV Operational Manual), but do NOT expose this framework directly in the TTL-facing narrative. Use it to drive your thematic analysis.
@@ -1755,6 +1949,14 @@ Every mid-cycle priority must be change-aware. Populate `change_type`, `restruct
 
 For each detected change type, ground the priority in the two linked checks: context-change since approval and conflict-sensitivity of the change. For AF, include the well-performing-project / waiver question only as advisory. For PDO change, include the ToC essence test and conflict-population check. For significant new scope, activities, or geography, flag a possible reappraisal-trigger question. Do not make eligibility, waiver, approval-authority, or restructuring-level determinations.
 
+## DPF / DPO Overlay (Development Policy Financing only)
+If INSTRUMENT_TYPE is DPO, write instrument-true recommendations anchored to **prior actions** and the Program Document - not PAD sections, ESCP, ESF standards, SORT-as-monitoring, or DLIs. Use DPF-aware output framing:
+- `pad_sections` carries **Program Document sections** (Program Description / Prior Actions; Poverty and Social Impacts; Environmental Aspects; Macroeconomic Policy / Fund Relations; Results).
+- `suggested_language` targets the **Program Document, policy matrix, or Letter of Development Policy (LDP)**.
+- Anchor to the DPF reference set: Prior Actions, Policy Matrix, PSIA, Program Document, LDP, Results Indicators, Fund Relations Note (Cat DDO: trigger / parametric design).
+- `next-series` is the apt `action_timing` for indicative-trigger recommendations in a programmatic series.
+Foreground the two headline findings as priorities where material: the **macroeconomic framework / IMF coordination (para 8)** finding and, for conflict-affected operations, the **conflict-exception adequacy (Paragraph 38-39)** finding. Ground harm findings in **PSIA adequacy (para 13)** and reform-cost / safety-net sequencing. Close the narrative with a section titled **DPF FCV Watch** covering the macro/IMF watch, programmatic-series reversal and 24-month-lapse risk, Cat DDO activation (if present), and conflict-exception follow-through. Also populate top-level JSON field `dpf_watch` as an array of short strings. Keep all procedural and macroeconomic language advisory - never determine macroeconomic adequacy, financing source, or approval.
+
 {playbook_guidance}
 
 ## Instrument Awareness
@@ -2026,7 +2228,7 @@ The SEA/SH card and the GRM card may both appear in the output — they address 
 - For any [R] or [S+R] priority, `why_it_matters` includes the shift justification sentence
 - No [From: ...] citation tags appear anywhere in the narrative or JSON fields
 - JSON block is present at the end, wrapped in %%%JSON_START%%% / %%%JSON_END%%%
-- All 7 top-level JSON fields are populated (fcv_rating, fcv_responsiveness_rating, sensitivity_summary, responsiveness_summary, risk_exposure, mid_cycle_watch, priorities)
+- All 8 top-level JSON fields are populated (fcv_rating, fcv_responsiveness_rating, sensitivity_summary, responsiveness_summary, risk_exposure, mid_cycle_watch, dpf_watch, priorities)
 - Each priority's pad_sections, actions (including per-action suggested_language), and implementation_note are specific to this project — not generic placeholders
 - Each priority JSON object has all 19 fields: title, fcv_dimension, tag, refresh_shift, risk_level, the_gap, why_it_matters, actions, who_acts, when, action_timing, resources, pad_sections, country_category_relevance, implementation_note, cpf_alignment, change_type, restructuring_level, priority_scope
 - No generic or templated language anywhere
@@ -2049,6 +2251,7 @@ The FCV ratings, summaries, and risk exposure paragraphs you have written in the
     "risks_from": "The How project could affect fragility paragraph from the FCV Risk Exposure section above"
   }}}},
   "mid_cycle_watch": ["Use only for AF/Restructuring; otherwise return an empty array"],
+  "dpf_watch": ["Use only for DPF/DPO; otherwise return an empty array"],
   "priorities": [
     {{{{
       "title": "Priority 1 · Short descriptive phrase",
@@ -2835,6 +3038,7 @@ def clean_stage1_output(text):
     text = re.sub(r'%%%PROCESS_TYPE:[^%\n]*%%%\n?', '', text)
     text = re.sub(r'%%%TEMPORAL_CONTEXT_START%%%.*?%%%TEMPORAL_CONTEXT_END%%%\n?', '', text, flags=re.DOTALL)
     text = re.sub(r'%%%CHANGE_TYPE_START%%%.*?%%%CHANGE_TYPE_END%%%\n?', '', text, flags=re.DOTALL)
+    text = re.sub(r'%%%PRIOR_ACTIONS_START%%%.*?%%%PRIOR_ACTIONS_END%%%\n?', '', text, flags=re.DOTALL)
     # NEW: strip country classification, sector context, and context flags blocks
     text = re.sub(r'%%%COUNTRY_CLASSIFICATION_START%%%.*?%%%COUNTRY_CLASSIFICATION_END%%%\n?', '', text, flags=re.DOTALL)
     text = re.sub(r'%%%SECTOR_CONTEXT_START%%%.*?%%%SECTOR_CONTEXT_END%%%\n?', '', text, flags=re.DOTALL)
@@ -3073,6 +3277,7 @@ def extract_priorities(text: str, uploaded_doc_names: list = None) -> dict:
         'responsiveness_summary': '',
         'risk_exposure': {'risks_to': '', 'risks_from': ''},
         'mid_cycle_watch': [],
+        'dpf_watch': [],
     }
 
     m = re.search(r'%%%JSON_START%%%(.*?)%%%JSON_END%%%', text, re.DOTALL)
@@ -3175,6 +3380,7 @@ def extract_priorities(text: str, uploaded_doc_names: list = None) -> dict:
             'risks_from': risks_from,
         },
         'mid_cycle_watch': data.get('mid_cycle_watch', []),
+        'dpf_watch': data.get('dpf_watch', []),
     }
 
 
@@ -4133,6 +4339,9 @@ def run_stage():
                 mid_cycle_slice = get_mid_cycle_slice(document_type)
                 if mid_cycle_slice:
                     stage_prompt = stage_prompt + mid_cycle_slice
+                dpf_slice = get_dpf_slice(instrument_type)
+                if dpf_slice:
+                    stage_prompt = stage_prompt + dpf_slice
 
                 # CPF Q3 conditionality: tell LLM whether a CPF is available
                 _cpf_present_s2 = _detect_cpf_present(uploaded_doc_names_payload, conversation_history)
@@ -4273,6 +4482,9 @@ def run_stage():
                 mid_cycle_slice = get_mid_cycle_slice(doc_type)
                 if mid_cycle_slice:
                     stage_prompt = stage_prompt + mid_cycle_slice
+                dpf_slice = get_dpf_slice(instrument_type)
+                if dpf_slice:
+                    stage_prompt = stage_prompt + dpf_slice
 
                 # CPF explicit signal: content-aware detection
                 if _detect_cpf_present(uploaded_doc_names_payload, conversation_history):
@@ -4503,7 +4715,9 @@ def run_stage():
                 _context_flags = {}
                 _sector_context = {}
                 _change_types = {}
+                _prior_actions = {}
                 mid_cycle_watch = []
+                dpf_watch = []
 
                 if stage == 2:
                     # Stage 2: extract ratings and Under the Hood panels
@@ -4526,6 +4740,7 @@ def run_stage():
                     sensitivity_summary = parsed.get('sensitivity_summary', '')
                     responsiveness_summary = parsed.get('responsiveness_summary', '')
                     mid_cycle_watch = parsed.get('mid_cycle_watch', [])
+                    dpf_watch = parsed.get('dpf_watch', [])
                     gap_table = extract_gap_table(full_text)
                     parse_error = parsed.get('error', False)
                     parse_error_message = parsed.get('message', '')
@@ -4548,6 +4763,7 @@ def run_stage():
                     _context_flags = extract_context_flags(full_text)
                     _sector_context = extract_sector_context(full_text)
                     _change_types = extract_change_types(full_text)
+                    _prior_actions = extract_prior_actions(full_text)
                     _s1_primary_names = [dp['name'] for dp in doc_parts if dp['label'] == 'PROJECT DOCUMENT']
                     _s1_package_names = [dp['name'] for dp in doc_parts if dp['label'] == 'PACKAGE INSTRUMENT']
                     _s1_context_names = [dp['name'] for dp in doc_parts if dp['label'] == 'CONTEXT DOCUMENT']
@@ -4596,6 +4812,7 @@ def run_stage():
                     'context_flags': _context_flags if stage == 1 else None,
                     'sector_context': _sector_context if stage == 1 else None,
                     'change_types': _change_types if stage == 1 else None,
+                    'prior_actions': _prior_actions if stage == 1 else None,
                     'review_mode': review_mode,
                 }
 
@@ -4623,6 +4840,7 @@ def run_stage():
                     done_data['sensitivity_summary'] = sensitivity_summary
                     done_data['responsiveness_summary'] = responsiveness_summary
                     done_data['mid_cycle_watch'] = mid_cycle_watch
+                    done_data['dpf_watch'] = dpf_watch
                     done_data['horizon_considerations'] = horizon
                     done_data['applied_snippets'] = [
                         {'id': s['id'], 'title': s['title'], 'source': s['source']}
@@ -4982,6 +5200,7 @@ def run_express():
                 context_flags = extract_context_flags(stage1_output)
                 sector_context = extract_sector_context(stage1_output)
                 change_types = extract_change_types(stage1_output)
+                prior_actions = extract_prior_actions(stage1_output)
                 if is_impl:
                     process_type = extract_process_type(stage1_output)
                     doc_type = process_type  # Use process type as doc_type label for impl mode
@@ -5007,7 +5226,7 @@ def run_express():
                 # ── Stage 1 done event ──
                 # Strip classifier delimiter tags from display output; history retains raw text.
                 stage1_display = clean_stage1_output(stage1_output)
-                yield f"data: {json.dumps({'stage_done': 1, 'result': stage1_display, 'history': conversation_history, 'research_brief': research_brief_text, 'research_country': research_country, 'doc_type': doc_type, 'instrument_type': instrument_type, 'temporal_context': temporal_context, 'process_type': process_type if is_impl else None, 'country_classification': country_classification, 'context_flags': context_flags, 'sector_context': sector_context, 'change_types': change_types, 'review_mode': review_mode})}\n\n"
+                yield f"data: {json.dumps({'stage_done': 1, 'result': stage1_display, 'history': conversation_history, 'research_brief': research_brief_text, 'research_country': research_country, 'doc_type': doc_type, 'instrument_type': instrument_type, 'temporal_context': temporal_context, 'process_type': process_type if is_impl else None, 'country_classification': country_classification, 'context_flags': context_flags, 'sector_context': sector_context, 'change_types': change_types, 'prior_actions': prior_actions, 'review_mode': review_mode})}\n\n"
 
                 # ════════════════════════════════════════════════════════════
                 # STAGE 2 — FCV Assessment
@@ -5077,6 +5296,9 @@ def run_express():
                 mid_cycle_slice = get_mid_cycle_slice(doc_type)
                 if mid_cycle_slice:
                     stage2_prompt = stage2_prompt + mid_cycle_slice
+                dpf_slice = get_dpf_slice(instrument_type)
+                if dpf_slice:
+                    stage2_prompt = stage2_prompt + dpf_slice
 
                 confirmed_category_e2 = (
                     country_classification.get('category', 'General')
@@ -5220,6 +5442,9 @@ def run_express():
                     mid_cycle_slice = get_mid_cycle_slice(doc_type)
                     if mid_cycle_slice:
                         stage3_prompt = stage3_prompt + mid_cycle_slice
+                    dpf_slice = get_dpf_slice(instrument_type)
+                    if dpf_slice:
+                        stage3_prompt = stage3_prompt + dpf_slice
 
                     # CPF explicit signal: content-aware detection
                     if _detect_cpf_present(_doc_names_ex, conversation_history):
@@ -5298,7 +5523,7 @@ def run_express():
                     conversation_history = conversation_history[-20:]
 
                 # ── Stage 3 done event ──
-                yield f"data: {json.dumps({'stage_done': 3, 'result': stage3_output_clean, 'history': conversation_history, 'priorities': parsed.get('priorities', []), 'fcv_rating': parsed.get('fcv_rating', ''), 'fcv_responsiveness_rating': parsed.get('fcv_responsiveness_rating', ''), 'sensitivity_summary': parsed.get('sensitivity_summary', ''), 'responsiveness_summary': parsed.get('responsiveness_summary', ''), 'risk_exposure': parsed.get('risk_exposure'), 'mid_cycle_watch': parsed.get('mid_cycle_watch', []), 'gap_table': extract_gap_table(stage3_output), 'parse_error': parsed.get('error', False), 'parse_error_message': parsed.get('message', ''), 'horizon_considerations': horizon, 'applied_snippets': [{'id': s['id'], 'title': s['title'], 'source': s['source']} for s in secondary_snippets_s3e]})}\n\n"
+                yield f"data: {json.dumps({'stage_done': 3, 'result': stage3_output_clean, 'history': conversation_history, 'priorities': parsed.get('priorities', []), 'fcv_rating': parsed.get('fcv_rating', ''), 'fcv_responsiveness_rating': parsed.get('fcv_responsiveness_rating', ''), 'sensitivity_summary': parsed.get('sensitivity_summary', ''), 'responsiveness_summary': parsed.get('responsiveness_summary', ''), 'risk_exposure': parsed.get('risk_exposure'), 'mid_cycle_watch': parsed.get('mid_cycle_watch', []), 'dpf_watch': parsed.get('dpf_watch', []), 'gap_table': extract_gap_table(stage3_output), 'parse_error': parsed.get('error', False), 'parse_error_message': parsed.get('message', ''), 'horizon_considerations': horizon, 'applied_snippets': [{'id': s['id'], 'title': s['title'], 'source': s['source']} for s in secondary_snippets_s3e]})}\n\n"
 
                 # ── Express complete ──
                 yield f"data: {json.dumps({'express_done': True})}\n\n"
@@ -5524,6 +5749,7 @@ def download_report():
     fcv_resp_rating = data.get('fcv_responsiveness_rating', '')
     risk_exposure = data.get('risk_exposure') or {}
     mid_cycle_watch = data.get('mid_cycle_watch') or []
+    dpf_watch = data.get('dpf_watch') or []
     horizon = data.get('horizon_considerations', '')
     under_hood = data.get('under_hood') or {}
     meta = data.get('metadata', {})
@@ -5778,6 +6004,11 @@ def download_report():
         if mid_cycle_watch:
             _add_section_heading('Mid-Cycle FCV Watch')
             for item in mid_cycle_watch:
+                _add_single_para(str(item), space_after=3)
+
+        if dpf_watch:
+            _add_section_heading('DPF FCV Watch')
+            for item in dpf_watch:
                 _add_single_para(str(item), space_after=3)
 
         if horizon:
