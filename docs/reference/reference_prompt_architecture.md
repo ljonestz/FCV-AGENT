@@ -29,7 +29,7 @@
 - Part A: Extract only from the project document. No outside knowledge.
 - Part B: Use tiers 1→2→3 in strict priority order; always label the source tier at each point.
 - Extraction guided by Playbook Diagnostics questions (RRA utilisation, compound risks, forced displacement, CPSD)
-- FCV classification context from FCV Refresh injected (is this an FCS country? what trajectory?)
+- FCV classification context from FCV Strategy 2026-2030 injected (is this an FCS country? what trajectory?)
 
 **Large document handling:**
 - Documents > 150,000 characters are condensed via LLM extraction (FCV-relevant content only).
@@ -56,17 +56,17 @@
 
 **TTL-facing output (400–500 words, thematic narrative):**
 - FCV Sensitivity findings: what the project addresses well, where it falls short
-- Do No Harm traffic-light inline (e.g., "6 of 8 principles addressed | 1 partial | 1 gap")
-- FCV Responsiveness findings: framed around the 4 FCV Refresh shifts (not old pillars)
+- Do No Harm traffic-light inline (e.g., "6 of 9 principles addressed | 1 partial | 1 gap")
+- FCV Responsiveness findings: framed around the 4 FCV Strategy 2026-2030 pillars (not old pillars)
 - Key gaps: 3–5 most critical, prioritised, with evidence
 
-**Responsiveness assessment — 4 FCV Refresh shifts:**
+**Responsiveness assessment — 4 FCV Strategy 2026-2030 pillars:**
 - Shift A: Anticipate — does the project design reflect current fragility classification?
 - Shift B: Differentiate — is it calibrated to the country's FCV trajectory/context type?
 - Shift C: Jobs & private sector — does it address economic livelihoods/job creation as a stability pathway?
 - Shift D: Enhanced toolkit — does it leverage operational flexibilities (OP7.30, TPIs, CERC, etc.)?
 
-**Do No Harm — canonical 8 principles:**
+**Do No Harm — canonical 9 principles:**
 1. Conflict-sensitive targeting and beneficiary selection
 2. Avoiding reinforcement of existing power asymmetries
 3. Preventing exacerbation of inter-group tensions
@@ -82,7 +82,7 @@ If in doubt → [S] or [R].
 
 **"Under the Hood" panels (collapsed, expandable `<details>`):**
 - Panel 1: Full 12-rec assessment (table: rec | status | evidence | gaps | shift alignment)
-- Panel 2: Detailed DNH checklist (8 principles, traffic-light table with evidence)
+- Panel 2: Detailed DNH checklist (9 principles, traffic-light table with evidence)
 - Panel 3: 25 key questions mapping (answerable/gaps, evidence for each)
 - Panel 4: Evidence trail (sources used, citation tier, confidence level)
 
@@ -98,7 +98,7 @@ If in doubt → [S] or [R].
 
 %%%UNDER_HOOD_START%%%
   %%%RECS_TABLE_START%%%    [12-rec table with S/R Tag column]  %%%RECS_TABLE_END%%%
-  %%%DNH_CHECKLIST_START%%% [8-principle DNH checklist]         %%%DNH_CHECKLIST_END%%%
+  %%%DNH_CHECKLIST_START%%% [9-principle DNH checklist]         %%%DNH_CHECKLIST_END%%%
   %%%QUESTIONS_MAP_START%%% [25 key questions with findings]    %%%QUESTIONS_MAP_END%%%
   %%%EVIDENCE_TRAIL_START%%% [sources, types, contributions]    %%%EVIDENCE_TRAIL_END%%%
 %%%UNDER_HOOD_END%%%
@@ -111,7 +111,7 @@ If in doubt → [S] or [R].
 
 **Rating Rubric (v7.5):**
 - **Sensitivity:** Count of 12 OST recs rated "Strongly/Partially addressed" → 6-tier baseline. Quality gates cap if 3+ DNH gaps, no conflict analysis, or no geographic specificity.
-- **Responsiveness:** Count of 4 FCV Refresh shifts actively addressed → 6-tier baseline. Quality gates cap if zero shift alignment or no adaptive M&E.
+- **Responsiveness:** Count of 4 FCV Strategy 2026-2030 pillars actively addressed → 6-tier baseline. Quality gates cap if zero shift alignment or no adaptive M&E.
 - **Stage 3 inheritance:** Stage 3 copies Stage 2 ratings verbatim — no independent rating generation.
 
 **Error handling:** If `extract_under_hood()` fails, `parse_error: true` in SSE done event; raw text shown; yellow banner displayed; Stage 3 can still proceed.

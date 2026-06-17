@@ -6,8 +6,10 @@ import queue
 import threading
 import time
 import uuid
+from dataclasses import dataclass, field
 from datetime import date
 from concurrent.futures import ThreadPoolExecutor
+from typing import Any
 from flask import Flask, request, jsonify, send_from_directory, Response, stream_with_context
 import anthropic
 import httpx
@@ -17,7 +19,8 @@ from background_docs import (
     PLAYBOOK_CLOSING, STAGE_GUIDANCE_MAP,
     WB_INSTRUMENT_GUIDE, FCV_GLOSSARY, WB_PROCESS_GUIDE, FCS_LIST,
     FCV_INSTRUMENT_CALIBRATION, CPF_INTEGRATION_GUIDE,
-    OP730_COUNTRIES, FCS_COUNTRIES_CURRENT, DIFFERENTIATED_APPROACHES, SECONDARY_KNOWLEDGE
+    OP730_COUNTRIES, FCS_COUNTRIES_CURRENT, FCS_COUNTRY_ALIASES,
+    FCS_COUNTRY_CATEGORIES, DIFFERENTIATED_APPROACHES, SECONDARY_KNOWLEDGE
 )
 import io
 try:
@@ -52,6 +55,248 @@ ASSESSMENT_EXECUTOR = ThreadPoolExecutor(max_workers=ASSESSMENT_WORKERS)
 
 # ── Research cache (in-process, keyed by country name) ───────────────────────
 _research_cache: dict = {}  # key: country.lower() → {brief, country, sources}
+
+@dataclass(frozen=True)
+class PolicyRegistryEntry:
+    """Version-stamped policy source used by the Render source provider."""
+
+    key: str
+    title: str
+    catalogue_id: str
+    source: str
+    last_updated: str
+    ati_designation: str
+    summary: str
+    needs_verification: bool = False
+
+
+POLICY_REGISTRY: dict[str, PolicyRegistryEntry] = {
+    "dpf_policy": PolicyRegistryEntry(
+        key="dpf_policy",
+        title="Development Policy Financing Policy",
+        catalogue_id="OPS5.02-POL.120",
+        source="World Bank Policy: Development Policy Financing",
+        last_updated="2026-06-16",
+        ati_designation="Public",
+        summary="Current DPF authority; effective 2024-02-01.",
+    ),
+    "fcv_envelope_directive": PolicyRegistryEntry(
+        key="fcv_envelope_directive",
+        title="Fragility, Conflict and Violence Envelope Directive",
+        catalogue_id="DFI2.01-DIR.108",
+        source="IDA FCV Envelope Directive",
+        last_updated="2026-06-16",
+        ati_designation="Official Use Only",
+        summary="Governing source for PRA, RECA, TAA, WHR and related FCV Envelope advice.",
+    ),
+    "fcs_list_fy26": PolicyRegistryEntry(
+        key="fcs_list_fy26",
+        title="FY26 Fragile and Conflict-affected Situations List",
+        catalogue_id="FCS-FY26",
+        source="World Bank FY26 FCS list",
+        last_updated="2026-06-16",
+        ati_designation="Public list; underlying indicator file not embedded",
+        summary="Thirty-five economies with Conflict or Fragility category metadata.",
+    ),
+    "ipf_one_step_processing": PolicyRegistryEntry(
+        key="ipf_one_step_processing",
+        title="April 2026 one-step IPF processing claim",
+        catalogue_id="VERIFY-WITH-OPCS",
+        source="Not confirmed in accessible OPCS material",
+        last_updated="2026-06-16",
+        ati_designation="Unknown",
+        summary="Verify with OPCS before relying on a one-step IPF processing model.",
+        needs_verification=True,
+    ),
+    "ost_manual_alignment": PolicyRegistryEntry(
+        key="ost_manual_alignment",
+        title="FCV Operational Manual 12 recommendations / 25 questions alignment",
+        catalogue_id="VERIFY-WITH-OPCS",
+        source="FCV Operational Manual for FCV Country Coordinators, June 2025",
+        last_updated="2026-06-16",
+        ati_designation="Official Use Only",
+        summary="Verify with OPCS before changing or hard-coding the OST recommendation set.",
+        needs_verification=True,
+    ),
+}
+
+
+class RenderSourceProvider:
+    """Render-safe policy source seam: registry first, explicit verify fallback."""
+
+    def __init__(self, registry: dict[str, PolicyRegistryEntry] | None = None):
+        self.registry = registry or POLICY_REGISTRY
+
+    def get_policy(self, key: str) -> PolicyRegistryEntry:
+        if key in self.registry:
+            return self.registry[key]
+        return PolicyRegistryEntry(
+            key=key,
+            title="Unverified policy reference",
+            catalogue_id="VERIFY-WITH-OPCS",
+            source="Registry miss",
+            last_updated=date.today().isoformat(),
+            ati_designation="Unknown",
+            summary=(
+                "Verify with OPCS / LEG / ESF / FM before presenting this procedural "
+                "point as current policy."
+            ),
+            needs_verification=True,
+        )
+
+
+@dataclass(frozen=True)
+class Rubric:
+    """Instrument-owned S/R scoring metadata."""
+
+    name: str
+    dimensions: tuple[str, ...]
+    sensitivity_thresholds: tuple[tuple[str, float], ...]
+    responsiveness_thresholds: tuple[tuple[str, float], ...]
+    quality_gates: tuple[str, ...] = ()
+
+
+IPF_DEFAULT_RUBRIC = Rubric(
+    name="IPF 12-OST default",
+    dimensions=(
+        "contextual_awareness",
+        "conflict_informed_design",
+        "do_no_harm",
+        "fcv_adapted_operations",
+        "fcv_responsiveness",
+    ),
+    sensitivity_thresholds=(
+        ("Strong", 0.80),
+        ("Adequate", 0.60),
+        ("Partial", 0.40),
+        ("Low", 0.20),
+        ("Extremely Low", 0.0),
+    ),
+    responsiveness_thresholds=(
+        ("Strong", 0.80),
+        ("Adequate", 0.60),
+        ("Partial", 0.40),
+        ("Low", 0.0),
+    ),
+    quality_gates=("do_no_harm_cap", "conflict_analysis_cap", "geographic_specificity_cap"),
+)
+
+
+def _rating_from_thresholds(score: float, thresholds: tuple[tuple[str, float], ...]) -> str:
+    for label, floor in thresholds:
+        if score >= floor:
+            return label
+    return thresholds[-1][0]
+
+
+def score_sr(rubric: Rubric, evidence: dict[str, Any]) -> dict[str, Any]:
+    """Generic S/R scorer; current IPF behavior remains the default rubric."""
+
+    addressed = float(evidence.get("addressed", 0) or 0)
+    partial = float(evidence.get("partial", 0) or 0)
+    weak = float(evidence.get("weak", 0) or 0)
+    not_addressed = float(evidence.get("not_addressed", 0) or 0)
+    total = addressed + partial + weak + not_addressed
+    sensitivity_score = 0.0 if total <= 0 else (addressed + (0.5 * partial) + (0.25 * weak)) / total
+
+    responsiveness_raw = str(evidence.get("responsiveness_evidence", "")).lower()
+    responsiveness_score = {
+        "strong": 0.85,
+        "adequate": 0.65,
+        "partial": 0.45,
+        "limited": 0.20,
+        "low": 0.20,
+        "none": 0.0,
+    }.get(responsiveness_raw, float(evidence.get("responsiveness_score", 0) or 0))
+
+    return {
+        "rubric": rubric.name,
+        "sensitivity_score": round(sensitivity_score, 3),
+        "sensitivity_rating": _rating_from_thresholds(sensitivity_score, rubric.sensitivity_thresholds),
+        "responsiveness_score": round(responsiveness_score, 3),
+        "responsiveness_rating": _rating_from_thresholds(
+            responsiveness_score,
+            rubric.responsiveness_thresholds,
+        ),
+    }
+
+
+@dataclass(frozen=True)
+class ModuleConfig:
+    key: tuple[str, str, str]
+    rubric: Rubric
+    legacy_instrument: str
+    knowledge_keys: tuple[str, ...] = ()
+    intake_fields: tuple[str, ...] = ()
+    output_fields: tuple[str, ...] = ()
+    guardrails: tuple[str, ...] = ()
+
+
+def _module_key(doc_type: str, instrument: str, country_scope: str) -> tuple[str, str, str]:
+    return (
+        (doc_type or "Unknown").strip() or "Unknown",
+        (instrument or "Unknown").strip().upper() or "Unknown",
+        (country_scope or "single").strip().lower() or "single",
+    )
+
+
+MODULE_REGISTRY: dict[tuple[str, str, str], ModuleConfig] = {
+    _module_key(doc_type, "IPF", "single"): ModuleConfig(
+        key=_module_key(doc_type, "IPF", "single"),
+        rubric=IPF_DEFAULT_RUBRIC,
+        legacy_instrument="IPF",
+        knowledge_keys=("FCV_OPERATIONAL_MANUAL", "FCV_GUIDE", "FCV_INSTRUMENT_CALIBRATION"),
+        intake_fields=("instrument", "doc_type", "countries"),
+        output_fields=("fcv_rating", "fcv_responsiveness_rating", "priorities"),
+        guardrails=("compact_label_history", "tier1_citation_discipline", "advisory_procedural_language"),
+    )
+    for doc_type in ("PCN", "PID", "PAD", "AF", "Restructuring", "ISR", "Unknown")
+}
+
+
+def select_module(doc_type: str = "Unknown", instrument: str = "Unknown", country_scope: str = "single") -> ModuleConfig:
+    """Select analysis module, defaulting to the existing IPF single-country path."""
+
+    key = _module_key(doc_type, instrument, country_scope)
+    if key in MODULE_REGISTRY:
+        return MODULE_REGISTRY[key]
+    ipf_key = _module_key(doc_type, "IPF", "single")
+    if ipf_key in MODULE_REGISTRY:
+        return MODULE_REGISTRY[ipf_key]
+    return MODULE_REGISTRY[_module_key("Unknown", "IPF", "single")]
+
+
+@dataclass
+class AnalysisState:
+    instrument: str = "Unknown"
+    doc_type: str = "Unknown"
+    country_scope: str = "single"
+    countries: list[dict[str, Any]] = field(default_factory=list)
+    phase: str | None = None
+    restructuring_level: str | None = None
+    parent_operation: str | None = None
+    active_modules: list[str] = field(default_factory=list)
+    intersection: dict[str, Any] = field(default_factory=dict)
+
+    @classmethod
+    def from_payload(cls, payload: dict[str, Any] | None) -> "AnalysisState":
+        payload = payload or {}
+        intake = payload.get("structured_intake") or payload.get("analysis_state") or {}
+        countries = intake.get("countries", payload.get("countries", [])) or []
+        if isinstance(countries, str):
+            countries = [{"name": c.strip()} for c in countries.split(",") if c.strip()]
+        return cls(
+            instrument=intake.get("instrument", payload.get("instrument_type", "Unknown")) or "Unknown",
+            doc_type=intake.get("doc_type", payload.get("document_type", "Unknown")) or "Unknown",
+            country_scope=intake.get("country_scope", payload.get("country_scope", "single")) or "single",
+            countries=countries if isinstance(countries, list) else [],
+            phase=intake.get("phase", payload.get("phase")),
+            restructuring_level=intake.get("restructuring_level", payload.get("restructuring_level")),
+            parent_operation=intake.get("parent_operation", payload.get("parent_operation")),
+            active_modules=list(intake.get("active_modules", payload.get("active_modules", [])) or []),
+            intersection=dict(intake.get("intersection", payload.get("intersection", {})) or {}),
+        )
+
 
 DO_NO_HARM_HEADER = """---
 **AI-Generated Output — For Review Purposes Only**
@@ -282,14 +527,24 @@ def classify_country(country_name: str) -> dict:
             }
 
     # FCS list check — Conflict-Affected
-    for fcs_country in FCS_COUNTRIES_CURRENT:
-        if fcs_country.lower() == name_lower or name_lower in fcs_country.lower() or fcs_country.lower() in name_lower:
+    fcs_lookup = {c.lower(): c for c in FCS_COUNTRIES_CURRENT}
+    fcs_lookup.update({alias.lower(): canonical for alias, canonical in FCS_COUNTRY_ALIASES.items()})
+    for fcs_name, canonical in fcs_lookup.items():
+        fcs_pattern = rf'\b{re.escape(fcs_name)}\b'
+        name_pattern = rf'\b{re.escape(name_lower)}\b'
+        if (
+            fcs_name == name_lower
+            or re.search(fcs_pattern, name_lower)
+            or re.search(name_pattern, fcs_name)
+        ):
+            fy26_category = FCS_COUNTRY_CATEGORIES.get(canonical, 'FCS')
             return {
                 'category': 'Conflict-Affected',
                 'confidence': 'high',
                 'reasoning': (
-                    f'{name} is on the World Bank FCS list. Government-led delivery is '
-                    f'expected; analysis calibrated for conflict-affected engagement.'
+                    f'{name} is on the World Bank FY26 FCS list ({fy26_category}). '
+                    f'Government-led delivery is expected unless other evidence indicates '
+                    f'otherwise; analysis calibrated for conflict-affected engagement.'
                 )
             }
 
@@ -508,7 +763,7 @@ def extract_under_hood(stage2_output):
 
 DEFAULT_PROMPTS = {
 "1": '''# Role
-You are an expert FCV (Fragility, Conflict, and Violence) analyst for the World Bank Group, specialising in identifying conflict risks and development challenges in fragile contexts. You have access to the WBG FCV Strategy Refresh framework and the FCV Operational Playbook Diagnostics guidance, which inform your analysis of compound risks, forced displacement, private sector dimensions, and FCV classification context.
+You are an expert FCV (Fragility, Conflict, and Violence) analyst for the World Bank Group, specialising in identifying conflict risks and development challenges in fragile contexts. You have access to the WBG FCV Strategy 2026-2030 framework and the FCV Operational Playbook Diagnostics guidance, which inform your analysis of compound risks, forced displacement, private sector dimensions, and FCV classification context.
 
 # Task
 Analyse the provided documents and produce a structured FCV assessment in two clearly separated parts:
@@ -612,7 +867,7 @@ DATA GAP FLAGGING: If a key FCV dimension (e.g. conflict intensity, displacement
   CASE 3 — No RRA exists: If no RRA or equivalent country risk assessment is known to exist, note the absence ("No RRA or country risk assessment was available for cross-reference"), summarise the key FCV risk drivers from background knowledge, and flag that an updated country risk analysis would strengthen the project's FCV grounding.
 
 - IDA FCV ENVELOPE ADVISORY (Conflict-Affected and Situations of Fragility categories only): If the country is classified as Conflict-Affected or Situations of Fragility, add a brief advisory note at the end of Part B — after the synthesis statement — in the following format: "Note for the Task Team: Given [country]'s FCV profile, the team may wish to discuss whether this operation could benefit from IDA FCV Envelope financing windows (PRA, RECA, TAA). Eligibility involves a multi-criteria assessment conducted by the FCV Group — this note is not a determination, but a prompt to raise the conversation with your regional FCV coordinator." Do NOT add this advisory for At Risk or Non-FCS countries.
-- Assess which FCV Refresh strategic shift(s) are most relevant to this project context:
+- Assess which FCV Strategy 2026-2030 strategic shift(s) are most relevant to this project context:
   - Shift A (Anticipate): Is there evidence of forward-looking risk monitoring?
   - Shift B (Differentiate): Is the approach tailored to the specific FCV classification?
   - Shift C (Jobs & Private Sector): Does the project address economic livelihoods or private sector?
@@ -731,7 +986,7 @@ For the country classification:
 ''',
 
 "2": '''# Role
-You are an expert FCV analyst conducting a comprehensive FCV assessment for the World Bank Group. You have deep expertise in the WBG FCV Strategy, the Operational Screening Tool (OST), and the FCV Refresh (January 2026). You are assessing a project based on the Stage 1 context and extraction analysis.
+You are an expert FCV analyst conducting a comprehensive FCV assessment for the World Bank Group. You have deep expertise in the WBG FCV Strategy, the Operational Screening Tool (OST), and the FCV Strategy 2026-2030 (January 2026). You are assessing a project based on the Stage 1 context and extraction analysis.
 
 # Task
 Using the Stage 1 analysis, conduct a comprehensive FCV assessment of this project. You will produce TWO outputs:
@@ -745,7 +1000,7 @@ You MUST assess the project against ALL of the following (from the FCV Operation
 Assess the project against each recommendation. For EACH recommendation, determine:
 - Its status (Strongly addressed / Partially addressed / Weakly addressed / Not addressed)
 - Whether it functions as a SENSITIVITY measure, a RESPONSIVENESS measure, or BOTH [S+R] in this specific project (this is dynamic — the same rec can be S in one project and R in another)
-- Which of the 4 FCV Refresh shifts it aligns with
+- Which of the 4 FCV Strategy 2026-2030 pillars it aligns with
 
 The 12 recommendations:
 1. Use DRRs to inform operational design
@@ -814,8 +1069,8 @@ Shorthand: does this ACTIVELY HELP MAKE FRAGILITY DYNAMICS BETTER?
 
 STRICT RULE: Most findings will be [S] or [R], not [S+R]. Do not default to [S+R] — it must be earned.
 
-# FCV Refresh Strategic Shifts — Cross-Cutting
-The 4 shifts apply to BOTH sensitivity and responsiveness findings. They are strategic directions, not an S/R category:
+# FCV Strategy 2026-2030 Pillars — Cross-Cutting
+The 4 pillars apply to BOTH sensitivity and responsiveness findings. They are strategic directions, not an S/R category:
 - **Anticipate** — Risk monitoring, early warning, forward-looking classification
 - **Differentiate** — Tailoring to FCV context type (conflict/displacement/criminal violence/at-risk)
 - **Jobs & Private Sector** — Economic livelihoods, MSME, private sector entry points
@@ -837,7 +1092,7 @@ Rules for themes:
 - Theme titles should be SHORT and DESCRIPTIVE (e.g., "Contextual Awareness & Risk Analysis", "Targeting, Inclusion & Beneficiary Protection", "Economic Resilience & Root-Cause Engagement")
 - Themes must NOT be named "Sensitivity" or "Responsiveness" — they are analytical groupings that can contain a mix of [S] and [R] findings
 - Each finding within a theme carries exactly ONE tag: [S], [R], or [S+R] — placed at the end of the finding paragraph
-- Each finding references the relevant FCV Refresh shift where applicable — placed after the S/R tag
+- Each finding references the relevant FCV Strategy 2026-2030 pillar where applicable — placed after the S/R tag
 - Be specific: name geographic locations, institutions, mechanisms, project design elements
 - Cite evidence from the project document and Stage 1 analysis
 
@@ -857,7 +1112,7 @@ Assess the project against these 9 Do No Harm principles:
 6. Protecting project staff and beneficiaries from security risks
 7. Monitoring for unintended negative consequences
 8. Establishing accessible and trusted grievance mechanisms
-9. SEA/SH risk management in conflict contexts — for projects operating in conflict-affected areas, or involving contractor workforces, or with female-majority beneficiaries or community workers, assess: (a) Is the SEA/SH risk formally classified (Low / Moderate / High / Very High) and consistent with the conflict context? (b) If risk is High or Very High, does the ESCP include a time-bound commitment to develop and implement a standalone SEA/SH Action Plan? (c) Are GRM reporting channels anonymous/confidential and accessible to women with mobility restrictions? (d) Does the ESS2 Labour Management Procedure address contractor screening for prior SEA/SH incidents and pre-deployment training? (e) Is there a Results Framework indicator for SEA/SH monitoring? Set seash_standalone_flag: TRUE if risk is High or Very High, or if any of the five elements above is absent or inadequate. Pass this flag to Stage 3.
+9. SEA/SH risk management in conflict contexts — for projects operating in conflict-affected areas, or involving contractor workforces, or with female-majority beneficiaries or community workers, assess: (a) Is the SEA/SH risk formally classified (Low / Moderate / Substantial / High) and consistent with the conflict context? (b) If risk is Substantial or High, does the ESCP include a time-bound commitment to develop and implement a standalone SEA/SH Action Plan? (c) Are GRM reporting channels anonymous/confidential and accessible to women with mobility restrictions? (d) Does the ESS2 Labour Management Procedure address contractor screening for prior SEA/SH incidents and pre-deployment training? (e) Is there a Results Framework indicator for SEA/SH monitoring? Set seash_standalone_flag: TRUE if risk is Substantial or High, or if any of the five elements above is absent or inadequate. Pass this flag to Stage 3.
 
 FOR BUDGET SUPPORT INSTRUMENTS (DPF/DPO/DPL) ONLY — Additional DNH assessment (run after principle 9):
 Adjustment Sequencing Risk: Assess whether prior actions or triggers create a window of exposure where reform costs (subsidy removal, price liberalisation, tariff reform, civil service rationalisation) are imposed BEFORE compensatory safety net mechanisms are operational. In FCV contexts, this sequencing gap is a primary conflict escalation pathway — adjustment costs hit FCV-affected populations first, before protective measures are in place. Assess: (a) Does the policy matrix sequence safety net or social protection prior actions before or concurrent with fiscal adjustment measures? (b) Is there a PSIA that explicitly models distributional impacts of reform on conflict-affected or vulnerable populations? (c) Do any prior actions risk triggering political backlash from vested interests in ways that could destabilise the operating environment? This is the most important DNH dimension for budget support in FCV settings — weight it accordingly in the DNH summary line.
@@ -1007,7 +1262,7 @@ Note: the absence of conflict analysis is a less severe gap for projects in at-r
 TRANSPARENCY REQUIRED: In the Rating Reasoning Block, explicitly state what is driving the final Sensitivity rating — is it the percentage score alone, or is a quality gate cap overriding it? Write: "Final rating driven by: [score / DNH cap / conflict analysis cap / geographic specificity cap]." This must be visible in the reasoning block so the TTL can understand why the rating is what it is.
 
 ## Responsiveness Rating
-Assess the depth and breadth of the project's active engagement with FCV root causes and the quality of that engagement, using the 4 FCV Refresh shifts (Anticipate, Differentiate, Jobs & Private Sector, Enhanced Toolkit) as QUALITATIVE LENSES — not as a scoring checklist to tick off.
+Assess the depth and breadth of the project's active engagement with FCV root causes and the quality of that engagement, using the 4 FCV Strategy 2026-2030 pillars (Anticipate, Differentiate, Jobs & Private Sector, Enhanced Toolkit) as QUALITATIVE LENSES — not as a scoring checklist to tick off.
 
 For each shift, make a qualitative judgement: does the project show genuine, embedded alignment with this strategic direction, or is it absent/superficial? A project can show deep alignment with one shift and complete absence of another. The rating reflects overall responsiveness quality, informed by the shift lenses but not mechanically derived from counting how many are "addressed".
 
@@ -1096,7 +1351,7 @@ After the ratings block, emit ALL of the following between delimiters. These are
 | 6 | Protecting project staff and beneficiaries from security risks | [status] | [evidence/gap] |
 | 7 | Monitoring for unintended negative consequences | [status] | [evidence/gap] |
 | 8 | Establishing accessible and trusted grievance mechanisms | [status] | [evidence/gap] |
-| 9 | SEA/SH risk management in conflict contexts (risk classification / Action Plan / GRM channels / LMP provisions / RF indicator) | [status] | [evidence/gap — seash_standalone_flag: TRUE if any element absent or risk rated High/Very High] |
+| 9 | SEA/SH risk management in conflict contexts (risk classification / Action Plan / GRM channels / LMP provisions / RF indicator) | [status] | [evidence/gap — seash_standalone_flag: TRUE if any element absent or risk rated Substantial/High] |
 %%%DNH_CHECKLIST_END%%%
 
 %%%QUESTIONS_MAP_START%%%
@@ -1168,7 +1423,7 @@ Do not require exact terminology. Accept these conceptual equivalents:
 - Be specific: name geographic locations, institutions, mechanisms — not generic statements
 - When evidence is missing, say so explicitly rather than speculating
 - Citations follow the three-tier system from Stage 1: [From: document name] > [From: web research] > [From: training knowledge]
-- The Under the Hood tables must cover ALL items (12 recs, 8 DNH principles, 25 questions) even if evidence is limited — mark gaps explicitly
+- The Under the Hood tables must cover ALL items (12 recs, 9 DNH principles, 25 questions) even if evidence is limited — mark gaps explicitly
 - Ground every assessment in the Stage 1 extraction — quote or paraphrase specifically
 - Distinguish clearly between "Risk TO project" (FCV context threatens delivery) and "Risk FROM project" (project could worsen FCV dynamics)
 - Tailor every assessment to this specific country, sector, and project type — no generic statements
@@ -1178,7 +1433,7 @@ Do not require exact terminology. Accept these conceptual equivalents:
 "3": '''# Role and Context
 You are a senior FCV specialist providing collegial technical input to a World Bank Task Team Leader (TTL). Your purpose is to offer constructive guidance to strengthen the project's FCV integration. Tone: supportive, consultative, operationally focused — a trusted peer reviewer, not an auditor. This is NOT an audit or compliance checklist.
 
-This analysis is grounded in the WBG FCV Strategy Refresh, FCV Operational Manual (OST), FCV Operational Playbook, and Good Practice Notes on Peace & Inclusion Lenses and FCV-Sensitive Programming. When a Country Partnership Framework (CPF) was uploaded, recommendations are also linked to relevant CPF outcomes via the `cpf_alignment` field.
+This analysis is grounded in the WBG FCV Strategy 2026-2030, FCV Operational Manual (OST), FCV Operational Playbook, and Good Practice Notes on Peace & Inclusion Lenses and FCV-Sensitive Programming. When a Country Partnership Framework (CPF) was uploaded, recommendations are also linked to relevant CPF outcomes via the `cpf_alignment` field.
 
 ---
 
@@ -1241,7 +1496,7 @@ Before generating any priority card, identify the detected document type from St
 - Restructuring: Only instruments being changed in the restructuring are modifiable. Reference only the components and instruments being restructured.
 
 DPF/DPO INSTRUMENT EXCLUSIONS — when instrument_type is DPF, DPO, or DPL, the following are EXCLUDED from all priority cards:
-- ESCP (Environmental and Social Commitment Plan): IPF-only instrument. DPFs are governed by OP/BP 8.60 — use "environmental and poverty/social analysis" or "PSIA" framing instead.
+- ESCP (Environmental and Social Commitment Plan): IPF-only instrument. DPFs are governed by OPS5.02-POL.120 — use "environmental and poverty/social analysis" or "PSIA" framing instead.
 - ESS1–ESS10 (Environmental and Social Standards): IPF-only framework. DPFs do not apply the ESF.
 - SORT as an adaptive management or monitoring dashboard: SORT is a preparation-phase risk tool. Do not recommend it as an implementation monitoring mechanism.
 - DLIs (Disbursement-Linked Indicators): DPF-specific instrument is prior action policy conditions, not DLIs. Do not recommend DLIs for DPF operations.
@@ -1344,7 +1599,7 @@ Write a paragraph of 80-100 words assessing the project's overall FCV SENSITIVIT
 (This paragraph will also be reproduced faithfully in the JSON block as `sensitivity_summary`.)
 
 **FCV Responsiveness Summary (80-100 words):**
-Write a paragraph of 80-100 words assessing the project's FCV RESPONSIVENESS — the degree to which it actively contributes to addressing root drivers of fragility and/or building resilience. Anchor this explicitly to whichever of the four FCV Refresh strategic shifts (Shift A: Anticipate, Shift B: Differentiate, Shift C: Jobs & Private Sector, Shift D: Enhanced Toolkit) are most relevant to this project's context and sector. Be honest: many projects will have low responsiveness scores. Say so clearly and explain what the missed opportunity is, rather than inflating the assessment.
+Write a paragraph of 80-100 words assessing the project's FCV RESPONSIVENESS — the degree to which it actively contributes to addressing root drivers of fragility and/or building resilience. Anchor this explicitly to whichever of the four FCV Strategy 2026-2030 pillars (Shift A: Anticipate, Shift B: Differentiate, Shift C: Jobs & Private Sector, Shift D: Enhanced Toolkit) are most relevant to this project's context and sector. Be honest: many projects will have low responsiveness scores. Say so clearly and explain what the missed opportunity is, rather than inflating the assessment.
 (This paragraph will also be reproduced faithfully in the JSON block as `responsiveness_summary`.)
 
 ---
@@ -1367,7 +1622,7 @@ For EACH priority, write the following fields clearly in the narrative. These wi
 TITLE: Priority N · [Actionable verb phrase starting with a strong verb]
 FCV_DIMENSION: [One of: Institutional Legitimacy | Inclusion | Social Cohesion | Security | Economic Livelihoods | Resilience — these map to the analytical risk dimensions and will appear as visible tags on each priority card]
 TAG: [One of: [S] | [R] | [S+R] — see tag definitions below]
-REFRESH_SHIFT: [One of: Shift A: Anticipate | Shift B: Differentiate | Shift C: Jobs & private sector | Shift D: Enhanced toolkit — the FCV Refresh strategic shift this priority most directly aligns with]
+REFRESH_SHIFT: [One of: Shift A: Anticipate | Shift B: Differentiate | Shift C: Jobs & private sector | Shift D: Enhanced toolkit — the FCV Strategy 2026-2030 strategic shift this priority most directly aligns with]
 RISK_LEVEL: [One of: High | Medium | Low — this is the PRIORITY LEVEL of this recommendation (how urgently it needs to be addressed), NOT a separate FCV risk rating. High = must address before or at appraisal; Medium = important but can be addressed during implementation or a subsequent review; Low = useful improvement if bandwidth allows.]
 THE_GAP: 2-3 sentences on what is missing or inadequate in the current project design, specifically for this country and sector. Name the document section or component that is absent or insufficient.
 WHY_IT_MATTERS: 2-3 sentences covering both the operational consequence of not addressing this gap AND its significance through an FCV lens. Name the specific delivery risk, then explain the FCV mechanism at stake (e.g. exclusion fuelling grievance, weak institutions enabling spoilers, displacement disrupting community cohesion). Be concise — cover both dimensions in the same passage. For any priority tagged [R] or [S+R], include a one-sentence shift justification at the end: e.g., "Tagged [R] because this directly addresses Shift B (Differentiate) by calibrating the design to the country's specific FCV trajectory."
@@ -1427,7 +1682,7 @@ Apply the following definitions strictly. [S+R] must be earned — do not use it
 
 [S] — FCV Sensitivity. This priority helps the project AVOID MAKING THINGS WORSE. It concerns how the project operates in the FCV context: contextual awareness, conflict-informed design, Do No Harm, targeting adaptation, risk framework strengthening, FCV-adapted operations and safeguards.
 
-[R] — FCV Responsiveness. This priority ACTIVELY HELPS MAKE FRAGILITY DYNAMICS BETTER. It addresses root causes of fragility, builds resilience, leverages FCV tools for transformative impact, or connects project outcomes to stability and peace dividends. Linked to one or more FCV Refresh shifts: Anticipate (early warning, classification awareness), Differentiate (calibrate to FCV context type), Jobs & Private Sector (economic livelihoods as stability pathways), Enhanced Toolkit (CERC, HEIS, TPM, GEMS, FCV-appropriate implementation).
+[R] — FCV Responsiveness. This priority ACTIVELY HELPS MAKE FRAGILITY DYNAMICS BETTER. It addresses root causes of fragility, builds resilience, leverages FCV tools for transformative impact, or connects project outcomes to stability and peace dividends. Linked to one or more FCV Strategy 2026-2030 pillars: Anticipate (early warning, classification awareness), Differentiate (calibrate to FCV context type), Jobs & Private Sector (economic livelihoods as stability pathways), Enhanced Toolkit (CERC, HEIS, TPM, GEMS, FCV-appropriate implementation).
 
 [S+R] — Reserve ONLY for priorities that genuinely serve both functions simultaneously. The four overlap zones: (1) inclusion/targeting of conflict-affected populations — avoids exclusion harm (S) AND addresses exclusion as a root driver (R); (2) embedding FCV logic substantively in the ToC/PDO; (3) adaptive M&E that monitors harm AND adapts for resilience; (4) GRM designed to strengthen state-citizen accountability. If in doubt, assign [S] or [R].
 
@@ -1575,7 +1830,7 @@ Produce exactly 2-3 items. For each, use:
 - Why it adds value beyond the core recommendation
 - Which specific PAD section or document it would affect (e.g. "Annex 5: SEP", "ESCP Commitment #3", "Project Operations Manual — Adaptive Management")
 - What preconditions, cost, or dependencies it requires
-- Where relevant, how this connects to one of the FCV Refresh strategic shifts (Shift A: Anticipate, Shift B: Differentiate, Shift C: Jobs & Private Sector, Shift D: Enhanced Toolkit)
+- Where relevant, how this connects to one of the FCV Strategy 2026-2030 pillars (Shift A: Anticipate, Shift B: Differentiate, Shift C: Jobs & Private Sector, Shift D: Enhanced Toolkit)
 Make unambiguously clear this is an optional enhancement, not a prerequisite.]
 
 ## Who might act
@@ -1746,7 +2001,7 @@ This is an IMPLEMENTATION review — you are assessing how the project is perfor
 Assess the project's CURRENT IMPLEMENTATION against each of the 12 OST recommendations. For each, determine:
 - Current status: **Performing well** / **Performing adequately** / **Performing weakly** / **Not addressed in implementation** / **N/A for this instrument**
 - Whether implementation is BETTER or WORSE than the original design suggested
-- Which FCV Refresh shift it relates to
+- Which FCV Strategy 2026-2030 pillar it relates to
 
 The 12 dimensions (same as design-stage OST recommendations):
 1. Use of risk/resilience diagnostics to guide implementation adjustments
@@ -1774,7 +2029,7 @@ Apply instrument-specific knowledge. Mark N/A where the recommendation is not ap
 
 **[S+R]** — Reserve for the same four overlap zones as design review (inclusion/targeting, FCV logic in ToC, adaptive M&E, GRM for accountability).
 
-# FCV Refresh Shifts Assessment
+# FCV Strategy 2026-2030 Pillars Assessment
 For each shift, assess how well the project is implementing it:
 - **Anticipate** — Is the project monitoring forward-looking FCV risks? Are adaptive triggers in place?
 - **Differentiate** — Is implementation tailored to the actual FCV context (which may have changed since design)?
@@ -1802,11 +2057,11 @@ If the process type is MTR:
 Group findings into 3–5 ANALYTICAL THEMES based on what the performance assessment surfaces. Theme rules:
 - Titles must be SHORT and DESCRIPTIVE of actual implementation findings
 - Each finding carries exactly ONE tag: [S], [R], or [S+R] at the end of the paragraph
-- Each finding references the relevant FCV Refresh shift where applicable
+- Each finding references the relevant FCV Strategy 2026-2030 pillar where applicable
 - Be specific: name what the project IS doing (or failing to do) in implementation — not what it should have designed
 
 ## Do No Harm (after themes)
-Assess current implementation against the 8 DNH principles:
+Assess current implementation against the 9 DNH principles:
 1. Conflict-sensitive targeting and beneficiary selection
 2. Avoiding reinforcement of existing power asymmetries
 3. Preventing exacerbation of inter-group tensions
@@ -1816,7 +2071,7 @@ Assess current implementation against the 8 DNH principles:
 7. Monitoring for unintended negative consequences
 8. Establishing accessible and trusted grievance mechanisms
 
-Output: "**Do No Harm: [X] of 8 principles actively maintained | [Y] partial | [Z] not addressed**"
+Output: "**Do No Harm: [X] of 9 principles actively maintained | [Y] partial | [Z] not addressed**"
 Then 2–4 sentences on the most critical implementation-stage DNH issues.
 
 ## Supplementary Dimensions (after DNH)
@@ -1868,7 +2123,7 @@ Quality gates:
 TRANSPARENCY REQUIRED: State explicitly what is driving the final rating — score alone or a quality gate cap.
 
 ## Responsiveness Rating
-Count how many FCV Refresh shifts are being actively implemented with concrete, demonstrable measures:
+Count how many FCV Strategy 2026-2030 pillars are being actively implemented with concrete, demonstrable measures:
 
 | Shifts actively implemented | Baseline Rating |
 |---|---|
@@ -1876,8 +2131,8 @@ Count how many FCV Refresh shifts are being actively implemented with concrete, 
 | 1 shift, minimal | Very Low |
 | 1–2 shifts, some measures | Low |
 | 2–3 shifts, concrete measures | Adequate |
-| 3–4 shifts, strong implementation | Well Embedded |
-| 4 shifts, deeply embedded | Very Well Embedded |
+| 3–4 pillars, strong implementation | Well Embedded |
+| 4 pillars, deeply embedded | Very Well Embedded |
 
 ## Rating Reasoning Block
 %%%RATING_REASONING_START%%%
@@ -2253,7 +2508,7 @@ Always check and comment on:
 - Do NOT regenerate the full Recommendations Note or repeat the analysis summary
 - Draw specifically on the analysis findings — name locations, groups, mechanisms, and priorities as established in Stages 1-3
 - Be specific and operational; avoid generic FCV language not grounded in this project
-- When referencing FCV responsiveness, use the four FCV Refresh strategic shifts (Shift A: Anticipate, Shift B: Differentiate, Shift C: Jobs & Private Sector, Shift D: Enhanced Toolkit) rather than the old FCV Strategy 2020-2025 pillars
+- When referencing FCV responsiveness, use the four FCV Strategy 2026-2030 pillars (Shift A: Anticipate, Shift B: Differentiate, Shift C: Jobs & Private Sector, Shift D: Enhanced Toolkit) rather than the old FCV Strategy 2020-2025 pillars
 - Use the status terminology: "Strongly addressed", "Partially addressed", "Weakly addressed", "Not addressed"
 - If the user provides new project context (e.g. a dimension they forgot to mention): briefly identify which priorities this most affects and suggest what specific change to each priority's recommendation would follow — then offer a full re-analysis (direct them to "Go back to Stage 2")
 - If reviewing pasted text: compare against the relevant priority recommendation, identify what it addresses well, and propose specific edits to strengthen it
@@ -3366,12 +3621,13 @@ def run_stage():
         if not data:
             return jsonify({'error': 'Invalid request.'}), 400
 
+        analysis_state = AnalysisState.from_payload(data)
         stage = int(data.get('stage', 1))
         assessment_id = data.get('assessment_id') or str(uuid.uuid4())
         conversation_history = data.get('history', [])
         user_message = data.get('user_message', '').strip()
         prompt_override = data.get('prompt_override', '').strip()  # session-only override from frontend
-        document_type = data.get('document_type', 'Unknown').strip()
+        document_type = (data.get('document_type') or analysis_state.doc_type or 'Unknown').strip()
         review_mode = data.get('review_mode', 'design').strip()  # 'design' or 'implementation'
         is_impl = (review_mode == 'implementation')
         user_context = data.get('user_context', '').strip()  # optional user-supplied context
@@ -3519,7 +3775,7 @@ def run_stage():
             # ── DESIGN REVIEW: Stage 2 injection ─────────────────────────────
             if not is_impl and stage == 2:
                 # Get instrument type and temporal context from request (passed from Stage 1 via frontend)
-                instrument_type = data.get('instrument_type', 'Unknown')
+                instrument_type = data.get('instrument_type') or analysis_state.instrument or 'Unknown'
                 instrument_slice = get_instrument_slice(instrument_type)
                 temporal_ctx = data.get('temporal_context', {})
                 temporal_guardrail = _build_temporal_guardrail(temporal_ctx, document_type)
@@ -3537,7 +3793,7 @@ def run_stage():
                     stage_prompt +
                     "\n\n--- WBG FCV Operational Manual (12 Recommendations, 25 Key Questions, 3 Key Elements) ---\n" +
                     FCV_OPERATIONAL_MANUAL +
-                    "\n\n--- WBG FCV Strategy Refresh Framework (4 Shifts) ---\n" +
+                    "\n\n--- WBG FCV Strategy 2026-2030 Framework (4 Pillars) ---\n" +
                     FCV_REFRESH_FRAMEWORK +
                     "\n\n--- WBG FCV Sensitivity and Responsiveness Guide ---\n" +
                     FCV_GUIDE +
@@ -3621,7 +3877,7 @@ def run_stage():
 
             # ── IMPLEMENTATION REVIEW: Stage 2 injection ─────────────────────
             elif is_impl and stage == 2:
-                instrument_type = data.get('instrument_type', 'Unknown')
+                instrument_type = data.get('instrument_type') or analysis_state.instrument or 'Unknown'
                 instrument_slice = get_instrument_slice(instrument_type)
                 process_type = data.get('process_type', 'MTR')
                 process_slice = get_process_slice(process_type)
@@ -3637,7 +3893,7 @@ def run_stage():
 
                 stage_prompt = (
                     stage_prompt +
-                    "\n\n--- WBG FCV Strategy Refresh Framework (4 Shifts) ---\n" +
+                    "\n\n--- WBG FCV Strategy 2026-2030 Framework (4 Pillars) ---\n" +
                     FCV_REFRESH_FRAMEWORK +
                     "\n\n--- WBG FCV Sensitivity and Responsiveness Guide ---\n" +
                     FCV_GUIDE +
@@ -3680,7 +3936,7 @@ def run_stage():
 
                 stage_prompt = (
                     stage_prompt +
-                    "\n\n--- WBG FCV Strategy Refresh Framework (4 Shifts) ---\n" +
+                    "\n\n--- WBG FCV Strategy 2026-2030 Framework (4 Pillars) ---\n" +
                     FCV_REFRESH_FRAMEWORK +
                     "\n\n--- CPF Integration Guide (use when CPF was uploaded as a contextual document) ---\n" +
                     CPF_INTEGRATION_GUIDE
@@ -3763,16 +4019,16 @@ def run_stage():
 
                 stage_prompt = (
                     stage_prompt +
-                    "\n\n--- WBG FCV Strategy Refresh Framework (4 Shifts) ---\n" +
+                    "\n\n--- WBG FCV Strategy 2026-2030 Framework (4 Pillars) ---\n" +
                     FCV_REFRESH_FRAMEWORK +
                     "\n\n--- WBG Playbook — Implementation Phase ---\n" +
                     PLAYBOOK_IMPLEMENTATION
                 )
 
-                # Append FCV Refresh framework as reference material
+                # Append FCV Strategy 2026-2030 framework as reference material
                 stage_prompt = (
                     stage_prompt +
-                    "\n\n--- WBG FCV Strategy Refresh Framework (4 Shifts) ---\n" +
+                    "\n\n--- WBG FCV Strategy 2026-2030 Framework (4 Pillars) ---\n" +
                     FCV_REFRESH_FRAMEWORK
                 )
 
@@ -3869,7 +4125,7 @@ def run_stage():
                     content_parts.append({"type": "text", "text": (
                         "\n\n--- WBG FCV Sensitivity and Responsiveness Guide (always included) ---\n" + FCV_GUIDE +
                         "\n\n--- FCV Operational Playbook — Diagnostics Phase (always included) ---\n" + PLAYBOOK_DIAGNOSTICS +
-                        "\n\n--- WBG FCV Strategy Refresh Framework (always included) ---\n" + FCV_REFRESH_FRAMEWORK +
+                        "\n\n--- WBG FCV Strategy 2026-2030 Framework (always included) ---\n" + FCV_REFRESH_FRAMEWORK +
                         "\n\n--- World Bank FCS Country List (2015–Present) ---\n" + FCS_LIST +
                         "\n\n--- OP 7.30 Countries (In Crisis — Bank cannot work through government) ---\n" +
                         "Current OP 7.30 countries: " + ", ".join(OP730_COUNTRIES) + "\n" +
@@ -4160,6 +4416,7 @@ def run_express():
         if not data:
             return jsonify({'error': 'Invalid request.'}), 400
 
+        analysis_state = AnalysisState.from_payload(data)
         documents = data.get('documents', [])
         assessment_id = data.get('assessment_id') or str(uuid.uuid4())
         review_mode = data.get('review_mode', 'design').strip()
@@ -4174,9 +4431,9 @@ def run_express():
             # ── Variables that persist across stages ──
             stage1_output = ''
             stage2_output = ''
-            doc_type = 'Unknown'
+            doc_type = analysis_state.doc_type
             process_type = 'Unknown'
-            instrument_type = 'Unknown'
+            instrument_type = analysis_state.instrument
             temporal_context = {}
             country_classification = {}
             context_flags = {}
@@ -4331,7 +4588,7 @@ def run_express():
                 content_parts.append({"type": "text", "text": (
                     "\n\n--- WBG FCV Sensitivity and Responsiveness Guide (always included) ---\n" + FCV_GUIDE +
                     "\n\n--- FCV Operational Playbook — Diagnostics Phase (always included) ---\n" + PLAYBOOK_DIAGNOSTICS +
-                    "\n\n--- WBG FCV Strategy Refresh Framework (always included) ---\n" + FCV_REFRESH_FRAMEWORK +
+                    "\n\n--- WBG FCV Strategy 2026-2030 Framework (always included) ---\n" + FCV_REFRESH_FRAMEWORK +
                     "\n\n--- World Bank FCS Country List (2015–Present) ---\n" + FCS_LIST +
                     "\n\n--- OP 7.30 Countries (In Crisis — Bank cannot work through government) ---\n" +
                     "Current OP 7.30 countries: " + ", ".join(OP730_COUNTRIES) + "\n" +
@@ -4426,7 +4683,7 @@ def run_express():
                         pass
                     stage2_prompt = (
                         stage2_prompt +
-                        "\n\n--- WBG FCV Strategy Refresh Framework (4 Shifts) ---\n" + FCV_REFRESH_FRAMEWORK +
+                        "\n\n--- WBG FCV Strategy 2026-2030 Framework (4 Pillars) ---\n" + FCV_REFRESH_FRAMEWORK +
                         "\n\n--- WBG FCV Sensitivity and Responsiveness Guide ---\n" + FCV_GUIDE +
                         "\n\n--- FCV Glossary ---\n" + get_glossary_for_prompt()
                     )
@@ -4444,7 +4701,7 @@ def run_express():
                         stage2_prompt +
                         "\n\n--- WBG FCV Operational Manual (12 Recommendations, 25 Key Questions, 3 Key Elements) ---\n" +
                         FCV_OPERATIONAL_MANUAL +
-                        "\n\n--- WBG FCV Strategy Refresh Framework (4 Shifts) ---\n" +
+                        "\n\n--- WBG FCV Strategy 2026-2030 Framework (4 Pillars) ---\n" +
                         FCV_REFRESH_FRAMEWORK +
                         "\n\n--- WBG FCV Sensitivity and Responsiveness Guide ---\n" +
                         FCV_GUIDE +
@@ -4568,7 +4825,7 @@ def run_express():
                         pass
                     stage3_prompt = (
                         stage3_prompt +
-                        "\n\n--- WBG FCV Strategy Refresh Framework (4 Shifts) ---\n" + FCV_REFRESH_FRAMEWORK +
+                        "\n\n--- WBG FCV Strategy 2026-2030 Framework (4 Pillars) ---\n" + FCV_REFRESH_FRAMEWORK +
                         "\n\n--- WBG Playbook — Implementation Phase ---\n" + PLAYBOOK_IMPLEMENTATION
                     )
                 else:
@@ -4604,7 +4861,7 @@ def run_express():
 
                     stage3_prompt = (
                         stage3_prompt +
-                        "\n\n--- WBG FCV Strategy Refresh Framework (4 Shifts) ---\n" +
+                        "\n\n--- WBG FCV Strategy 2026-2030 Framework (4 Pillars) ---\n" +
                         FCV_REFRESH_FRAMEWORK +
                         "\n\n--- CPF Integration Guide (use when CPF was uploaded as a contextual document) ---\n" +
                         CPF_INTEGRATION_GUIDE
@@ -5002,7 +5259,7 @@ def download_report():
 
         # ── Date and brief disclaimer (one line each) ──
         _add_single_para(f'Generated by WBG FCV Project Screener · {date_str}', size=9, color=RGBColor(0x66, 0x66, 0x66), italic=True, space_after=1)
-        _add_single_para('AI-assisted output. Analytical framework: WBG FCV Strategy Refresh, FCV Operational Manual, FCV Playbook, Good Practice Notes. Verify before operational use.', size=8.5, color=WB_LGRAY, italic=True, space_before=0, space_after=6)
+        _add_single_para('AI-assisted output. Analytical framework: WBG FCV Strategy 2026-2030, FCV Operational Manual, FCV Playbook, Good Practice Notes. Verify before operational use.', size=8.5, color=WB_LGRAY, italic=True, space_before=0, space_after=6)
 
         # ── Finalized PAD notice ──
         if finalized_pad and approval_date:
@@ -5111,7 +5368,7 @@ def download_report():
                 if pr.get('tag') and pr['tag'] in tag_labels:
                     meta_parts.append(f'Focus: {tag_labels[pr["tag"]]}')
                 if pr.get('refresh_shift'):
-                    meta_parts.append(f'FCV Refresh: {pr["refresh_shift"]}')
+                    meta_parts.append(f'FCV Strategy 2026-2030: {pr["refresh_shift"]}')
                 if pr.get('action_timing') and pr['action_timing'] in timing_map:
                     meta_parts.append(f'Timing: {timing_map[pr["action_timing"]]}')
                 if meta_parts:

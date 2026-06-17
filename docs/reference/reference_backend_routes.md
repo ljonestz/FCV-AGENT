@@ -167,7 +167,7 @@ Each stage re-injects its own fresh background docs into the API call. The histo
 def extract_priorities(stage3_output, uploaded_doc_names=None):
     # 1. Find %%%JSON_START%%%...%%%JSON_END%%% block
     # 2. Parse via json.loads()
-    # 3. Validate refresh_shift (one of 4 shifts)
+    # 3. Validate refresh_shift (one of 4 pillars)
     # 4. Validate who_acts (semicolon-separated, expanded set)
     # 5. Validate when (Identification|Preparation|Appraisal|Implementation|Restructuring)
     # 6. Run _check_specificity(): mid-sentence capitalised words as proper-noun proxy

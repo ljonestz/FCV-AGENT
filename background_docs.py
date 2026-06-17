@@ -1,11 +1,11 @@
 # Background documents embedded at deploy time
-# Sources: WBG FCV Strategy Refresh (Jan 2026), OST Manual (June 2025),
+# Sources: WBG FCV Strategy 2026-2030 (Jan 2026), OST Manual (June 2025),
 #          FCV Operational Playbook (Diagnostics, Preparation, Implementation, Closing)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 1. FCV_GUIDE — Core FCV framework and screening questions (~3,000 tokens)
 # Last verified: 2026-04
-# Policy-sensitive: FCV Refresh shifts (Jan 2026), FCV country classification
+# Policy-sensitive: FCV Strategy 2026-2030 pillars (Jan 2026), FCV country classification
 # ─────────────────────────────────────────────────────────────────────────────
 
 FCV_GUIDE = """## WBG FCV Framework — Sensitivity, Responsiveness, and Strategic Shifts
@@ -26,9 +26,9 @@ FCV-sensitive programming requires moving beyond broad context-setting to **sect
 3. **Transformative Use of FCV Tools** — Leverages operational flexibilities (CERC, HEIS, TPM, GEMS) for impact beyond standard delivery
 4. **Peace & Stability Dividends** — Connects project outcomes to stability, state-citizen trust, and reduced fragility
 
-### II. FCV Refresh — Four Strategic Shifts (January 2026)
+### II. FCV Strategy 2026-2030 — Four Strategic Shifts (January 2026)
 
-The WBG FCV Strategy Refresh replaces the original four pillars (preventing conflict, remaining engaged, transition, spillovers) with four cross-cutting strategic shifts:
+The WBG FCV Strategy 2026-2030 replaces the original four pillars (preventing conflict, remaining engaged, transition, spillovers) with four cross-cutting strategic shifts:
 
 **Shift A — Anticipate** (WHEN)
 Risk-monitoring and management process to identify country-level FCV risks early and inform strategic choices. Work proactively with partners to tackle emerging risks before they escalate. Introduces a forward-looking FCV country-classification scheme to replace the backward-looking FCS list.
@@ -42,14 +42,15 @@ Work better as One WBG on the jobs agenda in FCV settings. Security, justice, an
 **Shift D — Enhanced Toolkit & Partnerships** (HOW)
 Enhance the WBG operational toolkit and pursue more focused partnerships. Attract, support and build talent to work in/on FCV settings. Strengthen HDP nexus coordination. Adaptive tactical and strategic management throughout the country engagement cycle.
 
-### III. FCV Country Classification Scheme (Refresh)
+### III. FCV Country Classification Scheme
 
-The refreshed approach introduces a differentiated classification:
-- **Conflict-affected** — Active armed conflict or post-conflict (within 5 years)
-- **At risk** — Elevated fragility indicators; emerging or escalating risks
-- **Forced displacement** — Significant refugee or IDP populations
-- **Criminal violence** — Organised crime, gang violence (especially MICs)
-- **Compound risk** — Multiple overlapping crises (climate, food insecurity, displacement)
+The WBG FCV Strategy 2026-2030 uses a four-category differentiated approach for analytical calibration:
+- **In Crisis** - situations where the Bank cannot work through or finance the government, typically triggered by OP 7.30.
+- **In Transition** - countries recently emerging from protracted crisis where a credible transition window exists.
+- **Conflict-Affected** - countries with functioning governments but conflict or insecurity that materially affects development prospects.
+- **At Risk** - countries not currently in active conflict but showing elevated fragility, violence, spillover, or escalation risks.
+
+Use the FY26 FCS list as a current institutional reference, but do not treat FCS membership as the sole trigger for FCV analysis.
 
 ### IV. Assessment Rating Scale
 
@@ -91,9 +92,9 @@ When rating FCV sensitivity or responsiveness, use these levels:
 
 ### VII. Cross-Cutting Concepts for FCV Assessment
 
-**HDP Nexus (Humanitarian-Development-Peace):** FCV Refresh Shift D names HDP nexus coordination as a strategic priority. Assess whether projects in acute crisis or forced displacement contexts document engagement with humanitarian actors, alignment with Humanitarian Response Plans, or participation in joint needs assessments. Absence of HDP nexus reference in an acute crisis context should be flagged.
+**HDP Nexus (Humanitarian-Development-Peace):** FCV Strategy 2026-2030 Shift D names HDP nexus coordination as a strategic priority. Assess whether projects in acute crisis or forced displacement contexts document engagement with humanitarian actors, alignment with Humanitarian Response Plans, or participation in joint needs assessments. Absence of HDP nexus reference in an acute crisis context should be flagged.
 
-**IDA FCV Envelope:** The full set of IDA FCV Envelope windows: Prevention and Resilience Allocation (PRA), Remaining Engaged during Conflict Allocation (RECA), Turnaround Allocation (TAA), Window for Host Communities and Refugees (WHR), and Private Sector Window (PSW). Recognise references to these in project documents and assess whether design is appropriate for the specific financing window.
+**IDA FCV Envelope:** The full set of IDA FCV Envelope windows is governed by DFI2.01-DIR.108: Prevention and Resilience Allocation (PRA), Remaining Engaged during Conflict Allocation (RECA), Turnaround Allocation (TAA), Window for Host Communities and Refugees (WHR), and Private Sector Window (PSW). Recognise references to these in project documents and assess whether design is appropriate for the specific financing window. Do not make eligibility determinations.
 
 **Political Economy Analysis (PEA):** A systematic assessment of actors, interests, incentives, and power dynamics. Goes beyond conflict analysis to inform design decisions around implementation arrangements, beneficiary targeting, and institutional reform sequencing. Recognise PEA as a form of conflict-sensitive analytics alongside formal RRAs.
 
@@ -101,7 +102,7 @@ When rating FCV sensitivity or responsiveness, use these levels:
 
 **Adaptive Management:** Structured, evidence-based course correction during implementation without requiring formal restructuring. Assess whether M&E systems and implementation support plans include mechanisms for adaptive management (learning loops, crisis response protocols, context monitoring systems) rather than treating course-correction as purely a restructuring event.
 
-**FCV Country Classification (Refresh):** The January 2026 FCV Strategy Refresh replaces the backward-looking FCS harmonised list with a forward-looking classification: Conflict-affected, At-risk, Forced displacement, Criminal violence, and Compound risk, with a traffic-light system (Green/Amber/Red). Countries may be FCV-relevant without appearing on the legacy FCS list. Do not treat FCS list membership as the sole trigger for FCV analysis.
+**FCV Country Classification:** The WBG FCV Strategy 2026-2030 uses four analytical categories: In Crisis, In Transition, Conflict-Affected, and At Risk. Countries may be FCV-relevant without appearing on the FCS list. Do not treat FCS membership as the sole trigger for FCV analysis.
 """
 
 
@@ -111,86 +112,58 @@ When rating FCV sensitivity or responsiveness, use these levels:
 # Use: Cross-check FCS classification in Stage 1 Part B and Stage 2 ratings
 # ─────────────────────────────────────────────────────────────────────────────
 
-FCS_LIST = """## World Bank Fragile and Conflict-affected Situations (FCS) List — 2015 to Present
+FCS_LIST = """## World Bank Fragile and Conflict-affected Situations (FCS) List - FY26
 
-Source: World Bank FCS list (fiscal year reporting, 2015–FY2026).
-Use this list to verify whether the project country is or has been classified as FCS, and for how long.
-A country on the FCS list may access enhanced operational flexibilities. IDA FCV Envelope financing (PRA / RECA / TAA) eligibility depends on multiple criteria beyond FCS classification — including CPIA scores, conflict intensity, annual FCV review submissions, and Management determinations. Do not draw eligibility conclusions from FCS status alone.
+Source: World Bank FCS list for FY26. This public list identifies 35 economies and assigns each to either Conflict or Fragility. The underlying indicator data is not embedded.
+Use this list to verify whether the project country is on the current FCS list and which FY26 category applies. A country on the FCS list may access enhanced operational flexibilities. IDA FCV Envelope financing (PRA / RECA / TAA / WHR) is governed by DFI2.01-DIR.108 and depends on multiple criteria beyond FCS classification, including CPIA scores, conflict intensity, annual FCV review submissions, and Management determinations. Do not draw eligibility conclusions from FCS status alone.
 
-### Currently on the FCS List (FY2026 / "Present")
-Afghanistan, Burkina Faso, Burundi, Cameroon, Central African Republic, Chad, Comoros,
-Congo (Democratic Republic of), Congo (Republic of), Eritrea, Ethiopia, Guinea-Bissau,
-Haiti, Iraq, Kiribati, Kosovo, Lebanon, Libya, Mali, Marshall Islands,
-Micronesia (Federated States of), Mozambique, Myanmar, Niger, Nigeria, Papua New Guinea,
-São Tomé and Príncipe, Solomon Islands, Somalia, South Sudan, Sudan, Syrian Arab Republic,
-Timor-Leste, Tuvalu, Ukraine, Venezuela (RB), West Bank and Gaza, Yemen (Republic of), Zimbabwe
+### Current FY26 FCS List by Category
 
-### Year of FCS Entry (for countries currently on the list)
-| Country | On FCS list since |
+| Country / economy | FY26 category |
 |---|---|
-| Afghanistan | 2015 |
-| Burkina Faso | 2020 |
-| Burundi | 2015 |
-| Cameroon | 2020 |
-| Central African Republic | 2015 |
-| Chad | 2015 |
-| Comoros | 2015 |
-| Congo, Democratic Republic of | 2015 |
-| Congo, Republic of | 2015 |
-| Eritrea | 2015 |
-| Ethiopia | 2022 |
-| Guinea-Bissau | 2015 |
-| Haiti | 2015 |
-| Iraq | 2015 |
-| Kiribati | 2015 |
-| Kosovo | 2015 |
-| Lebanon | 2015 |
-| Libya | 2015 |
-| Mali | 2015 |
-| Marshall Islands | 2015 |
-| Micronesia, Federated States of | 2015 |
-| Mozambique | 2021 |
-| Myanmar | 2015 |
-| Niger | 2020 |
-| Nigeria | 2020 |
-| Papua New Guinea | 2020 |
-| São Tomé and Príncipe | 2024 |
-| Solomon Islands | 2015 |
-| Somalia | 2015 |
-| South Sudan | 2015 |
-| Sudan | 2015 |
-| Syrian Arab Republic | 2015 |
-| Timor-Leste | 2015 |
-| Tuvalu | 2015 |
-| Ukraine | 2023 |
-| Venezuela, RB | 2020 |
-| West Bank and Gaza | 2015 |
-| Yemen, Republic of | 2015 |
-| Zimbabwe | 2015 |
-
-### Graduated from FCS List (appeared on list 2015–present but no longer classified FCS)
-| Country | Years on FCS list | Notes |
-|---|---|---|
-| Côte d'Ivoire | 2015–2019 | Graduated FY2020 |
-| Djibouti | 2015–2019 | Graduated FY2020 |
-| Gambia, The | 2015–2021 | Graduated FY2022 |
-| Liberia | 2015–2019 | Graduated FY2020 |
-| Madagascar | 2015–2018 | Graduated FY2019 |
-| Togo | 2015–2019 | Graduated FY2020 |
-| Armenia | 2022 only | One-year classification; removed FY2023 |
-| Azerbaijan | 2022 only | One-year classification; removed FY2023 |
-| Lao PDR | 2021 only | One-year classification; removed FY2022 |
+| Afghanistan | Fragility |
+| Burkina Faso | Conflict |
+| Burundi | Fragility |
+| Cameroon | Conflict |
+| Central African Republic | Conflict |
+| Chad | Conflict |
+| Comoros | Fragility |
+| Congo, Dem. Rep. | Conflict |
+| Congo, Rep. | Fragility |
+| Eritrea | Fragility |
+| Ethiopia | Conflict |
+| Guinea-Bissau | Fragility |
+| Haiti | Conflict |
+| Kiribati | Fragility |
+| Kosovo | Fragility |
+| Lebanon | Conflict |
+| Mali | Conflict |
+| Marshall Islands | Fragility |
+| Micronesia, Fed. Sts. | Fragility |
+| Myanmar | Conflict |
+| Niger | Conflict |
+| Papua New Guinea | Fragility |
+| Sao Tome and Principe | Fragility |
+| Somalia | Conflict |
+| South Sudan | Fragility |
+| Sudan | Conflict |
+| Suriname | Fragility |
+| Syrian Arab Republic | Conflict |
+| Timor-Leste | Fragility |
+| Tuvalu | Fragility |
+| Ukraine | Conflict |
+| Venezuela, RB | Fragility |
+| West Bank and Gaza | Conflict |
+| Yemen, Rep. | Conflict |
+| Zimbabwe | Fragility |
 
 ### Usage Notes for Analysis
-- If the project country is currently on the FCS list, confirm FCS status and note the year of entry.
-- If a country has been on the FCS list since 2015, this represents over a decade of chronic fragility — flag this in analysis.
-- If a country entered recently (e.g., Ethiopia 2022, Ukraine 2023, São Tomé 2024), flag the recency and likely drivers.
-- If the country graduated from the FCS list, acknowledge the trajectory and any residual fragility risk.
-- IDA FCV Envelope eligibility is complex and multi-criteria — do not draw eligibility conclusions from FCS status alone, and do not state in outputs whether a country is or is not eligible for any Envelope window.
-- Do not assume FCS = conflict. FCS encompasses fragility (weak institutions, political instability) as well as active conflict situations.
+- If the project country is currently on the FCS list, confirm FCS status and note the FY26 Conflict or Fragility category.
+- IDA FCV Envelope eligibility is complex and multi-criteria. Do not draw eligibility conclusions from FCS status alone, and do not state in outputs whether a country is or is not eligible for any Envelope window.
+- Do not assume FCS = conflict. FY26 distinguishes Conflict from Fragility; tailor analysis accordingly.
+- Watch item: FY27 is expected to introduce a changed FCV-list methodology, including a violence-prevalence public list, a separate institutional-fragility list, and a confidential At-Risk list. Treat this FY26 list as the current source until the FY27 method is confirmed.
 """
 
-# ─────────────────────────────────────────────────────────────────────────────
 # 3. FCV_OPERATIONAL_MANUAL — 12 Recommendations + 25 Key Questions (~5,000 tokens)
 # Last verified: 2026-04
 # Policy-sensitive: 12 OST recommendations, 25 key questions, operational flexibilities
@@ -405,7 +378,7 @@ When assessing a project, consider both directions:
 # Policy-sensitive: 4 strategic shifts, FCV country classification scheme
 # ─────────────────────────────────────────────────────────────────────────────
 
-FCV_REFRESH_FRAMEWORK = """## WBG FCV Strategy Refresh Framework (January 2026)
+FCV_REFRESH_FRAMEWORK = """## WBG FCV Strategy 2026-2030 Framework (January 2026)
 
 Source: Internal briefing — Towards a Refreshed WBG Strategy for Engaging in FCV Settings
 
@@ -1102,7 +1075,7 @@ WB_INSTRUMENT_GUIDE = {
             "identified from Concept Decision date?"
         ),
         "dnh_applicability": (
-            "All 8 DNH principles are FULLY APPLICABLE to IPF. "
+            "All 9 DNH principles are FULLY APPLICABLE to IPF. "
             "Assess directly against all principles at the beneficiary and community level."
         ),
         "cdd_sub_modality": (
@@ -1234,7 +1207,7 @@ WB_INSTRUMENT_GUIDE = {
         "description": (
             "DPOs provide budget support to governments in exchange for policy and institutional "
             "reforms (prior actions). They finance the government's general budget, not specific "
-            "investment activities. DPOs are governed by OP/BP 8.60 and require a satisfactory "
+            "investment activities. DPOs are governed by OPS5.02-POL.120 and require a satisfactory "
             "macroeconomic framework — a binding eligibility condition often difficult to certify "
             "in active conflict or post-crisis settings. Less common in FCV settings due to reform "
             "capacity requirements and the macro precondition, but used for governance reform, "
@@ -1256,7 +1229,7 @@ WB_INSTRUMENT_GUIDE = {
         "not_applicable": (
             "DPO does NOT: finance specific investment activities, civil works, goods, or services "
             "(those are IPF); use CERC, HEIS, TPM, or GEMS (these are IPF operational tools); "
-            "apply the ESF (ESS1-ESS10), ESSA, ESCP, or SEP — DPOs are governed by OP/BP 8.60 "
+            "apply the ESF (ESS1-ESS10), ESSA, ESCP, or SEP — DPOs are governed by OPS5.02-POL.120 "
             "and use Poverty and Social Impact Analysis (PSIA) instead; "
             "have a results framework with project-level intermediate indicators in the IPF sense; "
             "have PIU, procurement plans, or component-level implementation arrangements. "
@@ -1629,7 +1602,7 @@ Empirically, prior actions in FCV DPOs concentrate heavily on basic state functi
 Catastrophe Deferred Drawdown Options (Cat DDOs) link disbursement to an emergency declaration or crisis trigger. In FCV contexts, political contingency matters: the capacity and willingness of governments to formally declare an emergency — and the political implications of doing so — varies significantly. Assess whether the trigger design is operationally realistic given the country's institutional and political context.
 
 **Post-conflict DPF exception:**
-A post-conflict exception exists in OP/BP 8.60 that can relax the macroeconomic framework requirement, but it is rarely formally operationalized in project documents. Most DPOs in FCS countries work in fragile but not active-conflict settings. Where a post-conflict exception may apply, flag it as an underutilised design option.
+OPS5.02-POL.120 includes conflict-related design considerations that may affect macroeconomic framework assessment, but it is rarely formally operationalized in project documents. Most DPOs in FCS countries work in fragile but not active-conflict settings. Where a post-conflict exception may apply, flag it as an underutilised design option.
 
 ---
 
@@ -1877,7 +1850,7 @@ FCV_GLOSSARY = {
             "with existing FCV dynamics."
         ),
         "measurement": (
-            "Assessed against 8 principles: conflict-sensitive targeting, avoiding power "
+            "Assessed against 9 principles: conflict-sensitive targeting, avoiding power "
             "asymmetry reinforcement, preventing inter-group tension exacerbation, equitable "
             "geographic distribution, elite capture safeguards, staff/beneficiary security, "
             "unintended consequence monitoring, accessible grievance mechanisms."
@@ -1988,7 +1961,7 @@ FCV_GLOSSARY = {
             "avoid making things worse?"
         ),
         "measurement": (
-            "Assessed against 12 OST recommendations and 8 Do No Harm principles. "
+            "Assessed against 12 OST recommendations and 9 Do No Harm principles. "
             "Rating scale: Extremely Low to Very Well Embedded."
         ),
         "source": "WBG FCV Strategy; FCV Operational Manual"
@@ -2002,16 +1975,16 @@ FCV_GLOSSARY = {
             "dividends. Shorthand: does the project actively help make fragility better?"
         ),
         "measurement": (
-            "Assessed against 4 FCV Refresh strategic shifts (Anticipate, Differentiate, "
+            "Assessed against 4 FCV Strategy 2026-2030 pillars (Anticipate, Differentiate, "
             "Jobs & Private Sector, Enhanced Toolkit). Rating scale: Extremely Low to "
             "Very Well Embedded."
         ),
-        "source": "WBG FCV Strategy Refresh (January 2026)"
+        "source": "WBG FCV Strategy 2026-2030 (January 2026)"
     },
     "fcv_refresh_shifts": {
-        "term": "FCV Refresh Strategic Shifts",
+        "term": "FCV Strategy 2026-2030 Pillars",
         "definition": (
-            "Four cross-cutting strategic directions from the WBG FCV Strategy Refresh "
+            "Four cross-cutting strategic directions from the WBG FCV Strategy 2026-2030 "
             "(January 2026): Shift A — Anticipate (forward-looking risk monitoring); "
             "Shift B — Differentiate (tailor to FCV classification); "
             "Shift C — Jobs & Private Sector (economic livelihoods as stability pathway); "
@@ -2021,7 +1994,7 @@ FCV_GLOSSARY = {
             "Assessed by: number and depth of shifts actively addressed in project design; "
             "whether shifts are merely mentioned or embedded with concrete measures."
         ),
-        "source": "WBG FCV Strategy Refresh (January 2026)"
+        "source": "WBG FCV Strategy 2026-2030 (January 2026)"
     },
     "impact_evaluation": {
         "term": "Impact Evaluation (IE)",
@@ -2063,7 +2036,7 @@ FCV_GLOSSARY = {
             "Assessed by: documented engagement with humanitarian actors, alignment with "
             "Humanitarian Response Plans, participation in joint needs assessments."
         ),
-        "source": "WBG FCV Strategy Refresh — Shift D"
+        "source": "WBG FCV Strategy 2026-2030 — Shift D"
     },
     "sort": {
         "term": "Systematic Operations Risk-rating Tool (SORT)",
@@ -2128,7 +2101,7 @@ FCV_GLOSSARY = {
             "Assessed by: presence of learning loops, crisis response protocols, context "
             "monitoring systems, and evidence of actual course corrections during implementation."
         ),
-        "source": "WBG FCV Operational Playbook; FCV Strategy Refresh"
+        "source": "WBG FCV Operational Playbook; FCV Strategy 2026-2030"
     },
     "ida_fcv_envelope": {
         "term": "IDA FCV Envelope",
@@ -2519,30 +2492,76 @@ OP730_COUNTRIES = [
 # Derived from FCS_LIST constant above (FY2026 / current)
 # ─────────────────────────────────────────────────────────────────────────────
 
-FCS_COUNTRIES_CURRENT = frozenset([
-    "Afghanistan", "Burkina Faso", "Burundi", "Cameroon", "Central African Republic",
-    "Chad", "Comoros", "Congo (Democratic Republic of)", "Congo (Republic of)",
-    "Eritrea", "Ethiopia", "Guinea-Bissau", "Haiti", "Iraq", "Kiribati", "Kosovo",
-    "Lebanon", "Libya", "Mali", "Marshall Islands", "Micronesia (Federated States of)",
-    "Mozambique", "Myanmar", "Niger", "Nigeria", "Papua New Guinea",
-    "São Tomé and Príncipe", "Solomon Islands", "Somalia", "South Sudan", "Sudan",
-    "Syrian Arab Republic", "Timor-Leste", "Tuvalu", "Ukraine", "Venezuela (RB)",
-    "West Bank and Gaza", "Yemen (Republic of)", "Zimbabwe",
-])
+FCS_COUNTRY_CATEGORIES = {
+    "Afghanistan": "Fragility",
+    "Burkina Faso": "Conflict",
+    "Burundi": "Fragility",
+    "Cameroon": "Conflict",
+    "Central African Republic": "Conflict",
+    "Chad": "Conflict",
+    "Comoros": "Fragility",
+    "Congo, Dem. Rep.": "Conflict",
+    "Congo, Rep.": "Fragility",
+    "Eritrea": "Fragility",
+    "Ethiopia": "Conflict",
+    "Guinea-Bissau": "Fragility",
+    "Haiti": "Conflict",
+    "Kiribati": "Fragility",
+    "Kosovo": "Fragility",
+    "Lebanon": "Conflict",
+    "Mali": "Conflict",
+    "Marshall Islands": "Fragility",
+    "Micronesia, Fed. Sts.": "Fragility",
+    "Myanmar": "Conflict",
+    "Niger": "Conflict",
+    "Papua New Guinea": "Fragility",
+    "Sao Tome and Principe": "Fragility",
+    "Somalia": "Conflict",
+    "South Sudan": "Fragility",
+    "Sudan": "Conflict",
+    "Suriname": "Fragility",
+    "Syrian Arab Republic": "Conflict",
+    "Timor-Leste": "Fragility",
+    "Tuvalu": "Fragility",
+    "Ukraine": "Conflict",
+    "Venezuela, RB": "Fragility",
+    "West Bank and Gaza": "Conflict",
+    "Yemen, Rep.": "Conflict",
+    "Zimbabwe": "Fragility",
+}
+
+FCS_COUNTRY_ALIASES = {
+    "Congo (Democratic Republic of)": "Congo, Dem. Rep.",
+    "Congo, Democratic Republic of": "Congo, Dem. Rep.",
+    "Democratic Republic of Congo": "Congo, Dem. Rep.",
+    "DRC": "Congo, Dem. Rep.",
+    "Congo (Republic of)": "Congo, Rep.",
+    "Congo, Republic of": "Congo, Rep.",
+    "Republic of Congo": "Congo, Rep.",
+    "Micronesia (Federated States of)": "Micronesia, Fed. Sts.",
+    "Micronesia, Federated States of": "Micronesia, Fed. Sts.",
+    "Sao Tome & Principe": "Sao Tome and Principe",
+    "Sao Tome and Principe": "Sao Tome and Principe",
+    "Venezuela (RB)": "Venezuela, RB",
+    "Venezuela, RB": "Venezuela, RB",
+    "Yemen (Republic of)": "Yemen, Rep.",
+    "Yemen, Republic of": "Yemen, Rep.",
+}
+
+FCS_COUNTRIES_CURRENT = frozenset(FCS_COUNTRY_CATEGORIES)
 
 
-# ─────────────────────────────────────────────────────────────────────────────
 # DIFFERENTIATED_APPROACHES — Per-category screening lens, calibration, framing
-# Source: WBG FCV Strategy Refresh (April 2026 operationalisation update)
+# Source: WBG FCV Strategy 2026-2030 (April 2026 operationalisation update)
 # Injected into Stage 2 and Stage 3 prompts alongside confirmed country category
 # ~2,500 tokens
 # ─────────────────────────────────────────────────────────────────────────────
 
 DIFFERENTIATED_APPROACHES = """## WBG FCV Strategy — Differentiated Country Engagement Approach
 
-Source: WBG FCV Strategy Refresh Operationalisation Plan (April 2026)
+Source: WBG FCV Strategy 2026-2030 Operationalisation Plan (April 2026)
 
-The FCV Strategy Refresh introduces a forward-looking FCV country classification scheme to replace the backward-looking FCS list. The four categories — In Crisis, In Transition, Conflict-Affected, and At Risk — each require a differentiated analytical lens, rating calibration, and recommendation framing.
+The WBG FCV Strategy 2026-2030 uses a forward-looking differentiated country approach. The four categories — In Crisis, In Transition, Conflict-Affected, and At Risk — each require a differentiated analytical lens, rating calibration, and recommendation framing.
 
 **IMPORTANT — Classification as analytical judgment:** When referencing a country's category, always frame it as the analysis's working judgment about where the country fits within the Strategy's differentiated approach — not as an official institutional designation. Use language such as: "Based on [evidence], this analysis places [country] within the 'Conflict-Affected' category of the FCV Strategy's differentiated approach." Never state: "[Country] is a [category] country."
 
@@ -2610,7 +2629,7 @@ Emphasise:
 
 **Definition:** Countries with functioning governments where conflict and insecurity are widespread enough to hamper national development progress, typically corresponding to the World Bank FCS list (excluding OP 7.30 countries).
 
-**Current examples:** ~35 current FCS list countries not on OP 7.30 list, including Nigeria, Somalia, DRC, Ukraine, Haiti, etc.
+**Current examples:** FY26 FCS conflict-affected countries not on OP 7.30, including Somalia, DRC, Ukraine, Haiti, Lebanon, and Ethiopia.
 
 #### Stage 2 Screening Lens — Conflict-Affected
 

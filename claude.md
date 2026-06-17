@@ -23,7 +23,7 @@ Every prompt output tags findings as [S], [R], or [S+R], assigned dynamically pe
 
 **Key goal:** Move from broad, vague recommendations to specific, location-aware, operationally grounded, stage-aware suggestions (e.g., "historically, Nzerekore, Kindia, and Kankan have been excluded from service delivery — focus on these regions before PAD appraisal").
 
-**Analytical backbone:** WBG FCV Strategy Refresh, FCV Operational Manual (OST, enriched with Peace & Inclusion Lens dimensions and Strategic DRR Framing from Good Practice Notes), FCV Operational Playbook, and Good Practice Notes on Peace & Inclusion Lenses and FCV-Sensitive Programming. When a Country Partnership Framework (CPF) is uploaded as a contextual document, Stage 3 recommendations include a `cpf_alignment` field linking priorities to CPF outcomes.
+**Analytical backbone:** WBG FCV Strategy 2026-2030, FCV Operational Manual (OST, enriched with Peace & Inclusion Lens dimensions and Strategic DRR Framing from Good Practice Notes), FCV Operational Playbook, and Good Practice Notes on Peace & Inclusion Lenses and FCV-Sensitive Programming. When a Country Partnership Framework (CPF) is uploaded as a contextual document, Stage 3 recommendations include a `cpf_alignment` field linking priorities to CPF outcomes.
 
 **Version history:**
 - **v7.0** — Redesigned from 4 stages to 3; full 12 OST recs + 25 key questions; FCV Playbook integration; Under the Hood panels; refresh_shift field
@@ -38,7 +38,7 @@ Every prompt output tags findings as [S], [R], or [S+R], assigned dynamically pe
   - **Temporal anchoring fix:** `_build_temporal_guardrail(temporal_ctx, doc_type)` now takes `doc_type`; PAD/PCN/PID/AF/Restructuring documents always receive preparation-phase framing regardless of whether approval date is in the past — prevents implementation-review hallucination cascade in Stages 2–3
   - **Stage 1 UX:** Prompt now requires 2–3 sentence narrative lead paragraph at top of each Part. Frontend `renderStage1()` parses Part A/B split and renders with styled section badges ("From your document only" / "Wider context & research"); narrative lead paragraph visually distinguished
   - **Finalized PAD notice:** `isFinalizedPAD()` detects uploaded PADs with past approval dates; amber retrospective notice injected in Stage 3 output and downloaded report
-  - **FCS cross-checking:** `FCS_LIST` constant added to `background_docs.py` (39 current members, year of entry, 9 graduated countries); injected into Stage 1 and Stage 2 prompts so LLM verifies classification against authoritative list
+  - **FCS cross-checking:** `FCS_LIST` and FY26 category constants added to `background_docs.py` (35 FY26 FCS economies, with Conflict and Fragility metadata); injected into Stage 1 and Stage 2 prompts so LLM verifies classification against authoritative list
   - **Implementation review locked off:** `fcv_review_mode` localStorage restore IIFE removed; app always defaults to design review mode on load; implementation review preserved in backend for future activation
   - **Rating recalibration:** Percentage-based thresholds, partial credit for Weakly addressed, softened responsiveness cap
   - **Optional context box:** User can supply framing before analysis (peer review notes, changed conflict conditions)
@@ -90,7 +90,7 @@ Every prompt output tags findings as [S], [R], or [S+R], assigned dynamically pe
   - **Stage 1 prompt — prose narrative:** Body content now required to be prose paragraphs (2–4 sentences per subsection); bullets restricted to genuinely enumerable items only
   - **Stage 1 prompt — country-specific fact flagging:** Part B must tag unverifiable country-specific claims (named institutions, legislation, political events, officials) with `[Verify: ...]` inline
   - **Stage 1 prompt — IDA FCV Envelope advisory:** For Conflict-Affected and Situations of Fragility countries, adds a brief end-of-Part-B advisory prompting TTL to discuss PRA/RECA/TAA eligibility with regional FCV coordinator (not an eligibility determination)
-  - **Stage 2 prompt — Refresh shifts as qualitative lenses:** FCV Strategy Refresh shifts explicitly framed as analytical lenses for strategic alignment, not a scoring checklist
+  - **Stage 2 prompt — Refresh shifts as qualitative lenses:** FCV Strategy 2026-2030 shifts explicitly framed as analytical lenses for strategic alignment, not a scoring checklist
   - **Stage 3 prompt — Watch List for Supervision:** "Horizon Considerations" section renamed and reframed as "Watch List for Supervision"; each item must name a specific WBG tracking vehicle (ISR risk flag, MTR agenda item, RRA update, restructuring trigger); panel heading in frontend updated to match
   - **Stage 3 priorities — `action_timing` field:** New enum field (`pre-appraisal` / `next-series` / `supervision`) with coloured pill in UI and included in DOCX download
   - **SORT guardrail:** Stage 3 prompt now prohibits prescribing specific SORT ratings; frames risk exposure as "consider whether the current rating adequately reflects X"
@@ -191,7 +191,7 @@ STAGE 2 — FCV Assessment
 │    %%%EVIDENCE_TRAIL_START/END%%% — sources and citation tiers
 ├─ Under Hood text stored in localStorage "stage2_under_hood" → used by Go Deeper Tab 1
 ├─ Rating rubric: Sensitivity = OST recs % addressed → 6-tier (percentage-based, partial credit
-│  for Weakly addressed, quality gates apply); Responsiveness = FCV Refresh shifts count → 6-tier
+│  for Weakly addressed, quality gates apply); Responsiveness = FCV Strategy 2026-2030 pillars count → 6-tier
 │  Stage 3 inherits Stage 2 ratings verbatim — no independent re-rating
 ├─ SEA/SH flag: seash_standalone_flag: TRUE → mandatory SEA/SH priority card in Stage 3
 ├─ Gender flag: gender_fcv_flag: TRUE (any of 7 trigger conditions) → mandatory gender card
@@ -320,7 +320,7 @@ DEFAULT_PROMPTS = {
 3. Update `showPriority()` in `index.html`
 4. Update `downloadReport()` if field should appear in export
 
-**Change the 4 FCV Refresh shifts:**
+**Change the 4 FCV Strategy 2026-2030 pillars:**
 1. Edit `FCV_REFRESH_FRAMEWORK` in `background_docs.py`
 2. Update Stage 2 and Stage 3 prompts
 3. Update `extract_priorities()` shift validation list
@@ -338,7 +338,7 @@ DEFAULT_PROMPTS = {
 5. **Output panel (Stages 1–3)** — LLM output + collapsible sections
 6. **Under the Hood panels (Stage 2)** — 4 expandable `<details>`:
    - Panel 1: "How well does the project integrate FCV considerations?" (12 OST recs, S/R Tag column)
-   - Panel 2: "Could this project unintentionally cause harm?" (8 DNH principles)
+   - Panel 2: "Could this project unintentionally cause harm?" (9 DNH principles)
    - Panel 3: "What did we look for — and what was missing?" (25 diagnostic questions)
    - Panel 4: "Where did this analysis come from?" (sources, tiers, contributions)
 7. **Ratings sidebar (Stage 2+)** — Sensitivity gauge (blue, shield) + Responsiveness gauge (green, leaf)
@@ -353,8 +353,8 @@ DEFAULT_PROMPTS = {
 - **Font consistency:** `.pc-zone-body` and `.out-body` both 14px — do not let these diverge
 
 ### 4.3 Do No Harm Rendering
-- **Stage 2 inline:** traffic-light summary, e.g., "Do No Harm: 6 of 8 addressed | 1 partial | 1 gap"
-- **Stage 2 Under the Hood Panel 2:** full 8-principle table with evidence (from `%%%DNH_CHECKLIST_START/END%%%`)
+- **Stage 2 inline:** traffic-light summary, e.g., "Do No Harm: 6 of 9 addressed | 1 partial | 1 gap"
+- **Stage 2 Under the Hood Panel 2:** full 9-principle table with evidence (from `%%%DNH_CHECKLIST_START/END%%%`)
 - DNH is NOT shown as a standalone checklist in Stage 3
 
 > **Full JS function list, Express mode functions, and removed items:**
@@ -508,7 +508,7 @@ Citation hallucination guard: Stage 3 prompt explicitly prohibits fabricating do
 
 **Per run, check:**
 - [ ] Stage 1 Part A extracts from doc only; Part B uses correct citation tiers
-- [ ] Stage 2 Assessment is thematic and uses FCV Refresh framing (not old pillars)
+- [ ] Stage 2 Assessment is thematic and uses FCV Strategy 2026-2030 framing (not old pillars)
 - [ ] Stage 2 Under the Hood panels parse correctly (12-rec table, DNH, questions, evidence)
 - [ ] Stage 2 gauges animate; ratings are plausible
 - [ ] Stage 3 priorities include geographic callouts and `refresh_shift` badges
@@ -520,7 +520,7 @@ Citation hallucination guard: Stage 3 prompt explicitly prohibits fabricating do
 **Prompt quality checks:**
 - Are recommendations specific (geography, mechanism, entry points)?
 - Are they evidence-based (grounded in uploaded docs)?
-- Does the Stage 2 Assessment correctly apply 4 FCV Refresh shifts (not old pillars)?
+- Does the Stage 2 Assessment correctly apply 4 FCV Strategy 2026-2030 pillars (not old pillars)?
 
 ---
 
