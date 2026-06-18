@@ -50,7 +50,7 @@ Every prompt output tags findings as [S], [R], or [S+R], assigned dynamically pe
   - **Citation discipline (Stage 1):** Part B now required to label training knowledge as `[From: general knowledge — ...]` not `[From: training knowledge - ...]`
   - **FCV Envelope eligibility guardrail:** Stage 1 prompt and `FCS_LIST` constant updated to prohibit explicit eligibility determinations for IDA FCV Envelope windows (PRA/RECA/TAA) — eligibility is multi-criteria and determinations risk being incorrect
   - **Web research timeout:** Research client timeout increased 45s → 120s; error now logged as `[WebResearch ERROR]` in Render logs
-  - **Upload UI:** Project zone now lists PCN/PID/PAD only; contextual zone updated with PPSD/technical studies examples; "implementation coming soon" notice upgraded to amber banner
+  - **Upload UI:** Project and contextual zone copy refreshed with PPSD/technical studies examples; "implementation coming soon" notice upgraded to amber banner
   - **Download:** Reports default to `.docx`
 - **v8.2** — GPN integration + CPF upload support (branch `feat/v8.2-gpn-cpf-integration`, merged 2026-04-14):
   - **GPN enrichment:** `FCV_OPERATIONAL_MANUAL` enriched with two Good Practice Note subsections — "Peace & Inclusion Lens Dimensions" (5 dimensions: geographic targeting against RRA divides, social cohesion/reconciliation, project-cycle-specific application, conflict actor engagement, unintended consequences screening) and "Strategic DRR Framing" (DRR mapping, 4 P's framework, strategic vs operational distinction)
@@ -81,6 +81,9 @@ Every prompt output tags findings as [S], [R], or [S+R], assigned dynamically pe
 - **v9.4** - Stream timeout hardening (branch `fix/stage3-stream-timeout`, 2026-05-06):
   - **Backend stream timeout:** `_stream_stage()` now enforces server-side stage wall-clock limits (Stage 1: 8 min, Stage 2: 6 min, Stage 3: 8 min) in addition to frontend abort timers. This prevents Stage 3 provider stalls from sending keepalives indefinitely and leaving Express or Step-by-Step runs stuck on the loading screen.
   - **Shared stream helper:** Step-by-Step now uses the same queue-based `_stream_stage()` helper as Express, so keepalive and timeout behavior is consistent across both modes.
+- **v9.5** - Storage quota resilience and document-scope copy (branch `fix/stage2-storage-quota`, 2026-06-18):
+  - **Stage 2 storage quota hardening:** Stage 2 Under the Hood persistence is best-effort via `static/fcv_storage.js`; quota failures no longer fail Stage 2 or block Stage 3.
+  - **Document scope UX:** Landing/upload copy now frames supported inputs as WBG appraisal/design-stage documents across PCN/PID/PAD/AF/Restructuring plus DPF/DPO, PforR, MPA, and regional operations. MTR/ISR remains marked as implementation review coming soon.
 - **v9.2** - Classification caveat and background_docs policy corrections (branch `feat/v9-differentiated-approaches`, 2026-04-19):
   - **Classification widget caveat:** Narrative now always ends with "This is a subjective judgement on the part of this AI tool and does not constitute an official WBG classification." — consistent with Stage 1 AI disclaimer framing
   - **background_docs.py — ICR timing:** `STAGE_GUIDANCE_MAP["ICR"]["timing_options"]` corrected from `"During implementation"` to `"At project closing"`
@@ -152,7 +155,7 @@ Procfile            # Render deployment config
 
 ```
 STAGE 1 — Context & Extraction
-├─ Input: Project doc (PCN/PID/PAD/AF/Restructuring) + optional contextual docs
+├─ Input: appraisal/design-stage project doc (PCN/PID/PAD/AF/Restructuring; instrument type IPF/PforR/DPO/TA/MPA/IPF-DDO; regional ops supported) + optional contextual docs
 ├─ Automated web research: extract_country_name() + extract_sector_name() → 9-search brief
 │  (cached by "country::sector"; shown as collapsible dropdown above Stage 1 output)
 ├─ Three-tier citation: Tier 1 uploaded docs → Tier 2 web research → Tier 3 training knowledge
@@ -189,7 +192,7 @@ STAGE 2 — FCV Assessment
 │    %%%DNH_CHECKLIST_START/END%%% — 9-principle DNH checklist (principle 9 = SEA/SH)
 │    %%%QUESTIONS_MAP_START/END%%% — 25 key questions with findings
 │    %%%EVIDENCE_TRAIL_START/END%%% — sources and citation tiers
-├─ Under Hood text stored in localStorage "stage2_under_hood" → used by Go Deeper Tab 1
+├─ Under Hood text kept in memory and best-effort localStorage "stage2_under_hood" → used by Go Deeper Tab 1
 ├─ Rating rubric: Sensitivity = OST recs % addressed → 6-tier (percentage-based, partial credit
 │  for Weakly addressed, quality gates apply); Responsiveness = FCV Refresh shifts count → 6-tier
 │  Stage 3 inherits Stage 2 ratings verbatim — no independent re-rating
@@ -232,8 +235,8 @@ FOLLOW-ON (Stage 3 bottom card)
    "Review my revised text" / "Summarise for brief"
 
 GO DEEPER (per-priority, Stage 3 only — 2 tabs)
-├─ Tab 1 (Evidence trail): DEFAULT. No API call — filters localStorage.stage2_under_hood
-│  by priority.fcv_dimension; renders instantly
+├─ Tab 1 (Evidence trail): DEFAULT. No API call — filters in-memory Stage 2 Under Hood data,
+│  falling back to localStorage.stage2_under_hood when available; renders instantly
 └─ Tab 2 (FCV Playbook): SSE call to /api/run-deeper?tab=playbook_refs
    Cache keys: deeper_{idx}_trail, deeper_{idx}_playbook
 ```
@@ -414,7 +417,7 @@ History passed to each stage so the LLM maintains context. Stored in localStorag
 **Compact-label pattern (critical for performance):** Each stage stores a compact user label in `conversation_history` instead of the full prompt with injected background constants. The full prompt is used for the API call but is replaced with a label like `"[Stage 2 — analysis prompt with operational guidance injected]"` before being saved to history. This prevents 80k+ chars of background docs from accumulating in the Stage 3 (and follow-on) API call inputs, which would otherwise cause slow time-to-first-token and risk hitting Render's 10-minute proxy timeout. Stage 1 has always done this; Stages 2 and 3 were updated in v8.2. Each stage re-injects its own fresh background docs — the assistant outputs are what matters for continuity.
 
 ### 6.3 Under the Hood → Go Deeper Flow
-Stage 2 emits `%%%UNDER_HOOD_START/END%%%` delimiter block. After Stage 2 completes, frontend stores this in `localStorage.stage2_under_hood`. Go Deeper Tab 1 (Evidence trail) reads this directly — no API call, renders instantly.
+Stage 2 emits `%%%UNDER_HOOD_START/END%%%` delimiter block. After Stage 2 completes, the frontend keeps this data in memory and attempts to persist it in `localStorage.stage2_under_hood`. Persistence is best-effort: `static/fcv_storage.js` prunes stale large FCV cache entries and returns `false` instead of throwing if the browser quota is still exceeded. Go Deeper Tab 1 (Evidence trail) reads the in-memory value first and falls back to localStorage, so a storage quota failure must not fail Stage 2 or block the current run.
 
 ### 6.4 Priority JSON Parsing
 `extract_priorities()` uses `json.loads()` on the `%%%JSON_START/END%%%` block. No regex field extraction. Validates all field value sets. Runs specificity check (proper-noun proxy) and citation check (against uploaded doc names + org whitelist).
@@ -577,7 +580,7 @@ docs/superpowers/  # Dev plans and specs
 
 ---
 
-**Last updated:** 2026-05-06
-**Current version:** FCV Project Screener v9.4
+**Last updated:** 2026-06-18
+**Current version:** FCV Project Screener v9.5
 **Claude model:** `claude-sonnet-4-6`
 **Stack:** Flask 3.0.3 + vanilla JS + Anthropic SDK + gunicorn/gevent on Render

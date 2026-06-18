@@ -23,7 +23,7 @@
 - `loadDeeperTab(idx, tab)` — dispatches to correct loader based on `tab`:
   - `tab: "trail"` → calls `loadAnalyticalTrail(idx)` (no API call — filters localStorage)
   - `tab: "playbook_refs"` → SSE call to `/api/run-deeper?tab=playbook_refs`; caches in `deeper_{idx}_playbook`
-- `loadAnalyticalTrail(idx)` — no API call; reads `localStorage.stage2_under_hood`; filters by `priority.fcv_dimension`; renders matching OST recs/questions instantly
+- `loadAnalyticalTrail(idx)` — no API call; reads in-memory `stage2UnderHood` first, falls back to `localStorage.stage2_under_hood`; filters by `priority.fcv_dimension`; renders matching OST recs/questions instantly
 - `cancelGoDeeper()` — aborts in-flight SSE request via `goDeeperAbortController`
 - `renderGoFurtherHtml(parsed)` — renders `parsed.goFurtherItems` as `.beyond-item` cards (legacy alternatives tab)
 - `renderPriorityStepper()` — build horizontal step indicator; compact S/R badge + refresh_shift below risk badge on each tab
@@ -47,8 +47,11 @@
 - `md(text)` — markdown-to-HTML renderer
 - `escHtml()` / `escAttr()` — HTML escaping
 - `formatDate()` — human-readable timestamps
-- `saveSession()` / `loadSession()` — localStorage serialization
+- `saveSession()` / `loadSession()` - localStorage serialization
+- `fcvSaveStage2UnderHood(underHood)` - best-effort persistence for the large Stage 2 Under the Hood payload; prunes stale FCV cache keys on quota errors and returns `false` instead of throwing
+- `fcvSafeLocalStorageSet(key, value)` - safe wrapper for optional localStorage writes that should not fail a running analysis
 - Browser session storage is now automatically namespaced by per-tab `assessment_id` via a storage/fetch shim appended at the end of `index.html`
+- Landing and upload copy explicitly frames supported inputs as WBG appraisal/design-stage documents across PCN, PID, PAD, AF, Restructuring, DPF/DPO, PforR, MPA, and regional operations; MTR/ISR implementation review remains marked as coming soon.
 
 ---
 
@@ -149,10 +152,10 @@ Both modes use identical prompts, code paths, and output quality. Express is a f
 **Session persistence (v2 format):**
 - `saveSession()` includes `analysisMode`, `stageOutputs`, `stageHists`
 - `loadSession()` restores all three; missing `analysisMode` → `'stepbystep'` (v1 compat)
-- During express run, outputs/hists written to `localStorage.fcv_express_stageOutputs` / `fcv_express_stageHists`
+- During express run, outputs/hists are best-effort writes to `localStorage.fcv_express_stageOutputs` / `fcv_express_stageHists`
 - Express resume IIFE on page load: if partial keys exist and Stage 3 missing, shows amber "Resume or restart?" banner
 - `resumeExpressRun()` / `discardExpressResume()` handle the two choices
 
 ---
 
-*Last updated: 2026-04-28 — corrected function names (runStage, renderStage1, handleDeeperToggle, loadAnalyticalTrail, loadDeeperTab); removed dead pc-followup code and explorerHistory*
+*Last updated: 2026-06-18 - documented best-effort Stage 2 Under the Hood storage, storage quota helpers, and broader document-scope copy*
