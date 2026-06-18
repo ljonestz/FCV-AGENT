@@ -94,7 +94,7 @@ When rating FCV sensitivity or responsiveness, use these levels:
 
 **HDP Nexus (Humanitarian-Development-Peace):** FCV Strategy 2026-2030 Shift D names HDP nexus coordination as a strategic priority. Assess whether projects in acute crisis or forced displacement contexts document engagement with humanitarian actors, alignment with Humanitarian Response Plans, or participation in joint needs assessments. Absence of HDP nexus reference in an acute crisis context should be flagged.
 
-**IDA FCV Envelope:** The full set of IDA FCV Envelope windows is governed by DFI2.01-DIR.108: Prevention and Resilience Allocation (PRA), Remaining Engaged during Conflict Allocation (RECA), Turnaround Allocation (TAA), Window for Host Communities and Refugees (WHR), and Private Sector Window (PSW). Recognise references to these in project documents and assess whether design is appropriate for the specific financing window. Do not make eligibility determinations.
+**IDA FCV Envelope:** The IDA FCV Envelope (FCVE) is governed by DFI2.01-DIR.108 and comprises three allocations: Prevention and Resilience Allocation (PRA), Remaining Engaged during Conflict Allocation (RECA), and Turn Around Allocation (TAA). The IDA Window for Host Communities and Refugees (WHR) and the IDA Private Sector Window (PSW) are related but separate IDA FCV-financing instruments — they are NOT FCVE allocations under DFI2.01-DIR.108. Recognise references to all of these in project documents and assess whether design is appropriate for the specific financing window. Do not make eligibility determinations.
 
 **Political Economy Analysis (PEA):** A systematic assessment of actors, interests, incentives, and power dynamics. Goes beyond conflict analysis to inform design decisions around implementation arrangements, beneficiary targeting, and institutional reform sequencing. Recognise PEA as a form of conflict-sensitive analytics alongside formal RRAs.
 
@@ -115,7 +115,7 @@ When rating FCV sensitivity or responsiveness, use these levels:
 FCS_LIST = """## World Bank Fragile and Conflict-affected Situations (FCS) List - FY26
 
 Source: World Bank FCS list for FY26. This public list identifies 35 economies and assigns each to either Conflict or Fragility. The underlying indicator data is not embedded.
-Use this list to verify whether the project country is on the current FCS list and which FY26 category applies. A country on the FCS list may access enhanced operational flexibilities. IDA FCV Envelope financing (PRA / RECA / TAA / WHR) is governed by DFI2.01-DIR.108 and depends on multiple criteria beyond FCS classification, including CPIA scores, conflict intensity, annual FCV review submissions, and Management determinations. Do not draw eligibility conclusions from FCS status alone.
+Use this list to verify whether the project country is on the current FCS list and which FY26 category applies. A country on the FCS list may access enhanced operational flexibilities. IDA FCV Envelope financing (PRA / RECA / TAA) is governed by DFI2.01-DIR.108 and depends on multiple criteria beyond FCS classification, including CPIA scores, conflict intensity, annual FCV review submissions, and Management determinations. Do not draw eligibility conclusions from FCS status alone.
 
 ### Current FY26 FCS List by Category
 
@@ -164,9 +164,9 @@ Use this list to verify whether the project country is on the current FCS list a
 - Watch item: FY27 is expected to introduce a changed FCV-list methodology, including a violence-prevalence public list, a separate institutional-fragility list, and a confidential At-Risk list. Treat this FY26 list as the current source until the FY27 method is confirmed.
 """
 
-# 3. FCV_OPERATIONAL_MANUAL — 12 Recommendations + 25 Key Questions (~5,000 tokens)
+# 3. FCV_OPERATIONAL_MANUAL — 12 Recommendations (authoritative) + 25-question review checklist (tool-derived) (~5,000 tokens)
 # Last verified: 2026-04
-# Policy-sensitive: 12 OST recommendations, 25 key questions, operational flexibilities
+# Policy-sensitive: 12 OST recommendations (from the FCV Operational Manual, June 2025), 25-question review checklist (tool-derived, not a fixed Manual framework), operational flexibilities
 # ─────────────────────────────────────────────────────────────────────────────
 
 FCV_OPERATIONAL_MANUAL = """## WBG FCV Operational Manual — Core Framework for FCV-Sensitive Project Design
@@ -227,7 +227,9 @@ ICR should: (i) describe how design responded to FCV elements, (ii) document ada
 
 ---
 
-### 25 Key Questions for FCV Review
+### 25-Question FCV Review Checklist (tool-derived)
+
+Note: the 12 recommendations above are the authoritative framework from the FCV Operational Manual (June 2025). The 25 questions below are a review checklist derived/adapted by this tool from the Manual's stage-by-stage guidance (its Boxes and the Section 8 "Summary of Questions" one-pager). The number 25 is a tool construction, not a fixed Manual framework — do not cite it as an official "25 Key Questions" set.
 
 #### PCN Stage — IPF/PforR (Questions 1–15)
 1. Is the project design informed by DRRs from the RRA or equivalent analysis?
@@ -546,7 +548,7 @@ Teams should consider: (1) whether to use operational flexibilities and which on
 - **In all FCV contexts**: IPF policy (esp. **Paragraph 12** for urgent need/capacity constraints), PforR policy, DPF policy
 - **OP 7.30**: Dealing with De Facto Governments (unconstitutional government changes)
 - **OP 7.60**: Projects in Disputed Areas
-- **OP 8.00**: Rapid Response to Crises and Emergencies
+- **OPS5.08-POL.125**: Rapid Response to Crises and Emergencies (current Policy, issued 25 June 2024; replaced OP 8.00, retired 24 June 2024)
 
 ### Project Design Flexibilities (no Para 12 required)
 - **Framework approach**: Umbrella of activities/areas, details in Project Operations Manual
@@ -653,7 +655,7 @@ FCV implementation requires: continuous risk monitoring (project, country, regio
 
 ### Key Policy Framework During Implementation
 - IPF policy (esp. Para 12), PforR policy, DPF policy
-- OP 7.30 (de facto governments), OP 7.60 (disputed areas), OP 8.00 (rapid response)
+- OP 7.30 (de facto governments), OP 7.60 (disputed areas), OPS5.08-POL.125 (rapid response; formerly OP 8.00, retired 24 June 2024)
 - CERCs for rapid crisis response within existing projects
 - Portfolio adjustment and restructuring as adaptive tools
 - Rapid Response Option (RRO): repurpose up to 10% of undisbursed IPF/PforR portfolio
@@ -827,7 +829,7 @@ The ICR should:
 STAGE_GUIDANCE_MAP = {
     "PCN": {
         "playbook_phase": "Preparation",
-        "timing_options": ["At design stage", "Before appraisal"],
+        "timing_options": ["At design stage", "Before Decision Review"],
         "framing": "Early design — focus on embedding FCV elements into ToC, PDO, stakeholder analysis, and operational approach before the design is locked.",
         "key_flexibilities": [
             "CERC", "HEIS", "Phased implementation", "Unallocated funds",
@@ -846,7 +848,7 @@ STAGE_GUIDANCE_MAP = {
     },
     "PID": {
         "playbook_phase": "Preparation",
-        "timing_options": ["At design stage", "Before appraisal"],
+        "timing_options": ["At design stage", "Before Decision Review"],
         "framing": "Public information document — recommendations should focus on what needs to be integrated before the PAD is finalised.",
         "key_flexibilities": [
             "CERC", "HEIS", "Phased implementation", "Unallocated funds",
@@ -861,7 +863,7 @@ STAGE_GUIDANCE_MAP = {
     },
     "PAD": {
         "playbook_phase": "Preparation",
-        "timing_options": ["At design stage", "Before appraisal"],
+        "timing_options": ["At design stage", "Before Decision Review"],
         "framing": "Appraisal document — FCV elements should already be embedded. Focus on strengthening what exists, identifying gaps before Board approval, and ensuring operational readiness.",
         "key_flexibilities": [
             "CERC", "HEIS", "TPM", "GEMS", "Phased disbursement",
@@ -946,7 +948,7 @@ STAGE_GUIDANCE_MAP = {
     },
     "Unknown": {
         "playbook_phase": "Preparation",
-        "timing_options": ["At design stage", "Before appraisal", "During implementation"],
+        "timing_options": ["At design stage", "Before Decision Review", "During implementation"],
         "framing": "Document type not identified — provide general FCV sensitivity recommendations applicable across the project cycle.",
         "key_flexibilities": [
             "CERC", "HEIS", "TPM", "GEMS", "Phased implementation",
@@ -1766,8 +1768,10 @@ a coverage aid, not a scoring grid - narrative judgement governs.
 P4R_MODULE_GUIDE = """
 ## Program-for-Results (PforR / P4R) Module - FCV Screening Guide
 
-Source grounding: Program-for-Results Financing Policy **OPS5.09**, cross-referencing
-**OP 7.30** (Dealings with De Facto Governments). Use this guide as advisory screening
+Source grounding: Program-for-Results Financing Policy **OPS5.04-POL.125** (Bank Policy,
+effective 19 August 2024) and Bank Directive **OPS5.04-DIR.110** (effective 9 April 2025),
+cross-referencing **OP 7.30** (Dealings with De Facto Governments). PforR sits under the
+OPS5.04 catalogue family and replaced the retired OP/BP 9.00. Use this guide as advisory screening
 support only. Do not make instrument-eligibility, OP 7.30, or disbursement determinations -
 direct the task team to verify instrument choice and feasibility with the regional FCV
 coordinator, OPCS, and the verification team.
@@ -2091,7 +2095,7 @@ PforR disburses upon verified achievement, not upon expenditure. There is no con
 PforR uses the Environmental and Social Systems Assessment, which evaluates the government's own E&S systems. In settings where those systems have collapsed or are controlled by actors with incentives to suppress adverse information, ESSA's mitigating value is structurally limited. PforR does not have access to CERC, HEIS, or standard ESCP instruments.
 
 **OP 7.30 incompatibility:**
-In true OP 7.30 contexts, PforR is effectively unusable. The instrument disburses against government program expenditures, which requires a government counterpart to disburse. Without a counterpart, there is no program to support and no ESSA to conduct. Flag PforR as contraindicated in OP 7.30 contexts, and as requiring explicit justification in any context where government capacity is severely degraded.
+In true OP 7.30 contexts, PforR is generally not feasible — strongly constrained rather than categorically barred. The instrument disburses against government program expenditures, which requires a government counterpart to disburse. Without a counterpart, there is no program to support and no ESSA to conduct. Flag PforR as contraindicated in OP 7.30 contexts, and as requiring explicit justification in any context where government capacity is severely degraded.
 
 **Phase transition risk in MPAs:**
 PforR-based MPAs compound these problems: subsequent phases require demonstrated DLI achievement before financing is committed. Conflict disruption causing DLI underachievement can block transitions to phases the country urgently needs.
@@ -2226,12 +2230,13 @@ FCV_GLOSSARY = {
             "with existing FCV dynamics."
         ),
         "measurement": (
-            "Assessed against 9 principles: conflict-sensitive targeting, avoiding power "
+            "Assessed against 9 dimensions: conflict-sensitive targeting, avoiding power "
             "asymmetry reinforcement, preventing inter-group tension exacerbation, equitable "
             "geographic distribution, elite capture safeguards, staff/beneficiary security, "
-            "unintended consequence monitoring, accessible grievance mechanisms."
+            "unintended consequence monitoring, accessible grievance mechanisms, and SEA/SH "
+            "risk management in conflict settings."
         ),
-        "source": "WBG FCV Operational Manual — 8 Do No Harm Principles"
+        "source": "Do-No-Harm checklist (9 dimensions) derived by this tool from WBG FCV conflict-sensitivity good practice. SEA/SH (the 9th) is grounded in the ESF (ESS1/ESS2/ESS4) and the SEA/SH Good Practice Note, not in Do No Harm itself. The FCV Operational Manual (June 2025) treats Do No Harm as a principle, not a fixed numbered list."
     },
     "third_party_monitoring": {
         "term": "Third-Party Monitoring (TPM)",
@@ -2397,7 +2402,7 @@ FCV_GLOSSARY = {
             "timeframes. Replaced the Adaptable Program Loan (APL)."
         ),
         "measurement": "Assess inter-phase learning, adaptive design, and FCV context responsiveness.",
-        "source": "MPA Board Paper July 2017; MPA Bank Guidance"
+        "source": "MPA Board Paper (R2017-0159/4, approved July 2017); Bank Guidance, Multiphase Programmatic Approach, OPS5.06-GUID.148 (issued 29 November 2021)"
     },
     "hdp_nexus": {
         "term": "HDP Nexus (Humanitarian-Development-Peace)",
@@ -2482,15 +2487,16 @@ FCV_GLOSSARY = {
     "ida_fcv_envelope": {
         "term": "IDA FCV Envelope",
         "definition": (
-            "The set of IDA allocations specifically for FCV-affected countries: Prevention "
-            "and Resilience Allocation (PRA, for countries at risk of conflict); Remaining "
-            "Engaged during Conflict Allocation (RECA, for countries in active conflict); "
-            "Turnaround Allocation (TAA, for post-conflict recovery); Window for Host "
-            "Communities and Refugees (WHR); and Private Sector Window (PSW, for de-risking "
-            "private investment in FCV settings)."
+            "The IDA FCV Envelope (FCVE) comprises three allocations specifically for "
+            "FCV-affected countries: Prevention and Resilience Allocation (PRA, for countries "
+            "at risk of conflict); Remaining Engaged during Conflict Allocation (RECA, for "
+            "countries in active conflict); and Turn Around Allocation (TAA, for post-conflict "
+            "recovery). The IDA Window for Host Communities and Refugees (WHR) and the IDA "
+            "Private Sector Window (PSW, for de-risking private investment in FCV settings) are "
+            "related but separate IDA FCV-financing instruments — they are NOT FCVE allocations."
         ),
         "measurement": "Eligibility category determines available financing and flexibilities.",
-        "source": "IDA Replenishment Documents; WBG FCV Strategy"
+        "source": "IDA FCV Envelope: SEC2.01-POL.140 (Policy) / DFI2.01-DIR.108 (Directive); WBG FCV Strategy"
     },
     "non_state_actors": {
         "term": "Non-State Actors",
@@ -2543,7 +2549,7 @@ FCV_GLOSSARY = {
         "source": "PforR Policy"
     },
     "taa": {
-        "term": "Turnaround Allocation (TAA)",
+        "term": "Turn Around Allocation (TAA)",
         "definition": (
             "One of the IDA FCV Envelope windows, designed for countries emerging from conflict "
             "or fragility and beginning a recovery trajectory. TAA provides enhanced IDA "
@@ -2956,7 +2962,7 @@ The WBG FCV Strategy 2026-2030 uses a forward-looking differentiated country app
 
 #### Stage 2 Screening Lens — In Crisis
 
-Emphasise these dimensions when assessing against the 12 OST recommendations and 25 key questions:
+Emphasise these dimensions when assessing against the 12 OST recommendations and the 25-question review checklist (tool-derived):
 
 - **Delivery modality** (Recs 1, 2, 8): Government may not be the primary implementation partner. Assess whether the project has identified institutionally sustainable local delivery pathways — UN agencies, INGOs, community-driven mechanisms, private sector platforms. Is TPI selection based on the ability to sustain services and build local capacity, not just deliver outputs?
 - **Do No Harm and safeguards** (DNH principles, Rec 4, ESF): In constrained environments, the risk of inadvertent harm increases. Is the project's safeguard design realistic given limited state oversight? Is the GRM accessible when government institutions are non-functional?
@@ -3207,7 +3213,7 @@ No single model is universally correct. The delivery actor choice must be derive
     },
     "cerc_guidance": {
         "title": "Contingency Emergency Response Component (CERC) Guidance",
-        "source": "FCV Playbook — Bank Guidance: Contingent Emergency Response Components",
+        "source": "Bank Guidance: Contingent Emergency Response Components (CERC), OPS5.03-GUID.141 (effective 16 October 2017)",
         "triggers": {
             "country_category": ["In Crisis", "Conflict-Affected"],
             "instrument": ["IPF"],

@@ -105,23 +105,35 @@ POLICY_REGISTRY: dict[str, PolicyRegistryEntry] = {
     ),
     "ipf_one_step_processing": PolicyRegistryEntry(
         key="ipf_one_step_processing",
-        title="April 2026 one-step IPF processing claim",
-        catalogue_id="VERIFY-WITH-OPCS",
-        source="Not confirmed in accessible OPCS material",
-        last_updated="2026-06-16",
-        ati_designation="Unknown",
-        summary="Verify with OPCS before relying on a one-step IPF processing model.",
-        needs_verification=True,
+        title="Condensed / consolidated IPF preparation procedures (processing flexibilities)",
+        catalogue_id="FCV-OPS-MANUAL-2025",
+        source="FCV Operational Manual (June 2025), Processing Flexibilities; WBG project-preparation streamlining reform (faster/simpler agenda)",
+        last_updated="2026-06-18",
+        ati_designation="Official Use Only",
+        summary=(
+            "Consolidated preparation stages (identification + preparation + appraisal in a single step), "
+            "Decision Review before appraisal, and accelerated turnaround (comments in 3 vs 5 business days; "
+            "Board submission 10 vs 18 business days) are confirmed in the FCV Operational Manual (June 2025) "
+            "and reflect the WBG preparation-streamlining reform (average preparation time targeted down from "
+            "~19 to ~12 months). The specific 'one-step / April 2026' label and any Bank-wide formal IPF "
+            "Directive instrument should still be confirmed against the current IPF Directive."
+        ),
+        needs_verification=False,
     ),
     "ost_manual_alignment": PolicyRegistryEntry(
         key="ost_manual_alignment",
-        title="FCV Operational Manual 12 recommendations / 25 questions alignment",
-        catalogue_id="VERIFY-WITH-OPCS",
+        title="FCV Operational Manual 12 recommendations (authoritative) + 25-question checklist (tool-derived)",
+        catalogue_id="FCV-OPS-MANUAL-2025",
         source="FCV Operational Manual for FCV Country Coordinators, June 2025",
-        last_updated="2026-06-16",
+        last_updated="2026-06-18",
         ati_designation="Official Use Only",
-        summary="Verify with OPCS before changing or hard-coding the OST recommendation set.",
-        needs_verification=True,
+        summary=(
+            "The 12 OST recommendations (six FCV-design Recs 1-6 + six M&E Recs 7-12) are confirmed "
+            "verbatim in the FCV Operational Manual (June 2025). The '25 key questions' are NOT a fixed "
+            "Manual framework — they are a review checklist derived/adapted by this tool from the Manual's "
+            "stage guidance (Boxes + the Section 8 one-pager); do not attribute the count 25 to the Manual."
+        ),
+        needs_verification=False,
     ),
     "ipf_restructuring_level_guide": PolicyRegistryEntry(
         key="ipf_restructuring_level_guide",
@@ -2428,7 +2440,7 @@ Front-loaded work rule: Assess what is present, not what is absent relative to a
 
 action_timing assignment for PCN/PID:
 - flag-for-preparation: raise now, no resolution expected; do NOT frame as a gap
-- required-before-appraisal: must be in the PAD
+- required-before-appraisal: must be in the PAD and ready by the Decision Review (DM/ROC), which under consolidated/condensed processing precedes appraisal
 - required-before-board: ONLY for requirements confirmed as pre-conditions by OPCS or regional management — do not apply based on your own judgment
 
 ## Mid-Cycle Overlay (AF / Restructuring only)
@@ -2656,7 +2668,7 @@ WHO_ACTS: [Semicolon-separated from: TTL; PIU; Government; FCV CC; FM Team; ESF 
 WHEN: [One of: Identification | Preparation | Appraisal | Implementation | Restructuring — must be appropriate for {doc_type} stage]
 ACTION_TIMING: [One of: flag-for-preparation | required-before-appraisal | required-before-board | next-series | supervision]
   - flag-for-preparation: raise now so the team is aware during preparation; do NOT frame as a current gap or require resolution at this stage. Use for all PCN-stage items and PID items that belong to PAD-level delivery.
-  - required-before-appraisal: must be substantively addressed and reflected in the PAD before appraisal sign-off
+  - required-before-appraisal: must be substantively addressed and reflected in the PAD and ready by the Decision Review (DM/ROC). Under consolidated/condensed processing the Decision Review is the operative gate and precedes appraisal, so treat "by the Decision Review" as the deadline (the value name is retained for compatibility).
   - required-before-board: reserve ONLY for critical safeguard or fiduciary requirements confirmed as pre-conditions by OPCS or regional management — do not apply based on your own judgment
   - next-series: relevant input for the next operation in a programmatic series (especially for DPF/DPO)
   - supervision: monitoring or early-warning signal; no preparation action required now, flag for supervision planning
@@ -6355,11 +6367,11 @@ def download_report():
 
     timing_map = {
         'flag-for-preparation': 'Flag for preparation',
-        'required-before-appraisal': 'Required before appraisal',
+        'required-before-appraisal': 'Required before Decision Review (DM/ROC)',
         'required-before-board': 'Required before Board',
         'next-series': 'Feed into next series',
         'supervision': 'Supervision / monitoring only',
-        'pre-appraisal': 'Required before appraisal',
+        'pre-appraisal': 'Required before Decision Review (DM/ROC)',
     }
     tag_labels = {
         '[S]': 'Sensitivity', '[R]': 'Responsiveness', '[S+R]': 'Sensitivity + Responsiveness'
