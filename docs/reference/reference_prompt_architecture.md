@@ -9,7 +9,7 @@
 
 **Purpose:** Extract FCV-relevant content from uploaded project and contextual documents, enriched by automated web research and Playbook Diagnostics framing.
 
-**Input:** Any project document at any preparation stage (Concept Note, PID, PCN, PAD, restructuring/AF draft). Optionally 1–2 contextual documents (RRA, country risk report, etc.).
+**Input:** Any WBG appraisal or design-stage project document (Concept Note, PID, PCN, PAD, Additional Financing, Restructuring Paper, DPF/DPO Program Document, PforR document, MPA, or regional operation). Optionally 1–2 contextual documents (RRA, country risk report, policy matrix, DLI matrix, etc.).
 
 **Automated FCV web research phase (runs before LLM generation):**
 1. `extract_country_name()` — brief LLM call to identify project country (first 4000 chars)
@@ -38,6 +38,7 @@
 
 **Document type classification (embedded in Stage 1):**
 - The very last line of every Stage 1 response is: `%%%DOC_TYPE: [PCN/PID/PAD/AF/Restructuring/ISR/Unknown]%%%`
+- Stage 1 also emits `%%%INSTRUMENT_TYPE: [IPF/PforR/DPO/TA/MPA/IPF-DDO/Unknown]%%%` for instrument-aware Stage 2/3 calibration.
 - The frontend extracts this via regex when Stage 1 completes and sets the `docType` state
 - The DOC_TYPE line is stripped from the display text before rendering to the user
 - `docType` is passed in the Stage 3 request body for stage-aware prompt injection
@@ -238,4 +239,4 @@ Stage badge (e.g., "Recommendations tailored for PCN stage")
 
 ---
 
-*Last updated: 2026-04-05 — split from CLAUDE.md v7.5*
+*Last updated: 2026-06-18 — documented broader appraisal/design-stage document scope*

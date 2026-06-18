@@ -50,7 +50,7 @@ Every prompt output tags findings as [S], [R], or [S+R], assigned dynamically pe
   - **Citation discipline (Stage 1):** Part B now required to label training knowledge as `[From: general knowledge — ...]` not `[From: training knowledge - ...]`
   - **FCV Envelope eligibility guardrail:** Stage 1 prompt and `FCS_LIST` constant updated to prohibit explicit eligibility determinations for IDA FCV Envelope windows (PRA/RECA/TAA) — eligibility is multi-criteria and determinations risk being incorrect
   - **Web research timeout:** Research client timeout increased 45s → 120s; error now logged as `[WebResearch ERROR]` in Render logs
-  - **Upload UI:** Project zone now lists PCN/PID/PAD only; contextual zone updated with PPSD/technical studies examples; "implementation coming soon" notice upgraded to amber banner
+  - **Upload UI:** Project and contextual zone copy refreshed with PPSD/technical studies examples; "implementation coming soon" notice upgraded to amber banner
   - **Download:** Reports default to `.docx`
 - **v8.2** — GPN integration + CPF upload support (branch `feat/v8.2-gpn-cpf-integration`, merged 2026-04-14):
   - **GPN enrichment:** `FCV_OPERATIONAL_MANUAL` enriched with two Good Practice Note subsections — "Peace & Inclusion Lens Dimensions" (5 dimensions: geographic targeting against RRA divides, social cohesion/reconciliation, project-cycle-specific application, conflict actor engagement, unintended consequences screening) and "Strategic DRR Framing" (DRR mapping, 4 P's framework, strategic vs operational distinction)
@@ -81,6 +81,9 @@ Every prompt output tags findings as [S], [R], or [S+R], assigned dynamically pe
 - **v9.4** - Stream timeout hardening (branch `fix/stage3-stream-timeout`, 2026-05-06):
   - **Backend stream timeout:** `_stream_stage()` now enforces server-side stage wall-clock limits (Stage 1: 8 min, Stage 2: 6 min, Stage 3: 8 min) in addition to frontend abort timers. This prevents Stage 3 provider stalls from sending keepalives indefinitely and leaving Express or Step-by-Step runs stuck on the loading screen.
   - **Shared stream helper:** Step-by-Step now uses the same queue-based `_stream_stage()` helper as Express, so keepalive and timeout behavior is consistent across both modes.
+- **v9.5** - Storage quota resilience and document-scope copy (branch `fix/stage2-storage-quota`, 2026-06-18):
+  - **Stage 2 storage quota hardening:** Stage 2 Under the Hood persistence is best-effort via `static/fcv_storage.js`; quota failures no longer fail Stage 2 or block Stage 3.
+  - **Document scope UX:** Landing/upload copy now frames supported inputs as WBG appraisal/design-stage documents across PCN/PID/PAD/AF/Restructuring plus DPF/DPO, PforR, MPA, and regional operations. MTR/ISR remains marked as implementation review coming soon.
 - **v9.2** - Classification caveat and background_docs policy corrections (branch `feat/v9-differentiated-approaches`, 2026-04-19):
   - **Classification widget caveat:** Narrative now always ends with "This is a subjective judgement on the part of this AI tool and does not constitute an official WBG classification." — consistent with Stage 1 AI disclaimer framing
   - **background_docs.py — ICR timing:** `STAGE_GUIDANCE_MAP["ICR"]["timing_options"]` corrected from `"During implementation"` to `"At project closing"`
@@ -152,7 +155,7 @@ Procfile            # Render deployment config
 
 ```
 STAGE 1 — Context & Extraction
-├─ Input: Project doc (PCN/PID/PAD/AF/Restructuring) + optional contextual docs
+├─ Input: appraisal/design-stage project doc (PCN/PID/PAD/AF/Restructuring; instrument type IPF/PforR/DPO/TA/MPA/IPF-DDO; regional ops supported) + optional contextual docs
 ├─ Automated web research: extract_country_name() + extract_sector_name() → 9-search brief
 │  (cached by "country::sector"; shown as collapsible dropdown above Stage 1 output)
 ├─ Three-tier citation: Tier 1 uploaded docs → Tier 2 web research → Tier 3 training knowledge
@@ -589,7 +592,7 @@ docs/superpowers/  # Dev plans and specs
 
 ---
 
-**Last updated:** 2026-05-12
-**Current version:** FCV Project Screener v9.4
+**Last updated:** 2026-06-18
+**Current version:** FCV Project Screener v9.5
 **Claude model:** `claude-sonnet-4-6`
 **Stack:** Flask 3.0.3 + vanilla JS + Anthropic SDK + gunicorn/gevent on Render

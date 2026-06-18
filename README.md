@@ -4,7 +4,7 @@ A Flask web application that guides World Bank Task Team Leaders (TTLs) through 
 
 ## What it does
 
-Upload a project document (PAD, PCN, PID, or restructuring paper) and optionally a Country Partnership Framework or other contextual document. Choose your workflow:
+Upload a WBG appraisal or design-stage document (PCN, PID, PAD, Additional Financing, Restructuring Paper, DPF/DPO Program Document, PforR document, MPA, or regional operation) and optionally a Country Partnership Framework or other contextual document. Choose your workflow:
 
 - **Express Analysis** (default) — all 3 stages run automatically in a single connection (~4–5 min)
 - **Step-by-Step** — interactive mode; review and refine at each stage before proceeding (~8–12 min)
@@ -13,7 +13,7 @@ Both modes produce identical output across three stages:
 
 1. **Stage 1 — Context Extraction** — Extracts FCV risks from the project document, enriched by automated web research
 2. **Stage 2 — FCV Assessment** — Thematic analysis across FCV dimensions, Do No Harm traffic-light, and detailed Under the Hood panels
-3. **Stage 3 — Recommendations Note** — Structured memo with strategic priorities, actionable guidance, and ready-to-paste PAD language
+3. **Stage 3 — Recommendations Note** — Structured memo with strategic priorities, actionable guidance, and ready-to-paste project-document language
 
 ## Prerequisites
 
