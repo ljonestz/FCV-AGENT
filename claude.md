@@ -189,7 +189,7 @@ STAGE 2 — FCV Assessment
 │    %%%DNH_CHECKLIST_START/END%%% — 9-principle DNH checklist (principle 9 = SEA/SH)
 │    %%%QUESTIONS_MAP_START/END%%% — 25 key questions with findings
 │    %%%EVIDENCE_TRAIL_START/END%%% — sources and citation tiers
-├─ Under Hood text stored in localStorage "stage2_under_hood" → used by Go Deeper Tab 1
+├─ Under Hood text kept in memory and best-effort localStorage "stage2_under_hood" → used by Go Deeper Tab 1
 ├─ Rating rubric: Sensitivity = OST recs % addressed → 6-tier (percentage-based, partial credit
 │  for Weakly addressed, quality gates apply); Responsiveness = FCV Refresh shifts count → 6-tier
 │  Stage 3 inherits Stage 2 ratings verbatim — no independent re-rating
@@ -232,8 +232,8 @@ FOLLOW-ON (Stage 3 bottom card)
    "Review my revised text" / "Summarise for brief"
 
 GO DEEPER (per-priority, Stage 3 only — 2 tabs)
-├─ Tab 1 (Evidence trail): DEFAULT. No API call — filters localStorage.stage2_under_hood
-│  by priority.fcv_dimension; renders instantly
+├─ Tab 1 (Evidence trail): DEFAULT. No API call — filters in-memory Stage 2 Under Hood data,
+│  falling back to localStorage.stage2_under_hood when available; renders instantly
 └─ Tab 2 (FCV Playbook): SSE call to /api/run-deeper?tab=playbook_refs
    Cache keys: deeper_{idx}_trail, deeper_{idx}_playbook
 ```
@@ -414,7 +414,7 @@ History passed to each stage so the LLM maintains context. Stored in localStorag
 **Compact-label pattern (critical for performance):** Each stage stores a compact user label in `conversation_history` instead of the full prompt with injected background constants. The full prompt is used for the API call but is replaced with a label like `"[Stage 2 — analysis prompt with operational guidance injected]"` before being saved to history. This prevents 80k+ chars of background docs from accumulating in the Stage 3 (and follow-on) API call inputs, which would otherwise cause slow time-to-first-token and risk hitting Render's 10-minute proxy timeout. Stage 1 has always done this; Stages 2 and 3 were updated in v8.2. Each stage re-injects its own fresh background docs — the assistant outputs are what matters for continuity.
 
 ### 6.3 Under the Hood → Go Deeper Flow
-Stage 2 emits `%%%UNDER_HOOD_START/END%%%` delimiter block. After Stage 2 completes, frontend stores this in `localStorage.stage2_under_hood`. Go Deeper Tab 1 (Evidence trail) reads this directly — no API call, renders instantly.
+Stage 2 emits `%%%UNDER_HOOD_START/END%%%` delimiter block. After Stage 2 completes, the frontend keeps this data in memory and attempts to persist it in `localStorage.stage2_under_hood`. Persistence is best-effort: `static/fcv_storage.js` prunes stale large FCV cache entries and returns `false` instead of throwing if the browser quota is still exceeded. Go Deeper Tab 1 (Evidence trail) reads the in-memory value first and falls back to localStorage, so a storage quota failure must not fail Stage 2 or block the current run.
 
 ### 6.4 Priority JSON Parsing
 `extract_priorities()` uses `json.loads()` on the `%%%JSON_START/END%%%` block. No regex field extraction. Validates all field value sets. Runs specificity check (proper-noun proxy) and citation check (against uploaded doc names + org whitelist).

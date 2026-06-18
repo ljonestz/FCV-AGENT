@@ -2342,6 +2342,7 @@
   WBG FCV Analytics Unit · Internal Use Only · LLM-Assisted Review Pilot
 </footer>
 
+<script src="/static/fcv_storage.js"></script>
 <script>
   // ── State ──────────────────────────────────────────────────────────────────
   let pF=[],pkF=[],cF=[],hist=[],curS=0,busy=false;
@@ -3031,7 +3032,7 @@
               if(p.instrument_type)instrumentType=p.instrument_type;
               if(p.temporal_context)temporalContext=p.temporal_context;
               if(p.process_type&&p.process_type!=='Unknown')processType=p.process_type;
-              if(p.country_classification){countryClassification=p.country_classification;localStorage.setItem('country_classification',JSON.stringify(countryClassification));}
+              if(p.country_classification){countryClassification=p.country_classification;fcvSafeLocalStorageSet('country_classification',JSON.stringify(countryClassification));}
               if(p.context_flags)contextFlags=p.context_flags;
               if(p.sector_context)sectorContext=p.sector_context;
               const cat=countryClassification.category||'General';
@@ -3046,8 +3047,8 @@
               hist=p.history||hist;stageHists[2]=hist.slice();
               if(p.sensitivity_rating)fcvRating=p.sensitivity_rating;
               if(p.responsiveness_rating)fcvResponsivenessRating=p.responsiveness_rating;
-              if(p.under_hood){stage2UnderHood=p.under_hood;localStorage.setItem('stage2_under_hood',JSON.stringify(p.under_hood));}
-              localStorage.setItem('stage2_timestamp',Date.now());
+              if(p.under_hood){stage2UnderHood=p.under_hood;fcvSaveStage2UnderHood(p.under_hood);}
+              fcvSafeLocalStorageSet('stage2_timestamp',Date.now());
               const sensR=p.sensitivity_rating||'\u2014',respR=p.responsiveness_rating||'\u2014';
               updateExpressStage(2,'done','Sensitivity: '+sensR+' \u00B7 Responsiveness: '+respR);
               epSafeStore(stageOutputs,stageHists,'2');
@@ -3065,7 +3066,7 @@
               if(p.priorities)stageThreePriorities=p.priorities;
               if(p.horizon_considerations)horizonConsiderations=p.horizon_considerations;
               if(p.applied_snippets)stageAppliedSnippets=p.applied_snippets;
-              localStorage.setItem('stage3_timestamp',Date.now());
+              fcvSafeLocalStorageSet('stage3_timestamp',Date.now());
               updateExpressStage(3,'done','Complete');
               epSafeStore(stageOutputs,stageHists,'3');
             }
@@ -3310,13 +3311,13 @@
               if(stage===2){
                 if(p.sensitivity_rating){ fcvRating=p.sensitivity_rating; }
                 if(p.responsiveness_rating){ fcvResponsivenessRating=p.responsiveness_rating; }
-                if(p.under_hood){ stage2UnderHood=p.under_hood; localStorage.setItem('stage2_under_hood', JSON.stringify(p.under_hood)); }
+                if(p.under_hood){ stage2UnderHood=p.under_hood; fcvSaveStage2UnderHood(p.under_hood); }
               }
               if(stage===3){stageGapTable=p.gap_table||null;stageRiskExposure=p.risk_exposure||null;stageSensitivitySummary=p.sensitivity_summary||'';stageResponsivenessSummary=p.responsiveness_summary||'';if(p.fcv_rating)fcvRating=p.fcv_rating;if(p.fcv_responsiveness_rating)fcvResponsivenessRating=p.fcv_responsiveness_rating;if(p.applied_snippets)stageAppliedSnippets=p.applied_snippets;}
               // Write timestamps BEFORE renderOut so the consistency check inside renderOut reads the current run's value
               // Stage 2 completion also clears any previously dismissed banner on Stage 3
-              if(stage===2){ localStorage.setItem('stage2_timestamp', Date.now()); localStorage.removeItem('stage3_consistency_dismissed'); }
-              if(stage===3) localStorage.setItem('stage3_timestamp', Date.now());
+              if(stage===2){ fcvSafeLocalStorageSet('stage2_timestamp', Date.now()); localStorage.removeItem('stage3_consistency_dismissed'); }
+              if(stage===3) fcvSafeLocalStorageSet('stage3_timestamp', Date.now());
               // For Stage 2, use display_text (stripped of delimiters) if provided by backend
               const renderResult = (stage===2 && p.display_text) ? p.display_text : p.result;
               // Stage 1: extract docType + research data
@@ -3327,7 +3328,7 @@
                 if(p.instrument_type)instrumentType=p.instrument_type;
                 if(p.temporal_context)temporalContext=p.temporal_context;
                 if(p.process_type&&p.process_type!=='Unknown')processType=p.process_type;
-                if(p.country_classification){countryClassification=p.country_classification;localStorage.setItem('country_classification',JSON.stringify(countryClassification));}
+                if(p.country_classification){countryClassification=p.country_classification;fcvSafeLocalStorageSet('country_classification',JSON.stringify(countryClassification));}
                 if(p.context_flags)contextFlags=p.context_flags;
                 if(p.sector_context)sectorContext=p.sector_context;
               }
@@ -5194,7 +5195,7 @@ ${body}
     const resultEl = document.getElementById('deeper-result-' + idx);
     if (!resultEl) return;
     let underHood = {};
-    try { underHood = JSON.parse(localStorage.getItem('stage2_under_hood') || '{}'); } catch(e) {}
+    underHood = fcvReadStage2UnderHood(stage2UnderHood);
     const priority = stageThreePriorities[idx] || {};
     const dimension = priority.dimension || priority.fcv_dimension || '';
     const titleWords = (priority.title || '').replace(/^Priority\s+\d+\s*[·•]\s*/i, '').split(/\s+/).filter(function(w) { return w.length > 3; });
@@ -5789,7 +5790,16 @@ ${body}
     };
 
     storageProto.setItem = function (key, value) {
-      return originalSetItem.call(this, scopedKey(key), value);
+      const targetKey = scopedKey(key);
+      try {
+        return originalSetItem.call(this, targetKey, value);
+      } catch (error) {
+        if (window.fcvIsQuotaExceededError && window.fcvIsQuotaExceededError(error) && window.fcvPruneAppStorage) {
+          window.fcvPruneAppStorage(this);
+          return originalSetItem.call(this, targetKey, value);
+        }
+        throw error;
+      }
     };
 
     storageProto.removeItem = function (key) {
