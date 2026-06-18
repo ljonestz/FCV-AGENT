@@ -2183,7 +2183,7 @@
       </div>
       <div class="upload-intro-text">
         <h2>Upload Project Documents</h2>
-        <p>Upload the project document to be assessed. Optionally add companion appraisal instruments (ESCP, SEP, PPSD, SORT) as a project package to sharpen the analysis, and country context documents for broader FCV insights. Web research supplements the analysis where no country context is uploaded.</p>
+        <p>Upload one main project document to anchor the assessment. Optionally add up to 10 supporting package documents for key-signal extraction, plus country context documents for broader FCV insights. Web research supplements the analysis where no country context is uploaded.</p>
       </div>
     </div>
 
@@ -2208,7 +2208,7 @@
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--border)" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
             <p style="margin-bottom:4px">Drag &amp; drop, or</p>
             <button type="button" class="browse-btn" style="background:#7C3AED" onclick="document.getElementById('ip').click()">Browse files</button>
-            <input type="file" id="ip" name="project_doc" multiple accept=".pdf,.txt,.docx,.pptx,.md">
+            <input type="file" id="ip" name="project_doc" accept=".pdf,.txt,.docx,.pptx,.md">
           </div>
           <div class="zone-chips">
             <span class="zone-chip p">PCN</span>
@@ -2227,7 +2227,7 @@
         <div class="zone-inner">
           <span class="zone-status-badge optional">Optional</span>
           <div class="zone-lbl"><span class="zone-dot pack"></span>Additional Project Package Documents</div>
-          <p class="zone-hint" id="zone-hint-package">Option to add any accompanying appraisal or design-stage documents. Limit: 2 documents.</p>
+          <p class="zone-hint" id="zone-hint-package">Add up to 10 supporting package documents (policy matrix, DLI matrix, SORT, ESCP, SEP, technical assessments). These are read for key signals, not fully assessed.</p>
           <div class="drop-zone" id="dpack">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--border)" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
             <p style="margin-bottom:4px">Drag &amp; drop, or</p>
@@ -2240,6 +2240,9 @@
             <span class="zone-chip pack">ESCP</span>
             <span class="zone-chip pack">SEP</span>
             <span class="zone-chip pack">PPSD</span>
+            <span class="zone-chip pack">SORT</span>
+            <span class="zone-chip pack">DLI Matrix</span>
+            <span class="zone-chip pack">Policy Matrix</span>
           </div>
         </div>
       </div>
@@ -2350,6 +2353,9 @@
 <script>
   // ── State ──────────────────────────────────────────────────────────────────
   let pF=[],pkF=[],cF=[],hist=[],curS=0,busy=false;
+  const MAX_PRIMARY = 1;
+  const MAX_PACK = 10;
+  const MAX_CTX = 3;
   let sessionName='';
   let docType='Unknown';
   let instrumentType='Unknown';
@@ -2664,23 +2670,23 @@
     const ipack = document.getElementById('ipack');
     const ic = document.getElementById('ic');
     if(ip && ip.files && ip.files.length > 0){
-      Array.from(ip.files).forEach(f=>{ if(!pF.find(x=>x.name===f.name)){pF.push(f);changed=true;} });
+      Array.from(ip.files).forEach(f=>{ if(pF.length < MAX_PRIMARY && !pF.find(x=>x.name===f.name)){pF.push(f);changed=true;} });
     }
     if(ipack && ipack.files && ipack.files.length > 0){
-      Array.from(ipack.files).forEach(f=>{ if(pkF.length < 3 && !pkF.find(x=>x.name===f.name)){pkF.push(f);changed=true;} });
+      Array.from(ipack.files).forEach(f=>{ if(pkF.length < MAX_PACK && !pkF.find(x=>x.name===f.name)){pkF.push(f);changed=true;} });
     }
     if(ic && ic.files && ic.files.length > 0){
-      Array.from(ic.files).forEach(f=>{ if(!cF.find(x=>x.name===f.name)){cF.push(f);changed=true;} });
+      Array.from(ic.files).forEach(f=>{ if(cF.length < MAX_CTX && !cF.find(x=>x.name===f.name)){cF.push(f);changed=true;} });
     }
     if(changed) renderChips();
   }, 600);
 
   function addFiles(files, arr, type) {
-    const MAX_PACK = 3;
     let added = 0;
     let skipped = 0;
     files.forEach(f => {
-      if (type === 'pack' && arr.length >= MAX_PACK) {
+      const maxForType = type === 'p' ? MAX_PRIMARY : type === 'pack' ? MAX_PACK : type === 'c' ? MAX_CTX : Infinity;
+      if (arr.length >= maxForType) {
         skipped++;
         return;
       }
@@ -2691,10 +2697,12 @@
       }
     });
     if (skipped > 0) {
-      const hint = document.getElementById('zone-hint-package');
+      const hint = document.getElementById(type === 'p' ? 'zone-hint-primary' : type === 'c' ? 'zone-hint-context' : 'zone-hint-package');
       if (hint) {
         hint.style.color = '#b45309';
-        hint.textContent = 'Project package limit reached (3 documents). Remove a file to add another.';
+        const label = type === 'p' ? 'Primary project document' : type === 'c' ? 'Contextual document' : 'Project package';
+        const limit = type === 'p' ? MAX_PRIMARY : type === 'c' ? MAX_CTX : MAX_PACK;
+        hint.textContent = label + ' limit reached (' + limit + (limit === 1 ? ' document' : ' documents') + '). Remove a file to add another.';
       }
     }
     if (added > 0) renderChips();
@@ -2712,9 +2720,9 @@
       if (inp) inp.value = '';
       // Reset cap warning when file removed
       const hint = document.getElementById('zone-hint-package');
-      if (hint && pkF.length < 3) {
+      if (hint && pkF.length < MAX_PACK) {
         hint.style.color = '';
-        hint.textContent = 'Optional — most useful at PID or PAD stage, when companion documents exist. If you\'re at PCN stage, you likely won\'t have anything to upload here yet. Adding these can sharpen the analysis but is never required. Limit: 3 documents.';
+        hint.textContent = 'Add up to 10 supporting package documents (policy matrix, DLI matrix, SORT, ESCP, SEP, technical assessments). These are read for key signals, not fully assessed.';
       }
     } else {
       cF = cF.filter(f => f.name !== name);
@@ -2862,19 +2870,24 @@
       const uploadForm = document.getElementById('upload-form');
       if(uploadForm){
         const fd = new FormData(uploadForm);
-        fd.getAll('project_doc').forEach(f=>{ if(f && f.size>0 && !pF.find(x=>x.name===f.name)){pF.push(f);fallbackAdded++;} });
-        fd.getAll('context_doc').forEach(f=>{ if(f && f.size>0 && !cF.find(x=>x.name===f.name)){cF.push(f);fallbackAdded++;} });
+        fd.getAll('project_doc').forEach(f=>{ if(f && f.size>0 && pF.length < MAX_PRIMARY && !pF.find(x=>x.name===f.name)){pF.push(f);fallbackAdded++;} });
+        fd.getAll('package_doc').forEach(f=>{ if(f && f.size>0 && pkF.length < MAX_PACK && !pkF.find(x=>x.name===f.name)){pkF.push(f);fallbackAdded++;} });
+        fd.getAll('context_doc').forEach(f=>{ if(f && f.size>0 && cF.length < MAX_CTX && !cF.find(x=>x.name===f.name)){cF.push(f);fallbackAdded++;} });
       }
     } catch(e) { /* FormData unavailable — fall through to direct files access */ }
 
     // FALLBACK: read files property directly at click time
     const ipEl = document.getElementById('ip');
+    const ipackEl = document.getElementById('ipack');
     const icEl = document.getElementById('ic');
     if(ipEl && ipEl.files){
-      Array.from(ipEl.files).forEach(f=>{ if(!pF.find(x=>x.name===f.name)){pF.push(f);fallbackAdded++;} });
+      Array.from(ipEl.files).forEach(f=>{ if(pF.length < MAX_PRIMARY && !pF.find(x=>x.name===f.name)){pF.push(f);fallbackAdded++;} });
+    }
+    if(ipackEl && ipackEl.files){
+      Array.from(ipackEl.files).forEach(f=>{ if(pkF.length < MAX_PACK && !pkF.find(x=>x.name===f.name)){pkF.push(f);fallbackAdded++;} });
     }
     if(icEl && icEl.files){
-      Array.from(icEl.files).forEach(f=>{ if(!cF.find(x=>x.name===f.name)){cF.push(f);fallbackAdded++;} });
+      Array.from(icEl.files).forEach(f=>{ if(cF.length < MAX_CTX && !cF.find(x=>x.name===f.name)){cF.push(f);fallbackAdded++;} });
     }
 
     if(fallbackAdded > 0) renderChips();

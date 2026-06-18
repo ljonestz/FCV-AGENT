@@ -23,7 +23,7 @@ Every prompt output tags findings as [S], [R], or [S+R], assigned dynamically pe
 
 **Key goal:** Move from broad, vague recommendations to specific, location-aware, operationally grounded, stage-aware suggestions (e.g., "historically, Nzerekore, Kindia, and Kankan have been excluded from service delivery — focus on these regions before PAD appraisal").
 
-**Analytical backbone:** WBG FCV Strategy Refresh, FCV Operational Manual (OST, enriched with Peace & Inclusion Lens dimensions and Strategic DRR Framing from Good Practice Notes), FCV Operational Playbook, and Good Practice Notes on Peace & Inclusion Lenses and FCV-Sensitive Programming. When a Country Partnership Framework (CPF) is uploaded as a contextual document, Stage 3 recommendations include a `cpf_alignment` field linking priorities to CPF outcomes.
+**Analytical backbone:** WBG FCV Strategy Refresh, FCV Operational Manual (OST, enriched with Peace & Inclusion Lens dimensions and Strategic DRR Framing from Good Practice Notes), FCV Operational Playbook, and Good Practice Notes on Peace & Inclusion Lenses and FCV-Sensitive Programming. When a Country Partnership Framework (CPF) is uploaded as a contextual document, Stage 3 recommendations include a `cpf_alignment` field linking priorities to CPF outcomes. When an RRA or equivalent conflict analysis is uploaded, Stage 3 also includes `rra_driver_alignment` linking priorities to identified conflict drivers where relevant.
 
 **Version history:**
 - **v7.0** — Redesigned from 4 stages to 3; full 12 OST recs + 25 key questions; FCV Playbook integration; Under the Hood panels; refresh_shift field
@@ -84,6 +84,11 @@ Every prompt output tags findings as [S], [R], or [S+R], assigned dynamically pe
 - **v9.5** - Storage quota resilience and document-scope copy (branch `fix/stage2-storage-quota`, 2026-06-18):
   - **Stage 2 storage quota hardening:** Stage 2 Under the Hood persistence is best-effort via `static/fcv_storage.js`; quota failures no longer fail Stage 2 or block Stage 3.
   - **Document scope UX:** Landing/upload copy now frames supported inputs as WBG appraisal/design-stage documents across PCN/PID/PAD/AF/Restructuring plus DPF/DPO, PforR, MPA, and regional operations. MTR/ISR remains marked as implementation review coming soon.
+- **v9.6** - Secondary-document distillation and upload expansion (branch `feat/secondary-doc-distillation`, 2026-06-18):
+  - **Upload tiers:** Zone 1 is a single required primary project document; Zone 2 accepts up to 10 supporting project-package documents; Zone 3 accepts up to 3 contextual documents.
+  - **Secondary distillation:** `fcv_distillation.py` classifies and distills package/context documents into compact source-labelled cards before Stage 1 assembly. The primary document remains on the existing 60k-character Stage 1 path.
+  - **Budget guard:** Secondary cards are capped per tier and by a global 32k-character budget with a context reserve. Overflow and distillation failures produce named stubs rather than silent drops.
+  - **Stage 3 matching:** Priority JSON now includes `rra_driver_alignment` alongside `cpf_alignment`, so recommendations can link to RRA conflict drivers where uploaded and relevant.
 - **v9.2** - Classification caveat and background_docs policy corrections (branch `feat/v9-differentiated-approaches`, 2026-04-19):
   - **Classification widget caveat:** Narrative now always ends with "This is a subjective judgement on the part of this AI tool and does not constitute an official WBG classification." — consistent with Stage 1 AI disclaimer framing
   - **background_docs.py — ICR timing:** `STAGE_GUIDANCE_MAP["ICR"]["timing_options"]` corrected from `"During implementation"` to `"At project closing"`
@@ -150,6 +155,8 @@ Procfile            # Render deployment config
 ```
 
 ### 1.3 Three-Stage Pipeline
+
+**Current upload tiering:** Zone 1 accepts exactly one primary project document; Zone 2 accepts up to 10 package documents that are distilled into key-signal cards; Zone 3 accepts up to 3 contextual documents distilled into RRA driver / CPF pillar cards or generic context cards.
 
 **Two workflow modes:** Express Analysis (default — all 3 stages run automatically via `/api/run-express`) and Step-by-Step (interactive, one stage at a time via `/api/run-stage`). Same prompts, same output quality.
 
@@ -384,7 +391,10 @@ DEFAULT_PROMPTS = {
 
 ```python
 MAX_DOC_CHARS = 500_000        # Hard cap on chars extracted from any single document
-STAGE1_MAX_DOC_CHARS = 60_000  # Docs truncated to this before Stage 1 (no LLM extraction)
+STAGE1_MAX_DOC_CHARS = 60_000  # Primary doc truncated to this before Stage 1
+CARD_CHARS_2A = 2_800          # Structured secondary package card cap in fcv_distillation.py
+CARD_CHARS_2B = 1_200          # Generic secondary package card cap in fcv_distillation.py
+CARD_CHARS_CONTEXT = 1_800     # Context card cap in fcv_distillation.py
 PROMPTS_FILE = 'prompts.json'
 ```
 
@@ -593,6 +603,6 @@ docs/superpowers/  # Dev plans and specs
 ---
 
 **Last updated:** 2026-06-18
-**Current version:** FCV Project Screener v9.5
+**Current version:** FCV Project Screener v9.6
 **Claude model:** `claude-sonnet-4-6`
 **Stack:** Flask 3.0.3 + vanilla JS + Anthropic SDK + gunicorn/gevent on Render
