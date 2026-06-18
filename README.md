@@ -2,6 +2,8 @@
 
 A Flask web application that guides World Bank Task Team Leaders (TTLs) through a structured 3-stage workflow to assess and improve FCV (Fragility, Conflict & Violence) integration in project design.
 
+> **Current status & where everything is:** see [`docs/20260618_PROJECT_STATE.md`](docs/20260618_PROJECT_STATE.md) for the live branch map, open PRs, deployment state, and outstanding items. As of 2026-06-18 the phase 0-6 knowledge-base expansion and OPCS policy corrections are staged in PR #29 and not yet merged into `main`.
+
 ## What it does
 
 Upload a project document (PAD, PCN, PID, or restructuring paper) and optionally a Country Partnership Framework or other contextual document. Choose your workflow:
@@ -47,6 +49,8 @@ python app.py
 3. Render reads `Procfile` automatically — no additional build config needed
 4. The app runs on gunicorn + gevent with a 600s timeout, required for long-running SSE streams
 
+> **Deployment caveat (2026-06-18):** if the Render service has a dashboard **Start Command** of `python app.py`, it overrides the `Procfile` and runs the Flask dev server instead of gunicorn. Clear the Start Command (or set it to the gunicorn line from `Procfile`) so production uses gunicorn + gevent. See `docs/20260618_PROJECT_STATE.md` section 5.
+
 ## Concurrency
 
 The app isolates state per browser tab via a per-assessment ID. Express Analysis runs off the request thread via a background executor. Combined with multi-worker gunicorn settings in `Procfile`, multiple users and sessions can run assessments concurrently.
@@ -63,6 +67,7 @@ The app isolates state per browser tab via a per-assessment ID. Express Analysis
 
 ## Documentation
 
+- `docs/20260618_PROJECT_STATE.md` — current project state: branches, open PRs, deployment, outstanding items
 - `CLAUDE.md` — full developer guide: architecture, prompt design, stage pipeline, design decisions
 - `docs/reference/` — detailed reference docs for prompts, routes, and frontend functions
 - `docs/fcv-agent-knowledge-architecture.html` — visual overview of how knowledge sources flow through the pipeline
