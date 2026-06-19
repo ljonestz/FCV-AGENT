@@ -518,7 +518,7 @@ python3 app.py   # http://localhost:5000
 
 ### Render.com
 - Connect GitHub repo → Render reads `Procfile` + `requirements.txt`
-- **Production server:** gunicorn + gevent (`--worker-class gevent --timeout 600`) — required for long-running SSE
+- **Production server:** gunicorn + gevent via the `wsgi:app` entry point (runs `gevent.monkey.patch_all()` before importing the app, so the worker does not block on SSL and trip WORKER TIMEOUT); `--worker-class gevent --workers 1 --timeout 1200` — required for long-running SSE
 - **Env vars:** `ANTHROPIC_API_KEY` (required)
 - Auto-deploys on push/merge to connected branch
 
