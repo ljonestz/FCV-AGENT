@@ -6,8 +6,10 @@ import queue
 import threading
 import time
 import uuid
+from dataclasses import dataclass, field
 from datetime import date
 from concurrent.futures import ThreadPoolExecutor
+from typing import Any
 from flask import Flask, request, jsonify, send_from_directory, Response, stream_with_context
 import anthropic
 import httpx
@@ -17,7 +19,13 @@ from background_docs import (
     PLAYBOOK_CLOSING, STAGE_GUIDANCE_MAP,
     WB_INSTRUMENT_GUIDE, FCV_GLOSSARY, WB_PROCESS_GUIDE, FCS_LIST,
     FCV_INSTRUMENT_CALIBRATION, CPF_INTEGRATION_GUIDE,
-    OP730_COUNTRIES, FCS_COUNTRIES_CURRENT, DIFFERENTIATED_APPROACHES, SECONDARY_KNOWLEDGE
+    OP730_COUNTRIES, FCS_COUNTRIES_CURRENT, FCS_COUNTRY_ALIASES,
+    FCS_COUNTRY_CATEGORIES, DIFFERENTIATED_APPROACHES, SECONDARY_KNOWLEDGE,
+    RESTRUCTURING_GUIDE, AF_GUIDE,
+    DPF_MODULE_GUIDE, DPF_POLICY_AREA_CHECKLIST,
+    P4R_MODULE_GUIDE,
+    REGIONAL_CROSSBORDER_LENS, MPA_MODULE_GUIDE,
+    INTERSECTION_SYNTHESIS_GUIDE
 )
 import io
 try:
@@ -53,6 +61,511 @@ ASSESSMENT_EXECUTOR = ThreadPoolExecutor(max_workers=ASSESSMENT_WORKERS)
 # ── Research cache (in-process, keyed by country name) ───────────────────────
 _research_cache: dict = {}  # key: country.lower() → {brief, country, sources}
 
+@dataclass(frozen=True)
+class PolicyRegistryEntry:
+    """Version-stamped policy source used by the Render source provider."""
+
+    key: str
+    title: str
+    catalogue_id: str
+    source: str
+    last_updated: str
+    ati_designation: str
+    summary: str
+    needs_verification: bool = False
+
+
+POLICY_REGISTRY: dict[str, PolicyRegistryEntry] = {
+    "dpf_policy": PolicyRegistryEntry(
+        key="dpf_policy",
+        title="Development Policy Financing Policy",
+        catalogue_id="OPS5.02-POL.120",
+        source="World Bank Policy: Development Policy Financing",
+        last_updated="2026-06-16",
+        ati_designation="Public",
+        summary="Current DPF authority; effective 2024-02-01.",
+    ),
+    "fcv_envelope_directive": PolicyRegistryEntry(
+        key="fcv_envelope_directive",
+        title="Fragility, Conflict and Violence Envelope Directive",
+        catalogue_id="DFI2.01-DIR.108",
+        source="IDA FCV Envelope Directive",
+        last_updated="2026-06-16",
+        ati_designation="Official Use Only",
+        summary="Governing source for PRA, RECA, TAA, WHR and related FCV Envelope advice.",
+    ),
+    "fcs_list_fy26": PolicyRegistryEntry(
+        key="fcs_list_fy26",
+        title="FY26 Fragile and Conflict-affected Situations List",
+        catalogue_id="FCS-FY26",
+        source="World Bank FY26 FCS list",
+        last_updated="2026-06-16",
+        ati_designation="Public list; underlying indicator file not embedded",
+        summary="Thirty-five economies with Conflict or Fragility category metadata.",
+    ),
+    "ipf_one_step_processing": PolicyRegistryEntry(
+        key="ipf_one_step_processing",
+        title="Condensed / consolidated IPF preparation procedures (processing flexibilities)",
+        catalogue_id="FCV-OPS-MANUAL-2025",
+        source="FCV Operational Manual (June 2025), Processing Flexibilities; WBG project-preparation streamlining reform (faster/simpler agenda)",
+        last_updated="2026-06-18",
+        ati_designation="Official Use Only",
+        summary=(
+            "Consolidated preparation stages (identification + preparation + appraisal in a single step), "
+            "Decision Review before appraisal, and accelerated turnaround (comments in 3 vs 5 business days; "
+            "Board submission 10 vs 18 business days) are confirmed in the FCV Operational Manual (June 2025) "
+            "and reflect the WBG preparation-streamlining reform (average preparation time targeted down from "
+            "~19 to ~12 months). The specific 'one-step / April 2026' label and any Bank-wide formal IPF "
+            "Directive instrument should still be confirmed against the current IPF Directive."
+        ),
+        needs_verification=False,
+    ),
+    "ost_manual_alignment": PolicyRegistryEntry(
+        key="ost_manual_alignment",
+        title="FCV Operational Manual 12 recommendations (authoritative) + 25-question checklist (tool-derived)",
+        catalogue_id="FCV-OPS-MANUAL-2025",
+        source="FCV Operational Manual for FCV Country Coordinators, June 2025",
+        last_updated="2026-06-18",
+        ati_designation="Official Use Only",
+        summary=(
+            "The 12 OST recommendations (six FCV-design Recs 1-6 + six M&E Recs 7-12) are confirmed "
+            "verbatim in the FCV Operational Manual (June 2025). The '25 key questions' are NOT a fixed "
+            "Manual framework — they are a review checklist derived/adapted by this tool from the Manual's "
+            "stage guidance (Boxes + the Section 8 one-pager); do not attribute the count 25 to the Manual."
+        ),
+        needs_verification=False,
+    ),
+    "ipf_restructuring_level_guide": PolicyRegistryEntry(
+        key="ipf_restructuring_level_guide",
+        title="IPF restructuring level and change-type guidance",
+        catalogue_id="IPF-RESTRUCTURING-GUIDE",
+        source="Phase 1 audit-resolved mid-cycle handover; verify procedural edge cases with OPCS",
+        last_updated="2026-06-17",
+        ati_designation="Public / OPCS verification fallback",
+        summary=(
+            "Mid-cycle overlay uses Level 1 only for APA and Bank Guarantee expiration-date "
+            "extension; PDO, scope, RF, closing date, reallocation, executing-agency, and "
+            "E&S risk re-rating changes are Level 2 / RVP or CD-DD advisory signals."
+        ),
+    ),
+    "additional_financing_guide": PolicyRegistryEntry(
+        key="additional_financing_guide",
+        title="Additional Financing FCV screening guidance",
+        catalogue_id="AF-MID-CYCLE-GUIDE",
+        source="Phase 1 audit-resolved mid-cycle handover; verify eligibility edge cases with OPCS",
+        last_updated="2026-06-17",
+        ati_designation="Public / OPCS verification fallback",
+        summary=(
+            "AF screening is advisory, change-focused, and anchored to the AF Project Paper, "
+            "original PAD/PCN where uploaded, and latest ISR where uploaded."
+        ),
+    ),
+}
+
+
+class RenderSourceProvider:
+    """Render-safe policy source seam: registry first, explicit verify fallback."""
+
+    def __init__(self, registry: dict[str, PolicyRegistryEntry] | None = None):
+        self.registry = registry or POLICY_REGISTRY
+
+    def get_policy(self, key: str) -> PolicyRegistryEntry:
+        if key in self.registry:
+            return self.registry[key]
+        return PolicyRegistryEntry(
+            key=key,
+            title="Unverified policy reference",
+            catalogue_id="VERIFY-WITH-OPCS",
+            source="Registry miss",
+            last_updated=date.today().isoformat(),
+            ati_designation="Unknown",
+            summary=(
+                "Verify with OPCS / LEG / ESF / FM before presenting this procedural "
+                "point as current policy."
+            ),
+            needs_verification=True,
+        )
+
+
+@dataclass(frozen=True)
+class Rubric:
+    """Instrument-owned S/R scoring metadata."""
+
+    name: str
+    dimensions: tuple[str, ...]
+    sensitivity_thresholds: tuple[tuple[str, float], ...]
+    responsiveness_thresholds: tuple[tuple[str, float], ...]
+    quality_gates: tuple[str, ...] = ()
+
+
+IPF_DEFAULT_RUBRIC = Rubric(
+    name="IPF 12-OST default",
+    dimensions=(
+        "contextual_awareness",
+        "conflict_informed_design",
+        "do_no_harm",
+        "fcv_adapted_operations",
+        "fcv_responsiveness",
+    ),
+    sensitivity_thresholds=(
+        ("Strong", 0.80),
+        ("Adequate", 0.60),
+        ("Partial", 0.40),
+        ("Low", 0.20),
+        ("Extremely Low", 0.0),
+    ),
+    responsiveness_thresholds=(
+        ("Strong", 0.80),
+        ("Adequate", 0.60),
+        ("Partial", 0.40),
+        ("Low", 0.0),
+    ),
+    quality_gates=("do_no_harm_cap", "conflict_analysis_cap", "geographic_specificity_cap"),
+)
+
+
+DPF_RUBRIC = Rubric(
+    name="DPF prior-action / PSIA",
+    dimensions=(
+        "prior_action_conflict_sensitivity",
+        "reform_sequencing",
+        "psia_adequacy",
+        "conflict_exception_adequacy",
+        "macro_fiscal_fragility",
+        "political_economy_reversibility",
+    ),
+    sensitivity_thresholds=(
+        ("Strong", 0.80),
+        ("Adequate", 0.60),
+        ("Partial", 0.40),
+        ("Low", 0.20),
+        ("Extremely Low", 0.0),
+    ),
+    responsiveness_thresholds=(
+        ("Strong", 0.80),
+        ("Adequate", 0.60),
+        ("Partial", 0.40),
+        ("Low", 0.0),
+    ),
+    quality_gates=("psia_adequacy_cap", "conflict_exception_cap", "macro_framework_cap"),
+)
+
+
+P4R_RUBRIC = Rubric(
+    name="P4R DLI / verification",
+    dimensions=(
+        "dli_conflict_sensitivity",
+        "dli_verifiability_iva_access",
+        "geographic_inclusion",
+        "essa_esms_adequacy",
+        "grm_functionality",
+        "disbursement_cliff_exposure",
+    ),
+    sensitivity_thresholds=(
+        ("Strong", 0.80),
+        ("Adequate", 0.60),
+        ("Partial", 0.40),
+        ("Low", 0.20),
+        ("Extremely Low", 0.0),
+    ),
+    responsiveness_thresholds=(
+        ("Strong", 0.80),
+        ("Adequate", 0.60),
+        ("Partial", 0.40),
+        ("Low", 0.0),
+    ),
+    quality_gates=("dli_verifiability_cap", "essa_grm_cap", "disbursement_cliff_cap"),
+)
+
+
+def _rating_from_thresholds(score: float, thresholds: tuple[tuple[str, float], ...]) -> str:
+    for label, floor in thresholds:
+        if score >= floor:
+            return label
+    return thresholds[-1][0]
+
+
+def score_sr(rubric: Rubric, evidence: dict[str, Any]) -> dict[str, Any]:
+    """Generic S/R scorer; current IPF behavior remains the default rubric."""
+
+    addressed = float(evidence.get("addressed", 0) or 0)
+    partial = float(evidence.get("partial", 0) or 0)
+    weak = float(evidence.get("weak", 0) or 0)
+    not_addressed = float(evidence.get("not_addressed", 0) or 0)
+    total = addressed + partial + weak + not_addressed
+    sensitivity_score = 0.0 if total <= 0 else (addressed + (0.5 * partial) + (0.25 * weak)) / total
+
+    responsiveness_raw = str(evidence.get("responsiveness_evidence", "")).lower()
+    responsiveness_score = {
+        "strong": 0.85,
+        "adequate": 0.65,
+        "partial": 0.45,
+        "limited": 0.20,
+        "low": 0.20,
+        "none": 0.0,
+    }.get(responsiveness_raw, float(evidence.get("responsiveness_score", 0) or 0))
+
+    return {
+        "rubric": rubric.name,
+        "sensitivity_score": round(sensitivity_score, 3),
+        "sensitivity_rating": _rating_from_thresholds(sensitivity_score, rubric.sensitivity_thresholds),
+        "responsiveness_score": round(responsiveness_score, 3),
+        "responsiveness_rating": _rating_from_thresholds(
+            responsiveness_score,
+            rubric.responsiveness_thresholds,
+        ),
+    }
+
+
+@dataclass(frozen=True)
+class ModuleConfig:
+    key: tuple[str, str, str]
+    rubric: Rubric
+    legacy_instrument: str
+    knowledge_keys: tuple[str, ...] = ()
+    intake_fields: tuple[str, ...] = ()
+    output_fields: tuple[str, ...] = ()
+    guardrails: tuple[str, ...] = ()
+
+
+def _module_key(doc_type: str, instrument: str, country_scope: str) -> tuple[str, str, str]:
+    return (
+        (doc_type or "Unknown").strip() or "Unknown",
+        (instrument or "Unknown").strip().upper() or "Unknown",
+        (country_scope or "single").strip().lower() or "single",
+    )
+
+
+MODULE_REGISTRY: dict[tuple[str, str, str], ModuleConfig] = {
+    _module_key(doc_type, "IPF", "single"): ModuleConfig(
+        key=_module_key(doc_type, "IPF", "single"),
+        rubric=IPF_DEFAULT_RUBRIC,
+        legacy_instrument="IPF",
+        knowledge_keys=("FCV_OPERATIONAL_MANUAL", "FCV_GUIDE", "FCV_INSTRUMENT_CALIBRATION"),
+        intake_fields=("instrument", "doc_type", "countries"),
+        output_fields=("fcv_rating", "fcv_responsiveness_rating", "priorities"),
+        guardrails=("compact_label_history", "tier1_citation_discipline", "advisory_procedural_language"),
+    )
+    for doc_type in ("PCN", "PID", "PAD", "AF", "Restructuring", "ISR", "Unknown")
+}
+
+for _mid_cycle_doc_type in ("AF", "Restructuring"):
+    MODULE_REGISTRY[_module_key(_mid_cycle_doc_type, "IPF", "single")] = ModuleConfig(
+        key=_module_key(_mid_cycle_doc_type, "IPF", "single"),
+        rubric=IPF_DEFAULT_RUBRIC,
+        legacy_instrument="IPF",
+        knowledge_keys=(
+            "FCV_OPERATIONAL_MANUAL",
+            "FCV_GUIDE",
+            "FCV_INSTRUMENT_CALIBRATION",
+            "RESTRUCTURING_GUIDE",
+            "AF_GUIDE",
+        ),
+        intake_fields=(
+            "instrument",
+            "doc_type",
+            "countries",
+            "parent_operation",
+            "change_types",
+            "restructuring_level",
+            "original_pad_or_pcn",
+            "latest_isr",
+        ),
+        output_fields=(
+            "fcv_rating",
+            "fcv_responsiveness_rating",
+            "priorities",
+            "change_type",
+            "restructuring_level",
+            "priority_scope",
+            "mid_cycle_watch",
+        ),
+        guardrails=(
+            "compact_label_history",
+            "tier1_citation_discipline",
+            "advisory_procedural_language",
+            "mid_cycle_overlay",
+            "mid_cycle_live_project_tier1_anchoring",
+        ),
+    )
+
+# Phase 2 — DPF/DPO instrument module: prior-action spine, PSIA harm screen, no ESF/DLI.
+for _dpf_doc_type in ("PCN", "PID", "PAD", "Unknown"):
+    MODULE_REGISTRY[_module_key(_dpf_doc_type, "DPO", "single")] = ModuleConfig(
+        key=_module_key(_dpf_doc_type, "DPO", "single"),
+        rubric=DPF_RUBRIC,
+        legacy_instrument="DPO",
+        knowledge_keys=(
+            "DPF_MODULE_GUIDE",
+            "DPF_POLICY_AREA_CHECKLIST",
+            "FCV_GUIDE",
+            "FCV_INSTRUMENT_CALIBRATION",
+        ),
+        intake_fields=(
+            "instrument",
+            "doc_type",
+            "countries",
+            "financing_source",
+            "series_position",
+            "cat_ddo",
+            "prior_operation_pd",
+            "imf_relations",
+        ),
+        output_fields=(
+            "fcv_rating",
+            "fcv_responsiveness_rating",
+            "priorities",
+            "prior_action",
+            "program_document_sections",
+            "dpf_watch",
+        ),
+        guardrails=(
+            "compact_label_history",
+            "tier1_citation_discipline",
+            "advisory_procedural_language",
+            "dpf_prior_action_spine",
+            "dpf_no_esf_escp_dli",
+            "dpf_macro_imf_headline",
+            "dpf_conflict_exception_check",
+        ),
+    )
+
+# Phase 3 - P4R/PforR instrument module: DLI + verification spine, ESSA/ESMS+GRM harm screen.
+for _p4r_doc_type in ("PCN", "PID", "PAD", "Unknown"):
+    MODULE_REGISTRY[_module_key(_p4r_doc_type, "PforR", "single")] = ModuleConfig(
+        key=_module_key(_p4r_doc_type, "PforR", "single"),
+        rubric=P4R_RUBRIC,
+        legacy_instrument="PforR",
+        knowledge_keys=(
+            "P4R_MODULE_GUIDE",
+            "FCV_GUIDE",
+            "FCV_INSTRUMENT_CALIBRATION",
+        ),
+        intake_fields=(
+            "instrument",
+            "doc_type",
+            "countries",
+            "has_ipf_component",
+            "dlis",
+            "program_boundary",
+            "essa_pap",
+            "latest_isr",
+        ),
+        output_fields=(
+            "fcv_rating",
+            "fcv_responsiveness_rating",
+            "priorities",
+            "dli",
+            "pforr_pad_sections",
+            "p4r_watch",
+        ),
+        guardrails=(
+            "compact_label_history",
+            "tier1_citation_discipline",
+            "advisory_procedural_language",
+            "p4r_dli_verification_spine",
+            "p4r_no_esf_escp",
+            "p4r_disbursement_under_conflict_headline",
+            "p4r_instrument_feasibility_advisory",
+        ),
+    )
+
+
+def select_module(doc_type: str = "Unknown", instrument: str = "Unknown", country_scope: str = "single") -> ModuleConfig:
+    """Select analysis module, defaulting to the existing IPF single-country path."""
+
+    key = _module_key(doc_type, instrument, country_scope)
+    if key in MODULE_REGISTRY:
+        return MODULE_REGISTRY[key]
+    ipf_key = _module_key(doc_type, "IPF", "single")
+    if ipf_key in MODULE_REGISTRY:
+        return MODULE_REGISTRY[ipf_key]
+    return MODULE_REGISTRY[_module_key("Unknown", "IPF", "single")]
+
+
+@dataclass
+class AnalysisState:
+    instrument: str = "Unknown"
+    doc_type: str = "Unknown"
+    country_scope: str = "single"
+    countries: list[dict[str, Any]] = field(default_factory=list)
+    phase: str | None = None
+    restructuring_level: str | None = None
+    change_types: list[str] = field(default_factory=list)
+    parent_operation: str | None = None
+    financing_source: str | None = None
+    series_position: str | None = None
+    cat_ddo: bool = False
+    prior_actions: list[str] = field(default_factory=list)
+    dlis: list[str] = field(default_factory=list)
+    has_ipf_component: bool = False
+    is_mpa: bool = False
+    implementing_entity: str | None = None
+    approval_authority: str | None = None
+    active_modules: list[str] = field(default_factory=list)
+    intersection: dict[str, Any] = field(default_factory=dict)
+
+    @classmethod
+    def from_payload(cls, payload: dict[str, Any] | None) -> "AnalysisState":
+        payload = payload or {}
+        intake = payload.get("structured_intake") or payload.get("analysis_state") or {}
+        countries = intake.get("countries", payload.get("countries", [])) or []
+        if isinstance(countries, str):
+            countries = [{"name": c.strip()} for c in countries.split(",") if c.strip()]
+        change_types = intake.get("change_types", payload.get("change_types", [])) or []
+        if isinstance(change_types, str):
+            change_types = [c.strip() for c in re.split(r'[;,]', change_types) if c.strip()]
+        doc_type = intake.get("doc_type", payload.get("document_type", "Unknown")) or "Unknown"
+        instrument = intake.get("instrument", payload.get("instrument_type", "Unknown")) or "Unknown"
+        country_scope = intake.get("country_scope", payload.get("country_scope", "single")) or "single"
+        if isinstance(countries, list) and len(countries) >= 2:
+            country_scope = "multi"
+        active_modules = list(intake.get("active_modules", payload.get("active_modules", [])) or [])
+        if country_scope == "multi" and "multi_country_layer" not in active_modules:
+            active_modules.append("multi_country_layer")
+        if doc_type in {"AF", "Restructuring"} and "mid_cycle_overlay" not in active_modules:
+            active_modules.append("mid_cycle_overlay")
+        if str(instrument).strip().upper() == "DPO" and "dpf_module" not in active_modules:
+            active_modules.append("dpf_module")
+        if str(instrument).strip().upper() in {"PFORR", "P4R", "PROGRAM-FOR-RESULTS"} and "p4r_module" not in active_modules:
+            active_modules.append("p4r_module")
+        is_mpa_raw = intake.get("is_mpa", payload.get("is_mpa", False))
+        is_mpa = is_mpa_raw if isinstance(is_mpa_raw, bool) else str(is_mpa_raw).strip().lower() in {"true", "yes", "1"}
+        if is_mpa and "mpa_wrapper" not in active_modules:
+            active_modules.append("mpa_wrapper")
+        prior_actions = intake.get("prior_actions", payload.get("prior_actions", [])) or []
+        if isinstance(prior_actions, str):
+            prior_actions = [c.strip() for c in re.split(r'[;\n]', prior_actions) if c.strip()]
+        cat_ddo_raw = intake.get("cat_ddo", payload.get("cat_ddo", False))
+        cat_ddo = cat_ddo_raw if isinstance(cat_ddo_raw, bool) else str(cat_ddo_raw).strip().lower() in {"true", "yes", "1"}
+        dlis = intake.get("dlis", payload.get("dlis", [])) or []
+        if isinstance(dlis, str):
+            dlis = [c.strip() for c in re.split(r'[;\n]', dlis) if c.strip()]
+        ipf_comp_raw = intake.get("has_ipf_component", payload.get("has_ipf_component", False))
+        has_ipf_component = ipf_comp_raw if isinstance(ipf_comp_raw, bool) else str(ipf_comp_raw).strip().lower() in {"true", "yes", "1"}
+        return cls(
+            instrument=instrument,
+            doc_type=doc_type,
+            country_scope=country_scope,
+            countries=countries if isinstance(countries, list) else [],
+            phase=intake.get("phase", payload.get("phase")),
+            restructuring_level=intake.get("restructuring_level", payload.get("restructuring_level")),
+            change_types=change_types if isinstance(change_types, list) else [],
+            parent_operation=intake.get("parent_operation", payload.get("parent_operation")),
+            financing_source=intake.get("financing_source", payload.get("financing_source")),
+            series_position=intake.get("series_position", payload.get("series_position")),
+            cat_ddo=cat_ddo,
+            prior_actions=prior_actions if isinstance(prior_actions, list) else [],
+            dlis=dlis if isinstance(dlis, list) else [],
+            has_ipf_component=has_ipf_component,
+            is_mpa=is_mpa,
+            implementing_entity=intake.get("implementing_entity", payload.get("implementing_entity")),
+            approval_authority=intake.get("approval_authority", payload.get("approval_authority")),
+            active_modules=active_modules,
+            intersection=dict(intake.get("intersection", payload.get("intersection", {})) or {}),
+        )
+
+
 DO_NO_HARM_HEADER = """---
 **AI-Generated Output — For Review Purposes Only**
 
@@ -82,7 +595,8 @@ _REQUIRED_PRIORITY_FIELDS = [
     'the_gap', 'why_it_matters', 'actions',
     'who_acts', 'when', 'action_timing', 'resources',
     'pad_sections', 'implementation_note', 'cpf_alignment',
-    'country_category_relevance',
+    'country_category_relevance', 'change_type', 'restructuring_level',
+    'priority_scope',
 ]
 
 _SPECIFICITY_STOPWORDS = frozenset({
@@ -202,6 +716,637 @@ def extract_process_type(stage1_output: str) -> str:
     return result if result in valid else 'Unknown'
 
 
+CHANGE_TYPE_CANONICAL = {
+    "pdo": "PDO change",
+    "pdo change": "PDO change",
+    "project development objective": "PDO change",
+    "component add/drop": "Component add/drop",
+    "component change": "Component add/drop",
+    "components": "Component add/drop",
+    "scope": "Scope / geographic change",
+    "scope change": "Scope / geographic change",
+    "geographic": "Scope / geographic change",
+    "geographic change": "Scope / geographic change",
+    "geography": "Scope / geographic change",
+    "results framework": "Results framework change",
+    "results framework change": "Results framework change",
+    "rf": "Results framework change",
+    "indicator": "Results framework change",
+    "closing date": "Closing-date extension",
+    "closing-date": "Closing-date extension",
+    "closing date extension": "Closing-date extension",
+    "extension": "Closing-date extension",
+    "reallocation": "Reallocation",
+    "funds reallocation": "Reallocation",
+    "executing agency": "Executing-agency change",
+    "executing-agency": "Executing-agency change",
+    "implementing agency": "Executing-agency change",
+    "e&s": "E&S risk re-rating",
+    "environmental and social": "E&S risk re-rating",
+    "risk re-rating": "E&S risk re-rating",
+    "alternative procurement arrangements": "Alternative Procurement Arrangements",
+    "apa": "Alternative Procurement Arrangements",
+    "bank guarantee": "Bank Guarantee expiration-date extension",
+    "bank guarantee expiration": "Bank Guarantee expiration-date extension",
+    "af": "AF scale-up / top-up",
+    "additional financing": "AF scale-up / top-up",
+    "scale-up": "AF scale-up / top-up",
+    "top-up": "AF scale-up / top-up",
+    "cost overrun": "Cost-overrun / financing gap",
+    "cost-overrun": "Cost-overrun / financing gap",
+    "financing gap": "Cost-overrun / financing gap",
+}
+
+LEVEL_1_CHANGE_TYPES = {
+    "Alternative Procurement Arrangements",
+    "Bank Guarantee expiration-date extension",
+}
+
+LEVEL_2_CHANGE_TYPES = {
+    "PDO change",
+    "Component add/drop",
+    "Scope / geographic change",
+    "Results framework change",
+    "Closing-date extension",
+    "Reallocation",
+    "Executing-agency change",
+    "E&S risk re-rating",
+}
+
+
+def _canonical_change_type(raw: str) -> str | None:
+    value = re.sub(r'\s+', ' ', str(raw or '').strip().lower())
+    value = value.strip(' .:-')
+    if not value:
+        return None
+    if value in CHANGE_TYPE_CANONICAL:
+        return CHANGE_TYPE_CANONICAL[value]
+    for needle, canonical in sorted(CHANGE_TYPE_CANONICAL.items(), key=lambda kv: len(kv[0]), reverse=True):
+        if re.search(rf'\b{re.escape(needle)}\b', value):
+            return canonical
+    return str(raw).strip()
+
+
+def derive_restructuring_level(change_types: list[str] | tuple[str, ...] | str) -> dict[str, str | None]:
+    """Derive advisory restructuring level from detected change types.
+
+    Procedural language remains advisory; TTLs should verify edge cases with OPCS.
+    """
+    if isinstance(change_types, str):
+        raw_types = [c.strip() for c in re.split(r'[;,]', change_types) if c.strip()]
+    else:
+        raw_types = list(change_types or [])
+    canonical = []
+    for item in raw_types:
+        mapped = _canonical_change_type(item)
+        if mapped and mapped not in canonical:
+            canonical.append(mapped)
+
+    if any(item in LEVEL_2_CHANGE_TYPES for item in canonical):
+        reasons = [item for item in canonical if item in LEVEL_2_CHANGE_TYPES]
+        return {
+            "level": "Level 2",
+            "authority": "RVP / CD-DD",
+            "reason": (
+                "Detected Level 2 change type(s): "
+                + ", ".join(reasons)
+                + ". PDO change is treated as Level 2 in this audit-resolved build; "
+                "verify procedural edge cases with OPCS."
+            ),
+        }
+    if canonical and all(item in LEVEL_1_CHANGE_TYPES for item in canonical):
+        return {
+            "level": "Level 1",
+            "authority": "Board",
+            "reason": (
+                "Only narrow Level 1 change type(s) detected: "
+                + ", ".join(canonical)
+                + ". Treat as advisory and verify with OPCS."
+            ),
+        }
+    if canonical:
+        return {
+            "level": "Unknown",
+            "authority": "Verify with OPCS",
+            "reason": "Detected change type(s) do not map cleanly to Level 1 or Level 2: " + ", ".join(canonical),
+        }
+    return {"level": None, "authority": None, "reason": "No restructuring change types detected."}
+
+
+def extract_change_types(stage1_output: str) -> dict[str, Any]:
+    """Extract mid-cycle change types from %%%CHANGE_TYPE_START/END%%% block."""
+    pattern = r'%%%CHANGE_TYPE_START%%%(.*?)%%%CHANGE_TYPE_END%%%'
+    m = re.search(pattern, stage1_output or '', re.DOTALL | re.IGNORECASE)
+    if not m:
+        return {
+            "error": True,
+            "change_types": [],
+            "restructuring_level": None,
+            "restructuring_authority": None,
+            "rationale": "",
+        }
+
+    block = m.group(1).strip()
+    change_types: list[str] = []
+    level_hint = ""
+    rationale = ""
+
+    try:
+        parsed = json.loads(block)
+        raw_change_types = parsed.get("change_types", [])
+        if isinstance(raw_change_types, str):
+            raw_change_types = re.split(r'[;,]', raw_change_types)
+        level_hint = str(parsed.get("restructuring_level", "") or "")
+        rationale = str(parsed.get("rationale", "") or "")
+    except (json.JSONDecodeError, ValueError, TypeError):
+        raw_line = ""
+        for line in block.splitlines():
+            if ':' not in line:
+                continue
+            key, value = line.split(':', 1)
+            key = key.strip().lower()
+            value = value.strip()
+            if key in {"change_types", "change_type"}:
+                raw_line = value
+            elif key == "restructuring_level":
+                level_hint = value
+            elif key == "rationale":
+                rationale = value
+        raw_change_types = re.split(r'[;,]', raw_line)
+
+    for raw in raw_change_types:
+        canonical = _canonical_change_type(str(raw))
+        if canonical and canonical not in change_types:
+            change_types.append(canonical)
+
+    derived = derive_restructuring_level(change_types)
+    level = level_hint if level_hint in {"Level 1", "Level 2"} else derived["level"]
+    authority = derived["authority"]
+    if level == "Level 1":
+        authority = "Board"
+    elif level == "Level 2":
+        authority = "RVP / CD-DD"
+
+    return {
+        "error": False,
+        "change_types": change_types,
+        "restructuring_level": level,
+        "restructuring_authority": authority,
+        "rationale": rationale or derived["reason"],
+    }
+
+
+def _normalise_financing_source(raw: str) -> str:
+    text = (raw or "").strip().upper()
+    if "IBRD" in text:
+        return "IBRD"
+    if "IDA" in text:
+        return "IDA"
+    return "Unknown"
+
+
+def extract_prior_actions(stage1_output: str) -> dict[str, Any]:
+    """Extract the DPF prior-action spine from a %%%PRIOR_ACTIONS_START/END%%% block.
+
+    Returns financing source (IBRD/IDA), series position, Cat DDO flag, the prior-action
+    list, and indicative triggers. Mirrors extract_change_types(): tolerant of JSON or
+    simple ``key: value`` lines, with semicolon-separated lists.
+    """
+    empty = {
+        "error": True,
+        "financing_source": "Unknown",
+        "series_position": "",
+        "is_programmatic": False,
+        "cat_ddo": False,
+        "prior_actions": [],
+        "indicative_triggers": [],
+    }
+    pattern = r'%%%PRIOR_ACTIONS_START%%%(.*?)%%%PRIOR_ACTIONS_END%%%'
+    m = re.search(pattern, stage1_output or '', re.DOTALL | re.IGNORECASE)
+    if not m:
+        return empty
+
+    block = m.group(1).strip()
+    financing_raw = ""
+    series_position = ""
+    cat_ddo_raw = ""
+    prior_actions_raw = ""
+    triggers_raw = ""
+
+    try:
+        parsed = json.loads(block)
+        financing_raw = str(parsed.get("financing_source", "") or "")
+        series_position = str(parsed.get("series_position", "") or "")
+        cat_ddo_raw = str(parsed.get("cat_ddo", "") or "")
+        pa = parsed.get("prior_actions", [])
+        prior_actions_raw = "; ".join(pa) if isinstance(pa, list) else str(pa or "")
+        tr = parsed.get("indicative_triggers", [])
+        triggers_raw = "; ".join(tr) if isinstance(tr, list) else str(tr or "")
+    except (json.JSONDecodeError, ValueError, TypeError):
+        for line in block.splitlines():
+            if ':' not in line:
+                continue
+            key, value = line.split(':', 1)
+            key = key.strip().lower()
+            value = value.strip()
+            if key == "financing_source":
+                financing_raw = value
+            elif key == "series_position":
+                series_position = value
+            elif key == "cat_ddo":
+                cat_ddo_raw = value
+            elif key in {"prior_actions", "prior_action"}:
+                prior_actions_raw = value
+            elif key in {"indicative_triggers", "triggers"}:
+                triggers_raw = value
+
+    prior_actions = [p.strip() for p in re.split(r'[;\n]', prior_actions_raw) if p.strip()]
+    indicative_triggers = [t.strip() for t in re.split(r'[;\n]', triggers_raw) if t.strip()]
+    cat_ddo = str(cat_ddo_raw).strip().lower() in {"true", "yes", "1"}
+    is_programmatic = bool(
+        re.search(r'programmatic|\bof\b|tranche|operation\s*\d', series_position, re.IGNORECASE)
+    ) and "standalone" not in series_position.lower()
+
+    return {
+        "error": False,
+        "financing_source": _normalise_financing_source(financing_raw),
+        "series_position": series_position,
+        "is_programmatic": is_programmatic,
+        "cat_ddo": cat_ddo,
+        "prior_actions": prior_actions,
+        "indicative_triggers": indicative_triggers,
+    }
+
+
+def get_dpf_slice(instrument: str) -> str:
+    """Return DPF/DPO module guidance for prompt injection (instrument == DPO)."""
+    if str(instrument).strip().upper() != "DPO":
+        return ""
+    return (
+        "\n\n--- Development Policy Financing (DPF/DPO) Module Guide ---\n"
+        + DPF_MODULE_GUIDE
+        + "\n\n--- DPF FCV Policy-Area Coverage Checklist ---\n"
+        + DPF_POLICY_AREA_CHECKLIST
+    )
+
+
+def extract_dlis(stage1_output: str) -> dict[str, Any]:
+    """Extract the P4R DLI spine from a %%%DLIS_START/END%%% block."""
+    empty = {
+        "error": True,
+        "ipf_component": False,
+        "program_boundary": "",
+        "fcs_status": "",
+        "dlis": [],
+        "verification": "",
+    }
+    pattern = r'%%%DLIS_START%%%(.*?)%%%DLIS_END%%%'
+    m = re.search(pattern, stage1_output or '', re.DOTALL | re.IGNORECASE)
+    if not m:
+        return empty
+    block = m.group(1).strip()
+    ipf_raw = ""
+    program_boundary = ""
+    fcs_status = ""
+    dlis_raw = ""
+    verification = ""
+    try:
+        parsed = json.loads(block)
+        ipf_raw = str(parsed.get("ipf_component", "") or "")
+        program_boundary = str(parsed.get("program_boundary", "") or "")
+        fcs_status = str(parsed.get("fcs_status", "") or "")
+        d = parsed.get("dlis", [])
+        dlis_raw = "; ".join(d) if isinstance(d, list) else str(d or "")
+        verification = str(parsed.get("verification", "") or "")
+    except (json.JSONDecodeError, ValueError, TypeError):
+        for line in block.splitlines():
+            if ':' not in line:
+                continue
+            key, value = line.split(':', 1)
+            key = key.strip().lower()
+            value = value.strip()
+            if key == "ipf_component":
+                ipf_raw = value
+            elif key == "program_boundary":
+                program_boundary = value
+            elif key == "fcs_status":
+                fcs_status = value
+            elif key in {"dlis", "dli"}:
+                dlis_raw = value
+            elif key in {"verification", "verification_protocol"}:
+                verification = value
+    dlis = [d.strip() for d in re.split(r'[;\n]', dlis_raw) if d.strip()]
+    ipf_component = str(ipf_raw).strip().lower() in {"true", "yes", "1"}
+    return {
+        "error": False,
+        "ipf_component": ipf_component,
+        "program_boundary": program_boundary,
+        "fcs_status": fcs_status,
+        "dlis": dlis,
+        "verification": verification,
+    }
+
+
+def get_p4r_slice(instrument: str) -> str:
+    """Return P4R/PforR module guidance for prompt injection (instrument == PforR)."""
+    if str(instrument).strip().upper() not in {"PFORR", "P4R", "PROGRAM-FOR-RESULTS"}:
+        return ""
+    return (
+        "\n\n--- Program-for-Results (P4R/PforR) Module Guide ---\n"
+        + P4R_MODULE_GUIDE
+    )
+
+
+def extract_country_set(stage1_output: str) -> dict[str, Any]:
+    """Extract the multi-country / regional country set from a %%%COUNTRY_SET_START/END%%% block."""
+    empty = {"error": True, "countries": [], "is_multi_country": False, "regional_pdo": False, "implementing_entity": ""}
+    m = re.search(r'%%%COUNTRY_SET_START%%%(.*?)%%%COUNTRY_SET_END%%%', stage1_output or '', re.DOTALL | re.IGNORECASE)
+    if not m:
+        return empty
+    block = m.group(1).strip()
+    countries_raw = ""
+    regional_raw = ""
+    implementing_entity = ""
+    try:
+        parsed = json.loads(block)
+        cc = parsed.get("countries", [])
+        countries_raw = "; ".join(cc) if isinstance(cc, list) else str(cc or "")
+        regional_raw = str(parsed.get("regional_pdo", "") or "")
+        implementing_entity = str(parsed.get("implementing_entity", "") or "")
+    except (json.JSONDecodeError, ValueError, TypeError):
+        for line in block.splitlines():
+            if ':' not in line:
+                continue
+            key, value = line.split(':', 1)
+            key = key.strip().lower()
+            value = value.strip()
+            if key == "countries":
+                countries_raw = value
+            elif key == "regional_pdo":
+                regional_raw = value
+            elif key == "implementing_entity":
+                implementing_entity = value
+    countries = [c.strip() for c in re.split(r'[;\n]', countries_raw) if c.strip()]
+    return {
+        "error": False,
+        "countries": countries,
+        "is_multi_country": len(countries) >= 2,
+        "regional_pdo": str(regional_raw).strip().lower() in {"true", "yes", "1"},
+        "implementing_entity": implementing_entity,
+    }
+
+
+def classify_country_set(countries: list) -> list:
+    """Classify each country in a regional set; flag non-FCS spillover/host-pressure candidates."""
+    results = []
+    for name in countries or []:
+        cls = classify_country(name)
+        fcs_status = None
+        for canon, cat in FCS_COUNTRY_CATEGORIES.items():
+            if canon.lower() == str(name).strip().lower():
+                fcs_status = cat
+                break
+        is_fcs = bool(cls.get("category")) or fcs_status is not None
+        results.append({
+            "name": name,
+            "category": cls.get("category"),
+            "confidence": cls.get("confidence"),
+            "fcs_status": fcs_status or ("FCS" if cls.get("category") else "Non-FCS"),
+            "spillover_candidate": not is_fcs,
+        })
+    return results
+
+
+def weighted_rollup(country_ratings: list) -> dict:
+    """Fragility/exposure-weighted roll-up of per-country S/R so a fragile minority is not masked."""
+    if not country_ratings:
+        return {"sensitivity_score": 0.0, "responsiveness_score": 0.0, "method": "empty", "weights": []}
+
+    def _weight(item):
+        cat = str(item.get("category") or "").lower()
+        fcs = str(item.get("fcs_status") or "").lower()
+        if "in crisis" in cat or "conflict" in cat or fcs == "conflict":
+            return 3.0
+        if "fragil" in cat or "transition" in cat or "at risk" in cat or fcs == "fragility":
+            return 2.0
+        return 1.0
+
+    total_w = 0.0
+    s_acc = 0.0
+    r_acc = 0.0
+    weights = []
+    for item in country_ratings:
+        w = _weight(item)
+        weights.append({"name": item.get("name"), "weight": w})
+        total_w += w
+        s_acc += w * float(item.get("sensitivity_score", 0) or 0)
+        r_acc += w * float(item.get("responsiveness_score", 0) or 0)
+    return {
+        "sensitivity_score": round(s_acc / total_w, 3) if total_w else 0.0,
+        "responsiveness_score": round(r_acc / total_w, 3) if total_w else 0.0,
+        "method": "fragility_exposure_weighted",
+        "weights": weights,
+    }
+
+
+def get_regional_slice(country_scope: str) -> str:
+    """Return the cross-border lens for multi-country / regional operations."""
+    if str(country_scope).strip().lower() != "multi":
+        return ""
+    return "\n\n--- Multi-Country / Regional Cross-Border Lens ---\n" + REGIONAL_CROSSBORDER_LENS
+
+
+def extract_mpa_context(stage1_output: str) -> dict[str, Any]:
+    """Extract MPA phase context from a %%%MPA_CONTEXT_START/END%%% block."""
+    empty = {"error": True, "is_mpa": False, "phase": "", "base_instrument": "", "regional_mpa": False, "approval_authority": "", "phase_transition_triggers": []}
+    m = re.search(r'%%%MPA_CONTEXT_START%%%(.*?)%%%MPA_CONTEXT_END%%%', stage1_output or '', re.DOTALL | re.IGNORECASE)
+    if not m:
+        return empty
+    block = m.group(1).strip()
+    is_mpa_raw = ""
+    phase = ""
+    base_instrument = ""
+    regional_raw = ""
+    triggers_raw = ""
+    try:
+        parsed = json.loads(block)
+        is_mpa_raw = str(parsed.get("is_mpa", "") or "")
+        phase = str(parsed.get("phase", "") or "")
+        base_instrument = str(parsed.get("base_instrument", "") or "")
+        regional_raw = str(parsed.get("regional_mpa", "") or "")
+        tt = parsed.get("phase_transition_triggers", [])
+        triggers_raw = "; ".join(tt) if isinstance(tt, list) else str(tt or "")
+    except (json.JSONDecodeError, ValueError, TypeError):
+        for line in block.splitlines():
+            if ':' not in line:
+                continue
+            key, value = line.split(':', 1)
+            key = key.strip().lower()
+            value = value.strip()
+            if key == "is_mpa":
+                is_mpa_raw = value
+            elif key == "phase":
+                phase = value
+            elif key == "base_instrument":
+                base_instrument = value
+            elif key == "regional_mpa":
+                regional_raw = value
+            elif key in {"phase_transition_triggers", "triggers"}:
+                triggers_raw = value
+    is_mpa = str(is_mpa_raw).strip().lower() in {"true", "yes", "1"}
+    triggers = [x.strip() for x in re.split(r'[;\n]', triggers_raw) if x.strip()]
+    phase_l = phase.lower()
+    is_phase1 = ("framework" in phase_l) or (phase_l.strip() in {"", "phase 1", "phase1", "1"})
+    if not is_mpa:
+        approval_authority = ""
+    elif is_phase1:
+        approval_authority = "Board (Program Framework + Phase 1) - advisory; verify with OPCS"
+    else:
+        approval_authority = "Management / RVP (subsequent phase) - advisory; verify with OPCS"
+    return {
+        "error": False,
+        "is_mpa": is_mpa,
+        "phase": phase,
+        "base_instrument": base_instrument,
+        "regional_mpa": str(regional_raw).strip().lower() in {"true", "yes", "1"},
+        "approval_authority": approval_authority,
+        "phase_transition_triggers": triggers,
+    }
+
+
+def mpa_carve_outs(phase: str) -> list:
+    """NOT_APPLICABLE gap suppressions for MPA subsequent phases (empty for Phase 1 / framework)."""
+    phase_l = str(phase or "").lower()
+    is_phase1 = ("framework" in phase_l) or (phase_l.strip() in {"", "phase 1", "phase1", "1"})
+    if is_phase1:
+        return []
+    return [
+        "standalone_conflict_analysis",
+        "program_institutional_arrangements",
+        "program_theory_of_change",
+        "standalone_results_framework",
+        "cerc_absence",
+        "esf_program_level",
+        "aggregate_isr",
+    ]
+
+
+def get_mpa_slice(is_mpa) -> str:
+    """Return MPA wrapper guidance for prompt injection when the operation is an MPA."""
+    if not is_mpa:
+        return ""
+    return "\n\n--- MPA (Multiphase Programmatic Approach) Wrapper Guide ---\n" + MPA_MODULE_GUIDE
+
+
+# ── Phase 6: intersection-matrix composition ──────────────────────────────────
+
+LAYER_INJECTION_PRIORITY = [
+    "instrument_spine",
+    "mid_cycle_overlay",
+    "mpa_wrapper",
+    "multi_country_layer",
+]
+
+
+def build_composition_plan(state) -> dict:
+    """Compose the active dimensions into a single layered plan with precedence rules.
+
+    Base spine = the instrument module (owns the unit of analysis); mid-cycle and
+    multi-country are overlays; MPA is a wrapper. Backward-compatible: a plain
+    single-country IPF op returns no overlays / no wrapper.
+    """
+    instrument = str(getattr(state, "instrument", "") or "").strip().upper()
+    spine = {
+        "DPO": "DPF prior-action spine",
+        "PFORR": "P4R DLI / verification spine",
+        "P4R": "P4R DLI / verification spine",
+    }.get(instrument, "IPF component spine")
+
+    active = list(getattr(state, "active_modules", []) or [])
+    overlays = []
+    if "mid_cycle_overlay" in active:
+        overlays.append("mid_cycle_overlay")
+    if "multi_country_layer" in active:
+        overlays.append("multi_country_layer")
+    wrapper = "mpa_wrapper" if "mpa_wrapper" in active else None
+
+    mid_cycle = "mid_cycle_overlay" in active
+    multi = "multi_country_layer" in active
+    precedence = {
+        "unit_of_analysis": spine,
+        "temporal": (
+            "mid-cycle live-project (Tier-1) framing governs"
+            if mid_cycle else
+            "instrument default (preparation framing for new lending)"
+        ),
+        "rating": (
+            "fragility/exposure-weighted roll-up governs the headline rating"
+            if multi else "single-country"
+        ),
+        "output_register": (
+            f"restructuring level: {getattr(state, 'restructuring_level', None) or 'Unknown'}"
+            if mid_cycle else "standard recommendations note"
+        ),
+    }
+
+    active_layers = ["instrument_spine"] + overlays + ([wrapper] if wrapper else [])
+    return {
+        "spine": spine,
+        "overlays": overlays,
+        "wrapper": wrapper,
+        "precedence": precedence,
+        "active_layers": active_layers,
+        "active_layer_count": len(active_layers),
+        "is_intersection": len(active_layers) > 1,
+    }
+
+
+def dedupe_and_scope_priorities(priorities, default_scope: str = "country-specific") -> list:
+    """Merge/dedupe priorities by normalised title and ensure each carries a priority_scope."""
+    seen = set()
+    result = []
+    for pr in priorities or []:
+        if not isinstance(pr, dict):
+            continue
+        title = str(pr.get("title", "")).strip()
+        norm = re.sub(r'^priority\s+\d+\s*[-:.·]\s*', '', title.lower()).strip()
+        norm = re.sub(r'\s+', ' ', norm)
+        if norm and norm in seen:
+            continue
+        if norm:
+            seen.add(norm)
+        item = dict(pr)
+        if not item.get("priority_scope"):
+            item["priority_scope"] = default_scope
+        result.append(item)
+    return result
+
+
+def bounded_injection_plan(layers, budget: int, costs=None) -> dict:
+    """Cap overlay injection by priority with disclosure; the instrument spine is never dropped."""
+    costs = costs or {}
+    ordered = sorted(
+        layers,
+        key=lambda l: LAYER_INJECTION_PRIORITY.index(l) if l in LAYER_INJECTION_PRIORITY else 99,
+    )
+    included, dropped, spent = [], [], 0
+    for layer in ordered:
+        cost = int(costs.get(layer, 0))
+        if layer == "instrument_spine" or spent + cost <= budget:
+            included.append(layer)
+            spent += cost
+        else:
+            dropped.append(layer)
+    disclosure = ""
+    if dropped:
+        disclosure = (
+            "Composition note: to stay within the context budget, overlay detail for the following "
+            "dimension(s) was bounded and not fully injected: " + ", ".join(dropped) + ". These "
+            "dimensions remain flagged; request a focused single-dimension re-run for full depth."
+        )
+    return {"included": included, "dropped": dropped, "spent": spent, "budget": budget, "disclosure": disclosure}
+
+
 def get_process_slice(process_type: str) -> str:
     """Return a formatted text block with process-specific knowledge.
     Used for prompt injection in Implementation Review Stages 2 and 3.
@@ -223,6 +1368,23 @@ def get_process_slice(process_type: str) -> str:
         f"\n**Backward/forward look guidance:** {entry.get('backward_forward_look', '')}",
     ]
     return '\n'.join(p for p in parts if p.strip())
+
+
+def get_mid_cycle_slice(doc_type: str) -> str:
+    """Return mid-cycle overlay guidance for AF and Restructuring documents."""
+    if doc_type == "AF":
+        return (
+            "\n\n--- Additional Financing Mid-Cycle Guide ---\n"
+            + AF_GUIDE
+            + "\n\n--- Restructuring Change-Type Guide (use if AF also changes scope/PDO/RF) ---\n"
+            + RESTRUCTURING_GUIDE
+        )
+    if doc_type == "Restructuring":
+        return (
+            "\n\n--- Restructuring Mid-Cycle Guide ---\n"
+            + RESTRUCTURING_GUIDE
+        )
+    return ""
 
 
 def extract_temporal_context(stage1_output: str) -> dict:
@@ -282,14 +1444,24 @@ def classify_country(country_name: str) -> dict:
             }
 
     # FCS list check — Conflict-Affected
-    for fcs_country in FCS_COUNTRIES_CURRENT:
-        if fcs_country.lower() == name_lower or name_lower in fcs_country.lower() or fcs_country.lower() in name_lower:
+    fcs_lookup = {c.lower(): c for c in FCS_COUNTRIES_CURRENT}
+    fcs_lookup.update({alias.lower(): canonical for alias, canonical in FCS_COUNTRY_ALIASES.items()})
+    for fcs_name, canonical in fcs_lookup.items():
+        fcs_pattern = rf'\b{re.escape(fcs_name)}\b'
+        name_pattern = rf'\b{re.escape(name_lower)}\b'
+        if (
+            fcs_name == name_lower
+            or re.search(fcs_pattern, name_lower)
+            or re.search(name_pattern, fcs_name)
+        ):
+            fy26_category = FCS_COUNTRY_CATEGORIES.get(canonical, 'FCS')
             return {
                 'category': 'Conflict-Affected',
                 'confidence': 'high',
                 'reasoning': (
-                    f'{name} is on the World Bank FCS list. Government-led delivery is '
-                    f'expected; analysis calibrated for conflict-affected engagement.'
+                    f'{name} is on the World Bank FY26 FCS list ({fy26_category}). '
+                    f'Government-led delivery is expected unless other evidence indicates '
+                    f'otherwise; analysis calibrated for conflict-affected engagement.'
                 )
             }
 
@@ -508,7 +1680,7 @@ def extract_under_hood(stage2_output):
 
 DEFAULT_PROMPTS = {
 "1": '''# Role
-You are an expert FCV (Fragility, Conflict, and Violence) analyst for the World Bank Group, specialising in identifying conflict risks and development challenges in fragile contexts. You have access to the WBG FCV Strategy Refresh framework and the FCV Operational Playbook Diagnostics guidance, which inform your analysis of compound risks, forced displacement, private sector dimensions, and FCV classification context.
+You are an expert FCV (Fragility, Conflict, and Violence) analyst for the World Bank Group, specialising in identifying conflict risks and development challenges in fragile contexts. You have access to the WBG FCV Strategy 2026-2030 framework and the FCV Operational Playbook Diagnostics guidance, which inform your analysis of compound risks, forced displacement, private sector dimensions, and FCV classification context.
 
 # Task
 Analyse the provided documents and produce a structured FCV assessment in two clearly separated parts:
@@ -612,7 +1784,7 @@ DATA GAP FLAGGING: If a key FCV dimension (e.g. conflict intensity, displacement
   CASE 3 — No RRA exists: If no RRA or equivalent country risk assessment is known to exist, note the absence ("No RRA or country risk assessment was available for cross-reference"), summarise the key FCV risk drivers from background knowledge, and flag that an updated country risk analysis would strengthen the project's FCV grounding.
 
 - IDA FCV ENVELOPE ADVISORY (Conflict-Affected and Situations of Fragility categories only): If the country is classified as Conflict-Affected or Situations of Fragility, add a brief advisory note at the end of Part B — after the synthesis statement — in the following format: "Note for the Task Team: Given [country]'s FCV profile, the team may wish to discuss whether this operation could benefit from IDA FCV Envelope financing windows (PRA, RECA, TAA). Eligibility involves a multi-criteria assessment conducted by the FCV Group — this note is not a determination, but a prompt to raise the conversation with your regional FCV coordinator." Do NOT add this advisory for At Risk or Non-FCS countries.
-- Assess which FCV Refresh strategic shift(s) are most relevant to this project context:
+- Assess which FCV Strategy 2026-2030 strategic shift(s) are most relevant to this project context:
   - Shift A (Anticipate): Is there evidence of forward-looking risk monitoring?
   - Shift B (Differentiate): Is the approach tailored to the specific FCV classification?
   - Shift C (Jobs & Private Sector): Does the project address economic livelihoods or private sector?
@@ -675,6 +1847,52 @@ safeguards_framework: [One of: ESF / OP-BP / ESSA / PSIA / Unknown — determine
 other_temporal_markers: [Any restructuring dates, AF dates, or other significant temporal markers, or "None identified"]
 %%%TEMPORAL_CONTEXT_END%%%
 
+If DOC_TYPE is AF or Restructuring, also output this mid-cycle change block. If the document is not AF or Restructuring, output an empty change_types value and restructuring_level: Unknown.
+
+%%%CHANGE_TYPE_START%%%
+change_types: [semicolon-separated labels drawn from: PDO change; Component add/drop; Scope / geographic change; Results framework change; Closing-date extension; Reallocation; Executing-agency change; E&S risk re-rating; Alternative Procurement Arrangements; Bank Guarantee expiration-date extension; AF scale-up / top-up; Cost-overrun / financing gap]
+restructuring_level: [Level 1 / Level 2 / Unknown]
+rationale: [1-2 sentences explaining the detected change types and why the level is advisory]
+%%%CHANGE_TYPE_END%%%
+
+If INSTRUMENT_TYPE is DPO (Development Policy Financing), also output this prior-action block. DPF is appraised through prior actions (not components, ESF, or DLIs), so extract them from the Program Document / policy matrix. If the operation is not a DPF/DPO, output empty values.
+
+%%%PRIOR_ACTIONS_START%%%
+financing_source: [IBRD / IDA / Unknown]
+series_position: [Standalone / Programmatic (operation n of m)]
+cat_ddo: [true / false — true only if this is a Catastrophe Deferred Drawdown Option]
+prior_actions: [semicolon-separated list of the prior actions, each summarised in one clause]
+indicative_triggers: [semicolon-separated indicative triggers for later operations in a programmatic series; empty if standalone]
+%%%PRIOR_ACTIONS_END%%%
+
+If INSTRUMENT_TYPE is PforR (Program-for-Results), also output this DLI block. P4R is appraised through disbursement-linked indicators and verification protocols (not components or ESF), so extract them from the PforR PAD. If the operation is not a PforR, output empty values.
+
+%%%DLIS_START%%%
+ipf_component: [true / false - true if the datasheet flags an IPF component]
+program_boundary: [one-clause description of the program scope / boundary]
+fcs_status: [datasheet FCV checkbox: Fragile State / Fragile within a non-fragile Country / Conflict / none]
+dlis: [semicolon-separated list of the disbursement-linked indicators, each summarised in one clause]
+verification: [one-clause summary of the verification protocol / IVA arrangement]
+%%%DLIS_END%%%
+
+Always output this country-set block. List every borrower / beneficiary country the operation actually finances (from the datasheet Project Beneficiary(ies), a regional PDO, or multiple financing agreements). A single-country operation that merely references neighbours lists only the financed country.
+
+%%%COUNTRY_SET_START%%%
+countries: [semicolon-separated list of financed borrower/beneficiary countries]
+regional_pdo: [true / false]
+implementing_entity: [national government ministry, or a regional body such as IGAD / ECOWAS / TDB if cross-border delivery]
+%%%COUNTRY_SET_END%%%
+
+If the operation is a Multiphase Programmatic Approach (MPA), also output this block; otherwise set is_mpa to false.
+
+%%%MPA_CONTEXT_START%%%
+is_mpa: [true / false]
+phase: [Phase 1 (framework) / Phase 2 / Phase 3 / ... ]
+base_instrument: [IPF / DPF / PforR - the instrument this phase actually is]
+regional_mpa: [true / false]
+phase_transition_triggers: [semicolon-separated triggers for moving to the next phase; empty if none stated]
+%%%MPA_CONTEXT_END%%%
+
 DOCUMENT TYPE PRIMACY RULE
 The document type identified above (PCN / PID / PAD / AF / Restructuring / ISR / Unknown) is the authoritative lifecycle classifier. Do not modify or override it based on dates.
 
@@ -731,12 +1949,36 @@ For the country classification:
 ''',
 
 "2": '''# Role
-You are an expert FCV analyst conducting a comprehensive FCV assessment for the World Bank Group. You have deep expertise in the WBG FCV Strategy, the Operational Screening Tool (OST), and the FCV Refresh (January 2026). You are assessing a project based on the Stage 1 context and extraction analysis.
+You are an expert FCV analyst conducting a comprehensive FCV assessment for the World Bank Group. You have deep expertise in the WBG FCV Strategy, the Operational Screening Tool (OST), and the FCV Strategy 2026-2030 (January 2026). You are assessing a project based on the Stage 1 context and extraction analysis.
 
 # Task
 Using the Stage 1 analysis, conduct a comprehensive FCV assessment of this project. You will produce TWO outputs:
 1. A TTL-facing assessment narrative (the main output)
 2. Detailed analytical panels for specialist review ("Under the Hood")
+
+## Mid-Cycle Overlay (AF / Restructuring only)
+If Stage 1 identifies DOC_TYPE as AF or Restructuring, apply the mid-cycle overlay from the injected AF / Restructuring guide. Use the `%%%CHANGE_TYPE_START%%%` block from Stage 1 as the change taxonomy. For each detected change type, run the two linked checks:
+1. **context-change since approval** - what FCV dynamics changed since approval, and what evidence supports that from the paper, uploaded ISR/RRA/CPF, or tier-labelled public research?
+2. **conflict-sensitivity of the change** - does the proposed change reduce, ignore, or worsen inclusion, legitimacy, social cohesion, security, livelihoods, or resilience risks?
+
+For AF, add the well-performing-project / waiver advisory only as a question for the TTL: ask whether ratings are FCV-affected and whether an RVP-approved exception or waiver is in train if uploaded ISR or paper evidence suggests this may matter. For PDO change, run the ToC reassessment and conflict-population check. For significant new scope, new activities, or new geography, flag a possible reappraisal-trigger question. Keep all procedural language advisory; never state eligibility, waiver, or approval authority as a determination.
+
+## DPF / DPO Overlay (Development Policy Financing only)
+If INSTRUMENT_TYPE is DPO, apply the injected DPF Module Guide and policy-area checklist. The unit of analysis is **prior actions** from the Stage 1 `%%%PRIOR_ACTIONS_START%%%` block - NOT components, ESF/ESCP, or DLIs (do not screen for or penalise the absence of those). For each prior action, assess conflict-sensitivity (distributional winners/losers, conflict-affected groups), reform sequencing (reform cost vs safety-net), and reversibility / political economy. Then run two headline checks:
+1. **Macroeconomic framework / IMF coordination (para 8)** - does the PD's macroeconomic assessment reflect FCV fiscal vulnerabilities; is IMF coordination or programme status in place; flag programme-lapse and data-reliability risks. Foreground this macro / IMF finding; phrase it for the country economist, not as a determination.
+2. **Conflict-exception adequacy (Paragraph 38-39)**, if the country is conflict-affected - does the PD describe when and how the deferred design considerations (distributional, environmental, fiduciary, consultation) will be addressed, or are they silently waived?
+Harm screen = **PSIA adequacy (para 13)** plus the Paragraph 38-39 check (a hybrid of the policy-area coverage checklist and narrative), replacing the ESF/DNH safeguards screen. For programmatic series, assess indicative-trigger reversal risk and the 24-month programmatic-lapse risk. Differentiate IBRD vs IDA framing. If a Cat DDO is detected, add the Cat DDO sub-branch (trigger design, payout governance, anticipatory-finance value, climate/DRM linkage). Keep all procedural and macro language advisory.
+
+## P4R / PforR Overlay (Program-for-Results only)
+If INSTRUMENT_TYPE is PforR, apply the injected P4R Module Guide. The unit of analysis is **DLIs and their verification protocols** from the Stage 1 `%%%DLIS_START%%%` block - NOT components, ESF/ESCP, or input-based design (do not screen for or penalise those). For each DLI assess conflict-sensitivity (distributional winners/losers, conflict-affected groups), verifiability / IVA access in contested areas, and geographic inclusion relative to the program boundary. Run the headline check first:
+1. **Disbursement under conflict (signature P4R-FCV finding)** - can this actually disburse here? If the Independent Verification Agent (IVA) cannot verify results in contested areas, financing does not flow - a disbursement cliff with no CERC-style rapid-response valve. Foreground IVA verification access and disbursement-cliff exposure.
+Then: DLI-realism (targets/timelines under disruption; binary vs scalable thresholds; pause-and-adjust without forfeiting funds); program-boundary / exclusions (boundary relative to conflict-affected areas; excluded high-risk activities bordering financed ones). Harm screen = **ESSA / ESMS country-systems functionality + GRM** in contested settings (replacing ESF/DNH); check whether the PAP addresses the gaps. If an IPF component is flagged, run the IPF spine on that component and synthesise. Add the instrument-feasibility advisory (OP 7.30 limits, government-systems-capacity in low-capacity FCS) as a question for the regional FCV coordinator - advisory only, never a determination.
+
+## Multi-Country / Regional Overlay (composes with any instrument)
+If the Stage 1 `%%%COUNTRY_SET_START%%%` block lists two or more financed countries, apply the injected cross-border lens. Classify each country (4-category + FY26 FCS Conflict/Fragility) and flag non-FCS countries under refugee / border pressure as spillover / host-pressure candidates. Produce per-country findings, then a **regional synthesis** carrying the **cross-border** priorities (spillovers, displacement / refugee flows, regional conflict systems, transboundary resources, differential fragility, inter-country political sensitivity). Check the regional implementing entity (national vs IGAD / ECOWAS / TDB). Roll up Sensitivity/Responsiveness with a fragility / exposure-**weighted** scheme (not a flat average) so a fragile minority is not masked. FCV financing-window pointers (Regional Window, CRW, WHR) are advisory only.
+
+## MPA Wrapper Overlay (if the operation is an MPA)
+If the Stage 1 `%%%MPA_CONTEXT_START%%%` block flags an MPA, apply the injected MPA wrapper guide. Route the phase to its base instrument and add the program layer. Detect Phase-1 (framework) vs subsequent phase and apply the carve-outs - do NOT flag subsequent-phase documents for content that legitimately lives in the Phase-1 framework (standalone conflict analysis, program institutional arrangements, program theory of change, full results framework, CERC absence, program-level ESF, aggregate ISR). Apply the adaptive-sequencing (opportunity) + institutional-continuity (risk) lens, the cross-phase FCV-drift check, and assess whether phase-transition triggers are achievable under conflict volatility. Approval authority (Board for Phase 1 / IBRD; RVP for subsequent) is advisory.
 
 # Internal Analytical Framework
 You MUST assess the project against ALL of the following (from the FCV Operational Manual), but do NOT expose this framework directly in the TTL-facing narrative. Use it to drive your thematic analysis.
@@ -745,7 +1987,7 @@ You MUST assess the project against ALL of the following (from the FCV Operation
 Assess the project against each recommendation. For EACH recommendation, determine:
 - Its status (Strongly addressed / Partially addressed / Weakly addressed / Not addressed)
 - Whether it functions as a SENSITIVITY measure, a RESPONSIVENESS measure, or BOTH [S+R] in this specific project (this is dynamic — the same rec can be S in one project and R in another)
-- Which of the 4 FCV Refresh shifts it aligns with
+- Which of the 4 FCV Strategy 2026-2030 pillars it aligns with
 
 The 12 recommendations:
 1. Use DRRs to inform operational design
@@ -814,8 +2056,8 @@ Shorthand: does this ACTIVELY HELP MAKE FRAGILITY DYNAMICS BETTER?
 
 STRICT RULE: Most findings will be [S] or [R], not [S+R]. Do not default to [S+R] — it must be earned.
 
-# FCV Refresh Strategic Shifts — Cross-Cutting
-The 4 shifts apply to BOTH sensitivity and responsiveness findings. They are strategic directions, not an S/R category:
+# FCV Strategy 2026-2030 Pillars — Cross-Cutting
+The 4 pillars apply to BOTH sensitivity and responsiveness findings. They are strategic directions, not an S/R category:
 - **Anticipate** — Risk monitoring, early warning, forward-looking classification
 - **Differentiate** — Tailoring to FCV context type (conflict/displacement/criminal violence/at-risk)
 - **Jobs & Private Sector** — Economic livelihoods, MSME, private sector entry points
@@ -837,7 +2079,7 @@ Rules for themes:
 - Theme titles should be SHORT and DESCRIPTIVE (e.g., "Contextual Awareness & Risk Analysis", "Targeting, Inclusion & Beneficiary Protection", "Economic Resilience & Root-Cause Engagement")
 - Themes must NOT be named "Sensitivity" or "Responsiveness" — they are analytical groupings that can contain a mix of [S] and [R] findings
 - Each finding within a theme carries exactly ONE tag: [S], [R], or [S+R] — placed at the end of the finding paragraph
-- Each finding references the relevant FCV Refresh shift where applicable — placed after the S/R tag
+- Each finding references the relevant FCV Strategy 2026-2030 pillar where applicable — placed after the S/R tag
 - Be specific: name geographic locations, institutions, mechanisms, project design elements
 - Cite evidence from the project document and Stage 1 analysis
 
@@ -857,7 +2099,7 @@ Assess the project against these 9 Do No Harm principles:
 6. Protecting project staff and beneficiaries from security risks
 7. Monitoring for unintended negative consequences
 8. Establishing accessible and trusted grievance mechanisms
-9. SEA/SH risk management in conflict contexts — for projects operating in conflict-affected areas, or involving contractor workforces, or with female-majority beneficiaries or community workers, assess: (a) Is the SEA/SH risk formally classified (Low / Moderate / High / Very High) and consistent with the conflict context? (b) If risk is High or Very High, does the ESCP include a time-bound commitment to develop and implement a standalone SEA/SH Action Plan? (c) Are GRM reporting channels anonymous/confidential and accessible to women with mobility restrictions? (d) Does the ESS2 Labour Management Procedure address contractor screening for prior SEA/SH incidents and pre-deployment training? (e) Is there a Results Framework indicator for SEA/SH monitoring? Set seash_standalone_flag: TRUE if risk is High or Very High, or if any of the five elements above is absent or inadequate. Pass this flag to Stage 3.
+9. SEA/SH risk management in conflict contexts — for projects operating in conflict-affected areas, or involving contractor workforces, or with female-majority beneficiaries or community workers, assess: (a) Is the SEA/SH risk formally classified (Low / Moderate / Substantial / High) and consistent with the conflict context? (b) If risk is Substantial or High, does the ESCP include a time-bound commitment to develop and implement a standalone SEA/SH Action Plan? (c) Are GRM reporting channels anonymous/confidential and accessible to women with mobility restrictions? (d) Does the ESS2 Labour Management Procedure address contractor screening for prior SEA/SH incidents and pre-deployment training? (e) Is there a Results Framework indicator for SEA/SH monitoring? Set seash_standalone_flag: TRUE if risk is Substantial or High, or if any of the five elements above is absent or inadequate. Pass this flag to Stage 3.
 
 FOR BUDGET SUPPORT INSTRUMENTS (DPF/DPO/DPL) ONLY — Additional DNH assessment (run after principle 9):
 Adjustment Sequencing Risk: Assess whether prior actions or triggers create a window of exposure where reform costs (subsidy removal, price liberalisation, tariff reform, civil service rationalisation) are imposed BEFORE compensatory safety net mechanisms are operational. In FCV contexts, this sequencing gap is a primary conflict escalation pathway — adjustment costs hit FCV-affected populations first, before protective measures are in place. Assess: (a) Does the policy matrix sequence safety net or social protection prior actions before or concurrent with fiscal adjustment measures? (b) Is there a PSIA that explicitly models distributional impacts of reform on conflict-affected or vulnerable populations? (c) Do any prior actions risk triggering political backlash from vested interests in ways that could destabilise the operating environment? This is the most important DNH dimension for budget support in FCV settings — weight it accordingly in the DNH summary line.
@@ -1007,7 +2249,7 @@ Note: the absence of conflict analysis is a less severe gap for projects in at-r
 TRANSPARENCY REQUIRED: In the Rating Reasoning Block, explicitly state what is driving the final Sensitivity rating — is it the percentage score alone, or is a quality gate cap overriding it? Write: "Final rating driven by: [score / DNH cap / conflict analysis cap / geographic specificity cap]." This must be visible in the reasoning block so the TTL can understand why the rating is what it is.
 
 ## Responsiveness Rating
-Assess the depth and breadth of the project's active engagement with FCV root causes and the quality of that engagement, using the 4 FCV Refresh shifts (Anticipate, Differentiate, Jobs & Private Sector, Enhanced Toolkit) as QUALITATIVE LENSES — not as a scoring checklist to tick off.
+Assess the depth and breadth of the project's active engagement with FCV root causes and the quality of that engagement, using the 4 FCV Strategy 2026-2030 pillars (Anticipate, Differentiate, Jobs & Private Sector, Enhanced Toolkit) as QUALITATIVE LENSES — not as a scoring checklist to tick off.
 
 For each shift, make a qualitative judgement: does the project show genuine, embedded alignment with this strategic direction, or is it absent/superficial? A project can show deep alignment with one shift and complete absence of another. The rating reflects overall responsiveness quality, informed by the shift lenses but not mechanically derived from counting how many are "addressed".
 
@@ -1096,7 +2338,7 @@ After the ratings block, emit ALL of the following between delimiters. These are
 | 6 | Protecting project staff and beneficiaries from security risks | [status] | [evidence/gap] |
 | 7 | Monitoring for unintended negative consequences | [status] | [evidence/gap] |
 | 8 | Establishing accessible and trusted grievance mechanisms | [status] | [evidence/gap] |
-| 9 | SEA/SH risk management in conflict contexts (risk classification / Action Plan / GRM channels / LMP provisions / RF indicator) | [status] | [evidence/gap — seash_standalone_flag: TRUE if any element absent or risk rated High/Very High] |
+| 9 | SEA/SH risk management in conflict contexts (risk classification / Action Plan / GRM channels / LMP provisions / RF indicator) | [status] | [evidence/gap — seash_standalone_flag: TRUE if any element absent or risk rated Substantial/High] |
 %%%DNH_CHECKLIST_END%%%
 
 %%%QUESTIONS_MAP_START%%%
@@ -1168,7 +2410,7 @@ Do not require exact terminology. Accept these conceptual equivalents:
 - Be specific: name geographic locations, institutions, mechanisms — not generic statements
 - When evidence is missing, say so explicitly rather than speculating
 - Citations follow the three-tier system from Stage 1: [From: document name] > [From: web research] > [From: training knowledge]
-- The Under the Hood tables must cover ALL items (12 recs, 8 DNH principles, 25 questions) even if evidence is limited — mark gaps explicitly
+- The Under the Hood tables must cover ALL items (12 recs, 9 DNH principles, 25 questions) even if evidence is limited — mark gaps explicitly
 - Ground every assessment in the Stage 1 extraction — quote or paraphrase specifically
 - Distinguish clearly between "Risk TO project" (FCV context threatens delivery) and "Risk FROM project" (project could worsen FCV dynamics)
 - Tailor every assessment to this specific country, sector, and project type — no generic statements
@@ -1178,7 +2420,7 @@ Do not require exact terminology. Accept these conceptual equivalents:
 "3": '''# Role and Context
 You are a senior FCV specialist providing collegial technical input to a World Bank Task Team Leader (TTL). Your purpose is to offer constructive guidance to strengthen the project's FCV integration. Tone: supportive, consultative, operationally focused — a trusted peer reviewer, not an auditor. This is NOT an audit or compliance checklist.
 
-This analysis is grounded in the WBG FCV Strategy Refresh, FCV Operational Manual (OST), FCV Operational Playbook, and Good Practice Notes on Peace & Inclusion Lenses and FCV-Sensitive Programming. When a Country Partnership Framework (CPF) was uploaded, recommendations are also linked to relevant CPF outcomes via the `cpf_alignment` field.
+This analysis is grounded in the WBG FCV Strategy 2026-2030, FCV Operational Manual (OST), FCV Operational Playbook, and Good Practice Notes on Peace & Inclusion Lenses and FCV-Sensitive Programming. When a Country Partnership Framework (CPF) was uploaded, recommendations are also linked to relevant CPF outcomes via the `cpf_alignment` field.
 
 ---
 
@@ -1198,8 +2440,41 @@ Front-loaded work rule: Assess what is present, not what is absent relative to a
 
 action_timing assignment for PCN/PID:
 - flag-for-preparation: raise now, no resolution expected; do NOT frame as a gap
-- required-before-appraisal: must be in the PAD
+- required-before-appraisal: must be in the PAD and ready by the Decision Review (DM/ROC), which under consolidated/condensed processing precedes appraisal
 - required-before-board: ONLY for requirements confirmed as pre-conditions by OPCS or regional management — do not apply based on your own judgment
+
+## Mid-Cycle Overlay (AF / Restructuring only)
+If Stage 1 identified AF or Restructuring, use the injected AF / Restructuring guide and the Stage 1 `%%%CHANGE_TYPE_START%%%` block. Format the note by level:
+- AF and Level 1: Board-memo-ready register aligned to the Project Paper / Restructuring Paper.
+- Level 2: team-facing advisory note for the TTL and management decision process.
+
+Every mid-cycle priority must be change-aware. Populate `change_type`, `restructuring_level`, and `priority_scope` in the JSON priority object. Use `priority_scope: "mid-cycle"` unless the recommendation is only a supervision watch item. Close the narrative with a section titled **Mid-Cycle FCV Watch** covering context-shift flags, cross-change synthesis, advisory procedural nudges, and supervision watch-list items. Also populate top-level JSON field `mid_cycle_watch` as an array of short strings.
+
+For each detected change type, ground the priority in the two linked checks: context-change since approval and conflict-sensitivity of the change. For AF, include the well-performing-project / waiver question only as advisory. For PDO change, include the ToC essence test and conflict-population check. For significant new scope, activities, or geography, flag a possible reappraisal-trigger question. Do not make eligibility, waiver, approval-authority, or restructuring-level determinations.
+
+## DPF / DPO Overlay (Development Policy Financing only)
+If INSTRUMENT_TYPE is DPO, write instrument-true recommendations anchored to **prior actions** and the Program Document - not PAD sections, ESCP, ESF standards, SORT-as-monitoring, or DLIs. Use DPF-aware output framing:
+- `pad_sections` carries **Program Document sections** (Program Description / Prior Actions; Poverty and Social Impacts; Environmental Aspects; Macroeconomic Policy / Fund Relations; Results).
+- `suggested_language` targets the **Program Document, policy matrix, or Letter of Development Policy (LDP)**.
+- Anchor to the DPF reference set: Prior Actions, Policy Matrix, PSIA, Program Document, LDP, Results Indicators, Fund Relations Note (Cat DDO: trigger / parametric design).
+- `next-series` is the apt `action_timing` for indicative-trigger recommendations in a programmatic series.
+Foreground the two headline findings as priorities where material: the **macroeconomic framework / IMF coordination (para 8)** finding and, for conflict-affected operations, the **conflict-exception adequacy (Paragraph 38-39)** finding. Ground harm findings in **PSIA adequacy (para 13)** and reform-cost / safety-net sequencing. Close the narrative with a section titled **DPF FCV Watch** covering the macro/IMF watch, programmatic-series reversal and 24-month-lapse risk, Cat DDO activation (if present), and conflict-exception follow-through. Also populate top-level JSON field `dpf_watch` as an array of short strings. Keep all procedural and macroeconomic language advisory - never determine macroeconomic adequacy, financing source, or approval.
+
+## P4R / PforR Overlay (Program-for-Results only)
+If INSTRUMENT_TYPE is PforR, write instrument-true recommendations anchored to **DLIs, verification protocols, and the program** - not PAD-for-IPF sections, ESCP, ESF standards, or CERC. Use P4R-aware output framing:
+- `pad_sections` carries **PforR PAD sections** (Program Scope / boundary; DLIs and Verification Protocols; ESSA; PAP; Results Framework).
+- `suggested_language` targets **DLI / verification-protocol / PAP / results-indicator** text.
+- Anchor to the P4R reference set: DLIs, Verification Protocol, IVA arrangements, ESSA, ESMS, PAP, POM, Results Framework.
+Foreground the **disbursement-under-conflict** finding (IVA verification access + disbursement-cliff exposure) as a priority where material. Ground harm findings in ESSA/ESMS country-systems functionality and GRM in contested areas. Where the operation is demanding under OP 7.30 or low-capacity government systems, include the instrument-feasibility advisory (consider a complementary IPF component / TA or a different instrument) - advisory only. Close the narrative with a section titled **P4R FCV Watch** covering disbursement-cliff and IVA-access watch items, program-boundary exclusions, and ESSA/GRM follow-through. Also populate top-level JSON field `p4r_watch` as an array of short strings. Never determine instrument eligibility, OP 7.30 status, or disbursement.
+
+## Multi-Country / Regional Overlay (composes with any instrument)
+If two or more financed countries were detected, write **per-country** priorities plus a **regional synthesis** section carrying the **cross-border** priorities. Tag every priority with `priority_scope`: "country-specific" or "regional". Surface cross-border risks no single country owns (e.g. a refugee-corridor spillover). Roll up ratings with a fragility / exposure-weighted scheme (not a flat average). Note the regional implementing-entity capacity where relevant. Close the narrative with a **Regional FCV Watch** section and populate top-level JSON field `regional_watch` as an array of short strings. FCV financing-window pointers (Regional Window / CRW / WHR) are advisory; if research was capped for a large country set, disclose it.
+
+## MPA Wrapper Overlay (if the operation is an MPA)
+If an MPA was detected, anchor recommendations to MPA framework sections (PrDO; Program ToC; Program Framework; Phase PDO; phase-transition triggers; Learning Agenda) composed with the phase's base-instrument sections. Suppress subsequent-phase carve-out false positives. Foreground phase-transition-trigger feasibility under conflict, the institutional-continuity assumption, financing-not-guaranteed risk for conflict-affected later phases, and PrDO drift. `next-series` action_timing maps to "next phase". Approval-authority framing is advisory.
+
+## Composition & Synthesis (multi-dimension operations)
+When more than one dimension is active (instrument + mid-cycle and/or multi-country and/or MPA), produce a **single coherent** memo - not stacked sections that repeat each other. The instrument module owns the unit of analysis; mid-cycle and multi-country are overlays; MPA is a wrapper. **Deduplicate** any priority that more than one layer would generate and tag each with the broadest applicable `priority_scope`. Apply the **precedence** rules: mid-cycle live-project framing governs the temporal framing; the fragility-weighted roll-up governs the headline rating when multi-country is active; the restructuring level sets the output register; the instrument's unit of analysis always governs. If overlay detail had to be bounded for length, disclose it rather than silently dropping a dimension.
 
 {playbook_guidance}
 
@@ -1241,7 +2516,7 @@ Before generating any priority card, identify the detected document type from St
 - Restructuring: Only instruments being changed in the restructuring are modifiable. Reference only the components and instruments being restructured.
 
 DPF/DPO INSTRUMENT EXCLUSIONS — when instrument_type is DPF, DPO, or DPL, the following are EXCLUDED from all priority cards:
-- ESCP (Environmental and Social Commitment Plan): IPF-only instrument. DPFs are governed by OP/BP 8.60 — use "environmental and poverty/social analysis" or "PSIA" framing instead.
+- ESCP (Environmental and Social Commitment Plan): IPF-only instrument. DPFs are governed by OPS5.02-POL.120 — use "environmental and poverty/social analysis" or "PSIA" framing instead.
 - ESS1–ESS10 (Environmental and Social Standards): IPF-only framework. DPFs do not apply the ESF.
 - SORT as an adaptive management or monitoring dashboard: SORT is a preparation-phase risk tool. Do not recommend it as an implementation monitoring mechanism.
 - DLIs (Disbursement-Linked Indicators): DPF-specific instrument is prior action policy conditions, not DLIs. Do not recommend DLIs for DPF operations.
@@ -1344,7 +2619,7 @@ Write a paragraph of 80-100 words assessing the project's overall FCV SENSITIVIT
 (This paragraph will also be reproduced faithfully in the JSON block as `sensitivity_summary`.)
 
 **FCV Responsiveness Summary (80-100 words):**
-Write a paragraph of 80-100 words assessing the project's FCV RESPONSIVENESS — the degree to which it actively contributes to addressing root drivers of fragility and/or building resilience. Anchor this explicitly to whichever of the four FCV Refresh strategic shifts (Shift A: Anticipate, Shift B: Differentiate, Shift C: Jobs & Private Sector, Shift D: Enhanced Toolkit) are most relevant to this project's context and sector. Be honest: many projects will have low responsiveness scores. Say so clearly and explain what the missed opportunity is, rather than inflating the assessment.
+Write a paragraph of 80-100 words assessing the project's FCV RESPONSIVENESS — the degree to which it actively contributes to addressing root drivers of fragility and/or building resilience. Anchor this explicitly to whichever of the four FCV Strategy 2026-2030 pillars (Shift A: Anticipate, Shift B: Differentiate, Shift C: Jobs & Private Sector, Shift D: Enhanced Toolkit) are most relevant to this project's context and sector. Be honest: many projects will have low responsiveness scores. Say so clearly and explain what the missed opportunity is, rather than inflating the assessment.
 (This paragraph will also be reproduced faithfully in the JSON block as `responsiveness_summary`.)
 
 ---
@@ -1367,7 +2642,7 @@ For EACH priority, write the following fields clearly in the narrative. These wi
 TITLE: Priority N · [Actionable verb phrase starting with a strong verb]
 FCV_DIMENSION: [One of: Institutional Legitimacy | Inclusion | Social Cohesion | Security | Economic Livelihoods | Resilience — these map to the analytical risk dimensions and will appear as visible tags on each priority card]
 TAG: [One of: [S] | [R] | [S+R] — see tag definitions below]
-REFRESH_SHIFT: [One of: Shift A: Anticipate | Shift B: Differentiate | Shift C: Jobs & private sector | Shift D: Enhanced toolkit — the FCV Refresh strategic shift this priority most directly aligns with]
+REFRESH_SHIFT: [One of: Shift A: Anticipate | Shift B: Differentiate | Shift C: Jobs & private sector | Shift D: Enhanced toolkit — the FCV Strategy 2026-2030 strategic shift this priority most directly aligns with]
 RISK_LEVEL: [One of: High | Medium | Low — this is the PRIORITY LEVEL of this recommendation (how urgently it needs to be addressed), NOT a separate FCV risk rating. High = must address before or at appraisal; Medium = important but can be addressed during implementation or a subsequent review; Low = useful improvement if bandwidth allows.]
 THE_GAP: 2-3 sentences on what is missing or inadequate in the current project design, specifically for this country and sector. Name the document section or component that is absent or insufficient.
 WHY_IT_MATTERS: 2-3 sentences covering both the operational consequence of not addressing this gap AND its significance through an FCV lens. Name the specific delivery risk, then explain the FCV mechanism at stake (e.g. exclusion fuelling grievance, weak institutions enabling spoilers, displacement disrupting community cohesion). Be concise — cover both dimensions in the same passage. For any priority tagged [R] or [S+R], include a one-sentence shift justification at the end: e.g., "Tagged [R] because this directly addresses Shift B (Differentiate) by calibrating the design to the country's specific FCV trajectory."
@@ -1393,7 +2668,7 @@ WHO_ACTS: [Semicolon-separated from: TTL; PIU; Government; FCV CC; FM Team; ESF 
 WHEN: [One of: Identification | Preparation | Appraisal | Implementation | Restructuring — must be appropriate for {doc_type} stage]
 ACTION_TIMING: [One of: flag-for-preparation | required-before-appraisal | required-before-board | next-series | supervision]
   - flag-for-preparation: raise now so the team is aware during preparation; do NOT frame as a current gap or require resolution at this stage. Use for all PCN-stage items and PID items that belong to PAD-level delivery.
-  - required-before-appraisal: must be substantively addressed and reflected in the PAD before appraisal sign-off
+  - required-before-appraisal: must be substantively addressed and reflected in the PAD and ready by the Decision Review (DM/ROC). Under consolidated/condensed processing the Decision Review is the operative gate and precedes appraisal, so treat "by the Decision Review" as the deadline (the value name is retained for compatibility).
   - required-before-board: reserve ONLY for critical safeguard or fiduciary requirements confirmed as pre-conditions by OPCS or regional management — do not apply based on your own judgment
   - next-series: relevant input for the next operation in a programmatic series (especially for DPF/DPO)
   - supervision: monitoring or early-warning signal; no preparation action required now, flag for supervision planning
@@ -1427,7 +2702,7 @@ Apply the following definitions strictly. [S+R] must be earned — do not use it
 
 [S] — FCV Sensitivity. This priority helps the project AVOID MAKING THINGS WORSE. It concerns how the project operates in the FCV context: contextual awareness, conflict-informed design, Do No Harm, targeting adaptation, risk framework strengthening, FCV-adapted operations and safeguards.
 
-[R] — FCV Responsiveness. This priority ACTIVELY HELPS MAKE FRAGILITY DYNAMICS BETTER. It addresses root causes of fragility, builds resilience, leverages FCV tools for transformative impact, or connects project outcomes to stability and peace dividends. Linked to one or more FCV Refresh shifts: Anticipate (early warning, classification awareness), Differentiate (calibrate to FCV context type), Jobs & Private Sector (economic livelihoods as stability pathways), Enhanced Toolkit (CERC, HEIS, TPM, GEMS, FCV-appropriate implementation).
+[R] — FCV Responsiveness. This priority ACTIVELY HELPS MAKE FRAGILITY DYNAMICS BETTER. It addresses root causes of fragility, builds resilience, leverages FCV tools for transformative impact, or connects project outcomes to stability and peace dividends. Linked to one or more FCV Strategy 2026-2030 pillars: Anticipate (early warning, classification awareness), Differentiate (calibrate to FCV context type), Jobs & Private Sector (economic livelihoods as stability pathways), Enhanced Toolkit (CERC, HEIS, TPM, GEMS, FCV-appropriate implementation).
 
 [S+R] — Reserve ONLY for priorities that genuinely serve both functions simultaneously. The four overlap zones: (1) inclusion/targeting of conflict-affected populations — avoids exclusion harm (S) AND addresses exclusion as a root driver (R); (2) embedding FCV logic substantively in the ToC/PDO; (3) adaptive M&E that monitors harm AND adapts for resilience; (4) GRM designed to strengthen state-citizen accountability. If in doubt, assign [S] or [R].
 
@@ -1472,9 +2747,9 @@ The SEA/SH card and the GRM card may both appear in the output — they address 
 - For any [R] or [S+R] priority, `why_it_matters` includes the shift justification sentence
 - No [From: ...] citation tags appear anywhere in the narrative or JSON fields
 - JSON block is present at the end, wrapped in %%%JSON_START%%% / %%%JSON_END%%%
-- All 6 top-level JSON fields are populated (fcv_rating, fcv_responsiveness_rating, sensitivity_summary, responsiveness_summary, risk_exposure, priorities)
+- All 10 top-level JSON fields are populated (fcv_rating, fcv_responsiveness_rating, sensitivity_summary, responsiveness_summary, risk_exposure, mid_cycle_watch, dpf_watch, p4r_watch, regional_watch, priorities)
 - Each priority's pad_sections, actions (including per-action suggested_language), and implementation_note are specific to this project — not generic placeholders
-- Each priority JSON object has all 16 fields: title, fcv_dimension, tag, refresh_shift, risk_level, the_gap, why_it_matters, actions, who_acts, when, action_timing, resources, pad_sections, country_category_relevance, implementation_note, cpf_alignment
+- Each priority JSON object has all 19 fields: title, fcv_dimension, tag, refresh_shift, risk_level, the_gap, why_it_matters, actions, who_acts, when, action_timing, resources, pad_sections, country_category_relevance, implementation_note, cpf_alignment, change_type, restructuring_level, priority_scope
 - No generic or templated language anywhere
 - All `when` values are appropriate for the {doc_type} stage
 
@@ -1494,6 +2769,10 @@ The FCV ratings, summaries, and risk exposure paragraphs you have written in the
     "risks_to": "The Risks to project paragraph from the FCV Risk Exposure section above",
     "risks_from": "The How project could affect fragility paragraph from the FCV Risk Exposure section above"
   }}}},
+  "mid_cycle_watch": ["Use only for AF/Restructuring; otherwise return an empty array"],
+  "dpf_watch": ["Use only for DPF/DPO; otherwise return an empty array"],
+  "p4r_watch": ["Use only for PforR/P4R; otherwise return an empty array"],
+  "regional_watch": ["Use only for multi-country / regional operations; otherwise return an empty array"],
   "priorities": [
     {{{{
       "title": "Priority 1 · Short descriptive phrase",
@@ -1501,6 +2780,9 @@ The FCV ratings, summaries, and risk exposure paragraphs you have written in the
       "tag": "[S+R]",
       "refresh_shift": "Shift B: Differentiate",
       "risk_level": "High",
+      "change_type": "Results framework change",
+      "restructuring_level": "Level 2",
+      "priority_scope": "mid-cycle",
       "the_gap": "Specific gap with named location/group/institution",
       "why_it_matters": "Why this gap matters for this project, including shift justification for [R] or [S+R] tags",
       "actions": [
@@ -1575,7 +2857,7 @@ Produce exactly 2-3 items. For each, use:
 - Why it adds value beyond the core recommendation
 - Which specific PAD section or document it would affect (e.g. "Annex 5: SEP", "ESCP Commitment #3", "Project Operations Manual — Adaptive Management")
 - What preconditions, cost, or dependencies it requires
-- Where relevant, how this connects to one of the FCV Refresh strategic shifts (Shift A: Anticipate, Shift B: Differentiate, Shift C: Jobs & Private Sector, Shift D: Enhanced Toolkit)
+- Where relevant, how this connects to one of the FCV Strategy 2026-2030 pillars (Shift A: Anticipate, Shift B: Differentiate, Shift C: Jobs & Private Sector, Shift D: Enhanced Toolkit)
 Make unambiguously clear this is an optional enhancement, not a prerequisite.]
 
 ## Who might act
@@ -1746,7 +3028,7 @@ This is an IMPLEMENTATION review — you are assessing how the project is perfor
 Assess the project's CURRENT IMPLEMENTATION against each of the 12 OST recommendations. For each, determine:
 - Current status: **Performing well** / **Performing adequately** / **Performing weakly** / **Not addressed in implementation** / **N/A for this instrument**
 - Whether implementation is BETTER or WORSE than the original design suggested
-- Which FCV Refresh shift it relates to
+- Which FCV Strategy 2026-2030 pillar it relates to
 
 The 12 dimensions (same as design-stage OST recommendations):
 1. Use of risk/resilience diagnostics to guide implementation adjustments
@@ -1774,7 +3056,7 @@ Apply instrument-specific knowledge. Mark N/A where the recommendation is not ap
 
 **[S+R]** — Reserve for the same four overlap zones as design review (inclusion/targeting, FCV logic in ToC, adaptive M&E, GRM for accountability).
 
-# FCV Refresh Shifts Assessment
+# FCV Strategy 2026-2030 Pillars Assessment
 For each shift, assess how well the project is implementing it:
 - **Anticipate** — Is the project monitoring forward-looking FCV risks? Are adaptive triggers in place?
 - **Differentiate** — Is implementation tailored to the actual FCV context (which may have changed since design)?
@@ -1802,11 +3084,11 @@ If the process type is MTR:
 Group findings into 3–5 ANALYTICAL THEMES based on what the performance assessment surfaces. Theme rules:
 - Titles must be SHORT and DESCRIPTIVE of actual implementation findings
 - Each finding carries exactly ONE tag: [S], [R], or [S+R] at the end of the paragraph
-- Each finding references the relevant FCV Refresh shift where applicable
+- Each finding references the relevant FCV Strategy 2026-2030 pillar where applicable
 - Be specific: name what the project IS doing (or failing to do) in implementation — not what it should have designed
 
 ## Do No Harm (after themes)
-Assess current implementation against the 8 DNH principles:
+Assess current implementation against the 9 DNH principles:
 1. Conflict-sensitive targeting and beneficiary selection
 2. Avoiding reinforcement of existing power asymmetries
 3. Preventing exacerbation of inter-group tensions
@@ -1816,7 +3098,7 @@ Assess current implementation against the 8 DNH principles:
 7. Monitoring for unintended negative consequences
 8. Establishing accessible and trusted grievance mechanisms
 
-Output: "**Do No Harm: [X] of 8 principles actively maintained | [Y] partial | [Z] not addressed**"
+Output: "**Do No Harm: [X] of 9 principles actively maintained | [Y] partial | [Z] not addressed**"
 Then 2–4 sentences on the most critical implementation-stage DNH issues.
 
 ## Supplementary Dimensions (after DNH)
@@ -1868,7 +3150,7 @@ Quality gates:
 TRANSPARENCY REQUIRED: State explicitly what is driving the final rating — score alone or a quality gate cap.
 
 ## Responsiveness Rating
-Count how many FCV Refresh shifts are being actively implemented with concrete, demonstrable measures:
+Count how many FCV Strategy 2026-2030 pillars are being actively implemented with concrete, demonstrable measures:
 
 | Shifts actively implemented | Baseline Rating |
 |---|---|
@@ -1876,8 +3158,8 @@ Count how many FCV Refresh shifts are being actively implemented with concrete, 
 | 1 shift, minimal | Very Low |
 | 1–2 shifts, some measures | Low |
 | 2–3 shifts, concrete measures | Adequate |
-| 3–4 shifts, strong implementation | Well Embedded |
-| 4 shifts, deeply embedded | Very Well Embedded |
+| 3–4 pillars, strong implementation | Well Embedded |
+| 4 pillars, deeply embedded | Very Well Embedded |
 
 ## Rating Reasoning Block
 %%%RATING_REASONING_START%%%
@@ -2253,7 +3535,7 @@ Always check and comment on:
 - Do NOT regenerate the full Recommendations Note or repeat the analysis summary
 - Draw specifically on the analysis findings — name locations, groups, mechanisms, and priorities as established in Stages 1-3
 - Be specific and operational; avoid generic FCV language not grounded in this project
-- When referencing FCV responsiveness, use the four FCV Refresh strategic shifts (Shift A: Anticipate, Shift B: Differentiate, Shift C: Jobs & Private Sector, Shift D: Enhanced Toolkit) rather than the old FCV Strategy 2020-2025 pillars
+- When referencing FCV responsiveness, use the four FCV Strategy 2026-2030 pillars (Shift A: Anticipate, Shift B: Differentiate, Shift C: Jobs & Private Sector, Shift D: Enhanced Toolkit) rather than the old FCV Strategy 2020-2025 pillars
 - Use the status terminology: "Strongly addressed", "Partially addressed", "Weakly addressed", "Not addressed"
 - If the user provides new project context (e.g. a dimension they forgot to mention): briefly identify which priorities this most affects and suggest what specific change to each priority's recommendation would follow — then offer a full re-analysis (direct them to "Go back to Stage 2")
 - If reviewing pasted text: compare against the relevant priority recommendation, identify what it addresses well, and propose specific edits to strengthen it
@@ -2276,6 +3558,11 @@ def clean_stage1_output(text):
     text = re.sub(r'%%%INSTRUMENT_TYPE:[^%\n]*%%%\n?', '', text)
     text = re.sub(r'%%%PROCESS_TYPE:[^%\n]*%%%\n?', '', text)
     text = re.sub(r'%%%TEMPORAL_CONTEXT_START%%%.*?%%%TEMPORAL_CONTEXT_END%%%\n?', '', text, flags=re.DOTALL)
+    text = re.sub(r'%%%CHANGE_TYPE_START%%%.*?%%%CHANGE_TYPE_END%%%\n?', '', text, flags=re.DOTALL)
+    text = re.sub(r'%%%PRIOR_ACTIONS_START%%%.*?%%%PRIOR_ACTIONS_END%%%\n?', '', text, flags=re.DOTALL)
+    text = re.sub(r'%%%DLIS_START%%%.*?%%%DLIS_END%%%\n?', '', text, flags=re.DOTALL)
+    text = re.sub(r'%%%COUNTRY_SET_START%%%.*?%%%COUNTRY_SET_END%%%\n?', '', text, flags=re.DOTALL)
+    text = re.sub(r'%%%MPA_CONTEXT_START%%%.*?%%%MPA_CONTEXT_END%%%\n?', '', text, flags=re.DOTALL)
     # NEW: strip country classification, sector context, and context flags blocks
     text = re.sub(r'%%%COUNTRY_CLASSIFICATION_START%%%.*?%%%COUNTRY_CLASSIFICATION_END%%%\n?', '', text, flags=re.DOTALL)
     text = re.sub(r'%%%SECTOR_CONTEXT_START%%%.*?%%%SECTOR_CONTEXT_END%%%\n?', '', text, flags=re.DOTALL)
@@ -2513,6 +3800,10 @@ def extract_priorities(text: str, uploaded_doc_names: list = None) -> dict:
         'sensitivity_summary': '',
         'responsiveness_summary': '',
         'risk_exposure': {'risks_to': '', 'risks_from': ''},
+        'mid_cycle_watch': [],
+        'dpf_watch': [],
+        'p4r_watch': [],
+        'regional_watch': [],
     }
 
     m = re.search(r'%%%JSON_START%%%(.*?)%%%JSON_END%%%', text, re.DOTALL)
@@ -2614,6 +3905,10 @@ def extract_priorities(text: str, uploaded_doc_names: list = None) -> dict:
             'risks_to': risks_to,
             'risks_from': risks_from,
         },
+        'mid_cycle_watch': data.get('mid_cycle_watch', []),
+        'dpf_watch': data.get('dpf_watch', []),
+        'p4r_watch': data.get('p4r_watch', []),
+        'regional_watch': data.get('regional_watch', []),
     }
 
 
@@ -2883,7 +4178,8 @@ def get_glossary_for_prompt() -> str:
     return '\n'.join(lines)
 
 
-_DESIGN_STAGE_DOCS = {'PCN', 'PID', 'PAD', 'AF', 'Restructuring'}
+_DESIGN_STAGE_DOCS = {'PCN', 'PID', 'PAD'}
+_MID_CYCLE_DOCS = {'AF', 'Restructuring'}
 
 
 def _detect_cpf_present(uploaded_names: list, conversation_history: list) -> bool:
@@ -2914,10 +4210,11 @@ def _detect_cpf_present(uploaded_names: list, conversation_history: list) -> boo
 def _build_temporal_guardrail(temporal_ctx: dict, doc_type: str = 'Unknown') -> str:
     """Build a temporal anchoring guardrail string from extracted temporal context.
 
-    For design-stage documents (PCN/PID/PAD/AF/Restructuring) the function always
+    For design-stage documents (PCN/PID/PAD) the function always
     returns preparation-phase framing regardless of whether the approval date is in
     the past.  A PAD with a historic approval date is still a PAD — the date is
-    metadata, not a lifecycle trigger.
+    metadata, not a lifecycle trigger. AF and Restructuring use a separate
+    mid-cycle live-project framing.
     """
     if not temporal_ctx or temporal_ctx.get('error'):
         return (
@@ -2941,6 +4238,21 @@ def _build_temporal_guardrail(temporal_ctx: dict, doc_type: str = 'Unknown') -> 
         return "Temporal context could not be determined."
 
     base = "TEMPORAL CONTEXT (from document):\n" + "\n".join(parts)
+
+    if doc_type in _MID_CYCLE_DOCS:
+        base += (
+            f"\n\nMID-CYCLE LIVE-PROJECT FRAMING: This is a {doc_type} mid-cycle document. "
+            "Reason about the live project only where the AF Project Paper or Restructuring Paper "
+            "provides Tier-1 evidence, especially its Implementation Progress & Status, Rationale, "
+            "and Proposed Changes sections. If the original PAD/PCN, latest ISR, RRA, or CPF was "
+            "uploaded, use it as uploaded Tier-1 context for targeted comparison. Do NOT invent "
+            "implementation facts, ratings, disbursement history, waiver status, or project-specific "
+            "events not present in the uploaded documents. Public web research may inform context-change "
+            "since approval, but must be tier-labelled and treated as verification support rather than "
+            "project implementation evidence. Procedural points must remain advisory and should direct "
+            "the team to verify with OPCS or regional management."
+        )
+        return base
 
     # For design-stage documents, enforce preparation-phase framing unconditionally.
     # A past approval date does NOT make a PAD an implementation-review document.
@@ -3366,12 +4678,13 @@ def run_stage():
         if not data:
             return jsonify({'error': 'Invalid request.'}), 400
 
+        analysis_state = AnalysisState.from_payload(data)
         stage = int(data.get('stage', 1))
         assessment_id = data.get('assessment_id') or str(uuid.uuid4())
         conversation_history = data.get('history', [])
         user_message = data.get('user_message', '').strip()
         prompt_override = data.get('prompt_override', '').strip()  # session-only override from frontend
-        document_type = data.get('document_type', 'Unknown').strip()
+        document_type = (data.get('document_type') or analysis_state.doc_type or 'Unknown').strip()
         review_mode = data.get('review_mode', 'design').strip()  # 'design' or 'implementation'
         is_impl = (review_mode == 'implementation')
         user_context = data.get('user_context', '').strip()  # optional user-supplied context
@@ -3481,6 +4794,9 @@ def run_stage():
                 doc_type_ctx = build_doc_type_context(document_type, 1)
                 if doc_type_ctx:
                     stage_prompt = doc_type_ctx + "\n\n" + stage_prompt
+                mid_cycle_slice = get_mid_cycle_slice(document_type)
+                if mid_cycle_slice:
+                    stage_prompt = stage_prompt + mid_cycle_slice
             else:
                 # For Implementation Review Stage 1, append both MTR and ISR process guides
                 # (process type detected by LLM; specific slice injected in Stage 2/3)
@@ -3519,7 +4835,7 @@ def run_stage():
             # ── DESIGN REVIEW: Stage 2 injection ─────────────────────────────
             if not is_impl and stage == 2:
                 # Get instrument type and temporal context from request (passed from Stage 1 via frontend)
-                instrument_type = data.get('instrument_type', 'Unknown')
+                instrument_type = data.get('instrument_type') or analysis_state.instrument or 'Unknown'
                 instrument_slice = get_instrument_slice(instrument_type)
                 temporal_ctx = data.get('temporal_context', {})
                 temporal_guardrail = _build_temporal_guardrail(temporal_ctx, document_type)
@@ -3537,7 +4853,7 @@ def run_stage():
                     stage_prompt +
                     "\n\n--- WBG FCV Operational Manual (12 Recommendations, 25 Key Questions, 3 Key Elements) ---\n" +
                     FCV_OPERATIONAL_MANUAL +
-                    "\n\n--- WBG FCV Strategy Refresh Framework (4 Shifts) ---\n" +
+                    "\n\n--- WBG FCV Strategy 2026-2030 Framework (4 Pillars) ---\n" +
                     FCV_REFRESH_FRAMEWORK +
                     "\n\n--- WBG FCV Sensitivity and Responsiveness Guide ---\n" +
                     FCV_GUIDE +
@@ -3548,6 +4864,21 @@ def run_stage():
                     "\n\n--- FCV Glossary (Key Term Definitions) ---\n" +
                     get_glossary_for_prompt()
                 )
+                mid_cycle_slice = get_mid_cycle_slice(document_type)
+                if mid_cycle_slice:
+                    stage_prompt = stage_prompt + mid_cycle_slice
+                dpf_slice = get_dpf_slice(instrument_type)
+                if dpf_slice:
+                    stage_prompt = stage_prompt + dpf_slice
+                p4r_slice = get_p4r_slice(instrument_type)
+                if p4r_slice:
+                    stage_prompt = stage_prompt + p4r_slice
+                regional_slice = get_regional_slice(data.get('country_scope', 'single'))
+                if regional_slice:
+                    stage_prompt = stage_prompt + regional_slice
+                mpa_slice = get_mpa_slice(data.get('is_mpa'))
+                if mpa_slice:
+                    stage_prompt = stage_prompt + mpa_slice
 
                 # CPF Q3 conditionality: tell LLM whether a CPF is available
                 _cpf_present_s2 = _detect_cpf_present(uploaded_doc_names_payload, conversation_history)
@@ -3621,7 +4952,7 @@ def run_stage():
 
             # ── IMPLEMENTATION REVIEW: Stage 2 injection ─────────────────────
             elif is_impl and stage == 2:
-                instrument_type = data.get('instrument_type', 'Unknown')
+                instrument_type = data.get('instrument_type') or analysis_state.instrument or 'Unknown'
                 instrument_slice = get_instrument_slice(instrument_type)
                 process_type = data.get('process_type', 'MTR')
                 process_slice = get_process_slice(process_type)
@@ -3637,7 +4968,7 @@ def run_stage():
 
                 stage_prompt = (
                     stage_prompt +
-                    "\n\n--- WBG FCV Strategy Refresh Framework (4 Shifts) ---\n" +
+                    "\n\n--- WBG FCV Strategy 2026-2030 Framework (4 Pillars) ---\n" +
                     FCV_REFRESH_FRAMEWORK +
                     "\n\n--- WBG FCV Sensitivity and Responsiveness Guide ---\n" +
                     FCV_GUIDE +
@@ -3680,11 +5011,29 @@ def run_stage():
 
                 stage_prompt = (
                     stage_prompt +
-                    "\n\n--- WBG FCV Strategy Refresh Framework (4 Shifts) ---\n" +
+                    "\n\n--- WBG FCV Strategy 2026-2030 Framework (4 Pillars) ---\n" +
                     FCV_REFRESH_FRAMEWORK +
                     "\n\n--- CPF Integration Guide (use when CPF was uploaded as a contextual document) ---\n" +
                     CPF_INTEGRATION_GUIDE
                 )
+                mid_cycle_slice = get_mid_cycle_slice(doc_type)
+                if mid_cycle_slice:
+                    stage_prompt = stage_prompt + mid_cycle_slice
+                dpf_slice = get_dpf_slice(instrument_type)
+                if dpf_slice:
+                    stage_prompt = stage_prompt + dpf_slice
+                p4r_slice = get_p4r_slice(instrument_type)
+                if p4r_slice:
+                    stage_prompt = stage_prompt + p4r_slice
+                regional_slice = get_regional_slice(data.get('country_scope', 'single'))
+                if regional_slice:
+                    stage_prompt = stage_prompt + regional_slice
+                mpa_slice = get_mpa_slice(data.get('is_mpa'))
+                if mpa_slice:
+                    stage_prompt = stage_prompt + mpa_slice
+                _comp_plan = build_composition_plan(AnalysisState.from_payload(data))
+                if _comp_plan['is_intersection']:
+                    stage_prompt = stage_prompt + "\n\n--- Intersection / Composition Synthesis Guide ---\n" + INTERSECTION_SYNTHESIS_GUIDE
 
                 # CPF explicit signal: content-aware detection
                 if _detect_cpf_present(uploaded_doc_names_payload, conversation_history):
@@ -3763,16 +5112,16 @@ def run_stage():
 
                 stage_prompt = (
                     stage_prompt +
-                    "\n\n--- WBG FCV Strategy Refresh Framework (4 Shifts) ---\n" +
+                    "\n\n--- WBG FCV Strategy 2026-2030 Framework (4 Pillars) ---\n" +
                     FCV_REFRESH_FRAMEWORK +
                     "\n\n--- WBG Playbook — Implementation Phase ---\n" +
                     PLAYBOOK_IMPLEMENTATION
                 )
 
-                # Append FCV Refresh framework as reference material
+                # Append FCV Strategy 2026-2030 framework as reference material
                 stage_prompt = (
                     stage_prompt +
-                    "\n\n--- WBG FCV Strategy Refresh Framework (4 Shifts) ---\n" +
+                    "\n\n--- WBG FCV Strategy 2026-2030 Framework (4 Pillars) ---\n" +
                     FCV_REFRESH_FRAMEWORK
                 )
 
@@ -3869,7 +5218,7 @@ def run_stage():
                     content_parts.append({"type": "text", "text": (
                         "\n\n--- WBG FCV Sensitivity and Responsiveness Guide (always included) ---\n" + FCV_GUIDE +
                         "\n\n--- FCV Operational Playbook — Diagnostics Phase (always included) ---\n" + PLAYBOOK_DIAGNOSTICS +
-                        "\n\n--- WBG FCV Strategy Refresh Framework (always included) ---\n" + FCV_REFRESH_FRAMEWORK +
+                        "\n\n--- WBG FCV Strategy 2026-2030 Framework (always included) ---\n" + FCV_REFRESH_FRAMEWORK +
                         "\n\n--- World Bank FCS Country List (2015–Present) ---\n" + FCS_LIST +
                         "\n\n--- OP 7.30 Countries (In Crisis — Bank cannot work through government) ---\n" +
                         "Current OP 7.30 countries: " + ", ".join(OP730_COUNTRIES) + "\n" +
@@ -3914,6 +5263,15 @@ def run_stage():
                 _country_classification = {}
                 _context_flags = {}
                 _sector_context = {}
+                _change_types = {}
+                _prior_actions = {}
+                _dlis = {}
+                _country_set = {}
+                _mpa_context = {}
+                mid_cycle_watch = []
+                dpf_watch = []
+                p4r_watch = []
+                regional_watch = []
 
                 if stage == 2:
                     # Stage 2: extract ratings and Under the Hood panels
@@ -3935,6 +5293,10 @@ def run_stage():
                     risk_exposure = parsed.get('risk_exposure', None)
                     sensitivity_summary = parsed.get('sensitivity_summary', '')
                     responsiveness_summary = parsed.get('responsiveness_summary', '')
+                    mid_cycle_watch = parsed.get('mid_cycle_watch', [])
+                    dpf_watch = parsed.get('dpf_watch', [])
+                    p4r_watch = parsed.get('p4r_watch', [])
+                    regional_watch = parsed.get('regional_watch', [])
                     gap_table = extract_gap_table(full_text)
                     parse_error = parsed.get('error', False)
                     parse_error_message = parsed.get('message', '')
@@ -3956,6 +5318,11 @@ def run_stage():
                     _country_classification = extract_country_classification(full_text)
                     _context_flags = extract_context_flags(full_text)
                     _sector_context = extract_sector_context(full_text)
+                    _change_types = extract_change_types(full_text)
+                    _prior_actions = extract_prior_actions(full_text)
+                    _dlis = extract_dlis(full_text)
+                    _country_set = extract_country_set(full_text)
+                    _mpa_context = extract_mpa_context(full_text)
                     _s1_primary_names = [dp['name'] for dp in doc_parts if dp['label'] == 'PROJECT DOCUMENT']
                     _s1_package_names = [dp['name'] for dp in doc_parts if dp['label'] == 'PACKAGE INSTRUMENT']
                     _s1_context_names = [dp['name'] for dp in doc_parts if dp['label'] == 'CONTEXT DOCUMENT']
@@ -4003,6 +5370,13 @@ def run_stage():
                     'country_classification': _country_classification if stage == 1 else None,
                     'context_flags': _context_flags if stage == 1 else None,
                     'sector_context': _sector_context if stage == 1 else None,
+                    'change_types': _change_types if stage == 1 else None,
+                    'prior_actions': _prior_actions if stage == 1 else None,
+                    'dlis': _dlis if stage == 1 else None,
+                    'country_set': _country_set if stage == 1 else None,
+                    'mpa_context': _mpa_context if stage == 1 else None,
+                    'country_scope': (('multi' if (isinstance(_country_set, dict) and _country_set.get('is_multi_country')) else 'single') if stage == 1 else None),
+                    'is_mpa': ((_mpa_context.get('is_mpa', False) if isinstance(_mpa_context, dict) else False) if stage == 1 else None),
                     'review_mode': review_mode,
                 }
 
@@ -4029,6 +5403,10 @@ def run_stage():
                     done_data['risk_exposure'] = risk_exposure
                     done_data['sensitivity_summary'] = sensitivity_summary
                     done_data['responsiveness_summary'] = responsiveness_summary
+                    done_data['mid_cycle_watch'] = mid_cycle_watch
+                    done_data['dpf_watch'] = dpf_watch
+                    done_data['p4r_watch'] = p4r_watch
+                    done_data['regional_watch'] = regional_watch
                     done_data['horizon_considerations'] = horizon
                     done_data['applied_snippets'] = [
                         {'id': s['id'], 'title': s['title'], 'source': s['source']}
@@ -4160,6 +5538,7 @@ def run_express():
         if not data:
             return jsonify({'error': 'Invalid request.'}), 400
 
+        analysis_state = AnalysisState.from_payload(data)
         documents = data.get('documents', [])
         assessment_id = data.get('assessment_id') or str(uuid.uuid4())
         review_mode = data.get('review_mode', 'design').strip()
@@ -4174,9 +5553,9 @@ def run_express():
             # ── Variables that persist across stages ──
             stage1_output = ''
             stage2_output = ''
-            doc_type = 'Unknown'
+            doc_type = analysis_state.doc_type
             process_type = 'Unknown'
-            instrument_type = 'Unknown'
+            instrument_type = analysis_state.instrument
             temporal_context = {}
             country_classification = {}
             context_flags = {}
@@ -4331,7 +5710,7 @@ def run_express():
                 content_parts.append({"type": "text", "text": (
                     "\n\n--- WBG FCV Sensitivity and Responsiveness Guide (always included) ---\n" + FCV_GUIDE +
                     "\n\n--- FCV Operational Playbook — Diagnostics Phase (always included) ---\n" + PLAYBOOK_DIAGNOSTICS +
-                    "\n\n--- WBG FCV Strategy Refresh Framework (always included) ---\n" + FCV_REFRESH_FRAMEWORK +
+                    "\n\n--- WBG FCV Strategy 2026-2030 Framework (always included) ---\n" + FCV_REFRESH_FRAMEWORK +
                     "\n\n--- World Bank FCS Country List (2015–Present) ---\n" + FCS_LIST +
                     "\n\n--- OP 7.30 Countries (In Crisis — Bank cannot work through government) ---\n" +
                     "Current OP 7.30 countries: " + ", ".join(OP730_COUNTRIES) + "\n" +
@@ -4341,6 +5720,13 @@ def run_express():
                 # Select Stage 1 prompt based on review mode
                 s1_key = 'impl_1' if is_impl else '1'
                 stage1_prompt = load_prompts().get(s1_key, DEFAULT_PROMPTS.get(s1_key, get_prompt_for_stage(1)))
+                if not is_impl:
+                    doc_type_ctx = build_doc_type_context(doc_type, 1)
+                    if doc_type_ctx:
+                        stage1_prompt = doc_type_ctx + "\n\n" + stage1_prompt
+                    mid_cycle_slice = get_mid_cycle_slice(doc_type)
+                    if mid_cycle_slice:
+                        stage1_prompt = stage1_prompt + mid_cycle_slice
                 if is_impl:
                     stage1_prompt = (
                         stage1_prompt +
@@ -4379,6 +5765,13 @@ def run_express():
                 country_classification = extract_country_classification(stage1_output)
                 context_flags = extract_context_flags(stage1_output)
                 sector_context = extract_sector_context(stage1_output)
+                change_types = extract_change_types(stage1_output)
+                prior_actions = extract_prior_actions(stage1_output)
+                dlis = extract_dlis(stage1_output)
+                country_set = extract_country_set(stage1_output)
+                mpa_context = extract_mpa_context(stage1_output)
+                _cscope_x = 'multi' if country_set.get('is_multi_country') else 'single'
+                _is_mpa_x = mpa_context.get('is_mpa', False)
                 if is_impl:
                     process_type = extract_process_type(stage1_output)
                     doc_type = process_type  # Use process type as doc_type label for impl mode
@@ -4404,7 +5797,7 @@ def run_express():
                 # ── Stage 1 done event ──
                 # Strip classifier delimiter tags from display output; history retains raw text.
                 stage1_display = clean_stage1_output(stage1_output)
-                yield f"data: {json.dumps({'stage_done': 1, 'result': stage1_display, 'history': conversation_history, 'research_brief': research_brief_text, 'research_country': research_country, 'doc_type': doc_type, 'instrument_type': instrument_type, 'temporal_context': temporal_context, 'process_type': process_type if is_impl else None, 'country_classification': country_classification, 'context_flags': context_flags, 'sector_context': sector_context, 'review_mode': review_mode})}\n\n"
+                yield f"data: {json.dumps({'stage_done': 1, 'result': stage1_display, 'history': conversation_history, 'research_brief': research_brief_text, 'research_country': research_country, 'doc_type': doc_type, 'instrument_type': instrument_type, 'temporal_context': temporal_context, 'process_type': process_type if is_impl else None, 'country_classification': country_classification, 'context_flags': context_flags, 'sector_context': sector_context, 'change_types': change_types, 'prior_actions': prior_actions, 'dlis': dlis, 'country_set': country_set, 'mpa_context': mpa_context, 'country_scope': _cscope_x, 'is_mpa': _is_mpa_x, 'review_mode': review_mode})}\n\n"
 
                 # ════════════════════════════════════════════════════════════
                 # STAGE 2 — FCV Assessment
@@ -4426,7 +5819,7 @@ def run_express():
                         pass
                     stage2_prompt = (
                         stage2_prompt +
-                        "\n\n--- WBG FCV Strategy Refresh Framework (4 Shifts) ---\n" + FCV_REFRESH_FRAMEWORK +
+                        "\n\n--- WBG FCV Strategy 2026-2030 Framework (4 Pillars) ---\n" + FCV_REFRESH_FRAMEWORK +
                         "\n\n--- WBG FCV Sensitivity and Responsiveness Guide ---\n" + FCV_GUIDE +
                         "\n\n--- FCV Glossary ---\n" + get_glossary_for_prompt()
                     )
@@ -4444,7 +5837,7 @@ def run_express():
                         stage2_prompt +
                         "\n\n--- WBG FCV Operational Manual (12 Recommendations, 25 Key Questions, 3 Key Elements) ---\n" +
                         FCV_OPERATIONAL_MANUAL +
-                        "\n\n--- WBG FCV Strategy Refresh Framework (4 Shifts) ---\n" +
+                        "\n\n--- WBG FCV Strategy 2026-2030 Framework (4 Pillars) ---\n" +
                         FCV_REFRESH_FRAMEWORK +
                         "\n\n--- WBG FCV Sensitivity and Responsiveness Guide ---\n" +
                         FCV_GUIDE +
@@ -4471,6 +5864,22 @@ def run_express():
                     )
 
                 # ── DIFFERENTIATED APPROACH INJECTION (express) ──────────────
+                mid_cycle_slice = get_mid_cycle_slice(doc_type)
+                if mid_cycle_slice:
+                    stage2_prompt = stage2_prompt + mid_cycle_slice
+                dpf_slice = get_dpf_slice(instrument_type)
+                if dpf_slice:
+                    stage2_prompt = stage2_prompt + dpf_slice
+                p4r_slice = get_p4r_slice(instrument_type)
+                if p4r_slice:
+                    stage2_prompt = stage2_prompt + p4r_slice
+                regional_slice = get_regional_slice(_cscope_x)
+                if regional_slice:
+                    stage2_prompt = stage2_prompt + regional_slice
+                mpa_slice = get_mpa_slice(_is_mpa_x)
+                if mpa_slice:
+                    stage2_prompt = stage2_prompt + mpa_slice
+
                 confirmed_category_e2 = (
                     country_classification.get('category', 'General')
                     if isinstance(country_classification, dict) else 'General'
@@ -4568,7 +5977,7 @@ def run_express():
                         pass
                     stage3_prompt = (
                         stage3_prompt +
-                        "\n\n--- WBG FCV Strategy Refresh Framework (4 Shifts) ---\n" + FCV_REFRESH_FRAMEWORK +
+                        "\n\n--- WBG FCV Strategy 2026-2030 Framework (4 Pillars) ---\n" + FCV_REFRESH_FRAMEWORK +
                         "\n\n--- WBG Playbook — Implementation Phase ---\n" + PLAYBOOK_IMPLEMENTATION
                     )
                 else:
@@ -4604,11 +6013,36 @@ def run_express():
 
                     stage3_prompt = (
                         stage3_prompt +
-                        "\n\n--- WBG FCV Strategy Refresh Framework (4 Shifts) ---\n" +
+                        "\n\n--- WBG FCV Strategy 2026-2030 Framework (4 Pillars) ---\n" +
                         FCV_REFRESH_FRAMEWORK +
                         "\n\n--- CPF Integration Guide (use when CPF was uploaded as a contextual document) ---\n" +
                         CPF_INTEGRATION_GUIDE
                     )
+
+                    mid_cycle_slice = get_mid_cycle_slice(doc_type)
+                    if mid_cycle_slice:
+                        stage3_prompt = stage3_prompt + mid_cycle_slice
+                    dpf_slice = get_dpf_slice(instrument_type)
+                    if dpf_slice:
+                        stage3_prompt = stage3_prompt + dpf_slice
+                    p4r_slice = get_p4r_slice(instrument_type)
+                    if p4r_slice:
+                        stage3_prompt = stage3_prompt + p4r_slice
+                    regional_slice = get_regional_slice(_cscope_x)
+                    if regional_slice:
+                        stage3_prompt = stage3_prompt + regional_slice
+                    mpa_slice = get_mpa_slice(_is_mpa_x)
+                    if mpa_slice:
+                        stage3_prompt = stage3_prompt + mpa_slice
+                    _comp_state_x = AnalysisState.from_payload({"structured_intake": {
+                        "instrument": instrument_type,
+                        "doc_type": doc_type,
+                        "countries": (country_set.get('countries', []) if isinstance(country_set, dict) else []),
+                        "is_mpa": _is_mpa_x,
+                    }})
+                    _comp_plan_x = build_composition_plan(_comp_state_x)
+                    if _comp_plan_x['is_intersection']:
+                        stage3_prompt = stage3_prompt + "\n\n--- Intersection / Composition Synthesis Guide ---\n" + INTERSECTION_SYNTHESIS_GUIDE
 
                     # CPF explicit signal: content-aware detection
                     if _detect_cpf_present(_doc_names_ex, conversation_history):
@@ -4687,7 +6121,7 @@ def run_express():
                     conversation_history = conversation_history[-20:]
 
                 # ── Stage 3 done event ──
-                yield f"data: {json.dumps({'stage_done': 3, 'result': stage3_output_clean, 'history': conversation_history, 'priorities': parsed.get('priorities', []), 'fcv_rating': parsed.get('fcv_rating', ''), 'fcv_responsiveness_rating': parsed.get('fcv_responsiveness_rating', ''), 'sensitivity_summary': parsed.get('sensitivity_summary', ''), 'responsiveness_summary': parsed.get('responsiveness_summary', ''), 'risk_exposure': parsed.get('risk_exposure'), 'gap_table': extract_gap_table(stage3_output), 'parse_error': parsed.get('error', False), 'parse_error_message': parsed.get('message', ''), 'horizon_considerations': horizon, 'applied_snippets': [{'id': s['id'], 'title': s['title'], 'source': s['source']} for s in secondary_snippets_s3e]})}\n\n"
+                yield f"data: {json.dumps({'stage_done': 3, 'result': stage3_output_clean, 'history': conversation_history, 'priorities': parsed.get('priorities', []), 'fcv_rating': parsed.get('fcv_rating', ''), 'fcv_responsiveness_rating': parsed.get('fcv_responsiveness_rating', ''), 'sensitivity_summary': parsed.get('sensitivity_summary', ''), 'responsiveness_summary': parsed.get('responsiveness_summary', ''), 'risk_exposure': parsed.get('risk_exposure'), 'mid_cycle_watch': parsed.get('mid_cycle_watch', []), 'dpf_watch': parsed.get('dpf_watch', []), 'p4r_watch': parsed.get('p4r_watch', []), 'regional_watch': parsed.get('regional_watch', []), 'gap_table': extract_gap_table(stage3_output), 'parse_error': parsed.get('error', False), 'parse_error_message': parsed.get('message', ''), 'horizon_considerations': horizon, 'applied_snippets': [{'id': s['id'], 'title': s['title'], 'source': s['source']} for s in secondary_snippets_s3e]})}\n\n"
 
                 # ── Express complete ──
                 yield f"data: {json.dumps({'express_done': True})}\n\n"
@@ -4912,6 +6346,10 @@ def download_report():
     fcv_rating = data.get('fcv_rating', '')
     fcv_resp_rating = data.get('fcv_responsiveness_rating', '')
     risk_exposure = data.get('risk_exposure') or {}
+    mid_cycle_watch = data.get('mid_cycle_watch') or []
+    dpf_watch = data.get('dpf_watch') or []
+    p4r_watch = data.get('p4r_watch') or []
+    regional_watch = data.get('regional_watch') or []
     horizon = data.get('horizon_considerations', '')
     under_hood = data.get('under_hood') or {}
     meta = data.get('metadata', {})
@@ -4929,11 +6367,11 @@ def download_report():
 
     timing_map = {
         'flag-for-preparation': 'Flag for preparation',
-        'required-before-appraisal': 'Required before appraisal',
+        'required-before-appraisal': 'Required before Decision Review (DM/ROC)',
         'required-before-board': 'Required before Board',
         'next-series': 'Feed into next series',
         'supervision': 'Supervision / monitoring only',
-        'pre-appraisal': 'Required before appraisal',
+        'pre-appraisal': 'Required before Decision Review (DM/ROC)',
     }
     tag_labels = {
         '[S]': 'Sensitivity', '[R]': 'Responsiveness', '[S+R]': 'Sensitivity + Responsiveness'
@@ -5002,7 +6440,7 @@ def download_report():
 
         # ── Date and brief disclaimer (one line each) ──
         _add_single_para(f'Generated by WBG FCV Project Screener · {date_str}', size=9, color=RGBColor(0x66, 0x66, 0x66), italic=True, space_after=1)
-        _add_single_para('AI-assisted output. Analytical framework: WBG FCV Strategy Refresh, FCV Operational Manual, FCV Playbook, Good Practice Notes. Verify before operational use.', size=8.5, color=WB_LGRAY, italic=True, space_before=0, space_after=6)
+        _add_single_para('AI-assisted output. Analytical framework: WBG FCV Strategy 2026-2030, FCV Operational Manual, FCV Playbook, Good Practice Notes. Verify before operational use.', size=8.5, color=WB_LGRAY, italic=True, space_before=0, space_after=6)
 
         # ── Finalized PAD notice ──
         if finalized_pad and approval_date:
@@ -5111,9 +6549,15 @@ def download_report():
                 if pr.get('tag') and pr['tag'] in tag_labels:
                     meta_parts.append(f'Focus: {tag_labels[pr["tag"]]}')
                 if pr.get('refresh_shift'):
-                    meta_parts.append(f'FCV Refresh: {pr["refresh_shift"]}')
+                    meta_parts.append(f'FCV Strategy 2026-2030: {pr["refresh_shift"]}')
                 if pr.get('action_timing') and pr['action_timing'] in timing_map:
                     meta_parts.append(f'Timing: {timing_map[pr["action_timing"]]}')
+                if pr.get('change_type'):
+                    meta_parts.append(f'Change: {pr["change_type"]}')
+                if pr.get('restructuring_level'):
+                    meta_parts.append(f'Restructuring level: {pr["restructuring_level"]}')
+                if pr.get('priority_scope'):
+                    meta_parts.append(f'Scope: {pr["priority_scope"]}')
                 if meta_parts:
                     _add_single_para(' | '.join(meta_parts), size=9, color=WB_GRAY)
 
@@ -5157,6 +6601,26 @@ def download_report():
                     _add_single_para(' · '.join(footer_parts), size=9, color=WB_GRAY)
 
         # ── Watch List for Supervision ──
+        if mid_cycle_watch:
+            _add_section_heading('Mid-Cycle FCV Watch')
+            for item in mid_cycle_watch:
+                _add_single_para(str(item), space_after=3)
+
+        if dpf_watch:
+            _add_section_heading('DPF FCV Watch')
+            for item in dpf_watch:
+                _add_single_para(str(item), space_after=3)
+
+        if p4r_watch:
+            _add_section_heading('P4R FCV Watch')
+            for item in p4r_watch:
+                _add_single_para(str(item), space_after=3)
+
+        if regional_watch:
+            _add_section_heading('Regional FCV Watch')
+            for item in regional_watch:
+                _add_single_para(str(item), space_after=3)
+
         if horizon:
             _add_section_heading('Watch List for Supervision')
             _md_to_docx_para(doc, horizon)

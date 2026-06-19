@@ -28,7 +28,8 @@ class TestFoundationConstants:
 
     def test_fcs_countries_contains_known_members(self):
         from background_docs import FCS_COUNTRIES_CURRENT
-        assert 'Nigeria' in FCS_COUNTRIES_CURRENT
+        assert 'Suriname' in FCS_COUNTRIES_CURRENT
+        assert 'Nigeria' not in FCS_COUNTRIES_CURRENT
         assert 'Somalia' in FCS_COUNTRIES_CURRENT
         assert 'Ukraine' in FCS_COUNTRIES_CURRENT
 
@@ -70,7 +71,7 @@ class TestClassifyCountry:
 
     def test_fcs_country_returns_conflict_affected(self):
         from app import classify_country
-        result = classify_country('Nigeria')
+        result = classify_country('Suriname')
         assert result['category'] == 'Conflict-Affected'
         assert result['confidence'] == 'high'
 
@@ -86,7 +87,7 @@ class TestClassifyCountry:
 
     def test_returns_dict_with_required_keys(self):
         from app import classify_country
-        result = classify_country('Nigeria')
+        result = classify_country('Suriname')
         assert 'category' in result
         assert 'confidence' in result
         assert 'reasoning' in result
@@ -100,13 +101,13 @@ class TestExtractCountryClassification:
 %%%COUNTRY_CLASSIFICATION_START%%%
 category: Conflict-Affected
 confidence: high
-reasoning: Nigeria is on the FCS list since 2020.
+reasoning: Suriname is on the FY26 FCS list.
 %%%COUNTRY_CLASSIFICATION_END%%%
 More output."""
         result = extract_country_classification(text)
         assert result['category'] == 'Conflict-Affected'
         assert result['confidence'] == 'high'
-        assert 'Nigeria' in result['reasoning']
+        assert 'Suriname' in result['reasoning']
 
     def test_returns_general_when_no_block(self):
         from app import extract_country_classification

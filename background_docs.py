@@ -1,11 +1,11 @@
 # Background documents embedded at deploy time
-# Sources: WBG FCV Strategy Refresh (Jan 2026), OST Manual (June 2025),
+# Sources: WBG FCV Strategy 2026-2030 (Jan 2026), OST Manual (June 2025),
 #          FCV Operational Playbook (Diagnostics, Preparation, Implementation, Closing)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 1. FCV_GUIDE — Core FCV framework and screening questions (~3,000 tokens)
 # Last verified: 2026-04
-# Policy-sensitive: FCV Refresh shifts (Jan 2026), FCV country classification
+# Policy-sensitive: FCV Strategy 2026-2030 pillars (Jan 2026), FCV country classification
 # ─────────────────────────────────────────────────────────────────────────────
 
 FCV_GUIDE = """## WBG FCV Framework — Sensitivity, Responsiveness, and Strategic Shifts
@@ -26,9 +26,9 @@ FCV-sensitive programming requires moving beyond broad context-setting to **sect
 3. **Transformative Use of FCV Tools** — Leverages operational flexibilities (CERC, HEIS, TPM, GEMS) for impact beyond standard delivery
 4. **Peace & Stability Dividends** — Connects project outcomes to stability, state-citizen trust, and reduced fragility
 
-### II. FCV Refresh — Four Strategic Shifts (January 2026)
+### II. FCV Strategy 2026-2030 — Four Strategic Shifts (January 2026)
 
-The WBG FCV Strategy Refresh replaces the original four pillars (preventing conflict, remaining engaged, transition, spillovers) with four cross-cutting strategic shifts:
+The WBG FCV Strategy 2026-2030 replaces the original four pillars (preventing conflict, remaining engaged, transition, spillovers) with four cross-cutting strategic shifts:
 
 **Shift A — Anticipate** (WHEN)
 Risk-monitoring and management process to identify country-level FCV risks early and inform strategic choices. Work proactively with partners to tackle emerging risks before they escalate. Introduces a forward-looking FCV country-classification scheme to replace the backward-looking FCS list.
@@ -42,14 +42,15 @@ Work better as One WBG on the jobs agenda in FCV settings. Security, justice, an
 **Shift D — Enhanced Toolkit & Partnerships** (HOW)
 Enhance the WBG operational toolkit and pursue more focused partnerships. Attract, support and build talent to work in/on FCV settings. Strengthen HDP nexus coordination. Adaptive tactical and strategic management throughout the country engagement cycle.
 
-### III. FCV Country Classification Scheme (Refresh)
+### III. FCV Country Classification Scheme
 
-The refreshed approach introduces a differentiated classification:
-- **Conflict-affected** — Active armed conflict or post-conflict (within 5 years)
-- **At risk** — Elevated fragility indicators; emerging or escalating risks
-- **Forced displacement** — Significant refugee or IDP populations
-- **Criminal violence** — Organised crime, gang violence (especially MICs)
-- **Compound risk** — Multiple overlapping crises (climate, food insecurity, displacement)
+The WBG FCV Strategy 2026-2030 uses a four-category differentiated approach for analytical calibration:
+- **In Crisis** - situations where the Bank cannot work through or finance the government, typically triggered by OP 7.30.
+- **In Transition** - countries recently emerging from protracted crisis where a credible transition window exists.
+- **Conflict-Affected** - countries with functioning governments but conflict or insecurity that materially affects development prospects.
+- **At Risk** - countries not currently in active conflict but showing elevated fragility, violence, spillover, or escalation risks.
+
+Use the FY26 FCS list as a current institutional reference, but do not treat FCS membership as the sole trigger for FCV analysis.
 
 ### IV. Assessment Rating Scale
 
@@ -91,9 +92,9 @@ When rating FCV sensitivity or responsiveness, use these levels:
 
 ### VII. Cross-Cutting Concepts for FCV Assessment
 
-**HDP Nexus (Humanitarian-Development-Peace):** FCV Refresh Shift D names HDP nexus coordination as a strategic priority. Assess whether projects in acute crisis or forced displacement contexts document engagement with humanitarian actors, alignment with Humanitarian Response Plans, or participation in joint needs assessments. Absence of HDP nexus reference in an acute crisis context should be flagged.
+**HDP Nexus (Humanitarian-Development-Peace):** FCV Strategy 2026-2030 Shift D names HDP nexus coordination as a strategic priority. Assess whether projects in acute crisis or forced displacement contexts document engagement with humanitarian actors, alignment with Humanitarian Response Plans, or participation in joint needs assessments. Absence of HDP nexus reference in an acute crisis context should be flagged.
 
-**IDA FCV Envelope:** The full set of IDA FCV Envelope windows: Prevention and Resilience Allocation (PRA), Remaining Engaged during Conflict Allocation (RECA), Turnaround Allocation (TAA), Window for Host Communities and Refugees (WHR), and Private Sector Window (PSW). Recognise references to these in project documents and assess whether design is appropriate for the specific financing window.
+**IDA FCV Envelope:** The IDA FCV Envelope (FCVE) is governed by DFI2.01-DIR.108 and comprises three allocations: Prevention and Resilience Allocation (PRA), Remaining Engaged during Conflict Allocation (RECA), and Turn Around Allocation (TAA). The IDA Window for Host Communities and Refugees (WHR) and the IDA Private Sector Window (PSW) are related but separate IDA FCV-financing instruments — they are NOT FCVE allocations under DFI2.01-DIR.108. Recognise references to all of these in project documents and assess whether design is appropriate for the specific financing window. Do not make eligibility determinations.
 
 **Political Economy Analysis (PEA):** A systematic assessment of actors, interests, incentives, and power dynamics. Goes beyond conflict analysis to inform design decisions around implementation arrangements, beneficiary targeting, and institutional reform sequencing. Recognise PEA as a form of conflict-sensitive analytics alongside formal RRAs.
 
@@ -101,7 +102,7 @@ When rating FCV sensitivity or responsiveness, use these levels:
 
 **Adaptive Management:** Structured, evidence-based course correction during implementation without requiring formal restructuring. Assess whether M&E systems and implementation support plans include mechanisms for adaptive management (learning loops, crisis response protocols, context monitoring systems) rather than treating course-correction as purely a restructuring event.
 
-**FCV Country Classification (Refresh):** The January 2026 FCV Strategy Refresh replaces the backward-looking FCS harmonised list with a forward-looking classification: Conflict-affected, At-risk, Forced displacement, Criminal violence, and Compound risk, with a traffic-light system (Green/Amber/Red). Countries may be FCV-relevant without appearing on the legacy FCS list. Do not treat FCS list membership as the sole trigger for FCV analysis.
+**FCV Country Classification:** The WBG FCV Strategy 2026-2030 uses four analytical categories: In Crisis, In Transition, Conflict-Affected, and At Risk. Countries may be FCV-relevant without appearing on the FCS list. Do not treat FCS membership as the sole trigger for FCV analysis.
 """
 
 
@@ -111,89 +112,61 @@ When rating FCV sensitivity or responsiveness, use these levels:
 # Use: Cross-check FCS classification in Stage 1 Part B and Stage 2 ratings
 # ─────────────────────────────────────────────────────────────────────────────
 
-FCS_LIST = """## World Bank Fragile and Conflict-affected Situations (FCS) List — 2015 to Present
+FCS_LIST = """## World Bank Fragile and Conflict-affected Situations (FCS) List - FY26
 
-Source: World Bank FCS list (fiscal year reporting, 2015–FY2026).
-Use this list to verify whether the project country is or has been classified as FCS, and for how long.
-A country on the FCS list may access enhanced operational flexibilities. IDA FCV Envelope financing (PRA / RECA / TAA) eligibility depends on multiple criteria beyond FCS classification — including CPIA scores, conflict intensity, annual FCV review submissions, and Management determinations. Do not draw eligibility conclusions from FCS status alone.
+Source: World Bank FCS list for FY26. This public list identifies 35 economies and assigns each to either Conflict or Fragility. The underlying indicator data is not embedded.
+Use this list to verify whether the project country is on the current FCS list and which FY26 category applies. A country on the FCS list may access enhanced operational flexibilities. IDA FCV Envelope financing (PRA / RECA / TAA) is governed by DFI2.01-DIR.108 and depends on multiple criteria beyond FCS classification, including CPIA scores, conflict intensity, annual FCV review submissions, and Management determinations. Do not draw eligibility conclusions from FCS status alone.
 
-### Currently on the FCS List (FY2026 / "Present")
-Afghanistan, Burkina Faso, Burundi, Cameroon, Central African Republic, Chad, Comoros,
-Congo (Democratic Republic of), Congo (Republic of), Eritrea, Ethiopia, Guinea-Bissau,
-Haiti, Iraq, Kiribati, Kosovo, Lebanon, Libya, Mali, Marshall Islands,
-Micronesia (Federated States of), Mozambique, Myanmar, Niger, Nigeria, Papua New Guinea,
-São Tomé and Príncipe, Solomon Islands, Somalia, South Sudan, Sudan, Syrian Arab Republic,
-Timor-Leste, Tuvalu, Ukraine, Venezuela (RB), West Bank and Gaza, Yemen (Republic of), Zimbabwe
+### Current FY26 FCS List by Category
 
-### Year of FCS Entry (for countries currently on the list)
-| Country | On FCS list since |
+| Country / economy | FY26 category |
 |---|---|
-| Afghanistan | 2015 |
-| Burkina Faso | 2020 |
-| Burundi | 2015 |
-| Cameroon | 2020 |
-| Central African Republic | 2015 |
-| Chad | 2015 |
-| Comoros | 2015 |
-| Congo, Democratic Republic of | 2015 |
-| Congo, Republic of | 2015 |
-| Eritrea | 2015 |
-| Ethiopia | 2022 |
-| Guinea-Bissau | 2015 |
-| Haiti | 2015 |
-| Iraq | 2015 |
-| Kiribati | 2015 |
-| Kosovo | 2015 |
-| Lebanon | 2015 |
-| Libya | 2015 |
-| Mali | 2015 |
-| Marshall Islands | 2015 |
-| Micronesia, Federated States of | 2015 |
-| Mozambique | 2021 |
-| Myanmar | 2015 |
-| Niger | 2020 |
-| Nigeria | 2020 |
-| Papua New Guinea | 2020 |
-| São Tomé and Príncipe | 2024 |
-| Solomon Islands | 2015 |
-| Somalia | 2015 |
-| South Sudan | 2015 |
-| Sudan | 2015 |
-| Syrian Arab Republic | 2015 |
-| Timor-Leste | 2015 |
-| Tuvalu | 2015 |
-| Ukraine | 2023 |
-| Venezuela, RB | 2020 |
-| West Bank and Gaza | 2015 |
-| Yemen, Republic of | 2015 |
-| Zimbabwe | 2015 |
-
-### Graduated from FCS List (appeared on list 2015–present but no longer classified FCS)
-| Country | Years on FCS list | Notes |
-|---|---|---|
-| Côte d'Ivoire | 2015–2019 | Graduated FY2020 |
-| Djibouti | 2015–2019 | Graduated FY2020 |
-| Gambia, The | 2015–2021 | Graduated FY2022 |
-| Liberia | 2015–2019 | Graduated FY2020 |
-| Madagascar | 2015–2018 | Graduated FY2019 |
-| Togo | 2015–2019 | Graduated FY2020 |
-| Armenia | 2022 only | One-year classification; removed FY2023 |
-| Azerbaijan | 2022 only | One-year classification; removed FY2023 |
-| Lao PDR | 2021 only | One-year classification; removed FY2022 |
+| Afghanistan | Fragility |
+| Burkina Faso | Conflict |
+| Burundi | Fragility |
+| Cameroon | Conflict |
+| Central African Republic | Conflict |
+| Chad | Conflict |
+| Comoros | Fragility |
+| Congo, Dem. Rep. | Conflict |
+| Congo, Rep. | Fragility |
+| Eritrea | Fragility |
+| Ethiopia | Conflict |
+| Guinea-Bissau | Fragility |
+| Haiti | Conflict |
+| Kiribati | Fragility |
+| Kosovo | Fragility |
+| Lebanon | Conflict |
+| Mali | Conflict |
+| Marshall Islands | Fragility |
+| Micronesia, Fed. Sts. | Fragility |
+| Myanmar | Conflict |
+| Niger | Conflict |
+| Papua New Guinea | Fragility |
+| Sao Tome and Principe | Fragility |
+| Somalia | Conflict |
+| South Sudan | Fragility |
+| Sudan | Conflict |
+| Suriname | Fragility |
+| Syrian Arab Republic | Conflict |
+| Timor-Leste | Fragility |
+| Tuvalu | Fragility |
+| Ukraine | Conflict |
+| Venezuela, RB | Fragility |
+| West Bank and Gaza | Conflict |
+| Yemen, Rep. | Conflict |
+| Zimbabwe | Fragility |
 
 ### Usage Notes for Analysis
-- If the project country is currently on the FCS list, confirm FCS status and note the year of entry.
-- If a country has been on the FCS list since 2015, this represents over a decade of chronic fragility — flag this in analysis.
-- If a country entered recently (e.g., Ethiopia 2022, Ukraine 2023, São Tomé 2024), flag the recency and likely drivers.
-- If the country graduated from the FCS list, acknowledge the trajectory and any residual fragility risk.
-- IDA FCV Envelope eligibility is complex and multi-criteria — do not draw eligibility conclusions from FCS status alone, and do not state in outputs whether a country is or is not eligible for any Envelope window.
-- Do not assume FCS = conflict. FCS encompasses fragility (weak institutions, political instability) as well as active conflict situations.
+- If the project country is currently on the FCS list, confirm FCS status and note the FY26 Conflict or Fragility category.
+- IDA FCV Envelope eligibility is complex and multi-criteria. Do not draw eligibility conclusions from FCS status alone, and do not state in outputs whether a country is or is not eligible for any Envelope window.
+- Do not assume FCS = conflict. FY26 distinguishes Conflict from Fragility; tailor analysis accordingly.
+- Watch item: FY27 is expected to introduce a changed FCV-list methodology, including a violence-prevalence public list, a separate institutional-fragility list, and a confidential At-Risk list. Treat this FY26 list as the current source until the FY27 method is confirmed.
 """
 
-# ─────────────────────────────────────────────────────────────────────────────
-# 3. FCV_OPERATIONAL_MANUAL — 12 Recommendations + 25 Key Questions (~5,000 tokens)
+# 3. FCV_OPERATIONAL_MANUAL — 12 Recommendations (authoritative) + 25-question review checklist (tool-derived) (~5,000 tokens)
 # Last verified: 2026-04
-# Policy-sensitive: 12 OST recommendations, 25 key questions, operational flexibilities
+# Policy-sensitive: 12 OST recommendations (from the FCV Operational Manual, June 2025), 25-question review checklist (tool-derived, not a fixed Manual framework), operational flexibilities
 # ─────────────────────────────────────────────────────────────────────────────
 
 FCV_OPERATIONAL_MANUAL = """## WBG FCV Operational Manual — Core Framework for FCV-Sensitive Project Design
@@ -254,7 +227,9 @@ ICR should: (i) describe how design responded to FCV elements, (ii) document ada
 
 ---
 
-### 25 Key Questions for FCV Review
+### 25-Question FCV Review Checklist (tool-derived)
+
+Note: the 12 recommendations above are the authoritative framework from the FCV Operational Manual (June 2025). The 25 questions below are a review checklist derived/adapted by this tool from the Manual's stage-by-stage guidance (its Boxes and the Section 8 "Summary of Questions" one-pager). The number 25 is a tool construction, not a fixed Manual framework — do not cite it as an official "25 Key Questions" set.
 
 #### PCN Stage — IPF/PforR (Questions 1–15)
 1. Is the project design informed by DRRs from the RRA or equivalent analysis?
@@ -405,7 +380,7 @@ When assessing a project, consider both directions:
 # Policy-sensitive: 4 strategic shifts, FCV country classification scheme
 # ─────────────────────────────────────────────────────────────────────────────
 
-FCV_REFRESH_FRAMEWORK = """## WBG FCV Strategy Refresh Framework (January 2026)
+FCV_REFRESH_FRAMEWORK = """## WBG FCV Strategy 2026-2030 Framework (January 2026)
 
 Source: Internal briefing — Towards a Refreshed WBG Strategy for Engaging in FCV Settings
 
@@ -573,7 +548,7 @@ Teams should consider: (1) whether to use operational flexibilities and which on
 - **In all FCV contexts**: IPF policy (esp. **Paragraph 12** for urgent need/capacity constraints), PforR policy, DPF policy
 - **OP 7.30**: Dealing with De Facto Governments (unconstitutional government changes)
 - **OP 7.60**: Projects in Disputed Areas
-- **OP 8.00**: Rapid Response to Crises and Emergencies
+- **OPS5.08-POL.125**: Rapid Response to Crises and Emergencies (current Policy, issued 25 June 2024; replaced OP 8.00, retired 24 June 2024)
 
 ### Project Design Flexibilities (no Para 12 required)
 - **Framework approach**: Umbrella of activities/areas, details in Project Operations Manual
@@ -680,7 +655,7 @@ FCV implementation requires: continuous risk monitoring (project, country, regio
 
 ### Key Policy Framework During Implementation
 - IPF policy (esp. Para 12), PforR policy, DPF policy
-- OP 7.30 (de facto governments), OP 7.60 (disputed areas), OP 8.00 (rapid response)
+- OP 7.30 (de facto governments), OP 7.60 (disputed areas), OPS5.08-POL.125 (rapid response; formerly OP 8.00, retired 24 June 2024)
 - CERCs for rapid crisis response within existing projects
 - Portfolio adjustment and restructuring as adaptive tools
 - Rapid Response Option (RRO): repurpose up to 10% of undisbursed IPF/PforR portfolio
@@ -854,7 +829,7 @@ The ICR should:
 STAGE_GUIDANCE_MAP = {
     "PCN": {
         "playbook_phase": "Preparation",
-        "timing_options": ["At design stage", "Before appraisal"],
+        "timing_options": ["At design stage", "Before Decision Review"],
         "framing": "Early design — focus on embedding FCV elements into ToC, PDO, stakeholder analysis, and operational approach before the design is locked.",
         "key_flexibilities": [
             "CERC", "HEIS", "Phased implementation", "Unallocated funds",
@@ -873,7 +848,7 @@ STAGE_GUIDANCE_MAP = {
     },
     "PID": {
         "playbook_phase": "Preparation",
-        "timing_options": ["At design stage", "Before appraisal"],
+        "timing_options": ["At design stage", "Before Decision Review"],
         "framing": "Public information document — recommendations should focus on what needs to be integrated before the PAD is finalised.",
         "key_flexibilities": [
             "CERC", "HEIS", "Phased implementation", "Unallocated funds",
@@ -888,7 +863,7 @@ STAGE_GUIDANCE_MAP = {
     },
     "PAD": {
         "playbook_phase": "Preparation",
-        "timing_options": ["At design stage", "Before appraisal"],
+        "timing_options": ["At design stage", "Before Decision Review"],
         "framing": "Appraisal document — FCV elements should already be embedded. Focus on strengthening what exists, identifying gaps before Board approval, and ensuring operational readiness.",
         "key_flexibilities": [
             "CERC", "HEIS", "TPM", "GEMS", "Phased disbursement",
@@ -973,7 +948,7 @@ STAGE_GUIDANCE_MAP = {
     },
     "Unknown": {
         "playbook_phase": "Preparation",
-        "timing_options": ["At design stage", "Before appraisal", "During implementation"],
+        "timing_options": ["At design stage", "Before Decision Review", "During implementation"],
         "framing": "Document type not identified — provide general FCV sensitivity recommendations applicable across the project cycle.",
         "key_flexibilities": [
             "CERC", "HEIS", "TPM", "GEMS", "Phased implementation",
@@ -1102,7 +1077,7 @@ WB_INSTRUMENT_GUIDE = {
             "identified from Concept Decision date?"
         ),
         "dnh_applicability": (
-            "All 8 DNH principles are FULLY APPLICABLE to IPF. "
+            "All 9 DNH principles are FULLY APPLICABLE to IPF. "
             "Assess directly against all principles at the beneficiary and community level."
         ),
         "cdd_sub_modality": (
@@ -1234,7 +1209,7 @@ WB_INSTRUMENT_GUIDE = {
         "description": (
             "DPOs provide budget support to governments in exchange for policy and institutional "
             "reforms (prior actions). They finance the government's general budget, not specific "
-            "investment activities. DPOs are governed by OP/BP 8.60 and require a satisfactory "
+            "investment activities. DPOs are governed by OPS5.02-POL.120 and require a satisfactory "
             "macroeconomic framework — a binding eligibility condition often difficult to certify "
             "in active conflict or post-crisis settings. Less common in FCV settings due to reform "
             "capacity requirements and the macro precondition, but used for governance reform, "
@@ -1256,7 +1231,7 @@ WB_INSTRUMENT_GUIDE = {
         "not_applicable": (
             "DPO does NOT: finance specific investment activities, civil works, goods, or services "
             "(those are IPF); use CERC, HEIS, TPM, or GEMS (these are IPF operational tools); "
-            "apply the ESF (ESS1-ESS10), ESSA, ESCP, or SEP — DPOs are governed by OP/BP 8.60 "
+            "apply the ESF (ESS1-ESS10), ESSA, ESCP, or SEP — DPOs are governed by OPS5.02-POL.120 "
             "and use Poverty and Social Impact Analysis (PSIA) instead; "
             "have a results framework with project-level intermediate indicators in the IPF sense; "
             "have PIU, procurement plans, or component-level implementation arrangements. "
@@ -1604,6 +1579,384 @@ WB_INSTRUMENT_GUIDE = {
 # Purpose: Grounding context for instrument-aware FCV assessment; injected into Stage 2
 # ─────────────────────────────────────────────────────────────────────────────
 
+RESTRUCTURING_GUIDE = """
+## IPF Restructuring Mid-Cycle Guide
+
+Use this guide only as advisory screening support. Do not make restructuring-level,
+approval-authority, eligibility, or waiver determinations. Direct the task team to
+verify procedural questions with OPCS, LEG, and regional management.
+
+### Change-type taxonomy for FCV screening
+- PDO change: Level 2 / RVP or CD-DD advisory signal in this audit-resolved build.
+  Reassess whether the revised PDO still addresses the FCV drivers identified at
+  approval, and whether conflict-affected groups are quietly diluted or dropped.
+- Component add/drop and scope / geographic change: Level 2 advisory signal. Check
+  whether the change shifts resources away from high-FCV areas or adds activities
+  with new harm pathways in contested locations.
+- Results framework change: Level 2 advisory signal. Check whether FCV-sensitive
+  indicators, grievance tracking, displacement markers, access constraints, or
+  inclusion measures are weakened or removed.
+- Closing-date extension: Level 2 advisory signal. Ask whether delays reflect
+  conflict, access, security, or capacity constraints and whether the revised date
+  is realistic under current FCV conditions.
+- Reallocation: Level 2 advisory signal. Check whether funds move away from
+  FCV-responsive activities or create distributional grievance risks.
+- Executing-agency change: Level 2 advisory signal. Check legitimacy, access,
+  conflict-actor exposure, perceived partiality, and capacity in contested areas.
+- E&S risk re-rating: Level 2 advisory signal. Check whether the re-rating reflects
+  conflict-driven SEA/SH, displacement, security, labour influx, or stakeholder risks.
+- Alternative Procurement Arrangements: narrow Level 1 / Board case.
+- Bank Guarantee expiration-date extension: narrow Level 1 / Board case.
+
+### Required FCV checks for each detected change
+Run two linked checks for every change type:
+1. Context-change since approval: what FCV dynamics changed since approval, and are
+   those changes evidenced in the paper, uploaded ISR/RRA/CPF, or tier-labelled
+   public research?
+2. Conflict-sensitivity of the change: does the proposed change reduce, ignore, or
+   worsen inclusion, legitimacy, social cohesion, security, livelihoods, or resilience
+   risks?
+
+### PDO change branch
+For PDO change, run a Theory-of-Change reassessment. Apply an essence test: does the
+revised PDO still preserve what the project originally promised in FCV terms? Apply
+a conflict-population check: are conflict-affected or displaced groups diluted into
+generic beneficiary language? If the proposed change fundamentally alters the
+project's essence, flag that Board involvement or cancel-and-replace may be more
+appropriate than routine restructuring, but keep this advisory.
+
+### Reappraisal trigger branch
+If significant scope, new activities, or new geography are added, flag possible
+reappraisal obligations, including Paris Alignment implications for new activities.
+Phrase this as "verify whether reappraisal is required" rather than a determination.
+"""
+
+
+AF_GUIDE = """
+## Additional Financing Mid-Cycle Guide
+
+Use this guide only as advisory screening support. Do not determine AF eligibility,
+waiver status, delegated authority, or approval level.
+
+### Core AF checks
+- Anchor analysis in the AF Project Paper, especially changes, rationale,
+  implementation progress, lessons learned, and revised Results Framework.
+- If the original PAD/PCN is uploaded, compare FCV-load-bearing elements only:
+  PDO, targeting and geography, Results Framework indicators, risk profile, and
+  implementation arrangements.
+- If an ISR is uploaded, use IP/DO ratings and risk flags as Tier-1 evidence for the
+  AF well-performing-project check.
+
+### Well-performing-project / waiver advisory
+AF normally expects IP and DO ratings of MS+ over the relevant period. In FCV settings,
+ratings may reflect security or access disruption rather than design failure. If the
+paper or ISR suggests ratings below MS+, ask whether the ratings are FCV-affected and
+whether an RVP-approved exception or waiver is in train. Do not state that a waiver is
+required or available unless the uploaded documents say so.
+
+### FCV value-add
+AF is a mid-course opportunity to correct FCV blind spots, update risk analysis,
+adapt targeting, restore conflict-sensitive indicators, adjust implementation
+arrangements, and scale only those design elements that remain conflict-sensitive
+under current conditions. Assess whether the AF simply scales a design that was
+FCV-blind or uses the additional financing to course-correct.
+"""
+
+
+DPF_MODULE_GUIDE = """
+## Development Policy Financing (DPF/DPO) Module — FCV Screening Guide
+
+Source grounding: Development Policy Financing Policy **OPS5.02-POL.120** (effective
+1 February 2024), which cross-references **OP 2.30** (Development Cooperation and
+Conflict). Use this guide as advisory screening support only. Do not make eligibility,
+financing-source, macroeconomic-adequacy, or approval determinations - direct the task
+team to verify procedural and macro questions with the country economist, OPCS, the IMF
+Fund Relations team, LEG, and FM as relevant.
+
+### Unit of analysis: prior actions, not components
+DPF is appraised through **prior actions** - the policy and institutional measures the
+country has taken as a condition of disbursement (OPS5.02-POL.120 para 16), set out in
+the **Program Document (PD)** alongside the **Letter of Development Policy (LDP)**.
+Programmatic operations add **indicative triggers** for later operations in the series
+(para 17); financing flows in tranches. There is **no PAD, ESCP, ESF, DLI, or IPF-style
+results framework** - do NOT screen a DPF for those instruments and do not penalise their
+absence. Screen each prior action; then synthesise at the program level.
+
+### Per prior action, assess
+- **Conflict-sensitivity:** does the reform create or mitigate grievance; who are the
+  distributional winners and losers; does it affect conflict-affected groups or regions?
+- **Reform sequencing:** are reform costs (subsidy, price, tariff, civil-service, SOE)
+  sequenced with compensating measures and safety nets? An unmitigated reform-cost /
+  safety-net sequencing gap is the primary Do-No-Harm pathway for budget support in FCV.
+- **Reversibility and political economy:** elite capture, patronage, and durability of
+  the reform in fragile or contested institutions.
+
+### Headline check 1 - Macroeconomic framework / IMF coordination (para 8)
+Macroeconomic adequacy is a precondition for DPF; the IMF Fund Relations Note is annexed
+to the PD. Screen whether the PD's macroeconomic assessment reflects FCV fiscal
+vulnerabilities (debt distress, narrow fiscal space for mitigation, revenue fragility),
+whether IMF coordination or programme status is in place, and flag **programme-lapse** and
+**data-reliability** risks. This macro / IMF finding is the signature DPF-FCV result and
+should be foregrounded - phrased as a question for the country economist, not a verdict.
+
+### Headline check 2 - Conflict-exception adequacy (Paragraph 38-39)
+"Countries Affected by Conflict" is a defined term (para 3p, cross-referencing OP 2.30).
+For conflict-affected, fast-tracked operations, OPS5.02-POL.120 Paragraph 38 and 39 allow
+design considerations (distributional effects, environment, fiduciary, stakeholder
+consultation) to be addressed on an exceptional basis, but the PD must describe **when and
+how** they will be addressed. Screen whether the PD credibly states this, or whether the
+deferred considerations are silently waived. Keep advisory.
+
+### Harm screen - PSIA + crisis/conflict design-consideration check (replaces ESF/DNH)
+- **PSIA adequacy (para 13):** does the PD analyse poverty, social, and distributional
+  impacts on poor and vulnerable groups - including conflict-affected populations - and
+  describe country systems to mitigate adverse effects?
+- **Paragraph 38-39 conflict-exception check** (above) where the operation is conflict-affected.
+- **Fiduciary in weak governance (paras 21-24):** foreign-exchange / central-bank and
+  PFM / budget control environment.
+
+### Series handling
+Detect the operation's position (standalone vs programmatic; tranche n of m). For
+programmatic series, assess in series context: indicative triggers (para 17), the
+**24-month programmatic-lapse risk**, and policy-reversal risk between operations in FCV.
+`next-series` is the apt action_timing for trigger-stage recommendations.
+
+### IBRD vs IDA differentiated framing
+**IDA**-FCS DPF (the most common case) vs **IBRD**-eligible countries with subnational
+conflict. Detect the financing source and frame accordingly; do not assume IDA.
+
+### Cat DDO sub-branch (if detected)
+A Catastrophe Deferred Drawdown Option (Cat DDO) links disbursement to a catastrophe or
+state-of-emergency declaration (paras 26-28; scalable Cat DDO financing delegated to
+Management, para 40). Screen: trigger-design adequacy in a fragile setting; payout
+governance where state capacity is contested; value as pre-arranged anticipatory finance
+vs slow activation risk in FCV; and the climate / disaster-risk-management linkage.
+
+### Output framing (Stage 3)
+Use **Program Document sections** (Program Description / Prior Actions; Poverty and Social
+Impacts; Environmental Aspects; Macroeconomic Policy / Fund Relations; Results) rather than
+PAD sections; suggested language targets the **PD, policy matrix, or LDP**. DPF reference
+set: Prior Actions, Policy Matrix, PSIA, Program Document, LDP, Results Indicators, Fund
+Relations Note (Cat DDO: trigger / parametric design). Foreground the macro/IMF and
+conflict-exception findings; close with a DPF watch list.
+"""
+
+
+DPF_POLICY_AREA_CHECKLIST = """
+## DPF FCV Policy-Area Coverage Checklist (PSIA hybrid - coverage prompt)
+
+For each prior action, note which sensitive policy area it touches and whether the PD
+analyses the FCV-relevant distributional / grievance / political-economy effects. This is
+a coverage aid, not a scoring grid - narrative judgement governs.
+
+- **Subsidy / price / tariff reform** -> price-shock unrest and grievance; sequencing with
+  compensatory transfers; geographic concentration of affected households.
+- **Civil-service / public-sector wage / SOE reform** -> patronage networks, stability,
+  regional or group exclusion.
+- **Tax / revenue measures** -> incidence on poor and conflict-affected households; informal
+  economy; perceived fairness.
+- **Trade / market liberalisation** -> winners and losers across regions and conflict lines.
+- **Social protection** -> adequacy, coverage of displaced and conflict-affected groups,
+  delivery through contested territory.
+- **Land / natural-resource / sector governance** -> contested ownership, displacement,
+  resource-conflict drivers.
+- **Security-sector / justice / governance** -> OP 2.30 sensitivity; do-no-harm in the
+  conflict actor landscape.
+"""
+
+
+P4R_MODULE_GUIDE = """
+## Program-for-Results (PforR / P4R) Module - FCV Screening Guide
+
+Source grounding: Program-for-Results Financing Policy **OPS5.04-POL.125** (Bank Policy,
+effective 19 August 2024) and Bank Directive **OPS5.04-DIR.110** (effective 9 April 2025),
+cross-referencing **OP 7.30** (Dealings with De Facto Governments). PforR sits under the
+OPS5.04 catalogue family and replaced the retired OP/BP 9.00. Use this guide as advisory screening
+support only. Do not make instrument-eligibility, OP 7.30, or disbursement determinations -
+direct the task team to verify instrument choice and feasibility with the regional FCV
+coordinator, OPCS, and the verification team.
+
+### Unit of analysis: DLIs + verification protocols, not components
+P4R disburses against **verified results**, not inputs. The spine is the
+**Disbursement-Linked Indicators (DLIs)** and their **Verification Protocols**, disbursed
+through a government **program** within a defined **program boundary** (Program Scope), with
+a **Program Action Plan (PAP)** and an **ESSA** operating through the country **ESMS** -
+NOT ESF/ESS/ESCP. Results are checked by an **Independent Verification Agent (IVA)**. The
+PAD datasheet declares FCV status directly (Fragile State / Fragile within a non-fragile
+Country / Conflict) - treat those checkboxes as a Tier-1 classification anchor. Do not
+screen a P4R for ESF/ESCP/DLI-absence; screen each DLI, then synthesise at program level.
+
+### Per DLI, assess
+- **Conflict-sensitivity:** does the incentivised result create or mitigate grievance; who
+  are the distributional winners and losers; effect on conflict-affected groups?
+- **Verifiability / IVA access:** can the result be verified where conflict limits access?
+  Is the verification protocol robust to contested-area conditions?
+- **Geographic inclusion:** does the DLI / program boundary include or exclude
+  conflict-affected regions?
+
+### Headline check - disbursement under conflict (the signature P4R-FCV finding)
+Stress-test first: "Can this actually disburse in this context?" Results-based disbursement
+means that if the IVA cannot verify results in contested areas, **financing does not flow** -
+a **disbursement cliff** with no CERC-style rapid-response valve. Foreground IVA verification
+access and disbursement-cliff exposure ahead of the rest of the assessment.
+
+### Harm screen - ESSA/ESMS country systems + GRM (replaces ESF/DNH)
+- **ESSA adequacy:** do borrower E&S systems function in conflict-affected areas; are gaps
+  addressed in the PAP?
+- **ESMS establishment and capacity** (the covenant to set up the system).
+- **GRM functionality** where state legitimacy is contested.
+- **Excluded-activities check:** P4R excludes high-value / high-risk (Category-A-equivalent)
+  activities - appropriate, or does it leave conflict-relevant harms unaddressed or push them
+  outside the boundary?
+
+### DLI-realism and program-boundary checks
+- **DLI realism:** are targets and timelines achievable under conflict-related disruption;
+  binary vs scalable disbursement thresholds; can the program pause and adjust without
+  forfeiting funds?
+- **Program-boundary / exclusions:** is the boundary clearly defined relative to
+  conflict-affected areas; do excluded high-risk activities border the financed ones?
+
+### Instrument-feasibility advisory (FCV settings)
+Surface as advisory, never a determination: OP 7.30 limits, no rapid-response valve, and
+disbursement-cliff exposure can make P4R demanding or "effectively unusable" in some conflict
+settings given its reliance on government systems and low-capacity FCS constraints - suggest
+discussing instrument choice (a complementary IPF component / TA, or a different instrument)
+with the regional FCV coordinator.
+
+### Hybrid P4R + IPF component
+If the datasheet flags an IPF component, run the IPF spine on that component and the P4R spine
+on the program, then synthesise a combined assessment.
+
+### Output framing (Stage 3)
+Use **PforR PAD sections** (Program Scope / boundary; DLIs and Verification Protocols; ESSA;
+PAP; Results Framework); suggested language targets **DLI / verification-protocol / PAP /
+results-indicator** text. P4R reference set: DLIs, Verification Protocol, IVA arrangements,
+ESSA, ESMS, PAP, POM, Results Framework. Foreground the disbursement-under-conflict finding;
+close with a P4R watch list.
+"""
+
+
+REGIONAL_CROSSBORDER_LENS = """
+## Multi-Country / Regional Layer - Cross-Border FCV Lens
+
+This layer is an orthogonal country_scope dimension that composes with whichever base
+instrument module(s) the operation uses (regional IPF / DPF / P4R / MPA). It triggers when
+an operation finances two or more borrower countries. A single-country operation that merely
+references neighbours stays single-country. Use as advisory screening support only; FCV
+financing-window pointers are for team follow-up, never eligibility determinations.
+
+### Per-country, then regional synthesis
+- Extract the country set; classify **each** country with the 4-category scheme (In Crisis /
+  In Transition / Conflict-affected / At Risk) plus the FY26 FCS Conflict/Fragility split.
+- Add a **spillover / host-pressure flag** for non-FCS countries under refugee or border
+  pressure (beyond the FCS-list check).
+- Produce per-country findings, then a **regional synthesis** that carries the cross-border
+  priorities a single-country screen cannot surface.
+
+### Cross-border lens (the distinctive layer)
+- **Spillovers and contagion** across borders.
+- **Displacement / refugee flows** and host-community dynamics.
+- **Regional conflict systems** (shared armed actors, cross-border trafficking, contested frontiers).
+- **Transboundary resources** (water, pasture, energy) as cooperation or conflict drivers.
+- **Differential fragility** across the set, where uniform design would mis-fit.
+- **Inter-country political-sensitivity** dimension.
+
+### Regional implementing-entity check
+National government vs a regional body (IGAD, ECOWAS, TDB) - scrutinise governance, fiduciary,
+and FCV-management capacity for cross-border delivery.
+
+### Weighted roll-up and scope tagging
+Roll up per-country Sensitivity/Responsiveness with a **fragility / exposure-weighted** scheme
+(NOT a flat average) so a fragile minority is not masked by stable majorities. Tag every
+priority by **priority_scope**: country-specific vs regional / cross-border.
+
+### Research scaling (no silent caps)
+Per-country research is cached per country. For large regional sets, research the FCV / fragile
+countries in full first, then stable ones, and **disclose** any cap applied - never silently
+truncate.
+
+### Advisory - FCV financing-window signalling
+IDA Regional Window, Crisis Response Window (CRW), and Window for Host Communities and Refugees
+(WHR) may be worth team follow-up - advisory only, never an eligibility determination.
+"""
+
+
+MPA_MODULE_GUIDE = """
+## MPA (Multiphase Programmatic Approach) Wrapper - FCV Screening Guide
+
+The MPA is a program-and-phase **wrapper, not a new analytical spine**: each phase is itself an
+IPF, DPF, or P4R operation. Route each phase to its base-instrument module and add the MPA
+program layer on top. Composes with the multi-country layer for regional MPAs. Advisory only -
+never determine approval authority, phase eligibility, or financing.
+
+### Structure and approval authority
+The Board approves the **program framework + financing envelope with Phase 1** (the Phase-1 PAD
+doubles as the Program Framework Document); **Management (RVP) approves subsequent phases**.
+Phases may be sequential or simultaneous; financing for later phases is **not guaranteed**.
+Detect the phase and set the expected document set / output register accordingly.
+
+### Phase awareness and carve-outs (correctness layer)
+Detect Phase-1 (framework) vs subsequent phase and suppress false-positive "gaps" for
+subsequent-phase documents on content that legitimately lives in the Phase-1 framework:
+standalone conflict analysis, program-level institutional arrangements, program theory of
+change, the full standalone results framework, CERC absence (adaptive phase redesign serves the
+equivalent function), ESF (applies per-phase by Concept Decision date), and aggregate ISR
+reporting (ISRs are phase-specific).
+
+### Distinctive MPA FCV lens - adaptive sequencing (opportunity) + continuity (risk)
+Opportunity / responsiveness levers: genuine incorporation of lessons learned between phases;
+adaptive redesign as the FCV context evolves; phased financing matched to volatile absorptive
+capacity; differentiated implementation arrangements per phase. Risk: are **phase-transition
+triggers** achievable under conflict volatility; the **institutional-continuity assumption**
+over a long horizon (coup / electoral / conflict discontinuity); **financing-not-guaranteed**
+risk that conflict-affected later phases are dropped; and **PrDO drift** away from
+conflict-affected populations across phases. Include a **cross-phase FCV-drift check** - a
+country entering FCS status between phases; is the adaptive design robust to it?
+
+### Output framing
+Use MPA framework sections (PrDO; Program ToC; Program Framework - phases / sequencing /
+financing / instruments; Phase PDO; phase-transition triggers; Learning Agenda) composed with
+the phase's base-instrument sections. `next-series` action_timing maps to "next phase".
+"""
+
+
+INTERSECTION_SYNTHESIS_GUIDE = """
+## Intersection / Composition Synthesis Guide (multi-dimension operations)
+
+An operation can hit several dimensions at once - instrument (IPF/DPF/P4R), doc-type / lifecycle
+(new lending vs mid-cycle AF/restructuring), country scope (single vs multi-country/regional), and
+the MPA wrapper. These **compose into one analysis**; they are not separate screens. Produce a
+**single coherent memo**, not stacked sections that repeat each other.
+
+### Layering
+- **Base spine = the instrument module** (IPF components / DPF prior actions / P4R DLIs). The spine
+  always owns the **unit of analysis**; overlays augment it, never replace it.
+- **Mid-cycle overlay** (AF/restructuring) reads the change-lens (context-change since approval +
+  conflict-sensitivity of the change) **onto the instrument's own unit** - e.g. a DPF AF reads the
+  prior-action set through both the DPF lens and the mid-cycle lens. Do not duplicate.
+- **Multi-country overlay** adds per-country analysis + cross-border lens + weighted roll-up.
+- **MPA wrapper** adds phase / approval-authority / FCV-drift and routes each phase to its base instrument.
+
+### Single synthesis
+Merge all active layers into one **deduplicated, scope-tagged** set of priority cards, one rating,
+and one watch list. If two layers would generate the same recommendation, **deduplicate** it and tag
+the broadest applicable `priority_scope`.
+
+### Precedence rules (conflict resolution)
+- **Temporal framing:** if mid-cycle is active, its live-project, Tier-1 framing governs (overrides
+  new-lending preparation framing).
+- **Rating:** if multi-country is active, the fragility/exposure-weighted roll-up governs the headline rating.
+- **Output register:** if mid-cycle is active, the restructuring level (Board-memo vs team-advisory) sets the format.
+- **Unit of analysis:** always the instrument module's unit; overlays augment it.
+
+### Bloat guardrail (no silent truncation)
+Inject only each active layer's essential slice; preserve the compact-label history. If a heavy
+combination (e.g. regional MPA AF) would exceed the context budget, cap overlays by priority
+(instrument spine > mid-cycle overlay > multi-country per-country detail) and **disclose** what was
+bounded - never silently drop a dimension.
+"""
+
+
 FCV_INSTRUMENT_CALIBRATION = """
 ## FCV Instrument Calibration Notes — Operational Grounding Context
 
@@ -1629,7 +1982,7 @@ Empirically, prior actions in FCV DPOs concentrate heavily on basic state functi
 Catastrophe Deferred Drawdown Options (Cat DDOs) link disbursement to an emergency declaration or crisis trigger. In FCV contexts, political contingency matters: the capacity and willingness of governments to formally declare an emergency — and the political implications of doing so — varies significantly. Assess whether the trigger design is operationally realistic given the country's institutional and political context.
 
 **Post-conflict DPF exception:**
-A post-conflict exception exists in OP/BP 8.60 that can relax the macroeconomic framework requirement, but it is rarely formally operationalized in project documents. Most DPOs in FCS countries work in fragile but not active-conflict settings. Where a post-conflict exception may apply, flag it as an underutilised design option.
+OPS5.02-POL.120 includes conflict-related design considerations that may affect macroeconomic framework assessment, but it is rarely formally operationalized in project documents. Most DPOs in FCS countries work in fragile but not active-conflict settings. Where a post-conflict exception may apply, flag it as an underutilised design option.
 
 ---
 
@@ -1742,7 +2095,7 @@ PforR disburses upon verified achievement, not upon expenditure. There is no con
 PforR uses the Environmental and Social Systems Assessment, which evaluates the government's own E&S systems. In settings where those systems have collapsed or are controlled by actors with incentives to suppress adverse information, ESSA's mitigating value is structurally limited. PforR does not have access to CERC, HEIS, or standard ESCP instruments.
 
 **OP 7.30 incompatibility:**
-In true OP 7.30 contexts, PforR is effectively unusable. The instrument disburses against government program expenditures, which requires a government counterpart to disburse. Without a counterpart, there is no program to support and no ESSA to conduct. Flag PforR as contraindicated in OP 7.30 contexts, and as requiring explicit justification in any context where government capacity is severely degraded.
+In true OP 7.30 contexts, PforR is generally not feasible — strongly constrained rather than categorically barred. The instrument disburses against government program expenditures, which requires a government counterpart to disburse. Without a counterpart, there is no program to support and no ESSA to conduct. Flag PforR as contraindicated in OP 7.30 contexts, and as requiring explicit justification in any context where government capacity is severely degraded.
 
 **Phase transition risk in MPAs:**
 PforR-based MPAs compound these problems: subsequent phases require demonstrated DLI achievement before financing is committed. Conflict disruption causing DLI underachievement can block transitions to phases the country urgently needs.
@@ -1877,12 +2230,13 @@ FCV_GLOSSARY = {
             "with existing FCV dynamics."
         ),
         "measurement": (
-            "Assessed against 8 principles: conflict-sensitive targeting, avoiding power "
+            "Assessed against 9 dimensions: conflict-sensitive targeting, avoiding power "
             "asymmetry reinforcement, preventing inter-group tension exacerbation, equitable "
             "geographic distribution, elite capture safeguards, staff/beneficiary security, "
-            "unintended consequence monitoring, accessible grievance mechanisms."
+            "unintended consequence monitoring, accessible grievance mechanisms, and SEA/SH "
+            "risk management in conflict settings."
         ),
-        "source": "WBG FCV Operational Manual — 8 Do No Harm Principles"
+        "source": "Do-No-Harm checklist (9 dimensions) derived by this tool from WBG FCV conflict-sensitivity good practice. SEA/SH (the 9th) is grounded in the ESF (ESS1/ESS2/ESS4) and the SEA/SH Good Practice Note, not in Do No Harm itself. The FCV Operational Manual (June 2025) treats Do No Harm as a principle, not a fixed numbered list."
     },
     "third_party_monitoring": {
         "term": "Third-Party Monitoring (TPM)",
@@ -1988,7 +2342,7 @@ FCV_GLOSSARY = {
             "avoid making things worse?"
         ),
         "measurement": (
-            "Assessed against 12 OST recommendations and 8 Do No Harm principles. "
+            "Assessed against 12 OST recommendations and 9 Do No Harm principles. "
             "Rating scale: Extremely Low to Very Well Embedded."
         ),
         "source": "WBG FCV Strategy; FCV Operational Manual"
@@ -2002,16 +2356,16 @@ FCV_GLOSSARY = {
             "dividends. Shorthand: does the project actively help make fragility better?"
         ),
         "measurement": (
-            "Assessed against 4 FCV Refresh strategic shifts (Anticipate, Differentiate, "
+            "Assessed against 4 FCV Strategy 2026-2030 pillars (Anticipate, Differentiate, "
             "Jobs & Private Sector, Enhanced Toolkit). Rating scale: Extremely Low to "
             "Very Well Embedded."
         ),
-        "source": "WBG FCV Strategy Refresh (January 2026)"
+        "source": "WBG FCV Strategy 2026-2030 (January 2026)"
     },
     "fcv_refresh_shifts": {
-        "term": "FCV Refresh Strategic Shifts",
+        "term": "FCV Strategy 2026-2030 Pillars",
         "definition": (
-            "Four cross-cutting strategic directions from the WBG FCV Strategy Refresh "
+            "Four cross-cutting strategic directions from the WBG FCV Strategy 2026-2030 "
             "(January 2026): Shift A — Anticipate (forward-looking risk monitoring); "
             "Shift B — Differentiate (tailor to FCV classification); "
             "Shift C — Jobs & Private Sector (economic livelihoods as stability pathway); "
@@ -2021,7 +2375,7 @@ FCV_GLOSSARY = {
             "Assessed by: number and depth of shifts actively addressed in project design; "
             "whether shifts are merely mentioned or embedded with concrete measures."
         ),
-        "source": "WBG FCV Strategy Refresh (January 2026)"
+        "source": "WBG FCV Strategy 2026-2030 (January 2026)"
     },
     "impact_evaluation": {
         "term": "Impact Evaluation (IE)",
@@ -2048,7 +2402,7 @@ FCV_GLOSSARY = {
             "timeframes. Replaced the Adaptable Program Loan (APL)."
         ),
         "measurement": "Assess inter-phase learning, adaptive design, and FCV context responsiveness.",
-        "source": "MPA Board Paper July 2017; MPA Bank Guidance"
+        "source": "MPA Board Paper (R2017-0159/4, approved July 2017); Bank Guidance, Multiphase Programmatic Approach, OPS5.06-GUID.148 (issued 29 November 2021)"
     },
     "hdp_nexus": {
         "term": "HDP Nexus (Humanitarian-Development-Peace)",
@@ -2063,7 +2417,7 @@ FCV_GLOSSARY = {
             "Assessed by: documented engagement with humanitarian actors, alignment with "
             "Humanitarian Response Plans, participation in joint needs assessments."
         ),
-        "source": "WBG FCV Strategy Refresh — Shift D"
+        "source": "WBG FCV Strategy 2026-2030 — Shift D"
     },
     "sort": {
         "term": "Systematic Operations Risk-rating Tool (SORT)",
@@ -2128,20 +2482,21 @@ FCV_GLOSSARY = {
             "Assessed by: presence of learning loops, crisis response protocols, context "
             "monitoring systems, and evidence of actual course corrections during implementation."
         ),
-        "source": "WBG FCV Operational Playbook; FCV Strategy Refresh"
+        "source": "WBG FCV Operational Playbook; FCV Strategy 2026-2030"
     },
     "ida_fcv_envelope": {
         "term": "IDA FCV Envelope",
         "definition": (
-            "The set of IDA allocations specifically for FCV-affected countries: Prevention "
-            "and Resilience Allocation (PRA, for countries at risk of conflict); Remaining "
-            "Engaged during Conflict Allocation (RECA, for countries in active conflict); "
-            "Turnaround Allocation (TAA, for post-conflict recovery); Window for Host "
-            "Communities and Refugees (WHR); and Private Sector Window (PSW, for de-risking "
-            "private investment in FCV settings)."
+            "The IDA FCV Envelope (FCVE) comprises three allocations specifically for "
+            "FCV-affected countries: Prevention and Resilience Allocation (PRA, for countries "
+            "at risk of conflict); Remaining Engaged during Conflict Allocation (RECA, for "
+            "countries in active conflict); and Turn Around Allocation (TAA, for post-conflict "
+            "recovery). The IDA Window for Host Communities and Refugees (WHR) and the IDA "
+            "Private Sector Window (PSW, for de-risking private investment in FCV settings) are "
+            "related but separate IDA FCV-financing instruments — they are NOT FCVE allocations."
         ),
         "measurement": "Eligibility category determines available financing and flexibilities.",
-        "source": "IDA Replenishment Documents; WBG FCV Strategy"
+        "source": "IDA FCV Envelope: SEC2.01-POL.140 (Policy) / DFI2.01-DIR.108 (Directive); WBG FCV Strategy"
     },
     "non_state_actors": {
         "term": "Non-State Actors",
@@ -2194,7 +2549,7 @@ FCV_GLOSSARY = {
         "source": "PforR Policy"
     },
     "taa": {
-        "term": "Turnaround Allocation (TAA)",
+        "term": "Turn Around Allocation (TAA)",
         "definition": (
             "One of the IDA FCV Envelope windows, designed for countries emerging from conflict "
             "or fragility and beginning a recovery trajectory. TAA provides enhanced IDA "
@@ -2348,17 +2703,20 @@ WB_PROCESS_GUIDE = {
             "rapidly, avoiding the long preparation timeline of a new operation."
         ),
         "scope": (
-            "AF must be consistent with the original PDO (changing PDO requires simultaneous "
-            "Level 1 restructuring). AF can: add components, scale up existing components, extend "
+            "AF is usually expected to remain consistent with the original PDO; if the AF also "
+            "changes the PDO, treat that as a simultaneous Level 2 restructuring advisory signal "
+            "for OPCS/regional management verification. AF can: add components, scale up existing components, extend "
             "geographic coverage, add financing categories, adjust targets, update RF. For ESF "
             "projects, AF scaling up activities requires updated E&S assessments, revised ESCP "
             "and SEP. For pre-ESF projects, AF for cost overruns continues under original "
             "safeguards; AF for new/scaled activities triggers ESF application."
         ),
         "key_policies": (
-            "If AF does not change PDO or trigger new E&S risk category change, Country Director "
-            "can approve. If AF involves PDO change or Level 1 restructuring, RVP approves. "
-            "Board approval not required for AF in most circumstances since 2017 policy changes."
+            "AF procedural routing is advisory in this tool. If uploaded documents indicate weak "
+            "IP/DO ratings, ask whether ratings are FCV-affected and whether an RVP-approved "
+            "exception or waiver is in train. If AF involves PDO, scope, RF, closing-date, "
+            "reallocation, executing-agency, or E&S risk re-rating changes, flag the relevant "
+            "mid-cycle change type and direct the team to verify approval routing with OPCS."
         ),
         "typical_documents": (
             "AF Project Paper with sections on changes and rationale; updated results framework; "
@@ -2389,21 +2747,23 @@ WB_PROCESS_GUIDE = {
     "Restructuring": {
         "purpose": (
             "Restructuring modifies a project during implementation to respond to changed "
-            "circumstances, correct design flaws, or adjust targets. Since 2017 policy "
-            "streamlining, restructurings are classified as Level 1 (limited Board cases only — "
-            "e.g., safeguard category change to Category A, use of Alternative Procurement "
-            "Arrangements, guarantee expiration extension; all other former Level 1 changes "
-            "including PDO changes are now delegated to RVP) and Level 2 (Country Director "
-            "approval for all other changes). Exception: closing date extensions of 2+ years "
-            "cumulative require RVP approval."
+            "circumstances, correct design flaws, or adjust targets. Restructuring level and "
+            "approval authority are advisory in this tool, not determinations: direct the team "
+            "to verify routing with OPCS. As an audit-resolved screening convention, Level 1 is "
+            "narrow and limited to a small set of cases such as use of Alternative Procurement "
+            "Arrangements and Bank Guarantee expiration-date extension. PDO change, "
+            "scope/component change, results framework change, closing-date extension, "
+            "reallocation, executing-agency change, and E&S risk re-rating are treated as Level 2 "
+            "(RVP or CD-DD) advisory signals, not Level 1."
         ),
         "scope": (
-            "Restructuring can change: PDO (Level 1/RVP), components, sub-components, financing "
-            "allocations, disbursement categories, implementing agencies, results indicators and "
-            "targets, closing dates, procurement methods, geographic scope. Cannot change: the "
-            "borrower, the lending instrument type, or legal agreement structure without amendment. "
-            "Important: PDO changes do NOT require Board approval since 2017 — the tool should "
-            "not state otherwise."
+            "Restructuring can change: PDO, components, sub-components, financing allocations, "
+            "disbursement categories, implementing agencies, results indicators and targets, "
+            "closing dates, procurement methods, geographic scope. Cannot change: the borrower, "
+            "the lending instrument type, or legal agreement structure without amendment. "
+            "Important: a PDO change is a Level 2 / RVP or CD-DD advisory signal in this build, "
+            "not a Level 1 change; the tool flags it for OPCS verification rather than asserting "
+            "an approval authority."
         ),
         "key_policies": (
             "For ESF projects, restructuring changing design impacting E&S risk requires: updated "
@@ -2519,30 +2879,76 @@ OP730_COUNTRIES = [
 # Derived from FCS_LIST constant above (FY2026 / current)
 # ─────────────────────────────────────────────────────────────────────────────
 
-FCS_COUNTRIES_CURRENT = frozenset([
-    "Afghanistan", "Burkina Faso", "Burundi", "Cameroon", "Central African Republic",
-    "Chad", "Comoros", "Congo (Democratic Republic of)", "Congo (Republic of)",
-    "Eritrea", "Ethiopia", "Guinea-Bissau", "Haiti", "Iraq", "Kiribati", "Kosovo",
-    "Lebanon", "Libya", "Mali", "Marshall Islands", "Micronesia (Federated States of)",
-    "Mozambique", "Myanmar", "Niger", "Nigeria", "Papua New Guinea",
-    "São Tomé and Príncipe", "Solomon Islands", "Somalia", "South Sudan", "Sudan",
-    "Syrian Arab Republic", "Timor-Leste", "Tuvalu", "Ukraine", "Venezuela (RB)",
-    "West Bank and Gaza", "Yemen (Republic of)", "Zimbabwe",
-])
+FCS_COUNTRY_CATEGORIES = {
+    "Afghanistan": "Fragility",
+    "Burkina Faso": "Conflict",
+    "Burundi": "Fragility",
+    "Cameroon": "Conflict",
+    "Central African Republic": "Conflict",
+    "Chad": "Conflict",
+    "Comoros": "Fragility",
+    "Congo, Dem. Rep.": "Conflict",
+    "Congo, Rep.": "Fragility",
+    "Eritrea": "Fragility",
+    "Ethiopia": "Conflict",
+    "Guinea-Bissau": "Fragility",
+    "Haiti": "Conflict",
+    "Kiribati": "Fragility",
+    "Kosovo": "Fragility",
+    "Lebanon": "Conflict",
+    "Mali": "Conflict",
+    "Marshall Islands": "Fragility",
+    "Micronesia, Fed. Sts.": "Fragility",
+    "Myanmar": "Conflict",
+    "Niger": "Conflict",
+    "Papua New Guinea": "Fragility",
+    "Sao Tome and Principe": "Fragility",
+    "Somalia": "Conflict",
+    "South Sudan": "Fragility",
+    "Sudan": "Conflict",
+    "Suriname": "Fragility",
+    "Syrian Arab Republic": "Conflict",
+    "Timor-Leste": "Fragility",
+    "Tuvalu": "Fragility",
+    "Ukraine": "Conflict",
+    "Venezuela, RB": "Fragility",
+    "West Bank and Gaza": "Conflict",
+    "Yemen, Rep.": "Conflict",
+    "Zimbabwe": "Fragility",
+}
+
+FCS_COUNTRY_ALIASES = {
+    "Congo (Democratic Republic of)": "Congo, Dem. Rep.",
+    "Congo, Democratic Republic of": "Congo, Dem. Rep.",
+    "Democratic Republic of Congo": "Congo, Dem. Rep.",
+    "DRC": "Congo, Dem. Rep.",
+    "Congo (Republic of)": "Congo, Rep.",
+    "Congo, Republic of": "Congo, Rep.",
+    "Republic of Congo": "Congo, Rep.",
+    "Micronesia (Federated States of)": "Micronesia, Fed. Sts.",
+    "Micronesia, Federated States of": "Micronesia, Fed. Sts.",
+    "Sao Tome & Principe": "Sao Tome and Principe",
+    "Sao Tome and Principe": "Sao Tome and Principe",
+    "Venezuela (RB)": "Venezuela, RB",
+    "Venezuela, RB": "Venezuela, RB",
+    "Yemen (Republic of)": "Yemen, Rep.",
+    "Yemen, Republic of": "Yemen, Rep.",
+}
+
+FCS_COUNTRIES_CURRENT = frozenset(FCS_COUNTRY_CATEGORIES)
 
 
-# ─────────────────────────────────────────────────────────────────────────────
 # DIFFERENTIATED_APPROACHES — Per-category screening lens, calibration, framing
-# Source: WBG FCV Strategy Refresh (April 2026 operationalisation update)
+# Source: WBG FCV Strategy 2026-2030 (April 2026 operationalisation update)
 # Injected into Stage 2 and Stage 3 prompts alongside confirmed country category
 # ~2,500 tokens
 # ─────────────────────────────────────────────────────────────────────────────
 
 DIFFERENTIATED_APPROACHES = """## WBG FCV Strategy — Differentiated Country Engagement Approach
 
-Source: WBG FCV Strategy Refresh Operationalisation Plan (April 2026)
+Source: WBG FCV Strategy 2026-2030 Operationalisation Plan (April 2026)
 
-The FCV Strategy Refresh introduces a forward-looking FCV country classification scheme to replace the backward-looking FCS list. The four categories — In Crisis, In Transition, Conflict-Affected, and At Risk — each require a differentiated analytical lens, rating calibration, and recommendation framing.
+The WBG FCV Strategy 2026-2030 uses a forward-looking differentiated country approach. The four categories — In Crisis, In Transition, Conflict-Affected, and At Risk — each require a differentiated analytical lens, rating calibration, and recommendation framing.
 
 **IMPORTANT — Classification as analytical judgment:** When referencing a country's category, always frame it as the analysis's working judgment about where the country fits within the Strategy's differentiated approach — not as an official institutional designation. Use language such as: "Based on [evidence], this analysis places [country] within the 'Conflict-Affected' category of the FCV Strategy's differentiated approach." Never state: "[Country] is a [category] country."
 
@@ -2556,7 +2962,7 @@ The FCV Strategy Refresh introduces a forward-looking FCV country classification
 
 #### Stage 2 Screening Lens — In Crisis
 
-Emphasise these dimensions when assessing against the 12 OST recommendations and 25 key questions:
+Emphasise these dimensions when assessing against the 12 OST recommendations and the 25-question review checklist (tool-derived):
 
 - **Delivery modality** (Recs 1, 2, 8): Government may not be the primary implementation partner. Assess whether the project has identified institutionally sustainable local delivery pathways — UN agencies, INGOs, community-driven mechanisms, private sector platforms. Is TPI selection based on the ability to sustain services and build local capacity, not just deliver outputs?
 - **Do No Harm and safeguards** (DNH principles, Rec 4, ESF): In constrained environments, the risk of inadvertent harm increases. Is the project's safeguard design realistic given limited state oversight? Is the GRM accessible when government institutions are non-functional?
@@ -2610,7 +3016,7 @@ Emphasise:
 
 **Definition:** Countries with functioning governments where conflict and insecurity are widespread enough to hamper national development progress, typically corresponding to the World Bank FCS list (excluding OP 7.30 countries).
 
-**Current examples:** ~35 current FCS list countries not on OP 7.30 list, including Nigeria, Somalia, DRC, Ukraine, Haiti, etc.
+**Current examples:** FY26 FCS conflict-affected countries not on OP 7.30, including Somalia, DRC, Ukraine, Haiti, Lebanon, and Ethiopia.
 
 #### Stage 2 Screening Lens — Conflict-Affected
 
@@ -2807,7 +3213,7 @@ No single model is universally correct. The delivery actor choice must be derive
     },
     "cerc_guidance": {
         "title": "Contingency Emergency Response Component (CERC) Guidance",
-        "source": "FCV Playbook — Bank Guidance: Contingent Emergency Response Components",
+        "source": "Bank Guidance: Contingent Emergency Response Components (CERC), OPS5.03-GUID.141 (effective 16 October 2017)",
         "triggers": {
             "country_category": ["In Crisis", "Conflict-Affected"],
             "instrument": ["IPF"],

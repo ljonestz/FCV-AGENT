@@ -23,7 +23,7 @@ Every prompt output tags findings as [S], [R], or [S+R], assigned dynamically pe
 
 **Key goal:** Move from broad, vague recommendations to specific, location-aware, operationally grounded, stage-aware suggestions (e.g., "historically, Nzerekore, Kindia, and Kankan have been excluded from service delivery — focus on these regions before PAD appraisal").
 
-**Analytical backbone:** WBG FCV Strategy Refresh, FCV Operational Manual (OST, enriched with Peace & Inclusion Lens dimensions and Strategic DRR Framing from Good Practice Notes), FCV Operational Playbook, and Good Practice Notes on Peace & Inclusion Lenses and FCV-Sensitive Programming. When a Country Partnership Framework (CPF) is uploaded as a contextual document, Stage 3 recommendations include a `cpf_alignment` field linking priorities to CPF outcomes.
+**Analytical backbone:** WBG FCV Strategy 2026-2030, FCV Operational Manual (OST, enriched with Peace & Inclusion Lens dimensions and Strategic DRR Framing from Good Practice Notes), FCV Operational Playbook, and Good Practice Notes on Peace & Inclusion Lenses and FCV-Sensitive Programming. When a Country Partnership Framework (CPF) is uploaded as a contextual document, Stage 3 recommendations include a `cpf_alignment` field linking priorities to CPF outcomes.
 
 **Version history:**
 - **v7.0** — Redesigned from 4 stages to 3; full 12 OST recs + 25 key questions; FCV Playbook integration; Under the Hood panels; refresh_shift field
@@ -38,7 +38,7 @@ Every prompt output tags findings as [S], [R], or [S+R], assigned dynamically pe
   - **Temporal anchoring fix:** `_build_temporal_guardrail(temporal_ctx, doc_type)` now takes `doc_type`; PAD/PCN/PID/AF/Restructuring documents always receive preparation-phase framing regardless of whether approval date is in the past — prevents implementation-review hallucination cascade in Stages 2–3
   - **Stage 1 UX:** Prompt now requires 2–3 sentence narrative lead paragraph at top of each Part. Frontend `renderStage1()` parses Part A/B split and renders with styled section badges ("From your document only" / "Wider context & research"); narrative lead paragraph visually distinguished
   - **Finalized PAD notice:** `isFinalizedPAD()` detects uploaded PADs with past approval dates; amber retrospective notice injected in Stage 3 output and downloaded report
-  - **FCS cross-checking:** `FCS_LIST` constant added to `background_docs.py` (39 current members, year of entry, 9 graduated countries); injected into Stage 1 and Stage 2 prompts so LLM verifies classification against authoritative list
+  - **FCS cross-checking:** `FCS_LIST` and FY26 category constants added to `background_docs.py` (35 FY26 FCS economies, with Conflict and Fragility metadata); injected into Stage 1 and Stage 2 prompts so LLM verifies classification against authoritative list
   - **Implementation review locked off:** `fcv_review_mode` localStorage restore IIFE removed; app always defaults to design review mode on load; implementation review preserved in backend for future activation
   - **Rating recalibration:** Percentage-based thresholds, partial credit for Weakly addressed, softened responsiveness cap
   - **Optional context box:** User can supply framing before analysis (peer review notes, changed conflict conditions)
@@ -84,6 +84,43 @@ Every prompt output tags findings as [S], [R], or [S+R], assigned dynamically pe
 - **v9.5** - Storage quota resilience and document-scope copy (branch `fix/stage2-storage-quota`, 2026-06-18):
   - **Stage 2 storage quota hardening:** Stage 2 Under the Hood persistence is best-effort via `static/fcv_storage.js`; quota failures no longer fail Stage 2 or block Stage 3.
   - **Document scope UX:** Landing/upload copy now frames supported inputs as WBG appraisal/design-stage documents across PCN/PID/PAD/AF/Restructuring plus DPF/DPO, PforR, MPA, and regional operations. MTR/ISR remains marked as implementation review coming soon.
+- **v9.6** - Phase 1 mid-cycle overlay: Additional Financing & Restructuring (branch `feat/phase1-mid-cycle`, base Phase 0 `8389f39` / PR #24, 2026-06-17):
+  - **Change-type block:** Stage 1 emits `%%%CHANGE_TYPE_START%%%...%%%CHANGE_TYPE_END%%%` (change_types; restructuring_level; rationale) for AF/Restructuring; stripped from display by `clean_stage1_output()`. Parsed by `extract_change_types()`; level derived by `derive_restructuring_level()`
+  - **Audit-resolved restructuring level:** PDO change = Level 2 / RVP or CD-DD advisory signal (NOT Level 1). Level 1 is narrow: Alternative Procurement Arrangements and Bank Guarantee expiration-date extension only. Routing is advisory - verify with OPCS, no determinations. `RESTRUCTURING_GUIDE` + `AF_GUIDE` constants added; stale `WB_PROCESS_GUIDE[Restructuring]` Level-1 text corrected
+  - **Mid-cycle temporal guardrail:** `_build_temporal_guardrail(temporal_ctx, doc_type)` returns MID-CYCLE LIVE-PROJECT FRAMING (Tier-1 anchored) for AF/Restructuring vs preparation framing for PCN/PID/PAD
+  - **Registry/state:** `MODULE_REGISTRY` specialization for AF/Restructuring IPF single with `mid_cycle_overlay` guardrail + change_type output; `AnalysisState` carries change_types/restructuring_level
+  - **Stage 2 overlay:** two linked checks per change - context-change since approval + conflict-sensitivity; AF waiver advisory; PDO ToC reassessment; reappraisal-trigger advisory
+  - **Stage 3 priorities:** new change_type, restructuring_level, priority_scope fields + top-level mid_cycle_watch; Board-memo vs team-advisory register (7 top-level / 19 per-priority JSON fields)
+  - **Export parity:** `/api/download-report` (DOCX) and `downloadHTML()` both render change/level/scope chips and a Mid-Cycle FCV Watch section
+  - **Tests:** `tests/test_mid_cycle_phase1.py` (7 tests); full suite 87 passed; no IPF single-country regression
+- **v9.7** - Phase 2 DPF/DPO instrument module (branch `feat/phase2-dpf`, base Phase 1 `feat/phase1-mid-cycle` / PR #25, 2026-06-17):
+  - **Prior-action spine:** Stage 1 emits `%%%PRIOR_ACTIONS_START%%%...%%%PRIOR_ACTIONS_END%%%` (financing_source IBRD/IDA; series_position; cat_ddo; prior_actions; indicative_triggers) when INSTRUMENT_TYPE is DPO; parsed by `extract_prior_actions()`; stripped from display by `clean_stage1_output()`
+  - **DPF rubric:** `DPF_RUBRIC` (prior-action conflict-sensitivity / reform-sequencing / PSIA / conflict-exception / macro-fiscal / political-economy) via the Phase 0 `score_sr()` interface - replaces the 12-OST '% addressed' rubric for DPF
+  - **Registry/state:** `MODULE_REGISTRY` entries for `(PCN|PID|PAD|Unknown, DPO, single)` with `dpf_prior_action_spine` / `dpf_no_esf_escp_dli` / `dpf_macro_imf_headline` guardrails; `AnalysisState` carries financing_source / series_position / cat_ddo / prior_actions and auto-adds `dpf_module`
+  - **Stage 2 overlay:** prior-action unit (no ESF/ESCP/DLI); headline 1 = macro framework / IMF coordination (para 8); headline 2 = conflict-exception adequacy (Paragraph 38-39); PSIA hybrid harm screen; series 24-month lapse / reversal; IBRD vs IDA; Cat DDO sub-branch
+  - **Stage 3:** DPF-aware output (Program Document sections / policy matrix / LDP; DPF reference set; `next-series` timing); top-level `dpf_watch` array + DPF FCV Watch section in DOCX and HTML exports
+  - **Knowledge:** `DPF_MODULE_GUIDE` + `DPF_POLICY_AREA_CHECKLIST` in `background_docs.py`, grounded in OPS5.02-POL.120 + OP 2.30; injected via `get_dpf_slice()`
+  - **Tests:** `tests/test_dpf_phase2.py` (9 tests); full suite 96 passed; no IPF/mid-cycle regression
+- **v9.8** - Phase 3 P4R/PforR instrument module (branch `feat/phase3-p4r`, base Phase 2 `feat/phase2-dpf` / PR #26, 2026-06-17):
+  - **DLI + verification spine:** Stage 1 emits `%%%DLIS_START%%%...%%%DLIS_END%%%` (ipf_component; program_boundary; fcs_status; dlis; verification) when INSTRUMENT_TYPE is PforR; parsed by `extract_dlis()`; stripped from display by `clean_stage1_output()`
+  - **P4R rubric:** `P4R_RUBRIC` (DLI conflict-sensitivity / IVA-verifiability / geographic inclusion / ESSA-ESMS / GRM / disbursement-cliff) via the Phase 0 `score_sr()` interface
+  - **Registry/state:** `MODULE_REGISTRY` entries for `(PCN|PID|PAD|Unknown, PFORR, single)` with `p4r_dli_verification_spine` / `p4r_no_esf_escp` / `p4r_disbursement_under_conflict_headline` / `p4r_instrument_feasibility_advisory` guardrails; `AnalysisState` carries dlis / has_ipf_component, auto-adds `p4r_module`
+  - **Stage 2 overlay:** DLI unit (no ESF/ESCP); headline = disbursement under conflict (IVA verification access + disbursement cliff, no CERC valve); DLI-realism; program-boundary/exclusions; ESSA/ESMS + GRM harm screen; OP 7.30 / government-systems feasibility advisory; IPF-component dual-spine
+  - **Stage 3:** P4R-aware output (PforR PAD sections; DLI / verification-protocol / PAP language; P4R reference set); top-level `p4r_watch` array + P4R FCV Watch section in DOCX and HTML exports
+  - **Knowledge:** `P4R_MODULE_GUIDE` in `background_docs.py`, grounded in OPS5.09 + OP 7.30; injected via `get_p4r_slice()`
+  - **Tests:** `tests/test_p4r_phase3.py` (9 tests); full suite 105 passed; no IPF/mid-cycle/DPF regression
+- **v9.9** - Phases 4+5 MPA wrapper + Multi-country / regional layer (branch `feat/phase45-mpa-multicountry`, base Phase 3 `feat/phase3-p4r` / PR #27, 2026-06-17):
+  - **Multi-country / regional (orthogonal country_scope layer):** Stage 1 emits `%%%COUNTRY_SET_START%%%...%%%COUNTRY_SET_END%%%` (countries; regional_pdo; implementing_entity); `extract_country_set()` parses it (>=2 financed countries -> multi). `classify_country_set()` classifies each country (4-category + FY26 FCS) and flags non-FCS spillover/host-pressure candidates. `weighted_rollup()` does a fragility/exposure-weighted S/R roll-up (conflict x3, fragility x2) so a fragile minority is not masked. `REGIONAL_CROSSBORDER_LENS` + `get_regional_slice()`; cross-border lens, regional implementing-entity check (IGAD/ECOWAS/TDB), advisory financing-window pointers (Regional Window/CRW/WHR)
+  - **MPA wrapper:** Stage 1 emits `%%%MPA_CONTEXT_START%%%...%%%MPA_CONTEXT_END%%%` (is_mpa; phase; base_instrument; regional_mpa; phase_transition_triggers); `extract_mpa_context()` derives approval authority (Board for Phase 1 / RVP for subsequent - advisory); `mpa_carve_outs()` suppresses subsequent-phase false positives (CERC/ESF/program-ToC/etc.); `MPA_MODULE_GUIDE` + `get_mpa_slice()`; adaptive-sequencing + institutional-continuity lens, cross-phase FCV-drift; routes each phase to its base instrument
+  - **State:** `AnalysisState` sets country_scope=multi for >=2 countries and adds `multi_country_layer`; adds `mpa_wrapper` when is_mpa; carries is_mpa / implementing_entity / approval_authority
+  - **Stage 2/3 overlays + output:** per-country + regional synthesis; `priority_scope` country-specific vs regional; top-level `regional_watch` + Regional FCV Watch section (DOCX + HTML); slices injected at Stage 2/3 (step-by-step via echoed country_scope/is_mpa; express via Stage-1 extraction locals)
+  - **Tests:** `tests/test_mpa_multicountry_phase45.py` (13 tests); full suite 118 passed; no prior-phase regression
+- **v9.10** - Phase 6 intersection matrix / multi-dimension composition (branch `feat/phase6-intersection`, base Phase 4+5 `feat/phase45-mpa-multicountry` / PR #28, 2026-06-17):
+  - **Composition router:** `build_composition_plan(state)` selects the base instrument spine (IPF/DPF/P4R) and the active overlays (mid_cycle, multi_country) + MPA wrapper from `AnalysisState.active_modules`, and resolves **precedence**: mid-cycle live-project framing governs temporal; fragility-weighted roll-up governs rating when multi-country; restructuring level sets the output register; the instrument unit of analysis always governs. Backward-compatible (plain IPF -> no overlays)
+  - **Single synthesis:** `dedupe_and_scope_priorities()` merges/dedupes priorities by normalised title and ensures a `priority_scope` on each
+  - **Bounded injection (no silent truncation):** `bounded_injection_plan()` caps overlays by priority (instrument spine never dropped: instrument > mid-cycle > MPA > multi-country detail) and returns a disclosure string when anything is bounded
+  - **Knowledge + prompt:** `INTERSECTION_SYNTHESIS_GUIDE` (layering, single coherent memo, precedence, bloat guardrail); Stage 3 prompt gains a Composition & Synthesis section; Stage 3 (both routes) injects the guide when `build_composition_plan(...).is_intersection` (>=2 active layers)
+  - **Tests:** `tests/test_intersection_phase6.py` (8 tests); full suite 126 passed; no prior-phase regression. Completes the Phase 0-6 expansion (mid-cycle, DPF, P4R, MPA, multi-country, intersection) on the registry foundation
 - **v9.2** - Classification caveat and background_docs policy corrections (branch `feat/v9-differentiated-approaches`, 2026-04-19):
   - **Classification widget caveat:** Narrative now always ends with "This is a subjective judgement on the part of this AI tool and does not constitute an official WBG classification." — consistent with Stage 1 AI disclaimer framing
   - **background_docs.py — ICR timing:** `STAGE_GUIDANCE_MAP["ICR"]["timing_options"]` corrected from `"During implementation"` to `"At project closing"`
@@ -93,7 +130,7 @@ Every prompt output tags findings as [S], [R], or [S+R], assigned dynamically pe
   - **Stage 1 prompt — prose narrative:** Body content now required to be prose paragraphs (2–4 sentences per subsection); bullets restricted to genuinely enumerable items only
   - **Stage 1 prompt — country-specific fact flagging:** Part B must tag unverifiable country-specific claims (named institutions, legislation, political events, officials) with `[Verify: ...]` inline
   - **Stage 1 prompt — IDA FCV Envelope advisory:** For Conflict-Affected and Situations of Fragility countries, adds a brief end-of-Part-B advisory prompting TTL to discuss PRA/RECA/TAA eligibility with regional FCV coordinator (not an eligibility determination)
-  - **Stage 2 prompt — Refresh shifts as qualitative lenses:** FCV Strategy Refresh shifts explicitly framed as analytical lenses for strategic alignment, not a scoring checklist
+  - **Stage 2 prompt — Refresh shifts as qualitative lenses:** FCV Strategy 2026-2030 shifts explicitly framed as analytical lenses for strategic alignment, not a scoring checklist
   - **Stage 3 prompt — Watch List for Supervision:** "Horizon Considerations" section renamed and reframed as "Watch List for Supervision"; each item must name a specific WBG tracking vehicle (ISR risk flag, MTR agenda item, RRA update, restructuring trigger); panel heading in frontend updated to match
   - **Stage 3 priorities — `action_timing` field:** New enum field (`pre-appraisal` / `next-series` / `supervision`) with coloured pill in UI and included in DOCX download
   - **SORT guardrail:** Stage 3 prompt now prohibits prescribing specific SORT ratings; frames risk exposure as "consider whether the current rating adequately reflects X"
@@ -194,7 +231,7 @@ STAGE 2 — FCV Assessment
 │    %%%EVIDENCE_TRAIL_START/END%%% — sources and citation tiers
 ├─ Under Hood text kept in memory and best-effort localStorage "stage2_under_hood" → used by Go Deeper Tab 1
 ├─ Rating rubric: Sensitivity = OST recs % addressed → 6-tier (percentage-based, partial credit
-│  for Weakly addressed, quality gates apply); Responsiveness = FCV Refresh shifts count → 6-tier
+│  for Weakly addressed, quality gates apply); Responsiveness = FCV Strategy 2026-2030 pillars count → 6-tier
 │  Stage 3 inherits Stage 2 ratings verbatim — no independent re-rating
 ├─ SEA/SH flag: seash_standalone_flag: TRUE → mandatory SEA/SH priority card in Stage 3
 ├─ Gender flag: gender_fcv_flag: TRUE (any of 7 trigger conditions) → mandatory gender card
@@ -323,7 +360,7 @@ DEFAULT_PROMPTS = {
 3. Update `showPriority()` in `index.html`
 4. Update `downloadReport()` if field should appear in export
 
-**Change the 4 FCV Refresh shifts:**
+**Change the 4 FCV Strategy 2026-2030 pillars:**
 1. Edit `FCV_REFRESH_FRAMEWORK` in `background_docs.py`
 2. Update Stage 2 and Stage 3 prompts
 3. Update `extract_priorities()` shift validation list
@@ -341,7 +378,7 @@ DEFAULT_PROMPTS = {
 5. **Output panel (Stages 1–3)** — LLM output + collapsible sections
 6. **Under the Hood panels (Stage 2)** — 4 expandable `<details>`:
    - Panel 1: "How well does the project integrate FCV considerations?" (12 OST recs, S/R Tag column)
-   - Panel 2: "Could this project unintentionally cause harm?" (8 DNH principles)
+   - Panel 2: "Could this project unintentionally cause harm?" (9 DNH principles)
    - Panel 3: "What did we look for — and what was missing?" (25 diagnostic questions)
    - Panel 4: "Where did this analysis come from?" (sources, tiers, contributions)
 7. **Ratings sidebar (Stage 2+)** — Sensitivity gauge (blue, shield) + Responsiveness gauge (green, leaf)
@@ -356,8 +393,8 @@ DEFAULT_PROMPTS = {
 - **Font consistency:** `.pc-zone-body` and `.out-body` both 14px — do not let these diverge
 
 ### 4.3 Do No Harm Rendering
-- **Stage 2 inline:** traffic-light summary, e.g., "Do No Harm: 6 of 8 addressed | 1 partial | 1 gap"
-- **Stage 2 Under the Hood Panel 2:** full 8-principle table with evidence (from `%%%DNH_CHECKLIST_START/END%%%`)
+- **Stage 2 inline:** traffic-light summary, e.g., "Do No Harm: 6 of 9 addressed | 1 partial | 1 gap"
+- **Stage 2 Under the Hood Panel 2:** full 9-principle table with evidence (from `%%%DNH_CHECKLIST_START/END%%%`)
 - DNH is NOT shown as a standalone checklist in Stage 3
 
 > **Full JS function list, Express mode functions, and removed items:**
@@ -511,7 +548,7 @@ Citation hallucination guard: Stage 3 prompt explicitly prohibits fabricating do
 
 **Per run, check:**
 - [ ] Stage 1 Part A extracts from doc only; Part B uses correct citation tiers
-- [ ] Stage 2 Assessment is thematic and uses FCV Refresh framing (not old pillars)
+- [ ] Stage 2 Assessment is thematic and uses FCV Strategy 2026-2030 framing (not old pillars)
 - [ ] Stage 2 Under the Hood panels parse correctly (12-rec table, DNH, questions, evidence)
 - [ ] Stage 2 gauges animate; ratings are plausible
 - [ ] Stage 3 priorities include geographic callouts and `refresh_shift` badges
@@ -523,7 +560,7 @@ Citation hallucination guard: Stage 3 prompt explicitly prohibits fabricating do
 **Prompt quality checks:**
 - Are recommendations specific (geography, mechanism, entry points)?
 - Are they evidence-based (grounded in uploaded docs)?
-- Does the Stage 2 Assessment correctly apply 4 FCV Refresh shifts (not old pillars)?
+- Does the Stage 2 Assessment correctly apply 4 FCV Strategy 2026-2030 pillars (not old pillars)?
 
 ---
 
@@ -581,6 +618,6 @@ docs/superpowers/  # Dev plans and specs
 ---
 
 **Last updated:** 2026-06-18
-**Current version:** FCV Project Screener v9.5
+**Current version:** FCV Project Screener v9.10
 **Claude model:** `claude-sonnet-4-6`
 **Stack:** Flask 3.0.3 + vanilla JS + Anthropic SDK + gunicorn/gevent on Render
