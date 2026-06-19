@@ -2950,7 +2950,20 @@
     }
 
     const expressAbort=new AbortController();
-    let expressTimeout=setTimeout(()=>expressAbort.abort(new Error('Express analysis timed out after 10 minutes (Stages 1 & 2).')),10*60*1000);
+    // Per-stage abort budgets (ms). Each stage gets its own budget, reset at stage_start,
+    // so a slow Stage 1 (web research) can't consume the budget Stage 2 needs. Budgets sit
+    // above the backend wall-clock limits (S1 8m / S2 6m / S3 8m) so the backend's stage
+    // error surfaces before the frontend tears the stream ("BodyStreamBuffer was aborted").
+    const EXPRESS_STAGE_TIMEOUTS={1:9*60*1000,2:8*60*1000,3:9*60*1000};
+    const EXPRESS_STAGE_LABELS={1:'9 minutes',2:'8 minutes',3:'9 minutes'};
+    let expressTimeout=null;
+    function armExpressTimeout(stage){
+      clearTimeout(expressTimeout);
+      const ms=EXPRESS_STAGE_TIMEOUTS[stage]||9*60*1000;
+      const label=EXPRESS_STAGE_LABELS[stage]||'9 minutes';
+      expressTimeout=setTimeout(()=>expressAbort.abort(new Error('Stage '+stage+' timed out after '+label+'. The AI service may be slow - please retry.')),ms);
+    }
+    armExpressTimeout(1);
 
     let res;
     try{
@@ -2994,12 +3007,9 @@
           if(p.stage_start){
             currentStage=p.stage_start;
             updateExpressStage(currentStage,'active',null);
-            // Reset the abort timer when Stage 3 begins so it gets its own 8-minute budget
-            // regardless of how long Stages 1 & 2 took.
-            if(p.stage_start===3){
-              clearTimeout(expressTimeout);
-              expressTimeout=setTimeout(()=>expressAbort.abort(new Error('Stage 3 timed out after 8 minutes. The AI service may be slow — please retry.')),8*60*1000);
-            }
+            // Re-arm the abort timer at the start of every stage so each stage gets its
+            // own budget, regardless of how long earlier stages took.
+            armExpressTimeout(currentStage);
           }
 
           // ── Extraction warning (scanned / unreadable doc) ──

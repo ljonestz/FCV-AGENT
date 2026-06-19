@@ -126,6 +126,8 @@ Every prompt output tags findings as [S], [R], or [S+R], assigned dynamically pe
   - **Secondary distillation:** `fcv_distillation.py` classifies and distills package/context documents into compact source-labelled cards before Stage 1 assembly. The primary document remains on the existing 60k-character Stage 1 path.
   - **Budget guard:** Secondary cards are capped per tier and by a global 32k-character budget with a context reserve. Overflow and distillation failures produce named stubs rather than silent drops.
   - **Stage 3 matching:** Priority JSON now includes `rra_driver_alignment` alongside `cpf_alignment`, so recommendations can link to RRA conflict drivers where uploaded and relevant.
+- **v9.12** - Express per-stage abort budgets (branch `fix/express-stage2-timeout`, 2026-06-19):
+  - **Stage 2 "BodyStreamBuffer was aborted" fix:** Express mode armed a single 10-minute frontend abort timer covering Stages 1 and 2, reset only at `stage_start:3`. A slow Stage 1 (web research on a fragile-context AF) could consume the shared budget, firing the timer mid-Stage-2 and tearing the fetch stream. `armExpressTimeout(stage)` now re-arms the abort timer at every `stage_start` with per-stage budgets (`EXPRESS_STAGE_TIMEOUTS` = S1 9m / S2 8m / S3 9m), each sitting above the backend wall-clock limits (S1 8m / S2 6m / S3 8m) so the backend stage error surfaces before the frontend tears the stream. Also removes a latent Stage 3 race where the frontend 8m budget equalled the backend 8m limit.
 - **v9.2** - Classification caveat and background_docs policy corrections (branch `feat/v9-differentiated-approaches`, 2026-04-19):
   - **Classification widget caveat:** Narrative now always ends with "This is a subjective judgement on the part of this AI tool and does not constitute an official WBG classification." — consistent with Stage 1 AI disclaimer framing
   - **background_docs.py — ICR timing:** `STAGE_GUIDANCE_MAP["ICR"]["timing_options"]` corrected from `"During implementation"` to `"At project closing"`
@@ -639,7 +641,7 @@ docs/superpowers/  # Dev plans and specs
 
 ---
 
-**Last updated:** 2026-06-18
-**Current version:** FCV Project Screener v9.11
+**Last updated:** 2026-06-19
+**Current version:** FCV Project Screener v9.12
 **Claude model:** `claude-sonnet-4-6`
 **Stack:** Flask 3.0.3 + vanilla JS + Anthropic SDK + gunicorn/gevent on Render
