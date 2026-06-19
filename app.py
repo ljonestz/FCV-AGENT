@@ -2408,6 +2408,12 @@ Do not require exact terminology. Accept these conceptual equivalents:
 - Impact evaluation / IE / RCT / Rigorous evaluation / Quasi-experimental methods
 - Adaptive management / Learning loops / Course correction / Context monitoring / Crisis response protocols
 
+# CERC ELIGIBILITY GUARDRAIL
+Do NOT recommend a CERC for violence/conflict escalation alone, and do NOT flag the absence of CERC readiness as a gap on the basis of conflict escalation, insecurity, armed-group activity, civil unrest, or deteriorating access alone.
+Do NOT flag the absence of CERC readiness as a gap unless there is a credible natural-hazard, climate, health, or economic emergency pathway.
+
+Only treat CERC as relevant where the project faces a credible natural-hazard, climate, health, or economic emergency that the borrower government could plausibly declare and request financing against. State the specific hazard pathway. For conflict/violence-driven implementation risk, assess adaptive management, restructuring, SORT updating, and security planning instead: POM stop/go provisions, security-triggered restructuring, conflict-sensitive early-warning indicators, Security Management Plan, TPM/GEMS, or IPF urgent-need/condensed procedures where appropriate.
+
 # Important Guidelines
 - The TTL-facing narrative must be self-contained and readable without the Under the Hood panels
 - Be specific: name geographic locations, institutions, mechanisms — not generic statements
@@ -2483,6 +2489,12 @@ When more than one dimension is active (instrument + mid-cycle and/or multi-coun
 
 ## Instrument Awareness
 {instrument_guidance}
+**CERC hard eligibility guardrail - read first:**
+Do NOT recommend a CERC for violence/conflict escalation alone. Do NOT recommend operationalising, preparing, or inserting a CERC, and do NOT flag the absence of CERC readiness as a gap, on the basis of conflict escalation, deteriorating security, armed-group activity, civil unrest, or access constraints alone.
+Do NOT flag the absence of CERC readiness as a gap unless there is a credible natural-hazard, climate, health, or economic emergency pathway.
+
+Only recommend a CERC where the project has a credible natural-hazard, climate, health, or economic emergency exposure and a plausible borrower emergency declaration/request pathway. Name the specific hazard pathway in the priority card. For conflict/violence-driven implementation risk, recommend adaptive management, restructuring, SORT updating, and security planning instead: POM stop/go provisions, security-triggered restructuring, conflict-sensitive early-warning indicators, Security Management Plan, TPM/GEMS, or IPF urgent-need/condensed procedures where appropriate. Do not invent non-standard CERC activation pathways to make a conflict-triggered CERC work.
+
 All recommendations MUST be feasible under this instrument type. Do not suggest DPO-style policy conditionality for an IPF, or IPF-style CERC for a PforR. Use only the operational levers available to this instrument.
 
 **CERC-specific framing rule:**
@@ -2490,7 +2502,7 @@ When recommending a CERC or noting its absence:
 - Frame as "worth actively exploring with OPCS FCV focal points" — not as a required design element or a gap the team has failed to address
 - Acknowledge the emergency-to-emergency redirect risk (activating CERC redirects funds from one emergency to another) and the limited effectiveness/slow activation pattern in FCV settings (practitioner experience, not formally evaluated at scale)
 - If the project is OP 7.30 or lacks a recognised government counterpart: explicitly note that standard trigger mechanisms (government emergency declaration) are unavailable and that alternative trigger arrangements require OPCS legal and operational clearance before they can be included
-- action_timing for CERC recommendations: flag-for-preparation for PCN/PID; required-before-appraisal for PAD — never required-before-board unless OPCS has already confirmed a viable trigger pathway. Example for non-Afghanistan context: for a Sahel IPF project with a functioning government counterpart, CERC can be framed as recommended and straightforward to include; the more cautious framing applies specifically to contexts without a government counterpart.
+- action_timing for CERC recommendations: flag-for-preparation for PCN/PID; required-before-appraisal for PAD — never required-before-board unless OPCS has already confirmed a viable trigger pathway. Even where the borrower counterpart is functioning, CERC should be framed around a specific natural-hazard, climate, health, or economic emergency pathway, not conflict escalation alone.
 
 **Conditionality leverage guardrail:**
 When recommending or assessing conditionality-based or incentive-based frameworks — including: (a) ECA-type access mechanisms, output-based aid with compliance triggers tied to non-state or contested actors; (b) governance or political reform prior actions or DLIs where the political economy analysis indicates the relevant actors have limited incentive or capacity to comply (e.g. security force accountability prior actions in contested governance environments; inter-ministerial reform DLIs where ministries have documented conflicts of interest):
@@ -2567,7 +2579,7 @@ When identifying Strategic Priorities, evaluate the project design through these
 - **Targeting and Exclusion:** Does the beneficiary selection criteria or geographic footprint risk reinforcing historical grievances or spatial exclusion? Can the Project Operations Manual (POM) criteria be adjusted?
 - **Implementation Arrangements:** In insecure or low-capacity areas, is the government PIU sufficient? Does the design need Third-Party Monitoring (TPM), UN agency partnerships, or community-driven execution?
 - **Elite Capture and Resource Allocation:** Do the procurement arrangements or component designs risk resources being captured by dominant groups?
-- **Flexibility and Adaptability:** Is the project too rigid for a volatile context? Does it utilise unallocated funds, a Contingent Emergency Response Component (CERC), or phased disbursement conditions effectively?
+- **Flexibility and Adaptability:** Is the project too rigid for a volatile context? Does it utilise unallocated funds, phased disbursement conditions, or a CERC only where there is a credible natural-hazard, climate, health, or economic emergency pathway?
 - **Citizen Engagement:** Does the Grievance Redress Mechanism (GRM) and Stakeholder Engagement Plan (SEP) go beyond compliance to actively build state-society trust?
 
 ---
@@ -2707,7 +2719,7 @@ Apply the following definitions strictly. [S+R] must be earned — do not use it
 
 [S] — FCV Sensitivity. This priority helps the project AVOID MAKING THINGS WORSE. It concerns how the project operates in the FCV context: contextual awareness, conflict-informed design, Do No Harm, targeting adaptation, risk framework strengthening, FCV-adapted operations and safeguards.
 
-[R] — FCV Responsiveness. This priority ACTIVELY HELPS MAKE FRAGILITY DYNAMICS BETTER. It addresses root causes of fragility, builds resilience, leverages FCV tools for transformative impact, or connects project outcomes to stability and peace dividends. Linked to one or more FCV Strategy 2026-2030 pillars: Anticipate (early warning, classification awareness), Differentiate (calibrate to FCV context type), Jobs & Private Sector (economic livelihoods as stability pathways), Enhanced Toolkit (CERC, HEIS, TPM, GEMS, FCV-appropriate implementation).
+[R] — FCV Responsiveness. This priority ACTIVELY HELPS MAKE FRAGILITY DYNAMICS BETTER. It addresses root causes of fragility, builds resilience, leverages FCV tools for transformative impact, or connects project outcomes to stability and peace dividends. Linked to one or more FCV Strategy 2026-2030 pillars: Anticipate (early warning, classification awareness), Differentiate (calibrate to FCV context type), Jobs & Private Sector (economic livelihoods as stability pathways), Enhanced Toolkit (hazard-appropriate CERC, HEIS, TPM, GEMS, FCV-appropriate implementation).
 
 [S+R] — Reserve ONLY for priorities that genuinely serve both functions simultaneously. The four overlap zones: (1) inclusion/targeting of conflict-affected populations — avoids exclusion harm (S) AND addresses exclusion as a root driver (R); (2) embedding FCV logic substantively in the ToC/PDO; (3) adaptive M&E that monitors harm AND adapts for resilience; (4) GRM designed to strengthen state-citizen accountability. If in doubt, assign [S] or [R].
 

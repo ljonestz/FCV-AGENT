@@ -268,7 +268,7 @@ Note: the 12 recommendations above are the authoritative framework from the FCV 
 
 ### Operational Flexibilities Available in FCV Contexts
 
-- **CERC** (Contingency Emergency Response Component): Zero-dollar component activated rapidly during crises without Board restructuring. Enables swift fund reallocation.
+- **CERC** (Contingency Emergency Response Component): Zero-dollar component for eligible declared emergencies with a plausible borrower request pathway. In FCV screening, do not treat conflict escalation, civil unrest, armed-group activity, or insecurity alone as a standard CERC trigger.
 - **HEIS** (Hands-on Expanded Implementation Support): WBG staff provide direct procurement support, bypassing standard timelines. Does not substitute for Borrower decision-making.
 - **TPM** (Third-Party Monitoring): Independent NGO/research org verification where direct supervision is impossible.
 - **GEMS** (Geo-Enabling initiative for Monitoring and Supervision): Satellite/mobile technology for remote supervision and data collection.
@@ -1070,8 +1070,10 @@ WB_INSTRUMENT_GUIDE = {
         ),
         "ost_applicability": (
             "All 12 OST recommendations are FULLY APPLICABLE to IPF. "
-            "Additional IPF-specific FCV checks: (1) Is there a CERC component? In high-risk FCV, "
-            "absence should be flagged. (2) Is HEIS or UN direct engagement planned for weak-capacity "
+            "Additional IPF-specific FCV checks: (1) If natural-hazard, climate, health, or economic "
+            "emergency exposure is material, is any CERC realistic given the borrower emergency "
+            "declaration/request pathway? Do not flag CERC absence as a gap on the basis of "
+            "conflict escalation or insecurity alone. (2) Is HEIS or UN direct engagement planned for weak-capacity "
             "areas? (3) Has Para 12 been triggered and documented where applicable? (4) Is PIU design appropriate "
             "for FCV (lean, embedded, with alternative channels)? (5) Is ESF/OP-BP framework correctly "
             "identified from Concept Decision date?"
@@ -2061,7 +2063,7 @@ Cat DDO is increasingly relevant in FCV-adjacent and fragile contexts where mult
 ### CERC — FCV Calibration Notes
 
 **Appropriate use signal:**
-CERC remains worth flagging as a gap in FCV settings. The zero-dollar structure imposes no upfront cost commitment and can be valuable if well-designed with FCV-appropriate triggers. The app should continue to flag CERC absence — but must shift from "required" to "worth actively exploring with OPCS FCV focal points."
+CERC is not a generic response to FCV volatility. Do not flag CERC absence as a gap on the basis of conflict escalation, civil unrest, armed-group activity, deteriorating security, or access constraints alone. CERC may be worth exploring only where there is a credible natural-hazard, climate, health, or economic emergency exposure and a plausible borrower emergency declaration/request pathway. The zero-dollar structure imposes no upfront cost commitment, but the trigger must be operationally realistic.
 
 **Emergency-to-emergency redirect risk:**
 WBG guidance explicitly cautions that CERC is "not usually advised for emergency operations" because activation redirects funds from one emergency response to another. In settings where the baseline is already humanitarian (e.g. OP 7.30 contexts), this risk is material and should be named in any recommendation.
@@ -2070,10 +2072,12 @@ WBG guidance explicitly cautions that CERC is "not usually advised for emergency
 Operational experience suggests CERCs may be slow to activate in FCV settings due to complex trigger mechanisms in low-governance environments. This has not been formally evaluated at scale but reflects documented practitioner experience — frame it as such, not as a formally established WBG finding.
 
 **OP 7.30 trigger mechanism caveat:**
-In OP 7.30 settings, the standard CERC trigger (government emergency declaration) is unavailable — there is no recognised counterpart to make the declaration. Alternative workarounds (e.g. UN OCHA statements as trigger proxies) are operationally creative but are NOT formally covered in WBG CERC guidance. Any such mechanism requires specific OPCS legal and operational clearance. Recommendations involving alternative triggers must be framed as "explore with OPCS FCV focal points" — not as a design gap the team has failed to address.
+In OP 7.30 settings, the standard CERC trigger (government emergency declaration) is unavailable because there is no recognised counterpart to make the declaration. Do not invent substitute triggers to make a conflict-triggered CERC work. Any alternative trigger concept requires specific OPCS legal and operational clearance and should be treated as a reason for caution, not as a design gap the team has failed to address.
 
 **Calibration guidance for FCV screening:**
-- Frame CERC recommendations as "worth actively exploring" not "required"
+- Do not flag CERC absence as a gap on the basis of conflict escalation, insecurity, civil unrest, or armed-group activity alone
+- Only recommend CERC where there is a credible natural-hazard, climate, health, or economic emergency and a plausible borrower emergency declaration/request pathway
+- Frame eligible CERC recommendations as "worth actively exploring" not "required"
 - Always name the emergency-to-emergency redirect risk
 - For OP 7.30 contexts: explicitly note standard trigger unavailability and OPCS clearance requirement
 - action_timing for CERC: flag-for-preparation (PCN/PID) or required-before-appraisal (PAD) — never required-before-board unless OPCS has confirmed a viable trigger pathway
@@ -3026,7 +3030,7 @@ Emphasise:
 - **Government commitment to trajectory-shifting actions** (Recs 1–3): Does the project align with government-level commitments to address FCV drivers? Are reforms or investments sequenced to reduce fragility over time?
 - **DRR alignment** (Rec 1): Are the project's Drivers-Risks-Resilience specifically identified for the sector and subnational geography? Are recommendations grounded in the RRA?
 - **Subnational targeting** (Rec 2, Peace & Inclusion Lens): Subnational variation in conflict intensity is the defining characteristic of most Conflict-Affected countries. Is the project's geographic footprint mapped against subnational conflict dynamics? Are historically excluded areas explicitly included?
-- **Operational flexibilities** (Rec 9): CERCs, HEIS, phased disbursement, alternative implementation are available and expected to be considered.
+- **Operational flexibilities** (Rec 9): HEIS, phased disbursement, adaptive management, alternative implementation, and hazard-appropriate CERCs are available and expected to be considered. Do not treat CERC as the response to conflict escalation or insecurity alone.
 - **Institutional strengthening** (Recs 7, 9): Even under fragility, government delivery is the expected model. Does the project build, not bypass, government capacity?
 
 #### Rating Calibration — Conflict-Affected
@@ -3039,7 +3043,7 @@ Emphasise:
 - Recommendations must name specific geography, mechanism, and entry points (not broad policy suggestions).
 - Trajectory-shifting actions should be explicitly connected to FCV drivers identified in Part B.
 - Reference the applicable WBG instrument and lifecycle stage when recommending operational changes.
-- Operational flexibility recommendations should reference the specific mechanism (e.g., "Add a zero-dollar CERC to allow rapid reallocation if conflict escalates in [specific region]").
+- Operational flexibility recommendations should reference the specific mechanism. Use CERC only for a natural-hazard, climate, health, or economic emergency pathway; use adaptive management, security planning, TPM/GEMS, or restructuring for conflict escalation in a specific region.
 
 ---
 
@@ -3074,10 +3078,10 @@ Emphasise:
 
 | Category | Government as primary partner | TPI/UN/NGO expected | Key flexibilities |
 |---|---|---|---|
-| In Crisis | No — assess alternative pathways | Yes — assess sustainability/phase-out | CERC, HEIS, TPM, alt. implementation |
-| In Transition | Partially — emerging government role | Transitioning out of TPI | CERC, phased approach |
-| Conflict-Affected | Yes — government-led expected | Where government capacity is absent in specific areas | Full suite: CERC, HEIS, TPM, phased disbursement |
-| At Risk | Yes — standard government-led | Rarely, unless subnational pockets | CERC, SORT, adaptive M&E |
+| In Crisis | No — assess alternative pathways | Yes — assess sustainability/phase-out | HEIS, TPM, alt. implementation; CERC only if a viable eligible emergency trigger exists |
+| In Transition | Partially — emerging government role | Transitioning out of TPI | phased approach; CERC only for eligible declared emergencies |
+| Conflict-Affected | Yes — government-led expected | Where government capacity is absent in specific areas | HEIS, TPM, phased disbursement; CERC only for eligible declared emergencies |
+| At Risk | Yes — standard government-led | Rarely, unless subnational pockets | SORT, adaptive M&E; CERC only for eligible declared emergencies |
 
 ---
 
@@ -3226,6 +3230,9 @@ No single model is universally correct. The delivery actor choice must be derive
 ### What CERC Is
 A CERC is a dedicated component within an IPF operation that enables swift reallocation of loan proceeds in response to a declared crisis or emergency, without requiring full project restructuring before funds flow. CERCs are typically zero-dollar at approval and activated only when an eligible event occurs.
 
+### Trigger Boundary for FCV Screening
+For screening purposes, a CERC should be associated with a credible natural-hazard, climate, health, or economic emergency and a plausible borrower declaration/request pathway, not an escalation of armed conflict, civil unrest, or insecurity alone. Conflict-related implementation volatility should normally be handled through adaptive management, restructuring, security planning, TPM/GEMS, or urgent-need/condensed procedures rather than a CERC keyed to violence escalation.
+
 ### What CERC Can and Cannot Finance
 CERC-eligible expenditures: civil works, goods, non-consulting services, consulting services, training, and operating costs needed for emergency response.
 CERC cannot finance: humanitarian assistance, food aid, or cash transfers to affected populations. These require separate humanitarian instruments.
@@ -3240,7 +3247,7 @@ Project teams must embed four elements at preparation stage, not after a crisis 
 Failure to prepare these ex ante is the most common cause of CERC activation delays.
 
 ### Activation Process
-Activation requires: (1) a declaration of emergency by the competent national authority (or alternative trigger such as a UN Flash Appeal or certified statement of facts if national institutions have collapsed); (2) a formal Borrower request to the Bank; (3) an Emergency Action Plan listing activities, costs, implementation modalities, procurement plan, and E&S implications; (4) Bank approval.
+Activation requires: (1) a declaration of emergency by the competent national authority; (2) a formal Borrower request to the Bank; (3) an Emergency Action Plan listing activities, costs, implementation modalities, procurement plan, and E&S implications; (4) Bank approval.
 Formal restructuring is processed within three months of activation — it is not a prerequisite to fund flow.
 
 ### Financial Management Under CERC
@@ -3297,7 +3304,7 @@ OP 8.00 is not a substitute for addressing long-term structural economic issues 
 Trust funds frequently play a critical role in rapid response — the Bank can administer pooled funds with specific donor requirements, enabling coordinated financing while maintaining oversight. In FCV contexts, trust fund coordination with UNHCR, WFP, and bilateral donors is often more important than the Bank's own lending volume.
 
 ### Relationship to CERC
-CERC (within an existing IPF) and stand-alone emergency IPFs both operate under OP 8.00. The key distinction: CERC is prepared in advance as a project component; a stand-alone emergency IPF is prepared after the crisis event. For FCV-affected countries, CERC is preferred because activation is faster and the institutional context is already established. If a project lacks a CERC and a crisis occurs, a new emergency IPF under OP 8.00 is the fallback — but it requires a full preparation cycle (typically 2-6 months even under emergency procedures).
+CERC (within an existing IPF) and stand-alone emergency IPFs both operate under OP 8.00. The key distinction: CERC is prepared in advance as a project component; a stand-alone emergency IPF is prepared after the crisis event. In FCV-affected countries, CERC is relevant only where the likely eligible emergency is operationally declarable through the borrower pathway, such as a natural-hazard, climate, health, or economic shock. Violence escalation and insecurity alone should point teams toward adaptive management, restructuring, security planning, or urgent-need/condensed procedures rather than a CERC trigger.
 
 ### Country Director Authorities
 Under OP 8.00, the Country Director may approve temporary adjustments to cost-sharing limits and may invoke streamlined review procedures. These are administrative flexibilities, not waivers of fiduciary, environmental, or social standards.
@@ -3638,7 +3645,7 @@ Under Condensed Procedures, the normally sequential stages of identification, pr
 Environmental and social requirements are not waived but can be phased: the ESCP and SEP must be disclosed no later than Decision Review (not before appraisal). The Appraisal-stage ESRS must still be prepared and cleared by the RSA and ES Practice Managers. For fiduciary matters, paragraph 12(a) of the IPF Policy enables deferral of certain FM arrangements and special procurement arrangements. IDA projects under this pathway are subject to the Mandatory Direct Payment Pilot for contracts procured through international open or limited competition — exemptions require approval from the Director, OPSPF.
 
 ### CERC Eligibility
-A Contingency Emergency Response Component (CERC) may be incorporated into an operation processed under this procedure, activatable when a crisis is declared. This provides additional flexibility for FCS contexts where security or access conditions can shift rapidly during implementation. Whether to include a CERC should be considered at the Decision Review stage and reflected in the SORT risk discussion.
+A Contingency Emergency Response Component (CERC) may be incorporated into an operation processed under this procedure when a credible natural-hazard, climate, health, or economic emergency could be declared through the borrower pathway. It should not be used as the default response to security deterioration or conflict escalation alone. Whether to include a CERC should be considered at the Decision Review stage and reflected in the SORT risk discussion only where the eligible emergency pathway is plausible.
 
 ### When to Use This Pathway vs. Standard Preparation
 Teams should use Condensed Procedures when country or project circumstances require faster Board presentation than standard processing allows, when fiduciary or safeguard flexibility is needed to reflect limited government capacity, or when the project is responding to an active conflict or post-conflict transition. Using this pathway does not lower the analytical bar for FCV context analysis — the PAD must still demonstrate conflict-informed design.
@@ -3686,7 +3693,7 @@ The Bank's oversight shift in FCCE settings moves from prior review (approvals b
 A PPSD for an FCCE project must: (a) understand the prevailing political economy and geographic spread of conflict; (b) map supply chain constraints (last-mile delivery, market fragmentation, transport bottlenecks); (c) use procurement approaches suited to the situation and that will deliver the best outcomes; (d) consider framework agreements where feasible; (e) track the procurement cycle to identify bottleneck approval processes on the Borrower side; (f) be short, simple, and fit for purpose — not a comprehensive procurement strategy borrowed from a stable-country context. TTLs should flag if a PAD's PPSD appears to be a template copy-paste that does not address specific conflict-driven supply chain realities.
 
 ### Preparedness Phase — What Should Be in Place Before a Crisis
-For projects in countries at risk of crisis escalation, procurement preparedness measures should include: pre-qualified supplier lists; framework agreements for common emergency goods and services; pre-positioned stocks; capacity-building for emergency procurement staff; inclusion of a CERC component to enable rapid reallocation. Projects that omit these preparedness measures in at-risk country contexts are less resilient to crisis escalation and will require emergency restructuring. FCV CCs should check whether CERC inclusion has been considered and, if rejected, whether the justification addresses the risk of escalation.
+For projects in countries at risk of crisis escalation, procurement preparedness measures should include: pre-qualified supplier lists; framework agreements for common emergency goods and services; pre-positioned stocks; and capacity-building for emergency procurement staff. Consider a CERC only where the likely emergency is a natural-hazard, climate, health, or economic shock with a plausible borrower declaration/request pathway. For violence or insecurity escalation, procurement preparedness should focus on adaptive procurement planning, framework agreements, TPM/GEMS verification, security planning, and restructuring options rather than CERC activation.
 """,
     },
     "fm_fcv": {

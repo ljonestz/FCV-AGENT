@@ -333,6 +333,19 @@ Recommendation timing was also re-anchored to the Decision Review (DM/ROC) as th
 
 ---
 
+## 13A. Change Group K - CERC Conflict-Trigger Guardrail
+
+The app previously over-recommended CERC readiness for conflict or violence escalation scenarios. The corrected rule is:
+
+- Do not recommend CERC, operationalise CERC readiness, or flag missing CERC readiness for violence/conflict escalation, insecurity, civil unrest, armed-group activity, or access constraints alone.
+- CERC is appropriate only where the project has a credible natural-hazard, climate, health, or economic emergency exposure and a plausible borrower emergency declaration/request pathway.
+- For conflict-driven implementation risk, use adaptive management, POM stop/go provisions, security-triggered restructuring, SORT updating, conflict-sensitive indicators, Security Management Plan, TPM/GEMS, or IPF urgent-need/condensed procedures.
+- Do not reintroduce non-standard trigger workaround examples such as UN appeals or certified statements of facts as substitutes for a borrower declaration.
+
+Regression coverage: `tests/test_cerc_guardrail.py`.
+
+---
+
 ## 14. Stage 2 Storage-Quota Resilience
 
 ### Purpose

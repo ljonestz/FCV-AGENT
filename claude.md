@@ -128,6 +128,11 @@ Every prompt output tags findings as [S], [R], or [S+R], assigned dynamically pe
   - **Stage 3 matching:** Priority JSON now includes `rra_driver_alignment` alongside `cpf_alignment`, so recommendations can link to RRA conflict drivers where uploaded and relevant.
 - **v9.12** - Express per-stage abort budgets (branch `fix/express-stage2-timeout`, 2026-06-19):
   - **Stage 2 "BodyStreamBuffer was aborted" fix:** Express mode armed a single 10-minute frontend abort timer covering Stages 1 and 2, reset only at `stage_start:3`. A slow Stage 1 (web research on a fragile-context AF) could consume the shared budget, firing the timer mid-Stage-2 and tearing the fetch stream. `armExpressTimeout(stage)` now re-arms the abort timer at every `stage_start` with per-stage budgets (`EXPRESS_STAGE_TIMEOUTS` = S1 9m / S2 8m / S3 9m), each sitting above the backend wall-clock limits (S1 8m / S2 6m / S3 8m) so the backend stage error surfaces before the frontend tears the stream. Also removes a latent Stage 3 race where the frontend 8m budget equalled the backend 8m limit.
+- **v9.13** - CERC conflict-trigger guardrail (branch `fix/cerc-violence-guardrail`, 2026-06-19):
+  - **Stage 2/3 CERC guardrail:** Prompts now prohibit recommending CERC, or flagging absence of CERC readiness as a gap, for violence/conflict escalation, insecurity, armed-group activity, civil unrest, or access constraints alone.
+  - **Eligible CERC framing:** CERC can be recommended only where there is a credible natural-hazard, climate, health, or economic emergency exposure and a plausible borrower emergency declaration/request pathway. The specific hazard pathway must be named.
+  - **Alternative levers:** Conflict/violence-driven implementation risk should be routed to adaptive management, POM stop/go provisions, security-triggered restructuring, SORT updating, conflict-sensitive indicators, Security Management Plan, TPM/GEMS, or IPF urgent-need/condensed procedures.
+  - **Knowledge-base alignment:** `FCV_INSTRUMENT_CALIBRATION`, CERC guidance, differentiated country guidance, IPF applicability checks, rapid-response guidance, and procurement-in-FCV guidance were updated to remove the previous "CERC for conflict escalation" framing and non-standard trigger workaround examples.
 - **v9.2** - Classification caveat and background_docs policy corrections (branch `feat/v9-differentiated-approaches`, 2026-04-19):
   - **Classification widget caveat:** Narrative now always ends with "This is a subjective judgement on the part of this AI tool and does not constitute an official WBG classification." — consistent with Stage 1 AI disclaimer framing
   - **background_docs.py — ICR timing:** `STAGE_GUIDANCE_MAP["ICR"]["timing_options"]` corrected from `"During implementation"` to `"At project closing"`
@@ -642,6 +647,6 @@ docs/superpowers/  # Dev plans and specs
 ---
 
 **Last updated:** 2026-06-19
-**Current version:** FCV Project Screener v9.12
+**Current version:** FCV Project Screener v9.13
 **Claude model:** `claude-sonnet-4-6`
 **Stack:** Flask 3.0.3 + vanilla JS + Anthropic SDK + gunicorn/gevent on Render
