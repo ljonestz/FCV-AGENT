@@ -29,19 +29,17 @@ Use the GitHub repository as the source of truth:
 
 `https://github.com/ljonestz/FCV-AGENT`
 
-As of 2026-06-19, the current Render/GitHub baseline is:
+As of 2026-06-19, `origin/main` is at `944ec30` after this ITS handover brief was merged. The code baseline for ITS porting is `4e8a9d0`, the PR #34 merge commit immediately before the docs-only handover commit.
 
-| Ref | Commit | Status | Purpose |
-|---|---|---|---|
-| `origin/main` | `4e8a9d0` | Current merged baseline | Includes Stage 2 storage-quota resilience, Phase 0-6 instrument/document expansion, Phase 6 intersection composition, and secondary-document distillation. |
-| [PR #34](https://github.com/ljonestz/FCV-AGENT/pull/34), `codex/integrate-secondary-phase6` | `4f24b69` head, merged as `4e8a9d0` | Merged | Canonical integration PR combining Phase 6 and secondary-document distillation on top of the current `main`. |
-| [PR #29](https://github.com/ljonestz/FCV-AGENT/pull/29), `feat/phase6-intersection` | `76fba9e` | Merged via PR #34 | Original Phase 0-6 lending/document-type expansion: policy registry, AF/restructuring, DPF/DPO, PforR/P4R, MPA, multi-country/regional layer, intersection matrix, and policy/timing corrections. |
-| [PR #33](https://github.com/ljonestz/FCV-AGENT/pull/33), `feat/secondary-doc-distillation` | `1f6b0d2` | Merged via PR #34 | Original secondary-document upload expansion and distillation layer. |
-| [PR #31](https://github.com/ljonestz/FCV-AGENT/pull/31), `fix/stage2-storage-quota-main` | `67c9110` | Merged before PR #34 | Makes Stage 2 "Under the Hood" browser storage best-effort, so quota failures do not block Stage 3. |
+| Ref | Status | Purpose |
+|---|---|---|
+| `origin/main` at `944ec30` | Current default branch | Same app code as `4e8a9d0`, plus this ITS handover brief. |
+| [PR #34](https://github.com/ljonestz/FCV-AGENT/pull/34), merged as `4e8a9d0` | Canonical code baseline | Combines Stage 2 storage-quota resilience, Phase 0-6 instrument/document expansion, Phase 6 intersection composition, secondary-document distillation, and the P4R policy-test alignment. |
+| [PR #29](https://github.com/ljonestz/FCV-AGENT/pull/29) and [PR #33](https://github.com/ljonestz/FCV-AGENT/pull/33) | Optional archaeology only | Original Phase 6 and secondary-distillation PRs. Their conflicts were reconciled in PR #34, so do not replay them separately unless investigating a specific file history question. |
 
-Recommended adoption path for ITS: start from `origin/main` at `4e8a9d0` if possible. This is safer than replaying PR #29 and PR #33 separately because their conflicts have already been reconciled and tested in PR #34.
+Recommended adoption path for ITS: start from `origin/main` if possible. If ITS wants only the app-code delta and not this handover document, use PR #34 / `4e8a9d0` as the baseline. This is safer than replaying PR #29 and PR #33 separately because their conflicts have already been reconciled and tested in PR #34.
 
-If the internal clone cannot fast-forward to `4e8a9d0`, use PR #34 as the primary diff reference. Only fall back to the original PRs (#29, #33, #31) for file-level archaeology.
+If the internal clone cannot fast-forward to the current public baseline, use PR #34 as the primary diff reference. Only fall back to the original PRs (#29, #33, #31) for file-level archaeology.
 
 Verification performed on the PR #34 integration branch before merge:
 
@@ -315,7 +313,27 @@ This keeps the primary assessment from being squeezed out by secondary evidence.
 
 ---
 
-## 13. Stage 2 Storage-Quota Resilience
+## 13. Change Group J - Verified Policy and Instrument-Reference Corrections (do not re-derive)
+
+These corrections in `background_docs.py`, plus two `app.py` `POLICY_REGISTRY` entries, were verified against current intranet OPCS/FCV sources. Port them as-is. Do not let any model or reviewer "correct" them back from training memory: WBG instruments were renumbered across 2024-2026 and model recall is unreliable.
+
+- PforR: `OPS5.09` -> `OPS5.04-POL.125` (effective 19 Aug 2024) plus Bank Directive `OPS5.04-DIR.110` (effective 9 Apr 2025); retired OP/BP 9.00 references removed.
+- IDA FCV Envelope: three allocations (PRA / RECA / TAA). WHR and PSW are separate IDA FCV-financing instruments, not FCV Envelope allocations.
+- "Turn Around Allocation" standardized to two words per the FCV Operational Manual.
+- MPA: `OPS5.06-GUID.148` (issued 29 Nov 2021).
+- OP 8.00 retired 24 Jun 2024 and is now `OPS5.08-POL.125`; CERC is now `OPS5.03-GUID.141`.
+- PforR / OP 7.30 wording softened from "effectively unusable" to "generally not feasible".
+- Do-No-Harm reconciled to 9 dimensions and de-attributed from the Manual. SEA/SH is ESF-grounded.
+- "25 Key Questions" relabelled as tool-derived; the 12 OST recommendations remain authoritative.
+- `app.py` `POLICY_REGISTRY`: `ipf_one_step_processing` and `ost_manual_alignment` reframed from unverified to confirmed.
+
+Do not revert these verified-current items: the WBG FCV Strategy 2026-2030 and its four shifts, including "Anticipate"; `OPS5.05-GUID.177` for procurement in urgent need; and the existing "Condensed Procedures" content, which matches the FCV Operational Manual (June 2025).
+
+Recommendation timing was also re-anchored to the Decision Review (DM/ROC) as the operative gate. This is a label and definition change only: keep the enum value `required-before-appraisal` and the `.timing-*` CSS classes unchanged for frontend compatibility.
+
+---
+
+## 14. Stage 2 Storage-Quota Resilience
 
 ### Purpose
 
@@ -335,7 +353,7 @@ Stage 2 stores "Under the Hood" analytical material in browser storage for Go De
 
 ---
 
-## 14. Internal Version Divergence Marker - Internal Retrieval
+## 15. Internal Version Divergence Marker - Internal Retrieval
 
 The internal World Bank version has an important potential advantage over the Render version: it can use permission-aware internal retrieval for WBG policy, procedure, and country context sources.
 
@@ -398,12 +416,12 @@ Use this precedence order:
 
 ---
 
-## 15. Recommended Internal Porting Sequence
+## 16. Recommended Internal Porting Sequence
 
 1. Confirm the internal clone's current baseline commit and differences from the Render GitHub repo.
 2. Back up any internal-only changes, especially authentication, internal search, deployment configuration, secrets handling, and network policy.
-3. Prefer adopting or comparing against `origin/main` at `4e8a9d0` / PR #34, which already combines Stage 2 storage resilience, Phase 0-6, Phase 6 intersection composition, and secondary-document distillation.
-4. If direct adoption of `4e8a9d0` is not possible, apply PR #34 as the primary patch reference rather than replaying PR #29 and PR #33 separately.
+3. Prefer adopting or comparing against current `origin/main` at `944ec30`. For the app-code baseline specifically, use PR #34 / `4e8a9d0`, which combines Stage 2 storage resilience, Phase 0-6, Phase 6 intersection composition, secondary-document distillation, and the verified policy-reference corrections.
+4. If direct adoption of the public baseline is not possible, apply PR #34 as the primary patch reference rather than replaying PR #29 and PR #33 separately.
 5. Reconcile any conflicts in:
    - `app.py`
    - `background_docs.py`
@@ -416,7 +434,7 @@ Use this precedence order:
 
 ---
 
-## 16. Validation Checklist
+## 17. Validation Checklist
 
 ### Automated tests
 
@@ -467,17 +485,19 @@ Check that:
 
 ---
 
-## 17. Known Caveats
+## 18. Known Caveats
 
 - MTR/ISR implementation review is not yet live in the frontend. Backend implementation-review logic exists, but the user-facing workflow remains withheld pending dedicated testing.
-- PR #34 resolves the prior integration conflict between the Phase 0-6 stack and secondary-document distillation. ITS should use PR #34 / `origin/main` at `4e8a9d0` as the canonical integrated state.
+- `origin/main` is now at `944ec30` after this handover brief was merged; `4e8a9d0` remains the app-code integration baseline.
+- PR #34 resolves the prior integration conflict between the Phase 0-6 stack and secondary-document distillation. ITS should use PR #34 / `4e8a9d0` as the canonical app-code baseline.
+- The verified policy and instrument-reference corrections in Change Group J should be ported as-is. Do not re-derive or "tidy" those references from model memory.
 - The Render deployment uses gunicorn/gevent with long SSE timeouts. Internal hosting may use different infrastructure, but the SSE/long-running request behavior still needs equivalent timeout and keepalive handling.
 - The internal retrieval layer described above is a marker for future divergence. It is not part of the Render app parity changes unless ITS implements it separately.
 - Any internal retrieval must be permission-aware. Avoid broad service-account retrieval that could expose documents to users who should not have access.
 
 ---
 
-## 18. Suggested Acceptance Criteria for ITS
+## 19. Suggested Acceptance Criteria for ITS
 
 The internal clone can be considered aligned with the recent Render app changes when:
 
@@ -486,6 +506,7 @@ The internal clone can be considered aligned with the recent Render app changes 
 3. Upload caps are: one primary project document, up to 10 package documents, and up to 3 contextual documents.
 4. Secondary documents are distilled before Stage 1 model assembly.
 5. CPF and RRA evidence can be reflected in Stage 3 recommendation metadata.
-6. Express and Step-by-Step workflows both work.
-7. The full automated test suite passes.
-8. Any internal retrieval behavior is implemented as permission-aware backend retrieval and source injection, not as a model-side instruction to search internal systems.
+6. Verified policy and instrument-reference corrections from Change Group J are preserved exactly.
+7. Express and Step-by-Step workflows both work.
+8. The full automated test suite passes.
+9. Any internal retrieval behavior is implemented as permission-aware backend retrieval and source injection, not as a model-side instruction to search internal systems.
