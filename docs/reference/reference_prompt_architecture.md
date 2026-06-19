@@ -7,9 +7,13 @@
 
 ## Stage 1: "Context & Extraction"
 
-**Purpose:** Extract FCV-relevant content from uploaded project and contextual documents, enriched by automated web research and Playbook Diagnostics framing.
+**Purpose:** Extract FCV-relevant content from the primary project document, enriched by distilled secondary document cards, automated web research, and Playbook Diagnostics framing.
 
-**Input:** Any WBG appraisal or design-stage project document (Concept Note, PID, PCN, PAD, Additional Financing, Restructuring Paper, DPF/DPO Program Document, PforR document, MPA, or regional operation). Optionally 1–2 contextual documents (RRA, country risk report, policy matrix, DLI matrix, etc.).
+Current upload tiering: exactly one primary project document anchors the assessment; up to 10 project-package documents are distilled into key-signal cards; up to 3 contextual documents are distilled into RRA driver / CPF pillar cards or generic context cards.
+
+**Secondary-document distillation:** Before Stage 1 assembly, package and contextual documents are passed through `fcv_distillation.distill_doc_parts_stream()`. Each secondary document is classified and extracted in isolation using Haiku, then mutated into a compact, source-labelled card. Package cards are injected under `SUPPORTING PACKAGE EVIDENCE (not independently assessed)`. Context cards are injected under `CONTEXT ANCHOR: CONFLICT DRIVERS AND COUNTRY PILLARS`, preserving RRA drivers and CPF pillars for Stage 3 matching. Failed or overflowed distillation produces a named stub rather than silently dropping a document.
+
+**Input:** Any WBG appraisal or design-stage project document (Concept Note, PID, PCN, PAD, Additional Financing, Restructuring Paper, DPF/DPO Program Document, PforR document, MPA, or regional operation). Optionally up to 10 project-package documents and up to 3 contextual documents (RRA, CPF, country risk report, policy matrix, DLI matrix, etc.).
 
 **Automated FCV web research phase (runs before LLM generation):**
 1. `extract_country_name()` — brief LLM call to identify project country (first 4000 chars)
@@ -26,14 +30,14 @@
 - Tier 3 — Training knowledge: `[From: training knowledge]` or named org/report
 
 **Key behaviors:**
-- Part A: Extract only from the project document. No outside knowledge.
+- Part A: Extract only from the primary project document plus package evidence cards. No outside knowledge.
 - Part B: Use tiers 1→2→3 in strict priority order; always label the source tier at each point.
 - Extraction guided by Playbook Diagnostics questions (RRA utilisation, compound risks, forced displacement, CPSD)
 - FCV classification context from FCV Strategy 2026-2030 injected (is this an FCS country? what trajectory?)
 
 **Large document handling:**
-- Documents > 150,000 characters are condensed via LLM extraction (FCV-relevant content only).
-- Documents > 500,000 characters are truncated to MAX_DOC_CHARS.
+- Primary documents are extracted up to `MAX_DOC_CHARS`, then truncated to `STAGE1_MAX_DOC_CHARS = 60_000` before Stage 1.
+- Secondary package/context documents are extracted up to `MAX_DOC_CHARS`, then distilled into capped cards before Stage 1. The old 25k/30k secondary full-read caps are no longer the effective Stage 1 payload size.
 - Truncation warnings shown to users when triggered.
 
 **Document type classification (embedded in Stage 1):**

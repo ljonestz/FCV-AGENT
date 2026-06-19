@@ -30,6 +30,7 @@ POST /api/run-express
     assessment_id: {assessment_id}
     stage_start: {stage_start: N}
     research_status: {research_status, country}
+    preprocessing: {status: "preprocessing", preprocessing: {...}}  # secondary-doc distillation progress
     preprocess: {preprocess: message}
     chunk: {chunk: text, stage: N}
     stage_done: {stage_done: N, result, history, ...stage-specific data}
@@ -135,8 +136,14 @@ extract_pptx_text(b64_data, name)  # python-pptx — slide-labelled text + table
 ```python
 MAX_DOC_CHARS = 500_000       # Hard cap per document after extraction
 STAGE1_MAX_DOC_CHARS = 60_000 # Truncation before sending to Claude (Stage 1)
+CARD_CHARS_2A = 2_800         # Structured package card cap in fcv_distillation.py
+CARD_CHARS_2B = 1_200         # Generic package card cap in fcv_distillation.py
+CARD_CHARS_CONTEXT = 1_800    # Context card cap in fcv_distillation.py
+SECONDARY_CARD_BUDGET_CHARS = 32_000 # Global package/context card budget
 MAX_ASSISTANT_CHARS = 40_000  # Truncation applied to assistant turns stored in conversation_history
 ```
+
+Zone 2 package documents and Zone 3 contextual documents are distilled by `fcv_distillation.distill_doc_parts_stream()` before Stage 1 prompt assembly. The primary Zone 1 document is not distilled.
 
 ---
 
@@ -173,6 +180,7 @@ def extract_priorities(stage3_output, uploaded_doc_names=None):
     # 6. Run _check_specificity(): mid-sentence capitalised words as proper-noun proxy
     # 7. Run _check_citations(): cross-ref [From: ...] against uploaded_doc_names + org whitelist
     # 8. Return unified dict with all fields + specificity_warning / citation_warnings per priority
+    #    Priority fields include cpf_alignment and rra_driver_alignment.
     # 9. On malformed JSON: return {error: True, message: ...} — NOT silent failure
 ```
 

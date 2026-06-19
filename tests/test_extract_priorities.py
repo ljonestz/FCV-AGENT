@@ -166,6 +166,14 @@ class TestExtractPrioritiesJsonPath:
                 f"Missing country_category_relevance on priority: {pr.get('title', '?')}"
             )
 
+    def test_rra_driver_alignment_optional(self):
+        """rra_driver_alignment should be present on each priority (may be None or empty string)."""
+        result = extract_priorities(VALID_JSON_FIXTURE)
+        for pr in result['priorities']:
+            assert 'rra_driver_alignment' in pr, (
+                f"Missing rra_driver_alignment on priority: {pr.get('title', '?')}"
+            )
+
 
 # ── Error-path tests ──────────────────────────────────────────────────────────
 

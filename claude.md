@@ -23,7 +23,7 @@ Every prompt output tags findings as [S], [R], or [S+R], assigned dynamically pe
 
 **Key goal:** Move from broad, vague recommendations to specific, location-aware, operationally grounded, stage-aware suggestions (e.g., "historically, Nzerekore, Kindia, and Kankan have been excluded from service delivery — focus on these regions before PAD appraisal").
 
-**Analytical backbone:** WBG FCV Strategy 2026-2030, FCV Operational Manual (OST, enriched with Peace & Inclusion Lens dimensions and Strategic DRR Framing from Good Practice Notes), FCV Operational Playbook, and Good Practice Notes on Peace & Inclusion Lenses and FCV-Sensitive Programming. When a Country Partnership Framework (CPF) is uploaded as a contextual document, Stage 3 recommendations include a `cpf_alignment` field linking priorities to CPF outcomes.
+**Analytical backbone:** WBG FCV Strategy 2026-2030, FCV Operational Manual (OST, enriched with Peace & Inclusion Lens dimensions and Strategic DRR Framing from Good Practice Notes), FCV Operational Playbook, and Good Practice Notes on Peace & Inclusion Lenses and FCV-Sensitive Programming. When a Country Partnership Framework (CPF) is uploaded as a contextual document, Stage 3 recommendations include a `cpf_alignment` field linking priorities to CPF outcomes. When an RRA or equivalent conflict analysis is uploaded, Stage 3 also includes `rra_driver_alignment` linking priorities to identified conflict drivers where relevant.
 
 **Version history:**
 - **v7.0** — Redesigned from 4 stages to 3; full 12 OST recs + 25 key questions; FCV Playbook integration; Under the Hood panels; refresh_shift field
@@ -121,6 +121,11 @@ Every prompt output tags findings as [S], [R], or [S+R], assigned dynamically pe
   - **Bounded injection (no silent truncation):** `bounded_injection_plan()` caps overlays by priority (instrument spine never dropped: instrument > mid-cycle > MPA > multi-country detail) and returns a disclosure string when anything is bounded
   - **Knowledge + prompt:** `INTERSECTION_SYNTHESIS_GUIDE` (layering, single coherent memo, precedence, bloat guardrail); Stage 3 prompt gains a Composition & Synthesis section; Stage 3 (both routes) injects the guide when `build_composition_plan(...).is_intersection` (>=2 active layers)
   - **Tests:** `tests/test_intersection_phase6.py` (8 tests); full suite 126 passed; no prior-phase regression. Completes the Phase 0-6 expansion (mid-cycle, DPF, P4R, MPA, multi-country, intersection) on the registry foundation
+- **v9.11** - Secondary-document distillation and upload expansion (branch `feat/secondary-doc-distillation`, 2026-06-18):
+  - **Upload tiers:** Zone 1 is a single required primary project document; Zone 2 accepts up to 10 supporting project-package documents; Zone 3 accepts up to 3 contextual documents.
+  - **Secondary distillation:** `fcv_distillation.py` classifies and distills package/context documents into compact source-labelled cards before Stage 1 assembly. The primary document remains on the existing 60k-character Stage 1 path.
+  - **Budget guard:** Secondary cards are capped per tier and by a global 32k-character budget with a context reserve. Overflow and distillation failures produce named stubs rather than silent drops.
+  - **Stage 3 matching:** Priority JSON now includes `rra_driver_alignment` alongside `cpf_alignment`, so recommendations can link to RRA conflict drivers where uploaded and relevant.
 - **v9.2** - Classification caveat and background_docs policy corrections (branch `feat/v9-differentiated-approaches`, 2026-04-19):
   - **Classification widget caveat:** Narrative now always ends with "This is a subjective judgement on the part of this AI tool and does not constitute an official WBG classification." — consistent with Stage 1 AI disclaimer framing
   - **background_docs.py — ICR timing:** `STAGE_GUIDANCE_MAP["ICR"]["timing_options"]` corrected from `"During implementation"` to `"At project closing"`
@@ -187,6 +192,8 @@ Procfile            # Render deployment config
 ```
 
 ### 1.3 Three-Stage Pipeline
+
+**Current upload tiering:** Zone 1 accepts exactly one primary project document; Zone 2 accepts up to 10 package documents that are distilled into key-signal cards; Zone 3 accepts up to 3 contextual documents distilled into RRA driver / CPF pillar cards or generic context cards.
 
 **Two workflow modes:** Express Analysis (default — all 3 stages run automatically via `/api/run-express`) and Step-by-Step (interactive, one stage at a time via `/api/run-stage`). Same prompts, same output quality.
 
@@ -421,7 +428,10 @@ DEFAULT_PROMPTS = {
 
 ```python
 MAX_DOC_CHARS = 500_000        # Hard cap on chars extracted from any single document
-STAGE1_MAX_DOC_CHARS = 60_000  # Docs truncated to this before Stage 1 (no LLM extraction)
+STAGE1_MAX_DOC_CHARS = 60_000  # Primary doc truncated to this before Stage 1
+CARD_CHARS_2A = 2_800          # Structured secondary package card cap in fcv_distillation.py
+CARD_CHARS_2B = 1_200          # Generic secondary package card cap in fcv_distillation.py
+CARD_CHARS_CONTEXT = 1_800     # Context card cap in fcv_distillation.py
 PROMPTS_FILE = 'prompts.json'
 ```
 
@@ -508,7 +518,15 @@ python3 app.py   # http://localhost:5000
 - Connect GitHub repo → Render reads `Procfile` + `requirements.txt`
 - **Production server:** gunicorn + gevent (`--worker-class gevent --timeout 600`) — required for long-running SSE
 - **Env vars:** `ANTHROPIC_API_KEY` (required)
-- Auto-deploys on push to connected branch
+- Auto-deploys on push/merge to connected branch
+
+### GitHub Security & Branch Workflow
+- `main` is protected: changes should go through pull requests, with 1 approving review required before merge.
+- Branch protection dismisses stale approvals, requires conversation resolution, applies to admins, and blocks force pushes and branch deletion.
+- GitHub Advanced Security features enabled for this public repo: Dependabot vulnerability alerts, Dependabot security updates, secret scanning, and push protection.
+- `.github/dependabot.yml` schedules weekly dependency update checks for Python (`requirements.txt`) and GitHub Actions.
+- `.github/workflows/codeql.yml` runs CodeQL Python analysis on PRs to `main`, pushes to `main`, and weekly on Monday.
+- After the first CodeQL run is stable on `main`, consider adding the CodeQL check as a required status check in branch protection.
 
 ---
 
@@ -594,6 +612,10 @@ FCV-AGENT/
 ├── prompts.json                  # Session-specific prompt overrides (empty by default)
 ├── requirements.txt
 ├── Procfile
+├── .github/
+│   ├── dependabot.yml            # Weekly dependency update configuration
+│   └── workflows/
+│       └── codeql.yml            # CodeQL Python security scanning
 ├── README.md                     # Deployment guide for IT
 ├── CLAUDE.md                     # This file — developer reference
 ├── docs/
@@ -618,6 +640,6 @@ docs/superpowers/  # Dev plans and specs
 ---
 
 **Last updated:** 2026-06-18
-**Current version:** FCV Project Screener v9.10
+**Current version:** FCV Project Screener v9.11
 **Claude model:** `claude-sonnet-4-6`
 **Stack:** Flask 3.0.3 + vanilla JS + Anthropic SDK + gunicorn/gevent on Render

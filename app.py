@@ -12,6 +12,7 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 from flask import Flask, request, jsonify, send_from_directory, Response, stream_with_context
 import anthropic
+from fcv_distillation import distill_doc_parts_stream
 import httpx
 from background_docs import (
     FCV_GUIDE, FCV_OPERATIONAL_MANUAL, FCV_REFRESH_FRAMEWORK,
@@ -46,8 +47,8 @@ except ImportError:
 MAX_DOC_CHARS = 500_000       # Max chars extracted from any single document
 STAGE1_MAX_DOC_CHARS = 60_000       # Docs are truncated to this before Stage 1 — no LLM extraction,
                                      # no blocking pre-stage calls, no proxy timeout risk
-STAGE1_PACKAGE_DOC_CHARS = 25_000   # Per Zone 2 companion instrument char limit
-STAGE1_CONTEXT_DOC_CHARS = 30_000   # Per Zone 3 country context doc char limit
+STAGE1_PACKAGE_DOC_CHARS = 25_000   # Pre-distillation fallback cap for Zone 2 docs
+STAGE1_CONTEXT_DOC_CHARS = 30_000   # Pre-distillation fallback cap for Zone 3 docs
 STREAM_KEEPALIVE_SECONDS = 20
 STAGE_STREAM_TIMEOUTS = {
     1: 8 * 60,
@@ -595,8 +596,8 @@ _REQUIRED_PRIORITY_FIELDS = [
     'the_gap', 'why_it_matters', 'actions',
     'who_acts', 'when', 'action_timing', 'resources',
     'pad_sections', 'implementation_note', 'cpf_alignment',
-    'country_category_relevance', 'change_type', 'restructuring_level',
-    'priority_scope',
+    'rra_driver_alignment', 'country_category_relevance',
+    'change_type', 'restructuring_level', 'priority_scope',
 ]
 
 _SPECIFICITY_STOPWORDS = frozenset({
@@ -1690,6 +1691,8 @@ Analyse the provided documents and produce a structured FCV assessment in two cl
 
 Keep the two parts strictly separate. Part A is a project package extraction exercise. Part B is a contextual enrichment exercise.
 
+Package and context documents may appear as pre-distilled cards rather than full document text. Treat those cards as key signals only: use them as supporting evidence, cite the source filename shown in the card, and do not expect full-document detail from secondary uploads.
+
 # Output Structure
 
 ## Part A: FCV Risks and Indicators from the Project Document
@@ -2685,7 +2688,9 @@ GEOGRAPHIC VALIDATION: Before finalising each priority, check: does the `the_gap
 
 COUNTRY CATEGORY RELEVANCE (MANDATORY): For each priority, populate `country_category_relevance` with a 1-2 sentence note explaining why this priority is particularly relevant given the country's FCV category (Conflict-Affected / At Risk / In Transition / General). What does the specific category imply for how this priority should be approached differently than in a stable-country context? For example, in a Conflict-Affected context, a GRM recommendation matters because access is contested and trust in state institutions is low; in an At Risk context, the same recommendation matters because early-warning signals require proactive engagement before grievances escalate. Do NOT leave this field empty.
 
-CPF ALIGNMENT: If a Country Partnership Framework (CPF) was uploaded by the user among the contextual documents in Stage 1, it will appear in the Stage 1 output under contextual sources. For each priority recommendation, identify whether implementing that recommendation would strengthen a specific CPF outcome. Populate the `cpf_alignment` JSON field with a 1–2 sentence statement naming the specific CPF outcome (by number or title as stated in the CPF) and explaining how this recommendation supports it. If no CPF was uploaded, or if no clear linkage exists for a given priority, set `cpf_alignment` to `null` — do not fabricate connections. Refer to the CPF Integration Guide (injected below) for tone and citation guidance.
+CPF ALIGNMENT: If a Country Partnership Framework (CPF) was uploaded by the user among the contextual documents in Stage 1, it will appear in the Stage 1 output under contextual sources. For each priority recommendation, identify whether implementing that recommendation would strengthen a specific CPF outcome. Populate the `cpf_alignment` JSON field with a 1-2 sentence statement naming the specific CPF outcome (by number or title as stated in the CPF) and explaining how this recommendation supports it. If no CPF was uploaded, or if no clear linkage exists for a given priority, set `cpf_alignment` to `null` - do not fabricate connections. Refer to the CPF Integration Guide (injected below) for tone and citation guidance.
+
+RRA DRIVER ALIGNMENT: If a Risk and Resilience Assessment (RRA) or equivalent conflict analysis was uploaded among the contextual documents, its main conflict drivers will appear in the Stage 1 output under contextual sources, often in a distilled card labelled "CONFLICT DRIVERS". For each priority recommendation, identify whether it addresses one or more of those named drivers. Populate `rra_driver_alignment` with a 1-2 sentence statement naming the specific driver(s) and how the recommendation responds. If no RRA was uploaded, or no clear linkage exists for a given priority, set `rra_driver_alignment` to null and do not fabricate a connection.
 
 Strict prohibitions: NO specific percentages or dollar amounts; NO generic language; NO criticism for post-preparation events. The `actions` field is a structured array (see JSON block below); all other fields use flowing prose.
 
@@ -2749,7 +2754,7 @@ The SEA/SH card and the GRM card may both appear in the output — they address 
 - JSON block is present at the end, wrapped in %%%JSON_START%%% / %%%JSON_END%%%
 - All 10 top-level JSON fields are populated (fcv_rating, fcv_responsiveness_rating, sensitivity_summary, responsiveness_summary, risk_exposure, mid_cycle_watch, dpf_watch, p4r_watch, regional_watch, priorities)
 - Each priority's pad_sections, actions (including per-action suggested_language), and implementation_note are specific to this project — not generic placeholders
-- Each priority JSON object has all 19 fields: title, fcv_dimension, tag, refresh_shift, risk_level, the_gap, why_it_matters, actions, who_acts, when, action_timing, resources, pad_sections, country_category_relevance, implementation_note, cpf_alignment, change_type, restructuring_level, priority_scope
+- Each priority JSON object has all 20 fields: title, fcv_dimension, tag, refresh_shift, risk_level, the_gap, why_it_matters, actions, who_acts, when, action_timing, resources, pad_sections, country_category_relevance, implementation_note, cpf_alignment, rra_driver_alignment, change_type, restructuring_level, priority_scope
 - No generic or templated language anywhere
 - All `when` values are appropriate for the {doc_type} stage
 
@@ -2804,13 +2809,14 @@ The FCV ratings, summaries, and risk exposure paragraphs you have written in the
       "action_timing": "required-before-appraisal",
       "country_category_relevance": "In a Conflict-Affected context, this priority matters because...",
       "implementation_note": "1-2 sentences on timing, cost, sequencing, or key dependency",
-      "cpf_alignment": "This recommendation strengthens CPF Outcome 1 (Healthier, Better Educated and Skilled Population) by ensuring FCV-sensitive targeting reaches conflict-affected communities."
+      "cpf_alignment": "This recommendation strengthens CPF Outcome 1 (Healthier, Better Educated and Skilled Population) by ensuring FCV-sensitive targeting reaches conflict-affected communities.",
+      "rra_driver_alignment": "This recommendation directly addresses RRA Driver 2 (competition over land and water) by embedding conflict-sensitive site selection and a local grievance mechanism."
     }}}}
   ]
 }}}}
 %%%JSON_END%%%
 
-IMPORTANT: The JSON block must come AFTER all narrative text. Do not include any explanatory text inside the JSON block itself. Use exact field names as shown. The `tag` field must be exactly "[S]", "[R]", or "[S+R]" (with square brackets). For `fcv_rating` and `fcv_responsiveness_rating`: use the sensitivity and responsiveness ratings from Stage 2 exactly as provided in the conversation history. Copy them into the JSON fields without modification. Do not re-assess or override the Stage 2 ratings. The `refresh_shift` field must be exactly one of: "Shift A: Anticipate" | "Shift B: Differentiate" | "Shift C: Jobs & private sector" | "Shift D: Enhanced toolkit". The `who_acts` field is semicolon-separated (e.g. "TTL; ESF Team"). The `when` field must be exactly one of: "Identification" | "Preparation" | "Appraisal" | "Implementation" | "Restructuring". The `cpf_alignment` field must be either a string (1–2 sentences) or JSON null — never the string "null" or "Not identified".
+IMPORTANT: The JSON block must come AFTER all narrative text. Do not include any explanatory text inside the JSON block itself. Use exact field names as shown. The `tag` field must be exactly "[S]", "[R]", or "[S+R]" (with square brackets). For `fcv_rating` and `fcv_responsiveness_rating`: use the sensitivity and responsiveness ratings from Stage 2 exactly as provided in the conversation history. Copy them into the JSON fields without modification. Do not re-assess or override the Stage 2 ratings. The `refresh_shift` field must be exactly one of: "Shift A: Anticipate" | "Shift B: Differentiate" | "Shift C: Jobs & private sector" | "Shift D: Enhanced toolkit". The `who_acts` field is semicolon-separated (e.g. "TTL; ESF Team"). The `when` field must be exactly one of: "Identification" | "Preparation" | "Appraisal" | "Implementation" | "Restructuring". The `cpf_alignment` and `rra_driver_alignment` fields must each be either a string (1-2 sentences) or JSON null - never the string "null" or "Not identified".
 
 ## WATCH LIST FOR SUPERVISION (after the JSON block)
 
@@ -5175,12 +5181,22 @@ def run_stage():
                     # Assemble document content.
                     # Documents are truncated to STAGE1_MAX_DOC_CHARS — no LLM extraction,
                     # no additional blocking API calls before the keepalive stream starts.
+                    _secondary_dps = [
+                        d for d in doc_parts
+                        if d['label'] in ('PACKAGE INSTRUMENT', 'CONTEXT DOCUMENT')
+                    ]
+                    if _secondary_dps:
+                        for _event in distill_doc_parts_stream(
+                            _secondary_dps, get_fast_client(), ASSESSMENT_EXECUTOR
+                        ):
+                            yield _event
+
                     for dp in doc_parts:
                         if dp['label'] == 'PACKAGE INSTRUMENT' and not package_sep_added:
-                            content_parts.append({"type": "text", "text": "\n\n--- PROJECT PACKAGE INSTRUMENTS ---\n"})
+                            content_parts.append({"type": "text", "text": "\n\n--- SUPPORTING PACKAGE EVIDENCE (not independently assessed) ---\n"})
                             package_sep_added = True
                         if dp['label'] == 'CONTEXT DOCUMENT' and not context_sep_added:
-                            content_parts.append({"type": "text", "text": "\n\n--- CONTEXTUAL DOCUMENTS ---\n"})
+                            content_parts.append({"type": "text", "text": "\n\n--- CONTEXT ANCHOR: CONFLICT DRIVERS AND COUNTRY PILLARS ---\n"})
                             context_sep_added = True
 
                         raw = dp['raw_text']
@@ -5670,12 +5686,22 @@ def run_express():
                 content_parts = []
                 context_sep_added = False
                 package_sep_added = False
+                _secondary_dps = [
+                    d for d in doc_parts
+                    if d['label'] in ('PACKAGE INSTRUMENT', 'CONTEXT DOCUMENT')
+                ]
+                if _secondary_dps:
+                    for _event in distill_doc_parts_stream(
+                        _secondary_dps, get_fast_client(), ASSESSMENT_EXECUTOR
+                    ):
+                        yield _event
+
                 for dp in doc_parts:
                     if dp['label'] == 'PACKAGE INSTRUMENT' and not package_sep_added:
-                        content_parts.append({"type": "text", "text": "\n\n--- PROJECT PACKAGE INSTRUMENTS ---\n"})
+                        content_parts.append({"type": "text", "text": "\n\n--- SUPPORTING PACKAGE EVIDENCE (not independently assessed) ---\n"})
                         package_sep_added = True
                     if dp['label'] == 'CONTEXT DOCUMENT' and not context_sep_added:
-                        content_parts.append({"type": "text", "text": "\n\n--- CONTEXTUAL DOCUMENTS ---\n"})
+                        content_parts.append({"type": "text", "text": "\n\n--- CONTEXT ANCHOR: CONFLICT DRIVERS AND COUNTRY PILLARS ---\n"})
                         context_sep_added = True
                     raw = dp['raw_text']
                     limit = dp.get('char_limit', STAGE1_MAX_DOC_CHARS)
@@ -6564,6 +6590,7 @@ def download_report():
                 add_field('The Gap', pr.get('the_gap'))
                 add_field('Why It Matters', pr.get('why_it_matters'))
                 add_field('CPF Alignment', pr.get('cpf_alignment'))
+                add_field('RRA Driver Alignment', pr.get('rra_driver_alignment'))
                 add_field('Differentiated approach note', pr.get('country_category_relevance'))
 
                 actions = pr.get('actions', [])

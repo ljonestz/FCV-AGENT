@@ -52,6 +52,7 @@
 - `fcvSafeLocalStorageSet(key, value)` - safe wrapper for optional localStorage writes that should not fail a running analysis
 - Browser session storage is now automatically namespaced by per-tab `assessment_id` via a storage/fetch shim appended at the end of `index.html`
 - Landing and upload copy explicitly frames supported inputs as WBG appraisal/design-stage documents across PCN, PID, PAD, AF, Restructuring, DPF/DPO, PforR, MPA, and regional operations; MTR/ISR implementation review remains marked as coming soon.
+- Upload caps are enforced in drag/drop, polling, and FormData fallback paths: Zone 1 primary document = 1 file, Zone 2 project package = up to 10 files, Zone 3 contextual documents = up to 3 files. Secondary documents are read for key signals through backend distillation, not fully assessed as standalone documents.
 
 ---
 
