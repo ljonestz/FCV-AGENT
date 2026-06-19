@@ -166,6 +166,14 @@ class TestExtractPrioritiesJsonPath:
                 f"Missing country_category_relevance on priority: {pr.get('title', '?')}"
             )
 
+    def test_rra_driver_alignment_optional(self):
+        """rra_driver_alignment should be present on each priority (may be None or empty string)."""
+        result = extract_priorities(VALID_JSON_FIXTURE)
+        for pr in result['priorities']:
+            assert 'rra_driver_alignment' in pr, (
+                f"Missing rra_driver_alignment on priority: {pr.get('title', '?')}"
+            )
+
 
 # ── Error-path tests ──────────────────────────────────────────────────────────
 
@@ -290,7 +298,7 @@ class TestInstrumentCalibrationContent:
         assert 'IVA' in FCV_INSTRUMENT_CALIBRATION
 
     def test_pforr_op730_incompatibility(self):
-        assert 'effectively unusable' in FCV_INSTRUMENT_CALIBRATION
+        assert 'strongly constrained rather than categorically barred' in FCV_INSTRUMENT_CALIBRATION
 
     def test_mpa_calibration_block_present(self):
         assert 'MPA — FCV Calibration' in FCV_INSTRUMENT_CALIBRATION
