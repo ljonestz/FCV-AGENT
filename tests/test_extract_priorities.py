@@ -298,7 +298,7 @@ class TestInstrumentCalibrationContent:
         assert 'IVA' in FCV_INSTRUMENT_CALIBRATION
 
     def test_pforr_op730_incompatibility(self):
-        assert 'effectively unusable' in FCV_INSTRUMENT_CALIBRATION
+        assert 'strongly constrained rather than categorically barred' in FCV_INSTRUMENT_CALIBRATION
 
     def test_mpa_calibration_block_present(self):
         assert 'MPA — FCV Calibration' in FCV_INSTRUMENT_CALIBRATION

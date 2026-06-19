@@ -119,7 +119,7 @@ def test_get_p4r_slice_injects_dli_guidance():
 
     slice_p4r = get_p4r_slice("PforR")
     assert "DLI" in slice_p4r
-    assert "OPS5.09" in slice_p4r
+    assert "OPS5.04-POL.125" in slice_p4r
     assert "IVA" in slice_p4r
 
 
@@ -129,7 +129,8 @@ def test_p4r_guides_and_prompts_are_present():
 
     guide = background_docs.P4R_MODULE_GUIDE
     assert "DLI" in guide
-    assert "OPS5.09" in guide
+    assert "OPS5.04-POL.125" in guide
+    assert "OPS5.04-DIR.110" in guide
     assert "OP 7.30" in guide
     assert "ESSA" in guide and "ESMS" in guide
     assert "GRM" in guide
