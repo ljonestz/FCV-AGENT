@@ -3140,6 +3140,14 @@
         }
         if(_expressDone)break; // break while loop immediately after express_done
       }
+      // Stream ended WITHOUT an express_done event: the server closed or dropped the
+      // connection mid-run (common on the free Render tier, a worker restart, or a proxy
+      // timeout on a long Stage 3). Surface a real error instead of leaving the loading
+      // screen spinning forever (the finally block below only resets busy/timeout).
+      if(!_expressDone){
+        clearTimeout(expressTimeout);
+        showExpressError(currentStage,'Connection closed before the Recommendations Note finished. The server may have restarted or dropped the stream. Click Retry - completed stages are cached and re-run quickly.');
+      }
     }catch(e){
       clearTimeout(expressTimeout);
       showExpressError(currentStage,e.message||'Connection lost');
