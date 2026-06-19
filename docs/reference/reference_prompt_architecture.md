@@ -69,7 +69,9 @@ Current upload tiering: exactly one primary project document anchors the assessm
 - Shift A: Anticipate — does the project design reflect current fragility classification?
 - Shift B: Differentiate — is it calibrated to the country's FCV trajectory/context type?
 - Shift C: Jobs & private sector — does it address economic livelihoods/job creation as a stability pathway?
-- Shift D: Enhanced toolkit — does it leverage operational flexibilities (OP7.30, TPIs, CERC, etc.)?
+- Shift D: Enhanced toolkit — does it leverage operational flexibilities (OP7.30, TPIs, hazard-appropriate CERC, etc.)?
+
+**CERC guardrail:** Stage 2 must not score CERC absence as a flexibility gap on the basis of violence/conflict escalation, insecurity, civil unrest, armed-group activity, or access constraints alone. CERC is relevant only where there is a credible natural-hazard, climate, health, or economic emergency exposure and a plausible borrower emergency declaration/request pathway. For conflict-driven implementation risk, assess adaptive management, restructuring, SORT updating, security planning, TPM/GEMS, or urgent-need/condensed procedures instead.
 
 **Do No Harm — canonical 9 principles:**
 1. Conflict-sensitive targeting and beneficiary selection
@@ -135,6 +137,8 @@ If in doubt → [S] or [R].
 - AF/Restructuring → PLAYBOOK_IMPLEMENTATION, timing: "Implementation / Restructuring"
 - ISR → PLAYBOOK_IMPLEMENTATION + PLAYBOOK_CLOSING, timing: "Implementation"
 - Unknown → PLAYBOOK_PREPARATION (safe default)
+
+**CERC recommendation guardrail:** Stage 3 must not recommend CERC, operationalise CERC readiness, or flag missing CERC readiness for conflict/violence escalation alone. CERC priority cards are allowed only for natural-hazard, climate, health, or economic emergency exposure with a plausible borrower declaration/request pathway, and must name that hazard pathway. Do not invent substitute activation paths such as UN appeals or certified statements of facts for conflict-triggered CERC activation.
 
 **Narrative output structure:**
 ```
