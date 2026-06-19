@@ -523,7 +523,7 @@ python3 app.py   # http://localhost:5000
 - Auto-deploys on push/merge to connected branch
 
 ### GitHub Security & Branch Workflow
-- `main` is protected: changes should go through pull requests, with 1 approving review required before merge.
+- `main` is protected: changes go through pull requests. No approving review is currently required (`required_approving_review_count: 0`), so PRs can be merged programmatically (e.g. `gh pr merge`); open review conversations must still be resolved first, and protection applies to admins.
 - Branch protection dismisses stale approvals, requires conversation resolution, applies to admins, and blocks force pushes and branch deletion.
 - GitHub Advanced Security features enabled for this public repo: Dependabot vulnerability alerts, Dependabot security updates, secret scanning, and push protection.
 - `.github/dependabot.yml` schedules weekly dependency update checks for Python (`requirements.txt`) and GitHub Actions.
