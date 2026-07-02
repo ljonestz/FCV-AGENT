@@ -5622,6 +5622,7 @@ def run_express():
         review_mode = data.get('review_mode', 'design').strip()
         is_impl = (review_mode == 'implementation')
         user_context = data.get('user_context', '').strip()  # optional user-supplied context
+        priority_questions = normalize_priority_questions(data.get('priority_questions'))
         if not documents:
             return jsonify({'error': 'Please upload at least one project document.'}), 400
 
@@ -5832,6 +5833,9 @@ def run_express():
                         + user_context +
                         "\n---"
                     )
+                pq_block = build_priority_questions_block(priority_questions, 1)
+                if pq_block:
+                    stage1_prompt = stage1_prompt + pq_block
                 content_parts.append({"type": "text", "text": stage1_prompt})
 
                 stage1_messages = [{"role": "user", "content": content_parts}]
@@ -6007,6 +6011,9 @@ def run_express():
                     "%%%CATEGORY_LENS_END%%%"
                 )
 
+                pq_block = build_priority_questions_block(priority_questions, 2)
+                if pq_block:
+                    stage2_prompt = stage2_prompt + pq_block
                 # Build messages: prior context + Stage 2 prompt
                 stage2_messages = [
                     {"role": "user", "content": f"Prior FCV analysis context:\n\nStage 1 output:\n{conversation_history[1]['content']}\n\nUse this as the basis for the next stage."},
@@ -6180,6 +6187,9 @@ def run_express():
                             snippets_text_s3e += f"### {snip['title']}\nSource: {snip['source']}\n\n{snip['content']}\n\n---\n"
                         stage3_prompt = stage3_prompt + snippets_text_s3e
 
+                pq_block = build_priority_questions_block(priority_questions, 3)
+                if pq_block:
+                    stage3_prompt = stage3_prompt + pq_block
                 # Build Stage 3 messages from conversation history
                 stage3_messages = conversation_history + [
                     {"role": "user", "content": stage3_prompt}
