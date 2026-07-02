@@ -257,27 +257,29 @@ Stage badge (e.g., "Recommendations tailored for PCN stage")
 ```
 %%%FOCUS_QUESTIONS_START%%%
 {
+  "overview": "2-3 sentence intro: how many points flagged, coverage note in natural language (no status labels).",
   "responses": [
     {
       "id":                  "1",
       "question":            "original question text as entered by the user",
       "status":              "addressed",
       "direct_answer":       "2–4 sentence answer grounded in stage outputs",
-      "evidence_basis":      "[From: document name] or Stage 1/2/3 reference",
+      "evidence_basis":      "Plain-language note naming the uploaded project documents (not internal stage/theme/flag references)",
       "linked_priorities":   ["Priority title A", "Priority title B"],
       "confidence_gap_note": null
     }
-  ],
-  "summary": "1–2 sentence overall coverage note"
+  ]
 }
 %%%FOCUS_QUESTIONS_END%%%
 ```
 
 **Field value sets:**
-- `status`: `"addressed"` | `"partially_addressed"` | `"not_yet_addressed"` (unknown values coerced to `"not_yet_addressed"` by `extract_focus_questions()`)
-- `confidence_gap_note`: `null` (no gap) or a short string explaining uncertainty
+- `overview`: top-level string; introduces the responses panel for readers who have not seen the internal Stage 1-3 analysis. Parsed and passed through by `extract_focus_questions()` as `overview` in the return dict.
+- `status`: `"addressed"` | `"partially_addressed"` | `"not_yet_addressed"` (unknown values coerced to `"not_yet_addressed"` by `extract_focus_questions()`). **Internal-only — not displayed to the user.** Still used by the frontend's re-run nudge logic.
+- `evidence_basis`: plain language describing which uploaded documents the response draws from (e.g. "the Project Paper and ESRS"). Must NOT reference internal analysis stages ("Stage 2"), theme numbers ("Theme 1"), key-gap labels, or system flags (e.g. `seash_standalone_flag`).
+- `confidence_gap_note`: `null` (no gap) or a short string explaining uncertainty, preferring to name what is absent from the uploaded documents.
 
-**Parsing:** `extract_focus_questions(text)` — see reference_backend_routes.md for full signature and return shape.
+**Parsing:** `extract_focus_questions(text)` — see reference_backend_routes.md for full signature and return shape. Return dict now includes `overview` alongside `responses` and `summary`.
 
 ---
 
@@ -290,4 +292,4 @@ Stage badge (e.g., "Recommendations tailored for PCN stage")
 
 ---
 
-*Last updated: 2026-07-02 — added Priority Questions prompt, %%%FOCUS_QUESTIONS_START/END%%% schema, and soft-emphasis injection pattern (v9.13)*
+*Last updated: 2026-07-02 — added Priority Questions prompt, %%%FOCUS_QUESTIONS_START/END%%% schema, and soft-emphasis injection pattern (v9.13); added top-level `overview` field, plain-language `evidence_basis` constraint, `status` marked internal-only (v9.14)*

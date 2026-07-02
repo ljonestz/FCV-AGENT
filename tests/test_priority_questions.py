@@ -75,3 +75,14 @@ def test_extract_focus_questions_empty_on_no_marker():
     out = extract_focus_questions("no markers here")
     assert out['error'] is True
     assert out['responses'] == []
+
+
+def test_extract_focus_questions_passes_overview():
+    text = ("%%%FOCUS_QUESTIONS_START%%%"
+            + json.dumps({"overview": "Intro text.", "responses": [
+                {"id": "q1", "question": "Q", "status": "addressed", "direct_answer": "A",
+                 "evidence_basis": "E", "linked_priorities": [], "confidence_gap_note": "N"}]})
+            + "%%%FOCUS_QUESTIONS_END%%%")
+    out = extract_focus_questions(text)
+    assert out['overview'] == "Intro text."
+    assert out['responses'][0]['status'] == 'addressed'

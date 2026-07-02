@@ -3559,38 +3559,49 @@ QUESTION to answer or a FOCUS AREA to reflect on), and the completed Stage 1 out
 Stage 2 assessment + ratings, Stage 3 memo, and Stage 3 priority titles. These points were
 used as soft emphasis guidance during the main analysis, so the completed outputs should
 already contain relevant evidence. Your task is to draw that evidence together and respond
-to each point directly.
+to each point directly, for a reader who has ONLY seen the recommendations note — not the
+internal Stage 1-3 analysis.
 
 Instructions:
-1. Respond to each point clearly and concisely (2–4 sentences). For a question, answer it.
+1. Write a 2-3 sentence "overview" that introduces the responses: note how many points the
+   task team flagged, and that each response draws together the relevant findings from
+   across the assessment and links to the recommendations where relevant. You MAY briefly
+   note coverage in natural language (e.g. "the analysis speaks to all three, most fully on
+   readiness"). Do NOT use status labels such as "partially addressed".
+2. Respond to each point clearly and concisely (2-4 sentences). For a question, answer it.
    For a focus area (e.g. "focus on social cohesion in the north"), give a considered
-   reflection on what the analysis found on that theme ("On social cohesion in the north,
-   the analysis found…").
-2. Ground responses ONLY in what is present in the supplied analysis. Do not introduce new
+   reflection on what the analysis found on that theme.
+3. Ground responses ONLY in what is present in the supplied analysis. Do not introduce new
    evidence or arguments.
-3. Where relevant, link the response to one or more existing Stage 3 priority titles, using
-   the exact titles supplied.
-4. If the analysis only partially addresses a point, say so directly.
-5. If the analysis does not adequately address a point, identify clearly what is missing —
-   do not fill the gap with speculation.
-6. Do not invent citations, document names, or new priority cards.
-7. Do not alter or reinterpret the existing Stage 3 recommendations.
-8. Do not change any Stage 2 rating or Stage 3 priority — only respond to the points.
+4. In "evidence_basis", describe in PLAIN LANGUAGE where the evidence is drawn from, naming
+   the UPLOADED PROJECT DOCUMENTS where possible (e.g. "the Project Paper, ESRS and PID").
+   Do NOT reference internal analysis stages ("Stage 2"), theme numbers ("Theme 1"),
+   "Key Gap N", or system flags (e.g. seash_standalone_flag). Write it so a reader who never
+   opened the internal analysis understands where the response comes from.
+5. In "linked_priorities", list the exact Stage 3 priority titles the response connects to.
+6. If the analysis only partially covers a point, say so in the answer itself (not as a label).
+7. If the analysis does not adequately cover a point, identify clearly in "confidence_gap_note"
+   what is missing -- do not speculate. Prefer to note what is absent from the UPLOADED DOCUMENTS.
+8. Do not invent citations, document names, or new priority cards. Do not alter or reinterpret
+   the existing Stage 3 recommendations or ratings.
 
-Return ONLY a JSON block between the markers below. status must be one of:
-addressed | partially_addressed | not_yet_addressed.
+The "status" field is used internally only (it is NOT shown to the user); still set it
+accurately to one of: addressed | partially_addressed | not_yet_addressed.
+
+Return ONLY a JSON block between the markers below.
 
 %%%FOCUS_QUESTIONS_START%%%
 {
+  "overview": "2-3 sentence introduction to the responses (see instruction 1).",
   "responses": [
     {
       "id": "q1",
       "question": "Original point text",
       "status": "addressed",
-      "direct_answer": "2–4 sentences directly responding to the point.",
-      "evidence_basis": "Short explanation of what in the completed analysis supports this.",
+      "direct_answer": "2-4 sentences directly responding to the point.",
+      "evidence_basis": "Plain-language note of which uploaded documents the response draws from.",
       "linked_priorities": ["Exact Stage 3 priority title if applicable"],
-      "confidence_gap_note": "One sentence on certainty level or what evidence is missing."
+      "confidence_gap_note": "One sentence on certainty or what is missing from the uploaded documents."
     }
   ]
 }
@@ -4042,6 +4053,7 @@ def extract_focus_questions(text: str) -> dict:
     _empty = {
         'error': True,
         'message': 'Priority-point responses could not be parsed.',
+        'overview': '',
         'responses': [],
         'summary': {'addressed': 0, 'partially_addressed': 0, 'not_yet_addressed': 0},
     }
@@ -4057,10 +4069,15 @@ def extract_focus_questions(text: str) -> dict:
             return _empty
         body = m2.group(1).strip()
 
+    overview = ''
     responses = []
     try:
         parsed = json.loads(body)
-        responses = parsed.get('responses', []) if isinstance(parsed, dict) else []
+        if isinstance(parsed, dict):
+            responses = parsed.get('responses', [])
+            overview = parsed.get('overview', '') or ''
+        else:
+            responses = []
     except (json.JSONDecodeError, ValueError):
         for chunk in re.findall(r'\{[^{}]*\}', body, re.DOTALL):
             try:
@@ -4075,7 +4092,7 @@ def extract_focus_questions(text: str) -> dict:
     summary = {'addressed': 0, 'partially_addressed': 0, 'not_yet_addressed': 0}
     for e in cleaned:
         summary[e['status']] = summary.get(e['status'], 0) + 1
-    return {'error': False, 'message': '', 'responses': cleaned, 'summary': summary}
+    return {'error': False, 'message': '', 'overview': overview, 'responses': cleaned, 'summary': summary}
 
 
 # ── Document type detection ───────────────────────────────────────────────────
@@ -6926,33 +6943,21 @@ def download_report():
         focus_responses = focus.get('responses', []) if isinstance(focus, dict) else (focus or [])
         if focus_responses:
             _add_section_heading('Responses to Your Priority Points')
-            summ = focus.get('summary') if isinstance(focus, dict) else None
-            if summ:
-                _add_single_para(
-                    f"{summ.get('addressed', 0)} addressed · "
-                    f"{summ.get('partially_addressed', 0)} partially addressed · "
-                    f"{summ.get('not_yet_addressed', 0)} not yet addressed",
-                    size=9, color=WB_GRAY, italic=True, space_after=6,
-                )
-            _status_labels = {
-                'addressed': 'Addressed',
-                'partially_addressed': 'Partially addressed',
-                'not_yet_addressed': 'Not yet addressed',
-            }
-            for r in focus_responses:
-                _add_single_para(r.get('question', ''), bold=True, color=WB_NAVY, space_before=6, space_after=1)
-                _add_single_para(
-                    _status_labels.get(r.get('status', ''), r.get('status', '')),
-                    size=9, color=WB_GRAY, italic=True, space_after=2,
-                )
+            overview = focus.get('overview', '') if isinstance(focus, dict) else ''
+            if overview:
+                _add_single_para(overview, size=10, color=WB_GRAY, italic=True, space_after=8)
+            for i, r in enumerate(focus_responses):
+                _add_single_para(f"{i + 1}. {r.get('question', '')}", bold=True, color=WB_NAVY, space_before=6, space_after=2)
                 if r.get('direct_answer'):
                     _add_single_para(r['direct_answer'], space_before=0, space_after=2)
-                add_field('Evidence basis', r.get('evidence_basis', ''))
+                if r.get('evidence_basis'):
+                    add_field('Where this draws from', r.get('evidence_basis', ''))
                 lp = r.get('linked_priorities') or []
                 if lp:
-                    add_field('Linked priorities', '; '.join(lp) if isinstance(lp, list) else str(lp))
+                    joined = '; '.join(lp) if isinstance(lp, list) else str(lp)
+                    add_field('Linked recommendations', 'insights above connect to ' + joined)
                 if r.get('confidence_gap_note'):
-                    _add_single_para(r['confidence_gap_note'], size=9, color=WB_LGRAY, italic=True, space_after=4)
+                    _add_single_para('Note: ' + r['confidence_gap_note'], size=9, color=WB_LGRAY, italic=True, space_after=4)
 
         # ── Annex: Stage 2 Assessment Tables ──
         recs_table = under_hood.get('recs_table', '')
