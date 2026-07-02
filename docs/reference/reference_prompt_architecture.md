@@ -263,8 +263,7 @@ Stage badge (e.g., "Recommendations tailored for PCN stage")
       "id":                  "1",
       "question":            "original question text as entered by the user",
       "status":              "addressed",
-      "direct_answer":       "2–4 sentence answer grounded in stage outputs",
-      "evidence_basis":      "Plain-language note naming the uploaded project documents (not internal stage/theme/flag references)",
+      "direct_answer":       "One full paragraph or two shorter paragraphs (~5–9 sentences) with operational detail. Two-paragraph answers use a blank line as separator.",
       "linked_priorities":   ["Priority title A", "Priority title B"],
       "confidence_gap_note": null
     }
@@ -273,13 +272,14 @@ Stage badge (e.g., "Recommendations tailored for PCN stage")
 %%%FOCUS_QUESTIONS_END%%%
 ```
 
+Note: `evidence_basis` has been removed from this schema (v9.15). The `direct_answer` field is now a fuller response — one full paragraph or two shorter paragraphs (roughly 5–9 sentences), including relevant operational specifics. When the model uses two paragraphs it separates them with a blank line; the DOCX renderer splits on blank lines so each paragraph renders separately.
+
 **Field value sets:**
 - `overview`: top-level string; introduces the responses panel for readers who have not seen the internal Stage 1-3 analysis. Parsed and passed through by `extract_focus_questions()` as `overview` in the return dict.
 - `status`: `"addressed"` | `"partially_addressed"` | `"not_yet_addressed"` (unknown values coerced to `"not_yet_addressed"` by `extract_focus_questions()`). **Internal-only — not displayed to the user.** Still used by the frontend's re-run nudge logic.
-- `evidence_basis`: plain language describing which uploaded documents the response draws from (e.g. "the Project Paper and ESRS"). Must NOT reference internal analysis stages ("Stage 2"), theme numbers ("Theme 1"), key-gap labels, or system flags (e.g. `seash_standalone_flag`).
 - `confidence_gap_note`: `null` (no gap) or a short string explaining uncertainty, preferring to name what is absent from the uploaded documents.
 
-**Parsing:** `extract_focus_questions(text)` — see reference_backend_routes.md for full signature and return shape. Return dict now includes `overview` alongside `responses` and `summary`.
+**Parsing:** `extract_focus_questions(text)` — see reference_backend_routes.md for full signature and return shape. Return dict includes `overview` alongside `responses` and `summary`. The parser tolerates an absent `evidence_basis` field via `setdefault`.
 
 ---
 
@@ -292,4 +292,4 @@ Stage badge (e.g., "Recommendations tailored for PCN stage")
 
 ---
 
-*Last updated: 2026-07-02 — added Priority Questions prompt, %%%FOCUS_QUESTIONS_START/END%%% schema, and soft-emphasis injection pattern (v9.13); added top-level `overview` field, plain-language `evidence_basis` constraint, `status` marked internal-only (v9.14)*
+*Last updated: 2026-07-02 — added Priority Questions prompt, %%%FOCUS_QUESTIONS_START/END%%% schema, and soft-emphasis injection pattern (v9.13); added top-level `overview` field, plain-language `evidence_basis` constraint, `status` marked internal-only (v9.14); removed `evidence_basis` field, expanded `direct_answer` to one or two full paragraphs with blank-line separator, raised max_tokens to 10000 (v9.15)*

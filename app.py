@@ -3560,29 +3560,29 @@ Stage 2 assessment + ratings, Stage 3 memo, and Stage 3 priority titles. These p
 used as soft emphasis guidance during the main analysis, so the completed outputs should
 already contain relevant evidence. Your task is to draw that evidence together and respond
 to each point directly, for a reader who has ONLY seen the recommendations note — not the
-internal Stage 1-3 analysis.
+internal Stage 1–3 analysis.
 
 Instructions:
-1. Write a 2-3 sentence "overview" that introduces the responses: note how many points the
+1. Write a 2–3 sentence "overview" that introduces the responses: note how many points the
    task team flagged, and that each response draws together the relevant findings from
    across the assessment and links to the recommendations where relevant. You MAY briefly
    note coverage in natural language (e.g. "the analysis speaks to all three, most fully on
    readiness"). Do NOT use status labels such as "partially addressed".
-2. Respond to each point clearly and concisely (2-4 sentences). For a question, answer it.
-   For a focus area (e.g. "focus on social cohesion in the north"), give a considered
-   reflection on what the analysis found on that theme.
-3. Ground responses ONLY in what is present in the supplied analysis. Do not introduce new
-   evidence or arguments.
-4. In "evidence_basis", describe in PLAIN LANGUAGE where the evidence is drawn from, naming
-   the UPLOADED PROJECT DOCUMENTS where possible (e.g. "the Project Paper, ESRS and PID").
-   Do NOT reference internal analysis stages ("Stage 2"), theme numbers ("Theme 1"),
-   "Key Gap N", or system flags (e.g. seash_standalone_flag). Write it so a reader who never
-   opened the internal analysis understands where the response comes from.
-5. In "linked_priorities", list the exact Stage 3 priority titles the response connects to.
-6. If the analysis only partially covers a point, say so in the answer itself (not as a label).
-7. If the analysis does not adequately cover a point, identify clearly in "confidence_gap_note"
-   what is missing -- do not speculate. Prefer to note what is absent from the UPLOADED DOCUMENTS.
-8. Do not invent citations, document names, or new priority cards. Do not alter or reinterpret
+2. Respond to each point substantively. Give a thorough, genuinely useful answer — one full
+   paragraph or two shorter paragraphs (roughly 5–9 sentences in total). The reader's primary
+   goal is to have these questions answered well, so include the relevant operational detail,
+   specifics (locations, mechanisms, instruments, figures) and nuance that the analysis and
+   the uploaded documents support. If you use two paragraphs, separate them with a blank line.
+   For a question, answer it directly; for a focus area, give a considered reflection on what
+   the analysis found on that theme.
+3. Ground responses ONLY in what is present in the supplied analysis and the uploaded
+   documents. Do not introduce new evidence or arguments, and do not reference internal
+   analysis stages ("Stage 2"), theme numbers ("Theme 1"), "Key Gap N", or system flags.
+4. In "linked_priorities", list the exact Stage 3 priority titles the response connects to.
+5. If the analysis only partially covers a point, say so within the answer itself (not as a label).
+6. If the analysis does not adequately cover a point, note clearly in "confidence_gap_note"
+   what is missing — do not speculate. Prefer to note what is absent from the UPLOADED DOCUMENTS.
+7. Do not invent citations, document names, or new priority cards. Do not alter or reinterpret
    the existing Stage 3 recommendations or ratings.
 
 The "status" field is used internally only (it is NOT shown to the user); still set it
@@ -3592,14 +3592,13 @@ Return ONLY a JSON block between the markers below.
 
 %%%FOCUS_QUESTIONS_START%%%
 {
-  "overview": "2-3 sentence introduction to the responses (see instruction 1).",
+  "overview": "2–3 sentence introduction to the responses (see instruction 1).",
   "responses": [
     {
       "id": "q1",
       "question": "Original point text",
       "status": "addressed",
-      "direct_answer": "2-4 sentences directly responding to the point.",
-      "evidence_basis": "Plain-language note of which uploaded documents the response draws from.",
+      "direct_answer": "One full paragraph or two short paragraphs (~5–9 sentences) directly responding to the point, with the operational detail the analysis supports. Separate two paragraphs with a blank line.",
       "linked_priorities": ["Exact Stage 3 priority title if applicable"],
       "confidence_gap_note": "One sentence on certainty or what is missing from the uploaded documents."
     }
@@ -6623,7 +6622,7 @@ def run_priority_questions():
                 collected = []
                 with get_client().messages.stream(
                     model="claude-sonnet-4-6",
-                    max_tokens=8000,
+                    max_tokens=10000,
                     system=prompt,
                     messages=[{"role": "user", "content": user_message}],
                 ) as stream:
@@ -6949,9 +6948,9 @@ def download_report():
             for i, r in enumerate(focus_responses):
                 _add_single_para(f"{i + 1}. {r.get('question', '')}", bold=True, color=WB_NAVY, space_before=6, space_after=2)
                 if r.get('direct_answer'):
-                    _add_single_para(r['direct_answer'], space_before=0, space_after=2)
-                if r.get('evidence_basis'):
-                    add_field('Where this draws from', r.get('evidence_basis', ''))
+                    for _para in re.split(r'\n\s*\n', r['direct_answer']):
+                        if _para.strip():
+                            _add_single_para(_para.strip(), space_before=0, space_after=2)
                 lp = r.get('linked_priorities') or []
                 if lp:
                     joined = '; '.join(lp) if isinstance(lp, list) else str(lp)
