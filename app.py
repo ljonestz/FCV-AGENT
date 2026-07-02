@@ -6908,6 +6908,39 @@ def download_report():
             _add_section_heading('Watch List for Supervision')
             _md_to_docx_para(doc, horizon)
 
+        # ── Responses to Your Priority Points ──
+        focus = data.get('focus_questions') or {}
+        focus_responses = focus.get('responses', []) if isinstance(focus, dict) else (focus or [])
+        if focus_responses:
+            _add_section_heading('Responses to Your Priority Points')
+            summ = focus.get('summary') if isinstance(focus, dict) else None
+            if summ:
+                _add_single_para(
+                    f"{summ.get('addressed', 0)} addressed · "
+                    f"{summ.get('partially_addressed', 0)} partially addressed · "
+                    f"{summ.get('not_yet_addressed', 0)} not yet addressed",
+                    size=9, color=WB_GRAY, italic=True, space_after=6,
+                )
+            _status_labels = {
+                'addressed': 'Addressed',
+                'partially_addressed': 'Partially addressed',
+                'not_yet_addressed': 'Not yet addressed',
+            }
+            for r in focus_responses:
+                _add_single_para(r.get('question', ''), bold=True, color=WB_NAVY, space_before=6, space_after=1)
+                _add_single_para(
+                    _status_labels.get(r.get('status', ''), r.get('status', '')),
+                    size=9, color=WB_GRAY, italic=True, space_after=2,
+                )
+                if r.get('direct_answer'):
+                    _add_single_para(r['direct_answer'], space_before=0, space_after=2)
+                add_field('Evidence basis', r.get('evidence_basis', ''))
+                lp = r.get('linked_priorities') or []
+                if lp:
+                    add_field('Linked priorities', '; '.join(lp) if isinstance(lp, list) else str(lp))
+                if r.get('confidence_gap_note'):
+                    _add_single_para(r['confidence_gap_note'], size=9, color=WB_LGRAY, italic=True, space_after=4)
+
         # ── Annex: Stage 2 Assessment Tables ──
         recs_table = under_hood.get('recs_table', '')
         dnh_checklist = under_hood.get('dnh_checklist', '')
