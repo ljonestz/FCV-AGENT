@@ -4709,7 +4709,8 @@ ${body}
   }
 
   function reset(){
-    pF=[];cF=[];hist=[];curS=0;busy=false;stageOutputs={};stageHists={};researchBrief='';researchCountry='';
+    pF=[];cF=[];hist=[];curS=0;busy=false;stageOutputs={};stageHists={};researchBrief='';researchCountry='';priorityQuestions=[];focusQuestionsResult=null;pqPanelEnabled=true;
+    { const _pc=document.getElementById('pq-confirm'); if(_pc){_pc.innerHTML='';_pc.style.display='none';} }
     ['stage2_timestamp','stage3_timestamp','stage3_consistency_dismissed'].forEach(k=>localStorage.removeItem(k));
     document.getElementById('upload-panel').style.display='block';
     document.getElementById('analysis-panel').style.display='none';
@@ -4848,6 +4849,12 @@ ${body}
 
   // ── Stage output tracking ─────────────────────────────────────────────────
   let stageOutputs = {};  // {stageNum: result_text} — used by goBack()
+  // Priority Points feature
+  let priorityQuestions = [];      // snapshot of the points sent on the current run
+  let focusQuestionsResult = null; // parsed {responses[], summary} from /api/run-priority-questions
+  let _pqInFlight = false;
+  let pqPanelEnabled = true;       // confirm-strip checkbox state (default ON when points detected)
+  let _pqDetectTimer = null;       // debounce handle for detection
   let stageHists = {};    // {stageNum: hist_snapshot} — used to restore history on goBack()
   let stageGapTable = null;
   let stageRiskExposure = null;
@@ -5889,7 +5896,7 @@ ${body}
     const originalFetch = window.fetch.bind(window);
     window.fetch = function (input, init) {
       const url = typeof input === 'string' ? input : (input && input.url) || '';
-      const target = ['/api/run-express', '/api/run-stage', '/api/run-deeper', '/api/run-followon'];
+      const target = ['/api/run-express', '/api/run-stage', '/api/run-deeper', '/api/run-followon', '/api/run-priority-questions'];
       const shouldInject = target.some(path => url.includes(path));
 
       if (!shouldInject || !init || !init.body || typeof init.body !== 'string') {
