@@ -30,3 +30,48 @@ def test_build_block_stage2_has_rating_guardrail():
     assert "Do NOT attempt to answer them directly" in s1
     assert "GUARDRAIL" not in s1
     assert "must NOT change your Sensitivity" in s2
+
+
+from app import extract_focus_questions
+
+
+def test_extract_focus_questions_happy_path():
+    text = (
+        "preamble %%%FOCUS_QUESTIONS_START%%%"
+        + json.dumps({"responses": [
+            {"id": "q1", "question": "Q1", "status": "addressed", "direct_answer": "A1",
+             "evidence_basis": "E1", "linked_priorities": ["Priority 1 · Do X"], "confidence_gap_note": "N1"},
+            {"id": "q2", "question": "Q2", "status": "partially_addressed", "direct_answer": "A2",
+             "evidence_basis": "E2", "linked_priorities": [], "confidence_gap_note": "N2"},
+        ]})
+        + "%%%FOCUS_QUESTIONS_END%%% trailing"
+    )
+    out = extract_focus_questions(text)
+    assert out['error'] is False
+    assert len(out['responses']) == 2
+    assert out['summary'] == {'addressed': 1, 'partially_addressed': 1, 'not_yet_addressed': 0}
+
+
+def test_extract_focus_questions_coerces_bad_status():
+    text = ("%%%FOCUS_QUESTIONS_START%%%"
+            + json.dumps({"responses": [{"id": "q1", "question": "Q", "status": "maybe", "direct_answer": "A"}]})
+            + "%%%FOCUS_QUESTIONS_END%%%")
+    out = extract_focus_questions(text)
+    assert out['responses'][0]['status'] == 'not_yet_addressed'
+    assert out['responses'][0]['linked_priorities'] == []
+
+
+def test_extract_focus_questions_salvages_truncated_json():
+    text = ('%%%FOCUS_QUESTIONS_START%%%\n{"responses": [\n'
+            '{"id": "q1", "question": "Q1", "status": "addressed", "direct_answer": "A1",'
+            ' "evidence_basis": "E1", "linked_priorities": [], "confidence_gap_note": "N1"},\n'
+            '{"id": "q2", "question": "Q2", "status": "addr')  # truncated mid-entry
+    out = extract_focus_questions(text)
+    assert len(out['responses']) == 1
+    assert out['responses'][0]['id'] == 'q1'
+
+
+def test_extract_focus_questions_empty_on_no_marker():
+    out = extract_focus_questions("no markers here")
+    assert out['error'] is True
+    assert out['responses'] == []

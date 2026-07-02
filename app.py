@@ -4018,6 +4018,66 @@ def build_priority_questions_block(questions: list, stage: int) -> str:
     return block + "\n---"
 
 
+_FOCUS_REQUIRED_FIELDS = (
+    'id', 'question', 'status', 'direct_answer',
+    'evidence_basis', 'linked_priorities', 'confidence_gap_note',
+)
+
+
+def _coerce_focus_entry(entry: dict) -> dict:
+    for f in _FOCUS_REQUIRED_FIELDS:
+        entry.setdefault(f, [] if f == 'linked_priorities' else '')
+    lp = entry.get('linked_priorities')
+    if not isinstance(lp, list):
+        entry['linked_priorities'] = [lp] if lp else []
+    status = str(entry.get('status') or '').strip().lower().replace(' ', '_')
+    entry['status'] = status if status in FOCUS_QUESTION_STATUSES else 'not_yet_addressed'
+    return entry
+
+
+def extract_focus_questions(text: str) -> dict:
+    """Parse the %%%FOCUS_QUESTIONS_START/END%%% JSON block from the answer call.
+    On success: {'error': False, 'responses': [...], 'summary': {...}}
+    On failure: {'error': True, 'message': str, 'responses': [], 'summary': {...}}"""
+    _empty = {
+        'error': True,
+        'message': 'Priority-point responses could not be parsed.',
+        'responses': [],
+        'summary': {'addressed': 0, 'partially_addressed': 0, 'not_yet_addressed': 0},
+    }
+    if not text:
+        return _empty
+
+    m = re.search(r'%%%FOCUS_QUESTIONS_START%%%(.*?)%%%FOCUS_QUESTIONS_END%%%', text, re.DOTALL)
+    if m:
+        body = m.group(1).strip()
+    else:
+        m2 = re.search(r'%%%FOCUS_QUESTIONS_START%%%(.*)$', text, re.DOTALL)
+        if not m2:
+            return _empty
+        body = m2.group(1).strip()
+
+    responses = []
+    try:
+        parsed = json.loads(body)
+        responses = parsed.get('responses', []) if isinstance(parsed, dict) else []
+    except (json.JSONDecodeError, ValueError):
+        for chunk in re.findall(r'\{[^{}]*\}', body, re.DOTALL):
+            try:
+                responses.append(json.loads(chunk))
+            except (json.JSONDecodeError, ValueError):
+                continue
+
+    cleaned = [_coerce_focus_entry(e) for e in responses if isinstance(e, dict)]
+    if not cleaned:
+        return _empty
+
+    summary = {'addressed': 0, 'partially_addressed': 0, 'not_yet_addressed': 0}
+    for e in cleaned:
+        summary[e['status']] = summary.get(e['status'], 0) + 1
+    return {'error': False, 'message': '', 'responses': cleaned, 'summary': summary}
+
+
 # ── Document type detection ───────────────────────────────────────────────────
 
 DOCUMENT_TYPE_DETECTION_PROMPT = """You are a World Bank document classifier. Based on the text below, classify this document into exactly one of the following types:
