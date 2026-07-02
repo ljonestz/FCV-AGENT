@@ -1502,6 +1502,11 @@
 
   /* ── Follow-on card (Stage 3 query interface) ───────────────────────────── */
   .followon-card{ background:#fff; border:1px solid var(--border); border-radius:8px; padding:16px; margin-top:16px; }
+  .pq-panel{ margin-top:16px; background:#f0f9ff; border:1px solid #bae6fd; border-left:4px solid #009FDA; border-radius:8px; padding:14px 16px; }
+  .pq-intro{ font-size:13px; line-height:1.6; color:#334155; margin:4px 0 12px; }
+  .pq-item{ padding:10px 0; border-top:1px solid #dbeafe; }
+  .pq-item:first-of-type{ border-top:none; padding-top:2px; }
+  .pq-num{ font-weight:700; color:#009FDA; margin-right:4px; }
   .pq-section{ margin-top:16px; }
   .pq-hdr{ font-size:15px; font-weight:700; color:#002244; margin-bottom:8px; }
   .pq-strip{ font-size:12px; color:var(--muted); margin-bottom:10px; }
@@ -4682,21 +4687,21 @@
     }
     // ── Responses to your priority points ──
     if(focusQuestionsResult && (focusQuestionsResult.responses||[]).length){
-      const sm=focusQuestionsResult.summary||{};
-      const lbl={addressed:'Addressed',partially_addressed:'Partially addressed',not_yet_addressed:'Not yet addressed'};
-      body += `<h2 class="exp-section-hdr">Responses to your priority points</h2>
-        <p style="font-size:12px;color:#666;margin-bottom:10px">${(sm.addressed||0)} addressed &middot; ${(sm.partially_addressed||0)} partially addressed &middot; ${(sm.not_yet_addressed||0)} not yet addressed</p>`;
-      focusQuestionsResult.responses.forEach(r=>{
+      const ov=focusQuestionsResult.overview||'';
+      body += `<h2 class="exp-section-hdr">Responses to your priority points</h2>`;
+      body += `<div style="background:#f0f9ff;border:1px solid #bae6fd;border-left:4px solid #009FDA;border-radius:8px;padding:14px 16px;margin-bottom:16px">`;
+      if(ov) body += `<p style="font-size:13px;line-height:1.6;color:#334155;margin:0 0 12px">${esc(ov)}</p>`;
+      focusQuestionsResult.responses.forEach((r,i)=>{
         const lp=(r.linked_priorities||[]).filter(Boolean);
-        body += `<div style="border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;margin-bottom:10px">
-          <h3 style="margin:0 0 4px;font-size:14px">${esc(r.question||'')}</h3>
-          <p style="font-size:11px;color:#555;font-weight:600;margin:0 0 6px">${esc(lbl[r.status]||r.status||'')}</p>
+        body += `<div style="padding:10px 0;${i>0?'border-top:1px solid #dbeafe':''}">
+          <h3 style="margin:0 0 4px;font-size:14px"><span style="color:#009FDA">${i+1}.</span> ${esc(r.question||'')}</h3>
           ${r.direct_answer?`<p style="margin:0 0 6px">${esc(r.direct_answer)}</p>`:''}
-          ${r.evidence_basis?`<p style="font-size:12px;margin:0 0 4px"><strong>Evidence basis:</strong> ${esc(r.evidence_basis)}</p>`:''}
-          ${lp.length?`<p style="font-size:12px;margin:0 0 4px"><strong>Linked priorities:</strong> ${lp.map(esc).join('; ')}</p>`:''}
-          ${r.confidence_gap_note?`<p style="font-size:11px;color:#888;font-style:italic;margin:0">${esc(r.confidence_gap_note)}</p>`:''}
+          ${r.evidence_basis?`<p style="font-size:12px;margin:0 0 4px"><strong>Where this draws from:</strong> ${esc(r.evidence_basis)}</p>`:''}
+          ${lp.length?`<p style="font-size:12px;margin:0 0 4px"><strong>Linked recommendations:</strong> insights above connect to ${lp.map(esc).join('; ')}</p>`:''}
+          ${r.confidence_gap_note?`<p style="font-size:11px;color:#888;font-style:italic;margin:0">Note: ${esc(r.confidence_gap_note)}</p>`:''}
         </div>`;
       });
+      body += `</div>`;
     }
 
     // ── Mid-Cycle FCV Watch (AF / Restructuring) ──
@@ -5139,7 +5144,7 @@ ${body}
     if(_pqInFlight) return;
     _pqInFlight=true;
 
-    container.innerHTML=`<div class="pq-section ani">
+    container.innerHTML=`<div class="pq-panel ani">
       <div class="pq-hdr">Responses to your priority points</div>
       <div class="pq-loading"><span class="dot active"></span>Answering your ${priorityQuestions.length} priority point${priorityQuestions.length!==1?'s':''} using the completed analysis…</div>
     </div>`;
@@ -5192,33 +5197,30 @@ ${body}
     const c=document.getElementById('priority-questions-section'); if(!c) return;
     const rs=(parsed&&parsed.responses)||[];
     if(!rs.length){ renderPriorityQuestionsError(); return; }
-    const sm=parsed.summary||{};
-    const pill=(s)=> s==='addressed' ? '<span class="pq-pill pq-pill-ok">Addressed</span>'
-                    : s==='partially_addressed' ? '<span class="pq-pill pq-pill-part">Partially addressed</span>'
-                    : '<span class="pq-pill pq-pill-none">Not yet addressed</span>';
-    const cards=rs.map((r,i)=>{
+    const overview=(parsed&&parsed.overview)||'';
+    const items=rs.map((r,i)=>{
       const lp=(r.linked_priorities||[]).filter(Boolean);
       const rerun=(r.status!=='addressed')
         ? `<button class="pq-rerun" onclick="pqAddContextAndRerun(${i})">+ Add context &amp; re-run</button>` : '';
-      return `<div class="pq-card">
-        <div class="pq-q">${esc(r.question||'')}${pill(r.status)}</div>
+      return `<div class="pq-item">
+        <div class="pq-q"><span class="pq-num">${i+1}.</span>${esc(r.question||'')}</div>
         ${r.direct_answer?`<div class="pq-a">${esc(r.direct_answer)}</div>`:''}
-        ${r.evidence_basis?`<div class="pq-field"><span class="pq-lbl">Evidence basis:</span> ${esc(r.evidence_basis)}</div>`:''}
-        ${lp.length?`<div class="pq-field"><span class="pq-lbl">Linked priorities:</span> ${lp.map(esc).join('; ')}</div>`:''}
-        ${r.confidence_gap_note?`<div class="pq-note">${esc(r.confidence_gap_note)}</div>`:''}
+        ${r.evidence_basis?`<div class="pq-field"><span class="pq-lbl">Where this draws from:</span> ${esc(r.evidence_basis)}</div>`:''}
+        ${lp.length?`<div class="pq-field"><span class="pq-lbl">Linked recommendations:</span> insights above connect to ${lp.map(esc).join('; ')}</div>`:''}
+        ${r.confidence_gap_note?`<div class="pq-note">Note: ${esc(r.confidence_gap_note)}</div>`:''}
         ${rerun}
       </div>`;
     }).join('');
-    c.innerHTML=`<div class="pq-section ani">
+    c.innerHTML=`<div class="pq-panel ani">
       <div class="pq-hdr">Responses to your priority points</div>
-      <div class="pq-strip">${(sm.addressed||0)} addressed &middot; ${(sm.partially_addressed||0)} partially addressed &middot; ${(sm.not_yet_addressed||0)} not yet addressed</div>
-      ${cards}
+      ${overview?`<p class="pq-intro">${esc(overview)}</p>`:''}
+      ${items}
     </div>`;
   }
 
   function renderPriorityQuestionsError(){
     const c=document.getElementById('priority-questions-section'); if(!c) return;
-    c.innerHTML=`<div class="pq-section ani">
+    c.innerHTML=`<div class="pq-panel ani">
       <div class="pq-hdr">Responses to your priority points</div>
       <div class="callout warn"><div class="callout-body">Couldn't generate the responses to your priority points. The main analysis above is unaffected.
         <button class="btn btn-ghost btn-sm" style="margin-left:8px" onclick="maybeRunPriorityQuestions(true)">Retry</button>
