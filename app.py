@@ -3918,6 +3918,59 @@ def extract_priorities(text: str, uploaded_doc_names: list = None) -> dict:
     }
 
 
+# ── Priority Points (a.k.a. priority questions): constants & helpers ──────────
+PRIORITY_QUESTIONS_MAX = 10           # hard cap (soft guidance to the user: 3–5)
+FOCUS_QUESTION_STATUSES = {'addressed', 'partially_addressed', 'not_yet_addressed'}
+
+
+def normalize_priority_questions(raw) -> list:
+    """Trim, drop blanks, dedupe (case-insensitive), cap at PRIORITY_QUESTIONS_MAX,
+    assign stable ids q1..qN in input order. Accepts a list of strings or of
+    {"question": "..."} dicts. Returns [{"id": "qN", "question": "..."}]."""
+    if not raw:
+        return []
+    items, seen = [], set()
+    for entry in raw:
+        q = (entry.get('question') if isinstance(entry, dict) else entry) or ''
+        q = str(q).strip()
+        if not q:
+            continue
+        key = q.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        items.append(q)
+        if len(items) >= PRIORITY_QUESTIONS_MAX:
+            break
+    return [{'id': f'q{i + 1}', 'question': q} for i, q in enumerate(items)]
+
+
+def build_priority_questions_block(questions: list, stage: int) -> str:
+    """Soft-context injection appended to a Stage 1/2/3 prompt. '' when no questions.
+    Stage 2 additionally gets an explicit rating guardrail so emphasis-steering does
+    not move the scores (which Stage 3 inherits verbatim). An item may be a question
+    OR a focus area."""
+    if not questions:
+        return ''
+    lines = "\n".join(f"- {q['question']}" for q in questions)
+    block = (
+        "\n\n---\n**PRIORITY POINTS FLAGGED BY THE TASK TEAM (soft emphasis guidance):**\n"
+        "The user has flagged the following specific questions or focus areas for this analysis:\n"
+        f"{lines}\n\n"
+        "Use these ONLY to guide which evidence you surface and how much depth you apply "
+        "in the relevant areas. Do NOT attempt to answer them directly in this output. "
+        "Do NOT change the structure, schema, or delimiter format of your output."
+    )
+    if stage == 2:
+        block += (
+            "\n\nSTAGE 2 GUARDRAIL: These points must NOT change your Sensitivity or "
+            "Responsiveness ratings, which of the 12 OST recommendations or 4 Strategy "
+            "pillars you assess, or your Do No Harm determinations. They influence "
+            "narrative emphasis only."
+        )
+    return block + "\n---"
+
+
 # ── Document type detection ───────────────────────────────────────────────────
 
 DOCUMENT_TYPE_DETECTION_PROMPT = """You are a World Bank document classifier. Based on the text below, classify this document into exactly one of the following types:
