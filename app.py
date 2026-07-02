@@ -6131,6 +6131,11 @@ def run_express():
                     yield event
                 stage2_output = _stream_stage._last_result
 
+                # ── Workstream 2: silent instrument-vocabulary repair ──────────
+                _vocab_violations_s2 = validate_instrument_vocabulary(stage2_output, instrument_type)
+                if _vocab_violations_s2:
+                    stage2_output = repair_vocabulary_violations(stage2_output, instrument_type, _vocab_violations_s2, 2)
+
                 # Parse Stage 2 output
                 stage2_ratings = extract_stage2_ratings(stage2_output)
                 under_hood = extract_under_hood(stage2_output)
@@ -6302,6 +6307,11 @@ def run_express():
                 for event in _stream_stage(stage3_messages, 20000, 3):
                     yield event
                 stage3_output = _stream_stage._last_result
+
+                # ── Workstream 2: silent instrument-vocabulary repair ──────────
+                _vocab_violations_s3 = validate_instrument_vocabulary(stage3_output, instrument_type)
+                if _vocab_violations_s3:
+                    stage3_output = repair_vocabulary_violations(stage3_output, instrument_type, _vocab_violations_s3, 3)
 
                 # Parse Stage 3 output
                 uploaded_doc_names = [doc.get('name', '') for doc in documents if doc.get('name')]
