@@ -1514,8 +1514,6 @@
   .pq-field{ font-size:12px; color:#333; margin-bottom:3px; }
   .pq-lbl{ font-weight:700; color:#555; }
   .pq-note{ font-size:11px; color:#888; font-style:italic; margin-top:4px; }
-  .pq-rerun{ margin-top:6px; background:#f0f4f8; border:1px solid var(--border); border-radius:14px; padding:3px 10px; font-size:12px; color:#1D4ED8; cursor:pointer; }
-  .pq-rerun:hover{ background:#e2e8f0; }
   .followon-desc{ font-size:12px; color:var(--muted); margin:4px 0 8px; }
   .followon-chips{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
   .followon-chip{ background:#f0f4f8; border:1px solid var(--border); border-radius:14px; padding:4px 12px; font-size:12px; color:var(--text); cursor:pointer; white-space:nowrap; transition:background .15s,border-color .15s; }
@@ -2340,13 +2338,6 @@
           <button type="button" class="context-chip" onclick="applyContextChip(this)" data-text="Conflict or security conditions have changed since the project was prepared. Please factor this into the assessment and flag where the current design may need updating to reflect the changed situation on the ground.">Security or conflict conditions have changed since project preparation</button>
         </div>
         <textarea id="user-context" class="context-textarea" aria-label="Additional context, focus areas, or priority questions" placeholder="Add any context, a theme or region to focus on, or specific questions you want answered — e.g.&#10;1. Does targeting reach conflict-affected or excluded groups?&#10;2. Focus on social cohesion in the north" oninput="onGuidanceInput()"></textarea>
-        <p class="context-box-hint" style="margin-top:8px;color:#7dd3fc;font-size:11px">Priority questions or focus areas — click to add (3–5 works best):</p>
-        <div class="context-chips">
-          <button type="button" class="context-chip pq-chip" onclick="applyPriorityChip(this)" data-text="How well does the project address gender and SEA/SH risks?">Gender &amp; SEA/SH risks</button>
-          <button type="button" class="context-chip pq-chip" onclick="applyPriorityChip(this)" data-text="Are Do No Harm risks adequately identified and mitigated?">Do No Harm risks</button>
-          <button type="button" class="context-chip pq-chip" onclick="applyPriorityChip(this)" data-text="How effectively does targeting reach conflict-affected or excluded populations?">Targeting &amp; inclusion</button>
-          <button type="button" class="context-chip pq-chip" onclick="applyPriorityChip(this)" data-text="Is implementation feasible in the current security context?">Security feasibility</button>
-        </div>
         <div id="pq-confirm" class="pq-confirm" style="display:none"></div>
       </div>
     </div>
@@ -2531,13 +2522,6 @@
     syncContextChips(ta.value);
     clearTimeout(_pqDetectTimer);
     _pqDetectTimer=setTimeout(()=>{ renderPqConfirm(detectPriorityPoints(ta.value)); }, 250);
-  }
-
-  function applyPriorityChip(el){
-    const ta=document.getElementById('user-context'); if(!ta) return;
-    const line=el.dataset.text;
-    ta.value = ta.value.trim() ? (ta.value.replace(/\s*$/,'')+'\n'+line) : line;
-    onGuidanceInput(); ta.focus();
   }
 
   function getPriorityQuestions(){
@@ -4686,10 +4670,11 @@
       if(ov) body += `<p style="font-size:13px;line-height:1.6;color:#334155;margin:0 0 12px">${esc(ov)}</p>`;
       focusQuestionsResult.responses.forEach((r,i)=>{
         const lp=(r.linked_priorities||[]).filter(Boolean);
+        const ans=(r.direct_answer||'').split(/\n\s*\n/).map(p=>p.trim()).filter(Boolean)
+          .map(p=>`<p style="margin:0 0 6px">${esc(p)}</p>`).join('');
         body += `<div style="padding:10px 0;${i>0?'border-top:1px solid #dbeafe':''}">
           <h3 style="margin:0 0 4px;font-size:14px"><span style="color:#009FDA">${i+1}.</span> ${esc(r.question||'')}</h3>
-          ${r.direct_answer?`<p style="margin:0 0 6px">${esc(r.direct_answer)}</p>`:''}
-          ${r.evidence_basis?`<p style="font-size:12px;margin:0 0 4px"><strong>Where this draws from:</strong> ${esc(r.evidence_basis)}</p>`:''}
+          ${ans}
           ${lp.length?`<p style="font-size:12px;margin:0 0 4px"><strong>Linked recommendations:</strong> insights above connect to ${lp.map(esc).join('; ')}</p>`:''}
           ${r.confidence_gap_note?`<p style="font-size:11px;color:#888;font-style:italic;margin:0">Note: ${esc(r.confidence_gap_note)}</p>`:''}
         </div>`;
@@ -5193,15 +5178,13 @@ ${body}
     const overview=(parsed&&parsed.overview)||'';
     const items=rs.map((r,i)=>{
       const lp=(r.linked_priorities||[]).filter(Boolean);
-      const rerun=(r.status!=='addressed')
-        ? `<button class="pq-rerun" onclick="pqAddContextAndRerun(${i})">+ Add context &amp; re-run</button>` : '';
+      const ans=(r.direct_answer||'').split(/\n\s*\n/).map(p=>p.trim()).filter(Boolean)
+        .map(p=>`<div class="pq-a">${esc(p)}</div>`).join('');
       return `<div class="pq-item">
         <div class="pq-q"><span class="pq-num">${i+1}.</span>${esc(r.question||'')}</div>
-        ${r.direct_answer?`<div class="pq-a">${esc(r.direct_answer)}</div>`:''}
-        ${r.evidence_basis?`<div class="pq-field"><span class="pq-lbl">Where this draws from:</span> ${esc(r.evidence_basis)}</div>`:''}
+        ${ans}
         ${lp.length?`<div class="pq-field"><span class="pq-lbl">Linked recommendations:</span> insights above connect to ${lp.map(esc).join('; ')}</div>`:''}
         ${r.confidence_gap_note?`<div class="pq-note">Note: ${esc(r.confidence_gap_note)}</div>`:''}
-        ${rerun}
       </div>`;
     }).join('');
     c.innerHTML=`<div class="pq-panel ani">
@@ -5219,23 +5202,6 @@ ${body}
         <button class="btn btn-ghost btn-sm" style="margin-left:8px" onclick="maybeRunPriorityQuestions(true)">Retry</button>
       </div></div>
     </div>`;
-  }
-
-  function pqAddContextAndRerun(idx){
-    const r=((focusQuestionsResult&&focusQuestionsResult.responses)||[])[idx];
-    const q=r?(r.question||''):'';
-    const main=document.getElementById('main'); if(main) main.style.display='';
-    const panel=document.getElementById('analysis-panel'); if(panel) panel.style.display='none';
-    const stepperWrap=document.getElementById('stepper-wrap'); if(stepperWrap) stepperWrap.style.display='none';
-    const body=document.getElementById('context-box-body'); const toggle=document.getElementById('context-toggle');
-    if(body && body.hidden){ body.hidden=false; if(toggle){ toggle.classList.add('open'); toggle.setAttribute('aria-expanded','true'); } }
-    const ta=document.getElementById('user-context');
-    if(ta && q){
-      const add='Please make sure the analysis specifically addresses: '+q;
-      ta.value = ta.value ? (ta.value.replace(/\s*$/,'')+'\n'+add) : add;
-      onGuidanceInput(); ta.focus();
-    }
-    (document.getElementById('context-box-body')||ta||main).scrollIntoView({behavior:'smooth',block:'center'});
   }
 
   function renderHorizonPanel(text){
