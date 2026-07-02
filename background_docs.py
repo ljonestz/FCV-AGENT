@@ -1653,8 +1653,11 @@ waiver status, delegated authority, or approval level.
 AF normally expects IP and DO ratings of MS+ over the relevant period. In FCV settings,
 ratings may reflect security or access disruption rather than design failure. If the
 paper or ISR suggests ratings below MS+, ask whether the ratings are FCV-affected and
-whether an RVP-approved exception or waiver is in train. Do not state that a waiver is
-required or available unless the uploaded documents say so.
+whether a documented policy waiver process is in train. Approval authority for such waivers
+varies by circumstance and is not always at RVP level - do not name a specific approval level
+unless the uploaded documents state it; direct the team to confirm the applicable waiver
+route with OPCS. Do not state that a waiver is required or available unless the uploaded
+documents say so.
 
 ### FCV value-add
 AF is a mid-course opportunity to correct FCV blind spots, update risk analysis,
@@ -1771,9 +1774,10 @@ P4R_MODULE_GUIDE = """
 ## Program-for-Results (PforR / P4R) Module - FCV Screening Guide
 
 Source grounding: Program-for-Results Financing Policy **OPS5.04-POL.125** (Bank Policy,
-effective 19 August 2024) and Bank Directive **OPS5.04-DIR.110** (effective 9 April 2025),
-cross-referencing **OP 7.30** (Dealings with De Facto Governments). PforR sits under the
-OPS5.04 catalogue family and replaced the retired OP/BP 9.00. Use this guide as advisory screening
+effective 19 August 2024) and Bank Directive **OPS5.04-DIR.110** (effective 9 April 2025).
+PforR sits under the OPS5.04 catalogue family and replaced the retired OP/BP 9.00. Treat
+OP 7.30 as a feasibility constraint to check case by case, not a policy the PforR
+framework itself formally cross-references. Use this guide as advisory screening
 support only. Do not make instrument-eligibility, OP 7.30, or disbursement determinations -
 direct the task team to verify instrument choice and feasibility with the regional FCV
 coordinator, OPCS, and the verification team.
@@ -1807,9 +1811,11 @@ access and disbursement-cliff exposure ahead of the rest of the assessment.
   addressed in the PAP?
 - **ESMS establishment and capacity** (the covenant to set up the system).
 - **GRM functionality** where state legitimacy is contested.
-- **Excluded-activities check:** P4R excludes high-value / high-risk (Category-A-equivalent)
-  activities - appropriate, or does it leave conflict-relevant harms unaddressed or push them
-  outside the boundary?
+- **Excluded-activities check:** the ESSA and Program Action Plan should define which
+  high-value / high-risk activities are excluded from the program boundary because they
+  present risks the PforR instrument is not designed to manage - is the exclusion
+  appropriate, or does it leave conflict-relevant harms unaddressed or push them outside
+  the boundary?
 
 ### DLI-realism and program-boundary checks
 - **DLI realism:** are targets and timelines achievable under conflict-related disruption;
@@ -1823,7 +1829,11 @@ Surface as advisory, never a determination: OP 7.30 limits, no rapid-response va
 disbursement-cliff exposure can make P4R demanding or "effectively unusable" in some conflict
 settings given its reliance on government systems and low-capacity FCS constraints - suggest
 discussing instrument choice (a complementary IPF component / TA, or a different instrument)
-with the regional FCV coordinator.
+with the regional FCV coordinator. Note that OPS5.04-POL.125 para 12 provides a
+**Rapid Response Option (RRO)** allowing accelerated processing for emergency circumstances - flag
+RRO as a potential partial mitigant to disbursement-cliff exposure where the program faces
+a plausible emergency scenario, without asserting it resolves the underlying feasibility
+concern.
 
 ### Hybrid P4R + IPF component
 If the datasheet flags an IPF component, run the IPF spine on that component and the P4R spine
@@ -1887,13 +1897,20 @@ MPA_MODULE_GUIDE = """
 ## MPA (Multiphase Programmatic Approach) Wrapper - FCV Screening Guide
 
 The MPA is a program-and-phase **wrapper, not a new analytical spine**: each phase is itself an
-IPF, DPF, or P4R operation. Route each phase to its base-instrument module and add the MPA
-program layer on top. Composes with the multi-country layer for regional MPAs. Advisory only -
-never determine approval authority, phase eligibility, or financing.
+IPF or P4R operation under current WBG MPA policy (OPS5.01-POL/DIR) - DPF/DPO is not itself an
+MPA phase instrument; a DPO series uses its own distinct programmatic-series mechanism (see
+`FCV_INSTRUMENT_CALIBRATION` "Programmatic series risk"), not the MPA wrapper. Route each phase
+to its base-instrument module and add the MPA program layer on top. Composes with the
+multi-country layer for regional MPAs. Advisory only - never determine approval authority,
+phase eligibility, or financing.
 
 ### Structure and approval authority
 The Board approves the **program framework + financing envelope with Phase 1** (the Phase-1 PAD
-doubles as the Program Framework Document); **Management (RVP) approves subsequent phases**.
+doubles as the Program Framework Document). Management (RVP) approval is the norm for subsequent
+phases, but a subsequent phase may return to the Board where it involves a material change in
+scope, cost, or the Program Development Objective (PrDO) - do not present RVP approval of
+subsequent phases as an absolute rule; frame it as the typical case with a Board-referral
+possibility, and direct the team to confirm the applicable approval level with OPCS.
 Phases may be sequential or simultaneous; financing for later phases is **not guaranteed**.
 Detect the phase and set the expected document set / output register accordingly.
 
@@ -2035,8 +2052,8 @@ OPS5.02-POL.120 includes conflict-related design considerations that may affect 
 **Annual review requirement (frequently missed):**
 IDA FCV Envelope eligibility is NOT automatic — countries must submit annual FCV Review Notes demonstrating continued eligibility and the government's commitment to prevention and resilience. Failure to submit or inadequate submissions can result in loss of allocation. This has occurred in practice (e.g., Mali). When reviewing FCV Envelope operations, assess whether the country's annual review trajectory is factored into the operation's medium-term resource projections.
 
-**Extended Data Pathway (EDP) — low-awareness provision:**
-The EDP allows a country to access Prevention and Resilience Allocation (PRA) even when conflict intensity exceeds standard fatality thresholds, provided meaningful conflict prevention remains feasible and the government demonstrates commitment. This is not widely documented and requires a compelling case with Management approval. Flag EDP as a potential option in countries that exceed standard PRA thresholds but where prevention work remains meaningful.
+**Above-threshold PRA access — low-awareness provision:**
+There is an FCV Envelope provision allowing a country to access Prevention and Resilience Allocation (PRA) even where conflict intensity exceeds standard fatality thresholds, provided meaningful conflict prevention remains feasible and the government demonstrates commitment; this route requires a compelling case with Management approval and is not widely documented. [Verify with regional FCV coordinator and the current FCV Envelope Directive before naming this provision or any specific acronym for it in a project-facing output — do not assert an unverified name for this mechanism.] Flag it as a potential option in countries that exceed standard PRA thresholds but where prevention work remains meaningful.
 
 **Eligibility logic — not a ladder:**
 RECA, TAA, and PRA are not a graduated ladder from more conflict to less conflict. Each has distinct eligibility logic:

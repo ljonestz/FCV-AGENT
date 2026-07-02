@@ -95,7 +95,7 @@ POLICY_REGISTRY: dict[str, PolicyRegistryEntry] = {
         source="IDA FCV Envelope Directive",
         last_updated="2026-06-16",
         ati_designation="Official Use Only",
-        summary="Governing source for PRA, RECA, TAA, WHR and related FCV Envelope advice.",
+        summary="Governing source for PRA, RECA, TAA (the FCV Envelope allocations) and related FCV financing-window advice.",
     ),
     "fcs_list_fy26": PolicyRegistryEntry(
         key="fcs_list_fy26",
@@ -1932,7 +1932,7 @@ DATA GAP FLAGGING: If a key FCV dimension (e.g. conflict intensity, displacement
 ### FCV Classification Context
 - Note if the country appears on the FCS (Fragile and Conflict-affected Situations) list
 - If FCS, note this classification and its implications for project design and operational flexibilities
-- DO NOT make any explicit statement about whether the country is or is not eligible for IDA FCV Envelope financing windows (PRA, RECA, TAA, WHR). Eligibility depends on multiple criteria beyond FCS classification — including CPIA scores, conflict intensity thresholds, annual FCV review submissions, and Management determinations — and any eligibility statement risks being incorrect and undermining trust in the output. Simply note relevant FCV Envelope instruments if they appear in the project document, without drawing eligibility conclusions.
+- DO NOT make any explicit statement about whether the country is or is not eligible for IDA FCV Envelope financing windows (PRA, RECA, TAA), or the related but separate WHR (Window for Host Communities and Refugees) or PSW (Private Sector Window) instruments. Eligibility depends on multiple criteria beyond FCS classification — including CPIA scores, conflict intensity thresholds, annual FCV review submissions, and Management determinations — and any eligibility statement risks being incorrect and undermining trust in the output. Simply note relevant FCV financing instruments if they appear in the project document, without drawing eligibility conclusions and without implying WHR/PSW are FCVE allocations.
 - RRA CROSS-REFERENCE AND FALLBACK:
 
   CASE 1 — RRA uploaded or referenced: If the contextual documents include a Risk and Resilience Assessment (RRA), country risk assessment, or equivalent conflict/fragility analysis, Part B must explicitly cross-check the project document's risk narrative and design assumptions against the RRA's scenarios:
