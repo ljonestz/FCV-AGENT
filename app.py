@@ -5426,6 +5426,16 @@ def run_stage():
 
                 full_text = _stream_stage._last_result
 
+                # ── Workstream 2: silent instrument-vocabulary repair ──────────
+                # Only Stage 2/3 design-review output can carry the ESF/ESCP/ESS
+                # vocabulary that QA flagged; Stage 1 extraction text is not
+                # instrument-prescriptive in the same way.
+                if not is_impl and stage in (2, 3):
+                    _vocab_violations = validate_instrument_vocabulary(full_text, instrument_type)
+                    if _vocab_violations:
+                        full_text = repair_vocabulary_violations(full_text, instrument_type, _vocab_violations, stage)
+                        _stream_stage._last_result = full_text
+
                 # Post-processing: extract structured data from delimited blocks
                 priorities = []
                 fcv_rating = ''
