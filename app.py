@@ -600,6 +600,7 @@ _REQUIRED_PRIORITY_FIELDS = [
     'pad_sections', 'implementation_note', 'cpf_alignment',
     'rra_driver_alignment', 'country_category_relevance',
     'change_type', 'restructuring_level', 'priority_scope',
+    'governance_level',
 ]
 
 _SPECIFICITY_STOPWORDS = frozenset({
@@ -4052,6 +4053,14 @@ def extract_priorities(text: str, uploaded_doc_names: list = None) -> dict:
             pr['action_timing'] = _timing_remap[raw_timing]
         elif raw_timing not in _valid_timings:
             pr['action_timing'] = None
+
+        # Validate governance_level enum (Workstream 6, MPA operations only;
+        # non-MPA priorities legitimately omit this field, so an empty/missing
+        # value maps to None rather than a warning).
+        _valid_governance_levels = {'Regional Platform', 'Country Phase'}
+        raw_governance_level = pr.get('governance_level')
+        if raw_governance_level not in _valid_governance_levels:
+            pr['governance_level'] = None
 
         # Post-parse checks — check specificity across gap + all action guidance
         actions_text = ' '.join(
