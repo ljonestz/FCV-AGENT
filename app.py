@@ -6537,6 +6537,82 @@ def run_followon():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/run-priority-questions', methods=['POST'])
+def run_priority_questions():
+    """Answer the task team's priority points using the completed Stage 1–3 analysis.
+    Runs as its own request (fired by the frontend after the analysis completes) so it
+    never extends the run-express SSE connection and can be retried on its own."""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'Invalid request.'}), 400
+
+        questions = normalize_priority_questions(data.get('priority_questions'))
+        if not questions:
+            return jsonify({'error': 'No priority points provided.'}), 400
+
+        user_context = (data.get('user_context') or '').strip()
+        stage1_output = data.get('stage1_output') or ''
+        stage2_output = data.get('stage2_output') or ''
+        stage3_output = data.get('stage3_output') or ''
+        stage2_ratings = data.get('stage2_ratings') or {}
+        stage3_priorities = data.get('stage3_priorities') or {}
+
+        MAX_STAGE_CHARS = 40000
+
+        def _cap(t):
+            t = t if isinstance(t, str) else json.dumps(t, ensure_ascii=False)
+            return t if len(t) <= MAX_STAGE_CHARS else t[:MAX_STAGE_CHARS] + '\n...[truncated]'
+
+        try:
+            prio_titles = [
+                p.get('title', '') for p in (stage3_priorities.get('priorities') or [])
+                if isinstance(p, dict)
+            ]
+        except AttributeError:
+            prio_titles = []
+
+        questions_block = "\n".join(f"{q['id']}: {q['question']}" for q in questions)
+        titles_block = "\n".join(f"- {t}" for t in prio_titles if t) or "(none parsed)"
+
+        user_message = (
+            "PRIORITY POINTS TO RESPOND TO:\n" + questions_block + "\n\n"
+            "USER CONTEXT (optional):\n" + (user_context or "(none)") + "\n\n"
+            "STAGE 1 OUTPUT:\n" + _cap(stage1_output) + "\n\n"
+            "STAGE 2 ASSESSMENT:\n" + _cap(stage2_output) + "\n\n"
+            "STAGE 2 RATINGS:\n" + json.dumps(stage2_ratings, ensure_ascii=False) + "\n\n"
+            "STAGE 3 MEMO:\n" + _cap(stage3_output) + "\n\n"
+            "STAGE 3 PRIORITY TITLES (for linked_priorities matching):\n" + titles_block
+        )
+
+        prompt = load_prompts().get('priority_questions', DEFAULT_PROMPTS.get('priority_questions', ''))
+
+        def generate():
+            try:
+                yield f"data: {json.dumps({'ping': True})}\n\n"
+                collected = []
+                with get_client().messages.stream(
+                    model="claude-sonnet-4-6",
+                    max_tokens=8000,
+                    system=prompt,
+                    messages=[{"role": "user", "content": user_message}],
+                ) as stream:
+                    for text_chunk in stream.text_stream:
+                        collected.append(text_chunk)
+                        yield f"data: {json.dumps({'chunk': text_chunk})}\n\n"
+                parsed = extract_focus_questions(''.join(collected))
+                yield f"data: {json.dumps({'done': True, 'focus_questions': parsed})}\n\n"
+            except anthropic.AuthenticationError:
+                yield f"data: {json.dumps({'error': 'Invalid API key.'})}\n\n"
+            except Exception as e:
+                yield f"data: {json.dumps({'error': str(e)})}\n\n"
+
+        return Response(stream_with_context(generate()), mimetype='text/event-stream',
+                        headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/api/download-report', methods=['POST'])
 def download_report():
     """Generate a DOCX mirroring the full Stage 3 web output structure."""
