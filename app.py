@@ -4747,6 +4747,7 @@ def run_stage():
         review_mode = data.get('review_mode', 'design').strip()  # 'design' or 'implementation'
         is_impl = (review_mode == 'implementation')
         user_context = data.get('user_context', '').strip()  # optional user-supplied context
+        priority_questions = normalize_priority_questions(data.get('priority_questions'))
         # Uploaded doc names passed by frontend (used for CPF detection in Stage 3)
         uploaded_doc_names_payload = [n for n in data.get('uploaded_doc_names', []) if n]
 
@@ -4876,6 +4877,10 @@ def run_stage():
                     + user_context +
                     "\n---"
                 )
+            # Inject priority points as soft emphasis guidance (Stage 1)
+            pq_block = build_priority_questions_block(priority_questions, 1)
+            if pq_block:
+                stage_prompt = stage_prompt + pq_block
             # messages will be fully built inside generate() for stage 1
 
         elif user_message:
@@ -5184,6 +5189,10 @@ def run_stage():
                     FCV_REFRESH_FRAMEWORK
                 )
 
+            if stage in (2, 3):
+                pq_block = build_priority_questions_block(priority_questions, stage)
+                if pq_block:
+                    stage_prompt = stage_prompt + pq_block
             messages.append({"role": "user", "content": stage_prompt})
 
         def workflow_events():
