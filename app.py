@@ -6513,6 +6513,18 @@ def run_followon():
             else:
                 trimmed_messages.append(m)
 
+        pr = data.get('priority_responses') or []
+        if pr and trimmed_messages and trimmed_messages[-1].get('role') == 'user':
+            qa = "\n\n".join(
+                f"Q: {r.get('question', '')}\nA: {r.get('direct_answer', '')}"
+                for r in pr if isinstance(r, dict) and r.get('direct_answer')
+            )
+            if qa:
+                trimmed_messages[-1]['content'] += (
+                    "\n\n---\nReference — the task team's priority points and the responses "
+                    "produced during this analysis (reflect these where relevant):\n\n" + qa
+                )
+
         def generate():
             try:
                 yield f"data: {json.dumps({'ping': True})}\n\n"
