@@ -1318,6 +1318,86 @@ def validate_instrument_vocabulary(output_text: str, instrument_type: str) -> li
     return found
 
 
+_VOCABULARY_SCRUB_MAP: dict[str, dict[str, str]] = {
+    "PFORR": {
+        "ESCP": "the Program Action Plan (PAP)",
+        "Environmental and Social Commitment Plan": "the Program Action Plan (PAP)",
+        "ESS4": "ESSA Core Principle #6",
+        "ESS2": "the ESSA",
+        "SEP": "the borrower's GRM",
+        "Stakeholder Engagement Plan": "the borrower's GRM",
+    },
+    "DPO": {
+        "ESCP": "the Program Document's policy matrix",
+        "Environmental and Social Commitment Plan": "the Program Document's policy matrix",
+        "ESS4": "the PSIA",
+        "ESS2": "the PSIA",
+        "SEP": "the Program Document",
+        "Stakeholder Engagement Plan": "the Program Document",
+    },
+}
+
+
+def repair_vocabulary_violations(
+    output_text: str,
+    instrument_type: str,
+    violations: list[str],
+    stage_num: int,
+) -> str:
+    """Silently regenerate any output text containing banned instrument vocabulary.
+
+    Runs one non-streaming Anthropic call asking the model to rewrite the
+    violating vocabulary only, preserving all delimiter blocks and factual
+    content. Falls back to a deterministic regex scrub if the model repair
+    still leaves a banned term in place, or if the API call itself fails.
+    Never raises and never surfaces an error to the user — per product
+    decision, vocabulary violations are repaired silently. Any residual
+    scrub is logged server-side only (Render logs), never shown in the UI.
+    """
+    key = _vocabulary_rule_key(instrument_type)
+    rules = INSTRUMENT_VOCABULARY_RULES.get(key) if key else None
+    label = rules["label"] if rules else instrument_type
+
+    repaired = output_text
+    try:
+        repair_prompt = (
+            f"The following FCV screening output for a {label} operation incorrectly uses "
+            f"ESF/ESCP/ESS/SEP vocabulary that does not apply to this instrument: "
+            f"{', '.join(violations)}. Rewrite the ENTIRE text below so it uses only "
+            "vocabulary appropriate to the instrument (for PforR: ESSA, PAP, ESMS, DLI, POM; "
+            "for DPF/DPO: PSIA, Program Document, policy matrix, LDP). Preserve all delimiter "
+            "blocks (%%%...%%%) exactly, all factual findings, and the overall structure. "
+            "Only change the vocabulary that incorrectly references ESF/ESCP/ESS/SEP "
+            f"instruments.\n\n--- TEXT TO REWRITE ---\n{output_text}"
+        )
+        response = get_client().messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=8000,
+            messages=[{"role": "user", "content": repair_prompt}],
+        )
+        if response.content:
+            repaired = response.content[0].text
+    except Exception:
+        repaired = output_text  # fall through to deterministic scrub below
+
+    remaining = validate_instrument_vocabulary(repaired, instrument_type)
+    if not remaining:
+        return repaired
+
+    scrub_map = _VOCABULARY_SCRUB_MAP.get(key, {}) if key else {}
+    scrubbed = repaired
+    for term, replacement in scrub_map.items():
+        scrubbed = re.sub(r'\b' + re.escape(term) + r'\b', replacement, scrubbed, flags=re.IGNORECASE)
+
+    still_bad = validate_instrument_vocabulary(scrubbed, instrument_type)
+    if still_bad:
+        app.logger.warning(
+            "Vocabulary repair incomplete: instrument=%s stage=%s remaining_terms=%s",
+            instrument_type, stage_num, still_bad,
+        )
+    return scrubbed
+
+
 # ── Phase 6: intersection-matrix composition ──────────────────────────────────
 
 LAYER_INJECTION_PRIORITY = [
