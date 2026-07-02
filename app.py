@@ -6797,6 +6797,8 @@ def download_report():
                     meta_parts.append(f'Restructuring level: {pr["restructuring_level"]}')
                 if pr.get('priority_scope'):
                     meta_parts.append(f'Scope: {pr["priority_scope"]}')
+                if pr.get('governance_level'):
+                    meta_parts.append(f'Governance level: {pr["governance_level"]}')
                 if meta_parts:
                     _add_single_para(' | '.join(meta_parts), size=9, color=WB_GRAY)
 
