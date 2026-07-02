@@ -1502,6 +1502,22 @@
 
   /* ── Follow-on card (Stage 3 query interface) ───────────────────────────── */
   .followon-card{ background:#fff; border:1px solid var(--border); border-radius:8px; padding:16px; margin-top:16px; }
+  .pq-section{ margin-top:16px; }
+  .pq-hdr{ font-size:15px; font-weight:700; color:#002244; margin-bottom:8px; }
+  .pq-strip{ font-size:12px; color:var(--muted); margin-bottom:10px; }
+  .pq-loading{ font-size:13px; color:#555; display:flex; align-items:center; gap:8px; padding:8px 0; }
+  .pq-card{ background:#fff; border:1px solid var(--border); border-radius:8px; padding:12px 14px; margin-bottom:10px; }
+  .pq-q{ font-size:14px; font-weight:600; color:var(--text); margin-bottom:6px; }
+  .pq-a{ font-size:13px; line-height:1.6; color:#222; margin-bottom:6px; }
+  .pq-field{ font-size:12px; color:#333; margin-bottom:3px; }
+  .pq-lbl{ font-weight:700; color:#555; }
+  .pq-note{ font-size:11px; color:#888; font-style:italic; margin-top:4px; }
+  .pq-pill{ display:inline-block; font-size:11px; font-weight:600; padding:1px 8px; border-radius:10px; margin-left:6px; vertical-align:middle; }
+  .pq-pill-ok{ background:#DCFCE7; color:#166534; }
+  .pq-pill-part{ background:#FEF9C3; color:#854D0E; }
+  .pq-pill-none{ background:#F1F5F9; color:#475569; }
+  .pq-rerun{ margin-top:6px; background:#f0f4f8; border:1px solid var(--border); border-radius:14px; padding:3px 10px; font-size:12px; color:#1D4ED8; cursor:pointer; }
+  .pq-rerun:hover{ background:#e2e8f0; }
   .followon-desc{ font-size:12px; color:var(--muted); margin:4px 0 8px; }
   .followon-chips{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
   .followon-chip{ background:#f0f4f8; border:1px solid var(--border); border-radius:14px; padding:4px 12px; font-size:12px; color:var(--text); cursor:pointer; white-space:nowrap; transition:background .15s,border-color .15s; }
@@ -1560,6 +1576,13 @@
   .impl-soon-note svg{flex-shrink:0;color:#f59e0b}
 
   /* ── Optional Context Box ── */
+  .pq-confirm{ margin-top:12px; border-top:1px dashed rgba(255,255,255,.18); padding-top:10px; }
+  .pq-confirm-row{ display:flex; align-items:flex-start; gap:8px; font-size:13px; color:#e5f3fb; cursor:pointer; }
+  .pq-confirm-row input{ margin-top:2px; }
+  .pq-preview{ margin:6px 0 0 22px; padding:0; list-style:disc; }
+  .pq-preview li{ font-size:12px; color:#cfe9f7; margin:2px 0; }
+  .pq-over{ font-size:11px; color:#fca5a5; margin:6px 0 0 22px; }
+  .pq-src-note{ font-size:11px; color:#7dd3fc; margin:6px 0 0 22px; }
   .context-box-section{margin:16px 32px 0}
   .context-box-toggle{width:100%;display:flex;align-items:center;gap:8px;padding:10px 14px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;color:#0369a1;text-align:left;line-height:1;transition:background .15s,border-color .15s}
   .context-box-toggle:hover{background:#e0f2fe;border-color:#7dd3fc}
@@ -2318,7 +2341,15 @@
           <button type="button" class="context-chip" onclick="applyContextChip(this)" data-text="Peer reviewers have flagged that the FCV sensitivity analysis needs strengthening — please pay particular attention to Do No Harm risks and community exclusion dynamics in your assessment.">Peer reviewers flagged FCV sensitivity needs strengthening — focus on Do No Harm and exclusion</button>
           <button type="button" class="context-chip" onclick="applyContextChip(this)" data-text="Conflict or security conditions have changed since the project was prepared. Please factor this into the assessment and flag where the current design may need updating to reflect the changed situation on the ground.">Security or conflict conditions have changed since project preparation</button>
         </div>
-        <textarea id="user-context" class="context-textarea" aria-label="Additional context for the analysis" placeholder="e.g. The team needs to strengthen the Do No Harm analysis before the next peer review. Please focus on exclusion risks, grievance mechanisms, and conflict-sensitive targeting…" oninput="syncContextChips(this.value)"></textarea>
+        <textarea id="user-context" class="context-textarea" aria-label="Additional context, focus areas, or priority questions" placeholder="Add any context, a theme or region to focus on, or specific questions you want answered — e.g.&#10;1. Does targeting reach conflict-affected or excluded groups?&#10;2. Focus on social cohesion in the north" oninput="onGuidanceInput()"></textarea>
+        <p class="context-box-hint" style="margin-top:8px;color:#7dd3fc;font-size:11px">Priority questions or focus areas — click to add (3–5 works best):</p>
+        <div class="context-chips">
+          <button type="button" class="context-chip pq-chip" onclick="applyPriorityChip(this)" data-text="How well does the project address gender and SEA/SH risks?">Gender &amp; SEA/SH risks</button>
+          <button type="button" class="context-chip pq-chip" onclick="applyPriorityChip(this)" data-text="Are Do No Harm risks adequately identified and mitigated?">Do No Harm risks</button>
+          <button type="button" class="context-chip pq-chip" onclick="applyPriorityChip(this)" data-text="How effectively does targeting reach conflict-affected or excluded populations?">Targeting &amp; inclusion</button>
+          <button type="button" class="context-chip pq-chip" onclick="applyPriorityChip(this)" data-text="Is implementation feasible in the current security context?">Security feasibility</button>
+        </div>
+        <div id="pq-confirm" class="pq-confirm" style="display:none"></div>
       </div>
     </div>
 
@@ -2448,6 +2479,75 @@
 
   function syncContextChips(val){
     document.querySelectorAll('.context-chip').forEach(c=>c.classList.toggle('active',c.dataset.text===val));
+  }
+
+  // ── Priority Points intake (single box + detection) ───────────────────────
+  const PQ_MAX = 10;
+  const PQ_CUES = [
+    /\bfocus on\b/i, /\bpay (?:particular |close )?attention\b/i, /\bemphasi[sz]e\b/i,
+    /\bprioriti[sz]e\b/i, /\bassess whether\b/i, /\blook at\b/i, /\bhow well\b/i,
+    /\bto what extent\b/i, /\bthe extent to which\b/i, /\bmake sure\b/i, /\bensure\b.*\baddress/i
+  ];
+  const PQ_INTERROG = /^(?:does|do|did|is|are|was|were|how|what|why|which|who|where|when|should|shall|can|could|will|would|has|have|to what extent)\b/i;
+
+  function detectPriorityPoints(text){
+    if(!text) return [];
+    const out=[], seen=new Set();
+    const expanded=[];
+    text.split(/\r?\n/).forEach(l=>{
+      if(/\d+[.)]\s+.*\d+[.)]\s+/.test(l)){ l.split(/\s*(?=\d+[.)]\s+)/).forEach(s=>expanded.push(s)); }
+      else { expanded.push(l); }
+    });
+    for(const raw of expanded){
+      const s=raw.replace(/^\s*(?:\d+[.)]|[-•*])\s*/,'').trim();
+      if(!s) continue;
+      const isPoint = /\?\s*$/.test(s) || PQ_CUES.some(re=>re.test(s)) || PQ_INTERROG.test(s);
+      if(!isPoint) continue;
+      const key=s.toLowerCase();
+      if(seen.has(key)) continue;
+      seen.add(key); out.push(s);
+      if(out.length >= PQ_MAX + 5) break;
+    }
+    return out;
+  }
+
+  function renderPqConfirm(points){
+    const wrap=document.getElementById('pq-confirm'); if(!wrap) return;
+    if(!points.length){ wrap.innerHTML=''; wrap.style.display='none'; return; }
+    wrap.style.display='block';
+    const shown=points.slice(0, PQ_MAX);
+    const overflow=points.length > PQ_MAX;
+    const items=shown.map(p=>`<li>${esc(p)}</li>`).join('');
+    wrap.innerHTML=`
+      <label class="pq-confirm-row">
+        <input type="checkbox" id="pq-enable" ${pqPanelEnabled?'checked':''} onchange="togglePqPanel(this)">
+        <span><strong>${shown.length}</strong> priority point${shown.length!==1?'s':''} detected — answer ${shown.length!==1?'them':'it'} in a dedicated panel</span>
+      </label>
+      <ul class="pq-preview">${items}</ul>
+      ${overflow?`<p class="pq-over">Showing first ${PQ_MAX}. Trim your list to include the rest.</p>`:''}
+      <p class="pq-src-note">To edit, change the text above ↑</p>`;
+  }
+
+  function togglePqPanel(cb){ pqPanelEnabled = cb.checked; }
+
+  function onGuidanceInput(){
+    const ta=document.getElementById('user-context'); if(!ta) return;
+    syncContextChips(ta.value);
+    clearTimeout(_pqDetectTimer);
+    _pqDetectTimer=setTimeout(()=>{ renderPqConfirm(detectPriorityPoints(ta.value)); }, 250);
+  }
+
+  function applyPriorityChip(el){
+    const ta=document.getElementById('user-context'); if(!ta) return;
+    const line=el.dataset.text;
+    ta.value = ta.value.trim() ? (ta.value.replace(/\s*$/,'')+'\n'+line) : line;
+    onGuidanceInput(); ta.focus();
+  }
+
+  function getPriorityQuestions(){
+    if(!pqPanelEnabled) return [];
+    const ta=document.getElementById('user-context');
+    return detectPriorityPoints(ta?ta.value:'').slice(0, PQ_MAX);
   }
 
   // ── Onboarding ──────────────────────────────────────────────────────────────
