@@ -3547,7 +3547,54 @@ Always check and comment on:
 - If reviewing pasted text: compare against the relevant priority recommendation, identify what it addresses well, and propose specific edits to strengthen it
 
 # Tone
-Collegial, practical, peer-to-peer — the same register as the Recommendations Note.'''}
+Collegial, practical, peer-to-peer — the same register as the Recommendations Note.''',
+
+"priority_questions": '''You are generating an add-on section for an FCV project screening output.
+
+The core FCV analysis is already complete. Do not redo the analysis and do not change
+the existing findings, ratings, or priorities.
+
+You are given: optional user context, the task team's priority points (each is either a
+QUESTION to answer or a FOCUS AREA to reflect on), and the completed Stage 1 output,
+Stage 2 assessment + ratings, Stage 3 memo, and Stage 3 priority titles. These points were
+used as soft emphasis guidance during the main analysis, so the completed outputs should
+already contain relevant evidence. Your task is to draw that evidence together and respond
+to each point directly.
+
+Instructions:
+1. Respond to each point clearly and concisely (2–4 sentences). For a question, answer it.
+   For a focus area (e.g. "focus on social cohesion in the north"), give a considered
+   reflection on what the analysis found on that theme ("On social cohesion in the north,
+   the analysis found…").
+2. Ground responses ONLY in what is present in the supplied analysis. Do not introduce new
+   evidence or arguments.
+3. Where relevant, link the response to one or more existing Stage 3 priority titles, using
+   the exact titles supplied.
+4. If the analysis only partially addresses a point, say so directly.
+5. If the analysis does not adequately address a point, identify clearly what is missing —
+   do not fill the gap with speculation.
+6. Do not invent citations, document names, or new priority cards.
+7. Do not alter or reinterpret the existing Stage 3 recommendations.
+8. Do not change any Stage 2 rating or Stage 3 priority — only respond to the points.
+
+Return ONLY a JSON block between the markers below. status must be one of:
+addressed | partially_addressed | not_yet_addressed.
+
+%%%FOCUS_QUESTIONS_START%%%
+{
+  "responses": [
+    {
+      "id": "q1",
+      "question": "Original point text",
+      "status": "addressed",
+      "direct_answer": "2–4 sentences directly responding to the point.",
+      "evidence_basis": "Short explanation of what in the completed analysis supports this.",
+      "linked_priorities": ["Exact Stage 3 priority title if applicable"],
+      "confidence_gap_note": "One sentence on certainty level or what evidence is missing."
+    }
+  ]
+}
+%%%FOCUS_QUESTIONS_END%%%'''}
 
 
 
@@ -4187,7 +4234,8 @@ def get_stage_name(stage):
         "3": "Recommendations Note",
         "deeper": "Go Deeper",
         "deeper_playbook": "Playbook References",
-        "followon": "Follow-on"
+        "followon": "Follow-on",
+        "priority_questions": "Priority Points",
     }
     return names.get(str(stage), f"Stage {stage}")
 
