@@ -4079,6 +4079,7 @@
 
     if(isLast){
       document.getElementById('refine-area').innerHTML=`
+        <div id="priority-questions-section"></div>
         <div class="followon-card ani">
           <div class="refine-lbl">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -5096,6 +5097,7 @@ ${body}
   };
 
   function initStage3UI(){
+    maybeRunPriorityQuestions();
     if(!stageThreePriorities.length) return;
     currentPriority = 0;
     renderPrioritiesIntro();
@@ -5106,6 +5108,118 @@ ${body}
     if(horizonConsiderations && horizonConsiderations.trim()){
       renderHorizonPanel(horizonConsiderations);
     }
+  }
+
+  async function maybeRunPriorityQuestions(force){
+    const container=document.getElementById('priority-questions-section');
+    if(!container) return;
+    if(!priorityQuestions.length){ container.innerHTML=''; return; }
+    if(focusQuestionsResult && !force){ renderPriorityQuestions(focusQuestionsResult); return; }
+    if(_pqInFlight) return;
+    _pqInFlight=true;
+
+    container.innerHTML=`<div class="pq-section ani">
+      <div class="pq-hdr">Responses to your priority points</div>
+      <div class="pq-loading"><span class="dot active"></span>Answering your ${priorityQuestions.length} priority point${priorityQuestions.length!==1?'s':''} using the completed analysis…</div>
+    </div>`;
+
+    const body={
+      priority_questions:priorityQuestions,
+      user_context:(document.getElementById('user-context')?.value||'').trim(),
+      stage1_output:stageOutputs[1]||'',
+      stage2_output:stageOutputs[2]||'',
+      stage2_ratings:{sensitivity_rating:fcvRating||'',responsiveness_rating:fcvResponsivenessRating||''},
+      stage3_output:stageOutputs[3]||'',
+      stage3_priorities:{fcv_rating:fcvRating||'',priorities:stageThreePriorities||[]}
+    };
+
+    const ac=new AbortController();
+    const to=setTimeout(()=>ac.abort(new Error('Priority points timed out.')), 5*60*1000);
+    try{
+      const res=await fetch('/api/run-priority-questions',{
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(body), signal:ac.signal
+      });
+      const reader=res.body.getReader(); const dec=new TextDecoder();
+      let buf='', parsed=null;
+      while(true){
+        const {done,value}=await reader.read(); if(done) break;
+        buf+=dec.decode(value,{stream:true});
+        const lines=buf.split('\n'); buf=lines.pop();
+        for(const line of lines){
+          if(!line.startsWith('data: ')) continue;
+          try{
+            const d=JSON.parse(line.slice(6));
+            if(d.done){ parsed=d.focus_questions||null; }
+            if(d.error){ throw new Error(d.error); }
+          }catch(e){ if(e instanceof SyntaxError) continue; throw e; }
+        }
+      }
+      clearTimeout(to);
+      focusQuestionsResult=parsed;
+      if(parsed && !parsed.error && (parsed.responses||[]).length){ renderPriorityQuestions(parsed); }
+      else { renderPriorityQuestionsError(); }
+    }catch(e){
+      clearTimeout(to);
+      renderPriorityQuestionsError();
+    }finally{
+      _pqInFlight=false;
+    }
+  }
+
+  function renderPriorityQuestions(parsed){
+    const c=document.getElementById('priority-questions-section'); if(!c) return;
+    const rs=(parsed&&parsed.responses)||[];
+    if(!rs.length){ renderPriorityQuestionsError(); return; }
+    const sm=parsed.summary||{};
+    const pill=(s)=> s==='addressed' ? '<span class="pq-pill pq-pill-ok">Addressed</span>'
+                    : s==='partially_addressed' ? '<span class="pq-pill pq-pill-part">Partially addressed</span>'
+                    : '<span class="pq-pill pq-pill-none">Not yet addressed</span>';
+    const cards=rs.map((r,i)=>{
+      const lp=(r.linked_priorities||[]).filter(Boolean);
+      const rerun=(r.status!=='addressed')
+        ? `<button class="pq-rerun" onclick="pqAddContextAndRerun(${i})">+ Add context &amp; re-run</button>` : '';
+      return `<div class="pq-card">
+        <div class="pq-q">${esc(r.question||'')}${pill(r.status)}</div>
+        ${r.direct_answer?`<div class="pq-a">${esc(r.direct_answer)}</div>`:''}
+        ${r.evidence_basis?`<div class="pq-field"><span class="pq-lbl">Evidence basis:</span> ${esc(r.evidence_basis)}</div>`:''}
+        ${lp.length?`<div class="pq-field"><span class="pq-lbl">Linked priorities:</span> ${lp.map(esc).join('; ')}</div>`:''}
+        ${r.confidence_gap_note?`<div class="pq-note">${esc(r.confidence_gap_note)}</div>`:''}
+        ${rerun}
+      </div>`;
+    }).join('');
+    c.innerHTML=`<div class="pq-section ani">
+      <div class="pq-hdr">Responses to your priority points</div>
+      <div class="pq-strip">${(sm.addressed||0)} addressed &middot; ${(sm.partially_addressed||0)} partially addressed &middot; ${(sm.not_yet_addressed||0)} not yet addressed</div>
+      ${cards}
+    </div>`;
+  }
+
+  function renderPriorityQuestionsError(){
+    const c=document.getElementById('priority-questions-section'); if(!c) return;
+    c.innerHTML=`<div class="pq-section ani">
+      <div class="pq-hdr">Responses to your priority points</div>
+      <div class="callout warn"><div class="callout-body">Couldn't generate the responses to your priority points. The main analysis above is unaffected.
+        <button class="btn btn-ghost btn-sm" style="margin-left:8px" onclick="maybeRunPriorityQuestions(true)">Retry</button>
+      </div></div>
+    </div>`;
+  }
+
+  function pqAddContextAndRerun(idx){
+    const r=((focusQuestionsResult&&focusQuestionsResult.responses)||[])[idx];
+    const q=r?(r.question||''):'';
+    const main=document.getElementById('main'); if(main) main.style.display='';
+    const panel=document.getElementById('analysis-panel'); if(panel) panel.style.display='none';
+    const stepperWrap=document.getElementById('stepper-wrap'); if(stepperWrap) stepperWrap.style.display='none';
+    const body=document.getElementById('context-box-body'); const toggle=document.getElementById('context-toggle');
+    if(body && body.hidden){ body.hidden=false; if(toggle){ toggle.classList.add('open'); toggle.setAttribute('aria-expanded','true'); } }
+    const ta=document.getElementById('user-context');
+    if(ta && q){
+      const add='Please make sure the analysis specifically addresses: '+q;
+      ta.value = ta.value ? (ta.value.replace(/\s*$/,'')+'\n'+add) : add;
+      onGuidanceInput(); ta.focus();
+    }
+    (document.getElementById('context-box-body')||ta||main).scrollIntoView({behavior:'smooth',block:'center'});
   }
 
   function renderHorizonPanel(text){
