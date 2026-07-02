@@ -234,6 +234,53 @@ Stage badge (e.g., "Recommendations tailored for PCN stage")
 
 ---
 
+## Priority Questions Prompt (v9.13 — "priority_questions" key in DEFAULT_PROMPTS)
+
+**Purpose:** After the main three-stage run completes, answer the user's priority points (custom questions / areas of focus entered in the Analysis Guidance box) by cross-referencing the full Stage 1–3 outputs.
+
+**When invoked:** Fired by `maybeRunPriorityQuestions()` in `index.html` AFTER the main run finishes (after `express_done` in Express mode, or after Stage 3 `done` in Step-by-Step). Never called inline during `run-express` or `run-stage`.
+
+**Stage 2 rating guardrail:** The soft-emphasis injection does NOT alter the rating or DNH/rec-set logic. The Stage 2 prompt blocks override by the priority-questions block, keeping ratings/DNH/rec-set unaffected by the user's specific focus areas.
+
+**Soft-emphasis injection into Stages 1–3 (`build_priority_questions_block(questions, stage)`):**
+- Returns a bounded plain-English paragraph placed at the END of the user's context in each stage prompt
+- Framed as "soft emphasis" — the LLM is instructed to draw out evidence relating to these questions where natural, but not to restructure or omit other required output
+- Bounded: if questions text exceeds a character threshold, it is truncated with a disclosure note
+- Injected into both `/api/run-stage` (step-by-step) and `/api/run-express` (express) paths
+
+**System prompt structure (DEFAULT_PROMPTS["priority_questions"]):**
+- Receives: stage1_output, stage2_output, stage2_ratings, stage3_output, stage3_priorities, priority_questions[], user_context
+- Instruction: for each question, search across all stage outputs, produce a direct answer with evidence, link to matching priorities, flag gaps
+- Output constraint: emit ONLY the %%%FOCUS_QUESTIONS_START/END%%% block (no prose wrapping)
+
+**`%%%FOCUS_QUESTIONS_START/END%%%` JSON schema:**
+```
+%%%FOCUS_QUESTIONS_START%%%
+{
+  "responses": [
+    {
+      "id":                  "1",
+      "question":            "original question text as entered by the user",
+      "status":              "addressed",
+      "direct_answer":       "2–4 sentence answer grounded in stage outputs",
+      "evidence_basis":      "[From: document name] or Stage 1/2/3 reference",
+      "linked_priorities":   ["Priority title A", "Priority title B"],
+      "confidence_gap_note": null
+    }
+  ],
+  "summary": "1–2 sentence overall coverage note"
+}
+%%%FOCUS_QUESTIONS_END%%%
+```
+
+**Field value sets:**
+- `status`: `"addressed"` | `"partially_addressed"` | `"not_yet_addressed"` (unknown values coerced to `"not_yet_addressed"` by `extract_focus_questions()`)
+- `confidence_gap_note`: `null` (no gap) or a short string explaining uncertainty
+
+**Parsing:** `extract_focus_questions(text)` — see reference_backend_routes.md for full signature and return shape.
+
+---
+
 ## Go Deeper "alternatives" tab output format (legacy — tab removed in v7.2, prompt retained)
 
 - Only `%%%GO_FURTHER_START%%%...%%%GO_FURTHER_END%%%` markers used
@@ -243,4 +290,4 @@ Stage badge (e.g., "Recommendations tailored for PCN stage")
 
 ---
 
-*Last updated: 2026-06-18 — documented broader appraisal/design-stage document scope*
+*Last updated: 2026-07-02 — added Priority Questions prompt, %%%FOCUS_QUESTIONS_START/END%%% schema, and soft-emphasis injection pattern (v9.13)*

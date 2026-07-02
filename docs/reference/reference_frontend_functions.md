@@ -56,6 +56,39 @@
 
 ---
 
+## Priority Points (v9.13)
+
+**State globals:**
+- `priorityQuestions` — array of question strings derived from the guidance box; populated by `detectPriorityPoints()`
+- `focusQuestionsResult` — parsed result object from `extract_focus_questions()` once `/api/run-priority-questions` completes; `null` until the call finishes
+- `pqPanelEnabled` — boolean; driven by the confirm-strip checkbox (default `true`); when `false`, `maybeRunPriorityQuestions()` skips the API call
+- `_pqInFlight` — boolean guard preventing concurrent calls to `/api/run-priority-questions`
+- `_pqDetectTimer` — debounce timer handle for `detectPriorityPoints()`
+
+**Detection and confirm:**
+- `onGuidanceInput()` — `oninput` handler on the Analysis Guidance textarea; debounces 400ms then calls `detectPriorityPoints()`
+- `detectPriorityPoints(text)` — client-side heuristic; splits text on line breaks and `?` markers; returns array of candidate question strings; stores result in `priorityQuestions`; calls `renderPqConfirm()` when candidates found
+- `renderPqConfirm()` — renders the `#pq-confirm` intake confirm strip below the guidance box; shows candidate questions as chips; checkbox (default checked) sets `pqPanelEnabled`; strip is hidden if no questions detected
+- `applyPriorityChip(idx)` — click handler for a detected-question chip; toggles inclusion of that question in `priorityQuestions`
+
+**Invocation:**
+- `maybeRunPriorityQuestions()` — called after the main run completes; checks `pqPanelEnabled`, `priorityQuestions.length > 0`, and `!_pqInFlight`; if all true, calls `getPriorityQuestions()`
+- `getPriorityQuestions()` — assembles the POST body `{user_context, priority_questions, stage1_output, stage2_output, stage2_ratings, stage3_output, stage3_priorities}`; SSE-streams `/api/run-priority-questions`; on `done` event calls `renderPriorityQuestions(result)`; on error calls `renderPriorityQuestionsError(msg)`
+- `togglePqPanel(show)` — shows/hides `#priority-questions-section`; called by `renderPriorityQuestions()` and `renderPriorityQuestionsError()`
+
+**Rendering:**
+- `renderPriorityQuestions(result)` — renders the "Responses to your priority points" panel inside `#priority-questions-section`; one card per response object with: status pill (green / amber / grey), question text, direct answer, evidence basis, linked-priority chips, confidence gap note in italic; appends overall summary at the bottom
+- `renderPriorityQuestionsError(msg)` — renders an error state inside `#priority-questions-section` with retry affordance
+- `pqAddContextAndRerun(newContext)` — updates `user_context` and re-fires `getPriorityQuestions()` with the revised context; used by the "Refine" affordance on the results panel
+
+**UI container:** `#priority-questions-section` — rendered below the Stage 3 priority stepper; hidden until `renderPriorityQuestions()` or `renderPriorityQuestionsError()` is called.
+
+**Confirm strip:** `#pq-confirm` — appears between the guidance textarea and the run button when priority points are detected; checkbox label "Include responses to my priority points in the output" (default checked).
+
+**Export:** `downloadReport()` includes the `focusQuestionsResult` in its POST body as `focus_questions`; `downloadHTML()` renders a "Responses to Your Priority Points" section in the HTML export. Both sections are omitted when `focusQuestionsResult` is null or errored.
+
+---
+
 ## Classification Widget (v9.0/v9.1)
 
 - **`renderClassificationWidget()`** — renders narrative-format classification widget at top of Stage 1 output
@@ -159,4 +192,4 @@ Both modes use identical prompts, code paths, and output quality. Express is a f
 
 ---
 
-*Last updated: 2026-06-18 - documented best-effort Stage 2 Under the Hood storage, storage quota helpers, and broader document-scope copy*
+*Last updated: 2026-07-02 — added Priority Points section: detectPriorityPoints, renderPqConfirm, togglePqPanel, onGuidanceInput, applyPriorityChip, getPriorityQuestions, maybeRunPriorityQuestions, renderPriorityQuestions, renderPriorityQuestionsError, pqAddContextAndRerun; state globals priorityQuestions / focusQuestionsResult / pqPanelEnabled / _pqInFlight / _pqDetectTimer; #priority-questions-section and #pq-confirm containers (v9.13)*
