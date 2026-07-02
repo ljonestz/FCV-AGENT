@@ -2627,7 +2627,9 @@
       docType: docType,
       analysisMode: analysisMode,
       stageOutputs: stageOutputs,
-      stageHists: stageHists
+      stageHists: stageHists,
+      priorityQuestions: priorityQuestions,
+      focusQuestionsResult: focusQuestionsResult
     };
     const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
     const url = URL.createObjectURL(blob);
@@ -2677,6 +2679,8 @@
         selectMode(state.analysisMode || 'stepbystep');
         if(state.stageOutputs) stageOutputs = state.stageOutputs;
         if(state.stageHists) stageHists = state.stageHists;
+        priorityQuestions = state.priorityQuestions || [];
+        focusQuestionsResult = state.focusQuestionsResult || null;
         sessionName = file.name;
         document.getElementById('upload-panel').style.display='none';
         document.getElementById('analysis-panel').style.display='block';
@@ -4242,7 +4246,7 @@
       const res = await fetch('/api/run-followon', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({messages}),
+        body: JSON.stringify({messages, priority_responses: (focusQuestionsResult && focusQuestionsResult.responses) || []}),
         signal: _followonAbort.signal
       });
       const reader = res.body.getReader();
@@ -4562,6 +4566,7 @@
       p4r_watch: p4rWatch || [],
       regional_watch: regionalWatch || [],
       horizon_considerations: horizonConsiderations || '',
+      focus_questions: focusQuestionsResult || null,
       metadata: {
         date_str: dateStr,
         classification_category: cat,
@@ -4675,6 +4680,24 @@
       body += `<h2 class="exp-section-hdr">Strategic Priorities</h2>`;
       stageThreePriorities.forEach((pr,i)=>{
         body += _buildExportPriorityCard(pr, i, stageThreePriorities.length);
+      });
+    }
+    // ── Responses to your priority points ──
+    if(focusQuestionsResult && (focusQuestionsResult.responses||[]).length){
+      const sm=focusQuestionsResult.summary||{};
+      const lbl={addressed:'Addressed',partially_addressed:'Partially addressed',not_yet_addressed:'Not yet addressed'};
+      body += `<h2 class="exp-section-hdr">Responses to your priority points</h2>
+        <p style="font-size:12px;color:#666;margin-bottom:10px">${(sm.addressed||0)} addressed &middot; ${(sm.partially_addressed||0)} partially addressed &middot; ${(sm.not_yet_addressed||0)} not yet addressed</p>`;
+      focusQuestionsResult.responses.forEach(r=>{
+        const lp=(r.linked_priorities||[]).filter(Boolean);
+        body += `<div style="border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;margin-bottom:10px">
+          <h3 style="margin:0 0 4px;font-size:14px">${esc(r.question||'')}</h3>
+          <p style="font-size:11px;color:#555;font-weight:600;margin:0 0 6px">${esc(lbl[r.status]||r.status||'')}</p>
+          ${r.direct_answer?`<p style="margin:0 0 6px">${esc(r.direct_answer)}</p>`:''}
+          ${r.evidence_basis?`<p style="font-size:12px;margin:0 0 4px"><strong>Evidence basis:</strong> ${esc(r.evidence_basis)}</p>`:''}
+          ${lp.length?`<p style="font-size:12px;margin:0 0 4px"><strong>Linked priorities:</strong> ${lp.map(esc).join('; ')}</p>`:''}
+          ${r.confidence_gap_note?`<p style="font-size:11px;color:#888;font-style:italic;margin:0">${esc(r.confidence_gap_note)}</p>`:''}
+        </div>`;
       });
     }
 
