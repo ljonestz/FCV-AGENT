@@ -26,7 +26,9 @@ from background_docs import (
     DPF_MODULE_GUIDE, DPF_POLICY_AREA_CHECKLIST,
     P4R_MODULE_GUIDE,
     REGIONAL_CROSSBORDER_LENS, MPA_MODULE_GUIDE,
-    INTERSECTION_SYNTHESIS_GUIDE
+    INTERSECTION_SYNTHESIS_GUIDE,
+    DNH_SEASH_IPF, DNH_SEASH_PFORR, DNH_SEASH_DPF,
+    SEASH_GENDER_CARD_IPF, SEASH_GENDER_CARD_PFORR, SEASH_GENDER_CARD_DPF
 )
 import io
 try:
@@ -1237,6 +1239,32 @@ def get_mpa_slice(is_mpa) -> str:
     if not is_mpa:
         return ""
     return "\n\n--- MPA (Multiphase Programmatic Approach) Wrapper Guide ---\n" + MPA_MODULE_GUIDE
+
+
+def get_dnh_seash_guidance(instrument_type: str) -> str:
+    """Return the instrument-appropriate DNH Principle 9 (SEA/SH) text for Stage 2.
+
+    IPF / AF-of-IPF / MPA-IPF-phase (the default) keeps the existing
+    ESS2/ESS4/ESCP/RF-anchored language. PforR and DPF/DPO get instrument-true
+    replacements with no ESF/ESCP/ESS/RF vocabulary, matching DPF_MODULE_GUIDE
+    / P4R_MODULE_GUIDE (Workstream 1 of the OPCS policy-consistency project).
+    """
+    instrument = str(instrument_type or "").strip().upper()
+    if instrument in {"PFORR", "P4R", "PROGRAM-FOR-RESULTS"}:
+        return DNH_SEASH_PFORR
+    if instrument == "DPO":
+        return DNH_SEASH_DPF
+    return DNH_SEASH_IPF
+
+
+def get_seash_gender_card_guidance(instrument_type: str) -> str:
+    """Return the instrument-appropriate Stage 3 Gender-FCV / SEA-SH card rules."""
+    instrument = str(instrument_type or "").strip().upper()
+    if instrument in {"PFORR", "P4R", "PROGRAM-FOR-RESULTS"}:
+        return SEASH_GENDER_CARD_PFORR
+    if instrument == "DPO":
+        return SEASH_GENDER_CARD_DPF
+    return SEASH_GENDER_CARD_IPF
 
 
 # ── Phase 6: intersection-matrix composition ──────────────────────────────────
