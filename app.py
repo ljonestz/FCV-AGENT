@@ -1633,7 +1633,7 @@ def extract_country_classification(stage1_output: str) -> dict:
     """Extract country classification from Stage 1 output.
 
     Looks for %%%COUNTRY_CLASSIFICATION_START%%%...%%%COUNTRY_CLASSIFICATION_END%%%.
-    Returns dict with category, confidence, reasoning, error.
+    Returns dict with category, confidence, reasoning, trigger, error.
     """
     pattern = r'%%%COUNTRY_CLASSIFICATION_START%%%(.*?)%%%COUNTRY_CLASSIFICATION_END%%%'
     m = re.search(pattern, stage1_output, re.DOTALL)
@@ -1646,7 +1646,7 @@ def extract_country_classification(stage1_output: str) -> dict:
         }
     block = m.group(1).strip()
     result = {'error': False}
-    for field in ('category', 'confidence', 'reasoning'):
+    for field in ('category', 'confidence', 'reasoning', 'trigger'):
         fm = re.search(rf'{field}:\s*(.+)', block)
         result[field] = fm.group(1).strip() if fm else 'Unknown'
     # Validate category
@@ -2069,6 +2069,15 @@ CRITICAL: Determine the safeguards framework from the DOCUMENT ITSELF (Data Shee
 
 ---
 
+**GEOGRAPHIC-FOOTPRINT ANCHORING RULE (applies to Part B and the classification block below):**
+Any sub-national or district-level FCV risk factor you cite (e.g. a named conflict-affected
+region, displacement corridor, or contested district) must be checked against the
+project's specific geographic/administrative footprint — the actual implementing regions, provinces,
+or districts named in the document — before being cited. Do not cite country-level FCV risk
+factors that pertain to parts of the country outside the project's footprint as if they were
+directly relevant to this project; if the document does not specify a sub-national footprint,
+say so explicitly rather than defaulting to a national conflict profile.
+
 **REQUIRED CLASSIFIER OUTPUTS (append after your analysis, stripped from display):**
 
 After completing Part A and Part B, append these three blocks exactly as shown:
@@ -2076,7 +2085,8 @@ After completing Part A and Part B, append these three blocks exactly as shown:
 %%%COUNTRY_CLASSIFICATION_START%%%
 category: [In Crisis | Conflict-Affected | At Risk | In Transition | General]
 confidence: [high | moderate]
-reasoning: [1-2 sentences citing evidence from the document or web research]
+reasoning: [1-2 sentences citing evidence from the document or web research, anchored to the project's actual geographic footprint per the rule above]
+trigger: [One-line statement of the specific fact that drove this category — mandatory when category is "General"; for other categories, name the specific conflict/fragility indicator that drove the classification]
 %%%COUNTRY_CLASSIFICATION_END%%%
 
 %%%SECTOR_CONTEXT_START%%%
