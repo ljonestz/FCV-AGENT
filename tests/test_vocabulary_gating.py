@@ -70,3 +70,30 @@ def test_default_prompts_use_placeholders_not_hardcoded_escp_language():
     # Gender-FCV / SEA-SH card rule text directly.
     assert "{seash_gender_card_guidance}" in app.DEFAULT_PROMPTS["3"]
     assert "Explicitly reference the SEA/SH Action Plan (required under ESS2 and ESS4" not in app.DEFAULT_PROMPTS["3"]
+
+
+def test_get_dnh_seash_guidance_replaces_placeholder_cleanly():
+    from app import get_dnh_seash_guidance, DEFAULT_PROMPTS
+
+    for instrument in ("IPF", "PforR", "DPO"):
+        guidance = get_dnh_seash_guidance(instrument)
+        filled = DEFAULT_PROMPTS["2"].replace("{dnh_seash_guidance}", guidance)
+        assert "{dnh_seash_guidance}" not in filled
+        assert guidance in filled
+
+
+def test_get_seash_gender_card_guidance_replaces_placeholder_cleanly():
+    from app import get_seash_gender_card_guidance, DEFAULT_PROMPTS
+
+    for instrument in ("IPF", "PforR", "DPO"):
+        guidance = get_seash_gender_card_guidance(instrument)
+        filled = DEFAULT_PROMPTS["3"].format(
+            doc_type="PAD",
+            timing_emphasis="Preparation",
+            playbook_guidance="",
+            instrument_guidance="",
+            temporal_guardrail="",
+            seash_gender_card_guidance=guidance,
+        )
+        assert "{seash_gender_card_guidance}" not in filled
+        assert guidance in filled

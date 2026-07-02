@@ -2130,10 +2130,7 @@ Assess the project against these 9 Do No Harm principles:
 6. Protecting project staff and beneficiaries from security risks
 7. Monitoring for unintended negative consequences
 8. Establishing accessible and trusted grievance mechanisms
-9. SEA/SH risk management in conflict contexts — for projects operating in conflict-affected areas, or involving contractor workforces, or with female-majority beneficiaries or community workers, assess: (a) Is the SEA/SH risk formally classified (Low / Moderate / Substantial / High) and consistent with the conflict context? (b) If risk is Substantial or High, does the ESCP include a time-bound commitment to develop and implement a standalone SEA/SH Action Plan? (c) Are GRM reporting channels anonymous/confidential and accessible to women with mobility restrictions? (d) Does the ESS2 Labour Management Procedure address contractor screening for prior SEA/SH incidents and pre-deployment training? (e) Is there a Results Framework indicator for SEA/SH monitoring? Set seash_standalone_flag: TRUE if risk is Substantial or High, or if any of the five elements above is absent or inadequate. Pass this flag to Stage 3.
-
-FOR BUDGET SUPPORT INSTRUMENTS (DPF/DPO/DPL) ONLY — Additional DNH assessment (run after principle 9):
-Adjustment Sequencing Risk: Assess whether prior actions or triggers create a window of exposure where reform costs (subsidy removal, price liberalisation, tariff reform, civil service rationalisation) are imposed BEFORE compensatory safety net mechanisms are operational. In FCV contexts, this sequencing gap is a primary conflict escalation pathway — adjustment costs hit FCV-affected populations first, before protective measures are in place. Assess: (a) Does the policy matrix sequence safety net or social protection prior actions before or concurrent with fiscal adjustment measures? (b) Is there a PSIA that explicitly models distributional impacts of reform on conflict-affected or vulnerable populations? (c) Do any prior actions risk triggering political backlash from vested interests in ways that could destabilise the operating environment? This is the most important DNH dimension for budget support in FCV settings — weight it accordingly in the DNH summary line.
+9. {dnh_seash_guidance}
 
 Output format — a standalone section titled "## Do No Harm":
 Line 1: "**Do No Harm: [X] of 9 principles addressed | [Y] partial | [Z] not addressed**"
@@ -2755,14 +2752,7 @@ Apply the following definitions strictly. [S+R] must be earned — do not use it
 
 # MANDATORY PRIORITY CARDS
 
-Gender-FCV Card Rule: If gender_fcv_flag: TRUE was passed from Stage 2, a Gender-FCV priority card is mandatory and must appear in the output, in addition to the standard 4-5 priorities. This card must address: how the FCV context specifically alters gender dynamics for this project, SEA/SH risk classification adequacy, GRM access for women and girls in conflict-affected settings, and safety risks for female community workers. Document locations must name the relevant ESCP commitment, SEP section, and Operations Manual section. Explicitly reference the SEA/SH Action Plan (required under ESS2 and ESS4 for elevated-risk projects) and recommend engagement with the Bank's SEA/SH Secretariat and Gender Group.
-
-SEA/SH Standalone Card Rule: If seash_standalone_flag: TRUE was passed from Stage 2, generate a dedicated SEA/SH priority card. This card must not be merged with the Gender-FCV card — they address different things. The card must include:
-- Gap description: the specific SEA/SH elements that are absent or inadequate, as identified in Stage 2 (risk classification, Action Plan, GRM design, LMP provisions, monitoring indicators)
-- Why it matters: reference ESS4 (Community Health and Safety) as the governing standard; note that elevated SEA/SH risk in conflict settings requires a formally documented and monitored Action Plan
-- Actions: map to the five elements of the Stage 2 check — risk classification, Action Plan, GRM design for SEA/SH reporting, ESS2/LMP worker provisions, and Results Framework monitoring indicator
-- Document locations: ESCP (commitment on Action Plan delivery), SEP (GRM design section), Operations Manual (worker protection provisions)
-- Named standards: ESS2, ESS4, and ESS10 explicitly; recommend engagement with the Bank's SEA/SH Secretariat and the Gender Group
+{seash_gender_card_guidance}
 
 The SEA/SH card and the GRM card may both appear in the output — they address different things. Do not merge them.
 
@@ -4892,6 +4882,7 @@ def run_stage():
                 try:
                     stage_prompt = stage_prompt.replace('{instrument_guidance}', instrument_slice)
                     stage_prompt = stage_prompt.replace('{temporal_guardrail}', temporal_guardrail)
+                    stage_prompt = stage_prompt.replace('{dnh_seash_guidance}', get_dnh_seash_guidance(instrument_type))
                 except Exception:
                     pass
 
@@ -5051,6 +5042,7 @@ def run_stage():
                         playbook_guidance=playbook,
                         instrument_guidance=instrument_slice,
                         temporal_guardrail=temporal_guardrail,
+                        seash_gender_card_guidance=get_seash_gender_card_guidance(instrument_type),
                     )
                 except KeyError:
                     pass  # If format fails, use prompt as-is
@@ -5945,6 +5937,7 @@ def run_express():
                 mpa_slice = get_mpa_slice(_is_mpa_x)
                 if mpa_slice:
                     stage2_prompt = stage2_prompt + mpa_slice
+                stage2_prompt = stage2_prompt.replace('{dnh_seash_guidance}', get_dnh_seash_guidance(instrument_type))
 
                 confirmed_category_e2 = (
                     country_classification.get('category', 'General')
@@ -6073,6 +6066,7 @@ def run_express():
                             playbook_guidance=playbook,
                             instrument_guidance=instrument_slice_s3,
                             temporal_guardrail=temporal_guardrail_s3,
+                            seash_gender_card_guidance=get_seash_gender_card_guidance(instrument_type),
                         )
                     except KeyError:
                         pass

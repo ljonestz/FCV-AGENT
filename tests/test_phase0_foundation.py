@@ -49,6 +49,10 @@ def test_policy_currency_strings_are_updated():
         background_docs.FCV_INSTRUMENT_CALIBRATION,
         background_docs.WB_INSTRUMENT_GUIDE["DPO"]["description"],
         background_docs.WB_INSTRUMENT_GUIDE["DPO"]["not_applicable"],
+        # DNH Principle 9 (SEA/SH) text moved from DEFAULT_PROMPTS["2"] into the
+        # instrument-conditional DNH_SEASH_IPF constant in Workstream 1 (v9.14);
+        # it is injected into the assembled Stage 2 prompt via {dnh_seash_guidance}.
+        background_docs.DNH_SEASH_IPF,
     ])
 
     assert "WBG FCV Strategy 2026-2030" in combined
