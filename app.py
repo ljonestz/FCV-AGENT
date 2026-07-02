@@ -2934,7 +2934,7 @@ The SEA/SH card and the GRM card may both appear in the output — they address 
 - JSON block is present at the end, wrapped in %%%JSON_START%%% / %%%JSON_END%%%
 - All 10 top-level JSON fields are populated (fcv_rating, fcv_responsiveness_rating, sensitivity_summary, responsiveness_summary, risk_exposure, mid_cycle_watch, dpf_watch, p4r_watch, regional_watch, priorities)
 - Each priority's pad_sections, actions (including per-action suggested_language), and implementation_note are specific to this project — not generic placeholders
-- Each priority JSON object has all 20 fields: title, fcv_dimension, tag, refresh_shift, risk_level, the_gap, why_it_matters, actions, who_acts, when, action_timing, resources, pad_sections, country_category_relevance, implementation_note, cpf_alignment, rra_driver_alignment, change_type, restructuring_level, priority_scope
+- Each priority JSON object has all 21 fields: title, fcv_dimension, tag, refresh_shift, risk_level, the_gap, why_it_matters, actions, who_acts, when, action_timing, resources, pad_sections, country_category_relevance, implementation_note, cpf_alignment, rra_driver_alignment, change_type, restructuring_level, priority_scope, governance_level
 - No generic or templated language anywhere
 - All `when` values are appropriate for the {doc_type} stage
 
@@ -2968,6 +2968,7 @@ The FCV ratings, summaries, and risk exposure paragraphs you have written in the
       "change_type": "Results framework change",
       "restructuring_level": "Level 2",
       "priority_scope": "mid-cycle",
+      "governance_level": "Country Phase",
       "the_gap": "Specific gap with named location/group/institution",
       "why_it_matters": "Why this gap matters for this project, including shift justification for [R] or [S+R] tags",
       "actions": [
@@ -2996,7 +2997,7 @@ The FCV ratings, summaries, and risk exposure paragraphs you have written in the
 }}}}
 %%%JSON_END%%%
 
-IMPORTANT: The JSON block must come AFTER all narrative text. Do not include any explanatory text inside the JSON block itself. Use exact field names as shown. The `tag` field must be exactly "[S]", "[R]", or "[S+R]" (with square brackets). For `fcv_rating` and `fcv_responsiveness_rating`: use the sensitivity and responsiveness ratings from Stage 2 exactly as provided in the conversation history. Copy them into the JSON fields without modification. Do not re-assess or override the Stage 2 ratings. The `refresh_shift` field must be exactly one of: "Shift A: Anticipate" | "Shift B: Differentiate" | "Shift C: Jobs & private sector" | "Shift D: Enhanced toolkit". The `who_acts` field is semicolon-separated (e.g. "TTL; ESF Team"). The `when` field must be exactly one of: "Identification" | "Preparation" | "Appraisal" | "Implementation" | "Restructuring". The `cpf_alignment` and `rra_driver_alignment` fields must each be either a string (1-2 sentences) or JSON null - never the string "null" or "Not identified".
+IMPORTANT: The JSON block must come AFTER all narrative text. Do not include any explanatory text inside the JSON block itself. Use exact field names as shown. The `tag` field must be exactly "[S]", "[R]", or "[S+R]" (with square brackets). For `fcv_rating` and `fcv_responsiveness_rating`: use the sensitivity and responsiveness ratings from Stage 2 exactly as provided in the conversation history. Copy them into the JSON fields without modification. Do not re-assess or override the Stage 2 ratings. The `refresh_shift` field must be exactly one of: "Shift A: Anticipate" | "Shift B: Differentiate" | "Shift C: Jobs & private sector" | "Shift D: Enhanced toolkit". The `who_acts` field is semicolon-separated (e.g. "TTL; ESF Team"). The `when` field must be exactly one of: "Identification" | "Preparation" | "Appraisal" | "Implementation" | "Restructuring". The `cpf_alignment` and `rra_driver_alignment` fields must each be either a string (1-2 sentences) or JSON null - never the string "null" or "Not identified". The `governance_level` field applies ONLY to MPA operations: set it to "Regional Platform" for priorities that belong in the Phase-1 Program Framework Document (program-wide PrDO, cross-phase learning agenda, program-level institutional arrangements) or "Country Phase" for priorities that belong in a specific phase's own PAD (phase-specific targeting, phase-specific results indicators, phase-specific implementation arrangements). For non-MPA operations, set `governance_level` to JSON null. Never recommend a country-phase-owned decision be made at the Regional Platform level, or vice versa.
 
 ## WATCH LIST FOR SUPERVISION (after the JSON block)
 
