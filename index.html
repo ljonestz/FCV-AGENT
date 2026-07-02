@@ -2469,12 +2469,9 @@
   function applyContextChip(el){
     const ta=document.getElementById('user-context');
     if(!ta)return;
-    const alreadyActive=el.classList.contains('active');
-    document.querySelectorAll('.context-chip').forEach(c=>c.classList.remove('active'));
-    if(alreadyActive){ta.value='';return;}
-    el.classList.add('active');
-    ta.value=el.dataset.text;
-    ta.focus();
+    const line=el.dataset.text;
+    ta.value = ta.value.trim() ? (ta.value.replace(/\s*$/,'')+'\n'+line) : line;
+    onGuidanceInput(); ta.focus();
   }
 
   function syncContextChips(val){
@@ -2499,9 +2496,10 @@
       else { expanded.push(l); }
     });
     for(const raw of expanded){
+      const wasList=/^\s*(?:\d+[.)]|[-•*])\s*/.test(raw);
       const s=raw.replace(/^\s*(?:\d+[.)]|[-•*])\s*/,'').trim();
       if(!s) continue;
-      const isPoint = /\?\s*$/.test(s) || PQ_CUES.some(re=>re.test(s)) || PQ_INTERROG.test(s);
+      const isPoint = /\?\s*$/.test(s) || PQ_CUES.some(re=>re.test(s)) || (wasList && PQ_INTERROG.test(s));
       if(!isPoint) continue;
       const key=s.toLowerCase();
       if(seen.has(key)) continue;

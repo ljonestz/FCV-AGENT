@@ -6514,7 +6514,8 @@ def run_followon():
                 trimmed_messages.append(m)
 
         pr = data.get('priority_responses') or []
-        if pr and trimmed_messages and trimmed_messages[-1].get('role') == 'user':
+        if (pr and trimmed_messages and trimmed_messages[-1].get('role') == 'user'
+                and isinstance(trimmed_messages[-1].get('content'), str)):
             qa = "\n\n".join(
                 f"Q: {r.get('question', '')}\nA: {r.get('direct_answer', '')}"
                 for r in pr if isinstance(r, dict) and r.get('direct_answer')
