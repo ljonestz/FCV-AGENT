@@ -1267,6 +1267,57 @@ def get_seash_gender_card_guidance(instrument_type: str) -> str:
     return SEASH_GENDER_CARD_IPF
 
 
+INSTRUMENT_VOCABULARY_RULES: dict[str, dict[str, Any]] = {
+    "PFORR": {
+        "label": "PforR",
+        "banned": [
+            "ESCP", "Environmental and Social Commitment Plan",
+            "ESS1", "ESS2", "ESS3", "ESS4", "ESS5", "ESS6", "ESS7", "ESS8", "ESS9", "ESS10",
+            "SEP", "Stakeholder Engagement Plan",
+        ],
+    },
+    "DPO": {
+        "label": "DPF/DPO",
+        "banned": [
+            "ESCP", "Environmental and Social Commitment Plan",
+            "ESS1", "ESS2", "ESS3", "ESS4", "ESS5", "ESS6", "ESS7", "ESS8", "ESS9", "ESS10",
+            "SEP", "Stakeholder Engagement Plan",
+        ],
+    },
+}
+
+
+def _vocabulary_rule_key(instrument_type: str) -> str | None:
+    instrument = str(instrument_type or "").strip().upper()
+    if instrument in {"PFORR", "P4R", "PROGRAM-FOR-RESULTS"}:
+        return "PFORR"
+    if instrument == "DPO":
+        return "DPO"
+    return None
+
+
+def validate_instrument_vocabulary(output_text: str, instrument_type: str) -> list[str]:
+    """Return a list of banned-vocabulary terms found in generated Stage 2/3 output.
+
+    Programmatic, silent check (Workstream 2 of the OPCS policy-consistency
+    project). PforR and DPF/DPO must never surface ESF/ESCP/ESS/SEP language,
+    since those instruments are not ESF-governed. Returns an empty list when
+    the instrument has no rule table (e.g. plain IPF) or no banned term is
+    found — never raises. Matching is whole-word (\\b boundaries) so short
+    acronyms like "SEP" do not match inside common words ("separate",
+    "September") and "ESS1" does not match inside "ESS10".
+    """
+    key = _vocabulary_rule_key(instrument_type)
+    rules = INSTRUMENT_VOCABULARY_RULES.get(key) if key else None
+    if not rules or not output_text:
+        return []
+    found = []
+    for term in rules["banned"]:
+        if re.search(r'\b' + re.escape(term) + r'\b', output_text, re.IGNORECASE):
+            found.append(term)
+    return found
+
+
 # ── Phase 6: intersection-matrix composition ──────────────────────────────────
 
 LAYER_INJECTION_PRIORITY = [
