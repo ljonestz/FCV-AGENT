@@ -3745,7 +3745,64 @@ Always check and comment on:
 - If reviewing pasted text: compare against the relevant priority recommendation, identify what it addresses well, and propose specific edits to strengthen it
 
 # Tone
-Collegial, practical, peer-to-peer — the same register as the Recommendations Note.'''}
+Collegial, practical, peer-to-peer — the same register as the Recommendations Note.''',
+
+"priority_questions": '''You are generating an add-on section for an FCV project screening output.
+
+The core FCV analysis is already complete. Do not redo the analysis and do not change
+the existing findings, ratings, or priorities.
+
+You are given: optional user context, the task team's priority points (each is either a
+QUESTION to answer or a FOCUS AREA to reflect on), and the completed Stage 1 output,
+Stage 2 assessment + ratings, Stage 3 memo, and Stage 3 priority titles. These points were
+used as soft emphasis guidance during the main analysis, so the completed outputs should
+already contain relevant evidence. Your task is to draw that evidence together and respond
+to each point directly, for a reader who has ONLY seen the recommendations note — not the
+internal Stage 1–3 analysis.
+
+Instructions:
+1. Write a 2–3 sentence "overview" that introduces the responses: note how many points the
+   task team flagged, and that each response draws together the relevant findings from
+   across the assessment and links to the recommendations where relevant. You MAY briefly
+   note coverage in natural language (e.g. "the analysis speaks to all three, most fully on
+   readiness"). Do NOT use status labels such as "partially addressed".
+2. Respond to each point substantively. Give a thorough, genuinely useful answer — one full
+   paragraph or two shorter paragraphs (roughly 5–9 sentences in total). The reader's primary
+   goal is to have these questions answered well, so include the relevant operational detail,
+   specifics (locations, mechanisms, instruments, figures) and nuance that the analysis and
+   the uploaded documents support. If you use two paragraphs, separate them with a blank line.
+   For a question, answer it directly; for a focus area, give a considered reflection on what
+   the analysis found on that theme.
+3. Ground responses ONLY in what is present in the supplied analysis and the uploaded
+   documents. Do not introduce new evidence or arguments, and do not reference internal
+   analysis stages ("Stage 2"), theme numbers ("Theme 1"), "Key Gap N", or system flags.
+4. In "linked_priorities", list the exact Stage 3 priority titles the response connects to.
+5. If the analysis only partially covers a point, say so within the answer itself (not as a label).
+6. If the analysis does not adequately cover a point, note clearly in "confidence_gap_note"
+   what is missing — do not speculate. Prefer to note what is absent from the UPLOADED DOCUMENTS.
+7. Do not invent citations, document names, or new priority cards. Do not alter or reinterpret
+   the existing Stage 3 recommendations or ratings.
+
+The "status" field is used internally only (it is NOT shown to the user); still set it
+accurately to one of: addressed | partially_addressed | not_yet_addressed.
+
+Return ONLY a JSON block between the markers below.
+
+%%%FOCUS_QUESTIONS_START%%%
+{
+  "overview": "2–3 sentence introduction to the responses (see instruction 1).",
+  "responses": [
+    {
+      "id": "q1",
+      "question": "Original point text",
+      "status": "addressed",
+      "direct_answer": "One full paragraph or two short paragraphs (~5–9 sentences) directly responding to the point, with the operational detail the analysis supports. Separate two paragraphs with a blank line.",
+      "linked_priorities": ["Exact Stage 3 priority title if applicable"],
+      "confidence_gap_note": "One sentence on certainty or what is missing from the uploaded documents."
+    }
+  ]
+}
+%%%FOCUS_QUESTIONS_END%%%'''}
 
 
 
@@ -4141,6 +4198,125 @@ def extract_priorities(text: str, uploaded_doc_names: list = None) -> dict:
     }
 
 
+# ── Priority Points (a.k.a. priority questions): constants & helpers ──────────
+PRIORITY_QUESTIONS_MAX = 10           # hard cap (soft guidance to the user: 3–5)
+FOCUS_QUESTION_STATUSES = {'addressed', 'partially_addressed', 'not_yet_addressed'}
+
+
+def normalize_priority_questions(raw) -> list:
+    """Trim, drop blanks, dedupe (case-insensitive), cap at PRIORITY_QUESTIONS_MAX,
+    assign stable ids q1..qN in input order. Accepts a list of strings or of
+    {"question": "..."} dicts. Returns [{"id": "qN", "question": "..."}]."""
+    if not raw:
+        return []
+    items, seen = [], set()
+    for entry in raw:
+        q = (entry.get('question') if isinstance(entry, dict) else entry) or ''
+        q = str(q).strip()
+        if not q:
+            continue
+        key = q.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        items.append(q)
+        if len(items) >= PRIORITY_QUESTIONS_MAX:
+            break
+    return [{'id': f'q{i + 1}', 'question': q} for i, q in enumerate(items)]
+
+
+def build_priority_questions_block(questions: list, stage: int) -> str:
+    """Soft-context injection appended to a Stage 1/2/3 prompt. '' when no questions.
+    Stage 2 additionally gets an explicit rating guardrail so emphasis-steering does
+    not move the scores (which Stage 3 inherits verbatim). An item may be a question
+    OR a focus area."""
+    if not questions:
+        return ''
+    lines = "\n".join(f"- {q['question']}" for q in questions)
+    block = (
+        "\n\n---\n**PRIORITY POINTS FLAGGED BY THE TASK TEAM (soft emphasis guidance):**\n"
+        "The user has flagged the following specific questions or focus areas for this analysis:\n"
+        f"{lines}\n\n"
+        "Use these ONLY to guide which evidence you surface and how much depth you apply "
+        "in the relevant areas. Do NOT attempt to answer them directly in this output. "
+        "Do NOT change the structure, schema, or delimiter format of your output."
+    )
+    if stage == 2:
+        block += (
+            "\n\nSTAGE 2 GUARDRAIL: These points must NOT change your Sensitivity or "
+            "Responsiveness ratings, which of the 12 OST recommendations or 4 Strategy "
+            "pillars you assess, or your Do No Harm determinations. They influence "
+            "narrative emphasis only."
+        )
+    return block + "\n---"
+
+
+_FOCUS_REQUIRED_FIELDS = (
+    'id', 'question', 'status', 'direct_answer',
+    'evidence_basis', 'linked_priorities', 'confidence_gap_note',
+)
+
+
+def _coerce_focus_entry(entry: dict) -> dict:
+    for f in _FOCUS_REQUIRED_FIELDS:
+        entry.setdefault(f, [] if f == 'linked_priorities' else '')
+    lp = entry.get('linked_priorities')
+    if not isinstance(lp, list):
+        entry['linked_priorities'] = [lp] if lp else []
+    status = str(entry.get('status') or '').strip().lower().replace(' ', '_')
+    entry['status'] = status if status in FOCUS_QUESTION_STATUSES else 'not_yet_addressed'
+    return entry
+
+
+def extract_focus_questions(text: str) -> dict:
+    """Parse the %%%FOCUS_QUESTIONS_START/END%%% JSON block from the answer call.
+    On success: {'error': False, 'responses': [...], 'summary': {...}}
+    On failure: {'error': True, 'message': str, 'responses': [], 'summary': {...}}"""
+    _empty = {
+        'error': True,
+        'message': 'Priority-point responses could not be parsed.',
+        'overview': '',
+        'responses': [],
+        'summary': {'addressed': 0, 'partially_addressed': 0, 'not_yet_addressed': 0},
+    }
+    if not text:
+        return _empty
+
+    m = re.search(r'%%%FOCUS_QUESTIONS_START%%%(.*?)%%%FOCUS_QUESTIONS_END%%%', text, re.DOTALL)
+    if m:
+        body = m.group(1).strip()
+    else:
+        m2 = re.search(r'%%%FOCUS_QUESTIONS_START%%%(.*)$', text, re.DOTALL)
+        if not m2:
+            return _empty
+        body = m2.group(1).strip()
+
+    overview = ''
+    responses = []
+    try:
+        parsed = json.loads(body)
+        if isinstance(parsed, dict):
+            responses = parsed.get('responses', [])
+            overview = parsed.get('overview', '') or ''
+        else:
+            responses = []
+    except (json.JSONDecodeError, ValueError):
+        for chunk in re.findall(r'\{[^{}]*\}', body, re.DOTALL):
+            try:
+                responses.append(json.loads(chunk))
+            except (json.JSONDecodeError, ValueError):
+                continue
+
+    cleaned = [_coerce_focus_entry(e) for e in responses if isinstance(e, dict)]
+    if not cleaned:
+        return _empty
+
+    summary = {'addressed': 0, 'partially_addressed': 0, 'not_yet_addressed': 0}
+    for e in cleaned:
+        summary[e['status']] = summary.get(e['status'], 0) + 1
+    return {'error': False, 'message': '', 'overview': overview, 'responses': cleaned, 'summary': summary}
+
+
 # ── Document type detection ───────────────────────────────────────────────────
 
 DOCUMENT_TYPE_DETECTION_PROMPT = """You are a World Bank document classifier. Based on the text below, classify this document into exactly one of the following types:
@@ -4357,7 +4533,8 @@ def get_stage_name(stage):
         "3": "Recommendations Note",
         "deeper": "Go Deeper",
         "deeper_playbook": "Playbook References",
-        "followon": "Follow-on"
+        "followon": "Follow-on",
+        "priority_questions": "Priority Points",
     }
     return names.get(str(stage), f"Stage {stage}")
 
@@ -4917,6 +5094,7 @@ def run_stage():
         review_mode = data.get('review_mode', 'design').strip()  # 'design' or 'implementation'
         is_impl = (review_mode == 'implementation')
         user_context = data.get('user_context', '').strip()  # optional user-supplied context
+        priority_questions = normalize_priority_questions(data.get('priority_questions'))
         # Uploaded doc names passed by frontend (used for CPF detection in Stage 3)
         uploaded_doc_names_payload = [n for n in data.get('uploaded_doc_names', []) if n]
 
@@ -5046,6 +5224,10 @@ def run_stage():
                     + user_context +
                     "\n---"
                 )
+            # Inject priority points as soft emphasis guidance (Stage 1)
+            pq_block = build_priority_questions_block(priority_questions, 1)
+            if pq_block:
+                stage_prompt = stage_prompt + pq_block
             # messages will be fully built inside generate() for stage 1
 
         elif user_message:
@@ -5356,6 +5538,10 @@ def run_stage():
                     FCV_REFRESH_FRAMEWORK
                 )
 
+            if stage in (2, 3):
+                pq_block = build_priority_questions_block(priority_questions, stage)
+                if pq_block:
+                    stage_prompt = stage_prompt + pq_block
             messages.append({"role": "user", "content": stage_prompt})
 
         def workflow_events():
@@ -5795,6 +5981,7 @@ def run_express():
         review_mode = data.get('review_mode', 'design').strip()
         is_impl = (review_mode == 'implementation')
         user_context = data.get('user_context', '').strip()  # optional user-supplied context
+        priority_questions = normalize_priority_questions(data.get('priority_questions'))
         if not documents:
             return jsonify({'error': 'Please upload at least one project document.'}), 400
 
@@ -6005,6 +6192,9 @@ def run_express():
                         + user_context +
                         "\n---"
                     )
+                pq_block = build_priority_questions_block(priority_questions, 1)
+                if pq_block:
+                    stage1_prompt = stage1_prompt + pq_block
                 content_parts.append({"type": "text", "text": stage1_prompt})
 
                 stage1_messages = [{"role": "user", "content": content_parts}]
@@ -6181,6 +6371,9 @@ def run_express():
                     "%%%CATEGORY_LENS_END%%%"
                 )
 
+                pq_block = build_priority_questions_block(priority_questions, 2)
+                if pq_block:
+                    stage2_prompt = stage2_prompt + pq_block
                 # Build messages: prior context + Stage 2 prompt
                 stage2_messages = [
                     {"role": "user", "content": f"Prior FCV analysis context:\n\nStage 1 output:\n{conversation_history[1]['content']}\n\nUse this as the basis for the next stage."},
@@ -6360,6 +6553,9 @@ def run_express():
                             snippets_text_s3e += f"### {snip['title']}\nSource: {snip['source']}\n\n{snip['content']}\n\n---\n"
                         stage3_prompt = stage3_prompt + snippets_text_s3e
 
+                pq_block = build_priority_questions_block(priority_questions, 3)
+                if pq_block:
+                    stage3_prompt = stage3_prompt + pq_block
                 # Build Stage 3 messages from conversation history
                 stage3_messages = conversation_history + [
                     {"role": "user", "content": stage3_prompt}
@@ -6580,6 +6776,19 @@ def run_followon():
             else:
                 trimmed_messages.append(m)
 
+        pr = data.get('priority_responses') or []
+        if (pr and trimmed_messages and trimmed_messages[-1].get('role') == 'user'
+                and isinstance(trimmed_messages[-1].get('content'), str)):
+            qa = "\n\n".join(
+                f"Q: {r.get('question', '')}\nA: {r.get('direct_answer', '')}"
+                for r in pr if isinstance(r, dict) and r.get('direct_answer')
+            )
+            if qa:
+                trimmed_messages[-1]['content'] += (
+                    "\n\n---\nReference — the task team's priority points and the responses "
+                    "produced during this analysis (reflect these where relevant):\n\n" + qa
+                )
+
         def generate():
             try:
                 yield f"data: {json.dumps({'ping': True})}\n\n"
@@ -6600,6 +6809,82 @@ def run_followon():
         return Response(stream_with_context(generate()), mimetype='text/event-stream',
                         headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'})
 
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/run-priority-questions', methods=['POST'])
+def run_priority_questions():
+    """Answer the task team's priority points using the completed Stage 1–3 analysis.
+    Runs as its own request (fired by the frontend after the analysis completes) so it
+    never extends the run-express SSE connection and can be retried on its own."""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'Invalid request.'}), 400
+
+        questions = normalize_priority_questions(data.get('priority_questions'))
+        if not questions:
+            return jsonify({'error': 'No priority points provided.'}), 400
+
+        user_context = (data.get('user_context') or '').strip()
+        stage1_output = data.get('stage1_output') or ''
+        stage2_output = data.get('stage2_output') or ''
+        stage3_output = data.get('stage3_output') or ''
+        stage2_ratings = data.get('stage2_ratings') or {}
+        stage3_priorities = data.get('stage3_priorities') or {}
+
+        MAX_STAGE_CHARS = 40000
+
+        def _cap(t):
+            t = t if isinstance(t, str) else json.dumps(t, ensure_ascii=False)
+            return t if len(t) <= MAX_STAGE_CHARS else t[:MAX_STAGE_CHARS] + '\n...[truncated]'
+
+        try:
+            prio_titles = [
+                p.get('title', '') for p in (stage3_priorities.get('priorities') or [])
+                if isinstance(p, dict)
+            ]
+        except AttributeError:
+            prio_titles = []
+
+        questions_block = "\n".join(f"{q['id']}: {q['question']}" for q in questions)
+        titles_block = "\n".join(f"- {t}" for t in prio_titles if t) or "(none parsed)"
+
+        user_message = (
+            "PRIORITY POINTS TO RESPOND TO:\n" + questions_block + "\n\n"
+            "USER CONTEXT (optional):\n" + (user_context or "(none)") + "\n\n"
+            "STAGE 1 OUTPUT:\n" + _cap(stage1_output) + "\n\n"
+            "STAGE 2 ASSESSMENT:\n" + _cap(stage2_output) + "\n\n"
+            "STAGE 2 RATINGS:\n" + json.dumps(stage2_ratings, ensure_ascii=False) + "\n\n"
+            "STAGE 3 MEMO:\n" + _cap(stage3_output) + "\n\n"
+            "STAGE 3 PRIORITY TITLES (for linked_priorities matching):\n" + titles_block
+        )
+
+        prompt = load_prompts().get('priority_questions', DEFAULT_PROMPTS.get('priority_questions', ''))
+
+        def generate():
+            try:
+                yield f"data: {json.dumps({'ping': True})}\n\n"
+                collected = []
+                with get_client().messages.stream(
+                    model="claude-sonnet-4-6",
+                    max_tokens=10000,
+                    system=prompt,
+                    messages=[{"role": "user", "content": user_message}],
+                ) as stream:
+                    for text_chunk in stream.text_stream:
+                        collected.append(text_chunk)
+                        yield f"data: {json.dumps({'chunk': text_chunk})}\n\n"
+                parsed = extract_focus_questions(''.join(collected))
+                yield f"data: {json.dumps({'done': True, 'focus_questions': parsed})}\n\n"
+            except anthropic.AuthenticationError:
+                yield f"data: {json.dumps({'error': 'Invalid API key.'})}\n\n"
+            except Exception as e:
+                yield f"data: {json.dumps({'error': str(e)})}\n\n"
+
+        return Response(stream_with_context(generate()), mimetype='text/event-stream',
+                        headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -6900,6 +7185,27 @@ def download_report():
         if horizon:
             _add_section_heading('Watch List for Supervision')
             _md_to_docx_para(doc, horizon)
+
+        # ── Responses to Your Priority Points ──
+        focus = data.get('focus_questions') or {}
+        focus_responses = focus.get('responses', []) if isinstance(focus, dict) else (focus or [])
+        if focus_responses:
+            _add_section_heading('Responses to Your Priority Points')
+            overview = focus.get('overview', '') if isinstance(focus, dict) else ''
+            if overview:
+                _add_single_para(overview, size=10, color=WB_GRAY, italic=True, space_after=8)
+            for i, r in enumerate(focus_responses):
+                _add_single_para(f"{i + 1}. {r.get('question', '')}", bold=True, color=WB_NAVY, space_before=6, space_after=2)
+                if r.get('direct_answer'):
+                    for _para in re.split(r'\n\s*\n', r['direct_answer']):
+                        if _para.strip():
+                            _add_single_para(_para.strip(), space_before=0, space_after=2)
+                lp = r.get('linked_priorities') or []
+                if lp:
+                    joined = '; '.join(lp) if isinstance(lp, list) else str(lp)
+                    add_field('Linked recommendations', 'insights above connect to ' + joined)
+                if r.get('confidence_gap_note'):
+                    _add_single_para('Note: ' + r['confidence_gap_note'], size=9, color=WB_LGRAY, italic=True, space_after=4)
 
         # ── Annex: Stage 2 Assessment Tables ──
         recs_table = under_hood.get('recs_table', '')

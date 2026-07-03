@@ -238,6 +238,55 @@ Stage badge (e.g., "Recommendations tailored for PCN stage")
 
 ---
 
+## Priority Questions Prompt (v9.13 — "priority_questions" key in DEFAULT_PROMPTS)
+
+**Purpose:** After the main three-stage run completes, answer the user's priority points (custom questions / areas of focus entered in the Analysis Guidance box) by cross-referencing the full Stage 1–3 outputs.
+
+**When invoked:** Fired by `maybeRunPriorityQuestions()` in `index.html` AFTER the main run finishes (after `express_done` in Express mode, or after Stage 3 `done` in Step-by-Step). Never called inline during `run-express` or `run-stage`.
+
+**Stage 2 rating guardrail:** The soft-emphasis injection does NOT alter the rating or DNH/rec-set logic. The Stage 2 prompt blocks override by the priority-questions block, keeping ratings/DNH/rec-set unaffected by the user's specific focus areas.
+
+**Soft-emphasis injection into Stages 1–3 (`build_priority_questions_block(questions, stage)`):**
+- Returns a bounded plain-English paragraph placed at the END of the user's context in each stage prompt
+- Framed as "soft emphasis" — the LLM is instructed to draw out evidence relating to these questions where natural, but not to restructure or omit other required output
+- Bounded: if questions text exceeds a character threshold, it is truncated with a disclosure note
+- Injected into both `/api/run-stage` (step-by-step) and `/api/run-express` (express) paths
+
+**System prompt structure (DEFAULT_PROMPTS["priority_questions"]):**
+- Receives: stage1_output, stage2_output, stage2_ratings, stage3_output, stage3_priorities, priority_questions[], user_context
+- Instruction: for each question, search across all stage outputs, produce a direct answer with evidence, link to matching priorities, flag gaps
+- Output constraint: emit ONLY the %%%FOCUS_QUESTIONS_START/END%%% block (no prose wrapping)
+
+**`%%%FOCUS_QUESTIONS_START/END%%%` JSON schema:**
+```
+%%%FOCUS_QUESTIONS_START%%%
+{
+  "overview": "2-3 sentence intro: how many points flagged, coverage note in natural language (no status labels).",
+  "responses": [
+    {
+      "id":                  "1",
+      "question":            "original question text as entered by the user",
+      "status":              "addressed",
+      "direct_answer":       "One full paragraph or two shorter paragraphs (~5–9 sentences) with operational detail. Two-paragraph answers use a blank line as separator.",
+      "linked_priorities":   ["Priority title A", "Priority title B"],
+      "confidence_gap_note": null
+    }
+  ]
+}
+%%%FOCUS_QUESTIONS_END%%%
+```
+
+Note: `evidence_basis` has been removed from this schema (v9.15). The `direct_answer` field is now a fuller response — one full paragraph or two shorter paragraphs (roughly 5–9 sentences), including relevant operational specifics. When the model uses two paragraphs it separates them with a blank line; the DOCX renderer splits on blank lines so each paragraph renders separately.
+
+**Field value sets:**
+- `overview`: top-level string; introduces the responses panel for readers who have not seen the internal Stage 1-3 analysis. Parsed and passed through by `extract_focus_questions()` as `overview` in the return dict.
+- `status`: `"addressed"` | `"partially_addressed"` | `"not_yet_addressed"` (unknown values coerced to `"not_yet_addressed"` by `extract_focus_questions()`). **Internal-only — not displayed to the user.** Still used by the frontend's re-run nudge logic.
+- `confidence_gap_note`: `null` (no gap) or a short string explaining uncertainty, preferring to name what is absent from the uploaded documents.
+
+**Parsing:** `extract_focus_questions(text)` — see reference_backend_routes.md for full signature and return shape. Return dict includes `overview` alongside `responses` and `summary`. The parser tolerates an absent `evidence_basis` field via `setdefault`.
+
+---
+
 ## Go Deeper "alternatives" tab output format (legacy — tab removed in v7.2, prompt retained)
 
 - Only `%%%GO_FURTHER_START%%%...%%%GO_FURTHER_END%%%` markers used
@@ -247,4 +296,4 @@ Stage badge (e.g., "Recommendations tailored for PCN stage")
 
 ---
 
-*Last updated: 2026-06-18 — documented broader appraisal/design-stage document scope*
+*Last updated: 2026-07-02 — added Priority Questions prompt, %%%FOCUS_QUESTIONS_START/END%%% schema, and soft-emphasis injection pattern (v9.13); added top-level `overview` field, plain-language `evidence_basis` constraint, `status` marked internal-only (v9.14); removed `evidence_basis` field, expanded `direct_answer` to one or two full paragraphs with blank-line separator, raised max_tokens to 10000 (v9.15)*
