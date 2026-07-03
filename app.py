@@ -1323,7 +1323,7 @@ _VOCABULARY_SCRUB_MAP: dict[str, dict[str, str]] = {
     "PFORR": {
         "ESCP": "the Program Action Plan (PAP)",
         "Environmental and Social Commitment Plan": "the Program Action Plan (PAP)",
-        "ESS4": "ESSA Core Principle #6",
+        "ESS4": "the ESSA findings on community health and safety",
         "ESS2": "the ESSA",
         "SEP": "the borrower's GRM",
         "Stakeholder Engagement Plan": "the borrower's GRM",

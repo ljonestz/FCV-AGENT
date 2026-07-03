@@ -14,7 +14,10 @@ def test_dnh_seash_variants_exist_and_are_instrument_true():
     assert "ESCP" not in bd.DNH_SEASH_PFORR
     assert "ESS4" not in bd.DNH_SEASH_PFORR
     assert "ESSA" in bd.DNH_SEASH_PFORR
-    assert "Core Principle" in bd.DNH_SEASH_PFORR
+    # SEA/SH authority in PforR is the safety/vulnerable-groups principles + the
+    # Bank's Good Practice Note, NOT the social-conflict "Core Principle #6".
+    assert "Good Practice Note" in bd.DNH_SEASH_PFORR
+    assert "Core Principle #6" not in bd.DNH_SEASH_PFORR
 
     assert "ESCP" not in bd.DNH_SEASH_DPF
     assert "ESS4" not in bd.DNH_SEASH_DPF
