@@ -3818,6 +3818,23 @@
     return !isNaN(d.getTime()) && d < new Date();
   }
 
+  // Workstream 5 (QA Issue 5): document-text-only lifecycle detection.
+  // Mirrors isFinalizedPAD()'s pattern — reads a Stage-1-emitted signal and
+  // renders an amber advisory banner, never a hard block. Designed so a
+  // future WBG project-status lookup can populate the same
+  // temporalContext.lifecycle_status field without a frontend contract change.
+  function isClosedOrCompletedProject() {
+    const status = temporalContext && temporalContext.lifecycle_status;
+    return !!status && status !== 'active' && status !== 'Unknown' && status.toLowerCase().startsWith('closed');
+  }
+
+  function closedProjectStatusReason() {
+    const status = temporalContext && temporalContext.lifecycle_status;
+    if (!status || !status.toLowerCase().startsWith('closed')) return '';
+    const dash = status.indexOf('-');
+    return dash >= 0 ? status.slice(dash + 1).trim() : '';
+  }
+
   function renderStage1(text, hasPackage) {
     // Split on "## Part B" heading (handles "## Part B:", "## Part B —", etc.)
     const splitRe = /\n(#{1,3}\s*Part B[:\s\u2014][^\n]*\n)/i;
@@ -3874,11 +3891,15 @@
         <div class="fpn-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
         <div class="fpn-body"><strong>Retrospective screening — finalized PAD</strong>This document was Board-approved in ${esc(temporalContext.approval_date)}. The recommendations below represent the guidance this tool would have provided had the document been reviewed prior to appraisal. They are framed as if the project is still in the design stage and can be used for retrospective peer review, benchmarking, or to inform future similar projects.</div>
       </div>` : '';
+      const _closedProjectNotice = isClosedOrCompletedProject() ? `<div class="finalized-pad-notice">
+        <div class="fpn-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+        <div class="fpn-body"><strong>This document appears to describe a closed or completed project</strong>${esc(closedProjectStatusReason())}. The recommendations below are framed as design-stage guidance and may not be actionable for a closed project. Use them for retrospective review, lessons-learned, or as input to a follow-on operation rather than as live implementation guidance.</div>
+      </div>` : '';
       function styleClassificationFraming(html){
         return html.replace(/(<p>)((?:Based on|This analysis places)[^<]*<\/p>)/,'<div class="classification-framing-para">$1$2</div>');
       }
       const _preHtml = styleClassificationFraming(md(_pre));
-      _outBodyContent=wrapSRTerms(_padNotice+_stageBadge+_preHtml+renderRiskExposure(stageRiskExposure)+md(_rest)+renderSRCards(stageSensitivitySummary,stageResponsivenessSummary))+'<div id="priorities-intro"></div>';
+      _outBodyContent=wrapSRTerms(_closedProjectNotice+_padNotice+_stageBadge+_preHtml+renderRiskExposure(stageRiskExposure)+md(_rest)+renderSRCards(stageSensitivitySummary,stageResponsivenessSummary))+'<div id="priorities-intro"></div>';
     }else{
       const cleanResult = stage===1 ? result.replace(/\n*%%%DOC_TYPE:[^%\n]*%%%\n*/g,'') : result;
       if(stage===1){
@@ -5127,6 +5148,7 @@ ${body}
               ${pr.change_type ? `<span class="pc-chip">Change: ${esc(pr.change_type)}</span>` : ''}
               ${pr.restructuring_level ? `<span class="pc-chip">${esc(pr.restructuring_level)}</span>` : ''}
               ${pr.priority_scope ? `<span class="pc-chip">Scope: ${esc(pr.priority_scope)}</span>` : ''}
+              ${pr.governance_level ? `<span class="pc-chip" title="MPA governance level — where this priority should be decided">${esc(pr.governance_level)}</span>` : ''}
             </div>
             ${(pr.who_acts||pr.when||pr.resources) ? `<div class="pc-meta-row">
               ${pr.who_acts ? `<span class="pc-meta-chip"><strong>Who:</strong> ${(pr.who_acts||'').split(';').map(w=>w.trim()).filter(Boolean).map(w=>'<span class="who-chip">'+esc(w)+'</span>').join(' ')}</span>` : ''}

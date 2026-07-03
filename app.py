@@ -26,7 +26,9 @@ from background_docs import (
     DPF_MODULE_GUIDE, DPF_POLICY_AREA_CHECKLIST,
     P4R_MODULE_GUIDE,
     REGIONAL_CROSSBORDER_LENS, MPA_MODULE_GUIDE,
-    INTERSECTION_SYNTHESIS_GUIDE
+    INTERSECTION_SYNTHESIS_GUIDE,
+    DNH_SEASH_IPF, DNH_SEASH_PFORR, DNH_SEASH_DPF,
+    SEASH_GENDER_CARD_IPF, SEASH_GENDER_CARD_PFORR, SEASH_GENDER_CARD_DPF
 )
 import io
 try:
@@ -93,7 +95,7 @@ POLICY_REGISTRY: dict[str, PolicyRegistryEntry] = {
         source="IDA FCV Envelope Directive",
         last_updated="2026-06-16",
         ati_designation="Official Use Only",
-        summary="Governing source for PRA, RECA, TAA, WHR and related FCV Envelope advice.",
+        summary="Governing source for PRA, RECA, TAA (the FCV Envelope allocations) and related FCV financing-window advice.",
     ),
     "fcs_list_fy26": PolicyRegistryEntry(
         key="fcs_list_fy26",
@@ -598,7 +600,19 @@ _REQUIRED_PRIORITY_FIELDS = [
     'pad_sections', 'implementation_note', 'cpf_alignment',
     'rra_driver_alignment', 'country_category_relevance',
     'change_type', 'restructuring_level', 'priority_scope',
+    'governance_level',
 ]
+
+# Null-equivalent placeholder values the Stage 3 prompt emits for fields with no
+# content ("If a field has no content, write 'Not identified'"). Used to strip
+# instrument-inapplicable metadata (change_type/restructuring_level/priority_scope)
+# so it is omitted rather than printed as clutter on DPF/PforR/plain-IPF outputs.
+# "unknown" is intentionally NOT included — it is a meaningful advisory state for
+# an AF restructuring level.
+_NULL_META_PLACEHOLDERS = frozenset({
+    '', 'not identified', 'not specified', 'n/a', 'na', 'none', 'not applicable',
+    'null', 'not available', 'tbd',
+})
 
 _SPECIFICITY_STOPWORDS = frozenset({
     'the', 'a', 'an', 'of', 'in', 'and', 'or', 'for', 'with', 'on',
@@ -1239,6 +1253,163 @@ def get_mpa_slice(is_mpa) -> str:
     return "\n\n--- MPA (Multiphase Programmatic Approach) Wrapper Guide ---\n" + MPA_MODULE_GUIDE
 
 
+def get_dnh_seash_guidance(instrument_type: str) -> str:
+    """Return the instrument-appropriate DNH Principle 9 (SEA/SH) text for Stage 2.
+
+    IPF / AF-of-IPF / MPA-IPF-phase (the default) keeps the existing
+    ESS2/ESS4/ESCP/RF-anchored language. PforR and DPF/DPO get instrument-true
+    replacements with no ESF/ESCP/ESS/RF vocabulary, matching DPF_MODULE_GUIDE
+    / P4R_MODULE_GUIDE (Workstream 1 of the OPCS policy-consistency project).
+    """
+    instrument = str(instrument_type or "").strip().upper()
+    if instrument in {"PFORR", "P4R", "PROGRAM-FOR-RESULTS"}:
+        return DNH_SEASH_PFORR
+    if instrument == "DPO":
+        return DNH_SEASH_DPF
+    return DNH_SEASH_IPF
+
+
+def get_seash_gender_card_guidance(instrument_type: str) -> str:
+    """Return the instrument-appropriate Stage 3 Gender-FCV / SEA-SH card rules."""
+    instrument = str(instrument_type or "").strip().upper()
+    if instrument in {"PFORR", "P4R", "PROGRAM-FOR-RESULTS"}:
+        return SEASH_GENDER_CARD_PFORR
+    if instrument == "DPO":
+        return SEASH_GENDER_CARD_DPF
+    return SEASH_GENDER_CARD_IPF
+
+
+INSTRUMENT_VOCABULARY_RULES: dict[str, dict[str, Any]] = {
+    "PFORR": {
+        "label": "PforR",
+        "banned": [
+            "ESCP", "Environmental and Social Commitment Plan",
+            "ESS1", "ESS2", "ESS3", "ESS4", "ESS5", "ESS6", "ESS7", "ESS8", "ESS9", "ESS10",
+            "SEP", "Stakeholder Engagement Plan",
+        ],
+    },
+    "DPO": {
+        "label": "DPF/DPO",
+        "banned": [
+            "ESCP", "Environmental and Social Commitment Plan",
+            "ESS1", "ESS2", "ESS3", "ESS4", "ESS5", "ESS6", "ESS7", "ESS8", "ESS9", "ESS10",
+            "SEP", "Stakeholder Engagement Plan",
+        ],
+    },
+}
+
+
+def _vocabulary_rule_key(instrument_type: str) -> str | None:
+    instrument = str(instrument_type or "").strip().upper()
+    if instrument in {"PFORR", "P4R", "PROGRAM-FOR-RESULTS"}:
+        return "PFORR"
+    if instrument == "DPO":
+        return "DPO"
+    return None
+
+
+def validate_instrument_vocabulary(output_text: str, instrument_type: str) -> list[str]:
+    """Return a list of banned-vocabulary terms found in generated Stage 2/3 output.
+
+    Programmatic, silent check (Workstream 2 of the OPCS policy-consistency
+    project). PforR and DPF/DPO must never surface ESF/ESCP/ESS/SEP language,
+    since those instruments are not ESF-governed. Returns an empty list when
+    the instrument has no rule table (e.g. plain IPF) or no banned term is
+    found — never raises. Matching is whole-word (\\b boundaries) so short
+    acronyms like "SEP" do not match inside common words ("separate",
+    "September") and "ESS1" does not match inside "ESS10".
+    """
+    key = _vocabulary_rule_key(instrument_type)
+    rules = INSTRUMENT_VOCABULARY_RULES.get(key) if key else None
+    if not rules or not output_text:
+        return []
+    found = []
+    for term in rules["banned"]:
+        if re.search(r'\b' + re.escape(term) + r'\b', output_text, re.IGNORECASE):
+            found.append(term)
+    return found
+
+
+_VOCABULARY_SCRUB_MAP: dict[str, dict[str, str]] = {
+    "PFORR": {
+        "ESCP": "the Program Action Plan (PAP)",
+        "Environmental and Social Commitment Plan": "the Program Action Plan (PAP)",
+        "ESS4": "the ESSA findings on community health and safety",
+        "ESS2": "the ESSA",
+        "SEP": "the borrower's GRM",
+        "Stakeholder Engagement Plan": "the borrower's GRM",
+    },
+    "DPO": {
+        "ESCP": "the Program Document's policy matrix",
+        "Environmental and Social Commitment Plan": "the Program Document's policy matrix",
+        "ESS4": "the PSIA",
+        "ESS2": "the PSIA",
+        "SEP": "the Program Document",
+        "Stakeholder Engagement Plan": "the Program Document",
+    },
+}
+
+
+def repair_vocabulary_violations(
+    output_text: str,
+    instrument_type: str,
+    violations: list[str],
+    stage_num: int,
+) -> str:
+    """Silently regenerate any output text containing banned instrument vocabulary.
+
+    Runs one non-streaming Anthropic call asking the model to rewrite the
+    violating vocabulary only, preserving all delimiter blocks and factual
+    content. Falls back to a deterministic regex scrub if the model repair
+    still leaves a banned term in place, or if the API call itself fails.
+    Never raises and never surfaces an error to the user — per product
+    decision, vocabulary violations are repaired silently. Any residual
+    scrub is logged server-side only (Render logs), never shown in the UI.
+    """
+    key = _vocabulary_rule_key(instrument_type)
+    rules = INSTRUMENT_VOCABULARY_RULES.get(key) if key else None
+    label = rules["label"] if rules else instrument_type
+
+    repaired = output_text
+    try:
+        repair_prompt = (
+            f"The following FCV screening output for a {label} operation incorrectly uses "
+            f"ESF/ESCP/ESS/SEP vocabulary that does not apply to this instrument: "
+            f"{', '.join(violations)}. Rewrite the ENTIRE text below so it uses only "
+            "vocabulary appropriate to the instrument (for PforR: ESSA, PAP, ESMS, DLI, POM; "
+            "for DPF/DPO: PSIA, Program Document, policy matrix, LDP). Preserve all delimiter "
+            "blocks (%%%...%%%) exactly, all factual findings, and the overall structure. "
+            "Only change the vocabulary that incorrectly references ESF/ESCP/ESS/SEP "
+            f"instruments.\n\n--- TEXT TO REWRITE ---\n{output_text}"
+        )
+        response = get_client().messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=8000,
+            messages=[{"role": "user", "content": repair_prompt}],
+        )
+        if response.content:
+            repaired = response.content[0].text
+    except Exception:
+        repaired = output_text  # fall through to deterministic scrub below
+
+    remaining = validate_instrument_vocabulary(repaired, instrument_type)
+    if not remaining:
+        return repaired
+
+    scrub_map = _VOCABULARY_SCRUB_MAP.get(key, {}) if key else {}
+    scrubbed = repaired
+    for term, replacement in scrub_map.items():
+        scrubbed = re.sub(r'\b' + re.escape(term) + r'\b', replacement, scrubbed, flags=re.IGNORECASE)
+
+    still_bad = validate_instrument_vocabulary(scrubbed, instrument_type)
+    if still_bad:
+        app.logger.warning(
+            "Vocabulary repair incomplete: instrument=%s stage=%s remaining_terms=%s",
+            instrument_type, stage_num, still_bad,
+        )
+    return scrubbed
+
+
 # ── Phase 6: intersection-matrix composition ──────────────────────────────────
 
 LAYER_INJECTION_PRIORITY = [
@@ -1391,7 +1562,8 @@ def get_mid_cycle_slice(doc_type: str) -> str:
 def extract_temporal_context(stage1_output: str) -> dict:
     """Extract temporal context from Stage 1 output.
     Looks for %%%TEMPORAL_CONTEXT_START%%%...%%%TEMPORAL_CONTEXT_END%%% block.
-    Returns dict with approval_date, closing_date, safeguards_framework, other_temporal_markers.
+    Returns dict with approval_date, closing_date, safeguards_framework,
+    other_temporal_markers, lifecycle_status.
     """
     pattern = r'%%%TEMPORAL_CONTEXT_START%%%(.*?)%%%TEMPORAL_CONTEXT_END%%%'
     m = re.search(pattern, stage1_output, re.DOTALL)
@@ -1401,6 +1573,7 @@ def extract_temporal_context(stage1_output: str) -> dict:
             'closing_date': 'Unknown',
             'safeguards_framework': 'Unknown',
             'other_temporal_markers': 'None identified',
+            'lifecycle_status': 'Unknown',
             'error': True
         }
     block = m.group(1).strip()
@@ -1408,6 +1581,11 @@ def extract_temporal_context(stage1_output: str) -> dict:
     for field in ['approval_date', 'closing_date', 'safeguards_framework', 'other_temporal_markers']:
         fm = re.search(rf'{field}:\s*(.+)', block)
         ctx[field] = fm.group(1).strip() if fm else 'Unknown'
+    # lifecycle_status was added in Workstream 5 (2026-07); default to "active"
+    # for older-shaped blocks that predate this field, since the vast majority
+    # of historical runs are active-project screenings, not closed ones.
+    lm = re.search(r'lifecycle_status:\s*(.+)', block)
+    ctx['lifecycle_status'] = lm.group(1).strip() if lm else 'active'
     return ctx
 
 
@@ -1474,7 +1652,7 @@ def extract_country_classification(stage1_output: str) -> dict:
     """Extract country classification from Stage 1 output.
 
     Looks for %%%COUNTRY_CLASSIFICATION_START%%%...%%%COUNTRY_CLASSIFICATION_END%%%.
-    Returns dict with category, confidence, reasoning, error.
+    Returns dict with category, confidence, reasoning, trigger, error.
     """
     pattern = r'%%%COUNTRY_CLASSIFICATION_START%%%(.*?)%%%COUNTRY_CLASSIFICATION_END%%%'
     m = re.search(pattern, stage1_output, re.DOTALL)
@@ -1487,7 +1665,7 @@ def extract_country_classification(stage1_output: str) -> dict:
         }
     block = m.group(1).strip()
     result = {'error': False}
-    for field in ('category', 'confidence', 'reasoning'):
+    for field in ('category', 'confidence', 'reasoning', 'trigger'):
         fm = re.search(rf'{field}:\s*(.+)', block)
         result[field] = fm.group(1).strip() if fm else 'Unknown'
     # Validate category
@@ -1773,7 +1951,7 @@ DATA GAP FLAGGING: If a key FCV dimension (e.g. conflict intensity, displacement
 ### FCV Classification Context
 - Note if the country appears on the FCS (Fragile and Conflict-affected Situations) list
 - If FCS, note this classification and its implications for project design and operational flexibilities
-- DO NOT make any explicit statement about whether the country is or is not eligible for IDA FCV Envelope financing windows (PRA, RECA, TAA, WHR). Eligibility depends on multiple criteria beyond FCS classification — including CPIA scores, conflict intensity thresholds, annual FCV review submissions, and Management determinations — and any eligibility statement risks being incorrect and undermining trust in the output. Simply note relevant FCV Envelope instruments if they appear in the project document, without drawing eligibility conclusions.
+- DO NOT make any explicit statement about whether the country is or is not eligible for IDA FCV Envelope financing windows (PRA, RECA, TAA), or the related but separate WHR (Window for Host Communities and Refugees) or PSW (Private Sector Window) instruments. Eligibility depends on multiple criteria beyond FCS classification — including CPIA scores, conflict intensity thresholds, annual FCV review submissions, and Management determinations — and any eligibility statement risks being incorrect and undermining trust in the output. Simply note relevant FCV financing instruments if they appear in the project document, without drawing eligibility conclusions and without implying WHR/PSW are FCVE allocations.
 - RRA CROSS-REFERENCE AND FALLBACK:
 
   CASE 1 — RRA uploaded or referenced: If the contextual documents include a Risk and Resilience Assessment (RRA), country risk assessment, or equivalent conflict/fragility analysis, Part B must explicitly cross-check the project document's risk narrative and design assumptions against the RRA's scenarios:
@@ -1848,6 +2026,7 @@ approval_date: [Board approval date or preparation date if PCN/PID, in format YY
 closing_date: [Project closing date if available, in format YYYY-MM or "Unknown"]
 safeguards_framework: [One of: ESF / OP-BP / ESSA / PSIA / Unknown — determined from the document, NOT assumed]
 other_temporal_markers: [Any restructuring dates, AF dates, or other significant temporal markers, or "None identified"]
+lifecycle_status: [One of: "active" | "closed - <brief reason>" | "Unknown" — set to "closed - <reason>" ONLY if the document itself contains explicit closure/completion signals: it is an Implementation Completion and Results Report (ICR), it explicitly states the project has closed, was cancelled, or was dropped, or the closing_date above is clearly in the past AND the document text discusses results/lessons-learned in a completed-project register rather than a design or supervision register. Do not infer closure from the closing_date alone — a PAD or AF whose closing date has passed but which is being screened for a NEW restructuring or AF is still active for that purpose. When genuinely uncertain, use "active".]
 %%%TEMPORAL_CONTEXT_END%%%
 
 If DOC_TYPE is AF or Restructuring, also output this mid-cycle change block. If the document is not AF or Restructuring, output an empty change_types value and restructuring_level: Unknown.
@@ -1857,6 +2036,8 @@ change_types: [semicolon-separated labels drawn from: PDO change; Component add/
 restructuring_level: [Level 1 / Level 2 / Unknown]
 rationale: [1-2 sentences explaining the detected change types and why the level is advisory]
 %%%CHANGE_TYPE_END%%%
+
+For AF documents specifically: in Part A, state explicitly which of the parent project's components the additional financing finances and which components remain unchanged / not financed by this AF, drawing only on the uploaded document. This matters because recommendations must be scoped to what the AF actually finances, not to the full parent-project narrative. If the document does not specify which components the AF finances, say "the uploaded document does not specify which components the additional financing finances" rather than assuming the AF covers the entire parent project.
 
 If INSTRUMENT_TYPE is DPO (Development Policy Financing), also output this prior-action block. DPF is appraised through prior actions (not components, ESF, or DLIs), so extract them from the Program Document / policy matrix. If the operation is not a DPF/DPO, output empty values.
 
@@ -1910,6 +2091,15 @@ CRITICAL: Determine the safeguards framework from the DOCUMENT ITSELF (Data Shee
 
 ---
 
+**GEOGRAPHIC-FOOTPRINT ANCHORING RULE (applies to Part B and the classification block below):**
+Any sub-national or district-level FCV risk factor you cite (e.g. a named conflict-affected
+region, displacement corridor, or contested district) must be checked against the
+project's specific geographic/administrative footprint — the actual implementing regions, provinces,
+or districts named in the document — before being cited. Do not cite country-level FCV risk
+factors that pertain to parts of the country outside the project's footprint as if they were
+directly relevant to this project; if the document does not specify a sub-national footprint,
+say so explicitly rather than defaulting to a national conflict profile.
+
 **REQUIRED CLASSIFIER OUTPUTS (append after your analysis, stripped from display):**
 
 After completing Part A and Part B, append these three blocks exactly as shown:
@@ -1917,7 +2107,8 @@ After completing Part A and Part B, append these three blocks exactly as shown:
 %%%COUNTRY_CLASSIFICATION_START%%%
 category: [In Crisis | Conflict-Affected | At Risk | In Transition | General]
 confidence: [high | moderate]
-reasoning: [1-2 sentences citing evidence from the document or web research]
+reasoning: [1-2 sentences citing evidence from the document or web research, anchored to the project's actual geographic footprint per the rule above]
+trigger: [One-line statement of the specific fact that drove this category — mandatory when category is "General"; for other categories, name the specific conflict/fragility indicator that drove the classification]
 %%%COUNTRY_CLASSIFICATION_END%%%
 
 %%%SECTOR_CONTEXT_START%%%
@@ -2102,10 +2293,7 @@ Assess the project against these 9 Do No Harm principles:
 6. Protecting project staff and beneficiaries from security risks
 7. Monitoring for unintended negative consequences
 8. Establishing accessible and trusted grievance mechanisms
-9. SEA/SH risk management in conflict contexts — for projects operating in conflict-affected areas, or involving contractor workforces, or with female-majority beneficiaries or community workers, assess: (a) Is the SEA/SH risk formally classified (Low / Moderate / Substantial / High) and consistent with the conflict context? (b) If risk is Substantial or High, does the ESCP include a time-bound commitment to develop and implement a standalone SEA/SH Action Plan? (c) Are GRM reporting channels anonymous/confidential and accessible to women with mobility restrictions? (d) Does the ESS2 Labour Management Procedure address contractor screening for prior SEA/SH incidents and pre-deployment training? (e) Is there a Results Framework indicator for SEA/SH monitoring? Set seash_standalone_flag: TRUE if risk is Substantial or High, or if any of the five elements above is absent or inadequate. Pass this flag to Stage 3.
-
-FOR BUDGET SUPPORT INSTRUMENTS (DPF/DPO/DPL) ONLY — Additional DNH assessment (run after principle 9):
-Adjustment Sequencing Risk: Assess whether prior actions or triggers create a window of exposure where reform costs (subsidy removal, price liberalisation, tariff reform, civil service rationalisation) are imposed BEFORE compensatory safety net mechanisms are operational. In FCV contexts, this sequencing gap is a primary conflict escalation pathway — adjustment costs hit FCV-affected populations first, before protective measures are in place. Assess: (a) Does the policy matrix sequence safety net or social protection prior actions before or concurrent with fiscal adjustment measures? (b) Is there a PSIA that explicitly models distributional impacts of reform on conflict-affected or vulnerable populations? (c) Do any prior actions risk triggering political backlash from vested interests in ways that could destabilise the operating environment? This is the most important DNH dimension for budget support in FCV settings — weight it accordingly in the DNH summary line.
+9. {dnh_seash_guidance}
 
 Output format — a standalone section titled "## Do No Harm":
 Line 1: "**Do No Harm: [X] of 9 principles addressed | [Y] partial | [Z] not addressed**"
@@ -2710,6 +2898,10 @@ HALLUCINATED PRECISION GUARDRAIL: Do NOT include specific budget figures, staffi
 
 IPF PROCUREMENT COMPLIANCE: All employment, targeting, and hiring recommendations must be feasible under standard IPF procurement rules (Procurement Regulations for IPF Borrowers). Mandatory employment quotas as binding civil works contract conditions are NOT standard under IPF — they require PPSD justification and specific community contracting provisions. Do not draft recommendations that read as binding contractual employment requirements. Instead, frame workforce inclusion measures as: community contracting provisions in the PPSD, labour influx management provisions in the ESCP, or PIU-level operational commitments in the Operations Manual. If you are uncertain whether a measure requires non-standard procurement justification, frame it as an "Operations Manual commitment" rather than a contract specification.
 
+POLICY CITATION GUARDRAIL: Do NOT invent paragraph- or sub-paragraph-level policy citations (e.g. "para 13", "para 9(f)", "paragraphs 24-27") or OPS catalogue-and-paragraph handles. Cite policy only at a level supported by the operational guidance provided to you — the instrument, the policy or standard by name, or a paragraph number that actually appears in that guidance. If you are not certain of an exact paragraph, name the policy or standard instead (e.g. "the DPF policy", "the Program Action Plan", "the SEA/SH Good Practice Note", "the relevant PforR core principle"). A precise-looking but wrong paragraph citation propagates into operational documents and does real reputational damage when a reviewer checks it.
+
+EXISTING-CONTROL RECONCILIATION (GROUNDING): Before flagging any safeguard, instrument, or control as absent — or recommending that the team "establish", "create", or "prepare" one — check whether the uploaded documents already evidence it (e.g. an ESCP commitment or covenant, an ISR management action, a SEA/SH Action Plan already prepared, Third-Party Monitoring already deployed, an operating GRM). If the record shows the control already exists, frame the recommendation as strengthen / extend / verify-coverage / confirm-adequacy — NOT create. Recommending the creation of a control that already exists on the record discredits the whole output with an operations team. Where the uploaded material is merely silent (not evidently absent), recommend confirming its status and putting it in place if missing — do not assert an absence you cannot substantiate from the documents.
+
 ---
 
 # TAG DEFINITIONS FOR PRIORITIES
@@ -2727,14 +2919,7 @@ Apply the following definitions strictly. [S+R] must be earned — do not use it
 
 # MANDATORY PRIORITY CARDS
 
-Gender-FCV Card Rule: If gender_fcv_flag: TRUE was passed from Stage 2, a Gender-FCV priority card is mandatory and must appear in the output, in addition to the standard 4-5 priorities. This card must address: how the FCV context specifically alters gender dynamics for this project, SEA/SH risk classification adequacy, GRM access for women and girls in conflict-affected settings, and safety risks for female community workers. Document locations must name the relevant ESCP commitment, SEP section, and Operations Manual section. Explicitly reference the SEA/SH Action Plan (required under ESS2 and ESS4 for elevated-risk projects) and recommend engagement with the Bank's SEA/SH Secretariat and Gender Group.
-
-SEA/SH Standalone Card Rule: If seash_standalone_flag: TRUE was passed from Stage 2, generate a dedicated SEA/SH priority card. This card must not be merged with the Gender-FCV card — they address different things. The card must include:
-- Gap description: the specific SEA/SH elements that are absent or inadequate, as identified in Stage 2 (risk classification, Action Plan, GRM design, LMP provisions, monitoring indicators)
-- Why it matters: reference ESS4 (Community Health and Safety) as the governing standard; note that elevated SEA/SH risk in conflict settings requires a formally documented and monitored Action Plan
-- Actions: map to the five elements of the Stage 2 check — risk classification, Action Plan, GRM design for SEA/SH reporting, ESS2/LMP worker provisions, and Results Framework monitoring indicator
-- Document locations: ESCP (commitment on Action Plan delivery), SEP (GRM design section), Operations Manual (worker protection provisions)
-- Named standards: ESS2, ESS4, and ESS10 explicitly; recommend engagement with the Bank's SEA/SH Secretariat and the Gender Group
+{seash_gender_card_guidance}
 
 The SEA/SH card and the GRM card may both appear in the output — they address different things. Do not merge them.
 
@@ -2766,7 +2951,7 @@ The SEA/SH card and the GRM card may both appear in the output — they address 
 - JSON block is present at the end, wrapped in %%%JSON_START%%% / %%%JSON_END%%%
 - All 10 top-level JSON fields are populated (fcv_rating, fcv_responsiveness_rating, sensitivity_summary, responsiveness_summary, risk_exposure, mid_cycle_watch, dpf_watch, p4r_watch, regional_watch, priorities)
 - Each priority's pad_sections, actions (including per-action suggested_language), and implementation_note are specific to this project — not generic placeholders
-- Each priority JSON object has all 20 fields: title, fcv_dimension, tag, refresh_shift, risk_level, the_gap, why_it_matters, actions, who_acts, when, action_timing, resources, pad_sections, country_category_relevance, implementation_note, cpf_alignment, rra_driver_alignment, change_type, restructuring_level, priority_scope
+- Each priority JSON object has all 21 fields: title, fcv_dimension, tag, refresh_shift, risk_level, the_gap, why_it_matters, actions, who_acts, when, action_timing, resources, pad_sections, country_category_relevance, implementation_note, cpf_alignment, rra_driver_alignment, change_type, restructuring_level, priority_scope, governance_level
 - No generic or templated language anywhere
 - All `when` values are appropriate for the {doc_type} stage
 
@@ -2800,6 +2985,7 @@ The FCV ratings, summaries, and risk exposure paragraphs you have written in the
       "change_type": "Results framework change",
       "restructuring_level": "Level 2",
       "priority_scope": "mid-cycle",
+      "governance_level": "Country Phase",
       "the_gap": "Specific gap with named location/group/institution",
       "why_it_matters": "Why this gap matters for this project, including shift justification for [R] or [S+R] tags",
       "actions": [
@@ -2828,7 +3014,7 @@ The FCV ratings, summaries, and risk exposure paragraphs you have written in the
 }}}}
 %%%JSON_END%%%
 
-IMPORTANT: The JSON block must come AFTER all narrative text. Do not include any explanatory text inside the JSON block itself. Use exact field names as shown. The `tag` field must be exactly "[S]", "[R]", or "[S+R]" (with square brackets). For `fcv_rating` and `fcv_responsiveness_rating`: use the sensitivity and responsiveness ratings from Stage 2 exactly as provided in the conversation history. Copy them into the JSON fields without modification. Do not re-assess or override the Stage 2 ratings. The `refresh_shift` field must be exactly one of: "Shift A: Anticipate" | "Shift B: Differentiate" | "Shift C: Jobs & private sector" | "Shift D: Enhanced toolkit". The `who_acts` field is semicolon-separated (e.g. "TTL; ESF Team"). The `when` field must be exactly one of: "Identification" | "Preparation" | "Appraisal" | "Implementation" | "Restructuring". The `cpf_alignment` and `rra_driver_alignment` fields must each be either a string (1-2 sentences) or JSON null - never the string "null" or "Not identified".
+IMPORTANT: The JSON block must come AFTER all narrative text. Do not include any explanatory text inside the JSON block itself. Use exact field names as shown. The `tag` field must be exactly "[S]", "[R]", or "[S+R]" (with square brackets). For `fcv_rating` and `fcv_responsiveness_rating`: use the sensitivity and responsiveness ratings from Stage 2 exactly as provided in the conversation history. Copy them into the JSON fields without modification. Do not re-assess or override the Stage 2 ratings. The `refresh_shift` field must be exactly one of: "Shift A: Anticipate" | "Shift B: Differentiate" | "Shift C: Jobs & private sector" | "Shift D: Enhanced toolkit". The `who_acts` field is semicolon-separated (e.g. "TTL; ESF Team"). The `when` field must be exactly one of: "Identification" | "Preparation" | "Appraisal" | "Implementation" | "Restructuring". The `cpf_alignment` and `rra_driver_alignment` fields must each be either a string (1-2 sentences) or JSON null - never the string "null" or "Not identified". The `governance_level` field applies ONLY to MPA operations: set it to "Regional Platform" for priorities that belong in the Phase-1 Program Framework Document (program-wide PrDO, cross-phase learning agenda, program-level institutional arrangements) or "Country Phase" for priorities that belong in a specific phase's own PAD (phase-specific targeting, phase-specific results indicators, phase-specific implementation arrangements). For non-MPA operations, set `governance_level` to JSON null. Never recommend a country-phase-owned decision be made at the Regional Platform level, or vice versa.
 
 ## WATCH LIST FOR SUPERVISION (after the JSON block)
 
@@ -3886,6 +4072,31 @@ def extract_priorities(text: str, uploaded_doc_names: list = None) -> dict:
         elif raw_timing not in _valid_timings:
             pr['action_timing'] = None
 
+        # Validate governance_level enum (Workstream 6, MPA operations only;
+        # non-MPA priorities legitimately omit this field, so an empty/missing
+        # value maps to None rather than a warning).
+        _valid_governance_levels = {'Regional Platform', 'Country Phase'}
+        raw_governance_level = pr.get('governance_level')
+        if raw_governance_level not in _valid_governance_levels:
+            pr['governance_level'] = None
+
+        # Instrument-aware metadata hygiene (MAI systemic finding, 2026-07):
+        # change_type / restructuring_level / priority_scope are AF/restructuring/
+        # multi-country concepts with no analogue in a single-tranche DPF/PforR or
+        # plain IPF new lending. The prompt fills non-applicable fields with the
+        # placeholder "Not identified"; normalise those null-equivalents to None so
+        # the render layers (DOCX + frontend chips, both truthiness-gated) omit them
+        # instead of printing "Change: Not identified | Restructuring level: Not
+        # identified | Scope: Not identified" clutter. Real values (incl. "Unknown"
+        # for an AF) are preserved.
+        for _meta_field in ('change_type', 'restructuring_level', 'priority_scope'):
+            _val = pr.get(_meta_field)
+            if isinstance(_val, str):
+                if _val.strip().lower() in _NULL_META_PLACEHOLDERS:
+                    pr[_meta_field] = None
+            elif _val is not None:
+                pr[_meta_field] = None
+
         # Post-parse checks — check specificity across gap + all action guidance
         actions_text = ' '.join(
             act.get('guidance', '') for act in pr['actions'] if isinstance(act, dict)
@@ -4864,6 +5075,7 @@ def run_stage():
                 try:
                     stage_prompt = stage_prompt.replace('{instrument_guidance}', instrument_slice)
                     stage_prompt = stage_prompt.replace('{temporal_guardrail}', temporal_guardrail)
+                    stage_prompt = stage_prompt.replace('{dnh_seash_guidance}', get_dnh_seash_guidance(instrument_type))
                 except Exception:
                     pass
 
@@ -5023,6 +5235,7 @@ def run_stage():
                         playbook_guidance=playbook,
                         instrument_guidance=instrument_slice,
                         temporal_guardrail=temporal_guardrail,
+                        seash_gender_card_guidance=get_seash_gender_card_guidance(instrument_type),
                     )
                 except KeyError:
                     pass  # If format fails, use prompt as-is
@@ -5274,6 +5487,16 @@ def run_stage():
                     yield event
 
                 full_text = _stream_stage._last_result
+
+                # ── Workstream 2: silent instrument-vocabulary repair ──────────
+                # Only Stage 2/3 design-review output can carry the ESF/ESCP/ESS
+                # vocabulary that QA flagged; Stage 1 extraction text is not
+                # instrument-prescriptive in the same way.
+                if not is_impl and stage in (2, 3):
+                    _vocab_violations = validate_instrument_vocabulary(full_text, instrument_type)
+                    if _vocab_violations:
+                        full_text = repair_vocabulary_violations(full_text, instrument_type, _vocab_violations, stage)
+                        _stream_stage._last_result = full_text
 
                 # Post-processing: extract structured data from delimited blocks
                 priorities = []
@@ -5917,6 +6140,7 @@ def run_express():
                 mpa_slice = get_mpa_slice(_is_mpa_x)
                 if mpa_slice:
                     stage2_prompt = stage2_prompt + mpa_slice
+                stage2_prompt = stage2_prompt.replace('{dnh_seash_guidance}', get_dnh_seash_guidance(instrument_type))
 
                 confirmed_category_e2 = (
                     country_classification.get('category', 'General')
@@ -5968,6 +6192,11 @@ def run_express():
                 for event in _stream_stage(stage2_messages, 16000, 2):
                     yield event
                 stage2_output = _stream_stage._last_result
+
+                # ── Workstream 2: silent instrument-vocabulary repair ──────────
+                _vocab_violations_s2 = validate_instrument_vocabulary(stage2_output, instrument_type)
+                if _vocab_violations_s2:
+                    stage2_output = repair_vocabulary_violations(stage2_output, instrument_type, _vocab_violations_s2, 2)
 
                 # Parse Stage 2 output
                 stage2_ratings = extract_stage2_ratings(stage2_output)
@@ -6045,6 +6274,7 @@ def run_express():
                             playbook_guidance=playbook,
                             instrument_guidance=instrument_slice_s3,
                             temporal_guardrail=temporal_guardrail_s3,
+                            seash_gender_card_guidance=get_seash_gender_card_guidance(instrument_type),
                         )
                     except KeyError:
                         pass
@@ -6139,6 +6369,11 @@ def run_express():
                 for event in _stream_stage(stage3_messages, 20000, 3):
                     yield event
                 stage3_output = _stream_stage._last_result
+
+                # ── Workstream 2: silent instrument-vocabulary repair ──────────
+                _vocab_violations_s3 = validate_instrument_vocabulary(stage3_output, instrument_type)
+                if _vocab_violations_s3:
+                    stage3_output = repair_vocabulary_violations(stage3_output, instrument_type, _vocab_violations_s3, 3)
 
                 # Parse Stage 3 output
                 uploaded_doc_names = [doc.get('name', '') for doc in documents if doc.get('name')]
@@ -6596,6 +6831,8 @@ def download_report():
                     meta_parts.append(f'Restructuring level: {pr["restructuring_level"]}')
                 if pr.get('priority_scope'):
                     meta_parts.append(f'Scope: {pr["priority_scope"]}')
+                if pr.get('governance_level'):
+                    meta_parts.append(f'Governance level: {pr["governance_level"]}')
                 if meta_parts:
                     _add_single_para(' | '.join(meta_parts), size=9, color=WB_GRAY)
 

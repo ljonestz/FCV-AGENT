@@ -1648,13 +1648,25 @@ waiver status, delegated authority, or approval level.
   implementation arrangements.
 - If an ISR is uploaded, use IP/DO ratings and risk flags as Tier-1 evidence for the
   AF well-performing-project check.
+- Financed-scope check (AF): identify and state explicitly which of the parent
+  project's components the additional financing actually finances, and which remain
+  unchanged / not financed by this AF. Scope recommendations to the AF-financed
+  components - do not draw recommendations indiscriminately from parent-project
+  components this AF does not touch (e.g. a crisis-response component the AF does not
+  finance). If the uploaded documents disagree on scope or geography (e.g. a PID and a
+  SEP list different intervention zones), flag the inconsistency rather than presenting
+  a single confident list. If the documents do not state which components are financed,
+  say so rather than assuming the AF covers the full parent project.
 
 ### Well-performing-project / waiver advisory
 AF normally expects IP and DO ratings of MS+ over the relevant period. In FCV settings,
 ratings may reflect security or access disruption rather than design failure. If the
 paper or ISR suggests ratings below MS+, ask whether the ratings are FCV-affected and
-whether an RVP-approved exception or waiver is in train. Do not state that a waiver is
-required or available unless the uploaded documents say so.
+whether a documented policy waiver process is in train. Approval authority for such waivers
+varies by circumstance and is not always at RVP level - do not name a specific approval level
+unless the uploaded documents state it; direct the team to confirm the applicable waiver
+route with OPCS. Do not state that a waiver is required or available unless the uploaded
+documents say so.
 
 ### FCV value-add
 AF is a mid-course opportunity to correct FCV blind spots, update risk analysis,
@@ -1771,9 +1783,10 @@ P4R_MODULE_GUIDE = """
 ## Program-for-Results (PforR / P4R) Module - FCV Screening Guide
 
 Source grounding: Program-for-Results Financing Policy **OPS5.04-POL.125** (Bank Policy,
-effective 19 August 2024) and Bank Directive **OPS5.04-DIR.110** (effective 9 April 2025),
-cross-referencing **OP 7.30** (Dealings with De Facto Governments). PforR sits under the
-OPS5.04 catalogue family and replaced the retired OP/BP 9.00. Use this guide as advisory screening
+effective 19 August 2024) and Bank Directive **OPS5.04-DIR.110** (effective 9 April 2025).
+PforR sits under the OPS5.04 catalogue family and replaced the retired OP/BP 9.00. Treat
+OP 7.30 as a feasibility constraint to check case by case, not a policy the PforR
+framework itself formally cross-references. Use this guide as advisory screening
 support only. Do not make instrument-eligibility, OP 7.30, or disbursement determinations -
 direct the task team to verify instrument choice and feasibility with the regional FCV
 coordinator, OPCS, and the verification team.
@@ -1807,9 +1820,11 @@ access and disbursement-cliff exposure ahead of the rest of the assessment.
   addressed in the PAP?
 - **ESMS establishment and capacity** (the covenant to set up the system).
 - **GRM functionality** where state legitimacy is contested.
-- **Excluded-activities check:** P4R excludes high-value / high-risk (Category-A-equivalent)
-  activities - appropriate, or does it leave conflict-relevant harms unaddressed or push them
-  outside the boundary?
+- **Excluded-activities check:** the ESSA and Program Action Plan should define which
+  high-value / high-risk activities are excluded from the program boundary because they
+  present risks the PforR instrument is not designed to manage - is the exclusion
+  appropriate, or does it leave conflict-relevant harms unaddressed or push them outside
+  the boundary?
 
 ### DLI-realism and program-boundary checks
 - **DLI realism:** are targets and timelines achievable under conflict-related disruption;
@@ -1823,7 +1838,11 @@ Surface as advisory, never a determination: OP 7.30 limits, no rapid-response va
 disbursement-cliff exposure can make P4R demanding or "effectively unusable" in some conflict
 settings given its reliance on government systems and low-capacity FCS constraints - suggest
 discussing instrument choice (a complementary IPF component / TA, or a different instrument)
-with the regional FCV coordinator.
+with the regional FCV coordinator. Note that OPS5.04-POL.125 para 12 provides a
+**Rapid Response Option (RRO)** allowing accelerated processing for emergency circumstances - flag
+RRO as a potential partial mitigant to disbursement-cliff exposure where the program faces
+a plausible emergency scenario, without asserting it resolves the underlying feasibility
+concern.
 
 ### Hybrid P4R + IPF component
 If the datasheet flags an IPF component, run the IPF spine on that component and the P4R spine
@@ -1887,13 +1906,20 @@ MPA_MODULE_GUIDE = """
 ## MPA (Multiphase Programmatic Approach) Wrapper - FCV Screening Guide
 
 The MPA is a program-and-phase **wrapper, not a new analytical spine**: each phase is itself an
-IPF, DPF, or P4R operation. Route each phase to its base-instrument module and add the MPA
-program layer on top. Composes with the multi-country layer for regional MPAs. Advisory only -
-never determine approval authority, phase eligibility, or financing.
+IPF or P4R operation under current WBG MPA policy (OPS5.01-POL/DIR) - DPF/DPO is not itself an
+MPA phase instrument; a DPO series uses its own distinct programmatic-series mechanism (see
+`FCV_INSTRUMENT_CALIBRATION` "Programmatic series risk"), not the MPA wrapper. Route each phase
+to its base-instrument module and add the MPA program layer on top. Composes with the
+multi-country layer for regional MPAs. Advisory only - never determine approval authority,
+phase eligibility, or financing.
 
 ### Structure and approval authority
 The Board approves the **program framework + financing envelope with Phase 1** (the Phase-1 PAD
-doubles as the Program Framework Document); **Management (RVP) approves subsequent phases**.
+doubles as the Program Framework Document). Management (RVP) approval is the norm for subsequent
+phases, but a subsequent phase may return to the Board where it involves a material change in
+scope, cost, or the Program Development Objective (PrDO) - do not present RVP approval of
+subsequent phases as an absolute rule; frame it as the typical case with a Board-referral
+possibility, and direct the team to confirm the applicable approval level with OPCS.
 Phases may be sequential or simultaneous; financing for later phases is **not guaranteed**.
 Detect the phase and set the expected document set / output register accordingly.
 
@@ -1920,6 +1946,48 @@ Use MPA framework sections (PrDO; Program ToC; Program Framework - phases / sequ
 financing / instruments; Phase PDO; phase-transition triggers; Learning Agenda) composed with
 the phase's base-instrument sections. `next-series` action_timing maps to "next phase".
 """
+
+
+DNH_SEASH_IPF = """SEA/SH risk management in conflict contexts — for projects operating in conflict-affected areas, or involving contractor workforces, or with female-majority beneficiaries or community workers, assess: (a) Is the SEA/SH risk formally classified (Low / Moderate / Substantial / High) and consistent with the conflict context? (b) If risk is Substantial or High, does the ESCP include a time-bound commitment to develop and implement a standalone SEA/SH Action Plan? (c) Are GRM reporting channels anonymous/confidential and accessible to women with mobility restrictions? (d) Does the ESS2 Labour Management Procedure address contractor screening for prior SEA/SH incidents and pre-deployment training? (e) Is there a Results Framework indicator for SEA/SH monitoring? Set seash_standalone_flag: TRUE if risk is Substantial or High, or if any of the five elements above is absent or inadequate. Pass this flag to Stage 3."""
+
+DNH_SEASH_PFORR = """SEA/SH risk management in conflict contexts (PforR) — for programs operating in conflict-affected areas, or involving contractor/implementing-partner workforces, or with female-majority beneficiaries or community workers, assess: (a) Does the ESSA (Environmental and Social Systems Assessment) evaluate the borrower's SEA/SH risk — drawing on the Program-for-Results core principles on public and worker safety and on protecting the poor and vulnerable, together with the Bank's Good Practice Note on SEA/SH — including whether it is formally classified given the conflict context? (The distinct PforR core principle on avoiding the exacerbation of social conflict is FCV-relevant but is not the SEA/SH authority.) (b) If risk is Substantial or High, does the Program Action Plan (PAP) include a time-bound commitment to strengthen SEA/SH prevention and response measures within the country's own systems? (c) Are GRM reporting channels — within the borrower's own systems as assessed in the ESSA, with gaps addressed through the PAP — anonymous/confidential and accessible to women with mobility restrictions? (d) Does the ESSA address contractor/implementing-partner screening for prior SEA/SH incidents where the program finances civil works or service delivery through non-state actors? (e) Is there a results/verification indicator tracking SEA/SH monitoring? PforR is not ESF-governed and has no environmental-and-social commitment plan, numbered environmental/social standards, or standalone SEA/SH Action Plan template — do not require these instruments; the PAP and ESSA are the governing mechanisms. Set seash_standalone_flag: TRUE if risk is Substantial or High, or if any of the five elements above is absent or inadequate. Pass this flag to Stage 3."""
+
+DNH_SEASH_DPF = """SEA/SH risk management in conflict contexts (DPF/DPO) — DPF is not ESF-governed and has no environmental-and-social commitment plan, numbered environmental/social standards, or IPF-style SEA/SH Action Plan; SEA/SH risk in budget support is addressed through the Poverty and Social Impact Analysis (PSIA) and, where a prior action touches service delivery or a specific sector program, through that program's own accountability mechanisms. Assess: (a) Does the PSIA or Program Document poverty/social analysis (para 13) consider SEA/SH or gender-based-violence risk among the distributional and social impacts of the reform, where the reform materially affects service delivery, cash transfers, or public-sector employment? (b) Where the operation is linked to a specific sector program (e.g. a social-protection prior action), does that program have its own GRM or accountability channel accessible to women and girls? Do not require an environmental-and-social commitment, a labour-management procedure, or a standalone Action Plan — these do not exist for DPF. Set seash_standalone_flag: TRUE only where the PSIA or Program Document is silent on a materially relevant SEA/SH or GBV risk pathway; otherwise FALSE. Pass this flag to Stage 3.
+
+Adjustment Sequencing Risk (run alongside the SEA/SH check above, for budget support only): Assess whether prior actions or triggers create a window of exposure where reform costs (subsidy removal, price liberalisation, tariff reform, civil service rationalisation) are imposed BEFORE compensatory safety net mechanisms are operational. In FCV contexts, this sequencing gap is a primary conflict escalation pathway — adjustment costs hit FCV-affected populations first, before protective measures are in place. Assess: (a) Does the policy matrix sequence safety net or social protection prior actions before or concurrent with fiscal adjustment measures? (b) Is there a PSIA that explicitly models distributional impacts of reform on conflict-affected or vulnerable populations? (c) Do any prior actions risk triggering political backlash from vested interests in ways that could destabilise the operating environment? This is the most important DNH dimension for budget support in FCV settings — weight it accordingly in the DNH summary line."""
+
+SEASH_GENDER_CARD_IPF = """Gender-FCV Card Rule: If gender_fcv_flag: TRUE was passed from Stage 2, a Gender-FCV priority card is mandatory and must appear in the output, in addition to the standard 4-5 priorities. This card must address: how the FCV context specifically alters gender dynamics for this project, SEA/SH risk classification adequacy, GRM access for women and girls in conflict-affected settings, and safety risks for female community workers. Document locations must name the relevant ESCP commitment, SEP section, and Operations Manual section. Explicitly reference the SEA/SH Action Plan (its requirement flows from the ESS1 risk assessment and the Bank's Good Practice Note on SEA/SH, operationalized through ESS2 and ESS4 for elevated-risk projects) and recommend engagement with the Bank's SEA/SH Secretariat and Gender Group.
+
+SEA/SH Standalone Card Rule: If seash_standalone_flag: TRUE was passed from Stage 2, generate a dedicated SEA/SH priority card. This card must not be merged with the Gender-FCV card — they address different things. The card must include:
+- Gap description: the specific SEA/SH elements that are absent or inadequate, as identified in Stage 2 (risk classification, Action Plan, GRM design, LMP provisions, monitoring indicators)
+- Why it matters: the SEA/SH requirement flows from the ESS1 risk assessment and the Bank's Good Practice Note on SEA/SH, operationalized through ESS4 (Community Health and Safety); note that elevated SEA/SH risk in conflict settings requires a formally documented and monitored Action Plan
+- Actions: map to the five elements of the Stage 2 check — risk classification, Action Plan, GRM design for SEA/SH reporting, ESS2/LMP worker provisions, and Results Framework monitoring indicator
+- Document locations: ESCP (commitment on Action Plan delivery), SEP (GRM design section), Operations Manual (worker protection provisions)
+- Named standards: ESS2, ESS4, and ESS10 explicitly; recommend engagement with the Bank's SEA/SH Secretariat and the Gender Group
+
+The SEA/SH card and the GRM card may both appear in the output — they address different things. Do not merge them."""
+
+SEASH_GENDER_CARD_PFORR = """Gender-FCV Card Rule (PforR): If gender_fcv_flag: TRUE was passed from Stage 2, a Gender-FCV priority card is mandatory, in addition to the standard 4-5 priorities. This card must address: how the FCV context specifically alters gender dynamics for this program, SEA/SH risk classification adequacy as assessed in the ESSA (under the Program-for-Results core principles on public and worker safety and on protecting the poor and vulnerable, together with the Bank's Good Practice Note on SEA/SH), GRM access for women and girls operating within the borrower's own systems, and safety risks for female community workers or service providers financed through the program. Document locations must name the relevant ESSA finding, PAP action, and POM (Program Operations Manual) provision. Do NOT reference the ESF commitment plan, numbered environmental/social standards, or a standalone SEA/SH Action Plan — these instruments do not exist for PforR. Recommend engagement with the Bank's SEA/SH Secretariat and Gender Group as the follow-up mechanism.
+
+SEA/SH Standalone Card Rule (PforR): If seash_standalone_flag: TRUE was passed from Stage 2, generate a dedicated SEA/SH priority card, distinct from the Gender-FCV card. The card must include:
+- Gap description: the specific SEA/SH elements absent or inadequate in the ESSA/PAP, as identified in Stage 2
+- Why it matters: reference the Program-for-Results core principles on public and worker safety and on protecting the poor and vulnerable, together with the Bank's Good Practice Note on SEA/SH, as the governing standards (assessed through the ESSA) — not an ESF community-health-and-safety standard, and not the social-conflict core principle
+- Actions: map to PAP commitments strengthening SEA/SH prevention/response within the borrower's own systems, and GRM design within the borrower's own systems as assessed in the ESSA
+- Document locations: ESSA (risk finding), PAP (time-bound action), POM (worker/program-personnel provisions)
+- Named standards: ESSA and the PAP explicitly; do not cite the numbered ESF environmental/social standards — recommend engagement with the Bank's SEA/SH Secretariat and Gender Group
+
+The SEA/SH card and the GRM card may both appear — do not merge them."""
+
+SEASH_GENDER_CARD_DPF = """Gender-FCV Card Rule (DPF/DPO): If gender_fcv_flag: TRUE was passed from Stage 2, a Gender-FCV priority card is mandatory, in addition to the standard 4-5 priorities. This card must address: how the FCV context specifically alters gender dynamics for the reforms in this operation, whether the PSIA or Program Document poverty/social analysis considers SEA/SH or GBV risk among distributional impacts, and access to accountability channels for women where a prior action touches service delivery or public-sector employment. Document locations must name the relevant PSIA finding, Program Document section, and (where linked to a specific sector program) that program's own GRM. DPF has no ESF commitment plan, numbered environmental/social standards, stakeholder-engagement plan, or IPF-style Action Plan — do NOT reference these. Recommend engagement with the Bank's SEA/SH Secretariat and Gender Group as the follow-up mechanism, and, where a materially relevant sector program exists, with that program's task team.
+
+SEA/SH Standalone Card Rule (DPF/DPO): If seash_standalone_flag: TRUE was passed from Stage 2, generate a dedicated SEA/SH priority card, distinct from the Gender-FCV card. The card must include:
+- Gap description: the specific SEA/SH or GBV risk pathway the PSIA/Program Document leaves unaddressed
+- Why it matters: reference the PSIA (para 13) as the governing analytical requirement — DPF has no ESF community-health-and-safety standard or Action Plan mechanism
+- Actions: recommend the PSIA be strengthened to name the pathway, and, where relevant, that the linked sector program's own GRM be checked for accessibility
+- Document locations: Program Document (Poverty and Social Impacts section), PSIA annex
+- Named standards: PSIA only; do not cite the numbered ESF environmental/social standards or the ESF commitment plan
+
+The SEA/SH card and the GRM card may both appear — do not merge them."""
 
 
 INTERSECTION_SYNTHESIS_GUIDE = """
@@ -1993,8 +2061,8 @@ OPS5.02-POL.120 includes conflict-related design considerations that may affect 
 **Annual review requirement (frequently missed):**
 IDA FCV Envelope eligibility is NOT automatic — countries must submit annual FCV Review Notes demonstrating continued eligibility and the government's commitment to prevention and resilience. Failure to submit or inadequate submissions can result in loss of allocation. This has occurred in practice (e.g., Mali). When reviewing FCV Envelope operations, assess whether the country's annual review trajectory is factored into the operation's medium-term resource projections.
 
-**Extended Data Pathway (EDP) — low-awareness provision:**
-The EDP allows a country to access Prevention and Resilience Allocation (PRA) even when conflict intensity exceeds standard fatality thresholds, provided meaningful conflict prevention remains feasible and the government demonstrates commitment. This is not widely documented and requires a compelling case with Management approval. Flag EDP as a potential option in countries that exceed standard PRA thresholds but where prevention work remains meaningful.
+**Above-threshold PRA access — low-awareness provision:**
+There is an FCV Envelope provision allowing a country to access Prevention and Resilience Allocation (PRA) even where conflict intensity exceeds standard fatality thresholds, provided meaningful conflict prevention remains feasible and the government demonstrates commitment; this route requires a compelling case with Management approval and is not widely documented. [Verify with regional FCV coordinator and the current FCV Envelope Directive before naming this provision or any specific acronym for it in a project-facing output — do not assert an unverified name for this mechanism.] Flag it as a potential option in countries that exceed standard PRA thresholds but where prevention work remains meaningful.
 
 **Eligibility logic — not a ladder:**
 RECA, TAA, and PRA are not a graduated ladder from more conflict to less conflict. Each has distinct eligibility logic:
