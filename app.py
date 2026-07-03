@@ -2037,6 +2037,8 @@ restructuring_level: [Level 1 / Level 2 / Unknown]
 rationale: [1-2 sentences explaining the detected change types and why the level is advisory]
 %%%CHANGE_TYPE_END%%%
 
+For AF documents specifically: in Part A, state explicitly which of the parent project's components the additional financing finances and which components remain unchanged / not financed by this AF, drawing only on the uploaded document. This matters because recommendations must be scoped to what the AF actually finances, not to the full parent-project narrative. If the document does not specify which components the AF finances, say "the uploaded document does not specify which components the additional financing finances" rather than assuming the AF covers the entire parent project.
+
 If INSTRUMENT_TYPE is DPO (Development Policy Financing), also output this prior-action block. DPF is appraised through prior actions (not components, ESF, or DLIs), so extract them from the Program Document / policy matrix. If the operation is not a DPF/DPO, output empty values.
 
 %%%PRIOR_ACTIONS_START%%%

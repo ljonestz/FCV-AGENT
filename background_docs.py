@@ -1648,6 +1648,15 @@ waiver status, delegated authority, or approval level.
   implementation arrangements.
 - If an ISR is uploaded, use IP/DO ratings and risk flags as Tier-1 evidence for the
   AF well-performing-project check.
+- Financed-scope check (AF): identify and state explicitly which of the parent
+  project's components the additional financing actually finances, and which remain
+  unchanged / not financed by this AF. Scope recommendations to the AF-financed
+  components - do not draw recommendations indiscriminately from parent-project
+  components this AF does not touch (e.g. a crisis-response component the AF does not
+  finance). If the uploaded documents disagree on scope or geography (e.g. a PID and a
+  SEP list different intervention zones), flag the inconsistency rather than presenting
+  a single confident list. If the documents do not state which components are financed,
+  say so rather than assuming the AF covers the full parent project.
 
 ### Well-performing-project / waiver advisory
 AF normally expects IP and DO ratings of MS+ over the relevant period. In FCV settings,
