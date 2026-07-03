@@ -603,6 +603,17 @@ _REQUIRED_PRIORITY_FIELDS = [
     'governance_level',
 ]
 
+# Null-equivalent placeholder values the Stage 3 prompt emits for fields with no
+# content ("If a field has no content, write 'Not identified'"). Used to strip
+# instrument-inapplicable metadata (change_type/restructuring_level/priority_scope)
+# so it is omitted rather than printed as clutter on DPF/PforR/plain-IPF outputs.
+# "unknown" is intentionally NOT included — it is a meaningful advisory state for
+# an AF restructuring level.
+_NULL_META_PLACEHOLDERS = frozenset({
+    '', 'not identified', 'not specified', 'n/a', 'na', 'none', 'not applicable',
+    'null', 'not available', 'tbd',
+})
+
 _SPECIFICITY_STOPWORDS = frozenset({
     'the', 'a', 'an', 'of', 'in', 'and', 'or', 'for', 'with', 'on',
     'at', 'by', 'to', 'from', 'is', 'are', 'was', 'were', 'be', 'been',
@@ -4066,6 +4077,23 @@ def extract_priorities(text: str, uploaded_doc_names: list = None) -> dict:
         raw_governance_level = pr.get('governance_level')
         if raw_governance_level not in _valid_governance_levels:
             pr['governance_level'] = None
+
+        # Instrument-aware metadata hygiene (MAI systemic finding, 2026-07):
+        # change_type / restructuring_level / priority_scope are AF/restructuring/
+        # multi-country concepts with no analogue in a single-tranche DPF/PforR or
+        # plain IPF new lending. The prompt fills non-applicable fields with the
+        # placeholder "Not identified"; normalise those null-equivalents to None so
+        # the render layers (DOCX + frontend chips, both truthiness-gated) omit them
+        # instead of printing "Change: Not identified | Restructuring level: Not
+        # identified | Scope: Not identified" clutter. Real values (incl. "Unknown"
+        # for an AF) are preserved.
+        for _meta_field in ('change_type', 'restructuring_level', 'priority_scope'):
+            _val = pr.get(_meta_field)
+            if isinstance(_val, str):
+                if _val.strip().lower() in _NULL_META_PLACEHOLDERS:
+                    pr[_meta_field] = None
+            elif _val is not None:
+                pr[_meta_field] = None
 
         # Post-parse checks — check specificity across gap + all action guidance
         actions_text = ' '.join(
