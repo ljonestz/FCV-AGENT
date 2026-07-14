@@ -1,5 +1,7 @@
 """Unit tests for secondary-document distillation."""
 import json
+import concurrent.futures
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 from types import SimpleNamespace
@@ -69,6 +71,79 @@ def test_distills_package_doc_into_traceable_card():
         payload.get("preprocessing", {}).get("phase") == "complete"
         for payload in _parse_events(events)
     )
+
+
+def test_distillation_yields_completed_doc_before_all_docs_finish(monkeypatch):
+    """A slow secondary doc should not create a silent preprocessing gap."""
+    slow_started = threading.Event()
+    release_slow = threading.Event()
+
+    def fake_distill(dp, _api_client):
+        if dp["name"] == "fast.pdf":
+            return {
+                "name": dp["name"],
+                "role": "package",
+                "detected_type": "sort",
+                "confidence": 0.9,
+                "tier": "2A",
+                "card": "Source: fast.pdf\nFAST CARD",
+                "chars": 26,
+                "failed": False,
+            }
+        slow_started.set()
+        release_slow.wait(timeout=2)
+        return {
+            "name": dp["name"],
+            "role": "context",
+            "detected_type": "rra",
+            "confidence": 0.9,
+            "tier": "context",
+            "card": "Source: slow.pdf\nSLOW CARD",
+            "chars": 26,
+            "failed": False,
+        }
+
+    monkeypatch.setattr(fcv_distillation, "_distill_one", fake_distill)
+    doc_parts = [
+        {
+            "label": "PACKAGE INSTRUMENT",
+            "name": "fast.pdf",
+            "raw_text": "sort",
+            "page_count": 1,
+            "char_limit": 25_000,
+        },
+        {
+            "label": "CONTEXT DOCUMENT",
+            "name": "slow.pdf",
+            "raw_text": "rra",
+            "page_count": 1,
+            "char_limit": 30_000,
+        },
+    ]
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        gen = fcv_distillation.distill_doc_parts_stream(
+            doc_parts, FakeClient("{}"), executor
+        )
+        first = json.loads(next(gen)[6:].strip())
+        assert first["preprocessing"]["phase"] == "distilling"
+
+        with ThreadPoolExecutor(max_workers=1) as poller:
+            next_event = poller.submit(next, gen)
+            assert slow_started.wait(timeout=0.2)
+            try:
+                payload = json.loads(next_event.result(timeout=0.2)[6:].strip())
+            except concurrent.futures.TimeoutError:
+                release_slow.set()
+                next_event.result(timeout=2)
+                raise AssertionError(
+                    "distillation did not yield progress until every doc finished"
+                )
+            finally:
+                release_slow.set()
+
+    assert payload["preprocessing"]["phase"] == "distilled_one"
+    assert payload["preprocessing"]["name"] == "fast.pdf"
 
 
 def test_low_confidence_package_doc_falls_back_to_generic_tier():

@@ -11,6 +11,7 @@ from datetime import date
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 from flask import Flask, request, jsonify, send_from_directory, Response, stream_with_context
+from werkzeug.exceptions import RequestEntityTooLarge
 import anthropic
 from fcv_distillation import distill_doc_parts_stream
 import httpx
@@ -70,6 +71,29 @@ ASSESSMENT_EXECUTOR = ThreadPoolExecutor(max_workers=ASSESSMENT_WORKERS)
 
 # ── Research cache (in-process, keyed by country name) ───────────────────────
 _research_cache: dict = {}  # key: country.lower() → {brief, country, sources}
+
+
+def _stage1_payload_summary(documents: list[dict]) -> dict[str, int]:
+    """Return low-cardinality diagnostics for Stage 1 upload intake."""
+    summary = {
+        "docs": len(documents or []),
+        "primary": 0,
+        "package": 0,
+        "context": 0,
+        "content_chars": 0,
+    }
+    for doc in documents or []:
+        role = doc.get('docRole')
+        if role == 'package':
+            summary["package"] += 1
+        elif role == 'context' or (not role and doc.get('isContext')):
+            summary["context"] += 1
+        elif role == 'primary' or not role:
+            summary["primary"] += 1
+        content = doc.get('content', '')
+        if isinstance(content, str):
+            summary["content_chars"] += len(content)
+    return summary
 
 @dataclass(frozen=True)
 class PolicyRegistryEntry:
@@ -4956,6 +4980,27 @@ if os.path.exists(PROMPTS_FILE):
 
 app = Flask(__name__, static_folder='static')
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
+
+
+def _payload_too_large_response(_error=None):
+    max_bytes = int(app.config.get('MAX_CONTENT_LENGTH') or 0)
+    max_mb = max_bytes // (1024 * 1024)
+    return jsonify({
+        'error': (
+            'Uploaded documents are too large for this deployment. '
+            f'The request limit is {max_mb} MB after browser encoding. '
+            'Remove optional package/context documents, use smaller PDFs, '
+            'or split the run into fewer uploads.'
+        ),
+        'max_mb': max_mb,
+    }), 413
+
+
+@app.errorhandler(RequestEntityTooLarge)
+def handle_request_entity_too_large(error):
+    return _payload_too_large_response(error)
+
+
 _client = None
 
 def get_client():
@@ -5135,6 +5180,13 @@ def run_stage():
             if not documents:
                 return jsonify({'error': 'Please upload at least one project document.'}), 400
 
+            _stage1_preprocess_started = time.monotonic()
+            _stage1_summary = _stage1_payload_summary(documents)
+            app.logger.info(
+                "Stage 1 preprocessing start route=run-stage summary=%s",
+                _stage1_summary,
+            )
+
             project_docs = [d for d in documents if d.get('docRole') == 'primary'
                             or (not d.get('docRole') and not d.get('isContext'))]
             package_docs  = [d for d in documents if d.get('docRole') == 'package']
@@ -5202,6 +5254,14 @@ def run_stage():
                 warning = _check_extraction(text, name)
                 if warning:
                     extraction_warnings.append(warning)
+
+            app.logger.info(
+                "Stage 1 extraction complete route=run-stage elapsed_ms=%s doc_parts=%s extracted_chars=%s warnings=%s",
+                int((time.monotonic() - _stage1_preprocess_started) * 1000),
+                len(doc_parts),
+                sum(len(dp.get('raw_text') or '') for dp in doc_parts),
+                len(extraction_warnings),
+            )
 
             # Select Stage 1 prompt based on review mode
             stage1_key = 'impl_1' if is_impl else '1'
@@ -5888,6 +5948,8 @@ def run_stage():
         return Response(stream_with_context(generate()), mimetype='text/event-stream',
                         headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'})
 
+    except RequestEntityTooLarge as e:
+        return _payload_too_large_response(e)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -6017,6 +6079,13 @@ def run_express():
                 # ════════════════════════════════════════════════════════════
                 yield f"data: {json.dumps({'stage_start': 1})}\n\n"
 
+                _stage1_preprocess_started = time.monotonic()
+                _stage1_summary = _stage1_payload_summary(documents)
+                app.logger.info(
+                    "Stage 1 preprocessing start route=run-express summary=%s",
+                    _stage1_summary,
+                )
+
                 project_docs = [d for d in documents if d.get('docRole') == 'primary'
                                 or (not d.get('docRole') and not d.get('isContext'))]
                 package_docs  = [d for d in documents if d.get('docRole') == 'package']
@@ -6083,6 +6152,13 @@ def run_express():
                     warning = _check_extraction(text, name)
                     if warning:
                         extraction_warnings_express.append(warning)
+                app.logger.info(
+                    "Stage 1 extraction complete route=run-express elapsed_ms=%s doc_parts=%s extracted_chars=%s warnings=%s",
+                    int((time.monotonic() - _stage1_preprocess_started) * 1000),
+                    len(doc_parts),
+                    sum(len(dp.get('raw_text') or '') for dp in doc_parts),
+                    len(extraction_warnings_express),
+                )
                 for w in extraction_warnings_express:
                     yield f"data: {json.dumps({'extraction_warning': w})}\n\n"
 
@@ -6636,6 +6712,8 @@ def run_express():
                         mimetype='text/event-stream',
                         headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'})
 
+    except RequestEntityTooLarge as e:
+        return _payload_too_large_response(e)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

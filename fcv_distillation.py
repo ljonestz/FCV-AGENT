@@ -313,12 +313,12 @@ def _mark_result_on_doc_part(result: dict[str, Any], dp: dict[str, Any]) -> dict
     return None
 
 
-def _collect_distillation_results(
+def _iter_distillation_events(
     dps: list[dict[str, Any]],
     api_client: Any,
-) -> list[dict[str, Any]]:
+):
+    """Yield distillation results as soon as each doc finishes or times out."""
     max_workers = max(1, min(DISTILL_MAX_WORKERS, len(dps)))
-    results_by_id: dict[int, dict[str, Any]] = {}
     pool = concurrent.futures.ThreadPoolExecutor(max_workers=max_workers)
     try:
         future_to_dp = {pool.submit(_distill_one, dp, api_client): dp for dp in dps}
@@ -330,6 +330,7 @@ def _collect_distillation_results(
                 timeout=DISTILL_POLL_SECONDS,
                 return_when=concurrent.futures.FIRST_COMPLETED,
             )
+            emitted = False
             for future in done:
                 pending.remove(future)
                 dp = future_to_dp[future]
@@ -337,7 +338,9 @@ def _collect_distillation_results(
                     result = future.result()
                 except Exception as exc:  # noqa: BLE001
                     result = _failure_result(dp, str(exc)[:200])
-                results_by_id[id(dp)] = result
+                result["_dp"] = dp
+                yield "result", result
+                emitted = True
 
             now = time.monotonic()
             for future in list(pending):
@@ -345,20 +348,17 @@ def _collect_distillation_results(
                     dp = future_to_dp[future]
                     future.cancel()
                     pending.remove(future)
-                    results_by_id[id(dp)] = _failure_result(
+                    result = _failure_result(
                         dp, f"timed out after {DISTILL_TIMEOUT_SECONDS}s"
                     )
+                    result["_dp"] = dp
+                    yield "result", result
+                    emitted = True
+
+            if pending and not emitted:
+                yield "keepalive", {"pending": len(pending)}
     finally:
         pool.shutdown(wait=False, cancel_futures=True)
-
-    results = []
-    for dp in dps:
-        result = results_by_id.get(id(dp))
-        if result is None:
-            result = _failure_result(dp, "no distillation result")
-        result["_dp"] = dp
-        results.append(result)
-    return results
 
 
 def distill_doc_parts_stream(secondary_dps: list[dict[str, Any]], api_client: Any, executor: Any):
@@ -378,18 +378,43 @@ def distill_doc_parts_stream(secondary_dps: list[dict[str, Any]], api_client: An
         "preprocessing": {"phase": "distilling", "total": len(dps)},
     })
 
-    results = _collect_distillation_results(dps, api_client)
-    for index, result in enumerate(results, start=1):
+    results_by_id: dict[int, dict[str, Any]] = {}
+    completed = 0
+    for kind, payload in _iter_distillation_events(dps, api_client):
+        if kind == "keepalive":
+            yield _sse({
+                "keepalive": True,
+                "stage": 1,
+                "status": "preprocessing",
+                "preprocessing": {
+                    "phase": "distilling_wait",
+                    "pending": payload["pending"],
+                    "total": len(dps),
+                },
+            })
+            continue
+
+        result = payload
+        completed += 1
+        results_by_id[id(result["_dp"])] = result
         yield _sse({
             "status": "preprocessing",
             "preprocessing": {
                 "phase": "distilled_one",
                 "name": result["name"],
                 "detected_type": result["detected_type"],
-                "done": index,
+                "done": completed,
                 "total": len(dps),
             },
         })
+
+    results = []
+    for dp in dps:
+        result = results_by_id.get(id(dp))
+        if result is None:
+            result = _failure_result(dp, "no distillation result")
+            result["_dp"] = dp
+        results.append(result)
 
     _apply_budget(results)
     overflow = []
