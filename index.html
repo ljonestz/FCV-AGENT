@@ -3000,6 +3000,24 @@
   }
 
   // ── Express mode chain ───────────────────────────────────────────────────
+  function uploadPayloadLimitMessage(primaryFiles, packageFiles, contextFiles){
+    const all=[...(primaryFiles||[]),...(packageFiles||[]),...(contextFiles||[])];
+    const rawBytes=all.reduce((sum,f)=>sum+(f&&f.size?f.size:0),0);
+    const estimatedPayloadBytes=Math.ceil(rawBytes*4/3);
+    const limitBytes=45*1024*1024; // below Flask's 50MB cap to allow JSON overhead
+    if(estimatedPayloadBytes<=limitBytes)return '';
+    const rawMb=(rawBytes/1024/1024).toFixed(1);
+    const encodedMb=(estimatedPayloadBytes/1024/1024).toFixed(1);
+    return 'Uploaded documents are too large for this Render deployment: '+rawMb+' MB of files becomes about '+encodedMb+' MB after browser base64 encoding. Remove optional package/context documents or use smaller PDFs, then retry.';
+  }
+
+  function requestErrorMessage(err, networkMessage){
+    const msg=err&&err.message?String(err.message):'';
+    if(err&&err.name==='AbortError')return msg||'Request timed out';
+    if(/timed out|timeout/i.test(msg))return msg;
+    return networkMessage;
+  }
+
   async function runExpress(){
     if(busy)return;
     busy=true;
@@ -3061,7 +3079,7 @@
       });
     }catch(e){
       clearTimeout(expressTimeout);
-      showExpressError(1,e.name==='AbortError'?(e.message||'Request timed out'):'Could not reach the server.');
+      showExpressError(1,requestErrorMessage(e,'Could not reach the server.'));
       busy=false;return;
     }
 
@@ -3359,7 +3377,7 @@
       let res;
       try{
         res=await fetch('/api/run-stage',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:_stageAbort.signal});
-      }catch(e){clearTimeout(_stageTimeoutId);throw new Error(e.name==='AbortError'?(e.message||'Request timed out'):'Could not reach the server. Please check your connection and try again.')}
+      }catch(e){clearTimeout(_stageTimeoutId);throw new Error(requestErrorMessage(e,'Could not reach the server. Please check your connection and try again.'))}
 
       if(!res.ok){
         clearTimeout(_stageTimeoutId);
