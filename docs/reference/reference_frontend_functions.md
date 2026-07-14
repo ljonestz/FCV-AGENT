@@ -143,19 +143,24 @@ Both modes use identical prompts, code paths, and output quality. Express is a f
 **`runExpress()`:**
 1. Shows `#ep-accent` + `#express-progress` via `showExpressProgress()`
 2. POSTs to `/api/run-express`; reads SSE stream via `fetch()` + `ReadableStream`
-3. Sets a global 10-minute `AbortController` timeout for Stages 1 & 2; when `stage_start:3` fires, resets to a fresh 8-minute timeout for Stage 3
+3. Arms a per-stage `AbortController` timeout, resetting at each `stage_start`
 4. After `express_done` event: hides progress, calls `renderOut(3, ...)`, calls `enableClickableStepper()`, cleans up express localStorage keys
 5. On failure: `showExpressError(stage, msg)` shows red card with "Retry" and "Switch to step-by-step" options
 
 **Abort timeout budget (Express):**
-- Stages 1 + 2 combined: 10 minutes from request start (`let expressTimeout`)
-- Stage 3: reset to 8 minutes from when `stage_start:3` fires (`clearTimeout` + new `setTimeout`)
-- Error message distinguishes which stage timed out
+- Stage 1: 9 minutes
+- Stage 2: 10 minutes
+- Stage 3: 10 minutes
+- `requestErrorMessage()` preserves custom `AbortController.abort(new Error(...))` timeout messages, while still using `Could not reach the server.` for true network/fetch failures.
 
 **Abort timeout budget (Step-by-step):**
-- Stage 1: 8 minutes (includes web research)
-- Stage 2: 6 minutes
-- Stage 3: 8 minutes (longest output — 20k max tokens)
+- Stage 1: 9 minutes (includes web research)
+- Stage 2: 10 minutes
+- Stage 3: 10 minutes (longest output - 20k max tokens)
+
+**Upload payload preflight:**
+- `uploadPayloadLimitMessage(primaryFiles, packageFiles, contextFiles)` estimates raw file size after browser base64 encoding and blocks likely-over-limit uploads before reading or posting files.
+- This mirrors backend `413 RequestEntityTooLarge` handling for Render's JSON request cap. It is especially relevant for multi-document PforR runs with PAD + ESSA + fiduciary/package files.
 
 **Progress screen elements** (inside `#express-progress`):
 - `#ep-accent` — 4px gradient accent bar
@@ -192,4 +197,4 @@ Both modes use identical prompts, code paths, and output quality. Express is a f
 
 ---
 
-*Last updated: 2026-07-02 — added Priority Points section: detectPriorityPoints, renderPqConfirm, togglePqPanel, onGuidanceInput, applyPriorityChip, getPriorityQuestions, maybeRunPriorityQuestions, renderPriorityQuestions, renderPriorityQuestionsError, pqAddContextAndRerun; state globals priorityQuestions / focusQuestionsResult / pqPanelEnabled / _pqInFlight / _pqDetectTimer; #priority-questions-section and #pq-confirm containers (v9.13)*
+*Last updated: 2026-07-14 - PforR timeout/payload hardening: per-stage Express abort budgets, `requestErrorMessage()`, `uploadPayloadLimitMessage()`, and Render payload-limit handling.*
