@@ -11,7 +11,7 @@
 
 Current upload tiering: exactly one primary project document anchors the assessment; up to 10 project-package documents are distilled into key-signal cards; up to 3 contextual documents are distilled into RRA driver / CPF pillar cards or generic context cards.
 
-**Secondary-document distillation:** Before Stage 1 assembly, package and contextual documents are passed through `fcv_distillation.distill_doc_parts_stream()`. Each secondary document is classified and extracted in isolation using Haiku, then mutated into a compact, source-labelled card. Package cards are injected under `SUPPORTING PACKAGE EVIDENCE (not independently assessed)`. Context cards are injected under `CONTEXT ANCHOR: CONFLICT DRIVERS AND COUNTRY PILLARS`, preserving RRA drivers and CPF pillars for Stage 3 matching. Failed or overflowed distillation produces a named stub rather than silently dropping a document.
+**Secondary-document distillation:** Before Stage 1 assembly, package and contextual documents are passed through `fcv_distillation.distill_doc_parts_stream()`. Each secondary document is classified and extracted in isolation using Haiku, then mutated into a compact, source-labelled card. Package cards are injected under `SUPPORTING PACKAGE EVIDENCE (not independently assessed)`. Context cards are injected under `CONTEXT ANCHOR: CONFLICT DRIVERS AND COUNTRY PILLARS`, preserving RRA drivers and CPF pillars for Stage 3 matching. Failed or overflowed distillation produces a named stub rather than silently dropping a document. As of 2026-07-14, distillation streams each completed/timeout card as it arrives and emits `distilling_wait` keepalives while pending documents remain, avoiding a silent collect-all window before Stage 1 model streaming.
 
 **Input:** Any WBG appraisal or design-stage project document (Concept Note, PID, PCN, PAD, Additional Financing, Restructuring Paper, DPF/DPO Program Document, PforR document, MPA, or regional operation). Optionally up to 10 project-package documents and up to 3 contextual documents (RRA, CPF, country risk report, policy matrix, DLI matrix, etc.).
 
@@ -49,7 +49,7 @@ Current upload tiering: exactly one primary project document anchors the assessm
 
 **Prompt constants injected:** `FCV_GUIDE`, `PLAYBOOK_DIAGNOSTICS`, `FCV_REFRESH_FRAMEWORK`
 
-**Loading time note:** Stage 1 loading card shows "may take 60–90 seconds" due to web research phase.
+**Loading time note:** Stage 1 can be materially longer than 60-90 seconds for large PforR/P4R PADs because PDF extraction, web research, and the first Stage 1 model call all occur before the main Stage 1 text is visible. Render logs now include Stage 1 preprocessing and extraction diagnostics for both `/api/run-stage` and `/api/run-express`.
 
 ---
 

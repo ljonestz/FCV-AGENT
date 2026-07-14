@@ -6,8 +6,8 @@ A Flask web application that guides World Bank Task Team Leaders (TTLs) through 
 
 Upload a WBG appraisal or design-stage document (PCN, PID, PAD, Additional Financing, Restructuring Paper, DPF/DPO Program Document, PforR document, MPA, or regional operation) and optionally a Country Partnership Framework or other contextual document. Choose your workflow:
 
-- **Express Analysis** (default) — all 3 stages run automatically in a single connection (~4–5 min)
-- **Step-by-Step** — interactive mode; review and refine at each stage before proceeding (~8–12 min)
+- **Express Analysis** (default) - all 3 stages run automatically in a single SSE connection. Typical IPF/PAD runs are shorter; large PforR operations can run 10-15+ minutes on Render.
+- **Step-by-Step** - interactive mode; review and refine at each stage before proceeding. Uses the same backend stage logic and timeout budgets as Express.
 
 Both modes produce identical output across three stages:
 
@@ -44,8 +44,21 @@ python app.py
 
 1. Connect this GitHub repo to a new Render **Web Service**
 2. Set `ANTHROPIC_API_KEY` as an environment variable in the Render dashboard
-3. Render reads `Procfile` automatically — no additional build config needed
+3. Render reads `Procfile` automatically - no additional build config needed
 4. The app runs on gunicorn + gevent with a 600s timeout, required for long-running SSE streams
+5. The public Render instance currently deploys from `main`; PforR timeout/payload hardening is live on `main` as of PR #51 (`2877bf9`).
+
+### Long-Running PforR Notes
+
+PforR/P4R project documents generate the largest outputs in the app because Stage 2 and Stage 3 include DLI/PAP/ESSA/ESMS-specific checks and a PforR watch list. The current `main` branch includes:
+
+- backend per-stage stream caps of 8 minutes for Stage 1, 9 minutes for Stage 2, and 9 minutes for Stage 3;
+- frontend abort budgets of 9/10/10 minutes, so backend stage errors surface before the browser aborts the stream;
+- deterministic PforR/DPO vocabulary scrubbing, replacing a previous blocking model repair call;
+- Stage 1 preprocessing/extraction diagnostics in Render logs;
+- explicit 413 handling plus frontend preflight warnings for uploads that exceed Render's base64 JSON payload limit.
+
+Recent live checks against `https://fcv-agent.onrender.com/` confirmed that the Morocco Green Generation PforR PAD can complete end-to-end. A later India STARS PforR PAD test hung before response headers, which should be treated as a live Render worker/gateway stall until Render logs show otherwise.
 
 ## Concurrency
 
@@ -60,6 +73,7 @@ The app isolates state per browser tab via a per-assessment ID. Express Analysis
 | `background_docs.py` | WBG FCV framework reference constants (knowledge base) |
 | `requirements.txt` | Python dependencies |
 | `Procfile` | Render deployment config |
+| `docs/20260714_ITS_handover_p4r_timeout_patch.md` | Current IPS/ITS handover on PforR timeout and Render-main state |
 
 ## Documentation
 

@@ -25,7 +25,7 @@ POST /api/run-stage
 
 # Express mode route (single SSE endpoint for all 3 stages)
 POST /api/run-express
-  Input: {documents[], assessment_id}
+  Input: {documents[], assessment_id, review_mode, user_context, priority_questions}
   Output: SSE stream with events:
     assessment_id: {assessment_id}
     stage_start: {stage_start: N}
@@ -41,9 +41,18 @@ POST /api/run-express
     on the background assessment executor and streams its events back to the
     client. Keepalive pings cover web research gaps and inter-stage transitions.
     The backend stream helper enforces per-stage wall-clock limits (Stage 1:
-    8 min, Stage 2: 6 min, Stage 3: 8 min) so a provider stream that keeps the
+    8 min, Stage 2: 9 min, Stage 3: 9 min) so a provider stream that keeps the
     SSE alive without completing returns a clear stage error instead of running
     indefinitely.
+
+# Oversized upload handling
+POST /api/run-stage and POST /api/run-express
+  If Flask raises RequestEntityTooLarge because the JSON body exceeds
+  MAX_CONTENT_LENGTH, the app returns:
+    HTTP 413
+    {error: "...too large...", max_mb: <integer>}
+  The frontend also preflights raw file sizes before base64 encoding and blocks
+  requests likely to exceed the Render deployment limit.
 
 # Go Deeper route
 POST /api/run-deeper
@@ -176,6 +185,7 @@ extract_pptx_text(b64_data, name)  # python-pptx — slide-labelled text + table
 
 **Size limits:**
 ```python
+MAX_CONTENT_LENGTH = 50 * 1024 * 1024 # Flask request-body cap; browser base64 JSON counts against this
 MAX_DOC_CHARS = 500_000       # Hard cap per document after extraction
 STAGE1_MAX_DOC_CHARS = 60_000 # Truncation before sending to Claude (Stage 1)
 CARD_CHARS_2A = 2_800         # Structured package card cap in fcv_distillation.py
@@ -185,7 +195,16 @@ SECONDARY_CARD_BUDGET_CHARS = 32_000 # Global package/context card budget
 MAX_ASSISTANT_CHARS = 40_000  # Truncation applied to assistant turns stored in conversation_history
 ```
 
-Zone 2 package documents and Zone 3 contextual documents are distilled by `fcv_distillation.distill_doc_parts_stream()` before Stage 1 prompt assembly. The primary Zone 1 document is not distilled.
+Zone 2 package documents and Zone 3 contextual documents are distilled by `fcv_distillation.distill_doc_parts_stream()` before Stage 1 prompt assembly. The primary Zone 1 document is not distilled. Distillation now yields each completed/timeout card as it arrives and emits `keepalive` / `distilling_wait` events while slower secondary documents remain pending, so Stage 1 does not sit silent behind a collect-all preprocessing step.
+
+Both `/api/run-stage` and `/api/run-express` log low-cardinality Stage 1 preprocessing and extraction summaries in Render logs:
+
+```text
+Stage 1 preprocessing start route=<route> summary={docs, primary, package, context, content_chars}
+Stage 1 extraction complete route=<route> elapsed_ms=<ms> doc_parts=<n> extracted_chars=<n> warnings=<n>
+```
+
+These diagnostics intentionally avoid filenames and document text, but identify whether a PforR failure happened before extraction, during extraction, or after model streaming began.
 
 ---
 
