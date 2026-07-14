@@ -52,10 +52,17 @@ STAGE1_MAX_DOC_CHARS = 60_000       # Docs are truncated to this before Stage 1 
 STAGE1_PACKAGE_DOC_CHARS = 25_000   # Pre-distillation fallback cap for Zone 2 docs
 STAGE1_CONTEXT_DOC_CHARS = 30_000   # Pre-distillation fallback cap for Zone 3 docs
 STREAM_KEEPALIVE_SECONDS = 20
+# Backend per-stage wall-clock caps (seconds). Raised for Stage 2/3 in v9.16:
+# PforR (added in v9.8, after these caps were set in v9.4) produces the largest
+# Stage 2/3 output in the app, and a large PforR PAD's Stage 2 stream legitimately
+# ran up to the old 6-minute cap, surfacing as a ~6:55 timeout. Every frontend
+# abort budget must stay strictly above the matching cap here (see index.html
+# EXPRESS_STAGE_TIMEOUTS and the step-by-step _stageTimeoutMs), and all sit well
+# under the gunicorn --timeout of 1200s.
 STAGE_STREAM_TIMEOUTS = {
     1: 8 * 60,
-    2: 6 * 60,
-    3: 8 * 60,
+    2: 9 * 60,
+    3: 9 * 60,
 }
 PROMPTS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'prompts.json')
 ASSESSMENT_WORKERS = max(2, int(os.environ.get("ASSESSMENT_WORKERS", "4")))
