@@ -66,11 +66,12 @@ GET /how-it-works               # Workflow explanation page
 GET /admin                      # Admin panel (prompts modal)
 GET /api/default-prompts        # Get default prompts for reference
 
-# DOCX download route (v9.1)
+# DOCX download route (v9.1; extended v9.13)
 POST /api/download-report
   Input: {
     "summary": "<markdown string — Stage 3 executive summary>",
     "priorities": [ ...stageThreePriorities array... ],
+    "focus_questions": { ...focusQuestionsResult... },  # optional (v9.13); omit or null to skip section
     "metadata": {
       "date_str": "18 April 2026",
       "classification_category": "Conflict-Affected",
@@ -87,16 +88,57 @@ POST /api/download-report
     -          _safe_run(para) — safe para.runs[0] access
     - Document structure: Title → subtitle → disclaimer → HR → optional finalized-PAD notice →
         optional classification box → Exec Summary → HR → Strategic Priorities (Heading 3 per
-        priority, metadata line, gap/actions/who/timing, implementation note)
+        priority, metadata line, gap/actions/who/timing, implementation note) →
+        optional "Responses to Your Priority Points" section (v9.13, rendered when focus_questions
+        is supplied and non-error; one subsection per response with status label, answer,
+        evidence basis, linked priorities, and gap note)
     - Frontend: downloadReport() POSTs JSON payload; receives blob; triggers browser save
 
 # Follow-on post-analysis route (Stage 3 bottom card)
 POST /api/run-followon
-  Input: {messages[]} — full conversationHistory + user message
+  Input: {messages[], priority_responses (optional)} — full conversationHistory + user message;
+         when priority_responses[] is supplied (non-empty), the route folds the Q/A pairs
+         onto the final user turn so the follow-on LLM has full priority-point context
   Output: SSE stream (same chunk/done format as run-stage)
   System prompt: DEFAULT_PROMPTS["followon"]
   max_tokens: 4000
   Note: Route truncates large assistant messages to 40,000 chars before sending
+
+# Priority Questions route (v9.13 — Priority Points feature)
+POST /api/run-priority-questions
+  Input: {
+    user_context,           # free-text framing entered by the user
+    priority_questions,     # array of question strings derived from the guidance box
+    stage1_output,          # Stage 1 assistant output text
+    stage2_output,          # Stage 2 assistant output text (clean, display text)
+    stage2_ratings,         # {sensitivity_rating, responsiveness_rating}
+    stage3_output,          # Stage 3 narrative (clean, display text)
+    stage3_priorities       # parsed priorities array from Stage 3 JSON
+  }
+  Output: SSE stream — chunk events during generation, then a done event:
+    chunk: {chunk: text}
+    done:  {done: true, focus_questions: {error, responses[], summary}}
+  Notes:
+    - Fired by the frontend AFTER the main run completes (express_done or Stage 3 done);
+      never called inline within run-express or run-stage, preserving the timeout design
+    - Independently retryable without re-running the main analysis
+    - Uses DEFAULT_PROMPTS["priority_questions"] system prompt
+    - Responses use the %%%FOCUS_QUESTIONS_START/END%%% delimiter block (see reference_prompt_architecture.md)
+
+  Each response object in responses[]:
+    {
+      "id":                  string,     # matches original question identifier / index
+      "question":            string,     # the original question text
+      "status":              string,     # "addressed" | "partially_addressed" | "not_yet_addressed"
+      "direct_answer":       string,     # 2–4 sentence answer grounded in the stage outputs
+      "evidence_basis":      string,     # specific source citations ([From: name] or stage reference)
+      "linked_priorities":   string[],   # priority titles from Stage 3 that relate to this question
+      "confidence_gap_note": string      # null or note explaining uncertainty / data gap
+    }
+
+  Rendered by the frontend as a "Responses to your priority points" panel:
+    - Status pill: green (addressed) / amber (partially_addressed) / grey (not_yet_addressed)
+    - Answer text, evidence basis, linked priorities as chips, gap note in italic
 ```
 
 ---
@@ -203,6 +245,32 @@ def extract_priorities(stage3_output, uploaded_doc_names=None):
 
 ---
 
+## Priority Questions Parsing — `/api/run-priority-questions` (`extract_focus_questions()`)
+
+```python
+def extract_focus_questions(text: str) -> dict:
+    # 1. Find %%%FOCUS_QUESTIONS_START%%%...%%%FOCUS_QUESTIONS_END%%% block
+    # 2. Parse via json.loads()
+    # 3. Validate status values — unknown statuses coerced to "not_yet_addressed"
+    # 4. Truncation salvage: if the closing delimiter is missing (stream cut short),
+    #    attempts json.loads() on text up to the last complete response object
+    # 5. Returns {error, message, responses[], summary}
+    # 6. On malformed JSON: return {error: True, message: ...} — NOT silent failure
+    # Mirrors the interface of extract_priorities() for error handling consistency
+```
+
+**Return shape:**
+```python
+{
+  'error':     bool,
+  'message':   str,       # only when error=True
+  'responses': [...],     # list of response objects (see route spec above for fields)
+  'summary':   str        # 1–2 sentence overall coverage summary
+}
+```
+
+---
+
 ## Stage 2 Output Parsing
 
 ```python
@@ -256,4 +324,4 @@ def clean_stage2_output(stage2_output):
 
 ---
 
-*Last updated: 2026-04-18 — added /api/download-report (v9.1)*
+*Last updated: 2026-07-02 — added /api/run-priority-questions, extract_focus_questions, focus_questions param for /api/download-report, priority_responses param for /api/run-followon (v9.13)*

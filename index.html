@@ -1502,6 +1502,18 @@
 
   /* ── Follow-on card (Stage 3 query interface) ───────────────────────────── */
   .followon-card{ background:#fff; border:1px solid var(--border); border-radius:8px; padding:16px; margin-top:16px; }
+  .pq-panel{ margin-top:16px; background:#f0f9ff; border:1px solid #bae6fd; border-left:4px solid #009FDA; border-radius:8px; padding:14px 16px; }
+  .pq-intro{ font-size:13px; line-height:1.6; color:#334155; margin:4px 0 12px; }
+  .pq-item{ padding:10px 0; border-top:1px solid #dbeafe; }
+  .pq-item:first-of-type{ border-top:none; padding-top:2px; }
+  .pq-num{ font-weight:700; color:#009FDA; margin-right:4px; }
+  .pq-hdr{ font-size:15px; font-weight:700; color:#002244; margin-bottom:8px; }
+  .pq-loading{ font-size:13px; color:#555; display:flex; align-items:center; gap:8px; padding:8px 0; }
+  .pq-q{ font-size:14px; font-weight:600; color:var(--text); margin-bottom:6px; }
+  .pq-a{ font-size:13px; line-height:1.6; color:#222; margin-bottom:6px; }
+  .pq-field{ font-size:12px; color:#333; margin-bottom:3px; }
+  .pq-lbl{ font-weight:700; color:#555; }
+  .pq-note{ font-size:11px; color:#888; font-style:italic; margin-top:4px; }
   .followon-desc{ font-size:12px; color:var(--muted); margin:4px 0 8px; }
   .followon-chips{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
   .followon-chip{ background:#f0f4f8; border:1px solid var(--border); border-radius:14px; padding:4px 12px; font-size:12px; color:var(--text); cursor:pointer; white-space:nowrap; transition:background .15s,border-color .15s; }
@@ -1560,6 +1572,13 @@
   .impl-soon-note svg{flex-shrink:0;color:#f59e0b}
 
   /* ── Optional Context Box ── */
+  .pq-confirm{ margin-top:12px; border-top:1px dashed rgba(255,255,255,.18); padding-top:10px; }
+  .pq-confirm-row{ display:flex; align-items:flex-start; gap:8px; font-size:13px; color:#e5f3fb; cursor:pointer; }
+  .pq-confirm-row input{ margin-top:2px; }
+  .pq-preview{ margin:6px 0 0 22px; padding:0; list-style:disc; }
+  .pq-preview li{ font-size:12px; color:#cfe9f7; margin:2px 0; }
+  .pq-over{ font-size:11px; color:#fca5a5; margin:6px 0 0 22px; }
+  .pq-src-note{ font-size:11px; color:#7dd3fc; margin:6px 0 0 22px; }
   .context-box-section{margin:16px 32px 0}
   .context-box-toggle{width:100%;display:flex;align-items:center;gap:8px;padding:10px 14px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;color:#0369a1;text-align:left;line-height:1;transition:background .15s,border-color .15s}
   .context-box-toggle:hover{background:#e0f2fe;border-color:#7dd3fc}
@@ -2318,7 +2337,8 @@
           <button type="button" class="context-chip" onclick="applyContextChip(this)" data-text="Peer reviewers have flagged that the FCV sensitivity analysis needs strengthening — please pay particular attention to Do No Harm risks and community exclusion dynamics in your assessment.">Peer reviewers flagged FCV sensitivity needs strengthening — focus on Do No Harm and exclusion</button>
           <button type="button" class="context-chip" onclick="applyContextChip(this)" data-text="Conflict or security conditions have changed since the project was prepared. Please factor this into the assessment and flag where the current design may need updating to reflect the changed situation on the ground.">Security or conflict conditions have changed since project preparation</button>
         </div>
-        <textarea id="user-context" class="context-textarea" aria-label="Additional context for the analysis" placeholder="e.g. The team needs to strengthen the Do No Harm analysis before the next peer review. Please focus on exclusion risks, grievance mechanisms, and conflict-sensitive targeting…" oninput="syncContextChips(this.value)"></textarea>
+        <textarea id="user-context" class="context-textarea" aria-label="Additional context, focus areas, or priority questions" placeholder="Add any context, a theme or region to focus on, or specific questions you want answered — e.g.&#10;1. Does targeting reach conflict-affected or excluded groups?&#10;2. Focus on social cohesion in the north" oninput="onGuidanceInput()"></textarea>
+        <div id="pq-confirm" class="pq-confirm" style="display:none"></div>
       </div>
     </div>
 
@@ -2438,16 +2458,76 @@
   function applyContextChip(el){
     const ta=document.getElementById('user-context');
     if(!ta)return;
-    const alreadyActive=el.classList.contains('active');
-    document.querySelectorAll('.context-chip').forEach(c=>c.classList.remove('active'));
-    if(alreadyActive){ta.value='';return;}
-    el.classList.add('active');
-    ta.value=el.dataset.text;
-    ta.focus();
+    const line=el.dataset.text;
+    ta.value = ta.value.trim() ? (ta.value.replace(/\s*$/,'')+'\n'+line) : line;
+    onGuidanceInput(); ta.focus();
   }
 
   function syncContextChips(val){
     document.querySelectorAll('.context-chip').forEach(c=>c.classList.toggle('active',c.dataset.text===val));
+  }
+
+  // ── Priority Points intake (single box + detection) ───────────────────────
+  const PQ_MAX = 10;
+  const PQ_CUES = [
+    /\bfocus on\b/i, /\bpay (?:particular |close )?attention\b/i, /\bemphasi[sz]e\b/i,
+    /\bprioriti[sz]e\b/i, /\bassess whether\b/i, /\blook at\b/i, /\bhow well\b/i,
+    /\bto what extent\b/i, /\bthe extent to which\b/i, /\bmake sure\b/i, /\bensure\b.*\baddress/i
+  ];
+  const PQ_INTERROG = /^(?:does|do|did|is|are|was|were|how|what|why|which|who|where|when|should|shall|can|could|will|would|has|have|to what extent)\b/i;
+
+  function detectPriorityPoints(text){
+    if(!text) return [];
+    const out=[], seen=new Set();
+    const expanded=[];
+    text.split(/\r?\n/).forEach(l=>{
+      if(/\d+[.)]\s+.*\d+[.)]\s+/.test(l)){ l.split(/\s*(?=\d+[.)]\s+)/).forEach(s=>expanded.push(s)); }
+      else { expanded.push(l); }
+    });
+    for(const raw of expanded){
+      const wasList=/^\s*(?:\d+[.)]|[-•*])\s*/.test(raw);
+      const s=raw.replace(/^\s*(?:\d+[.)]|[-•*])\s*/,'').trim();
+      if(!s) continue;
+      const isPoint = /\?\s*$/.test(s) || PQ_CUES.some(re=>re.test(s)) || (wasList && PQ_INTERROG.test(s));
+      if(!isPoint) continue;
+      const key=s.toLowerCase();
+      if(seen.has(key)) continue;
+      seen.add(key); out.push(s);
+      if(out.length >= PQ_MAX + 5) break;
+    }
+    return out;
+  }
+
+  function renderPqConfirm(points){
+    const wrap=document.getElementById('pq-confirm'); if(!wrap) return;
+    if(!points.length){ wrap.innerHTML=''; wrap.style.display='none'; return; }
+    wrap.style.display='block';
+    const shown=points.slice(0, PQ_MAX);
+    const overflow=points.length > PQ_MAX;
+    const items=shown.map(p=>`<li>${esc(p)}</li>`).join('');
+    wrap.innerHTML=`
+      <label class="pq-confirm-row">
+        <input type="checkbox" id="pq-enable" ${pqPanelEnabled?'checked':''} onchange="togglePqPanel(this)">
+        <span><strong>${shown.length}</strong> priority point${shown.length!==1?'s':''} detected — answer ${shown.length!==1?'them':'it'} in a dedicated panel</span>
+      </label>
+      <ul class="pq-preview">${items}</ul>
+      ${overflow?`<p class="pq-over">Showing first ${PQ_MAX}. Trim your list to include the rest.</p>`:''}
+      <p class="pq-src-note">To edit, change the text above ↑</p>`;
+  }
+
+  function togglePqPanel(cb){ pqPanelEnabled = cb.checked; }
+
+  function onGuidanceInput(){
+    const ta=document.getElementById('user-context'); if(!ta) return;
+    syncContextChips(ta.value);
+    clearTimeout(_pqDetectTimer);
+    _pqDetectTimer=setTimeout(()=>{ renderPqConfirm(detectPriorityPoints(ta.value)); }, 250);
+  }
+
+  function getPriorityQuestions(){
+    if(!pqPanelEnabled) return [];
+    const ta=document.getElementById('user-context');
+    return detectPriorityPoints(ta?ta.value:'').slice(0, PQ_MAX);
   }
 
   // ── Onboarding ──────────────────────────────────────────────────────────────
@@ -2527,7 +2607,9 @@
       docType: docType,
       analysisMode: analysisMode,
       stageOutputs: stageOutputs,
-      stageHists: stageHists
+      stageHists: stageHists,
+      priorityQuestions: priorityQuestions,
+      focusQuestionsResult: focusQuestionsResult
     };
     const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
     const url = URL.createObjectURL(blob);
@@ -2577,6 +2659,8 @@
         selectMode(state.analysisMode || 'stepbystep');
         if(state.stageOutputs) stageOutputs = state.stageOutputs;
         if(state.stageHists) stageHists = state.stageHists;
+        priorityQuestions = state.priorityQuestions || [];
+        focusQuestionsResult = state.focusQuestionsResult || null;
         sessionName = file.name;
         document.getElementById('upload-panel').style.display='none';
         document.getElementById('analysis-panel').style.display='block';
@@ -2942,7 +3026,8 @@
           ...await Promise.all(cF.map(f=>readF(f,true,'context')))
         ],
         review_mode:reviewMode,
-        user_context:(document.getElementById('user-context')?.value||'').trim()
+        user_context:(document.getElementById('user-context')?.value||'').trim(),
+        priority_questions:(priorityQuestions=getPriorityQuestions())
       };
     }catch(e){
       showExpressError(1,'Could not read documents: '+(e.message||e));
@@ -3240,7 +3325,7 @@
     if(analysisMode!=='express')startSbsLoadingTimers(stage);
 
     try{
-      const payload={stage,history:hist,user_message:followOn||'',document_type:docType,instrument_type:instrumentType,temporal_context:temporalContext,change_types:changeTypes,country_scope:countryScope,is_mpa:isMpa,review_mode:reviewMode,process_type:processType,user_context:(document.getElementById('user-context')?.value||'').trim(),uploaded_doc_names:[...pF.map(f=>f.name),...pkF.map(f=>f.name),...cF.map(f=>f.name)],country_classification:countryClassification,context_flags:contextFlags,sector_context:sectorContext};
+      const payload={stage,history:hist,user_message:followOn||'',document_type:docType,instrument_type:instrumentType,temporal_context:temporalContext,change_types:changeTypes,country_scope:countryScope,is_mpa:isMpa,review_mode:reviewMode,process_type:processType,user_context:(document.getElementById('user-context')?.value||'').trim(),uploaded_doc_names:[...pF.map(f=>f.name),...pkF.map(f=>f.name),...cF.map(f=>f.name)],country_classification:countryClassification,context_flags:contextFlags,sector_context:sectorContext,priority_questions:(priorityQuestions=getPriorityQuestions())};
       // Attach session prompt override if user has edited this stage's prompt
       if(sessionPrompts[stage]){
         payload.prompt_override = sessionPrompts[stage];
@@ -3999,6 +4084,7 @@
 
     if(isLast){
       document.getElementById('refine-area').innerHTML=`
+        <div id="priority-questions-section"></div>
         <div class="followon-card ani">
           <div class="refine-lbl">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -4161,7 +4247,7 @@
       const res = await fetch('/api/run-followon', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({messages}),
+        body: JSON.stringify({messages, priority_responses: (focusQuestionsResult && focusQuestionsResult.responses) || []}),
         signal: _followonAbort.signal
       });
       const reader = res.body.getReader();
@@ -4481,6 +4567,7 @@
       p4r_watch: p4rWatch || [],
       regional_watch: regionalWatch || [],
       horizon_considerations: horizonConsiderations || '',
+      focus_questions: focusQuestionsResult || null,
       metadata: {
         date_str: dateStr,
         classification_category: cat,
@@ -4595,6 +4682,25 @@
       stageThreePriorities.forEach((pr,i)=>{
         body += _buildExportPriorityCard(pr, i, stageThreePriorities.length);
       });
+    }
+    // ── Responses to your priority points ──
+    if(focusQuestionsResult && (focusQuestionsResult.responses||[]).length){
+      const ov=focusQuestionsResult.overview||'';
+      body += `<h2 class="exp-section-hdr">Responses to your priority points</h2>`;
+      body += `<div style="background:#f0f9ff;border:1px solid #bae6fd;border-left:4px solid #009FDA;border-radius:8px;padding:14px 16px;margin-bottom:16px">`;
+      if(ov) body += `<p style="font-size:13px;line-height:1.6;color:#334155;margin:0 0 12px">${esc(ov)}</p>`;
+      focusQuestionsResult.responses.forEach((r,i)=>{
+        const lp=(r.linked_priorities||[]).filter(Boolean);
+        const ans=(r.direct_answer||'').split(/\n\s*\n/).map(p=>p.trim()).filter(Boolean)
+          .map(p=>`<p style="margin:0 0 6px">${esc(p)}</p>`).join('');
+        body += `<div style="padding:10px 0;${i>0?'border-top:1px solid #dbeafe':''}">
+          <h3 style="margin:0 0 4px;font-size:14px"><span style="color:#009FDA">${i+1}.</span> ${esc(r.question||'')}</h3>
+          ${ans}
+          ${lp.length?`<p style="font-size:12px;margin:0 0 4px"><strong>Linked recommendations:</strong> insights above connect to ${lp.map(esc).join('; ')}</p>`:''}
+          ${r.confidence_gap_note?`<p style="font-size:11px;color:#888;font-style:italic;margin:0">Note: ${esc(r.confidence_gap_note)}</p>`:''}
+        </div>`;
+      });
+      body += `</div>`;
     }
 
     // ── Mid-Cycle FCV Watch (AF / Restructuring) ──
@@ -4730,7 +4836,8 @@ ${body}
   }
 
   function reset(){
-    pF=[];cF=[];hist=[];curS=0;busy=false;stageOutputs={};stageHists={};researchBrief='';researchCountry='';
+    pF=[];cF=[];hist=[];curS=0;busy=false;stageOutputs={};stageHists={};researchBrief='';researchCountry='';priorityQuestions=[];focusQuestionsResult=null;pqPanelEnabled=true;
+    { const _pc=document.getElementById('pq-confirm'); if(_pc){_pc.innerHTML='';_pc.style.display='none';} }
     ['stage2_timestamp','stage3_timestamp','stage3_consistency_dismissed'].forEach(k=>localStorage.removeItem(k));
     document.getElementById('upload-panel').style.display='block';
     document.getElementById('analysis-panel').style.display='none';
@@ -4869,6 +4976,12 @@ ${body}
 
   // ── Stage output tracking ─────────────────────────────────────────────────
   let stageOutputs = {};  // {stageNum: result_text} — used by goBack()
+  // Priority Points feature
+  let priorityQuestions = [];      // snapshot of the points sent on the current run
+  let focusQuestionsResult = null; // parsed {responses[], summary} from /api/run-priority-questions
+  let _pqInFlight = false;
+  let pqPanelEnabled = true;       // confirm-strip checkbox state (default ON when points detected)
+  let _pqDetectTimer = null;       // debounce handle for detection
   let stageHists = {};    // {stageNum: hist_snapshot} — used to restore history on goBack()
   let stageGapTable = null;
   let stageRiskExposure = null;
@@ -5009,6 +5122,7 @@ ${body}
   };
 
   function initStage3UI(){
+    maybeRunPriorityQuestions();
     if(!stageThreePriorities.length) return;
     currentPriority = 0;
     renderPrioritiesIntro();
@@ -5019,6 +5133,96 @@ ${body}
     if(horizonConsiderations && horizonConsiderations.trim()){
       renderHorizonPanel(horizonConsiderations);
     }
+  }
+
+  async function maybeRunPriorityQuestions(force){
+    const container=document.getElementById('priority-questions-section');
+    if(!container) return;
+    if(!priorityQuestions.length){ container.innerHTML=''; return; }
+    if(focusQuestionsResult && !force){ renderPriorityQuestions(focusQuestionsResult); return; }
+    if(_pqInFlight) return;
+    _pqInFlight=true;
+
+    container.innerHTML=`<div class="pq-panel ani">
+      <div class="pq-hdr">Responses to your priority points</div>
+      <div class="pq-loading"><span class="dot active"></span>Answering your ${priorityQuestions.length} priority point${priorityQuestions.length!==1?'s':''} using the completed analysis…</div>
+    </div>`;
+
+    const body={
+      priority_questions:priorityQuestions,
+      user_context:(document.getElementById('user-context')?.value||'').trim(),
+      stage1_output:stageOutputs[1]||'',
+      stage2_output:stageOutputs[2]||'',
+      stage2_ratings:{sensitivity_rating:fcvRating||'',responsiveness_rating:fcvResponsivenessRating||''},
+      stage3_output:stageOutputs[3]||'',
+      stage3_priorities:{fcv_rating:fcvRating||'',priorities:stageThreePriorities||[]}
+    };
+
+    const ac=new AbortController();
+    const to=setTimeout(()=>ac.abort(new Error('Priority points timed out.')), 5*60*1000);
+    try{
+      const res=await fetch('/api/run-priority-questions',{
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(body), signal:ac.signal
+      });
+      const reader=res.body.getReader(); const dec=new TextDecoder();
+      let buf='', parsed=null;
+      while(true){
+        const {done,value}=await reader.read(); if(done) break;
+        buf+=dec.decode(value,{stream:true});
+        const lines=buf.split('\n'); buf=lines.pop();
+        for(const line of lines){
+          if(!line.startsWith('data: ')) continue;
+          try{
+            const d=JSON.parse(line.slice(6));
+            if(d.done){ parsed=d.focus_questions||null; }
+            if(d.error){ throw new Error(d.error); }
+          }catch(e){ if(e instanceof SyntaxError) continue; throw e; }
+        }
+      }
+      clearTimeout(to);
+      focusQuestionsResult=parsed;
+      if(parsed && !parsed.error && (parsed.responses||[]).length){ renderPriorityQuestions(parsed); }
+      else { renderPriorityQuestionsError(); }
+    }catch(e){
+      clearTimeout(to);
+      renderPriorityQuestionsError();
+    }finally{
+      _pqInFlight=false;
+    }
+  }
+
+  function renderPriorityQuestions(parsed){
+    const c=document.getElementById('priority-questions-section'); if(!c) return;
+    const rs=(parsed&&parsed.responses)||[];
+    if(!rs.length){ renderPriorityQuestionsError(); return; }
+    const overview=(parsed&&parsed.overview)||'';
+    const items=rs.map((r,i)=>{
+      const lp=(r.linked_priorities||[]).filter(Boolean);
+      const ans=(r.direct_answer||'').split(/\n\s*\n/).map(p=>p.trim()).filter(Boolean)
+        .map(p=>`<div class="pq-a">${esc(p)}</div>`).join('');
+      return `<div class="pq-item">
+        <div class="pq-q"><span class="pq-num">${i+1}.</span>${esc(r.question||'')}</div>
+        ${ans}
+        ${lp.length?`<div class="pq-field"><span class="pq-lbl">Linked recommendations:</span> insights above connect to ${lp.map(esc).join('; ')}</div>`:''}
+        ${r.confidence_gap_note?`<div class="pq-note">Note: ${esc(r.confidence_gap_note)}</div>`:''}
+      </div>`;
+    }).join('');
+    c.innerHTML=`<div class="pq-panel ani">
+      <div class="pq-hdr">Responses to your priority points</div>
+      ${overview?`<p class="pq-intro">${esc(overview)}</p>`:''}
+      ${items}
+    </div>`;
+  }
+
+  function renderPriorityQuestionsError(){
+    const c=document.getElementById('priority-questions-section'); if(!c) return;
+    c.innerHTML=`<div class="pq-panel ani">
+      <div class="pq-hdr">Responses to your priority points</div>
+      <div class="callout warn"><div class="callout-body">Couldn't generate the responses to your priority points. The main analysis above is unaffected.
+        <button class="btn btn-ghost btn-sm" style="margin-left:8px" onclick="maybeRunPriorityQuestions(true)">Retry</button>
+      </div></div>
+    </div>`;
   }
 
   function renderHorizonPanel(text){
@@ -5911,7 +6115,7 @@ ${body}
     const originalFetch = window.fetch.bind(window);
     window.fetch = function (input, init) {
       const url = typeof input === 'string' ? input : (input && input.url) || '';
-      const target = ['/api/run-express', '/api/run-stage', '/api/run-deeper', '/api/run-followon'];
+      const target = ['/api/run-express', '/api/run-stage', '/api/run-deeper', '/api/run-followon', '/api/run-priority-questions'];
       const shouldInject = target.some(path => url.includes(path));
 
       if (!shouldInject || !init || !init.body || typeof init.body !== 'string') {
