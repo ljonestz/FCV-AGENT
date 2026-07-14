@@ -64,41 +64,54 @@ def test_validator_does_not_flag_common_words_containing_sep():
     assert violations == []
 
 
-def test_repair_calls_model_once_and_returns_clean_text(monkeypatch):
+def test_repair_makes_no_llm_call_and_returns_clean_text(monkeypatch):
+    """Repair is a deterministic scrub only — it must NOT call the LLM.
+
+    The previous implementation made a blocking, non-streaming rewrite call
+    after the SSE stream had ended; for PforR/DPO (whose long Stage 2/3 outputs
+    always leak ESS/SEP vocabulary) that silent 1.5-3 min gap pushed the total
+    request past the frontend abort budget, timing out Stage 2 and Stage 3.
+    """
     from app import repair_vocabulary_violations
     import app as app_module
 
     calls = {"count": 0}
 
-    class _FakeContent:
-        def __init__(self, text):
-            self.text = text
+    def _boom_client():
+        calls["count"] += 1
+        raise AssertionError("repair must not call the LLM")
 
-    class _FakeResponse:
-        def __init__(self, text):
-            self.content = [_FakeContent(text)]
-
-    class _FakeMessages:
-        def create(self, **kwargs):
-            calls["count"] += 1
-            return _FakeResponse(
-                "The ESSA identifies SEA/SH risk under Core Principle #6; "
-                "the PAP commits to strengthening GRM access via the ESMS."
-            )
-
-    class _FakeClient:
-        messages = _FakeMessages()
-
-    monkeypatch.setattr(app_module, "get_client", lambda: _FakeClient())
+    monkeypatch.setattr(app_module, "get_client", _boom_client)
 
     dirty_text = "The ESCP should include a time-bound SEA/SH Action Plan under ESS4."
     violations = ["ESCP", "ESS4"]
     repaired = repair_vocabulary_violations(dirty_text, "PforR", violations, stage_num=2)
 
-    assert calls["count"] == 1
+    assert calls["count"] == 0
     assert "ESCP" not in repaired
     assert "ESS4" not in repaired
-    assert "ESSA" in repaired
+
+
+def test_repair_scrubs_all_banned_terms_including_uncovered_ess(monkeypatch):
+    """Every banned term must be scrubbed, including ESS1/3/5-10 and SEP.
+
+    The scrub map previously only covered ESS2/ESS4, so a PforR output citing
+    e.g. ESS1, ESS6 or ESS10 would pass through the scrub un-repaired.
+    """
+    from app import repair_vocabulary_violations, validate_instrument_vocabulary
+    import app as app_module
+
+    monkeypatch.setattr(app_module, "get_client",
+                        lambda: (_ for _ in ()).throw(AssertionError("no LLM")))
+
+    for instrument in ("PforR", "DPO"):
+        dirty = ("Under ESS1, ESS2, ESS3, ESS4, ESS5, ESS6, ESS7, ESS8, ESS9 and "
+                 "ESS10 the ESCP and the SEP (Stakeholder Engagement Plan) should "
+                 "be strengthened via the Environmental and Social Commitment Plan.")
+        violations = validate_instrument_vocabulary(dirty, instrument)
+        assert violations  # sanity: dirty text does violate
+        repaired = repair_vocabulary_violations(dirty, instrument, violations, stage_num=3)
+        assert validate_instrument_vocabulary(repaired, instrument) == [], instrument
 
 
 def test_repair_falls_back_to_scrub_when_model_repair_still_dirty(monkeypatch):

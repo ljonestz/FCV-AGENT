@@ -1330,12 +1330,24 @@ def validate_instrument_vocabulary(output_text: str, instrument_type: str) -> li
     return found
 
 
+# Deterministic replacement map for the silent vocabulary scrub. Every banned
+# term in INSTRUMENT_VOCABULARY_RULES must have an entry here so the scrub can
+# fully clean the output without an LLM call. Word-boundary matching (\b) means
+# "ESS1" never matches inside "ESS10", so ordering is irrelevant.
 _VOCABULARY_SCRUB_MAP: dict[str, dict[str, str]] = {
     "PFORR": {
         "ESCP": "the Program Action Plan (PAP)",
         "Environmental and Social Commitment Plan": "the Program Action Plan (PAP)",
         "ESS4": "the ESSA findings on community health and safety",
+        "ESS10": "the borrower's GRM",
+        "ESS1": "the ESSA",
         "ESS2": "the ESSA",
+        "ESS3": "the ESSA",
+        "ESS5": "the ESSA",
+        "ESS6": "the ESSA",
+        "ESS7": "the ESSA",
+        "ESS8": "the ESSA",
+        "ESS9": "the ESSA",
         "SEP": "the borrower's GRM",
         "Stakeholder Engagement Plan": "the borrower's GRM",
     },
@@ -1343,7 +1355,15 @@ _VOCABULARY_SCRUB_MAP: dict[str, dict[str, str]] = {
         "ESCP": "the Program Document's policy matrix",
         "Environmental and Social Commitment Plan": "the Program Document's policy matrix",
         "ESS4": "the PSIA",
+        "ESS10": "the Program Document",
+        "ESS1": "the PSIA",
         "ESS2": "the PSIA",
+        "ESS3": "the PSIA",
+        "ESS5": "the PSIA",
+        "ESS6": "the PSIA",
+        "ESS7": "the PSIA",
+        "ESS8": "the PSIA",
+        "ESS9": "the PSIA",
         "SEP": "the Program Document",
         "Stakeholder Engagement Plan": "the Program Document",
     },
@@ -1356,55 +1376,37 @@ def repair_vocabulary_violations(
     violations: list[str],
     stage_num: int,
 ) -> str:
-    """Silently regenerate any output text containing banned instrument vocabulary.
+    """Silently scrub banned instrument vocabulary from Stage 2/3 output.
 
-    Runs one non-streaming Anthropic call asking the model to rewrite the
-    violating vocabulary only, preserving all delimiter blocks and factual
-    content. Falls back to a deterministic regex scrub if the model repair
-    still leaves a banned term in place, or if the API call itself fails.
-    Never raises and never surfaces an error to the user — per product
-    decision, vocabulary violations are repaired silently. Any residual
-    scrub is logged server-side only (Render logs), never shown in the UI.
+    Deterministic, in-process regex scrub only — NO LLM call. PforR and
+    DPF/DPO must never surface ESF/ESCP/ESS/SEP vocabulary, but the earlier
+    implementation repaired violations with a blocking, non-streaming Anthropic
+    rewrite that ran *after* the SSE stream had already ended. For these two
+    instruments — whose long Stage 2/3 outputs almost always leak at least one
+    ESS/SEP term — that silent 1.5-3 min gap (no keepalives reaching the client)
+    pushed the total request past the frontend abort budget, timing out Stage 2
+    and Stage 3. It also used max_tokens=8000 and so truncated any output longer
+    than ~8k tokens, dropping the trailing JSON priorities block.
+
+    The scrub runs in well under a millisecond, covers every banned term via
+    _VOCABULARY_SCRUB_MAP, and can never truncate the output. `violations` is
+    retained for call-site compatibility but is no longer needed (the scrub map
+    is keyed on the instrument, not the specific hits). Never raises; any
+    residual banned term is logged server-side only, never surfaced to the user.
     """
     key = _vocabulary_rule_key(instrument_type)
-    rules = INSTRUMENT_VOCABULARY_RULES.get(key) if key else None
-    label = rules["label"] if rules else instrument_type
+    if not key:
+        return output_text
 
-    repaired = output_text
-    try:
-        repair_prompt = (
-            f"The following FCV screening output for a {label} operation incorrectly uses "
-            f"ESF/ESCP/ESS/SEP vocabulary that does not apply to this instrument: "
-            f"{', '.join(violations)}. Rewrite the ENTIRE text below so it uses only "
-            "vocabulary appropriate to the instrument (for PforR: ESSA, PAP, ESMS, DLI, POM; "
-            "for DPF/DPO: PSIA, Program Document, policy matrix, LDP). Preserve all delimiter "
-            "blocks (%%%...%%%) exactly, all factual findings, and the overall structure. "
-            "Only change the vocabulary that incorrectly references ESF/ESCP/ESS/SEP "
-            f"instruments.\n\n--- TEXT TO REWRITE ---\n{output_text}"
-        )
-        response = get_client().messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=8000,
-            messages=[{"role": "user", "content": repair_prompt}],
-        )
-        if response.content:
-            repaired = response.content[0].text
-    except Exception:
-        repaired = output_text  # fall through to deterministic scrub below
-
-    remaining = validate_instrument_vocabulary(repaired, instrument_type)
-    if not remaining:
-        return repaired
-
-    scrub_map = _VOCABULARY_SCRUB_MAP.get(key, {}) if key else {}
-    scrubbed = repaired
+    scrub_map = _VOCABULARY_SCRUB_MAP.get(key, {})
+    scrubbed = output_text
     for term, replacement in scrub_map.items():
         scrubbed = re.sub(r'\b' + re.escape(term) + r'\b', replacement, scrubbed, flags=re.IGNORECASE)
 
     still_bad = validate_instrument_vocabulary(scrubbed, instrument_type)
     if still_bad:
         app.logger.warning(
-            "Vocabulary repair incomplete: instrument=%s stage=%s remaining_terms=%s",
+            "Vocabulary scrub incomplete: instrument=%s stage=%s remaining_terms=%s",
             instrument_type, stage_num, still_bad,
         )
     return scrubbed
