@@ -409,5 +409,18 @@ def test_active_lens_output_is_capped_at_five_priorities_only():
     active = extract_priorities(wrapped, active_lens_ids=['climate'])
     core_only = extract_priorities(wrapped)
 
+    payload['priorities'].append({
+        **payload['priorities'][0],
+        'title': 'Mandatory SEA/SH standalone safeguard',
+    })
+    with_exception = extract_priorities(
+        f"%%%JSON_START%%%\n{json.dumps(payload)}\n%%%JSON_END%%%",
+        active_lens_ids=['climate'],
+    )
+
     assert len(active['priorities']) == 5
     assert len(core_only['priorities']) == 6
+    assert len(with_exception['priorities']) == 6
+    assert with_exception['priorities'][-1]['title'] == (
+        'Mandatory SEA/SH standalone safeguard'
+    )

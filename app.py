@@ -933,6 +933,10 @@ _REQUIRED_PRIORITY_FIELDS = [
     'governance_level',
 ]
 
+_MANDATORY_STANDALONE_PRIORITY = re.compile(
+    r"\b(?:gender[\s-]*fcv|sea\s*/\s*sh)\b", re.IGNORECASE
+)
+
 # Null-equivalent placeholder values the Stage 3 prompt emits for fields with no
 # content ("If a field has no content, write 'Not identified'"). Used to strip
 # instrument-inapplicable metadata (change_type/restructuring_level/priority_scope)
@@ -4524,10 +4528,24 @@ def extract_priorities(
 
         priorities.append(pr)
 
-    # Active-lens notes have a stricter cross-cutting ceiling. Preserve the
-    # model's ranked order and leave core-only parsing byte-for-byte compatible.
+    # Active-lens notes cap substantive priorities while retaining the existing
+    # mandatory Gender-FCV and SEA/SH standalone-card exceptions.
     if active_lens_ids:
-        priorities = priorities[:5]
+        bounded_priorities = []
+        substantive_count = 0
+        for priority in priorities:
+            marker_text = " ".join((
+                str(priority.get('title', '')),
+                str(priority.get('fcv_dimension', '')),
+            ))
+            is_mandatory_exception = bool(
+                _MANDATORY_STANDALONE_PRIORITY.search(marker_text)
+            )
+            if is_mandatory_exception or substantive_count < 5:
+                bounded_priorities.append(priority)
+                if not is_mandatory_exception:
+                    substantive_count += 1
+        priorities = bounded_priorities
 
     # Extract risk_exposure from nested object (new schema)
     risk_exposure_raw = data.get('risk_exposure', {})
