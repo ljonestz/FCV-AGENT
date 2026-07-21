@@ -54,7 +54,8 @@ def normalize_lens_context_sources(
 
     active = set(active_lens_ids)
     normalized: list[dict[str, str]] = []
-    for source in sources or ():
+    safe_sources = sources if isinstance(sources, (list, tuple)) else ()
+    for source in safe_sources:
         if not isinstance(source, dict):
             continue
         source_id = _bounded_text(source.get("id"), 100)

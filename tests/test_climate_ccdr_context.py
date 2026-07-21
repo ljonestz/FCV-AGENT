@@ -8,6 +8,7 @@ from sector_lenses.context import (
     CCDR_CONTEXT_START,
     extract_ccdr_context,
     has_uploaded_ccdr,
+    normalize_lens_context_sources,
 )
 
 
@@ -127,3 +128,7 @@ def test_ccdr_prompt_context_is_optional_and_labels_context_evidence():
     assert "contextual evidence rather than project evidence" in block
     assert "Drought affects project areas." in block
     assert app_module.build_ccdr_prompt_context([]) == ""
+
+
+def test_dynamic_context_scalar_payload_is_ignored():
+    assert normalize_lens_context_sources(1, ["climate"]) == []

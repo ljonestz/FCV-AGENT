@@ -171,6 +171,37 @@ def test_hidden_stage1_evidence_is_validated_against_active_lenses():
     assert [item["lens_id"] for item in evidence["lenses"]] == ["test-agriculture"]
 
 
+def test_hidden_diagnostics_treat_scalar_collections_as_empty():
+    evidence = extract_lens_evidence(
+        "%%%LENS_EVIDENCE_START%%%" + json.dumps({"lenses": [{
+            "lens_id": "climate",
+            "evidence_requests": None,
+            "research_intents": "not-a-list",
+        }]}) + "%%%LENS_EVIDENCE_END%%%",
+        ["climate"],
+    )
+    diagnostic = extract_lens_diagnostic(
+        "%%%LENS_DIAGNOSTIC_START%%%" + json.dumps({
+            "lenses": [],
+            "findings": [{
+                "lens_ids": None,
+                "core_mappings": "dnh:1",
+                "evidence": 7,
+                "source_ids": None,
+                "mechanism": "x",
+                "geography": "y",
+                "action_target": "z",
+            }],
+        }) + "%%%LENS_DIAGNOSTIC_END%%%",
+        ["climate"],
+    )
+
+    assert evidence["lenses"][0]["evidence_requests"] == []
+    assert evidence["lenses"][0]["research_intents"] == []
+    assert diagnostic["error"] is False
+    assert diagnostic["findings"] == []
+
+
 def test_incomplete_hidden_block_never_leaks_into_display_text():
     text = "Visible assessment\n%%%LENS_DIAGNOSTIC_START%%%\npartial hidden JSON"
 

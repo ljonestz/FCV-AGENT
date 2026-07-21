@@ -393,3 +393,21 @@ def test_lens_provenance_is_filtered_bounded_and_has_no_type_quota():
     assert priority['lens_ids'] == ['climate']
     assert len(priority['lens_relevance']) == 500
     assert 'priority_type' not in priority
+
+
+def test_active_lens_output_is_capped_at_five_priorities_only():
+    fixture = _make_timing_fixture('supervision')
+    payload = json.loads(re.search(
+        r'%%%JSON_START%%%(.*?)%%%JSON_END%%%', fixture, re.DOTALL
+    ).group(1))
+    payload['priorities'] = [
+        {**payload['priorities'][0], 'title': f'Priority {index + 1}'}
+        for index in range(6)
+    ]
+    wrapped = f"%%%JSON_START%%%\n{json.dumps(payload)}\n%%%JSON_END%%%"
+
+    active = extract_priorities(wrapped, active_lens_ids=['climate'])
+    core_only = extract_priorities(wrapped)
+
+    assert len(active['priorities']) == 5
+    assert len(core_only['priorities']) == 6

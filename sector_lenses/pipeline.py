@@ -142,8 +142,16 @@ def extract_lens_evidence(text: str, active_lens_ids: Iterable[str]) -> dict[str
             continue
         lenses.append({
             "lens_id": item["lens_id"],
-            "evidence_requests": [str(value) for value in item.get("evidence_requests", []) if str(value).strip()],
-            "research_intents": [str(value) for value in item.get("research_intents", []) if str(value).strip()],
+            "evidence_requests": [
+                str(value) for value in _list_values(
+                    item.get("evidence_requests")
+                ) if str(value).strip()
+            ],
+            "research_intents": [
+                str(value) for value in _list_values(
+                    item.get("research_intents")
+                ) if str(value).strip()
+            ],
         })
     return {"error": False, "message": "", "lenses": lenses}
 
@@ -288,15 +296,27 @@ def extract_lens_diagnostic(
     for raw in raw_findings[:20]:
         if not isinstance(raw, dict):
             continue
-        lens_ids = [value for value in raw.get("lens_ids", []) if value in active]
-        mappings = [value for value in raw.get("core_mappings", []) if _VALID_MAPPING.match(str(value))]
+        lens_ids = [
+            value for value in _list_values(raw.get("lens_ids"))
+            if value in active
+        ]
+        mappings = [
+            value for value in _list_values(raw.get("core_mappings"))
+            if _VALID_MAPPING.match(str(value))
+        ]
         if not lens_ids or not mappings:
             continue
         status = str(raw.get("status", "not_yet_addressed"))
         if status not in _VALID_STATUSES:
             status = "not_yet_addressed"
-        evidence = [str(value).strip()[:500] for value in raw.get("evidence", []) if str(value).strip()][:5]
-        source_ids = list(dict.fromkeys(str(value) for value in raw.get("source_ids", [])))[:10]
+        evidence = [
+            str(value).strip()[:500]
+            for value in _list_values(raw.get("evidence"))
+            if str(value).strip()
+        ][:5]
+        source_ids = list(dict.fromkeys(
+            str(value) for value in _list_values(raw.get("source_ids"))
+        ))[:10]
         if source_ids_by_lens is not None:
             allowed_sources = set().union(*(source_ids_by_lens.get(lens_id, set()) for lens_id in lens_ids))
             source_ids = [value for value in source_ids if value in allowed_sources]

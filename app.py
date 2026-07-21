@@ -4524,6 +4524,11 @@ def extract_priorities(
 
         priorities.append(pr)
 
+    # Active-lens notes have a stricter cross-cutting ceiling. Preserve the
+    # model's ranked order and leave core-only parsing byte-for-byte compatible.
+    if active_lens_ids:
+        priorities = priorities[:5]
+
     # Extract risk_exposure from nested object (new schema)
     risk_exposure_raw = data.get('risk_exposure', {})
     if isinstance(risk_exposure_raw, dict):
