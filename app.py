@@ -15,14 +15,17 @@ from werkzeug.exceptions import RequestEntityTooLarge
 import anthropic
 from fcv_distillation import distill_doc_parts_stream
 from sector_lenses import (
+    CCDR_RESEARCH_INSTRUCTIONS,
     LENS_DIAGNOSTIC_END,
     LENS_DIAGNOSTIC_START,
     LENS_EVIDENCE_END,
     LENS_EVIDENCE_START,
     build_stage_slice,
     detect_lens_suggestions,
+    extract_ccdr_context,
     extract_lens_diagnostic,
     extract_lens_evidence,
+    has_uploaded_ccdr,
     lens_catalogue,
     load_registry,
     merge_lens_findings,
@@ -5073,13 +5076,20 @@ def extract_sector_name(project_doc_text: str, api_client) -> str:
         return "Development"
 
 
-def run_fcv_web_research(country: str, sector: str, api_client) -> dict:
+def run_fcv_web_research(
+    country: str,
+    sector: str,
+    api_client,
+    include_ccdr: bool = False,
+) -> dict:
     """
     Run automated FCV web research for the given country using the Anthropic
     web search tool. Returns a dict with 'brief' (str) and 'country' (str).
     Timeout handled by the httpx client (get_research_client, 60s total).
     """
     prompt = FCV_RESEARCH_PROMPT.format(country=country, sector=sector)
+    if include_ccdr:
+        prompt += "\n\n" + CCDR_RESEARCH_INSTRUCTIONS.format(country=country)
     try:
         resp = api_client.beta.messages.create(
             model="claude-sonnet-4-6",
@@ -5087,7 +5097,7 @@ def run_fcv_web_research(country: str, sector: str, api_client) -> dict:
             tools=[{
                 "type": "web_search_20250305",
                 "name": "web_search",
-                "max_uses": 4
+                "max_uses": 5 if include_ccdr else 4
             }],
             messages=[{"role": "user", "content": prompt}],
             betas=["web-search-2025-03-05"]
@@ -5097,13 +5107,70 @@ def run_fcv_web_research(country: str, sector: str, api_client) -> dict:
             if hasattr(block, 'type') and block.type == 'text':
                 brief_parts.append(block.text)
         brief = '\n'.join(brief_parts).strip()
-        return {'brief': brief, 'country': country}
+        brief, ccdr_context = extract_ccdr_context(brief, country)
+        return {
+            'brief': brief,
+            'country': country,
+            'ccdr_context': ccdr_context,
+        }
+
+
     except Exception as e:
         print(f"[WebResearch ERROR] {type(e).__name__}: {e}", flush=True)
         return {
             'brief': f'*Web research for {country} could not be completed — proceeding without supplemental research.*',
-            'country': country
+            'country': country,
+            'ccdr_context': {},
         }
+
+
+def should_include_ccdr_context(
+    active_lenses: list[dict[str, Any]],
+    doc_parts: list[dict[str, Any]],
+) -> bool:
+    """Gate optional CCDR lookup on server-resolved Climate selection."""
+
+    active_ids = {
+        item.get("id") for item in active_lenses if isinstance(item, dict)
+    }
+    return "climate" in active_ids and not has_uploaded_ccdr(doc_parts)
+
+
+def research_cache_key(
+    country: str,
+    sector: str,
+    include_ccdr: bool,
+) -> str:
+    """Keep core and Climate-enriched research cache entries separate."""
+
+    return (
+        f"{country.lower().strip()}::{sector.lower().strip()}::"
+        f"ccdr={int(include_ccdr)}"
+    )
+
+
+def build_ccdr_prompt_context(
+    lens_context_sources: list[dict[str, Any]],
+) -> str:
+    """Format one validated CCDR as optional contextual evidence."""
+
+    source = next((
+        item for item in lens_context_sources
+        if isinstance(item, dict)
+        and item.get("id") == "context-ccdr"
+        and item.get("summary")
+    ), None)
+    if source is None:
+        return ""
+    return (
+        "--- OPTIONAL CCDR CONTEXT ---\n"
+        "Use this as contextual evidence rather than project evidence. "
+        "Apply it only where a specific project mechanism is established; "
+        "do not make the CCDR a routine recommendation.\n\n"
+        f"{source.get('title', 'Country Climate and Development Report')}: "
+        f"{source['summary']}\n"
+        "--- END OPTIONAL CCDR CONTEXT ---"
+    )
 
 
 # ── Flask app ────────────────────────────────────────────────────────────────
@@ -5794,6 +5861,7 @@ def run_stage():
         def workflow_events():
             research_brief_text = ''
             research_country = ''
+            lens_context_sources = list(data.get('lens_context_sources') or [])
             try:
                 yield f"data: {json.dumps({'assessment_id': assessment_id})}\n\n"
                 yield f"data: {json.dumps({'ping': True})}\n\n"
@@ -5819,20 +5887,33 @@ def run_stage():
                             research_country = country_future.result()
                             research_sector = sector_future.result()
 
-                        cache_key = f"{research_country.lower().strip()}::{research_sector.lower().strip()}"
+                        include_ccdr = should_include_ccdr_context(
+                            lens_context['active_lenses'], doc_parts
+                        )
+                        cache_key = research_cache_key(
+                            research_country, research_sector, include_ccdr
+                        )
                         if cache_key in _research_cache:
                             research_data = _research_cache[cache_key]
                             research_brief_text = research_data['brief']
                             yield f"data: {json.dumps({'research_status': 'cached', 'country': research_country})}\n\n"
                         else:
                             yield f"data: {json.dumps({'research_status': 'searching', 'country': research_country})}\n\n"
-                            research_data = run_fcv_web_research(research_country, research_sector, get_research_client())
+                            research_data = run_fcv_web_research(
+                                research_country,
+                                research_sector,
+                                get_research_client(),
+                                include_ccdr=include_ccdr,
+                            )
                             research_brief_text = research_data['brief']
                             _research_cache[cache_key] = research_data
+                        ccdr_context = research_data.get('ccdr_context') or {}
+                        lens_context_sources = [ccdr_context] if ccdr_context else []
 
                         yield f"data: {json.dumps({'research_status': 'complete', 'country': research_country, 'brief': research_brief_text})}\n\n"
                     except Exception:
                         research_brief_text = ''
+                        lens_context_sources = []
                         yield f"data: {json.dumps({'research_status': 'error', 'country': research_country})}\n\n"
                     # ── End Research Phase ────────────────────────────────────
 
@@ -5882,6 +5963,14 @@ def run_stage():
                             + research_brief_text +
                             "\n--- END AUTOMATED WEB RESEARCH ---\n"
                         )})
+                    ccdr_prompt_context = build_ccdr_prompt_context(
+                        lens_context_sources
+                    )
+                    if ccdr_prompt_context:
+                        content_parts.append({
+                            "type": "text",
+                            "text": "\n\n" + ccdr_prompt_context + "\n",
+                        })
 
                     # Brief instrument recognition guide for Stage 1 identification
                     _instrument_recognition = "\n".join([
@@ -6080,6 +6169,7 @@ def run_stage():
                     'active_lenses': lens_context['active_lenses'],
                     'lens_warnings': lens_context['warnings'],
                     'lens_evidence': lens_evidence if stage == 1 else None,
+                    'lens_context_sources': lens_context_sources,
                 }
 
                 if stage == 2:
@@ -6268,6 +6358,7 @@ def run_express():
             sector_context = {}
             research_brief_text = ''
             research_country = ''
+            lens_context_sources = []
             conversation_history = []
             lens_diagnostic = {}
 
@@ -6360,6 +6451,15 @@ def run_express():
                 for w in extraction_warnings_express:
                     yield f"data: {json.dumps({'extraction_warning': w})}\n\n"
 
+                lens_context_s1 = build_lens_stage_context(analysis_state, 1)
+                analysis_state.active_lenses = [
+                    item['id'] for item in lens_context_s1['active_lenses']
+                ]
+                analysis_state.lens_versions = {
+                    item['id']: item['version']
+                    for item in lens_context_s1['active_lenses']
+                }
+
                 # ── Web research phase ──
                 try:
                     first_doc_text = doc_parts[0]['raw_text'] if doc_parts else ''
@@ -6371,20 +6471,33 @@ def run_express():
                         research_country = country_future.result()
                         research_sector = sector_future.result()
 
-                    cache_key = f"{research_country.lower().strip()}::{research_sector.lower().strip()}"
+                    include_ccdr = should_include_ccdr_context(
+                        lens_context_s1['active_lenses'], doc_parts
+                    )
+                    cache_key = research_cache_key(
+                        research_country, research_sector, include_ccdr
+                    )
                     if cache_key in _research_cache:
                         research_data = _research_cache[cache_key]
                         research_brief_text = research_data['brief']
                         yield f"data: {json.dumps({'research_status': 'cached', 'country': research_country})}\n\n"
                     else:
                         yield f"data: {json.dumps({'research_status': 'searching', 'country': research_country})}\n\n"
-                        research_data = run_fcv_web_research(research_country, research_sector, get_research_client())
+                        research_data = run_fcv_web_research(
+                            research_country,
+                            research_sector,
+                            get_research_client(),
+                            include_ccdr=include_ccdr,
+                        )
                         research_brief_text = research_data['brief']
                         _research_cache[cache_key] = research_data
+                    ccdr_context = research_data.get('ccdr_context') or {}
+                    lens_context_sources = [ccdr_context] if ccdr_context else []
 
                     yield f"data: {json.dumps({'research_status': 'complete', 'country': research_country, 'brief': research_brief_text})}\n\n"
                 except Exception:
                     research_brief_text = ''
+                    lens_context_sources = []
                     yield f"data: {json.dumps({'research_status': 'error', 'country': research_country})}\n\n"
 
                 # ── Assemble Stage 1 content_parts ──
@@ -6431,6 +6544,14 @@ def run_express():
                         + research_brief_text +
                         "\n--- END AUTOMATED WEB RESEARCH ---\n"
                     )})
+                ccdr_prompt_context = build_ccdr_prompt_context(
+                    lens_context_sources
+                )
+                if ccdr_prompt_context:
+                    content_parts.append({
+                        "type": "text",
+                        "text": "\n\n" + ccdr_prompt_context + "\n",
+                    })
 
                 # Brief instrument recognition guide for Stage 1 identification
                 _instrument_recognition = "\n".join([
@@ -6478,11 +6599,6 @@ def run_express():
                 pq_block = build_priority_questions_block(priority_questions, 1)
                 if pq_block:
                     stage1_prompt = stage1_prompt + pq_block
-                lens_context_s1 = build_lens_stage_context(analysis_state, 1)
-                analysis_state.active_lenses = [item['id'] for item in lens_context_s1['active_lenses']]
-                analysis_state.lens_versions = {
-                    item['id']: item['version'] for item in lens_context_s1['active_lenses']
-                }
                 if lens_context_s1['prompt']:
                     stage1_prompt += "\n\n--- ACTIVE SECTOR LENSES ---\n" + lens_context_s1['prompt']
                 content_parts.append({"type": "text", "text": stage1_prompt})
@@ -6541,7 +6657,7 @@ def run_express():
                 lens_evidence_s1 = extract_lens_evidence(
                     stage1_output, [item['id'] for item in lens_context_s1['active_lenses']]
                 ) if lens_context_s1['active_lenses'] else {}
-                yield f"data: {json.dumps({'stage_done': 1, 'result': stage1_display, 'history': conversation_history, 'research_brief': research_brief_text, 'research_country': research_country, 'doc_type': doc_type, 'instrument_type': instrument_type, 'temporal_context': temporal_context, 'process_type': process_type if is_impl else None, 'country_classification': country_classification, 'context_flags': context_flags, 'sector_context': sector_context, 'change_types': change_types, 'prior_actions': prior_actions, 'dlis': dlis, 'country_set': country_set, 'mpa_context': mpa_context, 'country_scope': _cscope_x, 'is_mpa': _is_mpa_x, 'review_mode': review_mode, 'active_lenses': lens_context_s1['active_lenses'], 'lens_warnings': lens_context_s1['warnings'], 'lens_evidence': lens_evidence_s1})}\n\n"
+                yield f"data: {json.dumps({'stage_done': 1, 'result': stage1_display, 'history': conversation_history, 'research_brief': research_brief_text, 'research_country': research_country, 'doc_type': doc_type, 'instrument_type': instrument_type, 'temporal_context': temporal_context, 'process_type': process_type if is_impl else None, 'country_classification': country_classification, 'context_flags': context_flags, 'sector_context': sector_context, 'change_types': change_types, 'prior_actions': prior_actions, 'dlis': dlis, 'country_set': country_set, 'mpa_context': mpa_context, 'country_scope': _cscope_x, 'is_mpa': _is_mpa_x, 'review_mode': review_mode, 'active_lenses': lens_context_s1['active_lenses'], 'lens_warnings': lens_context_s1['warnings'], 'lens_evidence': lens_evidence_s1, 'lens_context_sources': lens_context_sources})}\n\n"
 
                 # ════════════════════════════════════════════════════════════
                 # STAGE 2 — FCV Assessment

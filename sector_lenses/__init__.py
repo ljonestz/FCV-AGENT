@@ -22,6 +22,13 @@ from .models import (
     StageSlice,
 )
 from .registry import load_registry
+from .context import (
+    CCDR_CONTEXT_END,
+    CCDR_CONTEXT_START,
+    CCDR_RESEARCH_INSTRUCTIONS,
+    extract_ccdr_context,
+    has_uploaded_ccdr,
+)
 from .pipeline import (
     LENS_DIAGNOSTIC_END,
     LENS_DIAGNOSTIC_START,
@@ -57,8 +64,13 @@ __all__ = [
     "StageBudgets",
     "StageSlice",
     "build_stage_slice",
+    "CCDR_CONTEXT_END",
+    "CCDR_CONTEXT_START",
+    "CCDR_RESEARCH_INSTRUCTIONS",
     "estimate_tokens",
+    "extract_ccdr_context",
     "load_registry",
+    "has_uploaded_ccdr",
     "LENS_DIAGNOSTIC_END",
     "LENS_DIAGNOSTIC_START",
     "LENS_EVIDENCE_END",
