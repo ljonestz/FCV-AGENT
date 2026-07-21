@@ -7,6 +7,15 @@
 
 ## Key JavaScript Functions
 
+### Sector lenses
+- `loadLensCatalogue()` — fetches `/api/sector-lenses`; an empty catalogue keeps the selector hidden.
+- `renderLensSelector()` / `toggleLens(id)` — render ordered selection chips, enforce two lenses, show materially relevant suggestions, and lock changes once analysis starts.
+- `lensVersions()` — sends client-observed versions for mismatch detection; the backend remains authoritative.
+- `showLensWarnings()` — displays non-fatal unknown/disabled/version warnings while core analysis continues.
+- `renderLensDiagnostic()` — renders the parsed Stage 2 diagnostic with evidence, core mappings, and source IDs.
+- Session JSON is version 3 and persists `activeLenses`, `lensVersions`, and `lensDiagnostic`; older sessions load core-only.
+- Stage 3 priority cards render `lens_ids` badges with `lens_relevance` tooltips. DOCX payloads include active lenses and diagnostics for the appendix.
+
 ### Stage management
 - `runStage(stage, followOn=null)` — async; sends stage request to `/api/run-stage`; `followOn` used by Express mode
 - `updateSessionBar()` — refresh progress indicator
@@ -188,13 +197,14 @@ Both modes use identical prompts, code paths, and output quality. Express is a f
 
 **`switchToStepByStep(stage)`:** Bails from express, renders last completed stage in step-by-step mode.
 
-**Session persistence (v2 format):**
-- `saveSession()` includes `analysisMode`, `stageOutputs`, `stageHists`
+**Session persistence (v3 format):**
+- `saveSession()` includes `analysisMode`, `stageOutputs`, `stageHists`, ordered `activeLenses`, authoritative `lensVersions`, and `lensDiagnostic`
+- `loadSession()` treats v1/v2 files as core-only and requires a Stage 1 restart when an incomplete v3 file references a missing or changed lens version
 - `loadSession()` restores all three; missing `analysisMode` → `'stepbystep'` (v1 compat)
 - During express run, outputs/hists are best-effort writes to `localStorage.fcv_express_stageOutputs` / `fcv_express_stageHists`
-- Express resume IIFE on page load: if partial keys exist and Stage 3 missing, shows amber "Resume or restart?" banner
-- `resumeExpressRun()` / `discardExpressResume()` handle the two choices
+- Express recovery never claims to resume a later stage because browser `File` objects cannot survive reload. It preserves valid lens choices, asks for document re-upload, and requires a clean Stage 1 restart.
+- `restartExpressFromStage1()` clears partial outputs and diagnostics while retaining valid in-memory lens choices; `discardExpressRecovery()` also clears the choices
 
 ---
 
-*Last updated: 2026-07-14 - PforR timeout/payload hardening: per-stage Express abort budgets, `requestErrorMessage()`, `uploadPayloadLimitMessage()`, and Render payload-limit handling.*
+*Last updated: 2026-07-21 - sector-lens session v3 and fail-safe Express recovery.*

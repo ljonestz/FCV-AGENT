@@ -314,6 +314,20 @@
       display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;
     }
     .upload-hint{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
+    .lens-selector{margin:12px 32px 18px;padding:16px 18px;border:1px solid #cbd5e1;border-radius:10px;background:#f8fafc}
+    .lens-selector-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:10px}
+    .lens-selector-title{font-size:14px;font-weight:700;color:#0f172a}
+    .lens-selector-help{font-size:12px;color:#64748b;line-height:1.45;margin-top:3px}
+    .lens-options{display:flex;flex-wrap:wrap;gap:8px}
+    .lens-option{border:1px solid #94a3b8;background:#fff;color:#334155;border-radius:999px;padding:7px 12px;font-size:12px;cursor:pointer}
+    .lens-option.selected{border-color:#0071bc;background:#eaf6fc;color:#005b96;font-weight:700}
+    .lens-option:disabled{cursor:not-allowed;opacity:.65}
+    .lens-suggested{font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:#047857;margin-left:5px}
+    .lens-warning{font-size:12px;color:#92400e;margin-top:9px}
+    .lens-diagnostic-panel{border:1px solid #bae6fd;border-left:4px solid #0284c7;border-radius:8px;background:#f0f9ff;padding:14px 16px;margin:16px 0}
+    .lens-diagnostic-panel h3{font-size:14px;margin:0 0 8px;color:#075985}
+    .lens-diagnostic-item{font-size:12px;color:#334155;padding:8px 0;border-top:1px solid #dbeafe}
+    .lens-badge{display:inline-flex;align-items:center;padding:3px 8px;border-radius:999px;background:#ecfeff;color:#0e7490;border:1px solid #a5f3fc;font-size:10px;font-weight:700}
 
     /* ── Buttons ── */
     .btn{
@@ -2299,6 +2313,16 @@
     </div>
     <div id="debug-log" style="margin:0 32px 8px;font-size:11px;color:#666;min-height:16px"></div>
 
+    <section id="lens-selector" class="lens-selector" style="display:none" aria-label="Sector lenses">
+      <div class="lens-selector-head">
+        <div><div class="lens-selector-title">Add a sector lens <span style="font-weight:400;color:#64748b">(optional)</span></div>
+        <div class="lens-selector-help">Use up to two specialist lenses. Suggested lenses are based on the uploaded project document and can be removed or replaced before analysis starts.</div></div>
+        <span id="lens-count" class="lens-selector-help">0 of 2</span>
+      </div>
+      <div id="lens-options" class="lens-options"></div>
+      <div id="lens-warning" class="lens-warning" style="display:none"></div>
+    </section>
+
     <!-- ══ MODE SELECTION ══ -->
     <div class="mode-section" id="mode-section">
       <div class="mode-section-label">
@@ -2394,6 +2418,7 @@
   let countryClassification={};
   let contextFlags={};
   let sectorContext={};
+  let lensCatalogue=[],lensSuggestions=[],activeLenses=[],resolvedLensVersions={},lensDiagnostic={},lensSelectionTouched=false,lensSelectionLocked=false;
   let stageAppliedSnippets=[];
   let sbsTimerInterval=null,sbsMessageInterval=null,sbsStartTime=null,sbsMessageIdx=0;
   // Stage 3 (Recommendations) state is declared in the Stage 3 section below
@@ -2406,6 +2431,62 @@
       if(r.ok) fcvGlossary = await r.json();
     } catch(e) { /* silent — tooltips just won't appear */ }
   })();
+
+  let lensCatalogueReady=(async function loadLensCatalogue(){
+    try{
+      const r=await fetch('/api/sector-lenses');
+      if(!r.ok)return;
+      const data=await r.json();
+      lensCatalogue=Array.isArray(data.lenses)?data.lenses:[];
+      renderLensSelector();
+    }catch(e){/* Core screening remains available if the catalogue cannot load. */}
+  })();
+
+  function renderLensSelector(){
+    const section=document.getElementById('lens-selector'),options=document.getElementById('lens-options');
+    if(!section||!options)return;
+    section.style.display=lensCatalogue.length?'':'none';
+    const suggested=new Set(lensSuggestions.map(s=>s.lens_id));
+    options.innerHTML=lensCatalogue.map(l=>{
+      const selected=activeLenses.includes(l.id);
+      return `<button type="button" class="lens-option${selected?' selected':''}" ${lensSelectionLocked?'disabled':''} onclick="toggleLens('${esc(l.id)}')" title="${esc(l.description||'')}">${esc(l.name)}${suggested.has(l.id)?'<span class="lens-suggested">Suggested</span>':''}</button>`;
+    }).join('');
+    const count=document.getElementById('lens-count');if(count)count.textContent=activeLenses.length+' of 2';
+  }
+
+  function toggleLens(id){
+    if(lensSelectionLocked)return;
+    lensSelectionTouched=true;
+    const idx=activeLenses.indexOf(id);
+    if(idx>=0){activeLenses.splice(idx,1);delete resolvedLensVersions[id];}
+    else if(activeLenses.length<2)activeLenses.push(id);
+    else showLensWarnings([{message:'Remove one active lens before selecting another.'}]);
+    renderLensSelector();
+  }
+
+  function lensVersions(){
+    const catalogueVersions=Object.fromEntries(lensCatalogue.filter(l=>activeLenses.includes(l.id)).map(l=>[l.id,l.version]));
+    return Object.fromEntries(activeLenses.map(id=>[id,resolvedLensVersions[id]||catalogueVersions[id]||'']).filter(([,version])=>version));
+  }
+
+  function showLensWarnings(warnings){
+    const el=document.getElementById('lens-warning');if(!el)return;
+    const items=(warnings||[]).filter(w=>w&&w.message);
+    el.style.display=items.length?'':'none';el.textContent=items.map(w=>w.message).join(' ');
+    const runtimeHost=document.getElementById('err-area');
+    let runtime=document.getElementById('lens-runtime-warning');
+    if(runtime)runtime.remove();
+    if(items.length&&runtimeHost){runtime=document.createElement('div');runtime.id='lens-runtime-warning';runtime.className='callout warn ani';runtime.innerHTML=`<div class="callout-body"><strong>Sector-lens notice:</strong> ${esc(items.map(w=>w.message).join(' '))}</div>`;runtimeHost.prepend(runtime);}
+  }
+
+  function renderLensDiagnostic(){
+    const old=document.getElementById('lens-diagnostic-panel');if(old)old.remove();
+    if(!lensDiagnostic||lensDiagnostic.error||!(lensDiagnostic.findings||[]).length)return;
+    const host=document.getElementById('out-txt')||document.getElementById('stage-disp');if(!host)return;
+    const panel=document.createElement('div');panel.id='lens-diagnostic-panel';panel.className='lens-diagnostic-panel';
+    panel.innerHTML='<h3>Sector-lens diagnostic</h3>'+lensDiagnostic.findings.map(f=>`<div class="lens-diagnostic-item"><strong>${(f.lens_ids||[]).map(esc).join(' + ')}</strong> · ${esc(f.status||'')}<br>${esc((f.evidence||[]).join(' '))}<br><span style="color:#64748b">Mapped to ${(f.core_mappings||[]).map(esc).join(', ')} · Sources: ${(f.source_ids||[]).map(esc).join(', ')}</span></div>`).join('');
+    host.prepend(panel);
+  }
 
   // ── Mode selection ────────────────────────────────────────────────────────
   function selectMode(mode){
@@ -2554,18 +2635,28 @@
   // Always reset to design review — implementation review is not yet live
   localStorage.removeItem('fcv_review_mode');
 
-  // Express resume: check for partial express state on page load
-  (function(){
+  // Express recovery: checkpoints cannot restore browser File objects after a reload.
+  // Preserve valid lens choices, but require document re-upload and a clean Stage 1 restart.
+  (async function(){
     try{
+      await lensCatalogueReady;
       const saved=localStorage.getItem('fcv_express_stageOutputs');
       if(!saved)return;
       const outputs=JSON.parse(saved);
+      const savedLensState=JSON.parse(localStorage.getItem('fcv_express_lensState')||'{}');
+      activeLenses=Array.isArray(savedLensState.activeLenses)?savedLensState.activeLenses.slice(0,2):[];
+      resolvedLensVersions=savedLensState.lensVersions?{...savedLensState.lensVersions}:{};
+      lensDiagnostic=savedLensState.lensDiagnostic||{};
       // If Stage 3 is present the run completed — clean up and do nothing
-      if(outputs[3]){localStorage.removeItem('fcv_express_stageOutputs');localStorage.removeItem('fcv_express_stageHists');return;}
+      if(outputs[3]){localStorage.removeItem('fcv_express_stageOutputs');localStorage.removeItem('fcv_express_stageHists');localStorage.removeItem('fcv_express_lensState');return;}
       // Partial state: at least Stage 1 exists but Stage 3 does not
       const lastStage=outputs[2]?2:outputs[1]?1:null;
       if(!lastStage)return;
-      // Show resume prompt on the upload panel
+      const currentVersions=Object.fromEntries(lensCatalogue.map(l=>[l.id,l.version]));
+      const staleLens=activeLenses.some(id=>!resolvedLensVersions[id]||currentVersions[id]!==resolvedLensVersions[id]);
+      if(staleLens){activeLenses=[];resolvedLensVersions={};lensDiagnostic={};}
+      renderLensSelector();
+      // Show an honest recovery prompt on the upload panel.
       const resumeDiv=document.createElement('div');
       resumeDiv.id='express-resume-banner';
       resumeDiv.className='rerun-banner ani';
@@ -2574,10 +2665,10 @@
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#B45309" stroke-width="2" style="flex-shrink:0;margin-top:1px"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
         <div style="flex:1">
           <div style="font-weight:700;color:#92400E;margin-bottom:4px">Incomplete express run detected</div>
-          <div style="font-size:13px;color:#78350F;margin-bottom:10px">Stage ${lastStage} of 3 completed. Resume to continue from Stage ${lastStage+1}, or discard and start fresh.</div>
+          <div style="font-size:13px;color:#78350F;margin-bottom:10px">Stage ${lastStage} of 3 was saved, but uploaded documents cannot be restored after a page reload. ${staleLens?'A selected sector lens is also unavailable or has changed. ':''}Re-upload the project documents and restart Stage 1 to avoid mixing evidence or module versions.</div>
           <div style="display:flex;gap:8px">
-            <button class="btn btn-blue btn-sm" onclick="resumeExpressRun()">Resume from Stage ${lastStage+1}</button>
-            <button class="btn btn-ghost btn-sm" onclick="discardExpressResume()">Discard &amp; start fresh</button>
+            <button class="btn btn-blue btn-sm" onclick="restartExpressFromStage1()">Prepare Stage 1 restart</button>
+            <button class="btn btn-ghost btn-sm" onclick="discardExpressRecovery()">Discard checkpoint</button>
           </div>
         </div>`;
       // Insert at top of upload panel
@@ -2586,20 +2677,28 @@
     }catch(e){}
   })();
 
-  function resumeExpressRun(){
-    runExpress();
-  }
-
-  function discardExpressResume(){
+  function restartExpressFromStage1(){
     localStorage.removeItem('fcv_express_stageOutputs');
     localStorage.removeItem('fcv_express_stageHists');
+    localStorage.removeItem('fcv_express_lensState');
+    lensDiagnostic={};lensSelectionLocked=false;renderLensSelector();
+    const b=document.getElementById('express-resume-banner');if(b)b.remove();
+    const log=document.getElementById('debug-log');
+    if(log){log.style.color='#92400e';log.textContent='Re-upload the project documents, confirm sector lenses, then begin a new Stage 1 analysis.';}
+  }
+
+  function discardExpressRecovery(){
+    localStorage.removeItem('fcv_express_stageOutputs');
+    localStorage.removeItem('fcv_express_stageHists');
+    localStorage.removeItem('fcv_express_lensState');
+    activeLenses=[];resolvedLensVersions={};lensDiagnostic={};lensSelectionLocked=false;renderLensSelector();
     const b=document.getElementById('express-resume-banner');if(b)b.remove();
   }
 
   // ── Session persistence ─────────────────────────────────────────────────────
   function saveSession(){
     const state = {
-      version: 2,
+      version: 3,
       savedAt: new Date().toISOString(),
       currentStage: curS,
       history: hist,
@@ -2609,7 +2708,10 @@
       stageOutputs: stageOutputs,
       stageHists: stageHists,
       priorityQuestions: priorityQuestions,
-      focusQuestionsResult: focusQuestionsResult
+      focusQuestionsResult: focusQuestionsResult,
+      activeLenses: activeLenses,
+      lensVersions: lensVersions(),
+      lensDiagnostic: lensDiagnostic
     };
     const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
     const url = URL.createObjectURL(blob);
@@ -2635,9 +2737,10 @@
     const file = input.files[0];
     if(!file) return;
     const reader = new FileReader();
-    reader.onload = e => {
+    reader.onload = async e => {
       try {
         const state = JSON.parse(e.target.result);
+        await lensCatalogueReady;
         if(!state.version || !state.history){
           alert('This does not appear to be a valid FCV session file.');
           return;
@@ -2661,6 +2764,13 @@
         if(state.stageHists) stageHists = state.stageHists;
         priorityQuestions = state.priorityQuestions || [];
         focusQuestionsResult = state.focusQuestionsResult || null;
+        activeLenses = state.version >= 3 && Array.isArray(state.activeLenses) ? state.activeLenses.slice(0,2) : [];
+        resolvedLensVersions = state.version >= 3 && state.lensVersions ? {...state.lensVersions} : {};
+        lensDiagnostic = state.version >= 3 && state.lensDiagnostic ? state.lensDiagnostic : {};
+        const currentVersions=Object.fromEntries(lensCatalogue.map(l=>[l.id,l.version]));
+        const staleLens=state.version>=3&&state.currentStage<3&&activeLenses.some(id=>!state.lensVersions||!state.lensVersions[id]||currentVersions[id]!==state.lensVersions[id]);
+        if(staleLens){hist=[];curS=0;stageOutputs={};stageHists={};activeLenses=[];resolvedLensVersions={};lensDiagnostic={};lensSelectionLocked=false;renderLensSelector();document.getElementById('upload-panel').style.display='block';document.getElementById('analysis-panel').style.display='none';alert('A selected sector lens is unavailable or has been updated. Re-upload the project document and rerun from Stage 1 to avoid mixing module versions.');return;}
+        lensSelectionLocked=curS>0;renderLensSelector();
         sessionName = file.name;
         document.getElementById('upload-panel').style.display='none';
         document.getElementById('analysis-panel').style.display='block';
@@ -2913,6 +3023,13 @@
         doc_type: data.doc_type || data.document_type || 'Unknown',
         extraction_status: data.extraction_status || 'ok'
       };
+      if(pF.some(item=>item.name===file.name)){
+        lensSuggestions=Array.isArray(data.lens_suggestions)?data.lens_suggestions:[];
+        if(!lensSelectionTouched&&!lensSelectionLocked){
+          activeLenses=lensSuggestions.filter(s=>s.selected_by_default).slice(0,2).map(s=>s.lens_id);
+        }
+        renderLensSelector();
+      }
       renderChips();
     } catch(e) {
       // Metadata fetch failed — no update to chip, no error shown (non-blocking)
@@ -2953,6 +3070,7 @@
 
   async function startAnalysis(){
     if(busy) return;
+    lensSelectionLocked=true;renderLensSelector();
     let fallbackAdded = 0;
 
     // PRIMARY: try FormData (uses browser's internal form API — works even when the
@@ -3045,7 +3163,9 @@
         ],
         review_mode:reviewMode,
         user_context:(document.getElementById('user-context')?.value||'').trim(),
-        priority_questions:(priorityQuestions=getPriorityQuestions())
+        priority_questions:(priorityQuestions=getPriorityQuestions()),
+        active_lenses:activeLenses,
+        lens_versions:lensVersions()
       };
     }catch(e){
       showExpressError(1,'Could not read documents: '+(e.message||e));
@@ -3174,6 +3294,8 @@
               if(p.context_flags)contextFlags=p.context_flags;
               if(p.sector_context)sectorContext=p.sector_context;
               if(p.change_types)changeTypes=p.change_types;
+              if(p.active_lenses){activeLenses=p.active_lenses.map(l=>l.id);resolvedLensVersions=Object.fromEntries(p.active_lenses.map(l=>[l.id,l.version]));}
+              showLensWarnings(p.lens_warnings);
               const cat=countryClassification.category||'General';
               const catSuffix=cat&&cat!=='General'?' \u00B7 '+esc(cat):'';
               const summary1=(reviewMode==='implementation'?(processType!=='Unknown'?processType:'Process')+' detected':docType!=='Unknown'?docType:'Document')+catSuffix+' \u00B7 Context extracted';
@@ -3187,6 +3309,8 @@
               if(p.sensitivity_rating)fcvRating=p.sensitivity_rating;
               if(p.responsiveness_rating)fcvResponsivenessRating=p.responsiveness_rating;
               if(p.under_hood){stage2UnderHood=p.under_hood;fcvSaveStage2UnderHood(p.under_hood);}
+              if(p.lens_diagnostic)lensDiagnostic=p.lens_diagnostic;
+              showLensWarnings(p.lens_warnings);
               fcvSafeLocalStorageSet('stage2_timestamp',Date.now());
               const sensR=p.sensitivity_rating||'\u2014',respR=p.responsiveness_rating||'\u2014';
               updateExpressStage(2,'done','Sensitivity: '+sensR+' \u00B7 Responsiveness: '+respR);
@@ -3236,6 +3360,7 @@
             localStorage.removeItem('fcv_express_stageOutputs');
             localStorage.removeItem('fcv_express_stageHists');
             localStorage.removeItem('fcv_express_curS');
+            localStorage.removeItem('fcv_express_lensState');
             busy=false;
             _expressDone=true;
             reader.cancel();
@@ -3344,7 +3469,7 @@
     if(analysisMode!=='express')startSbsLoadingTimers(stage);
 
     try{
-      const payload={stage,history:hist,user_message:followOn||'',document_type:docType,instrument_type:instrumentType,temporal_context:temporalContext,change_types:changeTypes,country_scope:countryScope,is_mpa:isMpa,review_mode:reviewMode,process_type:processType,user_context:(document.getElementById('user-context')?.value||'').trim(),uploaded_doc_names:[...pF.map(f=>f.name),...pkF.map(f=>f.name),...cF.map(f=>f.name)],country_classification:countryClassification,context_flags:contextFlags,sector_context:sectorContext,priority_questions:(priorityQuestions=getPriorityQuestions())};
+      const payload={stage,history:hist,user_message:followOn||'',document_type:docType,instrument_type:instrumentType,temporal_context:temporalContext,change_types:changeTypes,country_scope:countryScope,is_mpa:isMpa,review_mode:reviewMode,process_type:processType,user_context:(document.getElementById('user-context')?.value||'').trim(),uploaded_doc_names:[...pF.map(f=>f.name),...pkF.map(f=>f.name),...cF.map(f=>f.name)],country_classification:countryClassification,context_flags:contextFlags,sector_context:sectorContext,priority_questions:(priorityQuestions=getPriorityQuestions()),active_lenses:activeLenses,lens_versions:lensVersions(),lens_diagnostic:lensDiagnostic};
       // Attach session prompt override if user has edited this stage's prompt
       if(sessionPrompts[stage]){
         payload.prompt_override = sessionPrompts[stage];
@@ -3458,11 +3583,14 @@
             }
             if(p.chunk){streamed+=p.chunk;} // Buffer only — full output rendered on p.done via renderOut()
             if(p.done){clearTimeout(_stageTimeoutId);clearSbsLoadingTimers();hist=p.history||hist;curS=stage;stageOutputs[stage]=p.result;stageHists[stage]=hist.slice();updateSessionBar();
+              if(p.active_lenses){activeLenses=p.active_lenses.map(l=>l.id);resolvedLensVersions=Object.fromEntries(p.active_lenses.map(l=>[l.id,l.version]));}
+              showLensWarnings(p.lens_warnings);
               // Stage 2: capture ratings and under_hood data
               if(stage===2){
                 if(p.sensitivity_rating){ fcvRating=p.sensitivity_rating; }
                 if(p.responsiveness_rating){ fcvResponsivenessRating=p.responsiveness_rating; }
                 if(p.under_hood){ stage2UnderHood=p.under_hood; fcvSaveStage2UnderHood(p.under_hood); }
+                if(p.lens_diagnostic)lensDiagnostic=p.lens_diagnostic;
               }
               if(stage===3){stageGapTable=p.gap_table||null;stageRiskExposure=p.risk_exposure||null;stageSensitivitySummary=p.sensitivity_summary||'';stageResponsivenessSummary=p.responsiveness_summary||'';midCycleWatch=p.mid_cycle_watch||[];dpfWatch=p.dpf_watch||[];p4rWatch=p.p4r_watch||[];regionalWatch=p.regional_watch||[];if(p.fcv_rating)fcvRating=p.fcv_rating;if(p.fcv_responsiveness_rating)fcvResponsivenessRating=p.fcv_responsiveness_rating;if(p.applied_snippets)stageAppliedSnippets=p.applied_snippets;}
               // Write timestamps BEFORE renderOut so the consistency check inside renderOut reads the current run's value
@@ -3494,6 +3622,7 @@
               }
               // Stage 2: show parse error banner and update sidebar
               if(stage===2){
+                renderLensDiagnostic();
                 if(p.parse_error){
                   const outTxt = document.getElementById('out-txt');
                   if(outTxt){
@@ -4389,6 +4518,7 @@
     stageThreePriorities=[];fcvRating='';fcvResponsivenessRating='';
     clearUI();renderOut(stage,stageOutputs[stage],false);
     if(stage===2&&stage2UnderHood){buildUnderHoodPanels(stage2UnderHood);updateSidebar();}
+    if(stage===2)renderLensDiagnostic();
   }
 
   function injectStageNavArrows(stage){
@@ -4428,6 +4558,7 @@
     try{localStorage.setItem('fcv_express_stageOutputs',JSON.stringify(outputs));}catch(e){}
     try{localStorage.setItem('fcv_express_stageHists',JSON.stringify(hists));}catch(e){}
     try{localStorage.setItem('fcv_express_curS',curStage);}catch(e){}
+    try{localStorage.setItem('fcv_express_lensState',JSON.stringify({activeLenses,lensVersions:lensVersions(),lensDiagnostic}));}catch(e){}
   }
 
   function showExpressProgress(){
@@ -4590,6 +4721,8 @@
       regional_watch: regionalWatch || [],
       horizon_considerations: horizonConsiderations || '',
       focus_questions: focusQuestionsResult || null,
+      active_lenses: activeLenses.map((id,index)=>({id,version:lensVersions()[id]||'',position:index===0?'primary':'secondary'})),
+      lens_diagnostic: lensDiagnostic || {},
       metadata: {
         date_str: dateStr,
         classification_category: cat,
@@ -4841,6 +4974,7 @@ ${body}
             ${pr.change_type?`<span class="pc-chip">Change: ${esc(pr.change_type)}</span>`:''}
             ${pr.restructuring_level?`<span class="pc-chip">${esc(pr.restructuring_level)}</span>`:''}
             ${pr.priority_scope?`<span class="pc-chip">Scope: ${esc(pr.priority_scope)}</span>`:''}
+            ${(pr.lens_ids||[]).map(id=>`<span class="lens-badge" title="${esc(pr.lens_relevance||'Sector-lens finding')}">${esc(id)}</span>`).join('')}
           </div>
           ${(pr.who_acts||pr.when||pr.resources)?`<div class="pc-meta-row">
             ${pr.who_acts?`<span class="pc-meta-chip"><strong>Who:</strong> ${esc(pr.who_acts)}</span>`:''}
@@ -4859,6 +4993,7 @@ ${body}
 
   function reset(){
     pF=[];cF=[];hist=[];curS=0;busy=false;stageOutputs={};stageHists={};researchBrief='';researchCountry='';priorityQuestions=[];focusQuestionsResult=null;pqPanelEnabled=true;
+    activeLenses=[];resolvedLensVersions={};lensSuggestions=[];lensDiagnostic={};lensSelectionTouched=false;lensSelectionLocked=false;renderLensSelector();
     { const _pc=document.getElementById('pq-confirm'); if(_pc){_pc.innerHTML='';_pc.style.display='none';} }
     ['stage2_timestamp','stage3_timestamp','stage3_consistency_dismissed'].forEach(k=>localStorage.removeItem(k));
     document.getElementById('upload-panel').style.display='block';
@@ -5375,6 +5510,7 @@ ${body}
               ${pr.restructuring_level ? `<span class="pc-chip">${esc(pr.restructuring_level)}</span>` : ''}
               ${pr.priority_scope ? `<span class="pc-chip">Scope: ${esc(pr.priority_scope)}</span>` : ''}
               ${pr.governance_level ? `<span class="pc-chip" title="MPA governance level — where this priority should be decided">${esc(pr.governance_level)}</span>` : ''}
+              ${(pr.lens_ids||[]).map(id=>`<span class="lens-badge" title="${esc(pr.lens_relevance||'Sector-lens finding')}">${esc(id)}</span>`).join('')}
             </div>
             ${(pr.who_acts||pr.when||pr.resources) ? `<div class="pc-meta-row">
               ${pr.who_acts ? `<span class="pc-meta-chip"><strong>Who:</strong> ${(pr.who_acts||'').split(';').map(w=>w.trim()).filter(Boolean).map(w=>'<span class="who-chip">'+esc(w)+'</span>').join(' ')}</span>` : ''}

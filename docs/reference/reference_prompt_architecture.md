@@ -5,6 +5,10 @@
 
 ---
 
+## Optional Sector-Lens Overlay
+
+Both workflow paths call the same bounded composer. Stage 1 receives evidence/research intents and emits `%%%LENS_EVIDENCE_START/END%%%`. Stage 2 receives distilled guidance plus conditional questions and emits JSON in `%%%LENS_DIAGNOSTIC_START/END%%%`. Each finding contains lens/source provenance and an explicit `ost:*`, `dnh:*`, or `shift:*` mapping. Stage 3 merges overlapping findings and may add `lens_ids` and `lens_relevance` to affected priorities in the single existing recommendation set. Lenses never add a score or change the rating denominator. See `reference_sector_lenses.md` for the module schema and compatibility contract.
+
 ## Stage 1: "Context & Extraction"
 
 **Purpose:** Extract FCV-relevant content from the primary project document, enriched by distilled secondary document cards, automated web research, and Playbook Diagnostics framing.

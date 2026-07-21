@@ -14,6 +14,24 @@ from flask import Flask, request, jsonify, send_from_directory, Response, stream
 from werkzeug.exceptions import RequestEntityTooLarge
 import anthropic
 from fcv_distillation import distill_doc_parts_stream
+from sector_lenses import (
+    LENS_DIAGNOSTIC_END,
+    LENS_DIAGNOSTIC_START,
+    LENS_EVIDENCE_END,
+    LENS_EVIDENCE_START,
+    build_stage_slice,
+    detect_lens_suggestions,
+    extract_lens_diagnostic,
+    extract_lens_evidence,
+    lens_catalogue,
+    load_registry,
+    merge_lens_findings,
+    normalize_lens_diagnostic,
+    estimate_tokens,
+    PLATFORM_STAGE_BUDGETS,
+    resolve_active_lenses,
+    strip_lens_blocks,
+)
 import httpx
 from background_docs import (
     FCV_GUIDE, FCV_OPERATIONAL_MANUAL, FCV_REFRESH_FRAMEWORK,
@@ -68,6 +86,8 @@ STAGE_STREAM_TIMEOUTS = {
 PROMPTS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'prompts.json')
 ASSESSMENT_WORKERS = max(2, int(os.environ.get("ASSESSMENT_WORKERS", "4")))
 ASSESSMENT_EXECUTOR = ThreadPoolExecutor(max_workers=ASSESSMENT_WORKERS)
+SECTOR_LENS_MODULES = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sector_lenses", "modules")
+SECTOR_LENS_REGISTRY = load_registry(SECTOR_LENS_MODULES)
 
 # ── Research cache (in-process, keyed by country name) ───────────────────────
 _research_cache: dict = {}  # key: country.lower() → {brief, country, sources}
@@ -537,6 +557,8 @@ class AnalysisState:
     implementing_entity: str | None = None
     approval_authority: str | None = None
     active_modules: list[str] = field(default_factory=list)
+    active_lenses: list[str] = field(default_factory=list)
+    lens_versions: dict[str, str] = field(default_factory=dict)
     intersection: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
@@ -555,6 +577,10 @@ class AnalysisState:
         if isinstance(countries, list) and len(countries) >= 2:
             country_scope = "multi"
         active_modules = list(intake.get("active_modules", payload.get("active_modules", [])) or [])
+        active_lenses = intake.get("active_lenses", payload.get("active_lenses", [])) or []
+        if isinstance(active_lenses, str):
+            active_lenses = [value.strip() for value in active_lenses.split(",") if value.strip()]
+        lens_versions = intake.get("lens_versions", payload.get("lens_versions", {})) or {}
         if country_scope == "multi" and "multi_country_layer" not in active_modules:
             active_modules.append("multi_country_layer")
         if doc_type in {"AF", "Restructuring"} and "mid_cycle_overlay" not in active_modules:
@@ -596,8 +622,102 @@ class AnalysisState:
             implementing_entity=intake.get("implementing_entity", payload.get("implementing_entity")),
             approval_authority=intake.get("approval_authority", payload.get("approval_authority")),
             active_modules=active_modules,
+            active_lenses=list(active_lenses) if isinstance(active_lenses, list) else [],
+            lens_versions=dict(lens_versions) if isinstance(lens_versions, dict) else {},
             intersection=dict(intake.get("intersection", payload.get("intersection", {})) or {}),
         )
+
+
+def build_lens_stage_context(
+    state: AnalysisState,
+    stage: int,
+    registry=None,
+    lens_diagnostic: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Resolve client lens choices and build a bounded stage-specific prompt contract."""
+
+    registry = registry or SECTOR_LENS_REGISTRY
+    selection = resolve_active_lenses(registry, state.active_lenses, state.lens_versions)
+    active_ids = [lens.id for lens in selection.lenses]
+    source_ids_by_lens = {
+        lens.id: {source.id for source in lens.sources} for lens in selection.lenses
+    }
+    normalized_diagnostic = normalize_lens_diagnostic(
+        lens_diagnostic, active_ids, source_ids_by_lens
+    ) if stage == 3 else {}
+    suffix = ""
+    diagnostic_truncated = bool(normalized_diagnostic.get("truncated"))
+    if selection.lenses and stage == 1:
+        suffix = (
+            "Return a hidden JSON evidence object after the visible Stage 1 analysis between "
+            f"{LENS_EVIDENCE_START} and {LENS_EVIDENCE_END}. Include one entry per active lens, "
+            "using {\"lenses\":[{\"lens_id\":\"...\",\"evidence_requests\":[],"
+            "\"research_intents\":[]}]}. Include evidence requests and research intents only."
+        )
+    elif selection.lenses and stage == 2:
+        suffix = (
+            "Return a hidden JSON object after the visible Stage 2 assessment between "
+            f"{LENS_DIAGNOSTIC_START} and {LENS_DIAGNOSTIC_END}. Use top-level arrays 'lenses' "
+            "and 'findings'. Each finding must include lens_ids, evidence, status, source_ids, "
+            "core_mappings, mechanism, geography, and action_target. Lens findings do not create "
+            "a separate score and may affect ratings only through an explicit core_mappings value."
+        )
+    elif selection.lenses and stage == 3:
+        prefix = (
+            "Integrate applicable sector-lens findings into the single existing priority list. "
+            "Do not create a separate recommendation set or score. Add lens_ids and lens_relevance "
+            "only to affected priority objects. Deterministically merged findings:\n"
+        )
+        selected_findings: list[dict[str, Any]] = []
+        for finding in merge_lens_findings(normalized_diagnostic.get("findings", [])):
+            candidate = prefix + json.dumps(selected_findings + [finding], ensure_ascii=False)
+            if estimate_tokens(candidate) <= 700:
+                selected_findings.append(finding)
+            else:
+                diagnostic_truncated = True
+        suffix = prefix + json.dumps(selected_findings, ensure_ascii=False)
+
+    platform_limit = PLATFORM_STAGE_BUDGETS.for_stage(stage)
+    reserved = estimate_tokens(suffix) + (1 if suffix else 0)
+    prompt_slice = build_stage_slice(
+        selection.lenses, stage, token_limit=max(1, platform_limit - reserved)
+    )
+    prompt = "\n\n".join(value for value in (prompt_slice.content, suffix) if value)
+    final_estimate = estimate_tokens(prompt)
+    if final_estimate > platform_limit:
+        raise ValueError(f"sector-lens Stage {stage} prompt exceeded its token ceiling")
+    return {
+        "active_lenses": [
+            {
+                "id": lens.id,
+                "version": lens.version,
+                "position": "primary" if index == 0 else "secondary",
+            }
+            for index, lens in enumerate(selection.lenses)
+        ],
+        "warnings": [
+            {"code": warning.code, "message": warning.message, "lens_id": warning.lens_id}
+            for warning in selection.warnings
+        ],
+        "prompt": prompt,
+        "estimated_tokens": final_estimate,
+        "truncated": prompt_slice.truncated or diagnostic_truncated,
+        "restart_required": stage > 1 and any(
+            warning.code == "version_mismatch" for warning in selection.warnings
+        ),
+    }
+
+
+def lens_source_ids(active_lenses: list[dict[str, Any]], registry=None) -> dict[str, set[str]]:
+    """Return declared source IDs for resolved active lenses."""
+
+    registry = registry or SECTOR_LENS_REGISTRY
+    result: dict[str, set[str]] = {}
+    for item in active_lenses:
+        lens = registry.get(item.get("id", ""))
+        if lens:
+            result[lens.id] = {source.id for source in lens.sources}
+    return result
 
 
 DO_NO_HARM_HEADER = """---
@@ -4076,7 +4196,11 @@ def _safe_run(para):
     return para.runs[0] if para.runs else para.add_run()
 
 
-def extract_priorities(text: str, uploaded_doc_names: list = None) -> dict:
+def extract_priorities(
+    text: str,
+    uploaded_doc_names: list = None,
+    active_lens_ids: list[str] | None = None,
+) -> dict:
     """Parse %%%JSON_START%%% / %%%JSON_END%%% block from Stage 3/4 output.
 
     Returns a dict:
@@ -4186,6 +4310,22 @@ def extract_priorities(text: str, uploaded_doc_names: list = None) -> dict:
                     pr[_meta_field] = None
             elif _val is not None:
                 pr[_meta_field] = None
+
+        raw_lens_ids = pr.get('lens_ids', [])
+        if not isinstance(raw_lens_ids, list):
+            raw_lens_ids = []
+        pr['lens_ids'] = list(dict.fromkeys(
+            value.strip() for value in raw_lens_ids
+            if isinstance(value, str) and value.strip()
+        ))
+        if active_lens_ids is not None:
+            active_set = set(active_lens_ids)
+            pr['lens_ids'] = [value for value in pr['lens_ids'] if value in active_set]
+        relevance = pr.get('lens_relevance', '')
+        pr['lens_relevance'] = (
+            relevance.strip()[:500]
+            if isinstance(relevance, str) and pr['lens_ids'] else ''
+        )
 
         # Post-parse checks — check specificity across gap + all action guidance
         actions_text = ' '.join(
@@ -5083,6 +5223,22 @@ def get_glossary():
     return jsonify(FCV_GLOSSARY)
 
 
+@app.route('/api/sector-lenses', methods=['GET'])
+def get_sector_lenses():
+    """Return enabled selector modules; invalid packages remain non-fatal diagnostics."""
+
+    warnings = [
+        {
+            "lens_id": diagnostic.module_id,
+            "code": error.code,
+            "message": error.message,
+        }
+        for diagnostic in SECTOR_LENS_REGISTRY.diagnostics
+        for error in diagnostic.errors
+    ]
+    return jsonify({"lenses": lens_catalogue(SECTOR_LENS_REGISTRY), "warnings": warnings})
+
+
 @app.route('/api/detect-document-type', methods=['POST'])
 def detect_document_type_route():
     """Classify an uploaded project document into a standard WBG document type.
@@ -5120,13 +5276,22 @@ def detect_document_type_route():
             extraction_status = 'ok'
         word_count = len(text.split()) if extraction_status != 'failed' else 0
         doc_type = detect_document_type_from_text(text, get_client()) if extraction_status == 'ok' else 'Unknown'
+        try:
+            lens_suggestions = (
+                detect_lens_suggestions(text, SECTOR_LENS_REGISTRY)
+                if extraction_status == 'ok' else []
+            )
+        except Exception as exc:
+            app.logger.warning("Sector-lens detection failed without blocking metadata: %s", exc)
+            lens_suggestions = []
         return jsonify({
             'document_type': doc_type,
             'word_count': word_count,
-            'extraction_status': extraction_status
+            'extraction_status': extraction_status,
+            'lens_suggestions': lens_suggestions,
         })
     except Exception as e:
-        return jsonify({'document_type': 'Unknown', 'word_count': 0, 'extraction_status': 'failed', 'error': str(e)})
+        return jsonify({'document_type': 'Unknown', 'word_count': 0, 'extraction_status': 'failed', 'lens_suggestions': [], 'error': str(e)})
 
 
 # ── Main analysis route ───────────────────────────────────────────────────────
@@ -5611,6 +5776,19 @@ def run_stage():
                 pq_block = build_priority_questions_block(priority_questions, stage)
                 if pq_block:
                     stage_prompt = stage_prompt + pq_block
+            lens_context = build_lens_stage_context(
+                analysis_state,
+                stage,
+                lens_diagnostic=data.get('lens_diagnostic'),
+            )
+            if lens_context['restart_required']:
+                return jsonify({
+                    'error': 'A selected sector lens version changed. Re-run from Stage 1.',
+                    'restart_required': True,
+                    'lens_warnings': lens_context['warnings'],
+                }), 409
+            if lens_context['prompt']:
+                stage_prompt += "\n\n--- ACTIVE SECTOR LENSES ---\n" + lens_context['prompt']
             messages.append({"role": "user", "content": stage_prompt})
 
         def workflow_events():
@@ -5766,6 +5944,8 @@ def run_stage():
                 stage2_ratings = {}
                 under_hood = {}
                 category_lens = {}
+                lens_diagnostic = {}
+                lens_evidence = {}
                 _country_classification = {}
                 _context_flags = {}
                 _sector_context = {}
@@ -5784,6 +5964,9 @@ def run_stage():
                     stage2_ratings = extract_stage2_ratings(full_text)
                     under_hood = extract_under_hood(full_text)
                     category_lens = extract_category_lens(full_text)
+                    lens_diagnostic = extract_lens_diagnostic(full_text, [
+                        item['id'] for item in lens_context['active_lenses']
+                    ], lens_source_ids(lens_context['active_lenses'])) if lens_context['active_lenses'] else {}
                     parse_error = under_hood.get('error', False) or stage2_ratings.get('error', False)
                     parse_error_message = under_hood.get('message', '') or stage2_ratings.get('message', '')
 
@@ -5792,7 +5975,11 @@ def run_stage():
                     # Use uploaded_doc_names_payload (parsed from frontend's uploaded_doc_names
                     # array at request start) — includes all zones (primary, package, context).
                     # data.get('documents', []) is empty at Stage 3 in step-by-step mode.
-                    parsed = extract_priorities(full_text, uploaded_doc_names_payload)
+                    parsed = extract_priorities(
+                        full_text,
+                        uploaded_doc_names_payload,
+                        [item['id'] for item in lens_context['active_lenses']],
+                    )
                     priorities = parsed.get('priorities', [])
                     fcv_rating = parsed.get('fcv_rating', '')
                     fcv_responsiveness_rating = parsed.get('fcv_responsiveness_rating', '')
@@ -5808,7 +5995,7 @@ def run_stage():
                     parse_error_message = parsed.get('message', '')
                     full_text_raw = full_text  # Preserve raw output before cleaning
                     horizon = extract_horizon_considerations(full_text_raw)
-                    full_text = clean_stage3_output(full_text)
+                    full_text = strip_lens_blocks(clean_stage3_output(full_text))
                     from datetime import date
                     header = DO_NO_HARM_HEADER.format(date=date.today().strftime('%d %B %Y'))
                     full_text = header + full_text
@@ -5818,6 +6005,9 @@ def run_stage():
                 # outputs from history, so carrying the full documents/research/guides forward
                 # would send huge payloads unnecessarily on every Stage 2/3 call.
                 if stage == 1:
+                    lens_evidence = extract_lens_evidence(full_text, [
+                        item['id'] for item in lens_context['active_lenses']
+                    ]) if lens_context['active_lenses'] else {}
                     _instrument_type = extract_instrument_type(full_text)
                     _temporal_context = extract_temporal_context(full_text)
                     _process_type = extract_process_type(full_text) if is_impl else None
@@ -5860,7 +6050,10 @@ def run_stage():
                 # Build done event payload
                 # For Stage 1: strip classifier delimiter blocks from display text only;
                 # history retains the raw output so downstream stages can re-parse.
-                display_full_text = clean_stage1_output(full_text) if stage == 1 else full_text
+                display_full_text = (
+                    strip_lens_blocks(clean_stage1_output(full_text))
+                    if stage == 1 else strip_lens_blocks(full_text)
+                )
                 done_data = {
                     'done': True,
                     'result': display_full_text,
@@ -5884,11 +6077,14 @@ def run_stage():
                     'country_scope': (('multi' if (isinstance(_country_set, dict) and _country_set.get('is_multi_country')) else 'single') if stage == 1 else None),
                     'is_mpa': ((_mpa_context.get('is_mpa', False) if isinstance(_mpa_context, dict) else False) if stage == 1 else None),
                     'review_mode': review_mode,
+                    'active_lenses': lens_context['active_lenses'],
+                    'lens_warnings': lens_context['warnings'],
+                    'lens_evidence': lens_evidence if stage == 1 else None,
                 }
 
                 if stage == 2:
                     # Stage 2: include ratings and Under the Hood panel data
-                    done_data['display_text'] = under_hood.get('display_text', full_text)
+                    done_data['display_text'] = strip_lens_blocks(under_hood.get('display_text', full_text))
                     done_data['sensitivity_rating'] = stage2_ratings.get('sensitivity_rating', '')
                     done_data['responsiveness_rating'] = stage2_ratings.get('responsiveness_rating', '')
                     done_data['rating_reasoning'] = stage2_ratings.get('rating_reasoning', '')
@@ -5899,6 +6095,7 @@ def run_stage():
                         'evidence_trail': under_hood.get('evidence_trail', ''),
                     }
                     done_data['category_lens'] = category_lens
+                    done_data['lens_diagnostic'] = lens_diagnostic
 
                 elif stage == 3:
                     # Stage 3: include priorities, ratings, summaries, risk exposure
@@ -6072,6 +6269,7 @@ def run_express():
             research_brief_text = ''
             research_country = ''
             conversation_history = []
+            lens_diagnostic = {}
 
             try:
                 # ════════════════════════════════════════════════════════════
@@ -6280,6 +6478,13 @@ def run_express():
                 pq_block = build_priority_questions_block(priority_questions, 1)
                 if pq_block:
                     stage1_prompt = stage1_prompt + pq_block
+                lens_context_s1 = build_lens_stage_context(analysis_state, 1)
+                analysis_state.active_lenses = [item['id'] for item in lens_context_s1['active_lenses']]
+                analysis_state.lens_versions = {
+                    item['id']: item['version'] for item in lens_context_s1['active_lenses']
+                }
+                if lens_context_s1['prompt']:
+                    stage1_prompt += "\n\n--- ACTIVE SECTOR LENSES ---\n" + lens_context_s1['prompt']
                 content_parts.append({"type": "text", "text": stage1_prompt})
 
                 stage1_messages = [{"role": "user", "content": content_parts}]
@@ -6332,8 +6537,11 @@ def run_express():
 
                 # ── Stage 1 done event ──
                 # Strip classifier delimiter tags from display output; history retains raw text.
-                stage1_display = clean_stage1_output(stage1_output)
-                yield f"data: {json.dumps({'stage_done': 1, 'result': stage1_display, 'history': conversation_history, 'research_brief': research_brief_text, 'research_country': research_country, 'doc_type': doc_type, 'instrument_type': instrument_type, 'temporal_context': temporal_context, 'process_type': process_type if is_impl else None, 'country_classification': country_classification, 'context_flags': context_flags, 'sector_context': sector_context, 'change_types': change_types, 'prior_actions': prior_actions, 'dlis': dlis, 'country_set': country_set, 'mpa_context': mpa_context, 'country_scope': _cscope_x, 'is_mpa': _is_mpa_x, 'review_mode': review_mode})}\n\n"
+                stage1_display = strip_lens_blocks(clean_stage1_output(stage1_output))
+                lens_evidence_s1 = extract_lens_evidence(
+                    stage1_output, [item['id'] for item in lens_context_s1['active_lenses']]
+                ) if lens_context_s1['active_lenses'] else {}
+                yield f"data: {json.dumps({'stage_done': 1, 'result': stage1_display, 'history': conversation_history, 'research_brief': research_brief_text, 'research_country': research_country, 'doc_type': doc_type, 'instrument_type': instrument_type, 'temporal_context': temporal_context, 'process_type': process_type if is_impl else None, 'country_classification': country_classification, 'context_flags': context_flags, 'sector_context': sector_context, 'change_types': change_types, 'prior_actions': prior_actions, 'dlis': dlis, 'country_set': country_set, 'mpa_context': mpa_context, 'country_scope': _cscope_x, 'is_mpa': _is_mpa_x, 'review_mode': review_mode, 'active_lenses': lens_context_s1['active_lenses'], 'lens_warnings': lens_context_s1['warnings'], 'lens_evidence': lens_evidence_s1})}\n\n"
 
                 # ════════════════════════════════════════════════════════════
                 # STAGE 2 — FCV Assessment
@@ -6459,6 +6667,9 @@ def run_express():
                 pq_block = build_priority_questions_block(priority_questions, 2)
                 if pq_block:
                     stage2_prompt = stage2_prompt + pq_block
+                lens_context_s2 = build_lens_stage_context(analysis_state, 2)
+                if lens_context_s2['prompt']:
+                    stage2_prompt += "\n\n--- ACTIVE SECTOR LENSES ---\n" + lens_context_s2['prompt']
                 # Build messages: prior context + Stage 2 prompt
                 stage2_messages = [
                     {"role": "user", "content": f"Prior FCV analysis context:\n\nStage 1 output:\n{conversation_history[1]['content']}\n\nUse this as the basis for the next stage."},
@@ -6480,6 +6691,11 @@ def run_express():
                 stage2_ratings = extract_stage2_ratings(stage2_output)
                 under_hood = extract_under_hood(stage2_output)
                 category_lens_e2 = extract_category_lens(stage2_output)
+                lens_diagnostic = extract_lens_diagnostic(
+                    stage2_output,
+                    [item['id'] for item in lens_context_s2['active_lenses']],
+                    lens_source_ids(lens_context_s2['active_lenses']),
+                ) if lens_context_s2['active_lenses'] else {}
                 s2_parse_error = under_hood.get('error', False) or stage2_ratings.get('error', False)
                 s2_parse_error_msg = under_hood.get('message', '') or stage2_ratings.get('message', '')
 
@@ -6496,7 +6712,7 @@ def run_express():
                     conversation_history = conversation_history[-20:]
 
                 # ── Stage 2 done event ──
-                yield f"data: {json.dumps({'stage_done': 2, 'result': stage2_output, 'display_text': under_hood.get('display_text', stage2_output), 'history': conversation_history, 'sensitivity_rating': stage2_ratings.get('sensitivity_rating', ''), 'responsiveness_rating': stage2_ratings.get('responsiveness_rating', ''), 'rating_reasoning': stage2_ratings.get('rating_reasoning', ''), 'under_hood': {'recs_table': under_hood.get('recs_table', ''), 'dnh_checklist': under_hood.get('dnh_checklist', ''), 'questions_map': under_hood.get('questions_map', ''), 'evidence_trail': under_hood.get('evidence_trail', '')}, 'category_lens': category_lens_e2, 'parse_error': s2_parse_error, 'parse_error_message': s2_parse_error_msg})}\n\n"
+                yield f"data: {json.dumps({'stage_done': 2, 'result': strip_lens_blocks(stage2_output), 'display_text': strip_lens_blocks(under_hood.get('display_text', stage2_output)), 'history': conversation_history, 'sensitivity_rating': stage2_ratings.get('sensitivity_rating', ''), 'responsiveness_rating': stage2_ratings.get('responsiveness_rating', ''), 'rating_reasoning': stage2_ratings.get('rating_reasoning', ''), 'under_hood': {'recs_table': under_hood.get('recs_table', ''), 'dnh_checklist': under_hood.get('dnh_checklist', ''), 'questions_map': under_hood.get('questions_map', ''), 'evidence_trail': under_hood.get('evidence_trail', '')}, 'category_lens': category_lens_e2, 'lens_diagnostic': lens_diagnostic, 'active_lenses': lens_context_s2['active_lenses'], 'lens_warnings': lens_context_s2['warnings'], 'parse_error': s2_parse_error, 'parse_error_message': s2_parse_error_msg})}\n\n"
 
                 # ════════════════════════════════════════════════════════════
                 # STAGE 3 — Recommendations / Course-Correction Note
@@ -6641,6 +6857,11 @@ def run_express():
                 pq_block = build_priority_questions_block(priority_questions, 3)
                 if pq_block:
                     stage3_prompt = stage3_prompt + pq_block
+                lens_context_s3 = build_lens_stage_context(
+                    analysis_state, 3, lens_diagnostic=lens_diagnostic
+                )
+                if lens_context_s3['prompt']:
+                    stage3_prompt += "\n\n--- ACTIVE SECTOR LENSES ---\n" + lens_context_s3['prompt']
                 # Build Stage 3 messages from conversation history
                 stage3_messages = conversation_history + [
                     {"role": "user", "content": stage3_prompt}
@@ -6658,9 +6879,13 @@ def run_express():
 
                 # Parse Stage 3 output
                 uploaded_doc_names = [doc.get('name', '') for doc in documents if doc.get('name')]
-                parsed = extract_priorities(stage3_output, uploaded_doc_names)
+                parsed = extract_priorities(
+                    stage3_output,
+                    uploaded_doc_names,
+                    [item['id'] for item in lens_context_s3['active_lenses']],
+                )
                 horizon = extract_horizon_considerations(stage3_output)
-                stage3_output_clean = clean_stage3_output(stage3_output)
+                stage3_output_clean = strip_lens_blocks(clean_stage3_output(stage3_output))
                 header = DO_NO_HARM_HEADER.format(date=date.today().strftime('%d %B %Y'))
                 stage3_output_clean = header + stage3_output_clean
 
@@ -6675,7 +6900,7 @@ def run_express():
                     conversation_history = conversation_history[-20:]
 
                 # ── Stage 3 done event ──
-                yield f"data: {json.dumps({'stage_done': 3, 'result': stage3_output_clean, 'history': conversation_history, 'priorities': parsed.get('priorities', []), 'fcv_rating': parsed.get('fcv_rating', ''), 'fcv_responsiveness_rating': parsed.get('fcv_responsiveness_rating', ''), 'sensitivity_summary': parsed.get('sensitivity_summary', ''), 'responsiveness_summary': parsed.get('responsiveness_summary', ''), 'risk_exposure': parsed.get('risk_exposure'), 'mid_cycle_watch': parsed.get('mid_cycle_watch', []), 'dpf_watch': parsed.get('dpf_watch', []), 'p4r_watch': parsed.get('p4r_watch', []), 'regional_watch': parsed.get('regional_watch', []), 'gap_table': extract_gap_table(stage3_output), 'parse_error': parsed.get('error', False), 'parse_error_message': parsed.get('message', ''), 'horizon_considerations': horizon, 'applied_snippets': [{'id': s['id'], 'title': s['title'], 'source': s['source']} for s in secondary_snippets_s3e]})}\n\n"
+                yield f"data: {json.dumps({'stage_done': 3, 'result': stage3_output_clean, 'history': conversation_history, 'priorities': parsed.get('priorities', []), 'fcv_rating': parsed.get('fcv_rating', ''), 'fcv_responsiveness_rating': parsed.get('fcv_responsiveness_rating', ''), 'sensitivity_summary': parsed.get('sensitivity_summary', ''), 'responsiveness_summary': parsed.get('responsiveness_summary', ''), 'risk_exposure': parsed.get('risk_exposure'), 'mid_cycle_watch': parsed.get('mid_cycle_watch', []), 'dpf_watch': parsed.get('dpf_watch', []), 'p4r_watch': parsed.get('p4r_watch', []), 'regional_watch': parsed.get('regional_watch', []), 'gap_table': extract_gap_table(stage3_output), 'parse_error': parsed.get('error', False), 'parse_error_message': parsed.get('message', ''), 'horizon_considerations': horizon, 'active_lenses': lens_context_s3['active_lenses'], 'lens_warnings': lens_context_s3['warnings'], 'applied_snippets': [{'id': s['id'], 'title': s['title'], 'source': s['source']} for s in secondary_snippets_s3e]})}\n\n"
 
                 # ── Express complete ──
                 yield f"data: {json.dumps({'express_done': True})}\n\n"
@@ -6997,6 +7222,48 @@ def download_report():
     regional_watch = data.get('regional_watch') or []
     horizon = data.get('horizon_considerations', '')
     under_hood = data.get('under_hood') or {}
+    requested_report_lenses = data.get('active_lenses') or []
+    report_ids = [item.get('id') for item in requested_report_lenses if isinstance(item, dict) and item.get('id')]
+    report_versions = {
+        item['id']: item.get('version', '')
+        for item in requested_report_lenses
+        if isinstance(item, dict) and item.get('id')
+    }
+    report_selection = resolve_active_lenses(SECTOR_LENS_REGISTRY, report_ids, report_versions)
+    active_lenses = [
+        {
+            'id': lens.id,
+            'version': lens.version,
+            'position': 'primary' if index == 0 else 'secondary',
+        }
+        for index, lens in enumerate(report_selection.lenses)
+    ]
+    active_report_ids = {item['id'] for item in active_lenses}
+    normalized_priorities = []
+    for priority in priorities if isinstance(priorities, list) else []:
+        if not isinstance(priority, dict):
+            continue
+        priority = dict(priority)
+        raw_ids = priority.get('lens_ids', [])
+        priority['lens_ids'] = list(dict.fromkeys(
+            value.strip() for value in raw_ids
+            if isinstance(value, str) and value.strip() in active_report_ids
+        )) if isinstance(raw_ids, list) else []
+        relevance = priority.get('lens_relevance', '')
+        priority['lens_relevance'] = (
+            relevance.strip()[:500]
+            if isinstance(relevance, str) and priority['lens_ids'] else ''
+        )
+        normalized_priorities.append(priority)
+    priorities = normalized_priorities
+    report_source_ids = {
+        lens.id: {source.id for source in lens.sources} for lens in report_selection.lenses
+    }
+    lens_diagnostic = normalize_lens_diagnostic(
+        data.get('lens_diagnostic') or {},
+        [lens.id for lens in report_selection.lenses],
+        report_source_ids,
+    ) if report_selection.lenses else {}
     meta = data.get('metadata', {})
 
     date_str = meta.get('date_str', '')
@@ -7205,6 +7472,8 @@ def download_report():
                     meta_parts.append(f'Scope: {pr["priority_scope"]}')
                 if pr.get('governance_level'):
                     meta_parts.append(f'Governance level: {pr["governance_level"]}')
+                if pr.get('lens_ids'):
+                    meta_parts.append(f'Sector lenses: {", ".join(pr["lens_ids"])}')
                 if meta_parts:
                     _add_single_para(' | '.join(meta_parts), size=9, color=WB_GRAY)
 
@@ -7325,6 +7594,47 @@ def download_report():
                 _add_section_heading('Diagnostic Questions Assessment (25 Questions)', level=2)
                 if not _add_md_table(doc, questions_map):
                     _md_to_docx_para(doc, questions_map)
+
+        findings = lens_diagnostic.get('findings', []) if isinstance(lens_diagnostic, dict) else []
+        if active_lenses or findings:
+            doc.add_page_break()
+            appendix = doc.add_heading('Appendix: Sector-Lens Sources and Evidence', level=1)
+            if appendix.runs:
+                appendix.runs[0].font.color.rgb = WB_NAVY
+            _add_single_para(
+                'Sector lenses supplement the common FCV framework. They do not create a separate score or alter the rating denominator.',
+                size=9, color=WB_GRAY, italic=True, space_after=8
+            )
+            for item in active_lenses:
+                if not isinstance(item, dict) or not item.get('id'):
+                    continue
+                lens = SECTOR_LENS_REGISTRY.get(item['id'])
+                label = lens.metadata.name if lens else item['id']
+                _add_section_heading(f'{label} (v{item.get("version", "unknown")})', level=2)
+                if lens:
+                    for source in lens.sources:
+                        citation = source.title
+                        if source.citation:
+                            citation += f' | {source.citation}'
+                        if source.url:
+                            citation += f' | {source.url}'
+                        _add_single_para(f'[{source.id}] {citation}', size=9, space_after=2)
+            if findings:
+                _add_section_heading('Diagnostic evidence', level=2)
+                for finding in findings:
+                    if not isinstance(finding, dict):
+                        continue
+                    lens_ids = ', '.join(finding.get('lens_ids', []))
+                    mappings = ', '.join(finding.get('core_mappings', []))
+                    sources = ', '.join(finding.get('source_ids', []))
+                    _add_single_para(
+                        f'{lens_ids} | {finding.get("status", "")} | Core mapping: {mappings}',
+                        bold=True, size=9, color=WB_NAVY, space_after=1
+                    )
+                    for evidence in finding.get('evidence', []):
+                        _add_single_para(str(evidence), size=9, space_before=0, space_after=1)
+                    if sources:
+                        _add_single_para(f'Source IDs: {sources}', size=8.5, color=WB_LGRAY, italic=True, space_after=5)
 
         # ── Write to buffer ──
         buf = io.BytesIO()

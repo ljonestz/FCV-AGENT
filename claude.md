@@ -5,6 +5,7 @@
 > **Reference files** (detailed specs moved here to keep this file under 40k):
 > - `docs/reference/reference_prompt_architecture.md` — per-stage prompt specs, delimiter schemas, parsing details
 > - `docs/reference/reference_frontend_functions.md` — JS function list, Express mode architecture, removed items
+> - `docs/reference/reference_sector_lenses.md` — module packages, budgets, selection, delimiters, and parity contract
 > - `docs/reference/reference_backend_routes.md` — all routes, SSE event shapes, parsing function signatures
 
 ---
@@ -242,6 +243,8 @@ Procfile            # Render deployment config
 
 **Two workflow modes:** Express Analysis (default — all 3 stages run automatically via `/api/run-express`) and Step-by-Step (interactive, one stage at a time via `/api/run-stage`). Same prompts, same output quality.
 
+**Optional sector lenses:** users may select up to two ordered lenses. Both workflows resolve authoritative module versions and inject the same bounded stage slices. Lens findings must map to existing OST/DNH/Strategy criteria; they do not add a score or separate recommendation list. The production registry remains empty until a content module is separately approved.
+
 ```
 STAGE 1 — Context & Extraction
 ├─ Input: appraisal/design-stage project doc (PCN/PID/PAD/AF/Restructuring; instrument type IPF/PforR/DPO/TA/MPA/IPF-DDO; regional ops supported) + optional contextual docs
@@ -465,6 +468,7 @@ DEFAULT_PROMPTS = {
 | POST | `/api/run-deeper` | Go Deeper tab content |
 | POST | `/api/run-followon` | Follow-on post-analysis queries |
 | POST | `/api/download-report` | Generate true DOCX binary via python-docx |
+| GET | `/api/sector-lenses` | Return enabled sector-lens selector catalogue |
 | GET | `/api/default-prompts` | Return current DEFAULT_PROMPTS dict |
 | GET | `/` | Main app |
 | GET | `/health` | Health check |
@@ -481,6 +485,8 @@ PROMPTS_FILE = 'prompts.json'
 ```
 
 ### 5.3 Priority Parsing (`extract_priorities()`)
+
+Optional sector provenance is normalized as `lens_ids: string[]` and `lens_relevance: string`. These fields decorate affected priorities only and never define an additional score or recommendation list.
 
 Finds `%%%JSON_START%%%...%%%JSON_END%%%`, parses via `json.loads()`, validates field values, runs `_check_specificity()` and `_check_citations()`, returns unified dict. On malformed JSON: `{error: True, message: ...}` — NOT silent failure.
 

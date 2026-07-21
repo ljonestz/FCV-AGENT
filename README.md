@@ -69,6 +69,7 @@ The app isolates state per browser tab via a per-assessment ID. Express Analysis
 | File | Purpose |
 |---|---|
 | `app.py` | Flask backend — all stage prompts, routes, document processing |
+| `sector_lenses/` | Validated optional sector-lens packages, budgets, detection, and diagnostic parsing |
 | `index.html` | Single-page frontend UI |
 | `background_docs.py` | WBG FCV framework reference constants (knowledge base) |
 | `requirements.txt` | Python dependencies |
@@ -79,4 +80,5 @@ The app isolates state per browser tab via a per-assessment ID. Express Analysis
 
 - `CLAUDE.md` — full developer guide: architecture, prompt design, stage pipeline, design decisions
 - `docs/reference/` — detailed reference docs for prompts, routes, and frontend functions
+- `docs/reference/reference_sector_lenses.md` — sector-lens module and cross-build contract
 - `docs/fcv-agent-knowledge-architecture.html` — visual overview of how knowledge sources flow through the pipeline

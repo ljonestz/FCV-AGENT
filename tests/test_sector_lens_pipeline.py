@@ -1,0 +1,133 @@
+"""Contract tests for lens detection, hidden diagnostics, and cross-lens merging."""
+
+import json
+from itertools import permutations
+from pathlib import Path
+
+from sector_lenses import (
+    detect_lens_suggestions,
+    extract_lens_diagnostic,
+    extract_lens_evidence,
+    lens_catalogue,
+    load_registry,
+    merge_lens_findings,
+    strip_lens_blocks,
+)
+
+
+FIXTURE_ROOT = Path(__file__).parent / "fixtures" / "sector_lenses"
+
+
+def test_catalogue_and_detection_are_ranked_and_non_blocking():
+    registry = load_registry(FIXTURE_ROOT)
+
+    catalogue = lens_catalogue(registry)
+    suggestions = detect_lens_suggestions(
+        "The irrigation activity addresses food security and irrigation access.",
+        registry,
+    )
+    uncertain = detect_lens_suggestions("An irrigation activity is mentioned.", registry)
+
+    assert catalogue == [{
+        "id": "test-agriculture",
+        "name": "Test Agriculture Lens",
+        "version": "1.2.0",
+        "description": "Test-only lens for registry and prompt-slice coverage.",
+        "aliases": ["agriculture", "irrigation"],
+        "compatibility": {"compatible_with": ["*"], "incompatible_with": []},
+    }]
+    assert suggestions[0]["lens_id"] == "test-agriculture"
+    assert suggestions[0]["confidence"] == "high"
+    assert suggestions[0]["selected_by_default"] is True
+    assert uncertain[0]["confidence"] == "uncertain"
+    assert uncertain[0]["selected_by_default"] is False
+    assert detect_lens_suggestions("No relevant sector text.", registry) == []
+
+
+def test_hidden_lens_diagnostic_is_validated_and_removed_from_display_text():
+    payload = {
+        "lenses": [{"lens_id": "test-agriculture", "applicability": "material"}],
+        "findings": [{
+            "lens_ids": ["test-agriculture"],
+            "evidence": ["Targeting uses water-user groups."],
+            "status": "partially_addressed",
+            "source_ids": ["agri-guidance"],
+            "core_mappings": ["dnh:3"],
+            "mechanism": "water access grievance",
+            "geography": "project area",
+            "action_target": "beneficiary targeting",
+        }],
+    }
+    text = "Visible assessment\n%%%LENS_DIAGNOSTIC_START%%%\n" + json.dumps(payload) + (
+        "\n%%%LENS_DIAGNOSTIC_END%%%\nVisible close"
+    )
+
+    diagnostic = extract_lens_diagnostic(text, active_lens_ids=["test-agriculture"])
+
+    assert diagnostic["error"] is False
+    assert diagnostic["findings"][0]["core_mappings"] == ["dnh:3"]
+    assert "LENS_DIAGNOSTIC" not in strip_lens_blocks(text)
+    assert strip_lens_blocks(text) == "Visible assessment\n\nVisible close"
+
+
+def test_hidden_stage1_evidence_is_validated_against_active_lenses():
+    text = "%%%LENS_EVIDENCE_START%%%" + json.dumps({"lenses": [{
+        "lens_id": "test-agriculture",
+        "evidence_requests": ["Confirm irrigated districts."],
+        "research_intents": ["Check water-access grievances."],
+    }, {"lens_id": "unknown", "evidence_requests": ["Drop"], "research_intents": []}]}) + "%%%LENS_EVIDENCE_END%%%"
+
+    evidence = extract_lens_evidence(text, ["test-agriculture"])
+
+    assert evidence["error"] is False
+    assert [item["lens_id"] for item in evidence["lenses"]] == ["test-agriculture"]
+
+
+def test_incomplete_hidden_block_never_leaks_into_display_text():
+    text = "Visible assessment\n%%%LENS_DIAGNOSTIC_START%%%\npartial hidden JSON"
+
+    assert strip_lens_blocks(text) == "Visible assessment"
+
+
+def test_incomplete_dedup_keys_are_rejected_and_merge_is_permutation_stable():
+    complete = [
+        {"lens_ids": ["climate"], "evidence": ["A"], "source_ids": ["c1"],
+         "core_mappings": ["dnh:3", "ost:2"], "mechanism": "competition",
+         "geography": "north", "action_target": "targeting", "status": "partially_addressed"},
+        {"lens_ids": ["energy"], "evidence": ["B"], "source_ids": ["e1"],
+         "core_mappings": ["ost:2", "shift:B"], "mechanism": "Competition",
+         "geography": "North", "action_target": "Targeting", "status": "gap"},
+    ]
+    outputs = [merge_lens_findings(order) for order in permutations(complete)]
+    incomplete_text = "%%%LENS_DIAGNOSTIC_START%%%" + json.dumps({
+        "lenses": [], "findings": [{**complete[0], "geography": ""}]
+    }) + "%%%LENS_DIAGNOSTIC_END%%%"
+
+    assert outputs[0] == outputs[1]
+    assert outputs[0][0]["status"] == "gap"
+    assert extract_lens_diagnostic(incomplete_text, ["climate"])["findings"] == []
+
+
+def test_parser_failure_is_non_fatal_and_dedup_retains_contributors():
+    invalid = extract_lens_diagnostic(
+        "%%%LENS_DIAGNOSTIC_START%%%not-json%%%LENS_DIAGNOSTIC_END%%%",
+        active_lens_ids=["one"],
+    )
+    merged = merge_lens_findings([
+        {
+            "lens_ids": ["climate"], "evidence": ["A"], "source_ids": ["c1"],
+            "core_mappings": ["dnh:3", "ost:2"], "mechanism": "resource competition",
+            "geography": "north", "action_target": "targeting", "status": "gap",
+        },
+        {
+            "lens_ids": ["energy"], "evidence": ["B"], "source_ids": ["e1"],
+            "core_mappings": ["dnh:3"], "mechanism": "Resource Competition",
+            "geography": "North", "action_target": "Targeting", "status": "gap",
+        },
+    ])
+
+    assert invalid["error"] is True
+    assert len(merged) == 1
+    assert merged[0]["lens_ids"] == ["climate", "energy"]
+    assert merged[0]["source_ids"] == ["c1", "e1"]
+    assert merged[0]["evidence"] == ["A", "B"]

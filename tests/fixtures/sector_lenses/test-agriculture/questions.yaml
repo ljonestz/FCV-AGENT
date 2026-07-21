@@ -1,0 +1,18 @@
+questions:
+  - id: agri-access
+    text: Could beneficiary targeting reinforce land or water access grievances?
+    condition: project uses beneficiary targeting
+    source_ids:
+      - agri-guidance
+    core_mappings:
+      - ost:2
+      - dnh:3
+      - shift:B
+  - id: agri-markets
+    text: Are market-access activities adapted to conflict-related mobility constraints?
+    source_ids:
+      - agri-guidance
+      - mobility-note
+    core_mappings:
+      - ost:7
+      - shift:C
