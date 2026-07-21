@@ -100,6 +100,15 @@ class LensSource:
 
 
 @dataclass(frozen=True)
+class LensReadoutSection:
+    """A declared group of model-output items for a lens readout."""
+
+    id: str
+    title: str
+    item_ids: tuple[str, ...]
+
+
+@dataclass(frozen=True)
 class SectorLens:
     """A fully parsed and validated runtime lens."""
 
@@ -112,6 +121,7 @@ class SectorLens:
     sources: tuple[LensSource, ...]
     path: Path
     compatibility: LensCompatibility = field(default_factory=LensCompatibility)
+    readout_sections: tuple[LensReadoutSection, ...] = ()
 
     @property
     def id(self) -> str:

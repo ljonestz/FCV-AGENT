@@ -16,6 +16,7 @@ from .models import (
     LensLoadStatus,
     LensMetadata,
     LensQuestion,
+    LensReadoutSection,
     LensRegistry,
     LensSource,
     LensStatus,
@@ -67,15 +68,24 @@ def _validate_lens(lens: SectorLens) -> None:
         raise LensPackageError("missing_stage_content", "all three stage instructions are required")
     source_ids = [source.id for source in lens.sources]
     question_ids = [question.id for question in lens.questions]
+    section_ids = [section.id for section in lens.readout_sections]
+    item_ids = [item_id for section in lens.readout_sections for item_id in section.item_ids]
     if len(source_ids) != len(set(source_ids)) or len(question_ids) != len(set(question_ids)):
         raise LensPackageError("duplicate_id", "source and question IDs must be unique")
+    if len(section_ids) != len(set(section_ids)) or len(item_ids) != len(set(item_ids)):
+        raise LensPackageError("duplicate_id", "readout section and item IDs must be unique")
     known_sources = set(source_ids)
     if not VALID_ID.match(lens.id):
         raise LensPackageError("invalid_id", "lens ID must be a lowercase URL-safe slug")
     invalid_source_ids = [value for value in source_ids if not VALID_ID.match(value)]
     invalid_question_ids = [value for value in question_ids if not VALID_ID.match(value)]
-    if invalid_source_ids or invalid_question_ids:
-        invalid = ", ".join((*invalid_source_ids, *invalid_question_ids))
+    invalid_section_ids = [value for value in section_ids if not VALID_ID.match(value)]
+    invalid_item_ids = [value for value in item_ids if not VALID_ID.match(value)]
+    if invalid_source_ids or invalid_question_ids or invalid_section_ids or invalid_item_ids:
+        invalid = ", ".join((
+            *invalid_source_ids, *invalid_question_ids,
+            *invalid_section_ids, *invalid_item_ids,
+        ))
         raise LensPackageError(
             "invalid_id",
             f"source and question IDs must be lowercase URL-safe slugs: {invalid}",
@@ -84,6 +94,7 @@ def _validate_lens(lens: SectorLens) -> None:
         lens.id, lens.metadata.name, lens.metadata.description, lens.guidance,
         *lens.metadata.aliases, *lens.detection.keywords, *lens.detection.sector_codes,
         *lens.stage_instructions.values(),
+        *(section.title for section in lens.readout_sections),
     ]
     text_values.extend(question.text + " " + question.condition for question in lens.questions)
     text_values.extend(
@@ -95,6 +106,12 @@ def _validate_lens(lens: SectorLens) -> None:
         for value in text_values
     ):
         raise LensPackageError("unsafe_content", "module text contains a reserved delimiter or unsafe markup")
+    if any(not section.title.strip() or not section.item_ids for section in lens.readout_sections):
+        raise LensPackageError(
+            "invalid_readout",
+            "readout sections require a title and at least one item",
+            "manifest.yaml",
+        )
     for question in lens.questions:
         if set(question.source_ids) - known_sources:
             raise LensPackageError("missing_source", f"question {question.id!r} references a missing source")
@@ -160,6 +177,14 @@ def _load_package(path: Path) -> SectorLens:
         compatible_with=tuple(str(value) for value in compatibility_data.get("compatible_with", ["*"])),
         incompatible_with=tuple(str(value) for value in compatibility_data.get("incompatible_with", [])),
     )
+    readout_sections = tuple(
+        LensReadoutSection(
+            id=str(item["id"]),
+            title=str(item["title"]),
+            item_ids=tuple(str(value) for value in item.get("item_ids", [])),
+        )
+        for item in manifest.get("readout_sections", [])
+    )
 
     source_data = _read_yaml(path / "sources.yaml").get("sources", [])
     sources = tuple(
@@ -216,6 +241,7 @@ def _load_package(path: Path) -> SectorLens:
         sources=sources,
         path=path,
         compatibility=compatibility,
+        readout_sections=readout_sections,
     )
     _validate_lens(lens)
     return lens

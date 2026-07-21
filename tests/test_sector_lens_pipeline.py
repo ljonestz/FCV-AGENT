@@ -11,6 +11,7 @@ from sector_lenses import (
     lens_catalogue,
     load_registry,
     merge_lens_findings,
+    normalize_lens_diagnostic,
     strip_lens_blocks,
 )
 
@@ -69,6 +70,49 @@ def test_hidden_lens_diagnostic_is_validated_and_removed_from_display_text():
     assert diagnostic["findings"][0]["core_mappings"] == ["dnh:3"]
     assert "LENS_DIAGNOSTIC" not in strip_lens_blocks(text)
     assert strip_lens_blocks(text) == "Visible assessment\n\nVisible close"
+
+
+def test_diagnostic_normalizes_declared_readout_items():
+    payload = {"lenses": [{
+        "lens_id": "test-agriculture",
+        "applicability": "material",
+        "materiality_summary": "Water access is material.",
+        "analysis_emphasis": ["resource access"],
+        "readout_sections": [{
+            "section_id": "production-opportunities",
+            "items": [{
+                "item_id": "equitable-access",
+                "status": "supported",
+                "mechanism": "Transparent water allocation reduces grievance risk.",
+                "evidence": ["Water-user groups allocate access."],
+                "evidence_gap": "Seasonal-user representation is not documented.",
+                "trade_off": "Formal rules may exclude customary users.",
+                "source_ids": ["agri-guidance"],
+            }],
+        }],
+        "other_pathways": [{
+            "pathway": "resilient-markets",
+            "status": "not_material",
+            "reason": "The project has no market component.",
+        }],
+    }], "findings": []}
+    schema = {"test-agriculture": {
+        "production-opportunities": {
+            "equitable-access", "resilient-markets"
+        }
+    }}
+
+    result = normalize_lens_diagnostic(
+        payload,
+        ["test-agriculture"],
+        {"test-agriculture": {"agri-guidance"}},
+        schema,
+    )
+
+    lens = result["lenses"][0]
+    assert lens["materiality_summary"] == "Water access is material."
+    assert lens["readout_sections"][0]["items"][0]["status"] == "supported"
+    assert lens["other_pathways"][0]["status"] == "not_material"
 
 
 def test_hidden_stage1_evidence_is_validated_against_active_lenses():

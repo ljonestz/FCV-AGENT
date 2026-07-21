@@ -14,6 +14,10 @@ detection:
   sector_codes:
     - AG
   threshold: 2
+readout_sections:
+  - id: production-opportunities
+    title: Where agricultural design can help
+    item_ids: [equitable-access, resilient-markets]
 budgets:
   stage1: 80
   stage2: 600

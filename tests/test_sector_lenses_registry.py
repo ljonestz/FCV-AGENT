@@ -29,6 +29,7 @@ def test_public_models_and_platform_limits_are_typed():
         "LensLoadStatus",
         "LensMetadata",
         "LensQuestion",
+        "LensReadoutSection",
         "LensRegistry",
         "LensSource",
         "LensStatus",
@@ -100,6 +101,18 @@ def test_activation_mode_defaults_to_suggested_and_is_typed():
     lens = api.load_registry(FIXTURE_ROOT).get("test-agriculture")
 
     assert lens.metadata.activation is api.LensActivationMode.SUGGESTED
+
+
+def test_registry_loads_declared_readout_sections():
+    lens = _sector_lenses_api().load_registry(FIXTURE_ROOT).get(
+        "test-agriculture"
+    )
+
+    assert lens.readout_sections[0].id == "production-opportunities"
+    assert lens.readout_sections[0].item_ids == (
+        "equitable-access",
+        "resilient-markets",
+    )
 
 
 def test_manual_lens_is_catalogued_but_never_suggested():

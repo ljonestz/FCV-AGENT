@@ -138,6 +138,7 @@ def extract_lens_diagnostic(
     text: str,
     active_lens_ids: Iterable[str],
     source_ids_by_lens: dict[str, set[str]] | None = None,
+    readout_schema_by_lens: dict[str, dict[str, set[str]]] | None = None,
 ) -> dict[str, Any]:
     """Parse and validate the hidden Stage-2 lens diagnostic without failing core analysis."""
 
@@ -177,14 +178,92 @@ def extract_lens_diagnostic(
                 value for value in lens_sources
                 if value in source_ids_by_lens.get(lens_id, set())
             ]
+        declared_sections = (
+            readout_schema_by_lens.get(lens_id, {})
+            if readout_schema_by_lens is not None else {}
+        )
+        normalized_sections: list[dict[str, Any]] = []
+        raw_sections = item.get("readout_sections", [])
+        for raw_section in raw_sections if isinstance(raw_sections, list) else []:
+            if not isinstance(raw_section, dict):
+                continue
+            section_id = str(raw_section.get("section_id", ""))
+            allowed_items = declared_sections.get(section_id)
+            if allowed_items is None:
+                continue
+            normalized_items: list[dict[str, Any]] = []
+            raw_items = raw_section.get("items", [])
+            for raw_item in raw_items if isinstance(raw_items, list) else []:
+                if not isinstance(raw_item, dict):
+                    continue
+                item_id = str(raw_item.get("item_id", ""))
+                status = str(raw_item.get("status", "potential"))
+                if item_id not in allowed_items or status not in {
+                    "supported", "potential", "not_material",
+                }:
+                    continue
+                item_sources = list(dict.fromkeys(
+                    str(value) for value in raw_item.get("source_ids", [])
+                ))[:10]
+                if source_ids_by_lens is not None:
+                    item_sources = [
+                        value for value in item_sources
+                        if value in source_ids_by_lens.get(lens_id, set())
+                    ]
+                normalized_items.append({
+                    "item_id": item_id,
+                    "status": status,
+                    "mechanism": str(raw_item.get("mechanism", "")).strip()[:500],
+                    "evidence": [
+                        str(value).strip()[:500]
+                        for value in raw_item.get("evidence", [])
+                        if str(value).strip()
+                    ][:5],
+                    "evidence_gap": str(raw_item.get("evidence_gap", "")).strip()[:500],
+                    "trade_off": str(raw_item.get("trade_off", "")).strip()[:500],
+                    "source_ids": item_sources,
+                })
+                if len(normalized_items) >= 3:
+                    break
+            if normalized_items:
+                normalized_sections.append({
+                    "section_id": section_id,
+                    "items": normalized_items,
+                })
+        normalized_other: list[dict[str, str]] = []
+        raw_other = item.get("other_pathways", [])
+        for pathway in raw_other if isinstance(raw_other, list) else []:
+            if not isinstance(pathway, dict):
+                continue
+            status = str(pathway.get("status", ""))
+            name = str(pathway.get("pathway", "")).strip()[:200]
+            if not name or status not in {"potential", "not_material"}:
+                continue
+            normalized_other.append({
+                "pathway": name,
+                "status": status,
+                "reason": str(pathway.get("reason", "")).strip()[:500],
+            })
+            if len(normalized_other) >= 10:
+                break
         lenses.append({
             "lens_id": lens_id,
             "applicability": applicability,
+            "materiality_summary": str(
+                item.get("materiality_summary", "")
+            ).strip()[:600],
+            "analysis_emphasis": [
+                str(value).strip()[:100]
+                for value in item.get("analysis_emphasis", [])
+                if str(value).strip()
+            ][:5],
             "evidence": [
                 str(value).strip()[:500]
                 for value in item.get("evidence", []) if str(value).strip()
             ][:5],
             "source_ids": lens_sources,
+            "readout_sections": normalized_sections,
+            "other_pathways": normalized_other,
         })
 
     findings: list[dict[str, Any]] = []
@@ -228,12 +307,18 @@ def normalize_lens_diagnostic(
     payload: dict[str, Any] | None,
     active_lens_ids: Iterable[str],
     source_ids_by_lens: dict[str, set[str]] | None = None,
+    readout_schema_by_lens: dict[str, dict[str, set[str]]] | None = None,
 ) -> dict[str, Any]:
     """Apply the model-output validator to a diagnostic received from a client/session."""
 
     serialized = json.dumps(payload or {}, ensure_ascii=False)
     wrapped = LENS_DIAGNOSTIC_START + serialized + LENS_DIAGNOSTIC_END
-    return extract_lens_diagnostic(wrapped, active_lens_ids, source_ids_by_lens)
+    return extract_lens_diagnostic(
+        wrapped,
+        active_lens_ids,
+        source_ids_by_lens,
+        readout_schema_by_lens,
+    )
 
 
 def _extend_unique(target: list[str], values: Iterable[Any]) -> None:

@@ -111,6 +111,16 @@ def _lens_blocks(lens: SectorLens, stage: int) -> list[tuple[str | None, str]]:
     if instruction:
         blocks.append((None, instruction))
     if stage == 2:
+        if lens.readout_sections:
+            lines = [
+                f"- {section.id}: {section.title}; allowed items: "
+                f"{', '.join(section.item_ids)}"
+                for section in lens.readout_sections
+            ]
+            blocks.append((
+                None,
+                "Declared diagnostic readout sections:\n" + "\n".join(lines),
+            ))
         if lens.guidance:
             blocks.append((None, f"Guidance:\n{lens.guidance}"))
         source_lookup = {source.id: source for source in lens.sources}
