@@ -327,6 +327,15 @@
     .lens-diagnostic-panel{border:1px solid #bae6fd;border-left:4px solid #0284c7;border-radius:8px;background:#f0f9ff;padding:14px 16px;margin:16px 0}
     .lens-diagnostic-panel h3{font-size:14px;margin:0 0 8px;color:#075985}
     .lens-diagnostic-item{font-size:12px;color:#334155;padding:8px 0;border-top:1px solid #dbeafe}
+    .lens-materiality{font-size:13px;color:#334155;margin:8px 0}
+    .lens-emphasis{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 12px}
+    .lens-emphasis span,.lens-readout-status{font-size:11px;padding:2px 7px;border-radius:999px;background:#e0f2fe;color:#075985}
+    .lens-readout-section{margin-top:12px;padding-top:10px;border-top:1px solid #bae6fd}
+    .lens-readout-section h4{font-size:13px;color:#0f172a;margin:0 0 6px}
+    .lens-readout-item{font-size:12px;color:#334155;padding:7px 0}
+    .lens-readout-item p{margin:3px 0;line-height:1.45}
+    .lens-other-pathways{font-size:12px;margin-top:10px;color:#475569}
+    .lens-other-pathways summary{cursor:pointer;font-weight:600;color:#075985}
     .lens-badge{display:inline-flex;align-items:center;padding:3px 8px;border-radius:999px;background:#ecfeff;color:#0e7490;border:1px solid #a5f3fc;font-size:10px;font-weight:700}
 
     /* ── Buttons ── */
@@ -2316,7 +2325,7 @@
     <section id="lens-selector" class="lens-selector" style="display:none" aria-label="Sector lenses">
       <div class="lens-selector-head">
         <div><div class="lens-selector-title">Add a sector lens <span style="font-weight:400;color:#64748b">(optional)</span></div>
-        <div class="lens-selector-help">Use up to two specialist lenses. Suggested lenses are based on the uploaded project document and can be removed or replaced before analysis starts.</div></div>
+        <div class="lens-selector-help">Select up to two specialist lenses before analysis. Some lenses may be suggested from the uploaded document; Climate is not selected automatically.</div></div>
         <span id="lens-count" class="lens-selector-help">0 of 2</span>
       </div>
       <div id="lens-options" class="lens-options"></div>
@@ -2458,9 +2467,11 @@
     if(lensSelectionLocked)return;
     lensSelectionTouched=true;
     const idx=activeLenses.indexOf(id);
-    if(idx>=0){activeLenses.splice(idx,1);delete resolvedLensVersions[id];}
-    else if(activeLenses.length<2)activeLenses.push(id);
+    let changed=false;
+    if(idx>=0){activeLenses.splice(idx,1);delete resolvedLensVersions[id];changed=true;}
+    else if(activeLenses.length<2){activeLenses.push(id);changed=true;}
     else showLensWarnings([{message:'Remove one active lens before selecting another.'}]);
+    if(changed){lensDiagnostic={};lensContextSources=[];}
     renderLensSelector();
   }
 
@@ -2479,12 +2490,51 @@
     if(items.length&&runtimeHost){runtime=document.createElement('div');runtime.id='lens-runtime-warning';runtime.className='callout warn ani';runtime.innerHTML=`<div class="callout-body"><strong>Sector-lens notice:</strong> ${esc(items.map(w=>w.message).join(' '))}</div>`;runtimeHost.prepend(runtime);}
   }
 
+  function renderLensReadoutSections(lens,catalogueLens){
+    if(!lens||!catalogueLens)return '';
+    const lensName=catalogueLens.name||'Sector lens';
+    let html=`<div class="lens-materiality"><strong>${esc(lensName)} materiality</strong><br>${esc(lens.materiality_summary||'Materiality was not established.')}</div>`;
+    if(lens.applicability==='not_applicable')return html;
+    const emphasis=(Array.isArray(lens.analysis_emphasis)?lens.analysis_emphasis:[]).filter(Boolean).slice(0,5);
+    if(emphasis.length)html+=`<div class="lens-emphasis">${emphasis.map(value=>`<span>${esc(value)}</span>`).join('')}</div>`;
+    const declared=Array.isArray(catalogueLens.readout_sections)?catalogueLens.readout_sections:[];
+    const modelSections=new Map((Array.isArray(lens.readout_sections)?lens.readout_sections:[]).map(section=>[section.section_id,section]));
+    const fallbackTitles={'invest-in':'What the project may invest in','deliver-through':'How the project may deliver'};
+    declared.forEach(section=>{
+      const model=modelSections.get(section.id)||{};
+      const allowed=new Set(Array.isArray(section.item_ids)?section.item_ids:[]);
+      const items=(Array.isArray(model.items)?model.items:[]).filter(item=>allowed.has(item.item_id)&&['supported','potential'].includes(item.status)).slice(0,3);
+      if(!items.length)return;
+      const title=section.title||fallbackTitles[section.id]||section.id;
+      html+=`<div class="lens-readout-section"><h4>${esc(title)}</h4>`;
+      items.forEach(item=>{
+        const label=String(item.item_id||'').replace(/-/g,' ');
+        const evidence=(Array.isArray(item.evidence)?item.evidence:[]).filter(Boolean).slice(0,5);
+        html+=`<div class="lens-readout-item"><strong>${esc(label)}</strong> <span class="lens-readout-status">${esc(item.status)}</span>`;
+        if(item.mechanism)html+=`<p>${esc(item.mechanism)}</p>`;
+        if(evidence.length)html+=`<p><strong>Evidence:</strong> ${evidence.map(esc).join(' ')}</p>`;
+        if(item.evidence_gap)html+=`<p><strong>Evidence gap:</strong> ${esc(item.evidence_gap)}</p>`;
+        if(item.trade_off)html+=`<p><strong>Trade-off:</strong> ${esc(item.trade_off)}</p>`;
+        html+='</div>';
+      });
+      html+='</div>';
+    });
+    const pathways=(Array.isArray(lens.other_pathways)?lens.other_pathways:[]).filter(item=>item&&item.pathway).slice(0,10);
+    if(pathways.length)html+=`<details class="lens-other-pathways"><summary>Other pathways considered</summary>${pathways.map(item=>`<div><strong>${esc(item.pathway)}</strong> (${esc(item.status||'')}): ${esc(item.reason||'')}</div>`).join('')}</details>`;
+    return html;
+  }
+
   function renderLensDiagnostic(){
     const old=document.getElementById('lens-diagnostic-panel');if(old)old.remove();
-    if(!lensDiagnostic||lensDiagnostic.error||!(lensDiagnostic.findings||[]).length)return;
+    if(!lensDiagnostic||lensDiagnostic.error)return;
+    const lenses=Array.isArray(lensDiagnostic.lenses)?lensDiagnostic.lenses:[];
+    const findings=Array.isArray(lensDiagnostic.findings)?lensDiagnostic.findings:[];
+    if(!lenses.length&&!findings.length)return;
     const host=document.getElementById('out-txt')||document.getElementById('stage-disp');if(!host)return;
     const panel=document.createElement('div');panel.id='lens-diagnostic-panel';panel.className='lens-diagnostic-panel';
-    panel.innerHTML='<h3>Sector-lens diagnostic</h3>'+lensDiagnostic.findings.map(f=>`<div class="lens-diagnostic-item"><strong>${(f.lens_ids||[]).map(esc).join(' + ')}</strong> · ${esc(f.status||'')}<br>${esc((f.evidence||[]).join(' '))}<br><span style="color:#64748b">Mapped to ${(f.core_mappings||[]).map(esc).join(', ')} · Sources: ${(f.source_ids||[]).map(esc).join(', ')}</span></div>`).join('');
+    const readouts=lenses.map(lens=>renderLensReadoutSections(lens,lensCatalogue.find(item=>item.id===lens.lens_id))).join('');
+    const findingHtml=findings.map(f=>`<div class="lens-diagnostic-item"><strong>${(f.lens_ids||[]).map(esc).join(' + ')}</strong> · ${esc(f.status||'')}<br>${esc((f.evidence||[]).join(' '))}<br><span style="color:#64748b">Mapped to ${(f.core_mappings||[]).map(esc).join(', ')} · Sources: ${(f.source_ids||[]).map(esc).join(', ')}</span></div>`).join('');
+    panel.innerHTML='<h3>Sector-lens diagnostic</h3>'+readouts+findingHtml;
     host.prepend(panel);
   }
 
