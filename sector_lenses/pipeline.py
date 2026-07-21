@@ -30,6 +30,14 @@ def lens_catalogue(registry: LensRegistry) -> list[dict[str, Any]]:
             "version": lens.version,
             "description": lens.metadata.description,
             "activation": lens.metadata.activation.value,
+            "readout_sections": [
+                {
+                    "id": section.id,
+                    "title": section.title,
+                    "item_ids": list(section.item_ids),
+                }
+                for section in lens.readout_sections
+            ],
             "aliases": list(lens.metadata.aliases),
             "compatibility": {
                 "compatible_with": list(lens.compatibility.compatible_with),

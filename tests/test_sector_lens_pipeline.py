@@ -35,6 +35,11 @@ def test_catalogue_and_detection_are_ranked_and_non_blocking():
         "version": "1.2.0",
         "description": "Test-only lens for registry and prompt-slice coverage.",
         "activation": "suggested",
+        "readout_sections": [{
+            "id": "production-opportunities",
+            "title": "Where agricultural design can help",
+            "item_ids": ["equitable-access", "resilient-markets"],
+        }],
         "aliases": ["agriculture", "irrigation"],
         "compatibility": {"compatible_with": ["*"], "incompatible_with": []},
     }]

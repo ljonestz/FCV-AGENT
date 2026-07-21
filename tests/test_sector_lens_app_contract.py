@@ -11,13 +11,25 @@ from sector_lenses import load_registry
 FIXTURE_ROOT = Path(__file__).parent / "fixtures" / "sector_lenses"
 
 
-def test_production_catalogue_is_empty_until_a_module_is_approved():
+def test_production_catalogue_has_manual_climate_without_suggestions():
     client = app_module.app.test_client()
 
     response = client.get("/api/sector-lenses")
 
     assert response.status_code == 200
-    assert response.get_json() == {"lenses": [], "warnings": []}
+    payload = response.get_json()
+    assert payload["warnings"] == []
+    assert len(payload["lenses"]) == 1
+    climate = payload["lenses"][0]
+    assert climate["id"] == "climate"
+    assert climate["activation"] == "manual"
+    assert [section["id"] for section in climate["readout_sections"]] == [
+        "invest-in", "deliver-through",
+    ]
+    assert app_module.detect_lens_suggestions(
+        "Climate resilience adaptation drought mitigation transition",
+        app_module.SECTOR_LENS_REGISTRY,
+    ) == []
 
 
 def test_metadata_response_includes_ranked_lens_suggestions(monkeypatch):

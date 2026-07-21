@@ -1,0 +1,31 @@
+id: climate
+name: Climate-FCV Lens
+version: 1.0.0
+description: Screens material climate risks, project effects, credible climate co-benefits, and peace and social dividend pathways through an FCV lens.
+status: enabled
+activation: manual
+aliases: [climate, climate change]
+compatibility:
+  compatible_with: ["*"]
+  incompatible_with: []
+readout_sections:
+  - id: invest-in
+    title: What the project may invest in
+    item_ids:
+      - social-cohesion-inclusion
+      - institutional-capacity-legitimacy
+      - livelihoods-opportunity
+  - id: deliver-through
+    title: How the project may deliver
+    item_ids:
+      - context-analysis-monitoring
+      - trust-collaboration
+      - flexible-adaptive-delivery
+budgets:
+  stage1: 500
+  stage2: 1950
+  stage3: 180
+stage_instructions:
+  stage1: Collect only evidence needed to establish Climate materiality, causal pathways, affected groups, delivery constraints, and plausible dividend entry points. Do not diagnose or recommend.
+  stage2: Apply universal and conditionally relevant pathways. Prioritize adaptation and resilience; use deep mitigation analysis only for a clear mitigation or transition mechanism. Distinguish project evidence, context evidence, inference, and evidence gaps.
+  stage3: Integrate only material and actionable Climate-FCV findings into the common note. Use one priority list, avoid generic Climate advice, and treat category balance as flexible rather than quota-driven.

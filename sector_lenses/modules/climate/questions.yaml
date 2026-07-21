@@ -1,0 +1,115 @@
+questions:
+  - id: climate-materiality
+    text: Establish whether climate hazards, project influence, a credible co-benefit, or an explicit climate pathway is material to project results.
+    condition: always
+    priority: 10
+    source_ids: [ccdr-fcv-approach, peace-social-dividends]
+    core_mappings: ["ost:1", "ost:4", "shift:A"]
+  - id: project-climate-influence
+    text: Test whether project choices could materially change resilience, vulnerability, emissions, transition outcomes, or the distribution of climate risk.
+    condition: always
+    priority: 10
+    source_ids: [ccdr-fcv-approach, defueling-conflict]
+    core_mappings: ["ost:4", "dnh:7"]
+  - id: compound-risk
+    text: Trace the mediated mechanism through which material climate exposure and FCV pressures could compound one another.
+    condition: material exposure or climate pathway
+    priority: 20
+    source_ids: [ccdr-fcv-approach, adelphi-conflict-sensitivity, cgiar-climate-security]
+    core_mappings: ["ost:1", "ost:4", "shift:A", "shift:B"]
+  - id: differentiated-effects
+    text: Identify how exposure, adaptive capacity, voice, costs, and benefits differ across places and population groups.
+    condition: material climate pathway
+    priority: 20
+    source_ids: [ccdr-fcv-approach, adaptation-review]
+    core_mappings: ["ost:2", "dnh:1", "dnh:3", "dnh:4", "shift:B"]
+  - id: power-distribution
+    text: Examine winners, losers, elite capture, exclusion, and power effects where access, protection, costs, or benefits may change.
+    condition: access, protection, costs, or benefits change
+    priority: 20
+    source_ids: [fcv-climate-compendium, defueling-conflict]
+    core_mappings: ["ost:2", "dnh:2", "dnh:3", "dnh:4", "dnh:5"]
+  - id: institutional-feasibility
+    text: Assess whether formal, customary, community, and non-state institutions have the capacity, legitimacy, and incentives to manage the pathway fairly.
+    condition: material pathway
+    priority: 30
+    source_ids: [peace-social-dividends, defueling-field-notes]
+    core_mappings: ["ost:2", "ost:3", "ost:7", "ost:9", "shift:B"]
+  - id: delivery-feasibility
+    text: Test delivery under insecurity, restricted access, contested authority, partner constraints, and weak monitoring systems.
+    condition: insecurity, access, or capacity is material
+    priority: 30
+    source_ids: [fcv-climate-compendium, adelphi-conflict-sensitivity]
+    core_mappings: ["ost:4", "ost:6", "ost:7", "ost:8", "dnh:6", "shift:D"]
+  - id: maladaptation
+    text: Test whether the response could transfer risk, lock in vulnerability, reinforce exclusion, or create new climate and FCV harms.
+    condition: adaptation or resilience response
+    priority: 20
+    source_ids: [ccdr-fcv-approach, adaptation-review]
+    core_mappings: ["dnh:2", "dnh:3", "dnh:4", "dnh:7"]
+  - id: resource-access
+    text: Examine formal and customary rights, seasonal and secondary users, resource access, land value, and dispute pathways.
+    condition: climate-linked land, water, or ecosystem pathway
+    priority: 40
+    source_ids: [fcv-climate-compendium, defueling-conflict]
+    core_mappings: ["ost:2", "dnh:1", "dnh:2", "dnh:3", "dnh:4", "dnh:5"]
+  - id: livelihoods-food
+    text: Examine climate-sensitive livelihoods, food systems, jobs, coping strategies, exclusion, and conflict-linked economies.
+    condition: climate-sensitive livelihoods or jobs
+    priority: 40
+    source_ids: [peace-social-dividends, defueling-conflict]
+    core_mappings: ["ost:2", "ost:3", "dnh:1", "dnh:3", "shift:C"]
+  - id: disaster-services
+    text: Test whether infrastructure, services, preparedness, targeting, or assistance redistributes risk, protection, or perceived fairness.
+    condition: disaster, infrastructure, or service pathway
+    priority: 40
+    source_ids: [fcv-climate-compendium, cgiar-climate-security]
+    core_mappings: ["ost:4", "dnh:1", "dnh:4", "dnh:7", "shift:A"]
+  - id: mobility-displacement
+    text: Examine mobility, displacement, return, pastoral routes, urban pressure, and relationships among displaced, host, mobile, and sedentary groups.
+    condition: climate-linked mobility or displacement
+    priority: 40
+    source_ids: [defueling-conflict, cgiar-climate-security]
+    core_mappings: ["ost:2", "dnh:1", "dnh:3", "dnh:4", "shift:B"]
+  - id: governance-trust
+    text: Assess transparency, representation, dispute resolution, shared-resource governance, trust, and collective action.
+    condition: climate decisions depend on institutions
+    priority: 40
+    source_ids: [peace-social-dividends, defueling-field-notes]
+    core_mappings: ["ost:3", "ost:7", "ost:9", "dnh:8", "shift:B"]
+  - id: mitigation-transition
+    text: Examine affordability, energy access, land, jobs, subsidies, supply chains, minerals, conflict economies, and benefit-sharing.
+    condition: clear material mitigation or transition pathway only
+    priority: 40
+    source_ids: [ccdr-fcv-approach, cgiar-climate-security, defueling-conflict]
+    core_mappings: ["ost:1", "ost:2", "ost:3", "dnh:1", "dnh:2", "dnh:4", "dnh:5", "shift:C"]
+  - id: monitor-adapt
+    text: Test whether monitoring, scenarios, early warning, contingencies, and adaptation arrangements cover climate and FCV change.
+    condition: material climate pathway
+    priority: 30
+    source_ids: [peace-social-dividends, adelphi-conflict-sensitivity, defueling-field-notes]
+    core_mappings: ["ost:5", "ost:7", "ost:8", "ost:10", "ost:12", "dnh:7", "shift:A", "shift:D"]
+  - id: participation-grm
+    text: Test whether affected people can influence contested decisions and safely use accessible feedback and grievance channels.
+    condition: affected people or contested decisions
+    priority: 30
+    source_ids: [fcv-climate-compendium, adelphi-conflict-sensitivity, adaptation-review]
+    core_mappings: ["ost:2", "ost:9", "dnh:8", "shift:B"]
+  - id: dividends-invest
+    text: Identify supported or potential pathways for cohesion and inclusion, institutional legitimacy, or resilient livelihoods without asserting unsupported benefits.
+    condition: credible investment-side dividend
+    priority: 50
+    source_ids: [peace-social-dividends, defueling-field-notes]
+    core_mappings: ["ost:2", "ost:3", "ost:7", "shift:B", "shift:C"]
+  - id: dividends-deliver
+    text: Identify supported or potential pathways for context monitoring, trust and collaboration, or flexible delivery without forcing empty categories.
+    condition: credible delivery-side dividend
+    priority: 50
+    source_ids: [peace-social-dividends, fcv-climate-compendium]
+    core_mappings: ["ost:4", "ost:5", "ost:9", "ost:10", "dnh:7", "dnh:8", "shift:A", "shift:B"]
+  - id: transboundary-systems
+    text: Examine upstream and downstream effects, shared ecosystems, routes, and cross-border coordination where the pathway spans boundaries.
+    condition: shared ecosystem, route, or cross-border pathway
+    priority: 60
+    source_ids: [defueling-conflict, adelphi-conflict-sensitivity]
+    core_mappings: ["ost:1", "ost:4", "shift:A", "shift:B"]
