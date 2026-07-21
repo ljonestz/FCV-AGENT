@@ -120,6 +120,44 @@ def test_diagnostic_normalizes_declared_readout_items():
     assert lens["other_pathways"][0]["status"] == "not_material"
 
 
+def test_readout_normalization_treats_scalar_collections_as_empty():
+    payload = {"lenses": [{
+        "lens_id": "test-agriculture",
+        "applicability": "possible",
+        "analysis_emphasis": None,
+        "evidence": "not-a-list",
+        "source_ids": None,
+        "readout_sections": [{
+            "section_id": "production-opportunities",
+            "title": "Spoofed model title",
+            "items": [{
+                "item_id": "equitable-access",
+                "status": "potential",
+                "evidence": None,
+                "source_ids": "agri-guidance",
+            }],
+        }],
+    }], "findings": []}
+
+    result = normalize_lens_diagnostic(
+        payload,
+        ["test-agriculture"],
+        {"test-agriculture": {"agri-guidance"}},
+        {"test-agriculture": {
+            "production-opportunities": {"equitable-access"}
+        }},
+    )
+
+    lens = result["lenses"][0]
+    item = lens["readout_sections"][0]["items"][0]
+    assert lens["analysis_emphasis"] == []
+    assert lens["evidence"] == []
+    assert lens["source_ids"] == []
+    assert item["evidence"] == []
+    assert item["source_ids"] == []
+    assert "title" not in lens["readout_sections"][0]
+
+
 def test_hidden_stage1_evidence_is_validated_against_active_lenses():
     text = "%%%LENS_EVIDENCE_START%%%" + json.dumps({"lenses": [{
         "lens_id": "test-agriculture",

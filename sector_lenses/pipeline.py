@@ -20,6 +20,12 @@ _VALID_STATUSES = {
 }
 
 
+def _list_values(value: Any) -> list[Any]:
+    """Return model-provided collection values without iterating scalars."""
+
+    return list(value) if isinstance(value, (list, tuple)) else []
+
+
 def lens_catalogue(registry: LensRegistry) -> list[dict[str, Any]]:
     """Return selector-safe metadata for enabled modules only."""
 
@@ -179,7 +185,7 @@ def extract_lens_diagnostic(
         if applicability not in {"material", "possible", "not_applicable"}:
             applicability = "possible"
         lens_sources = list(dict.fromkeys(
-            str(value) for value in item.get("source_ids", [])
+            str(value) for value in _list_values(item.get("source_ids"))
         ))[:10]
         if source_ids_by_lens is not None:
             lens_sources = [
@@ -211,7 +217,9 @@ def extract_lens_diagnostic(
                 }:
                     continue
                 item_sources = list(dict.fromkeys(
-                    str(value) for value in raw_item.get("source_ids", [])
+                    str(value) for value in _list_values(
+                        raw_item.get("source_ids")
+                    )
                 ))[:10]
                 if source_ids_by_lens is not None:
                     item_sources = [
@@ -224,7 +232,7 @@ def extract_lens_diagnostic(
                     "mechanism": str(raw_item.get("mechanism", "")).strip()[:500],
                     "evidence": [
                         str(value).strip()[:500]
-                        for value in raw_item.get("evidence", [])
+                        for value in _list_values(raw_item.get("evidence"))
                         if str(value).strip()
                     ][:5],
                     "evidence_gap": str(raw_item.get("evidence_gap", "")).strip()[:500],
@@ -262,12 +270,13 @@ def extract_lens_diagnostic(
             ).strip()[:600],
             "analysis_emphasis": [
                 str(value).strip()[:100]
-                for value in item.get("analysis_emphasis", [])
+                for value in _list_values(item.get("analysis_emphasis"))
                 if str(value).strip()
             ][:5],
             "evidence": [
                 str(value).strip()[:500]
-                for value in item.get("evidence", []) if str(value).strip()
+                for value in _list_values(item.get("evidence"))
+                if str(value).strip()
             ][:5],
             "source_ids": lens_sources,
             "readout_sections": normalized_sections,
