@@ -15,6 +15,12 @@ Both modes produce identical output across three stages:
 2. **Stage 2 — FCV Assessment** — Thematic analysis across FCV dimensions, Do No Harm traffic-light, and detailed Under the Hood panels
 3. **Stage 3 — Recommendations Note** — Structured memo with strategic priorities, actionable guidance, and ready-to-paste project-document language
 
+## Optional sector lenses
+
+Users may select up to two specialist lenses before analysis. The production Climate-FCV Lens is manual-only and is never auto-suggested. Once selected, it automatically screens both climate-intent operations and wider development projects, prioritizes adaptation and resilience, and uses deep mitigation analysis only where a clear material pathway exists.
+
+Core-only runs retain the standard 4-5 substantive priorities and the lightweight conditional Climate-FCV check. Active-lens runs supersede that lightweight check, use one integrated list of no more than five substantive priorities, and apply a flexible evidence-led mix of core, Climate-linked, and blended actions. Optional CCDR material is validated contextual support and must not dominate recommendations.
+
 ## Prerequisites
 
 - Python 3.10+

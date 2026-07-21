@@ -88,6 +88,7 @@ POST /api/download-report
     "focus_questions": { ...focusQuestionsResult... },  # optional (v9.13); omit or null to skip section
     "active_lenses": [{"id": "...", "version": "...", "position": "primary"}],
     "lens_diagnostic": {"lenses": [...], "findings": [...]},
+    "lens_context_sources": [{"id": "context-ccdr", "lens_id": "climate", "source_type": "ccdr", "url": "https://...worldbank.org/..."}],
     "metadata": {
       "date_str": "18 April 2026",
       "classification_category": "Conflict-Affected",
@@ -108,8 +109,10 @@ POST /api/download-report
         optional "Responses to Your Priority Points" section (v9.13, rendered when focus_questions
         is supplied and non-error; one subsection per response with status label, answer,
         evidence basis, linked priorities, and gap note)
-    - Appends a sector-lens source/evidence appendix when lens data is present
+    - Appends a sector-lens source/evidence appendix when lens data is present; validated dynamic context appears under "Country context used"
     - Frontend: downloadReport() POSTs JSON payload; receives blob; triggers browser save
+
+Sector-lens catalogue records expose `activation` and `readout_sections`. Both `/api/run-stage` and `/api/run-express` carry `lens_context_sources` in request/SSE state. Stage 2 lens diagnostics include `materiality_summary`, `analysis_emphasis`, `readout_sections`, and `other_pathways` in addition to mapped findings.
 
 # Follow-on post-analysis route (Stage 3 bottom card)
 POST /api/run-followon

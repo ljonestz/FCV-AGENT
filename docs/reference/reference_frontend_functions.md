@@ -8,6 +8,10 @@
 ## Key JavaScript Functions
 
 ### Sector lenses
+- `renderLensReadoutSections(lens, catalogueLens)` safely renders materiality, catalogue-declared invest/deliver sections, evidence gaps, trade-offs, and collapsed other pathways; empty and not-applicable sections are suppressed.
+- `lensDisplayName(id)` resolves provenance badges to trusted catalogue names.
+- Climate selection is manual-only; suggestion rendering remains available for modules whose catalogue activation allows it.
+- Session version 3 and Express checkpoints persist `lensContextSources` with active versions and diagnostics. Requests and DOCX downloads send it as `lens_context_sources`; resets, lens changes, stale versions, and older-session loads clear it.
 - `loadLensCatalogue()` — fetches `/api/sector-lenses`; an empty catalogue keeps the selector hidden.
 - `renderLensSelector()` / `toggleLens(id)` — render ordered selection chips, enforce two lenses, show materially relevant suggestions, and lock changes once analysis starts.
 - `lensVersions()` — sends client-observed versions for mismatch detection; the backend remains authoritative.
@@ -207,4 +211,4 @@ Both modes use identical prompts, code paths, and output quality. Express is a f
 
 ---
 
-*Last updated: 2026-07-21 - sector-lens session v3 and fail-safe Express recovery.*
+*Last updated: 2026-07-21 - Climate-FCV readouts, context persistence, and flexible Stage 3 integration.*

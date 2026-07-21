@@ -86,6 +86,11 @@ Current upload tiering: exactly one primary project document anchors the assessm
 6. Protecting project staff and beneficiaries from security risks
 7. Monitoring for unintended negative consequences
 8. Establishing accessible and trusted grievance mechanisms
+9. Instrument-appropriate SEA/SH risk management in conflict contexts
+
+The Climate-FCV Lens may map evidence to these existing principles but does not independently rescore them.
+
+**Climate-FCV sector-lens contract:** Climate is manual-only and never auto-suggested. Core-only Stage 2 retains the lightweight conditional Climate-FCV Nexus check. Active Climate supersedes that check and emits `materiality_summary`, `analysis_emphasis`, declared `readout_sections`, and `other_pathways` in the hidden diagnostic. Analysis is adaptation-first; deep mitigation requires a clear material pathway. Optional CCDR context is non-dominant and validated separately. Core-only Stage 3 retains 4-5 substantive priorities; active-lens Stage 3 permits no more than five, with a flexible non-quota mix of core, Climate-linked, and blended priorities.
 
 **Strict [S+R] definition:**
 [S+R] only valid for: (1) inclusion/targeting of conflict-affected populations; (2) FCV logic in ToC/PDO; (3) adaptive M&E for harm + resilience; (4) GRM for state-citizen accountability.

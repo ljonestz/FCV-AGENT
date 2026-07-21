@@ -243,7 +243,7 @@ Procfile            # Render deployment config
 
 **Two workflow modes:** Express Analysis (default — all 3 stages run automatically via `/api/run-express`) and Step-by-Step (interactive, one stage at a time via `/api/run-stage`). Same prompts, same output quality.
 
-**Optional sector lenses:** users may select up to two ordered lenses. Both workflows resolve authoritative module versions and inject the same bounded stage slices. Lens findings must map to existing OST/DNH/Strategy criteria; they do not add a score or separate recommendation list. The production registry remains empty until a content module is separately approved.
+**Optional sector lenses:** users may select up to two ordered lenses. Both workflows resolve authoritative module versions and inject the same bounded stage slices. Lens findings must map to existing OST/DNH/Strategy criteria; they do not add a score or separate recommendation list. The production Climate-FCV Lens is manual-only and never auto-suggested. After selection it screens climate-intent and wider development operations automatically, prioritizes adaptation, and activates deep mitigation only for a clear pathway. Core-only retains 4-5 substantive priorities and the lightweight Climate-FCV check; active Climate supersedes that check and uses no more than five substantive priorities with a flexible evidence-led mix. `lens_context_sources` persists an optional validated World Bank CCDR without making it a routine recommendation.
 
 ```
 STAGE 1 — Context & Extraction
