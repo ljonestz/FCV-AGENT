@@ -2480,6 +2480,11 @@
     return Object.fromEntries(activeLenses.map(id=>[id,resolvedLensVersions[id]||catalogueVersions[id]||'']).filter(([,version])=>version));
   }
 
+  function lensDisplayName(id){
+    const lens=lensCatalogue.find(item=>item.id===id);
+    return lens&&lens.name?lens.name:id;
+  }
+
   function showLensWarnings(warnings){
     const el=document.getElementById('lens-warning');if(!el)return;
     const items=(warnings||[]).filter(w=>w&&w.message);
@@ -2533,7 +2538,7 @@
     const host=document.getElementById('out-txt')||document.getElementById('stage-disp');if(!host)return;
     const panel=document.createElement('div');panel.id='lens-diagnostic-panel';panel.className='lens-diagnostic-panel';
     const readouts=lenses.map(lens=>renderLensReadoutSections(lens,lensCatalogue.find(item=>item.id===lens.lens_id))).join('');
-    const findingHtml=findings.map(f=>`<div class="lens-diagnostic-item"><strong>${(f.lens_ids||[]).map(esc).join(' + ')}</strong> · ${esc(f.status||'')}<br>${esc((f.evidence||[]).join(' '))}<br><span style="color:#64748b">Mapped to ${(f.core_mappings||[]).map(esc).join(', ')} · Sources: ${(f.source_ids||[]).map(esc).join(', ')}</span></div>`).join('');
+    const findingHtml=findings.map(f=>`<div class="lens-diagnostic-item"><strong>${(f.lens_ids||[]).map(id=>esc(lensDisplayName(id))).join(' + ')}</strong> · ${esc(f.status||'')}<br>${esc((f.evidence||[]).join(' '))}<br><span style="color:#64748b">Mapped to ${(f.core_mappings||[]).map(esc).join(', ')} · Sources: ${(f.source_ids||[]).map(esc).join(', ')}</span></div>`).join('');
     panel.innerHTML='<h3>Sector-lens diagnostic</h3>'+readouts+findingHtml;
     host.prepend(panel);
   }
@@ -5030,7 +5035,7 @@ ${body}
             ${pr.change_type?`<span class="pc-chip">Change: ${esc(pr.change_type)}</span>`:''}
             ${pr.restructuring_level?`<span class="pc-chip">${esc(pr.restructuring_level)}</span>`:''}
             ${pr.priority_scope?`<span class="pc-chip">Scope: ${esc(pr.priority_scope)}</span>`:''}
-            ${(pr.lens_ids||[]).map(id=>`<span class="lens-badge" title="${esc(pr.lens_relevance||'Sector-lens finding')}">${esc(id)}</span>`).join('')}
+            ${(pr.lens_ids||[]).map(id=>`<span class="lens-badge" title="${esc(pr.lens_relevance||'Sector-lens finding')}">${esc(lensDisplayName(id))}</span>`).join('')}
           </div>
           ${(pr.who_acts||pr.when||pr.resources)?`<div class="pc-meta-row">
             ${pr.who_acts?`<span class="pc-meta-chip"><strong>Who:</strong> ${esc(pr.who_acts)}</span>`:''}
@@ -5566,7 +5571,7 @@ ${body}
               ${pr.restructuring_level ? `<span class="pc-chip">${esc(pr.restructuring_level)}</span>` : ''}
               ${pr.priority_scope ? `<span class="pc-chip">Scope: ${esc(pr.priority_scope)}</span>` : ''}
               ${pr.governance_level ? `<span class="pc-chip" title="MPA governance level — where this priority should be decided">${esc(pr.governance_level)}</span>` : ''}
-              ${(pr.lens_ids||[]).map(id=>`<span class="lens-badge" title="${esc(pr.lens_relevance||'Sector-lens finding')}">${esc(id)}</span>`).join('')}
+              ${(pr.lens_ids||[]).map(id=>`<span class="lens-badge" title="${esc(pr.lens_relevance||'Sector-lens finding')}">${esc(lensDisplayName(id))}</span>`).join('')}
             </div>
             ${(pr.who_acts||pr.when||pr.resources) ? `<div class="pc-meta-row">
               ${pr.who_acts ? `<span class="pc-meta-chip"><strong>Who:</strong> ${(pr.who_acts||'').split(';').map(w=>w.trim()).filter(Boolean).map(w=>'<span class="who-chip">'+esc(w)+'</span>').join(' ')}</span>` : ''}

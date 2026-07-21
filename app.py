@@ -777,10 +777,38 @@ def build_lens_stage_context(
             )
     elif selection.lenses and stage == 3:
         prefix = (
-            "Integrate applicable sector-lens findings into the single existing priority list. "
-            "Do not create a separate recommendation set or score. Add lens_ids and lens_relevance "
-            "only to affected priority objects. Deterministically merged findings:\n"
+            "Integrate applicable sector-lens findings into the opening assessment, operational "
+            "context, two-way risk narrative, strengths, gaps, and the single existing priority "
+            "list. Produce a maximum of five substantive priorities in total. A balance of "
+            "cross-cutting, Climate-FCV, and blended priorities is a helpful starting point, not "
+            "a quota: rank candidates by severity, materiality, evidence, actionability, leverage, "
+            "urgency, reversibility, and FCV feasibility. The final mix may contain more "
+            "Climate-linked, blended, or core priorities where the evidence warrants it. Show "
+            "overlapping actions once and retain contributing lens IDs. Existing mandatory "
+            "standalone-card exceptions retain current rules. Do not create a separate "
+            "recommendation set or score. Add lens_ids and lens_relevance only to affected "
+            "priority objects. "
         )
+        if "climate" in active_ids:
+            climate_entry = next((
+                item for item in normalized_diagnostic.get("lenses", [])
+                if item.get("lens_id") == "climate"
+            ), {})
+            if climate_entry.get("applicability") == "not_applicable":
+                prefix += (
+                    "For Climate, include one brief materiality sentence only; create no Climate "
+                    "priority and no empty dividend section. "
+                )
+            else:
+                prefix += (
+                    "State Climate relevance in the opening only when applicability is material "
+                    "or possible. Integrate climate into both FCV risk directions. Use invest-in "
+                    "and deliver-through readouts as the positive counterpart without claiming "
+                    "unsupported dividends. Mention a CCDR only where one specific insight "
+                    "materially improves the context or action; never make consulting the CCDR "
+                    "a routine priority. "
+                )
+        prefix += "Deterministically merged lens diagnostic:\n"
         selected_findings: list[dict[str, Any]] = []
         diagnostic_lenses, lenses_truncated = _bounded_stage3_lenses(
             normalized_diagnostic, prefix
@@ -4477,6 +4505,7 @@ def extract_priorities(
             relevance.strip()[:500]
             if isinstance(relevance, str) and pr['lens_ids'] else ''
         )
+        pr.pop('priority_type', None)
 
         # Post-parse checks — check specificity across gap + all action guidance
         actions_text = ' '.join(

@@ -39,6 +39,7 @@ def test_climate_readout_has_two_conditional_sections():
     assert "other_pathways" in html
     assert "What the project may invest in" in html
     assert "How the project may deliver" in html
+    assert "lensDisplayName(id)" in html
 
 
 def test_readout_renderer_is_safe_conditional_and_compact():

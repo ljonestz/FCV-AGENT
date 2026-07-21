@@ -375,3 +375,21 @@ class TestActionTiming:
     def test_empty_timing_nulled(self):
         result = extract_priorities(_make_timing_fixture(''))
         assert result['priorities'][0]['action_timing'] is None
+
+
+def test_lens_provenance_is_filtered_bounded_and_has_no_type_quota():
+    fixture = _make_timing_fixture('supervision')
+    payload = json.loads(re.search(
+        r'%%%JSON_START%%%(.*?)%%%JSON_END%%%', fixture, re.DOTALL
+    ).group(1))
+    payload['priorities'][0]['lens_ids'] = ['climate', 'invented', 'climate']
+    payload['priorities'][0]['lens_relevance'] = 'r' * 700
+    payload['priorities'][0]['priority_type'] = 'climate'
+    wrapped = f"%%%JSON_START%%%\n{json.dumps(payload)}\n%%%JSON_END%%%"
+
+    result = extract_priorities(wrapped, active_lens_ids=['climate'])
+    priority = result['priorities'][0]
+
+    assert priority['lens_ids'] == ['climate']
+    assert len(priority['lens_relevance']) == 500
+    assert 'priority_type' not in priority

@@ -316,3 +316,39 @@ def test_large_climate_readout_respects_stage3_platform_budget():
 
     assert context["estimated_tokens"] <= 900
     assert context["truncated"] is True
+
+
+def test_active_climate_stage3_integrates_opening_and_uses_flexible_mix():
+    module_root = Path(app_module.__file__).parent / "sector_lenses" / "modules"
+    registry = load_registry(module_root)
+    state = app_module.AnalysisState.from_payload({"active_lenses": ["climate"]})
+    diagnostic = {"lenses": [{
+        "lens_id": "climate",
+        "applicability": "material",
+        "materiality_summary": "Drought and FCV pressures affect delivery.",
+        "analysis_emphasis": ["adaptation"],
+        "readout_sections": [],
+        "other_pathways": [],
+    }], "findings": []}
+
+    context = app_module.build_lens_stage_context(
+        state, 3, registry, diagnostic, []
+    )
+    prompt = context["prompt"].lower()
+
+    assert "opening assessment" in prompt
+    assert "operational context" in prompt
+    assert "maximum of five substantive priorities" in prompt
+    assert "not a quota" in prompt
+    assert "may contain more climate-linked" in prompt
+    assert "single existing priority list" in prompt
+
+
+def test_core_only_stage3_keeps_four_to_five_rule():
+    context = app_module.build_lens_stage_context(
+        app_module.AnalysisState.from_payload({}), 3
+    )
+
+    assert context["prompt"] == ""
+    assert "4-5 priorities total" in app_module.DEFAULT_PROMPTS["3"]
+    assert "Climate-FCV Nexus" in app_module.DEFAULT_PROMPTS["2"]
