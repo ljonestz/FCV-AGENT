@@ -24,6 +24,7 @@ def test_public_models_and_platform_limits_are_typed():
         "DetectionConfig",
         "LensDiagnostic",
         "LensCompatibility",
+        "LensActivationMode",
         "LensLoadError",
         "LensLoadStatus",
         "LensMetadata",
@@ -92,6 +93,54 @@ def test_registry_loads_the_valid_fixture_lens():
     assert registry.get("test-agriculture").questions[0].condition == "project uses beneficiary targeting"
     loaded = next(item for item in registry.diagnostics if item.module_id == "test-agriculture")
     assert loaded.status is api.LensLoadStatus.LOADED
+
+
+def test_activation_mode_defaults_to_suggested_and_is_typed():
+    api = _sector_lenses_api()
+    lens = api.load_registry(FIXTURE_ROOT).get("test-agriculture")
+
+    assert lens.metadata.activation is api.LensActivationMode.SUGGESTED
+
+
+def test_manual_lens_is_catalogued_but_never_suggested():
+    api = _sector_lenses_api()
+    base = api.load_registry(FIXTURE_ROOT).get("test-agriculture")
+    manual = replace(
+        base,
+        metadata=replace(
+            base.metadata,
+            id="manual-lens",
+            activation=api.LensActivationMode.MANUAL,
+        ),
+    )
+    registry = api.LensRegistry(FIXTURE_ROOT, {manual.id: manual})
+
+    assert api.lens_catalogue(registry)[0]["activation"] == "manual"
+    assert api.detect_lens_suggestions("agriculture irrigation", registry) == []
+
+
+def test_invalid_activation_is_quarantined(monkeypatch):
+    api = _sector_lenses_api()
+    import sector_lenses.registry as registry_module
+
+    original_read_yaml = registry_module._read_yaml
+
+    def read_with_invalid_activation(path):
+        data = original_read_yaml(path)
+        if path.name == "manifest.yaml" and path.parent.name == "test-agriculture":
+            data["activation"] = "automatic"
+        return data
+
+    monkeypatch.setattr(registry_module, "_read_yaml", read_with_invalid_activation)
+
+    registry = api.load_registry(FIXTURE_ROOT)
+
+    assert registry.get("test-agriculture") is None
+    invalid = next(
+        item for item in registry.diagnostics
+        if item.module_id == "test-agriculture"
+    )
+    assert invalid.status is api.LensLoadStatus.INVALID
 
 
 def test_invalid_package_is_quarantined_without_hiding_valid_package(monkeypatch):

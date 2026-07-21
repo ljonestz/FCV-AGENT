@@ -9,6 +9,7 @@ import yaml
 
 from .models import (
     DetectionConfig,
+    LensActivationMode,
     LensDiagnostic,
     LensCompatibility,
     LensLoadError,
@@ -114,6 +115,7 @@ def _load_package(path: Path) -> SectorLens:
         description=str(manifest["description"]),
         status=LensStatus(str(manifest["status"])),
         aliases=tuple(str(value) for value in manifest.get("aliases", [])),
+        activation=LensActivationMode(str(manifest.get("activation", "suggested"))),
     )
     if not all((metadata.id, metadata.name, metadata.version, metadata.description)):
         raise LensPackageError("missing_metadata", "lens metadata fields cannot be empty", "manifest.yaml")

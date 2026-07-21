@@ -15,6 +15,13 @@ class LensStatus(str, Enum):
     DISABLED = "disabled"
 
 
+class LensActivationMode(str, Enum):
+    """How a lens may enter the user's active selection."""
+
+    SUGGESTED = "suggested"
+    MANUAL = "manual"
+
+
 class LensLoadStatus(str, Enum):
     """Outcome recorded while discovering a module directory."""
 
@@ -67,6 +74,7 @@ class LensMetadata:
     description: str
     status: LensStatus
     aliases: tuple[str, ...] = ()
+    activation: LensActivationMode = LensActivationMode.SUGGESTED
 
 
 @dataclass(frozen=True)

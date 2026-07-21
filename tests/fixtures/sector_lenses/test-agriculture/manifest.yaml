@@ -3,6 +3,7 @@ name: Test Agriculture Lens
 version: 1.2.0
 description: Test-only lens for registry and prompt-slice coverage.
 status: enabled
+activation: suggested
 aliases:
   - agriculture
   - irrigation

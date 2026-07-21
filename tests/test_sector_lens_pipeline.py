@@ -33,6 +33,7 @@ def test_catalogue_and_detection_are_ranked_and_non_blocking():
         "name": "Test Agriculture Lens",
         "version": "1.2.0",
         "description": "Test-only lens for registry and prompt-slice coverage.",
+        "activation": "suggested",
         "aliases": ["agriculture", "irrigation"],
         "compatibility": {"compatible_with": ["*"], "incompatible_with": []},
     }]

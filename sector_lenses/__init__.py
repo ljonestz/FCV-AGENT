@@ -5,6 +5,7 @@ from .composer import build_stage_slice, estimate_tokens, resolve_active_lenses
 from .models import (
     ActiveLensSelection,
     DetectionConfig,
+    LensActivationMode,
     LensDiagnostic,
     LensCompatibility,
     LensLoadError,
@@ -37,6 +38,7 @@ from .pipeline import (
 __all__ = [
     "ActiveLensSelection",
     "DetectionConfig",
+    "LensActivationMode",
     "LensDiagnostic",
     "LensCompatibility",
     "LensLoadError",

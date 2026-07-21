@@ -7,7 +7,7 @@ import re
 from copy import deepcopy
 from typing import Any, Iterable
 
-from .models import LensRegistry
+from .models import LensActivationMode, LensRegistry
 
 
 LENS_EVIDENCE_START = "%%%LENS_EVIDENCE_START%%%"
@@ -29,6 +29,7 @@ def lens_catalogue(registry: LensRegistry) -> list[dict[str, Any]]:
             "name": lens.metadata.name,
             "version": lens.version,
             "description": lens.metadata.description,
+            "activation": lens.metadata.activation.value,
             "aliases": list(lens.metadata.aliases),
             "compatibility": {
                 "compatible_with": list(lens.compatibility.compatible_with),
@@ -47,6 +48,8 @@ def detect_lens_suggestions(text: str, registry: LensRegistry) -> list[dict[str,
     haystack = text.casefold()
     suggestions: list[dict[str, Any]] = []
     for lens in registry.enabled_lenses:
+        if lens.metadata.activation is not LensActivationMode.SUGGESTED:
+            continue
         matches: list[str] = []
         occurrences = 0
         seen_signals: set[str] = set()
