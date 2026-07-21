@@ -29,6 +29,7 @@ from sector_lenses import (
     lens_catalogue,
     load_registry,
     merge_lens_findings,
+    normalize_lens_context_sources,
     normalize_lens_diagnostic,
     estimate_tokens,
     PLATFORM_STAGE_BUDGETS,
@@ -631,11 +632,93 @@ class AnalysisState:
         )
 
 
+def _bounded_stage3_lenses(
+    diagnostic: dict[str, Any],
+    prefix: str,
+    token_limit: int = 700,
+) -> tuple[list[dict[str, Any]], bool]:
+    """Retain compact materiality/readout data within the Stage 3 lens budget."""
+
+    selected: list[dict[str, Any]] = []
+    truncated = False
+
+    def fits(lenses: list[dict[str, Any]]) -> bool:
+        payload = {"lenses": lenses, "findings": []}
+        serialized = json.dumps(
+            payload, ensure_ascii=False, separators=(",", ":")
+        )
+        return estimate_tokens(prefix + serialized) <= token_limit
+
+    for raw in diagnostic.get("lenses", []):
+        compact = {
+            "lens_id": raw.get("lens_id", ""),
+            "applicability": raw.get("applicability", "possible"),
+            "materiality_summary": raw.get("materiality_summary", "")[:400],
+            "analysis_emphasis": raw.get("analysis_emphasis", [])[:5],
+            "source_ids": raw.get("source_ids", [])[:10],
+            "readout_sections": [],
+            "other_pathways": [],
+        }
+        if not fits(selected + [compact]):
+            compact["materiality_summary"] = compact["materiality_summary"][:200]
+            compact["analysis_emphasis"] = compact["analysis_emphasis"][:2]
+            truncated = True
+        if not fits(selected + [compact]):
+            truncated = True
+            continue
+        selected.append(compact)
+
+        for raw_section in raw.get("readout_sections", []):
+            compact_section = {
+                "section_id": raw_section.get("section_id", ""),
+                "items": [],
+            }
+            compact["readout_sections"].append(compact_section)
+            for raw_item in raw_section.get("items", []):
+                compact_item = {
+                    "item_id": raw_item.get("item_id", ""),
+                    "status": raw_item.get("status", "potential"),
+                    "mechanism": raw_item.get("mechanism", "")[:240],
+                    "evidence": [
+                        value[:240] for value in raw_item.get("evidence", [])[:2]
+                    ],
+                    "evidence_gap": raw_item.get("evidence_gap", "")[:180],
+                    "trade_off": raw_item.get("trade_off", "")[:180],
+                    "source_ids": raw_item.get("source_ids", [])[:10],
+                }
+                compact_section["items"].append(compact_item)
+                if not fits(selected):
+                    compact_section["items"].pop()
+                    truncated = True
+                    break
+            if not compact_section["items"]:
+                compact["readout_sections"].pop()
+            if len(compact_section["items"]) < len(raw_section.get("items", [])):
+                truncated = True
+
+        for pathway in raw.get("other_pathways", []):
+            compact_pathway = {
+                "pathway": pathway.get("pathway", ""),
+                "status": pathway.get("status", "potential"),
+                "reason": pathway.get("reason", "")[:240],
+            }
+            compact["other_pathways"].append(compact_pathway)
+            if not fits(selected):
+                compact["other_pathways"].pop()
+                truncated = True
+                break
+        if len(compact["other_pathways"]) < len(raw.get("other_pathways", [])):
+            truncated = True
+
+    return selected, truncated
+
+
 def build_lens_stage_context(
     state: AnalysisState,
     stage: int,
     registry=None,
     lens_diagnostic: dict[str, Any] | None = None,
+    lens_context_sources: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Resolve client lens choices and build a bounded stage-specific prompt contract."""
 
@@ -645,8 +728,23 @@ def build_lens_stage_context(
     source_ids_by_lens = {
         lens.id: {source.id for source in lens.sources} for lens in selection.lenses
     }
+    readout_schema_by_lens = {
+        lens.id: {
+            section.id: set(section.item_ids)
+            for section in lens.readout_sections
+        }
+        for lens in selection.lenses
+    }
+    normalized_context_sources = normalize_lens_context_sources(
+        lens_context_sources, active_ids
+    )
+    for source in normalized_context_sources:
+        source_ids_by_lens[source["lens_id"]].add(source["id"])
     normalized_diagnostic = normalize_lens_diagnostic(
-        lens_diagnostic, active_ids, source_ids_by_lens
+        lens_diagnostic,
+        active_ids,
+        source_ids_by_lens,
+        readout_schema_by_lens,
     ) if stage == 3 else {}
     suffix = ""
     diagnostic_truncated = bool(normalized_diagnostic.get("truncated"))
@@ -661,10 +759,22 @@ def build_lens_stage_context(
         suffix = (
             "Return a hidden JSON object after the visible Stage 2 assessment between "
             f"{LENS_DIAGNOSTIC_START} and {LENS_DIAGNOSTIC_END}. Use top-level arrays 'lenses' "
-            "and 'findings'. Each finding must include lens_ids, evidence, status, source_ids, "
+            "and 'findings'. For each active lens include applicability, materiality_summary, "
+            "analysis_emphasis, evidence, source_ids, readout_sections, and other_pathways. "
+            "Use only declared section/item IDs. Item status must be supported, potential, "
+            "or not_material. Do not claim a dividend unless mechanism, material relevance, "
+            "and practical action are all established. Each finding must include lens_ids, "
+            "evidence, status, source_ids, "
             "core_mappings, mechanism, geography, and action_target. Lens findings do not create "
             "a separate score and may affect ratings only through an explicit core_mappings value."
         )
+        if "climate" in active_ids:
+            suffix += (
+                " The full Climate lens diagnostic supersedes the lightweight supplementary "
+                "Climate-FCV Nexus check. Incorporate relevant evidence into the lens diagnostic "
+                "and common OST/DNH findings; do not produce a duplicate supplementary Climate "
+                "finding."
+            )
     elif selection.lenses and stage == 3:
         prefix = (
             "Integrate applicable sector-lens findings into the single existing priority list. "
@@ -672,13 +782,25 @@ def build_lens_stage_context(
             "only to affected priority objects. Deterministically merged findings:\n"
         )
         selected_findings: list[dict[str, Any]] = []
+        diagnostic_lenses, lenses_truncated = _bounded_stage3_lenses(
+            normalized_diagnostic, prefix
+        )
+        diagnostic_truncated = diagnostic_truncated or lenses_truncated
         for finding in merge_lens_findings(normalized_diagnostic.get("findings", [])):
-            candidate = prefix + json.dumps(selected_findings + [finding], ensure_ascii=False)
+            candidate = prefix + json.dumps(
+                {"lenses": diagnostic_lenses, "findings": selected_findings + [finding]},
+                ensure_ascii=False,
+                separators=(",", ":"),
+            )
             if estimate_tokens(candidate) <= 700:
                 selected_findings.append(finding)
             else:
                 diagnostic_truncated = True
-        suffix = prefix + json.dumps(selected_findings, ensure_ascii=False)
+        suffix = prefix + json.dumps(
+            {"lenses": diagnostic_lenses, "findings": selected_findings},
+            ensure_ascii=False,
+            separators=(",", ":"),
+        )
 
     platform_limit = PLATFORM_STAGE_BUDGETS.for_stage(stage)
     reserved = estimate_tokens(suffix) + (1 if suffix else 0)
@@ -708,10 +830,15 @@ def build_lens_stage_context(
         "restart_required": stage > 1 and any(
             warning.code == "version_mismatch" for warning in selection.warnings
         ),
+        "lens_context_sources": normalized_context_sources,
     }
 
 
-def lens_source_ids(active_lenses: list[dict[str, Any]], registry=None) -> dict[str, set[str]]:
+def lens_source_ids(
+    active_lenses: list[dict[str, Any]],
+    registry=None,
+    context_sources: list[dict[str, Any]] | None = None,
+) -> dict[str, set[str]]:
     """Return declared source IDs for resolved active lenses."""
 
     registry = registry or SECTOR_LENS_REGISTRY
@@ -720,6 +847,27 @@ def lens_source_ids(active_lenses: list[dict[str, Any]], registry=None) -> dict[
         lens = registry.get(item.get("id", ""))
         if lens:
             result[lens.id] = {source.id for source in lens.sources}
+    for source in normalize_lens_context_sources(
+        context_sources, result.keys()
+    ):
+        result[source["lens_id"]].add(source["id"])
+    return result
+
+
+def lens_readout_schema(
+    active_lenses: list[dict[str, Any]], registry=None
+) -> dict[str, dict[str, set[str]]]:
+    """Return declared readout section and item IDs for resolved lenses."""
+
+    registry = registry or SECTOR_LENS_REGISTRY
+    result: dict[str, dict[str, set[str]]] = {}
+    for item in active_lenses:
+        lens = registry.get(item.get("id", ""))
+        if lens:
+            result[lens.id] = {
+                section.id: set(section.item_ids)
+                for section in lens.readout_sections
+            }
     return result
 
 
@@ -5847,6 +5995,7 @@ def run_stage():
                 analysis_state,
                 stage,
                 lens_diagnostic=data.get('lens_diagnostic'),
+                lens_context_sources=data.get('lens_context_sources'),
             )
             if lens_context['restart_required']:
                 return jsonify({
@@ -6055,7 +6204,11 @@ def run_stage():
                     category_lens = extract_category_lens(full_text)
                     lens_diagnostic = extract_lens_diagnostic(full_text, [
                         item['id'] for item in lens_context['active_lenses']
-                    ], lens_source_ids(lens_context['active_lenses'])) if lens_context['active_lenses'] else {}
+                    ], lens_source_ids(
+                        lens_context['active_lenses'],
+                        context_sources=lens_context['lens_context_sources'],
+                    ),
+                    lens_readout_schema(lens_context['active_lenses'])) if lens_context['active_lenses'] else {}
                     parse_error = under_hood.get('error', False) or stage2_ratings.get('error', False)
                     parse_error_message = under_hood.get('message', '') or stage2_ratings.get('message', '')
 
@@ -6783,7 +6936,11 @@ def run_express():
                 pq_block = build_priority_questions_block(priority_questions, 2)
                 if pq_block:
                     stage2_prompt = stage2_prompt + pq_block
-                lens_context_s2 = build_lens_stage_context(analysis_state, 2)
+                lens_context_s2 = build_lens_stage_context(
+                    analysis_state,
+                    2,
+                    lens_context_sources=lens_context_sources,
+                )
                 if lens_context_s2['prompt']:
                     stage2_prompt += "\n\n--- ACTIVE SECTOR LENSES ---\n" + lens_context_s2['prompt']
                 # Build messages: prior context + Stage 2 prompt
@@ -6810,7 +6967,11 @@ def run_express():
                 lens_diagnostic = extract_lens_diagnostic(
                     stage2_output,
                     [item['id'] for item in lens_context_s2['active_lenses']],
-                    lens_source_ids(lens_context_s2['active_lenses']),
+                    lens_source_ids(
+                        lens_context_s2['active_lenses'],
+                        context_sources=lens_context_s2['lens_context_sources'],
+                    ),
+                    lens_readout_schema(lens_context_s2['active_lenses']),
                 ) if lens_context_s2['active_lenses'] else {}
                 s2_parse_error = under_hood.get('error', False) or stage2_ratings.get('error', False)
                 s2_parse_error_msg = under_hood.get('message', '') or stage2_ratings.get('message', '')
@@ -6828,7 +6989,7 @@ def run_express():
                     conversation_history = conversation_history[-20:]
 
                 # ── Stage 2 done event ──
-                yield f"data: {json.dumps({'stage_done': 2, 'result': strip_lens_blocks(stage2_output), 'display_text': strip_lens_blocks(under_hood.get('display_text', stage2_output)), 'history': conversation_history, 'sensitivity_rating': stage2_ratings.get('sensitivity_rating', ''), 'responsiveness_rating': stage2_ratings.get('responsiveness_rating', ''), 'rating_reasoning': stage2_ratings.get('rating_reasoning', ''), 'under_hood': {'recs_table': under_hood.get('recs_table', ''), 'dnh_checklist': under_hood.get('dnh_checklist', ''), 'questions_map': under_hood.get('questions_map', ''), 'evidence_trail': under_hood.get('evidence_trail', '')}, 'category_lens': category_lens_e2, 'lens_diagnostic': lens_diagnostic, 'active_lenses': lens_context_s2['active_lenses'], 'lens_warnings': lens_context_s2['warnings'], 'parse_error': s2_parse_error, 'parse_error_message': s2_parse_error_msg})}\n\n"
+                yield f"data: {json.dumps({'stage_done': 2, 'result': strip_lens_blocks(stage2_output), 'display_text': strip_lens_blocks(under_hood.get('display_text', stage2_output)), 'history': conversation_history, 'sensitivity_rating': stage2_ratings.get('sensitivity_rating', ''), 'responsiveness_rating': stage2_ratings.get('responsiveness_rating', ''), 'rating_reasoning': stage2_ratings.get('rating_reasoning', ''), 'under_hood': {'recs_table': under_hood.get('recs_table', ''), 'dnh_checklist': under_hood.get('dnh_checklist', ''), 'questions_map': under_hood.get('questions_map', ''), 'evidence_trail': under_hood.get('evidence_trail', '')}, 'category_lens': category_lens_e2, 'lens_diagnostic': lens_diagnostic, 'lens_context_sources': lens_context_s2['lens_context_sources'], 'active_lenses': lens_context_s2['active_lenses'], 'lens_warnings': lens_context_s2['warnings'], 'parse_error': s2_parse_error, 'parse_error_message': s2_parse_error_msg})}\n\n"
 
                 # ════════════════════════════════════════════════════════════
                 # STAGE 3 — Recommendations / Course-Correction Note
@@ -6974,7 +7135,10 @@ def run_express():
                 if pq_block:
                     stage3_prompt = stage3_prompt + pq_block
                 lens_context_s3 = build_lens_stage_context(
-                    analysis_state, 3, lens_diagnostic=lens_diagnostic
+                    analysis_state,
+                    3,
+                    lens_diagnostic=lens_diagnostic,
+                    lens_context_sources=lens_context_sources,
                 )
                 if lens_context_s3['prompt']:
                     stage3_prompt += "\n\n--- ACTIVE SECTOR LENSES ---\n" + lens_context_s3['prompt']
@@ -7016,7 +7180,7 @@ def run_express():
                     conversation_history = conversation_history[-20:]
 
                 # ── Stage 3 done event ──
-                yield f"data: {json.dumps({'stage_done': 3, 'result': stage3_output_clean, 'history': conversation_history, 'priorities': parsed.get('priorities', []), 'fcv_rating': parsed.get('fcv_rating', ''), 'fcv_responsiveness_rating': parsed.get('fcv_responsiveness_rating', ''), 'sensitivity_summary': parsed.get('sensitivity_summary', ''), 'responsiveness_summary': parsed.get('responsiveness_summary', ''), 'risk_exposure': parsed.get('risk_exposure'), 'mid_cycle_watch': parsed.get('mid_cycle_watch', []), 'dpf_watch': parsed.get('dpf_watch', []), 'p4r_watch': parsed.get('p4r_watch', []), 'regional_watch': parsed.get('regional_watch', []), 'gap_table': extract_gap_table(stage3_output), 'parse_error': parsed.get('error', False), 'parse_error_message': parsed.get('message', ''), 'horizon_considerations': horizon, 'active_lenses': lens_context_s3['active_lenses'], 'lens_warnings': lens_context_s3['warnings'], 'applied_snippets': [{'id': s['id'], 'title': s['title'], 'source': s['source']} for s in secondary_snippets_s3e]})}\n\n"
+                yield f"data: {json.dumps({'stage_done': 3, 'result': stage3_output_clean, 'history': conversation_history, 'priorities': parsed.get('priorities', []), 'fcv_rating': parsed.get('fcv_rating', ''), 'fcv_responsiveness_rating': parsed.get('fcv_responsiveness_rating', ''), 'sensitivity_summary': parsed.get('sensitivity_summary', ''), 'responsiveness_summary': parsed.get('responsiveness_summary', ''), 'risk_exposure': parsed.get('risk_exposure'), 'mid_cycle_watch': parsed.get('mid_cycle_watch', []), 'dpf_watch': parsed.get('dpf_watch', []), 'p4r_watch': parsed.get('p4r_watch', []), 'regional_watch': parsed.get('regional_watch', []), 'gap_table': extract_gap_table(stage3_output), 'parse_error': parsed.get('error', False), 'parse_error_message': parsed.get('message', ''), 'horizon_considerations': horizon, 'lens_context_sources': lens_context_s3['lens_context_sources'], 'active_lenses': lens_context_s3['active_lenses'], 'lens_warnings': lens_context_s3['warnings'], 'applied_snippets': [{'id': s['id'], 'title': s['title'], 'source': s['source']} for s in secondary_snippets_s3e]})}\n\n"
 
                 # ── Express complete ──
                 yield f"data: {json.dumps({'express_done': True})}\n\n"
@@ -7375,10 +7539,23 @@ def download_report():
     report_source_ids = {
         lens.id: {source.id for source in lens.sources} for lens in report_selection.lenses
     }
+    report_readout_schema = {
+        lens.id: {
+            section.id: set(section.item_ids)
+            for section in lens.readout_sections
+        }
+        for lens in report_selection.lenses
+    }
+    lens_context_sources = normalize_lens_context_sources(
+        data.get('lens_context_sources'), active_report_ids
+    )
+    for source in lens_context_sources:
+        report_source_ids[source['lens_id']].add(source['id'])
     lens_diagnostic = normalize_lens_diagnostic(
         data.get('lens_diagnostic') or {},
         [lens.id for lens in report_selection.lenses],
         report_source_ids,
+        report_readout_schema,
     ) if report_selection.lenses else {}
     meta = data.get('metadata', {})
 

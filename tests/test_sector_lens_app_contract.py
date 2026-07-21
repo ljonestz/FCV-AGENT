@@ -191,3 +191,128 @@ def test_final_stage3_lens_prompt_respects_combined_platform_budget():
 
     assert context["estimated_tokens"] <= 900
     assert context["truncated"] is True
+
+
+def test_climate_diagnostic_retains_readouts_and_ccdr_context():
+    module_root = Path(app_module.__file__).parent / "sector_lenses" / "modules"
+    registry = load_registry(module_root)
+    state = app_module.AnalysisState.from_payload({
+        "active_lenses": ["climate"]
+    })
+    payload = {"lenses": [{
+        "lens_id": "climate",
+        "applicability": "material",
+        "materiality_summary": "Drought affects delivery and livelihoods.",
+        "analysis_emphasis": ["adaptation", "resource access"],
+        "source_ids": [
+            "peace-social-dividends", "context-ccdr", "invented"
+        ],
+        "readout_sections": [{
+            "section_id": "invest-in",
+            "items": [{
+                "item_id": "institutional-capacity-legitimacy",
+                "status": "supported",
+                "mechanism": "Transparent allocation can strengthen legitimacy.",
+                "evidence": ["Water committees allocate access."],
+                "evidence_gap": "Seasonal users are not mapped.",
+                "trade_off": "Formalization may exclude customary users.",
+                "source_ids": ["peace-social-dividends", "context-ccdr"],
+            }],
+        }],
+        "other_pathways": [{
+            "pathway": "mitigation-transition",
+            "status": "not_material",
+            "reason": "No emissions or transition mechanism is documented.",
+        }],
+    }], "findings": []}
+    sources = [{
+        "id": "context-ccdr",
+        "lens_id": "climate",
+        "source_type": "ccdr",
+        "country": "Exampleland",
+        "title": "Example CCDR",
+        "publication_date": "2025",
+        "url": "https://www.worldbank.org/example",
+        "location": "p. 4",
+        "summary": "Drought affects project areas.",
+    }, {
+        "id": "context-ccdr",
+        "lens_id": "climate",
+        "source_type": "ccdr",
+        "title": "Untrusted context",
+        "url": "https://example.com/not-a-ccdr",
+        "summary": "This source must not enter the diagnostic.",
+    }]
+
+    context = app_module.build_lens_stage_context(
+        state, 3, registry, payload, sources
+    )
+
+    assert "Drought affects delivery" in context["prompt"]
+    assert "context-ccdr" in context["prompt"]
+    assert "invented" not in context["prompt"]
+    assert context["lens_context_sources"] == sources[:1]
+
+
+def test_active_climate_stage2_supersedes_lightweight_core_check():
+    state = app_module.AnalysisState.from_payload({
+        "active_lenses": ["climate"]
+    })
+
+    context = app_module.build_lens_stage_context(state, 2)
+
+    assert "materiality_summary" in context["prompt"]
+    assert "readout_sections" in context["prompt"]
+    assert "supersedes the lightweight supplementary Climate-FCV Nexus" in (
+        context["prompt"]
+    )
+    assert "do not produce a duplicate" in context["prompt"]
+
+
+def test_frontend_persists_and_submits_lens_context_sources():
+    html = (Path(app_module.__file__).parent / "index.html").read_text(
+        encoding="utf-8"
+    )
+
+    assert "lensContextSources" in html
+    assert "lens_context_sources:lensContextSources" in html
+    assert "lens_context_sources: lensContextSources || []" in html
+
+
+def test_large_climate_readout_respects_stage3_platform_budget():
+    state = app_module.AnalysisState.from_payload({"active_lenses": ["climate"]})
+    item_ids = [
+        "social-cohesion-inclusion",
+        "institutional-capacity-legitimacy",
+        "livelihoods-opportunity",
+    ]
+    payload = {"lenses": [{
+        "lens_id": "climate",
+        "applicability": "material",
+        "materiality_summary": "m" * 600,
+        "analysis_emphasis": ["e" * 100] * 5,
+        "evidence": ["v" * 500] * 5,
+        "source_ids": ["peace-social-dividends"],
+        "readout_sections": [{
+            "section_id": "invest-in",
+            "items": [{
+                "item_id": item_id,
+                "status": "supported",
+                "mechanism": "x" * 500,
+                "evidence": ["y" * 500] * 5,
+                "evidence_gap": "z" * 500,
+                "trade_off": "t" * 500,
+                "source_ids": ["peace-social-dividends"],
+            } for item_id in item_ids],
+        }],
+        "other_pathways": [{
+            "pathway": f"pathway-{index}",
+            "status": "potential",
+            "reason": "r" * 500,
+        } for index in range(10)],
+    }], "findings": []}
+
+    context = app_module.build_lens_stage_context(state, 3, lens_diagnostic=payload)
+
+    assert context["estimated_tokens"] <= 900
+    assert context["truncated"] is True

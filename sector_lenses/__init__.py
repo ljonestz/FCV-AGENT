@@ -28,6 +28,7 @@ from .context import (
     CCDR_RESEARCH_INSTRUCTIONS,
     extract_ccdr_context,
     has_uploaded_ccdr,
+    normalize_lens_context_sources,
 )
 from .pipeline import (
     LENS_DIAGNOSTIC_END,
@@ -71,6 +72,7 @@ __all__ = [
     "extract_ccdr_context",
     "load_registry",
     "has_uploaded_ccdr",
+    "normalize_lens_context_sources",
     "LENS_DIAGNOSTIC_END",
     "LENS_DIAGNOSTIC_START",
     "LENS_EVIDENCE_END",

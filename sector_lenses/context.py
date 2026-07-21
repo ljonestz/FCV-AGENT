@@ -46,6 +46,50 @@ def _is_world_bank_https(url: str) -> bool:
     )
 
 
+def normalize_lens_context_sources(
+    sources: Iterable[dict[str, Any]] | None,
+    active_lens_ids: Iterable[str],
+) -> list[dict[str, str]]:
+    """Validate the bounded dynamic source records allowed by active lenses."""
+
+    active = set(active_lens_ids)
+    normalized: list[dict[str, str]] = []
+    for source in sources or ():
+        if not isinstance(source, dict):
+            continue
+        source_id = _bounded_text(source.get("id"), 100)
+        lens_id = _bounded_text(source.get("lens_id"), 100)
+        source_type = _bounded_text(source.get("source_type"), 100)
+        url = _bounded_text(source.get("url"), 1000)
+        title = _bounded_text(source.get("title"), 300)
+        summary = _bounded_text(source.get("summary"), 2000)
+        if (
+            source_id != "context-ccdr"
+            or lens_id != "climate"
+            or lens_id not in active
+            or source_type != "ccdr"
+            or not title
+            or not summary
+            or not _is_world_bank_https(url)
+        ):
+            continue
+        normalized.append({
+            "id": source_id,
+            "lens_id": lens_id,
+            "source_type": source_type,
+            "country": _bounded_text(source.get("country"), 300),
+            "title": title,
+            "publication_date": _bounded_text(
+                source.get("publication_date"), 300
+            ),
+            "url": url,
+            "location": _bounded_text(source.get("location"), 300),
+            "summary": summary,
+        })
+        break
+    return normalized
+
+
 def extract_ccdr_context(text: str, country: str) -> tuple[str, dict[str, str]]:
     """Strip and validate one hidden CCDR metadata block."""
 
