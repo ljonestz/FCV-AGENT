@@ -164,6 +164,77 @@ def test_downloaded_report_has_sector_source_and_evidence_appendix(monkeypatch):
     assert "invented-lens" not in text
 
 
+def test_downloaded_report_has_climate_readout_and_context_sources():
+    from docx import Document
+
+    response = app_module.app.test_client().post("/api/download-report", json={
+        "summary": "# Test project\nSummary.",
+        "priorities": [],
+        "active_lenses": [{
+            "id": "climate", "version": "1.0.0", "position": "primary"
+        }],
+        "lens_diagnostic": {"lenses": [{
+            "lens_id": "climate",
+            "applicability": "material",
+            "materiality_summary": "Drought and fragility affect delivery.",
+            "analysis_emphasis": ["adaptation"],
+            "source_ids": ["peace-social-dividends", "context-ccdr"],
+            "readout_sections": [{
+                "section_id": "invest-in",
+                "items": [{
+                    "item_id": "institutional-capacity-legitimacy",
+                    "status": "supported",
+                    "mechanism": "Transparent allocation can strengthen legitimacy.",
+                    "evidence_gap": "Seasonal users are not mapped.",
+                    "trade_off": "Formalization may exclude customary users.",
+                    "source_ids": ["peace-social-dividends"],
+                }],
+            }, {
+                "section_id": "deliver-through",
+                "items": [{
+                    "item_id": "flexible-adaptive-delivery",
+                    "status": "potential",
+                    "mechanism": "Contingent delivery can respond to shocks.",
+                    "evidence_gap": "No trigger is defined.",
+                    "trade_off": "Flexibility needs accountability.",
+                    "source_ids": ["defueling-conflict"],
+                }],
+            }],
+            "other_pathways": [{
+                "pathway": "mitigation-transition",
+                "status": "not_material",
+                "reason": "No clear transition pathway.",
+            }],
+        }], "findings": []},
+        "lens_context_sources": [{
+            "id": "context-ccdr",
+            "lens_id": "climate",
+            "source_type": "ccdr",
+            "country": "Exampleland",
+            "title": "Exampleland Country Climate and Development Report",
+            "publication_date": "2025",
+            "url": "https://www.worldbank.org/example-ccdr",
+            "location": "p. 4",
+            "summary": "Drought affects project areas.",
+        }],
+        "metadata": {"date_str": "21 July 2026"},
+    })
+
+    assert response.status_code == 200
+    document = Document(io.BytesIO(response.data))
+    text = "\n".join(paragraph.text for paragraph in document.paragraphs)
+
+    assert "Climate-FCV Lens" in text
+    assert "Climate materiality" in text
+    assert "What the project may invest in" in text
+    assert "Institutional capacity and legitimacy" in text
+    assert "How the project may deliver" in text
+    assert "Flexible and adaptive delivery" in text
+    assert "Other pathways considered" in text
+    assert "Country Climate and Development Report" in text
+    assert text.count("Country Climate and Development Report") <= 2
+
+
 def test_frontend_contract_includes_selector_locking_v3_and_lens_rendering():
     html = (Path(app_module.__file__).parent / "index.html").read_text(encoding="utf-8")
 

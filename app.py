@@ -7711,6 +7711,71 @@ def download_report():
                 _add_single_para('How this project could affect FCV dynamics:', bold=True, space_after=1)
                 _add_single_para(risks_from, space_before=0)
 
+        # Climate readout sits in the common note rather than a parallel report.
+        climate_readout = next((
+            item for item in lens_diagnostic.get('lenses', [])
+            if isinstance(item, dict) and item.get('lens_id') == 'climate'
+        ), None) if isinstance(lens_diagnostic, dict) else None
+        if climate_readout:
+            _add_section_heading('Climate-FCV Lens')
+            add_field(
+                'Climate materiality',
+                climate_readout.get('materiality_summary')
+                or 'Materiality was not established.',
+            )
+            if climate_readout.get('applicability') != 'not_applicable':
+                climate_module = SECTOR_LENS_REGISTRY.get('climate')
+                declared_sections = {
+                    section.id: section.title
+                    for section in climate_module.readout_sections
+                } if climate_module else {}
+                item_labels = {
+                    'social-cohesion-inclusion': 'Social cohesion and inclusion',
+                    'institutional-capacity-legitimacy': 'Institutional capacity and legitimacy',
+                    'livelihoods-opportunity': 'Livelihoods and opportunity',
+                    'context-analysis-monitoring': 'Context analysis and monitoring',
+                    'trust-collaboration': 'Trust and collaboration',
+                    'flexible-adaptive-delivery': 'Flexible and adaptive delivery',
+                }
+                for section in climate_readout.get('readout_sections', []):
+                    items = section.get('items', []) if isinstance(section, dict) else []
+                    if not items:
+                        continue
+                    section_title = declared_sections.get(
+                        section.get('section_id'), section.get('section_id', '')
+                    )
+                    _add_section_heading(section_title, level=3)
+                    for item in items:
+                        if not isinstance(item, dict):
+                            continue
+                        label = item_labels.get(
+                            item.get('item_id'),
+                            str(item.get('item_id', '')).replace('-', ' ').title(),
+                        )
+                        _add_single_para(
+                            f'{label} ({item.get("status", "potential")})',
+                            bold=True,
+                            color=WB_NAVY,
+                            space_after=1,
+                        )
+                        if item.get('mechanism'):
+                            _add_single_para(item['mechanism'], space_before=0)
+                        add_field('Evidence gap', item.get('evidence_gap'))
+                        add_field('Trade-off', item.get('trade_off'))
+                pathways = climate_readout.get('other_pathways', [])
+                if pathways:
+                    _add_section_heading('Other pathways considered', level=3)
+                    for pathway in pathways:
+                        if not isinstance(pathway, dict):
+                            continue
+                        _add_single_para(
+                            f'{pathway.get("pathway", "")} '
+                            f'({pathway.get("status", "")}): '
+                            f'{pathway.get("reason", "")}',
+                            size=9,
+                            space_after=2,
+                        )
+
         # ── FCV Sensitivity ──
         if sensitivity_summary or fcv_rating:
             _add_section_heading('FCV Sensitivity')
@@ -7941,6 +8006,16 @@ def download_report():
                         if source.url:
                             citation += f' | {source.url}'
                         _add_single_para(f'[{source.id}] {citation}', size=9, space_after=2)
+            if lens_context_sources:
+                _add_section_heading('Country context used', level=2)
+                for source in lens_context_sources:
+                    details = source['title']
+                    if source.get('publication_date'):
+                        details += f' | {source["publication_date"]}'
+                    if source.get('location'):
+                        details += f' | {source["location"]}'
+                    details += f' | {source["url"]}'
+                    _add_single_para(details, size=9, space_after=2)
             if findings:
                 _add_section_heading('Diagnostic evidence', level=2)
                 for finding in findings:
