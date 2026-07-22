@@ -6358,6 +6358,10 @@ def run_stage():
                         uploaded_doc_names_payload,
                         [item['id'] for item in lens_context['active_lenses']],
                     )
+                    warn_on_missing_high_climate_priority(
+                        parsed.get('priorities', []),
+                        lens_context.get('lens_diagnostic', {}),
+                    )
                     priorities = parsed.get('priorities', [])
                     fcv_rating = parsed.get('fcv_rating', '')
                     fcv_responsiveness_rating = parsed.get('fcv_responsiveness_rating', '')
@@ -7300,6 +7304,10 @@ def run_express():
                     uploaded_doc_names,
                     [item['id'] for item in lens_context_s3['active_lenses']],
                 )
+                warn_on_missing_high_climate_priority(
+                    parsed.get('priorities', []),
+                    lens_context_s3.get('lens_diagnostic', {}),
+                )
                 horizon = extract_horizon_considerations(stage3_output)
                 stage3_output_clean = strip_lens_blocks(clean_stage3_output(stage3_output))
                 header = DO_NO_HARM_HEADER.format(date=date.today().strftime('%d %B %Y'))
@@ -7646,6 +7654,28 @@ def climate_materiality_level(lens: dict[str, Any] | None) -> str:
     if level in {'high', 'medium', 'low'}:
         return level
     return 'medium' if (lens or {}).get('applicability') == 'material' else 'low'
+
+
+def warn_on_missing_high_climate_priority(
+    priorities: list[dict[str, Any]],
+    diagnostic: dict[str, Any],
+) -> bool:
+    """Warn when a high-materiality Climate readout loses priority provenance."""
+
+    climate = climate_lens_entry(diagnostic)
+    if climate_materiality_level(climate) != 'high':
+        return False
+    if any(
+        'climate' in priority.get('lens_ids', [])
+        for priority in priorities
+        if isinstance(priority, dict)
+    ):
+        return False
+    app.logger.warning(
+        'High Climate-FCV materiality produced no climate-tagged priority; '
+        'review Stage 3 ranking and provenance extraction.'
+    )
+    return True
 
 
 def climate_dividend_groups(

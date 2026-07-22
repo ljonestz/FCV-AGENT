@@ -501,6 +501,29 @@ def test_active_climate_stage3_preserves_option_a_layers_and_gradient():
     assert context["lens_diagnostic"]["lenses"][0]["materiality_level"] == "high"
 
 
+def test_high_climate_materiality_warns_when_priorities_drop_provenance(caplog):
+    diagnostic = {"lenses": [{
+        "lens_id": "climate",
+        "materiality_level": "high",
+    }]}
+
+    with caplog.at_level("WARNING", logger=app_module.app.logger.name):
+        warning = app_module.warn_on_missing_high_climate_priority(
+            [{"title": "Core priority", "lens_ids": []}], diagnostic
+        )
+
+    assert warning is True
+    assert "High Climate-FCV materiality" in caplog.text
+    caplog.clear()
+    assert app_module.warn_on_missing_high_climate_priority(
+        [{"title": "Climate priority", "lens_ids": ["climate"]}], diagnostic
+    ) is False
+    assert app_module.warn_on_missing_high_climate_priority(
+        [{"title": "Core priority", "lens_ids": []}],
+        {"lenses": [{"lens_id": "climate", "materiality_level": "medium"}]},
+    ) is False
+
+
 def test_frontend_persists_and_submits_lens_context_sources():
     html = (Path(app_module.__file__).parent / "index.html").read_text(
         encoding="utf-8"
