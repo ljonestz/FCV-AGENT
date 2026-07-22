@@ -17,9 +17,14 @@ def test_climate_package_is_enabled_manual_and_bounded():
 
     assert climate is not None
     assert climate.enabled is True
+    assert climate.version == "1.1.0"
     assert climate.metadata.activation is LensActivationMode.MANUAL
     assert [section.id for section in climate.readout_sections] == [
         "invest-in", "deliver-through",
+    ]
+    assert [section.title for section in climate.readout_sections] == [
+        "Where the project could build climate, peace, and social dividends",
+        "How project design and delivery could strengthen those dividends",
     ]
     for stage, ceiling in ((1, 600), (2, 2000), (3, 900)):
         assert build_stage_slice([climate], stage).estimated_tokens <= ceiling

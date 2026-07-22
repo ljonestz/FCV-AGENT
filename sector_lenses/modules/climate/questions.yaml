@@ -1,18 +1,18 @@
 questions:
   - id: climate-materiality
-    text: Establish whether climate hazards, project influence, a credible co-benefit, or an explicit climate pathway is material to project results.
+    text: Assign High, Medium, or Low materiality by testing climate hazards, project influence, credible component-level co-benefits, and explicit climate pathways, including when climate is not the development project's primary objective.
     condition: always
     priority: 10
     source_ids: [ccdr-fcv-approach, peace-social-dividends]
     core_mappings: ["ost:1", "ost:4", "shift:A"]
   - id: project-climate-influence
-    text: Test whether project choices could materially change resilience, vulnerability, emissions, transition outcomes, or the distribution of climate risk.
+    text: Trace how Climate-FCV interactions could affect project components, results, locations, and groups, and how project choices could change resilience, vulnerability, emissions, transition outcomes, exclusion, or the distribution of climate risk.
     condition: always
     priority: 10
     source_ids: [ccdr-fcv-approach, defueling-conflict]
     core_mappings: ["ost:4", "dnh:7"]
   - id: compound-risk
-    text: Trace the mediated mechanism through which material climate exposure and FCV pressures could compound one another.
+    text: Produce the two distinct interaction directions by tracing the mediated mechanism, project implications, positive effects, adverse effects, evidence, and uncertainty through which material climate exposure and FCV pressures compound one another.
     condition: material exposure or climate pathway
     priority: 20
     source_ids: [ccdr-fcv-approach, adelphi-conflict-sensitivity, cgiar-climate-security]
@@ -96,13 +96,13 @@ questions:
     source_ids: [fcv-climate-compendium, adelphi-conflict-sensitivity, adaptation-review]
     core_mappings: ["ost:2", "ost:9", "dnh:8", "shift:B"]
   - id: dividends-invest
-    text: Identify supported or potential pathways for cohesion and inclusion, institutional legitimacy, or resilient livelihoods without asserting unsupported benefits.
+    text: Identify supported or evidence-backed potential pathways for cohesion and inclusion, institutional legitimacy, or resilient livelihoods; for each state the current project contribution and a specific way it could be strengthened without asserting unsupported benefits.
     condition: credible investment-side dividend
     priority: 50
     source_ids: [peace-social-dividends, defueling-field-notes]
     core_mappings: ["ost:2", "ost:3", "ost:7", "shift:B", "shift:C"]
   - id: dividends-deliver
-    text: Identify supported or potential pathways for context monitoring, trust and collaboration, or flexible delivery without forcing empty categories.
+    text: Identify supported or evidence-backed potential pathways for context monitoring, trust and collaboration, or flexible delivery; for each state the current project contribution and how design or delivery could strengthen it, suppressing empty categories and allowing only bounded evidence-backed additional pathways.
     condition: credible delivery-side dividend
     priority: 50
     source_ids: [peace-social-dividends, fcv-climate-compendium]

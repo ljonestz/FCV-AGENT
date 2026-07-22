@@ -171,7 +171,7 @@ def test_downloaded_report_has_climate_readout_and_context_sources():
         "summary": "# Test project\nSummary.",
         "priorities": [],
         "active_lenses": [{
-            "id": "climate", "version": "1.0.0", "position": "primary"
+            "id": "climate", "version": "1.1.0", "position": "primary"
         }],
         "lens_diagnostic": {"lenses": [{
             "lens_id": "climate",
@@ -226,9 +226,9 @@ def test_downloaded_report_has_climate_readout_and_context_sources():
 
     assert "Climate-FCV Lens" in text
     assert "Climate materiality" in text
-    assert "What the project may invest in" in text
+    assert "Where the project could build climate, peace, and social dividends" in text
     assert "Institutional capacity and legitimacy" in text
-    assert "How the project may deliver" in text
+    assert "How project design and delivery could strengthen those dividends" in text
     assert "Flexible and adaptive delivery" in text
     assert "Other pathways considered" in text
     assert "Country Climate and Development Report" in text
@@ -338,6 +338,52 @@ def test_active_climate_stage2_supersedes_lightweight_core_check():
         context["prompt"]
     )
     assert "do not produce a duplicate" in context["prompt"]
+
+
+def test_active_climate_stage2_requests_materiality_interactions_and_pathways():
+    state = app_module.AnalysisState.from_payload({
+        "active_lenses": ["climate"]
+    })
+
+    prompt = app_module.build_lens_stage_context(state, 2)["prompt"]
+
+    for field in (
+        "materiality_level", "interaction_readout", "project_contribution",
+        "strengthening_action", "additional_pathways",
+    ):
+        assert field in prompt
+    assert "development project" in prompt
+    assert "not its primary objective" in prompt
+
+
+def test_active_climate_stage3_preserves_option_a_layers_and_gradient():
+    state = app_module.AnalysisState.from_payload({"active_lenses": ["climate"]})
+    diagnostic = {"lenses": [{
+        "lens_id": "climate",
+        "applicability": "material",
+        "materiality_level": "high",
+        "materiality_summary": "Flood and FCV pressures are central.",
+        "interaction_readout": [{
+            "direction_id": "climate-fcv-on-project",
+            "summary": "Flood and insecurity could disrupt delivery.",
+        }],
+        "readout_sections": [],
+        "additional_pathways": [],
+    }], "findings": []}
+
+    context = app_module.build_lens_stage_context(
+        state, 3, lens_diagnostic=diagnostic
+    )
+    prompt = context["prompt"]
+
+    assert "High, Medium, or Low" in prompt
+    assert "executive summary" in prompt
+    assert "two-way Climate-FCV interaction" in prompt
+    assert "current contribution" in prompt
+    assert "how it could be strengthened" in prompt
+    assert "not a quota" in prompt
+    assert "Flood and insecurity could disrupt delivery" in prompt
+    assert context["lens_diagnostic"]["lenses"][0]["materiality_level"] == "high"
 
 
 def test_frontend_persists_and_submits_lens_context_sources():
