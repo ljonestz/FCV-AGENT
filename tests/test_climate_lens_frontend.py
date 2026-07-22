@@ -78,3 +78,59 @@ if (!notApplicable.includes('Not material.') || notApplicable.includes('What the
         ["node", "-e", script], capture_output=True, text=True, check=False
     )
     assert result.returncode == 0, result.stderr
+
+
+def test_option_a_renderers_scale_materiality_suppress_weak_items_and_escape():
+    source = INDEX.read_text(encoding="utf-8")
+    names = [
+        "climateMaterialityLevel", "renderClimateModuleNotice",
+        "renderClimateInteractions", "renderClimateDividends",
+        "renderSRNarrative",
+    ]
+    helpers = "\n".join(_extract_js_function(source, name) for name in names)
+    script = f"""
+const esc = value => String(value ?? '')
+  .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+  .replace(/\"/g,'&quot;').replace(/'/g,'&#039;');
+{helpers}
+const high = {{
+  materiality_level:'high',
+  materiality_summary:'Central <script>bad()</script>',
+  interaction_readout:[
+    {{direction_id:'climate-fcv-on-project',summary:'Flood and insecurity disrupt access.'}},
+    {{direction_id:'project-on-climate-fcv',summary:'Benefit rules can build trust or exclusion.'}}
+  ],
+  readout_sections:[{{section_id:'invest-in',items:[
+    {{item_id:'livelihoods-opportunity',status:'supported',
+      project_contribution:'Resilient livelihoods.',
+      strengthening_action:'Clarify benefit sharing.',evidence:['PCN component.']}},
+    {{item_id:'social-cohesion-inclusion',status:'not_material',
+      project_contribution:'Do not show.',strengthening_action:'Do not show.'}}
+  ]}}],
+  additional_pathways:[]
+}};
+const catalogue = {{readout_sections:[
+  {{id:'invest-in',title:'Where the project could build climate, peace, and social dividends'}},
+  {{id:'deliver-through',title:'How project design and delivery could strengthen those dividends'}}
+]}};
+const notice=renderClimateModuleNotice(high,false);
+const interactions=renderClimateInteractions(high);
+const dividends=renderClimateDividends(high,catalogue);
+const sr=renderSRNarrative('Sensitive <script>bad()</script>','Responsive','Adequate','Emerging');
+if(!notice.includes('strong climate emphasis')) throw new Error(notice);
+if(!interactions.includes('How Climate-FCV interactions could affect the project')) throw new Error(interactions);
+if(!dividends.includes('How the project may contribute')) throw new Error(dividends);
+if(!dividends.includes('How this could be strengthened')) throw new Error(dividends);
+if(dividends.includes('Do not show')) throw new Error(dividends);
+if(!sr.includes('FCV Sensitivity') || !sr.includes('FCV Responsiveness')) throw new Error(sr);
+if((notice+interactions+dividends+sr).includes('<script>')) throw new Error('unsafe HTML');
+const low={{materiality_level:'low',materiality_summary:'Limited.',readout_sections:[],additional_pathways:[]}};
+if(!renderClimateModuleNotice(low,false).includes('limited climate materiality')) throw new Error('low disclosure missing');
+if(renderClimateDividends(low,{{readout_sections:[]}})!=='') throw new Error('empty low dividends rendered');
+const errorNotice=renderClimateModuleNotice(null,true);
+if(!errorNotice.includes('could not be produced')) throw new Error('safe failure missing');
+"""
+    result = subprocess.run(
+        ["node", "-e", script], capture_output=True, text=True, check=False
+    )
+    assert result.returncode == 0, result.stderr

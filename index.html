@@ -337,6 +337,34 @@
     .lens-other-pathways{font-size:12px;margin-top:10px;color:#475569}
     .lens-other-pathways summary{cursor:pointer;font-weight:600;color:#075985}
     .lens-badge{display:inline-flex;align-items:center;padding:3px 8px;border-radius:999px;background:#ecfeff;color:#0e7490;border:1px solid #a5f3fc;font-size:10px;font-weight:700}
+    .climate-module-notice{border:1px solid #7dd3fc;border-left:5px solid #0284c7;background:#f0f9ff;border-radius:8px;padding:14px 16px;margin:0 0 18px;color:#334155}
+    .climate-module-notice h3{font-size:14px;color:#075985;margin:0 0 6px}
+    .climate-module-notice p{font-size:12px;line-height:1.55;margin:5px 0}
+    .climate-materiality-pill{display:inline-flex;padding:2px 8px;border-radius:999px;background:#dbeafe;color:#075985;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+    .climate-evidence-base{color:#475569;font-size:11px!important}
+    .climate-interactions-section,.climate-dividends-section,.sr-narrative-section{margin:20px 0}
+    .climate-readout-heading{font-size:14px;font-weight:700;color:#0f172a;margin:0 0 8px}
+    .climate-readout-intro{font-size:12px;line-height:1.55;color:#475569;margin:0 0 12px}
+    .climate-interaction-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .climate-interaction-grid.compact{grid-template-columns:1fr}
+    .climate-interaction-card{border:1px solid #bae6fd;background:#f8fcff;border-radius:8px;padding:13px 14px}
+    .climate-interaction-card h4{font-size:12px;line-height:1.4;color:#075985;margin:0 0 6px}
+    .climate-interaction-card p,.climate-interaction-card li{font-size:12px;line-height:1.5;color:#334155}
+    .climate-interaction-card p{margin:0}.climate-interaction-card ul{margin:7px 0 0;padding-left:18px}
+    .climate-dividend-groups{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}
+    .climate-dividend-group{border:1px solid #99f6e4;background:#f8fffd;border-radius:8px;padding:12px}
+    .climate-dividend-group:nth-child(even){border-color:#ddd6fe;background:#fcfbff}
+    .climate-dividend-group h4{font-size:12px;line-height:1.4;color:#0f766e;margin:0 0 8px}
+    .climate-dividend-card{border-top:1px solid #ccfbf1;padding:9px 0 2px}
+    .climate-dividend-card:first-of-type{border-top:none;padding-top:0}
+    .climate-dividend-title{font-size:12px;font-weight:700;color:#115e59;margin-bottom:5px}
+    .climate-dividend-card p{font-size:11px;line-height:1.5;color:#334155;margin:4px 0}
+    .climate-dividend-watchpoint{color:#64748b!important;font-style:italic}
+    .sr-narrative-block{border-left:3px solid #cbd5e1;padding:2px 0 2px 12px;margin:12px 0}
+    .sr-narrative-block h4{font-size:13px;color:#1e293b;margin:0 0 5px}
+    .sr-narrative-block p{font-size:13px;line-height:1.65;color:#334155;margin:0}
+    .sr-narrative-rating{display:inline-flex;margin-left:6px;padding:1px 7px;border-radius:999px;background:#f1f5f9;color:#475569;font-size:10px;font-weight:700}
+    @media (max-width:768px){.climate-interaction-grid,.climate-dividend-groups{grid-template-columns:1fr}}
 
     /* ── Buttons ── */
     .btn{
@@ -2493,6 +2521,104 @@
     let runtime=document.getElementById('lens-runtime-warning');
     if(runtime)runtime.remove();
     if(items.length&&runtimeHost){runtime=document.createElement('div');runtime.id='lens-runtime-warning';runtime.className='callout warn ani';runtime.innerHTML=`<div class="callout-body"><strong>Sector-lens notice:</strong> ${esc(items.map(w=>w.message).join(' '))}</div>`;runtimeHost.prepend(runtime);}
+  }
+
+  function climateMaterialityLevel(lens){
+    const level=String(lens&&lens.materiality_level||'').toLowerCase();
+    if(['high','medium','low'].includes(level))return level;
+    return lens&&lens.applicability==='material'?'medium':'low';
+  }
+
+  function renderClimateModuleNotice(lens,diagnosticError){
+    const evidence='The recommendations draw on a core library of relevant World Bank and external material, including the Peace and Social Dividends of Climate Action report, the framework for FCV-sensitive climate action, the Defueling Conflict series, and other internal and external sources.';
+    if(diagnosticError||!lens){
+      return `<div class="climate-module-notice climate-module-error"><h3>Climate-focused FCV assessment</h3><p>You selected the Climate-FCV module, but a validated Climate-FCV diagnostic could not be produced. The note therefore retains the core FCV assessment and does not add unvalidated climate findings.</p><p class="climate-evidence-base">${esc(evidence)}</p></div>`;
+    }
+    const level=climateMaterialityLevel(lens);
+    const wording={
+      high:'You selected the Climate-FCV module. The tool has therefore applied a strong climate emphasis across this FCV assessment, examining how Climate-FCV risks may affect the project and how project design could strengthen climate resilience and wider FCV outcomes.',
+      medium:'You selected the Climate-FCV module. The tool has applied a focused climate emphasis to the parts of this FCV assessment where Climate-FCV risks, opportunities, and delivery choices are material to the project.',
+      low:'You selected the Climate-FCV module. The assessment found limited climate materiality for this project. Climate considerations are therefore included with a light emphasis alongside the wider FCV sensitivity and responsiveness assessment.'
+    };
+    const summary=lens.materiality_summary?`<p><strong>Materiality:</strong> ${esc(lens.materiality_summary)}</p>`:'';
+    return `<div class="climate-module-notice"><h3>Climate-focused FCV assessment</h3><span class="climate-materiality-pill">${esc(level)} materiality</span><p>${esc(wording[level])}</p>${summary}<p class="climate-evidence-base">${esc(evidence)}</p></div>`;
+  }
+
+  function renderClimateInteractions(lens){
+    if(!lens)return '';
+    const level=climateMaterialityLevel(lens);
+    const labels={
+      'climate-fcv-on-project':'How Climate-FCV interactions could affect the project',
+      'project-on-climate-fcv':'How the project could influence Climate-FCV dynamics'
+    };
+    const seen=new Set();
+    const interactions=(Array.isArray(lens.interaction_readout)?lens.interaction_readout:[]).filter(item=>{
+      if(!item||!labels[item.direction_id]||seen.has(item.direction_id)||!item.summary)return false;
+      seen.add(item.direction_id);return true;
+    });
+    if(!interactions.length)return '';
+    const cards=interactions.map(item=>{
+      const details=[
+        ...(Array.isArray(item.project_implications)?item.project_implications:[]),
+        ...(Array.isArray(item.positive_effects)?item.positive_effects:[]),
+        ...(Array.isArray(item.adverse_effects)?item.adverse_effects:[])
+      ].filter(Boolean).slice(0,level==='low'?1:3);
+      return `<div class="climate-interaction-card"><h4>${esc(labels[item.direction_id])}</h4><p>${esc(item.summary)}</p>${details.length?`<ul>${details.map(value=>`<li>${esc(value)}</li>`).join('')}</ul>`:''}</div>`;
+    }).join('');
+    return `<div class="climate-interactions-section"><div class="climate-readout-heading">Climate-FCV interactions</div><p class="climate-readout-intro">The following synthesis highlights the most relevant ways climate and FCV dynamics may shape project delivery and outcomes.</p><div class="climate-interaction-grid ${level==='low'?'compact':''}">${cards}</div></div>`;
+  }
+
+  function renderClimateDividends(lens,catalogueLens){
+    if(!lens)return '';
+    const level=climateMaterialityLevel(lens);
+    const limit={high:6,medium:4,low:1}[level];
+    const labels={
+      'social-cohesion-inclusion':'Social cohesion and inclusion',
+      'institutional-capacity-legitimacy':'Institutional capacity and legitimacy',
+      'livelihoods-opportunity':'Livelihoods and economic opportunity',
+      'context-analysis-monitoring':'Context analysis and monitoring',
+      'trust-collaboration':'Trust and collaboration',
+      'flexible-adaptive-delivery':'Flexible and adaptive delivery'
+    };
+    const declared=Array.isArray(catalogueLens&&catalogueLens.readout_sections)?catalogueLens.readout_sections:[];
+    const fallback=[
+      {id:'invest-in',title:'Where the project could build climate, peace, and social dividends'},
+      {id:'deliver-through',title:'How project design and delivery could strengthen those dividends'}
+    ];
+    const sections=declared.length?declared:fallback;
+    const modelSections=new Map((Array.isArray(lens.readout_sections)?lens.readout_sections:[]).map(section=>[section.section_id,section]));
+    const additional=Array.isArray(lens.additional_pathways)?lens.additional_pathways:[];
+    let remaining=limit;
+    const groups=[];
+    sections.forEach(section=>{
+      if(remaining<1)return;
+      const model=modelSections.get(section.id)||{};
+      const allowed=Array.isArray(section.item_ids)&&section.item_ids.length?new Set(section.item_ids):null;
+      const baseline=(Array.isArray(model.items)?model.items:[]).filter(item=>!allowed||allowed.has(item.item_id)).map(item=>({...item,title:labels[item.item_id]||String(item.item_id||'').replace(/-/g,' ')}));
+      const extras=additional.filter(item=>item&&item.section_id===section.id).map(item=>({...item,title:item.title||''}));
+      const items=[...baseline,...extras].filter(item=>{
+        const evidence=(Array.isArray(item.evidence)?item.evidence:[]).filter(Boolean);
+        const contribution=item.project_contribution||item.mechanism||'';
+        const strengthening=item.strengthening_action||item.evidence_gap||'';
+        return ['supported','potential'].includes(item.status)&&contribution&&strengthening&&(item.status==='supported'||evidence.length);
+      }).slice(0,remaining);
+      if(!items.length)return;
+      remaining-=items.length;
+      const cards=items.map(item=>{
+        const contribution=item.project_contribution||item.mechanism||'';
+        const strengthening=item.strengthening_action||item.evidence_gap||'';
+        return `<div class="climate-dividend-card"><div class="climate-dividend-title">${esc(item.title)}</div><p><strong>How the project may contribute:</strong> ${esc(contribution)}</p><p><strong>How this could be strengthened:</strong> ${esc(strengthening)}</p>${item.trade_off?`<p class="climate-dividend-watchpoint"><strong>Watchpoint:</strong> ${esc(item.trade_off)}</p>`:''}</div>`;
+      }).join('');
+      groups.push(`<div class="climate-dividend-group"><h4>${esc(section.title||section.id)}</h4>${cards}</div>`);
+    });
+    if(!groups.length)return '';
+    return `<div class="climate-dividends-section"><div class="climate-readout-heading">Climate, peace and social dividends</div><p class="climate-readout-intro">The project has potential to support wider climate, peace and social dividends. The pathways below show how the project may already contribute to these outcomes and how those contributions could be strengthened. They draw partly on the Peace and Social Dividends of Climate Action report and other Climate-FCV evidence. They are selective design insights rather than a checklist, and not every pathway needs to be incorporated into the project.</p><div class="climate-dividend-groups">${groups.join('')}</div></div>`;
+  }
+
+  function renderSRNarrative(sensitivityText,responsivenessText,sensitivityRating,responsivenessRating){
+    if(!sensitivityText&&!responsivenessText)return '';
+    const block=(title,text,rating)=>text?`<div class="sr-narrative-block"><h4>${esc(title)}${rating?`<span class="sr-narrative-rating">${esc(rating)}</span>`:''}</h4><p>${esc(text)}</p></div>`:'';
+    return `<div class="sr-narrative-section"><div class="climate-readout-heading">FCV sensitivity and responsiveness</div>${block('FCV Sensitivity',sensitivityText,sensitivityRating)}${block('FCV Responsiveness',responsivenessText,responsivenessRating)}</div>`;
   }
 
   function renderLensReadoutSections(lens,catalogueLens){
