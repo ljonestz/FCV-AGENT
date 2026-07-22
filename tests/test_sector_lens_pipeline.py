@@ -120,6 +120,117 @@ def test_diagnostic_normalizes_declared_readout_items():
     assert lens["other_pathways"][0]["status"] == "not_material"
 
 
+def test_climate_diagnostic_normalizes_materiality_interactions_and_pathways():
+    payload = {"lenses": [{
+        "lens_id": "climate",
+        "applicability": "material",
+        "materiality_level": "high",
+        "materiality_summary": "Flood and fragility pressures are central.",
+        "source_ids": ["peace-social-dividends", "invented"],
+        "interaction_readout": [{
+            "direction_id": "climate-fcv-on-project",
+            "summary": "Flood, displacement, and weak access could disrupt delivery.",
+            "mechanisms": ["Flood damage combines with insecurity."],
+            "project_implications": ["Remote sites may become inaccessible."],
+            "positive_effects": [],
+            "adverse_effects": ["Infrastructure completion may be delayed."],
+            "evidence": ["The PCN identifies flood-prone sites."],
+            "evidence_gap": "Site-level access data are incomplete.",
+            "source_ids": ["peace-social-dividends", "invented"],
+        }, {
+            "direction_id": "project-on-climate-fcv",
+            "summary": "Benefit rules could strengthen resilience or deepen exclusion.",
+            "mechanisms": ["Co-management changes access to natural resources."],
+            "project_implications": ["Customary users need representation."],
+            "positive_effects": ["More legitimate resource rules."],
+            "adverse_effects": ["Seasonal users could be excluded."],
+            "evidence": ["Community institutions allocate access."],
+            "evidence_gap": "Seasonal users are not mapped.",
+            "source_ids": ["peace-social-dividends"],
+        }],
+        "readout_sections": [{
+            "section_id": "invest-in",
+            "items": [{
+                "item_id": "livelihoods-opportunity",
+                "status": "supported",
+                "mechanism": "Diversified livelihoods reduce climate exposure.",
+                "project_contribution": "The project finances resilient livelihoods.",
+                "strengthening_action": "Clarify access and benefit-sharing rules.",
+                "evidence": ["A livelihoods component is financed."],
+                "source_ids": ["peace-social-dividends"],
+            }],
+        }],
+        "additional_pathways": [{
+            "section_id": "invest-in",
+            "title": "Shared ecosystem restoration",
+            "status": "potential",
+            "mechanism": "Joint restoration can create collective benefits.",
+            "project_contribution": "The project restores shared watersheds.",
+            "strengthening_action": "Define joint oversight and dispute resolution.",
+            "evidence": ["Watershed restoration is included."],
+            "source_ids": ["peace-social-dividends"],
+        }],
+    }], "findings": []}
+    schema = {"climate": {
+        "invest-in": {"livelihoods-opportunity"},
+        "deliver-through": {"flexible-adaptive-delivery"},
+    }}
+
+    result = normalize_lens_diagnostic(
+        payload,
+        ["climate"],
+        {"climate": {"peace-social-dividends"}},
+        schema,
+    )
+
+    climate = result["lenses"][0]
+    assert climate["materiality_level"] == "high"
+    assert [item["direction_id"] for item in climate["interaction_readout"]] == [
+        "climate-fcv-on-project", "project-on-climate-fcv",
+    ]
+    assert climate["interaction_readout"][0]["source_ids"] == [
+        "peace-social-dividends"
+    ]
+    pathway = climate["readout_sections"][0]["items"][0]
+    assert pathway["project_contribution"].startswith("The project finances")
+    assert pathway["strengthening_action"].startswith("Clarify access")
+    assert climate["additional_pathways"][0]["title"] == (
+        "Shared ecosystem restoration"
+    )
+
+
+def test_climate_diagnostic_rejects_invalid_extensions_and_maps_legacy_low():
+    payload = {"lenses": [{
+        "lens_id": "climate",
+        "applicability": "not_applicable",
+        "materiality_level": "extreme",
+        "interaction_readout": [{
+            "direction_id": "invented-direction",
+            "summary": "Drop this.",
+        }],
+        "additional_pathways": [{
+            "section_id": "invented-section",
+            "title": "Drop this",
+            "status": "supported",
+            "project_contribution": "Unsupported.",
+            "strengthening_action": "Unsupported.",
+            "evidence": ["Unsupported."],
+        }],
+    }], "findings": []}
+
+    result = normalize_lens_diagnostic(
+        payload,
+        ["climate"],
+        {"climate": {"peace-social-dividends"}},
+        {"climate": {"invest-in": {"livelihoods-opportunity"}}},
+    )
+
+    climate = result["lenses"][0]
+    assert climate["materiality_level"] == "low"
+    assert climate["interaction_readout"] == []
+    assert climate["additional_pathways"] == []
+
+
 def test_readout_normalization_treats_scalar_collections_as_empty():
     payload = {"lenses": [{
         "lens_id": "test-agriculture",

@@ -18,12 +18,27 @@ _VALID_MAPPING = re.compile(r"^(?:ost:(?:[1-9]|1[0-2])|dnh:[1-9]|shift:[A-D])$")
 _VALID_STATUSES = {
     "addressed", "partially_addressed", "not_yet_addressed", "gap", "not_applicable",
 }
+_MATERIALITY_LEVELS = {"high", "medium", "low"}
+_INTERACTION_DIRECTIONS = {
+    "climate-fcv-on-project",
+    "project-on-climate-fcv",
+}
 
 
 def _list_values(value: Any) -> list[Any]:
     """Return model-provided collection values without iterating scalars."""
 
     return list(value) if isinstance(value, (list, tuple)) else []
+
+
+def _bounded_strings(value: Any, limit: int, length: int) -> list[str]:
+    """Return bounded, non-empty strings from a model-provided collection."""
+
+    return [
+        str(item).strip()[:length]
+        for item in _list_values(value)
+        if str(item).strip()
+    ][:limit]
 
 
 def lens_catalogue(registry: LensRegistry) -> list[dict[str, Any]]:
@@ -192,6 +207,14 @@ def extract_lens_diagnostic(
         applicability = str(item.get("applicability", "possible"))
         if applicability not in {"material", "possible", "not_applicable"}:
             applicability = "possible"
+        raw_materiality = str(item.get("materiality_level", "")).lower()
+        materiality_level = ""
+        if lens_id == "climate":
+            materiality_level = (
+                raw_materiality
+                if raw_materiality in _MATERIALITY_LEVELS
+                else "medium" if applicability == "material" else "low"
+            )
         lens_sources = list(dict.fromkeys(
             str(value) for value in _list_values(item.get("source_ids"))
         ))[:10]
@@ -238,6 +261,12 @@ def extract_lens_diagnostic(
                     "item_id": item_id,
                     "status": status,
                     "mechanism": str(raw_item.get("mechanism", "")).strip()[:500],
+                    "project_contribution": str(
+                        raw_item.get("project_contribution", "")
+                    ).strip()[:700],
+                    "strengthening_action": str(
+                        raw_item.get("strengthening_action", "")
+                    ).strip()[:700],
                     "evidence": [
                         str(value).strip()[:500]
                         for value in _list_values(raw_item.get("evidence"))
@@ -254,6 +283,108 @@ def extract_lens_diagnostic(
                     "section_id": section_id,
                     "items": normalized_items,
                 })
+        normalized_interactions: list[dict[str, Any]] = []
+        if lens_id == "climate":
+            seen_directions: set[str] = set()
+            for raw_interaction in _list_values(item.get("interaction_readout")):
+                if not isinstance(raw_interaction, dict):
+                    continue
+                direction_id = str(raw_interaction.get("direction_id", ""))
+                if (
+                    direction_id not in _INTERACTION_DIRECTIONS
+                    or direction_id in seen_directions
+                ):
+                    continue
+                seen_directions.add(direction_id)
+                interaction_sources = list(dict.fromkeys(_bounded_strings(
+                    raw_interaction.get("source_ids"), 10, 200
+                )))
+                if source_ids_by_lens is not None:
+                    interaction_sources = [
+                        source_id for source_id in interaction_sources
+                        if source_id in source_ids_by_lens.get(lens_id, set())
+                    ]
+                normalized_interactions.append({
+                    "direction_id": direction_id,
+                    "summary": str(
+                        raw_interaction.get("summary", "")
+                    ).strip()[:700],
+                    "mechanisms": _bounded_strings(
+                        raw_interaction.get("mechanisms"), 3, 350
+                    ),
+                    "project_implications": _bounded_strings(
+                        raw_interaction.get("project_implications"), 3, 350
+                    ),
+                    "positive_effects": _bounded_strings(
+                        raw_interaction.get("positive_effects"), 3, 350
+                    ),
+                    "adverse_effects": _bounded_strings(
+                        raw_interaction.get("adverse_effects"), 3, 350
+                    ),
+                    "evidence": _bounded_strings(
+                        raw_interaction.get("evidence"), 5, 500
+                    ),
+                    "evidence_gap": str(
+                        raw_interaction.get("evidence_gap", "")
+                    ).strip()[:500],
+                    "source_ids": interaction_sources,
+                })
+
+        normalized_additional: list[dict[str, Any]] = []
+        additional_by_section: dict[str, int] = {}
+        if lens_id == "climate":
+            for raw_pathway in _list_values(item.get("additional_pathways")):
+                if not isinstance(raw_pathway, dict):
+                    continue
+                section_id = str(raw_pathway.get("section_id", ""))
+                title = str(raw_pathway.get("title", "")).strip()[:200]
+                status = str(raw_pathway.get("status", ""))
+                contribution = str(
+                    raw_pathway.get("project_contribution", "")
+                ).strip()[:700]
+                strengthening = str(
+                    raw_pathway.get("strengthening_action", "")
+                ).strip()[:700]
+                evidence = _bounded_strings(raw_pathway.get("evidence"), 5, 500)
+                if (
+                    section_id not in declared_sections
+                    or additional_by_section.get(section_id, 0) >= 2
+                    or not title
+                    or status not in {"supported", "potential"}
+                    or not contribution
+                    or not strengthening
+                    or not evidence
+                ):
+                    continue
+                pathway_sources = list(dict.fromkeys(_bounded_strings(
+                    raw_pathway.get("source_ids"), 10, 200
+                )))
+                if source_ids_by_lens is not None:
+                    pathway_sources = [
+                        source_id for source_id in pathway_sources
+                        if source_id in source_ids_by_lens.get(lens_id, set())
+                    ]
+                normalized_additional.append({
+                    "section_id": section_id,
+                    "title": title,
+                    "status": status,
+                    "mechanism": str(
+                        raw_pathway.get("mechanism", "")
+                    ).strip()[:500],
+                    "project_contribution": contribution,
+                    "strengthening_action": strengthening,
+                    "evidence": evidence,
+                    "evidence_gap": str(
+                        raw_pathway.get("evidence_gap", "")
+                    ).strip()[:500],
+                    "trade_off": str(
+                        raw_pathway.get("trade_off", "")
+                    ).strip()[:500],
+                    "source_ids": pathway_sources,
+                })
+                additional_by_section[section_id] = (
+                    additional_by_section.get(section_id, 0) + 1
+                )
         normalized_other: list[dict[str, str]] = []
         raw_other = item.get("other_pathways", [])
         for pathway in raw_other if isinstance(raw_other, list) else []:
@@ -270,7 +401,7 @@ def extract_lens_diagnostic(
             })
             if len(normalized_other) >= 10:
                 break
-        lenses.append({
+        normalized_lens = {
             "lens_id": lens_id,
             "applicability": applicability,
             "materiality_summary": str(
@@ -289,7 +420,14 @@ def extract_lens_diagnostic(
             "source_ids": lens_sources,
             "readout_sections": normalized_sections,
             "other_pathways": normalized_other,
-        })
+        }
+        if lens_id == "climate":
+            normalized_lens.update({
+                "materiality_level": materiality_level,
+                "interaction_readout": normalized_interactions,
+                "additional_pathways": normalized_additional,
+            })
+        lenses.append(normalized_lens)
 
     findings: list[dict[str, Any]] = []
     truncated = len(raw_findings) > 20
