@@ -1042,6 +1042,94 @@ def lens_diagnostic_failure_message(
     return ''
 
 
+def lens_recovery_structure(
+    response_text: str,
+    diagnostic: dict[str, Any],
+    active_lens_ids: list[str],
+) -> dict[str, Any]:
+    """Return privacy-safe structural facts about a recovery response."""
+
+    text = response_text or ""
+    has_start = LENS_DIAGNOSTIC_START in text
+    has_end = LENS_DIAGNOSTIC_END in text
+    summary: dict[str, Any] = {
+        "response_chars": len(text),
+        "start_delimiter": has_start,
+        "end_delimiter": has_end,
+        "json_status": "missing_delimiters",
+        "lenses_list": False,
+        "lens_count": 0,
+        "findings_list": False,
+        "finding_count": 0,
+        "climate_entry_present": False,
+        "materiality_present": False,
+        "materiality_valid": False,
+        "recognized_interactions": [],
+        "missing_required_interactions": [],
+        "failure_reason": lens_diagnostic_failure_message(
+            diagnostic, active_lens_ids
+        ),
+    }
+    if not (has_start and has_end):
+        return summary
+    match = re.search(
+        re.escape(LENS_DIAGNOSTIC_START)
+        + r"(.*?)"
+        + re.escape(LENS_DIAGNOSTIC_END),
+        text,
+        re.DOTALL,
+    )
+    if not match:
+        return summary
+    try:
+        payload = json.loads(match.group(1).strip())
+    except (json.JSONDecodeError, TypeError, ValueError):
+        summary["json_status"] = "invalid_json"
+        return summary
+    if not isinstance(payload, dict):
+        summary["json_status"] = "valid_non_object"
+        return summary
+
+    summary["json_status"] = "valid_object"
+    raw_lenses = payload.get("lenses")
+    raw_findings = payload.get("findings")
+    summary["lenses_list"] = isinstance(raw_lenses, list)
+    summary["lens_count"] = min(len(raw_lenses), 99) if isinstance(
+        raw_lenses, list
+    ) else 0
+    summary["findings_list"] = isinstance(raw_findings, list)
+    summary["finding_count"] = min(len(raw_findings), 99) if isinstance(
+        raw_findings, list
+    ) else 0
+
+    climate = next((
+        item for item in raw_lenses or []
+        if isinstance(item, dict) and item.get("lens_id") == "climate"
+    ), None) if isinstance(raw_lenses, list) and "climate" in active_lens_ids else None
+    if not climate:
+        return summary
+
+    summary["climate_entry_present"] = True
+    summary["materiality_present"] = "materiality_level" in climate
+    level = str(climate.get("materiality_level", "")).lower()
+    summary["materiality_valid"] = level in {"high", "medium", "low"}
+    allowed_directions = {
+        "climate-fcv-on-project", "project-on-climate-fcv"
+    }
+    recognized = sorted({
+        str(item.get("direction_id"))
+        for item in climate.get("interaction_readout", [])
+        if isinstance(item, dict)
+        and item.get("direction_id") in allowed_directions
+    })
+    summary["recognized_interactions"] = recognized
+    if level in {"high", "medium"}:
+        summary["missing_required_interactions"] = sorted(
+            allowed_directions - set(recognized)
+        )
+    return summary
+
+
 def repair_lens_diagnostic(
     stage2_output: str,
     active_lens_ids: list[str],

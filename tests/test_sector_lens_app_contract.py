@@ -4,6 +4,8 @@ import json
 import io
 from pathlib import Path
 
+import pytest
+
 import app as app_module
 from sector_lenses import load_registry
 
@@ -547,6 +549,88 @@ def test_lens_diagnostic_failure_names_parser_errors_and_missing_entries():
             "interaction_readout": [],
         }], "findings": []}, ["climate"]
     ).lower()
+
+
+@pytest.mark.parametrize(
+    ("response_text", "expected_status"),
+    [
+        ("no diagnostic delimiters", "missing_delimiters"),
+        (
+            app_module.LENS_DIAGNOSTIC_START
+            + "{not valid json}"
+            + app_module.LENS_DIAGNOSTIC_END,
+            "invalid_json",
+        ),
+    ],
+)
+def test_lens_recovery_structure_classifies_unparseable_responses(
+    response_text, expected_status
+):
+    summary = app_module.lens_recovery_structure(
+        response_text,
+        {"error": True, "message": "Recovery invalid."},
+        ["climate"],
+    )
+
+    assert summary["json_status"] == expected_status
+    assert summary["climate_entry_present"] is False
+    assert summary["materiality_present"] is False
+    assert summary["recognized_interactions"] == []
+
+
+def test_lens_recovery_structure_reports_only_allowlisted_shape():
+    sentinel = "SECRET PROJECT EVIDENCE MUST NOT LEAK"
+    raw_payload = {
+        "lenses": [{
+            "lens_id": "climate",
+            "materiality_summary": sentinel,
+            "interaction_readout": [{
+                "direction_id": "climate-fcv-on-project",
+                "summary": sentinel,
+                "untrusted_key": sentinel,
+            }],
+            "untrusted_key": sentinel,
+        }],
+        "findings": [{"evidence": [sentinel]}],
+        "untrusted_key": sentinel,
+    }
+    response_text = (
+        app_module.LENS_DIAGNOSTIC_START
+        + json.dumps(raw_payload)
+        + app_module.LENS_DIAGNOSTIC_END
+    )
+    normalized = {
+        "lenses": [{
+            "lens_id": "climate",
+            "materiality_level": "",
+            "materiality_summary": sentinel,
+            "interaction_readout": [{
+                "direction_id": "climate-fcv-on-project",
+                "summary": sentinel,
+            }],
+        }],
+        "findings": [],
+    }
+
+    summary = app_module.lens_recovery_structure(
+        response_text, normalized, ["climate"]
+    )
+    serialized = json.dumps(summary, sort_keys=True)
+
+    assert summary["json_status"] == "valid_object"
+    assert summary["lenses_list"] is True
+    assert summary["lens_count"] == 1
+    assert summary["findings_list"] is True
+    assert summary["finding_count"] == 1
+    assert summary["climate_entry_present"] is True
+    assert summary["materiality_present"] is False
+    assert summary["materiality_valid"] is False
+    assert summary["recognized_interactions"] == [
+        "climate-fcv-on-project"
+    ]
+    assert summary["missing_required_interactions"] == []
+    assert sentinel not in serialized
+    assert "untrusted_key" not in serialized
 
 
 def test_lens_diagnostic_repair_is_bounded_and_accepts_valid_json_only():
