@@ -1206,6 +1206,21 @@ def repair_lens_diagnostic(
         recovered = not bool(
             lens_diagnostic_failure_message(repaired, active_lens_ids)
         )
+        if not recovered:
+            structure = lens_recovery_structure(
+                response_text, repaired, active_lens_ids
+            )
+            app.logger.warning(
+                "Lens diagnostic recovery invalid: assessment_id=%s "
+                "structure=%s",
+                assessment_id or "unknown",
+                json.dumps(
+                    structure,
+                    ensure_ascii=True,
+                    sort_keys=True,
+                    separators=(",", ":"),
+                ),
+            )
         app.logger.info(
             'Lens diagnostic recovery completed: assessment_id=%s '
             'elapsed_ms=%d recovered=%s',

@@ -806,6 +806,50 @@ def test_lens_diagnostic_repair_rejects_missing_climate_materiality_level():
     assert repaired["lenses"][0]["materiality_level"] == ""
 
 
+def test_unsuccessful_lens_recovery_logs_safe_structure(caplog):
+    sentinel = "SECRET PROJECT EVIDENCE MUST NOT LEAK"
+    incomplete_payload = {
+        "lenses": [{
+            "lens_id": "climate",
+            "materiality_summary": sentinel,
+            "interaction_readout": [{
+                "direction_id": "climate-fcv-on-project",
+                "summary": sentinel,
+            }],
+        }],
+        "findings": [],
+    }
+
+    class FakeMessages:
+        def create(self, **kwargs):
+            text = (
+                app_module.LENS_DIAGNOSTIC_START
+                + json.dumps(incomplete_payload)
+                + app_module.LENS_DIAGNOSTIC_END
+            )
+            return type("Response", (), {
+                "content": [type("Text", (), {"text": text})()]
+            })()
+
+    client = type("Client", (), {"messages": FakeMessages()})()
+    with caplog.at_level("WARNING", logger=app_module.app.logger.name):
+        _, recovered = app_module.repair_lens_diagnostic(
+            "Visible Stage 2 assessment",
+            ["climate"],
+            {"climate": set()},
+            {"climate": {"invest-in": set(), "deliver-through": set()}},
+            client=client,
+            assessment_id="assessment-structure",
+        )
+
+    assert recovered is False
+    assert "Lens diagnostic recovery invalid" in caplog.text
+    assert "assessment-structure" in caplog.text
+    assert '"json_status":"valid_object"' in caplog.text
+    assert '"materiality_present":false' in caplog.text
+    assert sentinel not in caplog.text
+
+
 def test_valid_inline_lens_diagnostic_bypasses_recovery(monkeypatch):
     state = app_module.AnalysisState.from_payload({"active_lenses": ["climate"]})
     active_lenses = app_module.build_lens_stage_context(state, stage=2)["active_lenses"]
