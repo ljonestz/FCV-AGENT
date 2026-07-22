@@ -3505,10 +3505,15 @@
               if(p.responsiveness_rating)fcvResponsivenessRating=p.responsiveness_rating;
               if(p.under_hood){stage2UnderHood=p.under_hood;fcvSaveStage2UnderHood(p.under_hood);}
               if(p.lens_diagnostic)lensDiagnostic=p.lens_diagnostic;
-              showLensWarnings(p.lens_warnings);
+              const expressLensWarnings=[...(p.lens_warnings||[])];
+              if(p.parse_error){
+                expressLensWarnings.push({message:p.parse_error_message||'Stage 2 structured assessment details could not be parsed. The core assessment remains available.'});
+              }
+              showLensWarnings(expressLensWarnings);
               fcvSafeLocalStorageSet('stage2_timestamp',Date.now());
               const sensR=p.sensitivity_rating||'\u2014',respR=p.responsiveness_rating||'\u2014';
-              updateExpressStage(2,'done','Sensitivity: '+sensR+' \u00B7 Responsiveness: '+respR);
+              const stage2Status=p.parse_error?'Completed with a diagnostic warning':'Sensitivity: '+sensR+' \u00B7 Responsiveness: '+respR;
+              updateExpressStage(2,'done',stage2Status);
               epSafeStore(stageOutputs,stageHists,'2');
             }
 

@@ -196,3 +196,14 @@ def test_download_html_uses_same_climate_sections_and_order():
         "renderSRCards(stageSensitivitySummary, stageResponsivenessSummary)"
         in helper
     )
+
+
+def test_express_mode_surfaces_stage2_structured_diagnostic_failures():
+    source = INDEX.read_text(encoding="utf-8")
+    start = source.index("else if(sn===2)")
+    end = source.index("else if(sn===3)", start)
+    stage2_handler = source[start:end]
+
+    assert "p.parse_error" in stage2_handler
+    assert "p.parse_error_message" in stage2_handler
+    assert "showLensWarnings" in stage2_handler

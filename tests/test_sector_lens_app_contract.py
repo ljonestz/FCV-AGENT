@@ -518,6 +518,89 @@ def test_high_climate_materiality_warns_when_priorities_drop_provenance(caplog):
     assert app_module.warn_on_missing_high_climate_priority(
         [{"title": "Climate priority", "lens_ids": ["climate"]}], diagnostic
     ) is False
+
+
+def test_lens_diagnostic_failure_names_parser_errors_and_missing_entries():
+    assert app_module.lens_diagnostic_failure_message(
+        {"error": True, "message": "Lens diagnostic block was not valid JSON."},
+        ["climate"],
+    ) == "Lens diagnostic block was not valid JSON."
+    assert app_module.lens_diagnostic_failure_message(
+        {"lenses": [], "findings": []}, ["climate"]
+    ) == "The Climate-FCV diagnostic was omitted from the Stage 2 structured output."
+    assert app_module.lens_diagnostic_failure_message(
+        {"lenses": [{
+            "lens_id": "climate",
+            "materiality_level": "medium",
+            "materiality_summary": "Material interactions.",
+            "interaction_readout": [
+                {"direction_id": "climate-fcv-on-project", "summary": "A"},
+                {"direction_id": "project-on-climate-fcv", "summary": "B"},
+            ],
+        }], "findings": []}, ["climate"]
+    ) == ""
+    assert "incomplete" in app_module.lens_diagnostic_failure_message(
+        {"lenses": [{
+            "lens_id": "climate",
+            "materiality_level": "high",
+            "materiality_summary": "Material interactions.",
+            "interaction_readout": [],
+        }], "findings": []}, ["climate"]
+    ).lower()
+
+
+def test_lens_diagnostic_repair_is_bounded_and_accepts_valid_json_only():
+    repaired_payload = {
+        "lenses": [{
+            "lens_id": "climate",
+            "applicability": "material",
+            "materiality_level": "medium",
+            "materiality_summary": "Flood and conflict pressures affect delivery.",
+            "readout_sections": [],
+            "interaction_readout": [
+                {
+                    "direction_id": "climate-fcv-on-project",
+                    "summary": "Flood and insecurity disrupt delivery.",
+                },
+                {
+                    "direction_id": "project-on-climate-fcv",
+                    "summary": "Benefit rules affect trust and access.",
+                },
+            ],
+            "additional_pathways": [],
+        }],
+        "findings": [],
+    }
+
+    class FakeMessages:
+        request = None
+
+        def create(self, **kwargs):
+            self.request = kwargs
+            block = (
+                app_module.LENS_DIAGNOSTIC_START
+                + json.dumps(repaired_payload)
+                + app_module.LENS_DIAGNOSTIC_END
+            )
+            return type("Response", (), {
+                "content": [type("Text", (), {"text": block})()]
+            })()
+
+    messages = FakeMessages()
+    client = type("Client", (), {"messages": messages})()
+    repaired, recovered = app_module.repair_lens_diagnostic(
+        "Visible Stage 2 assessment " * 3000,
+        ["climate"],
+        {"climate": set()},
+        {"climate": {"invest-in": set(), "deliver-through": set()}},
+        client=client,
+    )
+
+    assert recovered is True
+    assert repaired["lenses"][0]["materiality_level"] == "medium"
+    assert messages.request["model"] == "claude-haiku-4-5-20251001"
+    assert messages.request["max_tokens"] <= 4000
+    assert len(messages.request["messages"][0]["content"]) < 40000
     assert app_module.warn_on_missing_high_climate_priority(
         [{"title": "Core priority", "lens_ids": []}],
         {"lenses": [{"lens_id": "climate", "materiality_level": "medium"}]},

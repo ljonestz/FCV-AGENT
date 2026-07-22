@@ -983,6 +983,192 @@ def lens_readout_schema(
     return result
 
 
+def lens_diagnostic_failure_message(
+    diagnostic: dict[str, Any],
+    active_lens_ids: list[str],
+) -> str:
+    """Explain why an active-lens diagnostic cannot be used."""
+
+    if not active_lens_ids:
+        return ''
+    if not isinstance(diagnostic, dict):
+        return 'The Stage 2 lens diagnostic was not a valid object.'
+    if diagnostic.get('error'):
+        return str(
+            diagnostic.get('message')
+            or 'The Stage 2 lens diagnostic could not be parsed.'
+        )
+    entries = {
+        item.get('lens_id'): item
+        for item in diagnostic.get('lenses', [])
+        if isinstance(item, dict)
+    }
+    missing = [lens_id for lens_id in active_lens_ids if lens_id not in entries]
+    if missing == ['climate']:
+        return (
+            'The Climate-FCV diagnostic was omitted from the Stage 2 '
+            'structured output.'
+        )
+    if missing:
+        return (
+            'Stage 2 omitted structured diagnostics for: '
+            + ', '.join(missing)
+            + '.'
+        )
+    climate = entries.get('climate') if 'climate' in active_lens_ids else None
+    if climate:
+        level = str(climate.get('materiality_level', '')).lower()
+        summary = str(climate.get('materiality_summary', '')).strip()
+        directions = {
+            item.get('direction_id')
+            for item in climate.get('interaction_readout', [])
+            if isinstance(item, dict) and str(item.get('summary', '')).strip()
+        }
+        required = (
+            {'climate-fcv-on-project', 'project-on-climate-fcv'}
+            if level in {'high', 'medium'} else set()
+        )
+        incomplete = (
+            level not in {'high', 'medium', 'low'}
+            or not summary
+            or (level == 'low' and not directions)
+            or bool(required - directions)
+        )
+        if incomplete:
+            return (
+                'The Climate-FCV diagnostic was incomplete and could not '
+                'support the required materiality and interaction readout.'
+            )
+    return ''
+
+
+def repair_lens_diagnostic(
+    stage2_output: str,
+    active_lens_ids: list[str],
+    source_ids_by_lens: dict[str, set[str]],
+    readout_schema_by_lens: dict[str, dict[str, set[str]]],
+    client=None,
+) -> tuple[dict[str, Any], bool]:
+    """Make one bounded JSON-only attempt to recover a missing diagnostic."""
+
+    if not active_lens_ids:
+        return {}, False
+    visible = strip_lens_blocks(stage2_output or '')
+    if len(visible) > 30_000:
+        visible = visible[:15_000] + '\n[...middle omitted...]\n' + visible[-15_000:]
+    contract = {
+        'active_lens_ids': active_lens_ids,
+        'allowed_source_ids': {
+            lens_id: sorted(values)
+            for lens_id, values in source_ids_by_lens.items()
+        },
+        'readout_schema': {
+            lens_id: {
+                section_id: sorted(item_ids)
+                for section_id, item_ids in sections.items()
+            }
+            for lens_id, sections in readout_schema_by_lens.items()
+        },
+    }
+    prompt = (
+        'Recover only the missing structured sector-lens diagnostic from the '
+        'Stage 2 assessment below. Return no commentary or markdown. Return one '
+        f'JSON object between {LENS_DIAGNOSTIC_START} and '
+        f'{LENS_DIAGNOSTIC_END}. Use top-level arrays lenses and findings, '
+        'include exactly one lens entry per active lens, use only allowed IDs, '
+        'and do not invent evidence. For Climate include materiality_level, the '
+        'two fixed interaction directions, baseline project_contribution and '
+        'strengthening_action fields, and bounded additional_pathways. If the '
+        'assessment does not support a pathway, mark it not_material or omit it. '
+        'Use this compact shape: '
+        '{"lenses":[{"lens_id":"climate","applicability":"material",'
+        '"materiality_level":"high|medium|low","materiality_summary":"...",'
+        '"analysis_emphasis":[],"evidence":[],"source_ids":[],'
+        '"interaction_readout":[{"direction_id":"climate-fcv-on-project|'
+        'project-on-climate-fcv","summary":"...","mechanisms":[],'
+        '"project_implications":[],"positive_effects":[],"adverse_effects":[],'
+        '"evidence":[],"evidence_gap":"","source_ids":[]}],'
+        '"readout_sections":[{"section_id":"...","items":[{"item_id":"...",'
+        '"status":"supported|potential|not_material","mechanism":"...",'
+        '"project_contribution":"...","strengthening_action":"...",'
+        '"evidence":[],"evidence_gap":"","trade_off":"","source_ids":[]}]}],'
+        '"additional_pathways":[],"other_pathways":[]}],"findings":[]}.\n\n'
+        f'CONTRACT:\n{json.dumps(contract, ensure_ascii=False)}\n\n'
+        f'STAGE 2 ASSESSMENT:\n{visible}'
+    )
+    try:
+        response = (client or get_fast_client()).messages.create(
+            model='claude-haiku-4-5-20251001',
+            max_tokens=3500,
+            messages=[{'role': 'user', 'content': prompt}],
+        )
+        response_text = ''.join(
+            str(getattr(block, 'text', ''))
+            for block in getattr(response, 'content', [])
+        )
+        repaired = extract_lens_diagnostic(
+            response_text,
+            active_lens_ids,
+            source_ids_by_lens,
+            readout_schema_by_lens,
+        )
+        return repaired, not bool(
+            lens_diagnostic_failure_message(repaired, active_lens_ids)
+        )
+    except Exception as exc:
+        app.logger.warning(
+            'Lens diagnostic recovery request failed: %s',
+            type(exc).__name__,
+        )
+        return {
+            'error': True,
+            'message': 'The automatic lens diagnostic recovery attempt failed.',
+            'lenses': [],
+            'findings': [],
+        }, False
+
+
+def extract_or_repair_lens_diagnostic(
+    stage2_output: str,
+    active_lenses: list[dict[str, Any]],
+    context_sources: list[dict[str, Any]],
+    assessment_id: str = '',
+) -> tuple[dict[str, Any], bool, str]:
+    """Extract the diagnostic, then try one bounded recovery on failure."""
+
+    if not active_lenses:
+        return {}, False, ''
+    active_ids = [item['id'] for item in active_lenses]
+    source_ids = lens_source_ids(
+        active_lenses, context_sources=context_sources
+    )
+    schema = lens_readout_schema(active_lenses)
+    diagnostic = extract_lens_diagnostic(
+        stage2_output, active_ids, source_ids, schema
+    )
+    failure = lens_diagnostic_failure_message(diagnostic, active_ids)
+    if not failure:
+        return diagnostic, False, ''
+    app.logger.warning(
+        'Stage 2 lens diagnostic invalid: assessment_id=%s reason=%s',
+        assessment_id or 'unknown', failure,
+    )
+    repaired, recovered = repair_lens_diagnostic(
+        stage2_output, active_ids, source_ids, schema
+    )
+    if recovered:
+        app.logger.info(
+            'Stage 2 lens diagnostic recovered: assessment_id=%s',
+            assessment_id or 'unknown',
+        )
+        return repaired, True, ''
+    app.logger.warning(
+        'Stage 2 lens diagnostic recovery unsuccessful: assessment_id=%s',
+        assessment_id or 'unknown',
+    )
+    return diagnostic, False, failure
+
+
 DO_NO_HARM_HEADER = """---
 **AI-Generated Output — For Review Purposes Only**
 
@@ -6338,15 +6524,24 @@ def run_stage():
                     stage2_ratings = extract_stage2_ratings(full_text)
                     under_hood = extract_under_hood(full_text)
                     category_lens = extract_category_lens(full_text)
-                    lens_diagnostic = extract_lens_diagnostic(full_text, [
-                        item['id'] for item in lens_context['active_lenses']
-                    ], lens_source_ids(
-                        lens_context['active_lenses'],
-                        context_sources=lens_context['lens_context_sources'],
-                    ),
-                    lens_readout_schema(lens_context['active_lenses'])) if lens_context['active_lenses'] else {}
-                    parse_error = under_hood.get('error', False) or stage2_ratings.get('error', False)
-                    parse_error_message = under_hood.get('message', '') or stage2_ratings.get('message', '')
+                    lens_diagnostic, _, lens_failure = (
+                        extract_or_repair_lens_diagnostic(
+                            full_text,
+                            lens_context['active_lenses'],
+                            lens_context['lens_context_sources'],
+                            assessment_id,
+                        )
+                    )
+                    parse_error = (
+                        under_hood.get('error', False)
+                        or stage2_ratings.get('error', False)
+                        or bool(lens_failure)
+                    )
+                    parse_error_message = ' '.join(dict.fromkeys(filter(None, (
+                        under_hood.get('message', ''),
+                        stage2_ratings.get('message', ''),
+                        lens_failure,
+                    ))))
 
                 elif stage == 3:
                     # Stage 3 (Recommendations Note): extract priorities + ratings
@@ -7104,17 +7299,24 @@ def run_express():
                 stage2_ratings = extract_stage2_ratings(stage2_output)
                 under_hood = extract_under_hood(stage2_output)
                 category_lens_e2 = extract_category_lens(stage2_output)
-                lens_diagnostic = extract_lens_diagnostic(
-                    stage2_output,
-                    [item['id'] for item in lens_context_s2['active_lenses']],
-                    lens_source_ids(
+                lens_diagnostic, lens_recovered, lens_failure = (
+                    extract_or_repair_lens_diagnostic(
+                        stage2_output,
                         lens_context_s2['active_lenses'],
-                        context_sources=lens_context_s2['lens_context_sources'],
-                    ),
-                    lens_readout_schema(lens_context_s2['active_lenses']),
-                ) if lens_context_s2['active_lenses'] else {}
-                s2_parse_error = under_hood.get('error', False) or stage2_ratings.get('error', False)
-                s2_parse_error_msg = under_hood.get('message', '') or stage2_ratings.get('message', '')
+                        lens_context_s2['lens_context_sources'],
+                        assessment_id,
+                    )
+                )
+                s2_parse_error = (
+                    under_hood.get('error', False)
+                    or stage2_ratings.get('error', False)
+                    or bool(lens_failure)
+                )
+                s2_parse_error_msg = ' '.join(dict.fromkeys(filter(None, (
+                    under_hood.get('message', ''),
+                    stage2_ratings.get('message', ''),
+                    lens_failure,
+                ))))
 
                 # Update conversation history — store compact Stage 2 label (not full prompt) so
                 # Stage 3 doesn't carry 80k+ chars of background constants into its API call.
@@ -7129,7 +7331,7 @@ def run_express():
                     conversation_history = conversation_history[-20:]
 
                 # ── Stage 2 done event ──
-                yield f"data: {json.dumps({'stage_done': 2, 'result': strip_lens_blocks(stage2_output), 'display_text': strip_lens_blocks(under_hood.get('display_text', stage2_output)), 'history': conversation_history, 'sensitivity_rating': stage2_ratings.get('sensitivity_rating', ''), 'responsiveness_rating': stage2_ratings.get('responsiveness_rating', ''), 'rating_reasoning': stage2_ratings.get('rating_reasoning', ''), 'under_hood': {'recs_table': under_hood.get('recs_table', ''), 'dnh_checklist': under_hood.get('dnh_checklist', ''), 'questions_map': under_hood.get('questions_map', ''), 'evidence_trail': under_hood.get('evidence_trail', '')}, 'category_lens': category_lens_e2, 'lens_diagnostic': lens_diagnostic, 'lens_context_sources': lens_context_s2['lens_context_sources'], 'active_lenses': lens_context_s2['active_lenses'], 'lens_warnings': lens_context_s2['warnings'], 'parse_error': s2_parse_error, 'parse_error_message': s2_parse_error_msg})}\n\n"
+                yield f"data: {json.dumps({'stage_done': 2, 'result': strip_lens_blocks(stage2_output), 'display_text': strip_lens_blocks(under_hood.get('display_text', stage2_output)), 'history': conversation_history, 'sensitivity_rating': stage2_ratings.get('sensitivity_rating', ''), 'responsiveness_rating': stage2_ratings.get('responsiveness_rating', ''), 'rating_reasoning': stage2_ratings.get('rating_reasoning', ''), 'under_hood': {'recs_table': under_hood.get('recs_table', ''), 'dnh_checklist': under_hood.get('dnh_checklist', ''), 'questions_map': under_hood.get('questions_map', ''), 'evidence_trail': under_hood.get('evidence_trail', '')}, 'category_lens': category_lens_e2, 'lens_diagnostic': lens_diagnostic, 'lens_diagnostic_recovered': lens_recovered, 'lens_context_sources': lens_context_s2['lens_context_sources'], 'active_lenses': lens_context_s2['active_lenses'], 'lens_warnings': lens_context_s2['warnings'], 'parse_error': s2_parse_error, 'parse_error_message': s2_parse_error_msg})}\n\n"
 
                 # ════════════════════════════════════════════════════════════
                 # STAGE 3 — Recommendations / Course-Correction Note
