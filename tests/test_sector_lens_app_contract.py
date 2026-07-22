@@ -607,6 +607,55 @@ def test_lens_diagnostic_repair_is_bounded_and_accepts_valid_json_only():
     ) is False
 
 
+def test_lens_diagnostic_repair_uses_recovery_client_not_fast_client(monkeypatch):
+    repaired_payload = {
+        "lenses": [{
+            "lens_id": "climate",
+            "applicability": "material",
+            "materiality_level": "medium",
+            "materiality_summary": "Flood and conflict pressures affect delivery.",
+            "interaction_readout": [
+                {"direction_id": "climate-fcv-on-project", "summary": "Delivery risk."},
+                {"direction_id": "project-on-climate-fcv", "summary": "Distribution risk."},
+            ],
+            "readout_sections": [],
+            "additional_pathways": [],
+        }],
+        "findings": [],
+    }
+
+    class FakeMessages:
+        def create(self, **kwargs):
+            text = (
+                app_module.LENS_DIAGNOSTIC_START
+                + json.dumps(repaired_payload)
+                + app_module.LENS_DIAGNOSTIC_END
+            )
+            return type("Response", (), {
+                "content": [type("Text", (), {"text": text})()]
+            })()
+
+    recovery_client = type("Client", (), {"messages": FakeMessages()})()
+    monkeypatch.setattr(
+        app_module, "get_lens_recovery_client", lambda: recovery_client
+    )
+    monkeypatch.setattr(
+        app_module,
+        "get_fast_client",
+        lambda: (_ for _ in ()).throw(AssertionError("fast client used")),
+    )
+
+    repaired, recovered = app_module.repair_lens_diagnostic(
+        "Visible Stage 2 assessment",
+        ["climate"],
+        {"climate": set()},
+        {"climate": {"invest-in": set(), "deliver-through": set()}},
+    )
+
+    assert recovered is True
+    assert repaired["lenses"][0]["materiality_level"] == "medium"
+
+
 def test_lens_recovery_client_has_bounded_timeout_and_no_sdk_retries(monkeypatch):
     captured = {}
     sentinel = object()

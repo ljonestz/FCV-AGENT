@@ -1097,7 +1097,7 @@ def repair_lens_diagnostic(
         f'STAGE 2 ASSESSMENT:\n{visible}'
     )
     try:
-        response = (client or get_fast_client()).messages.create(
+        response = (client or get_lens_recovery_client()).messages.create(
             model='claude-haiku-4-5-20251001',
             max_tokens=3500,
             messages=[{'role': 'user', 'content': prompt}],
