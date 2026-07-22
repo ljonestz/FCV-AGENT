@@ -170,23 +170,53 @@ def test_downloaded_report_has_climate_readout_and_context_sources():
     response = app_module.app.test_client().post("/api/download-report", json={
         "summary": "# Test project\nSummary.",
         "priorities": [],
+        "fcv_rating": "Adequate",
+        "fcv_responsiveness_rating": "Emerging",
+        "sensitivity_summary": "The project recognizes key FCV risks and remaining gaps.",
+        "responsiveness_summary": "The project could make a stronger contribution to resilience.",
+        "risk_exposure": {
+            "risks_to": "Core fallback risk to the project.",
+            "risks_from": "Core fallback risk from the project.",
+        },
         "active_lenses": [{
             "id": "climate", "version": "1.1.0", "position": "primary"
         }],
         "lens_diagnostic": {"lenses": [{
             "lens_id": "climate",
             "applicability": "material",
+            "materiality_level": "high",
             "materiality_summary": "Drought and fragility affect delivery.",
             "analysis_emphasis": ["adaptation"],
             "source_ids": ["peace-social-dividends", "context-ccdr"],
+            "interaction_readout": [{
+                "direction_id": "climate-fcv-on-project",
+                "summary": "Drought, insecurity, and weak access could disrupt delivery.",
+                "project_implications": ["Remote sites may become inaccessible."],
+                "source_ids": ["peace-social-dividends"],
+            }, {
+                "direction_id": "project-on-climate-fcv",
+                "summary": "Benefit rules could strengthen resilience or exclusion.",
+                "adverse_effects": ["Seasonal users could be excluded."],
+                "source_ids": ["peace-social-dividends"],
+            }],
             "readout_sections": [{
                 "section_id": "invest-in",
                 "items": [{
                     "item_id": "institutional-capacity-legitimacy",
                     "status": "supported",
                     "mechanism": "Transparent allocation can strengthen legitimacy.",
+                    "project_contribution": "Community institutions allocate resources.",
+                    "strengthening_action": "Map seasonal users before approving rules.",
+                    "evidence": ["Community institutions are a project mechanism."],
                     "evidence_gap": "Seasonal users are not mapped.",
                     "trade_off": "Formalization may exclude customary users.",
+                    "source_ids": ["peace-social-dividends"],
+                }, {
+                    "item_id": "social-cohesion-inclusion",
+                    "status": "not_material",
+                    "project_contribution": "Do not render this pathway.",
+                    "strengthening_action": "Do not render this pathway.",
+                    "evidence": ["No credible entry point."],
                     "source_ids": ["peace-social-dividends"],
                 }],
             }, {
@@ -195,10 +225,23 @@ def test_downloaded_report_has_climate_readout_and_context_sources():
                     "item_id": "flexible-adaptive-delivery",
                     "status": "potential",
                     "mechanism": "Contingent delivery can respond to shocks.",
+                    "project_contribution": "The project uses contingent delivery.",
+                    "strengthening_action": "Define combined flood and access triggers.",
+                    "evidence": ["Contingent delivery is described."],
                     "evidence_gap": "No trigger is defined.",
                     "trade_off": "Flexibility needs accountability.",
                     "source_ids": ["defueling-conflict"],
                 }],
+            }],
+            "additional_pathways": [{
+                "section_id": "invest-in",
+                "title": "Shared ecosystem restoration",
+                "status": "potential",
+                "mechanism": "Joint restoration can create collective benefits.",
+                "project_contribution": "The project restores shared watersheds.",
+                "strengthening_action": "Add joint oversight and dispute resolution.",
+                "evidence": ["Watershed restoration is included."],
+                "source_ids": ["peace-social-dividends"],
             }],
             "other_pathways": [{
                 "pathway": "mitigation-transition",
@@ -224,15 +267,87 @@ def test_downloaded_report_has_climate_readout_and_context_sources():
     document = Document(io.BytesIO(response.data))
     text = "\n".join(paragraph.text for paragraph in document.paragraphs)
 
-    assert "Climate-FCV Lens" in text
-    assert "Climate materiality" in text
+    assert text.index("Climate-focused FCV assessment") < text.index("Summary.")
+    assert "High materiality" in text
+    assert text.index("FCV Sensitivity") < text.index(
+        "How Climate-FCV interactions could affect the project"
+    )
+    assert text.index("FCV Responsiveness") < text.index(
+        "How Climate-FCV interactions could affect the project"
+    )
+    assert "How the project could influence Climate-FCV dynamics" in text
     assert "Where the project could build climate, peace, and social dividends" in text
     assert "Institutional capacity and legitimacy" in text
     assert "How project design and delivery could strengthen those dividends" in text
     assert "Flexible and adaptive delivery" in text
-    assert "Other pathways considered" in text
+    assert "Shared ecosystem restoration" in text
+    assert "How the project may contribute" in text
+    assert "How this could be strengthened" in text
+    assert "Do not render this pathway" not in text
+    assert "Other pathways considered" not in text
+    assert "Core fallback risk to the project" not in text
     assert "Country Climate and Development Report" in text
     assert text.count("Country Climate and Development Report") <= 2
+
+
+def test_downloaded_report_scales_low_climate_materiality_without_empty_dividends():
+    from docx import Document
+
+    response = app_module.app.test_client().post("/api/download-report", json={
+        "summary": "# Low test\nSummary.",
+        "priorities": [],
+        "sensitivity_summary": "Core sensitivity remains material.",
+        "responsiveness_summary": "Core responsiveness remains limited.",
+        "active_lenses": [{
+            "id": "climate", "version": "1.1.0", "position": "primary"
+        }],
+        "lens_diagnostic": {"lenses": [{
+            "lens_id": "climate",
+            "applicability": "possible",
+            "materiality_level": "low",
+            "materiality_summary": "Climate entry points are limited.",
+            "interaction_readout": [{
+                "direction_id": "climate-fcv-on-project",
+                "summary": "Seasonal rainfall may modestly affect access.",
+            }],
+            "readout_sections": [],
+            "additional_pathways": [],
+        }], "findings": []},
+        "metadata": {"date_str": "22 July 2026"},
+    })
+
+    assert response.status_code == 200
+    document = Document(io.BytesIO(response.data))
+    text = "\n".join(paragraph.text for paragraph in document.paragraphs)
+    assert "limited climate materiality" in text
+    assert "Seasonal rainfall may modestly affect access" in text
+    assert "Climate, peace and social dividends" not in text
+
+
+def test_downloaded_report_uses_safe_climate_failure_and_core_risk_fallback():
+    from docx import Document
+
+    response = app_module.app.test_client().post("/api/download-report", json={
+        "summary": "# Failure test\nSummary.",
+        "priorities": [],
+        "active_lenses": [{
+            "id": "climate", "version": "1.1.0", "position": "primary"
+        }],
+        "lens_diagnostic": {},
+        "risk_exposure": {
+            "risks_to": "Insecurity could disrupt delivery.",
+            "risks_from": "Exclusion could deepen grievance.",
+        },
+        "metadata": {"date_str": "22 July 2026"},
+    })
+
+    assert response.status_code == 200
+    document = Document(io.BytesIO(response.data))
+    text = "\n".join(paragraph.text for paragraph in document.paragraphs)
+    assert "validated Climate-FCV diagnostic could not be produced" in text
+    assert "FCV Risk Exposure" in text
+    assert "Insecurity could disrupt delivery" in text
+    assert "Climate, peace and social dividends" not in text
 
 
 def test_frontend_contract_includes_selector_locking_v3_and_lens_rendering():

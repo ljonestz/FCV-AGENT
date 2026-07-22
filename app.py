@@ -7617,6 +7617,112 @@ def run_priority_questions():
         return jsonify({'error': str(e)}), 500
 
 
+_CLIMATE_PATHWAY_LABELS = {
+    'social-cohesion-inclusion': 'Social cohesion and inclusion',
+    'institutional-capacity-legitimacy': 'Institutional capacity and legitimacy',
+    'livelihoods-opportunity': 'Livelihoods and economic opportunity',
+    'context-analysis-monitoring': 'Context analysis and monitoring',
+    'trust-collaboration': 'Trust and collaboration',
+    'flexible-adaptive-delivery': 'Flexible and adaptive delivery',
+}
+
+
+def climate_lens_entry(
+    diagnostic: dict[str, Any],
+) -> dict[str, Any] | None:
+    """Return the normalized Climate entry without trusting raw client fields."""
+
+    lenses = diagnostic.get('lenses', []) if isinstance(diagnostic, dict) else []
+    return next((
+        item for item in lenses
+        if isinstance(item, dict) and item.get('lens_id') == 'climate'
+    ), None)
+
+
+def climate_materiality_level(lens: dict[str, Any] | None) -> str:
+    """Resolve the three-level Climate scale with a safe legacy mapping."""
+
+    level = str((lens or {}).get('materiality_level', '')).lower()
+    if level in {'high', 'medium', 'low'}:
+        return level
+    return 'medium' if (lens or {}).get('applicability') == 'material' else 'low'
+
+
+def climate_dividend_groups(
+    lens: dict[str, Any],
+    registry=None,
+) -> list[dict[str, Any]]:
+    """Return complete, evidence-grounded dividend pathways within tier limits."""
+
+    registry = registry or SECTOR_LENS_REGISTRY
+    module = registry.get('climate')
+    if not module:
+        return []
+    level = climate_materiality_level(lens)
+    remaining = {'high': 6, 'medium': 4, 'low': 1}[level]
+    model_sections = {
+        section.get('section_id'): section
+        for section in lens.get('readout_sections', [])
+        if isinstance(section, dict)
+    }
+    additional = [
+        pathway for pathway in lens.get('additional_pathways', [])
+        if isinstance(pathway, dict)
+    ]
+    groups: list[dict[str, Any]] = []
+    for declared in module.readout_sections:
+        if remaining < 1:
+            break
+        baseline = [
+            dict(item, title=_CLIMATE_PATHWAY_LABELS.get(
+                item.get('item_id'),
+                str(item.get('item_id', '')).replace('-', ' ').title(),
+            ))
+            for item in model_sections.get(declared.id, {}).get('items', [])
+            if isinstance(item, dict) and item.get('item_id') in declared.item_ids
+        ]
+        extras = [
+            dict(item, title=item.get('title', ''))
+            for item in additional
+            if item.get('section_id') == declared.id
+        ]
+        visible: list[dict[str, Any]] = []
+        for item in baseline + extras:
+            evidence = [
+                value for value in item.get('evidence', [])
+                if isinstance(value, str) and value.strip()
+            ] if isinstance(item.get('evidence'), list) else []
+            contribution = (
+                item.get('project_contribution') or item.get('mechanism') or ''
+            )
+            strengthening = (
+                item.get('strengthening_action') or item.get('evidence_gap') or ''
+            )
+            status = item.get('status')
+            if (
+                status not in {'supported', 'potential'}
+                or not contribution
+                or not strengthening
+                or (status == 'potential' and not evidence)
+            ):
+                continue
+            visible.append({
+                **item,
+                'project_contribution': contribution,
+                'strengthening_action': strengthening,
+            })
+            if len(visible) >= remaining:
+                break
+        if visible:
+            groups.append({
+                'section_id': declared.id,
+                'title': declared.title,
+                'items': visible,
+            })
+            remaining -= len(visible)
+    return groups
+
+
 @app.route('/api/download-report', methods=['POST'])
 def download_report():
     """Generate a DOCX mirroring the full Stage 3 web output structure."""
@@ -7693,6 +7799,14 @@ def download_report():
         report_source_ids,
         report_readout_schema,
     ) if report_selection.lenses else {}
+    climate_active = 'climate' in active_report_ids
+    climate_readout = climate_lens_entry(lens_diagnostic)
+    climate_error = climate_active and (
+        not isinstance(lens_diagnostic, dict)
+        or bool(lens_diagnostic.get('error'))
+        or climate_readout is None
+    )
+    climate_valid = climate_active and not climate_error
     meta = data.get('metadata', {})
 
     date_str = meta.get('date_str', '')
@@ -7764,6 +7878,170 @@ def download_report():
         vp = doc.add_paragraph(str(value))
         vp.paragraph_format.space_before = Pt(0)
 
+    def add_sr_sections():
+        if sensitivity_summary or fcv_rating:
+            _add_section_heading('FCV Sensitivity')
+            if fcv_rating:
+                _add_single_para(
+                    fcv_rating, bold=True, color=WB_NAVY, space_after=2
+                )
+            if sensitivity_summary:
+                _md_to_docx_para(doc, sensitivity_summary)
+        if responsiveness_summary or fcv_resp_rating:
+            _add_section_heading('FCV Responsiveness')
+            if fcv_resp_rating:
+                _add_single_para(
+                    fcv_resp_rating, bold=True, color=WB_NAVY, space_after=2
+                )
+            if responsiveness_summary:
+                _md_to_docx_para(doc, responsiveness_summary)
+
+    def add_core_risk_exposure():
+        risks_to = risk_exposure.get('risks_to', '')
+        risks_from = risk_exposure.get('risks_from', '')
+        if not risks_to and not risks_from:
+            return
+        _add_section_heading('FCV Risk Exposure')
+        if risks_to:
+            _add_single_para(
+                'How FCV risks could affect this project:',
+                bold=True,
+                space_after=1,
+            )
+            _add_single_para(risks_to, space_before=0)
+        if risks_from:
+            _add_single_para(
+                'How this project could affect FCV dynamics:',
+                bold=True,
+                space_after=1,
+            )
+            _add_single_para(risks_from, space_before=0)
+
+    def add_climate_notice():
+        if not climate_active:
+            return
+        _add_section_heading('Climate-focused FCV assessment')
+        evidence_base = (
+            'The recommendations draw on a core library of relevant World Bank '
+            'and external material, including the Peace and Social Dividends of '
+            'Climate Action report, the framework for FCV-sensitive climate '
+            'action, the Defueling Conflict series, and other internal and '
+            'external sources.'
+        )
+        if climate_error:
+            _add_single_para(
+                'You selected the Climate-FCV module, but a validated '
+                'Climate-FCV diagnostic could not be produced. The note therefore '
+                'retains the core FCV assessment and does not add unvalidated '
+                'climate findings.'
+            )
+            _add_single_para(evidence_base, size=9, color=WB_GRAY)
+            return
+        level = climate_materiality_level(climate_readout)
+        wording = {
+            'high': (
+                'You selected the Climate-FCV module. The tool has therefore '
+                'applied a strong climate emphasis across this FCV assessment, '
+                'examining how Climate-FCV risks may affect the project and how '
+                'project design could strengthen climate resilience and wider '
+                'FCV outcomes.'
+            ),
+            'medium': (
+                'You selected the Climate-FCV module. The tool has applied a '
+                'focused climate emphasis to the parts of this FCV assessment '
+                'where Climate-FCV risks, opportunities, and delivery choices '
+                'are material to the project.'
+            ),
+            'low': (
+                'You selected the Climate-FCV module. The assessment found '
+                'limited climate materiality for this project. Climate '
+                'considerations are therefore included with a light emphasis '
+                'alongside the wider FCV sensitivity and responsiveness assessment.'
+            ),
+        }
+        _add_single_para(
+            f'{level.title()} materiality',
+            bold=True,
+            color=WB_NAVY,
+            space_after=2,
+        )
+        _add_single_para(wording[level])
+        add_field('Materiality', climate_readout.get('materiality_summary'))
+        _add_single_para(evidence_base, size=9, color=WB_GRAY)
+
+    def add_climate_interactions():
+        labels = {
+            'climate-fcv-on-project': (
+                'How Climate-FCV interactions could affect the project'
+            ),
+            'project-on-climate-fcv': (
+                'How the project could influence Climate-FCV dynamics'
+            ),
+        }
+        interactions = [
+            item for item in climate_readout.get('interaction_readout', [])
+            if isinstance(item, dict)
+            and item.get('direction_id') in labels
+            and item.get('summary')
+        ]
+        if not interactions:
+            return
+        _add_section_heading('Climate-FCV interactions')
+        detail_limit = (
+            1 if climate_materiality_level(climate_readout) == 'low' else 3
+        )
+        for interaction in interactions:
+            _add_single_para(
+                labels[interaction['direction_id']],
+                bold=True,
+                color=WB_NAVY,
+                space_after=1,
+            )
+            _add_single_para(interaction['summary'], space_before=0)
+            details = []
+            for field in (
+                'project_implications', 'positive_effects', 'adverse_effects'
+            ):
+                values = interaction.get(field, [])
+                if isinstance(values, list):
+                    details.extend(value for value in values if value)
+            for detail in details[:detail_limit]:
+                paragraph = doc.add_paragraph(str(detail), style='List Bullet')
+                paragraph.paragraph_format.space_after = Pt(1)
+
+    def add_climate_dividends():
+        groups = climate_dividend_groups(climate_readout)
+        if not groups:
+            return
+        _add_section_heading('Climate, peace and social dividends')
+        _add_single_para(
+            'The project has potential to support wider climate, peace and '
+            'social dividends. The pathways below show how the project may '
+            'already contribute to these outcomes and how those contributions '
+            'could be strengthened. They draw partly on the Peace and Social '
+            'Dividends of Climate Action report and other Climate-FCV evidence. '
+            'They are selective design insights rather than a checklist, and '
+            'not every pathway needs to be incorporated into the project.'
+        )
+        for group in groups:
+            _add_section_heading(group['title'], level=3)
+            for item in group['items']:
+                _add_single_para(
+                    item.get('title', ''),
+                    bold=True,
+                    color=WB_NAVY,
+                    space_after=1,
+                )
+                add_field(
+                    'How the project may contribute',
+                    item.get('project_contribution'),
+                )
+                add_field(
+                    'How this could be strengthened',
+                    item.get('strengthening_action'),
+                )
+                add_field('Watchpoint', item.get('trade_off'))
+
     try:
         doc = DocxDocument()
 
@@ -7793,6 +8071,8 @@ def download_report():
             notice.runs[0].bold = True
             notice.runs[0].font.color.rgb = AMBER
 
+        add_climate_notice()
+
         # ── Main narrative (executive summary, operational context, strengths, gaps) ──
         # The summary text uses markdown headings (## / ###) and body paragraphs.
         # _md_to_docx_para handles headings, skips ---, handles bold/italic.
@@ -7807,97 +8087,14 @@ def download_report():
         )
 
         # ── FCV Risk Exposure ──
-        risks_to = risk_exposure.get('risks_to', '')
-        risks_from = risk_exposure.get('risks_from', '')
-        if risks_to or risks_from:
-            _add_section_heading('FCV Risk Exposure')
-            if risks_to:
-                _add_single_para('How FCV risks could affect this project:', bold=True, space_after=1)
-                _add_single_para(risks_to, space_before=0)
-            if risks_from:
-                _add_single_para('How this project could affect FCV dynamics:', bold=True, space_after=1)
-                _add_single_para(risks_from, space_before=0)
+        if climate_valid:
+            add_sr_sections()
+            add_climate_interactions()
+            add_climate_dividends()
+        else:
+            add_core_risk_exposure()
+            add_sr_sections()
 
-        # Climate readout sits in the common note rather than a parallel report.
-        climate_readout = next((
-            item for item in lens_diagnostic.get('lenses', [])
-            if isinstance(item, dict) and item.get('lens_id') == 'climate'
-        ), None) if isinstance(lens_diagnostic, dict) else None
-        if climate_readout:
-            _add_section_heading('Climate-FCV Lens')
-            add_field(
-                'Climate materiality',
-                climate_readout.get('materiality_summary')
-                or 'Materiality was not established.',
-            )
-            if climate_readout.get('applicability') != 'not_applicable':
-                climate_module = SECTOR_LENS_REGISTRY.get('climate')
-                declared_sections = {
-                    section.id: section.title
-                    for section in climate_module.readout_sections
-                } if climate_module else {}
-                item_labels = {
-                    'social-cohesion-inclusion': 'Social cohesion and inclusion',
-                    'institutional-capacity-legitimacy': 'Institutional capacity and legitimacy',
-                    'livelihoods-opportunity': 'Livelihoods and opportunity',
-                    'context-analysis-monitoring': 'Context analysis and monitoring',
-                    'trust-collaboration': 'Trust and collaboration',
-                    'flexible-adaptive-delivery': 'Flexible and adaptive delivery',
-                }
-                for section in climate_readout.get('readout_sections', []):
-                    items = section.get('items', []) if isinstance(section, dict) else []
-                    if not items:
-                        continue
-                    section_title = declared_sections.get(
-                        section.get('section_id'), section.get('section_id', '')
-                    )
-                    _add_section_heading(section_title, level=3)
-                    for item in items:
-                        if not isinstance(item, dict):
-                            continue
-                        label = item_labels.get(
-                            item.get('item_id'),
-                            str(item.get('item_id', '')).replace('-', ' ').title(),
-                        )
-                        _add_single_para(
-                            f'{label} ({item.get("status", "potential")})',
-                            bold=True,
-                            color=WB_NAVY,
-                            space_after=1,
-                        )
-                        if item.get('mechanism'):
-                            _add_single_para(item['mechanism'], space_before=0)
-                        add_field('Evidence gap', item.get('evidence_gap'))
-                        add_field('Trade-off', item.get('trade_off'))
-                pathways = climate_readout.get('other_pathways', [])
-                if pathways:
-                    _add_section_heading('Other pathways considered', level=3)
-                    for pathway in pathways:
-                        if not isinstance(pathway, dict):
-                            continue
-                        _add_single_para(
-                            f'{pathway.get("pathway", "")} '
-                            f'({pathway.get("status", "")}): '
-                            f'{pathway.get("reason", "")}',
-                            size=9,
-                            space_after=2,
-                        )
-
-        # ── FCV Sensitivity ──
-        if sensitivity_summary or fcv_rating:
-            _add_section_heading('FCV Sensitivity')
-            if fcv_rating:
-                _add_single_para(fcv_rating, bold=True, color=WB_NAVY, space_after=2)
-            if sensitivity_summary:
-                _md_to_docx_para(doc, sensitivity_summary)
-
-        # ── FCV Responsiveness ──
-        if responsiveness_summary or fcv_resp_rating:
-            _add_section_heading('FCV Responsiveness')
-            if fcv_resp_rating:
-                _add_single_para(fcv_resp_rating, bold=True, color=WB_NAVY, space_after=2)
-            if responsiveness_summary:
-                _md_to_docx_para(doc, responsiveness_summary)
 
         # ── Priority Actions for the Task Team (summary table) ──
         if priorities:
