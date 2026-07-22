@@ -175,3 +175,24 @@ def test_live_stage3_orders_option_a_and_preserves_core_fallback():
         "renderSRCards(stageSensitivitySummary,stageResponsivenessSummary)"
         in helper
     )
+
+
+def test_download_html_uses_same_climate_sections_and_order():
+    source = INDEX.read_text(encoding="utf-8")
+    helper = _extract_js_function(source, "downloadHTML")
+
+    assert "isClimateLensActive" in helper
+    required = [
+        "renderClimateModuleNotice",
+        "wrapSRTerms(md(summarybody))",
+        "renderSRNarrative",
+        "renderClimateInteractions",
+        "renderClimateDividends",
+    ]
+    positions = [helper.index(value) for value in required]
+    assert positions == sorted(positions)
+    assert "renderRiskExposure(stageRiskExposure)" in helper
+    assert (
+        "renderSRCards(stageSensitivitySummary, stageResponsivenessSummary)"
+        in helper
+    )

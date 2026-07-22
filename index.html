@@ -5022,23 +5022,45 @@
 
     // ── Narrative (exec summary, operational context, strengths, gaps) ──
     // The LLM narrative opens with "This analysis places [country]..." — no duplicate block needed.
+    const _exportClimateActive=isClimateLensActive();
+    const _exportClimateEntry=climateLensEntry(lensDiagnostic);
+    const _exportClimateError=_exportClimateActive&&(
+      !lensDiagnostic||lensDiagnostic.error||!_exportClimateEntry
+    );
+    const _exportClimateValid=_exportClimateActive&&!_exportClimateError;
+    if(_exportClimateActive){
+      body+=renderClimateModuleNotice(_exportClimateEntry,_exportClimateError);
+    }
+
     if(summarybody){
       body += `<div class="out-body exp-narrative">${wrapSRTerms(md(summarybody))}</div>`;
       body += `<p style="font-size:11px;color:#666;font-style:italic;margin-top:0;margin-bottom:16px;padding:0 4px">This is a subjective judgement on the part of this AI tool and does not constitute an official WBG classification.</p>`;
     }
 
     // ── Risk Exposure ──
-    body += renderRiskExposure(stageRiskExposure);
+    if(_exportClimateValid){
+      body+=renderSRNarrative(
+        stageSensitivitySummary,stageResponsivenessSummary,
+        fcvRating,fcvResponsivenessRating
+      );
+      body+=renderClimateInteractions(_exportClimateEntry);
+      body+=renderClimateDividends(
+        _exportClimateEntry,
+        lensCatalogue.find(item=>item.id==='climate')||{}
+      );
+    }else{
+      body += renderRiskExposure(stageRiskExposure);
 
     // ── S/R Cards ──
-    body += renderSRCards(stageSensitivitySummary, stageResponsivenessSummary);
+      body += renderSRCards(stageSensitivitySummary, stageResponsivenessSummary);
 
     // ── Ratings (text labels) ──
-    if(fcvRating || fcvResponsivenessRating){
-      body += `<div class="exp-ratings-row">
-        ${fcvRating ? `<div class="exp-rating-pill exp-rating-s"><strong>Sensitivity:</strong> ${esc(fcvRating)}</div>` : ''}
-        ${fcvResponsivenessRating ? `<div class="exp-rating-pill exp-rating-r"><strong>Responsiveness:</strong> ${esc(fcvResponsivenessRating)}</div>` : ''}
-      </div>`;
+      if(fcvRating || fcvResponsivenessRating){
+        body += `<div class="exp-ratings-row">
+          ${fcvRating ? `<div class="exp-rating-pill exp-rating-s"><strong>Sensitivity:</strong> ${esc(fcvRating)}</div>` : ''}
+          ${fcvResponsivenessRating ? `<div class="exp-rating-pill exp-rating-r"><strong>Responsiveness:</strong> ${esc(fcvResponsivenessRating)}</div>` : ''}
+        </div>`;
+      }
     }
 
     // ── Priority Summary Table ──
