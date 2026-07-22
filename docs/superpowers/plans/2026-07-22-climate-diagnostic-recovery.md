@@ -4,7 +4,7 @@
 
 **Goal:** Ensure a missing or incomplete Climate-FCV Stage 2 diagnostic is recovered through a dedicated, bounded client instead of the 25-second fast client.
 
-**Architecture:** Preserve the existing inline diagnostic as the fast path. Add one dedicated Anthropic client for conditional diagnostic recovery, with a 120-second timeout and no SDK retries, then pass every recovered response through the existing normalization and validation contract before either route can use it.
+**Architecture:** Preserve the existing inline diagnostic as the fast path. Add one dedicated Anthropic client for conditional diagnostic recovery, with a 120-second default/read timeout and no SDK retries, then pass every recovered response through the existing normalization and validation contract before either route can use it.
 
 **Tech Stack:** Python 3, Flask, Anthropic Python SDK, httpx, pytest
 
@@ -330,9 +330,9 @@ git commit -m "fix: make climate recovery failures observable and safe"
 
 - [ ] **Step 1: Document the recovery architecture**
 
-Add a v9.18 entry to `CLAUDE.md` stating that missing or incomplete active-lens diagnostics use one dedicated Haiku recovery request with a 120-second timeout, no SDK retries, strict validation, and identical Express/step-by-step behaviour. Update the current version from v9.17 to v9.18.
+Add a v9.18 entry to `CLAUDE.md` stating that missing or incomplete active-lens diagnostics use one dedicated Haiku recovery request with a 120-second default/read timeout, no SDK retries, strict validation, and identical Express/step-by-step behaviour. Update the current version from v9.17 to v9.18.
 
-Extend the Stage 2 sector-lens paragraph in `docs/reference/reference_backend_routes.md` with the same operational contract and clarify that recovery does not change SSE field names or the diagnostic schema.
+Extend the Stage 2 sector-lens paragraph in `docs/reference/reference_backend_routes.md` with the same operational contract. Clarify that v9.18 adds no further SSE fields, name the already-existing additive `lens_diagnostic_recovered` flag, and state that the diagnostic schema remains compatible.
 
 - [ ] **Step 2: Run formatting and focused regression checks**
 

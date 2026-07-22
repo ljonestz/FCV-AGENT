@@ -46,7 +46,7 @@ This removes reliance on the inline block but adds cost and latency to every act
 Add a lazily initialized `get_lens_recovery_client()` alongside the existing client factories. Configure it with:
 
 - the existing `ANTHROPIC_API_KEY` environment variable;
-- a 120-second total timeout and 10-second connection timeout;
+- a 120-second default/read timeout and 10-second connection timeout;
 - `max_retries=0`, so the single application-level recovery attempt is genuinely single and its upper bound is predictable.
 
 The fast client remains unchanged for genuinely lightweight calls. The main streaming client remains unchanged for Stages 1-3.
@@ -83,13 +83,13 @@ This makes Render verification unambiguous:
 
 ### Compatibility
 
-Both `/api/run-stage` and `/api/run-express` continue to call the shared extraction-and-recovery function, so they receive identical behaviour. SSE field names, sector-lens delimiters, diagnostic fields, Stage 3 priority fields, and dual-build parity contracts do not change.
+Both `/api/run-stage` and `/api/run-express` continue to call the shared extraction-and-recovery function, so they receive identical behaviour. This v9.18 client hardening adds no further SSE fields; the already-existing additive `lens_diagnostic_recovered` flag remains. Sector-lens delimiters, diagnostic fields, Stage 3 priority fields, and dual-build parity contracts do not change.
 
 ## Testing
 
 The implementation will follow red-green TDD and add focused regression coverage for:
 
-1. The dedicated recovery-client factory uses a 120-second timeout, 10-second connect timeout, and zero retries.
+1. The dedicated recovery-client factory uses a 120-second default/read timeout, 10-second connect timeout, and zero retries.
 2. `repair_lens_diagnostic()` uses the dedicated client by default and never calls `get_fast_client()`.
 3. A missing inline diagnostic is recovered from a valid bounded JSON response.
 4. A malformed or incomplete recovery response is rejected and produces the existing warning state.
