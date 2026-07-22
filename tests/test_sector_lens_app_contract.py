@@ -633,6 +633,35 @@ def test_lens_recovery_structure_reports_only_allowlisted_shape():
     assert "untrusted_key" not in serialized
 
 
+def test_lens_recovery_structure_reports_missing_required_interaction():
+    payload = {
+        "lenses": [{
+            "lens_id": "climate",
+            "materiality_level": "medium",
+            "materiality_summary": "Material interactions.",
+            "interaction_readout": [{
+                "direction_id": "climate-fcv-on-project",
+                "summary": "Delivery risk.",
+            }],
+        }],
+        "findings": [],
+    }
+    response_text = (
+        app_module.LENS_DIAGNOSTIC_START
+        + json.dumps(payload)
+        + app_module.LENS_DIAGNOSTIC_END
+    )
+
+    summary = app_module.lens_recovery_structure(
+        response_text, payload, ["climate"]
+    )
+
+    assert summary["materiality_valid"] is True
+    assert summary["missing_required_interactions"] == [
+        "project-on-climate-fcv"
+    ]
+
+
 def test_lens_diagnostic_repair_is_bounded_and_accepts_valid_json_only():
     repaired_payload = {
         "lenses": [{

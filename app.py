@@ -1102,10 +1102,12 @@ def lens_recovery_structure(
         raw_findings, list
     ) else 0
 
-    climate = next((
-        item for item in raw_lenses or []
-        if isinstance(item, dict) and item.get("lens_id") == "climate"
-    ), None) if isinstance(raw_lenses, list) and "climate" in active_lens_ids else None
+    climate = None
+    if isinstance(raw_lenses, list) and "climate" in active_lens_ids:
+        climate = next((
+            item for item in raw_lenses
+            if isinstance(item, dict) and item.get("lens_id") == "climate"
+        ), None)
     if not climate:
         return summary
 
