@@ -134,3 +134,44 @@ if(!errorNotice.includes('could not be produced')) throw new Error('safe failure
         ["node", "-e", script], capture_output=True, text=True, check=False
     )
     assert result.returncode == 0, result.stderr
+
+
+def test_climate_state_helpers_require_selection_and_valid_entry():
+    source = INDEX.read_text(encoding="utf-8")
+    helpers = "\n".join(_extract_js_function(source, name) for name in (
+        "isClimateLensActive", "climateLensEntry",
+    ))
+    script = f"""
+let activeLenses=['climate'];
+{helpers}
+if(!isClimateLensActive()) throw new Error('selected climate not active');
+const diagnostic={{lenses:[{{lens_id:'climate',materiality_level:'high'}}]}};
+if(climateLensEntry(diagnostic).materiality_level!=='high') throw new Error('entry missing');
+activeLenses=[];
+if(isClimateLensActive()) throw new Error('unselected climate active');
+if(climateLensEntry({{error:true}})!==null) throw new Error('invalid entry accepted');
+"""
+    result = subprocess.run(
+        ["node", "-e", script], capture_output=True, text=True, check=False
+    )
+    assert result.returncode == 0, result.stderr
+
+
+def test_live_stage3_orders_option_a_and_preserves_core_fallback():
+    source = INDEX.read_text(encoding="utf-8")
+    helper = _extract_js_function(source, "renderOut")
+
+    climate_order = [
+        "renderClimateModuleNotice",
+        "renderSRNarrative",
+        "renderClimateInteractions",
+        "renderClimateDividends",
+    ]
+    positions = [helper.index(name) for name in climate_order]
+    assert positions == sorted(positions)
+    assert "isClimateLensActive" in helper
+    assert "renderRiskExposure(stageRiskExposure)" in helper
+    assert (
+        "renderSRCards(stageSensitivitySummary,stageResponsivenessSummary)"
+        in helper
+    )

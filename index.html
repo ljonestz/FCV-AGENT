@@ -2529,6 +2529,16 @@
     return lens&&lens.applicability==='material'?'medium':'low';
   }
 
+  function isClimateLensActive(){
+    return Array.isArray(activeLenses)&&activeLenses.includes('climate');
+  }
+
+  function climateLensEntry(diagnostic){
+    if(!diagnostic||diagnostic.error)return null;
+    const lenses=Array.isArray(diagnostic.lenses)?diagnostic.lenses:[];
+    return lenses.find(item=>item&&item.lens_id==='climate')||null;
+  }
+
   function renderClimateModuleNotice(lens,diagnosticError){
     const evidence='The recommendations draw on a core library of relevant World Bank and external material, including the Peace and Social Dividends of Climate Action report, the framework for FCV-sensitive climate action, the Defueling Conflict series, and other internal and external sources.';
     if(diagnosticError||!lens){
@@ -4321,7 +4331,33 @@
         return html.replace(/(<p>)((?:Based on|This analysis places)[^<]*<\/p>)/,'<div class="classification-framing-para">$1$2</div>');
       }
       const _preHtml = styleClassificationFraming(md(_pre));
-      _outBodyContent=wrapSRTerms(_closedProjectNotice+_padNotice+_stageBadge+_preHtml+renderRiskExposure(stageRiskExposure)+md(_rest)+renderSRCards(stageSensitivitySummary,stageResponsivenessSummary))+'<div id="priorities-intro"></div>';
+      const _climateActive=isClimateLensActive();
+      const _climateEntry=climateLensEntry(lensDiagnostic);
+      const _climateError=_climateActive&&(
+        !lensDiagnostic||lensDiagnostic.error||!_climateEntry
+      );
+      const _climateNotice=_climateActive
+        ?renderClimateModuleNotice(_climateEntry,_climateError):'';
+      const _climateValid=_climateActive&&!_climateError;
+      if(_climateValid){
+        const _climateCatalogue=lensCatalogue.find(item=>item.id==='climate')||{};
+        _outBodyContent=wrapSRTerms(
+          _closedProjectNotice+_padNotice+_stageBadge+_climateNotice+
+          _preHtml+md(_rest)+
+          renderSRNarrative(
+            stageSensitivitySummary,stageResponsivenessSummary,
+            fcvRating,fcvResponsivenessRating
+          )+
+          renderClimateInteractions(_climateEntry)+
+          renderClimateDividends(_climateEntry,_climateCatalogue)
+        )+'<div id="priorities-intro"></div>';
+      }else{
+        _outBodyContent=wrapSRTerms(
+          _closedProjectNotice+_padNotice+_stageBadge+_climateNotice+
+          _preHtml+renderRiskExposure(stageRiskExposure)+md(_rest)+
+          renderSRCards(stageSensitivitySummary,stageResponsivenessSummary)
+        )+'<div id="priorities-intro"></div>';
+      }
     }else{
       const cleanResult = stage===1 ? result.replace(/\n*%%%DOC_TYPE:[^%\n]*%%%\n*/g,'') : result;
       if(stage===1){
