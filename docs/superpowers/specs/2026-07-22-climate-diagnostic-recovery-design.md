@@ -47,7 +47,7 @@ Add a lazily initialized `get_lens_recovery_client()` alongside the existing cli
 
 - the existing `ANTHROPIC_API_KEY` environment variable;
 - a 120-second default/read timeout and 10-second connection timeout;
-- `max_retries=0`, so the single application-level recovery attempt is genuinely single and its upper bound is predictable.
+- `max_retries=0`, so the single application-level recovery attempt avoids multiplication from SDK retries.
 
 The fast client remains unchanged for genuinely lightweight calls. The main streaming client remains unchanged for Stages 1-3.
 
@@ -79,7 +79,7 @@ This makes Render verification unambiguous:
 
 - `Stage 2 lens diagnostic recovered` confirms success;
 - `Lens diagnostic recovery request failed: <ExceptionClass>` identifies provider failure;
-- elapsed time confirms that the request respected its single 120-second bound rather than multiplying through SDK retries.
+- elapsed time helps verify a single request using the configured 120-second default/read timeout rather than multiplying through SDK retries.
 
 ### Compatibility
 
