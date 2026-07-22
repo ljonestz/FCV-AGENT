@@ -1048,6 +1048,7 @@ def repair_lens_diagnostic(
     source_ids_by_lens: dict[str, set[str]],
     readout_schema_by_lens: dict[str, dict[str, set[str]]],
     client=None,
+    assessment_id: str = '',
 ) -> tuple[dict[str, Any], bool]:
     """Make one bounded JSON-only attempt to recover a missing diagnostic."""
 
@@ -1096,6 +1097,7 @@ def repair_lens_diagnostic(
         f'CONTRACT:\n{json.dumps(contract, ensure_ascii=False)}\n\n'
         f'STAGE 2 ASSESSMENT:\n{visible}'
     )
+    started_at = time.monotonic()
     try:
         response = (client or get_lens_recovery_client()).messages.create(
             model='claude-haiku-4-5-20251001',
@@ -1112,12 +1114,23 @@ def repair_lens_diagnostic(
             source_ids_by_lens,
             readout_schema_by_lens,
         )
-        return repaired, not bool(
+        recovered = not bool(
             lens_diagnostic_failure_message(repaired, active_lens_ids)
         )
+        app.logger.info(
+            'Lens diagnostic recovery completed: assessment_id=%s '
+            'elapsed_ms=%d recovered=%s',
+            assessment_id or 'unknown',
+            round((time.monotonic() - started_at) * 1000),
+            recovered,
+        )
+        return repaired, recovered
     except Exception as exc:
         app.logger.warning(
-            'Lens diagnostic recovery request failed: %s',
+            'Lens diagnostic recovery request failed: assessment_id=%s '
+            'elapsed_ms=%d error=%s',
+            assessment_id or 'unknown',
+            round((time.monotonic() - started_at) * 1000),
             type(exc).__name__,
         )
         return {
@@ -1154,7 +1167,8 @@ def extract_or_repair_lens_diagnostic(
         assessment_id or 'unknown', failure,
     )
     repaired, recovered = repair_lens_diagnostic(
-        stage2_output, active_ids, source_ids, schema
+        stage2_output, active_ids, source_ids, schema,
+        assessment_id=assessment_id,
     )
     if recovered:
         app.logger.info(

@@ -656,6 +656,107 @@ def test_lens_diagnostic_repair_uses_recovery_client_not_fast_client(monkeypatch
     assert repaired["lenses"][0]["materiality_level"] == "medium"
 
 
+def test_lens_diagnostic_repair_rejects_incomplete_response():
+    class FakeMessages:
+        def create(self, **kwargs):
+            text = (
+                app_module.LENS_DIAGNOSTIC_START
+                + json.dumps({"lenses": [], "findings": []})
+                + app_module.LENS_DIAGNOSTIC_END
+            )
+            return type("Response", (), {
+                "content": [type("Text", (), {"text": text})()]
+            })()
+
+    client = type("Client", (), {"messages": FakeMessages()})()
+    repaired, recovered = app_module.repair_lens_diagnostic(
+        "Visible Stage 2 assessment",
+        ["climate"],
+        {"climate": set()},
+        {"climate": {"invest-in": set(), "deliver-through": set()}},
+        client=client,
+    )
+
+    assert recovered is False
+    assert app_module.lens_diagnostic_failure_message(repaired, ["climate"])
+
+
+def test_lens_diagnostic_timeout_preserves_core_warning_state(caplog):
+    class TimeoutMessages:
+        def create(self, **kwargs):
+            request = app_module.httpx.Request(
+                "POST", "https://api.anthropic.com/v1/messages"
+            )
+            raise app_module.anthropic.APITimeoutError(request=request)
+
+    client = type("Client", (), {"messages": TimeoutMessages()})()
+    with caplog.at_level("WARNING", logger=app_module.app.logger.name):
+        repaired, recovered = app_module.repair_lens_diagnostic(
+            "Visible Stage 2 assessment",
+            ["climate"],
+            {"climate": set()},
+            {"climate": {"invest-in": set(), "deliver-through": set()}},
+            client=client,
+            assessment_id="assessment-test",
+        )
+
+    assert recovered is False
+    assert repaired["error"] is True
+    assert "APITimeoutError" in caplog.text
+    assert "assessment-test" in caplog.text
+
+
+def test_lens_diagnostic_recovery_logs_assessment_elapsed_time(caplog):
+    repaired_payload = {
+        "lenses": [{
+            "lens_id": "climate",
+            "applicability": "material",
+            "materiality_level": "medium",
+            "materiality_summary": "Flood and conflict pressures affect delivery.",
+            "readout_sections": [],
+            "interaction_readout": [
+                {
+                    "direction_id": "climate-fcv-on-project",
+                    "summary": "Flood and insecurity disrupt delivery.",
+                },
+                {
+                    "direction_id": "project-on-climate-fcv",
+                    "summary": "Benefit rules affect trust and access.",
+                },
+            ],
+            "additional_pathways": [],
+        }],
+        "findings": [],
+    }
+
+    class FakeMessages:
+        def create(self, **kwargs):
+            text = (
+                app_module.LENS_DIAGNOSTIC_START
+                + json.dumps(repaired_payload)
+                + app_module.LENS_DIAGNOSTIC_END
+            )
+            return type("Response", (), {
+                "content": [type("Text", (), {"text": text})()]
+            })()
+
+    client = type("Client", (), {"messages": FakeMessages()})()
+    with caplog.at_level("INFO", logger=app_module.app.logger.name):
+        _, recovered = app_module.repair_lens_diagnostic(
+            "Visible Stage 2 assessment",
+            ["climate"],
+            {"climate": set()},
+            {"climate": {"invest-in": set(), "deliver-through": set()}},
+            client=client,
+            assessment_id="assessment-success",
+        )
+
+    assert recovered is True
+    assert "assessment-success" in caplog.text
+    assert "recovered=True" in caplog.text
+    assert "elapsed_ms=" in caplog.text
+
+
 def test_lens_recovery_client_has_bounded_timeout_and_no_sdk_retries(monkeypatch):
     captured = {}
     sentinel = object()
