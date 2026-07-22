@@ -176,6 +176,7 @@ def extract_lens_diagnostic(
     active_lens_ids: Iterable[str],
     source_ids_by_lens: dict[str, set[str]] | None = None,
     readout_schema_by_lens: dict[str, dict[str, set[str]]] | None = None,
+    strict_required_fields: bool = False,
 ) -> dict[str, Any]:
     """Parse and validate the hidden Stage-2 lens diagnostic without failing core analysis."""
 
@@ -213,6 +214,7 @@ def extract_lens_diagnostic(
             materiality_level = (
                 raw_materiality
                 if raw_materiality in _MATERIALITY_LEVELS
+                else "" if strict_required_fields
                 else "medium" if applicability == "material" else "low"
             )
         lens_sources = list(dict.fromkeys(

@@ -681,6 +681,96 @@ def test_lens_diagnostic_repair_rejects_incomplete_response():
     assert app_module.lens_diagnostic_failure_message(repaired, ["climate"])
 
 
+def test_lens_diagnostic_repair_rejects_missing_climate_materiality_level():
+    """Recovery must not turn a missing required Climate level into legacy low."""
+
+    incomplete_payload = {
+        "lenses": [{
+            "lens_id": "climate",
+            "materiality_summary": "Climate-FCV interactions materially affect delivery.",
+            "interaction_readout": [{
+                "direction_id": "climate-fcv-on-project",
+                "summary": "Flood and insecurity disrupt delivery.",
+            }],
+            "readout_sections": [],
+            "additional_pathways": [],
+        }],
+        "findings": [],
+    }
+
+    class FakeMessages:
+        def create(self, **kwargs):
+            text = (
+                app_module.LENS_DIAGNOSTIC_START
+                + json.dumps(incomplete_payload)
+                + app_module.LENS_DIAGNOSTIC_END
+            )
+            return type("Response", (), {
+                "content": [type("Text", (), {"text": text})()]
+            })()
+
+    client = type("Client", (), {"messages": FakeMessages()})()
+    repaired, recovered = app_module.repair_lens_diagnostic(
+        "Visible Stage 2 assessment",
+        ["climate"],
+        {"climate": set()},
+        {"climate": {"invest-in": set(), "deliver-through": set()}},
+        client=client,
+    )
+
+    assert recovered is False
+    assert repaired["lenses"][0]["materiality_level"] == ""
+
+
+def test_valid_inline_lens_diagnostic_bypasses_recovery(monkeypatch):
+    state = app_module.AnalysisState.from_payload({"active_lenses": ["climate"]})
+    active_lenses = app_module.build_lens_stage_context(state, stage=2)["active_lenses"]
+    inline_payload = {
+        "lenses": [{
+            "lens_id": "climate",
+            "applicability": "material",
+            "materiality_level": "medium",
+            "materiality_summary": "Flood and conflict pressures affect delivery.",
+            "interaction_readout": [
+                {
+                    "direction_id": "climate-fcv-on-project",
+                    "summary": "Flood and insecurity disrupt delivery.",
+                },
+                {
+                    "direction_id": "project-on-climate-fcv",
+                    "summary": "Benefit rules affect trust and access.",
+                },
+            ],
+            "readout_sections": [],
+            "additional_pathways": [],
+        }],
+        "findings": [],
+    }
+    stage2_output = (
+        "Visible Stage 2 assessment\n"
+        + app_module.LENS_DIAGNOSTIC_START
+        + json.dumps(inline_payload)
+        + app_module.LENS_DIAGNOSTIC_END
+    )
+    monkeypatch.setattr(
+        app_module,
+        "repair_lens_diagnostic",
+        lambda *args, **kwargs: (_ for _ in ()).throw(
+            AssertionError("recovery should not run for valid inline output")
+        ),
+    )
+
+    diagnostic, recovered, failure = app_module.extract_or_repair_lens_diagnostic(
+        stage2_output,
+        active_lenses,
+        [],
+    )
+
+    assert recovered is False
+    assert failure == ""
+    assert diagnostic["lenses"][0]["materiality_level"] == "medium"
+
+
 def test_lens_diagnostic_timeout_preserves_core_warning_state(caplog):
     class TimeoutMessages:
         def create(self, **kwargs):
@@ -704,6 +794,7 @@ def test_lens_diagnostic_timeout_preserves_core_warning_state(caplog):
     assert repaired["error"] is True
     assert "APITimeoutError" in caplog.text
     assert "assessment-test" in caplog.text
+    assert "elapsed_ms=" in caplog.text
 
 
 def test_lens_diagnostic_recovery_logs_assessment_elapsed_time(caplog):

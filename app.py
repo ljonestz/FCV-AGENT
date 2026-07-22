@@ -1113,6 +1113,7 @@ def repair_lens_diagnostic(
             active_lens_ids,
             source_ids_by_lens,
             readout_schema_by_lens,
+            strict_required_fields=True,
         )
         recovered = not bool(
             lens_diagnostic_failure_message(repaired, active_lens_ids)
@@ -1157,7 +1158,11 @@ def extract_or_repair_lens_diagnostic(
     )
     schema = lens_readout_schema(active_lenses)
     diagnostic = extract_lens_diagnostic(
-        stage2_output, active_ids, source_ids, schema
+        stage2_output,
+        active_ids,
+        source_ids,
+        schema,
+        strict_required_fields=True,
     )
     failure = lens_diagnostic_failure_message(diagnostic, active_ids)
     if not failure:
