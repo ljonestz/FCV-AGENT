@@ -5707,6 +5707,21 @@ def get_fast_client():
     return _fast_client
 
 
+_lens_recovery_client = None
+
+
+def get_lens_recovery_client():
+    """Client for one bounded structured sector-lens recovery request."""
+    global _lens_recovery_client
+    if _lens_recovery_client is None:
+        _lens_recovery_client = anthropic.Anthropic(
+            api_key=os.environ.get("ANTHROPIC_API_KEY"),
+            timeout=httpx.Timeout(timeout=120.0, connect=10.0),
+            max_retries=0,
+        )
+    return _lens_recovery_client
+
+
 _research_client = None
 
 def get_research_client():

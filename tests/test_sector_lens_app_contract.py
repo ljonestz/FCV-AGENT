@@ -607,6 +607,25 @@ def test_lens_diagnostic_repair_is_bounded_and_accepts_valid_json_only():
     ) is False
 
 
+def test_lens_recovery_client_has_bounded_timeout_and_no_sdk_retries(monkeypatch):
+    captured = {}
+    sentinel = object()
+
+    def fake_anthropic(**kwargs):
+        captured.update(kwargs)
+        return sentinel
+
+    monkeypatch.setattr(app_module.anthropic, "Anthropic", fake_anthropic)
+    monkeypatch.setattr(app_module, "_lens_recovery_client", None, raising=False)
+
+    client = app_module.get_lens_recovery_client()
+
+    assert client is sentinel
+    assert captured["max_retries"] == 0
+    assert captured["timeout"].connect == 10.0
+    assert captured["timeout"].read == 120.0
+
+
 def test_frontend_persists_and_submits_lens_context_sources():
     html = (Path(app_module.__file__).parent / "index.html").read_text(
         encoding="utf-8"
