@@ -13,6 +13,38 @@ from sector_lenses import load_registry
 FIXTURE_ROOT = Path(__file__).parent / "fixtures" / "sector_lenses"
 
 
+def _add_specific_climate_paths(payload):
+    """Add compact valid pathways to positive diagnostic fixtures."""
+
+    for lens in payload.get("lenses", []):
+        if lens.get("lens_id") != "climate":
+            continue
+        for interaction in lens.get("interaction_readout", []):
+            direction = interaction.get("direction_id", "")
+            if interaction.get("pathways") or direction not in {
+                "climate-fcv-on-project", "project-on-climate-fcv",
+            }:
+                continue
+            interaction["pathways"] = [{
+                "pathway_id": f"{direction}-1",
+                "pressure": "Material climate or project pressure",
+                "mechanism": "Access and allocation conditions change.",
+                "project_implication": (
+                    "A named project activity faces a distributional risk."
+                ),
+                "design_response": "Apply a specific access safeguard.",
+                "project_elements": ["Project activity"],
+                "geographies": ["Project area"],
+                "affected_groups": ["Affected users"],
+                "systems_or_assets": [],
+                "time_horizons": ["project-lifetime"],
+                "research_claim_ids": [],
+                "confidence": "medium",
+                "evidence_gap": "Site-level evidence remains incomplete.",
+            }]
+    return payload
+
+
 def test_production_catalogue_has_manual_climate_without_suggestions():
     client = app_module.app.test_client()
 
@@ -440,6 +472,7 @@ def test_climate_diagnostic_retains_readouts_and_ccdr_context():
         "summary": "This source must not enter the diagnostic.",
     }]
 
+    payload = _add_specific_climate_paths(payload)
     context = app_module.build_lens_stage_context(
         state, 3, registry, payload, sources
     )
@@ -481,6 +514,71 @@ def test_active_climate_stage2_requests_materiality_interactions_and_pathways():
     assert "not its primary objective" in prompt
 
 
+def test_climate_stage2_requires_project_specific_causal_contract():
+    state = app_module.AnalysisState.from_payload({
+        "active_lenses": ["climate"]
+    })
+    climate_research = {
+        "status": "complete",
+        "sources": [{
+            "id": "climate-source-1",
+            "source_type": "world-bank",
+            "title": "Climate profile",
+            "url": "https://www.worldbank.org/example",
+        }],
+        "claims": [{
+            "id": "climate-claim-1",
+            "source_ids": ["climate-source-1"],
+            "claim": "Flood timing affects site access.",
+            "project_elements": ["Landing sites"],
+            "geographies": ["Upper Nile"],
+            "affected_groups": [],
+            "systems_or_assets": ["Access roads"],
+            "evidence_status": "observed",
+            "confidence": "medium",
+            "time_horizons": ["project-lifetime"],
+        }],
+    }
+
+    prompt = app_module.build_lens_stage_context(
+        state,
+        2,
+        climate_research=climate_research,
+    )["prompt"]
+
+    for value in (
+        "pressure -> mediated mechanism -> project implication -> design response",
+        "current-near-term",
+        "project-lifetime",
+        "asset-system-lifetime",
+        "research_claim_ids",
+        "Suppress generic pathways",
+        "climate-claim-1",
+    ):
+        assert value in prompt
+
+
+def test_diagnostic_rejects_directions_without_specific_pathways():
+    diagnostic = {
+        "lenses": [{
+            "lens_id": "climate",
+            "materiality_level": "medium",
+            "materiality_summary": "Material interactions.",
+            "interaction_readout": [
+                {"direction_id": "climate-fcv-on-project", "summary": "A"},
+                {"direction_id": "project-on-climate-fcv", "summary": "B"},
+            ],
+        }],
+        "findings": [],
+    }
+
+    failure = app_module.lens_diagnostic_failure_message(
+        diagnostic, ["climate"]
+    )
+
+    assert "specific causal pathway" in failure
+
+
 def test_active_climate_stage3_preserves_option_a_layers_and_gradient():
     state = app_module.AnalysisState.from_payload({"active_lenses": ["climate"]})
     diagnostic = {"lenses": [{
@@ -499,6 +597,7 @@ def test_active_climate_stage3_preserves_option_a_layers_and_gradient():
         "additional_pathways": [],
     }], "findings": []}
 
+    diagnostic = _add_specific_climate_paths(diagnostic)
     context = app_module.build_lens_stage_context(
         state, 3, lens_diagnostic=diagnostic
     )
@@ -542,7 +641,7 @@ def test_lens_diagnostic_failure_names_parser_errors_and_missing_entries():
         {"lenses": [], "findings": []}, ["climate"]
     ) == "The Climate-FCV diagnostic was omitted from the Stage 2 structured output."
     assert app_module.lens_diagnostic_failure_message(
-        {"lenses": [{
+        _add_specific_climate_paths({"lenses": [{
             "lens_id": "climate",
             "materiality_level": "medium",
             "materiality_summary": "Material interactions.",
@@ -550,7 +649,7 @@ def test_lens_diagnostic_failure_names_parser_errors_and_missing_entries():
                 {"direction_id": "climate-fcv-on-project", "summary": "A"},
                 {"direction_id": "project-on-climate-fcv", "summary": "B"},
             ],
-        }], "findings": []}, ["climate"]
+        }], "findings": []}), ["climate"]
     ) == ""
     assert "incomplete" in app_module.lens_diagnostic_failure_message(
         {"lenses": [{
@@ -703,7 +802,7 @@ def test_lens_diagnostic_repair_is_bounded_and_accepts_valid_json_only():
             self.request = kwargs
             block = (
                 app_module.LENS_DIAGNOSTIC_START
-                + json.dumps(repaired_payload)
+                + json.dumps(_add_specific_climate_paths(repaired_payload))
                 + app_module.LENS_DIAGNOSTIC_END
             )
             return type("Response", (), {
@@ -752,7 +851,7 @@ def test_lens_diagnostic_repair_uses_recovery_client_not_fast_client(monkeypatch
         def create(self, **kwargs):
             text = (
                 app_module.LENS_DIAGNOSTIC_START
-                + json.dumps(repaired_payload)
+                + json.dumps(_add_specific_climate_paths(repaired_payload))
                 + app_module.LENS_DIAGNOSTIC_END
             )
             return type("Response", (), {
@@ -839,7 +938,7 @@ def test_lens_diagnostic_repair_has_capacity_for_bounded_climate_contract():
             else:
                 text = (
                     app_module.LENS_DIAGNOSTIC_START
-                    + json.dumps(repaired_payload)
+                    + json.dumps(_add_specific_climate_paths(repaired_payload))
                     + app_module.LENS_DIAGNOSTIC_END
                 )
             return type("Response", (), {
@@ -975,7 +1074,7 @@ def test_valid_inline_lens_diagnostic_bypasses_recovery(monkeypatch):
     stage2_output = (
         "Visible Stage 2 assessment\n"
         + app_module.LENS_DIAGNOSTIC_START
-        + json.dumps(inline_payload)
+        + json.dumps(_add_specific_climate_paths(inline_payload))
         + app_module.LENS_DIAGNOSTIC_END
     )
     monkeypatch.setattr(
@@ -1072,7 +1171,7 @@ def test_lens_diagnostic_recovery_logs_assessment_elapsed_time(caplog):
         def create(self, **kwargs):
             text = (
                 app_module.LENS_DIAGNOSTIC_START
-                + json.dumps(repaired_payload)
+                + json.dumps(_add_specific_climate_paths(repaired_payload))
                 + app_module.LENS_DIAGNOSTIC_END
             )
             return type("Response", (), {
@@ -1166,6 +1265,7 @@ def test_large_climate_readout_respects_stage3_platform_budget():
         } for index in range(10)],
     }], "findings": []}
 
+    payload = _add_specific_climate_paths(payload)
     context = app_module.build_lens_stage_context(state, 3, lens_diagnostic=payload)
 
     assert context["estimated_tokens"] <= 900
@@ -1193,6 +1293,7 @@ def test_active_climate_stage3_integrates_opening_and_uses_flexible_mix():
         "other_pathways": [],
     }], "findings": []}
 
+    diagnostic = _add_specific_climate_paths(diagnostic)
     context = app_module.build_lens_stage_context(
         state, 3, registry, diagnostic, []
     )

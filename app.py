@@ -791,6 +791,7 @@ def build_lens_stage_context(
     registry=None,
     lens_diagnostic: dict[str, Any] | None = None,
     lens_context_sources: list[dict[str, Any]] | None = None,
+    climate_research: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Resolve client lens choices and build a bounded stage-specific prompt contract."""
 
@@ -845,6 +846,23 @@ def build_lens_stage_context(
             "a separate score and may affect ratings only through an explicit core_mappings value."
         )
         if "climate" in active_ids:
+            research = normalize_climate_research_bundle(climate_research)
+            compact_claims = [{
+                "id": claim["id"],
+                "claim": claim["claim"][:350],
+                "project_elements": claim["project_elements"][:2],
+                "geographies": claim["geographies"][:2],
+                "affected_groups": claim["affected_groups"][:2],
+                "systems_or_assets": claim["systems_or_assets"][:2],
+                "time_horizons": claim["time_horizons"],
+                "confidence": claim["confidence"],
+                "evidence_gap": claim["evidence_gap"][:200],
+            } for claim in research["claims"][:3]]
+            research_context = json.dumps(
+                {"claims": compact_claims},
+                ensure_ascii=False,
+                separators=(",", ":"),
+            ) if compact_claims else '{"claims":[]}'
             suffix += (
                 " For Climate include materiality_level (high, medium, or low), "
                 "interaction_readout using only climate-fcv-on-project and "
@@ -855,7 +873,14 @@ def build_lens_stage_context(
                 " The full Climate lens diagnostic supersedes the lightweight supplementary "
                 "Climate-FCV Nexus check. Incorporate relevant evidence into the lens diagnostic "
                 "and common OST/DNH findings; do not produce a duplicate supplementary Climate "
-                "finding."
+                "finding. For each interaction direction include one to four pathways. "
+                "Each pathway must follow pressure -> mediated mechanism -> project implication "
+                "-> design response and name a project element plus a location, group, "
+                "institution, system, or asset. Include current-near-term, project-lifetime, "
+                "or asset-system-lifetime and cite research_claim_ids when supported by the "
+                "validated claims. Suppress generic pathways rather than filling the schema. "
+                "Validated Climate research claims:\n"
+                + research_context
             )
     elif selection.lenses and stage == 3 and stage3_diagnostic_failure:
         suffix = (
@@ -1039,11 +1064,12 @@ def lens_diagnostic_failure_message(
     if climate:
         level = str(climate.get('materiality_level', '')).lower()
         summary = str(climate.get('materiality_summary', '')).strip()
-        directions = {
-            item.get('direction_id')
+        interaction_entries = {
+            item.get('direction_id'): item
             for item in climate.get('interaction_readout', [])
             if isinstance(item, dict) and str(item.get('summary', '')).strip()
         }
+        directions = set(interaction_entries)
         required = (
             {'climate-fcv-on-project', 'project-on-climate-fcv'}
             if level in {'high', 'medium'} else set()
@@ -1058,6 +1084,27 @@ def lens_diagnostic_failure_message(
             return (
                 'The Climate-FCV diagnostic was incomplete and could not '
                 'support the required materiality and interaction readout.'
+            )
+        directions_with_pathways = {
+            direction_id
+            for direction_id, item in interaction_entries.items()
+            if any(
+                isinstance(pathway, dict)
+                and str(pathway.get('pathway_id', '')).strip()
+                for pathway in item.get('pathways', [])
+            )
+        }
+        missing_specific = (
+            required - directions_with_pathways
+            if required else (
+                directions - directions_with_pathways
+                if directions else set()
+            )
+        )
+        if missing_specific:
+            return (
+                'The Climate-FCV diagnostic did not provide a specific causal '
+                'pathway for each displayed interaction direction.'
             )
     return ''
 
@@ -1189,7 +1236,12 @@ def repair_lens_diagnostic(
         'include exactly one lens entry per active lens, use only allowed IDs, '
         'and do not invent evidence. For Climate include materiality_level, the '
         'two fixed interaction directions, baseline project_contribution and '
-        'strengthening_action fields, and bounded additional_pathways. If the '
+        'strengthening_action fields, and bounded additional_pathways. Each '
+        'interaction direction must contain one or two project-specific pathways '
+        'with pathway_id, pressure, mechanism, project_implication, '
+        'design_response, project_elements, geographies or affected_groups or '
+        'systems_or_assets, time_horizons, research_claim_ids, confidence, and '
+        'evidence_gap. If the '
         'assessment does not support a pathway, mark it not_material or omit it. '
         'Keep the total JSON under 12,000 characters: use short evidence-grounded '
         'sentences, at most three short strings per array, at most two items per '
@@ -1203,7 +1255,12 @@ def repair_lens_diagnostic(
         '"interaction_readout":[{"direction_id":"climate-fcv-on-project|'
         'project-on-climate-fcv","summary":"...","mechanisms":[],'
         '"project_implications":[],"positive_effects":[],"adverse_effects":[],'
-        '"evidence":[],"evidence_gap":"","source_ids":[]}],'
+        '"evidence":[],"evidence_gap":"","source_ids":[],"pathways":['
+        '{"pathway_id":"climate-fcv-on-project-1","pressure":"...",'
+        '"mechanism":"...","project_implication":"...","design_response":"...",'
+        '"project_elements":[],"geographies":[],"affected_groups":[],'
+        '"systems_or_assets":[],"time_horizons":["project-lifetime"],'
+        '"research_claim_ids":[],"confidence":"medium","evidence_gap":"..."}]}],'
         '"readout_sections":[{"section_id":"...","items":[{"item_id":"...",'
         '"status":"supported|potential|not_material","mechanism":"...",'
         '"project_contribution":"...","strengthening_action":"...",'
@@ -6634,6 +6691,7 @@ def run_stage():
                 stage,
                 lens_diagnostic=data.get('lens_diagnostic'),
                 lens_context_sources=data.get('lens_context_sources'),
+                climate_research=data.get('climate_research'),
             )
             if lens_context['restart_required']:
                 return jsonify({
@@ -7588,6 +7646,7 @@ def run_express():
                     analysis_state,
                     2,
                     lens_context_sources=lens_context_sources,
+                    climate_research=climate_research,
                 )
                 if lens_context_s2['prompt']:
                     stage2_prompt += "\n\n--- ACTIVE SECTOR LENSES ---\n" + lens_context_s2['prompt']
