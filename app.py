@@ -640,7 +640,7 @@ class AnalysisState:
 def _bounded_stage3_lenses(
     diagnostic: dict[str, Any],
     prefix: str,
-    token_limit: int = 700,
+    token_limit: int = 890,
 ) -> tuple[list[dict[str, Any]], bool]:
     """Retain compact materiality/readout data within the Stage 3 lens budget."""
 
@@ -679,31 +679,60 @@ def _bounded_stage3_lenses(
         for raw_interaction in raw.get("interaction_readout", []):
             compact_interaction = {
                 "direction_id": raw_interaction.get("direction_id", ""),
-                "summary": raw_interaction.get("summary", "")[:300],
-                "mechanisms": [
-                    value[:180]
-                    for value in raw_interaction.get("mechanisms", [])[:2]
-                ],
-                "project_implications": [
-                    value[:180]
-                    for value in raw_interaction.get("project_implications", [])[:2]
-                ],
-                "positive_effects": [
-                    value[:180]
-                    for value in raw_interaction.get("positive_effects", [])[:1]
-                ],
-                "adverse_effects": [
-                    value[:180]
-                    for value in raw_interaction.get("adverse_effects", [])[:1]
-                ],
-                "evidence_gap": raw_interaction.get("evidence_gap", "")[:180],
+                "summary": raw_interaction.get("summary", "")[:120],
                 "source_ids": raw_interaction.get("source_ids", [])[:10],
+                "pathways": [],
             }
             compact["interaction_readout"].append(compact_interaction)
             if not fits(selected):
                 compact["interaction_readout"].pop()
                 truncated = True
                 break
+            for pathway in raw_interaction.get("pathways", [])[:2]:
+                compact_pathway = {
+                    "pathway_id": pathway.get("pathway_id", ""),
+                    "pressure": pathway.get("pressure", "")[:60],
+                    "mechanism": pathway.get("mechanism", "")[:70],
+                    "project_implication": pathway.get(
+                        "project_implication", ""
+                    )[:80],
+                    "design_response": pathway.get("design_response", "")[:80],
+                    "project_elements": [
+                        value[:60] for value in pathway.get(
+                            "project_elements", []
+                        )[:1]
+                    ],
+                    "geographies": [
+                        value[:50] for value in pathway.get(
+                            "geographies", []
+                        )[:1]
+                    ],
+                    "affected_groups": [
+                        value[:50] for value in pathway.get(
+                            "affected_groups", []
+                        )[:1]
+                    ],
+                    "systems_or_assets": [
+                        value[:50] for value in pathway.get(
+                            "systems_or_assets", []
+                        )[:1]
+                    ],
+                    "time_horizons": pathway.get("time_horizons", [])[:3],
+                    "research_claim_ids": pathway.get(
+                        "research_claim_ids", []
+                    )[:2],
+                    "confidence": pathway.get("confidence", ""),
+                    "evidence_gap": pathway.get("evidence_gap", "")[:60],
+                }
+                compact_interaction["pathways"].append(compact_pathway)
+                if not fits(selected):
+                    compact_interaction["pathways"].pop()
+                    truncated = True
+                    break
+            if len(compact_interaction["pathways"]) < min(
+                len(raw_interaction.get("pathways", [])), 2
+            ):
+                truncated = True
         if len(compact["interaction_readout"]) < len(
             raw.get("interaction_readout", [])
         ):
@@ -717,6 +746,9 @@ def _bounded_stage3_lenses(
             compact["readout_sections"].append(compact_section)
             for raw_item in raw_section.get("items", []):
                 compact_item = {
+                    "pathway_id": raw_item.get(
+                        "pathway_id", raw_item.get("item_id", "")
+                    ),
                     "item_id": raw_item.get("item_id", ""),
                     "status": raw_item.get("status", "potential"),
                     "mechanism": raw_item.get("mechanism", "")[:240],
@@ -745,6 +777,7 @@ def _bounded_stage3_lenses(
 
         for raw_pathway in raw.get("additional_pathways", []):
             compact_pathway = {
+                "pathway_id": raw_pathway.get("pathway_id", ""),
                 "section_id": raw_pathway.get("section_id", ""),
                 "title": raw_pathway.get("title", "")[:120],
                 "status": raw_pathway.get("status", "potential"),
@@ -895,17 +928,13 @@ def build_lens_stage_context(
         )
     elif selection.lenses and stage == 3:
         prefix = (
-            "Integrate applicable sector-lens findings into the opening assessment, operational "
-            "context, two-way risk narrative, strengths, gaps, and the single existing priority "
-            "list. Produce a maximum of five substantive priorities in total. A balance of "
-            "cross-cutting, Climate-FCV, and blended priorities is a helpful starting point, not "
-            "a quota: rank candidates by severity, materiality, evidence, actionability, leverage, "
-            "urgency, reversibility, and FCV feasibility. The final mix may contain more "
-            "Climate-linked, blended, or core priorities where the evidence warrants it. Show "
-            "overlapping actions once and retain contributing lens IDs. Existing mandatory "
-            "standalone-card exceptions retain current rules. Do not create a separate "
-            "recommendation set or score. Add lens_ids and lens_relevance only to affected "
-            "priority objects. "
+            "Integrate applicable lens findings into the opening assessment, operational "
+            "context, strengths, gaps, and the single existing priority list. Produce a "
+            "maximum of five substantive priorities in total; no more than five substantive "
+            "priorities may be shown. The mix is not a quota and may contain more "
+            "Climate-linked, blended, or core priorities where evidence warrants. Rank by "
+            "severity, evidence, actionability, urgency, and FCV feasibility. Show overlaps "
+            "once, retain provenance, and do not create a separate score or priority list. "
         )
         if "climate" in active_ids:
             climate_entry = next((
@@ -922,23 +951,31 @@ def build_lens_stage_context(
                 )
             else:
                 prefix += (
-                    "Apply the same broad Climate-FCV readout architecture at High and Medium "
-                    "materiality, varying depth and emphasis proportionately. "
+                    "Use the same architecture at High and Medium materiality, with "
+                    "proportionate depth. "
                 )
             prefix += (
-                "Treat the validated Climate-FCV materiality as High, Medium, or Low. Preserve "
-                "the full executive summary and its detailed FCV sensitivity and responsiveness. "
-                "Keep a distinct two-way Climate-FCV interaction readout separate from selective "
-                "climate, peace, and social dividend pathways and from the priority list. For each "
-                "displayed dividend pathway state the current contribution and how it could be "
-                "strengthened. Suppress weak, not-material, empty, and repetitive pathways. "
-                "Mention a CCDR only where one specific insight materially improves the context "
-                "or action; never make consulting the CCDR a routine priority. "
-                "Every substantive priority JSON object must include climate_links with "
-                "status linked or no-material-pathway. Linked objects must cite recognized "
-                "interaction_pathway_ids, dividend_pathway_ids, or finding_ids and include "
-                "contribution and strengthening_effect. A retained core priority must use "
-                "no-material-pathway, empty ID arrays, and a concrete reason. Use exactly: "
+                "Treat materiality as High, Medium, or Low. "
+                "Preserve the full core FCV structure. Integrate material Climate-FCV evidence "
+                "into the bold opening assessment in the executive summary, operational "
+                "context, strengths, gaps, FCV "
+                "sensitivity, and FCV responsiveness without duplicate Climate paragraphs. "
+                "The active Climate diagnostic supersedes the core-only lightweight Climate-FCV "
+                "check; do not emit both. Adaptation and resilience are primary. Include deep "
+                "mitigation only when evidence shows a clear project-to-emissions or transition "
+                "pathway and its FCV effects. Use the validated two-way Climate-FCV interaction "
+                "pathways to write two substantive interaction narratives. After each, provide "
+                "a compact causal strip: pressure "
+                "-> mechanism -> project implication -> design response, with time-horizon "
+                "labels. Write one qualitative Climate, peace and social dividends synthesis "
+                "covering how the current design contributes, supported versus potential "
+                "pathways, watchpoints, and links to numbered priorities; state the current "
+                "contribution and how it could be strengthened. Do not produce "
+                "dividend cards or a checklist. Mention a CCDR only when one specific insight "
+                "materially improves context or action; it must not dominate. "
+                "Every priority JSON object must include climate_links. Linked objects cite "
+                "recognized IDs plus contribution and strengthening_effect. Retained core "
+                "priorities use no-material-pathway, empty ID arrays, and a reason. Shape: "
                 '{"status":"linked|no-material-pathway","interaction_pathway_ids":[],'
                 '"dividend_pathway_ids":[],"finding_ids":[],"contribution":"",'
                 '"strengthening_effect":"","reason":""}. '

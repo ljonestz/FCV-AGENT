@@ -1307,6 +1307,69 @@ def test_active_climate_stage3_integrates_opening_and_uses_flexible_mix():
     assert "single existing priority list" in prompt
 
 
+def test_climate_stage3_integrates_narrative_and_qualitative_dividends():
+    state = app_module.AnalysisState.from_payload({
+        "active_lenses": ["climate"]
+    })
+    diagnostic = _add_specific_climate_paths({"lenses": [{
+        "lens_id": "climate",
+        "applicability": "material",
+        "materiality_level": "medium",
+        "materiality_summary": "Flood and FCV pressures affect delivery.",
+        "interaction_readout": [
+            {"direction_id": "climate-fcv-on-project", "summary": "A"},
+            {"direction_id": "project-on-climate-fcv", "summary": "B"},
+        ],
+        "readout_sections": [],
+        "additional_pathways": [],
+    }], "findings": []})
+
+    context = app_module.build_lens_stage_context(
+        state, 3, lens_diagnostic=diagnostic
+    )
+    prompt = context["prompt"]
+
+    for value in (
+        "bold opening assessment",
+        "operational context",
+        "strengths",
+        "gaps",
+        "FCV sensitivity",
+        "FCV responsiveness",
+        "two substantive interaction narratives",
+        "qualitative Climate, peace and social dividends synthesis",
+        "Do not produce dividend cards",
+        "no more than five substantive priorities",
+        "Adaptation and resilience are primary",
+        "deep mitigation only when",
+        "climate-fcv-on-project-1",
+    ):
+        assert value in prompt
+    assert context["estimated_tokens"] <= 900
+
+
+def test_climate_stage3_does_not_duplicate_lightweight_check():
+    state = app_module.AnalysisState.from_payload({
+        "active_lenses": ["climate"]
+    })
+    diagnostic = _add_specific_climate_paths({"lenses": [{
+        "lens_id": "climate",
+        "materiality_level": "low",
+        "materiality_summary": "Limited materiality.",
+        "interaction_readout": [{
+            "direction_id": "climate-fcv-on-project",
+            "summary": "A bounded interaction.",
+        }],
+    }], "findings": []})
+
+    prompt = app_module.build_lens_stage_context(
+        state, 3, lens_diagnostic=diagnostic
+    )["prompt"]
+
+    assert "lightweight conditional Climate-FCV check" not in prompt
+    assert prompt.count("two substantive interaction narratives") == 1
+
+
 def test_core_only_stage3_keeps_four_to_five_rule():
     context = app_module.build_lens_stage_context(
         app_module.AnalysisState.from_payload({}), 3
