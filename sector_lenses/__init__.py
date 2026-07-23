@@ -49,6 +49,7 @@ from .pipeline import (
     lens_catalogue,
     merge_lens_findings,
     normalize_lens_diagnostic,
+    normalize_priority_climate_links,
     strip_lens_blocks,
 )
 
@@ -97,6 +98,7 @@ __all__ = [
     "lens_catalogue",
     "merge_lens_findings",
     "normalize_lens_diagnostic",
+    "normalize_priority_climate_links",
     "resolve_active_lenses",
     "strip_lens_blocks",
 ]

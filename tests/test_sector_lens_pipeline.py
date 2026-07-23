@@ -12,6 +12,7 @@ from sector_lenses import (
     load_registry,
     merge_lens_findings,
     normalize_lens_diagnostic,
+    normalize_priority_climate_links,
     strip_lens_blocks,
 )
 
@@ -367,6 +368,66 @@ def test_climate_dividend_pathway_ids_are_stable():
     assert lens["additional_pathways"][0]["pathway_id"] == (
         "additional-invest-in-1"
     )
+
+
+def test_priority_climate_links_keep_only_diagnostic_ids():
+    diagnostic = {"lenses": [{
+        "lens_id": "climate",
+        "interaction_readout": [{
+            "direction_id": "climate-fcv-on-project",
+            "pathways": [{
+                "pathway_id": "climate-fcv-on-project-1",
+            }],
+        }],
+        "readout_sections": [{
+            "section_id": "invest-in",
+            "items": [{
+                "pathway_id": "institutional-capacity-legitimacy",
+            }],
+        }],
+        "additional_pathways": [],
+    }], "findings": [{
+        "finding_id": "climate-finding-1",
+        "lens_ids": ["climate"],
+    }]}
+    raw = {
+        "status": "linked",
+        "interaction_pathway_ids": [
+            "climate-fcv-on-project-1",
+            "invented-interaction",
+        ],
+        "dividend_pathway_ids": [
+            "institutional-capacity-legitimacy",
+            "invented-dividend",
+        ],
+        "finding_ids": ["climate-finding-1", "invented-finding"],
+        "contribution": "This priority strengthens inclusive access rules.",
+        "strengthening_effect": "It preserves adaptive options.",
+        "reason": "",
+    }
+
+    links = normalize_priority_climate_links(raw, diagnostic)
+
+    assert links["interaction_pathway_ids"] == [
+        "climate-fcv-on-project-1"
+    ]
+    assert links["dividend_pathway_ids"] == [
+        "institutional-capacity-legitimacy"
+    ]
+    assert links["finding_ids"] == ["climate-finding-1"]
+
+
+def test_no_material_climate_links_require_a_reason_and_no_ids():
+    diagnostic = {"lenses": [], "findings": []}
+
+    assert normalize_priority_climate_links({
+        "status": "no-material-pathway",
+        "reason": "Retained on core FCV grounds.",
+    }, diagnostic)["status"] == "no-material-pathway"
+    assert normalize_priority_climate_links({
+        "status": "no-material-pathway",
+        "reason": "",
+    }, diagnostic) == {}
 
 
 def test_readout_normalization_treats_scalar_collections_as_empty():

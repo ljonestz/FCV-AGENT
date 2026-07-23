@@ -34,6 +34,7 @@ from sector_lenses import (
     merge_lens_findings,
     normalize_lens_context_sources,
     normalize_lens_diagnostic,
+    normalize_priority_climate_links,
     normalize_climate_research_bundle,
     estimate_tokens,
     PLATFORM_STAGE_BUDGETS,
@@ -933,6 +934,14 @@ def build_lens_stage_context(
                 "strengthened. Suppress weak, not-material, empty, and repetitive pathways. "
                 "Mention a CCDR only where one specific insight materially improves the context "
                 "or action; never make consulting the CCDR a routine priority. "
+                "Every substantive priority JSON object must include climate_links with "
+                "status linked or no-material-pathway. Linked objects must cite recognized "
+                "interaction_pathway_ids, dividend_pathway_ids, or finding_ids and include "
+                "contribution and strengthening_effect. A retained core priority must use "
+                "no-material-pathway, empty ID arrays, and a concrete reason. Use exactly: "
+                '{"status":"linked|no-material-pathway","interaction_pathway_ids":[],'
+                '"dividend_pathway_ids":[],"finding_ids":[],"contribution":"",'
+                '"strengthening_effect":"","reason":""}. '
             )
         prefix += "Deterministically merged lens diagnostic:\n"
         selected_findings: list[dict[str, Any]] = []
@@ -4859,6 +4868,7 @@ def extract_priorities(
     text: str,
     uploaded_doc_names: list = None,
     active_lens_ids: list[str] | None = None,
+    lens_diagnostic: dict[str, Any] | None = None,
 ) -> dict:
     """Parse %%%JSON_START%%% / %%%JSON_END%%% block from Stage 3/4 output.
 
@@ -4980,11 +4990,41 @@ def extract_priorities(
         if active_lens_ids is not None:
             active_set = set(active_lens_ids)
             pr['lens_ids'] = [value for value in pr['lens_ids'] if value in active_set]
+        enforce_climate_links = (
+            "climate" in (active_lens_ids or [])
+            and not lens_diagnostic_failure_message(
+                lens_diagnostic or {}, ["climate"]
+            )
+        )
+        if enforce_climate_links:
+            climate_links = normalize_priority_climate_links(
+                pr.get("climate_links"), lens_diagnostic
+            )
+            if not climate_links:
+                failed = dict(_error_result)
+                failed["message"] = (
+                    "Climate priority linkage was missing or invalid; "
+                    "please re-run Stage 3."
+                )
+                return failed
+            pr["climate_links"] = climate_links
+            pr["lens_ids"] = [
+                lens_id for lens_id in pr["lens_ids"]
+                if lens_id != "climate"
+            ]
+            if climate_links["status"] == "linked":
+                pr["lens_ids"].append("climate")
         relevance = pr.get('lens_relevance', '')
         pr['lens_relevance'] = (
             relevance.strip()[:500]
             if isinstance(relevance, str) and pr['lens_ids'] else ''
         )
+        if (
+            enforce_climate_links
+            and pr["climate_links"]["status"] == "linked"
+            and not pr["lens_relevance"]
+        ):
+            pr["lens_relevance"] = pr["climate_links"]["contribution"][:500]
         pr.pop('priority_type', None)
 
         # Post-parse checks — check specificity across gap + all action guidance
@@ -6925,6 +6965,7 @@ def run_stage():
                         full_text,
                         uploaded_doc_names_payload,
                         [item['id'] for item in lens_context['active_lenses']],
+                        lens_context.get('lens_diagnostic', {}),
                     )
                     warn_on_missing_high_climate_priority(
                         parsed.get('priorities', []),
@@ -7877,6 +7918,7 @@ def run_express():
                     stage3_output,
                     uploaded_doc_names,
                     [item['id'] for item in lens_context_s3['active_lenses']],
+                    lens_context_s3.get('lens_diagnostic', {}),
                 )
                 warn_on_missing_high_climate_priority(
                     parsed.get('priorities', []),

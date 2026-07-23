@@ -1317,6 +1317,89 @@ def test_core_only_stage3_keeps_four_to_five_rule():
     assert "Climate-FCV Nexus" in app_module.DEFAULT_PROMPTS["2"]
 
 
+def test_priority_parser_derives_climate_provenance_from_valid_links():
+    diagnostic = _add_specific_climate_paths({"lenses": [{
+        "lens_id": "climate",
+        "materiality_level": "medium",
+        "materiality_summary": "Material interactions.",
+        "interaction_readout": [
+            {"direction_id": "climate-fcv-on-project", "summary": "A"},
+            {"direction_id": "project-on-climate-fcv", "summary": "B"},
+        ],
+        "readout_sections": [],
+        "additional_pathways": [],
+    }], "findings": []})
+    pathway_id = diagnostic["lenses"][0]["interaction_readout"][0][
+        "pathways"
+    ][0]["pathway_id"]
+    block = {
+        "fcv_rating": "Moderate",
+        "fcv_responsiveness_rating": "Emerging",
+        "sensitivity_summary": "Summary",
+        "responsiveness_summary": "Summary",
+        "risk_exposure": {"risks_to": "A", "risks_from": "B"},
+        "priorities": [{
+            "title": "Protect seasonal access",
+            "the_gap": "Access safeguards are missing.",
+            "why_it_matters": "Seasonal users could lose access.",
+            "actions": [],
+            "climate_links": {
+                "status": "linked",
+                "interaction_pathway_ids": [pathway_id],
+                "dividend_pathway_ids": [],
+                "finding_ids": [],
+                "contribution": "The priority protects inclusive access.",
+                "strengthening_effect": "It preserves adaptive options.",
+                "reason": "",
+            },
+        }],
+    }
+
+    parsed = app_module.extract_priorities(
+        "%%%JSON_START%%%" + json.dumps(block) + "%%%JSON_END%%%",
+        active_lens_ids=["climate"],
+        lens_diagnostic=diagnostic,
+    )
+
+    assert parsed["error"] is False
+    assert parsed["priorities"][0]["lens_ids"] == ["climate"]
+    assert parsed["priorities"][0]["climate_links"]["status"] == "linked"
+
+
+def test_every_climate_priority_requires_link_or_no_material_reason():
+    diagnostic = _add_specific_climate_paths({"lenses": [{
+        "lens_id": "climate",
+        "materiality_level": "low",
+        "materiality_summary": "Limited but specific interaction.",
+        "interaction_readout": [{
+            "direction_id": "climate-fcv-on-project",
+            "summary": "A",
+        }],
+    }], "findings": []})
+    block = {
+        "fcv_rating": "Moderate",
+        "fcv_responsiveness_rating": "Emerging",
+        "sensitivity_summary": "Summary",
+        "responsiveness_summary": "Summary",
+        "risk_exposure": {"risks_to": "A", "risks_from": "B"},
+        "priorities": [{
+            "title": "Core SEA/SH safeguard",
+            "the_gap": "A core gap.",
+            "why_it_matters": "Material on FCV grounds.",
+            "actions": [],
+        }],
+    }
+
+    parsed = app_module.extract_priorities(
+        "%%%JSON_START%%%" + json.dumps(block) + "%%%JSON_END%%%",
+        active_lens_ids=["climate"],
+        lens_diagnostic=diagnostic,
+    )
+
+    assert parsed["error"] is True
+    assert "Climate priority linkage" in parsed["message"]
+
+
 def test_climate_active_research_plan_balances_core_and_climate():
     plan = app_module.build_stage1_research_plan(
         active_lens_ids=["climate"],

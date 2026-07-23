@@ -566,8 +566,21 @@ def extract_lens_diagnostic(
         action_target = str(raw.get("action_target", "")).strip()[:200]
         if not mechanism or not geography or not action_target:
             continue
+        proposed_finding_id = str(raw.get("finding_id", "")).strip()
+        default_finding_id = (
+            f"{sorted(set(lens_ids))[0]}-finding-{len(findings) + 1}"
+        )
+        finding_id = (
+            proposed_finding_id
+            if re.fullmatch(
+                r"[a-z0-9][a-z0-9-]*-finding-[1-9][0-9]?",
+                proposed_finding_id,
+            )
+            else default_finding_id
+        )
         findings.append(
             {
+                "finding_id": finding_id,
                 "lens_ids": list(dict.fromkeys(lens_ids)),
                 "evidence": evidence,
                 "status": status,
@@ -597,6 +610,86 @@ def normalize_lens_diagnostic(
         source_ids_by_lens,
         readout_schema_by_lens,
     )
+
+
+def normalize_priority_climate_links(
+    raw: Any,
+    diagnostic: dict[str, Any] | None,
+) -> dict[str, Any]:
+    """Validate priority-to-diagnostic Climate provenance links."""
+
+    if not isinstance(raw, dict):
+        return {}
+    diagnostic = diagnostic if isinstance(diagnostic, dict) else {}
+    interaction_ids: set[str] = set()
+    dividend_ids: set[str] = set()
+    for lens in diagnostic.get("lenses", []):
+        if not isinstance(lens, dict) or lens.get("lens_id") != "climate":
+            continue
+        for interaction in _list_values(lens.get("interaction_readout")):
+            if not isinstance(interaction, dict):
+                continue
+            for pathway in _list_values(interaction.get("pathways")):
+                if isinstance(pathway, dict) and pathway.get("pathway_id"):
+                    interaction_ids.add(str(pathway["pathway_id"]))
+        for section in _list_values(lens.get("readout_sections")):
+            if not isinstance(section, dict):
+                continue
+            for item in _list_values(section.get("items")):
+                if isinstance(item, dict) and item.get("pathway_id"):
+                    dividend_ids.add(str(item["pathway_id"]))
+        for pathway in _list_values(lens.get("additional_pathways")):
+            if isinstance(pathway, dict) and pathway.get("pathway_id"):
+                dividend_ids.add(str(pathway["pathway_id"]))
+    finding_ids = {
+        str(finding.get("finding_id"))
+        for finding in _list_values(diagnostic.get("findings"))
+        if isinstance(finding, dict)
+        and "climate" in _list_values(finding.get("lens_ids"))
+        and finding.get("finding_id")
+    }
+
+    def recognized(name: str, allowed: set[str]) -> list[str]:
+        return list(dict.fromkeys(
+            value
+            for value in _bounded_strings(raw.get(name), 8, 100)
+            if value in allowed
+        ))
+
+    interaction_links = recognized(
+        "interaction_pathway_ids", interaction_ids
+    )
+    dividend_links = recognized("dividend_pathway_ids", dividend_ids)
+    finding_links = recognized("finding_ids", finding_ids)
+    status = str(raw.get("status", "")).strip()
+    contribution = str(raw.get("contribution", "")).strip()[:700]
+    strengthening_effect = str(
+        raw.get("strengthening_effect", "")
+    ).strip()[:700]
+    reason = str(raw.get("reason", "")).strip()[:700]
+    if status == "linked":
+        if (
+            not (interaction_links or dividend_links or finding_links)
+            or not contribution
+            or not strengthening_effect
+        ):
+            return {}
+    elif status == "no-material-pathway":
+        if interaction_links or dividend_links or finding_links or not reason:
+            return {}
+        contribution = ""
+        strengthening_effect = ""
+    else:
+        return {}
+    return {
+        "status": status,
+        "interaction_pathway_ids": interaction_links,
+        "dividend_pathway_ids": dividend_links,
+        "finding_ids": finding_links,
+        "contribution": contribution,
+        "strengthening_effect": strengthening_effect,
+        "reason": reason if status == "no-material-pathway" else "",
+    }
 
 
 def _extend_unique(target: list[str], values: Iterable[Any]) -> None:
