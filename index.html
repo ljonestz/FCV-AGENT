@@ -2612,7 +2612,7 @@
         .map(renderClimatePathwayStrip).filter(Boolean).join('');
       return `<section class="climate-interaction-narrative"><h4>${esc(labels[item.direction_id])}</h4><p>${esc(item.summary)}</p>${pathways}</section>`;
     }).join('');
-    return `<div class="climate-interactions-section"><div class="climate-readout-heading">Climate-FCV interactions and project pathways</div><p class="climate-readout-intro">Given the material Climate-FCV pressures identified for this operation, the assessment traces how context-specific climate and FCV dynamics may affect particular project components, places, groups and assets, and how the project's own design choices may alter those dynamics over different time horizons.</p><div class="climate-interaction-stack">${sections}</div></div>`;
+    return `<div class="climate-interactions-section"><div class="climate-readout-heading">Climate-FCV interactions and project pathways</div><p class="climate-readout-intro">Given the Climate-FCV pressures identified for this operation, the assessment traces how context-specific climate and FCV dynamics may affect particular project components, places, groups and assets, and how the project's own design choices may alter those dynamics over different time horizons.</p><div class="climate-interaction-stack">${sections}</div></div>`;
   }
 
   function renderClimateDividendSynthesis(lens,priorities){

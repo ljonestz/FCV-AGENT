@@ -203,7 +203,23 @@ def test_downloaded_report_has_climate_readout_and_context_sources():
 
     response = app_module.app.test_client().post("/api/download-report", json={
         "summary": "# Test project\nSummary.",
-        "priorities": [],
+        "priorities": [{
+            "title": "Inclusive seasonal access",
+            "the_gap": "Seasonal users are not represented in access decisions.",
+            "country_category_relevance": "Legacy differentiated note.",
+            "climate_links": {
+                "status": "linked",
+                "interaction_pathway_ids": ["climate-fcv-on-project-1"],
+                "dividend_pathway_ids": [
+                    "institutional-capacity-legitimacy"
+                ],
+                "finding_ids": ["climate-finding-1"],
+                "contribution": "Protects legitimate seasonal access.",
+                "strengthening_effect": (
+                    "Adds representation and transparent monitoring."
+                ),
+            },
+        }],
         "fcv_rating": "Adequate",
         "fcv_responsiveness_rating": "Emerging",
         "sensitivity_summary": "The project recognizes key FCV risks and remaining gaps.",
@@ -225,12 +241,43 @@ def test_downloaded_report_has_climate_readout_and_context_sources():
             "interaction_readout": [{
                 "direction_id": "climate-fcv-on-project",
                 "summary": "Drought, insecurity, and weak access could disrupt delivery.",
-                "project_implications": ["Remote sites may become inaccessible."],
+                "pathways": [{
+                    "pathway_id": "climate-fcv-on-project-1",
+                    "pressure": "Erratic floods",
+                    "mechanism": "Access roads close during insecure periods.",
+                    "project_implication": (
+                        "Landing-site rehabilitation may be delayed."
+                    ),
+                    "design_response": "Use seasonal work windows.",
+                    "project_elements": ["Landing-site rehabilitation"],
+                    "geographies": ["Upper Nile"],
+                    "affected_groups": ["Fishing households"],
+                    "systems_or_assets": ["Feeder roads"],
+                    "time_horizons": [
+                        "project-lifetime", "asset-system-lifetime"
+                    ],
+                    "confidence": "medium",
+                    "evidence_gap": "Site thresholds are not defined.",
+                }],
                 "source_ids": ["peace-social-dividends"],
             }, {
                 "direction_id": "project-on-climate-fcv",
                 "summary": "Benefit rules could strengthen resilience or exclusion.",
-                "adverse_effects": ["Seasonal users could be excluded."],
+                "pathways": [{
+                    "pathway_id": "project-on-climate-fcv-1",
+                    "pressure": "New access rules",
+                    "mechanism": "Rules redistribute seasonal access.",
+                    "project_implication": (
+                        "Seasonal users may lose adaptive options."
+                    ),
+                    "design_response": "Represent seasonal users.",
+                    "project_elements": ["BFMU governance"],
+                    "geographies": ["Sudd"],
+                    "affected_groups": ["Seasonal users"],
+                    "time_horizons": ["current-near-term"],
+                    "confidence": "medium",
+                    "evidence_gap": "",
+                }],
                 "source_ids": ["peace-social-dividends"],
             }],
             "readout_sections": [{
@@ -304,24 +351,57 @@ def test_downloaded_report_has_climate_readout_and_context_sources():
     assert text.index("Climate-focused FCV assessment") < text.index("Summary.")
     assert "High materiality" in text
     assert text.index("FCV Sensitivity") < text.index(
-        "How Climate-FCV interactions could affect the project"
+        "How Climate-FCV dynamics could affect this project"
     )
     assert text.index("FCV Responsiveness") < text.index(
-        "How Climate-FCV interactions could affect the project"
+        "How Climate-FCV dynamics could affect this project"
     )
-    assert "How the project could influence Climate-FCV dynamics" in text
-    assert "Where the project could build climate, peace, and social dividends" in text
+    assert "How this project could affect Climate-FCV dynamics" in text
+    assert "Pressure:" in text
+    assert "Mechanism:" in text
+    assert "Project implication:" in text
+    assert "Design response:" in text
+    assert "Landing-site rehabilitation" in text
+    assert "Asset/system lifetime" in text
+    assert "How the current design contributes" in text
     assert "Institutional capacity and legitimacy" in text
-    assert "How project design and delivery could strengthen those dividends" in text
     assert "Flexible and adaptive delivery" in text
     assert "Shared ecosystem restoration" in text
-    assert "How the project may contribute" in text
-    assert "How this could be strengthened" in text
+    assert "How climate, peace and social dividends could be strengthened" in text
+    assert "Where the priorities carry this forward" in text
+    assert "Priority 1: Inclusive seasonal access" in text
+    assert "Climate, peace and social dividend contribution" in text
+    assert "Protects legitimate seasonal access." in text
+    assert "Differentiated approach note" not in text
+    assert "Legacy differentiated note." not in text
     assert "Do not render this pathway" not in text
     assert "Other pathways considered" not in text
     assert "Core fallback risk to the project" not in text
     assert "Country Climate and Development Report" in text
     assert text.count("Country Climate and Development Report") <= 2
+
+
+def test_downloaded_core_only_report_retains_differentiated_approach_note():
+    from docx import Document
+
+    response = app_module.app.test_client().post("/api/download-report", json={
+        "summary": "# Core-only test\nSummary.",
+        "priorities": [{
+            "title": "Tailor delivery arrangements",
+            "the_gap": "Delivery arrangements are not differentiated.",
+            "country_category_relevance": (
+                "Use a differentiated approach in high-risk areas."
+            ),
+        }],
+        "metadata": {"date_str": "23 July 2026"},
+    })
+
+    assert response.status_code == 200
+    document = Document(io.BytesIO(response.data))
+    text = "\n".join(paragraph.text for paragraph in document.paragraphs)
+    assert "Differentiated approach note" in text
+    assert "Use a differentiated approach in high-risk areas." in text
+    assert "Climate, peace and social dividend contribution" not in text
 
 
 def test_downloaded_report_scales_low_climate_materiality_without_empty_dividends():

@@ -8652,13 +8652,66 @@ def download_report():
         add_field('Materiality', climate_readout.get('materiality_summary'))
         _add_single_para(evidence_base, size=9, color=WB_GRAY)
 
+    def add_causal_strip(pathway):
+        """Add a compact, parser-readable causal sequence for one pathway."""
+
+        fields = (
+            ('Pressure', pathway.get('pressure')),
+            ('Mechanism', pathway.get('mechanism')),
+            ('Project implication', pathway.get('project_implication')),
+            ('Design response', pathway.get('design_response')),
+        )
+        if any(not value for _, value in fields):
+            return
+        anchors = []
+        for key in (
+            'project_elements', 'geographies', 'affected_groups',
+            'systems_or_assets',
+        ):
+            values = pathway.get(key, [])
+            if isinstance(values, list):
+                anchors.extend(str(value) for value in values if value)
+        if anchors:
+            add_field('Project anchors', ' · '.join(anchors))
+        causal = doc.add_paragraph()
+        for index, (label, value) in enumerate(fields):
+            if index:
+                causal.add_run('  →  ').font.color.rgb = WB_GRAY
+            label_run = causal.add_run(f'{label}: ')
+            label_run.bold = True
+            label_run.font.color.rgb = WB_NAVY
+            causal.add_run(str(value))
+        causal.paragraph_format.space_after = Pt(2)
+        horizon_labels = {
+            'current-near-term': 'Current / near term',
+            'project-lifetime': 'Project lifetime',
+            'asset-system-lifetime': 'Asset/system lifetime',
+        }
+        horizons = [
+            horizon_labels[value]
+            for value in pathway.get('time_horizons', [])
+            if value in horizon_labels
+        ] if isinstance(pathway.get('time_horizons'), list) else []
+        metadata = []
+        if horizons:
+            metadata.append('Time horizon: ' + ' · '.join(horizons))
+        if pathway.get('confidence'):
+            metadata.append(f'Confidence: {pathway["confidence"]}')
+        if pathway.get('evidence_gap'):
+            metadata.append(f'Evidence gap: {pathway["evidence_gap"]}')
+        if metadata:
+            _add_single_para(
+                ' | '.join(metadata), size=9, color=WB_GRAY,
+                space_before=0, space_after=4,
+            )
+
     def add_climate_interactions():
         labels = {
             'climate-fcv-on-project': (
-                'How Climate-FCV interactions could affect the project'
+                'How Climate-FCV dynamics could affect this project'
             ),
             'project-on-climate-fcv': (
-                'How the project could influence Climate-FCV dynamics'
+                'How this project could affect Climate-FCV dynamics'
             ),
         }
         interactions = [
@@ -8666,64 +8719,105 @@ def download_report():
             if isinstance(item, dict)
             and item.get('direction_id') in labels
             and item.get('summary')
-        ]
+        ][:2]
         if not interactions:
             return
-        _add_section_heading('Climate-FCV interactions')
-        detail_limit = (
-            1 if climate_materiality_level(climate_readout) == 'low' else 3
+        _add_section_heading('Climate-FCV interactions and project pathways')
+        _add_single_para(
+            'Given the Climate-FCV pressures identified for this '
+            'operation, the assessment traces how context-specific climate and '
+            'FCV dynamics may affect particular project components, places, '
+            'groups and assets, and how project design choices may alter those '
+            'dynamics over different time horizons.'
         )
         for interaction in interactions:
-            _add_single_para(
-                labels[interaction['direction_id']],
-                bold=True,
-                color=WB_NAVY,
-                space_after=1,
+            _add_section_heading(
+                labels[interaction['direction_id']], level=3
             )
             _add_single_para(interaction['summary'], space_before=0)
-            details = []
-            for field in (
-                'project_implications', 'positive_effects', 'adverse_effects'
-            ):
-                values = interaction.get(field, [])
-                if isinstance(values, list):
-                    details.extend(value for value in values if value)
-            for detail in details[:detail_limit]:
-                paragraph = doc.add_paragraph(str(detail), style='List Bullet')
-                paragraph.paragraph_format.space_after = Pt(1)
+            for pathway in interaction.get('pathways', []):
+                if isinstance(pathway, dict):
+                    add_causal_strip(pathway)
 
-    def add_climate_dividends():
+    def add_climate_dividend_synthesis():
         groups = climate_dividend_groups(climate_readout)
-        if not groups:
+        items = [
+            item for group in groups for item in group.get('items', [])
+            if isinstance(item, dict)
+        ]
+        if not items:
             return
         _add_section_heading('Climate, peace and social dividends')
         _add_single_para(
-            'The project has potential to support wider climate, peace and '
-            'social dividends. The pathways below show how the project may '
-            'already contribute to these outcomes and how those contributions '
-            'could be strengthened. They draw partly on the Peace and Social '
-            'Dividends of Climate Action report and other Climate-FCV evidence. '
-            'They are selective design insights rather than a checklist, and '
-            'not every pathway needs to be incorporated into the project.'
+            'The synthesis below identifies the strongest project-specific '
+            'dividend pathways supported by the diagnostic. It distinguishes '
+            'what the current design already contributes from practical ways '
+            'to reinforce those effects.'
         )
-        for group in groups:
-            _add_section_heading(group['title'], level=3)
-            for item in group['items']:
-                _add_single_para(
-                    item.get('title', ''),
-                    bold=True,
-                    color=WB_NAVY,
-                    space_after=1,
-                )
+        supported = [
+            item for item in items if item.get('status') == 'supported'
+        ]
+        if supported:
+            _add_section_heading('How the current design contributes', level=3)
+            for item in supported:
                 add_field(
-                    'How the project may contribute',
+                    item.get('title', ''),
                     item.get('project_contribution'),
                 )
-                add_field(
-                    'How this could be strengthened',
-                    item.get('strengthening_action'),
+        _add_section_heading(
+            'How climate, peace and social dividends could be strengthened',
+            level=3,
+        )
+        for item in items:
+            add_field(
+                item.get('title', ''),
+                item.get('strengthening_action'),
+            )
+            add_field('Watchpoint', item.get('trade_off'))
+        item_ids = {
+            item.get('item_id') or item.get('pathway_id')
+            for item in items
+            if item.get('item_id') or item.get('pathway_id')
+        }
+        linked_priorities = []
+        for index, priority in enumerate(priorities):
+            links = priority.get('climate_links') or {}
+            dividend_ids = links.get('dividend_pathway_ids', [])
+            if (
+                isinstance(dividend_ids, list)
+                and any(value in item_ids for value in dividend_ids)
+            ):
+                linked_priorities.append(
+                    f'Priority {index + 1}: {priority.get("title", "")}'
                 )
-                add_field('Watchpoint', item.get('trade_off'))
+        if linked_priorities:
+            _add_section_heading(
+                'Where the priorities carry this forward', level=3
+            )
+            for value in linked_priorities:
+                paragraph = doc.add_paragraph(value, style='List Bullet')
+                paragraph.paragraph_format.space_after = Pt(1)
+
+    def add_priority_climate_contribution(priority):
+        links = priority.get('climate_links') or {}
+        if links.get('status') == 'linked':
+            add_field(
+                'Climate, peace and social dividend contribution',
+                ' '.join(
+                    str(value) for value in (
+                        links.get('contribution'),
+                        links.get('strengthening_effect'),
+                    ) if value
+                ),
+            )
+            return
+        add_field(
+            'No material dividend pathway identified',
+            links.get('reason') or (
+                'This priority remains important to the wider FCV assessment '
+                'but has no material Climate-FCV dividend pathway.'
+            ),
+        )
 
     try:
         doc = DocxDocument()
@@ -8773,7 +8867,7 @@ def download_report():
         if climate_valid:
             add_sr_sections()
             add_climate_interactions()
-            add_climate_dividends()
+            add_climate_dividend_synthesis()
         else:
             add_core_risk_exposure()
             add_sr_sections()
@@ -8855,7 +8949,13 @@ def download_report():
                 add_field('Why It Matters', pr.get('why_it_matters'))
                 add_field('CPF Alignment', pr.get('cpf_alignment'))
                 add_field('RRA Driver Alignment', pr.get('rra_driver_alignment'))
-                add_field('Differentiated approach note', pr.get('country_category_relevance'))
+                if climate_valid:
+                    add_priority_climate_contribution(pr)
+                else:
+                    add_field(
+                        'Differentiated approach note',
+                        pr.get('country_category_relevance'),
+                    )
 
                 actions = pr.get('actions', [])
                 if actions:
