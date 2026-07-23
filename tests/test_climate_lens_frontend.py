@@ -84,7 +84,9 @@ def test_option_a_renderers_scale_materiality_suppress_weak_items_and_escape():
     source = INDEX.read_text(encoding="utf-8")
     names = [
         "climateMaterialityLevel", "renderClimateModuleNotice",
-        "renderClimateInteractions", "renderClimateDividends",
+        "renderHorizonBadge", "renderClimatePathwayStrip",
+        "renderClimateInteractions", "renderClimateDividendSynthesis",
+        "climateContributionZone", "renderPriorityClimateContribution",
         "renderSRNarrative",
     ]
     helpers = "\n".join(_extract_js_function(source, name) for name in names)
@@ -97,8 +99,22 @@ const high = {{
   materiality_level:'high',
   materiality_summary:'Central <script>bad()</script>',
   interaction_readout:[
-    {{direction_id:'climate-fcv-on-project',summary:'Flood and insecurity disrupt access.'}},
-    {{direction_id:'project-on-climate-fcv',summary:'Benefit rules can build trust or exclusion.'}}
+    {{direction_id:'climate-fcv-on-project',summary:'Flood and insecurity disrupt access.',pathways:[{{
+      pathway_id:'climate-fcv-on-project-1',pressure:'Erratic floods',
+      mechanism:'Access roads close during insecure periods.',
+      project_implication:'Landing-site rehabilitation may be delayed.',
+      design_response:'Use seasonal work windows.',project_elements:['Landing-site rehabilitation'],
+      geographies:['Upper Nile'],affected_groups:['Fishing households'],
+      time_horizons:['project-lifetime'],confidence:'medium',evidence_gap:'Site thresholds missing.'
+    }}]}},
+    {{direction_id:'project-on-climate-fcv',summary:'Benefit rules can build trust or exclusion.',pathways:[{{
+      pathway_id:'project-on-climate-fcv-1',pressure:'New access rules',
+      mechanism:'Rules redistribute seasonal access.',
+      project_implication:'Seasonal users may lose adaptive options.',
+      design_response:'Represent seasonal users.',project_elements:['BFMU governance'],
+      geographies:['Sudd'],affected_groups:['Seasonal users'],
+      time_horizons:['current-near-term','asset-system-lifetime'],confidence:'medium',evidence_gap:''
+    }}]}}
   ],
   readout_sections:[{{section_id:'invest-in',items:[
     {{item_id:'livelihoods-opportunity',status:'supported',
@@ -109,24 +125,34 @@ const high = {{
   ]}}],
   additional_pathways:[]
 }};
-const catalogue = {{readout_sections:[
-  {{id:'invest-in',title:'Where the project could build climate, peace, and social dividends'}},
-  {{id:'deliver-through',title:'How project design and delivery could strengthen those dividends'}}
-]}};
+const priorities=[{{title:'Core priority',climate_links:{{status:'no-material-pathway',reason:'Core FCV need.'}}}},
+  {{title:'Inclusive access',climate_links:{{status:'linked',interaction_pathway_ids:[],
+    dividend_pathway_ids:['livelihoods-opportunity'],finding_ids:[],
+    contribution:'Protects access.',strengthening_effect:'Adds monitoring.'}}}}];
+const linked=priorities[1];
+const unlinked=priorities[0];
 const notice=renderClimateModuleNotice(high,false);
 const interactions=renderClimateInteractions(high);
-const dividends=renderClimateDividends(high,catalogue);
+const dividends=renderClimateDividendSynthesis(high,priorities);
+const linkedPanel=renderPriorityClimateContribution(linked);
+const unlinkedPanel=renderPriorityClimateContribution(unlinked);
 const sr=renderSRNarrative('Sensitive <script>bad()</script>','Responsive','Adequate','Emerging');
 if(!notice.includes('strong climate emphasis')) throw new Error(notice);
-if(!interactions.includes('How Climate-FCV interactions could affect the project')) throw new Error(interactions);
-if(!dividends.includes('How the project may contribute')) throw new Error(dividends);
-if(!dividends.includes('How this could be strengthened')) throw new Error(dividends);
+if(!interactions.includes('climate-interaction-narrative')) throw new Error(interactions);
+if(!interactions.includes('causal-strip')) throw new Error(interactions);
+if(!interactions.includes('Project lifetime')) throw new Error(interactions);
+if(!interactions.includes('Landing-site rehabilitation')) throw new Error(interactions);
+if(!dividends.includes('How the current design contributes')) throw new Error(dividends);
+if(!dividends.includes('Priority 2')) throw new Error(dividends);
+if(dividends.includes('climate-dividend-card')) throw new Error(dividends);
 if(dividends.includes('Do not show')) throw new Error(dividends);
+if(!linkedPanel.includes('Climate, peace and social dividend contribution')) throw new Error(linkedPanel);
+if(!unlinkedPanel.includes('No material dividend pathway identified')) throw new Error(unlinkedPanel);
 if(!sr.includes('FCV Sensitivity') || !sr.includes('FCV Responsiveness')) throw new Error(sr);
-if((notice+interactions+dividends+sr).includes('<script>')) throw new Error('unsafe HTML');
+if((notice+interactions+dividends+linkedPanel+unlinkedPanel+sr).includes('<script>')) throw new Error('unsafe HTML');
 const low={{materiality_level:'low',materiality_summary:'Limited.',readout_sections:[],additional_pathways:[]}};
 if(!renderClimateModuleNotice(low,false).includes('limited climate materiality')) throw new Error('low disclosure missing');
-if(renderClimateDividends(low,{{readout_sections:[]}})!=='') throw new Error('empty low dividends rendered');
+if(renderClimateDividendSynthesis(low,[])!=='') throw new Error('empty low synthesis rendered');
 const errorNotice=renderClimateModuleNotice(null,true);
 if(!errorNotice.includes('could not be produced')) throw new Error('safe failure missing');
 """
@@ -165,7 +191,7 @@ def test_live_stage3_orders_option_a_and_preserves_core_fallback():
         "renderClimateModuleNotice",
         "renderSRNarrative",
         "renderClimateInteractions",
-        "renderClimateDividends",
+        "renderClimateDividendSynthesis",
     ]
     positions = [helper.index(name) for name in climate_order]
     assert positions == sorted(positions)
@@ -187,7 +213,7 @@ def test_download_html_uses_same_climate_sections_and_order():
         "wrapSRTerms(md(summarybody))",
         "renderSRNarrative",
         "renderClimateInteractions",
-        "renderClimateDividends",
+        "renderClimateDividendSynthesis",
     ]
     positions = [helper.index(value) for value in required]
     assert positions == sorted(positions)
@@ -196,6 +222,19 @@ def test_download_html_uses_same_climate_sections_and_order():
         "renderSRCards(stageSensitivitySummary, stageResponsivenessSummary)"
         in helper
     )
+
+
+def test_live_and_shared_priority_cards_switch_climate_panel_only_when_active():
+    source = INDEX.read_text(encoding="utf-8")
+    export_helper = _extract_js_function(source, "_buildExportPriorityCard")
+    live_helper = _extract_js_function(source, "showPriority")
+
+    assert "renderPriorityClimateContribution(pr)" in export_helper
+    assert "Differentiated approach note" in export_helper
+    assert "isClimateLensActive()" in export_helper
+    assert "renderPriorityClimateContribution(pr)" in live_helper
+    assert "Differentiated approach note" in live_helper
+    assert "isClimateLensActive()" in live_helper
 
 
 def test_express_mode_surfaces_stage2_structured_diagnostic_failures():

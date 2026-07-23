@@ -345,26 +345,36 @@
     .climate-interactions-section,.climate-dividends-section,.sr-narrative-section{margin:20px 0}
     .climate-readout-heading{font-size:14px;font-weight:700;color:#0f172a;margin:0 0 8px}
     .climate-readout-intro{font-size:12px;line-height:1.55;color:#475569;margin:0 0 12px}
-    .climate-interaction-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-    .climate-interaction-grid.compact{grid-template-columns:1fr}
-    .climate-interaction-card{border:1px solid #bae6fd;background:#f8fcff;border-radius:8px;padding:13px 14px}
-    .climate-interaction-card h4{font-size:12px;line-height:1.4;color:#075985;margin:0 0 6px}
-    .climate-interaction-card p,.climate-interaction-card li{font-size:12px;line-height:1.5;color:#334155}
-    .climate-interaction-card p{margin:0}.climate-interaction-card ul{margin:7px 0 0;padding-left:18px}
-    .climate-dividend-groups{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}
-    .climate-dividend-group{border:1px solid #99f6e4;background:#f8fffd;border-radius:8px;padding:12px}
-    .climate-dividend-group:nth-child(even){border-color:#ddd6fe;background:#fcfbff}
-    .climate-dividend-group h4{font-size:12px;line-height:1.4;color:#0f766e;margin:0 0 8px}
-    .climate-dividend-card{border-top:1px solid #ccfbf1;padding:9px 0 2px}
-    .climate-dividend-card:first-of-type{border-top:none;padding-top:0}
-    .climate-dividend-title{font-size:12px;font-weight:700;color:#115e59;margin-bottom:5px}
-    .climate-dividend-card p{font-size:11px;line-height:1.5;color:#334155;margin:4px 0}
+    .climate-interaction-stack{display:grid;gap:14px}
+    .climate-interaction-narrative{border:1px solid #bae6fd;background:#f8fcff;border-radius:8px;padding:14px 16px}
+    .climate-interaction-narrative h4{font-size:13px;line-height:1.4;color:#075985;margin:0 0 6px}
+    .climate-interaction-narrative>p{font-size:12px;line-height:1.55;color:#334155;margin:0 0 12px}
+    .climate-pathway{border-top:1px solid #dbeafe;padding:12px 0 2px}
+    .climate-pathway:first-of-type{border-top:0;padding-top:2px}
+    .climate-pathway-anchors{font-size:11px;line-height:1.45;color:#475569;margin-bottom:8px}
+    .causal-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+    .causal-strip>div{position:relative;border:1px solid #dbeafe;border-radius:6px;background:#fff;padding:9px 10px;font-size:11px;line-height:1.45;color:#334155}
+    .causal-strip>div:not(:last-child)::after{content:'›';position:absolute;right:-7px;top:50%;transform:translateY(-50%);z-index:1;color:#0284c7;font-size:18px;font-weight:700}
+    .causal-strip span{display:block;color:#075985;font-size:9px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;margin-bottom:3px}
+    .horizon-badges{display:flex;align-items:center;flex-wrap:wrap;gap:5px;margin-top:8px}
+    .horizon-badge{display:inline-flex;padding:2px 7px;border-radius:999px;background:#e0f2fe;color:#075985;font-size:9px;font-weight:700}
+    .climate-pathway-meta{font-size:10px;color:#64748b;margin-left:3px}
+    .climate-dividend-synthesis{border-left:4px solid #0f766e;background:#f8fffd;border-radius:7px;padding:13px 15px}
+    .climate-dividend-synthesis h4{font-size:12px;color:#0f766e;margin:0 0 5px}
+    .climate-dividend-synthesis p,.climate-dividend-synthesis li{font-size:12px;line-height:1.55;color:#334155}
+    .climate-dividend-synthesis p{margin:0 0 10px}.climate-dividend-synthesis p:last-child{margin-bottom:0}
+    .climate-priority-links{margin:5px 0 10px;padding-left:18px}
+    .climate-contribution-zone{border-left:4px solid #0f766e!important;background:#f8fffd!important}
+    .climate-contribution-zone .pc-zone-title{color:#0f766e}
     .climate-dividend-watchpoint{color:#64748b!important;font-style:italic}
     .sr-narrative-block{border-left:3px solid #cbd5e1;padding:2px 0 2px 12px;margin:12px 0}
     .sr-narrative-block h4{font-size:13px;color:#1e293b;margin:0 0 5px}
     .sr-narrative-block p{font-size:13px;line-height:1.65;color:#334155;margin:0}
     .sr-narrative-rating{display:inline-flex;margin-left:6px;padding:1px 7px;border-radius:999px;background:#f1f5f9;color:#475569;font-size:10px;font-weight:700}
-    @media (max-width:768px){.climate-interaction-grid,.climate-dividend-groups{grid-template-columns:1fr}}
+    @media (max-width:768px){
+      .causal-strip{grid-template-columns:1fr}
+      .causal-strip>div:not(:last-child)::after{content:'⌄';right:50%;top:auto;bottom:-13px;transform:translateX(50%)}
+    }
 
     /* ── Buttons ── */
     .btn{
@@ -2554,34 +2564,59 @@
     return `<div class="climate-module-notice"><h3>Climate-focused FCV assessment</h3><span class="climate-materiality-pill">${esc(level)} materiality</span><p>${esc(wording[level])}</p>${summary}<p class="climate-evidence-base">${esc(evidence)}</p></div>`;
   }
 
-  function renderClimateInteractions(lens){
-    if(!lens)return '';
-    const level=climateMaterialityLevel(lens);
+  function renderHorizonBadge(value){
     const labels={
-      'climate-fcv-on-project':'How Climate-FCV interactions could affect the project',
-      'project-on-climate-fcv':'How the project could influence Climate-FCV dynamics'
+      'current-near-term':'Current / near term',
+      'project-lifetime':'Project lifetime',
+      'asset-system-lifetime':'Asset/system lifetime'
     };
-    const seen=new Set();
-    const interactions=(Array.isArray(lens.interaction_readout)?lens.interaction_readout:[]).filter(item=>{
-      if(!item||!labels[item.direction_id]||seen.has(item.direction_id)||!item.summary)return false;
-      seen.add(item.direction_id);return true;
-    });
-    if(!interactions.length)return '';
-    const cards=interactions.map(item=>{
-      const details=[
-        ...(Array.isArray(item.project_implications)?item.project_implications:[]),
-        ...(Array.isArray(item.positive_effects)?item.positive_effects:[]),
-        ...(Array.isArray(item.adverse_effects)?item.adverse_effects:[])
-      ].filter(Boolean).slice(0,level==='low'?1:3);
-      return `<div class="climate-interaction-card"><h4>${esc(labels[item.direction_id])}</h4><p>${esc(item.summary)}</p>${details.length?`<ul>${details.map(value=>`<li>${esc(value)}</li>`).join('')}</ul>`:''}</div>`;
-    }).join('');
-    return `<div class="climate-interactions-section"><div class="climate-readout-heading">Climate-FCV interactions</div><p class="climate-readout-intro">The following synthesis highlights the most relevant ways climate and FCV dynamics may shape project delivery and outcomes.</p><div class="climate-interaction-grid ${level==='low'?'compact':''}">${cards}</div></div>`;
+    return labels[value]?`<span class="horizon-badge">${esc(labels[value])}</span>`:'';
   }
 
-  function renderClimateDividends(lens,catalogueLens){
+  function renderClimatePathwayStrip(pathway){
+    if(!pathway)return '';
+    const cells=[
+      ['Pressure',pathway.pressure],
+      ['Mechanism',pathway.mechanism],
+      ['Project implication',pathway.project_implication],
+      ['Design response',pathway.design_response]
+    ];
+    if(cells.some(([,value])=>!value))return '';
+    const anchors=[
+      ...(Array.isArray(pathway.project_elements)?pathway.project_elements:[]),
+      ...(Array.isArray(pathway.geographies)?pathway.geographies:[]),
+      ...(Array.isArray(pathway.affected_groups)?pathway.affected_groups:[]),
+      ...(Array.isArray(pathway.systems_or_assets)?pathway.systems_or_assets:[])
+    ].filter(Boolean);
+    const horizons=(Array.isArray(pathway.time_horizons)?pathway.time_horizons:[])
+      .map(renderHorizonBadge).filter(Boolean).join('');
+    const confidence=pathway.confidence
+      ?`<span class="climate-pathway-meta">Confidence: ${esc(pathway.confidence)}</span>`:'';
+    const evidenceGap=pathway.evidence_gap
+      ?`<span class="climate-pathway-meta">Evidence gap: ${esc(pathway.evidence_gap)}</span>`:'';
+    return `<div class="climate-pathway">${anchors.length?`<div class="climate-pathway-anchors"><strong>Project anchors:</strong> ${anchors.map(esc).join(' · ')}</div>`:''}<div class="causal-strip">${cells.map(([label,value])=>`<div><span>${esc(label)}</span>${esc(value)}</div>`).join('')}</div>${horizons||confidence||evidenceGap?`<div class="horizon-badges">${horizons}${confidence}${evidenceGap}</div>`:''}</div>`;
+  }
+
+  function renderClimateInteractions(lens){
     if(!lens)return '';
-    const level=climateMaterialityLevel(lens);
-    const limit={high:6,medium:4,low:1}[level];
+    const labels={
+      'climate-fcv-on-project':'How Climate-FCV dynamics could affect this project',
+      'project-on-climate-fcv':'How this project could affect Climate-FCV dynamics'
+    };
+    const interactions=(Array.isArray(lens.interaction_readout)?lens.interaction_readout:[])
+      .filter(item=>item&&labels[item.direction_id]&&item.summary)
+      .slice(0,2);
+    if(!interactions.length)return '';
+    const sections=interactions.map(item=>{
+      const pathways=(Array.isArray(item.pathways)?item.pathways:[])
+        .map(renderClimatePathwayStrip).filter(Boolean).join('');
+      return `<section class="climate-interaction-narrative"><h4>${esc(labels[item.direction_id])}</h4><p>${esc(item.summary)}</p>${pathways}</section>`;
+    }).join('');
+    return `<div class="climate-interactions-section"><div class="climate-readout-heading">Climate-FCV interactions and project pathways</div><p class="climate-readout-intro">Given the material Climate-FCV pressures identified for this operation, the assessment traces how context-specific climate and FCV dynamics may affect particular project components, places, groups and assets, and how the project's own design choices may alter those dynamics over different time horizons.</p><div class="climate-interaction-stack">${sections}</div></div>`;
+  }
+
+  function renderClimateDividendSynthesis(lens,priorities){
+    if(!lens)return '';
     const labels={
       'social-cohesion-inclusion':'Social cohesion and inclusion',
       'institutional-capacity-legitimacy':'Institutional capacity and legitimacy',
@@ -2590,39 +2625,60 @@
       'trust-collaboration':'Trust and collaboration',
       'flexible-adaptive-delivery':'Flexible and adaptive delivery'
     };
-    const declared=Array.isArray(catalogueLens&&catalogueLens.readout_sections)?catalogueLens.readout_sections:[];
-    const fallback=[
-      {id:'invest-in',title:'Where the project could build climate, peace, and social dividends'},
-      {id:'deliver-through',title:'How project design and delivery could strengthen those dividends'}
-    ];
-    const sections=declared.length?declared:fallback;
-    const modelSections=new Map((Array.isArray(lens.readout_sections)?lens.readout_sections:[]).map(section=>[section.section_id,section]));
+    const baseline=(Array.isArray(lens.readout_sections)?lens.readout_sections:[])
+      .flatMap(section=>(Array.isArray(section.items)?section.items:[]));
     const additional=Array.isArray(lens.additional_pathways)?lens.additional_pathways:[];
-    let remaining=limit;
-    const groups=[];
-    sections.forEach(section=>{
-      if(remaining<1)return;
-      const model=modelSections.get(section.id)||{};
-      const allowed=Array.isArray(section.item_ids)&&section.item_ids.length?new Set(section.item_ids):null;
-      const baseline=(Array.isArray(model.items)?model.items:[]).filter(item=>!allowed||allowed.has(item.item_id)).map(item=>({...item,title:labels[item.item_id]||String(item.item_id||'').replace(/-/g,' ')}));
-      const extras=additional.filter(item=>item&&item.section_id===section.id).map(item=>({...item,title:item.title||''}));
-      const items=[...baseline,...extras].filter(item=>{
-        const evidence=(Array.isArray(item.evidence)?item.evidence:[]).filter(Boolean);
-        const contribution=item.project_contribution||item.mechanism||'';
-        const strengthening=item.strengthening_action||item.evidence_gap||'';
-        return ['supported','potential'].includes(item.status)&&contribution&&strengthening&&(item.status==='supported'||evidence.length);
-      }).slice(0,remaining);
-      if(!items.length)return;
-      remaining-=items.length;
-      const cards=items.map(item=>{
-        const contribution=item.project_contribution||item.mechanism||'';
-        const strengthening=item.strengthening_action||item.evidence_gap||'';
-        return `<div class="climate-dividend-card"><div class="climate-dividend-title">${esc(item.title)}</div><p><strong>How the project may contribute:</strong> ${esc(contribution)}</p><p><strong>How this could be strengthened:</strong> ${esc(strengthening)}</p>${item.trade_off?`<p class="climate-dividend-watchpoint"><strong>Watchpoint:</strong> ${esc(item.trade_off)}</p>`:''}</div>`;
-      }).join('');
-      groups.push(`<div class="climate-dividend-group"><h4>${esc(section.title||section.id)}</h4>${cards}</div>`);
+    const items=[...baseline,...additional].filter(item=>{
+      const contribution=item&&(
+        item.project_contribution||item.mechanism
+      );
+      const strengthening=item&&(
+        item.strengthening_action||item.evidence_gap
+      );
+      return item&&['supported','potential'].includes(item.status)&&
+        contribution&&strengthening;
     });
-    if(!groups.length)return '';
-    return `<div class="climate-dividends-section"><div class="climate-readout-heading">Climate, peace and social dividends</div><p class="climate-readout-intro">The project has potential to support wider climate, peace and social dividends. The pathways below show how the project may already contribute to these outcomes and how those contributions could be strengthened. They draw partly on the Peace and Social Dividends of Climate Action report and other Climate-FCV evidence. They are selective design insights rather than a checklist, and not every pathway needs to be incorporated into the project.</p><div class="climate-dividend-groups">${groups.join('')}</div></div>`;
+    if(!items.length)return '';
+    const supported=items.filter(item=>item.status==='supported');
+    const potential=items.filter(item=>item.status==='potential');
+    const describe=(item,field)=>`<strong>${esc(item.title||labels[item.item_id]||String(item.item_id||'').replace(/-/g,' '))}:</strong> ${esc(item[field]||'')}`;
+    const current=supported.length
+      ?`<h4>How the current design contributes</h4><p>${supported.map(item=>describe(item,item.project_contribution?'project_contribution':'mechanism')).join(' ')}</p>`:'';
+    const strengthen=items.length
+      ?`<h4>How climate, peace and social dividends could be strengthened</h4><p>${items.map(item=>describe(item,item.strengthening_action?'strengthening_action':'evidence_gap')).join(' ')}</p>`:'';
+    const selectedIds=new Set(items.map(item=>item.item_id||item.pathway_id).filter(Boolean));
+    const links=(Array.isArray(priorities)?priorities:[]).flatMap((priority,index)=>{
+      const linked=priority&&priority.climate_links&&
+        Array.isArray(priority.climate_links.dividend_pathway_ids)
+        ?priority.climate_links.dividend_pathway_ids:[];
+      if(!linked.some(id=>selectedIds.has(id)))return [];
+      return [`<li><strong>Priority ${index+1}:</strong> ${esc(priority.title||'Untitled priority')}</li>`];
+    });
+    const priorityLinks=links.length
+      ?`<h4>Where the priorities carry this forward</h4><ul class="climate-priority-links">${links.join('')}</ul>`:'';
+    const watchpoints=items.map(item=>item.trade_off||'').filter(Boolean);
+    const watchpoint=watchpoints.length
+      ?`<p class="climate-dividend-watchpoint"><strong>Watchpoints:</strong> ${watchpoints.map(esc).join(' ')}</p>`:'';
+    return `<div class="climate-dividends-section"><div class="climate-readout-heading">Climate, peace and social dividends</div><p class="climate-readout-intro">The synthesis below identifies the strongest project-specific dividend pathways supported by the diagnostic. It distinguishes what the current design already contributes from practical ways to reinforce those effects.</p><div class="climate-dividend-synthesis">${current}${strengthen}${priorityLinks}${watchpoint}</div></div>`;
+  }
+
+  function climateContributionZone(title,body){
+    if(!body)return '';
+    return `<div class="pc-zone climate-contribution-zone"><div class="pc-zone-title">${esc(title)}</div><div class="pc-zone-body">${esc(body)}</div></div>`;
+  }
+
+  function renderPriorityClimateContribution(priority){
+    const links=priority&&priority.climate_links||{};
+    if(links.status==='linked'){
+      return climateContributionZone(
+        'Climate, peace and social dividend contribution',
+        [links.contribution,links.strengthening_effect].filter(Boolean).join(' ')
+      );
+    }
+    return climateContributionZone(
+      'No material dividend pathway identified',
+      links.reason||'This priority remains important to the wider FCV assessment but has no material Climate-FCV dividend pathway.'
+    );
   }
 
   function renderSRNarrative(sensitivityText,responsivenessText,sensitivityRating,responsivenessRating){
@@ -4350,7 +4406,6 @@
         ?renderClimateModuleNotice(_climateEntry,_climateError):'';
       const _climateValid=_climateActive&&!_climateError;
       if(_climateValid){
-        const _climateCatalogue=lensCatalogue.find(item=>item.id==='climate')||{};
         _outBodyContent=wrapSRTerms(
           _closedProjectNotice+_padNotice+_stageBadge+_climateNotice+
           _preHtml+md(_rest)+
@@ -4359,7 +4414,7 @@
             fcvRating,fcvResponsivenessRating
           )+
           renderClimateInteractions(_climateEntry)+
-          renderClimateDividends(_climateEntry,_climateCatalogue)
+          renderClimateDividendSynthesis(_climateEntry,stageThreePriorities)
         )+'<div id="priorities-intro"></div>';
       }else{
         _outBodyContent=wrapSRTerms(
@@ -5055,9 +5110,8 @@
         fcvRating,fcvResponsivenessRating
       );
       body+=renderClimateInteractions(_exportClimateEntry);
-      body+=renderClimateDividends(
-        _exportClimateEntry,
-        lensCatalogue.find(item=>item.id==='climate')||{}
+      body+=renderClimateDividendSynthesis(
+        _exportClimateEntry,stageThreePriorities
       );
     }else{
       body += renderRiskExposure(stageRiskExposure);
@@ -5243,7 +5297,7 @@ ${body}
       <div class="pc-zone zone-why"><div class="pc-zone-title">Why it matters</div><div class="pc-zone-body">${esc(pr.why_it_matters||'')}</div></div>
       ${pr.cpf_alignment?`<div class="pc-zone"><div class="pc-zone-title">CPF Alignment</div><div class="pc-zone-body">${esc(pr.cpf_alignment)}</div></div>`:''}
       ${actionsHtml?`<div class="pc-zone zone-act"><div class="pc-zone-title">How to act</div><div class="zone-act-primary"><div class="zone-act-section"><div class="zone-act-label">Essential action${(pr.actions||[]).length>1?'s':''}</div>${actionsHtml}</div>${pr.implementation_note?`<div class="zone-act-section zone-act-impl"><div class="zone-act-label">Implementation consideration</div><div class="pc-zone-body">${esc(pr.implementation_note)}</div></div>`:''}</div></div>`:''}
-      ${pr.country_category_relevance?`<div class="pc-zone"><div class="pc-zone-title">Differentiated approach note</div><div class="pc-zone-body">${esc(pr.country_category_relevance)}</div></div>`:''}
+      ${isClimateLensActive()?renderPriorityClimateContribution(pr):(pr.country_category_relevance?`<div class="pc-zone"><div class="pc-zone-title">Differentiated approach note</div><div class="pc-zone-body">${esc(pr.country_category_relevance)}</div></div>`:'')}
     </div>`;
   }
 
@@ -5835,11 +5889,11 @@ ${body}
               <div class="zone-act-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> Implementation consideration</div>
               <div class="pc-zone-body">${esc(pr.implementation_note)}</div>
             </div>` : ''}
-            <!-- Differentiated approach note -->
-            ${pr.country_category_relevance ? `<div class="zone-act-section zone-act-cat-relevance">
+            <!-- Climate contribution, or the normal core-only differentiated note -->
+            ${isClimateLensActive() ? renderPriorityClimateContribution(pr) : (pr.country_category_relevance ? `<div class="zone-act-section zone-act-cat-relevance">
               <div class="zone-act-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> Differentiated approach note</div>
               <div class="pc-zone-body">${esc(pr.country_category_relevance)}</div>
-            </div>` : ''}
+            </div>` : '')}
           </div>
           <!-- Go Deeper 3-tab section (lazy-loaded on expand) -->
           <details class="go-deeper" id="deeper-details-${idx}" ontoggle="handleDeeperToggle(this,${idx})">
