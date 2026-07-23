@@ -8,7 +8,7 @@ import time
 import uuid
 from dataclasses import dataclass, field
 from datetime import date
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from typing import Any
 from flask import Flask, request, jsonify, send_from_directory, Response, stream_with_context
 from werkzeug.exceptions import RequestEntityTooLarge
@@ -18,6 +18,7 @@ from sector_lenses import (
     CCDR_RESEARCH_INSTRUCTIONS,
     build_climate_research_prompt,
     extract_climate_research_bundle,
+    format_climate_research_context,
     LENS_DIAGNOSTIC_END,
     LENS_DIAGNOSTIC_START,
     LENS_EVIDENCE_END,
@@ -5817,6 +5818,108 @@ def research_cache_key(
     )
 
 
+def build_stage1_research_plan(
+    active_lens_ids: list[str],
+    country: str,
+    sector: str,
+    doc_parts: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Build one bounded plan shared by step-by-step and express workflows."""
+
+    climate_active = "climate" in active_lens_ids
+    project_parts = [
+        part for part in doc_parts
+        if isinstance(part, dict)
+        and part.get("label") == "PROJECT DOCUMENT"
+    ]
+    excerpt = "\n\n".join(
+        str(part.get("raw_text") or "")[:6000]
+        for part in project_parts[:2]
+    )[:12000]
+    return {
+        "country": str(country or "").strip(),
+        "sector": str(sector or "").strip(),
+        "core": {
+            "max_tokens": 4000 if climate_active else 5500,
+            "max_uses": 3 if climate_active else 4,
+        },
+        "climate": {"enabled": climate_active},
+        "project_profile": {
+            "documents": [
+                str(part.get("name") or "project document")[:200]
+                for part in project_parts[:4]
+            ],
+            "document_excerpt": excerpt,
+        },
+    }
+
+
+def _iter_stage1_research(research_plan: dict[str, Any]):
+    """Run core and optional Climate research concurrently with keepalives."""
+
+    country = research_plan["country"]
+    sector = research_plan["sector"]
+    core_budget = research_plan["core"]
+    climate_enabled = bool(research_plan["climate"]["enabled"])
+    cache_key = research_cache_key(country, sector, climate_enabled)
+    cached_core = _research_cache.get(cache_key)
+    results = {
+        "core_brief": "",
+        "climate_research": normalize_climate_research_bundle({}),
+        "lens_context_sources": [],
+    }
+    futures = {}
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        if cached_core:
+            results["core_brief"] = cached_core.get("brief", "")
+        else:
+            futures[pool.submit(
+                run_fcv_web_research,
+                country,
+                sector,
+                get_research_client(),
+                False,
+                core_budget["max_tokens"],
+                core_budget["max_uses"],
+            )] = "core"
+        if climate_enabled:
+            futures[pool.submit(
+                run_climate_web_research,
+                country,
+                sector,
+                research_plan["project_profile"],
+                get_research_client(),
+            )] = "climate"
+
+        while futures:
+            done, _ = wait(
+                futures,
+                timeout=15,
+                return_when=FIRST_COMPLETED,
+            )
+            if not done:
+                yield {
+                    "research_status": "searching",
+                    "country": country,
+                    "keepalive": True,
+                }
+                continue
+            for future in done:
+                kind = futures.pop(future)
+                try:
+                    value = future.result()
+                except Exception:
+                    value = {}
+                if kind == "core":
+                    results["core_brief"] = value.get("brief", "")
+                    _research_cache[cache_key] = value
+                else:
+                    climate_research = normalize_climate_research_bundle(value)
+                    results["climate_research"] = climate_research
+                    results["lens_context_sources"] = climate_research["sources"]
+    yield {"result": results}
+
+
 def build_ccdr_prompt_context(
     lens_context_sources: list[dict[str, Any]],
 ) -> str:
@@ -6545,6 +6648,9 @@ def run_stage():
         def workflow_events():
             research_brief_text = ''
             research_country = ''
+            climate_research = normalize_climate_research_bundle(
+                data.get('climate_research')
+            )
             lens_context_sources = list(data.get('lens_context_sources') or [])
             try:
                 yield f"data: {json.dumps({'assessment_id': assessment_id})}\n\n"
@@ -6571,32 +6677,26 @@ def run_stage():
                             research_country = country_future.result()
                             research_sector = sector_future.result()
 
-                        include_ccdr = should_include_ccdr_context(
-                            lens_context['active_lenses'], doc_parts
+                        research_plan = build_stage1_research_plan(
+                            [item['id'] for item in lens_context['active_lenses']],
+                            research_country,
+                            research_sector,
+                            doc_parts,
                         )
-                        cache_key = research_cache_key(
-                            research_country, research_sector, include_ccdr
-                        )
-                        if cache_key in _research_cache:
-                            research_data = _research_cache[cache_key]
-                            research_brief_text = research_data['brief']
-                            yield f"data: {json.dumps({'research_status': 'cached', 'country': research_country})}\n\n"
-                        else:
-                            yield f"data: {json.dumps({'research_status': 'searching', 'country': research_country})}\n\n"
-                            research_data = run_fcv_web_research(
-                                research_country,
-                                research_sector,
-                                get_research_client(),
-                                include_ccdr=include_ccdr,
-                            )
-                            research_brief_text = research_data['brief']
-                            _research_cache[cache_key] = research_data
-                        ccdr_context = research_data.get('ccdr_context') or {}
-                        lens_context_sources = [ccdr_context] if ccdr_context else []
+                        yield f"data: {json.dumps({'research_status': 'searching', 'country': research_country})}\n\n"
+                        for research_event in _iter_stage1_research(research_plan):
+                            if 'result' not in research_event:
+                                yield f"data: {json.dumps(research_event)}\n\n"
+                                continue
+                            research_result = research_event['result']
+                            research_brief_text = research_result['core_brief']
+                            climate_research = research_result['climate_research']
+                            lens_context_sources = research_result['lens_context_sources']
 
-                        yield f"data: {json.dumps({'research_status': 'complete', 'country': research_country, 'brief': research_brief_text})}\n\n"
+                        yield f"data: {json.dumps({'research_status': 'complete', 'country': research_country, 'brief': research_brief_text, 'climate_research': climate_research})}\n\n"
                     except Exception:
                         research_brief_text = ''
+                        climate_research = normalize_climate_research_bundle({})
                         lens_context_sources = []
                         yield f"data: {json.dumps({'research_status': 'error', 'country': research_country})}\n\n"
                     # ── End Research Phase ────────────────────────────────────
@@ -6647,13 +6747,15 @@ def run_stage():
                             + research_brief_text +
                             "\n--- END AUTOMATED WEB RESEARCH ---\n"
                         )})
-                    ccdr_prompt_context = build_ccdr_prompt_context(
-                        lens_context_sources
-                    )
-                    if ccdr_prompt_context:
+                    climate_context = format_climate_research_context(climate_research)
+                    if climate_context:
                         content_parts.append({
                             "type": "text",
-                            "text": "\n\n" + ccdr_prompt_context + "\n",
+                            "text": (
+                                "\n\n--- VALIDATED CLIMATE-FCV RESEARCH CLAIMS ---\n"
+                                + climate_context
+                                + "\n--- END VALIDATED CLIMATE-FCV RESEARCH CLAIMS ---\n"
+                            ),
                         })
 
                     # Brief instrument recognition guide for Stage 1 identification
@@ -6871,6 +6973,7 @@ def run_stage():
                     'lens_warnings': lens_context['warnings'],
                     'lens_evidence': lens_evidence if stage == 1 else None,
                     'lens_context_sources': lens_context_sources,
+                    'climate_research': climate_research,
                 }
 
                 if stage == 2:
@@ -7059,6 +7162,7 @@ def run_express():
             sector_context = {}
             research_brief_text = ''
             research_country = ''
+            climate_research = normalize_climate_research_bundle({})
             lens_context_sources = []
             conversation_history = []
             lens_diagnostic = {}
@@ -7172,32 +7276,26 @@ def run_express():
                         research_country = country_future.result()
                         research_sector = sector_future.result()
 
-                    include_ccdr = should_include_ccdr_context(
-                        lens_context_s1['active_lenses'], doc_parts
+                    research_plan = build_stage1_research_plan(
+                        [item['id'] for item in lens_context_s1['active_lenses']],
+                        research_country,
+                        research_sector,
+                        doc_parts,
                     )
-                    cache_key = research_cache_key(
-                        research_country, research_sector, include_ccdr
-                    )
-                    if cache_key in _research_cache:
-                        research_data = _research_cache[cache_key]
-                        research_brief_text = research_data['brief']
-                        yield f"data: {json.dumps({'research_status': 'cached', 'country': research_country})}\n\n"
-                    else:
-                        yield f"data: {json.dumps({'research_status': 'searching', 'country': research_country})}\n\n"
-                        research_data = run_fcv_web_research(
-                            research_country,
-                            research_sector,
-                            get_research_client(),
-                            include_ccdr=include_ccdr,
-                        )
-                        research_brief_text = research_data['brief']
-                        _research_cache[cache_key] = research_data
-                    ccdr_context = research_data.get('ccdr_context') or {}
-                    lens_context_sources = [ccdr_context] if ccdr_context else []
+                    yield f"data: {json.dumps({'research_status': 'searching', 'country': research_country})}\n\n"
+                    for research_event in _iter_stage1_research(research_plan):
+                        if 'result' not in research_event:
+                            yield f"data: {json.dumps(research_event)}\n\n"
+                            continue
+                        research_result = research_event['result']
+                        research_brief_text = research_result['core_brief']
+                        climate_research = research_result['climate_research']
+                        lens_context_sources = research_result['lens_context_sources']
 
-                    yield f"data: {json.dumps({'research_status': 'complete', 'country': research_country, 'brief': research_brief_text})}\n\n"
+                    yield f"data: {json.dumps({'research_status': 'complete', 'country': research_country, 'brief': research_brief_text, 'climate_research': climate_research})}\n\n"
                 except Exception:
                     research_brief_text = ''
+                    climate_research = normalize_climate_research_bundle({})
                     lens_context_sources = []
                     yield f"data: {json.dumps({'research_status': 'error', 'country': research_country})}\n\n"
 
@@ -7245,13 +7343,15 @@ def run_express():
                         + research_brief_text +
                         "\n--- END AUTOMATED WEB RESEARCH ---\n"
                     )})
-                ccdr_prompt_context = build_ccdr_prompt_context(
-                    lens_context_sources
-                )
-                if ccdr_prompt_context:
+                climate_context = format_climate_research_context(climate_research)
+                if climate_context:
                     content_parts.append({
                         "type": "text",
-                        "text": "\n\n" + ccdr_prompt_context + "\n",
+                        "text": (
+                            "\n\n--- VALIDATED CLIMATE-FCV RESEARCH CLAIMS ---\n"
+                            + climate_context
+                            + "\n--- END VALIDATED CLIMATE-FCV RESEARCH CLAIMS ---\n"
+                        ),
                     })
 
                 # Brief instrument recognition guide for Stage 1 identification
@@ -7358,7 +7458,7 @@ def run_express():
                 lens_evidence_s1 = extract_lens_evidence(
                     stage1_output, [item['id'] for item in lens_context_s1['active_lenses']]
                 ) if lens_context_s1['active_lenses'] else {}
-                yield f"data: {json.dumps({'stage_done': 1, 'result': stage1_display, 'history': conversation_history, 'research_brief': research_brief_text, 'research_country': research_country, 'doc_type': doc_type, 'instrument_type': instrument_type, 'temporal_context': temporal_context, 'process_type': process_type if is_impl else None, 'country_classification': country_classification, 'context_flags': context_flags, 'sector_context': sector_context, 'change_types': change_types, 'prior_actions': prior_actions, 'dlis': dlis, 'country_set': country_set, 'mpa_context': mpa_context, 'country_scope': _cscope_x, 'is_mpa': _is_mpa_x, 'review_mode': review_mode, 'active_lenses': lens_context_s1['active_lenses'], 'lens_warnings': lens_context_s1['warnings'], 'lens_evidence': lens_evidence_s1, 'lens_context_sources': lens_context_sources})}\n\n"
+                yield f"data: {json.dumps({'stage_done': 1, 'result': stage1_display, 'history': conversation_history, 'research_brief': research_brief_text, 'research_country': research_country, 'climate_research': climate_research, 'doc_type': doc_type, 'instrument_type': instrument_type, 'temporal_context': temporal_context, 'process_type': process_type if is_impl else None, 'country_classification': country_classification, 'context_flags': context_flags, 'sector_context': sector_context, 'change_types': change_types, 'prior_actions': prior_actions, 'dlis': dlis, 'country_set': country_set, 'mpa_context': mpa_context, 'country_scope': _cscope_x, 'is_mpa': _is_mpa_x, 'review_mode': review_mode, 'active_lenses': lens_context_s1['active_lenses'], 'lens_warnings': lens_context_s1['warnings'], 'lens_evidence': lens_evidence_s1, 'lens_context_sources': lens_context_sources})}\n\n"
 
                 # ════════════════════════════════════════════════════════════
                 # STAGE 2 — FCV Assessment

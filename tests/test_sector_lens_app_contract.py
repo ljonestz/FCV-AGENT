@@ -1214,3 +1214,45 @@ def test_core_only_stage3_keeps_four_to_five_rule():
     assert context["prompt"] == ""
     assert "4-5 priorities total" in app_module.DEFAULT_PROMPTS["3"]
     assert "Climate-FCV Nexus" in app_module.DEFAULT_PROMPTS["2"]
+
+
+def test_climate_active_research_plan_balances_core_and_climate():
+    plan = app_module.build_stage1_research_plan(
+        active_lens_ids=["climate"],
+        country="South Sudan",
+        sector="Natural resources",
+        doc_parts=[{
+            "label": "PROJECT DOCUMENT",
+            "name": "Concept Note",
+            "raw_text": (
+                "Sites: Upper Nile and Jonglei. "
+                "The project rehabilitates landing sites and conservancies."
+            ),
+        }],
+    )
+
+    assert plan["core"] == {"max_tokens": 4000, "max_uses": 3}
+    assert plan["climate"]["enabled"] is True
+    assert "Upper Nile" in plan["project_profile"]["document_excerpt"]
+    assert plan["project_profile"]["documents"] == ["Concept Note"]
+
+
+def test_core_only_research_plan_preserves_current_budget():
+    plan = app_module.build_stage1_research_plan(
+        active_lens_ids=[],
+        country="Exampleland",
+        sector="Water",
+        doc_parts=[],
+    )
+
+    assert plan["core"] == {"max_tokens": 5500, "max_uses": 4}
+    assert plan["climate"]["enabled"] is False
+    assert plan["project_profile"]["document_excerpt"] == ""
+
+
+def test_express_and_step_routes_emit_climate_research_context():
+    source = Path(app_module.__file__).read_text(encoding="utf-8")
+
+    assert source.count("'climate_research': climate_research") >= 2
+    assert source.count("format_climate_research_context(climate_research)") >= 2
+    assert source.count("_iter_stage1_research(research_plan)") >= 2

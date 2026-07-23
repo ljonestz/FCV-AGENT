@@ -2455,7 +2455,7 @@
   let countryClassification={};
   let contextFlags={};
   let sectorContext={};
-  let lensCatalogue=[],lensSuggestions=[],activeLenses=[],resolvedLensVersions={},lensDiagnostic={},lensContextSources=[],lensSelectionTouched=false,lensSelectionLocked=false;
+  let lensCatalogue=[],lensSuggestions=[],activeLenses=[],resolvedLensVersions={},lensDiagnostic={},lensContextSources=[],climateResearch={},lensSelectionTouched=false,lensSelectionLocked=false;
   let stageAppliedSnippets=[];
   let sbsTimerInterval=null,sbsMessageInterval=null,sbsStartTime=null,sbsMessageIdx=0;
   // Stage 3 (Recommendations) state is declared in the Stage 3 section below
@@ -2499,7 +2499,7 @@
     if(idx>=0){activeLenses.splice(idx,1);delete resolvedLensVersions[id];changed=true;}
     else if(activeLenses.length<2){activeLenses.push(id);changed=true;}
     else showLensWarnings([{message:'Remove one active lens before selecting another.'}]);
-    if(changed){lensDiagnostic={};lensContextSources=[];}
+    if(changed){lensDiagnostic={};lensContextSources=[];climateResearch={};}
     renderLensSelector();
   }
 
@@ -2839,6 +2839,7 @@
       resolvedLensVersions=savedLensState.lensVersions?{...savedLensState.lensVersions}:{};
       lensDiagnostic=savedLensState.lensDiagnostic||{};
       lensContextSources=Array.isArray(savedLensState.lensContextSources)?savedLensState.lensContextSources:[];
+      climateResearch=savedLensState.climateResearch||{};
       // If Stage 3 is present the run completed — clean up and do nothing
       if(outputs[3]){localStorage.removeItem('fcv_express_stageOutputs');localStorage.removeItem('fcv_express_stageHists');localStorage.removeItem('fcv_express_lensState');return;}
       // Partial state: at least Stage 1 exists but Stage 3 does not
@@ -2904,7 +2905,8 @@
       activeLenses: activeLenses,
       lensVersions: lensVersions(),
       lensDiagnostic: lensDiagnostic,
-      lensContextSources: lensContextSources
+      lensContextSources: lensContextSources,
+      climateResearch: climateResearch
     };
     const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
     const url = URL.createObjectURL(blob);
@@ -2961,6 +2963,7 @@
         resolvedLensVersions = state.version >= 3 && state.lensVersions ? {...state.lensVersions} : {};
         lensDiagnostic = state.version >= 3 && state.lensDiagnostic ? state.lensDiagnostic : {};
         lensContextSources = state.version >= 3 && Array.isArray(state.lensContextSources) ? state.lensContextSources : [];
+        climateResearch = state.version >= 3 && state.climateResearch ? state.climateResearch : {};
         const currentVersions=Object.fromEntries(lensCatalogue.map(l=>[l.id,l.version]));
         const staleLens=state.version>=3&&state.currentStage<3&&activeLenses.some(id=>!state.lensVersions||!state.lensVersions[id]||currentVersions[id]!==state.lensVersions[id]);
         if(staleLens){hist=[];curS=0;stageOutputs={};stageHists={};activeLenses=[];resolvedLensVersions={};lensDiagnostic={};lensContextSources=[];lensSelectionLocked=false;renderLensSelector();document.getElementById('upload-panel').style.display='block';document.getElementById('analysis-panel').style.display='none';alert('A selected sector lens is unavailable or has been updated. Re-upload the project document and rerun from Stage 1 to avoid mixing module versions.');return;}
@@ -3446,7 +3449,7 @@
             if(p.research_status==='extracting_country') rsMsg='Identifying project country\u2026';
             else if(p.research_status==='searching'&&p.country){researchCountry=p.country;rsMsg='Searching FCV context: '+esc(p.country)+'\u2026';}
             else if(p.research_status==='cached'&&p.country){researchCountry=p.country;rsMsg='Loading cached FCV research\u2026';}
-            else if(p.research_status==='complete'){if(p.brief)researchBrief=p.brief;if(p.country)researchCountry=p.country;rsMsg='Research complete \u2014 generating analysis\u2026';}
+            else if(p.research_status==='complete'){if(p.brief)researchBrief=p.brief;if(p.country)researchCountry=p.country;if(p.climate_research)climateResearch=p.climate_research;rsMsg='Research complete \u2014 generating analysis\u2026';}
             else if(p.research_status==='error'){rsMsg='Web research unavailable \u2014 proceeding\u2026';}
             if(rsMsg){const epSum=document.getElementById('ep-summary-1');if(epSum)epSum.innerHTML='<div class="ep-stage-spinner"><div class="ep-spinner-dot"></div><div class="ep-spinner-dot"></div><div class="ep-spinner-dot"></div><span>'+rsMsg+'</span></div>';}
           }
@@ -3475,6 +3478,7 @@
           else if(p.stage_done){
             const sn=p.stage_done;
             if(Array.isArray(p.lens_context_sources))lensContextSources=p.lens_context_sources;
+            if(p.climate_research)climateResearch=p.climate_research;
 
             if(sn===1){
               stageOutputs[1]=p.result;
@@ -3669,7 +3673,7 @@
     if(analysisMode!=='express')startSbsLoadingTimers(stage);
 
     try{
-      const payload={stage,history:hist,user_message:followOn||'',document_type:docType,instrument_type:instrumentType,temporal_context:temporalContext,change_types:changeTypes,country_scope:countryScope,is_mpa:isMpa,review_mode:reviewMode,process_type:processType,user_context:(document.getElementById('user-context')?.value||'').trim(),uploaded_doc_names:[...pF.map(f=>f.name),...pkF.map(f=>f.name),...cF.map(f=>f.name)],country_classification:countryClassification,context_flags:contextFlags,sector_context:sectorContext,priority_questions:(priorityQuestions=getPriorityQuestions()),active_lenses:activeLenses,lens_versions:lensVersions(),lens_diagnostic:lensDiagnostic,lens_context_sources:lensContextSources};
+      const payload={stage,history:hist,user_message:followOn||'',document_type:docType,instrument_type:instrumentType,temporal_context:temporalContext,change_types:changeTypes,country_scope:countryScope,is_mpa:isMpa,review_mode:reviewMode,process_type:processType,user_context:(document.getElementById('user-context')?.value||'').trim(),uploaded_doc_names:[...pF.map(f=>f.name),...pkF.map(f=>f.name),...cF.map(f=>f.name)],country_classification:countryClassification,context_flags:contextFlags,sector_context:sectorContext,priority_questions:(priorityQuestions=getPriorityQuestions()),active_lenses:activeLenses,lens_versions:lensVersions(),lens_diagnostic:lensDiagnostic,lens_context_sources:lensContextSources,climate_research:climateResearch};
       // Attach session prompt override if user has edited this stage's prompt
       if(sessionPrompts[stage]){
         payload.prompt_override = sessionPrompts[stage];
@@ -3785,6 +3789,7 @@
             if(p.done){clearTimeout(_stageTimeoutId);clearSbsLoadingTimers();hist=p.history||hist;curS=stage;stageOutputs[stage]=p.result;stageHists[stage]=hist.slice();updateSessionBar();
               if(p.active_lenses){activeLenses=p.active_lenses.map(l=>l.id);resolvedLensVersions=Object.fromEntries(p.active_lenses.map(l=>[l.id,l.version]));}
               if(Array.isArray(p.lens_context_sources))lensContextSources=p.lens_context_sources;
+              if(p.climate_research)climateResearch=p.climate_research;
               showLensWarnings(p.lens_warnings);
               // Stage 2: capture ratings and under_hood data
               if(stage===2){
@@ -4785,7 +4790,7 @@
     try{localStorage.setItem('fcv_express_stageOutputs',JSON.stringify(outputs));}catch(e){}
     try{localStorage.setItem('fcv_express_stageHists',JSON.stringify(hists));}catch(e){}
     try{localStorage.setItem('fcv_express_curS',curStage);}catch(e){}
-    try{localStorage.setItem('fcv_express_lensState',JSON.stringify({activeLenses,lensVersions:lensVersions(),lensDiagnostic,lensContextSources}));}catch(e){}
+    try{localStorage.setItem('fcv_express_lensState',JSON.stringify({activeLenses,lensVersions:lensVersions(),lensDiagnostic,lensContextSources,climateResearch}));}catch(e){}
   }
 
   function showExpressProgress(){
@@ -4951,6 +4956,7 @@
       active_lenses: activeLenses.map((id,index)=>({id,version:lensVersions()[id]||'',position:index===0?'primary':'secondary'})),
       lens_diagnostic: lensDiagnostic || {},
       lens_context_sources: lensContextSources || [],
+      climate_research: climateResearch || {},
       metadata: {
         date_str: dateStr,
         classification_category: cat,
@@ -5243,7 +5249,7 @@ ${body}
 
   function reset(){
     pF=[];cF=[];hist=[];curS=0;busy=false;stageOutputs={};stageHists={};researchBrief='';researchCountry='';priorityQuestions=[];focusQuestionsResult=null;pqPanelEnabled=true;
-    activeLenses=[];resolvedLensVersions={};lensSuggestions=[];lensDiagnostic={};lensContextSources=[];lensSelectionTouched=false;lensSelectionLocked=false;renderLensSelector();
+    activeLenses=[];resolvedLensVersions={};lensSuggestions=[];lensDiagnostic={};lensContextSources=[];climateResearch={};lensSelectionTouched=false;lensSelectionLocked=false;renderLensSelector();
     { const _pc=document.getElementById('pq-confirm'); if(_pc){_pc.innerHTML='';_pc.style.display='none';} }
     ['stage2_timestamp','stage3_timestamp','stage3_consistency_dismissed'].forEach(k=>localStorage.removeItem(k));
     document.getElementById('upload-panel').style.display='block';

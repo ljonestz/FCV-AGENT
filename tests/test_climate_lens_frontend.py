@@ -207,3 +207,13 @@ def test_express_mode_surfaces_stage2_structured_diagnostic_failures():
     assert "p.parse_error" in stage2_handler
     assert "p.parse_error_message" in stage2_handler
     assert "showLensWarnings" in stage2_handler
+
+
+def test_frontend_persists_climate_research_across_stages_and_reports():
+    source = INDEX.read_text(encoding="utf-8")
+
+    assert "climateResearch={}" in source
+    assert "if(p.climate_research)climateResearch=p.climate_research" in source
+    assert "climate_research:climateResearch" in source
+    assert "climate_research: climateResearch || {}" in source
+    assert "lensDiagnostic={};lensContextSources=[];climateResearch={}" in source
