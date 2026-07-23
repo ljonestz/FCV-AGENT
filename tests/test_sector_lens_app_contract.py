@@ -1582,4 +1582,5 @@ def test_express_and_step_routes_emit_climate_research_context():
 
     assert source.count("'climate_research': climate_research") >= 2
     assert source.count("format_climate_research_context(climate_research)") >= 2
-    assert source.count("_iter_stage1_research(research_plan)") >= 2
+    assert source.count("_iter_stage1_research(") >= 3
+    assert source.count("research_plan, assessment_id") >= 2

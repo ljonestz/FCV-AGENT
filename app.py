@@ -1155,6 +1155,66 @@ def lens_diagnostic_failure_message(
     return ''
 
 
+def climate_specificity_structure(
+    response_text: str,
+    diagnostic: dict[str, Any],
+    status: str = "initial",
+) -> dict[str, Any]:
+    """Count raw and accepted Climate pathways without retaining their text."""
+
+    raw_count = 0
+    match = re.search(
+        re.escape(LENS_DIAGNOSTIC_START)
+        + r"(.*?)"
+        + re.escape(LENS_DIAGNOSTIC_END),
+        response_text or "",
+        re.DOTALL,
+    )
+    if match:
+        try:
+            payload = json.loads(match.group(1).strip())
+        except (json.JSONDecodeError, TypeError, ValueError):
+            payload = {}
+        for lens in payload.get("lenses", []) if isinstance(
+            payload, dict
+        ) else []:
+            if not isinstance(lens, dict) or lens.get("lens_id") != "climate":
+                continue
+            for interaction in lens.get("interaction_readout", []):
+                if not isinstance(interaction, dict):
+                    continue
+                pathways = interaction.get("pathways", [])
+                if isinstance(pathways, list):
+                    raw_count += sum(
+                        1 for item in pathways if isinstance(item, dict)
+                    )
+    accepted = 0
+    horizon_counts = {
+        value: 0 for value in _CLIMATE_TELEMETRY_HORIZONS
+    }
+    diagnostic = diagnostic if isinstance(diagnostic, dict) else {}
+    for lens in diagnostic.get("lenses", []):
+        if not isinstance(lens, dict) or lens.get("lens_id") != "climate":
+            continue
+        for interaction in lens.get("interaction_readout", []):
+            if not isinstance(interaction, dict):
+                continue
+            for pathway in interaction.get("pathways", []):
+                if not isinstance(pathway, dict):
+                    continue
+                accepted += 1
+                horizons = pathway.get("time_horizons", [])
+                for horizon in horizons if isinstance(horizons, list) else []:
+                    if horizon in horizon_counts:
+                        horizon_counts[horizon] += 1
+    return {
+        "status": status,
+        "accepted": min(accepted, 99),
+        "rejected": min(max(raw_count - accepted, 0), 99),
+        "horizon_counts": horizon_counts,
+    }
+
+
 def lens_recovery_structure(
     response_text: str,
     diagnostic: dict[str, Any],
@@ -1398,6 +1458,15 @@ def extract_or_repair_lens_diagnostic(
         strict_required_fields=True,
     )
     failure = lens_diagnostic_failure_message(diagnostic, active_ids)
+    if "climate" in active_ids:
+        log_climate_specificity_summary(
+            assessment_id,
+            climate_specificity_structure(
+                stage2_output,
+                diagnostic,
+                status="invalid" if failure else "initial",
+            ),
+        )
     if not failure:
         return diagnostic, False, ''
     app.logger.warning(
@@ -1409,6 +1478,15 @@ def extract_or_repair_lens_diagnostic(
         assessment_id=assessment_id,
     )
     if recovered:
+        if "climate" in active_ids:
+            log_climate_specificity_summary(
+                assessment_id,
+                climate_specificity_structure(
+                    "",
+                    repaired,
+                    status="recovered",
+                ),
+            )
         app.logger.info(
             'Stage 2 lens diagnostic recovered: assessment_id=%s',
             assessment_id or 'unknown',
@@ -5876,13 +5954,147 @@ def run_fcv_web_research(
         }
 
 
+_CLIMATE_TELEMETRY_SOURCE_TYPES = {
+    "ccdr", "world-bank", "un", "government", "scientific",
+    "specialist", "current-operations",
+}
+_CLIMATE_TELEMETRY_HORIZONS = {
+    "current-near-term", "project-lifetime", "asset-system-lifetime",
+}
+
+
+def _telemetry_count(value: Any, limit: int = 999) -> int:
+    """Return a bounded non-negative count without logging raw input."""
+
+    try:
+        return min(max(int(value or 0), 0), limit)
+    except (TypeError, ValueError):
+        return 0
+
+
+def log_climate_research_summary(
+    assessment_id: str,
+    bundle: dict[str, Any],
+    elapsed_ms: int,
+) -> None:
+    """Log only allowlisted structural facts about Climate research."""
+
+    bundle = bundle if isinstance(bundle, dict) else {}
+    sources = bundle.get("sources", [])
+    claims = bundle.get("claims", [])
+    sources = sources if isinstance(sources, list) else []
+    claims = claims if isinstance(claims, list) else []
+    source_types = sorted({
+        str(item.get("source_type"))
+        for item in sources
+        if isinstance(item, dict)
+        and item.get("source_type") in _CLIMATE_TELEMETRY_SOURCE_TYPES
+    })
+    horizon_counts = {value: 0 for value in _CLIMATE_TELEMETRY_HORIZONS}
+    for claim in claims:
+        if not isinstance(claim, dict):
+            continue
+        horizons = claim.get("time_horizons", [])
+        for horizon in horizons if isinstance(horizons, list) else []:
+            if horizon in horizon_counts:
+                horizon_counts[horizon] += 1
+    horizon_text = ",".join(
+        f"{key}:{_telemetry_count(horizon_counts[key])}"
+        for key in sorted(horizon_counts)
+        if horizon_counts[key]
+    ) or "none"
+    status = (
+        bundle.get("status")
+        if bundle.get("status") in {"complete", "partial", "failed"}
+        else "failed"
+    )
+    app.logger.info(
+        "Climate research summary assessment_id=%s status=%s attempts=%d "
+        "elapsed_ms=%d sources=%d claims=%d source_types=%s horizons=%s",
+        assessment_id or "unknown",
+        status,
+        _telemetry_count(bundle.get("attempts"), 2),
+        _telemetry_count(elapsed_ms, 3_600_000),
+        min(len(sources), 99),
+        min(len(claims), 99),
+        ",".join(source_types) or "none",
+        horizon_text,
+    )
+
+
+def log_climate_specificity_summary(
+    assessment_id: str,
+    summary: dict[str, Any],
+) -> None:
+    """Log pathway acceptance counts without pathway or project content."""
+
+    summary = summary if isinstance(summary, dict) else {}
+    raw_horizons = summary.get("horizon_counts", {})
+    raw_horizons = raw_horizons if isinstance(raw_horizons, dict) else {}
+    horizon_text = ",".join(
+        f"{key}:{_telemetry_count(raw_horizons.get(key))}"
+        for key in sorted(_CLIMATE_TELEMETRY_HORIZONS)
+        if _telemetry_count(raw_horizons.get(key))
+    ) or "none"
+    status = (
+        summary.get("status")
+        if summary.get("status") in {"initial", "recovered", "invalid"}
+        else "initial"
+    )
+    app.logger.info(
+        "Climate specificity summary assessment_id=%s status=%s "
+        "accepted=%d rejected=%d horizons=%s",
+        assessment_id or "unknown",
+        status,
+        _telemetry_count(summary.get("accepted"), 99),
+        _telemetry_count(summary.get("rejected"), 99),
+        horizon_text,
+    )
+
+
+def log_climate_priority_summary(
+    assessment_id: str,
+    priorities: list[dict[str, Any]],
+) -> None:
+    """Log only counts of validated Climate priority linkage states."""
+
+    linked = 0
+    no_material = 0
+    for priority in priorities if isinstance(priorities, list) else []:
+        links = priority.get("climate_links", {}) if isinstance(
+            priority, dict
+        ) else {}
+        status = links.get("status") if isinstance(links, dict) else ""
+        if status == "linked":
+            linked += 1
+        elif status == "no-material-pathway":
+            no_material += 1
+    app.logger.info(
+        "Climate priority summary assessment_id=%s linked=%d no_material=%d",
+        assessment_id or "unknown",
+        min(linked, 99),
+        min(no_material, 99),
+    )
+
+
 def run_climate_web_research(
     country: str,
     sector: str,
     project_profile: dict[str, Any],
     api_client,
+    assessment_id: str = "",
 ) -> dict[str, Any]:
     """Run one bounded Climate research request and one narrower retry."""
+
+    started = time.perf_counter()
+
+    def finish(bundle: dict[str, Any]) -> dict[str, Any]:
+        log_climate_research_summary(
+            assessment_id,
+            bundle,
+            elapsed_ms=int((time.perf_counter() - started) * 1000),
+        )
+        return bundle
 
     for attempt, narrow in ((1, False), (2, True)):
         prompt = build_climate_research_prompt(
@@ -5911,20 +6123,20 @@ def run_climate_web_research(
             _, bundle = extract_climate_research_bundle(text)
             bundle["attempts"] = attempt
             if bundle["claims"]:
-                return bundle
+                return finish(bundle)
         except anthropic.APITimeoutError:
             if attempt == 1:
                 continue
             break
         except Exception:
             break
-    return normalize_climate_research_bundle({
+    return finish(normalize_climate_research_bundle({
         "status": "failed",
         "attempts": 2,
         "failure_reason": (
             "Dedicated Climate-FCV research could not be completed."
         ),
-    })
+    }))
 
 
 def should_include_ccdr_context(
@@ -5988,7 +6200,10 @@ def build_stage1_research_plan(
     }
 
 
-def _iter_stage1_research(research_plan: dict[str, Any]):
+def _iter_stage1_research(
+    research_plan: dict[str, Any],
+    assessment_id: str = "",
+):
     """Run core and optional Climate research concurrently with keepalives."""
 
     country = research_plan["country"]
@@ -6023,6 +6238,7 @@ def _iter_stage1_research(research_plan: dict[str, Any]):
                 sector,
                 research_plan["project_profile"],
                 get_research_client(),
+                assessment_id,
             )] = "climate"
 
         while futures:
@@ -6819,7 +7035,9 @@ def run_stage():
                             doc_parts,
                         )
                         yield f"data: {json.dumps({'research_status': 'searching', 'country': research_country})}\n\n"
-                        for research_event in _iter_stage1_research(research_plan):
+                        for research_event in _iter_stage1_research(
+                            research_plan, assessment_id
+                        ):
                             if 'result' not in research_event:
                                 yield f"data: {json.dumps(research_event)}\n\n"
                                 continue
@@ -7008,6 +7226,14 @@ def run_stage():
                         parsed.get('priorities', []),
                         lens_context.get('lens_diagnostic', {}),
                     )
+                    if "climate" in {
+                        item["id"]
+                        for item in lens_context["active_lenses"]
+                    }:
+                        log_climate_priority_summary(
+                            assessment_id,
+                            parsed.get("priorities", []),
+                        )
                     priorities = parsed.get('priorities', [])
                     fcv_rating = parsed.get('fcv_rating', '')
                     fcv_responsiveness_rating = parsed.get('fcv_responsiveness_rating', '')
@@ -7419,7 +7645,9 @@ def run_express():
                         doc_parts,
                     )
                     yield f"data: {json.dumps({'research_status': 'searching', 'country': research_country})}\n\n"
-                    for research_event in _iter_stage1_research(research_plan):
+                    for research_event in _iter_stage1_research(
+                        research_plan, assessment_id
+                    ):
                         if 'result' not in research_event:
                             yield f"data: {json.dumps(research_event)}\n\n"
                             continue
@@ -7961,6 +8189,13 @@ def run_express():
                     parsed.get('priorities', []),
                     lens_context_s3.get('lens_diagnostic', {}),
                 )
+                if "climate" in {
+                    item["id"] for item in lens_context_s3["active_lenses"]
+                }:
+                    log_climate_priority_summary(
+                        assessment_id,
+                        parsed.get("priorities", []),
+                    )
                 horizon = extract_horizon_considerations(stage3_output)
                 stage3_output_clean = strip_lens_blocks(clean_stage3_output(stage3_output))
                 header = DO_NO_HARM_HEADER.format(date=date.today().strftime('%d %B %Y'))

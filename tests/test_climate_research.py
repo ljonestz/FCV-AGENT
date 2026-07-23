@@ -205,3 +205,74 @@ def test_climate_research_stops_after_one_failed_retry():
     assert result["status"] == "failed"
     assert result["attempts"] == 2
     assert len(client.calls) == 2
+
+
+def test_climate_research_telemetry_is_structural_and_private(caplog):
+    sentinel = "SECRET PROJECT CLAIM MUST NOT LEAK"
+    bundle = _valid_bundle()
+    bundle["claims"][0]["claim"] = sentinel
+    bundle["sources"][0]["title"] = "SECRET SOURCE TITLE"
+    bundle["sources"][0]["url"] = "https://secret.example/private"
+
+    with caplog.at_level("INFO", logger=app_module.app.logger.name):
+        app_module.log_climate_research_summary(
+            "assessment-1", bundle, elapsed_ms=1234
+        )
+
+    assert "assessment-1" in caplog.text
+    assert "claims=1" in caplog.text
+    assert "sources=1" in caplog.text
+    assert "source_types=ccdr" in caplog.text
+    assert "elapsed_ms=1234" in caplog.text
+    assert sentinel not in caplog.text
+    assert "SECRET SOURCE TITLE" not in caplog.text
+    assert "secret.example" not in caplog.text
+
+
+def test_specificity_telemetry_does_not_log_rejected_pathway_text(caplog):
+    sentinel = "SECRET GENERIC PATHWAY"
+
+    with caplog.at_level("INFO", logger=app_module.app.logger.name):
+        app_module.log_climate_specificity_summary(
+            "assessment-1",
+            {
+                "accepted": 2,
+                "rejected": 1,
+                "horizon_counts": {
+                    "current-near-term": 1,
+                    "project-lifetime": 2,
+                },
+                "rejected_text": sentinel,
+            },
+        )
+
+    assert "accepted=2" in caplog.text
+    assert "rejected=1" in caplog.text
+    assert "project-lifetime:2" in caplog.text
+    assert sentinel not in caplog.text
+
+
+def test_priority_link_telemetry_logs_counts_not_priority_content(caplog):
+    sentinel = "SECRET PRIORITY CONTRIBUTION"
+    priorities = [{
+        "title": "SECRET PRIORITY TITLE",
+        "climate_links": {
+            "status": "linked",
+            "contribution": sentinel,
+        },
+    }, {
+        "title": "ANOTHER SECRET TITLE",
+        "climate_links": {
+            "status": "no-material-pathway",
+            "reason": "SECRET REASON",
+        },
+    }]
+
+    with caplog.at_level("INFO", logger=app_module.app.logger.name):
+        app_module.log_climate_priority_summary("assessment-1", priorities)
+
+    assert "linked=1" in caplog.text
+    assert "no_material=1" in caplog.text
+    assert sentinel not in caplog.text
+    assert "SECRET PRIORITY TITLE" not in caplog.text
+    assert "SECRET REASON" not in caplog.text
