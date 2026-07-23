@@ -1,6 +1,7 @@
 """Tests for bounded, validated Climate-FCV research context."""
 
 import json
+from pathlib import Path
 from types import SimpleNamespace
 
 import anthropic
@@ -14,6 +15,14 @@ from sector_lenses.research import (
     extract_climate_research_bundle,
     format_climate_research_context,
     normalize_climate_research_bundle,
+)
+
+
+SOUTH_SUDAN_FIXTURE = (
+    Path(__file__).parent
+    / "fixtures"
+    / "climate"
+    / "south_sudan_dual_use.json"
 )
 
 
@@ -110,6 +119,27 @@ def test_climate_research_bundle_is_bounded():
     result = normalize_climate_research_bundle(raw)
 
     assert len(result["claims"]) == 12
+
+
+def test_south_sudan_research_fixture_preserves_specific_horizons():
+    fixture = json.loads(SOUTH_SUDAN_FIXTURE.read_text(encoding="utf-8"))
+
+    result = normalize_climate_research_bundle(
+        fixture["research_bundle"]
+    )
+
+    assert result["status"] == "complete"
+    assert len(result["claims"]) == 3
+    assert {
+        horizon
+        for claim in result["claims"]
+        for horizon in claim["time_horizons"]
+    } == set(fixture["expected"]["time_horizons"])
+    assert {
+        element
+        for claim in result["claims"]
+        for element in claim["project_elements"]
+    } == set(fixture["project_elements"])
 
 
 class _SequencedResearchClient:

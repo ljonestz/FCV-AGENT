@@ -1,11 +1,18 @@
 """Frontend contracts for optional Climate selection and diagnostic readouts."""
 
+import json
 import re
 import subprocess
 from pathlib import Path
 
 
 INDEX = Path(__file__).resolve().parents[1] / "index.html"
+SOUTH_SUDAN_FIXTURE = (
+    Path(__file__).parent
+    / "fixtures"
+    / "climate"
+    / "south_sudan_dual_use.json"
+)
 
 
 def _extract_js_function(source: str, name: str) -> str:
@@ -155,6 +162,92 @@ if(!renderClimateModuleNotice(low,false).includes('limited climate materiality')
 if(renderClimateDividendSynthesis(low,[])!=='') throw new Error('empty low synthesis rendered');
 const errorNotice=renderClimateModuleNotice(null,true);
 if(!errorNotice.includes('could not be produced')) throw new Error('safe failure missing');
+"""
+    result = subprocess.run(
+        ["node", "-e", script], capture_output=True, text=True, check=False
+    )
+    assert result.returncode == 0, result.stderr
+
+
+def test_south_sudan_shared_html_renders_specific_dual_use_output():
+    source = INDEX.read_text(encoding="utf-8")
+    fixture = json.loads(SOUTH_SUDAN_FIXTURE.read_text(encoding="utf-8"))
+    lens = fixture["diagnostic"]["lenses"][0]
+    priorities = fixture["stage3_block"]["priorities"]
+    helpers = "\n".join(_extract_js_function(source, name) for name in (
+        "renderHorizonBadge",
+        "renderClimatePathwayStrip",
+        "renderClimateInteractions",
+        "renderClimateDividendSynthesis",
+        "climateContributionZone",
+        "renderPriorityClimateContribution",
+    ))
+    script = f"""
+const esc = value => String(value ?? '')
+  .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+  .replace(/\"/g,'&quot;').replace(/'/g,'&#039;');
+{helpers}
+const lens={json.dumps(lens)};
+const priorities={json.dumps(priorities)};
+const sharedHtml=renderClimateInteractions(lens)
+  +renderClimateDividendSynthesis(lens,priorities)
+  +priorities.map(renderPriorityClimateContribution).join('');
+for(const expected of [
+  'Landing-site rehabilitation','Upper Nile','Seasonal users',
+  'Current / near term','Project lifetime','Asset/system lifetime',
+  'Priority 1','Climate, peace and social dividend contribution',
+  'No material dividend pathway identified'
+]){{
+  if(!sharedHtml.includes(expected)) throw new Error('missing '+expected);
+}}
+if(sharedHtml.includes('climate-dividend-card')) throw new Error('old cards returned');
+if((sharedHtml.match(/causal-strip/g)||[]).length<2) throw new Error('missing causal strips');
+"""
+    result = subprocess.run(
+        ["node", "-e", script], capture_output=True, text=True, check=False
+    )
+    assert result.returncode == 0, result.stderr
+
+
+def test_low_materiality_shared_html_keeps_compact_path_and_no_material_panel():
+    source = INDEX.read_text(encoding="utf-8")
+    helpers = "\n".join(_extract_js_function(source, name) for name in (
+        "renderHorizonBadge",
+        "renderClimatePathwayStrip",
+        "renderClimateInteractions",
+        "renderClimateDividendSynthesis",
+        "climateContributionZone",
+        "renderPriorityClimateContribution",
+    ))
+    script = f"""
+const esc = value => String(value ?? '')
+  .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+  .replace(/\"/g,'&quot;').replace(/'/g,'&#039;');
+{helpers}
+const low={{
+  materiality_level:'low',
+  interaction_readout:[{{direction_id:'climate-fcv-on-project',
+    summary:'A limited seasonal access interaction.',
+    pathways:[{{pathway_id:'climate-fcv-on-project-1',
+      pressure:'Seasonal rainfall',mechanism:'Short access interruptions',
+      project_implication:'One site may face a brief delay.',
+      design_response:'Monitor the seasonal work window.',
+      project_elements:['One landing site'],geographies:['Project area'],
+      affected_groups:[],systems_or_assets:[],
+      time_horizons:['current-near-term'],research_claim_ids:[],
+      confidence:'low',evidence_gap:'Site timing is unconfirmed.'}}]}}],
+  readout_sections:[],additional_pathways:[]
+}};
+const priority={{title:'Core safeguard',climate_links:{{
+  status:'no-material-pathway',reason:'No distinct Climate-FCV pathway.'
+}}}};
+const html=renderClimateInteractions(low)
+  +renderClimateDividendSynthesis(low,[priority])
+  +renderPriorityClimateContribution(priority);
+if((html.match(/causal-strip/g)||[]).length!==1) throw new Error(html);
+if(!html.includes('Current / near term')) throw new Error(html);
+if(!html.includes('No material dividend pathway identified')) throw new Error(html);
+if(html.includes('Climate, peace and social dividends</div>')) throw new Error(html);
 """
     result = subprocess.run(
         ["node", "-e", script], capture_output=True, text=True, check=False

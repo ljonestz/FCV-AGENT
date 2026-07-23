@@ -657,11 +657,9 @@ def _bounded_stage3_lenses(
     for raw in diagnostic.get("lenses", []):
         compact = {
             "lens_id": raw.get("lens_id", ""),
-            "applicability": raw.get("applicability", "possible"),
             "materiality_level": raw.get("materiality_level", ""),
-            "materiality_summary": raw.get("materiality_summary", "")[:400],
-            "analysis_emphasis": raw.get("analysis_emphasis", [])[:5],
-            "source_ids": raw.get("source_ids", [])[:10],
+            "materiality_summary": raw.get("materiality_summary", "")[:120],
+            "analysis_emphasis": raw.get("analysis_emphasis", [])[:2],
             "interaction_readout": [],
             "readout_sections": [],
             "additional_pathways": [],
@@ -680,55 +678,71 @@ def _bounded_stage3_lenses(
             compact_interaction = {
                 "direction_id": raw_interaction.get("direction_id", ""),
                 "summary": raw_interaction.get("summary", "")[:120],
-                "source_ids": raw_interaction.get("source_ids", [])[:10],
                 "pathways": [],
             }
             compact["interaction_readout"].append(compact_interaction)
             if not fits(selected):
-                compact["interaction_readout"].pop()
+                compact_interaction["summary"] = (
+                    compact_interaction["summary"][:35]
+                )
                 truncated = True
-                break
+                if not fits(selected):
+                    compact["interaction_readout"].pop()
+                    break
             for pathway in raw_interaction.get("pathways", [])[:2]:
                 compact_pathway = {
                     "pathway_id": pathway.get("pathway_id", ""),
-                    "pressure": pathway.get("pressure", "")[:60],
-                    "mechanism": pathway.get("mechanism", "")[:70],
+                    "pressure": pathway.get("pressure", "")[:35],
+                    "mechanism": pathway.get("mechanism", "")[:45],
                     "project_implication": pathway.get(
                         "project_implication", ""
-                    )[:80],
-                    "design_response": pathway.get("design_response", "")[:80],
+                    )[:50],
+                    "design_response": pathway.get("design_response", "")[:50],
                     "project_elements": [
-                        value[:60] for value in pathway.get(
+                        value[:40] for value in pathway.get(
                             "project_elements", []
                         )[:1]
                     ],
                     "geographies": [
-                        value[:50] for value in pathway.get(
+                        value[:40] for value in pathway.get(
                             "geographies", []
                         )[:1]
                     ],
                     "affected_groups": [
-                        value[:50] for value in pathway.get(
+                        value[:40] for value in pathway.get(
                             "affected_groups", []
                         )[:1]
                     ],
                     "systems_or_assets": [
-                        value[:50] for value in pathway.get(
+                        value[:40] for value in pathway.get(
                             "systems_or_assets", []
                         )[:1]
-                    ],
+                    ] if not (
+                        pathway.get("geographies")
+                        or pathway.get("affected_groups")
+                    ) else [],
                     "time_horizons": pathway.get("time_horizons", [])[:3],
                     "research_claim_ids": pathway.get(
                         "research_claim_ids", []
-                    )[:2],
+                    )[:1],
                     "confidence": pathway.get("confidence", ""),
-                    "evidence_gap": pathway.get("evidence_gap", "")[:60],
+                    "evidence_gap": (
+                        ""
+                        if pathway.get("research_claim_ids")
+                        else pathway.get("evidence_gap", "")[:25]
+                    ),
                 }
                 compact_interaction["pathways"].append(compact_pathway)
                 if not fits(selected):
-                    compact_interaction["pathways"].pop()
-                    truncated = True
-                    break
+                    if len(compact_interaction["summary"]) > 35:
+                        compact_interaction["summary"] = (
+                            compact_interaction["summary"][:35]
+                        )
+                        truncated = True
+                    if not fits(selected):
+                        compact_interaction["pathways"].pop()
+                        truncated = True
+                        break
             if len(compact_interaction["pathways"]) < min(
                 len(raw_interaction.get("pathways", [])), 2
             ):
@@ -751,25 +765,29 @@ def _bounded_stage3_lenses(
                     ),
                     "item_id": raw_item.get("item_id", ""),
                     "status": raw_item.get("status", "potential"),
-                    "mechanism": raw_item.get("mechanism", "")[:240],
-                    "project_contribution": raw_item.get(
-                        "project_contribution", ""
-                    )[:240],
-                    "strengthening_action": raw_item.get(
-                        "strengthening_action", ""
-                    )[:240],
-                    "evidence": [
-                        value[:240] for value in raw_item.get("evidence", [])[:2]
-                    ],
-                    "evidence_gap": raw_item.get("evidence_gap", "")[:180],
-                    "trade_off": raw_item.get("trade_off", "")[:180],
-                    "source_ids": raw_item.get("source_ids", [])[:10],
                 }
                 compact_section["items"].append(compact_item)
                 if not fits(selected):
-                    compact_section["items"].pop()
-                    truncated = True
-                    break
+                    for interaction in compact["interaction_readout"]:
+                        if len(interaction.get("summary", "")) > 35:
+                            interaction["summary"] = interaction["summary"][:35]
+                            truncated = True
+                    if not fits(selected):
+                        compact_section["items"].pop()
+                        truncated = True
+                        break
+                for field, limit in (
+                    ("project_contribution", 70),
+                    ("strengthening_action", 70),
+                    ("trade_off", 45),
+                ):
+                    value = raw_item.get(field, "")[:limit]
+                    if not value:
+                        continue
+                    compact_item[field] = value
+                    if not fits(selected):
+                        compact_item.pop(field)
+                        truncated = True
             if not compact_section["items"]:
                 compact["readout_sections"].pop()
             if len(compact_section["items"]) < len(raw_section.get("items", [])):
@@ -799,6 +817,20 @@ def _bounded_stage3_lenses(
                 break
         if len(compact["additional_pathways"]) < len(
             raw.get("additional_pathways", [])
+        ):
+            truncated = True
+
+        compact["source_ids"] = []
+        for source_id in raw.get("source_ids", [])[:10]:
+            compact["source_ids"].append(source_id)
+            if not fits(selected):
+                compact["source_ids"].pop()
+                truncated = True
+                break
+        if not compact["source_ids"]:
+            compact.pop("source_ids")
+        if len(compact.get("source_ids", [])) < len(
+            raw.get("source_ids", [])
         ):
             truncated = True
 
@@ -928,13 +960,13 @@ def build_lens_stage_context(
         )
     elif selection.lenses and stage == 3:
         prefix = (
-            "Integrate applicable lens findings into the opening assessment, operational "
-            "context, strengths, gaps, and the single existing priority list. Produce a "
-            "maximum of five substantive priorities in total; no more than five substantive "
-            "priorities may be shown. The mix is not a quota and may contain more "
-            "Climate-linked, blended, or core priorities where evidence warrants. Rank by "
-            "severity, evidence, actionability, urgency, and FCV feasibility. Show overlaps "
-            "once, retain provenance, and do not create a separate score or priority list. "
+            "Integrate lens findings into the opening assessment, "
+            "operational context, strengths, gaps, and the single existing "
+            "priority list. Use a maximum of five substantive priorities; no "
+            "more than five substantive priorities may be shown. The mix is "
+            "not a quota and may contain more Climate-linked, blended, or core "
+            "priorities. Rank by severity, evidence, "
+            "actionability, and FCV feasibility. "
         )
         if "climate" in active_ids:
             climate_entry = next((
@@ -944,41 +976,37 @@ def build_lens_stage_context(
             climate_level = climate_entry.get("materiality_level", "low")
             if climate_level == "low":
                 prefix += (
-                    "For Low Climate-FCV materiality, state clearly that climate materiality is "
-                    "limited, retain a light climate emphasis, use a compact interaction readout, "
-                    "show a dividend only if one credible pathway exists, and create no forced "
-                    "standalone Climate priority. "
+                    "For Low materiality, state that Climate-FCV materiality is "
+                    "limited, use a light compact readout, show a dividend only "
+                    "for a credible pathway, and force no Climate priority. "
                 )
             else:
                 prefix += (
-                    "Use the same architecture at High and Medium materiality, with "
-                    "proportionate depth. "
+                    "Treat materiality as High, Medium, or Low; at High or "
+                    "Medium use proportionate depth. "
                 )
             prefix += (
-                "Treat materiality as High, Medium, or Low. "
-                "Preserve the full core FCV structure. Integrate material Climate-FCV evidence "
-                "into the bold opening assessment in the executive summary, operational "
-                "context, strengths, gaps, FCV "
-                "sensitivity, and FCV responsiveness without duplicate Climate paragraphs. "
-                "The active Climate diagnostic supersedes the core-only lightweight Climate-FCV "
-                "check; do not emit both. Adaptation and resilience are primary. Include deep "
-                "mitigation only when evidence shows a clear project-to-emissions or transition "
-                "pathway and its FCV effects. Use the validated two-way Climate-FCV interaction "
-                "pathways to write two substantive interaction narratives. After each, provide "
-                "a compact causal strip: pressure "
-                "-> mechanism -> project implication -> design response, with time-horizon "
-                "labels. Write one qualitative Climate, peace and social dividends synthesis "
-                "covering how the current design contributes, supported versus potential "
-                "pathways, watchpoints, and links to numbered priorities; state the current "
-                "contribution and how it could be strengthened. Do not produce "
-                "dividend cards or a checklist. Mention a CCDR only when one specific insight "
-                "materially improves context or action; it must not dominate. "
-                "Every priority JSON object must include climate_links. Linked objects cite "
-                "recognized IDs plus contribution and strengthening_effect. Retained core "
-                "priorities use no-material-pathway, empty ID arrays, and a reason. Shape: "
-                '{"status":"linked|no-material-pathway","interaction_pathway_ids":[],'
-                '"dividend_pathway_ids":[],"finding_ids":[],"contribution":"",'
-                '"strengthening_effect":"","reason":""}. '
+                "Preserve the full core FCV structure. Integrate material "
+                "Climate-FCV evidence into the bold opening assessment in the "
+                "executive summary, operational context, strengths, gaps, FCV "
+                "sensitivity, and FCV responsiveness. Avoid duplication; the "
+                "active lens supersedes the lightweight Climate-FCV check. "
+                "Adaptation and resilience are primary; include deep mitigation "
+                "only when a clear project pathway and FCV effects exist. Use "
+                "the validated two-way Climate-FCV interaction pathways to "
+                "write two substantive interaction narratives, each with a "
+                "causal strip: pressure -> "
+                "mechanism -> project implication -> design response and time "
+                "horizons. Write one qualitative Climate, peace and social "
+                "dividends synthesis covering current contribution, supported "
+                "versus potential pathways, watchpoints, how it could be "
+                "strengthened, and numbered-priority links. Do not produce "
+                "dividend cards or a "
+                "checklist. CCDR context is optional and must not dominate. "
+                "Every priority JSON object needs climate_links. Linked objects "
+                "cite recognized IDs, contribution, and strengthening_effect. "
+                "Core priorities use no-material-pathway, empty IDs, and a "
+                "reason. "
             )
         prefix += "Deterministically merged lens diagnostic:\n"
         selected_findings: list[dict[str, Any]] = []

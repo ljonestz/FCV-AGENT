@@ -11,6 +11,12 @@ from sector_lenses import load_registry
 
 
 FIXTURE_ROOT = Path(__file__).parent / "fixtures" / "sector_lenses"
+SOUTH_SUDAN_FIXTURE = (
+    Path(__file__).parent
+    / "fixtures"
+    / "climate"
+    / "south_sudan_dual_use.json"
+)
 
 
 def _add_specific_climate_paths(payload):
@@ -1426,6 +1432,112 @@ def test_climate_stage3_integrates_narrative_and_qualitative_dividends():
     ):
         assert value in prompt
     assert context["estimated_tokens"] <= 900
+
+
+def test_south_sudan_dual_use_fixture_crosses_stage3_and_docx_pipeline():
+    from docx import Document
+
+    fixture = json.loads(SOUTH_SUDAN_FIXTURE.read_text(encoding="utf-8"))
+    research = app_module.normalize_climate_research_bundle(
+        fixture["research_bundle"]
+    )
+    state = app_module.AnalysisState.from_payload({
+        "active_lenses": ["climate"],
+        "lens_versions": {"climate": "1.1.0"},
+    })
+    context = app_module.build_lens_stage_context(
+        state,
+        3,
+        lens_diagnostic=fixture["diagnostic"],
+        lens_context_sources=research["sources"],
+        climate_research=research,
+    )
+    diagnostic = context["lens_diagnostic"]
+    climate = app_module.climate_lens_entry(diagnostic)
+
+    assert app_module.lens_diagnostic_failure_message(
+        diagnostic, ["climate"]
+    ) == ""
+    assert climate["materiality_level"] == fixture["expected"]["materiality"]
+    assert len(climate["interaction_readout"]) == (
+        fixture["expected"]["interaction_directions"]
+    )
+    pathways = [
+        pathway
+        for interaction in climate["interaction_readout"]
+        for pathway in interaction["pathways"]
+    ]
+    assert len(pathways) >= fixture["expected"]["minimum_specific_pathways"]
+    assert {
+        horizon
+        for pathway in pathways
+        for horizon in pathway["time_horizons"]
+    } == set(fixture["expected"]["time_horizons"])
+    assert "climate-fcv-on-project-1" in context["prompt"]
+    assert "project-on-climate-fcv-1" in context["prompt"]
+
+    stage3_text = (
+        "%%%JSON_START%%%"
+        + json.dumps(fixture["stage3_block"])
+        + "%%%JSON_END%%%"
+    )
+    parsed = app_module.extract_priorities(
+        stage3_text,
+        active_lens_ids=["climate"],
+        lens_diagnostic=diagnostic,
+    )
+
+    assert parsed["error"] is False
+    assert len(parsed["priorities"]) == (
+        fixture["expected"]["substantive_priorities"]
+    )
+    assert all(
+        priority.get("climate_links")
+        for priority in parsed["priorities"]
+    )
+    assert {
+        priority["climate_links"]["status"]
+        for priority in parsed["priorities"]
+    } == {"linked", "no-material-pathway"}
+
+    response = app_module.app.test_client().post(
+        "/api/download-report",
+        json={
+            "summary": (
+                "# South Sudan synthetic dual-use test\n"
+                "## Executive summary\n"
+                "**Climate-FCV pressures shape access and governance.**"
+            ),
+            "priorities": parsed["priorities"],
+            "fcv_rating": parsed["fcv_rating"],
+            "fcv_responsiveness_rating": (
+                parsed["fcv_responsiveness_rating"]
+            ),
+            "sensitivity_summary": parsed["sensitivity_summary"],
+            "responsiveness_summary": parsed["responsiveness_summary"],
+            "active_lenses": [{
+                "id": "climate",
+                "version": "1.1.0",
+                "position": "primary",
+            }],
+            "lens_diagnostic": diagnostic,
+            "lens_context_sources": research["sources"],
+            "metadata": {"date_str": "23 July 2026"},
+        },
+    )
+
+    assert response.status_code == 200
+    document = Document(io.BytesIO(response.data))
+    text = "\n".join(paragraph.text for paragraph in document.paragraphs)
+    assert "How Climate-FCV dynamics could affect this project" in text
+    assert "How this project could affect Climate-FCV dynamics" in text
+    assert "Pressure:" in text
+    assert "Asset/system lifetime" in text
+    assert "How the current design contributes" in text
+    assert "Priority 1:" in text
+    assert "Climate, peace and social dividend contribution" in text
+    assert "No material dividend pathway identified" in text
+    assert "Differentiated approach note" not in text
 
 
 def test_climate_stage3_does_not_duplicate_lightweight_check():
