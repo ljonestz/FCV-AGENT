@@ -132,3 +132,29 @@ def test_ccdr_prompt_context_is_optional_and_labels_context_evidence():
 
 def test_dynamic_context_scalar_payload_is_ignored():
     assert normalize_lens_context_sources(1, ["climate"]) == []
+
+
+def test_dynamic_context_accepts_validated_climate_research_source():
+    sources = [{
+        "id": "climate-source-1",
+        "lens_id": "climate",
+        "source_type": "un",
+        "title": "Flood risk profile",
+        "url": "https://www.undp.org/example",
+        "publication_date": "2025",
+        "location": "Jonglei",
+    }]
+
+    assert normalize_lens_context_sources(sources, ["climate"]) == sources
+
+
+def test_dynamic_context_rejects_climate_source_for_inactive_lens():
+    sources = [{
+        "id": "climate-source-1",
+        "lens_id": "climate",
+        "source_type": "world-bank",
+        "title": "Climate profile",
+        "url": "https://www.worldbank.org/example",
+    }]
+
+    assert normalize_lens_context_sources(sources, []) == []

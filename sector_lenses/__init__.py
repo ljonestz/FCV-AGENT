@@ -22,6 +22,13 @@ from .models import (
     StageSlice,
 )
 from .registry import load_registry
+from .research import (
+    CLIMATE_RESEARCH_END,
+    CLIMATE_RESEARCH_START,
+    extract_climate_research_bundle,
+    format_climate_research_context,
+    normalize_climate_research_bundle,
+)
 from .context import (
     CCDR_CONTEXT_END,
     CCDR_CONTEXT_START,
@@ -68,11 +75,16 @@ __all__ = [
     "CCDR_CONTEXT_END",
     "CCDR_CONTEXT_START",
     "CCDR_RESEARCH_INSTRUCTIONS",
+    "CLIMATE_RESEARCH_END",
+    "CLIMATE_RESEARCH_START",
     "estimate_tokens",
     "extract_ccdr_context",
+    "extract_climate_research_bundle",
+    "format_climate_research_context",
     "load_registry",
     "has_uploaded_ccdr",
     "normalize_lens_context_sources",
+    "normalize_climate_research_bundle",
     "LENS_DIAGNOSTIC_END",
     "LENS_DIAGNOSTIC_START",
     "LENS_EVIDENCE_END",

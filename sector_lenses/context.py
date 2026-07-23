@@ -7,6 +7,8 @@ import re
 from typing import Any, Iterable
 from urllib.parse import urlparse
 
+from .research import normalize_climate_research_bundle
+
 
 CCDR_CONTEXT_START = "%%%CCDR_CONTEXT_START%%%"
 CCDR_CONTEXT_END = "%%%CCDR_CONTEXT_END%%%"
@@ -64,30 +66,37 @@ def normalize_lens_context_sources(
         url = _bounded_text(source.get("url"), 1000)
         title = _bounded_text(source.get("title"), 300)
         summary = _bounded_text(source.get("summary"), 2000)
-        if (
-            source_id != "context-ccdr"
-            or lens_id != "climate"
-            or lens_id not in active
-            or source_type != "ccdr"
-            or not title
-            or not summary
-            or not _is_world_bank_https(url)
-        ):
+        if lens_id != "climate" or lens_id not in active:
             continue
-        normalized.append({
-            "id": source_id,
-            "lens_id": lens_id,
-            "source_type": source_type,
-            "country": _bounded_text(source.get("country"), 300),
-            "title": title,
-            "publication_date": _bounded_text(
-                source.get("publication_date"), 300
-            ),
-            "url": url,
-            "location": _bounded_text(source.get("location"), 300),
-            "summary": summary,
-        })
-        break
+        if source_id == "context-ccdr":
+            if (
+                source_type != "ccdr"
+                or not title
+                or not summary
+                or not _is_world_bank_https(url)
+            ):
+                continue
+            normalized.append({
+                "id": source_id,
+                "lens_id": lens_id,
+                "source_type": source_type,
+                "country": _bounded_text(source.get("country"), 300),
+                "title": title,
+                "publication_date": _bounded_text(
+                    source.get("publication_date"), 300
+                ),
+                "url": url,
+                "location": _bounded_text(source.get("location"), 300),
+                "summary": summary,
+            })
+        else:
+            validated = normalize_climate_research_bundle({
+                "sources": [source],
+            })["sources"]
+            if validated:
+                normalized.extend(validated)
+        if len(normalized) == 10:
+            break
     return normalized
 
 
