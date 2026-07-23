@@ -390,8 +390,16 @@ def test_climate_diagnostic_retains_readouts_and_ccdr_context():
     payload = {"lenses": [{
         "lens_id": "climate",
         "applicability": "material",
+        "materiality_level": "medium",
         "materiality_summary": "Drought affects delivery and livelihoods.",
         "analysis_emphasis": ["adaptation", "resource access"],
+        "interaction_readout": [{
+            "direction_id": "climate-fcv-on-project",
+            "summary": "Drought and insecurity could disrupt delivery.",
+        }, {
+            "direction_id": "project-on-climate-fcv",
+            "summary": "Resource allocation could affect resilience and trust.",
+        }],
         "source_ids": [
             "peace-social-dividends", "context-ccdr", "invented"
         ],
@@ -483,6 +491,9 @@ def test_active_climate_stage3_preserves_option_a_layers_and_gradient():
         "interaction_readout": [{
             "direction_id": "climate-fcv-on-project",
             "summary": "Flood and insecurity could disrupt delivery.",
+        }, {
+            "direction_id": "project-on-climate-fcv",
+            "summary": "Benefit rules could affect resilience and trust.",
         }],
         "readout_sections": [],
         "additional_pathways": [],
@@ -712,7 +723,7 @@ def test_lens_diagnostic_repair_is_bounded_and_accepts_valid_json_only():
     assert recovered is True
     assert repaired["lenses"][0]["materiality_level"] == "medium"
     assert messages.request["model"] == "claude-haiku-4-5-20251001"
-    assert messages.request["max_tokens"] <= 4000
+    assert messages.request["max_tokens"] == 6000
     assert len(messages.request["messages"][0]["content"]) < 40000
     assert app_module.warn_on_missing_high_climate_priority(
         [{"title": "Core priority", "lens_ids": []}],
@@ -792,6 +803,64 @@ def test_lens_diagnostic_repair_rejects_incomplete_response():
 
     assert recovered is False
     assert app_module.lens_diagnostic_failure_message(repaired, ["climate"])
+
+
+def test_lens_diagnostic_repair_has_capacity_for_bounded_climate_contract():
+    """Recovery must not repeat the production 3,500-token truncation."""
+
+    repaired_payload = {
+        "lenses": [{
+            "lens_id": "climate",
+            "applicability": "material",
+            "materiality_level": "high",
+            "materiality_summary": "Flood and conflict pressures affect delivery.",
+            "interaction_readout": [
+                {
+                    "direction_id": "climate-fcv-on-project",
+                    "summary": "Flood and insecurity disrupt delivery.",
+                },
+                {
+                    "direction_id": "project-on-climate-fcv",
+                    "summary": "Benefit rules affect trust and access.",
+                },
+            ],
+            "readout_sections": [],
+            "additional_pathways": [],
+        }],
+        "findings": [],
+    }
+    captured = {}
+
+    class CeilingMessages:
+        def create(self, **kwargs):
+            captured.update(kwargs)
+            if kwargs["max_tokens"] < 6000:
+                text = app_module.LENS_DIAGNOSTIC_START + '{"lenses":['
+            else:
+                text = (
+                    app_module.LENS_DIAGNOSTIC_START
+                    + json.dumps(repaired_payload)
+                    + app_module.LENS_DIAGNOSTIC_END
+                )
+            return type("Response", (), {
+                "content": [type("Text", (), {"text": text})()]
+            })()
+
+    client = type("Client", (), {"messages": CeilingMessages()})()
+    _, recovered = app_module.repair_lens_diagnostic(
+        "Visible Stage 2 assessment",
+        ["climate"],
+        {"climate": set()},
+        {"climate": {"invest-in": set(), "deliver-through": set()}},
+        client=client,
+    )
+
+    assert recovered is True
+    assert captured["max_tokens"] >= 6000
+    prompt = captured["messages"][0]["content"]
+    assert "total JSON under 12,000 characters" in prompt
+    assert "at most two items per declared readout section" in prompt
+    assert "at most five findings" in prompt
 
 
 def test_lens_diagnostic_repair_rejects_missing_climate_materiality_level():
@@ -928,6 +997,28 @@ def test_valid_inline_lens_diagnostic_bypasses_recovery(monkeypatch):
     assert diagnostic["lenses"][0]["materiality_level"] == "medium"
 
 
+def test_invalid_climate_diagnostic_gates_stage3_lens_instructions():
+    state = app_module.AnalysisState.from_payload({"active_lenses": ["climate"]})
+    invalid = {
+        "error": True,
+        "message": "Lens diagnostic block was not produced.",
+        "lenses": [],
+        "findings": [],
+    }
+
+    context = app_module.build_lens_stage_context(
+        state,
+        3,
+        lens_diagnostic=invalid,
+    )
+
+    assert "validated sector-lens diagnostic is unavailable" in context["prompt"]
+    assert "Preserve normal core-only Stage 3 behavior" in context["prompt"]
+    assert "do not run the lightweight Climate-FCV check" in context["prompt"]
+    assert "Treat the validated Climate-FCV materiality" not in context["prompt"]
+    assert "two-way Climate-FCV interaction readout" not in context["prompt"]
+
+
 def test_lens_diagnostic_timeout_preserves_core_warning_state(caplog):
     class TimeoutMessages:
         def create(self, **kwargs):
@@ -1044,10 +1135,18 @@ def test_large_climate_readout_respects_stage3_platform_budget():
     payload = {"lenses": [{
         "lens_id": "climate",
         "applicability": "material",
+        "materiality_level": "medium",
         "materiality_summary": "m" * 600,
         "analysis_emphasis": ["e" * 100] * 5,
         "evidence": ["v" * 500] * 5,
         "source_ids": ["peace-social-dividends"],
+        "interaction_readout": [{
+            "direction_id": "climate-fcv-on-project",
+            "summary": "Flood and insecurity could disrupt delivery.",
+        }, {
+            "direction_id": "project-on-climate-fcv",
+            "summary": "Benefit rules could affect resilience and trust.",
+        }],
         "readout_sections": [{
             "section_id": "invest-in",
             "items": [{
@@ -1080,8 +1179,16 @@ def test_active_climate_stage3_integrates_opening_and_uses_flexible_mix():
     diagnostic = {"lenses": [{
         "lens_id": "climate",
         "applicability": "material",
+        "materiality_level": "medium",
         "materiality_summary": "Drought and FCV pressures affect delivery.",
         "analysis_emphasis": ["adaptation"],
+        "interaction_readout": [{
+            "direction_id": "climate-fcv-on-project",
+            "summary": "Drought and insecurity could disrupt delivery.",
+        }, {
+            "direction_id": "project-on-climate-fcv",
+            "summary": "Benefit rules could affect resilience and trust.",
+        }],
         "readout_sections": [],
         "other_pathways": [],
     }], "findings": []}

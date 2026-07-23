@@ -814,6 +814,10 @@ def build_lens_stage_context(
         source_ids_by_lens,
         readout_schema_by_lens,
     ) if stage == 3 else {}
+    stage3_diagnostic_failure = (
+        lens_diagnostic_failure_message(normalized_diagnostic, active_ids)
+        if stage == 3 and selection.lenses else ""
+    )
     suffix = ""
     diagnostic_truncated = bool(normalized_diagnostic.get("truncated"))
     if selection.lenses and stage == 1:
@@ -849,6 +853,16 @@ def build_lens_stage_context(
                 "and common OST/DNH findings; do not produce a duplicate supplementary Climate "
                 "finding."
             )
+    elif selection.lenses and stage == 3 and stage3_diagnostic_failure:
+        suffix = (
+            "The validated sector-lens diagnostic is unavailable. Preserve normal "
+            "core-only Stage 3 behavior, including four to five substantive priorities. "
+            "Do not add sector-lens findings, readouts, priorities, materiality claims, "
+            "or other lens-specific content. If Climate was selected, do not run the "
+            "lightweight Climate-FCV check because the active Climate lens supersedes it. "
+            "Deterministically merged lens diagnostic:\n"
+            '{"lenses":[],"findings":[]}'
+        )
     elif selection.lenses and stage == 3:
         prefix = (
             "Integrate applicable sector-lens findings into the opening assessment, operational "
@@ -916,7 +930,9 @@ def build_lens_stage_context(
     platform_limit = PLATFORM_STAGE_BUDGETS.for_stage(stage)
     reserved = estimate_tokens(suffix) + (1 if suffix else 0)
     prompt_slice = build_stage_slice(
-        selection.lenses, stage, token_limit=max(1, platform_limit - reserved)
+        [] if stage == 3 and stage3_diagnostic_failure else selection.lenses,
+        stage,
+        token_limit=max(1, platform_limit - reserved),
     )
     prompt = "\n\n".join(value for value in (prompt_slice.content, suffix) if value)
     final_estimate = estimate_tokens(prompt)
@@ -1171,6 +1187,11 @@ def repair_lens_diagnostic(
         'two fixed interaction directions, baseline project_contribution and '
         'strengthening_action fields, and bounded additional_pathways. If the '
         'assessment does not support a pathway, mark it not_material or omit it. '
+        'Keep the total JSON under 12,000 characters: use short evidence-grounded '
+        'sentences, at most three short strings per array, at most two items per '
+        'declared readout section, at most one additional_pathway per section, '
+        'and at most five findings. Omit empty optional fields rather than '
+        'expanding them. '
         'Use this compact shape: '
         '{"lenses":[{"lens_id":"climate","applicability":"material",'
         '"materiality_level":"high|medium|low","materiality_summary":"...",'
@@ -1191,7 +1212,7 @@ def repair_lens_diagnostic(
     try:
         response = (client or get_lens_recovery_client()).messages.create(
             model='claude-haiku-4-5-20251001',
-            max_tokens=3500,
+            max_tokens=6000,
             messages=[{'role': 'user', 'content': prompt}],
         )
         response_text = ''.join(
