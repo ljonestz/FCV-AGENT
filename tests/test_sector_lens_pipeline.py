@@ -428,6 +428,11 @@ def test_no_material_climate_links_require_a_reason_and_no_ids():
         "status": "no-material-pathway",
         "reason": "",
     }, diagnostic) == {}
+    assert normalize_priority_climate_links({
+        "status": "no-material-pathway",
+        "interaction_pathway_ids": ["invented-pathway"],
+        "reason": "Retained on core FCV grounds.",
+    }, diagnostic) == {}
 
 
 def test_readout_normalization_treats_scalar_collections_as_empty():

@@ -675,7 +675,21 @@ def normalize_priority_climate_links(
         ):
             return {}
     elif status == "no-material-pathway":
-        if interaction_links or dividend_links or finding_links or not reason:
+        raw_ids_present = any(
+            bool(raw.get(name))
+            for name in (
+                "interaction_pathway_ids",
+                "dividend_pathway_ids",
+                "finding_ids",
+            )
+        )
+        if (
+            raw_ids_present
+            or interaction_links
+            or dividend_links
+            or finding_links
+            or not reason
+        ):
             return {}
         contribution = ""
         strengthening_effect = ""
