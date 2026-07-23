@@ -75,6 +75,46 @@ def _attempt_count(value: Any) -> int:
         return 0
 
 
+def build_climate_research_prompt(
+    country: str,
+    sector: str,
+    project_profile: dict[str, Any],
+    narrow: bool = False,
+) -> str:
+    """Build the bounded dedicated Climate-FCV research request."""
+
+    scope = (
+        "NARROW RETRY: return at most six strongest claims."
+        if narrow
+        else "Return at most twelve claims, prioritizing material project pathways."
+    )
+    profile = json.dumps(
+        project_profile if isinstance(project_profile, dict) else {},
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )
+    return f"""
+Research Climate-FCV conditions for {country} and this {sector} project.
+First check for a public Country Climate and Development Report.
+Use it only where directly relevant, then fill material gaps from authoritative
+World Bank, UN, scientific, government, or established specialist sources.
+
+PROJECT PROFILE:
+{profile}
+
+Cover observed and projected hazards, changing seasonality, subnational
+locations, differentiated groups, delivery constraints, maladaptation,
+distributional effects, and both directions of project influence. Distinguish
+current-near-term, project-lifetime, and asset-system-lifetime implications.
+Every claim must name a project element and a geography, group, system, or
+asset. Do not return generic country statements. {scope}
+
+Return no prose. Return one JSON object between {CLIMATE_RESEARCH_START} and
+{CLIMATE_RESEARCH_END} with status, attempts, sources, and claims using the
+validated ClimateResearchBundle contract.
+""".strip()
+
+
 def normalize_climate_research_bundle(payload: Any) -> dict[str, Any]:
     """Validate untrusted model output into a bounded research bundle."""
 

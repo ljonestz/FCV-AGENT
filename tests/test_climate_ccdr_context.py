@@ -64,25 +64,6 @@ class _ResearchClient:
         ])
 
 
-def test_research_reuses_one_call_and_returns_hidden_ccdr_context():
-    response = (
-        "Visible research" + CCDR_CONTEXT_START +
-        '{"available":true,"title":"Example CCDR","publication_date":"2025",'
-        '"url":"https://openknowledge.worldbank.org/example","location":"p. 4",'
-        '"summary":"Drought affects project areas."}' + CCDR_CONTEXT_END
-    )
-    client = _ResearchClient(response)
-
-    result = app_module.run_fcv_web_research(
-        "Exampleland", "Water", client, include_ccdr=True
-    )
-
-    assert result["brief"] == "Visible research"
-    assert result["ccdr_context"]["id"] == "context-ccdr"
-    assert client.kwargs["tools"][0]["max_uses"] == 5
-    assert CCDR_CONTEXT_START in client.kwargs["messages"][0]["content"]
-
-
 def test_core_research_keeps_four_searches_and_no_ccdr_instruction():
     client = _ResearchClient("Visible research")
 
@@ -93,6 +74,21 @@ def test_core_research_keeps_four_searches_and_no_ccdr_instruction():
     assert result["ccdr_context"] == {}
     assert client.kwargs["tools"][0]["max_uses"] == 4
     assert CCDR_CONTEXT_START not in client.kwargs["messages"][0]["content"]
+
+
+def test_climate_active_core_research_accepts_explicit_reduced_budget():
+    client = _ResearchClient("Visible research")
+
+    app_module.run_fcv_web_research(
+        "Exampleland",
+        "Water",
+        client,
+        max_tokens=4000,
+        max_uses=3,
+    )
+
+    assert client.kwargs["max_tokens"] == 4000
+    assert client.kwargs["tools"][0]["max_uses"] == 3
 
 
 def test_lookup_gate_requires_active_climate_and_no_uploaded_ccdr():

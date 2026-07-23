@@ -16,6 +16,8 @@ import anthropic
 from fcv_distillation import distill_doc_parts_stream
 from sector_lenses import (
     CCDR_RESEARCH_INSTRUCTIONS,
+    build_climate_research_prompt,
+    extract_climate_research_bundle,
     LENS_DIAGNOSTIC_END,
     LENS_DIAGNOSTIC_START,
     LENS_EVIDENCE_END,
@@ -31,6 +33,7 @@ from sector_lenses import (
     merge_lens_findings,
     normalize_lens_context_sources,
     normalize_lens_diagnostic,
+    normalize_climate_research_bundle,
     estimate_tokens,
     PLATFORM_STAGE_BUDGETS,
     resolve_active_lenses,
@@ -5696,6 +5699,8 @@ def run_fcv_web_research(
     sector: str,
     api_client,
     include_ccdr: bool = False,
+    max_tokens: int = 5500,
+    max_uses: int = 4,
 ) -> dict:
     """
     Run automated FCV web research for the given country using the Anthropic
@@ -5703,16 +5708,14 @@ def run_fcv_web_research(
     Timeout handled by the httpx client (get_research_client, 60s total).
     """
     prompt = FCV_RESEARCH_PROMPT.format(country=country, sector=sector)
-    if include_ccdr:
-        prompt += "\n\n" + CCDR_RESEARCH_INSTRUCTIONS.format(country=country)
     try:
         resp = api_client.beta.messages.create(
             model="claude-sonnet-4-6",
-            max_tokens=5500,
+            max_tokens=max_tokens,
             tools=[{
                 "type": "web_search_20250305",
                 "name": "web_search",
-                "max_uses": 5 if include_ccdr else 4
+                "max_uses": max_uses,
             }],
             messages=[{"role": "user", "content": prompt}],
             betas=["web-search-2025-03-05"]
@@ -5722,11 +5725,10 @@ def run_fcv_web_research(
             if hasattr(block, 'type') and block.type == 'text':
                 brief_parts.append(block.text)
         brief = '\n'.join(brief_parts).strip()
-        brief, ccdr_context = extract_ccdr_context(brief, country)
         return {
             'brief': brief,
             'country': country,
-            'ccdr_context': ccdr_context,
+            'ccdr_context': {},
         }
 
 
@@ -5737,6 +5739,57 @@ def run_fcv_web_research(
             'country': country,
             'ccdr_context': {},
         }
+
+
+def run_climate_web_research(
+    country: str,
+    sector: str,
+    project_profile: dict[str, Any],
+    api_client,
+) -> dict[str, Any]:
+    """Run one bounded Climate research request and one narrower retry."""
+
+    for attempt, narrow in ((1, False), (2, True)):
+        prompt = build_climate_research_prompt(
+            country,
+            sector,
+            project_profile,
+            narrow=narrow,
+        )
+        try:
+            response = api_client.beta.messages.create(
+                model="claude-sonnet-4-6",
+                max_tokens=3200 if narrow else 5000,
+                tools=[{
+                    "type": "web_search_20250305",
+                    "name": "web_search",
+                    "max_uses": 3 if narrow else 5,
+                }],
+                messages=[{"role": "user", "content": prompt}],
+                betas=["web-search-2025-03-05"],
+            )
+            text = "\n".join(
+                block.text
+                for block in response.content
+                if getattr(block, "type", "") == "text"
+            )
+            _, bundle = extract_climate_research_bundle(text)
+            bundle["attempts"] = attempt
+            if bundle["claims"]:
+                return bundle
+        except anthropic.APITimeoutError:
+            if attempt == 1:
+                continue
+            break
+        except Exception:
+            break
+    return normalize_climate_research_bundle({
+        "status": "failed",
+        "attempts": 2,
+        "failure_reason": (
+            "Dedicated Climate-FCV research could not be completed."
+        ),
+    })
 
 
 def should_include_ccdr_context(
