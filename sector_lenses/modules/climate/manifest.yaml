@@ -22,10 +22,10 @@ readout_sections:
       - trust-collaboration
       - flexible-adaptive-delivery
 budgets:
-  stage1: 500
-  stage2: 1950
+  stage1: 550
+  stage2: 1850
   stage3: 180
 stage_instructions:
   stage1: Collect only evidence needed to establish High, Medium, or Low Climate-FCV materiality, two-way causal pathways, affected groups, delivery constraints, and plausible dividend entry points. Do not diagnose or recommend.
-  stage2: Assign proportionate materiality and separate the two-way Climate-FCV interaction readout from selective dividend pathways. For each credible dividend state the current project contribution and how it could be strengthened. Distinguish project evidence, context evidence, inference, and evidence gaps.
+  stage2: Assign proportionate materiality. For both interaction directions provide stable pathway_id values and specific causal chains from pressure through mechanism to project implication and design response. Name project elements, locations or groups, evidence, uncertainty, and current-near-term, project-lifetime, or asset-system-lifetime horizons. Keep selective dividend pathways distinct and suppress generic claims.
   stage3: Preserve the full core FCV executive summary and integrate Climate-FCV interactions, selective dividends, and only material actionable findings into one common priority list. Avoid generic Climate advice and treat category balance as flexible rather than quota-driven.

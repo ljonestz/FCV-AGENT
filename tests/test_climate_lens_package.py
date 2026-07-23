@@ -57,3 +57,16 @@ def test_source_notes_are_auditable_but_never_enter_runtime_prompts():
         assert "Audit-only anchor: triple-burden proportionality test." not in (
             build_stage_slice([climate], stage).content
         )
+
+
+def test_climate_package_requires_causal_pathways_and_time_horizons():
+    climate = load_registry(MODULE_ROOT).get("climate")
+    stage2 = build_stage_slice([climate], 2).content
+
+    assert "pathway_id" in stage2
+    assert "pressure" in stage2
+    assert "project implication" in stage2
+    assert "design response" in stage2
+    assert "current-near-term" in stage2
+    assert "project-lifetime" in stage2
+    assert "asset-system-lifetime" in stage2

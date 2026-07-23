@@ -23,6 +23,13 @@ _INTERACTION_DIRECTIONS = {
     "climate-fcv-on-project",
     "project-on-climate-fcv",
 }
+_CLIMATE_TIME_HORIZONS = {
+    "current-near-term",
+    "project-lifetime",
+    "asset-system-lifetime",
+}
+_CLIMATE_CONFIDENCE_LEVELS = {"high", "medium", "low"}
+_CLIMATE_CLAIM_ID = re.compile(r"^climate-claim-[1-9][0-9]?$")
 
 
 def _list_values(value: Any) -> list[Any]:
@@ -39,6 +46,89 @@ def _bounded_strings(value: Any, limit: int, length: int) -> list[str]:
         for item in _list_values(value)
         if str(item).strip()
     ][:limit]
+
+
+def _normalize_climate_pathways(
+    value: Any,
+    direction_id: str,
+) -> list[dict[str, Any]]:
+    """Keep only bounded, project-specific Climate causal pathways."""
+
+    normalized: list[dict[str, Any]] = []
+    seen_ids: set[str] = set()
+    pathway_id_pattern = re.compile(
+        rf"^{re.escape(direction_id)}-[1-4]$"
+    )
+    for raw in _list_values(value):
+        if not isinstance(raw, dict):
+            continue
+        pathway_id = str(raw.get("pathway_id", "")).strip()
+        if (
+            not pathway_id_pattern.fullmatch(pathway_id)
+            or pathway_id in seen_ids
+        ):
+            continue
+        pressure = str(raw.get("pressure", "")).strip()[:300]
+        mechanism = str(raw.get("mechanism", "")).strip()[:500]
+        project_implication = str(
+            raw.get("project_implication", "")
+        ).strip()[:600]
+        design_response = str(raw.get("design_response", "")).strip()[:600]
+        project_elements = _bounded_strings(
+            raw.get("project_elements"), 4, 180
+        )
+        geographies = _bounded_strings(raw.get("geographies"), 4, 160)
+        affected_groups = _bounded_strings(
+            raw.get("affected_groups"), 4, 160
+        )
+        systems_or_assets = _bounded_strings(
+            raw.get("systems_or_assets"), 4, 180
+        )
+        horizons = [
+            item
+            for item in _bounded_strings(raw.get("time_horizons"), 3, 40)
+            if item in _CLIMATE_TIME_HORIZONS
+        ]
+        claim_ids = [
+            item
+            for item in _bounded_strings(
+                raw.get("research_claim_ids"), 4, 80
+            )
+            if _CLIMATE_CLAIM_ID.fullmatch(item)
+        ]
+        confidence = str(raw.get("confidence", "")).strip().lower()
+        evidence_gap = str(raw.get("evidence_gap", "")).strip()[:500]
+        if (
+            not pressure
+            or not mechanism
+            or not project_implication
+            or not design_response
+            or not project_elements
+            or not (geographies or affected_groups or systems_or_assets)
+            or not horizons
+            or not (claim_ids or evidence_gap)
+            or confidence not in _CLIMATE_CONFIDENCE_LEVELS
+        ):
+            continue
+        normalized.append({
+            "pathway_id": pathway_id,
+            "pressure": pressure,
+            "mechanism": mechanism,
+            "project_implication": project_implication,
+            "design_response": design_response,
+            "project_elements": project_elements,
+            "geographies": geographies,
+            "affected_groups": affected_groups,
+            "systems_or_assets": systems_or_assets,
+            "time_horizons": horizons,
+            "research_claim_ids": claim_ids,
+            "confidence": confidence,
+            "evidence_gap": evidence_gap,
+        })
+        seen_ids.add(pathway_id)
+        if len(normalized) == 4:
+            break
+    return normalized
 
 
 def lens_catalogue(registry: LensRegistry) -> list[dict[str, Any]]:
@@ -259,7 +349,7 @@ def extract_lens_diagnostic(
                         value for value in item_sources
                         if value in source_ids_by_lens.get(lens_id, set())
                     ]
-                normalized_items.append({
+                normalized_item = {
                     "item_id": item_id,
                     "status": status,
                     "mechanism": str(raw_item.get("mechanism", "")).strip()[:500],
@@ -277,7 +367,10 @@ def extract_lens_diagnostic(
                     "evidence_gap": str(raw_item.get("evidence_gap", "")).strip()[:500],
                     "trade_off": str(raw_item.get("trade_off", "")).strip()[:500],
                     "source_ids": item_sources,
-                })
+                }
+                if lens_id == "climate":
+                    normalized_item["pathway_id"] = item_id
+                normalized_items.append(normalized_item)
                 if len(normalized_items) >= 3:
                     break
             if normalized_items:
@@ -330,6 +423,10 @@ def extract_lens_diagnostic(
                         raw_interaction.get("evidence_gap", "")
                     ).strip()[:500],
                     "source_ids": interaction_sources,
+                    "pathways": _normalize_climate_pathways(
+                        raw_interaction.get("pathways"),
+                        direction_id,
+                    ),
                 })
 
         normalized_additional: list[dict[str, Any]] = []
@@ -367,6 +464,10 @@ def extract_lens_diagnostic(
                         if source_id in source_ids_by_lens.get(lens_id, set())
                     ]
                 normalized_additional.append({
+                    "pathway_id": (
+                        f"additional-{section_id}-"
+                        f"{additional_by_section.get(section_id, 0) + 1}"
+                    ),
                     "section_id": section_id,
                     "title": title,
                     "status": status,

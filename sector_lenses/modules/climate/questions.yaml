@@ -12,7 +12,7 @@ questions:
     source_ids: [ccdr-fcv-approach, defueling-conflict]
     core_mappings: ["ost:4", "dnh:7"]
   - id: compound-risk
-    text: Produce the two distinct interaction directions by tracing the mediated mechanism, project implications, positive effects, adverse effects, evidence, and uncertainty through which material climate exposure and FCV pressures compound one another.
+    text: Produce the two distinct interaction directions with stable pathway_id values. For each pathway trace pressure, mediated mechanism, project implication, and design response; name project elements and affected places, groups, institutions, systems, or assets; cite research_claim_ids or an evidence gap; assign confidence; and distinguish current-near-term, project-lifetime, and asset-system-lifetime horizons.
     condition: material exposure or climate pathway
     priority: 20
     source_ids: [ccdr-fcv-approach, adelphi-conflict-sensitivity, cgiar-climate-security]

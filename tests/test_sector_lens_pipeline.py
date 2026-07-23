@@ -231,6 +231,144 @@ def test_climate_diagnostic_rejects_invalid_extensions_and_maps_legacy_low():
     assert climate["additional_pathways"] == []
 
 
+def test_climate_interactions_keep_specific_pathways_and_horizons():
+    payload = {"lenses": [{
+        "lens_id": "climate",
+        "applicability": "material",
+        "materiality_level": "high",
+        "materiality_summary": "Flood timing is material to fisheries delivery.",
+        "interaction_readout": [{
+            "direction_id": "climate-fcv-on-project",
+            "summary": "Flood timing and insecurity affect landing sites.",
+            "pathways": [{
+                "pathway_id": "climate-fcv-on-project-1",
+                "pressure": "More erratic flood timing",
+                "mechanism": (
+                    "Road access and seasonal movement become less predictable."
+                ),
+                "project_implication": (
+                    "Landing-site works in Upper Nile may become inaccessible."
+                ),
+                "design_response": (
+                    "Use site flood thresholds and seasonal work windows."
+                ),
+                "project_elements": ["Landing-site rehabilitation"],
+                "geographies": ["Upper Nile"],
+                "affected_groups": ["Fishing households"],
+                "systems_or_assets": ["Access roads"],
+                "time_horizons": [
+                    "project-lifetime",
+                    "asset-system-lifetime",
+                ],
+                "research_claim_ids": ["climate-claim-1"],
+                "confidence": "medium",
+                "evidence_gap": "Site design standards are not documented.",
+            }],
+        }, {
+            "direction_id": "project-on-climate-fcv",
+            "summary": "Access rules may redistribute resilience.",
+            "pathways": [{
+                "pathway_id": "project-on-climate-fcv-1",
+                "pressure": "Formalized access rules",
+                "mechanism": "Rules change who can fish during variable seasons.",
+                "project_implication": (
+                    "Seasonal users may lose access and adaptive options."
+                ),
+                "design_response": (
+                    "Represent seasonal users and monitor distributional effects."
+                ),
+                "project_elements": ["BFMU governance"],
+                "geographies": ["Sudd"],
+                "affected_groups": ["Seasonal fishing households"],
+                "time_horizons": [
+                    "current-near-term",
+                    "project-lifetime",
+                ],
+                "research_claim_ids": ["climate-claim-2"],
+                "confidence": "medium",
+                "evidence_gap": "",
+            }],
+        }],
+        "readout_sections": [],
+        "additional_pathways": [],
+    }], "findings": []}
+
+    result = normalize_lens_diagnostic(payload, ["climate"])
+    pathways = result["lenses"][0]["interaction_readout"][0]["pathways"]
+
+    assert pathways[0]["pathway_id"] == "climate-fcv-on-project-1"
+    assert pathways[0]["time_horizons"][-1] == "asset-system-lifetime"
+    assert pathways[0]["systems_or_assets"] == ["Access roads"]
+
+
+def test_generic_climate_pathway_is_suppressed():
+    payload = {"lenses": [{
+        "lens_id": "climate",
+        "applicability": "material",
+        "materiality_level": "medium",
+        "interaction_readout": [{
+            "direction_id": "climate-fcv-on-project",
+            "summary": "Generic summary.",
+            "pathways": [{
+                "pathway_id": "climate-fcv-on-project-1",
+                "pressure": "Climate stress",
+                "mechanism": "Tensions may increase.",
+                "project_implication": "The project may be affected.",
+                "design_response": "Monitor climate.",
+                "project_elements": [],
+                "geographies": [],
+                "affected_groups": [],
+                "time_horizons": [],
+                "research_claim_ids": [],
+                "confidence": "low",
+            }],
+        }],
+    }], "findings": []}
+
+    result = normalize_lens_diagnostic(payload, ["climate"])
+
+    assert result["lenses"][0]["interaction_readout"][0]["pathways"] == []
+
+
+def test_climate_dividend_pathway_ids_are_stable():
+    payload = {"lenses": [{
+        "lens_id": "climate",
+        "applicability": "material",
+        "readout_sections": [{
+            "section_id": "invest-in",
+            "items": [{
+                "item_id": "livelihoods-opportunity",
+                "status": "potential",
+                "project_contribution": "A livelihoods component exists.",
+                "strengthening_action": "Clarify inclusive access.",
+            }],
+        }],
+        "additional_pathways": [{
+            "section_id": "invest-in",
+            "title": "Shared restoration",
+            "status": "potential",
+            "project_contribution": "The project restores wetlands.",
+            "strengthening_action": "Add joint oversight.",
+            "evidence": ["Restoration is financed."],
+        }],
+    }], "findings": []}
+    schema = {"climate": {
+        "invest-in": {"livelihoods-opportunity"},
+    }}
+
+    result = normalize_lens_diagnostic(
+        payload, ["climate"], readout_schema_by_lens=schema
+    )
+    lens = result["lenses"][0]
+
+    assert lens["readout_sections"][0]["items"][0]["pathway_id"] == (
+        "livelihoods-opportunity"
+    )
+    assert lens["additional_pathways"][0]["pathway_id"] == (
+        "additional-invest-in-1"
+    )
+
+
 def test_readout_normalization_treats_scalar_collections_as_empty():
     payload = {"lenses": [{
         "lens_id": "test-agriculture",
