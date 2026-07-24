@@ -8986,13 +8986,13 @@ def download_report():
     def add_climate_notice():
         if not climate_active:
             return
-        _add_section_heading('Climate-focused FCV assessment')
+        _add_section_heading('How relevant is climate to this project?')
         evidence_base = (
-            'The recommendations draw on a core library of relevant World Bank '
-            'and external material, including the Peace and Social Dividends of '
-            'Climate Action report, the framework for FCV-sensitive climate '
-            'action, the Defueling Conflict series, and other internal and '
-            'external sources.'
+            'These reflections and recommendations draw on a core set of climate '
+            'and FCV frameworks and evidence, including: Maximizing the Peace and '
+            'Social Dividends of Climate Action; the FCV-Sensitive Climate Action '
+            'Framework; and the Defueling Conflict series, alongside other World '
+            'Bank and external sources.'
         )
         if climate_error:
             _add_single_para(
@@ -9036,16 +9036,26 @@ def download_report():
         _add_single_para(evidence_base, size=9, color=WB_GRAY)
 
     def add_causal_strip(pathway):
-        """Add a compact, parser-readable causal sequence for one pathway."""
-
-        fields = (
-            ('Pressure', pathway.get('pressure')),
-            ('Mechanism', pathway.get('mechanism')),
-            ('Project implication', pathway.get('project_implication')),
-            ('Design response', pathway.get('design_response')),
-        )
-        if any(not value for _, value in fields):
+        """Emit a single prose paragraph chaining the causal pathway."""
+        bits = [
+            pathway.get('pressure'),
+            pathway.get('mechanism'),
+            pathway.get('project_implication'),
+        ]
+        bits = [str(b) for b in bits if b]
+        if len(bits) < 2:
             return
+        horizon_map = {
+            'current-near-term': 'in the near term',
+            'project-lifetime': "over the project's life",
+            'asset-system-lifetime': 'over the life of the assets',
+        }
+        time_horizons = pathway.get('time_horizons', [])
+        horizons = [
+            horizon_map[v]
+            for v in (time_horizons if isinstance(time_horizons, list) else [])
+            if v in horizon_map
+        ]
         anchors = []
         for key in (
             'project_elements', 'geographies', 'affected_groups',
@@ -9053,48 +9063,32 @@ def download_report():
         ):
             values = pathway.get(key, [])
             if isinstance(values, list):
-                anchors.extend(str(value) for value in values if value)
-        if anchors:
-            add_field('Project anchors', ' · '.join(anchors))
-        causal = doc.add_paragraph()
-        for index, (label, value) in enumerate(fields):
-            if index:
-                causal.add_run('  →  ').font.color.rgb = WB_GRAY
-            label_run = causal.add_run(f'{label}: ')
-            label_run.bold = True
-            label_run.font.color.rgb = WB_NAVY
-            causal.add_run(str(value))
-        causal.paragraph_format.space_after = Pt(2)
-        horizon_labels = {
-            'current-near-term': 'Current / near term',
-            'project-lifetime': 'Project lifetime',
-            'asset-system-lifetime': 'Asset/system lifetime',
-        }
-        horizons = [
-            horizon_labels[value]
-            for value in pathway.get('time_horizons', [])
-            if value in horizon_labels
-        ] if isinstance(pathway.get('time_horizons'), list) else []
-        metadata = []
-        if horizons:
-            metadata.append('Time horizon: ' + ' · '.join(horizons))
-        if pathway.get('confidence'):
-            metadata.append(f'Confidence: {pathway["confidence"]}')
-        if pathway.get('evidence_gap'):
-            metadata.append(f'Evidence gap: {pathway["evidence_gap"]}')
-        if metadata:
-            _add_single_para(
-                ' | '.join(metadata), size=9, color=WB_GRAY,
-                space_before=0, space_after=4,
-            )
+                anchors.extend(str(v) for v in values if v)
+        lead = ', leading to '.join(bits) + '.'
+        design_response = pathway.get('design_response')
+        response_part = (
+            f' The current design response is {design_response}.'
+            if design_response else ''
+        )
+        horizon_note = (
+            ' This matters ' + ' and '.join(horizons) + '.'
+            if horizons else ''
+        )
+        anchor_note = (
+            ' Anchored in ' + ', '.join(anchors) + '.'
+            if anchors else ''
+        )
+        prose = lead + horizon_note + response_part + anchor_note
+        para = doc.add_paragraph(prose)
+        para.paragraph_format.space_after = Pt(4)
 
     def add_climate_interactions():
         labels = {
             'climate-fcv-on-project': (
-                'How Climate-FCV dynamics could affect this project'
+                'How climate and FCV dynamics could affect this project'
             ),
             'project-on-climate-fcv': (
-                'How this project could affect Climate-FCV dynamics'
+                'How this project could affect climate and FCV dynamics'
             ),
         }
         interactions = [

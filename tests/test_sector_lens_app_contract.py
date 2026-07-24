@@ -354,21 +354,18 @@ def test_downloaded_report_has_climate_readout_and_context_sources():
     document = Document(io.BytesIO(response.data))
     text = "\n".join(paragraph.text for paragraph in document.paragraphs)
 
-    assert text.index("Climate-focused FCV assessment") < text.index("Summary.")
+    assert text.index("How relevant is climate to this project?") < text.index("Summary.")
     assert "High materiality" in text
     assert text.index("FCV Sensitivity") < text.index(
-        "How Climate-FCV dynamics could affect this project"
+        "How climate and FCV dynamics could affect this project"
     )
     assert text.index("FCV Responsiveness") < text.index(
-        "How Climate-FCV dynamics could affect this project"
+        "How climate and FCV dynamics could affect this project"
     )
-    assert "How this project could affect Climate-FCV dynamics" in text
-    assert "Pressure:" in text
-    assert "Mechanism:" in text
-    assert "Project implication:" in text
-    assert "Design response:" in text
+    assert "How this project could affect climate and FCV dynamics" in text
+    assert "leading to" in text
     assert "Landing-site rehabilitation" in text
-    assert "Asset/system lifetime" in text
+    assert "over the life of the assets" in text
     assert "How the current design contributes" in text
     assert "Institutional capacity and legitimacy" in text
     assert "Flexible and adaptive delivery" in text
@@ -1543,15 +1540,78 @@ def test_south_sudan_dual_use_fixture_crosses_stage3_and_docx_pipeline():
     assert response.status_code == 200
     document = Document(io.BytesIO(response.data))
     text = "\n".join(paragraph.text for paragraph in document.paragraphs)
-    assert "How Climate-FCV dynamics could affect this project" in text
-    assert "How this project could affect Climate-FCV dynamics" in text
-    assert "Pressure:" in text
-    assert "Asset/system lifetime" in text
+    assert "How climate and FCV dynamics could affect this project" in text
+    assert "How this project could affect climate and FCV dynamics" in text
+    assert "leading to" in text
+    assert "over the life of the assets" in text
     assert "How the current design contributes" in text
     assert "Priority 1:" in text
     assert "Climate, peace and social dividend contribution" in text
     assert "No material dividend pathway identified" in text
     assert "Differentiated approach note" not in text
+
+
+def test_docx_climate_notice_title_and_prose_interactions():
+    """DOCX: notice heading, interaction direction labels, source signpost, prose strip."""
+    from docx import Document
+
+    fixture = json.loads(SOUTH_SUDAN_FIXTURE.read_text(encoding="utf-8"))
+    research = app_module.normalize_climate_research_bundle(
+        fixture["research_bundle"]
+    )
+    state = app_module.AnalysisState.from_payload({
+        "active_lenses": ["climate"],
+        "lens_versions": {"climate": "1.1.0"},
+    })
+    context = app_module.build_lens_stage_context(
+        state,
+        3,
+        lens_diagnostic=fixture["diagnostic"],
+        lens_context_sources=research["sources"],
+        climate_research=research,
+    )
+    diagnostic = context["lens_diagnostic"]
+    climate = app_module.climate_lens_entry(diagnostic)
+    stage3_text = (
+        "%%%JSON_START%%%"
+        + json.dumps(fixture["stage3_block"])
+        + "%%%JSON_END%%%"
+    )
+    parsed = app_module.extract_priorities(
+        stage3_text,
+        active_lens_ids=["climate"],
+        lens_diagnostic=diagnostic,
+    )
+    response = app_module.app.test_client().post(
+        "/api/download-report",
+        json={
+            "summary": (
+                "# South Sudan climate DOCX prose test\n"
+                "## Executive summary\n"
+                "**Climate-FCV pressures shape access and governance.**"
+            ),
+            "priorities": parsed["priorities"],
+            "fcv_rating": parsed["fcv_rating"],
+            "fcv_responsiveness_rating": parsed["fcv_responsiveness_rating"],
+            "sensitivity_summary": parsed["sensitivity_summary"],
+            "responsiveness_summary": parsed["responsiveness_summary"],
+            "active_lenses": [{
+                "id": "climate",
+                "version": "1.1.0",
+                "position": "primary",
+            }],
+            "lens_diagnostic": diagnostic,
+            "lens_context_sources": research["sources"],
+            "metadata": {"date_str": "23 July 2026"},
+        },
+    )
+    assert response.status_code == 200
+    document = Document(io.BytesIO(response.data))
+    text = "\n".join(paragraph.text for paragraph in document.paragraphs)
+    assert "How relevant is climate to this project?" in text
+    assert "How climate and FCV dynamics could affect this project" in text
+    assert "How this project could affect climate and FCV dynamics" in text
+    assert "Defueling Conflict" in text
 
 
 def test_climate_stage3_does_not_duplicate_lightweight_check():
