@@ -7444,6 +7444,18 @@ def run_stage():
                             assessment_id,
                             parsed.get("priorities", []),
                         )
+                        if not parsed.get("priorities"):
+                            app.logger.warning(
+                                "Climate Stage 3 produced no priorities: assessment_id=%s "
+                                "json_block=%s parse_error=%s msg=%s climate_total=%s "
+                                "climate_unlinked=%s",
+                                assessment_id or "unknown",
+                                "%%%JSON_START%%%" in (full_text or ""),
+                                parsed.get("error", False),
+                                (parsed.get("message", "") or "")[:80],
+                                parsed.get("climate_total", 0),
+                                parsed.get("climate_unlinked", 0),
+                            )
                     priorities = parsed.get('priorities', [])
                     fcv_rating = parsed.get('fcv_rating', '')
                     fcv_responsiveness_rating = parsed.get('fcv_responsiveness_rating', '')
@@ -8435,6 +8447,18 @@ def run_express():
                         assessment_id,
                         parsed.get("priorities", []),
                     )
+                    if not parsed.get("priorities"):
+                        app.logger.warning(
+                            "Climate Stage 3 produced no priorities: assessment_id=%s "
+                            "json_block=%s parse_error=%s msg=%s climate_total=%s "
+                            "climate_unlinked=%s",
+                            assessment_id or "unknown",
+                            "%%%JSON_START%%%" in (stage3_output or ""),
+                            parsed.get("error", False),
+                            (parsed.get("message", "") or "")[:80],
+                            parsed.get("climate_total", 0),
+                            parsed.get("climate_unlinked", 0),
+                        )
                 horizon = extract_horizon_considerations(stage3_output)
                 stage3_output_clean = strip_lens_blocks(clean_stage3_output(stage3_output))
                 header = DO_NO_HARM_HEADER.format(date=date.today().strftime('%d %B %Y'))
