@@ -454,3 +454,64 @@ def test_extract_priorities_wider_fcv_defaults_none():
         "%%%JSON_END%%%"
     )
     assert extract_priorities(text).get("wider_fcv_context") is None
+
+
+# ── policy_status and specialist_referral field tests ────────────────────────
+
+def _wrap_priorities(priorities_json):
+    return (
+        "%%%JSON_START%%%"
+        '{"fcv_rating":"Moderate","fcv_responsiveness_rating":"Moderate",'
+        '"sensitivity_summary":"s","responsiveness_summary":"r",'
+        '"risk_exposure":{"risks_to":[],"risks_from":[]},'
+        '"priorities":[' + priorities_json + "]}"
+        "%%%JSON_END%%%"
+    )
+
+
+def test_priority_policy_status_and_referral_parse():
+    pr = (
+        '{"title":"Negotiate water allocation in Baidoa","fcv_dimension":"Inclusion",'
+        '"tag":"[S]","refresh_shift":"Shift A: Anticipate","action_timing":"required-before-appraisal",'
+        '"risk_level":"High","the_gap":"Gap in Baidoa district.","why_it_matters":"Why it matters.",'
+        '"actions":[{"document_element":"PAD","guidance":"Add targeting criteria.","suggested_language":"y"}],'
+        '"who_acts":"TTL","when":"Before appraisal","resources":"Minimal","pad_sections":"Annex 2",'
+        '"implementation_note":"n","cpf_alignment":null,'
+        '"policy_status":"document_commitment",'
+        '"specialist_referral":{"required":true,"route":"Task Team E&S specialist","reason":"Possible conflict with ESCP action on water use."}}'
+    )
+    result = extract_priorities(_wrap_priorities(pr))
+    p = result["priorities"][0]
+    assert p["policy_status"] == "document_commitment"
+    assert p["specialist_referral"]["route"] == "Task Team E&S specialist"
+    assert p["specialist_referral"]["required"] is True
+
+
+def test_priority_policy_status_invalid_defaults_not_determined():
+    pr = (
+        '{"title":"Strengthen committees in Kismayo","fcv_dimension":"Inclusion",'
+        '"tag":"[R]","refresh_shift":"Shift A: Anticipate","action_timing":"supervision",'
+        '"risk_level":"High","the_gap":"Gap in Kismayo.","why_it_matters":"Why.",'
+        '"actions":[{"document_element":"PAD","guidance":"x","suggested_language":"y"}],'
+        '"who_acts":"TTL","when":"now","resources":"Minimal","pad_sections":"S",'
+        '"implementation_note":"n","cpf_alignment":null,'
+        '"policy_status":"totally_made_up","specialist_referral":{"route":"NotARealRoute","reason":""}}'
+    )
+    result = extract_priorities(_wrap_priorities(pr))
+    p = result["priorities"][0]
+    assert p["policy_status"] == "not_determined"
+    assert p["specialist_referral"] is None
+
+
+def test_priority_policy_status_absent_defaults():
+    pr = (
+        '{"title":"Map exclusion risk in Gedo","fcv_dimension":"Inclusion",'
+        '"tag":"[S]","refresh_shift":"Shift A: Anticipate","action_timing":"supervision",'
+        '"risk_level":"Low","the_gap":"Gap in Gedo district.","why_it_matters":"Why.",'
+        '"actions":[{"document_element":"PAD","guidance":"x","suggested_language":"y"}],'
+        '"who_acts":"TTL","when":"now","resources":"Minimal","pad_sections":"S",'
+        '"implementation_note":"n","cpf_alignment":null}'
+    )
+    p = extract_priorities(_wrap_priorities(pr))["priorities"][0]
+    assert p["policy_status"] == "not_determined"
+    assert p["specialist_referral"] is None

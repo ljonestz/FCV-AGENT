@@ -5209,6 +5209,30 @@ def extract_priorities(
             pr["lens_relevance"] = pr["climate_links"]["contribution"][:500]
         pr.pop('priority_type', None)
 
+        # Validate policy_status enum (OPCS compliance, hybrid/lightweight)
+        _valid_policy_statuses = {
+            'mandatory_reference', 'document_commitment', 'advisory', 'not_determined',
+        }
+        raw_status = str(pr.get('policy_status', '')).strip()
+        pr['policy_status'] = raw_status if raw_status in _valid_policy_statuses else 'not_determined'
+
+        # Validate specialist_referral dict (OPCS compliance)
+        _valid_referral_routes = {
+            'Task Team E&S specialist', 'RSA', 'ESF Help Desk',
+            'OESRC', 'Legal', 'UN engagement team',
+        }
+        referral = pr.get('specialist_referral')
+        pr['specialist_referral'] = None
+        if isinstance(referral, dict):
+            route = str(referral.get('route', '')).strip()
+            reason = str(referral.get('reason', '')).strip()[:500]
+            if route in _valid_referral_routes and reason:
+                pr['specialist_referral'] = {
+                    'required': bool(referral.get('required', True)),
+                    'route': route,
+                    'reason': reason,
+                }
+
         # Post-parse checks — check specificity across gap + all action guidance
         actions_text = ' '.join(
             act.get('guidance', '') for act in pr['actions'] if isinstance(act, dict)
