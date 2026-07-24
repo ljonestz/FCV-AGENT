@@ -2550,9 +2550,9 @@
   }
 
   function renderClimateModuleNotice(lens,diagnosticError){
-    const evidence='The recommendations draw on a core library of relevant World Bank and external material, including the Peace and Social Dividends of Climate Action report, the framework for FCV-sensitive climate action, the Defueling Conflict series, and other internal and external sources.';
+    const evidence='These reflections and recommendations draw on a core set of climate and FCV frameworks and evidence, including: Maximizing the Peace and Social Dividends of Climate Action; the FCV-Sensitive Climate Action Framework; and the Defueling Conflict series, alongside other World Bank and external sources.';
     if(diagnosticError||!lens){
-      return `<div class="climate-module-notice climate-module-error"><h3>Climate-focused FCV assessment</h3><p>You selected the Climate-FCV module, but a validated Climate-FCV diagnostic could not be produced. The note therefore retains the core FCV assessment and does not add unvalidated climate findings.</p><p class="climate-evidence-base">${esc(evidence)}</p></div>`;
+      return `<div class="climate-module-notice climate-module-error"><h3>How relevant is climate to this project?</h3><p>You selected the Climate-FCV module, but a validated Climate-FCV diagnostic could not be produced. The note therefore retains the core FCV assessment and does not add unvalidated climate findings.</p><p class="climate-evidence-base">${esc(evidence)}</p></div>`;
     }
     const level=climateMaterialityLevel(lens);
     const wording={
@@ -2561,7 +2561,7 @@
       low:'You selected the Climate-FCV module. The assessment found limited climate materiality for this project. Climate considerations are therefore included with a light emphasis alongside the wider FCV sensitivity and responsiveness assessment.'
     };
     const summary=lens.materiality_summary?`<p><strong>Materiality:</strong> ${esc(lens.materiality_summary)}</p>`:'';
-    return `<div class="climate-module-notice"><h3>Climate-focused FCV assessment</h3><span class="climate-materiality-pill">${esc(level)} materiality</span><p>${esc(wording[level])}</p>${summary}<p class="climate-evidence-base">${esc(evidence)}</p></div>`;
+    return `<div class="climate-module-notice"><h3>How relevant is climate to this project?</h3><span class="climate-materiality-pill">${esc(level)} materiality</span><p>${esc(wording[level])}</p>${summary}<p class="climate-evidence-base">${esc(evidence)}</p></div>`;
   }
 
   function renderHorizonBadge(value){

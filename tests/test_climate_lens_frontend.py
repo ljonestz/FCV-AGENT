@@ -349,3 +349,11 @@ def test_frontend_persists_climate_research_across_stages_and_reports():
     assert "climate_research:climateResearch" in source
     assert "climate_research: climateResearch || {}" in source
     assert "lensDiagnostic={};lensContextSources=[];climateResearch={}" in source
+
+
+def test_materiality_notice_uses_relevance_title_and_source_list():
+    html = INDEX.read_text(encoding="utf-8")
+    assert "How relevant is climate to this project?" in html
+    assert "Maximizing the Peace and Social Dividends of Climate Action" in html
+    assert "FCV-Sensitive Climate Action Framework" in html
+    assert "Defueling Conflict" in html
