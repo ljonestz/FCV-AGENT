@@ -97,6 +97,31 @@
           "climate-source-2",
           "climate-source-3"
         ],
+        "integration_level": "partly_integrated",
+        "integration_summary": "The project is climate-aware but treats water allocation as engineering rather than a contested-resource decision.",
+        "reflections": [
+          {
+            "question_key": "cq2_maladaptation",
+            "title": "Maladaptation, Do No Harm and lock-in",
+            "status_cue": "partial gap",
+            "text": "New water points reallocate a contested dry-season resource; siting is not yet treated as a governance decision."
+          },
+          {
+            "question_key": "cq4_inclusion",
+            "title": "Vulnerable regions and groups",
+            "status_cue": "strong",
+            "text": "Targeting reaches drought- and displacement-affected counties and names displaced households explicitly."
+          },
+          {
+            "question_key": "cq3_dividends",
+            "title": "Peace and social dividends",
+            "status_cue": "unclaimed opportunity",
+            "text": "Shared water-user governance could produce a cohesion dividend but is not an intended outcome."
+          }
+        ],
+        "less_central": "HDP coordination is relevant given the humanitarian presence but is treated only lightly.",
+        "sensitivity_evidence": ["The design acknowledges seasonal flooding can interrupt access to works sites."],
+        "responsiveness_evidence": ["Mixed water-user committees are proposed but cohesion is not a tracked outcome."],
         "interaction_readout": [
           {
             "direction_id": "climate-fcv-on-project",
@@ -232,12 +257,19 @@
       "risks_to": "Flood and insecurity can disrupt works.",
       "risks_from": "Exclusionary rules can deepen grievance."
     },
+    "wider_fcv_context": "Reliance on national and state delivery structures in areas of contested authority is a material non-climate FCV risk warranting verification.",
     "priorities": [
       {
         "title": "Sequence landing-site works against combined access risks",
         "the_gap": "Works planning lacks combined flood-security triggers for Upper Nile sites.",
         "why_it_matters": "Compressed safe-access windows can delay works and weaken supervision.",
         "actions": [],
+        "policy_status": "document_commitment",
+        "specialist_referral": {
+          "required": true,
+          "route": "Task Team E&S specialist",
+          "reason": "Possible interaction with the project's SEP/ESCP commitments on water use."
+        },
         "climate_links": {
           "status": "linked",
           "interaction_pathway_ids": ["climate-fcv-on-project-1"],
@@ -253,6 +285,7 @@
         "the_gap": "BFMU representation rules do not cover seasonal users.",
         "why_it_matters": "Formalization may narrow adaptive access and deepen grievance.",
         "actions": [],
+        "policy_status": "advisory",
         "climate_links": {
           "status": "linked",
           "interaction_pathway_ids": ["project-on-climate-fcv-1"],
