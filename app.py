@@ -7409,6 +7409,7 @@ def run_stage():
                     }
                     done_data['category_lens'] = category_lens
                     done_data['lens_diagnostic'] = lens_diagnostic
+                    done_data['climate_integration'] = climate_integration_payload(lens_diagnostic)
 
                 elif stage == 3:
                     # Stage 3: include priorities, ratings, summaries, risk exposure
@@ -8066,7 +8067,7 @@ def run_express():
                     conversation_history = conversation_history[-20:]
 
                 # ── Stage 2 done event ──
-                yield f"data: {json.dumps({'stage_done': 2, 'result': strip_lens_blocks(stage2_output), 'display_text': strip_lens_blocks(under_hood.get('display_text', stage2_output)), 'history': conversation_history, 'sensitivity_rating': stage2_ratings.get('sensitivity_rating', ''), 'responsiveness_rating': stage2_ratings.get('responsiveness_rating', ''), 'rating_reasoning': stage2_ratings.get('rating_reasoning', ''), 'under_hood': {'recs_table': under_hood.get('recs_table', ''), 'dnh_checklist': under_hood.get('dnh_checklist', ''), 'questions_map': under_hood.get('questions_map', ''), 'evidence_trail': under_hood.get('evidence_trail', '')}, 'category_lens': category_lens_e2, 'lens_diagnostic': lens_diagnostic, 'lens_diagnostic_recovered': lens_recovered, 'lens_context_sources': lens_context_s2['lens_context_sources'], 'active_lenses': lens_context_s2['active_lenses'], 'lens_warnings': lens_context_s2['warnings'], 'parse_error': s2_parse_error, 'parse_error_message': s2_parse_error_msg})}\n\n"
+                yield f"data: {json.dumps({'stage_done': 2, 'result': strip_lens_blocks(stage2_output), 'display_text': strip_lens_blocks(under_hood.get('display_text', stage2_output)), 'history': conversation_history, 'sensitivity_rating': stage2_ratings.get('sensitivity_rating', ''), 'responsiveness_rating': stage2_ratings.get('responsiveness_rating', ''), 'rating_reasoning': stage2_ratings.get('rating_reasoning', ''), 'under_hood': {'recs_table': under_hood.get('recs_table', ''), 'dnh_checklist': under_hood.get('dnh_checklist', ''), 'questions_map': under_hood.get('questions_map', ''), 'evidence_trail': under_hood.get('evidence_trail', '')}, 'category_lens': category_lens_e2, 'lens_diagnostic': lens_diagnostic, 'lens_diagnostic_recovered': lens_recovered, 'lens_context_sources': lens_context_s2['lens_context_sources'], 'active_lenses': lens_context_s2['active_lenses'], 'lens_warnings': lens_context_s2['warnings'], 'parse_error': s2_parse_error, 'parse_error_message': s2_parse_error_msg, 'climate_integration': climate_integration_payload(lens_diagnostic)})}\n\n"
 
                 # ════════════════════════════════════════════════════════════
                 # STAGE 3 — Recommendations / Course-Correction Note
@@ -8590,6 +8591,17 @@ def climate_lens_entry(
         item for item in lenses
         if isinstance(item, dict) and item.get('lens_id') == 'climate'
     ), None)
+
+
+def climate_integration_payload(diagnostic: dict[str, Any]) -> dict[str, Any] | None:
+    """Return the climate integration level/summary for SSE done payloads, or None."""
+    lens = climate_lens_entry(diagnostic)
+    if not lens or not lens.get("integration_level"):
+        return None
+    return {
+        "level": lens.get("integration_level", ""),
+        "summary": lens.get("integration_summary", ""),
+    }
 
 
 def climate_materiality_level(lens: dict[str, Any] | None) -> str:
