@@ -375,6 +375,8 @@
     .reflection-chip{display:inline-flex;padding:1px 8px;border-radius:999px;background:#eef2f7;color:#475569;font-size:10px;font-weight:700;text-transform:lowercase}
     .reflection-row p{font-size:13px;line-height:1.6;color:#334155;margin:0}
     .reflection-less{font-size:12px;color:#64748b;margin:10px 0 0}
+    .wider-fcv-note{border:1px solid var(--border);background:#f7f8fa;border-radius:8px;padding:12px 16px;margin:18px 0}
+    .wider-fcv-note p{font-size:12px;line-height:1.6;color:#475569;margin:0}
 
     /* ── Buttons ── */
     .btn{
@@ -2618,6 +2620,12 @@
     const rows=items.map(r=>`<div class="reflection-row"><div class="reflection-head"><strong>${esc(r.title||'')}</strong>${r.status_cue?`<span class="reflection-chip">${esc(r.status_cue)}</span>`:''}</div><p>${esc(r.text)}</p></div>`).join('');
     const less=lens.less_central?`<p class="reflection-less"><em>Less central here:</em> ${esc(lens.less_central)}</p>`:'';
     return `<div class="climate-reflections-section"><div class="climate-readout-heading">Reflections on core climate and FCV considerations</div><p class="climate-readout-intro">The reflections below draw on a core set of climate and FCV frameworks and evidence, and focus on the considerations most material to this project rather than applying every principle mechanically.</p>${rows}${less}</div>`;
+  }
+
+  function renderWiderFcvContext(text){
+    const value=(text||'').toString().trim();
+    if(!value)return '';
+    return `<div class="wider-fcv-note"><div class="climate-readout-heading">Wider FCV context</div><p>${esc(value)}</p></div>`;
   }
 
   function renderClimateDividendSynthesis(lens,priorities){

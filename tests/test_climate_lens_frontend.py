@@ -390,6 +390,21 @@ def test_interactions_render_as_prose_boxes_without_causal_grid():
     assert "seasonal windows" in out.stdout  # design response in prose
 
 
+def test_wider_fcv_context_renders_grey_callout_or_empty():
+    html = INDEX.read_text(encoding="utf-8")
+    assert "renderWiderFcvContext" in html
+    fn = _extract_js_function(html, "renderWiderFcvContext")
+    esc = _extract_js_function(html, "esc")
+    out = subprocess.run(["node", "-e", f'{esc}\n{fn}\nprocess.stdout.write(renderWiderFcvContext("Contested state delivery structures."));'], capture_output=True, text=True)
+    assert out.returncode == 0, out.stderr
+    assert "Wider FCV context" in out.stdout
+    assert "wider-fcv-note" in out.stdout
+    assert "Contested state delivery structures." in out.stdout
+    empty = subprocess.run(["node", "-e", f'{esc}\n{fn}\nprocess.stdout.write(renderWiderFcvContext(""));'], capture_output=True, text=True)
+    assert empty.returncode == 0, empty.stderr
+    assert empty.stdout.strip() == ""
+
+
 def test_reflections_render_with_status_chips_and_intro():
     html = INDEX.read_text(encoding="utf-8")
     assert "renderClimateReflections" in html
