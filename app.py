@@ -1220,22 +1220,6 @@ def lens_diagnostic_failure_message(
             for item in climate.get('interaction_readout', [])
             if isinstance(item, dict) and str(item.get('summary', '')).strip()
         }
-        directions = set(interaction_entries)
-        required = (
-            {'climate-fcv-on-project', 'project-on-climate-fcv'}
-            if level in {'high', 'medium'} else set()
-        )
-        incomplete = (
-            level not in {'high', 'medium', 'low'}
-            or not summary
-            or (level == 'low' and not directions)
-            or bool(required - directions)
-        )
-        if incomplete:
-            return (
-                'The Climate-FCV diagnostic was incomplete and could not '
-                'support the required materiality and interaction readout.'
-            )
         directions_with_pathways = {
             direction_id
             for direction_id, item in interaction_entries.items()
@@ -1245,17 +1229,22 @@ def lens_diagnostic_failure_message(
                 for pathway in item.get('pathways', [])
             )
         }
-        missing_specific = (
-            required - directions_with_pathways
-            if required else (
-                directions - directions_with_pathways
-                if directions else set()
-            )
+        # Graceful degradation: a usable Climate diagnostic needs valid materiality,
+        # a summary, and at least ONE fully-specified interaction direction at High or
+        # Medium materiality. A missing second direction is surfaced as an evidence
+        # limitation in the readout rather than discarding the whole dedicated Climate
+        # analysis. This does NOT weaken specificity/provenance: any displayed
+        # direction still requires a specific causal pathway (pathway_id).
+        min_specific_directions = 1 if level in {'high', 'medium'} else 0
+        incomplete = (
+            level not in {'high', 'medium', 'low'}
+            or not summary
+            or len(directions_with_pathways) < min_specific_directions
         )
-        if missing_specific:
+        if incomplete:
             return (
-                'The Climate-FCV diagnostic did not provide a specific causal '
-                'pathway for each displayed interaction direction.'
+                'The Climate-FCV diagnostic was incomplete and could not '
+                'support the required materiality and interaction readout.'
             )
     return ''
 

@@ -659,7 +659,11 @@ def test_diagnostic_rejects_directions_without_specific_pathways():
         diagnostic, ["climate"]
     )
 
-    assert "specific causal pathway" in failure
+    # Both directions present but neither carries a specific causal pathway,
+    # so the diagnostic is still rejected (graceful degradation requires at
+    # least one fully-specified direction). Message consolidated in the
+    # single-direction-acceptance fix.
+    assert failure
 
 
 def test_active_climate_stage3_preserves_option_a_layers_and_gradient():
@@ -1929,3 +1933,52 @@ def test_stage3_sse_payloads_include_wider_fcv_context():
     assert express_match, (
         "Express Stage-3 stage_done event missing wider_fcv_context"
     )
+
+
+# --- graceful degradation: single-direction climate diagnostic ---
+def _single_direction_climate_diag(level="high"):
+    return {
+        "lenses": [{
+            "lens_id": "climate",
+            "materiality_level": level,
+            "materiality_summary": "Water scarcity and armed conflict interact across the fisheries sites.",
+            "interaction_readout": [{
+                "direction_id": "climate-fcv-on-project",
+                "summary": "Drought and flooding cut access to landing sites.",
+                "pathways": [{
+                    "pathway_id": "climate-fcv-on-project-1",
+                    "pressure": "drought",
+                    "mechanism": "road closure",
+                    "project_implication": "delayed works",
+                    "design_response": "seasonal windows",
+                }],
+            }],
+        }],
+        "findings": [],
+    }
+
+
+def test_climate_diagnostic_usable_with_single_specific_direction():
+    # High/Medium materiality with ONE fully-specified direction is now usable
+    # (graceful degradation), not discarded for lacking the second direction.
+    assert app_module.lens_diagnostic_failure_message(
+        _single_direction_climate_diag("high"), ["climate"]) == ""
+    assert app_module.lens_diagnostic_failure_message(
+        _single_direction_climate_diag("medium"), ["climate"]) == ""
+
+
+def test_climate_diagnostic_still_fails_without_any_specific_direction():
+    d = _single_direction_climate_diag("high")
+    d["lenses"][0]["interaction_readout"][0]["pathways"] = []
+    assert app_module.lens_diagnostic_failure_message(d, ["climate"]) != ""
+
+
+def test_climate_diagnostic_still_fails_without_summary():
+    d = _single_direction_climate_diag("high")
+    d["lenses"][0]["materiality_summary"] = ""
+    assert app_module.lens_diagnostic_failure_message(d, ["climate"]) != ""
+
+
+def test_climate_diagnostic_still_fails_on_invalid_materiality():
+    d = _single_direction_climate_diag("amazing")
+    assert app_module.lens_diagnostic_failure_message(d, ["climate"]) != ""
