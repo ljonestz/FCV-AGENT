@@ -363,16 +363,16 @@ def test_downloaded_report_has_climate_readout_and_context_sources():
         "How climate and FCV dynamics could affect this project"
     )
     assert "How this project could affect climate and FCV dynamics" in text
-    assert "leading to" in text
+    assert "Key locations and components:" in text
     assert "Landing-site rehabilitation" in text
     assert "over the life of the assets" in text
-    assert "How the current design contributes" in text
-    assert "Institutional capacity and legitimacy" in text
-    assert "Flexible and adaptive delivery" in text
-    assert "Shared ecosystem restoration" in text
-    assert "How climate, peace and social dividends could be strengthened" in text
-    assert "Where the priorities carry this forward" in text
-    assert "Priority 1: Inclusive seasonal access" in text
+    assert "The current design already contributes" in text
+    assert "Community institutions allocate resources" in text
+    assert "The project uses contingent delivery" in text
+    assert "The project restores shared watersheds" in text
+    assert "There are clear opportunities to strengthen" in text
+    assert "carried forward by" in text
+    assert "Priority 1 (Inclusive seasonal access)" in text
     assert "Climate, peace and social dividend contribution" in text
     assert "Protects legitimate seasonal access." in text
     assert "Differentiated approach note" not in text
@@ -1546,10 +1546,9 @@ def test_south_sudan_dual_use_fixture_crosses_stage3_and_docx_pipeline():
     text = "\n".join(paragraph.text for paragraph in document.paragraphs)
     assert "How climate and FCV dynamics could affect this project" in text
     assert "How this project could affect climate and FCV dynamics" in text
-    assert "leading to" in text
+    assert "Key locations and components:" in text
     assert "over the life of the assets" in text
-    assert "How the current design contributes" in text
-    assert "Priority 1:" in text
+    assert "The current design already contributes" in text
     assert "Climate, peace and social dividend contribution" in text
     assert "No material dividend pathway identified" in text
     assert "Differentiated approach note" not in text
@@ -1982,3 +1981,16 @@ def test_climate_diagnostic_still_fails_without_summary():
 def test_climate_diagnostic_still_fails_on_invalid_materiality():
     d = _single_direction_climate_diag("amazing")
     assert app_module.lens_diagnostic_failure_message(d, ["climate"]) != ""
+
+
+def test_stage2_climate_prompt_caps_pathways_and_requires_completion():
+    state = app_module.AnalysisState.from_payload({
+        "active_lenses": ["climate"], "lens_versions": {}, "doc_type": "PAD",
+    })
+    prompt = app_module.build_lens_stage_context(
+        state, 2, climate_research={"status": "failed", "attempts": 0,
+                                    "sources": [], "claims": [], "failure_reason": ""},
+    )["prompt"]
+    assert "one or two pathways" in prompt
+    assert "Always complete and close the hidden diagnostic block" in prompt
+    assert "one to four pathways" not in prompt

@@ -939,12 +939,18 @@ def build_lens_stage_context(
                 " The full Climate lens diagnostic supersedes the lightweight supplementary "
                 "Climate-FCV Nexus check. Incorporate relevant evidence into the lens diagnostic "
                 "and common OST/DNH findings; do not produce a duplicate supplementary Climate "
-                "finding. For each interaction direction include one to four pathways. "
+                "finding. For each interaction direction include one or two pathways. "
                 "Each pathway must follow pressure -> mediated mechanism -> project implication "
                 "-> design response and name a project element plus a location, group, "
                 "institution, system, or asset. Include current-near-term, project-lifetime, "
                 "or asset-system-lifetime and cite research_claim_ids when supported by the "
                 "validated claims. Suppress generic pathways rather than filling the schema. "
+                "Write the interaction summaries and dividend descriptions in "
+                "plain, accessible language for a non-technical reader, as short "
+                "narrative sentences rather than a tagged list. Always complete and "
+                "close the hidden diagnostic block: if output space runs short, keep "
+                "the diagnostic complete and shorten the visible Under the Hood "
+                "detail rather than truncating or omitting the diagnostic. "
                 " Every pathway and finding must sit at the intersection of a "
                 "climate and an FCV dynamic; drop pure climate-engineering points "
                 "and pure FCV points with no climate dimension. Time horizons "
@@ -9031,13 +9037,13 @@ def download_report():
         _add_single_para(evidence_base, size=9, color=WB_GRAY)
 
     def add_causal_strip(pathway):
-        """Emit a single prose paragraph chaining the causal pathway."""
+        """Emit a single plain-language prose paragraph for one causal pathway."""
         bits = [
             pathway.get('pressure'),
             pathway.get('mechanism'),
             pathway.get('project_implication'),
         ]
-        bits = [str(b) for b in bits if b]
+        bits = [str(b).strip() for b in bits if b and str(b).strip()]
         if len(bits) < 2:
             return
         horizon_map = {
@@ -9051,6 +9057,30 @@ def download_report():
             for v in (time_horizons if isinstance(time_horizons, list) else [])
             if v in horizon_map
         ]
+
+        def _sentence(text):
+            text = str(text).strip()
+            if not text:
+                return ''
+            return text if text[-1] in '.!?' else text + '.'
+
+        core = ' '.join(_sentence(b) for b in bits if _sentence(b))
+        horizon_note = (
+            ' This matters ' + ' and '.join(horizons) + '.'
+            if horizons else ''
+        )
+        para = doc.add_paragraph(core + horizon_note)
+        para.paragraph_format.space_after = Pt(4)
+        design_response = pathway.get('design_response')
+        if design_response:
+            run = para.add_run(' How the design responds: ')
+            run.bold = True
+            para.add_run(_sentence(design_response))
+        gap = pathway.get('evidence_gap')
+        if gap:
+            run = para.add_run(' Still to confirm: ')
+            run.italic = True
+            para.add_run(_sentence(gap))
         anchors = []
         for key in (
             'project_elements', 'geographies', 'affected_groups',
@@ -9058,24 +9088,12 @@ def download_report():
         ):
             values = pathway.get(key, [])
             if isinstance(values, list):
-                anchors.extend(str(v) for v in values if v)
-        lead = ', leading to '.join(bits) + '.'
-        design_response = pathway.get('design_response')
-        response_part = (
-            f' The current design response is {design_response}.'
-            if design_response else ''
-        )
-        horizon_note = (
-            ' This matters ' + ' and '.join(horizons) + '.'
-            if horizons else ''
-        )
-        anchor_note = (
-            ' Anchored in ' + ', '.join(anchors) + '.'
-            if anchors else ''
-        )
-        prose = lead + horizon_note + response_part + anchor_note
-        para = doc.add_paragraph(prose)
-        para.paragraph_format.space_after = Pt(4)
+                anchors.extend(str(v).strip() for v in values if v)
+        anchors = anchors[:5]
+        if anchors:
+            run = para.add_run(' Key locations and components: ')
+            run.bold = True
+            para.add_run(', '.join(anchors) + '.')
 
     def add_policy_boundary():
         doc.add_paragraph(
@@ -9167,36 +9185,39 @@ def download_report():
         items = [
             item for group in groups for item in group.get('items', [])
             if isinstance(item, dict)
+            and (item.get('project_contribution') or item.get('mechanism'))
+            and (item.get('strengthening_action') or item.get('evidence_gap'))
         ]
         if not items:
             return
         _add_section_heading('Climate, peace and social dividends')
-        _add_single_para(
-            'The synthesis below identifies the strongest project-specific '
-            'dividend pathways supported by the diagnostic. It distinguishes '
-            'what the current design already contributes from practical ways '
-            'to reinforce those effects.'
-        )
-        supported = [
-            item for item in items if item.get('status') == 'supported'
+
+        def _sentence(text):
+            text = str(text or '').strip()
+            if not text:
+                return ''
+            return text if text[-1] in '.!?' else text + '.'
+
+        contribs = [
+            _sentence(item.get('project_contribution') or item.get('mechanism'))
+            for item in items
         ]
-        if supported:
-            _add_section_heading('How the current design contributes', level=3)
-            for item in supported:
-                add_field(
-                    item.get('title', ''),
-                    item.get('project_contribution'),
-                )
-        _add_section_heading(
-            'How climate, peace and social dividends could be strengthened',
-            level=3,
-        )
-        for item in items:
-            add_field(
-                item.get('title', ''),
-                item.get('strengthening_action'),
+        contribs = [c for c in contribs if c]
+        if contribs:
+            doc.add_paragraph(
+                'The current design already contributes to climate, peace and '
+                'social dividends in several practical ways. ' + ' '.join(contribs)
             )
-            add_field('Watchpoint', item.get('trade_off'))
+        strengthens = [
+            _sentence(item.get('strengthening_action') or item.get('evidence_gap'))
+            for item in items
+        ]
+        strengthens = [s for s in strengthens if s]
+        if strengthens:
+            doc.add_paragraph(
+                'There are clear opportunities to strengthen these contributions '
+                'further. ' + ' '.join(strengthens)
+            )
         item_ids = {
             item.get('item_id') or item.get('pathway_id')
             for item in items
@@ -9211,15 +9232,22 @@ def download_report():
                 and any(value in item_ids for value in dividend_ids)
             ):
                 linked_priorities.append(
-                    f'Priority {index + 1}: {priority.get("title", "")}'
+                    f'Priority {index + 1} ({priority.get("title", "")})'
                 )
         if linked_priorities:
-            _add_section_heading(
-                'Where the priorities carry this forward', level=3
+            doc.add_paragraph(
+                'These opportunities are carried forward by '
+                + ', '.join(linked_priorities) + '.'
             )
-            for value in linked_priorities:
-                paragraph = doc.add_paragraph(value, style='List Bullet')
-                paragraph.paragraph_format.space_after = Pt(1)
+        watchpoints = [
+            str(item.get('trade_off')).strip()
+            for item in items if item.get('trade_off')
+        ]
+        if watchpoints:
+            para = doc.add_paragraph()
+            run = para.add_run('Watch points: ')
+            run.italic = True
+            para.add_run(' '.join(watchpoints))
 
     def add_priority_compliance(priority):
         compliance_labels = {

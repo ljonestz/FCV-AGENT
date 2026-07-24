@@ -2589,20 +2589,21 @@
     if(!pathway)return '';
     const bits=[pathway.pressure,pathway.mechanism,pathway.project_implication].filter(Boolean);
     if(bits.length<2)return '';
+    const asSentence=s=>{s=esc(String(s).trim());return s?(/[.!?]$/.test(s)?s:s+'.'):'';};
     const anchors=[
       ...(Array.isArray(pathway.project_elements)?pathway.project_elements:[]),
       ...(Array.isArray(pathway.geographies)?pathway.geographies:[]),
       ...(Array.isArray(pathway.affected_groups)?pathway.affected_groups:[]),
       ...(Array.isArray(pathway.systems_or_assets)?pathway.systems_or_assets:[])
-    ].filter(Boolean);
+    ].filter(Boolean).slice(0,5);
     const horizons=(Array.isArray(pathway.time_horizons)?pathway.time_horizons:[])
       .map(v=>({'current-near-term':'in the near term','project-lifetime':'over the project’s life','asset-system-lifetime':'over the life of the assets'}[v])).filter(Boolean);
-    const lead=esc(bits.join(', leading to '))+'.';
-    const response=pathway.design_response?` The current design response is ${esc(pathway.design_response)}.`:'';
-    const gap=pathway.evidence_gap?` Remaining gap: ${esc(pathway.evidence_gap)}.`:'';
+    const core=bits.map(asSentence).filter(Boolean).join(' ');
     const horizonNote=horizons.length?` This matters ${horizons.map(esc).join(' and ')}.`:'';
-    const anchorNote=anchors.length?` <span class="climate-pathway-anchors">Anchored in ${anchors.map(esc).join(', ')}.</span>`:'';
-    return `<p class="climate-pathway-prose">${lead}${horizonNote}${response}${gap}${anchorNote}</p>`;
+    const response=pathway.design_response?` <strong>How the design responds:</strong> ${asSentence(pathway.design_response)}`:'';
+    const gap=pathway.evidence_gap?` <em>Still to confirm:</em> ${asSentence(pathway.evidence_gap)}`:'';
+    const anchorNote=anchors.length?` <span class="climate-pathway-anchors">Key locations and components: ${anchors.map(esc).join(', ')}.</span>`:'';
+    return `<p class="climate-pathway-prose">${core}${horizonNote}${response}${gap}${anchorNote}</p>`;
   }
 
   function renderClimateInteractions(lens){
@@ -2619,7 +2620,7 @@
     return interactions.map(item=>{
       const pathways=(Array.isArray(item.pathways)?item.pathways:[])
         .map(renderClimatePathwayStrip).filter(Boolean).join('');
-      return `<section class="climate-interaction-box ${modifier[item.direction_id]||''}"><h4>${esc(labels[item.direction_id])}</h4><p class="climate-interaction-summary">${esc(item.summary)}</p>${pathways}</section>`;
+      return `<section class="climate-interaction-box ${modifier[item.direction_id]||''}"><h4>${esc(labels[item.direction_id])}</h4><p class="climate-interaction-summary"><strong>${esc(item.summary)}</strong></p>${pathways}</section>`;
     }).join('');
   }
 
@@ -2642,49 +2643,30 @@
 
   function renderClimateDividendSynthesis(lens,priorities){
     if(!lens)return '';
-    const labels={
-      'social-cohesion-inclusion':'Social cohesion and inclusion',
-      'institutional-capacity-legitimacy':'Institutional capacity and legitimacy',
-      'livelihoods-opportunity':'Livelihoods and economic opportunity',
-      'context-analysis-monitoring':'Context analysis and monitoring',
-      'trust-collaboration':'Trust and collaboration',
-      'flexible-adaptive-delivery':'Flexible and adaptive delivery'
-    };
     const baseline=(Array.isArray(lens.readout_sections)?lens.readout_sections:[])
       .flatMap(section=>(Array.isArray(section.items)?section.items:[]));
     const additional=Array.isArray(lens.additional_pathways)?lens.additional_pathways:[];
     const items=[...baseline,...additional].filter(item=>{
-      const contribution=item&&(
-        item.project_contribution||item.mechanism
-      );
-      const strengthening=item&&(
-        item.strengthening_action||item.evidence_gap
-      );
-      return item&&['supported','potential'].includes(item.status)&&
-        contribution&&strengthening;
+      const contribution=item&&(item.project_contribution||item.mechanism);
+      const strengthening=item&&(item.strengthening_action||item.evidence_gap);
+      return item&&['supported','potential'].includes(item.status)&&contribution&&strengthening;
     });
     if(!items.length)return '';
-    const supported=items.filter(item=>item.status==='supported');
-    const potential=items.filter(item=>item.status==='potential');
-    const describe=(item,field)=>`<strong>${esc(item.title||labels[item.item_id]||String(item.item_id||'').replace(/-/g,' '))}:</strong> ${esc(item[field]||'')}`;
-    const current=supported.length
-      ?`<h4>How the current design contributes</h4><p>${supported.map(item=>describe(item,item.project_contribution?'project_contribution':'mechanism')).join(' ')}</p>`:'';
-    const strengthen=items.length
-      ?`<h4>How climate, peace and social dividends could be strengthened</h4><p>${items.map(item=>describe(item,item.strengthening_action?'strengthening_action':'evidence_gap')).join(' ')}</p>`:'';
+    const asSentence=s=>{s=esc(String(s).trim());return s?(/[.!?]$/.test(s)?s:s+'.'):'';};
+    const contribs=items.map(i=>asSentence(i.project_contribution||i.mechanism)).filter(Boolean);
+    const strengthens=items.map(i=>asSentence(i.strengthening_action||i.evidence_gap)).filter(Boolean);
+    const currentPara=contribs.length?`<p>The current design already contributes to climate, peace and social dividends in several practical ways. ${contribs.join(' ')}</p>`:'';
+    const strengthenPara=strengthens.length?`<p>There are clear opportunities to strengthen these contributions further. ${strengthens.join(' ')}</p>`:'';
     const selectedIds=new Set(items.map(item=>item.item_id||item.pathway_id).filter(Boolean));
-    const links=(Array.isArray(priorities)?priorities:[]).flatMap((priority,index)=>{
-      const linked=priority&&priority.climate_links&&
-        Array.isArray(priority.climate_links.dividend_pathway_ids)
-        ?priority.climate_links.dividend_pathway_ids:[];
+    const linkedTitles=(Array.isArray(priorities)?priorities:[]).flatMap((priority,index)=>{
+      const linked=priority&&priority.climate_links&&Array.isArray(priority.climate_links.dividend_pathway_ids)?priority.climate_links.dividend_pathway_ids:[];
       if(!linked.some(id=>selectedIds.has(id)))return [];
-      return [`<li><strong>Priority ${index+1}:</strong> ${esc(priority.title||'Untitled priority')}</li>`];
+      return [`Priority ${index+1} (${esc(priority.title||'Untitled priority')})`];
     });
-    const priorityLinks=links.length
-      ?`<h4>Where the priorities carry this forward</h4><ul class="climate-priority-links">${links.join('')}</ul>`:'';
+    const priorityLine=linkedTitles.length?`<p>These opportunities are carried forward by ${linkedTitles.join(', ')}.</p>`:'';
     const watchpoints=items.map(item=>item.trade_off||'').filter(Boolean);
-    const watchpoint=watchpoints.length
-      ?`<p class="climate-dividend-watchpoint"><strong>Watchpoints:</strong> ${watchpoints.map(esc).join(' ')}</p>`:'';
-    return `<div class="climate-dividends-section"><div class="climate-readout-heading">Climate, peace and social dividends</div><p class="climate-readout-intro">The synthesis below identifies the strongest project-specific dividend pathways supported by the diagnostic. It distinguishes what the current design already contributes from practical ways to reinforce those effects.</p><div class="climate-dividend-synthesis">${current}${strengthen}${priorityLinks}${watchpoint}</div></div>`;
+    const watchpoint=watchpoints.length?`<p class="climate-dividend-watchpoint"><em>Watch points:</em> ${watchpoints.map(esc).join(' ')}</p>`:'';
+    return `<div class="climate-dividends-section"><div class="climate-readout-heading">Climate, peace and social dividends</div><div class="climate-dividend-synthesis">${currentPara}${strengthenPara}${priorityLine}${watchpoint}</div></div>`;
   }
 
   function climateContributionZone(title,body){

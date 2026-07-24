@@ -149,7 +149,7 @@ if(!interactions.includes('climate-interaction-box')) throw new Error(interactio
 if(interactions.includes('causal-strip')) throw new Error('causal-strip should be gone: '+interactions);
 if(!interactions.includes('over the project')) throw new Error('prose horizon missing: '+interactions);
 if(!interactions.includes('Landing-site rehabilitation')) throw new Error(interactions);
-if(!dividends.includes('How the current design contributes')) throw new Error(dividends);
+if(!dividends.includes('The current design already contributes')) throw new Error(dividends);
 if(!dividends.includes('Priority 2')) throw new Error(dividends);
 if(dividends.includes('climate-dividend-card')) throw new Error(dividends);
 if(dividends.includes('Do not show')) throw new Error(dividends);
@@ -545,3 +545,45 @@ def test_reflections_render_sensitivity_responsiveness_evidence():
     )
     assert out_no.returncode == 0, out_no.stderr
     assert "reflection-evidence" not in out_no.stdout
+
+
+def test_climate_readout_is_plain_language_narrative():
+    html = INDEX.read_text(encoding="utf-8")
+    esc = _extract_js_function(html, "esc")
+    strip = _extract_js_function(html, "renderClimatePathwayStrip")
+    inter = _extract_js_function(html, "renderClimateInteractions")
+    div = _extract_js_function(html, "renderClimateDividendSynthesis")
+    base = "\n".join([esc, strip, inter, div]) + "\n"
+    lens = {
+        "interaction_readout": [{
+            "direction_id": "climate-fcv-on-project",
+            "summary": "Flood risk disrupts delivery.",
+            "pathways": [{
+                "pressure": "Flooding", "mechanism": "cuts road access",
+                "project_implication": "delays works",
+                "design_response": "seasonal windows",
+                "project_elements": ["landing sites"],
+                "time_horizons": ["project-lifetime"],
+            }],
+        }],
+        "readout_sections": [{"section_id": "invest-in", "items": [{
+            "item_id": "livelihoods-opportunity", "status": "supported",
+            "project_contribution": "Creates fisheries income.",
+            "strengthening_action": "Add climate-smart species.",
+            "evidence": ["x"],
+        }]}],
+        "additional_pathways": [],
+    }
+    script = (base + "process.stdout.write(renderClimateInteractions("
+              + json.dumps(lens) + ")+'@@'+renderClimateDividendSynthesis("
+              + json.dumps(lens) + ",[]));")
+    out = subprocess.run(["node", "-e", script], capture_output=True, text=True)
+    assert out.returncode == 0, out.stderr
+    interactions, dividends = out.stdout.split("@@")
+    assert "<strong>Flood risk disrupts delivery.</strong>" in interactions
+    assert "How the design responds:" in interactions
+    assert "leading to" not in interactions
+    assert "Key locations and components:" in interactions
+    assert "The current design already contributes" in dividends
+    assert "<h4>" not in dividends
+    assert "Creates fisheries income." in dividends
