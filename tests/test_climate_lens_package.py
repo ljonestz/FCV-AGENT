@@ -26,7 +26,7 @@ def test_climate_package_is_enabled_manual_and_bounded():
         "Where the project could build climate, peace, and social dividends",
         "How project design and delivery could strengthen those dividends",
     ]
-    for stage, ceiling in ((1, 600), (2, 2000), (3, 900)):
+    for stage, ceiling in ((1, 600), (2, 2000), (3, 1200)):
         assert build_stage_slice([climate], stage).estimated_tokens <= ceiling
 
 

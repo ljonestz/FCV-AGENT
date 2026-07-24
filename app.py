@@ -640,7 +640,7 @@ class AnalysisState:
 def _bounded_stage3_lenses(
     diagnostic: dict[str, Any],
     prefix: str,
-    token_limit: int = 890,
+    token_limit: int = 1100,
 ) -> tuple[list[dict[str, Any]], bool]:
     """Retain compact materiality/readout data within the Stage 3 lens budget."""
 
@@ -1016,9 +1016,13 @@ def build_lens_stage_context(
                 "Adaptation and resilience are primary; include deep mitigation "
                 "only when a clear project pathway and FCV effects exist. Use "
                 "the validated two-way Climate-FCV interaction pathways to "
-                "write two substantive interaction narratives in prose; add a "
-                "wider_fcv_context field: null, or name any FCV issue with no "
-                "climate dimension. "
+                "write two substantive interaction narratives in prose, one for "
+                "each direction (how Climate-FCV dynamics could affect the project; "
+                "how the project could affect Climate-FCV dynamics), naming "
+                "components, places, groups and assets, weaving in time horizons "
+                "only where they matter, and closing each with the current design "
+                "response and the remaining gap. Write these as flowing prose, not "
+                "a structured pathway grid or arrow diagram. "
                 "Write one qualitative Climate, peace and social "
                 "dividends synthesis covering current contribution, supported "
                 "versus potential pathways, watchpoints, how it could be "
@@ -1029,6 +1033,11 @@ def build_lens_stage_context(
                 "cite recognized IDs, contribution, and strengthening_effect. "
                 "Core priorities use no-material-pathway, empty IDs, and a "
                 "reason. "
+            )
+            prefix += (
+                "Add a top-level wider_fcv_context string naming any material FCV "
+                "issue with no real climate dimension so it is surfaced but not "
+                "developed into a priority; use null if none. "
             )
         prefix += "Deterministically merged lens diagnostic:\n"
         selected_findings: list[dict[str, Any]] = []
@@ -1042,7 +1051,7 @@ def build_lens_stage_context(
                 ensure_ascii=False,
                 separators=(",", ":"),
             )
-            if estimate_tokens(candidate) <= 700:
+            if estimate_tokens(candidate) <= 900:
                 selected_findings.append(finding)
             else:
                 diagnostic_truncated = True

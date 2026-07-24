@@ -78,7 +78,7 @@ def test_public_models_and_platform_limits_are_typed():
     assert lens.enabled is True
     assert detection.threshold == 2
     assert api.MAX_ACTIVE_LENSES == 2
-    assert api.PLATFORM_STAGE_BUDGETS == api.StageBudgets(600, 2000, 900)
+    assert api.PLATFORM_STAGE_BUDGETS == api.StageBudgets(600, 2000, 1200)
 
 
 def test_registry_loads_the_valid_fixture_lens():

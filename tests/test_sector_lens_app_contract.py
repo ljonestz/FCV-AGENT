@@ -495,7 +495,7 @@ def test_final_stage3_lens_prompt_respects_combined_platform_budget():
 
     context = app_module.build_lens_stage_context(state, 3, registry, huge)
 
-    assert context["estimated_tokens"] <= 900
+    assert context["estimated_tokens"] <= 1200
     assert context["truncated"] is True
 
 
@@ -1368,7 +1368,7 @@ def test_large_climate_readout_respects_stage3_platform_budget():
     payload = _add_specific_climate_paths(payload)
     context = app_module.build_lens_stage_context(state, 3, lens_diagnostic=payload)
 
-    assert context["estimated_tokens"] <= 900
+    assert context["estimated_tokens"] <= 1200
     assert context["truncated"] is True
 
 
@@ -1445,7 +1445,7 @@ def test_climate_stage3_integrates_narrative_and_qualitative_dividends():
         "climate-fcv-on-project-1",
     ):
         assert value in prompt
-    assert context["estimated_tokens"] <= 900
+    assert context["estimated_tokens"] <= 1200
 
 
 def test_south_sudan_dual_use_fixture_crosses_stage3_and_docx_pipeline():
