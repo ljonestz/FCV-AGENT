@@ -342,6 +342,10 @@
     .climate-module-notice p{font-size:12px;line-height:1.55;margin:5px 0}
     .climate-materiality-pill{display:inline-flex;padding:2px 8px;border-radius:999px;background:#dbeafe;color:#075985;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
     .climate-evidence-base{color:#475569;font-size:11px!important}
+    .climate-boundary{font-size:11px!important;color:#475569;font-style:italic}
+    .pc-compliance{margin-top:10px;padding-top:8px;border-top:1px dashed var(--border)}
+    .pc-compliance-line{font-size:11px;color:#64748b;line-height:1.5}
+    .pc-compliance-line span{font-weight:700;color:#475569}
     .climate-dividends-section,.sr-narrative-section{margin:20px 0}
     .climate-readout-heading{font-size:14px;font-weight:700;color:#0f172a;margin:0 0 8px}
     .climate-readout-intro{font-size:12px;line-height:1.55;color:#475569;margin:0 0 12px}
@@ -2555,8 +2559,9 @@
 
   function renderClimateModuleNotice(lens,diagnosticError){
     const evidence='These reflections and recommendations draw on a core set of climate and FCV frameworks and evidence, including: Maximizing the Peace and Social Dividends of Climate Action; the FCV-Sensitive Climate Action Framework; and the Defueling Conflict series, alongside other World Bank and external sources.';
+    const boundaryLine='<p class="climate-boundary">This is an advisory FCV screening readout. It does not determine ESF or ESS compliance or an environmental and social risk classification, and does not replace review by the Task Team\'s accredited E&amp;S specialist.</p>';
     if(diagnosticError||!lens){
-      return `<div class="climate-module-notice climate-module-error"><h3>How relevant is climate to this project?</h3><p>You selected the Climate-FCV module, but a validated Climate-FCV diagnostic could not be produced. The note therefore retains the core FCV assessment and does not add unvalidated climate findings.</p><p class="climate-evidence-base">${esc(evidence)}</p></div>`;
+      return `<div class="climate-module-notice climate-module-error"><h3>How relevant is climate to this project?</h3><p>You selected the Climate-FCV module, but a validated Climate-FCV diagnostic could not be produced. The note therefore retains the core FCV assessment and does not add unvalidated climate findings.</p>${boundaryLine}<p class="climate-evidence-base">${esc(evidence)}</p></div>`;
     }
     const level=climateMaterialityLevel(lens);
     const wording={
@@ -2565,7 +2570,7 @@
       low:'You selected the Climate-FCV module. The assessment found limited climate materiality for this project. Climate considerations are therefore included with a light emphasis alongside the wider FCV sensitivity and responsiveness assessment.'
     };
     const summary=lens.materiality_summary?`<p><strong>Materiality:</strong> ${esc(lens.materiality_summary)}</p>`:'';
-    return `<div class="climate-module-notice"><h3>How relevant is climate to this project?</h3><span class="climate-materiality-pill">${esc(level)} materiality</span><p>${esc(wording[level])}</p>${summary}<p class="climate-evidence-base">${esc(evidence)}</p></div>`;
+    return `<div class="climate-module-notice"><h3>How relevant is climate to this project?</h3><span class="climate-materiality-pill">${esc(level)} materiality</span><p>${esc(wording[level])}</p>${summary}${boundaryLine}<p class="climate-evidence-base">${esc(evidence)}</p></div>`;
   }
 
   function renderHorizonBadge(value){
@@ -2694,6 +2699,17 @@
       'No material dividend pathway identified',
       links.reason||'This priority remains important to the wider FCV assessment but has no material Climate-FCV dividend pathway.'
     );
+  }
+
+  function renderPriorityCompliance(pr){
+    const labels={mandatory_reference:'Mandatory reference — verify against ESF/OPCS requirements',document_commitment:'Existing project-document commitment',advisory:'Advisory (good practice)'};
+    const status=pr&&pr.policy_status;
+    const ref=pr&&pr.specialist_referral;
+    const parts=[];
+    if(labels[status])parts.push(`<div class="pc-compliance-line"><span>Policy status:</span> ${esc(labels[status])}</div>`);
+    if(ref&&ref.route&&ref.reason)parts.push(`<div class="pc-compliance-line"><span>${ref.required?'Referral suggested':'Consider referral'}:</span> ${esc(ref.route)} — ${esc(ref.reason)}</div>`);
+    if(!parts.length)return '';
+    return `<div class="pc-compliance">${parts.join('')}</div>`;
   }
 
   function renderSRNarrative(sensitivityText,responsivenessText,sensitivityRating,responsivenessRating){
@@ -5313,6 +5329,7 @@ ${body}
       ${pr.cpf_alignment?`<div class="pc-zone"><div class="pc-zone-title">CPF Alignment</div><div class="pc-zone-body">${esc(pr.cpf_alignment)}</div></div>`:''}
       ${actionsHtml?`<div class="pc-zone zone-act"><div class="pc-zone-title">How to act</div><div class="zone-act-primary"><div class="zone-act-section"><div class="zone-act-label">Essential action${(pr.actions||[]).length>1?'s':''}</div>${actionsHtml}</div>${pr.implementation_note?`<div class="zone-act-section zone-act-impl"><div class="zone-act-label">Implementation consideration</div><div class="pc-zone-body">${esc(pr.implementation_note)}</div></div>`:''}</div></div>`:''}
       ${isClimateLensActive()?renderPriorityClimateContribution(pr):(pr.country_category_relevance?`<div class="pc-zone"><div class="pc-zone-title">Differentiated approach note</div><div class="pc-zone-body">${esc(pr.country_category_relevance)}</div></div>`:'')}
+      ${renderPriorityCompliance(pr)}
     </div>`;
   }
 
@@ -5951,6 +5968,7 @@ ${body}
               <div class="zone-act-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> Differentiated approach note</div>
               <div class="pc-zone-body">${esc(pr.country_category_relevance)}</div>
             </div>` : '')}
+            ${renderPriorityCompliance(pr)}
           </div>
           <!-- Go Deeper 3-tab section (lazy-loaded on expand) -->
           <details class="go-deeper" id="deeper-details-${idx}" ontoggle="handleDeeperToggle(this,${idx})">

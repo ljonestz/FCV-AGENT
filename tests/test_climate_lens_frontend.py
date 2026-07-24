@@ -465,3 +465,34 @@ def test_live_and_shared_orders_boxes_reflections_dividends_wider():
     i_div = body.index("renderClimateDividendSynthesis")
     i_wid = body.index("renderWiderFcvContext")
     assert i_int < i_ref < i_div < i_wid
+
+
+def test_policy_boundary_notice_present():
+    html = INDEX.read_text(encoding="utf-8")
+    assert "does not determine ESF or ESS compliance" in html
+
+
+def test_priority_compliance_renderer():
+    html = INDEX.read_text(encoding="utf-8")
+    assert "renderPriorityCompliance" in html
+    fn = _extract_js_function(html, "renderPriorityCompliance")
+    esc_fn = _extract_js_function(html, "esc")
+    base = esc_fn + "\n" + fn + "\n"
+    # not_determined + no referral -> empty
+    e = subprocess.run(
+        ["node", "-e", base + "process.stdout.write(renderPriorityCompliance({policy_status:'not_determined',specialist_referral:null}))"],
+        capture_output=True, text=True,
+    )
+    assert e.returncode == 0, e.stderr
+    assert e.stdout.strip() == ""
+    # mandatory_reference + referral -> shows both
+    payload = "{policy_status:'mandatory_reference',specialist_referral:{required:true,route:'Task Team E&S specialist',reason:'Possible ESCP conflict.'}}"
+    o = subprocess.run(
+        ["node", "-e", base + f"process.stdout.write(renderPriorityCompliance({payload}))"],
+        capture_output=True, text=True,
+    )
+    assert o.returncode == 0, o.stderr
+    assert "Mandatory reference" in o.stdout
+    # esc() HTML-encodes '&' → '&amp;' in the rendered output
+    assert "Task Team E" in o.stdout and "S specialist" in o.stdout
+    assert "Possible ESCP conflict." in o.stdout
