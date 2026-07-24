@@ -975,6 +975,36 @@ def build_lens_stage_context(
                 "Use a soft status_cue (for example well recognised, partial gap, "
                 "strong, unclaimed opportunity) and add less_central naming any "
                 "core question that is not material here. "
+                " POLICY BOUNDARY: this is an advisory FCV screening readout; it "
+                "does not determine ESF or ESS compliance, assign or revise an E&S "
+                "Risk Classification, decide which ESSs apply, or replace required "
+                "E&S instruments, and does not substitute for the Task Team's "
+                "accredited E&S specialist. Where a finding overlaps ESF "
+                "requirements, frame it as an issue to verify with the project's "
+                "E&S documents and specialist. Match terminology to the instrument "
+                "type; do not apply IPF/ESF terms to a PforR or DPF operation as if "
+                "universal, and if the applicable framework cannot be established, "
+                "say so and avoid compliance-style conclusions. For maladaptation "
+                "and Do No Harm, separate project-caused risks, contextual delivery "
+                "risks, exclusion or conflict effects, and longer-term climate "
+                "risks, and do not repackage a risk already managed in the ESCP, "
+                "SEP or ESMP as a new unaddressed gap. Identify vulnerability from "
+                "project and context, not a fixed demographic checklist. Weigh "
+                "institutional choices contextually; working through or bypassing "
+                "government is not inherently good or bad. Never present an "
+                "unclaimed dividend as non-compliance unless an explicit commitment "
+                "applies. Check findings against available project documents and, "
+                "where a document already mitigates an issue, do not call it wholly "
+                "unaddressed. Treat current OPCS policy and the ESF as "
+                "authoritative and the climate-FCV frameworks as analytical "
+                "support; never present a framework recommendation as an OPCS "
+                "requirement. For each priority also return policy_status "
+                "(mandatory_reference, document_commitment, advisory, or "
+                "not_determined) and, where warranted, specialist_referral "
+                "{required, route, reason} with route one of Task Team E&S "
+                "specialist, RSA, ESF Help Desk, OESRC, Legal, or UN engagement "
+                "team, phrased as consider referral unless escalation is clearly "
+                "mandatory. "
                 "Validated Climate research claims:\n"
                 + research_context
             )
@@ -988,6 +1018,15 @@ def build_lens_stage_context(
             "Deterministically merged lens diagnostic:\n"
             '{"lenses":[],"findings":[]}'
         )
+        if "climate" in active_ids:
+            suffix += (
+                " This readout is advisory and does not determine ESF or ESS "
+                "compliance or an E&S risk classification. Give each priority a "
+                "policy_status (mandatory_reference, document_commitment, advisory, "
+                "or not_determined) and, where warranted, a specialist_referral "
+                "with required, route, and reason. Do not present an unclaimed "
+                "dividend as non-compliance. "
+            )
     elif selection.lenses and stage == 3:
         prefix = (
             "Integrate lens findings into the opening assessment, "
@@ -1046,6 +1085,14 @@ def build_lens_stage_context(
                 "Add a top-level wider_fcv_context string naming any material FCV "
                 "issue with no real climate dimension so it is surfaced but not "
                 "developed into a priority; use null if none. "
+            )
+            prefix += (
+                "This readout is advisory and does not determine ESF or ESS "
+                "compliance or an E&S risk classification. Give each priority a "
+                "policy_status (mandatory_reference, document_commitment, advisory, "
+                "or not_determined) and, where warranted, a specialist_referral "
+                "with required, route, and reason. Do not present an unclaimed "
+                "dividend as non-compliance. "
             )
         prefix += "Deterministically merged lens diagnostic:\n"
         selected_findings: list[dict[str, Any]] = []

@@ -1740,3 +1740,22 @@ def test_climate_integration_payload_helper():
     assert out == {"level": "partly_integrated", "summary": "Aware but allocation untreated."}
     assert app_module.climate_integration_payload({"lenses": []}) is None
     assert app_module.climate_integration_payload({"lenses": [{"lens_id": "climate"}]}) is None
+
+
+def test_climate_prompts_carry_opcs_guardrails():
+    state = app_module.AnalysisState.from_payload({
+        "active_lenses": ["climate"], "lens_versions": {}, "doc_type": "PAD",
+    })
+    s2 = app_module.build_lens_stage_context(
+        state, 2, climate_research={"status": "failed", "attempts": 0,
+                                    "sources": [], "claims": [], "failure_reason": ""},
+    )["prompt"]
+    assert "POLICY BOUNDARY" in s2
+    assert "do not apply IPF/ESF terms" in s2
+    assert "policy_status" in s2
+    assert "specialist_referral" in s2
+    diagnostic = {"lenses": [{"lens_id": "climate", "materiality_level": "high"}],
+                  "findings": []}
+    s3 = app_module.build_lens_stage_context(state, 3, lens_diagnostic=diagnostic)["prompt"]
+    assert "policy_status" in s3
+    assert "does not determine ESF" in s3
