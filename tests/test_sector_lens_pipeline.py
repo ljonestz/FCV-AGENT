@@ -565,3 +565,48 @@ def test_parser_failure_is_non_fatal_and_dedup_retains_contributors():
     assert merged[0]["lens_ids"] == ["climate", "energy"]
     assert merged[0]["source_ids"] == ["c1", "e1"]
     assert merged[0]["evidence"] == ["A", "B"]
+
+
+def test_climate_diagnostic_parses_reflections_and_integration():
+    block = (
+        "%%%LENS_DIAGNOSTIC_START%%%"
+        '{"lenses":[{"lens_id":"climate","applicability":"material",'
+        '"materiality_level":"high","materiality_summary":"Water and conflict.",'
+        '"integration_level":"moderate","integration_summary":"Aware but allocation untreated.",'
+        '"reflections":[{"question_key":"cq2_maladaptation","title":"Maladaptation and lock-in",'
+        '"status_cue":"partial gap","text":"Siting is treated as engineering, not allocation."},'
+        '{"question_key":"cq4_inclusion","title":"Vulnerable groups","status_cue":"strong",'
+        '"text":"IDP households are explicitly targeted."}],'
+        '"less_central":"HDP coordination is light here.",'
+        '"source_ids":[],"readout_sections":[],"interaction_readout":[],'
+        '"additional_pathways":[],"other_pathways":[]}],"findings":[]}'
+        "%%%LENS_DIAGNOSTIC_END%%%"
+    )
+    result = extract_lens_diagnostic(block, ["climate"])
+    lens = result["lenses"][0]
+    assert lens["integration_level"] == "moderate"
+    assert lens["integration_summary"].startswith("Aware")
+    assert [r["question_key"] for r in lens["reflections"]] == [
+        "cq2_maladaptation", "cq4_inclusion",
+    ]
+    assert lens["reflections"][0]["status_cue"] == "partial gap"
+    assert lens["less_central"] == "HDP coordination is light here."
+
+
+def test_climate_reflections_drop_unknown_keys_and_cap_at_five():
+    reflections = ",".join(
+        '{"question_key":"cq1_interaction","title":"t","status_cue":"ok","text":"x"}'
+        for _ in range(7)
+    )
+    bad = '{"question_key":"not_a_cq","title":"t","status_cue":"ok","text":"x"}'
+    block = (
+        "%%%LENS_DIAGNOSTIC_START%%%"
+        '{"lenses":[{"lens_id":"climate","applicability":"material",'
+        '"materiality_level":"high","reflections":[' + bad + "," + reflections + "],"
+        '"source_ids":[],"readout_sections":[],"interaction_readout":[],'
+        '"additional_pathways":[],"other_pathways":[]}],"findings":[]}'
+        "%%%LENS_DIAGNOSTIC_END%%%"
+    )
+    lens = extract_lens_diagnostic(block, ["climate"])["lenses"][0]
+    assert all(r["question_key"] != "not_a_cq" for r in lens["reflections"])
+    assert len(lens["reflections"]) <= 5

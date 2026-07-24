@@ -30,6 +30,11 @@ _CLIMATE_TIME_HORIZONS = {
 }
 _CLIMATE_CONFIDENCE_LEVELS = {"high", "medium", "low"}
 _CLIMATE_CLAIM_ID = re.compile(r"^climate-claim-[1-9][0-9]?$")
+_CLIMATE_REFLECTION_KEYS = {
+    "cq1_interaction", "cq2_maladaptation", "cq3_dividends",
+    "cq4_inclusion", "cq5_institutions", "cq6_adaptive",
+}
+_CLIMATE_INTEGRATION_LEVELS = {"strong", "moderate", "limited"}
 
 
 def _list_values(value: Any) -> list[Any]:
@@ -129,6 +134,28 @@ def _normalize_climate_pathways(
         if len(normalized) == 4:
             break
     return normalized
+
+
+def _normalize_climate_reflections(value: Any) -> list[dict[str, Any]]:
+    """Validate and bound climate diagnostic reflection entries."""
+
+    reflections: list[dict[str, Any]] = []
+    for raw in _list_values(value):
+        if not isinstance(raw, dict):
+            continue
+        key = str(raw.get("question_key", ""))
+        text = str(raw.get("text", "")).strip()[:700]
+        if key not in _CLIMATE_REFLECTION_KEYS or not text:
+            continue
+        reflections.append({
+            "question_key": key,
+            "title": str(raw.get("title", "")).strip()[:80],
+            "status_cue": str(raw.get("status_cue", "")).strip()[:40],
+            "text": text,
+        })
+        if len(reflections) >= 5:
+            break
+    return reflections
 
 
 def lens_catalogue(registry: LensRegistry) -> list[dict[str, Any]]:
@@ -504,6 +531,20 @@ def extract_lens_diagnostic(
             })
             if len(normalized_other) >= 10:
                 break
+        reflections: list[dict[str, Any]] = []
+        integration_level = ""
+        integration_summary = ""
+        less_central = ""
+        if lens_id == "climate":
+            reflections = _normalize_climate_reflections(item.get("reflections"))
+            raw_integration = str(item.get("integration_level", "")).lower()
+            integration_level = (
+                raw_integration if raw_integration in _CLIMATE_INTEGRATION_LEVELS
+                else "" if strict_required_fields
+                else "moderate" if applicability == "material" else "limited"
+            )
+            integration_summary = str(item.get("integration_summary", "")).strip()[:400]
+            less_central = str(item.get("less_central", "")).strip()[:300]
         normalized_lens = {
             "lens_id": lens_id,
             "applicability": applicability,
@@ -529,6 +570,10 @@ def extract_lens_diagnostic(
                 "materiality_level": materiality_level,
                 "interaction_readout": normalized_interactions,
                 "additional_pathways": normalized_additional,
+                "reflections": reflections,
+                "integration_level": integration_level,
+                "integration_summary": integration_summary,
+                "less_central": less_central,
             })
         lenses.append(normalized_lens)
 
