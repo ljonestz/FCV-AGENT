@@ -424,3 +424,33 @@ def test_active_lens_output_is_capped_at_five_priorities_only():
     assert with_exception['priorities'][-1]['title'] == (
         'Mandatory SEA/SH standalone safeguard'
     )
+
+
+def test_extract_priorities_captures_wider_fcv_context():
+    text = (
+        "%%%JSON_START%%%"
+        '{"fcv_rating":"Moderate","fcv_responsiveness_rating":"Moderate",'
+        '"sensitivity_summary":"s","responsiveness_summary":"r",'
+        '"risk_exposure":{"risks_to":"some risk","risks_from":"some risk"},'
+        '"wider_fcv_context":"Reliance on contested state structures is a non-climate FCV risk.",'
+        '"priorities":[{"title":"Test priority in Karamoja","fcv_dimension":"Inclusion",'
+        '"tag":"[S]","risk_level":"High","the_gap":"Gap in Kotido district.","why_it_matters":"Why.",'
+        '"actions":[],"who_acts":"TTL","when":"Before appraisal","resources":"Minimal",'
+        '"action_timing":"required-before-appraisal"}]}'
+        "%%%JSON_END%%%"
+    )
+    result = extract_priorities(text)
+    assert result["wider_fcv_context"].startswith("Reliance on contested")
+
+
+def test_extract_priorities_wider_fcv_defaults_none():
+    text = (
+        "%%%JSON_START%%%"
+        '{"fcv_rating":"Moderate",'
+        '"priorities":[{"title":"Test priority in Karamoja","fcv_dimension":"Inclusion",'
+        '"tag":"[S]","risk_level":"High","the_gap":"Gap in Kotido.","why_it_matters":"Why.",'
+        '"actions":[],"who_acts":"TTL","when":"Before appraisal","resources":"Minimal",'
+        '"action_timing":"required-before-appraisal"}]}'
+        "%%%JSON_END%%%"
+    )
+    assert extract_priorities(text).get("wider_fcv_context") is None

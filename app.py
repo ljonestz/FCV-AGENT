@@ -5215,6 +5215,12 @@ def extract_priorities(
         risks_to = ''
         risks_from = ''
 
+    wider_fcv_context = data.get("wider_fcv_context")
+    if isinstance(wider_fcv_context, str):
+        wider_fcv_context = wider_fcv_context.strip()[:1200] or None
+    else:
+        wider_fcv_context = None
+
     return {
         'error': False,
         'priorities': priorities,
@@ -5230,6 +5236,7 @@ def extract_priorities(
         'dpf_watch': data.get('dpf_watch', []),
         'p4r_watch': data.get('p4r_watch', []),
         'regional_watch': data.get('regional_watch', []),
+        'wider_fcv_context': wider_fcv_context,
     }
 
 
