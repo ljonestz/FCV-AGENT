@@ -3603,6 +3603,7 @@
               if(p.fcv_rating)fcvRating=p.fcv_rating;
               if(p.fcv_responsiveness_rating)fcvResponsivenessRating=p.fcv_responsiveness_rating;
               if(p.priorities)stageThreePriorities=p.priorities;
+              if(p.wider_fcv_context!==undefined)stageWiderFcvContext=p.wider_fcv_context||null;
               if(p.mid_cycle_watch)midCycleWatch=p.mid_cycle_watch;if(p.dpf_watch)dpfWatch=p.dpf_watch;if(p.p4r_watch)p4rWatch=p.p4r_watch;if(p.regional_watch)regionalWatch=p.regional_watch;
               if(p.horizon_considerations)horizonConsiderations=p.horizon_considerations;
               if(p.applied_snippets)stageAppliedSnippets=p.applied_snippets;
@@ -3920,6 +3921,7 @@
               // Priority cards + sidebar for Stage 3 (Recommendations)
               if(stage===3 && p.priorities && p.priorities.length){
                 stageThreePriorities=p.priorities;
+                if(p.wider_fcv_context!==undefined)stageWiderFcvContext=p.wider_fcv_context||null;
                 if(p.horizon_considerations)horizonConsiderations=p.horizon_considerations;
                 if(p.mid_cycle_watch)midCycleWatch=p.mid_cycle_watch;if(p.dpf_watch)dpfWatch=p.dpf_watch;if(p.p4r_watch)p4rWatch=p.p4r_watch;if(p.regional_watch)regionalWatch=p.regional_watch;
                 // Clear Go Deeper caches so stale results don't reappear for new Stage 3 run
@@ -4426,12 +4428,10 @@
         _outBodyContent=wrapSRTerms(
           _closedProjectNotice+_padNotice+_stageBadge+_climateNotice+
           _preHtml+md(_rest)+
-          renderSRNarrative(
-            stageSensitivitySummary,stageResponsivenessSummary,
-            fcvRating,fcvResponsivenessRating
-          )+
           renderClimateInteractions(_climateEntry)+
-          renderClimateDividendSynthesis(_climateEntry,stageThreePriorities)
+          renderClimateReflections(_climateEntry)+
+          renderClimateDividendSynthesis(_climateEntry,stageThreePriorities)+
+          renderWiderFcvContext(stageWiderFcvContext)
         )+'<div id="priorities-intro"></div>';
       }else{
         _outBodyContent=wrapSRTerms(
@@ -4819,7 +4819,7 @@
     if(stageHists[stage])hist=stageHists[stage].slice();
     curS=stage;
     for(let i=stage+1;i<=3;i++){delete stageOutputs[i];delete stageHists[i];}
-    stageThreePriorities=[];fcvRating='';fcvResponsivenessRating='';
+    stageThreePriorities=[];fcvRating='';fcvResponsivenessRating='';stageWiderFcvContext=null;
     clearUI();renderOut(stage,stageOutputs[stage],false);
     if(stage===2&&stage2UnderHood){buildUnderHoodPanels(stage2UnderHood);updateSidebar();}
     if(stage===2)renderLensDiagnostic();
@@ -5122,14 +5122,12 @@
 
     // ── Risk Exposure ──
     if(_exportClimateValid){
-      body+=renderSRNarrative(
-        stageSensitivitySummary,stageResponsivenessSummary,
-        fcvRating,fcvResponsivenessRating
-      );
       body+=renderClimateInteractions(_exportClimateEntry);
+      body+=renderClimateReflections(_exportClimateEntry);
       body+=renderClimateDividendSynthesis(
         _exportClimateEntry,stageThreePriorities
       );
+      body+=renderWiderFcvContext(stageWiderFcvContext);
     }else{
       body += renderRiskExposure(stageRiskExposure);
 
@@ -5488,6 +5486,7 @@ ${body}
   let fcvRating = '';
   let fcvResponsivenessRating = '';
   let climateIntegration=null; // {level, summary} from SSE
+  let stageWiderFcvContext=null; // wider_fcv_context string from Stage 3 JSON (climate path)
   function integrationGaugeFraction(level){
     return ({well_integrated:1,partly_integrated:0.66,weakly_integrated:0.33,insufficient_evidence:0})[String(level||'').toLowerCase()]||0;
   }
