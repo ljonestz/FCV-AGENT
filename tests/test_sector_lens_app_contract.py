@@ -1710,3 +1710,23 @@ def test_express_and_step_routes_emit_climate_research_context():
     assert source.count("format_climate_research_context(climate_research)") >= 2
     assert source.count("_iter_stage1_research(") >= 3
     assert source.count("research_plan, assessment_id") >= 2
+
+
+def test_stage3_climate_prompt_uses_prose_and_wider_context():
+    state = app_module.AnalysisState.from_payload({
+        "active_lenses": ["climate"], "lens_versions": {}, "doc_type": "PAD",
+    })
+    diagnostic = _add_specific_climate_paths({"lenses": [{
+        "lens_id": "climate",
+        "materiality_level": "high",
+        "materiality_summary": "Flood and FCV pressures are central.",
+        "interaction_readout": [
+            {"direction_id": "climate-fcv-on-project", "summary": "A"},
+            {"direction_id": "project-on-climate-fcv", "summary": "B"},
+        ],
+    }], "findings": []})
+    ctx = app_module.build_lens_stage_context(state, 3, lens_diagnostic=diagnostic)
+    prompt = ctx["prompt"]
+    assert "wider_fcv_context" in prompt
+    assert "causal strip" not in prompt.lower()
+    assert "prose" in prompt.lower()
