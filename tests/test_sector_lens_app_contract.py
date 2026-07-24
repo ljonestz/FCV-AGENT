@@ -1754,8 +1754,25 @@ def test_climate_prompts_carry_opcs_guardrails():
     assert "do not apply IPF/ESF terms" in s2
     assert "policy_status" in s2
     assert "specialist_referral" in s2
-    diagnostic = {"lenses": [{"lens_id": "climate", "materiality_level": "high"}],
-                  "findings": []}
+    # Build a valid climate diagnostic (routes to the normal Stage 3 branch, not failure)
+    diagnostic = {"lenses": [{
+        "lens_id": "climate",
+        "applicability": "material",
+        "materiality_level": "high",
+        "materiality_summary": "Flood and fragility pressures are central to this project.",
+        "interaction_readout": [{
+            "direction_id": "climate-fcv-on-project",
+            "summary": "Flood and insecurity could disrupt delivery.",
+        }, {
+            "direction_id": "project-on-climate-fcv",
+            "summary": "Benefit rules could affect resilience and trust.",
+        }],
+        "readout_sections": [],
+        "additional_pathways": [],
+    }], "findings": []}
+    diagnostic = _add_specific_climate_paths(diagnostic)
     s3 = app_module.build_lens_stage_context(state, 3, lens_diagnostic=diagnostic)["prompt"]
+    # Guard: must be exercising the valid branch (branch 2), not the failure branch
+    assert "Preserve normal" not in s3
     assert "policy_status" in s3
     assert "does not determine ESF" in s3

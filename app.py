@@ -1018,15 +1018,6 @@ def build_lens_stage_context(
             "Deterministically merged lens diagnostic:\n"
             '{"lenses":[],"findings":[]}'
         )
-        if "climate" in active_ids:
-            suffix += (
-                " This readout is advisory and does not determine ESF or ESS "
-                "compliance or an E&S risk classification. Give each priority a "
-                "policy_status (mandatory_reference, document_commitment, advisory, "
-                "or not_determined) and, where warranted, a specialist_referral "
-                "with required, route, and reason. Do not present an unclaimed "
-                "dividend as non-compliance. "
-            )
     elif selection.lenses and stage == 3:
         prefix = (
             "Integrate lens findings into the opening assessment, "
