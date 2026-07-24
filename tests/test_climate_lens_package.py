@@ -70,3 +70,15 @@ def test_climate_package_requires_causal_pathways_and_time_horizons():
     assert "current-near-term" in stage2
     assert "project-lifetime" in stage2
     assert "asset-system-lifetime" in stage2
+
+
+def test_stage_instructions_reference_reflections_and_dedicated_focus():
+    climate = load_registry(MODULE_ROOT).get("climate")
+    s2 = climate.stage_instructions.get(2, "")
+    s3 = climate.stage_instructions.get(3, "")
+    assert "reflection" in s2.lower()
+    assert "intersection" in s2.lower()
+    assert "prose" in s3.lower()
+    assert "causal strip" not in (s2 + s3).lower()
+    for stage, ceiling in ((1, 600), (2, 2000), (3, 1200)):
+        assert build_stage_slice([climate], stage).estimated_tokens <= ceiling
