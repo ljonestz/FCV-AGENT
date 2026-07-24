@@ -145,9 +145,9 @@ const linkedPanel=renderPriorityClimateContribution(linked);
 const unlinkedPanel=renderPriorityClimateContribution(unlinked);
 const sr=renderSRNarrative('Sensitive <script>bad()</script>','Responsive','Adequate','Emerging');
 if(!notice.includes('strong climate emphasis')) throw new Error(notice);
-if(!interactions.includes('climate-interaction-narrative')) throw new Error(interactions);
-if(!interactions.includes('causal-strip')) throw new Error(interactions);
-if(!interactions.includes('Project lifetime')) throw new Error(interactions);
+if(!interactions.includes('climate-interaction-box')) throw new Error(interactions);
+if(interactions.includes('causal-strip')) throw new Error('causal-strip should be gone: '+interactions);
+if(!interactions.includes('over the project')) throw new Error('prose horizon missing: '+interactions);
 if(!interactions.includes('Landing-site rehabilitation')) throw new Error(interactions);
 if(!dividends.includes('How the current design contributes')) throw new Error(dividends);
 if(!dividends.includes('Priority 2')) throw new Error(dividends);
@@ -194,14 +194,15 @@ const sharedHtml=renderClimateInteractions(lens)
   +priorities.map(renderPriorityClimateContribution).join('');
 for(const expected of [
   'Landing-site rehabilitation','Upper Nile','Seasonal users',
-  'Current / near term','Project lifetime','Asset/system lifetime',
+  'in the near term','over the project',
   'Priority 1','Climate, peace and social dividend contribution',
   'No material dividend pathway identified'
 ]){{
   if(!sharedHtml.includes(expected)) throw new Error('missing '+expected);
 }}
 if(sharedHtml.includes('climate-dividend-card')) throw new Error('old cards returned');
-if((sharedHtml.match(/causal-strip/g)||[]).length<2) throw new Error('missing causal strips');
+if(sharedHtml.includes('causal-strip')) throw new Error('causal-strip should be gone');
+if((sharedHtml.match(/climate-interaction-box/g)||[]).length<2) throw new Error('missing prose interaction boxes');
 """
     result = subprocess.run(
         ["node", "-e", script], capture_output=True, text=True, check=False
@@ -244,8 +245,9 @@ const priority={{title:'Core safeguard',climate_links:{{
 const html=renderClimateInteractions(low)
   +renderClimateDividendSynthesis(low,[priority])
   +renderPriorityClimateContribution(priority);
-if((html.match(/causal-strip/g)||[]).length!==1) throw new Error(html);
-if(!html.includes('Current / near term')) throw new Error(html);
+if(html.includes('causal-strip')) throw new Error('causal-strip should be gone: '+html);
+if((html.match(/climate-interaction-box/g)||[]).length!==1) throw new Error('expected 1 prose box: '+html);
+if(!html.includes('in the near term')) throw new Error('prose horizon missing: '+html);
 if(!html.includes('No material dividend pathway identified')) throw new Error(html);
 if(html.includes('Climate, peace and social dividends</div>')) throw new Error(html);
 """
@@ -357,3 +359,32 @@ def test_materiality_notice_uses_relevance_title_and_source_list():
     assert "Maximizing the Peace and Social Dividends of Climate Action" in html
     assert "FCV-Sensitive Climate Action Framework" in html
     assert "Defueling Conflict" in html
+
+
+def test_interactions_render_as_prose_boxes_without_causal_grid():
+    html = INDEX.read_text(encoding="utf-8")
+    assert ".causal-strip" not in html
+    assert "climate-interaction-box" in html
+    fn = _extract_js_function(html, "renderClimateInteractions")
+    dep = _extract_js_function(html, "renderClimatePathwayStrip")
+    esc = _extract_js_function(html, "esc")
+    lens = {
+        "interaction_readout": [
+            {"direction_id": "climate-fcv-on-project", "summary": "Drought cuts access.",
+             "pathways": [{"pressure": "Drought", "mechanism": "road closure",
+                           "project_implication": "delayed works",
+                           "design_response": "seasonal windows",
+                           "project_elements": ["water points"],
+                           "time_horizons": ["current-near-term"]}]},
+            {"direction_id": "project-on-climate-fcv", "summary": "Siting reallocates water.",
+             "pathways": []},
+        ]
+    }
+    script = f"{esc}\n{dep}\n{fn}\nprocess.stdout.write(renderClimateInteractions({json.dumps(lens)}));"
+    out = subprocess.run(["node", "-e", script], capture_output=True, text=True)
+    assert out.returncode == 0, out.stderr
+    assert "How climate and FCV dynamics could affect this project" in out.stdout
+    assert "How this project could affect climate and FCV dynamics" in out.stdout
+    assert "climate-interaction-box" in out.stdout
+    assert "›" not in out.stdout  # no › arrow glyph
+    assert "seasonal windows" in out.stdout  # design response in prose

@@ -342,20 +342,17 @@
     .climate-module-notice p{font-size:12px;line-height:1.55;margin:5px 0}
     .climate-materiality-pill{display:inline-flex;padding:2px 8px;border-radius:999px;background:#dbeafe;color:#075985;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
     .climate-evidence-base{color:#475569;font-size:11px!important}
-    .climate-interactions-section,.climate-dividends-section,.sr-narrative-section{margin:20px 0}
+    .climate-dividends-section,.sr-narrative-section{margin:20px 0}
     .climate-readout-heading{font-size:14px;font-weight:700;color:#0f172a;margin:0 0 8px}
     .climate-readout-intro{font-size:12px;line-height:1.55;color:#475569;margin:0 0 12px}
-    .climate-interaction-stack{display:grid;gap:14px}
-    .climate-interaction-narrative{border:1px solid #bae6fd;background:#f8fcff;border-radius:8px;padding:14px 16px}
-    .climate-interaction-narrative h4{font-size:13px;line-height:1.4;color:#075985;margin:0 0 6px}
-    .climate-interaction-narrative>p{font-size:12px;line-height:1.55;color:#334155;margin:0 0 12px}
-    .climate-pathway{border-top:1px solid #dbeafe;padding:12px 0 2px}
-    .climate-pathway:first-of-type{border-top:0;padding-top:2px}
-    .climate-pathway-anchors{font-size:11px;line-height:1.45;color:#475569;margin-bottom:8px}
-    .causal-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
-    .causal-strip>div{position:relative;border:1px solid #dbeafe;border-radius:6px;background:#fff;padding:9px 10px;font-size:11px;line-height:1.45;color:#334155}
-    .causal-strip>div:not(:last-child)::after{content:'›';position:absolute;right:-7px;top:50%;transform:translateY(-50%);z-index:1;color:#0284c7;font-size:18px;font-weight:700}
-    .causal-strip span{display:block;color:#075985;font-size:9px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;margin-bottom:3px}
+    .climate-interaction-box{border:1px solid var(--border);border-left:5px solid #64748b;background:#f8fafc;border-radius:8px;padding:14px 18px;margin:0 0 14px}
+    .climate-interaction-box.box-inbound{border-left-color:#475569;background:#f6f8fb}
+    .climate-interaction-box.box-outbound{border-left-color:#0f766e;background:#f5fbfa}
+    .climate-interaction-box h4{font-size:13px;line-height:1.4;color:#0f172a;margin:0 0 6px}
+    .climate-interaction-summary{font-size:13px;line-height:1.6;color:#334155;margin:0 0 8px}
+    .climate-pathway-prose{font-size:13px;line-height:1.6;color:#334155;margin:0 0 8px}
+    .climate-pathway-prose:last-child{margin-bottom:0}
+    .climate-pathway-anchors{color:#64748b;font-size:12px}
     .horizon-badges{display:flex;align-items:center;flex-wrap:wrap;gap:5px;margin-top:8px}
     .horizon-badge{display:inline-flex;padding:2px 7px;border-radius:999px;background:#e0f2fe;color:#075985;font-size:9px;font-weight:700}
     .climate-pathway-meta{font-size:10px;color:#64748b;margin-left:3px}
@@ -371,10 +368,6 @@
     .sr-narrative-block h4{font-size:13px;color:#1e293b;margin:0 0 5px}
     .sr-narrative-block p{font-size:13px;line-height:1.65;color:#334155;margin:0}
     .sr-narrative-rating{display:inline-flex;margin-left:6px;padding:1px 7px;border-radius:999px;background:#f1f5f9;color:#475569;font-size:10px;font-weight:700}
-    @media (max-width:768px){
-      .causal-strip{grid-template-columns:1fr}
-      .causal-strip>div:not(:last-child)::after{content:'⌄';right:50%;top:auto;bottom:-13px;transform:translateX(50%)}
-    }
 
     /* ── Buttons ── */
     .btn{
@@ -2575,13 +2568,8 @@
 
   function renderClimatePathwayStrip(pathway){
     if(!pathway)return '';
-    const cells=[
-      ['Pressure',pathway.pressure],
-      ['Mechanism',pathway.mechanism],
-      ['Project implication',pathway.project_implication],
-      ['Design response',pathway.design_response]
-    ];
-    if(cells.some(([,value])=>!value))return '';
+    const bits=[pathway.pressure,pathway.mechanism,pathway.project_implication].filter(Boolean);
+    if(bits.length<2)return '';
     const anchors=[
       ...(Array.isArray(pathway.project_elements)?pathway.project_elements:[]),
       ...(Array.isArray(pathway.geographies)?pathway.geographies:[]),
@@ -2589,30 +2577,31 @@
       ...(Array.isArray(pathway.systems_or_assets)?pathway.systems_or_assets:[])
     ].filter(Boolean);
     const horizons=(Array.isArray(pathway.time_horizons)?pathway.time_horizons:[])
-      .map(renderHorizonBadge).filter(Boolean).join('');
-    const confidence=pathway.confidence
-      ?`<span class="climate-pathway-meta">Confidence: ${esc(pathway.confidence)}</span>`:'';
-    const evidenceGap=pathway.evidence_gap
-      ?`<span class="climate-pathway-meta">Evidence gap: ${esc(pathway.evidence_gap)}</span>`:'';
-    return `<div class="climate-pathway">${anchors.length?`<div class="climate-pathway-anchors"><strong>Project anchors:</strong> ${anchors.map(esc).join(' · ')}</div>`:''}<div class="causal-strip">${cells.map(([label,value])=>`<div><span>${esc(label)}</span>${esc(value)}</div>`).join('')}</div>${horizons||confidence||evidenceGap?`<div class="horizon-badges">${horizons}${confidence}${evidenceGap}</div>`:''}</div>`;
+      .map(v=>({'current-near-term':'in the near term','project-lifetime':'over the project’s life','asset-system-lifetime':'over the life of the assets'}[v])).filter(Boolean);
+    const lead=esc(bits.join(', leading to '))+'.';
+    const response=pathway.design_response?` The current design response is ${esc(pathway.design_response)}.`:'';
+    const gap=pathway.evidence_gap?` Remaining gap: ${esc(pathway.evidence_gap)}.`:'';
+    const horizonNote=horizons.length?` This matters ${horizons.map(esc).join(' and ')}.`:'';
+    const anchorNote=anchors.length?` <span class="climate-pathway-anchors">Anchored in ${anchors.map(esc).join(', ')}.</span>`:'';
+    return `<p class="climate-pathway-prose">${lead}${horizonNote}${response}${gap}${anchorNote}</p>`;
   }
 
   function renderClimateInteractions(lens){
     if(!lens)return '';
     const labels={
-      'climate-fcv-on-project':'How Climate-FCV dynamics could affect this project',
-      'project-on-climate-fcv':'How this project could affect Climate-FCV dynamics'
+      'climate-fcv-on-project':'How climate and FCV dynamics could affect this project',
+      'project-on-climate-fcv':'How this project could affect climate and FCV dynamics'
     };
+    const modifier={'climate-fcv-on-project':'box-inbound','project-on-climate-fcv':'box-outbound'};
     const interactions=(Array.isArray(lens.interaction_readout)?lens.interaction_readout:[])
       .filter(item=>item&&labels[item.direction_id]&&item.summary)
       .slice(0,2);
     if(!interactions.length)return '';
-    const sections=interactions.map(item=>{
+    return interactions.map(item=>{
       const pathways=(Array.isArray(item.pathways)?item.pathways:[])
         .map(renderClimatePathwayStrip).filter(Boolean).join('');
-      return `<section class="climate-interaction-narrative"><h4>${esc(labels[item.direction_id])}</h4><p>${esc(item.summary)}</p>${pathways}</section>`;
+      return `<section class="climate-interaction-box ${modifier[item.direction_id]||''}"><h4>${esc(labels[item.direction_id])}</h4><p class="climate-interaction-summary">${esc(item.summary)}</p>${pathways}</section>`;
     }).join('');
-    return `<div class="climate-interactions-section"><div class="climate-readout-heading">Climate-FCV interactions and project pathways</div><p class="climate-readout-intro">Given the Climate-FCV pressures identified for this operation, the assessment traces how context-specific climate and FCV dynamics may affect particular project components, places, groups and assets, and how the project's own design choices may alter those dynamics over different time horizons.</p><div class="climate-interaction-stack">${sections}</div></div>`;
   }
 
   function renderClimateDividendSynthesis(lens,priorities){
