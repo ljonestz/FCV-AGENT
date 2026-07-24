@@ -1077,6 +1077,37 @@ git commit -m "docs: record v9.19 climate dedicated module in claude.md"
 
 ---
 
+## PHASE 5 — OPCS compliance guardrails (added 2026-07-24 from WBG LLM review)
+
+See spec §12. Claude Code must NOT read the OPCS corpus; implement from spec §12 only. Adopt clearly-right items + a lightweight `policy_status`/`specialist_referral` layer (hybrid); no full `finding_type` taxonomy.
+
+**Amendments to earlier tasks (apply as part of Phase 5, since Phase 1 is already committed):**
+- The Task 1.1 integration enum `strong|moderate|limited` is superseded by Task 5.1's enum `well_integrated|partly_integrated|weakly_integrated|insufficient_evidence` with `insufficient_evidence` as the no-valid-value default (drop the material→moderate default). Task 1.1 tests updated accordingly.
+- The gauge in Task 2.5 must use the new enum + the reframed "Indicative Climate-FCV Integration Readout" caption/caveat (spec §12.2), and map `insufficient_evidence` to an empty/zero arc labelled "Insufficient evidence".
+- Task 3.2 DOCX and Task 2.x priority panels additionally render `policy_status` (understated) and `specialist_referral`.
+- Task 4.1 fixture gains `sensitivity_evidence`/`responsiveness_evidence`, the new `integration_level` value, `policy_status`, and a `specialist_referral` on at least one priority.
+- Task 4.2 manifest stage_instructions gain the instrument-awareness + policy-boundary + source-layer discipline.
+
+### Task 5.1: Integration enum + separate S/R evidence in the diagnostic
+- `sector_lenses/pipeline.py` `extract_lens_diagnostic` climate branch + the `_CLIMATE_INTEGRATION_LEVELS` constant: change to `{well_integrated, partly_integrated, weakly_integrated, insufficient_evidence}`; the no-valid-value fallback becomes `insufficient_evidence` (remove the material→moderate branch). Add `sensitivity_evidence` and `responsiveness_evidence` (bounded string lists, ≤5 × ≤500 chars, via `_bounded_strings`) to the climate lens entry. Update the two Task 1.1 tests to the new enum values.
+- Test: `tests/test_sector_lens_pipeline.py` — assert new enum parses; unknown/absent → `insufficient_evidence`; S/R evidence arrays parse and bound.
+
+### Task 5.2: `policy_status` + `specialist_referral` on priorities
+- `app.py` `extract_priorities`: parse per-priority `policy_status` (enum `mandatory_reference|document_commitment|advisory|not_determined`, default `not_determined` for invalid/missing) and `specialist_referral` (`null` or `{required: bool, route: <one of the allowed routes>, reason: str≤500}`; invalid → `null`). Additive; do not disturb existing fields.
+- Test: `tests/test_extract_priorities.py` — valid values parse; invalid `policy_status` → `not_determined`; malformed `specialist_referral` → `null`; route validated against the allowed set.
+
+### Task 5.3: Climate prompt OPCS guardrails (Stage 2 + Stage 3)
+- `app.py` `build_lens_stage_context` climate branches. Add: the POLICY BOUNDARY block (spec §12.1); the instrument/framework guardrail (§12.5); CQ2/CQ4/CQ5 refinements (§12.6); dividends-not-requirements strengthening (§12.7); cross-document consistency rule (§12.8); two-source-layer rule (§12.9); and instructions to emit `policy_status`, `specialist_referral`, `sensitivity_evidence`, `responsiveness_evidence`. Mind the Stage 3 1200-token ceiling — put the longer boundary/instrument text in the Stage 2 branch and the manifest (Task 4.2/5.4) where budget is looser, and keep Stage 3 additions tight (boundary one-liner + the field names). If Stage 3 risks exceeding 1200, prefer the manifest for the wordier guidance.
+- Test: `tests/test_sector_lens_app_contract.py` — Stage 2 climate prompt contains the boundary phrase, the instrument guardrail, `policy_status`, `specialist_referral`, `sensitivity_evidence`; Stage 3 climate prompt contains a boundary reference and `policy_status`/`specialist_referral`; neither exceeds its ceiling.
+
+### Task 5.4: UI — policy-boundary notice + reframed gauge + understated compliance chips
+- `index.html`: add a one-line policy-boundary notice inside `renderClimateModuleNotice` (both paths); reframe the gauge caption/caveat in `sidebarHtml`/`updateSidebar` per §12.2 and handle the 4-value enum incl. `insufficient_evidence`; in `showPriority` (and the export card builder) render `policy_status` and `specialist_referral` as small, understated lines (not prominent labels).
+- Test: `tests/test_climate_lens_frontend.py` — boundary phrase present; gauge caption/caveat present; `insufficient_evidence` renders "Insufficient evidence"; a priority with `specialist_referral.required` shows a referral line; `policy_status` shown understated.
+
+### Task 5.5: DOCX export — boundary, S/R evidence note, compliance fields
+- `app.py` `download_report`: render the policy-boundary paragraph; where the integration line prints, keep it consistent with the reframed caption; render `policy_status`/`specialist_referral` per priority (understated); optionally note separate S/R evidence.
+- Test: `tests/test_sector_lens_app_contract.py` DOCX test — boundary text present; a referral priority shows its route/reason; caption consistent.
+
 ## Notes for the executor
 
 - **Confirm in-scope variable names when editing large functions.** Where this plan references a variable at an edit site (for example the parsed Stage-3 dict name in `renderOut`, or `lens_diagnostic` at the SSE done sites, or `priorities_payload`/`climate_readout` in `download_report`), read the surrounding 20 lines and substitute the real local name. The behaviour and code shown are correct; only the binding name may differ.

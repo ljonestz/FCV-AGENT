@@ -108,6 +108,42 @@ A Climate-active output:
 - renders priorities in the standard panels with a climate-contribution panel each;
 - completes reliably within bounded production time and context limits, and degrades safely when research or diagnostics fail.
 
+## 12. OPCS compliance guardrails (WBG LLM review, 2026-07-24)
+
+An internal WBG LLM with access to the OPCS policy corpus reviewed this design and plan for consistency with current OPCS/ESF policy. Claude Code must NOT read the OPCS corpus; these guardrails are the authoritative summary to implement. Scope decision: adopt the clearly-right items in full, plus a lightweight ("hybrid") structured layer (`policy_status` + `specialist_referral`); do not build the full four-way `finding_type` taxonomy.
+
+### 12.1 Policy boundary (adopt)
+A `POLICY BOUNDARY` block is injected into the Stage 2 and Stage 3 climate prompts, shown as a short UI notice, and included in exports. The module is an advisory FCV screening and design-support tool. It does NOT: determine ESF/ESS compliance; assign, confirm or revise an Environmental and Social Risk Classification; determine which ESSs apply; replace the E&S assessment, ESRS, ESCP, SEP or other required instruments; give authoritative OPCS-policy interpretation; or substitute for the Task Team's accredited E&S specialist, ES Practice Manager, RSA, CESSO, OESRC, Legal, or UN engagement team. Where a finding overlaps ESF requirements, it is framed as an issue to verify against the project's E&S documentation and responsible specialist.
+
+### 12.2 Integration readout reframe (adopt — revises §4.2)
+The gauge is titled/captioned "Indicative Climate-FCV Integration Readout" with the caveat: "This AI-assisted readout supports expert review. It is not an official WBG rating, policy determination, ESF assessment, Paris Alignment assessment, or substitute for Task Team and specialist judgment." The internal `integration_level` enum becomes `well_integrated | partly_integrated | weakly_integrated | insufficient_evidence`. Absence of a valid value defaults to `insufficient_evidence` — NOT to a middling value (the prior "material→moderate" default was analytically unsafe).
+
+### 12.3 Keep sensitivity and responsiveness separate internally (adopt)
+Even though one combined gauge is shown, the diagnostic retains separate `sensitivity_evidence` and `responsiveness_evidence` arrays. An operation may be FCV-sensitive without being responsive; the combined readout must not penalise a project for not pursuing dividends when it manages FCV risk well, nor reward dividend talk over basic Do No Harm.
+
+### 12.4 Hybrid structured compliance fields (adopt — lightweight)
+Each Stage 3 priority (and, where useful, each reflection) carries:
+- `policy_status`: `mandatory_reference | document_commitment | advisory | not_determined` (default `not_determined`). Distinguishes a mandatory ESF/OPCS reference, an existing project-document commitment (e.g. an ESCP/SEP action), FCV/climate good practice, and undetermined.
+- `specialist_referral`: `null`, or `{ "required": bool, "route": "Task Team E&S specialist | RSA | ESF Help Desk | OESRC | Legal | UN engagement team", "reason": string }`. Phrased as "consider referral" unless policy clearly makes escalation mandatory. Triggers include: uncertainty on applicable ESS; possible conflict with an ESCP/other commitment; security-personnel issues; SEA/SH; disproportionate effects on disadvantaged/vulnerable people; significant land or natural-resource access restrictions; ESRC uncertainty; unfamiliar UN-agency implementation arrangements; apparent need for policy interpretation.
+These are surfaced in the export and understated in the UI (not prominent technical labels). The full `finding_type`/`verification_route` taxonomy is deliberately out of scope for now.
+
+### 12.5 Instrument and framework awareness (adapt — partly exists)
+The underlying app already classifies `INSTRUMENT_TYPE` (IPF/PforR/DPO/MPA/AF/Restructuring) and scrubs ESF vocabulary for PforR/DPO. The climate prompts add an explicit guardrail: do not apply IPF/ESF terminology (project components, ESCP, ESS, PAD sections) to PforR or DPF as if universally applicable; if the instrument or applicable framework (ESF vs borrower systems vs predecessor Safeguards) cannot be established, state the limitation and avoid compliance-style conclusions.
+
+### 12.6 CQ2 / CQ4 / CQ5 refinements (adopt — prompt wording)
+- CQ2: distinguish project-caused risks, contextual delivery risks, exclusion/conflict effects, longer-term climate risks, and risks ALREADY managed in the ESCP/SEP/ESMF/ESMP; do not repackage an already-managed E&S risk as a new unaddressed FCV deficit.
+- CQ4: identify vulnerability from project + context, NOT a fixed demographic checklist; examine disproportionate impacts, benefit-access barriers, information/consultation/grievance barriers, natural-resource dependence, displacement/mobility, intersecting disadvantage, and whether differentiated measures are documented.
+- CQ5: assess the institutional trade-off contextually (state capacity vs legitimacy vs capture/exclusion vs access/security vs third-party/UN delivery vs sustainability vs accountability); "working through" vs "bypassing" government is not inherently good or bad.
+
+### 12.7 Dividends never implied as requirements (adopt — strengthen §4 dividends)
+Never describe an unclaimed peace/social dividend as policy non-compliance unless there is an explicit applicable commitment. Distinguish documented contribution / credible-but-unsupported opportunity / speculative / no material pathway. Do not recommend adding cohesion, jobs, trust or institutional objectives unless a credible project-attached mechanism exists and the proposal stays consistent with the PDO, ToC, instrument, mandate and capacity.
+
+### 12.8 Cross-document consistency (adopt — prompt guardrail)
+Compare findings against available authoritative project documents (PAD/PCN, ESRS, ESCP, SEP, ESMF/ESMP, SORT, results framework, Paris Alignment where present, CCDR). Purpose is to avoid contradiction, not to redo those assessments. If the PAD states an issue is mitigated via the SEP/ESCP, do not call it wholly unaddressed; state what the package documents, assess whether the response is specific enough for the climate-FCV pathway, and flag remaining uncertainty.
+
+### 12.9 Two source layers (adopt — framing rule)
+Layer 1 = current authoritative operational sources (current PPF policy/directive/procedure, ESF and applicable ESSs, current OPCS guidance, project-specific disclosed instruments). Layer 2 = analytical/good-practice sources (Maximizing the Peace and Social Dividends of Climate Action; FCV-Sensitive Climate Action Framework; Defueling Conflict; CCDR FCV-sensitivity materials). The source signpost names Layer 2; output must never present a Layer-2 recommendation as an OPCS requirement. Do not hard-code archived/retired OPCS PDFs as current authority.
+
 ## 11. Testing outline
 
 Extends the current suite. Cover: unchanged core-only behaviour; dedicated-mode routing on lens selection; the six core questions driving Stage 2; reflections selection and the "less central here" path; the single integration gauge; both prose interaction boxes with intersection-only content; the CQ2 lock-in and time-scale path (present when relevant, absent when not); grounded-source versus evidence-gap handling; the wider-FCV-context note; priority panels with climate-contribution panels; CCDR-present and CCDR-absent cases; climate research timeout, retry and safe failure; and parity across live page, shared HTML and DOCX. Retain the synthetic end-to-end regression.
