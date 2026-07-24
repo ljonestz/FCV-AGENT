@@ -356,10 +356,10 @@ def test_downloaded_report_has_climate_readout_and_context_sources():
 
     assert text.index("How relevant is climate to this project?") < text.index("Summary.")
     assert "High materiality" in text
-    assert text.index("FCV Sensitivity") < text.index(
-        "How climate and FCV dynamics could affect this project"
-    )
-    assert text.index("FCV Responsiveness") < text.index(
+    # S/R sections are replaced by the integration line in the climate path
+    assert "FCV Sensitivity" not in text
+    assert "FCV Responsiveness" not in text
+    assert text.index("How well does the project integrate climate and FCV?") < text.index(
         "How climate and FCV dynamics could affect this project"
     )
     assert "How this project could affect climate and FCV dynamics" in text
@@ -1836,3 +1836,75 @@ def test_climate_prompts_carry_opcs_guardrails():
     assert "Preserve normal" not in s3
     assert "policy_status" in s3
     assert "does not determine ESF" in s3
+
+
+def test_docx_climate_reflections_integration_wider_fcv_boundary_compliance():
+    """DOCX: reflections heading, integration line, wider FCV section, policy boundary, per-priority compliance, order."""
+    from docx import Document
+
+    fixture = json.loads(SOUTH_SUDAN_FIXTURE.read_text(encoding="utf-8"))
+    research = app_module.normalize_climate_research_bundle(
+        fixture["research_bundle"]
+    )
+    state = app_module.AnalysisState.from_payload({
+        "active_lenses": ["climate"],
+        "lens_versions": {"climate": "1.1.0"},
+    })
+    context = app_module.build_lens_stage_context(
+        state,
+        3,
+        lens_diagnostic=fixture["diagnostic"],
+        lens_context_sources=research["sources"],
+        climate_research=research,
+    )
+    diagnostic = context["lens_diagnostic"]
+    stage3_text = (
+        "%%%JSON_START%%%"
+        + json.dumps(fixture["stage3_block"])
+        + "%%%JSON_END%%%"
+    )
+    parsed = app_module.extract_priorities(
+        stage3_text,
+        active_lens_ids=["climate"],
+        lens_diagnostic=diagnostic,
+    )
+    response = app_module.app.test_client().post(
+        "/api/download-report",
+        json={
+            "summary": (
+                "# South Sudan climate reflections DOCX test\n"
+                "## Executive summary\n"
+                "**Climate-FCV pressures shape access and governance.**"
+            ),
+            "priorities": parsed["priorities"],
+            "fcv_rating": parsed["fcv_rating"],
+            "fcv_responsiveness_rating": parsed["fcv_responsiveness_rating"],
+            "sensitivity_summary": parsed["sensitivity_summary"],
+            "responsiveness_summary": parsed["responsiveness_summary"],
+            "wider_fcv_context": fixture["stage3_block"].get("wider_fcv_context", ""),
+            "active_lenses": [{
+                "id": "climate",
+                "version": "1.1.0",
+                "position": "primary",
+            }],
+            "lens_diagnostic": diagnostic,
+            "lens_context_sources": research["sources"],
+            "metadata": {"date_str": "23 July 2026"},
+        },
+    )
+    assert response.status_code == 200
+    document = Document(io.BytesIO(response.data))
+    text = "\n".join(paragraph.text for paragraph in document.paragraphs)
+
+    assert "Reflections on core climate and FCV considerations" in text
+    assert "How well does the project integrate climate and FCV?" in text
+    assert "Wider FCV context" in text
+    assert "does not determine ESF or ESS compliance" in text          # policy boundary
+    assert "Task Team E&S specialist" in text                          # specialist_referral route
+
+    # order: interactions -> reflections -> dividends -> wider fcv
+    i_int = text.index("How climate and FCV dynamics could affect this project")
+    i_ref = text.index("Reflections on core climate and FCV considerations")
+    i_div = text.index("Climate, peace and social dividends")
+    i_wid = text.index("Wider FCV context")
+    assert i_int < i_ref < i_div < i_wid

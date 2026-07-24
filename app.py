@@ -8809,6 +8809,11 @@ def download_report():
     p4r_watch = data.get('p4r_watch') or []
     regional_watch = data.get('regional_watch') or []
     horizon = data.get('horizon_considerations', '')
+    wider_fcv_context = data.get('wider_fcv_context')
+    if isinstance(wider_fcv_context, str):
+        wider_fcv_context = wider_fcv_context.strip()[:1200] or None
+    else:
+        wider_fcv_context = None
     under_hood = data.get('under_hood') or {}
     requested_report_lenses = data.get('active_lenses') or []
     report_ids = [item.get('id') for item in requested_report_lenses if isinstance(item, dict) and item.get('id')]
@@ -9082,6 +9087,54 @@ def download_report():
         para = doc.add_paragraph(prose)
         para.paragraph_format.space_after = Pt(4)
 
+    def add_policy_boundary():
+        doc.add_paragraph(
+            'This is an advisory FCV screening readout. It does not determine '
+            'ESF or ESS compliance or an environmental and social risk '
+            'classification, and does not replace review by the Task Team\'s '
+            'accredited E&S specialist.'
+        )
+
+    def add_climate_integration_line():
+        payload = climate_integration_payload(lens_diagnostic)
+        if not payload:
+            return
+        labels = {
+            'well_integrated': 'Well integrated',
+            'partly_integrated': 'Partly integrated',
+            'weakly_integrated': 'Weakly integrated',
+            'insufficient_evidence': 'Insufficient evidence',
+        }
+        _add_section_heading('How well does the project integrate climate and FCV?', level=2)
+        p = doc.add_paragraph()
+        r = p.add_run(
+            labels.get(payload['level'], 'Insufficient evidence')
+            + (f" — {payload['summary']}" if payload.get('summary') else '')
+        )
+        r.bold = False
+
+    def add_climate_reflections():
+        reflections = (climate_readout or {}).get('reflections', []) if climate_readout else []
+        if not reflections:
+            return
+        doc.add_heading('Reflections on core climate and FCV considerations', level=2)
+        for ref in reflections:
+            p = doc.add_paragraph()
+            head = p.add_run((ref.get('title') or '').strip())
+            head.bold = True
+            if ref.get('status_cue'):
+                p.add_run(f"  [{ref['status_cue']}]")
+            doc.add_paragraph(ref.get('text', ''))
+        less = (climate_readout or {}).get('less_central')
+        if less:
+            doc.add_paragraph(f'Less central here: {less}')
+
+    def add_wider_fcv_context():
+        if not wider_fcv_context:
+            return
+        doc.add_heading('Wider FCV context', level=2)
+        doc.add_paragraph(wider_fcv_context)
+
     def add_climate_interactions():
         labels = {
             'climate-fcv-on-project': (
@@ -9175,6 +9228,24 @@ def download_report():
                 paragraph = doc.add_paragraph(value, style='List Bullet')
                 paragraph.paragraph_format.space_after = Pt(1)
 
+    def add_priority_compliance(priority):
+        compliance_labels = {
+            'mandatory_reference': 'Mandatory reference — verify against ESF/OPCS requirements',
+            'document_commitment': 'Existing project-document commitment',
+            'advisory': 'Advisory (good practice)',
+        }
+        status = priority.get('policy_status')
+        if compliance_labels.get(status):
+            p = doc.add_paragraph()
+            p.add_run('Policy status: ').bold = True
+            p.add_run(compliance_labels[status])
+        ref = priority.get('specialist_referral')
+        if isinstance(ref, dict) and ref.get('route') and ref.get('reason'):
+            p = doc.add_paragraph()
+            label = 'Referral suggested: ' if ref.get('required') else 'Consider referral: '
+            p.add_run(label).bold = True
+            p.add_run(f"{ref['route']} — {ref['reason']}")
+
     def add_priority_climate_contribution(priority):
         links = priority.get('climate_links') or {}
         if links.get('status') == 'linked':
@@ -9242,9 +9313,12 @@ def download_report():
 
         # ── FCV Risk Exposure ──
         if climate_valid:
-            add_sr_sections()
+            add_policy_boundary()
+            add_climate_integration_line()
             add_climate_interactions()
+            add_climate_reflections()
             add_climate_dividend_synthesis()
+            add_wider_fcv_context()
         else:
             add_core_risk_exposure()
             add_sr_sections()
@@ -9328,6 +9402,7 @@ def download_report():
                 add_field('RRA Driver Alignment', pr.get('rra_driver_alignment'))
                 if climate_valid:
                     add_priority_climate_contribution(pr)
+                    add_priority_compliance(pr)
                 else:
                     add_field(
                         'Differentiated approach note',
