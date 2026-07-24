@@ -34,7 +34,7 @@ _CLIMATE_REFLECTION_KEYS = {
     "cq1_interaction", "cq2_maladaptation", "cq3_dividends",
     "cq4_inclusion", "cq5_institutions", "cq6_adaptive",
 }
-_CLIMATE_INTEGRATION_LEVELS = {"strong", "moderate", "limited"}
+_CLIMATE_INTEGRATION_LEVELS = {"well_integrated", "partly_integrated", "weakly_integrated", "insufficient_evidence"}
 
 
 def _list_values(value: Any) -> list[Any]:
@@ -535,16 +535,19 @@ def extract_lens_diagnostic(
         integration_level = ""
         integration_summary = ""
         less_central = ""
+        sensitivity_evidence: list[str] = []
+        responsiveness_evidence: list[str] = []
         if lens_id == "climate":
             reflections = _normalize_climate_reflections(item.get("reflections"))
             raw_integration = str(item.get("integration_level", "")).lower()
             integration_level = (
                 raw_integration if raw_integration in _CLIMATE_INTEGRATION_LEVELS
-                else "" if strict_required_fields
-                else "moderate" if applicability == "material" else "limited"
+                else "insufficient_evidence"
             )
             integration_summary = str(item.get("integration_summary", "")).strip()[:400]
             less_central = str(item.get("less_central", "")).strip()[:300]
+            sensitivity_evidence = _bounded_strings(item.get("sensitivity_evidence"), 5, 500)
+            responsiveness_evidence = _bounded_strings(item.get("responsiveness_evidence"), 5, 500)
         normalized_lens = {
             "lens_id": lens_id,
             "applicability": applicability,
@@ -574,6 +577,8 @@ def extract_lens_diagnostic(
                 "integration_level": integration_level,
                 "integration_summary": integration_summary,
                 "less_central": less_central,
+                "sensitivity_evidence": sensitivity_evidence,
+                "responsiveness_evidence": responsiveness_evidence,
             })
         lenses.append(normalized_lens)
 

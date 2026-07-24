@@ -572,25 +572,56 @@ def test_climate_diagnostic_parses_reflections_and_integration():
         "%%%LENS_DIAGNOSTIC_START%%%"
         '{"lenses":[{"lens_id":"climate","applicability":"material",'
         '"materiality_level":"high","materiality_summary":"Water and conflict.",'
-        '"integration_level":"moderate","integration_summary":"Aware but allocation untreated.",'
+        '"integration_level":"partly_integrated","integration_summary":"Aware but allocation untreated.",'
         '"reflections":[{"question_key":"cq2_maladaptation","title":"Maladaptation and lock-in",'
         '"status_cue":"partial gap","text":"Siting is treated as engineering, not allocation."},'
         '{"question_key":"cq4_inclusion","title":"Vulnerable groups","status_cue":"strong",'
         '"text":"IDP households are explicitly targeted."}],'
         '"less_central":"HDP coordination is light here.",'
+        '"sensitivity_evidence":["Aware of flood access risk."],'
+        '"responsiveness_evidence":["Committee model builds cohesion."],'
         '"source_ids":[],"readout_sections":[],"interaction_readout":[],'
         '"additional_pathways":[],"other_pathways":[]}],"findings":[]}'
         "%%%LENS_DIAGNOSTIC_END%%%"
     )
     result = extract_lens_diagnostic(block, ["climate"])
     lens = result["lenses"][0]
-    assert lens["integration_level"] == "moderate"
+    assert lens["integration_level"] == "partly_integrated"
     assert lens["integration_summary"].startswith("Aware")
     assert [r["question_key"] for r in lens["reflections"]] == [
         "cq2_maladaptation", "cq4_inclusion",
     ]
     assert lens["reflections"][0]["status_cue"] == "partial gap"
     assert lens["less_central"] == "HDP coordination is light here."
+    assert lens["sensitivity_evidence"] == ["Aware of flood access risk."]
+    assert lens["responsiveness_evidence"] == ["Committee model builds cohesion."]
+
+
+def test_climate_integration_defaults_to_insufficient_evidence():
+    # No integration_level at all — must not become "moderate"
+    block_no_level = (
+        "%%%LENS_DIAGNOSTIC_START%%%"
+        '{"lenses":[{"lens_id":"climate","applicability":"material",'
+        '"materiality_level":"high","materiality_summary":"Water and conflict.",'
+        '"source_ids":[],"readout_sections":[],"interaction_readout":[],'
+        '"additional_pathways":[],"other_pathways":[]}],"findings":[]}'
+        "%%%LENS_DIAGNOSTIC_END%%%"
+    )
+    result_no_level = extract_lens_diagnostic(block_no_level, ["climate"])
+    assert result_no_level["lenses"][0]["integration_level"] == "insufficient_evidence"
+
+    # Invalid value — must also become "insufficient_evidence"
+    block_invalid = (
+        "%%%LENS_DIAGNOSTIC_START%%%"
+        '{"lenses":[{"lens_id":"climate","applicability":"material",'
+        '"materiality_level":"high","materiality_summary":"Water and conflict.",'
+        '"integration_level":"amazing",'
+        '"source_ids":[],"readout_sections":[],"interaction_readout":[],'
+        '"additional_pathways":[],"other_pathways":[]}],"findings":[]}'
+        "%%%LENS_DIAGNOSTIC_END%%%"
+    )
+    result_invalid = extract_lens_diagnostic(block_invalid, ["climate"])
+    assert result_invalid["lenses"][0]["integration_level"] == "insufficient_evidence"
 
 
 def test_climate_reflections_drop_unknown_keys_and_cap_at_five():

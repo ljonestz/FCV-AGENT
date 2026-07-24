@@ -1734,9 +1734,9 @@ def test_stage3_climate_prompt_uses_prose_and_wider_context():
 
 def test_climate_integration_payload_helper():
     diagnostic = {"lenses": [{"lens_id": "climate",
-                              "integration_level": "moderate",
+                              "integration_level": "partly_integrated",
                               "integration_summary": "Aware but allocation untreated."}]}
     out = app_module.climate_integration_payload(diagnostic)
-    assert out == {"level": "moderate", "summary": "Aware but allocation untreated."}
+    assert out == {"level": "partly_integrated", "summary": "Aware but allocation untreated."}
     assert app_module.climate_integration_payload({"lenses": []}) is None
     assert app_module.climate_integration_payload({"lenses": [{"lens_id": "climate"}]}) is None
