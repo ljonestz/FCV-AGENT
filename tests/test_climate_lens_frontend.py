@@ -388,3 +388,26 @@ def test_interactions_render_as_prose_boxes_without_causal_grid():
     assert "climate-interaction-box" in out.stdout
     assert "›" not in out.stdout  # no › arrow glyph
     assert "seasonal windows" in out.stdout  # design response in prose
+
+
+def test_reflections_render_with_status_chips_and_intro():
+    html = INDEX.read_text(encoding="utf-8")
+    assert "renderClimateReflections" in html
+    fn = _extract_js_function(html, "renderClimateReflections")
+    esc = _extract_js_function(html, "esc")
+    lens = {"reflections": [
+        {"question_key": "cq2_maladaptation", "title": "Maladaptation and lock-in",
+         "status_cue": "partial gap", "text": "Siting is engineering, not allocation."},
+        {"question_key": "cq4_inclusion", "title": "Vulnerable groups",
+         "status_cue": "strong", "text": "IDP households explicitly targeted."}],
+        "less_central": "HDP coordination is light here."}
+    script = f"{esc}\n{fn}\nprocess.stdout.write(renderClimateReflections({json.dumps(lens)}));"
+    out = subprocess.run(["node", "-e", script], capture_output=True, text=True)
+    assert out.returncode == 0, out.stderr
+    assert "Reflections on core climate and FCV considerations" in out.stdout
+    assert "reflection-chip" in out.stdout
+    assert "partial gap" in out.stdout
+    assert "Less central here" in out.stdout
+    empty = subprocess.run(["node", "-e", f"{esc}\n{fn}\nprocess.stdout.write(renderClimateReflections({{}}));"], capture_output=True, text=True)
+    assert empty.returncode == 0, empty.stderr
+    assert empty.stdout.strip() == ""

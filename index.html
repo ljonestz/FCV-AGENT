@@ -368,6 +368,13 @@
     .sr-narrative-block h4{font-size:13px;color:#1e293b;margin:0 0 5px}
     .sr-narrative-block p{font-size:13px;line-height:1.65;color:#334155;margin:0}
     .sr-narrative-rating{display:inline-flex;margin-left:6px;padding:1px 7px;border-radius:999px;background:#f1f5f9;color:#475569;font-size:10px;font-weight:700}
+    .climate-reflections-section{margin:20px 0}
+    .reflection-row{border-left:3px solid #cbd5e1;padding:2px 0 2px 12px;margin:12px 0}
+    .reflection-head{display:flex;align-items:center;gap:8px;margin:0 0 4px}
+    .reflection-head strong{font-size:13px;color:#1e293b}
+    .reflection-chip{display:inline-flex;padding:1px 8px;border-radius:999px;background:#eef2f7;color:#475569;font-size:10px;font-weight:700;text-transform:lowercase}
+    .reflection-row p{font-size:13px;line-height:1.6;color:#334155;margin:0}
+    .reflection-less{font-size:12px;color:#64748b;margin:10px 0 0}
 
     /* ── Buttons ── */
     .btn{
@@ -2602,6 +2609,15 @@
         .map(renderClimatePathwayStrip).filter(Boolean).join('');
       return `<section class="climate-interaction-box ${modifier[item.direction_id]||''}"><h4>${esc(labels[item.direction_id])}</h4><p class="climate-interaction-summary">${esc(item.summary)}</p>${pathways}</section>`;
     }).join('');
+  }
+
+  function renderClimateReflections(lens){
+    const items=(lens&&Array.isArray(lens.reflections)?lens.reflections:[])
+      .filter(r=>r&&r.text);
+    if(!items.length)return '';
+    const rows=items.map(r=>`<div class="reflection-row"><div class="reflection-head"><strong>${esc(r.title||'')}</strong>${r.status_cue?`<span class="reflection-chip">${esc(r.status_cue)}</span>`:''}</div><p>${esc(r.text)}</p></div>`).join('');
+    const less=lens.less_central?`<p class="reflection-less"><em>Less central here:</em> ${esc(lens.less_central)}</p>`:'';
+    return `<div class="climate-reflections-section"><div class="climate-readout-heading">Reflections on core climate and FCV considerations</div><p class="climate-readout-intro">The reflections below draw on a core set of climate and FCV frameworks and evidence, and focus on the considerations most material to this project rather than applying every principle mechanically.</p>${rows}${less}</div>`;
   }
 
   function renderClimateDividendSynthesis(lens,priorities){
