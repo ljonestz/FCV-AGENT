@@ -747,6 +747,20 @@ def test_lens_diagnostic_failure_names_parser_errors_and_missing_entries():
     ).lower()
 
 
+def test_stage2_climate_prompt_requires_reflections_and_intersection():
+    state = app_module.AnalysisState.from_payload({
+        "active_lenses": ["climate"], "lens_versions": {}, "doc_type": "PAD",
+    })
+    ctx = app_module.build_lens_stage_context(
+        state, 2, climate_research={"status": "failed", "attempts": 0,
+                                    "sources": [], "claims": [], "failure_reason": ""},
+    )
+    prompt = ctx["prompt"]
+    assert "reflections" in prompt
+    assert "integration_level" in prompt
+    assert "cq2_maladaptation" in prompt
+    assert "climate and an FCV" in prompt  # intersection rule wording
+
 @pytest.mark.parametrize(
     ("response_text", "expected_status"),
     [
