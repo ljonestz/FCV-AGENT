@@ -7269,7 +7269,12 @@ def run_stage():
                 # a queue with a 20-second timeout.  If no chunk arrives in 20 s a
                 # keepalive event is sent, preventing any proxy from closing the SSE
                 # connection during Sonnet's time-to-first-token phase.
-                _stage_max_tokens = 8000 if stage == 1 else (20000 if stage == 3 else 16000)
+                # Climate-active Stage 2 must fit the full visible assessment AND the
+                # hidden climate diagnostic (reflections/integration/both directions);
+                # give it a larger output budget so the diagnostic block is not truncated.
+                _climate_active = "climate" in (analysis_state.active_lenses or [])
+                _stage2_cap = 26000 if _climate_active else 16000
+                _stage_max_tokens = 8000 if stage == 1 else (20000 if stage == 3 else _stage2_cap)
                 for event in _stream_stage(
                     messages,
                     _stage_max_tokens,
@@ -8097,7 +8102,10 @@ def run_express():
                 ]
 
                 # ── Stream Stage 2 ──
-                for event in _stream_stage(stage2_messages, 16000, 2):
+                # Climate-active runs need a larger output budget so the hidden
+                # diagnostic block is not truncated after the visible assessment.
+                _stage2_cap = 26000 if "climate" in (analysis_state.active_lenses or []) else 16000
+                for event in _stream_stage(stage2_messages, _stage2_cap, 2):
                     yield event
                 stage2_output = _stream_stage._last_result
 
