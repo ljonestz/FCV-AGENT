@@ -431,6 +431,9 @@ def extract_lens_diagnostic(
                     "summary": str(
                         raw_interaction.get("summary", "")
                     ).strip()[:700],
+                    "narrative": str(
+                        raw_interaction.get("narrative", "")
+                    ).strip()[:1600],
                     "mechanisms": _bounded_strings(
                         raw_interaction.get("mechanisms"), 3, 350
                     ),

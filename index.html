@@ -2628,13 +2628,20 @@
     };
     const modifier={'climate-fcv-on-project':'box-inbound','project-on-climate-fcv':'box-outbound'};
     const interactions=(Array.isArray(lens.interaction_readout)?lens.interaction_readout:[])
-      .filter(item=>item&&labels[item.direction_id]&&item.summary)
+      .filter(item=>item&&labels[item.direction_id]&&(item.summary||item.narrative))
       .slice(0,2);
     if(!interactions.length)return '';
     return interactions.map(item=>{
-      const pathways=(Array.isArray(item.pathways)?item.pathways:[])
-        .map(renderClimatePathwayStrip).filter(Boolean).join('');
-      return `<section class="climate-interaction-box ${modifier[item.direction_id]||''}"><h4>${esc(labels[item.direction_id])}</h4><p class="climate-interaction-summary"><strong>${esc(item.summary)}</strong></p>${pathways}</section>`;
+      const narr=String(item.narrative||'').trim();
+      // Prefer the model-authored flowing narrative; fall back to the stitched
+      // pathway strips only when no narrative was produced.
+      const bodyHtml=narr
+        ? narr.split(/\n\s*\n/).map(p=>p.trim()).filter(Boolean)
+            .map(p=>`<p class="climate-interaction-prose">${esc(p)}</p>`).join('')
+        : (Array.isArray(item.pathways)?item.pathways:[])
+            .map(renderClimatePathwayStrip).filter(Boolean).join('');
+      const lead=item.summary?`<p class="climate-interaction-summary"><strong>${esc(item.summary)}</strong></p>`:'';
+      return `<section class="climate-interaction-box ${modifier[item.direction_id]||''}"><h4>${esc(labels[item.direction_id])}</h4>${lead}${bodyHtml}</section>`;
     }).join('');
   }
 

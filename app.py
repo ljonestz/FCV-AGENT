@@ -948,7 +948,19 @@ def build_lens_stage_context(
                 "validated claims. Suppress generic pathways rather than filling the schema. "
                 "Write the interaction summaries and dividend descriptions in "
                 "plain, accessible language for a non-technical reader, as short "
-                "narrative sentences rather than a tagged list. Always complete and "
+                "narrative sentences rather than a tagged list. For each interaction "
+                "direction also produce a narrative field: one or two flowing "
+                "plain-language paragraphs (about 60-130 words) that a non-specialist "
+                "Task Team Leader can read easily. Open with why it matters, then "
+                "explain the climate pressure and how it collides with the "
+                "conflict/fragility dynamic in THIS project's named places and "
+                "components, what that concretely does to the project's activities, "
+                "what the design already does about it, and what remains unconfirmed "
+                "- woven into connected prose, not a list. Spell out any acronym on "
+                "first use (for example community wildlife conservancy (CWC), "
+                "Contingent Emergency Response Component (CERC)). Tell one clear, "
+                "specific story per direction; do not restate the document or pad "
+                "with generic climate language. Always complete and "
                 "close the hidden diagnostic block: if output space runs short, keep "
                 "the diagnostic complete and shorten the visible Under the Hood "
                 "detail rather than truncating or omitting the diagnostic. "
@@ -1450,6 +1462,15 @@ def repair_lens_diagnostic(
         'systems_or_assets, time_horizons, research_claim_ids, confidence, and '
         'evidence_gap. If the '
         'assessment does not support a pathway, mark it not_material or omit it. '
+        'For each interaction direction also produce a narrative field: one or two '
+        'flowing plain-language paragraphs (about 60-130 words) a non-specialist '
+        'Task Team Leader can read easily - opening with why it matters, then the '
+        'climate pressure, how it collides with the conflict/fragility dynamic in '
+        'the project\'s named places and components, what it concretely means for '
+        'the project\'s activities, what the design already does, and what is still '
+        'unconfirmed - woven into connected prose, not a list. Spell out any acronym '
+        'on first use. Tell one specific story per direction; never restate the '
+        'document or pad with generic climate language. '
         'For Climate also return integration_level (one of well_integrated, '
         'partly_integrated, weakly_integrated, insufficient_evidence; use '
         'insufficient_evidence when the assessment does not clearly support a '
@@ -1477,7 +1498,7 @@ def repair_lens_diagnostic(
         '"sensitivity_evidence":[],"responsiveness_evidence":[],'
         '"analysis_emphasis":[],"evidence":[],"source_ids":[],'
         '"interaction_readout":[{"direction_id":"climate-fcv-on-project|'
-        'project-on-climate-fcv","summary":"...","mechanisms":[],'
+        'project-on-climate-fcv","summary":"...","narrative":"...","mechanisms":[],'
         '"project_implications":[],"positive_effects":[],"adverse_effects":[],'
         '"evidence":[],"evidence_gap":"","source_ids":[],"pathways":['
         '{"pathway_id":"climate-fcv-on-project-1","pressure":"...",'
@@ -1496,7 +1517,12 @@ def repair_lens_diagnostic(
     started_at = time.monotonic()
     try:
         response = (client or get_lens_recovery_client()).messages.create(
-            model='claude-haiku-4-5-20251001',
+            # The primary Stage 2 call almost always omits the hidden diagnostic
+            # block (trailing-block fatigue), so this "recovery" is in practice
+            # the effective climate diagnostic generator. Use Sonnet (not Haiku)
+            # so the interaction narratives, reflections and dividends are fluent
+            # and project-specific rather than thin bounded fragments.
+            model='claude-sonnet-4-6',
             max_tokens=8000,
             messages=[{'role': 'user', 'content': prompt}],
         )
@@ -9307,7 +9333,7 @@ def download_report():
             item for item in climate_readout.get('interaction_readout', [])
             if isinstance(item, dict)
             and item.get('direction_id') in labels
-            and item.get('summary')
+            and (item.get('summary') or item.get('narrative'))
         ][:2]
         if not interactions:
             return
@@ -9315,10 +9341,20 @@ def download_report():
             _add_section_heading(
                 labels[interaction['direction_id']], level=2
             )
-            _add_single_para(interaction['summary'], space_before=0)
-            for pathway in interaction.get('pathways', []):
-                if isinstance(pathway, dict):
-                    add_causal_strip(pathway)
+            if interaction.get('summary'):
+                _add_single_para(interaction['summary'], space_before=0, bold=True)
+            narrative = str(interaction.get('narrative', '')).strip()
+            if narrative:
+                # Prefer the model-authored flowing narrative; fall back to the
+                # stitched causal strips only when no narrative was produced.
+                for para in re.split(r'\n\s*\n', narrative):
+                    para = para.strip()
+                    if para:
+                        _add_single_para(para, space_before=0)
+            else:
+                for pathway in interaction.get('pathways', []):
+                    if isinstance(pathway, dict):
+                        add_causal_strip(pathway)
 
     def add_climate_dividend_synthesis():
         groups = climate_dividend_groups(climate_readout)

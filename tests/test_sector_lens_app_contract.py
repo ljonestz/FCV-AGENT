@@ -922,7 +922,7 @@ def test_lens_diagnostic_repair_is_bounded_and_accepts_valid_json_only():
 
     assert recovered is True
     assert repaired["lenses"][0]["materiality_level"] == "medium"
-    assert messages.request["model"] == "claude-haiku-4-5-20251001"
+    assert messages.request["model"] == "claude-sonnet-4-6"
     assert messages.request["max_tokens"] == 8000
     assert len(messages.request["messages"][0]["content"]) < 40000
     assert app_module.warn_on_missing_high_climate_priority(
