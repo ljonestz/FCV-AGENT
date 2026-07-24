@@ -631,3 +631,9 @@ if (errored.includes(NOTICE)) throw new Error('hard error path must use its own 
         ["node", "-e", script], capture_output=True, text=True, check=False
     )
     assert result.returncode == 0, result.stderr
+
+
+def test_priorities_intro_shows_soft_notice_when_links_unvalidated():
+    source = INDEX.read_text(encoding="utf-8")
+    assert "climatePriorityUnlinked" in source
+    assert "provenance could not be validated" in source

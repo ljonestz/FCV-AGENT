@@ -3620,6 +3620,8 @@
               if(p.fcv_rating)fcvRating=p.fcv_rating;
               if(p.fcv_responsiveness_rating)fcvResponsivenessRating=p.fcv_responsiveness_rating;
               if(p.priorities)stageThreePriorities=p.priorities;
+              if(p.climate_unlinked!==undefined)climatePriorityUnlinked=p.climate_unlinked;
+              if(p.climate_total!==undefined)climatePriorityTotal=p.climate_total;
               if(p.wider_fcv_context!==undefined)stageWiderFcvContext=p.wider_fcv_context||null;
               if(p.mid_cycle_watch)midCycleWatch=p.mid_cycle_watch;if(p.dpf_watch)dpfWatch=p.dpf_watch;if(p.p4r_watch)p4rWatch=p.p4r_watch;if(p.regional_watch)regionalWatch=p.regional_watch;
               if(p.horizon_considerations)horizonConsiderations=p.horizon_considerations;
@@ -3938,6 +3940,8 @@
               // Priority cards + sidebar for Stage 3 (Recommendations)
               if(stage===3 && p.priorities && p.priorities.length){
                 stageThreePriorities=p.priorities;
+                if(p.climate_unlinked!==undefined)climatePriorityUnlinked=p.climate_unlinked;
+                if(p.climate_total!==undefined)climatePriorityTotal=p.climate_total;
                 if(p.wider_fcv_context!==undefined)stageWiderFcvContext=p.wider_fcv_context||null;
                 if(p.horizon_considerations)horizonConsiderations=p.horizon_considerations;
                 if(p.mid_cycle_watch)midCycleWatch=p.mid_cycle_watch;if(p.dpf_watch)dpfWatch=p.dpf_watch;if(p.p4r_watch)p4rWatch=p.p4r_watch;if(p.regional_watch)regionalWatch=p.regional_watch;
@@ -4836,7 +4840,7 @@
     if(stageHists[stage])hist=stageHists[stage].slice();
     curS=stage;
     for(let i=stage+1;i<=3;i++){delete stageOutputs[i];delete stageHists[i];}
-    stageThreePriorities=[];fcvRating='';fcvResponsivenessRating='';stageWiderFcvContext=null;
+    stageThreePriorities=[];fcvRating='';fcvResponsivenessRating='';stageWiderFcvContext=null;climatePriorityUnlinked=0;climatePriorityTotal=0;
     clearUI();renderOut(stage,stageOutputs[stage],false);
     if(stage===2&&stage2UnderHood){buildUnderHoodPanels(stage2UnderHood);updateSidebar();}
     if(stage===2)renderLensDiagnostic();
@@ -5497,6 +5501,7 @@ ${body}
 
   // ── Stage 3 (Recommendations) state ───────────────────────────────────────
   let stageThreePriorities = [];
+  let climatePriorityUnlinked = 0, climatePriorityTotal = 0;
   let currentPriority = 0;  // 0-indexed
   let currentDeeperTab = {};  // {priorityIndex: 'alternatives'|'trail'|'playbook'}
   let deeperAbortController = null;  // AbortController for cancelling in-flight Go Deeper fetch
@@ -5802,7 +5807,10 @@ ${body}
         ${pr.tag ? renderSRTagBadge(pr.tag,true) : ''}
       </div>`;
     }).join('');
-    el.innerHTML = `<div class="priorities-section-hdr">Priority Actions for the Task Team</div><div class="priorities-intro ani">
+    const _linkNotice = (isClimateLensActive() && climatePriorityUnlinked > 0)
+      ? `<div class="climate-partial-notice">Climate provenance could not be validated for ${climatePriorityUnlinked} of ${climatePriorityTotal} priorities. Those recommendations are shown but not tagged to a specific climate-FCV pathway.</div>`
+      : '';
+    el.innerHTML = _linkNotice + `<div class="priorities-section-hdr">Priority Actions for the Task Team</div><div class="priorities-intro ani">
       <p class="pi-lead">Based on a three-stage assessment of the project documents, <strong>${n} priority ${n === 1 ? 'action has' : 'actions have'} been identified</strong> to strengthen FCV sensitivity and responsiveness in the design and delivery of this project:</p>
       <div class="pi-list">${listItems}</div>
       <p class="pi-footer">Toggle through the panels below to explore each priority action and concrete implementation options in more detail.</p>
