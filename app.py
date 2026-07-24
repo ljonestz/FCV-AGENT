@@ -7504,6 +7504,7 @@ def run_stage():
                     done_data['p4r_watch'] = p4r_watch
                     done_data['regional_watch'] = regional_watch
                     done_data['horizon_considerations'] = horizon
+                    done_data['wider_fcv_context'] = parsed.get('wider_fcv_context')
                     done_data['applied_snippets'] = [
                         {'id': s['id'], 'title': s['title'], 'source': s['source']}
                         for s in secondary_snippets_s3
@@ -8349,7 +8350,7 @@ def run_express():
                     conversation_history = conversation_history[-20:]
 
                 # ── Stage 3 done event ──
-                yield f"data: {json.dumps({'stage_done': 3, 'result': stage3_output_clean, 'history': conversation_history, 'priorities': parsed.get('priorities', []), 'fcv_rating': parsed.get('fcv_rating', ''), 'fcv_responsiveness_rating': parsed.get('fcv_responsiveness_rating', ''), 'sensitivity_summary': parsed.get('sensitivity_summary', ''), 'responsiveness_summary': parsed.get('responsiveness_summary', ''), 'risk_exposure': parsed.get('risk_exposure'), 'mid_cycle_watch': parsed.get('mid_cycle_watch', []), 'dpf_watch': parsed.get('dpf_watch', []), 'p4r_watch': parsed.get('p4r_watch', []), 'regional_watch': parsed.get('regional_watch', []), 'gap_table': extract_gap_table(stage3_output), 'parse_error': parsed.get('error', False), 'parse_error_message': parsed.get('message', ''), 'horizon_considerations': horizon, 'lens_context_sources': lens_context_s3['lens_context_sources'], 'active_lenses': lens_context_s3['active_lenses'], 'lens_warnings': lens_context_s3['warnings'], 'applied_snippets': [{'id': s['id'], 'title': s['title'], 'source': s['source']} for s in secondary_snippets_s3e]})}\n\n"
+                yield f"data: {json.dumps({'stage_done': 3, 'result': stage3_output_clean, 'history': conversation_history, 'priorities': parsed.get('priorities', []), 'fcv_rating': parsed.get('fcv_rating', ''), 'fcv_responsiveness_rating': parsed.get('fcv_responsiveness_rating', ''), 'sensitivity_summary': parsed.get('sensitivity_summary', ''), 'responsiveness_summary': parsed.get('responsiveness_summary', ''), 'risk_exposure': parsed.get('risk_exposure'), 'mid_cycle_watch': parsed.get('mid_cycle_watch', []), 'dpf_watch': parsed.get('dpf_watch', []), 'p4r_watch': parsed.get('p4r_watch', []), 'regional_watch': parsed.get('regional_watch', []), 'gap_table': extract_gap_table(stage3_output), 'parse_error': parsed.get('error', False), 'parse_error_message': parsed.get('message', ''), 'horizon_considerations': horizon, 'wider_fcv_context': parsed.get('wider_fcv_context'), 'lens_context_sources': lens_context_s3['lens_context_sources'], 'active_lenses': lens_context_s3['active_lenses'], 'lens_warnings': lens_context_s3['warnings'], 'applied_snippets': [{'id': s['id'], 'title': s['title'], 'source': s['source']} for s in secondary_snippets_s3e]})}\n\n"
 
                 # ── Express complete ──
                 yield f"data: {json.dumps({'express_done': True})}\n\n"
@@ -9117,7 +9118,7 @@ def download_report():
         reflections = (climate_readout or {}).get('reflections', []) if climate_readout else []
         if not reflections:
             return
-        doc.add_heading('Reflections on core climate and FCV considerations', level=2)
+        _add_section_heading('Reflections on core climate and FCV considerations', level=2)
         for ref in reflections:
             p = doc.add_paragraph()
             head = p.add_run((ref.get('title') or '').strip())
@@ -9128,11 +9129,22 @@ def download_report():
         less = (climate_readout or {}).get('less_central')
         if less:
             doc.add_paragraph(f'Less central here: {less}')
+        for field_label, field_key in (
+            ('Sensitivity evidence', 'sensitivity_evidence'),
+            ('Responsiveness evidence', 'responsiveness_evidence'),
+        ):
+            items = (climate_readout or {}).get(field_key) if climate_readout else None
+            if isinstance(items, list) and items:
+                p = doc.add_paragraph()
+                r = p.add_run(f'{field_label}: ')
+                r.bold = True
+                for item in items:
+                    doc.add_paragraph(str(item), style='List Bullet')
 
     def add_wider_fcv_context():
         if not wider_fcv_context:
             return
-        doc.add_heading('Wider FCV context', level=2)
+        _add_section_heading('Wider FCV context', level=2)
         doc.add_paragraph(wider_fcv_context)
 
     def add_climate_interactions():
@@ -9152,17 +9164,9 @@ def download_report():
         ][:2]
         if not interactions:
             return
-        _add_section_heading('Climate-FCV interactions and project pathways')
-        _add_single_para(
-            'Given the Climate-FCV pressures identified for this '
-            'operation, the assessment traces how context-specific climate and '
-            'FCV dynamics may affect particular project components, places, '
-            'groups and assets, and how project design choices may alter those '
-            'dynamics over different time horizons.'
-        )
         for interaction in interactions:
             _add_section_heading(
-                labels[interaction['direction_id']], level=3
+                labels[interaction['direction_id']], level=2
             )
             _add_single_para(interaction['summary'], space_before=0)
             for pathway in interaction.get('pathways', []):

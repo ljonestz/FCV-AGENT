@@ -496,3 +496,52 @@ def test_priority_compliance_renderer():
     # esc() HTML-encodes '&' → '&amp;' in the rendered output
     assert "Task Team E" in o.stdout and "S specialist" in o.stdout
     assert "Possible ESCP conflict." in o.stdout
+
+
+def test_integration_gauge_arc_has_colour_map():
+    """I1: updateSidebar climate branch sets arc stroke colour from intColors enum map."""
+    html = INDEX.read_text(encoding="utf-8")
+    assert "intColors" in html, "intColors colour map missing from updateSidebar"
+    assert "well_integrated:'#1A7A4A'" in html, (
+        "well_integrated colour missing or wrong in intColors"
+    )
+    assert "arc.setAttribute('stroke'" in html, (
+        "arc stroke attribute not set in updateSidebar climate branch"
+    )
+
+
+def test_reflections_render_sensitivity_responsiveness_evidence():
+    """I3: renderClimateReflections appends S/R evidence blocks when present."""
+    html = INDEX.read_text(encoding="utf-8")
+    fn = _extract_js_function(html, "renderClimateReflections")
+    esc = _extract_js_function(html, "esc")
+    lens = {
+        "reflections": [
+            {"question_key": "cq1_interaction", "title": "Climate-FCV interaction",
+             "status_cue": "addressed", "text": "Flooding disrupts access."},
+        ],
+        "less_central": None,
+        "sensitivity_evidence": ["The design acknowledges seasonal flooding risk."],
+        "responsiveness_evidence": ["Mixed committee model builds cohesion."],
+    }
+    script = (
+        f"{esc}\n{fn}\n"
+        f"process.stdout.write(renderClimateReflections({json.dumps(lens)}));"
+    )
+    out = subprocess.run(["node", "-e", script], capture_output=True, text=True)
+    assert out.returncode == 0, out.stderr
+    assert "Sensitivity evidence" in out.stdout
+    assert "Responsiveness evidence" in out.stdout
+    assert "seasonal flooding risk" in out.stdout
+    assert "reflection-evidence" in out.stdout
+    # Empty evidence arrays → no evidence blocks
+    lens_no_ev = {
+        "reflections": [{"question_key": "cq1_interaction", "title": "T",
+                          "status_cue": "ok", "text": "Some text."}],
+    }
+    out_no = subprocess.run(
+        ["node", "-e", f"{esc}\n{fn}\nprocess.stdout.write(renderClimateReflections({json.dumps(lens_no_ev)}));"],
+        capture_output=True, text=True,
+    )
+    assert out_no.returncode == 0, out_no.stderr
+    assert "reflection-evidence" not in out_no.stdout

@@ -379,6 +379,9 @@
     .reflection-chip{display:inline-flex;padding:1px 8px;border-radius:999px;background:#eef2f7;color:#475569;font-size:10px;font-weight:700;text-transform:lowercase}
     .reflection-row p{font-size:13px;line-height:1.6;color:#334155;margin:0}
     .reflection-less{font-size:12px;color:#64748b;margin:10px 0 0}
+    .reflection-evidence{font-size:11px;color:#64748b;margin:8px 0 0}
+    .reflection-evidence span{font-weight:700;color:#475569}
+    .reflection-evidence ul{margin:2px 0 0;padding-left:16px}
     .wider-fcv-note{border:1px solid var(--border);background:#f7f8fa;border-radius:8px;padding:12px 16px;margin:18px 0}
     .wider-fcv-note p{font-size:12px;line-height:1.6;color:#475569;margin:0}
 
@@ -2626,7 +2629,9 @@
     if(!items.length)return '';
     const rows=items.map(r=>`<div class="reflection-row"><div class="reflection-head"><strong>${esc(r.title||'')}</strong>${r.status_cue?`<span class="reflection-chip">${esc(r.status_cue)}</span>`:''}</div><p>${esc(r.text)}</p></div>`).join('');
     const less=lens.less_central?`<p class="reflection-less"><em>Less central here:</em> ${esc(lens.less_central)}</p>`:'';
-    return `<div class="climate-reflections-section"><div class="climate-readout-heading">Reflections on core climate and FCV considerations</div><p class="climate-readout-intro">The reflections below draw on a core set of climate and FCV frameworks and evidence, and focus on the considerations most material to this project rather than applying every principle mechanically.</p>${rows}${less}</div>`;
+    const evBlock=(title,arr)=>Array.isArray(arr)&&arr.length?`<div class="reflection-evidence"><span>${esc(title)}:</span><ul>${arr.map(e=>`<li>${esc(e)}</li>`).join('')}</ul></div>`:'';
+    const evidence=evBlock('Sensitivity evidence',lens.sensitivity_evidence)+evBlock('Responsiveness evidence',lens.responsiveness_evidence);
+    return `<div class="climate-reflections-section"><div class="climate-readout-heading">Reflections on core climate and FCV considerations</div><p class="climate-readout-intro">The reflections below draw on a core set of climate and FCV frameworks and evidence, and focus on the considerations most material to this project rather than applying every principle mechanically.</p>${rows}${less}${evidence}</div>`;
   }
 
   function renderWiderFcvContext(text){
@@ -5600,6 +5605,8 @@ ${body}
       const lvl=climateIntegration&&climateIntegration.level||'';
       const frac=integrationGaugeFraction(lvl);
       if(arc)arc.setAttribute('stroke-dasharray',`${(frac*ARC_LEN).toFixed(2)} ${ARC_LEN}`);
+      const intColors={well_integrated:'#1A7A4A',partly_integrated:'#009FDA',weakly_integrated:'#E07B00',insufficient_evidence:'#94a3b8'};
+      if(arc)arc.setAttribute('stroke',intColors[String(lvl).toLowerCase()]||'#94a3b8');
       const intLabels={well_integrated:'Well integrated',partly_integrated:'Partly integrated',weakly_integrated:'Weakly integrated',insufficient_evidence:'Insufficient evidence'};
       const label=document.getElementById('fcv-int-label');
       if(label)label.textContent=intLabels[String(lvl).toLowerCase()]||'Insufficient evidence';

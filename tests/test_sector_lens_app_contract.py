@@ -1908,3 +1908,24 @@ def test_docx_climate_reflections_integration_wider_fcv_boundary_compliance():
     i_div = text.index("Climate, peace and social dividends")
     i_wid = text.index("Wider FCV context")
     assert i_int < i_ref < i_div < i_wid
+
+
+def test_stage3_sse_payloads_include_wider_fcv_context():
+    """C1: both Stage-3 SSE payload construction paths reference wider_fcv_context."""
+    import re
+    app_src = (
+        Path(__file__).resolve().parents[1] / "app.py"
+    ).read_text(encoding="utf-8")
+    # Step-by-step: done_data['wider_fcv_context'] inside the elif stage == 3 block
+    assert "done_data['wider_fcv_context']" in app_src, (
+        "Step-by-step Stage-3 done_data missing wider_fcv_context"
+    )
+    # Express: 'wider_fcv_context': parsed.get('wider_fcv_context') in stage_done:3 event
+    # The express stage_done line contains both stage_done and wider_fcv_context
+    express_match = re.search(
+        r"stage_done.*wider_fcv_context|wider_fcv_context.*stage_done",
+        app_src,
+    )
+    assert express_match, (
+        "Express Stage-3 stage_done event missing wider_fcv_context"
+    )
