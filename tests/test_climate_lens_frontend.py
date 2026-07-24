@@ -405,6 +405,25 @@ def test_wider_fcv_context_renders_grey_callout_or_empty():
     assert empty.stdout.strip() == ""
 
 
+def test_single_integration_gauge_present_in_module_mode():
+    html = INDEX.read_text(encoding="utf-8")
+    assert "How well does the project integrate climate and FCV?" in html
+    assert "Indicative Climate-FCV Integration Readout" in html
+    assert "not an official WBG rating" in html  # OPCS caveat
+    assert "climateIntegration" in html
+    assert "integrationGaugeFraction" in html
+    fn = _extract_js_function(html, "integrationGaugeFraction")
+    out = subprocess.run(
+        ["node", "-e", f"{fn}\nconsole.log([integrationGaugeFraction('well_integrated'),integrationGaugeFraction('partly_integrated'),integrationGaugeFraction('weakly_integrated'),integrationGaugeFraction('insufficient_evidence'),integrationGaugeFraction('')].join(','))"],
+        capture_output=True, text=True
+    )
+    assert out.returncode == 0, out.stderr
+    vals = out.stdout.strip().split(",")
+    assert vals[0] == "1"
+    assert vals[3] == "0" and vals[4] == "0"
+    assert float(vals[1]) > float(vals[2]) > 0
+
+
 def test_reflections_render_with_status_chips_and_intro():
     html = INDEX.read_text(encoding="utf-8")
     assert "renderClimateReflections" in html

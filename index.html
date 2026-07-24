@@ -768,6 +768,8 @@
       transition:color .3s;margin-bottom:3px;text-align:center;
     }
     .fcv-need-label{font-size:10.5px;color:var(--muted);font-style:italic;line-height:1.4;text-align:center;}
+    .fcv-gauge-caveat{font-size:9px;color:#94a3b8;line-height:1.4;margin-top:6px}
+    .fcv-eyebrow{font-size:9px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#64748b;margin:2px 0 6px}
 
     /* Sidebar risk matrix */
     .risk-matrix-widget{padding:12px 14px;}
@@ -2511,7 +2513,7 @@
     if(idx>=0){activeLenses.splice(idx,1);delete resolvedLensVersions[id];changed=true;}
     else if(activeLenses.length<2){activeLenses.push(id);changed=true;}
     else showLensWarnings([{message:'Remove one active lens before selecting another.'}]);
-    if(changed){lensDiagnostic={};lensContextSources=[];climateResearch={};}
+    if(changed){lensDiagnostic={};lensContextSources=[];climateResearch={};climateIntegration=null;}
     renderLensSelector();
   }
 
@@ -3578,6 +3580,7 @@
               if(p.responsiveness_rating)fcvResponsivenessRating=p.responsiveness_rating;
               if(p.under_hood){stage2UnderHood=p.under_hood;fcvSaveStage2UnderHood(p.under_hood);}
               if(p.lens_diagnostic)lensDiagnostic=p.lens_diagnostic;
+              if(p.climate_integration!==undefined)climateIntegration=p.climate_integration;
               const expressLensWarnings=[...(p.lens_warnings||[])];
               if(p.parse_error){
                 expressLensWarnings.push({message:p.parse_error_message||'Stage 2 structured assessment details could not be parsed. The core assessment remains available.'});
@@ -3866,6 +3869,7 @@
                 if(p.responsiveness_rating){ fcvResponsivenessRating=p.responsiveness_rating; }
                 if(p.under_hood){ stage2UnderHood=p.under_hood; fcvSaveStage2UnderHood(p.under_hood); }
                 if(p.lens_diagnostic)lensDiagnostic=p.lens_diagnostic;
+                if(p.climate_integration!==undefined)climateIntegration=p.climate_integration;
               }
               if(stage===3){stageGapTable=p.gap_table||null;stageRiskExposure=p.risk_exposure||null;stageSensitivitySummary=p.sensitivity_summary||'';stageResponsivenessSummary=p.responsiveness_summary||'';midCycleWatch=p.mid_cycle_watch||[];dpfWatch=p.dpf_watch||[];p4rWatch=p.p4r_watch||[];regionalWatch=p.regional_watch||[];if(p.fcv_rating)fcvRating=p.fcv_rating;if(p.fcv_responsiveness_rating)fcvResponsivenessRating=p.fcv_responsiveness_rating;if(p.applied_snippets)stageAppliedSnippets=p.applied_snippets;}
               // Write timestamps BEFORE renderOut so the consistency check inside renderOut reads the current run's value
@@ -5316,7 +5320,7 @@ ${body}
 
   function reset(){
     pF=[];cF=[];hist=[];curS=0;busy=false;stageOutputs={};stageHists={};researchBrief='';researchCountry='';priorityQuestions=[];focusQuestionsResult=null;pqPanelEnabled=true;
-    activeLenses=[];resolvedLensVersions={};lensSuggestions=[];lensDiagnostic={};lensContextSources=[];climateResearch={};lensSelectionTouched=false;lensSelectionLocked=false;renderLensSelector();
+    activeLenses=[];resolvedLensVersions={};lensSuggestions=[];lensDiagnostic={};lensContextSources=[];climateResearch={};climateIntegration=null;lensSelectionTouched=false;lensSelectionLocked=false;renderLensSelector();
     { const _pc=document.getElementById('pq-confirm'); if(_pc){_pc.innerHTML='';_pc.style.display='none';} }
     ['stage2_timestamp','stage3_timestamp','stage3_consistency_dismissed'].forEach(k=>localStorage.removeItem(k));
     document.getElementById('upload-panel').style.display='block';
@@ -5483,6 +5487,10 @@ ${body}
   let fileMetadata = {};   // {filename: {word_count, doc_type, extraction_status}}
   let fcvRating = '';
   let fcvResponsivenessRating = '';
+  let climateIntegration=null; // {level, summary} from SSE
+  function integrationGaugeFraction(level){
+    return ({well_integrated:1,partly_integrated:0.66,weakly_integrated:0.33,insufficient_evidence:0})[String(level||'').toLowerCase()]||0;
+  }
 
   const LEVELS = ['Extremely Low','Very Low','Low','Adequate','Well Embedded','Very Well Embedded'];
   const LEVEL_COLORS = {1:'#C0392B',2:'#E07B00',3:'#D97706',4:'#0072BB',5:'#1A7A4A',6:'#0d5c36'};
@@ -5503,6 +5511,29 @@ ${body}
   // ── Sidebar ─────────────────────────────────────────────────────────────────
 
   function sidebarHtml(){
+    if(isClimateLensActive()){
+      return `
+      <!-- Climate-FCV Integration Gauge (single gauge in climate module mode) -->
+      <div class="sidebar-widget sidebar-widget-fcv">
+        <div class="sidebar-widget-label sr-term">How well does the project integrate climate and FCV?</div>
+        <div class="fcv-eyebrow">Indicative Climate-FCV Integration Readout</div>
+        <svg viewBox="0 0 120 80" width="120" height="80" style="display:block;margin:0 auto -4px">
+          <path d="M15 70 A45 45 0 0 1 105 70" fill="none" stroke="#e8edf2" stroke-width="11" stroke-linecap="round"/>
+          <path id="fcv-int-arc" d="M15 70 A45 45 0 0 1 105 70" fill="none" stroke="#e8edf2" stroke-width="11" stroke-linecap="round" stroke-dasharray="0 141.37"/>
+        </svg>
+        <div id="fcv-int-label" class="fcv-rating-label" style="color:var(--muted)">Analysing…</div>
+        <div id="fcv-int-summary" class="fcv-need-label"></div>
+        <div class="fcv-gauge-caveat">This AI-assisted readout supports expert review. It is not an official WBG rating, policy determination, ESF assessment, Paris Alignment assessment, or substitute for Task Team and specialist judgment.</div>
+      </div>
+      <!-- Priority overview -->
+      <div class="sidebar-widget">
+        <div class="pov-widget">
+          <div class="sidebar-widget-label">Priority Overview</div>
+          <div id="pov-sb"><div style="font-size:11px;color:var(--muted)">Loading priorities…</div></div>
+        </div>
+      </div>
+      `;
+    }
     return `
       <!-- Sensitivity Gauge -->
       <div class="sidebar-widget">
@@ -5546,32 +5577,46 @@ ${body}
 
   function updateSidebar(){
     const n = stageThreePriorities.length;
-    const level = LEVELS.findIndex(l => l.toLowerCase() === (fcvRating||'').toLowerCase()) + 1;
-    const color = LEVEL_COLORS[level] || '#e8edf2';
 
-    // Sensitivity Gauge
-    const arcFill = document.getElementById('fcv-arc-fill');
-    const shieldPath = document.getElementById('fcv-shield-path');
-    const labelEl = document.getElementById('fcv-rating-label');
-    const needEl = document.getElementById('fcv-need-label');
-    if(arcFill){ const filled = level > 0 ? (level/6)*ARC_LEN : 0; arcFill.setAttribute('stroke-dasharray',`${filled} ${ARC_LEN}`); arcFill.setAttribute('stroke',color); }
-    if(shieldPath) shieldPath.setAttribute('fill', level > 0 ? color : '#c8d8c8');
-    if(labelEl){ labelEl.textContent = fcvRating ? `${fcvRating} Sensitivity` : '—'; labelEl.style.color = level > 0 ? color : 'var(--muted)'; }
-    if(needEl) needEl.textContent = NEED_LABELS[fcvRating] || '';
+    if(isClimateLensActive()){
+      // Single Climate-FCV integration gauge
+      const arc=document.getElementById('fcv-int-arc');
+      const lvl=climateIntegration&&climateIntegration.level||'';
+      const frac=integrationGaugeFraction(lvl);
+      if(arc)arc.setAttribute('stroke-dasharray',`${(frac*ARC_LEN).toFixed(2)} ${ARC_LEN}`);
+      const intLabels={well_integrated:'Well integrated',partly_integrated:'Partly integrated',weakly_integrated:'Weakly integrated',insufficient_evidence:'Insufficient evidence'};
+      const label=document.getElementById('fcv-int-label');
+      if(label)label.textContent=intLabels[String(lvl).toLowerCase()]||'Insufficient evidence';
+      const summary=document.getElementById('fcv-int-summary');
+      if(summary)summary.textContent=climateIntegration&&climateIntegration.summary||'';
+    } else {
+      const level = LEVELS.findIndex(l => l.toLowerCase() === (fcvRating||'').toLowerCase()) + 1;
+      const color = LEVEL_COLORS[level] || '#e8edf2';
 
-    // Responsiveness Gauge
-    const respLevel = LEVELS.findIndex(l => l.toLowerCase() === (fcvResponsivenessRating||'').toLowerCase()) + 1;
-    const respColor = RESP_LEVEL_COLORS[respLevel] || '#e8edf2';
-    const respArc = document.getElementById('fcv-resp-arc-fill');
-    const respLeaf = document.getElementById('fcv-resp-leaf-path');
-    const respLabel = document.getElementById('fcv-resp-rating-label');
-    const respNeed = document.getElementById('fcv-resp-need-label');
-    if(respArc){ const filled = respLevel > 0 ? (respLevel/6)*ARC_LEN : 0; respArc.setAttribute('stroke-dasharray',`${filled} ${ARC_LEN}`); respArc.setAttribute('stroke',respColor); }
-    if(respLeaf) respLeaf.setAttribute('fill', respLevel > 0 ? respColor : '#c8d8c8');
-    if(respLabel){ respLabel.textContent = fcvResponsivenessRating ? `${fcvResponsivenessRating} Responsiveness` : '—'; respLabel.style.color = respLevel > 0 ? respColor : 'var(--muted)'; }
-    if(respNeed) respNeed.textContent = NEED_LABELS[fcvResponsivenessRating] || '';
+      // Sensitivity Gauge
+      const arcFill = document.getElementById('fcv-arc-fill');
+      const shieldPath = document.getElementById('fcv-shield-path');
+      const labelEl = document.getElementById('fcv-rating-label');
+      const needEl = document.getElementById('fcv-need-label');
+      if(arcFill){ const filled = level > 0 ? (level/6)*ARC_LEN : 0; arcFill.setAttribute('stroke-dasharray',`${filled} ${ARC_LEN}`); arcFill.setAttribute('stroke',color); }
+      if(shieldPath) shieldPath.setAttribute('fill', level > 0 ? color : '#c8d8c8');
+      if(labelEl){ labelEl.textContent = fcvRating ? `${fcvRating} Sensitivity` : '—'; labelEl.style.color = level > 0 ? color : 'var(--muted)'; }
+      if(needEl) needEl.textContent = NEED_LABELS[fcvRating] || '';
 
-    // Priority overview widget
+      // Responsiveness Gauge
+      const respLevel = LEVELS.findIndex(l => l.toLowerCase() === (fcvResponsivenessRating||'').toLowerCase()) + 1;
+      const respColor = RESP_LEVEL_COLORS[respLevel] || '#e8edf2';
+      const respArc = document.getElementById('fcv-resp-arc-fill');
+      const respLeaf = document.getElementById('fcv-resp-leaf-path');
+      const respLabel = document.getElementById('fcv-resp-rating-label');
+      const respNeed = document.getElementById('fcv-resp-need-label');
+      if(respArc){ const filled = respLevel > 0 ? (respLevel/6)*ARC_LEN : 0; respArc.setAttribute('stroke-dasharray',`${filled} ${ARC_LEN}`); respArc.setAttribute('stroke',respColor); }
+      if(respLeaf) respLeaf.setAttribute('fill', respLevel > 0 ? respColor : '#c8d8c8');
+      if(respLabel){ respLabel.textContent = fcvResponsivenessRating ? `${fcvResponsivenessRating} Responsiveness` : '—'; respLabel.style.color = respLevel > 0 ? respColor : 'var(--muted)'; }
+      if(respNeed) respNeed.textContent = NEED_LABELS[fcvResponsivenessRating] || '';
+    }
+
+    // Priority overview widget (runs in both climate and non-climate modes)
     const povEl = document.getElementById('pov-sb');
     if(povEl && n){
       povEl.innerHTML = stageThreePriorities.map((pr, i) => {
