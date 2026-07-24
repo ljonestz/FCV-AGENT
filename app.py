@@ -24,6 +24,7 @@ from sector_lenses import (
     LENS_EVIDENCE_END,
     LENS_EVIDENCE_START,
     build_stage_slice,
+    climate_readout_is_complete,
     detect_lens_suggestions,
     extract_ccdr_context,
     extract_lens_diagnostic,
@@ -1449,7 +1450,18 @@ def repair_lens_diagnostic(
         'systems_or_assets, time_horizons, research_claim_ids, confidence, and '
         'evidence_gap. If the '
         'assessment does not support a pathway, mark it not_material or omit it. '
-        'Keep the total JSON under 12,000 characters: use short evidence-grounded '
+        'For Climate also return integration_level (one of well_integrated, '
+        'partly_integrated, weakly_integrated, insufficient_evidence; use '
+        'insufficient_evidence when the assessment does not clearly support a '
+        'level), a short integration_summary, three to five reflections against '
+        'the core climate-FCV questions (each with question_key from '
+        'cq1_interaction, cq2_maladaptation, cq3_dividends, cq4_inclusion, '
+        'cq5_institutions, cq6_adaptive, plus a short title, a status_cue, and '
+        'grounded text) surfacing only the material ones, an optional '
+        'less_central line, and separate sensitivity_evidence and '
+        'responsiveness_evidence lists. Draw every reflection and evidence line '
+        'strictly from the Stage 2 assessment below; do not invent findings. '
+        'Keep the total JSON under 16,000 characters: use short evidence-grounded '
         'sentences, at most three short strings per array, at most two items per '
         'declared readout section, at most one additional_pathway per section, '
         'and at most five findings. Omit empty optional fields rather than '
@@ -1457,6 +1469,12 @@ def repair_lens_diagnostic(
         'Use this compact shape: '
         '{"lenses":[{"lens_id":"climate","applicability":"material",'
         '"materiality_level":"high|medium|low","materiality_summary":"...",'
+        '"integration_level":"well_integrated|partly_integrated|'
+        'weakly_integrated|insufficient_evidence","integration_summary":"...",'
+        '"reflections":[{"question_key":"cq1_interaction|cq2_maladaptation|'
+        'cq3_dividends|cq4_inclusion|cq5_institutions|cq6_adaptive",'
+        '"title":"...","status_cue":"...","text":"..."}],"less_central":"...",'
+        '"sensitivity_evidence":[],"responsiveness_evidence":[],'
         '"analysis_emphasis":[],"evidence":[],"source_ids":[],'
         '"interaction_readout":[{"direction_id":"climate-fcv-on-project|'
         'project-on-climate-fcv","summary":"...","mechanisms":[],'
@@ -1479,7 +1497,7 @@ def repair_lens_diagnostic(
     try:
         response = (client or get_lens_recovery_client()).messages.create(
             model='claude-haiku-4-5-20251001',
-            max_tokens=6000,
+            max_tokens=8000,
             messages=[{'role': 'user', 'content': prompt}],
         )
         response_text = ''.join(
@@ -1558,7 +1576,18 @@ def extract_or_repair_lens_diagnostic(
         strict_required_fields=True,
     )
     failure = lens_diagnostic_failure_message(diagnostic, active_ids)
-    if "climate" in active_ids:
+    climate_active = "climate" in active_ids
+    # A usable diagnostic (passes the failure gate) can still be an incomplete
+    # dedicated Climate readout — interactions present but the reflections and
+    # integration_summary that drive the reflections block and integration gauge
+    # missing. That silently collapses the module to an interactions-only hybrid,
+    # so treat it as a recovery trigger rather than returning it as-is.
+    climate_incomplete = (
+        not failure
+        and climate_active
+        and not climate_readout_is_complete(climate_lens_entry(diagnostic))
+    )
+    if climate_active:
         log_climate_specificity_summary(
             assessment_id,
             climate_specificity_structure(
@@ -1567,36 +1596,63 @@ def extract_or_repair_lens_diagnostic(
                 status="invalid" if failure else "initial",
             ),
         )
-    if not failure:
+    if not failure and not climate_incomplete:
         return diagnostic, False, ''
-    app.logger.warning(
-        'Stage 2 lens diagnostic invalid: assessment_id=%s reason=%s',
-        assessment_id or 'unknown', failure,
-    )
+    if failure:
+        app.logger.warning(
+            'Stage 2 lens diagnostic invalid: assessment_id=%s reason=%s',
+            assessment_id or 'unknown', failure,
+        )
+    else:
+        app.logger.info(
+            'Stage 2 climate diagnostic incomplete (missing reflections or '
+            'integration_summary); attempting recovery: assessment_id=%s',
+            assessment_id or 'unknown',
+        )
     repaired, recovered = repair_lens_diagnostic(
         stage2_output, active_ids, source_ids, schema,
         assessment_id=assessment_id,
     )
     if recovered:
-        if "climate" in active_ids:
-            log_climate_specificity_summary(
-                assessment_id,
-                climate_specificity_structure(
-                    "",
-                    repaired,
-                    status="recovered",
-                ),
+        repaired_complete = (
+            not climate_active
+            or climate_readout_is_complete(climate_lens_entry(repaired))
+        )
+        # Never downgrade a usable primary: only adopt the recovered diagnostic
+        # when the primary was unusable, or when recovery is a complete readout.
+        if failure or repaired_complete:
+            if climate_active:
+                log_climate_specificity_summary(
+                    assessment_id,
+                    climate_specificity_structure(
+                        "",
+                        repaired,
+                        status="recovered",
+                    ),
+                )
+            app.logger.info(
+                'Stage 2 lens diagnostic recovered: assessment_id=%s',
+                assessment_id or 'unknown',
             )
+            return repaired, True, ''
         app.logger.info(
-            'Stage 2 lens diagnostic recovered: assessment_id=%s',
+            'Stage 2 climate recovery did not complete the readout; keeping the '
+            'partial primary diagnostic: assessment_id=%s',
             assessment_id or 'unknown',
         )
-        return repaired, True, ''
-    app.logger.warning(
-        'Stage 2 lens diagnostic recovery unsuccessful: assessment_id=%s',
+        return diagnostic, False, ''
+    if failure:
+        app.logger.warning(
+            'Stage 2 lens diagnostic recovery unsuccessful: assessment_id=%s',
+            assessment_id or 'unknown',
+        )
+        return diagnostic, False, failure
+    app.logger.info(
+        'Stage 2 climate diagnostic incomplete and recovery unsuccessful; '
+        'keeping the partial primary diagnostic: assessment_id=%s',
         assessment_id or 'unknown',
     )
-    return diagnostic, False, failure
+    return diagnostic, False, ''
 
 
 DO_NO_HARM_HEADER = """---
@@ -7285,6 +7341,19 @@ def run_stage():
 
                 full_text = _stream_stage._last_result
 
+                # Truncation observability: a climate-active Stage 2 cut off at
+                # the output ceiling drops the tail of the diagnostic block
+                # (reflections/integration), which forces recovery downstream.
+                if (
+                    stage == 2 and _climate_active
+                    and _stream_stage._last_stop_reason == 'max_tokens'
+                ):
+                    app.logger.warning(
+                        'Stage 2 climate output hit max_tokens (cap=%s); '
+                        'diagnostic tail may be truncated: assessment_id=%s',
+                        _stage_max_tokens, assessment_id or 'unknown',
+                    )
+
                 # ── Workstream 2: silent instrument-vocabulary repair ──────────
                 # Only Stage 2/3 design-review output can carry the ESF/ESCP/ESS
                 # vocabulary that QA flagged; Stage 1 extraction text is not
@@ -7579,6 +7648,7 @@ def _stream_stage(
     collected = []
     stream_q = _q.Queue()
     started_at = time.monotonic()
+    _stream_stage._last_stop_reason = None
     if max_seconds is None:
         max_seconds = _stage_timeout_seconds(stage_num)
 
@@ -7591,6 +7661,17 @@ def _stream_stage(
             ) as s:
                 for chunk in s.text_stream:
                     stream_q.put(('chunk', chunk))
+                # Capture the provider stop_reason so callers can detect a
+                # max_tokens truncation (e.g. a Stage 2 climate diagnostic block
+                # cut off at the output ceiling) rather than treating it as a
+                # normal completion.
+                try:
+                    final = s.get_final_message()
+                    _stream_stage._last_stop_reason = getattr(
+                        final, 'stop_reason', None
+                    )
+                except Exception:
+                    _stream_stage._last_stop_reason = None
             stream_q.put(('done', None))
         except Exception as e:
             stream_q.put(('error', str(e)))
@@ -8104,10 +8185,20 @@ def run_express():
                 # ── Stream Stage 2 ──
                 # Climate-active runs need a larger output budget so the hidden
                 # diagnostic block is not truncated after the visible assessment.
-                _stage2_cap = 26000 if "climate" in (analysis_state.active_lenses or []) else 16000
+                _climate_active_s2 = "climate" in (analysis_state.active_lenses or [])
+                _stage2_cap = 26000 if _climate_active_s2 else 16000
                 for event in _stream_stage(stage2_messages, _stage2_cap, 2):
                     yield event
                 stage2_output = _stream_stage._last_result
+
+                # Truncation observability: see the step-by-step route for the
+                # rationale — a max_tokens cut drops the diagnostic tail.
+                if _climate_active_s2 and _stream_stage._last_stop_reason == 'max_tokens':
+                    app.logger.warning(
+                        'Stage 2 climate output hit max_tokens (cap=%s); '
+                        'diagnostic tail may be truncated: assessment_id=%s',
+                        _stage2_cap, assessment_id or 'unknown',
+                    )
 
                 # ── Workstream 2: silent instrument-vocabulary repair ──────────
                 _vocab_violations_s2 = validate_instrument_vocabulary(stage2_output, instrument_type)
@@ -9042,6 +9133,16 @@ def download_report():
         )
         _add_single_para(wording[level])
         add_field('Materiality', climate_readout.get('materiality_summary'))
+        if not climate_readout_is_complete(climate_readout):
+            _add_single_para(
+                'Note: a full Climate-FCV reflections and integration readout '
+                'could not be generated for this run. The climate-FCV '
+                'interactions below are shown, but the reflections on the core '
+                'climate-FCV questions and the integration readout are '
+                'unavailable and were not substituted.',
+                size=9,
+                color=AMBER,
+            )
         _add_single_para(evidence_base, size=9, color=WB_GRAY)
 
     def add_causal_strip(pathway):

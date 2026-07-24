@@ -923,7 +923,7 @@ def test_lens_diagnostic_repair_is_bounded_and_accepts_valid_json_only():
     assert recovered is True
     assert repaired["lenses"][0]["materiality_level"] == "medium"
     assert messages.request["model"] == "claude-haiku-4-5-20251001"
-    assert messages.request["max_tokens"] == 6000
+    assert messages.request["max_tokens"] == 8000
     assert len(messages.request["messages"][0]["content"]) < 40000
     assert app_module.warn_on_missing_high_climate_priority(
         [{"title": "Core priority", "lens_ids": []}],
@@ -1058,7 +1058,7 @@ def test_lens_diagnostic_repair_has_capacity_for_bounded_climate_contract():
     assert recovered is True
     assert captured["max_tokens"] >= 6000
     prompt = captured["messages"][0]["content"]
-    assert "total JSON under 12,000 characters" in prompt
+    assert "total JSON under 16,000 characters" in prompt
     assert "at most two items per declared readout section" in prompt
     assert "at most five findings" in prompt
 
@@ -1157,6 +1157,14 @@ def test_valid_inline_lens_diagnostic_bypasses_recovery(monkeypatch):
             "applicability": "material",
             "materiality_level": "medium",
             "materiality_summary": "Flood and conflict pressures affect delivery.",
+            "integration_level": "partly_integrated",
+            "integration_summary": "Climate-aware but allocation untreated.",
+            "reflections": [{
+                "question_key": "cq2_maladaptation",
+                "title": "Maladaptation and lock-in",
+                "status_cue": "partial gap",
+                "text": "Siting is treated as engineering, not allocation.",
+            }],
             "interaction_readout": [
                 {
                     "direction_id": "climate-fcv-on-project",

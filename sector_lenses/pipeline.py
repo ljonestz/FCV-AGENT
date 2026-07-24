@@ -756,6 +756,43 @@ def normalize_priority_climate_links(
     }
 
 
+def climate_lens_readout(diagnostic: dict[str, Any] | None) -> dict[str, Any] | None:
+    """Return the normalized Climate lens entry from a diagnostic, or None."""
+
+    if not isinstance(diagnostic, dict):
+        return None
+    for lens in diagnostic.get("lenses", []):
+        if isinstance(lens, dict) and lens.get("lens_id") == "climate":
+            return lens
+    return None
+
+
+def climate_readout_is_complete(climate_entry: dict[str, Any] | None) -> bool:
+    """True when a Climate entry carries the full dedicated-module readout.
+
+    A *usable* diagnostic only needs materiality plus one interaction pathway
+    (the `lens_diagnostic_failure_message` gate). A *complete* dedicated-module
+    readout additionally needs the v9.19 fields that drive the reflections block
+    and the integration gauge: at least one reflection and a non-empty
+    integration_summary. When these are absent the module silently collapses to
+    an interactions-only "hybrid" that looks like the core FCV memo. Detecting
+    it lets us (a) trigger recovery to fill the gap and (b) surface an honest
+    partial notice instead of dropping the sections silently.
+    """
+
+    if not isinstance(climate_entry, dict):
+        return False
+    reflections = climate_entry.get("reflections") or []
+    has_reflections = isinstance(reflections, list) and any(
+        isinstance(item, dict) and str(item.get("text", "")).strip()
+        for item in reflections
+    )
+    integration_summary = str(
+        climate_entry.get("integration_summary", "")
+    ).strip()
+    return bool(has_reflections and integration_summary)
+
+
 def _extend_unique(target: list[str], values: Iterable[Any]) -> None:
     for value in values:
         string = str(value)

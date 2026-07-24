@@ -90,7 +90,8 @@ if (!notApplicable.includes('Not material.') || notApplicable.includes('What the
 def test_option_a_renderers_scale_materiality_suppress_weak_items_and_escape():
     source = INDEX.read_text(encoding="utf-8")
     names = [
-        "climateMaterialityLevel", "renderClimateModuleNotice",
+        "climateMaterialityLevel", "climateReadoutComplete",
+        "renderClimateModuleNotice",
         "renderHorizonBadge", "renderClimatePathwayStrip",
         "renderClimateInteractions", "renderClimateDividendSynthesis",
         "climateContributionZone", "renderPriorityClimateContribution",
@@ -587,3 +588,46 @@ def test_climate_readout_is_plain_language_narrative():
     assert "The current design already contributes" in dividends
     assert "<h4>" not in dividends
     assert "Creates fisheries income." in dividends
+
+
+def test_climate_module_notice_flags_incomplete_readout():
+    """The module notice must surface an honest partial notice when the
+    dedicated readout (reflections + integration) could not be produced,
+    rather than silently rendering an interactions-only hybrid."""
+    source = INDEX.read_text(encoding="utf-8")
+    names = [
+        "climateMaterialityLevel", "climateReadoutComplete",
+        "renderClimateModuleNotice",
+    ]
+    helpers = "\n".join(_extract_js_function(source, name) for name in names)
+    script = f"""
+const esc = value => String(value ?? '')
+  .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+  .replace(/\"/g,'&quot;').replace(/'/g,'&#039;');
+{helpers}
+const incomplete = {{
+  materiality_level:'medium',
+  materiality_summary:'Flood-conflict interaction is material.',
+  interaction_readout:[{{direction_id:'climate-fcv-on-project',summary:'Delivery risk.'}}],
+  reflections:[],
+  integration_summary:''
+}};
+const complete = {{
+  materiality_level:'medium',
+  materiality_summary:'Flood-conflict interaction is material.',
+  reflections:[{{question_key:'cq2_maladaptation',title:'Lock-in',status_cue:'partial gap',text:'Siting is engineering, not allocation.'}}],
+  integration_summary:'Aware but allocation untreated.'
+}};
+const NOTICE = 'reflections and integration readout could not be generated';
+const partial = renderClimateModuleNotice(incomplete,false);
+if (!partial.includes(NOTICE)) throw new Error('incomplete readout missing partial notice | '+partial);
+if (!partial.includes('climate-partial-notice')) throw new Error('partial notice class missing');
+const full = renderClimateModuleNotice(complete,false);
+if (full.includes(NOTICE)) throw new Error('complete readout must not show partial notice');
+const errored = renderClimateModuleNotice(null,true);
+if (errored.includes(NOTICE)) throw new Error('hard error path must use its own message, not the partial notice');
+"""
+    result = subprocess.run(
+        ["node", "-e", script], capture_output=True, text=True, check=False
+    )
+    assert result.returncode == 0, result.stderr

@@ -343,6 +343,7 @@
     .climate-materiality-pill{display:inline-flex;padding:2px 8px;border-radius:999px;background:#dbeafe;color:#075985;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
     .climate-evidence-base{color:#475569;font-size:11px!important}
     .climate-boundary{font-size:11px!important;color:#475569;font-style:italic}
+    .climate-partial-notice{font-size:11px!important;color:#924000;background:#fff7ed;border-left:3px solid #f59e0b;padding:6px 10px;margin:6px 0;border-radius:4px}
     .pc-compliance{margin-top:10px;padding-top:8px;border-top:1px dashed var(--border)}
     .pc-compliance-line{font-size:11px;color:#64748b;line-height:1.5}
     .pc-compliance-line span{font-weight:700;color:#475569}
@@ -2550,6 +2551,18 @@
     return lens&&lens.applicability==='material'?'medium':'low';
   }
 
+  function climateReadoutComplete(lens){
+    // Mirror of sector_lenses.pipeline.climate_readout_is_complete: a complete
+    // dedicated-module readout needs at least one grounded reflection and a
+    // non-empty integration_summary. Otherwise the reflections block and
+    // integration gauge would silently render empty (interactions-only hybrid).
+    if(!lens)return false;
+    const reflections=Array.isArray(lens.reflections)?lens.reflections:[];
+    const hasReflections=reflections.some(r=>r&&String(r.text||'').trim());
+    const hasIntegration=String(lens.integration_summary||'').trim().length>0;
+    return hasReflections&&hasIntegration;
+  }
+
   function isClimateLensActive(){
     return Array.isArray(activeLenses)&&activeLenses.includes('climate');
   }
@@ -2573,7 +2586,8 @@
       low:'You selected the Climate-FCV module. The assessment found limited climate materiality for this project. Climate considerations are therefore included with a light emphasis alongside the wider FCV sensitivity and responsiveness assessment.'
     };
     const summary=lens.materiality_summary?`<p><strong>Materiality:</strong> ${esc(lens.materiality_summary)}</p>`:'';
-    return `<div class="climate-module-notice"><h3>How relevant is climate to this project?</h3><span class="climate-materiality-pill">${esc(level)} materiality</span><p>${esc(wording[level])}</p>${summary}${boundaryLine}<p class="climate-evidence-base">${esc(evidence)}</p></div>`;
+    const partial=climateReadoutComplete(lens)?'':'<p class="climate-partial-notice">Note: a full Climate-FCV reflections and integration readout could not be generated for this run. The climate-FCV interactions below are shown, but the reflections on the core climate-FCV questions and the integration readout are unavailable and were not substituted.</p>';
+    return `<div class="climate-module-notice"><h3>How relevant is climate to this project?</h3><span class="climate-materiality-pill">${esc(level)} materiality</span><p>${esc(wording[level])}</p>${summary}${partial}${boundaryLine}<p class="climate-evidence-base">${esc(evidence)}</p></div>`;
   }
 
   function renderHorizonBadge(value){
