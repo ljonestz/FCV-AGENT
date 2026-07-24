@@ -5,6 +5,7 @@ Run with: python -m pytest tests/test_extract_priorities.py -v
 import sys, os, json, re
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import pytest
+import app as app_module
 from app import extract_priorities
 
 
@@ -515,3 +516,62 @@ def test_priority_policy_status_absent_defaults():
     p = extract_priorities(_wrap_priorities(pr))["priorities"][0]
     assert p["policy_status"] == "not_determined"
     assert p["specialist_referral"] is None
+
+
+# ── Task 1: Graceful per-priority climate_links gate ─────────────────────────
+
+def _stage3_block(priorities):
+    payload = {
+        "fcv_rating": "Moderate", "fcv_responsiveness_rating": "Moderate",
+        "sensitivity_summary": "s", "responsiveness_summary": "r",
+        "risk_exposure": {"risks_to": "x", "risks_from": "y"},
+        "priorities": priorities,
+    }
+    return "%%%JSON_START%%%" + json.dumps(payload) + "%%%JSON_END%%%"
+
+
+def _climate_diag_for_test():
+    return {"lenses": [{
+        "lens_id": "climate", "applicability": "material",
+        "materiality_level": "high", "materiality_summary": "m",
+        "integration_level": "partly_integrated", "integration_summary": "ok",
+        "reflections": [{"question_key": "cq1_interaction", "title": "t",
+                         "status_cue": "ok", "text": "grounded"}],
+        "interaction_readout": [{
+            "direction_id": "climate-fcv-on-project", "summary": "s",
+            "pathways": [{"pathway_id": "climate-fcv-on-project-1",
+                          "pressure": "p", "mechanism": "m",
+                          "project_implication": "i", "design_response": "d"}],
+        }],
+        "readout_sections": [], "additional_pathways": [],
+        "sensitivity_evidence": [], "responsiveness_evidence": [], "less_central": "",
+    }], "findings": []}
+
+
+def _priority_for_test(title, climate_links):
+    return {
+        "title": title, "fcv_dimension": "Contextual awareness", "tag": "[S]",
+        "refresh_shift": "Shift A: Anticipate", "risk_level": "High",
+        "the_gap": "g in Bentiu", "why_it_matters": "w", "actions": [
+            {"document_element": "PAD", "guidance": "do X in Bentiu", "suggested_language": ""}],
+        "who_acts": "TTL", "when": "before appraisal",
+        "action_timing": "required-before-appraisal", "resources": "r",
+        "pad_sections": "SORT", "implementation_note": "n", "cpf_alignment": None,
+        "climate_links": climate_links,
+    }
+
+
+def test_climate_links_failure_keeps_priorities_and_counts_unlinked():
+    good = {"status": "linked",
+            "interaction_pathway_ids": ["climate-fcv-on-project-1"],
+            "contribution": "c", "strengthening_effect": "s"}
+    priorities = [_priority_for_test("Good one", good), _priority_for_test("Bad one", {"status": "bogus"})]
+    result = app_module.extract_priorities(
+        _stage3_block(priorities), ["Doc.pdf"], ["climate"], _climate_diag_for_test())
+    assert result["error"] is False
+    assert len(result["priorities"]) == 2
+    assert result["climate_unlinked"] == 1
+    assert result["climate_total"] == 2
+    assert "climate" in result["priorities"][0]["lens_ids"]
+    assert "climate" not in result["priorities"][1]["lens_ids"]
+    assert result["priorities"][1]["climate_links"] is None

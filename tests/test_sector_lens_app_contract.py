@@ -1706,7 +1706,10 @@ def test_priority_parser_derives_climate_provenance_from_valid_links():
     assert parsed["priorities"][0]["climate_links"]["status"] == "linked"
 
 
-def test_every_climate_priority_requires_link_or_no_material_reason():
+def test_every_climate_priority_missing_link_degrades_gracefully():
+    # Previously this test asserted error=True when climate_links was absent;
+    # graceful-degradation contract (Task 1): priorities are kept, climate tag
+    # is omitted, and the unlinked counter increments instead of a hard fail.
     diagnostic = _add_specific_climate_paths({"lenses": [{
         "lens_id": "climate",
         "materiality_level": "low",
@@ -1736,8 +1739,11 @@ def test_every_climate_priority_requires_link_or_no_material_reason():
         lens_diagnostic=diagnostic,
     )
 
-    assert parsed["error"] is True
-    assert "Climate priority linkage" in parsed["message"]
+    assert parsed["error"] is False
+    assert len(parsed["priorities"]) == 1
+    assert parsed["climate_unlinked"] >= 1
+    assert "climate" not in parsed["priorities"][0]["lens_ids"]
+    assert parsed["priorities"][0]["climate_links"] is None
 
 
 def test_climate_active_research_plan_balances_core_and_climate():
@@ -1940,6 +1946,88 @@ def test_stage3_sse_payloads_include_wider_fcv_context():
     assert express_match, (
         "Express Stage-3 stage_done event missing wider_fcv_context"
     )
+
+
+def test_extract_priorities_returns_climate_link_counts_on_success():
+    """Task 3 contract: extract_priorities returns climate_unlinked + climate_total keys
+    for climate runs; both default to 0 for a non-climate run."""
+    # --- climate run: one priority with a valid linked climate_links ---
+    diag = _add_specific_climate_paths({"lenses": [{
+        "lens_id": "climate",
+        "materiality_level": "high",
+        "materiality_summary": "s",
+        "interaction_readout": [{
+            "direction_id": "climate-fcv-on-project",
+            "summary": "A",
+        }],
+    }], "findings": []})
+    block = {
+        "fcv_rating": "Moderate", "fcv_responsiveness_rating": "Moderate",
+        "sensitivity_summary": "s", "responsiveness_summary": "r",
+        "risk_exposure": {"risks_to": "x", "risks_from": "y"},
+        "priorities": [{
+            "title": "Climate priority in Juba",
+            "fcv_dimension": "Contextual awareness",
+            "tag": "[S]",
+            "refresh_shift": "Shift A: Anticipate",
+            "risk_level": "High",
+            "the_gap": "Gap in Juba area.",
+            "why_it_matters": "Why it matters.",
+            "actions": [{"document_element": "PAD", "guidance": "Do X in Juba.", "suggested_language": ""}],
+            "who_acts": "TTL",
+            "when": "before appraisal",
+            "action_timing": "required-before-appraisal",
+            "resources": "r",
+            "pad_sections": "SORT",
+            "implementation_note": "n",
+            "cpf_alignment": None,
+            "climate_links": {
+                "status": "linked",
+                "interaction_pathway_ids": ["climate-fcv-on-project-1"],
+                "contribution": "c",
+                "strengthening_effect": "s",
+            },
+        }],
+    }
+    result = app_module.extract_priorities(
+        "%%%JSON_START%%%" + json.dumps(block) + "%%%JSON_END%%%",
+        active_lens_ids=["climate"],
+        lens_diagnostic=diag,
+    )
+    assert result["error"] is False
+    assert "climate_unlinked" in result
+    assert "climate_total" in result
+    assert result["climate_total"] == 1
+
+    # --- non-climate run: counts are zero ---
+    plain_block = {
+        "fcv_rating": "Moderate", "fcv_responsiveness_rating": "Moderate",
+        "sensitivity_summary": "s", "responsiveness_summary": "r",
+        "risk_exposure": {"risks_to": "x", "risks_from": "y"},
+        "priorities": [{
+            "title": "FCV priority in Juba",
+            "fcv_dimension": "Contextual awareness",
+            "tag": "[S]",
+            "refresh_shift": "Shift A: Anticipate",
+            "risk_level": "High",
+            "the_gap": "Gap in Juba area.",
+            "why_it_matters": "Why.",
+            "actions": [{"document_element": "PAD", "guidance": "Do X in Juba.", "suggested_language": ""}],
+            "who_acts": "TTL",
+            "when": "before appraisal",
+            "action_timing": "required-before-appraisal",
+            "resources": "r",
+            "pad_sections": "SORT",
+            "implementation_note": "n",
+            "cpf_alignment": None,
+        }],
+    }
+    plain_result = app_module.extract_priorities(
+        "%%%JSON_START%%%" + json.dumps(plain_block) + "%%%JSON_END%%%",
+    )
+    assert plain_result["error"] is False
+    assert plain_result["climate_unlinked"] == 0
+    assert plain_result["climate_total"] == 0
 
 
 # --- graceful degradation: single-direction climate diagnostic ---

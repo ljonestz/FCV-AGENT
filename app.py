@@ -5183,6 +5183,8 @@ def extract_priorities(
         return _error_result
 
     priorities = []
+    climate_unlinked = 0
+    climate_total = 0
     for pr in priorities_raw:
         if not isinstance(pr, dict):
             continue
@@ -5268,23 +5270,23 @@ def extract_priorities(
             )
         )
         if enforce_climate_links:
+            climate_total += 1
             climate_links = normalize_priority_climate_links(
                 pr.get("climate_links"), lens_diagnostic
             )
-            if not climate_links:
-                failed = dict(_error_result)
-                failed["message"] = (
-                    "Climate priority linkage was missing or invalid; "
-                    "please re-run Stage 3."
-                )
-                return failed
-            pr["climate_links"] = climate_links
             pr["lens_ids"] = [
                 lens_id for lens_id in pr["lens_ids"]
                 if lens_id != "climate"
             ]
-            if climate_links["status"] == "linked":
-                pr["lens_ids"].append("climate")
+            if climate_links:
+                pr["climate_links"] = climate_links
+                if climate_links["status"] == "linked":
+                    pr["lens_ids"].append("climate")
+            else:
+                # Graceful degradation: keep the priority so the panel never
+                # blanks; null the unvalidated link and do not tag climate.
+                pr["climate_links"] = None
+                climate_unlinked += 1
         relevance = pr.get('lens_relevance', '')
         pr['lens_relevance'] = (
             relevance.strip()[:500]
@@ -5292,7 +5294,8 @@ def extract_priorities(
         )
         if (
             enforce_climate_links
-            and pr["climate_links"]["status"] == "linked"
+            and isinstance(pr.get("climate_links"), dict)
+            and pr["climate_links"].get("status") == "linked"
             and not pr["lens_relevance"]
         ):
             pr["lens_relevance"] = pr["climate_links"]["contribution"][:500]
@@ -5389,6 +5392,8 @@ def extract_priorities(
         'p4r_watch': data.get('p4r_watch', []),
         'regional_watch': data.get('regional_watch', []),
         'wider_fcv_context': wider_fcv_context,
+        'climate_unlinked': climate_unlinked,
+        'climate_total': climate_total,
     }
 
 
@@ -7574,6 +7579,8 @@ def run_stage():
                     done_data['regional_watch'] = regional_watch
                     done_data['horizon_considerations'] = horizon
                     done_data['wider_fcv_context'] = parsed.get('wider_fcv_context')
+                    done_data['climate_unlinked'] = parsed.get('climate_unlinked', 0)
+                    done_data['climate_total'] = parsed.get('climate_total', 0)
                     done_data['applied_snippets'] = [
                         {'id': s['id'], 'title': s['title'], 'source': s['source']}
                         for s in secondary_snippets_s3
@@ -8444,7 +8451,7 @@ def run_express():
                     conversation_history = conversation_history[-20:]
 
                 # ── Stage 3 done event ──
-                yield f"data: {json.dumps({'stage_done': 3, 'result': stage3_output_clean, 'history': conversation_history, 'priorities': parsed.get('priorities', []), 'fcv_rating': parsed.get('fcv_rating', ''), 'fcv_responsiveness_rating': parsed.get('fcv_responsiveness_rating', ''), 'sensitivity_summary': parsed.get('sensitivity_summary', ''), 'responsiveness_summary': parsed.get('responsiveness_summary', ''), 'risk_exposure': parsed.get('risk_exposure'), 'mid_cycle_watch': parsed.get('mid_cycle_watch', []), 'dpf_watch': parsed.get('dpf_watch', []), 'p4r_watch': parsed.get('p4r_watch', []), 'regional_watch': parsed.get('regional_watch', []), 'gap_table': extract_gap_table(stage3_output), 'parse_error': parsed.get('error', False), 'parse_error_message': parsed.get('message', ''), 'horizon_considerations': horizon, 'wider_fcv_context': parsed.get('wider_fcv_context'), 'lens_context_sources': lens_context_s3['lens_context_sources'], 'active_lenses': lens_context_s3['active_lenses'], 'lens_warnings': lens_context_s3['warnings'], 'applied_snippets': [{'id': s['id'], 'title': s['title'], 'source': s['source']} for s in secondary_snippets_s3e]})}\n\n"
+                yield f"data: {json.dumps({'stage_done': 3, 'result': stage3_output_clean, 'history': conversation_history, 'priorities': parsed.get('priorities', []), 'fcv_rating': parsed.get('fcv_rating', ''), 'fcv_responsiveness_rating': parsed.get('fcv_responsiveness_rating', ''), 'sensitivity_summary': parsed.get('sensitivity_summary', ''), 'responsiveness_summary': parsed.get('responsiveness_summary', ''), 'risk_exposure': parsed.get('risk_exposure'), 'mid_cycle_watch': parsed.get('mid_cycle_watch', []), 'dpf_watch': parsed.get('dpf_watch', []), 'p4r_watch': parsed.get('p4r_watch', []), 'regional_watch': parsed.get('regional_watch', []), 'gap_table': extract_gap_table(stage3_output), 'parse_error': parsed.get('error', False), 'parse_error_message': parsed.get('message', ''), 'horizon_considerations': horizon, 'wider_fcv_context': parsed.get('wider_fcv_context'), 'lens_context_sources': lens_context_s3['lens_context_sources'], 'active_lenses': lens_context_s3['active_lenses'], 'lens_warnings': lens_context_s3['warnings'], 'applied_snippets': [{'id': s['id'], 'title': s['title'], 'source': s['source']} for s in secondary_snippets_s3e], 'climate_unlinked': parsed.get('climate_unlinked', 0), 'climate_total': parsed.get('climate_total', 0)})}\n\n"
 
                 # ── Express complete ──
                 yield f"data: {json.dumps({'express_done': True})}\n\n"
