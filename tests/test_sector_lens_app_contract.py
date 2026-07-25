@@ -2100,3 +2100,54 @@ def test_stage2_climate_prompt_caps_pathways_and_requires_completion():
     assert "one or two pathways" in prompt
     assert "Always complete and close the hidden diagnostic block" in prompt
     assert "one to four pathways" not in prompt
+
+
+def test_workflow_bridge_streams_events_then_completes():
+    # Happy path: bridge yields each workflow event then stops on the sentinel.
+    def workflow_events():
+        yield "data: one\n\n"
+        yield "data: two\n\n"
+
+    with app_module.app.test_request_context("/api/run-express"):
+        out = list(
+            app_module._stream_workflow_events(
+                workflow_events, "assess-x", poll_interval=0.05
+            )
+        )
+    assert out == ["data: one\n\n", "data: two\n\n"]
+
+
+def test_workflow_bridge_surfaces_crash_without_hanging():
+    # A workflow that raises must yield an error event and terminate, never hang.
+    def workflow_events():
+        yield "data: partial\n\n"
+        raise RuntimeError("boom")
+
+    with app_module.app.test_request_context("/api/run-express"):
+        out = list(
+            app_module._stream_workflow_events(
+                workflow_events, "assess-y", poll_interval=0.05
+            )
+        )
+    assert out[0] == "data: partial\n\n"
+    assert any('"error"' in chunk and "failed_stage" in chunk for chunk in out)
+
+
+def test_workflow_bridge_keepalive_and_deadline_on_silent_workflow():
+    # A workflow that produces nothing for a while must not hang silently: the
+    # bridge emits keepalives and then a clean deadline error (never blocks).
+    import time as _time
+
+    def workflow_events():
+        _time.sleep(1.0)  # silent window longer than the deadline
+        yield "data: never-reached\n\n"
+
+    with app_module.app.test_request_context("/api/run-express"):
+        out = list(
+            app_module._stream_workflow_events(
+                workflow_events, "assess-z",
+                poll_interval=0.05, overall_deadline=0.2,
+            )
+        )
+    assert any('"keepalive"' in chunk for chunk in out)
+    assert any('"error"' in chunk and "failed_stage" in chunk for chunk in out)

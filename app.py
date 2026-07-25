@@ -7740,23 +7740,7 @@ def run_stage():
                 yield f"data: {json.dumps({'error': str(e)})}\n\n"
 
         def generate():
-            event_queue = queue.Queue()
-            sentinel = object()
-
-            def run_workflow():
-                try:
-                    for event in workflow_events():
-                        event_queue.put(event)
-                finally:
-                    event_queue.put(sentinel)
-
-            ASSESSMENT_EXECUTOR.submit(run_workflow)
-
-            while True:
-                item = event_queue.get()
-                if item is sentinel:
-                    break
-                yield item
+            yield from _stream_workflow_events(workflow_events, assessment_id)
 
         return Response(stream_with_context(generate()), mimetype='text/event-stream',
                         headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'})
@@ -7765,6 +7749,98 @@ def run_stage():
         return _payload_too_large_response(e)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+# Overall server-side backstop for a whole SSE workflow (all express stages, or
+# one step). Sits below the gunicorn --timeout (1200s) so we emit a clean error
+# before the worker is SIGKILLed, and above the sum of realistic per-stage work.
+WORKFLOW_OVERALL_DEADLINE_SECONDS = 19 * 60
+
+
+def _stream_workflow_events(
+    workflow_events,
+    assessment_id,
+    poll_interval=15,
+    overall_deadline=WORKFLOW_OVERALL_DEADLINE_SECONDS,
+):
+    """Bridge a workflow_events() generator (run on ASSESSMENT_EXECUTOR) to SSE.
+
+    Hardening over the old naive ``event_queue.get()`` bridge, which blocked
+    with no timeout and no keepalive — so any stall (or a workflow greenlet that
+    never scheduled) produced a silent, log-less hang until the browser aborted:
+
+    - keepalive during quiet gaps so the connection never goes silent;
+    - an overall wall-clock backstop that logs a WARNING and surfaces a clean
+      error instead of hanging;
+    - submit / start / first-event logging so a stall's location (never
+      submitted vs never started vs stuck mid-stage) is unambiguous in the logs.
+    """
+
+    route_label = request.path if request else "workflow"
+    tag = assessment_id or "unknown"
+    event_queue = queue.Queue()
+    sentinel = object()
+    started = time.monotonic()
+
+    def run_workflow():
+        app.logger.info(
+            "%s workflow started: assessment_id=%s", route_label, tag
+        )
+        try:
+            for event in workflow_events():
+                event_queue.put(event)
+        except Exception as exc:  # never let the bridge hang on a crash
+            app.logger.warning(
+                "%s workflow crashed: assessment_id=%s error=%s",
+                route_label, tag, type(exc).__name__,
+            )
+            event_queue.put(
+                "data: "
+                + json.dumps({"error": str(exc), "failed_stage": 1})
+                + "\n\n"
+            )
+        finally:
+            event_queue.put(sentinel)
+
+    app.logger.info(
+        "%s workflow submitted: assessment_id=%s", route_label, tag
+    )
+    ASSESSMENT_EXECUTOR.submit(run_workflow)
+
+    first_event_seen = False
+    while True:
+        try:
+            item = event_queue.get(timeout=poll_interval)
+        except queue.Empty:
+            elapsed = time.monotonic() - started
+            if elapsed > overall_deadline:
+                app.logger.warning(
+                    "%s overall deadline exceeded: assessment_id=%s "
+                    "elapsed_s=%d first_event=%s",
+                    route_label, tag, int(elapsed), first_event_seen,
+                )
+                yield (
+                    "data: "
+                    + json.dumps({
+                        "error": _stage_timeout_message(1, overall_deadline),
+                        "failed_stage": 1,
+                    })
+                    + "\n\n"
+                )
+                return
+            # Keepalive so the SSE connection never goes silent during a quiet
+            # window (e.g. the Stage 1 extraction loop yields no events).
+            yield f"data: {json.dumps({'keepalive': True})}\n\n"
+            continue
+        if not first_event_seen:
+            first_event_seen = True
+            app.logger.info(
+                "%s first event emitted: assessment_id=%s waited_ms=%d",
+                route_label, tag, int((time.monotonic() - started) * 1000),
+            )
+        if item is sentinel:
+            return
+        yield item
 
 
 def _stage_timeout_seconds(stage_num):
@@ -8624,23 +8700,7 @@ def run_express():
                 yield f"data: {json.dumps({'error': str(e), 'failed_stage': failed_stage})}\n\n"
 
         def generate():
-            event_queue = queue.Queue()
-            sentinel = object()
-
-            def run_workflow():
-                try:
-                    for event in workflow_events():
-                        event_queue.put(event)
-                finally:
-                    event_queue.put(sentinel)
-
-            ASSESSMENT_EXECUTOR.submit(run_workflow)
-
-            while True:
-                item = event_queue.get()
-                if item is sentinel:
-                    break
-                yield item
+            yield from _stream_workflow_events(workflow_events, assessment_id)
 
         return Response(stream_with_context(generate()),
                         mimetype='text/event-stream',
