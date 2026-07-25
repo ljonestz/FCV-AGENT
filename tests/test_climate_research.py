@@ -237,6 +237,64 @@ def test_climate_research_stops_after_one_failed_retry():
     assert len(client.calls) == 2
 
 
+def test_stage1_research_budget_abandons_slow_pass(monkeypatch):
+    # A slow research pass must not block Stage 1 past the aggregate budget.
+    import time as _time
+
+    def slow_core(*args, **kwargs):
+        _time.sleep(5)
+        return {"brief": "late brief"}
+
+    monkeypatch.setattr(app_module, "run_fcv_web_research", slow_core)
+    monkeypatch.setattr(app_module, "get_research_client", lambda: object())
+    plan = {
+        "country": "Testland",
+        "sector": "Water",
+        "core": {"max_tokens": 100, "max_uses": 1},
+        "climate": {"enabled": False},
+        "project_profile": {},
+    }
+    started = _time.monotonic()
+    events = list(
+        app_module._iter_stage1_research(plan, "assess-1", budget_seconds=1)
+    )
+    elapsed = _time.monotonic() - started
+
+    # Returned well before the slow (5s) pass would have finished.
+    assert elapsed < 4
+    statuses = [e.get("research_status") for e in events if "result" not in e]
+    assert "research_timeout" in statuses
+    final = events[-1]
+    assert "result" in final
+    # Abandoned pass contributed nothing; downstream degrades gracefully.
+    assert final["result"]["core_brief"] == ""
+
+
+def test_stage1_research_budget_completes_fast_pass(monkeypatch):
+    import time as _time
+
+    monkeypatch.setattr(
+        app_module,
+        "run_fcv_web_research",
+        lambda *a, **k: {"brief": "quick brief"},
+    )
+    monkeypatch.setattr(app_module, "get_research_client", lambda: object())
+    app_module._research_cache.clear()
+    plan = {
+        "country": "Fastland",
+        "sector": "Energy",
+        "core": {"max_tokens": 100, "max_uses": 1},
+        "climate": {"enabled": False},
+        "project_profile": {},
+    }
+    events = list(
+        app_module._iter_stage1_research(plan, "assess-2", budget_seconds=30)
+    )
+    statuses = [e.get("research_status") for e in events if "result" not in e]
+    assert "research_timeout" not in statuses
+    assert events[-1]["result"]["core_brief"] == "quick brief"
+
+
 def test_climate_research_telemetry_is_structural_and_private(caplog):
     sentinel = "SECRET PROJECT CLAIM MUST NOT LEAK"
     bundle = _valid_bundle()

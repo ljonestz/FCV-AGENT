@@ -6430,11 +6430,28 @@ def build_stage1_research_plan(
     }
 
 
+# Aggregate wall-clock budget for the Stage 1 research preprocessing phase
+# (core + optional Climate passes). Research runs BEFORE the Stage 1 model
+# stream and is NOT covered by the `_stream_stage` model cap, so without this
+# bound a slow/retrying Climate pass on the free tier could silently consume
+# the whole frontend Stage 1 budget (9 min) and surface only as a frontend
+# timeout. When the budget is exhausted we proceed with whatever completed;
+# research already degrades gracefully to an empty brief/bundle downstream.
+STAGE1_RESEARCH_BUDGET_SECONDS = 210
+
+
 def _iter_stage1_research(
     research_plan: dict[str, Any],
     assessment_id: str = "",
+    budget_seconds: int = STAGE1_RESEARCH_BUDGET_SECONDS,
 ):
-    """Run core and optional Climate research concurrently with keepalives."""
+    """Run core and optional Climate research concurrently with keepalives.
+
+    Bounded by an aggregate wall-clock budget: if the passes have not all
+    finished within ``budget_seconds`` the still-running ones are abandoned
+    (the pool is shut down without waiting) and Stage 1 proceeds with whatever
+    research completed, rather than blocking past the frontend Stage 1 budget.
+    """
 
     country = research_plan["country"]
     sector = research_plan["sector"]
@@ -6448,7 +6465,13 @@ def _iter_stage1_research(
         "lens_context_sources": [],
     }
     futures = {}
-    with ThreadPoolExecutor(max_workers=2) as pool:
+    deadline = time.monotonic() + max(1, budget_seconds)
+    timed_out = False
+    # NOTE: not a `with` block — the context manager's __exit__ calls
+    # shutdown(wait=True), which would re-block on an abandoned research pass
+    # and defeat the budget. We shut down explicitly with wait=False.
+    pool = ThreadPoolExecutor(max_workers=2)
+    try:
         if cached_core:
             results["core_brief"] = cached_core.get("brief", "")
         else:
@@ -6472,9 +6495,13 @@ def _iter_stage1_research(
             )] = "climate"
 
         while futures:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                timed_out = True
+                break
             done, _ = wait(
                 futures,
-                timeout=15,
+                timeout=min(15, remaining),
                 return_when=FIRST_COMPLETED,
             )
             if not done:
@@ -6497,6 +6524,26 @@ def _iter_stage1_research(
                     climate_research = normalize_climate_research_bundle(value)
                     results["climate_research"] = climate_research
                     results["lens_context_sources"] = climate_research["sources"]
+    finally:
+        # wait=False so an unfinished pass does not block Stage 1; the thread
+        # completes its API call in the background and its result is discarded.
+        pool.shutdown(wait=False, cancel_futures=True)
+
+    if timed_out:
+        app.logger.warning(
+            "Stage 1 research budget exhausted: assessment_id=%s "
+            "budget_s=%d pending=%s core_brief=%s climate_claims=%d",
+            assessment_id or "unknown",
+            max(1, budget_seconds),
+            ",".join(sorted(futures.values())) or "none",
+            "yes" if results["core_brief"] else "no",
+            len(results["climate_research"].get("claims", [])),
+        )
+        yield {
+            "research_status": "research_timeout",
+            "country": country,
+            "keepalive": True,
+        }
     yield {"result": results}
 
 
