@@ -7751,17 +7751,20 @@ def run_stage():
         return jsonify({'error': str(e)}), 500
 
 
-# Overall server-side backstop for a whole SSE workflow (all express stages, or
-# one step). Sits below the gunicorn --timeout (1200s) so we emit a clean error
-# before the worker is SIGKILLed, and above the sum of realistic per-stage work.
-WORKFLOW_OVERALL_DEADLINE_SECONDS = 19 * 60
+# Stuck-workflow backstop: max time with NO workflow event at all (not even a
+# stage keepalive). This is an IDLE detector, not a total-runtime cap — a
+# slow-but-streaming run (all express stages) must never be killed, only a
+# genuinely hung one that produces nothing. The longest legitimate quiet gap is
+# Stage 1 extraction + country/sector calls before research starts emitting; 5
+# min gives that ample headroom on the free tier.
+WORKFLOW_IDLE_DEADLINE_SECONDS = 5 * 60
 
 
 def _stream_workflow_events(
     workflow_events,
     assessment_id,
     poll_interval=15,
-    overall_deadline=WORKFLOW_OVERALL_DEADLINE_SECONDS,
+    idle_deadline=WORKFLOW_IDLE_DEADLINE_SECONDS,
 ):
     """Bridge a workflow_events() generator (run on ASSESSMENT_EXECUTOR) to SSE.
 
@@ -7770,8 +7773,9 @@ def _stream_workflow_events(
     never scheduled) produced a silent, log-less hang until the browser aborted:
 
     - keepalive during quiet gaps so the connection never goes silent;
-    - an overall wall-clock backstop that logs a WARNING and surfaces a clean
-      error instead of hanging;
+    - an idle backstop (time since the last workflow event) that logs a WARNING
+      and surfaces a clean error if the workflow is genuinely hung — while never
+      killing a slow-but-streaming run;
     - submit / start / first-event logging so a stall's location (never
       submitted vs never started vs stuck mid-stage) is unambiguous in the logs.
     """
@@ -7808,30 +7812,36 @@ def _stream_workflow_events(
     ASSESSMENT_EXECUTOR.submit(run_workflow)
 
     first_event_seen = False
+    last_event_at = time.monotonic()
     while True:
         try:
             item = event_queue.get(timeout=poll_interval)
         except queue.Empty:
-            elapsed = time.monotonic() - started
-            if elapsed > overall_deadline:
+            idle = time.monotonic() - last_event_at
+            if idle > idle_deadline:
                 app.logger.warning(
-                    "%s overall deadline exceeded: assessment_id=%s "
-                    "elapsed_s=%d first_event=%s",
-                    route_label, tag, int(elapsed), first_event_seen,
+                    "%s stalled (no workflow output): assessment_id=%s "
+                    "idle_s=%d elapsed_s=%d first_event=%s",
+                    route_label, tag, int(idle),
+                    int(time.monotonic() - started), first_event_seen,
                 )
                 yield (
                     "data: "
                     + json.dumps({
-                        "error": _stage_timeout_message(1, overall_deadline),
+                        "error": _stage_timeout_message(1, idle_deadline),
                         "failed_stage": 1,
                     })
                     + "\n\n"
                 )
                 return
             # Keepalive so the SSE connection never goes silent during a quiet
-            # window (e.g. the Stage 1 extraction loop yields no events).
+            # window (e.g. the Stage 1 extraction loop yields no events). This
+            # is bridge-generated and does NOT reset the idle timer, which
+            # tracks genuine workflow output only.
             yield f"data: {json.dumps({'keepalive': True})}\n\n"
             continue
+        # A real workflow event (incl. stage keepalives) — the workflow is alive.
+        last_event_at = time.monotonic()
         if not first_event_seen:
             first_event_seen = True
             app.logger.info(

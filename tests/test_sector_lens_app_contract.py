@@ -2133,21 +2133,46 @@ def test_workflow_bridge_surfaces_crash_without_hanging():
     assert any('"error"' in chunk and "failed_stage" in chunk for chunk in out)
 
 
-def test_workflow_bridge_keepalive_and_deadline_on_silent_workflow():
+def test_workflow_bridge_keepalive_and_idle_deadline_on_silent_workflow():
     # A workflow that produces nothing for a while must not hang silently: the
-    # bridge emits keepalives and then a clean deadline error (never blocks).
+    # bridge emits keepalives and then a clean idle-deadline error (never blocks).
     import time as _time
 
     def workflow_events():
-        _time.sleep(1.0)  # silent window longer than the deadline
+        _time.sleep(1.0)  # silent window longer than the idle deadline
         yield "data: never-reached\n\n"
 
     with app_module.app.test_request_context("/api/run-express"):
         out = list(
             app_module._stream_workflow_events(
                 workflow_events, "assess-z",
-                poll_interval=0.05, overall_deadline=0.2,
+                poll_interval=0.05, idle_deadline=0.2,
             )
         )
     assert any('"keepalive"' in chunk for chunk in out)
     assert any('"error"' in chunk and "failed_stage" in chunk for chunk in out)
+
+
+def test_workflow_bridge_does_not_kill_slow_but_streaming_run():
+    # A run that keeps emitting events (even slowly) must never trip the idle
+    # backstop, even when total elapsed exceeds the idle_deadline.
+    import time as _time
+
+    def workflow_events():
+        for i in range(4):
+            _time.sleep(0.15)
+            yield f"data: chunk-{i}\n\n"
+
+    with app_module.app.test_request_context("/api/run-express"):
+        out = list(
+            app_module._stream_workflow_events(
+                workflow_events, "assess-w",
+                poll_interval=0.05, idle_deadline=0.2,
+            )
+        )
+    # All four workflow chunks delivered; no error/deadline event.
+    assert [c for c in out if c.startswith("data: chunk-")] == [
+        "data: chunk-0\n\n", "data: chunk-1\n\n",
+        "data: chunk-2\n\n", "data: chunk-3\n\n",
+    ]
+    assert not any('"error"' in chunk for chunk in out)
