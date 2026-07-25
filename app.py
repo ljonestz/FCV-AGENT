@@ -6437,7 +6437,7 @@ def build_stage1_research_plan(
 # the whole frontend Stage 1 budget (9 min) and surface only as a frontend
 # timeout. When the budget is exhausted we proceed with whatever completed;
 # research already degrades gracefully to an empty brief/bundle downstream.
-STAGE1_RESEARCH_BUDGET_SECONDS = 210
+STAGE1_RESEARCH_BUDGET_SECONDS = 150
 
 
 def _iter_stage1_research(
@@ -6587,6 +6587,41 @@ app = Flask(__name__, static_folder='static')
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
 
 
+def _configure_app_logging() -> None:
+    """Make app.logger diagnostics visible in production (Render) logs.
+
+    Flask's app.logger has no stdout/stderr handler under gunicorn by default,
+    so every app.logger.info/warning (Stage 1 preprocessing timing, research
+    budget exhaustion, lens recovery telemetry, ...) was silently discarded —
+    which is why past handoffs could never "capture the Render log line".
+    Bind to gunicorn's error handlers when present, else emit to stdout, at
+    INFO (override with LOG_LEVEL).
+    """
+
+    import logging
+    import sys
+
+    level = getattr(
+        logging, os.environ.get("LOG_LEVEL", "INFO").upper(), logging.INFO
+    )
+    gunicorn_error = logging.getLogger("gunicorn.error")
+    if gunicorn_error.handlers:
+        app.logger.handlers = gunicorn_error.handlers
+    elif not app.logger.handlers:
+        handler = logging.StreamHandler(sys.stdout)
+        handler.setFormatter(
+            logging.Formatter("%(asctime)s %(levelname)s %(message)s")
+        )
+        app.logger.addHandler(handler)
+    app.logger.setLevel(level)
+    # Keep propagate=True: pytest's caplog captures via root-logger
+    # propagation, and INFO diagnostics do not duplicate (root's last-resort
+    # handler only emits WARNING+).
+
+
+_configure_app_logging()
+
+
 def _payload_too_large_response(_error=None):
     max_bytes = int(app.config.get('MAX_CONTENT_LENGTH') or 0)
     max_mb = max_bytes // (1024 * 1024)
@@ -6678,9 +6713,23 @@ def index():
     return resp
 
 
+BUILD_MARKER = os.environ.get("RENDER_GIT_COMMIT", "")[:12] or "dev"
+
+
 @app.route('/health')
 def health():
-    return jsonify({'status': 'ok'})
+    return jsonify({
+        'status': 'ok',
+        'build': BUILD_MARKER,
+        'stage1_research_budget_s': STAGE1_RESEARCH_BUDGET_SECONDS,
+    })
+
+
+app.logger.info(
+    "FCV screener started: build=%s stage1_research_budget_s=%d",
+    BUILD_MARKER,
+    STAGE1_RESEARCH_BUDGET_SECONDS,
+)
 
 
 # ── Admin routes ─────────────────────────────────────────────────────────────

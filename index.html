@@ -3470,13 +3470,17 @@
     // above the backend wall-clock limits (S1 8m / S2 9m / S3 9m) so the backend's stage
     // error surfaces before the frontend tears the stream ("BodyStreamBuffer was aborted").
     // Raised for S2/S3 in v9.16 for large PforR outputs (see STAGE_STREAM_TIMEOUTS in app.py).
-    const EXPRESS_STAGE_TIMEOUTS={1:9*60*1000,2:10*60*1000,3:10*60*1000};
-    const EXPRESS_STAGE_LABELS={1:'9 minutes',2:'10 minutes',3:'10 minutes'};
+    // Stage 1 frontend budget (12m) sits ABOVE the backend Stage 1 ceiling
+    // (research budget 150s + model cap 8m = 10.5m) so a slow-but-completing
+    // Stage 1 finishes and, if it does stall, the backend surfaces a clean
+    // phase-specific error before this frontend backstop fires.
+    const EXPRESS_STAGE_TIMEOUTS={1:12*60*1000,2:10*60*1000,3:10*60*1000};
+    const EXPRESS_STAGE_LABELS={1:'12 minutes',2:'10 minutes',3:'10 minutes'};
     let expressTimeout=null;
     function armExpressTimeout(stage){
       clearTimeout(expressTimeout);
-      const ms=EXPRESS_STAGE_TIMEOUTS[stage]||9*60*1000;
-      const label=EXPRESS_STAGE_LABELS[stage]||'9 minutes';
+      const ms=EXPRESS_STAGE_TIMEOUTS[stage]||12*60*1000;
+      const label=EXPRESS_STAGE_LABELS[stage]||'12 minutes';
       expressTimeout=setTimeout(()=>expressAbort.abort(new Error('Stage '+stage+' timed out after '+label+'. The AI service may be slow - please retry.')),ms);
     }
     armExpressTimeout(1);
@@ -3793,13 +3797,14 @@
         ];
       }
 
-      // Abort if backend hangs. Frontend budgets sit 1 min above the backend caps
-      // (STAGE_STREAM_TIMEOUTS in app.py: S1 8m / S2 9m / S3 9m) so the backend's
-      // stage error surfaces before the frontend tears the stream. Raised for large
-      // PforR outputs in v9.16 (S2 was 6m == its old cap, a race).
+      // Abort if backend hangs. Frontend budgets sit above the backend caps
+      // (STAGE_STREAM_TIMEOUTS in app.py: S2 9m / S3 9m) so the backend's
+      // stage error surfaces before the frontend tears the stream. Stage 1 is
+      // 12m: it must clear the backend Stage 1 ceiling of research budget
+      // (150s) + model cap (8m) = 10.5m, not just the model cap alone.
       const _stageAbort=new AbortController();
-      const _stageTimeoutMs=stage===1?9*60*1000:10*60*1000;
-      const _stageTimeoutLabel=stage===1?'9':'10';
+      const _stageTimeoutMs=stage===1?12*60*1000:10*60*1000;
+      const _stageTimeoutLabel=stage===1?'12':'10';
       const _stageTimeoutId=setTimeout(()=>_stageAbort.abort(new Error('Stage '+stage+' timed out after '+_stageTimeoutLabel+' minutes. The AI service may be slow — please retry.')),_stageTimeoutMs);
 
       let res;
