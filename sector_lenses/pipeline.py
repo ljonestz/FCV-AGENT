@@ -136,6 +136,54 @@ def _normalize_climate_pathways(
     return normalized
 
 
+# Models frequently emit machine-token status cues (e.g. "material_gap",
+# "unaddressed") despite the prompt asking for soft plain-language phrasing.
+# Soften deterministically at the parse layer so live HTML, shared HTML, and
+# DOCX all render human-readable chips — never a raw snake_case enum token.
+_STATUS_CUE_SOFT_MAP = {
+    "material_gap": "material gap",
+    "gap": "gap",
+    "partial": "partial gap",
+    "partial_gap": "partial gap",
+    "unaddressed": "not yet addressed",
+    "not_addressed": "not yet addressed",
+    "unspecified": "not yet specified",
+    "not_specified": "not yet specified",
+    "addressed": "recognised",
+    "well_addressed": "well recognised",
+    "recognised": "recognised",
+    "recognized": "recognised",
+    "well_integrated": "well recognised",
+    "partly_integrated": "partially recognised",
+    "weakly_integrated": "weak",
+    "weak": "weak",
+    "strong": "strong",
+    "strength": "strong",
+    "unclaimed": "unclaimed opportunity",
+    "unclaimed_opportunity": "unclaimed opportunity",
+    "opportunity": "unclaimed opportunity",
+    "insufficient_evidence": "insufficient evidence",
+    "ok": "recognised",
+}
+
+
+def _soften_status_cue(value: Any) -> str:
+    """Map a machine-token status cue to soft plain-language phrasing.
+
+    Already-soft cues (e.g. "partial gap", "strong") pass through unchanged;
+    snake_case tokens are mapped or, as a fallback, de-underscored.
+    """
+
+    raw = str(value or "").strip()
+    if not raw:
+        return ""
+    key = raw.lower().replace(" ", "_").replace("-", "_")
+    if key in _STATUS_CUE_SOFT_MAP:
+        return _STATUS_CUE_SOFT_MAP[key]
+    # Unknown token: strip snake_case so no raw enum ever reaches the UI.
+    return raw.replace("_", " ")
+
+
 def _normalize_climate_reflections(value: Any) -> list[dict[str, Any]]:
     """Validate and bound climate diagnostic reflection entries."""
 
@@ -150,7 +198,7 @@ def _normalize_climate_reflections(value: Any) -> list[dict[str, Any]]:
         reflections.append({
             "question_key": key,
             "title": str(raw.get("title", "")).strip()[:80],
-            "status_cue": str(raw.get("status_cue", "")).strip()[:40],
+            "status_cue": _soften_status_cue(raw.get("status_cue", ""))[:40],
             "text": text,
         })
         if len(reflections) >= 5:

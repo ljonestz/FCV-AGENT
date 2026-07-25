@@ -597,6 +597,53 @@ def test_climate_diagnostic_parses_reflections_and_integration():
     assert lens["responsiveness_evidence"] == ["Committee model builds cohesion."]
 
 
+def test_climate_reflection_status_cues_softened_from_machine_tokens():
+    # Models often emit raw snake_case enum tokens for status_cue despite the
+    # prompt asking for soft phrasing; these must never reach the UI verbatim.
+    cases = ",".join([
+        '{"question_key":"cq1_interaction","title":"a","status_cue":"material_gap","text":"x"}',
+        '{"question_key":"cq2_maladaptation","title":"b","status_cue":"unaddressed","text":"x"}',
+        '{"question_key":"cq3_dividends","title":"c","status_cue":"unspecified","text":"x"}',
+        '{"question_key":"cq4_inclusion","title":"d","status_cue":"partial","text":"x"}',
+        '{"question_key":"cq5_institutions","title":"e","status_cue":"strong","text":"x"}',
+    ])
+    block = (
+        "%%%LENS_DIAGNOSTIC_START%%%"
+        '{"lenses":[{"lens_id":"climate","applicability":"material",'
+        '"materiality_level":"high","reflections":[' + cases + "],"
+        '"source_ids":[],"readout_sections":[],"interaction_readout":[],'
+        '"additional_pathways":[],"other_pathways":[]}],"findings":[]}'
+        "%%%LENS_DIAGNOSTIC_END%%%"
+    )
+    lens = extract_lens_diagnostic(block, ["climate"])["lenses"][0]
+    cues = [r["status_cue"] for r in lens["reflections"]]
+    assert cues == [
+        "material gap", "not yet addressed", "not yet specified",
+        "partial gap", "strong",
+    ]
+    # No underscore machine token survives to the rendered cue.
+    assert not any("_" in cue for cue in cues)
+
+
+def test_climate_interaction_narrative_parsed_and_bounded():
+    long_narrative = "Flooding pushes fishing communities into contested areas. " * 60
+    block = (
+        "%%%LENS_DIAGNOSTIC_START%%%"
+        '{"lenses":[{"lens_id":"climate","applicability":"material",'
+        '"materiality_level":"high","materiality_summary":"Water and conflict.",'
+        '"interaction_readout":[{"direction_id":"climate-fcv-on-project",'
+        '"summary":"Flood and insecurity disrupt delivery.","narrative":'
+        + json.dumps(long_narrative) + ',"pathways":[]}],'
+        '"source_ids":[],"readout_sections":[],'
+        '"additional_pathways":[],"other_pathways":[]}],"findings":[]}'
+        "%%%LENS_DIAGNOSTIC_END%%%"
+    )
+    lens = extract_lens_diagnostic(block, ["climate"])["lenses"][0]
+    interaction = lens["interaction_readout"][0]
+    assert interaction["narrative"].startswith("Flooding pushes fishing communities")
+    assert len(interaction["narrative"]) <= 1600
+
+
 def test_climate_integration_defaults_to_insufficient_evidence():
     # No integration_level at all — must not become "moderate"
     block_no_level = (

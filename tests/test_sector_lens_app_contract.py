@@ -761,6 +761,10 @@ def test_stage2_climate_prompt_requires_reflections_and_intersection():
     assert "integration_level" in prompt
     assert "cq2_maladaptation" in prompt
     assert "climate and an FCV" in prompt  # intersection rule wording
+    # Reflection text must be prose, not a mechanical checklist entry, and the
+    # status cue must be plain words rather than a snake_case token.
+    assert "mechanical checklist entry" in prompt
+    assert "never a snake_case token" in prompt.replace("\n", " ")
 
 @pytest.mark.parametrize(
     ("response_text", "expected_status"),
@@ -924,7 +928,13 @@ def test_lens_diagnostic_repair_is_bounded_and_accepts_valid_json_only():
     assert repaired["lenses"][0]["materiality_level"] == "medium"
     assert messages.request["model"] == "claude-sonnet-4-6"
     assert messages.request["max_tokens"] == 8000
-    assert len(messages.request["messages"][0]["content"]) < 40000
+    prompt = messages.request["messages"][0]["content"]
+    assert len(prompt) < 40000
+    # The recovery prompt is the de-facto climate generator, so it must ask for
+    # the fluent per-direction narrative and reflection/dividend prose.
+    assert "narrative field" in prompt
+    assert "one specific story per direction" in prompt
+    assert "flowing plain-language" in prompt
     assert app_module.warn_on_missing_high_climate_priority(
         [{"title": "Core priority", "lens_ids": []}],
         {"lenses": [{"lens_id": "climate", "materiality_level": "medium"}]},

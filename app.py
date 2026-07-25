@@ -991,8 +991,14 @@ def build_lens_stage_context(
                 "cq4_inclusion (vulnerable regions, groups and inclusion), "
                 "cq5_institutions (institutions, governance and HDP coordination), "
                 "cq6_adaptive (adaptive design, monitoring and uncertainty). "
-                "Use a soft status_cue (for example well recognised, partial gap, "
-                "strong, unclaimed opportunity) and add less_central naming any "
+                "Use a soft status_cue in plain words (for example well "
+                "recognised, partial gap, strong, unclaimed opportunity), never a "
+                "snake_case token like material_gap or unaddressed. Write each "
+                "reflection text as one or two plain, connected sentences that "
+                "land a decision-relevant point for a non-specialist reader - what "
+                "is recognised or missing here and why it matters for THIS "
+                "project's design - not a restatement of the document or a "
+                "mechanical checklist entry. Add less_central naming any "
                 "core question that is not material here. "
                 " POLICY BOUNDARY: this is an advisory FCV screening readout; it "
                 "does not determine ESF or ESS compliance, assign or revise an E&S "
@@ -1477,10 +1483,16 @@ def repair_lens_diagnostic(
         'level), a short integration_summary, three to five reflections against '
         'the core climate-FCV questions (each with question_key from '
         'cq1_interaction, cq2_maladaptation, cq3_dividends, cq4_inclusion, '
-        'cq5_institutions, cq6_adaptive, plus a short title, a status_cue, and '
-        'grounded text) surfacing only the material ones, an optional '
-        'less_central line, and separate sensitivity_evidence and '
-        'responsiveness_evidence lists. Draw every reflection and evidence line '
+        'cq5_institutions, cq6_adaptive, plus a short title, a soft status_cue '
+        'in plain words (for example well recognised, partial gap, strong, '
+        'unclaimed opportunity - never a snake_case token like material_gap or '
+        'unaddressed), and grounded text) surfacing only the material ones, an '
+        'optional less_central line, and separate sensitivity_evidence and '
+        'responsiveness_evidence lists. Write each reflection text as one or two '
+        'plain, connected sentences that land a decision-relevant point for a '
+        'non-specialist reader - what is recognised or missing here and why it '
+        'matters for this project - not a restatement of the document or a '
+        'mechanical checklist entry. Draw every reflection and evidence line '
         'strictly from the Stage 2 assessment below; do not invent findings. '
         'Keep the total JSON under 16,000 characters: use short evidence-grounded '
         'sentences, at most three short strings per array, at most two items per '

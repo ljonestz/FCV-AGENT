@@ -397,6 +397,43 @@ def test_interactions_render_as_prose_boxes_without_causal_grid():
     assert "seasonal windows" in out.stdout  # design response in prose
 
 
+def test_interactions_prefer_narrative_prose_and_fall_back_to_strip():
+    html = INDEX.read_text(encoding="utf-8")
+    fn = _extract_js_function(html, "renderClimateInteractions")
+    dep = _extract_js_function(html, "renderClimatePathwayStrip")
+    esc = _extract_js_function(html, "esc")
+    lens = {
+        "interaction_readout": [
+            {
+                "direction_id": "climate-fcv-on-project",
+                "summary": "Flood and insecurity disrupt delivery.",
+                "narrative": "Flooding does more than damage roads.\n\nIt pushes fishing communities into contested areas.",
+                "pathways": [{"pressure": "Drought", "mechanism": "road closure",
+                              "project_implication": "delayed works",
+                              "design_response": "seasonal windows"}],
+            },
+            {
+                "direction_id": "project-on-climate-fcv",
+                "summary": "Siting reallocates water.",
+                "pathways": [{"pressure": "Siting", "mechanism": "reallocation",
+                              "project_implication": "grievance",
+                              "design_response": "committee allocation"}],
+            },
+        ]
+    }
+    script = f"{esc}\n{dep}\n{fn}\nprocess.stdout.write(renderClimateInteractions({json.dumps(lens)}));"
+    out = subprocess.run(["node", "-e", script], capture_output=True, text=True)
+    assert out.returncode == 0, out.stderr
+    # Direction 1 has a narrative → prose paragraphs, split on blank lines.
+    assert out.stdout.count("climate-interaction-prose") == 2
+    assert "Flooding does more than damage roads." in out.stdout
+    # The narrative is used instead of the stitched strip for that direction.
+    assert "seasonal windows" not in out.stdout
+    # Direction 2 has no narrative → falls back to the pathway strip.
+    assert "climate-pathway-prose" in out.stdout
+    assert "committee allocation" in out.stdout
+
+
 def test_wider_fcv_context_renders_grey_callout_or_empty():
     html = INDEX.read_text(encoding="utf-8")
     assert "renderWiderFcvContext" in html
