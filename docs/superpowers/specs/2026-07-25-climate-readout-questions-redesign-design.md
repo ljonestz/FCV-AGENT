@@ -4,7 +4,7 @@
 **Branch:** `codex/climate-fcv-output-redesign`
 **Status:** Design approved (brainstorming) — pending spec review → implementation plan.
 **Supersedes / extends:** `docs/superpowers/specs/2026-07-24-climate-native-flow-design.md` (Approach C, "climate-native flow"). That spec's structural direction stands; this spec refines the reader-facing readout, and adds the **source-derived core-question bank** as the Stage 2 engine.
-**Canonical reader view (mock):** `docs/20260725_ss_climate_readout_mock_v3.html` (grounded in the South Sudan SSNRL PCN + CCDR).
+**Canonical reader view (mock):** `docs/20260725_ss_climate_readout_mock_v4.html` (grounded in the South Sudan SSNRL PCN + CCDR; V3 structure with V2-level depth/nuance in strengths-weaknesses and the core questions).
 
 ---
 
@@ -28,8 +28,8 @@ Order, top to bottom (canonical: mock v3). Each section is prose unless noted; e
 1. **Executive summary** — 2–3 sentences. One **bolded lead sentence** carrying the single most important finding, then the design's key strength and the key unresolved gap. No scaffolding.
 2. **Integration gauge** — the **default app 6-tier scale** (`Extremely Low · Very Low · Low · Adequate · Well Embedded · Very Well Embedded`), rendered as the existing semicircular arc, with the default short "need" phrase (e.g. *Targeted enhancements possible*) and **one short summary sentence**. Replaces the current 4-level `integration_level` gauge and the long paragraph readout. Keeps the existing "not an official WBG rating" caveat.
 3. **Operational context** — three short blocks: **The FCV setting → The climate setting → Where they meet**. National (and regional where relevant) framing; "Where they meet" names the compound collisions against specific components. May run slightly longer than the other blocks.
-4. **Strengths & weaknesses** — a **short at-a-glance** scan (≈3–4 short points each), climate-FCV-scoped; each point makes clear how it is *both* a climate and an FCV point. Depth lives in the questions below, so this stays a quick read.
-5. **Core climate-FCV questions** — the analytical body. Curated to the **material** themes (see §4). Q1/Q2 are the two interaction directions; the other themes are peers at equal depth. Each answer: a bold "so what" lead, nuanced prose naming components, an understated **status word** (e.g. *Partial gap / Under-claimed / Strong, if protected / Gap*), and a subtle **source attribution** (e.g. *FCV-Sensitive Climate Action Framework*).
+4. **Strengths & weaknesses** — **full detail** (≈4 substantial points each side, ~2–3 sentences per point), climate-FCV-scoped; each point spells out how it is *both* a climate and an FCV issue and names the specific design element it attaches to. This is a nuanced section, not an at-a-glance scan (V2-level depth, per user preference).
+5. **Core climate-FCV questions** — the analytical body. Curated to the **material** themes (see §4). Q1/Q2 are the two interaction directions; the other themes are peers at equal depth. Each answer is **two solid, nuanced paragraphs** (V2-level depth): a bold "so what" lead, prose that develops the point with as much project-specific nuance as the evidence supports and names specific components/sub-components/institutions throughout, an understated **status word** (e.g. *Partial gap / Under-claimed / Strong, if protected / Gap*), and a subtle **source attribution** line (e.g. *FCV-Sensitive Climate Action Framework*). Depth and targeted, component-grounded specificity are the point — do not compress these into short summaries.
 6. **Priority action areas** — ~3 (may be more only if genuinely warranted; ≤5 hard cap), curated and deeper, each with *Why it matters / What to do / The gap*, `action_timing` pill, and existing per-priority fields.
 7. **Policy-boundary line** — advisory-only; not an ESF/ESS/ESRC determination; does not replace the accredited E&S specialist.
 
