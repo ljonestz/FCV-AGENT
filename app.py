@@ -169,18 +169,25 @@ POLICY_REGISTRY: dict[str, PolicyRegistryEntry] = {
     ),
     "ipf_one_step_processing": PolicyRegistryEntry(
         key="ipf_one_step_processing",
-        title="Condensed / consolidated IPF preparation procedures (processing flexibilities)",
+        title="One-step / two-step IPF preparation procedures (April 18, 2026 processing transition)",
         catalogue_id="FCV-OPS-MANUAL-2025",
-        source="FCV Operational Manual (June 2025), Processing Flexibilities; WBG project-preparation streamlining reform (faster/simpler agenda)",
-        last_updated="2026-06-18",
+        source="July 2026 OPCS P&PF snapshot (Copilot/WBG-LLM summary, 2026-07-26); FCV Operational Manual (June 2025), Processing Flexibilities; WBG project-preparation streamlining reform",
+        last_updated="2026-07-26",
         ati_designation="Official Use Only",
         summary=(
-            "Consolidated preparation stages (identification + preparation + appraisal in a single step), "
-            "Decision Review before appraisal, and accelerated turnaround (comments in 3 vs 5 business days; "
-            "Board submission 10 vs 18 business days) are confirmed in the FCV Operational Manual (June 2025) "
-            "and reflect the WBG preparation-streamlining reform (average preparation time targeted down from "
-            "~19 to ~12 months). The specific 'one-step / April 2026' label and any Bank-wide formal IPF "
-            "Directive instrument should still be confirmed against the current IPF Directive."
+            "OPCS's July 2026 architecture provides DISTINCT one-step and two-step IPF preparation "
+            "procedures, applicable to operations INITIATED ON OR AFTER April 18, 2026; operations "
+            "initiated BEFORE that date remain under the applicable transitional preparation procedure. "
+            "The same on/after-vs-before April 18, 2026 processing split applies to PforR (one-step / "
+            "two-step procedures) and to DPF (new processing instructions vs the pre-April-18 procedure). "
+            "The one-step model consolidates identification + preparation + appraisal with a Decision "
+            "Review before appraisal and accelerated turnaround (comments 3 vs 5 business days; Board "
+            "submission 10 vs 18 business days). General IPF preparation is now governed by the current "
+            "'Bank Guidance: Preparation of Investment Project Financing' (Published June 2026), which "
+            "supersedes the archived 'Preparing the Project Appraisal Document for IPF' guidance. "
+            "ROUTING RULE: select the applicable procedure by the operation's initiation date and "
+            "processing model, not by document title alone; confirm current Published status via the "
+            "OPCS source registry before treating any document as authoritative."
         ),
         needs_verification=False,
     ),
