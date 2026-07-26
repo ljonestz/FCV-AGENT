@@ -14,6 +14,7 @@ from flask import Flask, request, jsonify, send_from_directory, Response, stream
 from werkzeug.exceptions import RequestEntityTooLarge
 import anthropic
 from fcv_distillation import distill_doc_parts_stream
+import regime_router
 from sector_lenses import (
     CCDR_RESEARCH_INSTRUCTIONS,
     build_climate_research_prompt,
@@ -577,6 +578,9 @@ class AnalysisState:
     active_lenses: list[str] = field(default_factory=list)
     lens_versions: dict[str, str] = field(default_factory=dict)
     intersection: dict[str, Any] = field(default_factory=dict)
+    preparation_regime: str = "unresolved_policy_source"
+    es_regime: str = "UNRESOLVED"
+    processing_model: str = "unknown"
 
     @classmethod
     def from_payload(cls, payload: dict[str, Any] | None) -> "AnalysisState":
@@ -620,6 +624,10 @@ class AnalysisState:
             dlis = [c.strip() for c in re.split(r'[;\n]', dlis) if c.strip()]
         ipf_comp_raw = intake.get("has_ipf_component", payload.get("has_ipf_component", False))
         has_ipf_component = ipf_comp_raw if isinstance(ipf_comp_raw, bool) else str(ipf_comp_raw).strip().lower() in {"true", "yes", "1"}
+        regime = intake.get("regime_context", payload.get("regime_context", {})) or {}
+        preparation_regime = regime.get("preparation_regime", "unresolved_policy_source") or "unresolved_policy_source"
+        es_regime = regime.get("es_regime", "UNRESOLVED") or "UNRESOLVED"
+        processing_model = regime.get("processing_model", "unknown") or "unknown"
         return cls(
             instrument=instrument,
             doc_type=doc_type,
@@ -642,6 +650,9 @@ class AnalysisState:
             active_lenses=list(active_lenses) if isinstance(active_lenses, list) else [],
             lens_versions=dict(lens_versions) if isinstance(lens_versions, dict) else {},
             intersection=dict(intake.get("intersection", payload.get("intersection", {})) or {}),
+            preparation_regime=preparation_regime,
+            es_regime=es_regime,
+            processing_model=processing_model,
         )
 
 
@@ -2726,6 +2737,85 @@ def extract_temporal_context(stage1_output: str) -> dict:
     return ctx
 
 
+def _parse_regime_date(value: str):
+    """Parse an ISO date from the regime block. Accepts YYYY-MM-DD, YYYY/MM/DD,
+    and month-precision YYYY-MM (treated as the 1st). Returns a date or None."""
+    value = (value or "").strip()
+    if not value or value.lower() in ("unknown", "none", "n/a"):
+        return None
+    for fmt in ("%Y-%m-%d", "%Y/%m/%d", "%Y-%m", "%Y/%m"):
+        try:
+            from datetime import datetime as _dtm
+            return _dtm.strptime(value, fmt).date()
+        except ValueError:
+            continue
+    return None
+
+
+def extract_regime_context(stage1_output: str, instrument: str = "IPF") -> dict:
+    """Parse %%%REGIME_CONTEXT_START/END%%% and classify BOTH regime axes via
+    regime_router. Text-only detection; the router turns dates/flags into
+    classifications. Missing block or fields default safely to
+    unresolved/UNRESOLVED so a missing signal never mis-asserts a regime.
+    Preparation regime is governed by the OIS creation date (vs 18 Apr 2026);
+    the E&S regime by the Concept Decision date (vs 1 Oct 2018) — independent axes.
+    """
+    default = {
+        "preparation_regime": "unresolved_policy_source",
+        "preparation_regime_source": "",
+        "processing_model": "unknown",
+        "ois_creation_date": "",
+        "concept_decision_or_equivalent_date": "",
+        "concept_date_source": "",
+        "es_regime": "UNRESOLVED",
+        "es_regime_source": "",
+        "op_bp_4_03_applies": False,
+        "additional_financing_exception_applies": False,
+        "op_7_50_screen": False,
+        "op_7_60_screen": False,
+        "evidence_markers": "",
+        "conflicting_evidence": "",
+        "verification_flag": False,
+        "verification_reason": "",
+    }
+    m = re.search(
+        r'%%%REGIME_CONTEXT_START%%%(.*?)%%%REGIME_CONTEXT_END%%%',
+        stage1_output, re.DOTALL,
+    )
+    if not m:
+        return {**default, "verification_flag": True,
+                "verification_reason": "no regime block emitted"}
+    fields = dict(default)
+    for line in m.group(1).strip().splitlines():
+        if ":" not in line:
+            continue
+        key, _, val = line.partition(":")
+        key, val = key.strip(), val.strip()
+        if key in fields:
+            if isinstance(default.get(key), bool):
+                fields[key] = val.lower() in {"true", "yes", "1"}
+            else:
+                fields[key] = val
+    ois = _parse_regime_date(fields.get("ois_creation_date"))
+    concept = _parse_regime_date(fields.get("concept_decision_or_equivalent_date"))
+    fields["preparation_regime"] = regime_router.classify_preparation_regime(ois)
+    fields["es_regime"] = regime_router.classify_es_regime(
+        instrument=instrument or "IPF",
+        concept_decision_date=concept,
+        op_bp_4_03_applies=fields["op_bp_4_03_applies"],
+        is_af=fields["additional_financing_exception_applies"],
+        parent_under_safeguard_policies=fields["additional_financing_exception_applies"],
+        af_exclusively_cost_overrun_or_gap=fields["additional_financing_exception_applies"],
+    )
+    if (fields["preparation_regime"] == "unresolved_policy_source"
+            or fields["es_regime"] == "UNRESOLVED"):
+        fields["verification_flag"] = True
+        fields["verification_reason"] = (
+            fields.get("conflicting_evidence") or "regime signal missing or contradictory"
+        )
+    return fields
+
+
 def extract_horizon_considerations(stage3_output: str) -> str:
     """Extract Horizon Considerations section from Stage 3 output.
     Returns the text content or empty string if not found.
@@ -3165,6 +3255,26 @@ safeguards_framework: [One of: ESF / OP-BP / ESSA / PSIA / Unknown — determine
 other_temporal_markers: [Any restructuring dates, AF dates, or other significant temporal markers, or "None identified"]
 lifecycle_status: [One of: "active" | "closed - <brief reason>" | "Unknown" — set to "closed - <reason>" ONLY if the document itself contains explicit closure/completion signals: it is an Implementation Completion and Results Report (ICR), it explicitly states the project has closed, was cancelled, or was dropped, or the closing_date above is clearly in the past AND the document text discusses results/lessons-learned in a completed-project register rather than a design or supervision register. Do not infer closure from the closing_date alone — a PAD or AF whose closing date has passed but which is being screened for a NEW restructuring or AF is still active for that purpose. When genuinely uncertain, use "active".]
 %%%TEMPORAL_CONTEXT_END%%%
+
+After the temporal block, ALWAYS emit this regime-detection block (all fields present; use "Unknown"/"false" when a signal is absent — never guess):
+
+%%%REGIME_CONTEXT_START%%%
+ois_creation_date: [YYYY-MM-DD of the OIS (Operation Information Summary) creation date from the OIS/Datasheet, else Unknown]
+preparation_regime_source: [where the OIS date/markers came from]
+concept_decision_or_equivalent_date: [YYYY-MM-DD of the Concept Decision or equivalent, else Unknown]
+concept_date_source: [where it came from]
+op_bp_4_03_applies: [true|false — PS1-PS8 / Performance Standards present]
+additional_financing_exception_applies: [true ONLY if this is an AF addressing EXCLUSIVELY a cost overrun / financing gap]
+op_7_50_screen: [true if an international waterway is implicated, else false]
+op_7_60_screen: [true if a disputed territory is implicated, else false]
+evidence_markers: [semicolon list of the exact strings you keyed on]
+conflicting_evidence: [any contradictory signals, else none]
+%%%REGIME_CONTEXT_END%%%
+
+REGIME DETECTION RULES (do NOT decide the regime from the document LABEL alone):
+- The PREPARATION regime is governed by the operation's OWN OIS creation date vs 18 April 2026 (2026-04-18) [OPS5.03-PROC.281/282]. New-model markers: "Project Paper"/"Program Paper", "Technical Design Review", "Implementation Readiness Review", "One Review", "Project Assessment Summary". Legacy markers: PCN, "Concept Review", "Track 1/2", "Project Appraisal Document"/PAD, "Appraisal Stage/Package", "Decision Review". "PID" ALONE is NOT decisive (both regimes use it); a guidance catalogue number is NOT proof. Key on the OIS acronym + date, not on how the source spells out "OIS".
+- The E&S regime is a SEPARATE axis governed by the Concept Decision date vs 1 October 2018 (2018-10-01) [OPS5.03-DIR.123 Section III.A paragraph 1] — NOT by the OIS date. ESS1-10 apply to IPF only; DPF/PforR have their own E&S provisions. ESF markers: ESRC/ESRS/ESCP/SEP/ESS1-10; legacy markers: Environmental Category A/B/C/FI, ISDS, "Safeguard Policies triggered", OP/BP 4.xx.
+- SOURCE DISCIPLINE: cite the marker you used; do NOT equate "Public" (an Access-to-Information designation) with "Published" (a publication status). When signals conflict or a governing date is missing, leave the date Unknown and note it in conflicting_evidence.
 
 If DOC_TYPE is AF or Restructuring, also output this mid-cycle change block. If the document is not AF or Restructuring, output an empty change_types value and restructuring_level: Unknown.
 
@@ -4956,6 +5066,7 @@ def clean_stage1_output(text):
     text = re.sub(r'%%%INSTRUMENT_TYPE:[^%\n]*%%%\n?', '', text)
     text = re.sub(r'%%%PROCESS_TYPE:[^%\n]*%%%\n?', '', text)
     text = re.sub(r'%%%TEMPORAL_CONTEXT_START%%%.*?%%%TEMPORAL_CONTEXT_END%%%\n?', '', text, flags=re.DOTALL)
+    text = re.sub(r'%%%REGIME_CONTEXT_START%%%.*?%%%REGIME_CONTEXT_END%%%\n?', '', text, flags=re.DOTALL)
     text = re.sub(r'%%%CHANGE_TYPE_START%%%.*?%%%CHANGE_TYPE_END%%%\n?', '', text, flags=re.DOTALL)
     text = re.sub(r'%%%PRIOR_ACTIONS_START%%%.*?%%%PRIOR_ACTIONS_END%%%\n?', '', text, flags=re.DOTALL)
     text = re.sub(r'%%%DLIS_START%%%.*?%%%DLIS_END%%%\n?', '', text, flags=re.DOTALL)
@@ -7627,6 +7738,7 @@ def run_stage():
                     ]) if lens_context['active_lenses'] else {}
                     _instrument_type = extract_instrument_type(full_text)
                     _temporal_context = extract_temporal_context(full_text)
+                    _regime_context = extract_regime_context(full_text, _instrument_type)
                     _process_type = extract_process_type(full_text) if is_impl else None
                     _country_classification = extract_country_classification(full_text)
                     _context_flags = extract_context_flags(full_text)
@@ -7682,6 +7794,7 @@ def run_stage():
                     'research_country': research_country if stage == 1 else None,
                     'instrument_type': _instrument_type if stage == 1 else None,
                     'temporal_context': _temporal_context if stage == 1 else None,
+                    'regime_context': _regime_context if stage == 1 else None,
                     'process_type': _process_type if stage == 1 else None,
                     'country_classification': _country_classification if stage == 1 else None,
                     'context_flags': _context_flags if stage == 1 else None,
@@ -8248,6 +8361,7 @@ def run_express():
 
                 instrument_type = extract_instrument_type(stage1_output)
                 temporal_context = extract_temporal_context(stage1_output)
+                regime_context = extract_regime_context(stage1_output, instrument_type)
                 # NEW: extract classification, sector, flags
                 country_classification = extract_country_classification(stage1_output)
                 context_flags = extract_context_flags(stage1_output)
@@ -8287,7 +8401,7 @@ def run_express():
                 lens_evidence_s1 = extract_lens_evidence(
                     stage1_output, [item['id'] for item in lens_context_s1['active_lenses']]
                 ) if lens_context_s1['active_lenses'] else {}
-                yield f"data: {json.dumps({'stage_done': 1, 'result': stage1_display, 'history': conversation_history, 'research_brief': research_brief_text, 'research_country': research_country, 'climate_research': climate_research, 'doc_type': doc_type, 'instrument_type': instrument_type, 'temporal_context': temporal_context, 'process_type': process_type if is_impl else None, 'country_classification': country_classification, 'context_flags': context_flags, 'sector_context': sector_context, 'change_types': change_types, 'prior_actions': prior_actions, 'dlis': dlis, 'country_set': country_set, 'mpa_context': mpa_context, 'country_scope': _cscope_x, 'is_mpa': _is_mpa_x, 'review_mode': review_mode, 'active_lenses': lens_context_s1['active_lenses'], 'lens_warnings': lens_context_s1['warnings'], 'lens_evidence': lens_evidence_s1, 'lens_context_sources': lens_context_sources})}\n\n"
+                yield f"data: {json.dumps({'stage_done': 1, 'result': stage1_display, 'history': conversation_history, 'research_brief': research_brief_text, 'research_country': research_country, 'climate_research': climate_research, 'doc_type': doc_type, 'instrument_type': instrument_type, 'temporal_context': temporal_context, 'regime_context': regime_context, 'process_type': process_type if is_impl else None, 'country_classification': country_classification, 'context_flags': context_flags, 'sector_context': sector_context, 'change_types': change_types, 'prior_actions': prior_actions, 'dlis': dlis, 'country_set': country_set, 'mpa_context': mpa_context, 'country_scope': _cscope_x, 'is_mpa': _is_mpa_x, 'review_mode': review_mode, 'active_lenses': lens_context_s1['active_lenses'], 'lens_warnings': lens_context_s1['warnings'], 'lens_evidence': lens_evidence_s1, 'lens_context_sources': lens_context_sources})}\n\n"
 
                 # ════════════════════════════════════════════════════════════
                 # STAGE 2 — FCV Assessment
