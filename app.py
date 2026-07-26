@@ -8,12 +8,40 @@ import time
 import uuid
 from dataclasses import dataclass, field
 from datetime import date
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from typing import Any
 from flask import Flask, request, jsonify, send_from_directory, Response, stream_with_context
 from werkzeug.exceptions import RequestEntityTooLarge
 import anthropic
 from fcv_distillation import distill_doc_parts_stream
+from sector_lenses import (
+    CCDR_RESEARCH_INSTRUCTIONS,
+    build_climate_research_prompt,
+    extract_climate_research_bundle,
+    format_climate_research_context,
+    LENS_DIAGNOSTIC_END,
+    LENS_DIAGNOSTIC_START,
+    LENS_EVIDENCE_END,
+    LENS_EVIDENCE_START,
+    build_stage_slice,
+    climate_readout_is_complete,
+    detect_lens_suggestions,
+    extract_ccdr_context,
+    extract_lens_diagnostic,
+    extract_lens_evidence,
+    has_uploaded_ccdr,
+    lens_catalogue,
+    load_registry,
+    merge_lens_findings,
+    normalize_lens_context_sources,
+    normalize_lens_diagnostic,
+    normalize_priority_climate_links,
+    normalize_climate_research_bundle,
+    estimate_tokens,
+    PLATFORM_STAGE_BUDGETS,
+    resolve_active_lenses,
+    strip_lens_blocks,
+)
 import httpx
 from background_docs import (
     FCV_GUIDE, FCV_OPERATIONAL_MANUAL, FCV_REFRESH_FRAMEWORK,
@@ -68,6 +96,8 @@ STAGE_STREAM_TIMEOUTS = {
 PROMPTS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'prompts.json')
 ASSESSMENT_WORKERS = max(2, int(os.environ.get("ASSESSMENT_WORKERS", "4")))
 ASSESSMENT_EXECUTOR = ThreadPoolExecutor(max_workers=ASSESSMENT_WORKERS)
+SECTOR_LENS_MODULES = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sector_lenses", "modules")
+SECTOR_LENS_REGISTRY = load_registry(SECTOR_LENS_MODULES)
 
 # ── Research cache (in-process, keyed by country name) ───────────────────────
 _research_cache: dict = {}  # key: country.lower() → {brief, country, sources}
@@ -139,18 +169,25 @@ POLICY_REGISTRY: dict[str, PolicyRegistryEntry] = {
     ),
     "ipf_one_step_processing": PolicyRegistryEntry(
         key="ipf_one_step_processing",
-        title="Condensed / consolidated IPF preparation procedures (processing flexibilities)",
+        title="One-step / two-step IPF preparation procedures (April 18, 2026 processing transition)",
         catalogue_id="FCV-OPS-MANUAL-2025",
-        source="FCV Operational Manual (June 2025), Processing Flexibilities; WBG project-preparation streamlining reform (faster/simpler agenda)",
-        last_updated="2026-06-18",
+        source="July 2026 OPCS P&PF snapshot (Copilot/WBG-LLM summary, 2026-07-26); FCV Operational Manual (June 2025), Processing Flexibilities; WBG project-preparation streamlining reform",
+        last_updated="2026-07-26",
         ati_designation="Official Use Only",
         summary=(
-            "Consolidated preparation stages (identification + preparation + appraisal in a single step), "
-            "Decision Review before appraisal, and accelerated turnaround (comments in 3 vs 5 business days; "
-            "Board submission 10 vs 18 business days) are confirmed in the FCV Operational Manual (June 2025) "
-            "and reflect the WBG preparation-streamlining reform (average preparation time targeted down from "
-            "~19 to ~12 months). The specific 'one-step / April 2026' label and any Bank-wide formal IPF "
-            "Directive instrument should still be confirmed against the current IPF Directive."
+            "OPCS's July 2026 architecture provides DISTINCT one-step and two-step IPF preparation "
+            "procedures, applicable to operations INITIATED ON OR AFTER April 18, 2026; operations "
+            "initiated BEFORE that date remain under the applicable transitional preparation procedure. "
+            "The same on/after-vs-before April 18, 2026 processing split applies to PforR (one-step / "
+            "two-step procedures) and to DPF (new processing instructions vs the pre-April-18 procedure). "
+            "The one-step model consolidates identification + preparation + appraisal with a Decision "
+            "Review before appraisal and accelerated turnaround (comments 3 vs 5 business days; Board "
+            "submission 10 vs 18 business days). General IPF preparation is now governed by the current "
+            "'Bank Guidance: Preparation of Investment Project Financing' (Published June 2026), which "
+            "supersedes the archived 'Preparing the Project Appraisal Document for IPF' guidance. "
+            "ROUTING RULE: select the applicable procedure by the operation's initiation date and "
+            "processing model, not by document title alone; confirm current Published status via the "
+            "OPCS source registry before treating any document as authoritative."
         ),
         needs_verification=False,
     ),
@@ -537,6 +574,8 @@ class AnalysisState:
     implementing_entity: str | None = None
     approval_authority: str | None = None
     active_modules: list[str] = field(default_factory=list)
+    active_lenses: list[str] = field(default_factory=list)
+    lens_versions: dict[str, str] = field(default_factory=dict)
     intersection: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
@@ -555,6 +594,10 @@ class AnalysisState:
         if isinstance(countries, list) and len(countries) >= 2:
             country_scope = "multi"
         active_modules = list(intake.get("active_modules", payload.get("active_modules", [])) or [])
+        active_lenses = intake.get("active_lenses", payload.get("active_lenses", [])) or []
+        if isinstance(active_lenses, str):
+            active_lenses = [value.strip() for value in active_lenses.split(",") if value.strip()]
+        lens_versions = intake.get("lens_versions", payload.get("lens_versions", {})) or {}
         if country_scope == "multi" and "multi_country_layer" not in active_modules:
             active_modules.append("multi_country_layer")
         if doc_type in {"AF", "Restructuring"} and "mid_cycle_overlay" not in active_modules:
@@ -596,8 +639,1065 @@ class AnalysisState:
             implementing_entity=intake.get("implementing_entity", payload.get("implementing_entity")),
             approval_authority=intake.get("approval_authority", payload.get("approval_authority")),
             active_modules=active_modules,
+            active_lenses=list(active_lenses) if isinstance(active_lenses, list) else [],
+            lens_versions=dict(lens_versions) if isinstance(lens_versions, dict) else {},
             intersection=dict(intake.get("intersection", payload.get("intersection", {})) or {}),
         )
+
+
+def _bounded_stage3_lenses(
+    diagnostic: dict[str, Any],
+    prefix: str,
+    token_limit: int = 1100,
+) -> tuple[list[dict[str, Any]], bool]:
+    """Retain compact materiality/readout data within the Stage 3 lens budget."""
+
+    selected: list[dict[str, Any]] = []
+    truncated = False
+
+    def fits(lenses: list[dict[str, Any]]) -> bool:
+        payload = {"lenses": lenses, "findings": []}
+        serialized = json.dumps(
+            payload, ensure_ascii=False, separators=(",", ":")
+        )
+        return estimate_tokens(prefix + serialized) <= token_limit
+
+    for raw in diagnostic.get("lenses", []):
+        compact = {
+            "lens_id": raw.get("lens_id", ""),
+            "materiality_level": raw.get("materiality_level", ""),
+            "materiality_summary": raw.get("materiality_summary", "")[:120],
+            "analysis_emphasis": raw.get("analysis_emphasis", [])[:2],
+            "interaction_readout": [],
+            "readout_sections": [],
+            "additional_pathways": [],
+            "other_pathways": [],
+        }
+        if not fits(selected + [compact]):
+            compact["materiality_summary"] = compact["materiality_summary"][:200]
+            compact["analysis_emphasis"] = compact["analysis_emphasis"][:2]
+            truncated = True
+        if not fits(selected + [compact]):
+            truncated = True
+            continue
+        selected.append(compact)
+
+        for raw_interaction in raw.get("interaction_readout", []):
+            compact_interaction = {
+                "direction_id": raw_interaction.get("direction_id", ""),
+                "summary": raw_interaction.get("summary", "")[:120],
+                "pathways": [],
+            }
+            compact["interaction_readout"].append(compact_interaction)
+            if not fits(selected):
+                compact_interaction["summary"] = (
+                    compact_interaction["summary"][:35]
+                )
+                truncated = True
+                if not fits(selected):
+                    compact["interaction_readout"].pop()
+                    break
+            for pathway in raw_interaction.get("pathways", [])[:2]:
+                compact_pathway = {
+                    "pathway_id": pathway.get("pathway_id", ""),
+                    "pressure": pathway.get("pressure", "")[:35],
+                    "mechanism": pathway.get("mechanism", "")[:45],
+                    "project_implication": pathway.get(
+                        "project_implication", ""
+                    )[:50],
+                    "design_response": pathway.get("design_response", "")[:50],
+                    "project_elements": [
+                        value[:40] for value in pathway.get(
+                            "project_elements", []
+                        )[:1]
+                    ],
+                    "geographies": [
+                        value[:40] for value in pathway.get(
+                            "geographies", []
+                        )[:1]
+                    ],
+                    "affected_groups": [
+                        value[:40] for value in pathway.get(
+                            "affected_groups", []
+                        )[:1]
+                    ],
+                    "systems_or_assets": [
+                        value[:40] for value in pathway.get(
+                            "systems_or_assets", []
+                        )[:1]
+                    ] if not (
+                        pathway.get("geographies")
+                        or pathway.get("affected_groups")
+                    ) else [],
+                    "time_horizons": pathway.get("time_horizons", [])[:3],
+                    "research_claim_ids": pathway.get(
+                        "research_claim_ids", []
+                    )[:1],
+                    "confidence": pathway.get("confidence", ""),
+                    "evidence_gap": (
+                        ""
+                        if pathway.get("research_claim_ids")
+                        else pathway.get("evidence_gap", "")[:25]
+                    ),
+                }
+                compact_interaction["pathways"].append(compact_pathway)
+                if not fits(selected):
+                    if len(compact_interaction["summary"]) > 35:
+                        compact_interaction["summary"] = (
+                            compact_interaction["summary"][:35]
+                        )
+                        truncated = True
+                    if not fits(selected):
+                        compact_interaction["pathways"].pop()
+                        truncated = True
+                        break
+            if len(compact_interaction["pathways"]) < min(
+                len(raw_interaction.get("pathways", [])), 2
+            ):
+                truncated = True
+        if len(compact["interaction_readout"]) < len(
+            raw.get("interaction_readout", [])
+        ):
+            truncated = True
+
+        for raw_section in raw.get("readout_sections", []):
+            compact_section = {
+                "section_id": raw_section.get("section_id", ""),
+                "items": [],
+            }
+            compact["readout_sections"].append(compact_section)
+            for raw_item in raw_section.get("items", []):
+                compact_item = {
+                    "pathway_id": raw_item.get(
+                        "pathway_id", raw_item.get("item_id", "")
+                    ),
+                    "item_id": raw_item.get("item_id", ""),
+                    "status": raw_item.get("status", "potential"),
+                }
+                compact_section["items"].append(compact_item)
+                if not fits(selected):
+                    for interaction in compact["interaction_readout"]:
+                        if len(interaction.get("summary", "")) > 35:
+                            interaction["summary"] = interaction["summary"][:35]
+                            truncated = True
+                    if not fits(selected):
+                        compact_section["items"].pop()
+                        truncated = True
+                        break
+                for field, limit in (
+                    ("project_contribution", 70),
+                    ("strengthening_action", 70),
+                    ("trade_off", 45),
+                ):
+                    value = raw_item.get(field, "")[:limit]
+                    if not value:
+                        continue
+                    compact_item[field] = value
+                    if not fits(selected):
+                        compact_item.pop(field)
+                        truncated = True
+            if not compact_section["items"]:
+                compact["readout_sections"].pop()
+            if len(compact_section["items"]) < len(raw_section.get("items", [])):
+                truncated = True
+
+        for raw_pathway in raw.get("additional_pathways", []):
+            compact_pathway = {
+                "pathway_id": raw_pathway.get("pathway_id", ""),
+                "section_id": raw_pathway.get("section_id", ""),
+                "title": raw_pathway.get("title", "")[:120],
+                "status": raw_pathway.get("status", "potential"),
+                "mechanism": raw_pathway.get("mechanism", "")[:180],
+                "project_contribution": raw_pathway.get(
+                    "project_contribution", ""
+                )[:240],
+                "strengthening_action": raw_pathway.get(
+                    "strengthening_action", ""
+                )[:240],
+                "evidence_gap": raw_pathway.get("evidence_gap", "")[:160],
+                "trade_off": raw_pathway.get("trade_off", "")[:160],
+                "source_ids": raw_pathway.get("source_ids", [])[:10],
+            }
+            compact["additional_pathways"].append(compact_pathway)
+            if not fits(selected):
+                compact["additional_pathways"].pop()
+                truncated = True
+                break
+        if len(compact["additional_pathways"]) < len(
+            raw.get("additional_pathways", [])
+        ):
+            truncated = True
+
+        compact["source_ids"] = []
+        for source_id in raw.get("source_ids", [])[:10]:
+            compact["source_ids"].append(source_id)
+            if not fits(selected):
+                compact["source_ids"].pop()
+                truncated = True
+                break
+        if not compact["source_ids"]:
+            compact.pop("source_ids")
+        if len(compact.get("source_ids", [])) < len(
+            raw.get("source_ids", [])
+        ):
+            truncated = True
+
+        for pathway in raw.get("other_pathways", []):
+            compact_pathway = {
+                "pathway": pathway.get("pathway", ""),
+                "status": pathway.get("status", "potential"),
+                "reason": pathway.get("reason", "")[:240],
+            }
+            compact["other_pathways"].append(compact_pathway)
+            if not fits(selected):
+                compact["other_pathways"].pop()
+                truncated = True
+                break
+        if len(compact["other_pathways"]) < len(raw.get("other_pathways", [])):
+            truncated = True
+
+    return selected, truncated
+
+
+def build_lens_stage_context(
+    state: AnalysisState,
+    stage: int,
+    registry=None,
+    lens_diagnostic: dict[str, Any] | None = None,
+    lens_context_sources: list[dict[str, Any]] | None = None,
+    climate_research: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Resolve client lens choices and build a bounded stage-specific prompt contract."""
+
+    registry = registry or SECTOR_LENS_REGISTRY
+    selection = resolve_active_lenses(registry, state.active_lenses, state.lens_versions)
+    active_ids = [lens.id for lens in selection.lenses]
+    source_ids_by_lens = {
+        lens.id: {source.id for source in lens.sources} for lens in selection.lenses
+    }
+    readout_schema_by_lens = {
+        lens.id: {
+            section.id: set(section.item_ids)
+            for section in lens.readout_sections
+        }
+        for lens in selection.lenses
+    }
+    normalized_context_sources = normalize_lens_context_sources(
+        lens_context_sources, active_ids
+    )
+    for source in normalized_context_sources:
+        source_ids_by_lens[source["lens_id"]].add(source["id"])
+    normalized_diagnostic = normalize_lens_diagnostic(
+        lens_diagnostic,
+        active_ids,
+        source_ids_by_lens,
+        readout_schema_by_lens,
+    ) if stage == 3 else {}
+    stage3_diagnostic_failure = (
+        lens_diagnostic_failure_message(normalized_diagnostic, active_ids)
+        if stage == 3 and selection.lenses else ""
+    )
+    suffix = ""
+    diagnostic_truncated = bool(normalized_diagnostic.get("truncated"))
+    if selection.lenses and stage == 1:
+        suffix = (
+            "Return a hidden JSON evidence object after the visible Stage 1 analysis between "
+            f"{LENS_EVIDENCE_START} and {LENS_EVIDENCE_END}. Include one entry per active lens, "
+            "using {\"lenses\":[{\"lens_id\":\"...\",\"evidence_requests\":[],"
+            "\"research_intents\":[]}]}. Include evidence requests and research intents only."
+        )
+    elif selection.lenses and stage == 2:
+        suffix = (
+            "Return a hidden JSON object after the visible Stage 2 assessment between "
+            f"{LENS_DIAGNOSTIC_START} and {LENS_DIAGNOSTIC_END}. Use top-level arrays 'lenses' "
+            "and 'findings'. For each active lens include applicability, materiality_summary, "
+            "analysis_emphasis, evidence, source_ids, readout_sections, and other_pathways. "
+            "Use only declared section/item IDs. Item status must be supported, potential, "
+            "or not_material. Do not claim a dividend unless mechanism, material relevance, "
+            "and practical action are all established. Each finding must include lens_ids, "
+            "evidence, status, source_ids, "
+            "core_mappings, mechanism, geography, and action_target. Lens findings do not create "
+            "a separate score and may affect ratings only through an explicit core_mappings value."
+        )
+        if "climate" in active_ids:
+            research = normalize_climate_research_bundle(climate_research)
+            compact_claims = [{
+                "id": claim["id"],
+                "claim": claim["claim"][:350],
+                "project_elements": claim["project_elements"][:2],
+                "geographies": claim["geographies"][:2],
+                "affected_groups": claim["affected_groups"][:2],
+                "systems_or_assets": claim["systems_or_assets"][:2],
+                "time_horizons": claim["time_horizons"],
+                "confidence": claim["confidence"],
+                "evidence_gap": claim["evidence_gap"][:200],
+            } for claim in research["claims"][:3]]
+            research_context = json.dumps(
+                {"claims": compact_claims},
+                ensure_ascii=False,
+                separators=(",", ":"),
+            ) if compact_claims else '{"claims":[]}'
+            suffix += (
+                " For Climate include materiality_level (high, medium, or low), "
+                "interaction_readout using only climate-fcv-on-project and "
+                "project-on-climate-fcv, project_contribution and strengthening_action "
+                "for each dividend item, and no more than two evidence-backed "
+                "additional_pathways per declared section. A development project can have "
+                "material Climate-FCV pathways even when climate is not its primary objective."
+                " The full Climate lens diagnostic supersedes the lightweight supplementary "
+                "Climate-FCV Nexus check. Incorporate relevant evidence into the lens diagnostic "
+                "and common OST/DNH findings; do not produce a duplicate supplementary Climate "
+                "finding. For each interaction direction include one or two pathways. "
+                "Each pathway must follow pressure -> mediated mechanism -> project implication "
+                "-> design response and name a project element plus a location, group, "
+                "institution, system, or asset. Include current-near-term, project-lifetime, "
+                "or asset-system-lifetime and cite research_claim_ids when supported by the "
+                "validated claims. Suppress generic pathways rather than filling the schema. "
+                "Write the interaction summaries and dividend descriptions in "
+                "plain, accessible language for a non-technical reader, as short "
+                "narrative sentences rather than a tagged list. For each interaction "
+                "direction also produce a narrative field: one or two flowing "
+                "plain-language paragraphs (about 60-130 words) that a non-specialist "
+                "Task Team Leader can read easily. Open with why it matters, then "
+                "explain the climate pressure and how it collides with the "
+                "conflict/fragility dynamic in THIS project's named places and "
+                "components, what that concretely does to the project's activities, "
+                "what the design already does about it, and what remains unconfirmed "
+                "- woven into connected prose, not a list. Spell out any acronym on "
+                "first use (for example community wildlife conservancy (CWC), "
+                "Contingent Emergency Response Component (CERC)). Tell one clear, "
+                "specific story per direction; do not restate the document or pad "
+                "with generic climate language. Always complete and "
+                "close the hidden diagnostic block: if output space runs short, keep "
+                "the diagnostic complete and shorten the visible Under the Hood "
+                "detail rather than truncating or omitting the diagnostic. "
+                " Every pathway and finding must sit at the intersection of a "
+                "climate and an FCV dynamic; drop pure climate-engineering points "
+                "and pure FCV points with no climate dimension. Time horizons "
+                "(current-near-term, project-lifetime, asset-system-lifetime) are "
+                "an available lens: use them only where they change the finding, "
+                "for example where design choices could lock in patterns that "
+                "longer-term climate shifts would later turn maladaptive. "
+                "Also return, for the Climate lens, integration_level using exactly "
+                "one of: well_integrated, partly_integrated, weakly_integrated, or "
+                "insufficient_evidence (use insufficient_evidence when the document "
+                "does not contain enough to judge), plus integration_summary describing "
+                "how well the project recognises and responds to the material "
+                "Climate-FCV interactions. Also return sensitivity_evidence: up to five "
+                "short strings citing specific document evidence that the project is "
+                "aware of and designed for the FCV-climate context (FCV Sensitivity), "
+                "and responsiveness_evidence: up to five short strings citing specific "
+                "evidence that the project actively works to change the climate-FCV "
+                "situation (FCV Responsiveness). Leave either list empty if no clear "
+                "evidence exists. Also return reflections: three to five objects each "
+                "with question_key, title, status_cue, and text, drawn from these core "
+                "questions and surfacing only the material ones: "
+                "cq1_interaction (Climate-FCV interactions and delivery), "
+                "cq2_maladaptation (maladaptation, Do No Harm and lock-in), "
+                "cq3_dividends (peace and social dividends and root causes), "
+                "cq4_inclusion (vulnerable regions, groups and inclusion), "
+                "cq5_institutions (institutions, governance and HDP coordination), "
+                "cq6_adaptive (adaptive design, monitoring and uncertainty). "
+                "Use a soft status_cue in plain words (for example well "
+                "recognised, partial gap, strong, unclaimed opportunity), never a "
+                "snake_case token like material_gap or unaddressed. Write each "
+                "reflection text as one or two plain, connected sentences that "
+                "land a decision-relevant point for a non-specialist reader - what "
+                "is recognised or missing here and why it matters for THIS "
+                "project's design - not a restatement of the document or a "
+                "mechanical checklist entry. Add less_central naming any "
+                "core question that is not material here. "
+                " POLICY BOUNDARY: this is an advisory FCV screening readout; it "
+                "does not determine ESF or ESS compliance, assign or revise an E&S "
+                "Risk Classification, decide which ESSs apply, or replace required "
+                "E&S instruments, and does not substitute for the Task Team's "
+                "accredited E&S specialist. Where a finding overlaps ESF "
+                "requirements, frame it as an issue to verify with the project's "
+                "E&S documents and specialist. Match terminology to the instrument "
+                "type; do not apply IPF/ESF terms to a PforR or DPF operation as if "
+                "universal, and if the applicable framework cannot be established, "
+                "say so and avoid compliance-style conclusions. For maladaptation "
+                "and Do No Harm, separate project-caused risks, contextual delivery "
+                "risks, exclusion or conflict effects, and longer-term climate "
+                "risks, and do not repackage a risk already managed in the ESCP, "
+                "SEP or ESMP as a new unaddressed gap. Identify vulnerability from "
+                "project and context, not a fixed demographic checklist. Weigh "
+                "institutional choices contextually; working through or bypassing "
+                "government is not inherently good or bad. Never present an "
+                "unclaimed dividend as non-compliance unless an explicit commitment "
+                "applies. Check findings against available project documents and, "
+                "where a document already mitigates an issue, do not call it wholly "
+                "unaddressed. Treat current OPCS policy and the ESF as "
+                "authoritative and the climate-FCV frameworks as analytical "
+                "support; never present a framework recommendation as an OPCS "
+                "requirement. For each priority also return policy_status "
+                "(mandatory_reference, document_commitment, advisory, or "
+                "not_determined) and, where warranted, specialist_referral "
+                "{required, route, reason} with route one of Task Team E&S "
+                "specialist, RSA, ESF Help Desk, OESRC, Legal, or UN engagement "
+                "team, phrased as consider referral unless escalation is clearly "
+                "mandatory. "
+                "Validated Climate research claims:\n"
+                + research_context
+            )
+    elif selection.lenses and stage == 3 and stage3_diagnostic_failure:
+        suffix = (
+            "The validated sector-lens diagnostic is unavailable. Preserve normal "
+            "core-only Stage 3 behavior, including four to five substantive priorities. "
+            "Do not add sector-lens findings, readouts, priorities, materiality claims, "
+            "or other lens-specific content. If Climate was selected, do not run the "
+            "lightweight Climate-FCV check because the active Climate lens supersedes it. "
+            "Deterministically merged lens diagnostic:\n"
+            '{"lenses":[],"findings":[]}'
+        )
+    elif selection.lenses and stage == 3:
+        prefix = (
+            "Integrate lens findings into the opening assessment, "
+            "operational context, strengths, gaps, and the single existing "
+            "priority list. Use a maximum of five substantive priorities; no "
+            "more than five substantive priorities may be shown. The mix is "
+            "not a quota and may contain more Climate-linked, blended, or core "
+            "priorities. Rank by severity, evidence, "
+            "actionability, and FCV feasibility. "
+        )
+        if "climate" in active_ids:
+            climate_entry = next((
+                item for item in normalized_diagnostic.get("lenses", [])
+                if item.get("lens_id") == "climate"
+            ), {})
+            climate_level = climate_entry.get("materiality_level", "low")
+            if climate_level == "low":
+                prefix += (
+                    "For Low materiality, state that Climate-FCV materiality is "
+                    "limited, use a light compact readout, show a dividend only "
+                    "for a credible pathway, and force no Climate priority. "
+                )
+            else:
+                prefix += (
+                    "Treat materiality as High, Medium, or Low; at High or "
+                    "Medium use proportionate depth. "
+                )
+            prefix += (
+                "Preserve the full core FCV structure. Integrate material "
+                "Climate-FCV evidence into the bold opening assessment in the "
+                "executive summary, operational context, strengths, gaps, FCV "
+                "sensitivity, and FCV responsiveness. Avoid duplication; the "
+                "active lens supersedes the lightweight Climate-FCV check. "
+                "Adaptation and resilience are primary; include deep mitigation "
+                "only when a clear project pathway and FCV effects exist. Use "
+                "the validated two-way Climate-FCV interaction pathways to "
+                "write two substantive interaction narratives in prose, one for "
+                "each direction (how Climate-FCV dynamics could affect the project; "
+                "how the project could affect Climate-FCV dynamics), naming "
+                "components, places, groups and assets, weaving in time horizons "
+                "only where they matter, and closing each with the current design "
+                "response and the remaining gap. Write these as flowing prose, not "
+                "a structured pathway grid or arrow diagram. "
+                "Write one qualitative Climate, peace and social "
+                "dividends synthesis covering current contribution, supported "
+                "versus potential pathways, watchpoints, how it could be "
+                "strengthened, and numbered-priority links. Do not produce "
+                "dividend cards or a "
+                "checklist. CCDR context is optional and must not dominate. "
+                "Every priority JSON object needs climate_links. Linked objects "
+                "cite recognized IDs, contribution, and strengthening_effect. "
+                "Core priorities use no-material-pathway, empty IDs, and a "
+                "reason. "
+            )
+            prefix += (
+                "Add a top-level wider_fcv_context string naming any material FCV "
+                "issue with no real climate dimension so it is surfaced but not "
+                "developed into a priority; use null if none. "
+            )
+            prefix += (
+                "This readout is advisory and does not determine ESF or ESS "
+                "compliance or an E&S risk classification. Give each priority a "
+                "policy_status (mandatory_reference, document_commitment, advisory, "
+                "or not_determined) and, where warranted, a specialist_referral "
+                "with required, route, and reason. Do not present an unclaimed "
+                "dividend as non-compliance. "
+            )
+        prefix += "Deterministically merged lens diagnostic:\n"
+        selected_findings: list[dict[str, Any]] = []
+        diagnostic_lenses, lenses_truncated = _bounded_stage3_lenses(
+            normalized_diagnostic, prefix
+        )
+        diagnostic_truncated = diagnostic_truncated or lenses_truncated
+        for finding in merge_lens_findings(normalized_diagnostic.get("findings", [])):
+            candidate = prefix + json.dumps(
+                {"lenses": diagnostic_lenses, "findings": selected_findings + [finding]},
+                ensure_ascii=False,
+                separators=(",", ":"),
+            )
+            if estimate_tokens(candidate) <= 900:
+                selected_findings.append(finding)
+            else:
+                diagnostic_truncated = True
+        suffix = prefix + json.dumps(
+            {"lenses": diagnostic_lenses, "findings": selected_findings},
+            ensure_ascii=False,
+            separators=(",", ":"),
+        )
+
+    platform_limit = PLATFORM_STAGE_BUDGETS.for_stage(stage)
+    reserved = estimate_tokens(suffix) + (1 if suffix else 0)
+    prompt_slice = build_stage_slice(
+        [] if stage == 3 and stage3_diagnostic_failure else selection.lenses,
+        stage,
+        token_limit=max(1, platform_limit - reserved),
+    )
+    prompt = "\n\n".join(value for value in (prompt_slice.content, suffix) if value)
+    final_estimate = estimate_tokens(prompt)
+    if final_estimate > platform_limit:
+        raise ValueError(f"sector-lens Stage {stage} prompt exceeded its token ceiling")
+    return {
+        "active_lenses": [
+            {
+                "id": lens.id,
+                "version": lens.version,
+                "position": "primary" if index == 0 else "secondary",
+            }
+            for index, lens in enumerate(selection.lenses)
+        ],
+        "warnings": [
+            {"code": warning.code, "message": warning.message, "lens_id": warning.lens_id}
+            for warning in selection.warnings
+        ],
+        "prompt": prompt,
+        "estimated_tokens": final_estimate,
+        "truncated": prompt_slice.truncated or diagnostic_truncated,
+        "restart_required": stage > 1 and any(
+            warning.code == "version_mismatch" for warning in selection.warnings
+        ),
+        "lens_context_sources": normalized_context_sources,
+        "lens_diagnostic": normalized_diagnostic if stage == 3 else {},
+    }
+
+
+def lens_source_ids(
+    active_lenses: list[dict[str, Any]],
+    registry=None,
+    context_sources: list[dict[str, Any]] | None = None,
+) -> dict[str, set[str]]:
+    """Return declared source IDs for resolved active lenses."""
+
+    registry = registry or SECTOR_LENS_REGISTRY
+    result: dict[str, set[str]] = {}
+    for item in active_lenses:
+        lens = registry.get(item.get("id", ""))
+        if lens:
+            result[lens.id] = {source.id for source in lens.sources}
+    for source in normalize_lens_context_sources(
+        context_sources, result.keys()
+    ):
+        result[source["lens_id"]].add(source["id"])
+    return result
+
+
+def lens_readout_schema(
+    active_lenses: list[dict[str, Any]], registry=None
+) -> dict[str, dict[str, set[str]]]:
+    """Return declared readout section and item IDs for resolved lenses."""
+
+    registry = registry or SECTOR_LENS_REGISTRY
+    result: dict[str, dict[str, set[str]]] = {}
+    for item in active_lenses:
+        lens = registry.get(item.get("id", ""))
+        if lens:
+            result[lens.id] = {
+                section.id: set(section.item_ids)
+                for section in lens.readout_sections
+            }
+    return result
+
+
+def lens_diagnostic_failure_message(
+    diagnostic: dict[str, Any],
+    active_lens_ids: list[str],
+) -> str:
+    """Explain why an active-lens diagnostic cannot be used."""
+
+    if not active_lens_ids:
+        return ''
+    if not isinstance(diagnostic, dict):
+        return 'The Stage 2 lens diagnostic was not a valid object.'
+    if diagnostic.get('error'):
+        return str(
+            diagnostic.get('message')
+            or 'The Stage 2 lens diagnostic could not be parsed.'
+        )
+    entries = {
+        item.get('lens_id'): item
+        for item in diagnostic.get('lenses', [])
+        if isinstance(item, dict)
+    }
+    missing = [lens_id for lens_id in active_lens_ids if lens_id not in entries]
+    if missing == ['climate']:
+        return (
+            'The Climate-FCV diagnostic was omitted from the Stage 2 '
+            'structured output.'
+        )
+    if missing:
+        return (
+            'Stage 2 omitted structured diagnostics for: '
+            + ', '.join(missing)
+            + '.'
+        )
+    climate = entries.get('climate') if 'climate' in active_lens_ids else None
+    if climate:
+        level = str(climate.get('materiality_level', '')).lower()
+        summary = str(climate.get('materiality_summary', '')).strip()
+        interaction_entries = {
+            item.get('direction_id'): item
+            for item in climate.get('interaction_readout', [])
+            if isinstance(item, dict) and str(item.get('summary', '')).strip()
+        }
+        directions_with_pathways = {
+            direction_id
+            for direction_id, item in interaction_entries.items()
+            if any(
+                isinstance(pathway, dict)
+                and str(pathway.get('pathway_id', '')).strip()
+                for pathway in item.get('pathways', [])
+            )
+        }
+        # Graceful degradation: a usable Climate diagnostic needs valid materiality,
+        # a summary, and at least ONE fully-specified interaction direction at High or
+        # Medium materiality. A missing second direction is surfaced as an evidence
+        # limitation in the readout rather than discarding the whole dedicated Climate
+        # analysis. This does NOT weaken specificity/provenance: any displayed
+        # direction still requires a specific causal pathway (pathway_id).
+        min_specific_directions = 1 if level in {'high', 'medium'} else 0
+        incomplete = (
+            level not in {'high', 'medium', 'low'}
+            or not summary
+            or len(directions_with_pathways) < min_specific_directions
+        )
+        if incomplete:
+            return (
+                'The Climate-FCV diagnostic was incomplete and could not '
+                'support the required materiality and interaction readout.'
+            )
+    return ''
+
+
+def climate_specificity_structure(
+    response_text: str,
+    diagnostic: dict[str, Any],
+    status: str = "initial",
+) -> dict[str, Any]:
+    """Count raw and accepted Climate pathways without retaining their text."""
+
+    raw_count = 0
+    match = re.search(
+        re.escape(LENS_DIAGNOSTIC_START)
+        + r"(.*?)"
+        + re.escape(LENS_DIAGNOSTIC_END),
+        response_text or "",
+        re.DOTALL,
+    )
+    if match:
+        try:
+            payload = json.loads(match.group(1).strip())
+        except (json.JSONDecodeError, TypeError, ValueError):
+            payload = {}
+        for lens in payload.get("lenses", []) if isinstance(
+            payload, dict
+        ) else []:
+            if not isinstance(lens, dict) or lens.get("lens_id") != "climate":
+                continue
+            for interaction in lens.get("interaction_readout", []):
+                if not isinstance(interaction, dict):
+                    continue
+                pathways = interaction.get("pathways", [])
+                if isinstance(pathways, list):
+                    raw_count += sum(
+                        1 for item in pathways if isinstance(item, dict)
+                    )
+    accepted = 0
+    horizon_counts = {
+        value: 0 for value in _CLIMATE_TELEMETRY_HORIZONS
+    }
+    diagnostic = diagnostic if isinstance(diagnostic, dict) else {}
+    for lens in diagnostic.get("lenses", []):
+        if not isinstance(lens, dict) or lens.get("lens_id") != "climate":
+            continue
+        for interaction in lens.get("interaction_readout", []):
+            if not isinstance(interaction, dict):
+                continue
+            for pathway in interaction.get("pathways", []):
+                if not isinstance(pathway, dict):
+                    continue
+                accepted += 1
+                horizons = pathway.get("time_horizons", [])
+                for horizon in horizons if isinstance(horizons, list) else []:
+                    if horizon in horizon_counts:
+                        horizon_counts[horizon] += 1
+    return {
+        "status": status,
+        "accepted": min(accepted, 99),
+        "rejected": min(max(raw_count - accepted, 0), 99),
+        "horizon_counts": horizon_counts,
+    }
+
+
+def lens_recovery_structure(
+    response_text: str,
+    diagnostic: dict[str, Any],
+    active_lens_ids: list[str],
+) -> dict[str, Any]:
+    """Return privacy-safe structural facts about a recovery response."""
+
+    text = response_text or ""
+    has_start = LENS_DIAGNOSTIC_START in text
+    has_end = LENS_DIAGNOSTIC_END in text
+    summary: dict[str, Any] = {
+        "response_chars": len(text),
+        "start_delimiter": has_start,
+        "end_delimiter": has_end,
+        "json_status": "missing_delimiters",
+        "lenses_list": False,
+        "lens_count": 0,
+        "findings_list": False,
+        "finding_count": 0,
+        "climate_entry_present": False,
+        "materiality_present": False,
+        "materiality_valid": False,
+        "recognized_interactions": [],
+        "missing_required_interactions": [],
+        "failure_reason": lens_diagnostic_failure_message(
+            diagnostic, active_lens_ids
+        ),
+    }
+    if not (has_start and has_end):
+        return summary
+    match = re.search(
+        re.escape(LENS_DIAGNOSTIC_START)
+        + r"(.*?)"
+        + re.escape(LENS_DIAGNOSTIC_END),
+        text,
+        re.DOTALL,
+    )
+    if not match:
+        return summary
+    try:
+        payload = json.loads(match.group(1).strip())
+    except (json.JSONDecodeError, TypeError, ValueError):
+        summary["json_status"] = "invalid_json"
+        return summary
+    if not isinstance(payload, dict):
+        summary["json_status"] = "valid_non_object"
+        return summary
+
+    summary["json_status"] = "valid_object"
+    raw_lenses = payload.get("lenses")
+    raw_findings = payload.get("findings")
+    summary["lenses_list"] = isinstance(raw_lenses, list)
+    summary["lens_count"] = min(len(raw_lenses), 99) if isinstance(
+        raw_lenses, list
+    ) else 0
+    summary["findings_list"] = isinstance(raw_findings, list)
+    summary["finding_count"] = min(len(raw_findings), 99) if isinstance(
+        raw_findings, list
+    ) else 0
+
+    climate = None
+    if isinstance(raw_lenses, list) and "climate" in active_lens_ids:
+        climate = next((
+            item for item in raw_lenses
+            if isinstance(item, dict) and item.get("lens_id") == "climate"
+        ), None)
+    if not climate:
+        return summary
+
+    summary["climate_entry_present"] = True
+    summary["materiality_present"] = "materiality_level" in climate
+    level = str(climate.get("materiality_level", "")).lower()
+    summary["materiality_valid"] = level in {"high", "medium", "low"}
+    allowed_directions = {
+        "climate-fcv-on-project", "project-on-climate-fcv"
+    }
+    recognized = sorted({
+        str(item.get("direction_id"))
+        for item in climate.get("interaction_readout", [])
+        if isinstance(item, dict)
+        and item.get("direction_id") in allowed_directions
+    })
+    summary["recognized_interactions"] = recognized
+    if level in {"high", "medium"}:
+        summary["missing_required_interactions"] = sorted(
+            allowed_directions - set(recognized)
+        )
+    return summary
+
+
+def repair_lens_diagnostic(
+    stage2_output: str,
+    active_lens_ids: list[str],
+    source_ids_by_lens: dict[str, set[str]],
+    readout_schema_by_lens: dict[str, dict[str, set[str]]],
+    client=None,
+    assessment_id: str = '',
+) -> tuple[dict[str, Any], bool]:
+    """Make one bounded JSON-only attempt to recover a missing diagnostic."""
+
+    if not active_lens_ids:
+        return {}, False
+    visible = strip_lens_blocks(stage2_output or '')
+    if len(visible) > 30_000:
+        visible = visible[:15_000] + '\n[...middle omitted...]\n' + visible[-15_000:]
+    contract = {
+        'active_lens_ids': active_lens_ids,
+        'allowed_source_ids': {
+            lens_id: sorted(values)
+            for lens_id, values in source_ids_by_lens.items()
+        },
+        'readout_schema': {
+            lens_id: {
+                section_id: sorted(item_ids)
+                for section_id, item_ids in sections.items()
+            }
+            for lens_id, sections in readout_schema_by_lens.items()
+        },
+    }
+    prompt = (
+        'Recover only the missing structured sector-lens diagnostic from the '
+        'Stage 2 assessment below. Return no commentary or markdown. Return one '
+        f'JSON object between {LENS_DIAGNOSTIC_START} and '
+        f'{LENS_DIAGNOSTIC_END}. Use top-level arrays lenses and findings, '
+        'include exactly one lens entry per active lens, use only allowed IDs, '
+        'and do not invent evidence. For Climate include materiality_level, the '
+        'two fixed interaction directions, baseline project_contribution and '
+        'strengthening_action fields, and bounded additional_pathways. Each '
+        'interaction direction must contain one or two project-specific pathways '
+        'with pathway_id, pressure, mechanism, project_implication, '
+        'design_response, project_elements, geographies or affected_groups or '
+        'systems_or_assets, time_horizons, research_claim_ids, confidence, and '
+        'evidence_gap. If the '
+        'assessment does not support a pathway, mark it not_material or omit it. '
+        'For each interaction direction also produce a narrative field: one or two '
+        'flowing plain-language paragraphs (about 60-130 words) a non-specialist '
+        'Task Team Leader can read easily - opening with why it matters, then the '
+        'climate pressure, how it collides with the conflict/fragility dynamic in '
+        'the project\'s named places and components, what it concretely means for '
+        'the project\'s activities, what the design already does, and what is still '
+        'unconfirmed - woven into connected prose, not a list. Spell out any acronym '
+        'on first use. Tell one specific story per direction; never restate the '
+        'document or pad with generic climate language. '
+        'For Climate also return integration_level (one of well_integrated, '
+        'partly_integrated, weakly_integrated, insufficient_evidence; use '
+        'insufficient_evidence when the assessment does not clearly support a '
+        'level), a short integration_summary, three to five reflections against '
+        'the core climate-FCV questions (each with question_key from '
+        'cq1_interaction, cq2_maladaptation, cq3_dividends, cq4_inclusion, '
+        'cq5_institutions, cq6_adaptive, plus a short title, a soft status_cue '
+        'in plain words (for example well recognised, partial gap, strong, '
+        'unclaimed opportunity - never a snake_case token like material_gap or '
+        'unaddressed), and grounded text) surfacing only the material ones, an '
+        'optional less_central line, and separate sensitivity_evidence and '
+        'responsiveness_evidence lists. Write each reflection text as one or two '
+        'plain, connected sentences that land a decision-relevant point for a '
+        'non-specialist reader - what is recognised or missing here and why it '
+        'matters for this project - not a restatement of the document or a '
+        'mechanical checklist entry. Draw every reflection and evidence line '
+        'strictly from the Stage 2 assessment below; do not invent findings. '
+        'Keep the total JSON under 16,000 characters: use short evidence-grounded '
+        'sentences, at most three short strings per array, at most two items per '
+        'declared readout section, at most one additional_pathway per section, '
+        'and at most five findings. Omit empty optional fields rather than '
+        'expanding them. '
+        'Use this compact shape: '
+        '{"lenses":[{"lens_id":"climate","applicability":"material",'
+        '"materiality_level":"high|medium|low","materiality_summary":"...",'
+        '"integration_level":"well_integrated|partly_integrated|'
+        'weakly_integrated|insufficient_evidence","integration_summary":"...",'
+        '"reflections":[{"question_key":"cq1_interaction|cq2_maladaptation|'
+        'cq3_dividends|cq4_inclusion|cq5_institutions|cq6_adaptive",'
+        '"title":"...","status_cue":"...","text":"..."}],"less_central":"...",'
+        '"sensitivity_evidence":[],"responsiveness_evidence":[],'
+        '"analysis_emphasis":[],"evidence":[],"source_ids":[],'
+        '"interaction_readout":[{"direction_id":"climate-fcv-on-project|'
+        'project-on-climate-fcv","summary":"...","narrative":"...","mechanisms":[],'
+        '"project_implications":[],"positive_effects":[],"adverse_effects":[],'
+        '"evidence":[],"evidence_gap":"","source_ids":[],"pathways":['
+        '{"pathway_id":"climate-fcv-on-project-1","pressure":"...",'
+        '"mechanism":"...","project_implication":"...","design_response":"...",'
+        '"project_elements":[],"geographies":[],"affected_groups":[],'
+        '"systems_or_assets":[],"time_horizons":["project-lifetime"],'
+        '"research_claim_ids":[],"confidence":"medium","evidence_gap":"..."}]}],'
+        '"readout_sections":[{"section_id":"...","items":[{"item_id":"...",'
+        '"status":"supported|potential|not_material","mechanism":"...",'
+        '"project_contribution":"...","strengthening_action":"...",'
+        '"evidence":[],"evidence_gap":"","trade_off":"","source_ids":[]}]}],'
+        '"additional_pathways":[],"other_pathways":[]}],"findings":[]}.\n\n'
+        f'CONTRACT:\n{json.dumps(contract, ensure_ascii=False)}\n\n'
+        f'STAGE 2 ASSESSMENT:\n{visible}'
+    )
+    started_at = time.monotonic()
+    try:
+        response = (client or get_lens_recovery_client()).messages.create(
+            # The primary Stage 2 call almost always omits the hidden diagnostic
+            # block (trailing-block fatigue), so this "recovery" is in practice
+            # the effective climate diagnostic generator. Use Sonnet (not Haiku)
+            # so the interaction narratives, reflections and dividends are fluent
+            # and project-specific rather than thin bounded fragments.
+            model='claude-sonnet-4-6',
+            max_tokens=8000,
+            messages=[{'role': 'user', 'content': prompt}],
+        )
+        response_text = ''.join(
+            str(getattr(block, 'text', ''))
+            for block in getattr(response, 'content', [])
+        )
+        repaired = extract_lens_diagnostic(
+            response_text,
+            active_lens_ids,
+            source_ids_by_lens,
+            readout_schema_by_lens,
+            strict_required_fields=True,
+        )
+        recovered = not bool(
+            lens_diagnostic_failure_message(repaired, active_lens_ids)
+        )
+        if not recovered:
+            structure = lens_recovery_structure(
+                response_text, repaired, active_lens_ids
+            )
+            app.logger.warning(
+                "Lens diagnostic recovery invalid: assessment_id=%s "
+                "structure=%s",
+                assessment_id or "unknown",
+                json.dumps(
+                    structure,
+                    ensure_ascii=True,
+                    sort_keys=True,
+                    separators=(",", ":"),
+                ),
+            )
+        app.logger.info(
+            'Lens diagnostic recovery completed: assessment_id=%s '
+            'elapsed_ms=%d recovered=%s',
+            assessment_id or 'unknown',
+            round((time.monotonic() - started_at) * 1000),
+            recovered,
+        )
+        return repaired, recovered
+    except Exception as exc:
+        app.logger.warning(
+            'Lens diagnostic recovery request failed: assessment_id=%s '
+            'elapsed_ms=%d error=%s',
+            assessment_id or 'unknown',
+            round((time.monotonic() - started_at) * 1000),
+            type(exc).__name__,
+        )
+        return {
+            'error': True,
+            'message': 'The automatic lens diagnostic recovery attempt failed.',
+            'lenses': [],
+            'findings': [],
+        }, False
+
+
+def extract_or_repair_lens_diagnostic(
+    stage2_output: str,
+    active_lenses: list[dict[str, Any]],
+    context_sources: list[dict[str, Any]],
+    assessment_id: str = '',
+) -> tuple[dict[str, Any], bool, str]:
+    """Extract the diagnostic, then try one bounded recovery on failure."""
+
+    if not active_lenses:
+        return {}, False, ''
+    active_ids = [item['id'] for item in active_lenses]
+    source_ids = lens_source_ids(
+        active_lenses, context_sources=context_sources
+    )
+    schema = lens_readout_schema(active_lenses)
+    diagnostic = extract_lens_diagnostic(
+        stage2_output,
+        active_ids,
+        source_ids,
+        schema,
+        strict_required_fields=True,
+    )
+    failure = lens_diagnostic_failure_message(diagnostic, active_ids)
+    climate_active = "climate" in active_ids
+    # A usable diagnostic (passes the failure gate) can still be an incomplete
+    # dedicated Climate readout — interactions present but the reflections and
+    # integration_summary that drive the reflections block and integration gauge
+    # missing. That silently collapses the module to an interactions-only hybrid,
+    # so treat it as a recovery trigger rather than returning it as-is.
+    climate_incomplete = (
+        not failure
+        and climate_active
+        and not climate_readout_is_complete(climate_lens_entry(diagnostic))
+    )
+    if climate_active:
+        log_climate_specificity_summary(
+            assessment_id,
+            climate_specificity_structure(
+                stage2_output,
+                diagnostic,
+                status="invalid" if failure else "initial",
+            ),
+        )
+    if not failure and not climate_incomplete:
+        return diagnostic, False, ''
+    if failure:
+        app.logger.warning(
+            'Stage 2 lens diagnostic invalid: assessment_id=%s reason=%s',
+            assessment_id or 'unknown', failure,
+        )
+    else:
+        app.logger.info(
+            'Stage 2 climate diagnostic incomplete (missing reflections or '
+            'integration_summary); attempting recovery: assessment_id=%s',
+            assessment_id or 'unknown',
+        )
+    repaired, recovered = repair_lens_diagnostic(
+        stage2_output, active_ids, source_ids, schema,
+        assessment_id=assessment_id,
+    )
+    if recovered:
+        repaired_complete = (
+            not climate_active
+            or climate_readout_is_complete(climate_lens_entry(repaired))
+        )
+        # Never downgrade a usable primary: only adopt the recovered diagnostic
+        # when the primary was unusable, or when recovery is a complete readout.
+        if failure or repaired_complete:
+            if climate_active:
+                log_climate_specificity_summary(
+                    assessment_id,
+                    climate_specificity_structure(
+                        "",
+                        repaired,
+                        status="recovered",
+                    ),
+                )
+            app.logger.info(
+                'Stage 2 lens diagnostic recovered: assessment_id=%s',
+                assessment_id or 'unknown',
+            )
+            return repaired, True, ''
+        app.logger.info(
+            'Stage 2 climate recovery did not complete the readout; keeping the '
+            'partial primary diagnostic: assessment_id=%s',
+            assessment_id or 'unknown',
+        )
+        return diagnostic, False, ''
+    if failure:
+        app.logger.warning(
+            'Stage 2 lens diagnostic recovery unsuccessful: assessment_id=%s',
+            assessment_id or 'unknown',
+        )
+        return diagnostic, False, failure
+    app.logger.info(
+        'Stage 2 climate diagnostic incomplete and recovery unsuccessful; '
+        'keeping the partial primary diagnostic: assessment_id=%s',
+        assessment_id or 'unknown',
+    )
+    return diagnostic, False, ''
 
 
 DO_NO_HARM_HEADER = """---
@@ -633,6 +1733,10 @@ _REQUIRED_PRIORITY_FIELDS = [
     'change_type', 'restructuring_level', 'priority_scope',
     'governance_level',
 ]
+
+_MANDATORY_STANDALONE_PRIORITY = re.compile(
+    r"\b(?:gender[\s-]*fcv|sea\s*/\s*sh)\b", re.IGNORECASE
+)
 
 # Null-equivalent placeholder values the Stage 3 prompt emits for fields with no
 # content ("If a field has no content, write 'Not identified'"). Used to strip
@@ -4076,7 +5180,12 @@ def _safe_run(para):
     return para.runs[0] if para.runs else para.add_run()
 
 
-def extract_priorities(text: str, uploaded_doc_names: list = None) -> dict:
+def extract_priorities(
+    text: str,
+    uploaded_doc_names: list = None,
+    active_lens_ids: list[str] | None = None,
+    lens_diagnostic: dict[str, Any] | None = None,
+) -> dict:
     """Parse %%%JSON_START%%% / %%%JSON_END%%% block from Stage 3/4 output.
 
     Returns a dict:
@@ -4119,6 +5228,8 @@ def extract_priorities(text: str, uploaded_doc_names: list = None) -> dict:
         return _error_result
 
     priorities = []
+    climate_unlinked = 0
+    climate_total = 0
     for pr in priorities_raw:
         if not isinstance(pr, dict):
             continue
@@ -4187,6 +5298,78 @@ def extract_priorities(text: str, uploaded_doc_names: list = None) -> dict:
             elif _val is not None:
                 pr[_meta_field] = None
 
+        raw_lens_ids = pr.get('lens_ids', [])
+        if not isinstance(raw_lens_ids, list):
+            raw_lens_ids = []
+        pr['lens_ids'] = list(dict.fromkeys(
+            value.strip() for value in raw_lens_ids
+            if isinstance(value, str) and value.strip()
+        ))
+        if active_lens_ids is not None:
+            active_set = set(active_lens_ids)
+            pr['lens_ids'] = [value for value in pr['lens_ids'] if value in active_set]
+        enforce_climate_links = (
+            "climate" in (active_lens_ids or [])
+            and not lens_diagnostic_failure_message(
+                lens_diagnostic or {}, ["climate"]
+            )
+        )
+        if enforce_climate_links:
+            climate_total += 1
+            climate_links = normalize_priority_climate_links(
+                pr.get("climate_links"), lens_diagnostic
+            )
+            pr["lens_ids"] = [
+                lens_id for lens_id in pr["lens_ids"]
+                if lens_id != "climate"
+            ]
+            if climate_links:
+                pr["climate_links"] = climate_links
+                if climate_links["status"] == "linked":
+                    pr["lens_ids"].append("climate")
+            else:
+                # Graceful degradation: keep the priority so the panel never
+                # blanks; null the unvalidated link and do not tag climate.
+                pr["climate_links"] = None
+                climate_unlinked += 1
+        relevance = pr.get('lens_relevance', '')
+        pr['lens_relevance'] = (
+            relevance.strip()[:500]
+            if isinstance(relevance, str) and pr['lens_ids'] else ''
+        )
+        if (
+            enforce_climate_links
+            and isinstance(pr.get("climate_links"), dict)
+            and pr["climate_links"].get("status") == "linked"
+            and not pr["lens_relevance"]
+        ):
+            pr["lens_relevance"] = pr["climate_links"]["contribution"][:500]
+        pr.pop('priority_type', None)
+
+        # Validate policy_status enum (OPCS compliance, hybrid/lightweight)
+        _valid_policy_statuses = {
+            'mandatory_reference', 'document_commitment', 'advisory', 'not_determined',
+        }
+        raw_status = str(pr.get('policy_status', '')).strip()
+        pr['policy_status'] = raw_status if raw_status in _valid_policy_statuses else 'not_determined'
+
+        # Validate specialist_referral dict (OPCS compliance)
+        _valid_referral_routes = {
+            'Task Team E&S specialist', 'RSA', 'ESF Help Desk',
+            'OESRC', 'Legal', 'UN engagement team',
+        }
+        referral = pr.get('specialist_referral')
+        pr['specialist_referral'] = None
+        if isinstance(referral, dict):
+            route = str(referral.get('route', '')).strip()
+            reason = str(referral.get('reason', '')).strip()[:500]
+            if route in _valid_referral_routes and reason:
+                pr['specialist_referral'] = {
+                    'required': bool(referral.get('required', True)),
+                    'route': route,
+                    'reason': reason,
+                }
+
         # Post-parse checks — check specificity across gap + all action guidance
         actions_text = ' '.join(
             act.get('guidance', '') for act in pr['actions'] if isinstance(act, dict)
@@ -4204,6 +5387,25 @@ def extract_priorities(text: str, uploaded_doc_names: list = None) -> dict:
 
         priorities.append(pr)
 
+    # Active-lens notes cap substantive priorities while retaining the existing
+    # mandatory Gender-FCV and SEA/SH standalone-card exceptions.
+    if active_lens_ids:
+        bounded_priorities = []
+        substantive_count = 0
+        for priority in priorities:
+            marker_text = " ".join((
+                str(priority.get('title', '')),
+                str(priority.get('fcv_dimension', '')),
+            ))
+            is_mandatory_exception = bool(
+                _MANDATORY_STANDALONE_PRIORITY.search(marker_text)
+            )
+            if is_mandatory_exception or substantive_count < 5:
+                bounded_priorities.append(priority)
+                if not is_mandatory_exception:
+                    substantive_count += 1
+        priorities = bounded_priorities
+
     # Extract risk_exposure from nested object (new schema)
     risk_exposure_raw = data.get('risk_exposure', {})
     if isinstance(risk_exposure_raw, dict):
@@ -4212,6 +5414,12 @@ def extract_priorities(text: str, uploaded_doc_names: list = None) -> dict:
     else:
         risks_to = ''
         risks_from = ''
+
+    wider_fcv_context = data.get("wider_fcv_context")
+    if isinstance(wider_fcv_context, str):
+        wider_fcv_context = wider_fcv_context.strip()[:1200] or None
+    else:
+        wider_fcv_context = None
 
     return {
         'error': False,
@@ -4228,6 +5436,9 @@ def extract_priorities(text: str, uploaded_doc_names: list = None) -> dict:
         'dpf_watch': data.get('dpf_watch', []),
         'p4r_watch': data.get('p4r_watch', []),
         'regional_watch': data.get('regional_watch', []),
+        'wider_fcv_context': wider_fcv_context,
+        'climate_unlinked': climate_unlinked,
+        'climate_total': climate_total,
     }
 
 
@@ -4933,7 +6144,14 @@ def extract_sector_name(project_doc_text: str, api_client) -> str:
         return "Development"
 
 
-def run_fcv_web_research(country: str, sector: str, api_client) -> dict:
+def run_fcv_web_research(
+    country: str,
+    sector: str,
+    api_client,
+    include_ccdr: bool = False,
+    max_tokens: int = 5500,
+    max_uses: int = 4,
+) -> dict:
     """
     Run automated FCV web research for the given country using the Anthropic
     web search tool. Returns a dict with 'brief' (str) and 'country' (str).
@@ -4943,11 +6161,11 @@ def run_fcv_web_research(country: str, sector: str, api_client) -> dict:
     try:
         resp = api_client.beta.messages.create(
             model="claude-sonnet-4-6",
-            max_tokens=5500,
+            max_tokens=max_tokens,
             tools=[{
                 "type": "web_search_20250305",
                 "name": "web_search",
-                "max_uses": 4
+                "max_uses": max_uses,
             }],
             messages=[{"role": "user", "content": prompt}],
             betas=["web-search-2025-03-05"]
@@ -4957,13 +6175,407 @@ def run_fcv_web_research(country: str, sector: str, api_client) -> dict:
             if hasattr(block, 'type') and block.type == 'text':
                 brief_parts.append(block.text)
         brief = '\n'.join(brief_parts).strip()
-        return {'brief': brief, 'country': country}
+        return {
+            'brief': brief,
+            'country': country,
+            'ccdr_context': {},
+        }
+
+
     except Exception as e:
         print(f"[WebResearch ERROR] {type(e).__name__}: {e}", flush=True)
         return {
             'brief': f'*Web research for {country} could not be completed — proceeding without supplemental research.*',
-            'country': country
+            'country': country,
+            'ccdr_context': {},
         }
+
+
+_CLIMATE_TELEMETRY_SOURCE_TYPES = {
+    "ccdr", "world-bank", "un", "government", "scientific",
+    "specialist", "current-operations",
+}
+_CLIMATE_TELEMETRY_HORIZONS = {
+    "current-near-term", "project-lifetime", "asset-system-lifetime",
+}
+
+
+def _telemetry_count(value: Any, limit: int = 999) -> int:
+    """Return a bounded non-negative count without logging raw input."""
+
+    try:
+        return min(max(int(value or 0), 0), limit)
+    except (TypeError, ValueError):
+        return 0
+
+
+def log_climate_research_summary(
+    assessment_id: str,
+    bundle: dict[str, Any],
+    elapsed_ms: int,
+) -> None:
+    """Log only allowlisted structural facts about Climate research."""
+
+    bundle = bundle if isinstance(bundle, dict) else {}
+    sources = bundle.get("sources", [])
+    claims = bundle.get("claims", [])
+    sources = sources if isinstance(sources, list) else []
+    claims = claims if isinstance(claims, list) else []
+    source_types = sorted({
+        str(item.get("source_type"))
+        for item in sources
+        if isinstance(item, dict)
+        and item.get("source_type") in _CLIMATE_TELEMETRY_SOURCE_TYPES
+    })
+    horizon_counts = {value: 0 for value in _CLIMATE_TELEMETRY_HORIZONS}
+    for claim in claims:
+        if not isinstance(claim, dict):
+            continue
+        horizons = claim.get("time_horizons", [])
+        for horizon in horizons if isinstance(horizons, list) else []:
+            if horizon in horizon_counts:
+                horizon_counts[horizon] += 1
+    horizon_text = ",".join(
+        f"{key}:{_telemetry_count(horizon_counts[key])}"
+        for key in sorted(horizon_counts)
+        if horizon_counts[key]
+    ) or "none"
+    status = (
+        bundle.get("status")
+        if bundle.get("status") in {"complete", "partial", "failed"}
+        else "failed"
+    )
+    app.logger.info(
+        "Climate research summary assessment_id=%s status=%s attempts=%d "
+        "elapsed_ms=%d sources=%d claims=%d source_types=%s horizons=%s",
+        assessment_id or "unknown",
+        status,
+        _telemetry_count(bundle.get("attempts"), 2),
+        _telemetry_count(elapsed_ms, 3_600_000),
+        min(len(sources), 99),
+        min(len(claims), 99),
+        ",".join(source_types) or "none",
+        horizon_text,
+    )
+
+
+def log_climate_specificity_summary(
+    assessment_id: str,
+    summary: dict[str, Any],
+) -> None:
+    """Log pathway acceptance counts without pathway or project content."""
+
+    summary = summary if isinstance(summary, dict) else {}
+    raw_horizons = summary.get("horizon_counts", {})
+    raw_horizons = raw_horizons if isinstance(raw_horizons, dict) else {}
+    horizon_text = ",".join(
+        f"{key}:{_telemetry_count(raw_horizons.get(key))}"
+        for key in sorted(_CLIMATE_TELEMETRY_HORIZONS)
+        if _telemetry_count(raw_horizons.get(key))
+    ) or "none"
+    status = (
+        summary.get("status")
+        if summary.get("status") in {"initial", "recovered", "invalid"}
+        else "initial"
+    )
+    app.logger.info(
+        "Climate specificity summary assessment_id=%s status=%s "
+        "accepted=%d rejected=%d horizons=%s",
+        assessment_id or "unknown",
+        status,
+        _telemetry_count(summary.get("accepted"), 99),
+        _telemetry_count(summary.get("rejected"), 99),
+        horizon_text,
+    )
+
+
+def log_climate_priority_summary(
+    assessment_id: str,
+    priorities: list[dict[str, Any]],
+) -> None:
+    """Log only counts of validated Climate priority linkage states."""
+
+    linked = 0
+    no_material = 0
+    for priority in priorities if isinstance(priorities, list) else []:
+        links = priority.get("climate_links", {}) if isinstance(
+            priority, dict
+        ) else {}
+        status = links.get("status") if isinstance(links, dict) else ""
+        if status == "linked":
+            linked += 1
+        elif status == "no-material-pathway":
+            no_material += 1
+    app.logger.info(
+        "Climate priority summary assessment_id=%s linked=%d no_material=%d",
+        assessment_id or "unknown",
+        min(linked, 99),
+        min(no_material, 99),
+    )
+
+
+def run_climate_web_research(
+    country: str,
+    sector: str,
+    project_profile: dict[str, Any],
+    api_client,
+    assessment_id: str = "",
+) -> dict[str, Any]:
+    """Run one bounded Climate research request and one narrower retry."""
+
+    started = time.perf_counter()
+
+    def finish(bundle: dict[str, Any]) -> dict[str, Any]:
+        log_climate_research_summary(
+            assessment_id,
+            bundle,
+            elapsed_ms=int((time.perf_counter() - started) * 1000),
+        )
+        return bundle
+
+    for attempt, narrow in ((1, False), (2, True)):
+        prompt = build_climate_research_prompt(
+            country,
+            sector,
+            project_profile,
+            narrow=narrow,
+        )
+        try:
+            response = api_client.beta.messages.create(
+                model="claude-sonnet-4-6",
+                max_tokens=3200 if narrow else 5000,
+                tools=[{
+                    "type": "web_search_20250305",
+                    "name": "web_search",
+                    "max_uses": 3 if narrow else 5,
+                }],
+                messages=[{"role": "user", "content": prompt}],
+                betas=["web-search-2025-03-05"],
+            )
+            text = "\n".join(
+                block.text
+                for block in response.content
+                if getattr(block, "type", "") == "text"
+            )
+            _, bundle = extract_climate_research_bundle(text)
+            bundle["attempts"] = attempt
+            if bundle["claims"]:
+                return finish(bundle)
+        except anthropic.APITimeoutError:
+            if attempt == 1:
+                continue
+            break
+        except Exception:
+            break
+    return finish(normalize_climate_research_bundle({
+        "status": "failed",
+        "attempts": 2,
+        "failure_reason": (
+            "Dedicated Climate-FCV research could not be completed."
+        ),
+    }))
+
+
+def should_include_ccdr_context(
+    active_lenses: list[dict[str, Any]],
+    doc_parts: list[dict[str, Any]],
+) -> bool:
+    """Gate optional CCDR lookup on server-resolved Climate selection."""
+
+    active_ids = {
+        item.get("id") for item in active_lenses if isinstance(item, dict)
+    }
+    return "climate" in active_ids and not has_uploaded_ccdr(doc_parts)
+
+
+def research_cache_key(
+    country: str,
+    sector: str,
+    include_ccdr: bool,
+) -> str:
+    """Keep core and Climate-enriched research cache entries separate."""
+
+    return (
+        f"{country.lower().strip()}::{sector.lower().strip()}::"
+        f"ccdr={int(include_ccdr)}"
+    )
+
+
+def build_stage1_research_plan(
+    active_lens_ids: list[str],
+    country: str,
+    sector: str,
+    doc_parts: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Build one bounded plan shared by step-by-step and express workflows."""
+
+    climate_active = "climate" in active_lens_ids
+    project_parts = [
+        part for part in doc_parts
+        if isinstance(part, dict)
+        and part.get("label") == "PROJECT DOCUMENT"
+    ]
+    excerpt = "\n\n".join(
+        str(part.get("raw_text") or "")[:6000]
+        for part in project_parts[:2]
+    )[:12000]
+    return {
+        "country": str(country or "").strip(),
+        "sector": str(sector or "").strip(),
+        "core": {
+            "max_tokens": 4000 if climate_active else 5500,
+            "max_uses": 3 if climate_active else 4,
+        },
+        "climate": {"enabled": climate_active},
+        "project_profile": {
+            "documents": [
+                str(part.get("name") or "project document")[:200]
+                for part in project_parts[:4]
+            ],
+            "document_excerpt": excerpt,
+        },
+    }
+
+
+# Aggregate wall-clock budget for the Stage 1 research preprocessing phase
+# (core + optional Climate passes). Research runs BEFORE the Stage 1 model
+# stream and is NOT covered by the `_stream_stage` model cap, so without this
+# bound a slow/retrying Climate pass on the free tier could silently consume
+# the whole frontend Stage 1 budget (9 min) and surface only as a frontend
+# timeout. When the budget is exhausted we proceed with whatever completed;
+# research already degrades gracefully to an empty brief/bundle downstream.
+STAGE1_RESEARCH_BUDGET_SECONDS = 150
+
+
+def _iter_stage1_research(
+    research_plan: dict[str, Any],
+    assessment_id: str = "",
+    budget_seconds: int = STAGE1_RESEARCH_BUDGET_SECONDS,
+):
+    """Run core and optional Climate research concurrently with keepalives.
+
+    Bounded by an aggregate wall-clock budget: if the passes have not all
+    finished within ``budget_seconds`` the still-running ones are abandoned
+    (the pool is shut down without waiting) and Stage 1 proceeds with whatever
+    research completed, rather than blocking past the frontend Stage 1 budget.
+    """
+
+    country = research_plan["country"]
+    sector = research_plan["sector"]
+    core_budget = research_plan["core"]
+    climate_enabled = bool(research_plan["climate"]["enabled"])
+    cache_key = research_cache_key(country, sector, climate_enabled)
+    cached_core = _research_cache.get(cache_key)
+    results = {
+        "core_brief": "",
+        "climate_research": normalize_climate_research_bundle({}),
+        "lens_context_sources": [],
+    }
+    futures = {}
+    deadline = time.monotonic() + max(1, budget_seconds)
+    timed_out = False
+    # NOTE: not a `with` block — the context manager's __exit__ calls
+    # shutdown(wait=True), which would re-block on an abandoned research pass
+    # and defeat the budget. We shut down explicitly with wait=False.
+    pool = ThreadPoolExecutor(max_workers=2)
+    try:
+        if cached_core:
+            results["core_brief"] = cached_core.get("brief", "")
+        else:
+            futures[pool.submit(
+                run_fcv_web_research,
+                country,
+                sector,
+                get_research_client(),
+                False,
+                core_budget["max_tokens"],
+                core_budget["max_uses"],
+            )] = "core"
+        if climate_enabled:
+            futures[pool.submit(
+                run_climate_web_research,
+                country,
+                sector,
+                research_plan["project_profile"],
+                get_research_client(),
+                assessment_id,
+            )] = "climate"
+
+        while futures:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                timed_out = True
+                break
+            done, _ = wait(
+                futures,
+                timeout=min(15, remaining),
+                return_when=FIRST_COMPLETED,
+            )
+            if not done:
+                yield {
+                    "research_status": "searching",
+                    "country": country,
+                    "keepalive": True,
+                }
+                continue
+            for future in done:
+                kind = futures.pop(future)
+                try:
+                    value = future.result()
+                except Exception:
+                    value = {}
+                if kind == "core":
+                    results["core_brief"] = value.get("brief", "")
+                    _research_cache[cache_key] = value
+                else:
+                    climate_research = normalize_climate_research_bundle(value)
+                    results["climate_research"] = climate_research
+                    results["lens_context_sources"] = climate_research["sources"]
+    finally:
+        # wait=False so an unfinished pass does not block Stage 1; the thread
+        # completes its API call in the background and its result is discarded.
+        pool.shutdown(wait=False, cancel_futures=True)
+
+    if timed_out:
+        app.logger.warning(
+            "Stage 1 research budget exhausted: assessment_id=%s "
+            "budget_s=%d pending=%s core_brief=%s climate_claims=%d",
+            assessment_id or "unknown",
+            max(1, budget_seconds),
+            ",".join(sorted(futures.values())) or "none",
+            "yes" if results["core_brief"] else "no",
+            len(results["climate_research"].get("claims", [])),
+        )
+        yield {
+            "research_status": "research_timeout",
+            "country": country,
+            "keepalive": True,
+        }
+    yield {"result": results}
+
+
+def build_ccdr_prompt_context(
+    lens_context_sources: list[dict[str, Any]],
+) -> str:
+    """Format one validated CCDR as optional contextual evidence."""
+
+    source = next((
+        item for item in lens_context_sources
+        if isinstance(item, dict)
+        and item.get("id") == "context-ccdr"
+        and item.get("summary")
+    ), None)
+    if source is None:
+        return ""
+    return (
+        "--- OPTIONAL CCDR CONTEXT ---\n"
+        "Use this as contextual evidence rather than project evidence. "
+        "Apply it only where a specific project mechanism is established; "
+        "do not make the CCDR a routine recommendation.\n\n"
+        f"{source.get('title', 'Country Climate and Development Report')}: "
+        f"{source['summary']}\n"
+        "--- END OPTIONAL CCDR CONTEXT ---"
+    )
 
 
 # ── Flask app ────────────────────────────────────────────────────────────────
@@ -4980,6 +6592,41 @@ if os.path.exists(PROMPTS_FILE):
 
 app = Flask(__name__, static_folder='static')
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
+
+
+def _configure_app_logging() -> None:
+    """Make app.logger diagnostics visible in production (Render) logs.
+
+    Flask's app.logger has no stdout/stderr handler under gunicorn by default,
+    so every app.logger.info/warning (Stage 1 preprocessing timing, research
+    budget exhaustion, lens recovery telemetry, ...) was silently discarded —
+    which is why past handoffs could never "capture the Render log line".
+    Bind to gunicorn's error handlers when present, else emit to stdout, at
+    INFO (override with LOG_LEVEL).
+    """
+
+    import logging
+    import sys
+
+    level = getattr(
+        logging, os.environ.get("LOG_LEVEL", "INFO").upper(), logging.INFO
+    )
+    gunicorn_error = logging.getLogger("gunicorn.error")
+    if gunicorn_error.handlers:
+        app.logger.handlers = gunicorn_error.handlers
+    elif not app.logger.handlers:
+        handler = logging.StreamHandler(sys.stdout)
+        handler.setFormatter(
+            logging.Formatter("%(asctime)s %(levelname)s %(message)s")
+        )
+        app.logger.addHandler(handler)
+    app.logger.setLevel(level)
+    # Keep propagate=True: pytest's caplog captures via root-logger
+    # propagation, and INFO diagnostics do not duplicate (root's last-resort
+    # handler only emits WARNING+).
+
+
+_configure_app_logging()
 
 
 def _payload_too_large_response(_error=None):
@@ -5030,6 +6677,21 @@ def get_fast_client():
     return _fast_client
 
 
+_lens_recovery_client = None
+
+
+def get_lens_recovery_client():
+    """Client for one bounded structured sector-lens recovery request."""
+    global _lens_recovery_client
+    if _lens_recovery_client is None:
+        _lens_recovery_client = anthropic.Anthropic(
+            api_key=os.environ.get("ANTHROPIC_API_KEY"),
+            timeout=httpx.Timeout(timeout=120.0, connect=10.0),
+            max_retries=0,
+        )
+    return _lens_recovery_client
+
+
 _research_client = None
 
 def get_research_client():
@@ -5058,9 +6720,23 @@ def index():
     return resp
 
 
+BUILD_MARKER = os.environ.get("RENDER_GIT_COMMIT", "")[:12] or "dev"
+
+
 @app.route('/health')
 def health():
-    return jsonify({'status': 'ok'})
+    return jsonify({
+        'status': 'ok',
+        'build': BUILD_MARKER,
+        'stage1_research_budget_s': STAGE1_RESEARCH_BUDGET_SECONDS,
+    })
+
+
+app.logger.info(
+    "FCV screener started: build=%s stage1_research_budget_s=%d",
+    BUILD_MARKER,
+    STAGE1_RESEARCH_BUDGET_SECONDS,
+)
 
 
 # ── Admin routes ─────────────────────────────────────────────────────────────
@@ -5081,6 +6757,22 @@ def get_default_prompts():
 def get_glossary():
     """Return the FCV glossary as JSON for frontend tooltips."""
     return jsonify(FCV_GLOSSARY)
+
+
+@app.route('/api/sector-lenses', methods=['GET'])
+def get_sector_lenses():
+    """Return enabled selector modules; invalid packages remain non-fatal diagnostics."""
+
+    warnings = [
+        {
+            "lens_id": diagnostic.module_id,
+            "code": error.code,
+            "message": error.message,
+        }
+        for diagnostic in SECTOR_LENS_REGISTRY.diagnostics
+        for error in diagnostic.errors
+    ]
+    return jsonify({"lenses": lens_catalogue(SECTOR_LENS_REGISTRY), "warnings": warnings})
 
 
 @app.route('/api/detect-document-type', methods=['POST'])
@@ -5120,13 +6812,22 @@ def detect_document_type_route():
             extraction_status = 'ok'
         word_count = len(text.split()) if extraction_status != 'failed' else 0
         doc_type = detect_document_type_from_text(text, get_client()) if extraction_status == 'ok' else 'Unknown'
+        try:
+            lens_suggestions = (
+                detect_lens_suggestions(text, SECTOR_LENS_REGISTRY)
+                if extraction_status == 'ok' else []
+            )
+        except Exception as exc:
+            app.logger.warning("Sector-lens detection failed without blocking metadata: %s", exc)
+            lens_suggestions = []
         return jsonify({
             'document_type': doc_type,
             'word_count': word_count,
-            'extraction_status': extraction_status
+            'extraction_status': extraction_status,
+            'lens_suggestions': lens_suggestions,
         })
     except Exception as e:
-        return jsonify({'document_type': 'Unknown', 'word_count': 0, 'extraction_status': 'failed', 'error': str(e)})
+        return jsonify({'document_type': 'Unknown', 'word_count': 0, 'extraction_status': 'failed', 'lens_suggestions': [], 'error': str(e)})
 
 
 # ── Main analysis route ───────────────────────────────────────────────────────
@@ -5611,11 +7312,30 @@ def run_stage():
                 pq_block = build_priority_questions_block(priority_questions, stage)
                 if pq_block:
                     stage_prompt = stage_prompt + pq_block
+            lens_context = build_lens_stage_context(
+                analysis_state,
+                stage,
+                lens_diagnostic=data.get('lens_diagnostic'),
+                lens_context_sources=data.get('lens_context_sources'),
+                climate_research=data.get('climate_research'),
+            )
+            if lens_context['restart_required']:
+                return jsonify({
+                    'error': 'A selected sector lens version changed. Re-run from Stage 1.',
+                    'restart_required': True,
+                    'lens_warnings': lens_context['warnings'],
+                }), 409
+            if lens_context['prompt']:
+                stage_prompt += "\n\n--- ACTIVE SECTOR LENSES ---\n" + lens_context['prompt']
             messages.append({"role": "user", "content": stage_prompt})
 
         def workflow_events():
             research_brief_text = ''
             research_country = ''
+            climate_research = normalize_climate_research_bundle(
+                data.get('climate_research')
+            )
+            lens_context_sources = list(data.get('lens_context_sources') or [])
             try:
                 yield f"data: {json.dumps({'assessment_id': assessment_id})}\n\n"
                 yield f"data: {json.dumps({'ping': True})}\n\n"
@@ -5641,20 +7361,29 @@ def run_stage():
                             research_country = country_future.result()
                             research_sector = sector_future.result()
 
-                        cache_key = f"{research_country.lower().strip()}::{research_sector.lower().strip()}"
-                        if cache_key in _research_cache:
-                            research_data = _research_cache[cache_key]
-                            research_brief_text = research_data['brief']
-                            yield f"data: {json.dumps({'research_status': 'cached', 'country': research_country})}\n\n"
-                        else:
-                            yield f"data: {json.dumps({'research_status': 'searching', 'country': research_country})}\n\n"
-                            research_data = run_fcv_web_research(research_country, research_sector, get_research_client())
-                            research_brief_text = research_data['brief']
-                            _research_cache[cache_key] = research_data
+                        research_plan = build_stage1_research_plan(
+                            [item['id'] for item in lens_context['active_lenses']],
+                            research_country,
+                            research_sector,
+                            doc_parts,
+                        )
+                        yield f"data: {json.dumps({'research_status': 'searching', 'country': research_country})}\n\n"
+                        for research_event in _iter_stage1_research(
+                            research_plan, assessment_id
+                        ):
+                            if 'result' not in research_event:
+                                yield f"data: {json.dumps(research_event)}\n\n"
+                                continue
+                            research_result = research_event['result']
+                            research_brief_text = research_result['core_brief']
+                            climate_research = research_result['climate_research']
+                            lens_context_sources = research_result['lens_context_sources']
 
-                        yield f"data: {json.dumps({'research_status': 'complete', 'country': research_country, 'brief': research_brief_text})}\n\n"
+                        yield f"data: {json.dumps({'research_status': 'complete', 'country': research_country, 'brief': research_brief_text, 'climate_research': climate_research})}\n\n"
                     except Exception:
                         research_brief_text = ''
+                        climate_research = normalize_climate_research_bundle({})
+                        lens_context_sources = []
                         yield f"data: {json.dumps({'research_status': 'error', 'country': research_country})}\n\n"
                     # ── End Research Phase ────────────────────────────────────
 
@@ -5704,6 +7433,16 @@ def run_stage():
                             + research_brief_text +
                             "\n--- END AUTOMATED WEB RESEARCH ---\n"
                         )})
+                    climate_context = format_climate_research_context(climate_research)
+                    if climate_context:
+                        content_parts.append({
+                            "type": "text",
+                            "text": (
+                                "\n\n--- VALIDATED CLIMATE-FCV RESEARCH CLAIMS ---\n"
+                                + climate_context
+                                + "\n--- END VALIDATED CLIMATE-FCV RESEARCH CLAIMS ---\n"
+                            ),
+                        })
 
                     # Brief instrument recognition guide for Stage 1 identification
                     _instrument_recognition = "\n".join([
@@ -5732,7 +7471,12 @@ def run_stage():
                 # a queue with a 20-second timeout.  If no chunk arrives in 20 s a
                 # keepalive event is sent, preventing any proxy from closing the SSE
                 # connection during Sonnet's time-to-first-token phase.
-                _stage_max_tokens = 8000 if stage == 1 else (20000 if stage == 3 else 16000)
+                # Climate-active Stage 2 must fit the full visible assessment AND the
+                # hidden climate diagnostic (reflections/integration/both directions);
+                # give it a larger output budget so the diagnostic block is not truncated.
+                _climate_active = "climate" in (analysis_state.active_lenses or [])
+                _stage2_cap = 26000 if _climate_active else 16000
+                _stage_max_tokens = 8000 if stage == 1 else (20000 if stage == 3 else _stage2_cap)
                 for event in _stream_stage(
                     messages,
                     _stage_max_tokens,
@@ -5742,6 +7486,19 @@ def run_stage():
                     yield event
 
                 full_text = _stream_stage._last_result
+
+                # Truncation observability: a climate-active Stage 2 cut off at
+                # the output ceiling drops the tail of the diagnostic block
+                # (reflections/integration), which forces recovery downstream.
+                if (
+                    stage == 2 and _climate_active
+                    and _stream_stage._last_stop_reason == 'max_tokens'
+                ):
+                    app.logger.warning(
+                        'Stage 2 climate output hit max_tokens (cap=%s); '
+                        'diagnostic tail may be truncated: assessment_id=%s',
+                        _stage_max_tokens, assessment_id or 'unknown',
+                    )
 
                 # ── Workstream 2: silent instrument-vocabulary repair ──────────
                 # Only Stage 2/3 design-review output can carry the ESF/ESCP/ESS
@@ -5766,6 +7523,8 @@ def run_stage():
                 stage2_ratings = {}
                 under_hood = {}
                 category_lens = {}
+                lens_diagnostic = {}
+                lens_evidence = {}
                 _country_classification = {}
                 _context_flags = {}
                 _sector_context = {}
@@ -5784,15 +7543,60 @@ def run_stage():
                     stage2_ratings = extract_stage2_ratings(full_text)
                     under_hood = extract_under_hood(full_text)
                     category_lens = extract_category_lens(full_text)
-                    parse_error = under_hood.get('error', False) or stage2_ratings.get('error', False)
-                    parse_error_message = under_hood.get('message', '') or stage2_ratings.get('message', '')
+                    lens_diagnostic, _, lens_failure = (
+                        extract_or_repair_lens_diagnostic(
+                            full_text,
+                            lens_context['active_lenses'],
+                            lens_context['lens_context_sources'],
+                            assessment_id,
+                        )
+                    )
+                    parse_error = (
+                        under_hood.get('error', False)
+                        or stage2_ratings.get('error', False)
+                        or bool(lens_failure)
+                    )
+                    parse_error_message = ' '.join(dict.fromkeys(filter(None, (
+                        under_hood.get('message', ''),
+                        stage2_ratings.get('message', ''),
+                        lens_failure,
+                    ))))
 
                 elif stage == 3:
                     # Stage 3 (Recommendations Note): extract priorities + ratings
                     # Use uploaded_doc_names_payload (parsed from frontend's uploaded_doc_names
                     # array at request start) — includes all zones (primary, package, context).
                     # data.get('documents', []) is empty at Stage 3 in step-by-step mode.
-                    parsed = extract_priorities(full_text, uploaded_doc_names_payload)
+                    parsed = extract_priorities(
+                        full_text,
+                        uploaded_doc_names_payload,
+                        [item['id'] for item in lens_context['active_lenses']],
+                        lens_context.get('lens_diagnostic', {}),
+                    )
+                    warn_on_missing_high_climate_priority(
+                        parsed.get('priorities', []),
+                        lens_context.get('lens_diagnostic', {}),
+                    )
+                    if "climate" in {
+                        item["id"]
+                        for item in lens_context["active_lenses"]
+                    }:
+                        log_climate_priority_summary(
+                            assessment_id,
+                            parsed.get("priorities", []),
+                        )
+                        if not parsed.get("priorities"):
+                            app.logger.warning(
+                                "Climate Stage 3 produced no priorities: assessment_id=%s "
+                                "json_block=%s parse_error=%s msg=%s climate_total=%s "
+                                "climate_unlinked=%s",
+                                assessment_id or "unknown",
+                                "%%%JSON_START%%%" in (full_text or ""),
+                                parsed.get("error", False),
+                                (parsed.get("message", "") or "")[:80],
+                                parsed.get("climate_total", 0),
+                                parsed.get("climate_unlinked", 0),
+                            )
                     priorities = parsed.get('priorities', [])
                     fcv_rating = parsed.get('fcv_rating', '')
                     fcv_responsiveness_rating = parsed.get('fcv_responsiveness_rating', '')
@@ -5808,7 +7612,7 @@ def run_stage():
                     parse_error_message = parsed.get('message', '')
                     full_text_raw = full_text  # Preserve raw output before cleaning
                     horizon = extract_horizon_considerations(full_text_raw)
-                    full_text = clean_stage3_output(full_text)
+                    full_text = strip_lens_blocks(clean_stage3_output(full_text))
                     from datetime import date
                     header = DO_NO_HARM_HEADER.format(date=date.today().strftime('%d %B %Y'))
                     full_text = header + full_text
@@ -5818,6 +7622,9 @@ def run_stage():
                 # outputs from history, so carrying the full documents/research/guides forward
                 # would send huge payloads unnecessarily on every Stage 2/3 call.
                 if stage == 1:
+                    lens_evidence = extract_lens_evidence(full_text, [
+                        item['id'] for item in lens_context['active_lenses']
+                    ]) if lens_context['active_lenses'] else {}
                     _instrument_type = extract_instrument_type(full_text)
                     _temporal_context = extract_temporal_context(full_text)
                     _process_type = extract_process_type(full_text) if is_impl else None
@@ -5860,7 +7667,10 @@ def run_stage():
                 # Build done event payload
                 # For Stage 1: strip classifier delimiter blocks from display text only;
                 # history retains the raw output so downstream stages can re-parse.
-                display_full_text = clean_stage1_output(full_text) if stage == 1 else full_text
+                display_full_text = (
+                    strip_lens_blocks(clean_stage1_output(full_text))
+                    if stage == 1 else strip_lens_blocks(full_text)
+                )
                 done_data = {
                     'done': True,
                     'result': display_full_text,
@@ -5884,11 +7694,16 @@ def run_stage():
                     'country_scope': (('multi' if (isinstance(_country_set, dict) and _country_set.get('is_multi_country')) else 'single') if stage == 1 else None),
                     'is_mpa': ((_mpa_context.get('is_mpa', False) if isinstance(_mpa_context, dict) else False) if stage == 1 else None),
                     'review_mode': review_mode,
+                    'active_lenses': lens_context['active_lenses'],
+                    'lens_warnings': lens_context['warnings'],
+                    'lens_evidence': lens_evidence if stage == 1 else None,
+                    'lens_context_sources': lens_context_sources,
+                    'climate_research': climate_research,
                 }
 
                 if stage == 2:
                     # Stage 2: include ratings and Under the Hood panel data
-                    done_data['display_text'] = under_hood.get('display_text', full_text)
+                    done_data['display_text'] = strip_lens_blocks(under_hood.get('display_text', full_text))
                     done_data['sensitivity_rating'] = stage2_ratings.get('sensitivity_rating', '')
                     done_data['responsiveness_rating'] = stage2_ratings.get('responsiveness_rating', '')
                     done_data['rating_reasoning'] = stage2_ratings.get('rating_reasoning', '')
@@ -5899,6 +7714,8 @@ def run_stage():
                         'evidence_trail': under_hood.get('evidence_trail', ''),
                     }
                     done_data['category_lens'] = category_lens
+                    done_data['lens_diagnostic'] = lens_diagnostic
+                    done_data['climate_integration'] = climate_integration_payload(lens_diagnostic)
 
                 elif stage == 3:
                     # Stage 3: include priorities, ratings, summaries, risk exposure
@@ -5914,6 +7731,9 @@ def run_stage():
                     done_data['p4r_watch'] = p4r_watch
                     done_data['regional_watch'] = regional_watch
                     done_data['horizon_considerations'] = horizon
+                    done_data['wider_fcv_context'] = parsed.get('wider_fcv_context')
+                    done_data['climate_unlinked'] = parsed.get('climate_unlinked', 0)
+                    done_data['climate_total'] = parsed.get('climate_total', 0)
                     done_data['applied_snippets'] = [
                         {'id': s['id'], 'title': s['title'], 'source': s['source']}
                         for s in secondary_snippets_s3
@@ -5927,23 +7747,7 @@ def run_stage():
                 yield f"data: {json.dumps({'error': str(e)})}\n\n"
 
         def generate():
-            event_queue = queue.Queue()
-            sentinel = object()
-
-            def run_workflow():
-                try:
-                    for event in workflow_events():
-                        event_queue.put(event)
-                finally:
-                    event_queue.put(sentinel)
-
-            ASSESSMENT_EXECUTOR.submit(run_workflow)
-
-            while True:
-                item = event_queue.get()
-                if item is sentinel:
-                    break
-                yield item
+            yield from _stream_workflow_events(workflow_events, assessment_id)
 
         return Response(stream_with_context(generate()), mimetype='text/event-stream',
                         headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'})
@@ -5952,6 +7756,108 @@ def run_stage():
         return _payload_too_large_response(e)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+# Stuck-workflow backstop: max time with NO workflow event at all (not even a
+# stage keepalive). This is an IDLE detector, not a total-runtime cap — a
+# slow-but-streaming run (all express stages) must never be killed, only a
+# genuinely hung one that produces nothing. The longest legitimate quiet gap is
+# Stage 1 extraction + country/sector calls before research starts emitting; 5
+# min gives that ample headroom on the free tier.
+WORKFLOW_IDLE_DEADLINE_SECONDS = 5 * 60
+
+
+def _stream_workflow_events(
+    workflow_events,
+    assessment_id,
+    poll_interval=15,
+    idle_deadline=WORKFLOW_IDLE_DEADLINE_SECONDS,
+):
+    """Bridge a workflow_events() generator (run on ASSESSMENT_EXECUTOR) to SSE.
+
+    Hardening over the old naive ``event_queue.get()`` bridge, which blocked
+    with no timeout and no keepalive — so any stall (or a workflow greenlet that
+    never scheduled) produced a silent, log-less hang until the browser aborted:
+
+    - keepalive during quiet gaps so the connection never goes silent;
+    - an idle backstop (time since the last workflow event) that logs a WARNING
+      and surfaces a clean error if the workflow is genuinely hung — while never
+      killing a slow-but-streaming run;
+    - submit / start / first-event logging so a stall's location (never
+      submitted vs never started vs stuck mid-stage) is unambiguous in the logs.
+    """
+
+    route_label = request.path if request else "workflow"
+    tag = assessment_id or "unknown"
+    event_queue = queue.Queue()
+    sentinel = object()
+    started = time.monotonic()
+
+    def run_workflow():
+        app.logger.info(
+            "%s workflow started: assessment_id=%s", route_label, tag
+        )
+        try:
+            for event in workflow_events():
+                event_queue.put(event)
+        except Exception as exc:  # never let the bridge hang on a crash
+            app.logger.warning(
+                "%s workflow crashed: assessment_id=%s error=%s",
+                route_label, tag, type(exc).__name__,
+            )
+            event_queue.put(
+                "data: "
+                + json.dumps({"error": str(exc), "failed_stage": 1})
+                + "\n\n"
+            )
+        finally:
+            event_queue.put(sentinel)
+
+    app.logger.info(
+        "%s workflow submitted: assessment_id=%s", route_label, tag
+    )
+    ASSESSMENT_EXECUTOR.submit(run_workflow)
+
+    first_event_seen = False
+    last_event_at = time.monotonic()
+    while True:
+        try:
+            item = event_queue.get(timeout=poll_interval)
+        except queue.Empty:
+            idle = time.monotonic() - last_event_at
+            if idle > idle_deadline:
+                app.logger.warning(
+                    "%s stalled (no workflow output): assessment_id=%s "
+                    "idle_s=%d elapsed_s=%d first_event=%s",
+                    route_label, tag, int(idle),
+                    int(time.monotonic() - started), first_event_seen,
+                )
+                yield (
+                    "data: "
+                    + json.dumps({
+                        "error": _stage_timeout_message(1, idle_deadline),
+                        "failed_stage": 1,
+                    })
+                    + "\n\n"
+                )
+                return
+            # Keepalive so the SSE connection never goes silent during a quiet
+            # window (e.g. the Stage 1 extraction loop yields no events). This
+            # is bridge-generated and does NOT reset the idle timer, which
+            # tracks genuine workflow output only.
+            yield f"data: {json.dumps({'keepalive': True})}\n\n"
+            continue
+        # A real workflow event (incl. stage keepalives) — the workflow is alive.
+        last_event_at = time.monotonic()
+        if not first_event_seen:
+            first_event_seen = True
+            app.logger.info(
+                "%s first event emitted: assessment_id=%s waited_ms=%d",
+                route_label, tag, int((time.monotonic() - started) * 1000),
+            )
+        if item is sentinel:
+            return
+        yield item
 
 
 def _stage_timeout_seconds(stage_num):
@@ -5988,6 +7894,7 @@ def _stream_stage(
     collected = []
     stream_q = _q.Queue()
     started_at = time.monotonic()
+    _stream_stage._last_stop_reason = None
     if max_seconds is None:
         max_seconds = _stage_timeout_seconds(stage_num)
 
@@ -6000,6 +7907,17 @@ def _stream_stage(
             ) as s:
                 for chunk in s.text_stream:
                     stream_q.put(('chunk', chunk))
+                # Capture the provider stop_reason so callers can detect a
+                # max_tokens truncation (e.g. a Stage 2 climate diagnostic block
+                # cut off at the output ceiling) rather than treating it as a
+                # normal completion.
+                try:
+                    final = s.get_final_message()
+                    _stream_stage._last_stop_reason = getattr(
+                        final, 'stop_reason', None
+                    )
+                except Exception:
+                    _stream_stage._last_stop_reason = None
             stream_q.put(('done', None))
         except Exception as e:
             stream_q.put(('error', str(e)))
@@ -6071,7 +7989,10 @@ def run_express():
             sector_context = {}
             research_brief_text = ''
             research_country = ''
+            climate_research = normalize_climate_research_bundle({})
+            lens_context_sources = []
             conversation_history = []
+            lens_diagnostic = {}
 
             try:
                 # ════════════════════════════════════════════════════════════
@@ -6162,6 +8083,15 @@ def run_express():
                 for w in extraction_warnings_express:
                     yield f"data: {json.dumps({'extraction_warning': w})}\n\n"
 
+                lens_context_s1 = build_lens_stage_context(analysis_state, 1)
+                analysis_state.active_lenses = [
+                    item['id'] for item in lens_context_s1['active_lenses']
+                ]
+                analysis_state.lens_versions = {
+                    item['id']: item['version']
+                    for item in lens_context_s1['active_lenses']
+                }
+
                 # ── Web research phase ──
                 try:
                     first_doc_text = doc_parts[0]['raw_text'] if doc_parts else ''
@@ -6173,20 +8103,29 @@ def run_express():
                         research_country = country_future.result()
                         research_sector = sector_future.result()
 
-                    cache_key = f"{research_country.lower().strip()}::{research_sector.lower().strip()}"
-                    if cache_key in _research_cache:
-                        research_data = _research_cache[cache_key]
-                        research_brief_text = research_data['brief']
-                        yield f"data: {json.dumps({'research_status': 'cached', 'country': research_country})}\n\n"
-                    else:
-                        yield f"data: {json.dumps({'research_status': 'searching', 'country': research_country})}\n\n"
-                        research_data = run_fcv_web_research(research_country, research_sector, get_research_client())
-                        research_brief_text = research_data['brief']
-                        _research_cache[cache_key] = research_data
+                    research_plan = build_stage1_research_plan(
+                        [item['id'] for item in lens_context_s1['active_lenses']],
+                        research_country,
+                        research_sector,
+                        doc_parts,
+                    )
+                    yield f"data: {json.dumps({'research_status': 'searching', 'country': research_country})}\n\n"
+                    for research_event in _iter_stage1_research(
+                        research_plan, assessment_id
+                    ):
+                        if 'result' not in research_event:
+                            yield f"data: {json.dumps(research_event)}\n\n"
+                            continue
+                        research_result = research_event['result']
+                        research_brief_text = research_result['core_brief']
+                        climate_research = research_result['climate_research']
+                        lens_context_sources = research_result['lens_context_sources']
 
-                    yield f"data: {json.dumps({'research_status': 'complete', 'country': research_country, 'brief': research_brief_text})}\n\n"
+                    yield f"data: {json.dumps({'research_status': 'complete', 'country': research_country, 'brief': research_brief_text, 'climate_research': climate_research})}\n\n"
                 except Exception:
                     research_brief_text = ''
+                    climate_research = normalize_climate_research_bundle({})
+                    lens_context_sources = []
                     yield f"data: {json.dumps({'research_status': 'error', 'country': research_country})}\n\n"
 
                 # ── Assemble Stage 1 content_parts ──
@@ -6233,6 +8172,16 @@ def run_express():
                         + research_brief_text +
                         "\n--- END AUTOMATED WEB RESEARCH ---\n"
                     )})
+                climate_context = format_climate_research_context(climate_research)
+                if climate_context:
+                    content_parts.append({
+                        "type": "text",
+                        "text": (
+                            "\n\n--- VALIDATED CLIMATE-FCV RESEARCH CLAIMS ---\n"
+                            + climate_context
+                            + "\n--- END VALIDATED CLIMATE-FCV RESEARCH CLAIMS ---\n"
+                        ),
+                    })
 
                 # Brief instrument recognition guide for Stage 1 identification
                 _instrument_recognition = "\n".join([
@@ -6280,6 +8229,8 @@ def run_express():
                 pq_block = build_priority_questions_block(priority_questions, 1)
                 if pq_block:
                     stage1_prompt = stage1_prompt + pq_block
+                if lens_context_s1['prompt']:
+                    stage1_prompt += "\n\n--- ACTIVE SECTOR LENSES ---\n" + lens_context_s1['prompt']
                 content_parts.append({"type": "text", "text": stage1_prompt})
 
                 stage1_messages = [{"role": "user", "content": content_parts}]
@@ -6332,8 +8283,11 @@ def run_express():
 
                 # ── Stage 1 done event ──
                 # Strip classifier delimiter tags from display output; history retains raw text.
-                stage1_display = clean_stage1_output(stage1_output)
-                yield f"data: {json.dumps({'stage_done': 1, 'result': stage1_display, 'history': conversation_history, 'research_brief': research_brief_text, 'research_country': research_country, 'doc_type': doc_type, 'instrument_type': instrument_type, 'temporal_context': temporal_context, 'process_type': process_type if is_impl else None, 'country_classification': country_classification, 'context_flags': context_flags, 'sector_context': sector_context, 'change_types': change_types, 'prior_actions': prior_actions, 'dlis': dlis, 'country_set': country_set, 'mpa_context': mpa_context, 'country_scope': _cscope_x, 'is_mpa': _is_mpa_x, 'review_mode': review_mode})}\n\n"
+                stage1_display = strip_lens_blocks(clean_stage1_output(stage1_output))
+                lens_evidence_s1 = extract_lens_evidence(
+                    stage1_output, [item['id'] for item in lens_context_s1['active_lenses']]
+                ) if lens_context_s1['active_lenses'] else {}
+                yield f"data: {json.dumps({'stage_done': 1, 'result': stage1_display, 'history': conversation_history, 'research_brief': research_brief_text, 'research_country': research_country, 'climate_research': climate_research, 'doc_type': doc_type, 'instrument_type': instrument_type, 'temporal_context': temporal_context, 'process_type': process_type if is_impl else None, 'country_classification': country_classification, 'context_flags': context_flags, 'sector_context': sector_context, 'change_types': change_types, 'prior_actions': prior_actions, 'dlis': dlis, 'country_set': country_set, 'mpa_context': mpa_context, 'country_scope': _cscope_x, 'is_mpa': _is_mpa_x, 'review_mode': review_mode, 'active_lenses': lens_context_s1['active_lenses'], 'lens_warnings': lens_context_s1['warnings'], 'lens_evidence': lens_evidence_s1, 'lens_context_sources': lens_context_sources})}\n\n"
 
                 # ════════════════════════════════════════════════════════════
                 # STAGE 2 — FCV Assessment
@@ -6459,6 +8413,14 @@ def run_express():
                 pq_block = build_priority_questions_block(priority_questions, 2)
                 if pq_block:
                     stage2_prompt = stage2_prompt + pq_block
+                lens_context_s2 = build_lens_stage_context(
+                    analysis_state,
+                    2,
+                    lens_context_sources=lens_context_sources,
+                    climate_research=climate_research,
+                )
+                if lens_context_s2['prompt']:
+                    stage2_prompt += "\n\n--- ACTIVE SECTOR LENSES ---\n" + lens_context_s2['prompt']
                 # Build messages: prior context + Stage 2 prompt
                 stage2_messages = [
                     {"role": "user", "content": f"Prior FCV analysis context:\n\nStage 1 output:\n{conversation_history[1]['content']}\n\nUse this as the basis for the next stage."},
@@ -6467,9 +8429,22 @@ def run_express():
                 ]
 
                 # ── Stream Stage 2 ──
-                for event in _stream_stage(stage2_messages, 16000, 2):
+                # Climate-active runs need a larger output budget so the hidden
+                # diagnostic block is not truncated after the visible assessment.
+                _climate_active_s2 = "climate" in (analysis_state.active_lenses or [])
+                _stage2_cap = 26000 if _climate_active_s2 else 16000
+                for event in _stream_stage(stage2_messages, _stage2_cap, 2):
                     yield event
                 stage2_output = _stream_stage._last_result
+
+                # Truncation observability: see the step-by-step route for the
+                # rationale — a max_tokens cut drops the diagnostic tail.
+                if _climate_active_s2 and _stream_stage._last_stop_reason == 'max_tokens':
+                    app.logger.warning(
+                        'Stage 2 climate output hit max_tokens (cap=%s); '
+                        'diagnostic tail may be truncated: assessment_id=%s',
+                        _stage2_cap, assessment_id or 'unknown',
+                    )
 
                 # ── Workstream 2: silent instrument-vocabulary repair ──────────
                 _vocab_violations_s2 = validate_instrument_vocabulary(stage2_output, instrument_type)
@@ -6480,8 +8455,24 @@ def run_express():
                 stage2_ratings = extract_stage2_ratings(stage2_output)
                 under_hood = extract_under_hood(stage2_output)
                 category_lens_e2 = extract_category_lens(stage2_output)
-                s2_parse_error = under_hood.get('error', False) or stage2_ratings.get('error', False)
-                s2_parse_error_msg = under_hood.get('message', '') or stage2_ratings.get('message', '')
+                lens_diagnostic, lens_recovered, lens_failure = (
+                    extract_or_repair_lens_diagnostic(
+                        stage2_output,
+                        lens_context_s2['active_lenses'],
+                        lens_context_s2['lens_context_sources'],
+                        assessment_id,
+                    )
+                )
+                s2_parse_error = (
+                    under_hood.get('error', False)
+                    or stage2_ratings.get('error', False)
+                    or bool(lens_failure)
+                )
+                s2_parse_error_msg = ' '.join(dict.fromkeys(filter(None, (
+                    under_hood.get('message', ''),
+                    stage2_ratings.get('message', ''),
+                    lens_failure,
+                ))))
 
                 # Update conversation history — store compact Stage 2 label (not full prompt) so
                 # Stage 3 doesn't carry 80k+ chars of background constants into its API call.
@@ -6496,7 +8487,7 @@ def run_express():
                     conversation_history = conversation_history[-20:]
 
                 # ── Stage 2 done event ──
-                yield f"data: {json.dumps({'stage_done': 2, 'result': stage2_output, 'display_text': under_hood.get('display_text', stage2_output), 'history': conversation_history, 'sensitivity_rating': stage2_ratings.get('sensitivity_rating', ''), 'responsiveness_rating': stage2_ratings.get('responsiveness_rating', ''), 'rating_reasoning': stage2_ratings.get('rating_reasoning', ''), 'under_hood': {'recs_table': under_hood.get('recs_table', ''), 'dnh_checklist': under_hood.get('dnh_checklist', ''), 'questions_map': under_hood.get('questions_map', ''), 'evidence_trail': under_hood.get('evidence_trail', '')}, 'category_lens': category_lens_e2, 'parse_error': s2_parse_error, 'parse_error_message': s2_parse_error_msg})}\n\n"
+                yield f"data: {json.dumps({'stage_done': 2, 'result': strip_lens_blocks(stage2_output), 'display_text': strip_lens_blocks(under_hood.get('display_text', stage2_output)), 'history': conversation_history, 'sensitivity_rating': stage2_ratings.get('sensitivity_rating', ''), 'responsiveness_rating': stage2_ratings.get('responsiveness_rating', ''), 'rating_reasoning': stage2_ratings.get('rating_reasoning', ''), 'under_hood': {'recs_table': under_hood.get('recs_table', ''), 'dnh_checklist': under_hood.get('dnh_checklist', ''), 'questions_map': under_hood.get('questions_map', ''), 'evidence_trail': under_hood.get('evidence_trail', '')}, 'category_lens': category_lens_e2, 'lens_diagnostic': lens_diagnostic, 'lens_diagnostic_recovered': lens_recovered, 'lens_context_sources': lens_context_s2['lens_context_sources'], 'active_lenses': lens_context_s2['active_lenses'], 'lens_warnings': lens_context_s2['warnings'], 'parse_error': s2_parse_error, 'parse_error_message': s2_parse_error_msg, 'climate_integration': climate_integration_payload(lens_diagnostic)})}\n\n"
 
                 # ════════════════════════════════════════════════════════════
                 # STAGE 3 — Recommendations / Course-Correction Note
@@ -6641,6 +8632,14 @@ def run_express():
                 pq_block = build_priority_questions_block(priority_questions, 3)
                 if pq_block:
                     stage3_prompt = stage3_prompt + pq_block
+                lens_context_s3 = build_lens_stage_context(
+                    analysis_state,
+                    3,
+                    lens_diagnostic=lens_diagnostic,
+                    lens_context_sources=lens_context_sources,
+                )
+                if lens_context_s3['prompt']:
+                    stage3_prompt += "\n\n--- ACTIVE SECTOR LENSES ---\n" + lens_context_s3['prompt']
                 # Build Stage 3 messages from conversation history
                 stage3_messages = conversation_history + [
                     {"role": "user", "content": stage3_prompt}
@@ -6658,9 +8657,37 @@ def run_express():
 
                 # Parse Stage 3 output
                 uploaded_doc_names = [doc.get('name', '') for doc in documents if doc.get('name')]
-                parsed = extract_priorities(stage3_output, uploaded_doc_names)
+                parsed = extract_priorities(
+                    stage3_output,
+                    uploaded_doc_names,
+                    [item['id'] for item in lens_context_s3['active_lenses']],
+                    lens_context_s3.get('lens_diagnostic', {}),
+                )
+                warn_on_missing_high_climate_priority(
+                    parsed.get('priorities', []),
+                    lens_context_s3.get('lens_diagnostic', {}),
+                )
+                if "climate" in {
+                    item["id"] for item in lens_context_s3["active_lenses"]
+                }:
+                    log_climate_priority_summary(
+                        assessment_id,
+                        parsed.get("priorities", []),
+                    )
+                    if not parsed.get("priorities"):
+                        app.logger.warning(
+                            "Climate Stage 3 produced no priorities: assessment_id=%s "
+                            "json_block=%s parse_error=%s msg=%s climate_total=%s "
+                            "climate_unlinked=%s",
+                            assessment_id or "unknown",
+                            "%%%JSON_START%%%" in (stage3_output or ""),
+                            parsed.get("error", False),
+                            (parsed.get("message", "") or "")[:80],
+                            parsed.get("climate_total", 0),
+                            parsed.get("climate_unlinked", 0),
+                        )
                 horizon = extract_horizon_considerations(stage3_output)
-                stage3_output_clean = clean_stage3_output(stage3_output)
+                stage3_output_clean = strip_lens_blocks(clean_stage3_output(stage3_output))
                 header = DO_NO_HARM_HEADER.format(date=date.today().strftime('%d %B %Y'))
                 stage3_output_clean = header + stage3_output_clean
 
@@ -6675,7 +8702,7 @@ def run_express():
                     conversation_history = conversation_history[-20:]
 
                 # ── Stage 3 done event ──
-                yield f"data: {json.dumps({'stage_done': 3, 'result': stage3_output_clean, 'history': conversation_history, 'priorities': parsed.get('priorities', []), 'fcv_rating': parsed.get('fcv_rating', ''), 'fcv_responsiveness_rating': parsed.get('fcv_responsiveness_rating', ''), 'sensitivity_summary': parsed.get('sensitivity_summary', ''), 'responsiveness_summary': parsed.get('responsiveness_summary', ''), 'risk_exposure': parsed.get('risk_exposure'), 'mid_cycle_watch': parsed.get('mid_cycle_watch', []), 'dpf_watch': parsed.get('dpf_watch', []), 'p4r_watch': parsed.get('p4r_watch', []), 'regional_watch': parsed.get('regional_watch', []), 'gap_table': extract_gap_table(stage3_output), 'parse_error': parsed.get('error', False), 'parse_error_message': parsed.get('message', ''), 'horizon_considerations': horizon, 'applied_snippets': [{'id': s['id'], 'title': s['title'], 'source': s['source']} for s in secondary_snippets_s3e]})}\n\n"
+                yield f"data: {json.dumps({'stage_done': 3, 'result': stage3_output_clean, 'history': conversation_history, 'priorities': parsed.get('priorities', []), 'fcv_rating': parsed.get('fcv_rating', ''), 'fcv_responsiveness_rating': parsed.get('fcv_responsiveness_rating', ''), 'sensitivity_summary': parsed.get('sensitivity_summary', ''), 'responsiveness_summary': parsed.get('responsiveness_summary', ''), 'risk_exposure': parsed.get('risk_exposure'), 'mid_cycle_watch': parsed.get('mid_cycle_watch', []), 'dpf_watch': parsed.get('dpf_watch', []), 'p4r_watch': parsed.get('p4r_watch', []), 'regional_watch': parsed.get('regional_watch', []), 'gap_table': extract_gap_table(stage3_output), 'parse_error': parsed.get('error', False), 'parse_error_message': parsed.get('message', ''), 'horizon_considerations': horizon, 'wider_fcv_context': parsed.get('wider_fcv_context'), 'lens_context_sources': lens_context_s3['lens_context_sources'], 'active_lenses': lens_context_s3['active_lenses'], 'lens_warnings': lens_context_s3['warnings'], 'applied_snippets': [{'id': s['id'], 'title': s['title'], 'source': s['source']} for s in secondary_snippets_s3e], 'climate_unlinked': parsed.get('climate_unlinked', 0), 'climate_total': parsed.get('climate_total', 0)})}\n\n"
 
                 # ── Express complete ──
                 yield f"data: {json.dumps({'express_done': True})}\n\n"
@@ -6690,23 +8717,7 @@ def run_express():
                 yield f"data: {json.dumps({'error': str(e), 'failed_stage': failed_stage})}\n\n"
 
         def generate():
-            event_queue = queue.Queue()
-            sentinel = object()
-
-            def run_workflow():
-                try:
-                    for event in workflow_events():
-                        event_queue.put(event)
-                finally:
-                    event_queue.put(sentinel)
-
-            ASSESSMENT_EXECUTOR.submit(run_workflow)
-
-            while True:
-                item = event_queue.get()
-                if item is sentinel:
-                    break
-                yield item
+            yield from _stream_workflow_events(workflow_events, assessment_id)
 
         return Response(stream_with_context(generate()),
                         mimetype='text/event-stream',
@@ -6976,6 +8987,145 @@ def run_priority_questions():
         return jsonify({'error': str(e)}), 500
 
 
+_CLIMATE_PATHWAY_LABELS = {
+    'social-cohesion-inclusion': 'Social cohesion and inclusion',
+    'institutional-capacity-legitimacy': 'Institutional capacity and legitimacy',
+    'livelihoods-opportunity': 'Livelihoods and economic opportunity',
+    'context-analysis-monitoring': 'Context analysis and monitoring',
+    'trust-collaboration': 'Trust and collaboration',
+    'flexible-adaptive-delivery': 'Flexible and adaptive delivery',
+}
+
+
+def climate_lens_entry(
+    diagnostic: dict[str, Any],
+) -> dict[str, Any] | None:
+    """Return the normalized Climate entry without trusting raw client fields."""
+
+    lenses = diagnostic.get('lenses', []) if isinstance(diagnostic, dict) else []
+    return next((
+        item for item in lenses
+        if isinstance(item, dict) and item.get('lens_id') == 'climate'
+    ), None)
+
+
+def climate_integration_payload(diagnostic: dict[str, Any]) -> dict[str, Any] | None:
+    """Return the climate integration level/summary for SSE done payloads, or None."""
+    lens = climate_lens_entry(diagnostic)
+    if not lens or not lens.get("integration_level"):
+        return None
+    return {
+        "level": lens.get("integration_level", ""),
+        "summary": lens.get("integration_summary", ""),
+    }
+
+
+def climate_materiality_level(lens: dict[str, Any] | None) -> str:
+    """Resolve the three-level Climate scale with a safe legacy mapping."""
+
+    level = str((lens or {}).get('materiality_level', '')).lower()
+    if level in {'high', 'medium', 'low'}:
+        return level
+    return 'medium' if (lens or {}).get('applicability') == 'material' else 'low'
+
+
+def warn_on_missing_high_climate_priority(
+    priorities: list[dict[str, Any]],
+    diagnostic: dict[str, Any],
+) -> bool:
+    """Warn when a high-materiality Climate readout loses priority provenance."""
+
+    climate = climate_lens_entry(diagnostic)
+    if climate_materiality_level(climate) != 'high':
+        return False
+    if any(
+        'climate' in priority.get('lens_ids', [])
+        for priority in priorities
+        if isinstance(priority, dict)
+    ):
+        return False
+    app.logger.warning(
+        'High Climate-FCV materiality produced no climate-tagged priority; '
+        'review Stage 3 ranking and provenance extraction.'
+    )
+    return True
+
+
+def climate_dividend_groups(
+    lens: dict[str, Any],
+    registry=None,
+) -> list[dict[str, Any]]:
+    """Return complete, evidence-grounded dividend pathways within tier limits."""
+
+    registry = registry or SECTOR_LENS_REGISTRY
+    module = registry.get('climate')
+    if not module:
+        return []
+    level = climate_materiality_level(lens)
+    remaining = {'high': 6, 'medium': 4, 'low': 1}[level]
+    model_sections = {
+        section.get('section_id'): section
+        for section in lens.get('readout_sections', [])
+        if isinstance(section, dict)
+    }
+    additional = [
+        pathway for pathway in lens.get('additional_pathways', [])
+        if isinstance(pathway, dict)
+    ]
+    groups: list[dict[str, Any]] = []
+    for declared in module.readout_sections:
+        if remaining < 1:
+            break
+        baseline = [
+            dict(item, title=_CLIMATE_PATHWAY_LABELS.get(
+                item.get('item_id'),
+                str(item.get('item_id', '')).replace('-', ' ').title(),
+            ))
+            for item in model_sections.get(declared.id, {}).get('items', [])
+            if isinstance(item, dict) and item.get('item_id') in declared.item_ids
+        ]
+        extras = [
+            dict(item, title=item.get('title', ''))
+            for item in additional
+            if item.get('section_id') == declared.id
+        ]
+        visible: list[dict[str, Any]] = []
+        for item in baseline + extras:
+            evidence = [
+                value for value in item.get('evidence', [])
+                if isinstance(value, str) and value.strip()
+            ] if isinstance(item.get('evidence'), list) else []
+            contribution = (
+                item.get('project_contribution') or item.get('mechanism') or ''
+            )
+            strengthening = (
+                item.get('strengthening_action') or item.get('evidence_gap') or ''
+            )
+            status = item.get('status')
+            if (
+                status not in {'supported', 'potential'}
+                or not contribution
+                or not strengthening
+                or (status == 'potential' and not evidence)
+            ):
+                continue
+            visible.append({
+                **item,
+                'project_contribution': contribution,
+                'strengthening_action': strengthening,
+            })
+            if len(visible) >= remaining:
+                break
+        if visible:
+            groups.append({
+                'section_id': declared.id,
+                'title': declared.title,
+                'items': visible,
+            })
+            remaining -= len(visible)
+    return groups
+
+
 @app.route('/api/download-report', methods=['POST'])
 def download_report():
     """Generate a DOCX mirroring the full Stage 3 web output structure."""
@@ -6996,7 +9146,75 @@ def download_report():
     p4r_watch = data.get('p4r_watch') or []
     regional_watch = data.get('regional_watch') or []
     horizon = data.get('horizon_considerations', '')
+    wider_fcv_context = data.get('wider_fcv_context')
+    if isinstance(wider_fcv_context, str):
+        wider_fcv_context = wider_fcv_context.strip()[:1200] or None
+    else:
+        wider_fcv_context = None
     under_hood = data.get('under_hood') or {}
+    requested_report_lenses = data.get('active_lenses') or []
+    report_ids = [item.get('id') for item in requested_report_lenses if isinstance(item, dict) and item.get('id')]
+    report_versions = {
+        item['id']: item.get('version', '')
+        for item in requested_report_lenses
+        if isinstance(item, dict) and item.get('id')
+    }
+    report_selection = resolve_active_lenses(SECTOR_LENS_REGISTRY, report_ids, report_versions)
+    active_lenses = [
+        {
+            'id': lens.id,
+            'version': lens.version,
+            'position': 'primary' if index == 0 else 'secondary',
+        }
+        for index, lens in enumerate(report_selection.lenses)
+    ]
+    active_report_ids = {item['id'] for item in active_lenses}
+    normalized_priorities = []
+    for priority in priorities if isinstance(priorities, list) else []:
+        if not isinstance(priority, dict):
+            continue
+        priority = dict(priority)
+        raw_ids = priority.get('lens_ids', [])
+        priority['lens_ids'] = list(dict.fromkeys(
+            value.strip() for value in raw_ids
+            if isinstance(value, str) and value.strip() in active_report_ids
+        )) if isinstance(raw_ids, list) else []
+        relevance = priority.get('lens_relevance', '')
+        priority['lens_relevance'] = (
+            relevance.strip()[:500]
+            if isinstance(relevance, str) and priority['lens_ids'] else ''
+        )
+        normalized_priorities.append(priority)
+    priorities = normalized_priorities
+    report_source_ids = {
+        lens.id: {source.id for source in lens.sources} for lens in report_selection.lenses
+    }
+    report_readout_schema = {
+        lens.id: {
+            section.id: set(section.item_ids)
+            for section in lens.readout_sections
+        }
+        for lens in report_selection.lenses
+    }
+    lens_context_sources = normalize_lens_context_sources(
+        data.get('lens_context_sources'), active_report_ids
+    )
+    for source in lens_context_sources:
+        report_source_ids[source['lens_id']].add(source['id'])
+    lens_diagnostic = normalize_lens_diagnostic(
+        data.get('lens_diagnostic') or {},
+        [lens.id for lens in report_selection.lenses],
+        report_source_ids,
+        report_readout_schema,
+    ) if report_selection.lenses else {}
+    climate_active = 'climate' in active_report_ids
+    climate_readout = climate_lens_entry(lens_diagnostic)
+    climate_error = climate_active and (
+        not isinstance(lens_diagnostic, dict)
+        or bool(lens_diagnostic.get('error'))
+        or climate_readout is None
+    )
+    climate_valid = climate_active and not climate_error
     meta = data.get('metadata', {})
 
     date_str = meta.get('date_str', '')
@@ -7068,6 +9286,369 @@ def download_report():
         vp = doc.add_paragraph(str(value))
         vp.paragraph_format.space_before = Pt(0)
 
+    def add_sr_sections():
+        if sensitivity_summary or fcv_rating:
+            _add_section_heading('FCV Sensitivity')
+            if fcv_rating:
+                _add_single_para(
+                    fcv_rating, bold=True, color=WB_NAVY, space_after=2
+                )
+            if sensitivity_summary:
+                _md_to_docx_para(doc, sensitivity_summary)
+        if responsiveness_summary or fcv_resp_rating:
+            _add_section_heading('FCV Responsiveness')
+            if fcv_resp_rating:
+                _add_single_para(
+                    fcv_resp_rating, bold=True, color=WB_NAVY, space_after=2
+                )
+            if responsiveness_summary:
+                _md_to_docx_para(doc, responsiveness_summary)
+
+    def add_core_risk_exposure():
+        risks_to = risk_exposure.get('risks_to', '')
+        risks_from = risk_exposure.get('risks_from', '')
+        if not risks_to and not risks_from:
+            return
+        _add_section_heading('FCV Risk Exposure')
+        if risks_to:
+            _add_single_para(
+                'How FCV risks could affect this project:',
+                bold=True,
+                space_after=1,
+            )
+            _add_single_para(risks_to, space_before=0)
+        if risks_from:
+            _add_single_para(
+                'How this project could affect FCV dynamics:',
+                bold=True,
+                space_after=1,
+            )
+            _add_single_para(risks_from, space_before=0)
+
+    def add_climate_notice():
+        if not climate_active:
+            return
+        _add_section_heading('How relevant is climate to this project?')
+        evidence_base = (
+            'These reflections and recommendations draw on a core set of climate '
+            'and FCV frameworks and evidence, including: Maximizing the Peace and '
+            'Social Dividends of Climate Action; the FCV-Sensitive Climate Action '
+            'Framework; and the Defueling Conflict series, alongside other World '
+            'Bank and external sources.'
+        )
+        if climate_error:
+            _add_single_para(
+                'You selected the Climate-FCV module, but a validated '
+                'Climate-FCV diagnostic could not be produced. The note therefore '
+                'retains the core FCV assessment and does not add unvalidated '
+                'climate findings.'
+            )
+            _add_single_para(evidence_base, size=9, color=WB_GRAY)
+            return
+        level = climate_materiality_level(climate_readout)
+        wording = {
+            'high': (
+                'You selected the Climate-FCV module. The tool has therefore '
+                'applied a strong climate emphasis across this FCV assessment, '
+                'examining how Climate-FCV risks may affect the project and how '
+                'project design could strengthen climate resilience and wider '
+                'FCV outcomes.'
+            ),
+            'medium': (
+                'You selected the Climate-FCV module. The tool has applied a '
+                'focused climate emphasis to the parts of this FCV assessment '
+                'where Climate-FCV risks, opportunities, and delivery choices '
+                'are material to the project.'
+            ),
+            'low': (
+                'You selected the Climate-FCV module. The assessment found '
+                'limited climate materiality for this project. Climate '
+                'considerations are therefore included with a light emphasis '
+                'alongside the wider FCV sensitivity and responsiveness assessment.'
+            ),
+        }
+        _add_single_para(
+            f'{level.title()} materiality',
+            bold=True,
+            color=WB_NAVY,
+            space_after=2,
+        )
+        _add_single_para(wording[level])
+        add_field('Materiality', climate_readout.get('materiality_summary'))
+        if not climate_readout_is_complete(climate_readout):
+            _add_single_para(
+                'Note: a full Climate-FCV reflections and integration readout '
+                'could not be generated for this run. The climate-FCV '
+                'interactions below are shown, but the reflections on the core '
+                'climate-FCV questions and the integration readout are '
+                'unavailable and were not substituted.',
+                size=9,
+                color=AMBER,
+            )
+        _add_single_para(evidence_base, size=9, color=WB_GRAY)
+
+    def add_causal_strip(pathway):
+        """Emit a single plain-language prose paragraph for one causal pathway."""
+        bits = [
+            pathway.get('pressure'),
+            pathway.get('mechanism'),
+            pathway.get('project_implication'),
+        ]
+        bits = [str(b).strip() for b in bits if b and str(b).strip()]
+        if len(bits) < 2:
+            return
+        horizon_map = {
+            'current-near-term': 'in the near term',
+            'project-lifetime': "over the project's life",
+            'asset-system-lifetime': 'over the life of the assets',
+        }
+        time_horizons = pathway.get('time_horizons', [])
+        horizons = [
+            horizon_map[v]
+            for v in (time_horizons if isinstance(time_horizons, list) else [])
+            if v in horizon_map
+        ]
+
+        def _sentence(text):
+            text = str(text).strip()
+            if not text:
+                return ''
+            return text if text[-1] in '.!?' else text + '.'
+
+        core = ' '.join(_sentence(b) for b in bits if _sentence(b))
+        horizon_note = (
+            ' This matters ' + ' and '.join(horizons) + '.'
+            if horizons else ''
+        )
+        para = doc.add_paragraph(core + horizon_note)
+        para.paragraph_format.space_after = Pt(4)
+        design_response = pathway.get('design_response')
+        if design_response:
+            run = para.add_run(' How the design responds: ')
+            run.bold = True
+            para.add_run(_sentence(design_response))
+        gap = pathway.get('evidence_gap')
+        if gap:
+            run = para.add_run(' Still to confirm: ')
+            run.italic = True
+            para.add_run(_sentence(gap))
+        anchors = []
+        for key in (
+            'project_elements', 'geographies', 'affected_groups',
+            'systems_or_assets',
+        ):
+            values = pathway.get(key, [])
+            if isinstance(values, list):
+                anchors.extend(str(v).strip() for v in values if v)
+        anchors = anchors[:5]
+        if anchors:
+            run = para.add_run(' Key locations and components: ')
+            run.bold = True
+            para.add_run(', '.join(anchors) + '.')
+
+    def add_policy_boundary():
+        doc.add_paragraph(
+            'This is an advisory FCV screening readout. It does not determine '
+            'ESF or ESS compliance or an environmental and social risk '
+            'classification, and does not replace review by the Task Team\'s '
+            'accredited E&S specialist.'
+        )
+
+    def add_climate_integration_line():
+        payload = climate_integration_payload(lens_diagnostic)
+        if not payload:
+            return
+        labels = {
+            'well_integrated': 'Well integrated',
+            'partly_integrated': 'Partly integrated',
+            'weakly_integrated': 'Weakly integrated',
+            'insufficient_evidence': 'Insufficient evidence',
+        }
+        _add_section_heading('How well does the project integrate climate and FCV?', level=2)
+        p = doc.add_paragraph()
+        r = p.add_run(
+            labels.get(payload['level'], 'Insufficient evidence')
+            + (f" — {payload['summary']}" if payload.get('summary') else '')
+        )
+        r.bold = False
+
+    def add_climate_reflections():
+        reflections = (climate_readout or {}).get('reflections', []) if climate_readout else []
+        if not reflections:
+            return
+        _add_section_heading('Reflections on core climate and FCV considerations', level=2)
+        for ref in reflections:
+            p = doc.add_paragraph()
+            head = p.add_run((ref.get('title') or '').strip())
+            head.bold = True
+            if ref.get('status_cue'):
+                p.add_run(f"  [{ref['status_cue']}]")
+            doc.add_paragraph(ref.get('text', ''))
+        less = (climate_readout or {}).get('less_central')
+        if less:
+            doc.add_paragraph(f'Less central here: {less}')
+        for field_label, field_key in (
+            ('Sensitivity evidence', 'sensitivity_evidence'),
+            ('Responsiveness evidence', 'responsiveness_evidence'),
+        ):
+            items = (climate_readout or {}).get(field_key) if climate_readout else None
+            if isinstance(items, list) and items:
+                p = doc.add_paragraph()
+                r = p.add_run(f'{field_label}: ')
+                r.bold = True
+                for item in items:
+                    doc.add_paragraph(str(item), style='List Bullet')
+
+    def add_wider_fcv_context():
+        if not wider_fcv_context:
+            return
+        _add_section_heading('Wider FCV context', level=2)
+        doc.add_paragraph(wider_fcv_context)
+
+    def add_climate_interactions():
+        labels = {
+            'climate-fcv-on-project': (
+                'How climate and FCV dynamics could affect this project'
+            ),
+            'project-on-climate-fcv': (
+                'How this project could affect climate and FCV dynamics'
+            ),
+        }
+        interactions = [
+            item for item in climate_readout.get('interaction_readout', [])
+            if isinstance(item, dict)
+            and item.get('direction_id') in labels
+            and (item.get('summary') or item.get('narrative'))
+        ][:2]
+        if not interactions:
+            return
+        for interaction in interactions:
+            _add_section_heading(
+                labels[interaction['direction_id']], level=2
+            )
+            if interaction.get('summary'):
+                _add_single_para(interaction['summary'], space_before=0, bold=True)
+            narrative = str(interaction.get('narrative', '')).strip()
+            if narrative:
+                # Prefer the model-authored flowing narrative; fall back to the
+                # stitched causal strips only when no narrative was produced.
+                for para in re.split(r'\n\s*\n', narrative):
+                    para = para.strip()
+                    if para:
+                        _add_single_para(para, space_before=0)
+            else:
+                for pathway in interaction.get('pathways', []):
+                    if isinstance(pathway, dict):
+                        add_causal_strip(pathway)
+
+    def add_climate_dividend_synthesis():
+        groups = climate_dividend_groups(climate_readout)
+        items = [
+            item for group in groups for item in group.get('items', [])
+            if isinstance(item, dict)
+            and (item.get('project_contribution') or item.get('mechanism'))
+            and (item.get('strengthening_action') or item.get('evidence_gap'))
+        ]
+        if not items:
+            return
+        _add_section_heading('Climate, peace and social dividends')
+
+        def _sentence(text):
+            text = str(text or '').strip()
+            if not text:
+                return ''
+            return text if text[-1] in '.!?' else text + '.'
+
+        contribs = [
+            _sentence(item.get('project_contribution') or item.get('mechanism'))
+            for item in items
+        ]
+        contribs = [c for c in contribs if c]
+        if contribs:
+            doc.add_paragraph(
+                'The current design already contributes to climate, peace and '
+                'social dividends in several practical ways. ' + ' '.join(contribs)
+            )
+        strengthens = [
+            _sentence(item.get('strengthening_action') or item.get('evidence_gap'))
+            for item in items
+        ]
+        strengthens = [s for s in strengthens if s]
+        if strengthens:
+            doc.add_paragraph(
+                'There are clear opportunities to strengthen these contributions '
+                'further. ' + ' '.join(strengthens)
+            )
+        item_ids = {
+            item.get('item_id') or item.get('pathway_id')
+            for item in items
+            if item.get('item_id') or item.get('pathway_id')
+        }
+        linked_priorities = []
+        for index, priority in enumerate(priorities):
+            links = priority.get('climate_links') or {}
+            dividend_ids = links.get('dividend_pathway_ids', [])
+            if (
+                isinstance(dividend_ids, list)
+                and any(value in item_ids for value in dividend_ids)
+            ):
+                linked_priorities.append(
+                    f'Priority {index + 1} ({priority.get("title", "")})'
+                )
+        if linked_priorities:
+            doc.add_paragraph(
+                'These opportunities are carried forward by '
+                + ', '.join(linked_priorities) + '.'
+            )
+        watchpoints = [
+            str(item.get('trade_off')).strip()
+            for item in items if item.get('trade_off')
+        ]
+        if watchpoints:
+            para = doc.add_paragraph()
+            run = para.add_run('Watch points: ')
+            run.italic = True
+            para.add_run(' '.join(watchpoints))
+
+    def add_priority_compliance(priority):
+        compliance_labels = {
+            'mandatory_reference': 'Mandatory reference — verify against ESF/OPCS requirements',
+            'document_commitment': 'Existing project-document commitment',
+            'advisory': 'Advisory (good practice)',
+        }
+        status = priority.get('policy_status')
+        if compliance_labels.get(status):
+            p = doc.add_paragraph()
+            p.add_run('Policy status: ').bold = True
+            p.add_run(compliance_labels[status])
+        ref = priority.get('specialist_referral')
+        if isinstance(ref, dict) and ref.get('route') and ref.get('reason'):
+            p = doc.add_paragraph()
+            label = 'Referral suggested: ' if ref.get('required') else 'Consider referral: '
+            p.add_run(label).bold = True
+            p.add_run(f"{ref['route']} — {ref['reason']}")
+
+    def add_priority_climate_contribution(priority):
+        links = priority.get('climate_links') or {}
+        if links.get('status') == 'linked':
+            add_field(
+                'Climate, peace and social dividend contribution',
+                ' '.join(
+                    str(value) for value in (
+                        links.get('contribution'),
+                        links.get('strengthening_effect'),
+                    ) if value
+                ),
+            )
+            return
+        add_field(
+            'No material dividend pathway identified',
+            links.get('reason') or (
+                'This priority remains important to the wider FCV assessment '
+                'but has no material Climate-FCV dividend pathway.'
+            ),
+        )
+
     try:
         doc = DocxDocument()
 
@@ -7097,6 +9678,8 @@ def download_report():
             notice.runs[0].bold = True
             notice.runs[0].font.color.rgb = AMBER
 
+        add_climate_notice()
+
         # ── Main narrative (executive summary, operational context, strengths, gaps) ──
         # The summary text uses markdown headings (## / ###) and body paragraphs.
         # _md_to_docx_para handles headings, skips ---, handles bold/italic.
@@ -7111,32 +9694,17 @@ def download_report():
         )
 
         # ── FCV Risk Exposure ──
-        risks_to = risk_exposure.get('risks_to', '')
-        risks_from = risk_exposure.get('risks_from', '')
-        if risks_to or risks_from:
-            _add_section_heading('FCV Risk Exposure')
-            if risks_to:
-                _add_single_para('How FCV risks could affect this project:', bold=True, space_after=1)
-                _add_single_para(risks_to, space_before=0)
-            if risks_from:
-                _add_single_para('How this project could affect FCV dynamics:', bold=True, space_after=1)
-                _add_single_para(risks_from, space_before=0)
+        if climate_valid:
+            add_policy_boundary()
+            add_climate_integration_line()
+            add_climate_interactions()
+            add_climate_reflections()
+            add_climate_dividend_synthesis()
+            add_wider_fcv_context()
+        else:
+            add_core_risk_exposure()
+            add_sr_sections()
 
-        # ── FCV Sensitivity ──
-        if sensitivity_summary or fcv_rating:
-            _add_section_heading('FCV Sensitivity')
-            if fcv_rating:
-                _add_single_para(fcv_rating, bold=True, color=WB_NAVY, space_after=2)
-            if sensitivity_summary:
-                _md_to_docx_para(doc, sensitivity_summary)
-
-        # ── FCV Responsiveness ──
-        if responsiveness_summary or fcv_resp_rating:
-            _add_section_heading('FCV Responsiveness')
-            if fcv_resp_rating:
-                _add_single_para(fcv_resp_rating, bold=True, color=WB_NAVY, space_after=2)
-            if responsiveness_summary:
-                _md_to_docx_para(doc, responsiveness_summary)
 
         # ── Priority Actions for the Task Team (summary table) ──
         if priorities:
@@ -7205,6 +9773,8 @@ def download_report():
                     meta_parts.append(f'Scope: {pr["priority_scope"]}')
                 if pr.get('governance_level'):
                     meta_parts.append(f'Governance level: {pr["governance_level"]}')
+                if pr.get('lens_ids'):
+                    meta_parts.append(f'Sector lenses: {", ".join(pr["lens_ids"])}')
                 if meta_parts:
                     _add_single_para(' | '.join(meta_parts), size=9, color=WB_GRAY)
 
@@ -7212,7 +9782,14 @@ def download_report():
                 add_field('Why It Matters', pr.get('why_it_matters'))
                 add_field('CPF Alignment', pr.get('cpf_alignment'))
                 add_field('RRA Driver Alignment', pr.get('rra_driver_alignment'))
-                add_field('Differentiated approach note', pr.get('country_category_relevance'))
+                if climate_valid:
+                    add_priority_climate_contribution(pr)
+                    add_priority_compliance(pr)
+                else:
+                    add_field(
+                        'Differentiated approach note',
+                        pr.get('country_category_relevance'),
+                    )
 
                 actions = pr.get('actions', [])
                 if actions:
@@ -7325,6 +9902,57 @@ def download_report():
                 _add_section_heading('Diagnostic Questions Assessment (25 Questions)', level=2)
                 if not _add_md_table(doc, questions_map):
                     _md_to_docx_para(doc, questions_map)
+
+        findings = lens_diagnostic.get('findings', []) if isinstance(lens_diagnostic, dict) else []
+        if active_lenses or findings:
+            doc.add_page_break()
+            appendix = doc.add_heading('Appendix: Sector-Lens Sources and Evidence', level=1)
+            if appendix.runs:
+                appendix.runs[0].font.color.rgb = WB_NAVY
+            _add_single_para(
+                'Sector lenses supplement the common FCV framework. They do not create a separate score or alter the rating denominator.',
+                size=9, color=WB_GRAY, italic=True, space_after=8
+            )
+            for item in active_lenses:
+                if not isinstance(item, dict) or not item.get('id'):
+                    continue
+                lens = SECTOR_LENS_REGISTRY.get(item['id'])
+                label = lens.metadata.name if lens else item['id']
+                _add_section_heading(f'{label} (v{item.get("version", "unknown")})', level=2)
+                if lens:
+                    for source in lens.sources:
+                        citation = source.title
+                        if source.citation:
+                            citation += f' | {source.citation}'
+                        if source.url:
+                            citation += f' | {source.url}'
+                        _add_single_para(f'[{source.id}] {citation}', size=9, space_after=2)
+            if lens_context_sources:
+                _add_section_heading('Country context used', level=2)
+                for source in lens_context_sources:
+                    details = source['title']
+                    if source.get('publication_date'):
+                        details += f' | {source["publication_date"]}'
+                    if source.get('location'):
+                        details += f' | {source["location"]}'
+                    details += f' | {source["url"]}'
+                    _add_single_para(details, size=9, space_after=2)
+            if findings:
+                _add_section_heading('Diagnostic evidence', level=2)
+                for finding in findings:
+                    if not isinstance(finding, dict):
+                        continue
+                    lens_ids = ', '.join(finding.get('lens_ids', []))
+                    mappings = ', '.join(finding.get('core_mappings', []))
+                    sources = ', '.join(finding.get('source_ids', []))
+                    _add_single_para(
+                        f'{lens_ids} | {finding.get("status", "")} | Core mapping: {mappings}',
+                        bold=True, size=9, color=WB_NAVY, space_after=1
+                    )
+                    for evidence in finding.get('evidence', []):
+                        _add_single_para(str(evidence), size=9, space_before=0, space_after=1)
+                    if sources:
+                        _add_single_para(f'Source IDs: {sources}', size=8.5, color=WB_LGRAY, italic=True, space_after=5)
 
         # ── Write to buffer ──
         buf = io.BytesIO()

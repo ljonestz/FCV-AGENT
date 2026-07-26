@@ -1,0 +1,31 @@
+id: climate
+name: Climate-FCV Lens
+version: 1.1.0
+description: Screens material climate risks, project effects, credible climate co-benefits, and peace and social dividend pathways through an FCV lens.
+status: enabled
+activation: manual
+aliases: [climate, climate change]
+compatibility:
+  compatible_with: ["*"]
+  incompatible_with: []
+readout_sections:
+  - id: invest-in
+    title: Where the project could build climate, peace, and social dividends
+    item_ids:
+      - social-cohesion-inclusion
+      - institutional-capacity-legitimacy
+      - livelihoods-opportunity
+  - id: deliver-through
+    title: How project design and delivery could strengthen those dividends
+    item_ids:
+      - context-analysis-monitoring
+      - trust-collaboration
+      - flexible-adaptive-delivery
+budgets:
+  stage1: 550
+  stage2: 1850
+  stage3: 180
+stage_instructions:
+  stage1: Collect only evidence needed to establish High, Medium, or Low Climate-FCV materiality, two-way causal pathways, affected groups, delivery constraints, and plausible dividend entry points. Do not diagnose or recommend.
+  stage2: Assign proportionate materiality and keep every pathway and finding at the intersection of a climate and an FCV dynamic. Match terminology to the instrument type rather than assuming IPF or ESF applies. For both interaction directions give stable pathway_id values and causal chains from pressure through mechanism to project implication and design response, naming project elements, locations or groups, evidence, uncertainty, and current-near-term, project-lifetime, or asset-system-lifetime horizons where they matter. Return integration_level, integration_summary, and three to five reflections against the core climate-FCV questions, surfacing only the material ones. Keep selective dividend pathways distinct and suppress generic claims.
+  stage3: Produce a dedicated climate-FCV note. Write the two interaction directions as flowing prose rather than a diagram, a reflections read on the material core questions, and one qualitative dividends synthesis distinguishing what the project funds from how it is delivered. Integrate material findings into one common priority list of at most five substantive priorities, add a wider_fcv_context note for any material non-climate FCV issue, keep framework recommendations distinct from OPCS requirements, and avoid generic climate advice.

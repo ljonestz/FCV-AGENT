@@ -5,6 +5,7 @@ Run with: python -m pytest tests/test_extract_priorities.py -v
 import sys, os, json, re
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import pytest
+import app as app_module
 from app import extract_priorities
 
 
@@ -375,3 +376,202 @@ class TestActionTiming:
     def test_empty_timing_nulled(self):
         result = extract_priorities(_make_timing_fixture(''))
         assert result['priorities'][0]['action_timing'] is None
+
+
+def test_lens_provenance_is_filtered_bounded_and_has_no_type_quota():
+    fixture = _make_timing_fixture('supervision')
+    payload = json.loads(re.search(
+        r'%%%JSON_START%%%(.*?)%%%JSON_END%%%', fixture, re.DOTALL
+    ).group(1))
+    payload['priorities'][0]['lens_ids'] = ['climate', 'invented', 'climate']
+    payload['priorities'][0]['lens_relevance'] = 'r' * 700
+    payload['priorities'][0]['priority_type'] = 'climate'
+    wrapped = f"%%%JSON_START%%%\n{json.dumps(payload)}\n%%%JSON_END%%%"
+
+    result = extract_priorities(wrapped, active_lens_ids=['climate'])
+    priority = result['priorities'][0]
+
+    assert priority['lens_ids'] == ['climate']
+    assert len(priority['lens_relevance']) == 500
+    assert 'priority_type' not in priority
+
+
+def test_active_lens_output_is_capped_at_five_priorities_only():
+    fixture = _make_timing_fixture('supervision')
+    payload = json.loads(re.search(
+        r'%%%JSON_START%%%(.*?)%%%JSON_END%%%', fixture, re.DOTALL
+    ).group(1))
+    payload['priorities'] = [
+        {**payload['priorities'][0], 'title': f'Priority {index + 1}'}
+        for index in range(6)
+    ]
+    wrapped = f"%%%JSON_START%%%\n{json.dumps(payload)}\n%%%JSON_END%%%"
+
+    active = extract_priorities(wrapped, active_lens_ids=['climate'])
+    core_only = extract_priorities(wrapped)
+
+    payload['priorities'].append({
+        **payload['priorities'][0],
+        'title': 'Mandatory SEA/SH standalone safeguard',
+    })
+    with_exception = extract_priorities(
+        f"%%%JSON_START%%%\n{json.dumps(payload)}\n%%%JSON_END%%%",
+        active_lens_ids=['climate'],
+    )
+
+    assert len(active['priorities']) == 5
+    assert len(core_only['priorities']) == 6
+    assert len(with_exception['priorities']) == 6
+    assert with_exception['priorities'][-1]['title'] == (
+        'Mandatory SEA/SH standalone safeguard'
+    )
+
+
+def test_extract_priorities_captures_wider_fcv_context():
+    text = (
+        "%%%JSON_START%%%"
+        '{"fcv_rating":"Moderate","fcv_responsiveness_rating":"Moderate",'
+        '"sensitivity_summary":"s","responsiveness_summary":"r",'
+        '"risk_exposure":{"risks_to":"some risk","risks_from":"some risk"},'
+        '"wider_fcv_context":"Reliance on contested state structures is a non-climate FCV risk.",'
+        '"priorities":[{"title":"Test priority in Karamoja","fcv_dimension":"Inclusion",'
+        '"tag":"[S]","risk_level":"High","the_gap":"Gap in Kotido district.","why_it_matters":"Why.",'
+        '"actions":[],"who_acts":"TTL","when":"Before appraisal","resources":"Minimal",'
+        '"action_timing":"required-before-appraisal"}]}'
+        "%%%JSON_END%%%"
+    )
+    result = extract_priorities(text)
+    assert result["wider_fcv_context"].startswith("Reliance on contested")
+
+
+def test_extract_priorities_wider_fcv_defaults_none():
+    text = (
+        "%%%JSON_START%%%"
+        '{"fcv_rating":"Moderate",'
+        '"priorities":[{"title":"Test priority in Karamoja","fcv_dimension":"Inclusion",'
+        '"tag":"[S]","risk_level":"High","the_gap":"Gap in Kotido.","why_it_matters":"Why.",'
+        '"actions":[],"who_acts":"TTL","when":"Before appraisal","resources":"Minimal",'
+        '"action_timing":"required-before-appraisal"}]}'
+        "%%%JSON_END%%%"
+    )
+    assert extract_priorities(text).get("wider_fcv_context") is None
+
+
+# ── policy_status and specialist_referral field tests ────────────────────────
+
+def _wrap_priorities(priorities_json):
+    return (
+        "%%%JSON_START%%%"
+        '{"fcv_rating":"Moderate","fcv_responsiveness_rating":"Moderate",'
+        '"sensitivity_summary":"s","responsiveness_summary":"r",'
+        '"risk_exposure":{"risks_to":[],"risks_from":[]},'
+        '"priorities":[' + priorities_json + "]}"
+        "%%%JSON_END%%%"
+    )
+
+
+def test_priority_policy_status_and_referral_parse():
+    pr = (
+        '{"title":"Negotiate water allocation in Baidoa","fcv_dimension":"Inclusion",'
+        '"tag":"[S]","refresh_shift":"Shift A: Anticipate","action_timing":"required-before-appraisal",'
+        '"risk_level":"High","the_gap":"Gap in Baidoa district.","why_it_matters":"Why it matters.",'
+        '"actions":[{"document_element":"PAD","guidance":"Add targeting criteria.","suggested_language":"y"}],'
+        '"who_acts":"TTL","when":"Before appraisal","resources":"Minimal","pad_sections":"Annex 2",'
+        '"implementation_note":"n","cpf_alignment":null,'
+        '"policy_status":"document_commitment",'
+        '"specialist_referral":{"required":true,"route":"Task Team E&S specialist","reason":"Possible conflict with ESCP action on water use."}}'
+    )
+    result = extract_priorities(_wrap_priorities(pr))
+    p = result["priorities"][0]
+    assert p["policy_status"] == "document_commitment"
+    assert p["specialist_referral"]["route"] == "Task Team E&S specialist"
+    assert p["specialist_referral"]["required"] is True
+
+
+def test_priority_policy_status_invalid_defaults_not_determined():
+    pr = (
+        '{"title":"Strengthen committees in Kismayo","fcv_dimension":"Inclusion",'
+        '"tag":"[R]","refresh_shift":"Shift A: Anticipate","action_timing":"supervision",'
+        '"risk_level":"High","the_gap":"Gap in Kismayo.","why_it_matters":"Why.",'
+        '"actions":[{"document_element":"PAD","guidance":"x","suggested_language":"y"}],'
+        '"who_acts":"TTL","when":"now","resources":"Minimal","pad_sections":"S",'
+        '"implementation_note":"n","cpf_alignment":null,'
+        '"policy_status":"totally_made_up","specialist_referral":{"route":"NotARealRoute","reason":""}}'
+    )
+    result = extract_priorities(_wrap_priorities(pr))
+    p = result["priorities"][0]
+    assert p["policy_status"] == "not_determined"
+    assert p["specialist_referral"] is None
+
+
+def test_priority_policy_status_absent_defaults():
+    pr = (
+        '{"title":"Map exclusion risk in Gedo","fcv_dimension":"Inclusion",'
+        '"tag":"[S]","refresh_shift":"Shift A: Anticipate","action_timing":"supervision",'
+        '"risk_level":"Low","the_gap":"Gap in Gedo district.","why_it_matters":"Why.",'
+        '"actions":[{"document_element":"PAD","guidance":"x","suggested_language":"y"}],'
+        '"who_acts":"TTL","when":"now","resources":"Minimal","pad_sections":"S",'
+        '"implementation_note":"n","cpf_alignment":null}'
+    )
+    p = extract_priorities(_wrap_priorities(pr))["priorities"][0]
+    assert p["policy_status"] == "not_determined"
+    assert p["specialist_referral"] is None
+
+
+# ── Task 1: Graceful per-priority climate_links gate ─────────────────────────
+
+def _stage3_block(priorities):
+    payload = {
+        "fcv_rating": "Moderate", "fcv_responsiveness_rating": "Moderate",
+        "sensitivity_summary": "s", "responsiveness_summary": "r",
+        "risk_exposure": {"risks_to": "x", "risks_from": "y"},
+        "priorities": priorities,
+    }
+    return "%%%JSON_START%%%" + json.dumps(payload) + "%%%JSON_END%%%"
+
+
+def _climate_diag_for_test():
+    return {"lenses": [{
+        "lens_id": "climate", "applicability": "material",
+        "materiality_level": "high", "materiality_summary": "m",
+        "integration_level": "partly_integrated", "integration_summary": "ok",
+        "reflections": [{"question_key": "cq1_interaction", "title": "t",
+                         "status_cue": "ok", "text": "grounded"}],
+        "interaction_readout": [{
+            "direction_id": "climate-fcv-on-project", "summary": "s",
+            "pathways": [{"pathway_id": "climate-fcv-on-project-1",
+                          "pressure": "p", "mechanism": "m",
+                          "project_implication": "i", "design_response": "d"}],
+        }],
+        "readout_sections": [], "additional_pathways": [],
+        "sensitivity_evidence": [], "responsiveness_evidence": [], "less_central": "",
+    }], "findings": []}
+
+
+def _priority_for_test(title, climate_links):
+    return {
+        "title": title, "fcv_dimension": "Contextual awareness", "tag": "[S]",
+        "refresh_shift": "Shift A: Anticipate", "risk_level": "High",
+        "the_gap": "g in Bentiu", "why_it_matters": "w", "actions": [
+            {"document_element": "PAD", "guidance": "do X in Bentiu", "suggested_language": ""}],
+        "who_acts": "TTL", "when": "before appraisal",
+        "action_timing": "required-before-appraisal", "resources": "r",
+        "pad_sections": "SORT", "implementation_note": "n", "cpf_alignment": None,
+        "climate_links": climate_links,
+    }
+
+
+def test_climate_links_failure_keeps_priorities_and_counts_unlinked():
+    good = {"status": "linked",
+            "interaction_pathway_ids": ["climate-fcv-on-project-1"],
+            "contribution": "c", "strengthening_effect": "s"}
+    priorities = [_priority_for_test("Good one", good), _priority_for_test("Bad one", {"status": "bogus"})]
+    result = app_module.extract_priorities(
+        _stage3_block(priorities), ["Doc.pdf"], ["climate"], _climate_diag_for_test())
+    assert result["error"] is False
+    assert len(result["priorities"]) == 2
+    assert result["climate_unlinked"] == 1
+    assert result["climate_total"] == 2
+    assert "climate" in result["priorities"][0]["lens_ids"]
+    assert "climate" not in result["priorities"][1]["lens_ids"]
+    assert result["priorities"][1]["climate_links"] is None
