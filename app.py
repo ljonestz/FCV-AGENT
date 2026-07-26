@@ -2816,6 +2816,23 @@ def extract_regime_context(stage1_output: str, instrument: str = "IPF") -> dict:
     return fields
 
 
+def appraisal_document_label(preparation_regime: str, instrument: str) -> str:
+    """Render the displayed name of the design-stage appraisal document per regime.
+
+    New-model: Project Paper (IPF), Program Paper (PforR), Program Document (DPF).
+    Legacy / unresolved: Project Appraisal Document (PAD) — the safe default so a
+    missing regime signal never mis-labels the document.
+    """
+    inst = str(instrument or "").strip().lower()
+    if str(preparation_regime or "").strip().lower() == "new_model":
+        if inst in {"dpo", "dpf"}:
+            return "Program Document"
+        if inst in {"pforr", "p4r", "program-for-results"}:
+            return "Program Paper"
+        return "Project Paper"
+    return "Project Appraisal Document (PAD)"
+
+
 def extract_horizon_considerations(stage3_output: str) -> str:
     """Extract Horizon Considerations section from Stage 3 output.
     Returns the text content or empty string if not found.
@@ -5348,6 +5365,14 @@ def extract_priorities(
         for field in _REQUIRED_PRIORITY_FIELDS:
             if field not in pr:
                 pr[field] = ''
+
+        # ── Regime terminology: pad_sections <-> appraisal_document_sections ──
+        # Accept either key from the model; keep both populated so legacy renderers
+        # (pad_sections) and regime-aware renderers (appraisal_document_sections)
+        # both work. New key wins when both are present and non-empty.
+        _adoc = pr.get('appraisal_document_sections') or pr.get('pad_sections', '')
+        pr['appraisal_document_sections'] = _adoc or ''
+        pr['pad_sections'] = pr['appraisal_document_sections']
 
         # ── Normalise actions array ──────────────────────────────
         # New format: actions is a list of {document_element, guidance, suggested_language}
