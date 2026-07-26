@@ -688,3 +688,20 @@ def test_climate_reflections_drop_unknown_keys_and_cap_at_five():
     lens = extract_lens_diagnostic(block, ["climate"])["lenses"][0]
     assert all(r["question_key"] != "not_a_cq" for r in lens["reflections"])
     assert len(lens["reflections"]) <= 5
+
+
+def test_is_valid_finding_id_is_linear_and_correct():
+    """Regression for the CodeQL polynomial-redos finding on finding_id parsing."""
+    from sector_lenses import pipeline
+
+    assert pipeline._is_valid_finding_id("climate-finding-1")
+    assert pipeline._is_valid_finding_id("climate-finding-12")
+    assert pipeline._is_valid_finding_id("multi-word-slug-finding-3")
+    # Invalid shapes fall through to the generated default id.
+    assert not pipeline._is_valid_finding_id("climate-finding-0")   # number must start 1-9
+    assert not pipeline._is_valid_finding_id("-finding-1")          # empty slug
+    assert not pipeline._is_valid_finding_id("CLIMATE-finding-1")   # uppercase
+    assert not pipeline._is_valid_finding_id("climate-1")           # no marker
+    assert not pipeline._is_valid_finding_id("")
+    # Hostile input that made the old single-regex form backtrack is rejected instantly.
+    assert not pipeline._is_valid_finding_id("0" * 200000)

@@ -30,6 +30,24 @@ _CLIMATE_TIME_HORIZONS = {
 }
 _CLIMATE_CONFIDENCE_LEVELS = {"high", "medium", "low"}
 _CLIMATE_CLAIM_ID = re.compile(r"^climate-claim-[1-9][0-9]?$")
+
+# Finding IDs look like "<slug>-finding-<n>". Validate with two non-overlapping
+# fullmatch checks split on the literal marker rather than one pattern whose
+# "[a-z0-9-]*" overlaps the following "-finding-" literal — the overlap makes the
+# single-regex form backtrack in polynomial time on hostile input
+# (CodeQL py/polynomial-redos). Each check below is linear.
+_FINDING_SLUG = re.compile(r"[a-z0-9][a-z0-9-]*")
+_FINDING_NUM = re.compile(r"[1-9][0-9]?")
+
+
+def _is_valid_finding_id(value: str) -> bool:
+    marker = "-finding-"
+    idx = value.rfind(marker)
+    if idx <= 0:
+        return False
+    return bool(_FINDING_SLUG.fullmatch(value[:idx])) and bool(
+        _FINDING_NUM.fullmatch(value[idx + len(marker):])
+    )
 _CLIMATE_REFLECTION_KEYS = {
     "cq1_interaction", "cq2_maladaptation", "cq3_dividends",
     "cq4_inclusion", "cq5_institutions", "cq6_adaptive",
@@ -667,16 +685,13 @@ def extract_lens_diagnostic(
         action_target = str(raw.get("action_target", "")).strip()[:200]
         if not mechanism or not geography or not action_target:
             continue
-        proposed_finding_id = str(raw.get("finding_id", "")).strip()
+        proposed_finding_id = str(raw.get("finding_id", "")).strip()[:64]
         default_finding_id = (
             f"{sorted(set(lens_ids))[0]}-finding-{len(findings) + 1}"
         )
         finding_id = (
             proposed_finding_id
-            if re.fullmatch(
-                r"[a-z0-9][a-z0-9-]*-finding-[1-9][0-9]?",
-                proposed_finding_id,
-            )
+            if _is_valid_finding_id(proposed_finding_id)
             else default_finding_id
         )
         findings.append(
