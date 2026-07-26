@@ -5313,6 +5313,8 @@ def extract_priorities(
     uploaded_doc_names: list = None,
     active_lens_ids: list[str] | None = None,
     lens_diagnostic: dict[str, Any] | None = None,
+    preparation_regime: str = "unresolved_policy_source",
+    instrument: str = "",
 ) -> dict:
     """Parse %%%JSON_START%%% / %%%JSON_END%%% block from Stage 3/4 output.
 
@@ -5397,7 +5399,10 @@ def extract_priorities(
                 act.setdefault('guidance', '')
                 act.setdefault('suggested_language', '')
 
-        # Validate action_timing enum (v9.3: expanded to 5 values; remap legacy 'pre-appraisal')
+        # Validate action_timing enum (v9.3: 5 legacy values; remap legacy 'pre-appraisal').
+        # Dual-regime Phase 4: in new-model, map/validate against the OIS/TD/IR/One-Review
+        # vocabulary via regime_router (never emits "before appraisal"). Legacy/unresolved
+        # behaviour is byte-for-byte unchanged (keep valid legacy values, else None).
         _timing_remap = {'pre-appraisal': 'required-before-appraisal'}
         _valid_timings = {
             'flag-for-preparation', 'required-before-appraisal',
@@ -5405,8 +5410,13 @@ def extract_priorities(
         }
         raw_timing = pr.get('action_timing')
         if raw_timing in _timing_remap:
-            pr['action_timing'] = _timing_remap[raw_timing]
-        elif raw_timing not in _valid_timings:
+            raw_timing = _timing_remap[raw_timing]
+        if str(preparation_regime).strip().lower() == 'new_model':
+            pr['action_timing'] = regime_router.resolve_action_timing(
+                raw_timing, preparation_regime, instrument)
+        elif raw_timing in _valid_timings:
+            pr['action_timing'] = raw_timing
+        else:
             pr['action_timing'] = None
 
         # Validate governance_level enum (Workstream 6, MPA operations only;
@@ -7703,11 +7713,14 @@ def run_stage():
                     # Use uploaded_doc_names_payload (parsed from frontend's uploaded_doc_names
                     # array at request start) — includes all zones (primary, package, context).
                     # data.get('documents', []) is empty at Stage 3 in step-by-step mode.
+                    _s3_regime = (data.get('regime_context', {}) or {})
                     parsed = extract_priorities(
                         full_text,
                         uploaded_doc_names_payload,
                         [item['id'] for item in lens_context['active_lenses']],
                         lens_context.get('lens_diagnostic', {}),
+                        preparation_regime=_s3_regime.get('preparation_regime', 'unresolved_policy_source'),
+                        instrument=data.get('instrument_type', '') or '',
                     )
                     warn_on_missing_high_climate_priority(
                         parsed.get('priorities', []),
@@ -8801,6 +8814,8 @@ def run_express():
                     uploaded_doc_names,
                     [item['id'] for item in lens_context_s3['active_lenses']],
                     lens_context_s3.get('lens_diagnostic', {}),
+                    preparation_regime=(regime_context or {}).get('preparation_regime', 'unresolved_policy_source'),
+                    instrument=instrument_type or '',
                 )
                 warn_on_missing_high_climate_priority(
                     parsed.get('priorities', []),
