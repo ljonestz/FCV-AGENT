@@ -22,9 +22,9 @@ Make the app **regime-aware on two independent axes**, detect both from the uplo
 ## 3. The two independent axes
 
 1. **Preparation regime** — `new_model` (OIS ≥ 18 Apr 2026) vs `legacy_transitional` (OIS < 18 Apr 2026). Determines document type, gates, and timing vocabulary.
-2. **E&S regime** — `esf` (ESS1–10) vs `legacy_safeguards` (OP/BP) vs `unresolved`. **Orthogonal to axis 1** — the 18-Apr-2026 boundary does NOT decide ESF vs safeguards; that is governed separately by the E&S Policy's own applicability/transition provisions. Detect from document content, never from the OIS date.
+2. **E&S regime** — routed by the operation's **Concept Decision (or equivalent) date** against the **1 October 2018** threshold [Environmental and Social Directive/Procedure for IPF, **OPS5.03-DIR.123**, eff 15 Jan 2026, §III.A ¶1]. Values: `ESF_ESS1_TO_ESS10` | `LEGACY_SAFEGUARDS` | `PERFORMANCE_STANDARDS_OP_BP_4_03` | `INSTRUMENT_SPECIFIC` (DPF/PforR — they have their own E&S provisions, ESF/ESS applies to IPF only) | `UNRESOLVED`. **Separate classifiers, different governing fields** (not "entirely independent" — AF history can create valid mixed combinations): the E&S axis is NOT decided by the OIS date, and the preparation axis is NOT decided by the Concept Decision date.
 
-Store both as separate fields; never conflate them.
+Store both as separate fields; never conflate them. A valid combination is `preparation_regime = legacy_transitional` + `es_regime = ESF_ESS1_TO_ESS10` (e.g. Concept Decision 2022, OIS before 18 Apr 2026).
 
 ## 4. Routing rules (confirmed, cited)
 
@@ -57,7 +57,8 @@ Use the operation's **own OIS creation date**. `OIS ≥ 2026-04-18 → new_model
 ## 5. App changes
 
 ### 5.1 Stage 1 detection (new)
-Emit, alongside the existing `%%%DOC_TYPE%%%` / `%%%INSTRUMENT_TYPE%%%`, a regime block: `preparation_regime` (new_model | legacy_transitional | unknown), `processing_model` (one_step | two_step | one_review | unknown), `es_regime` (esf | legacy_safeguards | unresolved), and `ois_creation_date` if stated.
+Emit, alongside the existing `%%%DOC_TYPE%%%` / `%%%INSTRUMENT_TYPE%%%`, a regime block:
+`preparation_regime` (new_model | legacy_transitional | unresolved_policy_source) + `preparation_regime_source`; `processing_model` (one_step | two_step | one_review | unknown); `ois_creation_date`; `concept_decision_or_equivalent_date` + `concept_date_source`; `es_regime` (ESF_ESS1_TO_ESS10 | LEGACY_SAFEGUARDS | PERFORMANCE_STANDARDS_OP_BP_4_03 | INSTRUMENT_SPECIFIC | UNRESOLVED) + `es_regime_source`; `op_bp_4_03_applies`; `additional_financing_exception_applies`; `op_7_50_screen` / `op_7_60_screen`; `evidence_markers`; `conflicting_evidence`; `verification_flag` + `verification_reason`. **Source discipline:** cite title + catalogue + date + section for each classification; distinguish policy text from app inference and authoritative dates from keyword fallback; do NOT equate "Public" (an Access-to-Information designation) with "Published" (publication status — read from the PPF registry or leave unverified).
 
 **Detection precedence** (regime): (1) explicit document title + template signature validated against OIS date; (2) OIS creation date from OW/Datasheet; (3) gate vocabulary + section structure; (4) catalogue number (only for guidance/procedure uploads, not operation docs).
 ```
@@ -67,7 +68,7 @@ elif title contains "Project Paper"/"Program Paper" and text has TD/IR/One Revie
 else: UNKNOWN_REQUIRES_MANUAL_CONFIRMATION
 ```
 **Markers** — New: "Project Paper"/"Program Paper", "Technical Design Review", "Implementation Readiness Review", "One Review", "Project Assessment Summary", "ANNEX 1: Results Framework", "Operation Information Summary", DLIs/"Program Action Plan" (PforR), catalogues OPS5.03-GUID.180 / OPS5.04-GUID.128. Legacy: "Project Concept Note"/PCN, "Concept Review", "Track 1/2", "Project Appraisal Document"/PAD, "Appraisal Stage/Package", "Decision Review". **"PID" alone is NOT decisive** (both regimes use it); a guidance catalogue number is NOT proof an operation is new-regime.
-**E&S regime** — detect from content: ESRS/ESCP/SEP/ESRC/ESMS/ESS references → `esf`; explicit OP/BP safeguard invocation → `legacy_safeguards`; neither → `unresolved` (verify with OPCS). Current E&S Directive/Procedure for IPF = eff 15 Jan 2026 (file `22a9aff6…`). [ESF-applicability trigger: verify — see §9.]
+**E&S regime router** [OPS5.03-DIR.123, §III.A ¶1; ESF Policy ¶7, fn12, ¶63, fn1] — decision order: (A) instrument ≠ IPF → `INSTRUMENT_SPECIFIC` (route to DPF/PforR E&S provisions; never the ESS1–10 router); (B) OP/BP 4.03 applies → `PERFORMANCE_STANDARDS_OP_BP_4_03`; (C) AF where the parent is under Safeguard Policies **and** the AF addresses **exclusively** a cost overrun or financing gap → `LEGACY_SAFEGUARDS` (do NOT apply if the AF scales up/adds/changes activities or introduces new E&S risk); (D) Concept Decision date ≥ 1 Oct 2018 → `ESF_ESS1_TO_ESS10`; (E) < 1 Oct 2018 → `LEGACY_SAFEGUARDS` (verify mixed-history); (F) date/regime/parent info missing or contradictory → `UNRESOLVED` + verify flag. **Fallback markers (evidence, not decisive):** ESF = ESRC/ESRS/ESCP/SEP/ESS1–10/E&S risk terminology; legacy = Environmental Category A/B/C/FI, ISDS, "Safeguard Policies triggered", OP/BP 4.xx; OP/BP 4.03 = PS1–PS8. Never classify from a single keyword; conflicting signals → `UNRESOLVED`. **Separate operational-policy screens (not E&S regimes):** flag `op_7_50_screen` (International Waterways) and `op_7_60_screen` (Disputed Territories) — both material in FCV/cross-border contexts — as applicable *alongside* the E&S regime.
 
 ### 5.2 Terminology normalisation
 Introduce an internal lifecycle class `IPF_APPRAISAL_DOCUMENT` that both PAD and Project Paper normalise to; render the displayed label per `preparation_regime`. Keep PAD/PCN/PID as legacy input types. Rename `pad_sections → appraisal_document_sections` (accept `pad_sections` for backward compatibility). Replace user-facing "PAD stage/language/sections" and "ready-to-paste PAD text" with regime-rendered equivalents. Do **not** bulk-delete "PAD" — it stays valid for legacy + policy-level concepts + ADB-led FMRF.
@@ -93,10 +94,11 @@ Legacy behaviour unchanged when `preparation_regime == legacy_transitional`; ins
 ## 8. Testing
 Regime detection (new vs legacy vs unknown from representative markers/dates); one/two-step/DPF routing decision tables; AF-by-own-OIS, restructuring-bypass, MPA-phase rules; timing-vocabulary selection per regime; `pad_sections`↔`appraisal_document_sections` back-compat; `es_regime` detection from content; legacy output byte-for-byte unchanged; climate module consumes regime-aware timing.
 
-## 9. Verify-with-OPCS (non-blocking; final Copilot pass pending)
-- Exact ESF vs OP/BP-safeguards applicability trigger (E&S Directive/Procedure for IPF eff 15 Jan 2026 + the E&S Policy transition provisions) — until confirmed, `es_regime` is detected from content and defaults to `unresolved` with a verify flag.
-- Rapid Response catalogue OPS5.08-POL.125 cover-page confirmation (registry index already supports it; app value kept).
-- Full DPF Program Document section outline (`dpf_sections`).
+## 9. Verify-with-OPCS (non-blocking)
+- **ESF applicability trigger — RESOLVED** (OPS5.03-DIR.123, §III.A ¶1: Concept Decision ≥ 1 Oct 2018 → ESF; the exceptions and the ESF/legacy split are cited above). Only *mixed-history* / contradictory-marker / ambiguous-date cases still need per-operation verification (→ `UNRESOLVED`).
+- **Rapid Response — CONFIRMED** from the cover page: `OPS5.08-POL.125`, Bank Policy, issued/last-revised 25 Jun 2024, effective 10 Jul 2015, Public, IBRD/IDA. (Record "Published" only from the PPF registry, not the cover page.)
+- **18 Apr 2026 preparation boundary** is sourced from the one/two-step procedures (OPS5.03-PROC.281/282, eff 18 Apr 2026) — cite that source, not the E&S Directive; if a run cannot establish it, set `preparation_regime = unresolved_policy_source`.
+- Still open: full DPF Program Document section outline (`dpf_sections`).
 
 ## 10. Out of scope
 Reading the OPCS corpus directly (Claude works from Copilot/WBG-LLM summaries); a project-status/P-code lookup to auto-populate the OIS date; the climate readout structure (separate spec); ITS/FastAPI parity.
