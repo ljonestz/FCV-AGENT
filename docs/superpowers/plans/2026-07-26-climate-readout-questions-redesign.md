@@ -32,7 +32,7 @@ Frontend contract tests spawn `node` (v22 available). Commit `docs/superpowers/*
 | `tests/test_sector_lens_app_contract.py` | Stage 2/3 climate prompt + repair-prompt assertions | Modify |
 | `tests/test_climate_lens_frontend.py` | Gauge 6-tier, core-questions renderer, ordering, source line | Modify |
 
-**Phasing (each phase independently testable):** 1 Bank → 2 Contract → 3 Stage 2 prompt → 4 Stage 3 prompt → 5 Frontend render → 6 DOCX/shared-HTML parity → 7 Integration + live re-validation.
+**Phasing (each phase independently testable):** 1 Bank → 2 Contract → 3 Stage 2 prompt → 4 Stage 3 prompt → **4B OPCS §12/§12.9 calibration** → 5 Frontend render → 6 DOCX/shared-HTML parity → 7 Integration + live re-validation.
 
 ---
 
@@ -668,6 +668,285 @@ git commit -m "feat: drop wider_fcv_context from Stage 3 climate prompt (dedicat
 
 ---
 
+## Phase 4B — OPCS §12 / §12.9 calibration of climate recommendations
+
+Encodes the design spec's **§12** (instrument-routing; Paris Alignment / CDRS flag-not-determine; drop the universal numeric design horizon; conditional compound-risk wording; IPF-only ESS map; analytical-source labelling) and **§12.9** (CDRS scope + AF / Restructuring / MPA handling) into the climate Stage 2/3 prompts, and adds the shared `authority_basis` recommendation field. **The readout *structure* tasks (Phases 1–6) are unchanged** — this phase only layers recommendation-calibration guardrails onto the Stage 2/3 climate prompts and adds one new per-priority field. The bank questions were audited and are already OPCS-safe (`cq2-infra-horizon` asks about "future climate regimes rather than the historical record", not a numeric horizon), so no bank-content change is needed.
+
+> **Dependency on the dual-regime plan (§5.5).** `authority_basis` (`policy | directive | procedure | guidance | reviewer_judgment`) is an **app-wide** field introduced by the dual-regime process-model plan. Sequencing puts dual-regime first, so normally that plan owns the field, validator, and default. Task 4B.3 is written to be safe **either way**: if the field/validator already exist, it only requires + renders + exports them on climate priorities; if the climate module ships first, it adds them in full and the dual-regime plan reuses them. Do not implement the field twice — check `_REQUIRED_PRIORITY_FIELDS` / `extract_priorities` before adding.
+
+### Task 4B.1: Stage 2 climate calibration guardrails
+
+**Files:**
+- Modify: `app.py` — `build_lens_stage_context` Stage 2 climate `suffix` (the same climate-gated branch Task 3.1 appends to).
+- Test: `tests/test_sector_lens_app_contract.py`
+
+- [ ] **Step 1: Write failing test** (append near the Task 3.1 test)
+
+```python
+def test_stage2_climate_prompt_has_opcs_calibration_guardrails():
+    state = app_module.AnalysisState.from_payload({
+        "active_lenses": ["climate"], "lens_versions": {}, "doc_type": "PAD",
+    })
+    prompt = app_module.build_lens_stage_context(
+        state, 2,
+        climate_research={"status": "failed", "attempts": 0, "sources": [], "claims": [], "failure_reason": ""},
+    )["prompt"]
+    low = prompt.lower()
+    assert "instrument-route" in low                     # §12.1
+    assert "never determine" in low                      # advisory boundary / §12.2
+    assert "asset-appropriate design horizon" in low     # §12.3 dropped universal 20-50yr
+    assert "will cause conflict" in low                  # §12.6 names the banned deterministic phrasing
+    assert "not an opcs policy" in low                   # §12.7 source labelling
+    # Non-climate PAD Stage 2 does NOT carry the climate calibration block
+    plain = app_module.AnalysisState.from_payload({"active_lenses": [], "lens_versions": {}, "doc_type": "PAD"})
+    assert "asset-appropriate design horizon" not in app_module.build_lens_stage_context(plain, 2)["prompt"]
+```
+
+- [ ] **Step 2: Run to verify failure**
+
+Run: `C:/WBG/Python313/python.exe -m pytest tests/test_sector_lens_app_contract.py::test_stage2_climate_prompt_has_opcs_calibration_guardrails -q -p no:cacheprovider --ignore-glob=pytest-cache-files-*`
+Expected: FAIL (assertion — the calibration block is not present yet).
+
+- [ ] **Step 3: Implement** — in the Stage 2 climate `suffix` branch (climate-gated, after the Task 3.1 bank block), append:
+
+```python
+        suffix += (
+            " CLIMATE RECOMMENDATION CALIBRATION (advisory boundary — you may flag a "
+            "gap, point to the relevant corporate assessment/instrument, and pose a "
+            "question for the responsible specialist; you must NEVER determine Paris "
+            "alignment, ESF/ESS/ESRC compliance, climate resilience, or screening "
+            "adequacy). (1) Instrument-route every climate point before naming any "
+            "instrument or commitment: IPF uses ESF vocabulary (ESS1-10, ESCP, ESRS, "
+            "SEP, Operations Manual); PforR uses ESSA / six core principles / PAP / DLIs "
+            "/ borrower systems and NEVER ESS numbers, ESCP, or an IPF CERC; DPF uses the "
+            "Program Document / prior actions / PSIA / SORT and NEVER ESS, ESCP, ESRS or "
+            "CERC. (2) Paris Alignment and Climate-and-Disaster-Risk Screening (CDRS) are "
+            "separate corporate processes you flag but never determine — say 'may require "
+            "follow-up in the formal PA assessment', not 'the project is not Paris "
+            "aligned'; CCDR is evidence-where-available, not a mandatory step. (3) Good "
+            "practice is not a requirement: use no universal numeric design horizon — say "
+            "'an asset-appropriate design horizon using applicable national/international "
+            "standards', not '20-50 year projections'; adaptive triggers and actor-level "
+            "conflict analysis are proportionate to the evidence (reuse existing "
+            "RRA/ESSA/PSIA), not mandated. (4) Climate-relevant ESS mapping is IPF-only: "
+            "ESS1 (climate/hazard in the E&S assessment), ESS3 (resource efficiency/GHG), "
+            "ESS4 (community safety/hazards/emergency preparedness), conditional "
+            "ESS2/5/6/7/10; the PforR equivalent is the ESSA public-and-worker-safety "
+            "principle + PAP, the DPF equivalent is PSIA + environmental/NR analysis. "
+            "(5) Compound-risk wording is conditional only ('may intensify', 'could "
+            "interact with', 'should be monitored') — never 'climate change will cause "
+            "conflict', 'the project will reduce conflict', or 'the operation is "
+            "maladaptive'. (6) Label the primary framework — A Framework for Delivering "
+            "Climate Action in Settings Affected by FCV — and the other WBG sources as "
+            "'World Bank analytical / good-practice source, not an OPCS policy or "
+            "compliance standard'; never rank an analytical report above current PPF "
+            "policy/procedure/directive/guidance."
+        )
+```
+
+- [ ] **Step 4: Run to verify pass** + full app-contract suite
+
+Run: `C:/WBG/Python313/python.exe -m pytest tests/test_sector_lens_app_contract.py -q -p no:cacheprovider --ignore-glob=pytest-cache-files-*`
+Expected: PASS.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add app.py tests/test_sector_lens_app_contract.py
+git commit -m "feat: OPCS §12 calibration guardrails in Stage 2 climate prompt"
+```
+
+### Task 4B.2: Stage 3 climate calibration guardrails (CERC + CDRS + AF/Restructuring/MPA)
+
+**Files:**
+- Modify: `app.py` — Stage 3 climate branch `prefix` (the same branch Task 4.1 edits).
+- Test: `tests/test_sector_lens_app_contract.py`
+
+- [ ] **Step 1: Write failing test**
+
+```python
+def test_stage3_climate_prompt_has_cerc_cdrs_and_authority_basis_guardrails():
+    state = app_module.AnalysisState.from_payload({
+        "active_lenses": ["climate"], "lens_versions": {}, "doc_type": "PAD",
+    })
+    payload = {"lenses": [{"lens_id": "climate", "materiality_level": "high"}], "findings": []}
+    prompt = app_module.build_lens_stage_context(state, 3, lens_diagnostic=payload)["prompt"]
+    low = prompt.lower()
+    assert "cerc" in low
+    assert "named eligible emergency" in low or "activation pathway" in low   # §12.5
+    assert "cdrs" in low                                                       # §12.9
+    assert "af finances" in low or "what the af finances" in low              # §12.9 AF scoping
+    assert "does not auto-restart" in low or "does not auto" in low           # §12.9 restructuring
+    assert "phase level" in low or "phase-level" in low                       # §12.9 MPA
+    assert "authority_basis" in prompt                                        # §5.5 tag
+```
+
+- [ ] **Step 2: Run to verify failure**
+
+Run: `C:/WBG/Python313/python.exe -m pytest tests/test_sector_lens_app_contract.py::test_stage3_climate_prompt_has_cerc_cdrs_and_authority_basis_guardrails -q -p no:cacheprovider --ignore-glob=pytest-cache-files-*`
+Expected: FAIL.
+
+- [ ] **Step 3: Implement** — append to the Stage 3 climate `prefix`:
+
+```python
+        prefix += (
+            "CLIMATE STAGE-3 CALIBRATION. Instrument-route every recommendation first "
+            "(IPF=ESF; PforR=ESSA/PAP/DLIs; DPF=Program Document/prior actions/PSIA) and "
+            "flag-not-determine Paris Alignment / CDRS. CERC: recommend considering a "
+            "CERC only where the instrument can carry one, there is a named eligible "
+            "emergency (natural-hazard/climate/health/economic) with a plausible "
+            "declaration/activation pathway, and it links to the PDO — IPF only; PforR "
+            "only via a separate IPF component; DPF via Cat DDO/supplemental/scalable, "
+            "never an IPF CERC; never a generic 'flexibility' recommendation. Climate & "
+            "Disaster Risk Screening (CDRS) is a corporate commitment across IPF/PforR/DPF "
+            "including AF, MPA phases, emergency operations, CERCs and guarantees; no "
+            "named CDRS tool is mandatory; CDRS is ex-ante and informs design but does "
+            "NOT replace the ESF/ESS assessment — point to it, never treat a CDRS result "
+            "as an ESS/ESRC/ESRS/ESCP determination. Additional Financing has its own "
+            "package and its own AF-level CDRS on the operation-as-modified — scope every "
+            "climate recommendation to what the AF finances, not the whole parent. "
+            "Restructuring does not auto-restart CDRS: only where the change adds new "
+            "activities or materially changes hazard exposure / vulnerability / coverage "
+            "/ expected life / beneficiaries / design, flag a possible CDRS update and PA "
+            "Method on the NEW activities only. MPA: CDRS is required at the phase level; "
+            "scope recommendations to the phase's own activities, location and "
+            "beneficiaries. Tag every recommendation with authority_basis (policy | "
+            "directive | procedure | guidance | reviewer_judgment) reflecting the strength "
+            "of the underlying source. "
+        )
+```
+
+- [ ] **Step 4: Run to verify pass**
+
+Run: `C:/WBG/Python313/python.exe -m pytest tests/test_sector_lens_app_contract.py -q -p no:cacheprovider --ignore-glob=pytest-cache-files-*`
+Expected: PASS.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add app.py tests/test_sector_lens_app_contract.py
+git commit -m "feat: OPCS §12.5/§12.9 CERC+CDRS+AF/restructuring/MPA guardrails in Stage 3 climate prompt"
+```
+
+### Task 4B.3: `authority_basis` per-priority field (shared with dual-regime §5.5)
+
+**Files:**
+- Modify: `app.py` — Stage 3 climate JSON schema block (add the field) + `extract_priorities` validation + `_REQUIRED_PRIORITY_FIELDS` (only if not already added by the dual-regime plan).
+- Modify: `index.html` — `showPriority()` (render a muted chip) + `downloadHTML()` (export line).
+- Modify: `app.py` — DOCX priority metadata (`add_priority` / the priority export helper) to emit the field.
+- Test: `tests/test_extract_priorities.py`, `tests/test_climate_lens_frontend.py`
+
+- [ ] **Step 0: Check for the dual-regime field first**
+
+Run: `grep -n "authority_basis" app.py`
+If `extract_priorities` already validates `authority_basis` (dual-regime plan landed first), **skip Steps 2–3 of the implementation** and only do the climate-schema mention (Step 3a) + render/export (Steps 3c–3d).
+
+- [ ] **Step 1: Write failing tests** (append to `tests/test_extract_priorities.py`)
+
+```python
+def test_authority_basis_defaults_to_reviewer_judgment_when_missing():
+    block = (
+        '%%%JSON_START%%%{"fcv_rating":"Moderately addressed",'
+        '"fcv_responsiveness_rating":"Emerging","sensitivity_summary":"x",'
+        '"responsiveness_summary":"y","risk_exposure":{"risks_to":"a","risks_from":"b"},'
+        '"priorities":[{"title":"Flood-resilient siting","fcv_dimension":"Contextual",'
+        '"tag":"[S]","the_gap":"g","why_it_matters":"w","actions":[],'
+        '"who_acts":"TTL","when":"soon","resources":"r","pad_sections":"IV"}]}%%%JSON_END%%%'
+    )
+    result = app_module.extract_priorities(block, uploaded_doc_names=[])
+    assert result["priorities"][0]["authority_basis"] == "reviewer_judgment"
+
+def test_authority_basis_invalid_value_coerced_to_reviewer_judgment():
+    block = (
+        '%%%JSON_START%%%{"fcv_rating":"Moderately addressed",'
+        '"fcv_responsiveness_rating":"Emerging","sensitivity_summary":"x",'
+        '"responsiveness_summary":"y","risk_exposure":{"risks_to":"a","risks_from":"b"},'
+        '"priorities":[{"title":"T","fcv_dimension":"Contextual","tag":"[S]",'
+        '"the_gap":"g","why_it_matters":"w","actions":[],"who_acts":"TTL","when":"soon",'
+        '"resources":"r","pad_sections":"IV","authority_basis":"made-up"}]}%%%JSON_END%%%'
+    )
+    result = app_module.extract_priorities(block, uploaded_doc_names=[])
+    assert result["priorities"][0]["authority_basis"] == "reviewer_judgment"
+
+def test_authority_basis_valid_value_preserved():
+    block = (
+        '%%%JSON_START%%%{"fcv_rating":"Moderately addressed",'
+        '"fcv_responsiveness_rating":"Emerging","sensitivity_summary":"x",'
+        '"responsiveness_summary":"y","risk_exposure":{"risks_to":"a","risks_from":"b"},'
+        '"priorities":[{"title":"T","fcv_dimension":"Contextual","tag":"[S]",'
+        '"the_gap":"g","why_it_matters":"w","actions":[],"who_acts":"TTL","when":"soon",'
+        '"resources":"r","pad_sections":"IV","authority_basis":"Directive"}]}%%%JSON_END%%%'
+    )
+    result = app_module.extract_priorities(block, uploaded_doc_names=[])
+    assert result["priorities"][0]["authority_basis"] == "directive"
+```
+
+- [ ] **Step 2: Run to verify failure**
+
+Run: `C:/WBG/Python313/python.exe -m pytest tests/test_extract_priorities.py -k authority_basis -q -p no:cacheprovider --ignore-glob=pytest-cache-files-*`
+Expected: FAIL (`KeyError: 'authority_basis'`).
+
+- [ ] **Step 3: Implement**
+
+- **3a — Stage 3 climate schema:** add `"authority_basis": "policy | directive | procedure | guidance | reviewer_judgment"` to the per-priority JSON schema text in the Stage 3 climate prompt (Task 4B.2 already instructs the model to populate it).
+- **3b — `extract_priorities` validation:** in the per-priority normalisation loop, add:
+
+```python
+        allowed_authority = {"policy", "directive", "procedure", "guidance", "reviewer_judgment"}
+        ab = str(pr.get("authority_basis") or "").strip().lower().replace(" ", "_")
+        pr["authority_basis"] = ab if ab in allowed_authority else "reviewer_judgment"
+```
+
+  (Do NOT add `authority_basis` to `_REQUIRED_PRIORITY_FIELDS` — it defaults safely, so a missing value must never mark the priority malformed.)
+- **3c — `showPriority()` (index.html):** render a muted chip after the existing `action_timing` pill, e.g. `<span class="pc-chip pc-chip-muted" title="Strength of the underlying OPCS source">Basis: ${escapeHtml(p.authority_basis || 'reviewer_judgment')}</span>`.
+- **3d — DOCX + `downloadHTML()`:** add one metadata line `Authority basis: <value>` to the priority export in both the DOCX helper and `downloadHTML()`, alongside the existing `action_timing` line.
+
+- [ ] **Step 4: Run to verify pass**
+
+Run: `C:/WBG/Python313/python.exe -m pytest tests/test_extract_priorities.py tests/test_climate_lens_frontend.py -q -p no:cacheprovider --ignore-glob=pytest-cache-files-*`
+Expected: PASS.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add app.py index.html tests/test_extract_priorities.py tests/test_climate_lens_frontend.py
+git commit -m "feat: authority_basis recommendation field (climate + shared with dual-regime §5.5)"
+```
+
+### Task 4B.4: Recovery-prompt calibration parity
+
+**Files:**
+- Modify: `app.py` — `repair_lens_diagnostic` prompt (the same string Task 3.3 edits).
+- Test: `tests/test_sector_lens_app_contract.py`
+
+The Haiku recovery path regenerates the Stage 2 climate diagnostic; it must not reintroduce determinations or ESS-for-PforR/DPF vocabulary. Add a one-line compression of §12 to the recovery prompt.
+
+- [ ] **Step 1: Add failing assertion** to the recovery-prompt test (the one capturing the recovery `messages` content, extended in Task 3.3)
+
+```python
+    assert "never determine" in prompt.lower()
+    assert "instrument-route" in prompt.lower()
+```
+
+- [ ] **Step 2: Run to verify failure.**
+- [ ] **Step 3: Implement** — append to the `repair_lens_diagnostic` prompt string:
+
+```python
+        " Stay within the advisory boundary: flag and point, never determine Paris "
+        "alignment/ESF/ESRC/resilience; instrument-route (IPF=ESF, PforR=ESSA/PAP, "
+        "DPF=PSIA); no universal numeric horizon; conditional compound-risk wording only."
+```
+
+- [ ] **Step 4: Run** the recovery tests + `tests/test_climate_diagnostic_completeness.py` — Expected: PASS.
+- [ ] **Step 5: Commit**
+
+```bash
+git add app.py tests/test_sector_lens_app_contract.py
+git commit -m "feat: OPCS §12 calibration parity in climate recovery prompt"
+```
+
+---
+
 ## Phase 5 — Frontend rendering
 
 New reader order in climate mode: exec summary → **6-tier gauge** → operational context → **full-detail strengths/weaknesses** → **core-question section** (lay intro + Q1/Q2 interactions + theme answers with source) → priorities. Drop the standalone dividends section (absorbed into cq3) and the wider-FCV callout.
@@ -973,7 +1252,7 @@ Expected: all pass (baseline this branch was 375; new tests add to that). Invest
 
 ## Self-Review
 
-**Spec coverage:** §3 reader layout → Phases 5–6 (gauge 5.1; core questions 5.2; S&W 5.3; order 5.4; exports 6). §4 bank + themes → Phase 1 + Task 3.1. §4.3 contract additions (`source`, `integration_rating`, `strengths_weaknesses`) → Phase 2 + Tasks 5.3/3.1. §5 pipeline (climate-native Stage 2, wider-FCV drop) → Tasks 3.2, 4.1. §6 export parity → Phase 6. §7 content-quality bar → prompt text in Task 3.1 (two-paragraph + component-specificity). §8 invariants → completeness guard (2.3), non-climate regression (3.2, 7.2). §9 out-of-scope (CCDR-size, ITS parity) → not implemented, correct. §10 testing → Phase 7. §11 open items (bank size, cq5 fold) → bank is data (Phase 1, extensible); cq5 fold handled by curation (selector omits unfired themes).
+**Spec coverage:** §3 reader layout → Phases 5–6 (gauge 5.1; core questions 5.2; S&W 5.3; order 5.4; exports 6). §4 bank + themes → Phase 1 + Task 3.1. §4.3 contract additions (`source`, `integration_rating`, `strengths_weaknesses`) → Phase 2 + Tasks 5.3/3.1. §5 pipeline (climate-native Stage 2, wider-FCV drop) → Tasks 3.2, 4.1. §6 export parity → Phase 6. §7 content-quality bar → prompt text in Task 3.1 (two-paragraph + component-specificity). §8 invariants → completeness guard (2.3), non-climate regression (3.2, 7.2). §9 out-of-scope (CCDR-size, ITS parity) → not implemented, correct. §10 testing → Phase 7. §11 open items (bank size, cq5 fold) → bank is data (Phase 1, extensible); cq5 fold handled by curation (selector omits unfired themes). **§12 OPCS calibration** (instrument-routing 12.1; PA/CDRS flag-not-determine 12.2; drop-universal-horizon 12.3; ESS-map IPF-only 12.4; CERC 12.5; compound-risk wording 12.6; source labelling 12.7) → Phase 4B Tasks 4B.1 (Stage 2), 4B.2 (Stage 3), 4B.4 (recovery parity). **§12.9 CDRS + AF/Restructuring/MPA** → Task 4B.2. `authority_basis` field (§5.5 of the dual-regime spec, consumed here) → Task 4B.3, with a stated dependency guard so it is not implemented twice. Bank questions audited OPCS-safe (no numeric horizon) — no bank-content change needed.
 
 **Placeholder scan:** DOCX test (6.2) and fixture update (7.1) reference "the existing DOCX test pattern / fixture-driven assertions" rather than inlined code — flagged as the two tasks the implementer must read the current file to complete; all other steps carry concrete code. Acceptable given they mirror renderers defined earlier in the plan.
 
