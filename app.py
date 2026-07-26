@@ -9389,6 +9389,18 @@ def download_report():
         'next-series': 'Feed into next series',
         'supervision': 'Supervision / monitoring only',
         'pre-appraisal': 'Required before Decision Review (DM/ROC)',
+        # New-model (OPS5.03-PROC.281/282) preparation-gate timings
+        'shortly-after-OIS': 'Shortly after OIS decision',
+        'before-TD-review': 'Before Technical Design review',
+        'at-TD-review': 'At Technical Design review',
+        'between-TD-and-IR': 'Between TD and IR review',
+        'before-IR': 'Before Implementation Readiness review',
+        'at-IR': 'At Implementation Readiness review',
+        'before-One-Review': 'Before One Review',
+        'at-One-Review': 'At One Review',
+        'before-negotiations': 'Before negotiations',
+        'before-Board': 'Before Board',
+        'during-implementation-support': 'During implementation support',
     }
     tag_labels = {
         '[S]': 'Sensitivity', '[R]': 'Responsiveness', '[S+R]': 'Sensitivity + Responsiveness'

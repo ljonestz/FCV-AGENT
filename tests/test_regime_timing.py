@@ -47,3 +47,19 @@ def test_default_call_unchanged_legacy_behaviour():
     # An invalid legacy value still nulls out, as before.
     r2 = app_module.extract_priorities(_block("whenever-you-like"), uploaded_doc_names=[])
     assert r2["priorities"][0]["action_timing"] is None
+
+
+def test_new_model_timing_labels_wired_into_ui_and_docx():
+    """Task 4.2: the 11 new-model timings render as pills (3 index.html maps) + DOCX."""
+    from pathlib import Path
+    root = Path(__file__).resolve().parent.parent
+    html = (root / "index.html").read_text(encoding="utf-8")
+    appsrc = (root / "app.py").read_text(encoding="utf-8")
+    # Human label present in all three index.html timing maps (summary, pill, downloadHTML)
+    assert html.count("Before Technical Design review") >= 3
+    assert html.count("During implementation support") >= 3
+    for key in ("shortly-after-OIS", "before-TD-review", "before-IR", "before-One-Review", "before-Board"):
+        assert key in html, key
+    # DOCX timing_map (app.py) carries the labels too
+    assert "Before Technical Design review" in appsrc
+    assert "'before-One-Review': 'Before One Review'" in appsrc
