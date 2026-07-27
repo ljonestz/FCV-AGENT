@@ -8263,6 +8263,32 @@ def _stage_timeout_message(stage_num, max_seconds):
     )
 
 
+def _is_transient_stream_error(exc) -> bool:
+    """True for transient provider errors that are safe to retry on stream open:
+    Anthropic 'Overloaded' (529), 5xx, rate-limit, and connection errors. A mid-stream
+    'overloaded_error' event surfaces as a generic exception whose string contains
+    'overloaded', so match on that too. Hard client errors (bad JSON, auth, 4xx other
+    than 429) are NOT transient and must not be retried."""
+    if isinstance(exc, (anthropic.InternalServerError, anthropic.APIConnectionError,
+                        anthropic.RateLimitError)):
+        return True
+    if isinstance(exc, anthropic.APIStatusError):
+        if getattr(exc, 'status_code', None) in (429, 500, 502, 503, 529):
+            return True
+    text = str(exc).lower()
+    return any(token in text for token in (
+        'overload', '529', '503', 'internal server error', 'service unavailable',
+    ))
+
+
+def _transient_stream_user_message(exc) -> str:
+    """User-facing message: friendly guidance for transient overload, raw detail otherwise."""
+    if _is_transient_stream_error(exc):
+        return ('The AI service is temporarily overloaded. Please wait a moment and '
+                'click "Retry this stage".')
+    return str(exc)
+
+
 def _stream_stage(
     messages,
     max_tokens,
@@ -8288,28 +8314,48 @@ def _stream_stage(
         max_seconds = _stage_timeout_seconds(stage_num)
 
     def _run():
-        try:
-            with get_client().messages.stream(
-                model="claude-sonnet-4-6",
-                max_tokens=max_tokens,
-                messages=messages
-            ) as s:
-                for chunk in s.text_stream:
-                    stream_q.put(('chunk', chunk))
-                # Capture the provider stop_reason so callers can detect a
-                # max_tokens truncation (e.g. a Stage 2 climate diagnostic block
-                # cut off at the output ceiling) rather than treating it as a
-                # normal completion.
-                try:
-                    final = s.get_final_message()
-                    _stream_stage._last_stop_reason = getattr(
-                        final, 'stop_reason', None
-                    )
-                except Exception:
-                    _stream_stage._last_stop_reason = None
-            stream_q.put(('done', None))
-        except Exception as e:
-            stream_q.put(('error', str(e)))
+        # Retry a transient provider error (Anthropic 'Overloaded'/5xx) on stream OPEN.
+        # Only safe when nothing has streamed yet — re-opening after partial output
+        # would duplicate content, so once a chunk flows we never retry.
+        max_attempts = 3
+        for attempt in range(1, max_attempts + 1):
+            streamed_any = False
+            try:
+                with get_client().messages.stream(
+                    model="claude-sonnet-4-6",
+                    max_tokens=max_tokens,
+                    messages=messages
+                ) as s:
+                    for chunk in s.text_stream:
+                        streamed_any = True
+                        stream_q.put(('chunk', chunk))
+                    # Capture the provider stop_reason so callers can detect a
+                    # max_tokens truncation (e.g. a Stage 2 climate diagnostic block
+                    # cut off at the output ceiling) rather than treating it as a
+                    # normal completion.
+                    try:
+                        final = s.get_final_message()
+                        _stream_stage._last_stop_reason = getattr(
+                            final, 'stop_reason', None
+                        )
+                    except Exception:
+                        _stream_stage._last_stop_reason = None
+                stream_q.put(('done', None))
+                return
+            except Exception as e:
+                if (not streamed_any and attempt < max_attempts
+                        and _is_transient_stream_error(e)):
+                    try:
+                        app.logger.warning(
+                            'Stage %s stream transient error (attempt %s/%s), retrying: %s',
+                            stage_num, attempt, max_attempts, str(e)[:120],
+                        )
+                    except Exception:
+                        pass
+                    time.sleep(min(2 ** attempt, 12))
+                    continue
+                stream_q.put(('error', _transient_stream_user_message(e)))
+                return
 
     t = threading.Thread(target=_run, daemon=True)
     t.start()
