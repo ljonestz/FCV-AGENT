@@ -64,6 +64,7 @@ from background_docs import (
     LEGACY_PAD_MINIMUM_REFERENCE_SET
 )
 import io
+import climate_question_bank
 try:
     from pypdf import PdfReader
 except ImportError:
@@ -873,6 +874,22 @@ def _bounded_stage3_lenses(
     return selected, truncated
 
 
+def _climate_project_signals(state, *text_parts, max_chars: int = 3000) -> str:
+    """Assemble a compact lowercase-able signal blob for the climate question-bank
+    trigger selector from the instrument/doc-type plus any Stage-1-derived text.
+    Safe with None / dict parts; only used when the Climate lens is active."""
+    parts: list[str] = [
+        str(getattr(state, "instrument", "") or ""),
+        str(getattr(state, "doc_type", "") or ""),
+    ]
+    for t in text_parts:
+        if isinstance(t, dict):
+            t = " ".join(str(v) for v in t.values())
+        if t:
+            parts.append(str(t))
+    return " ".join(p for p in parts if p)[:max_chars]
+
+
 def build_lens_stage_context(
     state: AnalysisState,
     stage: int,
@@ -880,6 +897,7 @@ def build_lens_stage_context(
     lens_diagnostic: dict[str, Any] | None = None,
     lens_context_sources: list[dict[str, Any]] | None = None,
     climate_research: dict[str, Any] | None = None,
+    project_signals: str = "",
 ) -> dict[str, Any]:
     """Resolve client lens choices and build a bounded stage-specific prompt contract."""
 
@@ -1004,7 +1022,7 @@ def build_lens_stage_context(
                 "evidence that the project actively works to change the climate-FCV "
                 "situation (FCV Responsiveness). Leave either list empty if no clear "
                 "evidence exists. Also return reflections: three to five objects each "
-                "with question_key, title, status_cue, and text, drawn from these core "
+                "with question_key, title, status_cue, source, and text, drawn from these core "
                 "questions and surfacing only the material ones: "
                 "cq1_interaction (Climate-FCV interactions and delivery), "
                 "cq2_maladaptation (maladaptation, Do No Harm and lock-in), "
@@ -1053,6 +1071,63 @@ def build_lens_stage_context(
                 "mandatory. "
                 "Validated Climate research claims:\n"
                 + research_context
+            )
+            # Task 3.1 - inject the triggered WBG-source core-question bank and request
+            # per-theme two-paragraph answers with a source + the 6-tier integration_rating.
+            fired = climate_question_bank.select_triggered_questions(project_signals or "")
+            if fired:
+                bank_lines = []
+                for theme in climate_question_bank.THEMES:
+                    for q in fired.get(theme, []):
+                        bank_lines.append(f"- [{theme}] {q['question']} (source: {q['source']})")
+                bank_text = "\n".join(bank_lines)
+                suffix += (
+                    " CORE-QUESTION BANK (triggered for this project). Treat these as "
+                    "the battery of core climate-FCV questions to reason through; answer "
+                    "only the themes that are materially relevant to THIS project and "
+                    "drop the rest rather than padding. For each answered theme produce a "
+                    "reflections[] entry whose title is the reader-facing question, whose "
+                    "text is TWO solid, nuanced paragraphs (not a summary) naming the "
+                    "project's specific components, sub-components, institutions, sites and "
+                    "figures throughout, and whose source names the framework it draws on. "
+                    "Always answer the two interaction directions (Q1/Q2) via interaction_readout. "
+                    "Also return integration_rating using exactly one of: Extremely Low, "
+                    "Very Low, Low, Adequate, Well Embedded, Very Well Embedded (the same "
+                    "6-tier scale the app uses), reflecting how well the project integrates "
+                    "climate and FCV. Bank questions:\n" + bank_text + "\n"
+                )
+            # Task 4B.1 - OPCS Section 12 calibration guardrails for climate recommendations.
+            suffix += (
+                " CLIMATE RECOMMENDATION CALIBRATION (advisory boundary - you may flag a "
+                "gap, point to the relevant corporate assessment/instrument, and pose a "
+                "question for the responsible specialist; you must NEVER determine Paris "
+                "alignment, ESF/ESS/ESRC compliance, climate resilience, or screening "
+                "adequacy). (1) Instrument-route every climate point before naming any "
+                "instrument or commitment: IPF uses ESF vocabulary (ESS1-10, ESCP, ESRS, "
+                "SEP, Operations Manual); PforR uses ESSA / six core principles / PAP / DLIs "
+                "/ borrower systems and NEVER ESS numbers, ESCP, or an IPF CERC; DPF uses the "
+                "Program Document / prior actions / PSIA / SORT and NEVER ESS, ESCP, ESRS or "
+                "CERC. (2) Paris Alignment and Climate-and-Disaster-Risk Screening (CDRS) are "
+                "separate corporate processes you flag but never determine - say 'may require "
+                "follow-up in the formal PA assessment', not 'the project is not Paris "
+                "aligned'; CCDR is evidence-where-available, not a mandatory step. (3) Good "
+                "practice is not a requirement: use no universal numeric design horizon - say "
+                "'an asset-appropriate design horizon using applicable national/international "
+                "standards', not '20-50 year projections'; adaptive triggers and actor-level "
+                "conflict analysis are proportionate to the evidence (reuse existing "
+                "RRA/ESSA/PSIA), not mandated. (4) Climate-relevant ESS mapping is IPF-only: "
+                "ESS1 (climate/hazard in the E&S assessment), ESS3 (resource efficiency/GHG), "
+                "ESS4 (community safety/hazards/emergency preparedness), conditional "
+                "ESS2/5/6/7/10; the PforR equivalent is the ESSA public-and-worker-safety "
+                "principle + PAP, the DPF equivalent is PSIA + environmental/NR analysis. "
+                "(5) Compound-risk wording is conditional only ('may intensify', 'could "
+                "interact with', 'should be monitored') - never 'climate change will cause "
+                "conflict', 'the project will reduce conflict', or 'the operation is "
+                "maladaptive'. (6) Label the primary framework - A Framework for Delivering "
+                "Climate Action in Settings Affected by FCV - and the other WBG sources as "
+                "'World Bank analytical / good-practice source, not an OPCS policy or "
+                "compliance standard'; never rank an analytical report above current PPF "
+                "policy/procedure/directive/guidance."
             )
     elif selection.lenses and stage == 3 and stage3_diagnostic_failure:
         suffix = (
@@ -7565,12 +7640,22 @@ def run_stage():
                 pq_block = build_priority_questions_block(priority_questions, stage)
                 if pq_block:
                     stage_prompt = stage_prompt + pq_block
+            # Climate question-bank signals (Stage 2 only uses them): instrument/doc-type
+            # plus sector + the Stage-1 assistant narrative carried in the request history.
+            _s1_history_text = " ".join(
+                str(m.get('content', ''))
+                for m in (data.get('conversation_history') or [])
+                if isinstance(m, dict) and m.get('role') == 'assistant'
+            )[:2500]
             lens_context = build_lens_stage_context(
                 analysis_state,
                 stage,
                 lens_diagnostic=data.get('lens_diagnostic'),
                 lens_context_sources=data.get('lens_context_sources'),
                 climate_research=data.get('climate_research'),
+                project_signals=_climate_project_signals(
+                    analysis_state, data.get('sector_context'), _s1_history_text
+                ),
             )
             if lens_context['restart_required']:
                 return jsonify({
@@ -8688,6 +8773,9 @@ def run_express():
                     2,
                     lens_context_sources=lens_context_sources,
                     climate_research=climate_research,
+                    project_signals=_climate_project_signals(
+                        analysis_state, sector_context, stage1_output[:2500]
+                    ),
                 )
                 if lens_context_s2['prompt']:
                     stage2_prompt += "\n\n--- ACTIVE SECTOR LENSES ---\n" + lens_context_s2['prompt']

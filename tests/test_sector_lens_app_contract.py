@@ -766,6 +766,61 @@ def test_stage2_climate_prompt_requires_reflections_and_intersection():
     assert "mechanical checklist entry" in prompt
     assert "never a snake_case token" in prompt.replace("\n", " ")
 
+
+def test_stage2_climate_prompt_injects_bank_and_requests_source_and_rating():
+    state = app_module.AnalysisState.from_payload({
+        "active_lenses": ["climate"], "lens_versions": {}, "doc_type": "PAD",
+    })
+    ctx = app_module.build_lens_stage_context(
+        state, 2,
+        climate_research={"status": "failed", "attempts": 0, "sources": [], "claims": [], "failure_reason": ""},
+        project_signals="IPF fisheries flooding displacement cold storage community co-management",
+    )
+    prompt = ctx["prompt"]
+    # Bank questions surface as guidance
+    assert "core climate-fcv questions" in prompt.lower()
+    assert "FCV-Sensitive Climate Action Framework" in prompt  # a bank source
+    # New field requests
+    assert "integration_rating" in prompt
+    assert "Extremely Low" in prompt and "Very Well Embedded" in prompt  # 6-tier scale
+    assert "source" in prompt  # per-reflection source
+    # Two-paragraph depth instruction
+    assert "two" in prompt.lower() and "paragraph" in prompt.lower()
+
+
+def test_climate_stage2_is_native_not_generic_engine():
+    state = app_module.AnalysisState.from_payload({
+        "active_lenses": ["climate"], "lens_versions": {}, "doc_type": "PAD",
+    })
+    prompt = app_module.build_lens_stage_context(
+        state, 2, climate_research={"status": "failed", "attempts": 0, "sources": [], "claims": [], "failure_reason": ""},
+    )["prompt"]
+    assert "core climate-fcv questions" in prompt.lower()
+    # Sanity: a non-climate PAD Stage 2 still uses the generic engine unchanged.
+    plain = app_module.AnalysisState.from_payload({"active_lenses": [], "lens_versions": {}, "doc_type": "PAD"})
+    plain_prompt = app_module.build_lens_stage_context(plain, 2)["prompt"]
+    assert "core climate-fcv questions" not in plain_prompt.lower()
+
+
+def test_stage2_climate_prompt_has_opcs_calibration_guardrails():
+    state = app_module.AnalysisState.from_payload({
+        "active_lenses": ["climate"], "lens_versions": {}, "doc_type": "PAD",
+    })
+    prompt = app_module.build_lens_stage_context(
+        state, 2,
+        climate_research={"status": "failed", "attempts": 0, "sources": [], "claims": [], "failure_reason": ""},
+    )["prompt"]
+    low = prompt.lower()
+    assert "instrument-route" in low                     # 12.1
+    assert "never determine" in low                      # advisory boundary / 12.2
+    assert "asset-appropriate design horizon" in low     # 12.3 dropped universal 20-50yr
+    assert "will cause conflict" in low                  # 12.6 names the banned deterministic phrasing
+    assert "not an opcs policy" in low                   # 12.7 source labelling
+    # Non-climate PAD Stage 2 does NOT carry the climate calibration block
+    plain = app_module.AnalysisState.from_payload({"active_lenses": [], "lens_versions": {}, "doc_type": "PAD"})
+    assert "asset-appropriate design horizon" not in app_module.build_lens_stage_context(plain, 2)["prompt"]
+
+
 @pytest.mark.parametrize(
     ("response_text", "expected_status"),
     [
