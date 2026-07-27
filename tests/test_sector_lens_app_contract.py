@@ -335,6 +335,19 @@ def test_downloaded_report_has_climate_readout_and_context_sources():
                 "status": "not_material",
                 "reason": "No clear transition pathway.",
             }],
+            "reflections": [{
+                "question_key": "cq2_maladaptation",
+                "title": "Could the design lock in maladaptation?",
+                "status_cue": "partial gap",
+                "source": "FCV-Sensitive Climate Action Framework",
+                "text": "Answer paragraph one about lock-in.\n\nAnswer paragraph two names BFMU governance.",
+            }],
+            "strengths_weaknesses": [
+                {"side": "strength", "title": "Community delivery",
+                 "text": "Fits weak centre and adapts to floods."},
+                {"side": "gap", "title": "Flood-displacement link",
+                 "text": "Named but no design response."},
+            ],
         }], "findings": []},
         "lens_context_sources": [{
             "id": "context-ccdr",
@@ -366,15 +379,20 @@ def test_downloaded_report_has_climate_readout_and_context_sources():
     assert "Key locations and components:" in text
     assert "Landing-site rehabilitation" in text
     assert "over the life of the assets" in text
-    assert "The current design already contributes" in text
-    assert "Community institutions allocate resources" in text
-    assert "The project uses contingent delivery" in text
-    assert "The project restores shared watersheds" in text
-    assert "There are clear opportunities to strengthen" in text
-    assert "carried forward by" in text
-    assert "Priority 1 (Inclusive seasonal access)" in text
-    assert "Climate, peace and social dividend contribution" in text
-    assert "Protects legitimate seasonal access." in text
+    # Redesign: core-questions section (lay intro + theme answers with source) + S&W;
+    # the standalone dividend-synthesis and wider-FCV sections are dropped in module mode.
+    assert "Core climate and FCV questions" in text
+    assert "Maximizing the Peace and Social Dividends of Climate Action" in text
+    assert "Could the design lock in maladaptation?" in text
+    assert "Source: FCV-Sensitive Climate Action Framework" in text
+    assert "How the design holds up on climate and FCV" in text
+    assert "Where the design is strong" in text
+    assert "Community delivery" in text
+    assert "Named but no design response." in text
+    assert "Wider FCV context" not in text
+    # The priority still appears in the main Priority Actions table; the standalone
+    # dividend-synthesis panel (with its "Priority N (title)" links) is dropped.
+    assert "Inclusive seasonal access" in text
     assert "Differentiated approach note" not in text
     assert "Legacy differentiated note." not in text
     assert "Do not render this pathway" not in text
@@ -492,7 +510,7 @@ def test_final_stage3_lens_prompt_respects_combined_platform_budget():
 
     context = app_module.build_lens_stage_context(state, 3, registry, huge)
 
-    assert context["estimated_tokens"] <= 1200
+    assert context["estimated_tokens"] <= 1600
     assert context["truncated"] is True
 
 
@@ -766,6 +784,118 @@ def test_stage2_climate_prompt_requires_reflections_and_intersection():
     assert "mechanical checklist entry" in prompt
     assert "never a snake_case token" in prompt.replace("\n", " ")
 
+
+def test_stage2_lens_diagnostic_framed_as_mandatory_sibling_of_under_hood():
+    # Primary-emission hardening: the appended lens diagnostic block is the one that
+    # gets dropped ("trailing-block fatigue"), while the base %%%UNDER_HOOD%%% block is
+    # reliably emitted. Tie the diagnostic to UNDER_HOOD as a mandatory sibling so the
+    # model treats it as a required output, not an optional appendix.
+    state = app_module.AnalysisState.from_payload({
+        "active_lenses": ["climate"], "lens_versions": {}, "doc_type": "PAD",
+    })
+    prompt = app_module.build_lens_stage_context(
+        state, 2,
+        climate_research={"status": "failed", "attempts": 0, "sources": [], "claims": [], "failure_reason": ""},
+    )["prompt"]
+    assert "UNDER_HOOD" in prompt
+    low = prompt.lower()
+    assert "mandatory" in low
+    assert "must" in low
+
+
+def test_stage2_climate_prompt_injects_bank_and_requests_source_and_rating():
+    state = app_module.AnalysisState.from_payload({
+        "active_lenses": ["climate"], "lens_versions": {}, "doc_type": "PAD",
+    })
+    ctx = app_module.build_lens_stage_context(
+        state, 2,
+        climate_research={"status": "failed", "attempts": 0, "sources": [], "claims": [], "failure_reason": ""},
+        project_signals="IPF fisheries flooding displacement cold storage community co-management",
+    )
+    prompt = ctx["prompt"]
+    # Bank questions surface as guidance
+    assert "core climate-fcv questions" in prompt.lower()
+    assert "FCV-Sensitive Climate Action Framework" in prompt  # a bank source
+    # New field requests
+    assert "integration_rating" in prompt
+    assert "Extremely Low" in prompt and "Very Well Embedded" in prompt  # 6-tier scale
+    assert "source" in prompt  # per-reflection source
+    # Two-paragraph depth instruction
+    assert "two" in prompt.lower() and "paragraph" in prompt.lower()
+
+
+def test_climate_stage2_is_native_not_generic_engine():
+    state = app_module.AnalysisState.from_payload({
+        "active_lenses": ["climate"], "lens_versions": {}, "doc_type": "PAD",
+    })
+    prompt = app_module.build_lens_stage_context(
+        state, 2, climate_research={"status": "failed", "attempts": 0, "sources": [], "claims": [], "failure_reason": ""},
+    )["prompt"]
+    assert "core climate-fcv questions" in prompt.lower()
+    # Sanity: a non-climate PAD Stage 2 still uses the generic engine unchanged.
+    plain = app_module.AnalysisState.from_payload({"active_lenses": [], "lens_versions": {}, "doc_type": "PAD"})
+    plain_prompt = app_module.build_lens_stage_context(plain, 2)["prompt"]
+    assert "core climate-fcv questions" not in plain_prompt.lower()
+
+
+def test_stage2_climate_prompt_has_opcs_calibration_guardrails():
+    state = app_module.AnalysisState.from_payload({
+        "active_lenses": ["climate"], "lens_versions": {}, "doc_type": "PAD",
+    })
+    prompt = app_module.build_lens_stage_context(
+        state, 2,
+        climate_research={"status": "failed", "attempts": 0, "sources": [], "claims": [], "failure_reason": ""},
+    )["prompt"]
+    low = prompt.lower()
+    assert "instrument-route" in low                     # 12.1
+    assert "never determine" in low                      # advisory boundary / 12.2
+    assert "asset-appropriate design horizon" in low     # 12.3 dropped universal 20-50yr
+    assert "will cause conflict" in low                  # 12.6 names the banned deterministic phrasing
+    assert "not an opcs policy" in low                   # 12.7 source labelling
+    # Non-climate PAD Stage 2 does NOT carry the climate calibration block
+    plain = app_module.AnalysisState.from_payload({"active_lenses": [], "lens_versions": {}, "doc_type": "PAD"})
+    assert "asset-appropriate design horizon" not in app_module.build_lens_stage_context(plain, 2)["prompt"]
+
+
+def _valid_climate_stage3_payload():
+    # A "usable" climate diagnostic (both interaction directions) so the normal
+    # Stage 3 climate prefix is exercised rather than the failure fallback branch.
+    return _add_specific_climate_paths({"lenses": [{
+        "lens_id": "climate", "applicability": "material", "materiality_level": "high",
+        "materiality_summary": "Material climate-FCV interactions affect delivery and inclusion.",
+        "interaction_readout": [
+            {"direction_id": "climate-fcv-on-project", "summary": "Flood and insecurity could disrupt delivery."},
+            {"direction_id": "project-on-climate-fcv", "summary": "Benefit rules could affect resilience and trust."},
+        ],
+        "readout_sections": [], "other_pathways": [],
+    }], "findings": []})
+
+
+def test_climate_stage3_does_not_request_wider_fcv_context():
+    state = app_module.AnalysisState.from_payload({
+        "active_lenses": ["climate"], "lens_versions": {}, "doc_type": "PAD",
+    })
+    prompt = app_module.build_lens_stage_context(
+        state, 3, lens_diagnostic=_valid_climate_stage3_payload())["prompt"]
+    assert "wider_fcv_context" not in prompt
+
+
+def test_stage3_climate_prompt_has_cerc_cdrs_and_authority_basis_guardrails():
+    state = app_module.AnalysisState.from_payload({
+        "active_lenses": ["climate"], "lens_versions": {}, "doc_type": "PAD",
+    })
+    prompt = app_module.build_lens_stage_context(
+        state, 3, lens_diagnostic=_valid_climate_stage3_payload())["prompt"]
+    low = prompt.lower()
+    assert "cerc" in low
+    assert "named eligible emergency" in low or "activation pathway" in low   # 12.5
+    assert "cdrs" in low                                                       # 12.9
+    assert "af finances" in low or "what the af finances" in low              # 12.9 AF scoping
+    assert "does not auto-restart" in low or "does not auto" in low           # 12.9 restructuring
+    assert "phase level" in low or "phase-level" in low                       # 12.9 MPA
+    assert "authority_basis" in prompt                                        # 5.5 tag
+
+
 @pytest.mark.parametrize(
     ("response_text", "expected_status"),
     [
@@ -935,6 +1065,16 @@ def test_lens_diagnostic_repair_is_bounded_and_accepts_valid_json_only():
     assert "narrative field" in prompt
     assert "one specific story per direction" in prompt
     assert "flowing plain-language" in prompt
+    # Task 3.3 - recovery requests source + rating (cheap). Reflections stay CONCISE
+    # here (not two paragraphs): the recovery is the load-bearing fallback and must
+    # finish within its 120s read timeout, so it must not be enlarged like the primary.
+    assert "integration_rating" in prompt
+    assert "source" in prompt
+    assert "concise" in prompt.lower()
+    assert "two solid" not in prompt.lower() and "two-paragraph" not in prompt.lower()
+    # Task 4B.4 - recovery must stay within the OPCS calibration boundary
+    assert "never determine" in prompt.lower()
+    assert "instrument-route" in prompt.lower()
     assert app_module.warn_on_missing_high_climate_priority(
         [{"title": "Core priority", "lens_ids": []}],
         {"lenses": [{"lens_id": "climate", "materiality_level": "medium"}]},
@@ -1387,7 +1527,7 @@ def test_large_climate_readout_respects_stage3_platform_budget():
     payload = _add_specific_climate_paths(payload)
     context = app_module.build_lens_stage_context(state, 3, lens_diagnostic=payload)
 
-    assert context["estimated_tokens"] <= 1200
+    assert context["estimated_tokens"] <= 1600
     assert context["truncated"] is True
 
 
@@ -1464,7 +1604,7 @@ def test_climate_stage3_integrates_narrative_and_qualitative_dividends():
         "climate-fcv-on-project-1",
     ):
         assert value in prompt
-    assert context["estimated_tokens"] <= 1200
+    assert context["estimated_tokens"] <= 1600
 
 
 def test_south_sudan_dual_use_fixture_crosses_stage3_and_docx_pipeline():
@@ -1566,9 +1706,10 @@ def test_south_sudan_dual_use_fixture_crosses_stage3_and_docx_pipeline():
     assert "How this project could affect climate and FCV dynamics" in text
     assert "Key locations and components:" in text
     assert "over the life of the assets" in text
-    assert "The current design already contributes" in text
-    assert "Climate, peace and social dividend contribution" in text
-    assert "No material dividend pathway identified" in text
+    # Redesign: core-questions + strengths/weaknesses replace the standalone dividend section.
+    assert "Core climate and FCV questions" in text
+    assert "How the design holds up on climate and FCV" in text
+    assert "Wider FCV context" not in text
     assert "Differentiated approach note" not in text
 
 
@@ -1814,7 +1955,8 @@ def test_stage3_climate_prompt_uses_prose_and_wider_context():
     }], "findings": []})
     ctx = app_module.build_lens_stage_context(state, 3, lens_diagnostic=diagnostic)
     prompt = ctx["prompt"]
-    assert "wider_fcv_context" in prompt
+    # Phase 4 (Task 4.1): the dedicated module no longer surfaces wider_fcv_context.
+    assert "wider_fcv_context" not in prompt
     assert "causal strip" not in prompt.lower()
     assert "prose" in prompt.lower()
 
@@ -1822,9 +1964,11 @@ def test_stage3_climate_prompt_uses_prose_and_wider_context():
 def test_climate_integration_payload_helper():
     diagnostic = {"lenses": [{"lens_id": "climate",
                               "integration_level": "partly_integrated",
+                              "integration_rating": "Adequate",
                               "integration_summary": "Aware but allocation untreated."}]}
     out = app_module.climate_integration_payload(diagnostic)
-    assert out == {"level": "partly_integrated", "summary": "Aware but allocation untreated."}
+    assert out == {"level": "partly_integrated", "rating": "Adequate",
+                   "summary": "Aware but allocation untreated."}
     assert app_module.climate_integration_payload({"lenses": []}) is None
     assert app_module.climate_integration_payload({"lenses": [{"lens_id": "climate"}]}) is None
 
@@ -1923,18 +2067,20 @@ def test_docx_climate_reflections_integration_wider_fcv_boundary_compliance():
     document = Document(io.BytesIO(response.data))
     text = "\n".join(paragraph.text for paragraph in document.paragraphs)
 
-    assert "Reflections on core climate and FCV considerations" in text
+    # Redesign contract: core-questions section (with source lines) + strengths/weaknesses;
+    # standalone reflections/dividends/wider-FCV DOCX sections are gone in module mode.
+    assert "Core climate and FCV questions" in text
     assert "How well does the project integrate climate and FCV?" in text
-    assert "Wider FCV context" in text
+    assert "How the design holds up on climate and FCV" in text        # strengths/weaknesses
+    assert "Wider FCV context" not in text
     assert "does not determine ESF or ESS compliance" in text          # policy boundary
     assert "Task Team E&S specialist" in text                          # specialist_referral route
 
-    # order: interactions -> reflections -> dividends -> wider fcv
+    # order: integration line -> strengths&weaknesses -> core questions (interactions + answers)
+    i_sw = text.index("How the design holds up on climate and FCV")
+    i_q = text.index("Core climate and FCV questions")
     i_int = text.index("How climate and FCV dynamics could affect this project")
-    i_ref = text.index("Reflections on core climate and FCV considerations")
-    i_div = text.index("Climate, peace and social dividends")
-    i_wid = text.index("Wider FCV context")
-    assert i_int < i_ref < i_div < i_wid
+    assert i_sw < i_q < i_int
 
 
 def test_stage3_sse_payloads_include_wider_fcv_context():

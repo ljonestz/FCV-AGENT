@@ -283,14 +283,12 @@ def test_live_stage3_orders_option_a_and_preserves_core_fallback():
     source = INDEX.read_text(encoding="utf-8")
     helper = _extract_js_function(source, "renderOut")
 
-    # Climate-valid path: interactions → reflections → dividends → wider-fcv
-    # renderSRNarrative is NOT in the climate path (replaced by integration gauge + reflections)
+    # Climate-valid path (redesign): notice/gauge -> strengths & weaknesses -> core questions.
+    # renderSRNarrative is NOT in the climate path (replaced by integration gauge + core questions)
     climate_order = [
         "renderClimateModuleNotice",
-        "renderClimateInteractions",
-        "renderClimateReflections",
-        "renderClimateDividendSynthesis",
-        "renderWiderFcvContext",
+        "renderClimateStrengthsWeaknesses",
+        "renderClimateCoreQuestions",
     ]
     positions = [helper.index(name) for name in climate_order]
     assert positions == sorted(positions)
@@ -307,18 +305,19 @@ def test_download_html_uses_same_climate_sections_and_order():
     helper = _extract_js_function(source, "downloadHTML")
 
     assert "isClimateLensActive" in helper
-    # Climate-valid path mirrors renderOut: interactions → reflections → dividends → wider-fcv
-    # renderSRNarrative is dropped from the climate path
+    # Climate-valid path mirrors renderOut (redesign): notice -> strengths&weaknesses -> core questions.
     required = [
         "renderClimateModuleNotice",
         "wrapSRTerms(md(summarybody))",
-        "renderClimateInteractions",
-        "renderClimateReflections",
-        "renderClimateDividendSynthesis",
-        "renderWiderFcvContext",
+        "renderClimateStrengthsWeaknesses",
+        "renderClimateCoreQuestions",
     ]
     positions = [helper.index(value) for value in required]
     assert positions == sorted(positions)
+    # Dividends + wider-FCV are no longer called in the climate export block
+    _seg = helper[helper.index("renderClimateStrengthsWeaknesses"):helper.index("renderClimateCoreQuestions") + 400]
+    assert "renderClimateDividendSynthesis" not in _seg
+    assert "renderWiderFcvContext" not in _seg
     assert "renderRiskExposure(stageRiskExposure)" in helper
     assert (
         "renderSRCards(stageSensitivitySummary, stageResponsivenessSummary)"
@@ -468,6 +467,75 @@ def test_single_integration_gauge_present_in_module_mode():
     assert float(vals[1]) > float(vals[2]) > 0
 
 
+def test_climate_gauge_uses_six_tier_rating():
+    html = INDEX.read_text(encoding="utf-8")
+    assert "climateIntegrationRatingFraction" in html
+    fn = _extract_js_function(html, "climateIntegrationRatingFraction")
+    out = subprocess.run(
+        ["node", "-e",
+         f"{fn}\nconsole.log([climateIntegrationRatingFraction('Extremely Low'),"
+         f"climateIntegrationRatingFraction('Adequate'),"
+         f"climateIntegrationRatingFraction('Very Well Embedded'),"
+         f"climateIntegrationRatingFraction('')].join(','))"],
+        capture_output=True, text=True)
+    assert out.returncode == 0, out.stderr
+    vals = out.stdout.strip().split(",")
+    # Extremely Low > 0 (tier 1 of 6), Adequate = 4/6, top = 1, invalid = 0
+    assert abs(float(vals[0]) - (1 / 6)) < 0.01
+    assert abs(float(vals[1]) - (4 / 6)) < 0.01
+    assert vals[2] == "1"
+    assert vals[3] == "0"
+
+
+def test_core_questions_render_intro_interactions_and_theme_answers_with_source():
+    html = INDEX.read_text(encoding="utf-8")
+    assert "renderClimateCoreQuestions" in html
+    fn = _extract_js_function(html, "renderClimateCoreQuestions")
+    dep1 = _extract_js_function(html, "renderClimatePathwayStrip")
+    esc = _extract_js_function(html, "esc")
+    lens = {
+        "interaction_readout": [
+            {"direction_id": "climate-fcv-on-project", "summary": "Flood risk.",
+             "narrative": "Para one.\n\nPara two names Boma Fisheries Management Units.", "pathways": []},
+            {"direction_id": "project-on-climate-fcv", "summary": "Cohesion.",
+             "narrative": "Governance forum.", "pathways": []},
+        ],
+        "reflections": [
+            {"question_key": "cq2_maladaptation", "title": "Could the design lock in maladaptation?",
+             "status_cue": "partial gap", "source": "FCV-Sensitive Climate Action Framework",
+             "text": "Answer para one.\n\nAnswer para two."},
+        ],
+    }
+    script = f"{esc}\n{dep1}\n{fn}\nprocess.stdout.write(renderClimateCoreQuestions({json.dumps(lens)}));"
+    out = subprocess.run(["node", "-e", script], capture_output=True, text=True)
+    assert out.returncode == 0, out.stderr
+    # Lay-reader intro names the source literature
+    assert "Maximizing the Peace and Social Dividends of Climate Action" in out.stdout
+    # Both interaction directions present
+    assert "climate and FCV" in out.stdout
+    # Theme answer with its title, source line, and paragraph split
+    assert "Could the design lock in maladaptation?" in out.stdout
+    assert "FCV-Sensitive Climate Action Framework" in out.stdout
+    assert out.stdout.count("<p") >= 4  # multi-paragraph answers
+
+
+def test_strengths_weaknesses_two_column_full_detail():
+    html = INDEX.read_text(encoding="utf-8")
+    assert "renderClimateStrengthsWeaknesses" in html
+    fn = _extract_js_function(html, "renderClimateStrengthsWeaknesses")
+    esc = _extract_js_function(html, "esc")
+    lens = {"strengths_weaknesses": [
+        {"side": "strength", "title": "Community delivery", "text": "Fits weak centre and adapts to floods."},
+        {"side": "gap", "title": "Flood-displacement", "text": "Named but no design response."}]}
+    out = subprocess.run(["node", "-e",
+        f"{esc}\n{fn}\nprocess.stdout.write(renderClimateStrengthsWeaknesses({json.dumps(lens)}));"],
+        capture_output=True, text=True)
+    assert out.returncode == 0, out.stderr
+    assert "Where the design is strong" in out.stdout
+    assert "Community delivery" in out.stdout
+    assert "Named but no design response." in out.stdout
+
+
 def test_reflections_render_with_status_chips_and_intro():
     html = INDEX.read_text(encoding="utf-8")
     assert "renderClimateReflections" in html
@@ -491,18 +559,17 @@ def test_reflections_render_with_status_chips_and_intro():
     assert empty.stdout.strip() == ""
 
 
-def test_live_and_shared_orders_boxes_reflections_dividends_wider():
+def test_live_climate_order_notice_sw_questions():
     html = INDEX.read_text(encoding="utf-8")
-    for anchor in ("renderClimateInteractions", "renderClimateReflections",
-                   "renderClimateDividendSynthesis", "renderWiderFcvContext"):
-        assert anchor in html
-    # In renderOut, the climate-valid assembly must order the four calls correctly.
     body = html.split("function renderOut", 1)[1][:8000]
-    i_int = body.index("renderClimateInteractions")
-    i_ref = body.index("renderClimateReflections")
-    i_div = body.index("renderClimateDividendSynthesis")
-    i_wid = body.index("renderWiderFcvContext")
-    assert i_int < i_ref < i_div < i_wid
+    i_notice = body.index("renderClimateModuleNotice")
+    i_sw = body.index("renderClimateStrengthsWeaknesses")
+    i_q = body.index("renderClimateCoreQuestions")
+    assert i_notice < i_sw < i_q
+    # Dividends + wider-FCV renderers are no longer called in the climate block
+    seg = body[i_notice:i_q + 400]
+    assert "renderClimateDividendSynthesis" not in seg
+    assert "renderWiderFcvContext" not in seg
 
 
 def test_policy_boundary_notice_present():

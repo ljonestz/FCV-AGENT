@@ -44,41 +44,78 @@
     "claims": [
       {
         "id": "climate-claim-1",
-        "source_ids": ["climate-source-1"],
+        "source_ids": [
+          "climate-source-1"
+        ],
         "claim": "Changing flood timing can constrain rehabilitation access and construction windows.",
-        "geographies": ["Upper Nile"],
-        "project_elements": ["Landing-site rehabilitation"],
-        "affected_groups": ["Fishing households"],
-        "systems_or_assets": ["Feeder roads"],
+        "geographies": [
+          "Upper Nile"
+        ],
+        "project_elements": [
+          "Landing-site rehabilitation"
+        ],
+        "affected_groups": [
+          "Fishing households"
+        ],
+        "systems_or_assets": [
+          "Feeder roads"
+        ],
         "evidence_status": "projected",
         "confidence": "medium",
-        "time_horizons": ["project-lifetime"],
+        "time_horizons": [
+          "project-lifetime"
+        ],
         "evidence_gap": "Site-level flood thresholds are not available."
       },
       {
         "id": "climate-claim-2",
-        "source_ids": ["climate-source-2"],
+        "source_ids": [
+          "climate-source-2"
+        ],
         "claim": "Seasonal access rules can redistribute adaptive options among mobile and resident users.",
-        "geographies": ["Sudd"],
-        "project_elements": ["BFMU governance"],
-        "affected_groups": ["Seasonal users", "Pastoralists"],
-        "systems_or_assets": ["Fishing grounds"],
+        "geographies": [
+          "Sudd"
+        ],
+        "project_elements": [
+          "BFMU governance"
+        ],
+        "affected_groups": [
+          "Seasonal users",
+          "Pastoralists"
+        ],
+        "systems_or_assets": [
+          "Fishing grounds"
+        ],
         "evidence_status": "observed",
         "confidence": "medium",
-        "time_horizons": ["current-near-term"],
+        "time_horizons": [
+          "current-near-term"
+        ],
         "evidence_gap": "Seasonal-user representation is not documented."
       },
       {
         "id": "climate-claim-3",
-        "source_ids": ["climate-source-3"],
+        "source_ids": [
+          "climate-source-3"
+        ],
         "claim": "Conservancy governance choices can shape long-term access to shared ecosystems.",
-        "geographies": ["Jonglei"],
-        "project_elements": ["Community conservancies"],
-        "affected_groups": ["Pastoralists"],
-        "systems_or_assets": ["Wetland ecosystems"],
+        "geographies": [
+          "Jonglei"
+        ],
+        "project_elements": [
+          "Community conservancies"
+        ],
+        "affected_groups": [
+          "Pastoralists"
+        ],
+        "systems_or_assets": [
+          "Wetland ecosystems"
+        ],
         "evidence_status": "inferred",
         "confidence": "medium",
-        "time_horizons": ["asset-system-lifetime"],
+        "time_horizons": [
+          "asset-system-lifetime"
+        ],
         "evidence_gap": "Long-term governance arrangements remain undefined."
       }
     ]
@@ -90,7 +127,11 @@
         "applicability": "material",
         "materiality_level": "high",
         "materiality_summary": "Flood variability, seasonal mobility, and shared-resource governance are central to delivery and durable outcomes.",
-        "analysis_emphasis": ["adaptation", "resource access", "governance"],
+        "analysis_emphasis": [
+          "adaptation",
+          "resource access",
+          "governance"
+        ],
         "source_ids": [
           "peace-social-dividends",
           "climate-source-1",
@@ -104,29 +145,39 @@
             "question_key": "cq2_maladaptation",
             "title": "Maladaptation, Do No Harm and lock-in",
             "status_cue": "partial gap",
-            "text": "New water points reallocate a contested dry-season resource; siting is not yet treated as a governance decision."
+            "text": "New water points reallocate a contested dry-season resource; siting is not yet treated as a governance decision.\n\nThis second paragraph names a specific project component and its remaining gap.",
+            "source": "FCV-Sensitive Climate Action Framework"
           },
           {
             "question_key": "cq4_inclusion",
             "title": "Vulnerable regions and groups",
             "status_cue": "strong",
-            "text": "Targeting reaches drought- and displacement-affected counties and names displaced households explicitly."
+            "text": "Targeting reaches drought- and displacement-affected counties and names displaced households explicitly.\n\nThis second paragraph names a specific project component and its remaining gap.",
+            "source": "Maximizing the Peace and Social Dividends of Climate Action"
           },
           {
             "question_key": "cq3_dividends",
             "title": "Peace and social dividends",
             "status_cue": "unclaimed opportunity",
-            "text": "Shared water-user governance could produce a cohesion dividend but is not an intended outcome."
+            "text": "Shared water-user governance could produce a cohesion dividend but is not an intended outcome.\n\nThis second paragraph names a specific project component and its remaining gap.",
+            "source": "Defueling Conflict"
           }
         ],
         "less_central": "HDP coordination is relevant given the humanitarian presence but is treated only lightly.",
-        "sensitivity_evidence": ["The design acknowledges seasonal flooding can interrupt access to works sites."],
-        "responsiveness_evidence": ["Mixed water-user committees are proposed but cohesion is not a tracked outcome."],
+        "sensitivity_evidence": [
+          "The design acknowledges seasonal flooding can interrupt access to works sites."
+        ],
+        "responsiveness_evidence": [
+          "Mixed water-user committees are proposed but cohesion is not a tracked outcome."
+        ],
         "interaction_readout": [
           {
             "direction_id": "climate-fcv-on-project",
             "summary": "Flood timing and insecurity can jointly constrain access to landing-site works and services.",
-            "source_ids": ["climate-source-1", "climate-source-2"],
+            "source_ids": [
+              "climate-source-1",
+              "climate-source-2"
+            ],
             "pathways": [
               {
                 "pathway_id": "climate-fcv-on-project-1",
@@ -134,12 +185,24 @@
                 "mechanism": "Road closures compress safe construction and supervision windows.",
                 "project_implication": "Landing-site rehabilitation in Upper Nile may be delayed or unevenly supervised.",
                 "design_response": "Sequence works against seasonal access windows and define combined flood-security triggers.",
-                "project_elements": ["Landing-site rehabilitation"],
-                "geographies": ["Upper Nile"],
-                "affected_groups": ["Fishing households"],
-                "systems_or_assets": ["Feeder roads"],
-                "time_horizons": ["project-lifetime"],
-                "research_claim_ids": ["climate-claim-1"],
+                "project_elements": [
+                  "Landing-site rehabilitation"
+                ],
+                "geographies": [
+                  "Upper Nile"
+                ],
+                "affected_groups": [
+                  "Fishing households"
+                ],
+                "systems_or_assets": [
+                  "Feeder roads"
+                ],
+                "time_horizons": [
+                  "project-lifetime"
+                ],
+                "research_claim_ids": [
+                  "climate-claim-1"
+                ],
                 "confidence": "medium",
                 "evidence_gap": "Site-level flood thresholds are not available."
               }
@@ -148,7 +211,10 @@
           {
             "direction_id": "project-on-climate-fcv",
             "summary": "Resource-governance choices can preserve or narrow adaptive options for seasonal users.",
-            "source_ids": ["climate-source-2", "climate-source-3"],
+            "source_ids": [
+              "climate-source-2",
+              "climate-source-3"
+            ],
             "pathways": [
               {
                 "pathway_id": "project-on-climate-fcv-1",
@@ -156,12 +222,30 @@
                 "mechanism": "New institutions redistribute decision-making power and seasonal access.",
                 "project_implication": "BFMU and conservancy rules may exclude seasonal users and pastoralists from adaptive resources.",
                 "design_response": "Represent mobile users, publish seasonal rules, and monitor access disputes.",
-                "project_elements": ["BFMU governance", "Community conservancies"],
-                "geographies": ["Sudd", "Jonglei"],
-                "affected_groups": ["Seasonal users", "Pastoralists"],
-                "systems_or_assets": ["Fishing grounds", "Wetland ecosystems"],
-                "time_horizons": ["current-near-term", "asset-system-lifetime"],
-                "research_claim_ids": ["climate-claim-2", "climate-claim-3"],
+                "project_elements": [
+                  "BFMU governance",
+                  "Community conservancies"
+                ],
+                "geographies": [
+                  "Sudd",
+                  "Jonglei"
+                ],
+                "affected_groups": [
+                  "Seasonal users",
+                  "Pastoralists"
+                ],
+                "systems_or_assets": [
+                  "Fishing grounds",
+                  "Wetland ecosystems"
+                ],
+                "time_horizons": [
+                  "current-near-term",
+                  "asset-system-lifetime"
+                ],
+                "research_claim_ids": [
+                  "climate-claim-2",
+                  "climate-claim-3"
+                ],
                 "confidence": "medium",
                 "evidence_gap": "Representation and long-term governance arrangements remain undefined."
               }
@@ -178,10 +262,15 @@
                 "mechanism": "Transparent and representative resource rules can strengthen legitimacy.",
                 "project_contribution": "The project establishes BFMUs and community conservancies.",
                 "strengthening_action": "Add seasonal-user representation, published rules, and dispute monitoring.",
-                "evidence": ["BFMU and conservancy governance are named project elements."],
+                "evidence": [
+                  "BFMU and conservancy governance are named project elements."
+                ],
                 "evidence_gap": "Representation rules are incomplete.",
                 "trade_off": "Formalization could displace customary access.",
-                "source_ids": ["peace-social-dividends", "climate-source-2"]
+                "source_ids": [
+                  "peace-social-dividends",
+                  "climate-source-2"
+                ]
               },
               {
                 "item_id": "livelihoods-opportunity",
@@ -189,10 +278,14 @@
                 "mechanism": "Climate-resilient landing sites can protect livelihood continuity.",
                 "project_contribution": "The project rehabilitates landing sites used by fishing households.",
                 "strengthening_action": "Use site-specific climate thresholds and accessible maintenance arrangements.",
-                "evidence": ["Landing-site rehabilitation is a named project activity."],
+                "evidence": [
+                  "Landing-site rehabilitation is a named project activity."
+                ],
                 "evidence_gap": "Design thresholds are not specified.",
                 "trade_off": "Investment may favor better-connected settlements.",
-                "source_ids": ["climate-source-1"]
+                "source_ids": [
+                  "climate-source-1"
+                ]
               }
             ]
           },
@@ -205,10 +298,15 @@
                 "mechanism": "Combined climate-security triggers can protect continuity.",
                 "project_contribution": "The operation already uses phased site delivery.",
                 "strengthening_action": "Define flood, access, and dispute triggers for resequencing.",
-                "evidence": ["Phased delivery provides an operational entry point."],
+                "evidence": [
+                  "Phased delivery provides an operational entry point."
+                ],
                 "evidence_gap": "Trigger thresholds are missing.",
                 "trade_off": "Flexibility requires transparent decisions.",
-                "source_ids": ["climate-source-1", "climate-source-2"]
+                "source_ids": [
+                  "climate-source-1",
+                  "climate-source-2"
+                ]
               }
             ]
           }
@@ -220,28 +318,68 @@
             "status": "not_material",
             "reason": "No clear project mitigation pathway is evidenced."
           }
+        ],
+        "integration_rating": "Adequate",
+        "strengths_weaknesses": [
+          {
+            "side": "strength",
+            "title": "Community-based delivery",
+            "text": "Fits a weak centre and adapts to seasonal flooding in the Sudd."
+          },
+          {
+            "side": "strength",
+            "title": "Contingent delivery design",
+            "text": "Allows the project to respond to combined flood and access shocks."
+          },
+          {
+            "side": "gap",
+            "title": "Flood-displacement pathway",
+            "text": "Named in the context but without a concrete design response."
+          },
+          {
+            "side": "gap",
+            "title": "Seasonal-user mapping",
+            "text": "Benefit rules could exclude customary seasonal users who are not mapped."
+          }
         ]
       }
     ],
     "findings": [
       {
         "finding_id": "climate-finding-1",
-        "lens_ids": ["climate"],
-        "evidence": ["Landing-site works lack combined flood-security triggers."],
+        "lens_ids": [
+          "climate"
+        ],
+        "evidence": [
+          "Landing-site works lack combined flood-security triggers."
+        ],
         "status": "not_yet_addressed",
-        "source_ids": ["climate-source-1"],
-        "core_mappings": ["dnh:3"],
+        "source_ids": [
+          "climate-source-1"
+        ],
+        "core_mappings": [
+          "dnh:3"
+        ],
         "mechanism": "Compressed access windows can delay or weaken supervision.",
         "geography": "Upper Nile",
         "action_target": "works sequencing"
       },
       {
         "finding_id": "climate-finding-2",
-        "lens_ids": ["climate"],
-        "evidence": ["Seasonal-user representation is not defined."],
+        "lens_ids": [
+          "climate"
+        ],
+        "evidence": [
+          "Seasonal-user representation is not defined."
+        ],
         "status": "partially_addressed",
-        "source_ids": ["climate-source-2", "climate-source-3"],
-        "core_mappings": ["ost:2"],
+        "source_ids": [
+          "climate-source-2",
+          "climate-source-3"
+        ],
+        "core_mappings": [
+          "ost:2"
+        ],
         "mechanism": "Formal rules can narrow adaptive access and deepen grievance.",
         "geography": "Sudd and Jonglei",
         "action_target": "resource governance"
@@ -272,9 +410,15 @@
         },
         "climate_links": {
           "status": "linked",
-          "interaction_pathway_ids": ["climate-fcv-on-project-1"],
-          "dividend_pathway_ids": ["flexible-adaptive-delivery"],
-          "finding_ids": ["climate-finding-1"],
+          "interaction_pathway_ids": [
+            "climate-fcv-on-project-1"
+          ],
+          "dividend_pathway_ids": [
+            "flexible-adaptive-delivery"
+          ],
+          "finding_ids": [
+            "climate-finding-1"
+          ],
           "contribution": "Protects continuity of climate-resilient landing-site investment.",
           "strengthening_effect": "Adds transparent triggers for seasonal resequencing.",
           "reason": ""
@@ -288,9 +432,15 @@
         "policy_status": "advisory",
         "climate_links": {
           "status": "linked",
-          "interaction_pathway_ids": ["project-on-climate-fcv-1"],
-          "dividend_pathway_ids": ["institutional-capacity-legitimacy"],
-          "finding_ids": ["climate-finding-2"],
+          "interaction_pathway_ids": [
+            "project-on-climate-fcv-1"
+          ],
+          "dividend_pathway_ids": [
+            "institutional-capacity-legitimacy"
+          ],
+          "finding_ids": [
+            "climate-finding-2"
+          ],
           "contribution": "Protects adaptive resource access and institutional legitimacy.",
           "strengthening_effect": "Makes seasonal representation and dispute monitoring operational.",
           "reason": ""
@@ -318,9 +468,15 @@
         "actions": [],
         "climate_links": {
           "status": "linked",
-          "interaction_pathway_ids": ["climate-fcv-on-project-1"],
-          "dividend_pathway_ids": ["livelihoods-opportunity"],
-          "finding_ids": ["climate-finding-1"],
+          "interaction_pathway_ids": [
+            "climate-fcv-on-project-1"
+          ],
+          "dividend_pathway_ids": [
+            "livelihoods-opportunity"
+          ],
+          "finding_ids": [
+            "climate-finding-1"
+          ],
           "contribution": "Protects fishing livelihoods and asset performance.",
           "strengthening_effect": "Extends resilience through the asset lifetime.",
           "reason": ""

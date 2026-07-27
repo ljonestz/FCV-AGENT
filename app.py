@@ -64,6 +64,7 @@ from background_docs import (
     LEGACY_PAD_MINIMUM_REFERENCE_SET
 )
 import io
+import climate_question_bank
 try:
     from pypdf import PdfReader
 except ImportError:
@@ -659,10 +660,10 @@ class AnalysisState:
         )
 
 
-def _bounded_stage3_lenses(
+def _bounded_stage3_lenses(  # token_limit raised 1100 -> 1500 for the climate S12 calibration prefix
     diagnostic: dict[str, Any],
     prefix: str,
-    token_limit: int = 1100,
+    token_limit: int = 1500,
 ) -> tuple[list[dict[str, Any]], bool]:
     """Retain compact materiality/readout data within the Stage 3 lens budget."""
 
@@ -873,6 +874,22 @@ def _bounded_stage3_lenses(
     return selected, truncated
 
 
+def _climate_project_signals(state, *text_parts, max_chars: int = 3000) -> str:
+    """Assemble a compact lowercase-able signal blob for the climate question-bank
+    trigger selector from the instrument/doc-type plus any Stage-1-derived text.
+    Safe with None / dict parts; only used when the Climate lens is active."""
+    parts: list[str] = [
+        str(getattr(state, "instrument", "") or ""),
+        str(getattr(state, "doc_type", "") or ""),
+    ]
+    for t in text_parts:
+        if isinstance(t, dict):
+            t = " ".join(str(v) for v in t.values())
+        if t:
+            parts.append(str(t))
+    return " ".join(p for p in parts if p)[:max_chars]
+
+
 def build_lens_stage_context(
     state: AnalysisState,
     stage: int,
@@ -880,6 +897,7 @@ def build_lens_stage_context(
     lens_diagnostic: dict[str, Any] | None = None,
     lens_context_sources: list[dict[str, Any]] | None = None,
     climate_research: dict[str, Any] | None = None,
+    project_signals: str = "",
 ) -> dict[str, Any]:
     """Resolve client lens choices and build a bounded stage-specific prompt contract."""
 
@@ -922,8 +940,12 @@ def build_lens_stage_context(
         )
     elif selection.lenses and stage == 2:
         suffix = (
-            "Return a hidden JSON object after the visible Stage 2 assessment between "
-            f"{LENS_DIAGNOSTIC_START} and {LENS_DIAGNOSTIC_END}. Use top-level arrays 'lenses' "
+            "MANDATORY STRUCTURED OUTPUT. In the same trailing structured-output section as "
+            "the %%%UNDER_HOOD%%% block, and as a required sibling of it, you MUST emit a "
+            "hidden JSON object between "
+            f"{LENS_DIAGNOSTIC_START} and {LENS_DIAGNOSTIC_END}. This block is not optional: "
+            "your Stage 2 response is incomplete and unusable without it, so emit it in full "
+            "even if you must shorten the visible narrative to make room. Use top-level arrays 'lenses' "
             "and 'findings'. For each active lens include applicability, materiality_summary, "
             "analysis_emphasis, evidence, source_ids, readout_sections, and other_pathways. "
             "Use only declared section/item IDs. Item status must be supported, potential, "
@@ -1004,7 +1026,7 @@ def build_lens_stage_context(
                 "evidence that the project actively works to change the climate-FCV "
                 "situation (FCV Responsiveness). Leave either list empty if no clear "
                 "evidence exists. Also return reflections: three to five objects each "
-                "with question_key, title, status_cue, and text, drawn from these core "
+                "with question_key, title, status_cue, source, and text, drawn from these core "
                 "questions and surfacing only the material ones: "
                 "cq1_interaction (Climate-FCV interactions and delivery), "
                 "cq2_maladaptation (maladaptation, Do No Harm and lock-in), "
@@ -1053,6 +1075,70 @@ def build_lens_stage_context(
                 "mandatory. "
                 "Validated Climate research claims:\n"
                 + research_context
+            )
+            # Task 3.1 - inject the triggered WBG-source core-question bank and request
+            # per-theme two-paragraph answers with a source + the 6-tier integration_rating.
+            fired = climate_question_bank.select_triggered_questions(project_signals or "")
+            if fired:
+                bank_lines = []
+                for theme in climate_question_bank.THEMES:
+                    for q in fired.get(theme, []):
+                        bank_lines.append(f"- [{theme}] {q['question']} (source: {q['source']})")
+                bank_text = "\n".join(bank_lines)
+                suffix += (
+                    " CORE-QUESTION BANK (triggered for this project). Treat these as "
+                    "the battery of core climate-FCV questions to reason through; answer "
+                    "only the themes that are materially relevant to THIS project and "
+                    "drop the rest rather than padding. For each answered theme produce a "
+                    "reflections[] entry whose title is the reader-facing question, whose "
+                    "text is TWO solid, nuanced paragraphs (not a summary) naming the "
+                    "project's specific components, sub-components, institutions, sites and "
+                    "figures throughout, and whose source names the framework it draws on. "
+                    "Always answer the two interaction directions (Q1/Q2) via interaction_readout. "
+                    "Also return integration_rating using exactly one of: Extremely Low, "
+                    "Very Low, Low, Adequate, Well Embedded, Very Well Embedded (the same "
+                    "6-tier scale the app uses), reflecting how well the project integrates "
+                    "climate and FCV. Bank questions:\n" + bank_text + "\n"
+                )
+            # Task 5.3 - structured strengths/weaknesses for the full-detail block.
+            suffix += (
+                " Also return strengths_weaknesses: up to 4 strengths and 4 gaps, each "
+                "an object {side (strength or gap), title, text}, climate-FCV-scoped, "
+                "each naming the specific design element, component, or institution it "
+                "attaches to rather than a generic statement. "
+            )
+            # Task 4B.1 - OPCS Section 12 calibration guardrails for climate recommendations.
+            suffix += (
+                " CLIMATE RECOMMENDATION CALIBRATION (advisory boundary - you may flag a "
+                "gap, point to the relevant corporate assessment/instrument, and pose a "
+                "question for the responsible specialist; you must NEVER determine Paris "
+                "alignment, ESF/ESS/ESRC compliance, climate resilience, or screening "
+                "adequacy). (1) Instrument-route every climate point before naming any "
+                "instrument or commitment: IPF uses ESF vocabulary (ESS1-10, ESCP, ESRS, "
+                "SEP, Operations Manual); PforR uses ESSA / six core principles / PAP / DLIs "
+                "/ borrower systems and NEVER ESS numbers, ESCP, or an IPF CERC; DPF uses the "
+                "Program Document / prior actions / PSIA / SORT and NEVER ESS, ESCP, ESRS or "
+                "CERC. (2) Paris Alignment and Climate-and-Disaster-Risk Screening (CDRS) are "
+                "separate corporate processes you flag but never determine - say 'may require "
+                "follow-up in the formal PA assessment', not 'the project is not Paris "
+                "aligned'; CCDR is evidence-where-available, not a mandatory step. (3) Good "
+                "practice is not a requirement: use no universal numeric design horizon - say "
+                "'an asset-appropriate design horizon using applicable national/international "
+                "standards', not '20-50 year projections'; adaptive triggers and actor-level "
+                "conflict analysis are proportionate to the evidence (reuse existing "
+                "RRA/ESSA/PSIA), not mandated. (4) Climate-relevant ESS mapping is IPF-only: "
+                "ESS1 (climate/hazard in the E&S assessment), ESS3 (resource efficiency/GHG), "
+                "ESS4 (community safety/hazards/emergency preparedness), conditional "
+                "ESS2/5/6/7/10; the PforR equivalent is the ESSA public-and-worker-safety "
+                "principle + PAP, the DPF equivalent is PSIA + environmental/NR analysis. "
+                "(5) Compound-risk wording is conditional only ('may intensify', 'could "
+                "interact with', 'should be monitored') - never 'climate change will cause "
+                "conflict', 'the project will reduce conflict', or 'the operation is "
+                "maladaptive'. (6) Label the primary framework - A Framework for Delivering "
+                "Climate Action in Settings Affected by FCV - and the other WBG sources as "
+                "'World Bank analytical / good-practice source, not an OPCS policy or "
+                "compliance standard'; never rank an analytical report above current PPF "
+                "policy/procedure/directive/guidance."
             )
     elif selection.lenses and stage == 3 and stage3_diagnostic_failure:
         suffix = (
@@ -1118,11 +1204,9 @@ def build_lens_stage_context(
                 "Core priorities use no-material-pathway, empty IDs, and a "
                 "reason. "
             )
-            prefix += (
-                "Add a top-level wider_fcv_context string naming any material FCV "
-                "issue with no real climate dimension so it is surfaced but not "
-                "developed into a priority; use null if none. "
-            )
+            # Phase 4 (Task 4.1): the dedicated climate module no longer surfaces
+            # wider_fcv_context; the field stays parsed for back-compat but is not
+            # requested (always null in climate mode).
             prefix += (
                 "This readout is advisory and does not determine ESF or ESS "
                 "compliance or an E&S risk classification. Give each priority a "
@@ -1130,6 +1214,33 @@ def build_lens_stage_context(
                 "or not_determined) and, where warranted, a specialist_referral "
                 "with required, route, and reason. Do not present an unclaimed "
                 "dividend as non-compliance. "
+            )
+            # Phase 4B (Task 4B.2): OPCS Section 12.5/12.9 CERC + CDRS + AF/Restructuring/MPA
+            # calibration, plus the shared authority_basis tag (Section 5.5).
+            prefix += (
+                "CLIMATE STAGE-3 CALIBRATION. Instrument-route every recommendation first "
+                "(IPF=ESF; PforR=ESSA/PAP/DLIs; DPF=Program Document/prior actions/PSIA) and "
+                "flag-not-determine Paris Alignment / CDRS. CERC: recommend considering a "
+                "CERC only where the instrument can carry one, there is a named eligible "
+                "emergency (natural-hazard/climate/health/economic) with a plausible "
+                "declaration/activation pathway, and it links to the PDO - IPF only; PforR "
+                "only via a separate IPF component; DPF via Cat DDO/supplemental/scalable, "
+                "never an IPF CERC; never a generic 'flexibility' recommendation. Climate & "
+                "Disaster Risk Screening (CDRS) is a corporate commitment across IPF/PforR/DPF "
+                "including AF, MPA phases, emergency operations, CERCs and guarantees; no "
+                "named CDRS tool is mandatory; CDRS is ex-ante and informs design but does "
+                "NOT replace the ESF/ESS assessment - point to it, never treat a CDRS result "
+                "as an ESS/ESRC/ESRS/ESCP determination. Additional Financing has its own "
+                "package and its own AF-level CDRS on the operation-as-modified - scope every "
+                "climate recommendation to what the AF finances, not the whole parent. "
+                "Restructuring does not auto-restart CDRS: only where the change adds new "
+                "activities or materially changes hazard exposure / vulnerability / coverage "
+                "/ expected life / beneficiaries / design, flag a possible CDRS update and PA "
+                "Method on the NEW activities only. MPA: CDRS is required at the phase level; "
+                "scope recommendations to the phase's own activities, location and "
+                "beneficiaries. Tag every recommendation with authority_basis (policy | "
+                "directive | procedure | guidance | reviewer_judgment) reflecting the strength "
+                "of the underlying source. "
             )
         prefix += "Deterministically merged lens diagnostic:\n"
         selected_findings: list[dict[str, Any]] = []
@@ -1501,16 +1612,19 @@ def repair_lens_diagnostic(
         'For Climate also return integration_level (one of well_integrated, '
         'partly_integrated, weakly_integrated, insufficient_evidence; use '
         'insufficient_evidence when the assessment does not clearly support a '
-        'level), a short integration_summary, three to five reflections against '
+        'level), a short integration_summary, integration_rating (one of '
+        'Extremely Low, Very Low, Low, Adequate, Well Embedded, or Very Well '
+        'Embedded), three to five reflections against '
         'the core climate-FCV questions (each with question_key from '
         'cq1_interaction, cq2_maladaptation, cq3_dividends, cq4_inclusion, '
         'cq5_institutions, cq6_adaptive, plus a short title, a soft status_cue '
         'in plain words (for example well recognised, partial gap, strong, '
         'unclaimed opportunity - never a snake_case token like material_gap or '
-        'unaddressed), and grounded text) surfacing only the material ones, an '
+        'unaddressed), a short source naming the framework it draws on, and '
+        'grounded text) surfacing only the material ones, an '
         'optional less_central line, and separate sensitivity_evidence and '
         'responsiveness_evidence lists. Write each reflection text as one or two '
-        'plain, connected sentences that land a decision-relevant point for a '
+        'concise, connected sentences that land a decision-relevant point for a '
         'non-specialist reader - what is recognised or missing here and why it '
         'matters for this project - not a restatement of the document or a '
         'mechanical checklist entry. Draw every reflection and evidence line '
@@ -1520,14 +1634,21 @@ def repair_lens_diagnostic(
         'declared readout section, at most one additional_pathway per section, '
         'and at most five findings. Omit empty optional fields rather than '
         'expanding them. '
+        'Stay within the advisory boundary: flag and point, never determine Paris '
+        'alignment/ESF/ESRC/resilience; instrument-route (IPF=ESF, PforR=ESSA/PAP, '
+        'DPF=PSIA); no universal numeric horizon; conditional compound-risk wording only. '
         'Use this compact shape: '
         '{"lenses":[{"lens_id":"climate","applicability":"material",'
         '"materiality_level":"high|medium|low","materiality_summary":"...",'
         '"integration_level":"well_integrated|partly_integrated|'
         'weakly_integrated|insufficient_evidence","integration_summary":"...",'
+        '"integration_rating":"Extremely Low|Very Low|Low|Adequate|Well Embedded|'
+        'Very Well Embedded",'
         '"reflections":[{"question_key":"cq1_interaction|cq2_maladaptation|'
         'cq3_dividends|cq4_inclusion|cq5_institutions|cq6_adaptive",'
-        '"title":"...","status_cue":"...","text":"..."}],"less_central":"...",'
+        '"title":"...","status_cue":"...","source":"...","text":"..."}],'
+        '"strengths_weaknesses":[{"side":"strength|gap","title":"...","text":"..."}],'
+        '"less_central":"...",'
         '"sensitivity_evidence":[],"responsiveness_evidence":[],'
         '"analysis_emphasis":[],"evidence":[],"source_ids":[],'
         '"interaction_readout":[{"direction_id":"climate-fcv-on-project|'
@@ -7565,12 +7686,22 @@ def run_stage():
                 pq_block = build_priority_questions_block(priority_questions, stage)
                 if pq_block:
                     stage_prompt = stage_prompt + pq_block
+            # Climate question-bank signals (Stage 2 only uses them): instrument/doc-type
+            # plus sector + the Stage-1 assistant narrative carried in the request history.
+            _s1_history_text = " ".join(
+                str(m.get('content', ''))
+                for m in (data.get('conversation_history') or [])
+                if isinstance(m, dict) and m.get('role') == 'assistant'
+            )[:2500]
             lens_context = build_lens_stage_context(
                 analysis_state,
                 stage,
                 lens_diagnostic=data.get('lens_diagnostic'),
                 lens_context_sources=data.get('lens_context_sources'),
                 climate_research=data.get('climate_research'),
+                project_signals=_climate_project_signals(
+                    analysis_state, data.get('sector_context'), _s1_history_text
+                ),
             )
             if lens_context['restart_required']:
                 return jsonify({
@@ -8132,6 +8263,32 @@ def _stage_timeout_message(stage_num, max_seconds):
     )
 
 
+def _is_transient_stream_error(exc) -> bool:
+    """True for transient provider errors that are safe to retry on stream open:
+    Anthropic 'Overloaded' (529), 5xx, rate-limit, and connection errors. A mid-stream
+    'overloaded_error' event surfaces as a generic exception whose string contains
+    'overloaded', so match on that too. Hard client errors (bad JSON, auth, 4xx other
+    than 429) are NOT transient and must not be retried."""
+    if isinstance(exc, (anthropic.InternalServerError, anthropic.APIConnectionError,
+                        anthropic.RateLimitError)):
+        return True
+    if isinstance(exc, anthropic.APIStatusError):
+        if getattr(exc, 'status_code', None) in (429, 500, 502, 503, 529):
+            return True
+    text = str(exc).lower()
+    return any(token in text for token in (
+        'overload', '529', '503', 'internal server error', 'service unavailable',
+    ))
+
+
+def _transient_stream_user_message(exc) -> str:
+    """User-facing message: friendly guidance for transient overload, raw detail otherwise."""
+    if _is_transient_stream_error(exc):
+        return ('The AI service is temporarily overloaded. Please wait a moment and '
+                'click "Retry this stage".')
+    return str(exc)
+
+
 def _stream_stage(
     messages,
     max_tokens,
@@ -8157,28 +8314,48 @@ def _stream_stage(
         max_seconds = _stage_timeout_seconds(stage_num)
 
     def _run():
-        try:
-            with get_client().messages.stream(
-                model="claude-sonnet-4-6",
-                max_tokens=max_tokens,
-                messages=messages
-            ) as s:
-                for chunk in s.text_stream:
-                    stream_q.put(('chunk', chunk))
-                # Capture the provider stop_reason so callers can detect a
-                # max_tokens truncation (e.g. a Stage 2 climate diagnostic block
-                # cut off at the output ceiling) rather than treating it as a
-                # normal completion.
-                try:
-                    final = s.get_final_message()
-                    _stream_stage._last_stop_reason = getattr(
-                        final, 'stop_reason', None
-                    )
-                except Exception:
-                    _stream_stage._last_stop_reason = None
-            stream_q.put(('done', None))
-        except Exception as e:
-            stream_q.put(('error', str(e)))
+        # Retry a transient provider error (Anthropic 'Overloaded'/5xx) on stream OPEN.
+        # Only safe when nothing has streamed yet — re-opening after partial output
+        # would duplicate content, so once a chunk flows we never retry.
+        max_attempts = 3
+        for attempt in range(1, max_attempts + 1):
+            streamed_any = False
+            try:
+                with get_client().messages.stream(
+                    model="claude-sonnet-4-6",
+                    max_tokens=max_tokens,
+                    messages=messages
+                ) as s:
+                    for chunk in s.text_stream:
+                        streamed_any = True
+                        stream_q.put(('chunk', chunk))
+                    # Capture the provider stop_reason so callers can detect a
+                    # max_tokens truncation (e.g. a Stage 2 climate diagnostic block
+                    # cut off at the output ceiling) rather than treating it as a
+                    # normal completion.
+                    try:
+                        final = s.get_final_message()
+                        _stream_stage._last_stop_reason = getattr(
+                            final, 'stop_reason', None
+                        )
+                    except Exception:
+                        _stream_stage._last_stop_reason = None
+                stream_q.put(('done', None))
+                return
+            except Exception as e:
+                if (not streamed_any and attempt < max_attempts
+                        and _is_transient_stream_error(e)):
+                    try:
+                        app.logger.warning(
+                            'Stage %s stream transient error (attempt %s/%s), retrying: %s',
+                            stage_num, attempt, max_attempts, str(e)[:120],
+                        )
+                    except Exception:
+                        pass
+                    time.sleep(min(2 ** attempt, 12))
+                    continue
+                stream_q.put(('error', _transient_stream_user_message(e)))
+                return
 
     t = threading.Thread(target=_run, daemon=True)
     t.start()
@@ -8688,6 +8865,9 @@ def run_express():
                     2,
                     lens_context_sources=lens_context_sources,
                     climate_research=climate_research,
+                    project_signals=_climate_project_signals(
+                        analysis_state, sector_context, stage1_output[:2500]
+                    ),
                 )
                 if lens_context_s2['prompt']:
                     stage2_prompt += "\n\n--- ACTIVE SECTOR LENSES ---\n" + lens_context_s2['prompt']
@@ -9294,6 +9474,7 @@ def climate_integration_payload(diagnostic: dict[str, Any]) -> dict[str, Any] | 
         return None
     return {
         "level": lens.get("integration_level", ""),
+        "rating": lens.get("integration_rating", ""),
         "summary": lens.get("integration_summary", ""),
     }
 
@@ -9795,6 +9976,57 @@ def download_report():
         _add_section_heading('Wider FCV context', level=2)
         doc.add_paragraph(wider_fcv_context)
 
+    def add_climate_strengths_weaknesses():
+        sw = (climate_readout or {}).get('strengths_weaknesses', []) if climate_readout else []
+        sw = [x for x in sw if isinstance(x, dict) and x.get('title')]
+        if not sw:
+            return
+        _add_section_heading('How the design holds up on climate and FCV', level=2)
+        for side, heading in (('strength', 'Where the design is strong'),
+                              ('gap', 'Where the design is weak')):
+            rows = [x for x in sw if x.get('side') == side]
+            if not rows:
+                continue
+            p = doc.add_paragraph()
+            p.add_run(heading).bold = True
+            for x in rows:
+                item = doc.add_paragraph(style='List Bullet')
+                item.add_run((x.get('title') or '').strip()).bold = True
+                if x.get('text'):
+                    item.add_run(f" - {x['text']}")
+
+    def add_climate_core_questions():
+        # Lay intro naming the source literature, then the two interaction directions,
+        # then the per-theme answers (reflections) with their soft status and source line.
+        _add_section_heading('Core climate and FCV questions', level=2)
+        _add_single_para(
+            'These core questions draw on World Bank analytical frameworks - '
+            'Maximizing the Peace and Social Dividends of Climate Action, the '
+            'FCV-Sensitive Climate Action Framework, and the Defueling Conflict '
+            '(peace and social dividends) series - and focus on the considerations '
+            'most material to this project rather than applying every principle mechanically.',
+            size=9, color=WB_GRAY, italic=True, space_before=0,
+        )
+        add_climate_interactions()
+        reflections = (climate_readout or {}).get('reflections', []) if climate_readout else []
+        for ref in reflections:
+            if not (ref.get('text') or '').strip():
+                continue
+            p = doc.add_paragraph()
+            p.add_run((ref.get('title') or '').strip()).bold = True
+            if ref.get('status_cue'):
+                p.add_run(f"  [{ref['status_cue']}]")
+            for para in re.split(r'\n\s*\n', str(ref.get('text', ''))):
+                para = para.strip()
+                if para:
+                    _add_single_para(para, space_before=0)
+            if ref.get('source'):
+                _add_single_para(f"Source: {ref['source']}", size=9, color=WB_GRAY,
+                                 italic=True, space_before=0)
+        less = (climate_readout or {}).get('less_central')
+        if less:
+            doc.add_paragraph(f'Less central here: {less}')
+
     def add_climate_interactions():
         labels = {
             'climate-fcv-on-project': (
@@ -9985,12 +10217,14 @@ def download_report():
 
         # ── FCV Risk Exposure ──
         if climate_valid:
+            # Climate readout redesign order: policy boundary + integration line ->
+            # full-detail strengths & weaknesses -> core-questions (lay intro +
+            # interactions + theme answers with source). Dividends fold into the
+            # core questions; the standalone wider-FCV section is dropped in module mode.
             add_policy_boundary()
             add_climate_integration_line()
-            add_climate_interactions()
-            add_climate_reflections()
-            add_climate_dividend_synthesis()
-            add_wider_fcv_context()
+            add_climate_strengths_weaknesses()
+            add_climate_core_questions()
         else:
             add_core_risk_exposure()
             add_sr_sections()

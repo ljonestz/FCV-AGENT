@@ -54,6 +54,40 @@ _CLIMATE_REFLECTION_KEYS = {
 }
 _CLIMATE_INTEGRATION_LEVELS = {"well_integrated", "partly_integrated", "weakly_integrated", "insufficient_evidence"}
 
+# 6-tier display scale (matches the default app gauge labels in index.html).
+_CLIMATE_INTEGRATION_RATINGS = (
+    "Extremely Low", "Very Low", "Low",
+    "Adequate", "Well Embedded", "Very Well Embedded",
+)
+
+
+def climate_integration_rating(value: Any) -> str:
+    """Return a valid 6-tier rating label, or '' if absent/invalid."""
+    raw = str(value or "").strip()
+    return raw if raw in _CLIMATE_INTEGRATION_RATINGS else ""
+
+
+def _normalize_climate_sw(value: Any) -> list[dict[str, Any]]:
+    """Validate the structured strengths/weaknesses list for the full-detail block.
+
+    Each entry: {side: strength|gap, title (<=160), text (<=600)}. Up to 4 per side.
+    """
+    strengths: list[dict[str, Any]] = []
+    gaps: list[dict[str, Any]] = []
+    for raw in _list_values(value):
+        if not isinstance(raw, dict):
+            continue
+        side = str(raw.get("side", "")).strip().lower()
+        title = str(raw.get("title", "")).strip()[:160]
+        text = str(raw.get("text", "")).strip()[:600]
+        if side not in {"strength", "gap"} or not title:
+            continue
+        entry = {"side": side, "title": title, "text": text}
+        bucket = strengths if side == "strength" else gaps
+        if len(bucket) < 4:
+            bucket.append(entry)
+    return strengths + gaps
+
 
 def _list_values(value: Any) -> list[Any]:
     """Return model-provided collection values without iterating scalars."""
@@ -203,23 +237,29 @@ def _soften_status_cue(value: Any) -> str:
 
 
 def _normalize_climate_reflections(value: Any) -> list[dict[str, Any]]:
-    """Validate and bound climate diagnostic reflection entries."""
+    """Validate and bound climate diagnostic reflection (theme answer) entries.
+
+    Each entry is a stable-theme answer: question_key + reader title + softened
+    status cue + a two-paragraph answer (text, up to ~1800 chars, paragraph
+    breaks preserved) + a short source attribution.
+    """
 
     reflections: list[dict[str, Any]] = []
     for raw in _list_values(value):
         if not isinstance(raw, dict):
             continue
         key = str(raw.get("question_key", ""))
-        text = str(raw.get("text", "")).strip()[:700]
+        text = str(raw.get("text", "")).strip()[:1800]
         if key not in _CLIMATE_REFLECTION_KEYS or not text:
             continue
         reflections.append({
             "question_key": key,
-            "title": str(raw.get("title", "")).strip()[:80],
+            "title": str(raw.get("title", "")).strip()[:160],
             "status_cue": _soften_status_cue(raw.get("status_cue", ""))[:40],
+            "source": str(raw.get("source", "")).strip()[:120],
             "text": text,
         })
-        if len(reflections) >= 5:
+        if len(reflections) >= 6:
             break
     return reflections
 
@@ -601,13 +641,17 @@ def extract_lens_diagnostic(
             if len(normalized_other) >= 10:
                 break
         reflections: list[dict[str, Any]] = []
+        strengths_weaknesses: list[dict[str, Any]] = []
         integration_level = ""
+        integration_rating = ""
         integration_summary = ""
         less_central = ""
         sensitivity_evidence: list[str] = []
         responsiveness_evidence: list[str] = []
         if lens_id == "climate":
             reflections = _normalize_climate_reflections(item.get("reflections"))
+            strengths_weaknesses = _normalize_climate_sw(item.get("strengths_weaknesses"))
+            integration_rating = climate_integration_rating(item.get("integration_rating"))
             raw_integration = str(item.get("integration_level", "")).lower()
             integration_level = (
                 raw_integration if raw_integration in _CLIMATE_INTEGRATION_LEVELS
@@ -643,7 +687,9 @@ def extract_lens_diagnostic(
                 "interaction_readout": normalized_interactions,
                 "additional_pathways": normalized_additional,
                 "reflections": reflections,
+                "strengths_weaknesses": strengths_weaknesses,
                 "integration_level": integration_level,
+                "integration_rating": integration_rating,
                 "integration_summary": integration_summary,
                 "less_central": less_central,
                 "sensitivity_evidence": sensitivity_evidence,

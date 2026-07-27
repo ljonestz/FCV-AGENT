@@ -220,3 +220,14 @@ def test_complete_climate_primary_skips_recovery(monkeypatch):
     assert recovered is False
     assert failure == ""
     assert climate_readout_is_complete(climate_lens_readout(diagnostic)) is True
+
+
+def test_completeness_unchanged_with_source_field():
+    """A source-bearing reflection still counts as grounded; completeness keys on
+    >=1 grounded reflection + non-empty integration_summary (unchanged contract)."""
+    import sector_lenses.pipeline as p
+    entry = {"lens_id": "climate",
+             "reflections": [{"question_key": "cq2_maladaptation", "title": "t",
+                              "status_cue": "gap", "source": "X", "text": "grounded answer"}],
+             "integration_summary": "aware but untreated"}
+    assert p.climate_readout_is_complete(entry) is True
