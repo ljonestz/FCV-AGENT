@@ -380,3 +380,15 @@ def clean_stage2_output(stage2_output):
 - `extract_priorities(...)` gains `preparation_regime` / `instrument` kwargs (new-model timing
   remap) and mirrors `pad_sections` ↔ `appraisal_document_sections`; `authority_basis` field
   validated (default `reviewer_judgment`). Done-event / Stage 3 requests carry `regime_context`.
+
+
+---
+
+## Climate-FCV readout redesign helpers (v9.22)
+
+- `climate_question_bank.select_triggered_questions(project_signals) -> {theme: [question,...]}` — pure trigger selector; cq1 always present.
+- `sector_lenses.pipeline.climate_integration_rating(value) -> str` — validate the 6-tier rating label ('' if absent/invalid).
+- `sector_lenses.pipeline._normalize_climate_sw(value)` — bound the `strengths_weaknesses` list.
+- `build_lens_stage_context(..., project_signals="")` — injects the triggered bank + §12 calibration into the Stage 2 climate suffix; drops `wider_fcv_context` and adds §12.5/§12.9 guardrails to the Stage 3 climate prefix.
+- `climate_integration_payload(diagnostic)` now returns `{level, rating, summary}`.
+- DOCX (`download_report`): `add_climate_strengths_weaknesses()` + `add_climate_core_questions()` replace the standalone reflections/dividend/wider-FCV sections in climate mode.

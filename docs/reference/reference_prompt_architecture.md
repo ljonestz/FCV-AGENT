@@ -349,3 +349,21 @@ instrument)` returns `LEGACY_PAD_MINIMUM_REFERENCE_SET` for legacy/unresolved, t
 `NEW_MODEL_NON_ESF_REFERENCE_SET` (no ESF/ESS vocabulary). Gate-1 note: "appraisal" is not
 globally replaced (the E&S Directive still uses Concept/Appraisal); only preparation-gate
 language is relabelled.
+
+
+---
+
+## Climate-FCV readout redesign (v9.22)
+
+**Core-question bank** (`climate_question_bank.py`): six stable themes (cq1_interaction, cq2_maladaptation, cq3_dividends, cq4_inclusion, cq5_institutions, cq6_adaptive). Each entry `{id, theme, question, source, triggers[]}` (lowercase trigger tokens). `select_triggered_questions(project_signals)` returns per-theme fired questions (cq1 always guaranteed). Injected into the Stage 2 climate suffix; `project_signals` is assembled from instrument + doc_type + sector + Stage-1 narrative at both routes.
+
+**Climate diagnostic contract additions** (`sector_lenses/pipeline.py` climate lens entry):
+- `reflections[]` now `{question_key, title (<=160), status_cue, source (<=120), text (<=1800, two paragraphs)}`; cap 6.
+- `integration_rating` — 6-tier label (`Extremely Low` | `Very Low` | `Low` | `Adequate` | `Well Embedded` | `Very Well Embedded`), `''` when absent/invalid; `integration_level` (4-tier) kept for back-compat.
+- `strengths_weaknesses[]` — `{side: strength|gap, title (<=160), text (<=600)}`, up to 4 per side.
+
+**OPCS §12/§12.9 calibration** (Stage 2 suffix + Stage 3 prefix, climate-gated only): instrument-route every point; Paris Alignment / CDRS flag-not-determine; no universal numeric horizon ("asset-appropriate design horizon"); IPF-only ESS map; conditional compound-risk wording; analytical-source labelling; CERC only with a named eligible emergency + activation pathway; AF/Restructuring/MPA CDRS scoping; `authority_basis` tag. `wider_fcv_context` is no longer requested in climate mode (still parsed for back-compat).
+
+**Budgets:** `PLATFORM_STAGE_BUDGETS` = stage1 600 / stage2 3300 / stage3 1600; `_bounded_stage3_lenses` target 1500.
+
+**Readout order (live HTML, shared HTML, DOCX in parity):** module notice + 6-tier gauge -> `renderClimateStrengthsWeaknesses` -> `renderClimateCoreQuestions` (lay intro naming the source literature + both interaction directions in prose + per-theme answers with source). Standalone dividends + wider-FCV sections dropped in module mode. DOCX helpers: `add_climate_strengths_weaknesses`, `add_climate_core_questions`.
