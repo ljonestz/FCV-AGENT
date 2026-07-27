@@ -58,7 +58,10 @@ from background_docs import (
     REGIONAL_CROSSBORDER_LENS, MPA_MODULE_GUIDE,
     INTERSECTION_SYNTHESIS_GUIDE,
     DNH_SEASH_IPF, DNH_SEASH_PFORR, DNH_SEASH_DPF,
-    SEASH_GENDER_CARD_IPF, SEASH_GENDER_CARD_PFORR, SEASH_GENDER_CARD_DPF
+    SEASH_GENDER_CARD_IPF, SEASH_GENDER_CARD_PFORR, SEASH_GENDER_CARD_DPF,
+    IPF_PROJECT_PAPER_SECTIONS, PFORR_PROGRAM_PAPER_SECTIONS,
+    NEW_MODEL_MINIMUM_REFERENCE_SET, NEW_MODEL_NON_ESF_REFERENCE_SET,
+    LEGACY_PAD_MINIMUM_REFERENCE_SET
 )
 import io
 try:
@@ -2831,6 +2834,24 @@ def appraisal_document_label(preparation_regime: str, instrument: str) -> str:
             return "Program Paper"
         return "Project Paper"
     return "Project Appraisal Document (PAD)"
+
+
+def appraisal_reference_set(preparation_regime: str, es_regime: str, instrument: str) -> tuple:
+    """Return the regime-appropriate minimum instrument reference set.
+
+    Legacy / unresolved -> the existing v9.x PAD minimum set (unchanged default).
+    New-model -> the corrected set (spec Sec 5.4); ESS-bearing items only when the
+    E&S regime is ESF AND the instrument is IPF, since ESS1-10 apply to IPF only.
+    """
+    if str(preparation_regime or "").strip().lower() != "new_model":
+        return LEGACY_PAD_MINIMUM_REFERENCE_SET
+    esf = (
+        str(es_regime or "").strip().upper() == "ESF_ESS1_TO_ESS10"
+        and str(instrument or "").strip().lower() == "ipf"
+    )
+    if esf:
+        return NEW_MODEL_MINIMUM_REFERENCE_SET
+    return NEW_MODEL_NON_ESF_REFERENCE_SET
 
 
 def extract_horizon_considerations(stage3_output: str) -> str:
