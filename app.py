@@ -9926,6 +9926,57 @@ def download_report():
         _add_section_heading('Wider FCV context', level=2)
         doc.add_paragraph(wider_fcv_context)
 
+    def add_climate_strengths_weaknesses():
+        sw = (climate_readout or {}).get('strengths_weaknesses', []) if climate_readout else []
+        sw = [x for x in sw if isinstance(x, dict) and x.get('title')]
+        if not sw:
+            return
+        _add_section_heading('How the design holds up on climate and FCV', level=2)
+        for side, heading in (('strength', 'Where the design is strong'),
+                              ('gap', 'Where the design is weak')):
+            rows = [x for x in sw if x.get('side') == side]
+            if not rows:
+                continue
+            p = doc.add_paragraph()
+            p.add_run(heading).bold = True
+            for x in rows:
+                item = doc.add_paragraph(style='List Bullet')
+                item.add_run((x.get('title') or '').strip()).bold = True
+                if x.get('text'):
+                    item.add_run(f" - {x['text']}")
+
+    def add_climate_core_questions():
+        # Lay intro naming the source literature, then the two interaction directions,
+        # then the per-theme answers (reflections) with their soft status and source line.
+        _add_section_heading('Core climate and FCV questions', level=2)
+        _add_single_para(
+            'These core questions draw on World Bank analytical frameworks - '
+            'Maximizing the Peace and Social Dividends of Climate Action, the '
+            'FCV-Sensitive Climate Action Framework, and the Defueling Conflict '
+            '(peace and social dividends) series - and focus on the considerations '
+            'most material to this project rather than applying every principle mechanically.',
+            size=9, color=WB_GRAY, italic=True, space_before=0,
+        )
+        add_climate_interactions()
+        reflections = (climate_readout or {}).get('reflections', []) if climate_readout else []
+        for ref in reflections:
+            if not (ref.get('text') or '').strip():
+                continue
+            p = doc.add_paragraph()
+            p.add_run((ref.get('title') or '').strip()).bold = True
+            if ref.get('status_cue'):
+                p.add_run(f"  [{ref['status_cue']}]")
+            for para in re.split(r'\n\s*\n', str(ref.get('text', ''))):
+                para = para.strip()
+                if para:
+                    _add_single_para(para, space_before=0)
+            if ref.get('source'):
+                _add_single_para(f"Source: {ref['source']}", size=9, color=WB_GRAY,
+                                 italic=True, space_before=0)
+        less = (climate_readout or {}).get('less_central')
+        if less:
+            doc.add_paragraph(f'Less central here: {less}')
+
     def add_climate_interactions():
         labels = {
             'climate-fcv-on-project': (
@@ -10116,12 +10167,14 @@ def download_report():
 
         # ── FCV Risk Exposure ──
         if climate_valid:
+            # Climate readout redesign order: policy boundary + integration line ->
+            # full-detail strengths & weaknesses -> core-questions (lay intro +
+            # interactions + theme answers with source). Dividends fold into the
+            # core questions; the standalone wider-FCV section is dropped in module mode.
             add_policy_boundary()
             add_climate_integration_line()
-            add_climate_interactions()
-            add_climate_reflections()
-            add_climate_dividend_synthesis()
-            add_wider_fcv_context()
+            add_climate_strengths_weaknesses()
+            add_climate_core_questions()
         else:
             add_core_risk_exposure()
             add_sr_sections()

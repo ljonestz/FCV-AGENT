@@ -335,6 +335,19 @@ def test_downloaded_report_has_climate_readout_and_context_sources():
                 "status": "not_material",
                 "reason": "No clear transition pathway.",
             }],
+            "reflections": [{
+                "question_key": "cq2_maladaptation",
+                "title": "Could the design lock in maladaptation?",
+                "status_cue": "partial gap",
+                "source": "FCV-Sensitive Climate Action Framework",
+                "text": "Answer paragraph one about lock-in.\n\nAnswer paragraph two names BFMU governance.",
+            }],
+            "strengths_weaknesses": [
+                {"side": "strength", "title": "Community delivery",
+                 "text": "Fits weak centre and adapts to floods."},
+                {"side": "gap", "title": "Flood-displacement link",
+                 "text": "Named but no design response."},
+            ],
         }], "findings": []},
         "lens_context_sources": [{
             "id": "context-ccdr",
@@ -366,15 +379,20 @@ def test_downloaded_report_has_climate_readout_and_context_sources():
     assert "Key locations and components:" in text
     assert "Landing-site rehabilitation" in text
     assert "over the life of the assets" in text
-    assert "The current design already contributes" in text
-    assert "Community institutions allocate resources" in text
-    assert "The project uses contingent delivery" in text
-    assert "The project restores shared watersheds" in text
-    assert "There are clear opportunities to strengthen" in text
-    assert "carried forward by" in text
-    assert "Priority 1 (Inclusive seasonal access)" in text
-    assert "Climate, peace and social dividend contribution" in text
-    assert "Protects legitimate seasonal access." in text
+    # Redesign: core-questions section (lay intro + theme answers with source) + S&W;
+    # the standalone dividend-synthesis and wider-FCV sections are dropped in module mode.
+    assert "Core climate and FCV questions" in text
+    assert "Maximizing the Peace and Social Dividends of Climate Action" in text
+    assert "Could the design lock in maladaptation?" in text
+    assert "Source: FCV-Sensitive Climate Action Framework" in text
+    assert "How the design holds up on climate and FCV" in text
+    assert "Where the design is strong" in text
+    assert "Community delivery" in text
+    assert "Named but no design response." in text
+    assert "Wider FCV context" not in text
+    # The priority still appears in the main Priority Actions table; the standalone
+    # dividend-synthesis panel (with its "Priority N (title)" links) is dropped.
+    assert "Inclusive seasonal access" in text
     assert "Differentiated approach note" not in text
     assert "Legacy differentiated note." not in text
     assert "Do not render this pathway" not in text
@@ -1667,9 +1685,10 @@ def test_south_sudan_dual_use_fixture_crosses_stage3_and_docx_pipeline():
     assert "How this project could affect climate and FCV dynamics" in text
     assert "Key locations and components:" in text
     assert "over the life of the assets" in text
-    assert "The current design already contributes" in text
-    assert "Climate, peace and social dividend contribution" in text
-    assert "No material dividend pathway identified" in text
+    # Redesign: core-questions + strengths/weaknesses replace the standalone dividend section.
+    assert "Core climate and FCV questions" in text
+    assert "How the design holds up on climate and FCV" in text
+    assert "Wider FCV context" not in text
     assert "Differentiated approach note" not in text
 
 
@@ -2027,18 +2046,20 @@ def test_docx_climate_reflections_integration_wider_fcv_boundary_compliance():
     document = Document(io.BytesIO(response.data))
     text = "\n".join(paragraph.text for paragraph in document.paragraphs)
 
-    assert "Reflections on core climate and FCV considerations" in text
+    # Redesign contract: core-questions section (with source lines) + strengths/weaknesses;
+    # standalone reflections/dividends/wider-FCV DOCX sections are gone in module mode.
+    assert "Core climate and FCV questions" in text
     assert "How well does the project integrate climate and FCV?" in text
-    assert "Wider FCV context" in text
+    assert "How the design holds up on climate and FCV" in text        # strengths/weaknesses
+    assert "Wider FCV context" not in text
     assert "does not determine ESF or ESS compliance" in text          # policy boundary
     assert "Task Team E&S specialist" in text                          # specialist_referral route
 
-    # order: interactions -> reflections -> dividends -> wider fcv
+    # order: integration line -> strengths&weaknesses -> core questions (interactions + answers)
+    i_sw = text.index("How the design holds up on climate and FCV")
+    i_q = text.index("Core climate and FCV questions")
     i_int = text.index("How climate and FCV dynamics could affect this project")
-    i_ref = text.index("Reflections on core climate and FCV considerations")
-    i_div = text.index("Climate, peace and social dividends")
-    i_wid = text.index("Wider FCV context")
-    assert i_int < i_ref < i_div < i_wid
+    assert i_sw < i_q < i_int
 
 
 def test_stage3_sse_payloads_include_wider_fcv_context():
