@@ -74,3 +74,15 @@ def test_unresolved_regime_uses_legacy_reference_set():
     # The safe default (no regime detected) must not switch to the new-model set.
     assert app_module.appraisal_reference_set("unresolved_policy_source", "UNRESOLVED", "IPF") == \
         app_module.LEGACY_PAD_MINIMUM_REFERENCE_SET
+
+
+def test_regime_document_label_wired_into_frontend_badge():
+    """Task 3.2 UI: the doc-type badge renders the new-model document label."""
+    from pathlib import Path
+    html = (Path(__file__).resolve().parent.parent / "index.html").read_text(encoding="utf-8")
+    assert "function newModelDocLabel" in html
+    assert "Program Document" in html and "Program Paper" in html and "Project Paper" in html
+    # Badge only switches to the regime label for new-model runs.
+    assert "regimeContext.preparation_regime === 'new_model'" in html
+    # Stage 1 done event capture is wired.
+    assert "if(p.regime_context)regimeContext=p.regime_context;" in html

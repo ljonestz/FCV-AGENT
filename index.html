@@ -2462,8 +2462,17 @@
   let sessionName='';
   let docType='Unknown';
   let instrumentType='Unknown';
+  let regimeContext=null;
   let horizonConsiderations='';
   let temporalContext={};
+
+  // New-model appraisal-document label per instrument (dual-regime). Legacy/unknown -> null.
+  function newModelDocLabel(instrument){
+    const inst=(instrument||'').toString().trim().toLowerCase();
+    if(inst==='dpo'||inst==='dpf') return 'Program Document';
+    if(inst==='pforr'||inst==='p4r'||inst==='program-for-results') return 'Program Paper';
+    return 'Project Paper';
+  }
   let changeTypes={};
   let midCycleWatch=[];
   let dpfWatch=[];
@@ -3341,6 +3350,15 @@
     };
     badge.textContent = typeMap[docType] || docType;
     badge.className = 'doc-type-badge ' + (clsMap[docType] || 'dt-unknown');
+    // Dual-regime: for new-model operations, surface the regime document label
+    // (Project Paper / Program Paper / Program Document) so the chip does not imply a legacy PAD.
+    if(regimeContext && regimeContext.preparation_regime === 'new_model'){
+      const rlabel = newModelDocLabel(instrumentType);
+      badge.textContent = (typeMap[docType] || docType) + ' · ' + rlabel;
+      badge.title = 'New-model preparation (OIS on/after 18 Apr 2026) — appraisal document is the ' + rlabel;
+    } else {
+      badge.title = '';
+    }
     // Show the doc type area once we have a type
     const dtArea = document.getElementById('doc-type-area');
     if(dtArea && docType && docType !== 'Unknown') dtArea.style.display = 'flex';
@@ -3587,7 +3605,7 @@
               if(p.doc_type&&p.doc_type!=='Unknown'){docType=p.doc_type;updateDocTypeBadge();}
               if(p.research_brief)researchBrief=p.research_brief;
               if(p.research_country)researchCountry=p.research_country;
-              if(p.instrument_type)instrumentType=p.instrument_type;if(p.country_scope)countryScope=p.country_scope;if(typeof p.is_mpa!=='undefined'&&p.is_mpa!==null)isMpa=p.is_mpa;
+              if(p.instrument_type)instrumentType=p.instrument_type;if(p.regime_context)regimeContext=p.regime_context;if(p.country_scope)countryScope=p.country_scope;if(typeof p.is_mpa!=='undefined'&&p.is_mpa!==null)isMpa=p.is_mpa;
               if(p.temporal_context)temporalContext=p.temporal_context;
               if(p.process_type&&p.process_type!=='Unknown')processType=p.process_type;
               if(p.country_classification){countryClassification=p.country_classification;fcvSafeLocalStorageSet('country_classification',JSON.stringify(countryClassification));}
@@ -3917,7 +3935,7 @@
                 const dtMatch=p.result&&p.result.match(/%%%DOC_TYPE:\s*([^%\n]+)%%%/);if(dtMatch){docType=dtMatch[1].trim();updateDocTypeBadge();}
                 if(p.research_brief) researchBrief=p.research_brief;
                 if(p.research_country) researchCountry=p.research_country;
-                if(p.instrument_type)instrumentType=p.instrument_type;if(p.country_scope)countryScope=p.country_scope;if(typeof p.is_mpa!=='undefined'&&p.is_mpa!==null)isMpa=p.is_mpa;
+                if(p.instrument_type)instrumentType=p.instrument_type;if(p.regime_context)regimeContext=p.regime_context;if(p.country_scope)countryScope=p.country_scope;if(typeof p.is_mpa!=='undefined'&&p.is_mpa!==null)isMpa=p.is_mpa;
                 if(p.temporal_context)temporalContext=p.temporal_context;
                 if(p.process_type&&p.process_type!=='Unknown')processType=p.process_type;
                 if(p.country_classification){countryClassification=p.country_classification;fcvSafeLocalStorageSet('country_classification',JSON.stringify(countryClassification));}
