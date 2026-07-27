@@ -660,10 +660,10 @@ class AnalysisState:
         )
 
 
-def _bounded_stage3_lenses(
+def _bounded_stage3_lenses(  # token_limit raised 1100 -> 1500 for the climate S12 calibration prefix
     diagnostic: dict[str, Any],
     prefix: str,
-    token_limit: int = 1100,
+    token_limit: int = 1500,
 ) -> tuple[list[dict[str, Any]], bool]:
     """Retain compact materiality/readout data within the Stage 3 lens budget."""
 
@@ -1193,11 +1193,9 @@ def build_lens_stage_context(
                 "Core priorities use no-material-pathway, empty IDs, and a "
                 "reason. "
             )
-            prefix += (
-                "Add a top-level wider_fcv_context string naming any material FCV "
-                "issue with no real climate dimension so it is surfaced but not "
-                "developed into a priority; use null if none. "
-            )
+            # Phase 4 (Task 4.1): the dedicated climate module no longer surfaces
+            # wider_fcv_context; the field stays parsed for back-compat but is not
+            # requested (always null in climate mode).
             prefix += (
                 "This readout is advisory and does not determine ESF or ESS "
                 "compliance or an E&S risk classification. Give each priority a "
@@ -1205,6 +1203,33 @@ def build_lens_stage_context(
                 "or not_determined) and, where warranted, a specialist_referral "
                 "with required, route, and reason. Do not present an unclaimed "
                 "dividend as non-compliance. "
+            )
+            # Phase 4B (Task 4B.2): OPCS Section 12.5/12.9 CERC + CDRS + AF/Restructuring/MPA
+            # calibration, plus the shared authority_basis tag (Section 5.5).
+            prefix += (
+                "CLIMATE STAGE-3 CALIBRATION. Instrument-route every recommendation first "
+                "(IPF=ESF; PforR=ESSA/PAP/DLIs; DPF=Program Document/prior actions/PSIA) and "
+                "flag-not-determine Paris Alignment / CDRS. CERC: recommend considering a "
+                "CERC only where the instrument can carry one, there is a named eligible "
+                "emergency (natural-hazard/climate/health/economic) with a plausible "
+                "declaration/activation pathway, and it links to the PDO - IPF only; PforR "
+                "only via a separate IPF component; DPF via Cat DDO/supplemental/scalable, "
+                "never an IPF CERC; never a generic 'flexibility' recommendation. Climate & "
+                "Disaster Risk Screening (CDRS) is a corporate commitment across IPF/PforR/DPF "
+                "including AF, MPA phases, emergency operations, CERCs and guarantees; no "
+                "named CDRS tool is mandatory; CDRS is ex-ante and informs design but does "
+                "NOT replace the ESF/ESS assessment - point to it, never treat a CDRS result "
+                "as an ESS/ESRC/ESRS/ESCP determination. Additional Financing has its own "
+                "package and its own AF-level CDRS on the operation-as-modified - scope every "
+                "climate recommendation to what the AF finances, not the whole parent. "
+                "Restructuring does not auto-restart CDRS: only where the change adds new "
+                "activities or materially changes hazard exposure / vulnerability / coverage "
+                "/ expected life / beneficiaries / design, flag a possible CDRS update and PA "
+                "Method on the NEW activities only. MPA: CDRS is required at the phase level; "
+                "scope recommendations to the phase's own activities, location and "
+                "beneficiaries. Tag every recommendation with authority_basis (policy | "
+                "directive | procedure | guidance | reviewer_judgment) reflecting the strength "
+                "of the underlying source. "
             )
         prefix += "Deterministically merged lens diagnostic:\n"
         selected_findings: list[dict[str, Any]] = []

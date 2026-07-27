@@ -492,7 +492,7 @@ def test_final_stage3_lens_prompt_respects_combined_platform_budget():
 
     context = app_module.build_lens_stage_context(state, 3, registry, huge)
 
-    assert context["estimated_tokens"] <= 1200
+    assert context["estimated_tokens"] <= 1600
     assert context["truncated"] is True
 
 
@@ -819,6 +819,45 @@ def test_stage2_climate_prompt_has_opcs_calibration_guardrails():
     # Non-climate PAD Stage 2 does NOT carry the climate calibration block
     plain = app_module.AnalysisState.from_payload({"active_lenses": [], "lens_versions": {}, "doc_type": "PAD"})
     assert "asset-appropriate design horizon" not in app_module.build_lens_stage_context(plain, 2)["prompt"]
+
+
+def _valid_climate_stage3_payload():
+    # A "usable" climate diagnostic (both interaction directions) so the normal
+    # Stage 3 climate prefix is exercised rather than the failure fallback branch.
+    return _add_specific_climate_paths({"lenses": [{
+        "lens_id": "climate", "applicability": "material", "materiality_level": "high",
+        "materiality_summary": "Material climate-FCV interactions affect delivery and inclusion.",
+        "interaction_readout": [
+            {"direction_id": "climate-fcv-on-project", "summary": "Flood and insecurity could disrupt delivery."},
+            {"direction_id": "project-on-climate-fcv", "summary": "Benefit rules could affect resilience and trust."},
+        ],
+        "readout_sections": [], "other_pathways": [],
+    }], "findings": []})
+
+
+def test_climate_stage3_does_not_request_wider_fcv_context():
+    state = app_module.AnalysisState.from_payload({
+        "active_lenses": ["climate"], "lens_versions": {}, "doc_type": "PAD",
+    })
+    prompt = app_module.build_lens_stage_context(
+        state, 3, lens_diagnostic=_valid_climate_stage3_payload())["prompt"]
+    assert "wider_fcv_context" not in prompt
+
+
+def test_stage3_climate_prompt_has_cerc_cdrs_and_authority_basis_guardrails():
+    state = app_module.AnalysisState.from_payload({
+        "active_lenses": ["climate"], "lens_versions": {}, "doc_type": "PAD",
+    })
+    prompt = app_module.build_lens_stage_context(
+        state, 3, lens_diagnostic=_valid_climate_stage3_payload())["prompt"]
+    low = prompt.lower()
+    assert "cerc" in low
+    assert "named eligible emergency" in low or "activation pathway" in low   # 12.5
+    assert "cdrs" in low                                                       # 12.9
+    assert "af finances" in low or "what the af finances" in low              # 12.9 AF scoping
+    assert "does not auto-restart" in low or "does not auto" in low           # 12.9 restructuring
+    assert "phase level" in low or "phase-level" in low                       # 12.9 MPA
+    assert "authority_basis" in prompt                                        # 5.5 tag
 
 
 @pytest.mark.parametrize(
@@ -1449,7 +1488,7 @@ def test_large_climate_readout_respects_stage3_platform_budget():
     payload = _add_specific_climate_paths(payload)
     context = app_module.build_lens_stage_context(state, 3, lens_diagnostic=payload)
 
-    assert context["estimated_tokens"] <= 1200
+    assert context["estimated_tokens"] <= 1600
     assert context["truncated"] is True
 
 
@@ -1526,7 +1565,7 @@ def test_climate_stage3_integrates_narrative_and_qualitative_dividends():
         "climate-fcv-on-project-1",
     ):
         assert value in prompt
-    assert context["estimated_tokens"] <= 1200
+    assert context["estimated_tokens"] <= 1600
 
 
 def test_south_sudan_dual_use_fixture_crosses_stage3_and_docx_pipeline():
@@ -1876,7 +1915,8 @@ def test_stage3_climate_prompt_uses_prose_and_wider_context():
     }], "findings": []})
     ctx = app_module.build_lens_stage_context(state, 3, lens_diagnostic=diagnostic)
     prompt = ctx["prompt"]
-    assert "wider_fcv_context" in prompt
+    # Phase 4 (Task 4.1): the dedicated module no longer surfaces wider_fcv_context.
+    assert "wider_fcv_context" not in prompt
     assert "causal strip" not in prompt.lower()
     assert "prose" in prompt.lower()
 
