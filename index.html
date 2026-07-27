@@ -378,7 +378,9 @@
     .reflection-head{display:flex;align-items:center;gap:8px;margin:0 0 4px}
     .reflection-head strong{font-size:13px;color:#1e293b}
     .reflection-chip{display:inline-flex;padding:1px 8px;border-radius:999px;background:#eef2f7;color:#475569;font-size:10px;font-weight:700;text-transform:lowercase}
-    .reflection-row p{font-size:13px;line-height:1.6;color:#334155;margin:0}
+    .reflection-row p{font-size:13px;line-height:1.6;color:#334155;margin:0 0 8px}
+    .reflection-source{font-size:11px;color:#64748b;margin:4px 0 0}
+    .climate-core-questions-section{margin:14px 0}
     .reflection-less{font-size:12px;color:#64748b;margin:10px 0 0}
     .reflection-evidence{font-size:11px;color:#64748b;margin:8px 0 0}
     .reflection-evidence span{font-weight:700;color:#475569}
@@ -2669,6 +2671,40 @@
     const value=(text||'').toString().trim();
     if(!value)return '';
     return `<div class="wider-fcv-note"><div class="climate-readout-heading">Wider FCV context</div><p>${esc(value)}</p></div>`;
+  }
+
+  // Climate readout redesign: a single core-questions section = lay intro naming the
+  // source literature + the two interaction directions (prose) + per-theme answers,
+  // each a two-paragraph reflection with a soft status word and a source line.
+  // Self-contained (depends only on esc + renderClimatePathwayStrip) so it renders
+  // identically in the live view and the downloaded HTML.
+  function renderClimateCoreQuestions(lens){
+    if(!lens)return '';
+    const paras=t=>String(t||'').split(/\n\s*\n/).map(p=>p.trim()).filter(Boolean);
+    const intro='<p class="climate-readout-intro">These core questions draw on World Bank analytical frameworks - '
+      +'<em>Maximizing the Peace and Social Dividends of Climate Action</em>, the FCV-Sensitive Climate Action Framework, '
+      +'and the Defueling Conflict (peace and social dividends) series - and focus on the considerations most material '
+      +'to this project rather than applying every principle mechanically.</p>';
+    const labels={'climate-fcv-on-project':'How climate and FCV dynamics could affect this project','project-on-climate-fcv':'How this project could affect climate and FCV dynamics'};
+    const modifier={'climate-fcv-on-project':'box-inbound','project-on-climate-fcv':'box-outbound'};
+    const interactions=(Array.isArray(lens.interaction_readout)?lens.interaction_readout:[])
+      .filter(item=>item&&labels[item.direction_id]&&(item.summary||item.narrative)).slice(0,2)
+      .map(item=>{
+        const narr=String(item.narrative||'').trim();
+        const bodyHtml=narr?paras(narr).map(p=>`<p class="climate-interaction-prose">${esc(p)}</p>`).join('')
+          :(Array.isArray(item.pathways)?item.pathways:[]).map(renderClimatePathwayStrip).filter(Boolean).join('');
+        const lead=item.summary?`<p class="climate-interaction-summary"><strong>${esc(item.summary)}</strong></p>`:'';
+        return `<section class="climate-interaction-box ${modifier[item.direction_id]||''}"><h4>${esc(labels[item.direction_id])}</h4>${lead}${bodyHtml}</section>`;
+      }).join('');
+    const reflections=(Array.isArray(lens.reflections)?lens.reflections:[]).filter(r=>r&&r.text)
+      .map(r=>{
+        const body=paras(r.text).map(p=>`<p>${esc(p)}</p>`).join('');
+        const chip=r.status_cue?`<span class="reflection-chip">${esc(r.status_cue)}</span>`:'';
+        const src=r.source?`<p class="reflection-source"><em>Source:</em> ${esc(r.source)}</p>`:'';
+        return `<div class="reflection-row"><div class="reflection-head"><strong>${esc(r.title||'')}</strong>${chip}</div>${body}${src}</div>`;
+      }).join('');
+    if(!interactions&&!reflections)return '';
+    return `<div class="climate-core-questions-section"><div class="climate-readout-heading">Core climate and FCV questions</div>${intro}${interactions}${reflections}</div>`;
   }
 
   function renderClimateDividendSynthesis(lens,priorities){

@@ -488,6 +488,38 @@ def test_climate_gauge_uses_six_tier_rating():
     assert vals[3] == "0"
 
 
+def test_core_questions_render_intro_interactions_and_theme_answers_with_source():
+    html = INDEX.read_text(encoding="utf-8")
+    assert "renderClimateCoreQuestions" in html
+    fn = _extract_js_function(html, "renderClimateCoreQuestions")
+    dep1 = _extract_js_function(html, "renderClimatePathwayStrip")
+    esc = _extract_js_function(html, "esc")
+    lens = {
+        "interaction_readout": [
+            {"direction_id": "climate-fcv-on-project", "summary": "Flood risk.",
+             "narrative": "Para one.\n\nPara two names Boma Fisheries Management Units.", "pathways": []},
+            {"direction_id": "project-on-climate-fcv", "summary": "Cohesion.",
+             "narrative": "Governance forum.", "pathways": []},
+        ],
+        "reflections": [
+            {"question_key": "cq2_maladaptation", "title": "Could the design lock in maladaptation?",
+             "status_cue": "partial gap", "source": "FCV-Sensitive Climate Action Framework",
+             "text": "Answer para one.\n\nAnswer para two."},
+        ],
+    }
+    script = f"{esc}\n{dep1}\n{fn}\nprocess.stdout.write(renderClimateCoreQuestions({json.dumps(lens)}));"
+    out = subprocess.run(["node", "-e", script], capture_output=True, text=True)
+    assert out.returncode == 0, out.stderr
+    # Lay-reader intro names the source literature
+    assert "Maximizing the Peace and Social Dividends of Climate Action" in out.stdout
+    # Both interaction directions present
+    assert "climate and FCV" in out.stdout
+    # Theme answer with its title, source line, and paragraph split
+    assert "Could the design lock in maladaptation?" in out.stdout
+    assert "FCV-Sensitive Climate Action Framework" in out.stdout
+    assert out.stdout.count("<p") >= 4  # multi-paragraph answers
+
+
 def test_reflections_render_with_status_chips_and_intro():
     html = INDEX.read_text(encoding="utf-8")
     assert "renderClimateReflections" in html
