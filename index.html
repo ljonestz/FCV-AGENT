@@ -381,6 +381,16 @@
     .reflection-row p{font-size:13px;line-height:1.6;color:#334155;margin:0 0 8px}
     .reflection-source{font-size:11px;color:#64748b;margin:4px 0 0}
     .climate-core-questions-section{margin:14px 0}
+    .climate-sw-section{margin:14px 0}
+    .sw-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    @media(max-width:640px){.sw-grid{grid-template-columns:1fr}}
+    .sw-col{border-radius:8px;padding:10px 12px}
+    .sw-strength{background:#f0f9f4;border:1px solid #cbead7}
+    .sw-gap{background:#fdf3ef;border:1px solid #f3d4c7}
+    .sw-head{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#475569;margin-bottom:8px}
+    .sw-item{margin:8px 0}
+    .sw-title{font-size:13px;font-weight:700;color:#1f2937}
+    .sw-text{font-size:12.5px;line-height:1.55;color:#334155;margin:2px 0 0}
     .reflection-less{font-size:12px;color:#64748b;margin:10px 0 0}
     .reflection-evidence{font-size:11px;color:#64748b;margin:8px 0 0}
     .reflection-evidence span{font-weight:700;color:#475569}
@@ -2671,6 +2681,22 @@
     const value=(text||'').toString().trim();
     if(!value)return '';
     return `<div class="wider-fcv-note"><div class="climate-readout-heading">Wider FCV context</div><p>${esc(value)}</p></div>`;
+  }
+
+  // Climate readout redesign: full-detail strengths / weaknesses in two columns.
+  function renderClimateStrengthsWeaknesses(lens){
+    const items=(lens&&Array.isArray(lens.strengths_weaknesses)?lens.strengths_weaknesses:[])
+      .filter(x=>x&&x.title);
+    if(!items.length)return '';
+    const col=(side,heading)=>{
+      const rows=items.filter(x=>x.side===side).map(x=>
+        `<div class="sw-item"><div class="sw-title">${esc(x.title)}</div>${x.text?`<p class="sw-text">${esc(x.text)}</p>`:''}</div>`).join('');
+      if(!rows)return '';
+      return `<div class="sw-col sw-${side}"><div class="sw-head">${esc(heading)}</div>${rows}</div>`;
+    };
+    const cols=col('strength','Where the design is strong')+col('gap','Where the design is weak');
+    if(!cols)return '';
+    return `<div class="climate-sw-section"><div class="climate-readout-heading">How the design holds up on climate and FCV</div><div class="sw-grid">${cols}</div></div>`;
   }
 
   // Climate readout redesign: a single core-questions section = lay intro naming the

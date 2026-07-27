@@ -520,6 +520,23 @@ def test_core_questions_render_intro_interactions_and_theme_answers_with_source(
     assert out.stdout.count("<p") >= 4  # multi-paragraph answers
 
 
+def test_strengths_weaknesses_two_column_full_detail():
+    html = INDEX.read_text(encoding="utf-8")
+    assert "renderClimateStrengthsWeaknesses" in html
+    fn = _extract_js_function(html, "renderClimateStrengthsWeaknesses")
+    esc = _extract_js_function(html, "esc")
+    lens = {"strengths_weaknesses": [
+        {"side": "strength", "title": "Community delivery", "text": "Fits weak centre and adapts to floods."},
+        {"side": "gap", "title": "Flood-displacement", "text": "Named but no design response."}]}
+    out = subprocess.run(["node", "-e",
+        f"{esc}\n{fn}\nprocess.stdout.write(renderClimateStrengthsWeaknesses({json.dumps(lens)}));"],
+        capture_output=True, text=True)
+    assert out.returncode == 0, out.stderr
+    assert "Where the design is strong" in out.stdout
+    assert "Community delivery" in out.stdout
+    assert "Named but no design response." in out.stdout
+
+
 def test_reflections_render_with_status_chips_and_intro():
     html = INDEX.read_text(encoding="utf-8")
     assert "renderClimateReflections" in html

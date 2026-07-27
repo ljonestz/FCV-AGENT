@@ -1096,6 +1096,13 @@ def build_lens_stage_context(
                     "6-tier scale the app uses), reflecting how well the project integrates "
                     "climate and FCV. Bank questions:\n" + bank_text + "\n"
                 )
+            # Task 5.3 - structured strengths/weaknesses for the full-detail block.
+            suffix += (
+                " Also return strengths_weaknesses: up to 4 strengths and 4 gaps, each "
+                "an object {side (strength or gap), title, text}, climate-FCV-scoped, "
+                "each naming the specific design element, component, or institution it "
+                "attaches to rather than a generic statement. "
+            )
             # Task 4B.1 - OPCS Section 12 calibration guardrails for climate recommendations.
             suffix += (
                 " CLIMATE RECOMMENDATION CALIBRATION (advisory boundary - you may flag a "
@@ -1635,7 +1642,9 @@ def repair_lens_diagnostic(
         'Very Well Embedded",'
         '"reflections":[{"question_key":"cq1_interaction|cq2_maladaptation|'
         'cq3_dividends|cq4_inclusion|cq5_institutions|cq6_adaptive",'
-        '"title":"...","status_cue":"...","source":"...","text":"..."}],"less_central":"...",'
+        '"title":"...","status_cue":"...","source":"...","text":"..."}],'
+        '"strengths_weaknesses":[{"side":"strength|gap","title":"...","text":"..."}],'
+        '"less_central":"...",'
         '"sensitivity_evidence":[],"responsiveness_evidence":[],'
         '"analysis_emphasis":[],"evidence":[],"source_ids":[],'
         '"interaction_readout":[{"direction_id":"climate-fcv-on-project|'

@@ -645,6 +645,21 @@ def test_climate_reflection_carries_source_and_long_text():
     assert "\n\n" in r["text"]   # paragraph break kept
 
 
+def test_climate_strengths_weaknesses_parsed():
+    block = (
+        "%%%LENS_DIAGNOSTIC_START%%%"
+        '{"lenses":[{"lens_id":"climate","applicability":"material","materiality_level":"high",'
+        '"strengths_weaknesses":[{"side":"strength","title":"Community delivery","text":"Fits weak centre and adapts to floods."},'
+        '{"side":"gap","title":"Flood-displacement","text":"Named but no design response."}],'
+        '"source_ids":[],"readout_sections":[],"interaction_readout":[],"additional_pathways":[],"other_pathways":[]}],"findings":[]}'
+        "%%%LENS_DIAGNOSTIC_END%%%"
+    )
+    lens = extract_lens_diagnostic(block, ["climate"])["lenses"][0]
+    sw = lens["strengths_weaknesses"]
+    assert [x["side"] for x in sw] == ["strength", "gap"]
+    assert sw[0]["title"] == "Community delivery"
+
+
 def test_climate_integration_rating_six_tier():
     def _mk(rating):
         return (

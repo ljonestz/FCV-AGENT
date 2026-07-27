@@ -67,6 +67,28 @@ def climate_integration_rating(value: Any) -> str:
     return raw if raw in _CLIMATE_INTEGRATION_RATINGS else ""
 
 
+def _normalize_climate_sw(value: Any) -> list[dict[str, Any]]:
+    """Validate the structured strengths/weaknesses list for the full-detail block.
+
+    Each entry: {side: strength|gap, title (<=160), text (<=600)}. Up to 4 per side.
+    """
+    strengths: list[dict[str, Any]] = []
+    gaps: list[dict[str, Any]] = []
+    for raw in _list_values(value):
+        if not isinstance(raw, dict):
+            continue
+        side = str(raw.get("side", "")).strip().lower()
+        title = str(raw.get("title", "")).strip()[:160]
+        text = str(raw.get("text", "")).strip()[:600]
+        if side not in {"strength", "gap"} or not title:
+            continue
+        entry = {"side": side, "title": title, "text": text}
+        bucket = strengths if side == "strength" else gaps
+        if len(bucket) < 4:
+            bucket.append(entry)
+    return strengths + gaps
+
+
 def _list_values(value: Any) -> list[Any]:
     """Return model-provided collection values without iterating scalars."""
 
@@ -619,6 +641,7 @@ def extract_lens_diagnostic(
             if len(normalized_other) >= 10:
                 break
         reflections: list[dict[str, Any]] = []
+        strengths_weaknesses: list[dict[str, Any]] = []
         integration_level = ""
         integration_rating = ""
         integration_summary = ""
@@ -627,6 +650,7 @@ def extract_lens_diagnostic(
         responsiveness_evidence: list[str] = []
         if lens_id == "climate":
             reflections = _normalize_climate_reflections(item.get("reflections"))
+            strengths_weaknesses = _normalize_climate_sw(item.get("strengths_weaknesses"))
             integration_rating = climate_integration_rating(item.get("integration_rating"))
             raw_integration = str(item.get("integration_level", "")).lower()
             integration_level = (
@@ -663,6 +687,7 @@ def extract_lens_diagnostic(
                 "interaction_readout": normalized_interactions,
                 "additional_pathways": normalized_additional,
                 "reflections": reflections,
+                "strengths_weaknesses": strengths_weaknesses,
                 "integration_level": integration_level,
                 "integration_rating": integration_rating,
                 "integration_summary": integration_summary,
