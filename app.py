@@ -9415,6 +9415,7 @@ def climate_integration_payload(diagnostic: dict[str, Any]) -> dict[str, Any] | 
         return None
     return {
         "level": lens.get("integration_level", ""),
+        "rating": lens.get("integration_rating", ""),
         "summary": lens.get("integration_summary", ""),
     }
 

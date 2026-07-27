@@ -5552,6 +5552,13 @@ ${body}
   function integrationGaugeFraction(level){
     return ({well_integrated:1,partly_integrated:0.66,weakly_integrated:0.33,insufficient_evidence:0})[String(level||'').toLowerCase()]||0;
   }
+  // 6-tier climate integration rating (redesign): maps the rating label to an arc fraction.
+  const CLIMATE_RATING_ORDER = ['Extremely Low','Very Low','Low','Adequate','Well Embedded','Very Well Embedded'];
+  function climateIntegrationRatingFraction(rating){
+    const order = ['Extremely Low','Very Low','Low','Adequate','Well Embedded','Very Well Embedded'];
+    const i = order.indexOf(String(rating||''));
+    return i < 0 ? 0 : (i + 1) / order.length;
+  }
 
   const LEVELS = ['Extremely Low','Very Low','Low','Adequate','Well Embedded','Very Well Embedded'];
   const LEVEL_COLORS = {1:'#C0392B',2:'#E07B00',3:'#D97706',4:'#0072BB',5:'#1A7A4A',6:'#0d5c36'};
@@ -5640,18 +5647,29 @@ ${body}
     const n = stageThreePriorities.length;
 
     if(isClimateLensActive()){
-      // Single Climate-FCV integration gauge
+      // Single Climate-FCV integration gauge — prefer the 6-tier rating (redesign),
+      // fall back to the legacy 4-tier level when a rating is absent.
       const arc=document.getElementById('fcv-int-arc');
+      const rating=climateIntegration&&climateIntegration.rating||'';
       const lvl=climateIntegration&&climateIntegration.level||'';
-      const frac=integrationGaugeFraction(lvl);
-      if(arc)arc.setAttribute('stroke-dasharray',`${(frac*ARC_LEN).toFixed(2)} ${ARC_LEN}`);
-      const intColors={well_integrated:'#1A7A4A',partly_integrated:'#009FDA',weakly_integrated:'#E07B00',insufficient_evidence:'#94a3b8'};
-      if(arc)arc.setAttribute('stroke',intColors[String(lvl).toLowerCase()]||'#94a3b8');
-      const intLabels={well_integrated:'Well integrated',partly_integrated:'Partly integrated',weakly_integrated:'Weakly integrated',insufficient_evidence:'Insufficient evidence'};
       const label=document.getElementById('fcv-int-label');
-      if(label)label.textContent=intLabels[String(lvl).toLowerCase()]||'Insufficient evidence';
       const summary=document.getElementById('fcv-int-summary');
-      if(summary)summary.textContent=climateIntegration&&climateIntegration.summary||'';
+      if(rating){
+        const tier=CLIMATE_RATING_ORDER.indexOf(rating)+1;
+        const frac=climateIntegrationRatingFraction(rating);
+        if(arc)arc.setAttribute('stroke-dasharray',`${(frac*ARC_LEN).toFixed(2)} ${ARC_LEN}`);
+        if(arc)arc.setAttribute('stroke',LEVEL_COLORS[tier]||'#94a3b8');
+        if(label)label.textContent=rating;
+        if(summary)summary.textContent=(climateIntegration&&climateIntegration.summary)||NEED_LABELS[rating]||'';
+      } else {
+        const frac=integrationGaugeFraction(lvl);
+        if(arc)arc.setAttribute('stroke-dasharray',`${(frac*ARC_LEN).toFixed(2)} ${ARC_LEN}`);
+        const intColors={well_integrated:'#1A7A4A',partly_integrated:'#009FDA',weakly_integrated:'#E07B00',insufficient_evidence:'#94a3b8'};
+        if(arc)arc.setAttribute('stroke',intColors[String(lvl).toLowerCase()]||'#94a3b8');
+        const intLabels={well_integrated:'Well integrated',partly_integrated:'Partly integrated',weakly_integrated:'Weakly integrated',insufficient_evidence:'Insufficient evidence'};
+        if(label)label.textContent=intLabels[String(lvl).toLowerCase()]||(climateIntegration?'Analysing…':'Insufficient evidence');
+        if(summary)summary.textContent=climateIntegration&&climateIntegration.summary||'';
+      }
     } else {
       const level = LEVELS.findIndex(l => l.toLowerCase() === (fcvRating||'').toLowerCase()) + 1;
       const color = LEVEL_COLORS[level] || '#e8edf2';

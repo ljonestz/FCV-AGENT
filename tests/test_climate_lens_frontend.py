@@ -468,6 +468,26 @@ def test_single_integration_gauge_present_in_module_mode():
     assert float(vals[1]) > float(vals[2]) > 0
 
 
+def test_climate_gauge_uses_six_tier_rating():
+    html = INDEX.read_text(encoding="utf-8")
+    assert "climateIntegrationRatingFraction" in html
+    fn = _extract_js_function(html, "climateIntegrationRatingFraction")
+    out = subprocess.run(
+        ["node", "-e",
+         f"{fn}\nconsole.log([climateIntegrationRatingFraction('Extremely Low'),"
+         f"climateIntegrationRatingFraction('Adequate'),"
+         f"climateIntegrationRatingFraction('Very Well Embedded'),"
+         f"climateIntegrationRatingFraction('')].join(','))"],
+        capture_output=True, text=True)
+    assert out.returncode == 0, out.stderr
+    vals = out.stdout.strip().split(",")
+    # Extremely Low > 0 (tier 1 of 6), Adequate = 4/6, top = 1, invalid = 0
+    assert abs(float(vals[0]) - (1 / 6)) < 0.01
+    assert abs(float(vals[1]) - (4 / 6)) < 0.01
+    assert vals[2] == "1"
+    assert vals[3] == "0"
+
+
 def test_reflections_render_with_status_chips_and_intro():
     html = INDEX.read_text(encoding="utf-8")
     assert "renderClimateReflections" in html
