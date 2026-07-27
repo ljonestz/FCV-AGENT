@@ -645,6 +645,29 @@ def test_climate_reflection_carries_source_and_long_text():
     assert "\n\n" in r["text"]   # paragraph break kept
 
 
+def test_climate_integration_rating_six_tier():
+    def _mk(rating):
+        return (
+            "%%%LENS_DIAGNOSTIC_START%%%"
+            '{"lenses":[{"lens_id":"climate","applicability":"material",'
+            '"materiality_level":"high","integration_rating":"' + rating + '",'
+            '"source_ids":[],"readout_sections":[],"interaction_readout":[],'
+            '"additional_pathways":[],"other_pathways":[]}],"findings":[]}'
+            "%%%LENS_DIAGNOSTIC_END%%%"
+        )
+    ok = extract_lens_diagnostic(_mk("Adequate"), ["climate"])["lenses"][0]
+    assert ok["integration_rating"] == "Adequate"
+    # Invalid -> safe default (empty string; UI shows 'Analysing...'/no fill).
+    bad = extract_lens_diagnostic(_mk("Amazing"), ["climate"])["lenses"][0]
+    assert bad["integration_rating"] == ""
+    # Absent -> empty string, and integration_level still defaults as before.
+    absent = extract_lens_diagnostic(
+        _mk("Adequate").replace('"integration_rating":"Adequate",', ""), ["climate"]
+    )["lenses"][0]
+    assert absent["integration_rating"] == ""
+    assert absent["integration_level"] == "insufficient_evidence"
+
+
 def test_climate_interaction_narrative_parsed_and_bounded():
     long_narrative = "Flooding pushes fishing communities into contested areas. " * 60
     block = (

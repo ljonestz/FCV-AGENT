@@ -54,6 +54,18 @@ _CLIMATE_REFLECTION_KEYS = {
 }
 _CLIMATE_INTEGRATION_LEVELS = {"well_integrated", "partly_integrated", "weakly_integrated", "insufficient_evidence"}
 
+# 6-tier display scale (matches the default app gauge labels in index.html).
+_CLIMATE_INTEGRATION_RATINGS = (
+    "Extremely Low", "Very Low", "Low",
+    "Adequate", "Well Embedded", "Very Well Embedded",
+)
+
+
+def climate_integration_rating(value: Any) -> str:
+    """Return a valid 6-tier rating label, or '' if absent/invalid."""
+    raw = str(value or "").strip()
+    return raw if raw in _CLIMATE_INTEGRATION_RATINGS else ""
+
 
 def _list_values(value: Any) -> list[Any]:
     """Return model-provided collection values without iterating scalars."""
@@ -608,12 +620,14 @@ def extract_lens_diagnostic(
                 break
         reflections: list[dict[str, Any]] = []
         integration_level = ""
+        integration_rating = ""
         integration_summary = ""
         less_central = ""
         sensitivity_evidence: list[str] = []
         responsiveness_evidence: list[str] = []
         if lens_id == "climate":
             reflections = _normalize_climate_reflections(item.get("reflections"))
+            integration_rating = climate_integration_rating(item.get("integration_rating"))
             raw_integration = str(item.get("integration_level", "")).lower()
             integration_level = (
                 raw_integration if raw_integration in _CLIMATE_INTEGRATION_LEVELS
@@ -650,6 +664,7 @@ def extract_lens_diagnostic(
                 "additional_pathways": normalized_additional,
                 "reflections": reflections,
                 "integration_level": integration_level,
+                "integration_rating": integration_rating,
                 "integration_summary": integration_summary,
                 "less_central": less_central,
                 "sensitivity_evidence": sensitivity_evidence,
