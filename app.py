@@ -940,8 +940,12 @@ def build_lens_stage_context(
         )
     elif selection.lenses and stage == 2:
         suffix = (
-            "Return a hidden JSON object after the visible Stage 2 assessment between "
-            f"{LENS_DIAGNOSTIC_START} and {LENS_DIAGNOSTIC_END}. Use top-level arrays 'lenses' "
+            "MANDATORY STRUCTURED OUTPUT. In the same trailing structured-output section as "
+            "the %%%UNDER_HOOD%%% block, and as a required sibling of it, you MUST emit a "
+            "hidden JSON object between "
+            f"{LENS_DIAGNOSTIC_START} and {LENS_DIAGNOSTIC_END}. This block is not optional: "
+            "your Stage 2 response is incomplete and unusable without it, so emit it in full "
+            "even if you must shorten the visible narrative to make room. Use top-level arrays 'lenses' "
             "and 'findings'. For each active lens include applicability, materiality_summary, "
             "analysis_emphasis, evidence, source_ids, readout_sections, and other_pathways. "
             "Use only declared section/item IDs. Item status must be supported, potential, "
