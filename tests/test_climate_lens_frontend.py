@@ -283,14 +283,12 @@ def test_live_stage3_orders_option_a_and_preserves_core_fallback():
     source = INDEX.read_text(encoding="utf-8")
     helper = _extract_js_function(source, "renderOut")
 
-    # Climate-valid path: interactions → reflections → dividends → wider-fcv
-    # renderSRNarrative is NOT in the climate path (replaced by integration gauge + reflections)
+    # Climate-valid path (redesign): notice/gauge -> strengths & weaknesses -> core questions.
+    # renderSRNarrative is NOT in the climate path (replaced by integration gauge + core questions)
     climate_order = [
         "renderClimateModuleNotice",
-        "renderClimateInteractions",
-        "renderClimateReflections",
-        "renderClimateDividendSynthesis",
-        "renderWiderFcvContext",
+        "renderClimateStrengthsWeaknesses",
+        "renderClimateCoreQuestions",
     ]
     positions = [helper.index(name) for name in climate_order]
     assert positions == sorted(positions)
@@ -560,18 +558,17 @@ def test_reflections_render_with_status_chips_and_intro():
     assert empty.stdout.strip() == ""
 
 
-def test_live_and_shared_orders_boxes_reflections_dividends_wider():
+def test_live_climate_order_notice_sw_questions():
     html = INDEX.read_text(encoding="utf-8")
-    for anchor in ("renderClimateInteractions", "renderClimateReflections",
-                   "renderClimateDividendSynthesis", "renderWiderFcvContext"):
-        assert anchor in html
-    # In renderOut, the climate-valid assembly must order the four calls correctly.
     body = html.split("function renderOut", 1)[1][:8000]
-    i_int = body.index("renderClimateInteractions")
-    i_ref = body.index("renderClimateReflections")
-    i_div = body.index("renderClimateDividendSynthesis")
-    i_wid = body.index("renderWiderFcvContext")
-    assert i_int < i_ref < i_div < i_wid
+    i_notice = body.index("renderClimateModuleNotice")
+    i_sw = body.index("renderClimateStrengthsWeaknesses")
+    i_q = body.index("renderClimateCoreQuestions")
+    assert i_notice < i_sw < i_q
+    # Dividends + wider-FCV renderers are no longer called in the climate block
+    seg = body[i_notice:i_q + 400]
+    assert "renderClimateDividendSynthesis" not in seg
+    assert "renderWiderFcvContext" not in seg
 
 
 def test_policy_boundary_notice_present():

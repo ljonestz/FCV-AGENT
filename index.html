@@ -4546,13 +4546,14 @@
         ?renderClimateModuleNotice(_climateEntry,_climateError):'';
       const _climateValid=_climateActive&&!_climateError;
       if(_climateValid){
+        // Climate readout redesign order: notice/gauge -> model context prose ->
+        // full-detail strengths & weaknesses -> core-questions (interactions + theme
+        // answers). Dividends fold into cq3; wider-FCV is dropped in module mode.
         _outBodyContent=wrapSRTerms(
           _closedProjectNotice+_padNotice+_stageBadge+_climateNotice+
           _preHtml+md(_rest)+
-          renderClimateInteractions(_climateEntry)+
-          renderClimateReflections(_climateEntry)+
-          renderClimateDividendSynthesis(_climateEntry,stageThreePriorities)+
-          renderWiderFcvContext(stageWiderFcvContext)
+          renderClimateStrengthsWeaknesses(_climateEntry)+
+          renderClimateCoreQuestions(_climateEntry)
         )+'<div id="priorities-intro"></div>';
       }else{
         _outBodyContent=wrapSRTerms(
