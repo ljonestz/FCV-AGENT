@@ -4215,7 +4215,7 @@ The SEA/SH card and the GRM card may both appear in the output — they address 
 - JSON block is present at the end, wrapped in %%%JSON_START%%% / %%%JSON_END%%%
 - All 10 top-level JSON fields are populated (fcv_rating, fcv_responsiveness_rating, sensitivity_summary, responsiveness_summary, risk_exposure, mid_cycle_watch, dpf_watch, p4r_watch, regional_watch, priorities)
 - Each priority's pad_sections, actions (including per-action suggested_language), and implementation_note are specific to this project — not generic placeholders
-- Each priority JSON object has all 21 fields: title, fcv_dimension, tag, refresh_shift, risk_level, the_gap, why_it_matters, actions, who_acts, when, action_timing, resources, pad_sections, country_category_relevance, implementation_note, cpf_alignment, rra_driver_alignment, change_type, restructuring_level, priority_scope, governance_level
+- Each priority JSON object has all 22 fields: title, fcv_dimension, tag, refresh_shift, risk_level, the_gap, why_it_matters, actions, who_acts, when, action_timing, resources, pad_sections, country_category_relevance, implementation_note, cpf_alignment, rra_driver_alignment, change_type, restructuring_level, priority_scope, governance_level, authority_basis
 - No generic or templated language anywhere
 - All `when` values are appropriate for the {doc_type} stage
 
@@ -4272,13 +4272,14 @@ The FCV ratings, summaries, and risk exposure paragraphs you have written in the
       "country_category_relevance": "In a Conflict-Affected context, this priority matters because...",
       "implementation_note": "1-2 sentences on timing, cost, sequencing, or key dependency",
       "cpf_alignment": "This recommendation strengthens CPF Outcome 1 (Healthier, Better Educated and Skilled Population) by ensuring FCV-sensitive targeting reaches conflict-affected communities.",
-      "rra_driver_alignment": "This recommendation directly addresses RRA Driver 2 (competition over land and water) by embedding conflict-sensitive site selection and a local grievance mechanism."
+      "rra_driver_alignment": "This recommendation directly addresses RRA Driver 2 (competition over land and water) by embedding conflict-sensitive site selection and a local grievance mechanism.",
+      "authority_basis": "directive"
     }}}}
   ]
 }}}}
 %%%JSON_END%%%
 
-IMPORTANT: The JSON block must come AFTER all narrative text. Do not include any explanatory text inside the JSON block itself. Use exact field names as shown. The `tag` field must be exactly "[S]", "[R]", or "[S+R]" (with square brackets). For `fcv_rating` and `fcv_responsiveness_rating`: use the sensitivity and responsiveness ratings from Stage 2 exactly as provided in the conversation history. Copy them into the JSON fields without modification. Do not re-assess or override the Stage 2 ratings. The `refresh_shift` field must be exactly one of: "Shift A: Anticipate" | "Shift B: Differentiate" | "Shift C: Jobs & private sector" | "Shift D: Enhanced toolkit". The `who_acts` field is semicolon-separated (e.g. "TTL; ESF Team"). The `when` field must be exactly one of: "Identification" | "Preparation" | "Appraisal" | "Implementation" | "Restructuring". The `cpf_alignment` and `rra_driver_alignment` fields must each be either a string (1-2 sentences) or JSON null - never the string "null" or "Not identified". The `governance_level` field applies ONLY to MPA operations: set it to "Regional Platform" for priorities that belong in the Phase-1 Program Framework Document (program-wide PrDO, cross-phase learning agenda, program-level institutional arrangements) or "Country Phase" for priorities that belong in a specific phase's own PAD (phase-specific targeting, phase-specific results indicators, phase-specific implementation arrangements). For non-MPA operations, set `governance_level` to JSON null. Never recommend a country-phase-owned decision be made at the Regional Platform level, or vice versa.
+IMPORTANT: The JSON block must come AFTER all narrative text. Do not include any explanatory text inside the JSON block itself. Use exact field names as shown. The `tag` field must be exactly "[S]", "[R]", or "[S+R]" (with square brackets). For `fcv_rating` and `fcv_responsiveness_rating`: use the sensitivity and responsiveness ratings from Stage 2 exactly as provided in the conversation history. Copy them into the JSON fields without modification. Do not re-assess or override the Stage 2 ratings. The `refresh_shift` field must be exactly one of: "Shift A: Anticipate" | "Shift B: Differentiate" | "Shift C: Jobs & private sector" | "Shift D: Enhanced toolkit". The `who_acts` field is semicolon-separated (e.g. "TTL; ESF Team"). The `when` field must be exactly one of: "Identification" | "Preparation" | "Appraisal" | "Implementation" | "Restructuring". The `cpf_alignment` and `rra_driver_alignment` fields must each be either a string (1-2 sentences) or JSON null - never the string "null" or "Not identified". The `governance_level` field applies ONLY to MPA operations: set it to "Regional Platform" for priorities that belong in the Phase-1 Program Framework Document (program-wide PrDO, cross-phase learning agenda, program-level institutional arrangements) or "Country Phase" for priorities that belong in a specific phase's own PAD (phase-specific targeting, phase-specific results indicators, phase-specific implementation arrangements). For non-MPA operations, set `governance_level` to JSON null. Never recommend a country-phase-owned decision be made at the Regional Platform level, or vice versa. The `authority_basis` field records the strength of the underlying OPCS source for the recommendation and must be exactly one of: "policy" | "directive" | "procedure" | "guidance" | "reviewer_judgment". Use "policy"/"directive"/"procedure"/"guidance" only when the recommendation rests on a specific PPF instrument of that type; use "reviewer_judgment" (the default) for analytical or good-practice advice that is not anchored to a mandatory PPF requirement. Do not present reviewer_judgment or guidance as a mandatory requirement.
 
 ## WATCH LIST FOR SUPERVISION (after the JSON block)
 
@@ -5426,6 +5427,15 @@ def extract_priorities(
         raw_governance_level = pr.get('governance_level')
         if raw_governance_level not in _valid_governance_levels:
             pr['governance_level'] = None
+
+        # Validate authority_basis enum (dual-regime §5.5; shared with climate §12).
+        # Reflects the strength of the underlying OPCS source. Defaults safely to
+        # reviewer_judgment (itself OUTSIDE the PPF policy/directive/procedure/guidance
+        # hierarchy), so a missing or unrecognised value never marks a priority
+        # malformed. NOT added to _REQUIRED_PRIORITY_FIELDS for that reason.
+        _valid_authority = {'policy', 'directive', 'procedure', 'guidance', 'reviewer_judgment'}
+        _ab = str(pr.get('authority_basis') or '').strip().lower().replace(' ', '_')
+        pr['authority_basis'] = _ab if _ab in _valid_authority else 'reviewer_judgment'
 
         # Instrument-aware metadata hygiene (MAI systemic finding, 2026-07):
         # change_type / restructuring_level / priority_scope are AF/restructuring/
@@ -9939,6 +9949,8 @@ def download_report():
                     meta_parts.append(f'Scope: {pr["priority_scope"]}')
                 if pr.get('governance_level'):
                     meta_parts.append(f'Governance level: {pr["governance_level"]}')
+                if pr.get('authority_basis'):
+                    meta_parts.append(f'Authority basis: {str(pr["authority_basis"]).replace("_", " ")}')
                 if pr.get('lens_ids'):
                     meta_parts.append(f'Sector lenses: {", ".join(pr["lens_ids"])}')
                 if meta_parts:

@@ -5334,6 +5334,7 @@ ${body}
             ${pr.change_type?`<span class="pc-chip">Change: ${esc(pr.change_type)}</span>`:''}
             ${pr.restructuring_level?`<span class="pc-chip">${esc(pr.restructuring_level)}</span>`:''}
             ${pr.priority_scope?`<span class="pc-chip">Scope: ${esc(pr.priority_scope)}</span>`:''}
+            ${pr.authority_basis?`<span class="pc-chip" title="Strength of the underlying OPCS source">Basis: ${esc(String(pr.authority_basis).replace(/_/g,' '))}</span>`:''}
             ${(pr.lens_ids||[]).map(id=>`<span class="lens-badge" title="${esc(pr.lens_relevance||'Sector-lens finding')}">${esc(lensDisplayName(id))}</span>`).join('')}
           </div>
           ${(pr.who_acts||pr.when||pr.resources)?`<div class="pc-meta-row">
@@ -5919,6 +5920,7 @@ ${body}
               ${pr.restructuring_level ? `<span class="pc-chip">${esc(pr.restructuring_level)}</span>` : ''}
               ${pr.priority_scope ? `<span class="pc-chip">Scope: ${esc(pr.priority_scope)}</span>` : ''}
               ${pr.governance_level ? `<span class="pc-chip" title="MPA governance level — where this priority should be decided">${esc(pr.governance_level)}</span>` : ''}
+              ${pr.authority_basis ? `<span class="pc-chip" title="Strength of the underlying OPCS source">Basis: ${esc(String(pr.authority_basis).replace(/_/g,' '))}</span>` : ''}
               ${(pr.lens_ids||[]).map(id=>`<span class="lens-badge" title="${esc(pr.lens_relevance||'Sector-lens finding')}">${esc(lensDisplayName(id))}</span>`).join('')}
             </div>
             ${(pr.who_acts||pr.when||pr.resources) ? `<div class="pc-meta-row">
