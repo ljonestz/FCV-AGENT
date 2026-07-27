@@ -990,6 +990,13 @@ def test_lens_diagnostic_repair_is_bounded_and_accepts_valid_json_only():
     assert "narrative field" in prompt
     assert "one specific story per direction" in prompt
     assert "flowing plain-language" in prompt
+    # Task 3.3 - recovery must request source + rating + two-paragraph reflections
+    assert "integration_rating" in prompt
+    assert "source" in prompt
+    assert "two" in prompt.lower() and "paragraph" in prompt.lower()
+    # Task 4B.4 - recovery must stay within the OPCS calibration boundary
+    assert "never determine" in prompt.lower()
+    assert "instrument-route" in prompt.lower()
     assert app_module.warn_on_missing_high_climate_priority(
         [{"title": "Core priority", "lens_ids": []}],
         {"lenses": [{"lens_id": "climate", "materiality_level": "medium"}]},
