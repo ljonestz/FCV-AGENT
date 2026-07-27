@@ -14,6 +14,7 @@ from flask import Flask, request, jsonify, send_from_directory, Response, stream
 from werkzeug.exceptions import RequestEntityTooLarge
 import anthropic
 from fcv_distillation import distill_doc_parts_stream
+import regime_router
 from sector_lenses import (
     CCDR_RESEARCH_INSTRUCTIONS,
     build_climate_research_prompt,
@@ -57,7 +58,10 @@ from background_docs import (
     REGIONAL_CROSSBORDER_LENS, MPA_MODULE_GUIDE,
     INTERSECTION_SYNTHESIS_GUIDE,
     DNH_SEASH_IPF, DNH_SEASH_PFORR, DNH_SEASH_DPF,
-    SEASH_GENDER_CARD_IPF, SEASH_GENDER_CARD_PFORR, SEASH_GENDER_CARD_DPF
+    SEASH_GENDER_CARD_IPF, SEASH_GENDER_CARD_PFORR, SEASH_GENDER_CARD_DPF,
+    IPF_PROJECT_PAPER_SECTIONS, PFORR_PROGRAM_PAPER_SECTIONS,
+    NEW_MODEL_MINIMUM_REFERENCE_SET, NEW_MODEL_NON_ESF_REFERENCE_SET,
+    LEGACY_PAD_MINIMUM_REFERENCE_SET
 )
 import io
 try:
@@ -577,6 +581,9 @@ class AnalysisState:
     active_lenses: list[str] = field(default_factory=list)
     lens_versions: dict[str, str] = field(default_factory=dict)
     intersection: dict[str, Any] = field(default_factory=dict)
+    preparation_regime: str = "unresolved_policy_source"
+    es_regime: str = "UNRESOLVED"
+    processing_model: str = "unknown"
 
     @classmethod
     def from_payload(cls, payload: dict[str, Any] | None) -> "AnalysisState":
@@ -620,6 +627,10 @@ class AnalysisState:
             dlis = [c.strip() for c in re.split(r'[;\n]', dlis) if c.strip()]
         ipf_comp_raw = intake.get("has_ipf_component", payload.get("has_ipf_component", False))
         has_ipf_component = ipf_comp_raw if isinstance(ipf_comp_raw, bool) else str(ipf_comp_raw).strip().lower() in {"true", "yes", "1"}
+        regime = intake.get("regime_context", payload.get("regime_context", {})) or {}
+        preparation_regime = regime.get("preparation_regime", "unresolved_policy_source") or "unresolved_policy_source"
+        es_regime = regime.get("es_regime", "UNRESOLVED") or "UNRESOLVED"
+        processing_model = regime.get("processing_model", "unknown") or "unknown"
         return cls(
             instrument=instrument,
             doc_type=doc_type,
@@ -642,6 +653,9 @@ class AnalysisState:
             active_lenses=list(active_lenses) if isinstance(active_lenses, list) else [],
             lens_versions=dict(lens_versions) if isinstance(lens_versions, dict) else {},
             intersection=dict(intake.get("intersection", payload.get("intersection", {})) or {}),
+            preparation_regime=preparation_regime,
+            es_regime=es_regime,
+            processing_model=processing_model,
         )
 
 
@@ -2726,6 +2740,190 @@ def extract_temporal_context(stage1_output: str) -> dict:
     return ctx
 
 
+def _parse_regime_date(value: str):
+    """Parse an ISO date from the regime block. Accepts YYYY-MM-DD, YYYY/MM/DD,
+    and month-precision YYYY-MM (treated as the 1st). Returns a date or None."""
+    value = (value or "").strip()
+    if not value or value.lower() in ("unknown", "none", "n/a"):
+        return None
+    for fmt in ("%Y-%m-%d", "%Y/%m/%d", "%Y-%m", "%Y/%m"):
+        try:
+            from datetime import datetime as _dtm
+            return _dtm.strptime(value, fmt).date()
+        except ValueError:
+            continue
+    return None
+
+
+def extract_regime_context(stage1_output: str, instrument: str = "IPF") -> dict:
+    """Parse %%%REGIME_CONTEXT_START/END%%% and classify BOTH regime axes via
+    regime_router. Text-only detection; the router turns dates/flags into
+    classifications. Missing block or fields default safely to
+    unresolved/UNRESOLVED so a missing signal never mis-asserts a regime.
+    Preparation regime is governed by the OIS creation date (vs 18 Apr 2026);
+    the E&S regime by the Concept Decision date (vs 1 Oct 2018) — independent axes.
+    """
+    default = {
+        "preparation_regime": "unresolved_policy_source",
+        "preparation_regime_source": "",
+        "processing_model": "unknown",
+        "ois_creation_date": "",
+        "concept_decision_or_equivalent_date": "",
+        "concept_date_source": "",
+        "es_regime": "UNRESOLVED",
+        "es_regime_source": "",
+        "op_bp_4_03_applies": False,
+        "additional_financing_exception_applies": False,
+        "op_7_50_screen": False,
+        "op_7_60_screen": False,
+        "evidence_markers": "",
+        "conflicting_evidence": "",
+        "verification_flag": False,
+        "verification_reason": "",
+    }
+    m = re.search(
+        r'%%%REGIME_CONTEXT_START%%%(.*?)%%%REGIME_CONTEXT_END%%%',
+        stage1_output, re.DOTALL,
+    )
+    if not m:
+        return {**default, "verification_flag": True,
+                "verification_reason": "no regime block emitted"}
+    fields = dict(default)
+    for line in m.group(1).strip().splitlines():
+        if ":" not in line:
+            continue
+        key, _, val = line.partition(":")
+        key, val = key.strip(), val.strip()
+        if key in fields:
+            if isinstance(default.get(key), bool):
+                fields[key] = val.lower() in {"true", "yes", "1"}
+            else:
+                fields[key] = val
+    ois = _parse_regime_date(fields.get("ois_creation_date"))
+    concept = _parse_regime_date(fields.get("concept_decision_or_equivalent_date"))
+    fields["preparation_regime"] = regime_router.classify_preparation_regime(ois)
+    fields["es_regime"] = regime_router.classify_es_regime(
+        instrument=instrument or "IPF",
+        concept_decision_date=concept,
+        op_bp_4_03_applies=fields["op_bp_4_03_applies"],
+        is_af=fields["additional_financing_exception_applies"],
+        parent_under_safeguard_policies=fields["additional_financing_exception_applies"],
+        af_exclusively_cost_overrun_or_gap=fields["additional_financing_exception_applies"],
+    )
+    if (fields["preparation_regime"] == "unresolved_policy_source"
+            or fields["es_regime"] == "UNRESOLVED"):
+        fields["verification_flag"] = True
+        fields["verification_reason"] = (
+            fields.get("conflicting_evidence") or "regime signal missing or contradictory"
+        )
+    return fields
+
+
+def appraisal_document_label(preparation_regime: str, instrument: str) -> str:
+    """Render the displayed name of the design-stage appraisal document per regime.
+
+    New-model: Project Paper (IPF), Program Paper (PforR), Program Document (DPF).
+    Legacy / unresolved: Project Appraisal Document (PAD) — the safe default so a
+    missing regime signal never mis-labels the document.
+    """
+    inst = str(instrument or "").strip().lower()
+    if str(preparation_regime or "").strip().lower() == "new_model":
+        if inst in {"dpo", "dpf"}:
+            return "Program Document"
+        if inst in {"pforr", "p4r", "program-for-results"}:
+            return "Program Paper"
+        return "Project Paper"
+    return "Project Appraisal Document (PAD)"
+
+
+def appraisal_reference_set(preparation_regime: str, es_regime: str, instrument: str) -> tuple:
+    """Return the regime-appropriate minimum instrument reference set.
+
+    Legacy / unresolved -> the existing v9.x PAD minimum set (unchanged default).
+    New-model -> the corrected set (spec Sec 5.4); ESS-bearing items only when the
+    E&S regime is ESF AND the instrument is IPF, since ESS1-10 apply to IPF only.
+    """
+    if str(preparation_regime or "").strip().lower() != "new_model":
+        return LEGACY_PAD_MINIMUM_REFERENCE_SET
+    esf = (
+        str(es_regime or "").strip().upper() == "ESF_ESS1_TO_ESS10"
+        and str(instrument or "").strip().lower() == "ipf"
+    )
+    if esf:
+        return NEW_MODEL_MINIMUM_REFERENCE_SET
+    return NEW_MODEL_NON_ESF_REFERENCE_SET
+
+
+# Exact legacy PAD-stage minimum-reference prompt block, preserved verbatim so that
+# legacy / unresolved runs render byte-for-byte identically to pre-dual-regime output.
+LEGACY_MIN_REFERENCE_PROMPT_BLOCK = 'MINIMUM INSTRUMENT REFERENCE REQUIREMENT — PAD STAGE ONLY\nFor any output where the detected document type is PAD, the following instruments must each be referenced at least once across the full set of priority cards:\n- SORT — assess whether Political and Governance, Social, and Macroeconomic risk ratings and their mitigation measures reflect the FCV dynamics identified in this analysis\n- ESS1 — confirm whether the social assessment includes a conflict sensitivity analysis covering conflict-affected communities\n- SEA/SH Action Plan — required reference for any project with elevated SEA/SH risk or operating in conflict-affected areas with female beneficiaries or contractor workforces\n- SEP / ESS10 — assess the SEP and GRM design for conflict-sensitivity and gender-sensitivity; at least one priority must reference the SEP or GRM\n- ESCP — any operationally critical FCV mitigation must be checked for inclusion as a time-bound ESCP commitment\n- Operations Manual — any recommendation involving community engagement, GRM design, or communication in insecure areas must reference the Operations Manual\n- PPSD — any recommendation involving procurement modality (NGOs, UN agencies, direct selection, framework agreements) must reference the PPSD\n- Results Framework — every operationally critical mitigation measure must be assessed for whether a tracking indicator exists in the Results Framework\n\nThis list is a floor, not a ceiling. Additional instruments may be referenced as appropriate.'
+
+
+def build_minimum_reference_block(preparation_regime, es_regime, instrument):
+    """Render the Stage 3 minimum-instrument-reference block for the detected regime.
+
+    Legacy / unresolved -> the verbatim v9.x PAD-stage floor (unchanged default).
+    New-model -> a corrected floor keyed to the Project/Program Paper's Project
+    Assessment Summary; ESS items only when es_regime == ESF and instrument == IPF.
+    """
+    if str(preparation_regime or "").strip().lower() != "new_model":
+        return LEGACY_MIN_REFERENCE_PROMPT_BLOCK
+    label = appraisal_document_label(preparation_regime, instrument)
+    refs = appraisal_reference_set(preparation_regime, es_regime, instrument)
+    bullets = chr(10).join(f"- {r}" for r in refs)
+    nl = chr(10)
+    return (
+        f"MINIMUM INSTRUMENT REFERENCE REQUIREMENT - NEW-MODEL {label} (Project Assessment Summary stage)" + nl
+        + f"For a new-model {label}, the following instruments must each be referenced at least once "
+        + "across the full set of priority cards. ESS-bearing items apply only where the E&S regime is "
+        + "the ESF and the instrument is IPF; omit them otherwise." + nl
+        + bullets + nl + nl
+        + "This list is a floor, not a ceiling. Additional instruments may be referenced as appropriate. "
+        + "The E&S content sits in Section IV.C (Environmental/Social/Legal) of the Project Assessment "
+        + "Summary; the Results Framework is the only mandatory annex (Annex 1)."
+    )
+
+
+def build_regime_header(preparation_regime, processing_model, es_regime, instrument):
+    """Compact new-model preparation header for the Stage 2/3 prompts.
+
+    Returns "" for legacy / unresolved regimes so those runs are byte-for-byte
+    unchanged. New-model output names the Project/Program Paper document label, the
+    one/two-step gates (TD/IR or One Review), and the new-model timing vocabulary.
+    """
+    if str(preparation_regime or "").strip().lower() != "new_model":
+        return ""
+    label = appraisal_document_label(preparation_regime, instrument)
+    pm = str(processing_model or "").strip().lower()
+    if pm == "two_step":
+        gates = ("This operation follows the new-model TWO-STEP preparation process: OIS decision -> "
+                 "Technical Design (TD) review -> Implementation Readiness (IR) review -> negotiations -> Board.")
+        timing = ("Use new-model timing language only: shortly-after-OIS, before-TD-review, at-TD-review, "
+                  "between-TD-and-IR, before-IR, at-IR, before-negotiations, before-Board, "
+                  "during-implementation-support.")
+    elif pm in {"one_step", "one_review"}:
+        gates = ("This operation follows the new-model ONE-STEP preparation process: OIS decision -> "
+                 "One Review (OR) -> negotiations -> Board.")
+        timing = ("Use new-model timing language only: shortly-after-OIS, before-One-Review, at-One-Review, "
+                  "before-negotiations, before-Board, during-implementation-support.")
+    else:
+        gates = ("This operation follows the new-model preparation process (OIS decision -> Technical "
+                 "Design / Implementation Readiness review, or a single One Review, -> negotiations -> "
+                 "Board); confirm the exact route with OPCS.")
+        timing = "Use new-model timing language keyed to the OIS decision, the TD/IR reviews, or the One Review."
+    nl = chr(10)
+    return (
+        "REGIME CONTEXT - NEW-MODEL PREPARATION (OPS5.03-PROC.281/.282, effective 18 April 2026)" + nl
+        + f"- The design-stage document is the {label}, not a legacy PAD; frame document sections and "
+        + "'ready-to-paste' text against it." + nl
+        + f"- {gates}" + nl
+        + f"- {timing} Do not use the legacy pre-appraisal or Decision-Review timing vocabulary for this "
+        + "operation's preparation gates." + nl
+        + "- The new-model preparation gates replace the legacy Appraisal Stage and Decision Review. "
+        + "(E&S clearances may still be described using Concept/Appraisal terminology.)" + nl + nl
+    )
+
+
 def extract_horizon_considerations(stage3_output: str) -> str:
     """Extract Horizon Considerations section from Stage 3 output.
     Returns the text content or empty string if not found.
@@ -3165,6 +3363,26 @@ safeguards_framework: [One of: ESF / OP-BP / ESSA / PSIA / Unknown — determine
 other_temporal_markers: [Any restructuring dates, AF dates, or other significant temporal markers, or "None identified"]
 lifecycle_status: [One of: "active" | "closed - <brief reason>" | "Unknown" — set to "closed - <reason>" ONLY if the document itself contains explicit closure/completion signals: it is an Implementation Completion and Results Report (ICR), it explicitly states the project has closed, was cancelled, or was dropped, or the closing_date above is clearly in the past AND the document text discusses results/lessons-learned in a completed-project register rather than a design or supervision register. Do not infer closure from the closing_date alone — a PAD or AF whose closing date has passed but which is being screened for a NEW restructuring or AF is still active for that purpose. When genuinely uncertain, use "active".]
 %%%TEMPORAL_CONTEXT_END%%%
+
+After the temporal block, ALWAYS emit this regime-detection block (all fields present; use "Unknown"/"false" when a signal is absent — never guess):
+
+%%%REGIME_CONTEXT_START%%%
+ois_creation_date: [YYYY-MM-DD of the OIS (Operation Information Summary) creation date from the OIS/Datasheet, else Unknown]
+preparation_regime_source: [where the OIS date/markers came from]
+concept_decision_or_equivalent_date: [YYYY-MM-DD of the Concept Decision or equivalent, else Unknown]
+concept_date_source: [where it came from]
+op_bp_4_03_applies: [true|false — PS1-PS8 / Performance Standards present]
+additional_financing_exception_applies: [true ONLY if this is an AF addressing EXCLUSIVELY a cost overrun / financing gap]
+op_7_50_screen: [true if an international waterway is implicated, else false]
+op_7_60_screen: [true if a disputed territory is implicated, else false]
+evidence_markers: [semicolon list of the exact strings you keyed on]
+conflicting_evidence: [any contradictory signals, else none]
+%%%REGIME_CONTEXT_END%%%
+
+REGIME DETECTION RULES (do NOT decide the regime from the document LABEL alone):
+- The PREPARATION regime is governed by the operation's OWN OIS creation date vs 18 April 2026 (2026-04-18) [OPS5.03-PROC.281/282]. New-model markers: "Project Paper"/"Program Paper", "Technical Design Review", "Implementation Readiness Review", "One Review", "Project Assessment Summary". Legacy markers: PCN, "Concept Review", "Track 1/2", "Project Appraisal Document"/PAD, "Appraisal Stage/Package", "Decision Review". "PID" ALONE is NOT decisive (both regimes use it); a guidance catalogue number is NOT proof. Key on the OIS acronym + date, not on how the source spells out "OIS".
+- The E&S regime is a SEPARATE axis governed by the Concept Decision date vs 1 October 2018 (2018-10-01) [OPS5.03-DIR.123 Section III.A paragraph 1] — NOT by the OIS date. ESS1-10 apply to IPF only; DPF/PforR have their own E&S provisions. ESF markers: ESRC/ESRS/ESCP/SEP/ESS1-10; legacy markers: Environmental Category A/B/C/FI, ISDS, "Safeguard Policies triggered", OP/BP 4.xx.
+- SOURCE DISCIPLINE: cite the marker you used; do NOT equate "Public" (an Access-to-Information designation) with "Published" (a publication status). When signals conflict or a governing date is missing, leave the date Unknown and note it in conflicting_evidence.
 
 If DOC_TYPE is AF or Restructuring, also output this mid-cycle change block. If the document is not AF or Restructuring, output an empty change_types value and restructuring_level: Unknown.
 
@@ -3847,7 +4065,7 @@ Do not use the project approval date, signing date, or effectiveness date to mod
 
 ---
 
-INSTRUMENT ROUTING GUARDRAIL — MANDATORY
+{regime_header}INSTRUMENT ROUTING GUARDRAIL — MANDATORY
 Before generating any priority card, identify the detected document type from Stage 1. Apply these constraints:
 - PCN stage: Do not reference ESCP, SEP, PPSD, or SORT as actionable instruments. Use: 'Project Description', 'Preliminary PDO', 'Concept Note Risk Section'. Frame actions as design considerations, not document revisions.
 - PID stage: ESCP and SEP are being drafted — reference them as documents being developed, not finalized. PPSD and SORT are in preparation. Results Framework is preliminary.
@@ -3867,18 +4085,7 @@ Violation check: Before outputting each priority card, verify that the pad_secti
 
 ---
 
-MINIMUM INSTRUMENT REFERENCE REQUIREMENT — PAD STAGE ONLY
-For any output where the detected document type is PAD, the following instruments must each be referenced at least once across the full set of priority cards:
-- SORT — assess whether Political and Governance, Social, and Macroeconomic risk ratings and their mitigation measures reflect the FCV dynamics identified in this analysis
-- ESS1 — confirm whether the social assessment includes a conflict sensitivity analysis covering conflict-affected communities
-- SEA/SH Action Plan — required reference for any project with elevated SEA/SH risk or operating in conflict-affected areas with female beneficiaries or contractor workforces
-- SEP / ESS10 — assess the SEP and GRM design for conflict-sensitivity and gender-sensitivity; at least one priority must reference the SEP or GRM
-- ESCP — any operationally critical FCV mitigation must be checked for inclusion as a time-bound ESCP commitment
-- Operations Manual — any recommendation involving community engagement, GRM design, or communication in insecure areas must reference the Operations Manual
-- PPSD — any recommendation involving procurement modality (NGOs, UN agencies, direct selection, framework agreements) must reference the PPSD
-- Results Framework — every operationally critical mitigation measure must be assessed for whether a tracking indicator exists in the Results Framework
-
-This list is a floor, not a ceiling. Additional instruments may be referenced as appropriate.
+{minimum_reference_set}
 
 ---
 
@@ -4088,7 +4295,7 @@ The SEA/SH card and the GRM card may both appear in the output — they address 
 - JSON block is present at the end, wrapped in %%%JSON_START%%% / %%%JSON_END%%%
 - All 10 top-level JSON fields are populated (fcv_rating, fcv_responsiveness_rating, sensitivity_summary, responsiveness_summary, risk_exposure, mid_cycle_watch, dpf_watch, p4r_watch, regional_watch, priorities)
 - Each priority's pad_sections, actions (including per-action suggested_language), and implementation_note are specific to this project — not generic placeholders
-- Each priority JSON object has all 21 fields: title, fcv_dimension, tag, refresh_shift, risk_level, the_gap, why_it_matters, actions, who_acts, when, action_timing, resources, pad_sections, country_category_relevance, implementation_note, cpf_alignment, rra_driver_alignment, change_type, restructuring_level, priority_scope, governance_level
+- Each priority JSON object has all 22 fields: title, fcv_dimension, tag, refresh_shift, risk_level, the_gap, why_it_matters, actions, who_acts, when, action_timing, resources, pad_sections, country_category_relevance, implementation_note, cpf_alignment, rra_driver_alignment, change_type, restructuring_level, priority_scope, governance_level, authority_basis
 - No generic or templated language anywhere
 - All `when` values are appropriate for the {doc_type} stage
 
@@ -4145,13 +4352,14 @@ The FCV ratings, summaries, and risk exposure paragraphs you have written in the
       "country_category_relevance": "In a Conflict-Affected context, this priority matters because...",
       "implementation_note": "1-2 sentences on timing, cost, sequencing, or key dependency",
       "cpf_alignment": "This recommendation strengthens CPF Outcome 1 (Healthier, Better Educated and Skilled Population) by ensuring FCV-sensitive targeting reaches conflict-affected communities.",
-      "rra_driver_alignment": "This recommendation directly addresses RRA Driver 2 (competition over land and water) by embedding conflict-sensitive site selection and a local grievance mechanism."
+      "rra_driver_alignment": "This recommendation directly addresses RRA Driver 2 (competition over land and water) by embedding conflict-sensitive site selection and a local grievance mechanism.",
+      "authority_basis": "directive"
     }}}}
   ]
 }}}}
 %%%JSON_END%%%
 
-IMPORTANT: The JSON block must come AFTER all narrative text. Do not include any explanatory text inside the JSON block itself. Use exact field names as shown. The `tag` field must be exactly "[S]", "[R]", or "[S+R]" (with square brackets). For `fcv_rating` and `fcv_responsiveness_rating`: use the sensitivity and responsiveness ratings from Stage 2 exactly as provided in the conversation history. Copy them into the JSON fields without modification. Do not re-assess or override the Stage 2 ratings. The `refresh_shift` field must be exactly one of: "Shift A: Anticipate" | "Shift B: Differentiate" | "Shift C: Jobs & private sector" | "Shift D: Enhanced toolkit". The `who_acts` field is semicolon-separated (e.g. "TTL; ESF Team"). The `when` field must be exactly one of: "Identification" | "Preparation" | "Appraisal" | "Implementation" | "Restructuring". The `cpf_alignment` and `rra_driver_alignment` fields must each be either a string (1-2 sentences) or JSON null - never the string "null" or "Not identified". The `governance_level` field applies ONLY to MPA operations: set it to "Regional Platform" for priorities that belong in the Phase-1 Program Framework Document (program-wide PrDO, cross-phase learning agenda, program-level institutional arrangements) or "Country Phase" for priorities that belong in a specific phase's own PAD (phase-specific targeting, phase-specific results indicators, phase-specific implementation arrangements). For non-MPA operations, set `governance_level` to JSON null. Never recommend a country-phase-owned decision be made at the Regional Platform level, or vice versa.
+IMPORTANT: The JSON block must come AFTER all narrative text. Do not include any explanatory text inside the JSON block itself. Use exact field names as shown. The `tag` field must be exactly "[S]", "[R]", or "[S+R]" (with square brackets). For `fcv_rating` and `fcv_responsiveness_rating`: use the sensitivity and responsiveness ratings from Stage 2 exactly as provided in the conversation history. Copy them into the JSON fields without modification. Do not re-assess or override the Stage 2 ratings. The `refresh_shift` field must be exactly one of: "Shift A: Anticipate" | "Shift B: Differentiate" | "Shift C: Jobs & private sector" | "Shift D: Enhanced toolkit". The `who_acts` field is semicolon-separated (e.g. "TTL; ESF Team"). The `when` field must be exactly one of: "Identification" | "Preparation" | "Appraisal" | "Implementation" | "Restructuring". The `cpf_alignment` and `rra_driver_alignment` fields must each be either a string (1-2 sentences) or JSON null - never the string "null" or "Not identified". The `governance_level` field applies ONLY to MPA operations: set it to "Regional Platform" for priorities that belong in the Phase-1 Program Framework Document (program-wide PrDO, cross-phase learning agenda, program-level institutional arrangements) or "Country Phase" for priorities that belong in a specific phase's own PAD (phase-specific targeting, phase-specific results indicators, phase-specific implementation arrangements). For non-MPA operations, set `governance_level` to JSON null. Never recommend a country-phase-owned decision be made at the Regional Platform level, or vice versa. The `authority_basis` field records the strength of the underlying OPCS source for the recommendation and must be exactly one of: "policy" | "directive" | "procedure" | "guidance" | "reviewer_judgment". Use "policy"/"directive"/"procedure"/"guidance" only when the recommendation rests on a specific PPF instrument of that type; use "reviewer_judgment" (the default) for analytical or good-practice advice that is not anchored to a mandatory PPF requirement. Do not present reviewer_judgment or guidance as a mandatory requirement.
 
 ## WATCH LIST FOR SUPERVISION (after the JSON block)
 
@@ -4956,6 +5164,7 @@ def clean_stage1_output(text):
     text = re.sub(r'%%%INSTRUMENT_TYPE:[^%\n]*%%%\n?', '', text)
     text = re.sub(r'%%%PROCESS_TYPE:[^%\n]*%%%\n?', '', text)
     text = re.sub(r'%%%TEMPORAL_CONTEXT_START%%%.*?%%%TEMPORAL_CONTEXT_END%%%\n?', '', text, flags=re.DOTALL)
+    text = re.sub(r'%%%REGIME_CONTEXT_START%%%.*?%%%REGIME_CONTEXT_END%%%\n?', '', text, flags=re.DOTALL)
     text = re.sub(r'%%%CHANGE_TYPE_START%%%.*?%%%CHANGE_TYPE_END%%%\n?', '', text, flags=re.DOTALL)
     text = re.sub(r'%%%PRIOR_ACTIONS_START%%%.*?%%%PRIOR_ACTIONS_END%%%\n?', '', text, flags=re.DOTALL)
     text = re.sub(r'%%%DLIS_START%%%.*?%%%DLIS_END%%%\n?', '', text, flags=re.DOTALL)
@@ -5185,6 +5394,8 @@ def extract_priorities(
     uploaded_doc_names: list = None,
     active_lens_ids: list[str] | None = None,
     lens_diagnostic: dict[str, Any] | None = None,
+    preparation_regime: str = "unresolved_policy_source",
+    instrument: str = "",
 ) -> dict:
     """Parse %%%JSON_START%%% / %%%JSON_END%%% block from Stage 3/4 output.
 
@@ -5238,6 +5449,14 @@ def extract_priorities(
             if field not in pr:
                 pr[field] = ''
 
+        # ── Regime terminology: pad_sections <-> appraisal_document_sections ──
+        # Accept either key from the model; keep both populated so legacy renderers
+        # (pad_sections) and regime-aware renderers (appraisal_document_sections)
+        # both work. New key wins when both are present and non-empty.
+        _adoc = pr.get('appraisal_document_sections') or pr.get('pad_sections', '')
+        pr['appraisal_document_sections'] = _adoc or ''
+        pr['pad_sections'] = pr['appraisal_document_sections']
+
         # ── Normalise actions array ──────────────────────────────
         # New format: actions is a list of {document_element, guidance, suggested_language}
         # Backwards compat: if old 'recommendation' string exists, convert it
@@ -5261,7 +5480,10 @@ def extract_priorities(
                 act.setdefault('guidance', '')
                 act.setdefault('suggested_language', '')
 
-        # Validate action_timing enum (v9.3: expanded to 5 values; remap legacy 'pre-appraisal')
+        # Validate action_timing enum (v9.3: 5 legacy values; remap legacy 'pre-appraisal').
+        # Dual-regime Phase 4: in new-model, map/validate against the OIS/TD/IR/One-Review
+        # vocabulary via regime_router (never emits "before appraisal"). Legacy/unresolved
+        # behaviour is byte-for-byte unchanged (keep valid legacy values, else None).
         _timing_remap = {'pre-appraisal': 'required-before-appraisal'}
         _valid_timings = {
             'flag-for-preparation', 'required-before-appraisal',
@@ -5269,8 +5491,13 @@ def extract_priorities(
         }
         raw_timing = pr.get('action_timing')
         if raw_timing in _timing_remap:
-            pr['action_timing'] = _timing_remap[raw_timing]
-        elif raw_timing not in _valid_timings:
+            raw_timing = _timing_remap[raw_timing]
+        if str(preparation_regime).strip().lower() == 'new_model':
+            pr['action_timing'] = regime_router.resolve_action_timing(
+                raw_timing, preparation_regime, instrument)
+        elif raw_timing in _valid_timings:
+            pr['action_timing'] = raw_timing
+        else:
             pr['action_timing'] = None
 
         # Validate governance_level enum (Workstream 6, MPA operations only;
@@ -5280,6 +5507,15 @@ def extract_priorities(
         raw_governance_level = pr.get('governance_level')
         if raw_governance_level not in _valid_governance_levels:
             pr['governance_level'] = None
+
+        # Validate authority_basis enum (dual-regime §5.5; shared with climate §12).
+        # Reflects the strength of the underlying OPCS source. Defaults safely to
+        # reviewer_judgment (itself OUTSIDE the PPF policy/directive/procedure/guidance
+        # hierarchy), so a missing or unrecognised value never marks a priority
+        # malformed. NOT added to _REQUIRED_PRIORITY_FIELDS for that reason.
+        _valid_authority = {'policy', 'directive', 'procedure', 'guidance', 'reviewer_judgment'}
+        _ab = str(pr.get('authority_basis') or '').strip().lower().replace(' ', '_')
+        pr['authority_basis'] = _ab if _ab in _valid_authority else 'reviewer_judgment'
 
         # Instrument-aware metadata hygiene (MAI systemic finding, 2026-07):
         # change_type / restructuring_level / priority_scope are AF/restructuring/
@@ -7031,6 +7267,17 @@ def run_stage():
                 except Exception:
                     pass
 
+                # Regime-aware preparation header (empty for legacy/unresolved -> no change).
+                _s2_regime = data.get('regime_context', {}) or {}
+                _s2_regime_header = build_regime_header(
+                    _s2_regime.get('preparation_regime', 'unresolved_policy_source'),
+                    _s2_regime.get('processing_model', 'unknown'),
+                    _s2_regime.get('es_regime', 'UNRESOLVED'),
+                    instrument_type,
+                )
+                if _s2_regime_header:
+                    stage_prompt = stage_prompt + "\n\n" + _s2_regime_header
+
                 stage_prompt = (
                     stage_prompt +
                     "\n\n--- WBG FCV Operational Manual (12 Recommendations, 25 Key Questions, 3 Key Elements) ---\n" +
@@ -7179,6 +7426,10 @@ def run_stage():
                 instrument_slice = get_instrument_slice(instrument_type)
                 temporal_ctx = data.get('temporal_context', {})
                 temporal_guardrail = _build_temporal_guardrail(temporal_ctx, doc_type)
+                _s3_regime = data.get('regime_context', {}) or {}
+                _s3_prep = _s3_regime.get('preparation_regime', 'unresolved_policy_source')
+                _s3_pm = _s3_regime.get('processing_model', 'unknown')
+                _s3_es = _s3_regime.get('es_regime', 'UNRESOLVED')
 
                 try:
                     stage_prompt = stage_prompt.format(
@@ -7188,6 +7439,8 @@ def run_stage():
                         instrument_guidance=instrument_slice,
                         temporal_guardrail=temporal_guardrail,
                         seash_gender_card_guidance=get_seash_gender_card_guidance(instrument_type),
+                        regime_header=build_regime_header(_s3_prep, _s3_pm, _s3_es, instrument_type),
+                        minimum_reference_set=build_minimum_reference_block(_s3_prep, _s3_es, instrument_type),
                     )
                 except KeyError:
                     pass  # If format fails, use prompt as-is
@@ -7567,11 +7820,14 @@ def run_stage():
                     # Use uploaded_doc_names_payload (parsed from frontend's uploaded_doc_names
                     # array at request start) — includes all zones (primary, package, context).
                     # data.get('documents', []) is empty at Stage 3 in step-by-step mode.
+                    _s3_regime = (data.get('regime_context', {}) or {})
                     parsed = extract_priorities(
                         full_text,
                         uploaded_doc_names_payload,
                         [item['id'] for item in lens_context['active_lenses']],
                         lens_context.get('lens_diagnostic', {}),
+                        preparation_regime=_s3_regime.get('preparation_regime', 'unresolved_policy_source'),
+                        instrument=data.get('instrument_type', '') or '',
                     )
                     warn_on_missing_high_climate_priority(
                         parsed.get('priorities', []),
@@ -7627,6 +7883,7 @@ def run_stage():
                     ]) if lens_context['active_lenses'] else {}
                     _instrument_type = extract_instrument_type(full_text)
                     _temporal_context = extract_temporal_context(full_text)
+                    _regime_context = extract_regime_context(full_text, _instrument_type)
                     _process_type = extract_process_type(full_text) if is_impl else None
                     _country_classification = extract_country_classification(full_text)
                     _context_flags = extract_context_flags(full_text)
@@ -7682,6 +7939,7 @@ def run_stage():
                     'research_country': research_country if stage == 1 else None,
                     'instrument_type': _instrument_type if stage == 1 else None,
                     'temporal_context': _temporal_context if stage == 1 else None,
+                    'regime_context': _regime_context if stage == 1 else None,
                     'process_type': _process_type if stage == 1 else None,
                     'country_classification': _country_classification if stage == 1 else None,
                     'context_flags': _context_flags if stage == 1 else None,
@@ -8248,6 +8506,7 @@ def run_express():
 
                 instrument_type = extract_instrument_type(stage1_output)
                 temporal_context = extract_temporal_context(stage1_output)
+                regime_context = extract_regime_context(stage1_output, instrument_type)
                 # NEW: extract classification, sector, flags
                 country_classification = extract_country_classification(stage1_output)
                 context_flags = extract_context_flags(stage1_output)
@@ -8287,7 +8546,7 @@ def run_express():
                 lens_evidence_s1 = extract_lens_evidence(
                     stage1_output, [item['id'] for item in lens_context_s1['active_lenses']]
                 ) if lens_context_s1['active_lenses'] else {}
-                yield f"data: {json.dumps({'stage_done': 1, 'result': stage1_display, 'history': conversation_history, 'research_brief': research_brief_text, 'research_country': research_country, 'climate_research': climate_research, 'doc_type': doc_type, 'instrument_type': instrument_type, 'temporal_context': temporal_context, 'process_type': process_type if is_impl else None, 'country_classification': country_classification, 'context_flags': context_flags, 'sector_context': sector_context, 'change_types': change_types, 'prior_actions': prior_actions, 'dlis': dlis, 'country_set': country_set, 'mpa_context': mpa_context, 'country_scope': _cscope_x, 'is_mpa': _is_mpa_x, 'review_mode': review_mode, 'active_lenses': lens_context_s1['active_lenses'], 'lens_warnings': lens_context_s1['warnings'], 'lens_evidence': lens_evidence_s1, 'lens_context_sources': lens_context_sources})}\n\n"
+                yield f"data: {json.dumps({'stage_done': 1, 'result': stage1_display, 'history': conversation_history, 'research_brief': research_brief_text, 'research_country': research_country, 'climate_research': climate_research, 'doc_type': doc_type, 'instrument_type': instrument_type, 'temporal_context': temporal_context, 'regime_context': regime_context, 'process_type': process_type if is_impl else None, 'country_classification': country_classification, 'context_flags': context_flags, 'sector_context': sector_context, 'change_types': change_types, 'prior_actions': prior_actions, 'dlis': dlis, 'country_set': country_set, 'mpa_context': mpa_context, 'country_scope': _cscope_x, 'is_mpa': _is_mpa_x, 'review_mode': review_mode, 'active_lenses': lens_context_s1['active_lenses'], 'lens_warnings': lens_context_s1['warnings'], 'lens_evidence': lens_evidence_s1, 'lens_context_sources': lens_context_sources})}\n\n"
 
                 # ════════════════════════════════════════════════════════════
                 # STAGE 2 — FCV Assessment
@@ -8370,6 +8629,17 @@ def run_express():
                 if mpa_slice:
                     stage2_prompt = stage2_prompt + mpa_slice
                 stage2_prompt = stage2_prompt.replace('{dnh_seash_guidance}', get_dnh_seash_guidance(instrument_type))
+
+                # Regime-aware preparation header (empty for legacy/unresolved -> no change).
+                _e2_regime = regime_context or {}
+                _e2_regime_header = build_regime_header(
+                    _e2_regime.get('preparation_regime', 'unresolved_policy_source'),
+                    _e2_regime.get('processing_model', 'unknown'),
+                    _e2_regime.get('es_regime', 'UNRESOLVED'),
+                    instrument_type,
+                )
+                if _e2_regime_header:
+                    stage2_prompt = stage2_prompt + "\n\n" + _e2_regime_header
 
                 confirmed_category_e2 = (
                     country_classification.get('category', 'General')
@@ -8536,6 +8806,10 @@ def run_express():
                     timing_opts = stage_config.get('timing_options', ['Preparation'])
                     timing_str = ' / '.join(timing_opts) if isinstance(timing_opts, list) else str(timing_opts)
 
+                    _e3_regime = regime_context or {}
+                    _e3_prep = _e3_regime.get('preparation_regime', 'unresolved_policy_source')
+                    _e3_pm = _e3_regime.get('processing_model', 'unknown')
+                    _e3_es = _e3_regime.get('es_regime', 'UNRESOLVED')
                     try:
                         stage3_prompt = stage3_prompt.format(
                             doc_type=doc_type,
@@ -8544,6 +8818,8 @@ def run_express():
                             instrument_guidance=instrument_slice_s3,
                             temporal_guardrail=temporal_guardrail_s3,
                             seash_gender_card_guidance=get_seash_gender_card_guidance(instrument_type),
+                            regime_header=build_regime_header(_e3_prep, _e3_pm, _e3_es, instrument_type),
+                            minimum_reference_set=build_minimum_reference_block(_e3_prep, _e3_es, instrument_type),
                         )
                     except KeyError:
                         pass
@@ -8662,6 +8938,8 @@ def run_express():
                     uploaded_doc_names,
                     [item['id'] for item in lens_context_s3['active_lenses']],
                     lens_context_s3.get('lens_diagnostic', {}),
+                    preparation_regime=(regime_context or {}).get('preparation_regime', 'unresolved_policy_source'),
+                    instrument=instrument_type or '',
                 )
                 warn_on_missing_high_climate_priority(
                     parsed.get('priorities', []),
@@ -9235,6 +9513,18 @@ def download_report():
         'next-series': 'Feed into next series',
         'supervision': 'Supervision / monitoring only',
         'pre-appraisal': 'Required before Decision Review (DM/ROC)',
+        # New-model (OPS5.03-PROC.281/282) preparation-gate timings
+        'shortly-after-OIS': 'Shortly after OIS decision',
+        'before-TD-review': 'Before Technical Design review',
+        'at-TD-review': 'At Technical Design review',
+        'between-TD-and-IR': 'Between TD and IR review',
+        'before-IR': 'Before Implementation Readiness review',
+        'at-IR': 'At Implementation Readiness review',
+        'before-One-Review': 'Before One Review',
+        'at-One-Review': 'At One Review',
+        'before-negotiations': 'Before negotiations',
+        'before-Board': 'Before Board',
+        'during-implementation-support': 'During implementation support',
     }
     tag_labels = {
         '[S]': 'Sensitivity', '[R]': 'Responsiveness', '[S+R]': 'Sensitivity + Responsiveness'
@@ -9773,6 +10063,8 @@ def download_report():
                     meta_parts.append(f'Scope: {pr["priority_scope"]}')
                 if pr.get('governance_level'):
                     meta_parts.append(f'Governance level: {pr["governance_level"]}')
+                if pr.get('authority_basis'):
+                    meta_parts.append(f'Authority basis: {str(pr["authority_basis"]).replace("_", " ")}')
                 if pr.get('lens_ids'):
                     meta_parts.append(f'Sector lenses: {", ".join(pr["lens_ids"])}')
                 if meta_parts:
