@@ -625,6 +625,26 @@ def test_climate_reflection_status_cues_softened_from_machine_tokens():
     assert not any("_" in cue for cue in cues)
 
 
+def test_climate_reflection_carries_source_and_long_text():
+    long_text = "Paragraph one about maladaptation lock-in. " * 20 + "\n\n" + \
+                "Paragraph two naming Sub-component 1.2 cold storage. " * 20
+    block = (
+        "%%%LENS_DIAGNOSTIC_START%%%"
+        '{"lenses":[{"lens_id":"climate","applicability":"material",'
+        '"materiality_level":"high","reflections":[{"question_key":"cq2_maladaptation",'
+        '"title":"Could the design lock in maladaptation?","status_cue":"partial gap",'
+        '"source":"FCV-Sensitive Climate Action Framework","text":' + json.dumps(long_text) + '}],'
+        '"source_ids":[],"readout_sections":[],"interaction_readout":[],'
+        '"additional_pathways":[],"other_pathways":[]}],"findings":[]}'
+        "%%%LENS_DIAGNOSTIC_END%%%"
+    )
+    lens = extract_lens_diagnostic(block, ["climate"])["lenses"][0]
+    r = lens["reflections"][0]
+    assert r["source"] == "FCV-Sensitive Climate Action Framework"
+    assert len(r["text"]) > 900  # two-paragraph depth preserved (not truncated to 700)
+    assert "\n\n" in r["text"]   # paragraph break kept
+
+
 def test_climate_interaction_narrative_parsed_and_bounded():
     long_narrative = "Flooding pushes fishing communities into contested areas. " * 60
     block = (
@@ -671,10 +691,10 @@ def test_climate_integration_defaults_to_insufficient_evidence():
     assert result_invalid["lenses"][0]["integration_level"] == "insufficient_evidence"
 
 
-def test_climate_reflections_drop_unknown_keys_and_cap_at_five():
+def test_climate_reflections_drop_unknown_keys_and_cap_at_six():
     reflections = ",".join(
         '{"question_key":"cq1_interaction","title":"t","status_cue":"ok","text":"x"}'
-        for _ in range(7)
+        for _ in range(8)
     )
     bad = '{"question_key":"not_a_cq","title":"t","status_cue":"ok","text":"x"}'
     block = (
@@ -687,7 +707,9 @@ def test_climate_reflections_drop_unknown_keys_and_cap_at_five():
     )
     lens = extract_lens_diagnostic(block, ["climate"])["lenses"][0]
     assert all(r["question_key"] != "not_a_cq" for r in lens["reflections"])
-    assert len(lens["reflections"]) <= 5
+    # cap raised 5 -> 6 to fit all six stable themes (one answer per theme)
+    assert len(lens["reflections"]) <= 6
+    assert len(lens["reflections"]) == 6
 
 
 def test_is_valid_finding_id_is_linear_and_correct():

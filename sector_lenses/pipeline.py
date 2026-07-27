@@ -203,23 +203,29 @@ def _soften_status_cue(value: Any) -> str:
 
 
 def _normalize_climate_reflections(value: Any) -> list[dict[str, Any]]:
-    """Validate and bound climate diagnostic reflection entries."""
+    """Validate and bound climate diagnostic reflection (theme answer) entries.
+
+    Each entry is a stable-theme answer: question_key + reader title + softened
+    status cue + a two-paragraph answer (text, up to ~1800 chars, paragraph
+    breaks preserved) + a short source attribution.
+    """
 
     reflections: list[dict[str, Any]] = []
     for raw in _list_values(value):
         if not isinstance(raw, dict):
             continue
         key = str(raw.get("question_key", ""))
-        text = str(raw.get("text", "")).strip()[:700]
+        text = str(raw.get("text", "")).strip()[:1800]
         if key not in _CLIMATE_REFLECTION_KEYS or not text:
             continue
         reflections.append({
             "question_key": key,
-            "title": str(raw.get("title", "")).strip()[:80],
+            "title": str(raw.get("title", "")).strip()[:160],
             "status_cue": _soften_status_cue(raw.get("status_cue", ""))[:40],
+            "source": str(raw.get("source", "")).strip()[:120],
             "text": text,
         })
-        if len(reflections) >= 5:
+        if len(reflections) >= 6:
             break
     return reflections
 
