@@ -2854,6 +2854,76 @@ def appraisal_reference_set(preparation_regime: str, es_regime: str, instrument:
     return NEW_MODEL_NON_ESF_REFERENCE_SET
 
 
+# Exact legacy PAD-stage minimum-reference prompt block, preserved verbatim so that
+# legacy / unresolved runs render byte-for-byte identically to pre-dual-regime output.
+LEGACY_MIN_REFERENCE_PROMPT_BLOCK = 'MINIMUM INSTRUMENT REFERENCE REQUIREMENT — PAD STAGE ONLY\nFor any output where the detected document type is PAD, the following instruments must each be referenced at least once across the full set of priority cards:\n- SORT — assess whether Political and Governance, Social, and Macroeconomic risk ratings and their mitigation measures reflect the FCV dynamics identified in this analysis\n- ESS1 — confirm whether the social assessment includes a conflict sensitivity analysis covering conflict-affected communities\n- SEA/SH Action Plan — required reference for any project with elevated SEA/SH risk or operating in conflict-affected areas with female beneficiaries or contractor workforces\n- SEP / ESS10 — assess the SEP and GRM design for conflict-sensitivity and gender-sensitivity; at least one priority must reference the SEP or GRM\n- ESCP — any operationally critical FCV mitigation must be checked for inclusion as a time-bound ESCP commitment\n- Operations Manual — any recommendation involving community engagement, GRM design, or communication in insecure areas must reference the Operations Manual\n- PPSD — any recommendation involving procurement modality (NGOs, UN agencies, direct selection, framework agreements) must reference the PPSD\n- Results Framework — every operationally critical mitigation measure must be assessed for whether a tracking indicator exists in the Results Framework\n\nThis list is a floor, not a ceiling. Additional instruments may be referenced as appropriate.'
+
+
+def build_minimum_reference_block(preparation_regime, es_regime, instrument):
+    """Render the Stage 3 minimum-instrument-reference block for the detected regime.
+
+    Legacy / unresolved -> the verbatim v9.x PAD-stage floor (unchanged default).
+    New-model -> a corrected floor keyed to the Project/Program Paper's Project
+    Assessment Summary; ESS items only when es_regime == ESF and instrument == IPF.
+    """
+    if str(preparation_regime or "").strip().lower() != "new_model":
+        return LEGACY_MIN_REFERENCE_PROMPT_BLOCK
+    label = appraisal_document_label(preparation_regime, instrument)
+    refs = appraisal_reference_set(preparation_regime, es_regime, instrument)
+    bullets = chr(10).join(f"- {r}" for r in refs)
+    nl = chr(10)
+    return (
+        f"MINIMUM INSTRUMENT REFERENCE REQUIREMENT - NEW-MODEL {label} (Project Assessment Summary stage)" + nl
+        + f"For a new-model {label}, the following instruments must each be referenced at least once "
+        + "across the full set of priority cards. ESS-bearing items apply only where the E&S regime is "
+        + "the ESF and the instrument is IPF; omit them otherwise." + nl
+        + bullets + nl + nl
+        + "This list is a floor, not a ceiling. Additional instruments may be referenced as appropriate. "
+        + "The E&S content sits in Section IV.C (Environmental/Social/Legal) of the Project Assessment "
+        + "Summary; the Results Framework is the only mandatory annex (Annex 1)."
+    )
+
+
+def build_regime_header(preparation_regime, processing_model, es_regime, instrument):
+    """Compact new-model preparation header for the Stage 2/3 prompts.
+
+    Returns "" for legacy / unresolved regimes so those runs are byte-for-byte
+    unchanged. New-model output names the Project/Program Paper document label, the
+    one/two-step gates (TD/IR or One Review), and the new-model timing vocabulary.
+    """
+    if str(preparation_regime or "").strip().lower() != "new_model":
+        return ""
+    label = appraisal_document_label(preparation_regime, instrument)
+    pm = str(processing_model or "").strip().lower()
+    if pm == "two_step":
+        gates = ("This operation follows the new-model TWO-STEP preparation process: OIS decision -> "
+                 "Technical Design (TD) review -> Implementation Readiness (IR) review -> negotiations -> Board.")
+        timing = ("Use new-model timing language only: shortly-after-OIS, before-TD-review, at-TD-review, "
+                  "between-TD-and-IR, before-IR, at-IR, before-negotiations, before-Board, "
+                  "during-implementation-support.")
+    elif pm in {"one_step", "one_review"}:
+        gates = ("This operation follows the new-model ONE-STEP preparation process: OIS decision -> "
+                 "One Review (OR) -> negotiations -> Board.")
+        timing = ("Use new-model timing language only: shortly-after-OIS, before-One-Review, at-One-Review, "
+                  "before-negotiations, before-Board, during-implementation-support.")
+    else:
+        gates = ("This operation follows the new-model preparation process (OIS decision -> Technical "
+                 "Design / Implementation Readiness review, or a single One Review, -> negotiations -> "
+                 "Board); confirm the exact route with OPCS.")
+        timing = "Use new-model timing language keyed to the OIS decision, the TD/IR reviews, or the One Review."
+    nl = chr(10)
+    return (
+        "REGIME CONTEXT - NEW-MODEL PREPARATION (OPS5.03-PROC.281/.282, effective 18 April 2026)" + nl
+        + f"- The design-stage document is the {label}, not a legacy PAD; frame document sections and "
+        + "'ready-to-paste' text against it." + nl
+        + f"- {gates}" + nl
+        + f"- {timing} Do not use the legacy pre-appraisal or Decision-Review timing vocabulary for this "
+        + "operation's preparation gates." + nl
+        + "- The new-model preparation gates replace the legacy Appraisal Stage and Decision Review. "
+        + "(E&S clearances may still be described using Concept/Appraisal terminology.)" + nl + nl
+    )
+
+
 def extract_horizon_considerations(stage3_output: str) -> str:
     """Extract Horizon Considerations section from Stage 3 output.
     Returns the text content or empty string if not found.
@@ -3995,7 +4065,7 @@ Do not use the project approval date, signing date, or effectiveness date to mod
 
 ---
 
-INSTRUMENT ROUTING GUARDRAIL — MANDATORY
+{regime_header}INSTRUMENT ROUTING GUARDRAIL — MANDATORY
 Before generating any priority card, identify the detected document type from Stage 1. Apply these constraints:
 - PCN stage: Do not reference ESCP, SEP, PPSD, or SORT as actionable instruments. Use: 'Project Description', 'Preliminary PDO', 'Concept Note Risk Section'. Frame actions as design considerations, not document revisions.
 - PID stage: ESCP and SEP are being drafted — reference them as documents being developed, not finalized. PPSD and SORT are in preparation. Results Framework is preliminary.
@@ -4015,18 +4085,7 @@ Violation check: Before outputting each priority card, verify that the pad_secti
 
 ---
 
-MINIMUM INSTRUMENT REFERENCE REQUIREMENT — PAD STAGE ONLY
-For any output where the detected document type is PAD, the following instruments must each be referenced at least once across the full set of priority cards:
-- SORT — assess whether Political and Governance, Social, and Macroeconomic risk ratings and their mitigation measures reflect the FCV dynamics identified in this analysis
-- ESS1 — confirm whether the social assessment includes a conflict sensitivity analysis covering conflict-affected communities
-- SEA/SH Action Plan — required reference for any project with elevated SEA/SH risk or operating in conflict-affected areas with female beneficiaries or contractor workforces
-- SEP / ESS10 — assess the SEP and GRM design for conflict-sensitivity and gender-sensitivity; at least one priority must reference the SEP or GRM
-- ESCP — any operationally critical FCV mitigation must be checked for inclusion as a time-bound ESCP commitment
-- Operations Manual — any recommendation involving community engagement, GRM design, or communication in insecure areas must reference the Operations Manual
-- PPSD — any recommendation involving procurement modality (NGOs, UN agencies, direct selection, framework agreements) must reference the PPSD
-- Results Framework — every operationally critical mitigation measure must be assessed for whether a tracking indicator exists in the Results Framework
-
-This list is a floor, not a ceiling. Additional instruments may be referenced as appropriate.
+{minimum_reference_set}
 
 ---
 
@@ -7208,6 +7267,17 @@ def run_stage():
                 except Exception:
                     pass
 
+                # Regime-aware preparation header (empty for legacy/unresolved -> no change).
+                _s2_regime = data.get('regime_context', {}) or {}
+                _s2_regime_header = build_regime_header(
+                    _s2_regime.get('preparation_regime', 'unresolved_policy_source'),
+                    _s2_regime.get('processing_model', 'unknown'),
+                    _s2_regime.get('es_regime', 'UNRESOLVED'),
+                    instrument_type,
+                )
+                if _s2_regime_header:
+                    stage_prompt = stage_prompt + "\n\n" + _s2_regime_header
+
                 stage_prompt = (
                     stage_prompt +
                     "\n\n--- WBG FCV Operational Manual (12 Recommendations, 25 Key Questions, 3 Key Elements) ---\n" +
@@ -7356,6 +7426,10 @@ def run_stage():
                 instrument_slice = get_instrument_slice(instrument_type)
                 temporal_ctx = data.get('temporal_context', {})
                 temporal_guardrail = _build_temporal_guardrail(temporal_ctx, doc_type)
+                _s3_regime = data.get('regime_context', {}) or {}
+                _s3_prep = _s3_regime.get('preparation_regime', 'unresolved_policy_source')
+                _s3_pm = _s3_regime.get('processing_model', 'unknown')
+                _s3_es = _s3_regime.get('es_regime', 'UNRESOLVED')
 
                 try:
                     stage_prompt = stage_prompt.format(
@@ -7365,6 +7439,8 @@ def run_stage():
                         instrument_guidance=instrument_slice,
                         temporal_guardrail=temporal_guardrail,
                         seash_gender_card_guidance=get_seash_gender_card_guidance(instrument_type),
+                        regime_header=build_regime_header(_s3_prep, _s3_pm, _s3_es, instrument_type),
+                        minimum_reference_set=build_minimum_reference_block(_s3_prep, _s3_es, instrument_type),
                     )
                 except KeyError:
                     pass  # If format fails, use prompt as-is
@@ -8554,6 +8630,17 @@ def run_express():
                     stage2_prompt = stage2_prompt + mpa_slice
                 stage2_prompt = stage2_prompt.replace('{dnh_seash_guidance}', get_dnh_seash_guidance(instrument_type))
 
+                # Regime-aware preparation header (empty for legacy/unresolved -> no change).
+                _e2_regime = regime_context or {}
+                _e2_regime_header = build_regime_header(
+                    _e2_regime.get('preparation_regime', 'unresolved_policy_source'),
+                    _e2_regime.get('processing_model', 'unknown'),
+                    _e2_regime.get('es_regime', 'UNRESOLVED'),
+                    instrument_type,
+                )
+                if _e2_regime_header:
+                    stage2_prompt = stage2_prompt + "\n\n" + _e2_regime_header
+
                 confirmed_category_e2 = (
                     country_classification.get('category', 'General')
                     if isinstance(country_classification, dict) else 'General'
@@ -8719,6 +8806,10 @@ def run_express():
                     timing_opts = stage_config.get('timing_options', ['Preparation'])
                     timing_str = ' / '.join(timing_opts) if isinstance(timing_opts, list) else str(timing_opts)
 
+                    _e3_regime = regime_context or {}
+                    _e3_prep = _e3_regime.get('preparation_regime', 'unresolved_policy_source')
+                    _e3_pm = _e3_regime.get('processing_model', 'unknown')
+                    _e3_es = _e3_regime.get('es_regime', 'UNRESOLVED')
                     try:
                         stage3_prompt = stage3_prompt.format(
                             doc_type=doc_type,
@@ -8727,6 +8818,8 @@ def run_express():
                             instrument_guidance=instrument_slice_s3,
                             temporal_guardrail=temporal_guardrail_s3,
                             seash_gender_card_guidance=get_seash_gender_card_guidance(instrument_type),
+                            regime_header=build_regime_header(_e3_prep, _e3_pm, _e3_es, instrument_type),
+                            minimum_reference_set=build_minimum_reference_block(_e3_prep, _e3_es, instrument_type),
                         )
                     except KeyError:
                         pass
