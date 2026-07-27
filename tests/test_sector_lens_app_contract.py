@@ -1047,10 +1047,13 @@ def test_lens_diagnostic_repair_is_bounded_and_accepts_valid_json_only():
     assert "narrative field" in prompt
     assert "one specific story per direction" in prompt
     assert "flowing plain-language" in prompt
-    # Task 3.3 - recovery must request source + rating + two-paragraph reflections
+    # Task 3.3 - recovery requests source + rating (cheap). Reflections stay CONCISE
+    # here (not two paragraphs): the recovery is the load-bearing fallback and must
+    # finish within its 120s read timeout, so it must not be enlarged like the primary.
     assert "integration_rating" in prompt
     assert "source" in prompt
-    assert "two" in prompt.lower() and "paragraph" in prompt.lower()
+    assert "concise" in prompt.lower()
+    assert "two solid" not in prompt.lower() and "two-paragraph" not in prompt.lower()
     # Task 4B.4 - recovery must stay within the OPCS calibration boundary
     assert "never determine" in prompt.lower()
     assert "instrument-route" in prompt.lower()
