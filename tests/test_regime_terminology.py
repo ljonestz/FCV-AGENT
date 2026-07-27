@@ -86,3 +86,13 @@ def test_regime_document_label_wired_into_frontend_badge():
     assert "regimeContext.preparation_regime === 'new_model'" in html
     # Stage 1 done event capture is wired.
     assert "if(p.regime_context)regimeContext=p.regime_context;" in html
+
+
+def test_stage_awareness_badge_uses_regime_label_for_new_model():
+    """The 'Recommendations tailored for ...' badge must not say 'PAD stage' for a
+    new-model run; it uses the regime document label instead."""
+    from pathlib import Path
+    html = (Path(__file__).resolve().parent.parent / "index.html").read_text(encoding="utf-8")
+    # The stage-awareness badge branches on the new-model regime and renders the label.
+    assert "(new-model preparation)" in html
+    assert "newModelDocLabel(instrumentType)" in html

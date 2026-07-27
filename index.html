@@ -4456,7 +4456,13 @@
       const _sp=result.split(/(?=###\s*Strengths\b)/i);
       const _pre=_sp[0]||result;
       const _rest=_sp[1]||'';
-      const _stageBadge = docType && docType !== 'Unknown' ? `<div class="stage-awareness-badge">Recommendations tailored for <strong>${esc(docType)}</strong> stage</div>` : '';
+      // Dual-regime: for new-model operations the appraisal document is a Project/Program Paper,
+      // not a legacy PAD, so the stage-awareness badge names the regime document rather than "PAD stage".
+      const _isNewModel = regimeContext && regimeContext.preparation_regime === 'new_model';
+      const _stageInner = _isNewModel
+        ? `the <strong>${esc(newModelDocLabel(instrumentType))}</strong> (new-model preparation)`
+        : `<strong>${esc(docType)}</strong> stage`;
+      const _stageBadge = docType && docType !== 'Unknown' ? `<div class="stage-awareness-badge">Recommendations tailored for ${_stageInner}</div>` : '';
       const _padNotice = isFinalizedPAD() ? `<div class="finalized-pad-notice">
         <div class="fpn-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
         <div class="fpn-body"><strong>Retrospective screening — finalized PAD</strong>This document was Board-approved in ${esc(temporalContext.approval_date)}. The recommendations below represent the guidance this tool would have provided had the document been reviewed prior to appraisal. They are framed as if the project is still in the design stage and can be used for retrospective peer review, benchmarking, or to inform future similar projects.</div>
