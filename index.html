@@ -5244,12 +5244,11 @@
 
     // ── Risk Exposure ──
     if(_exportClimateValid){
-      body+=renderClimateInteractions(_exportClimateEntry);
-      body+=renderClimateReflections(_exportClimateEntry);
-      body+=renderClimateDividendSynthesis(
-        _exportClimateEntry,stageThreePriorities
-      );
-      body+=renderWiderFcvContext(stageWiderFcvContext);
+      // Shared-HTML export parity with the live redesign order: strengths & weaknesses,
+      // then the core-questions section (interactions + theme answers). Dividends fold
+      // into cq3; wider-FCV is dropped in module mode.
+      body+=renderClimateStrengthsWeaknesses(_exportClimateEntry);
+      body+=renderClimateCoreQuestions(_exportClimateEntry);
     }else{
       body += renderRiskExposure(stageRiskExposure);
 

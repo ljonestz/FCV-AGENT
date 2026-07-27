@@ -305,18 +305,19 @@ def test_download_html_uses_same_climate_sections_and_order():
     helper = _extract_js_function(source, "downloadHTML")
 
     assert "isClimateLensActive" in helper
-    # Climate-valid path mirrors renderOut: interactions → reflections → dividends → wider-fcv
-    # renderSRNarrative is dropped from the climate path
+    # Climate-valid path mirrors renderOut (redesign): notice -> strengths&weaknesses -> core questions.
     required = [
         "renderClimateModuleNotice",
         "wrapSRTerms(md(summarybody))",
-        "renderClimateInteractions",
-        "renderClimateReflections",
-        "renderClimateDividendSynthesis",
-        "renderWiderFcvContext",
+        "renderClimateStrengthsWeaknesses",
+        "renderClimateCoreQuestions",
     ]
     positions = [helper.index(value) for value in required]
     assert positions == sorted(positions)
+    # Dividends + wider-FCV are no longer called in the climate export block
+    _seg = helper[helper.index("renderClimateStrengthsWeaknesses"):helper.index("renderClimateCoreQuestions") + 400]
+    assert "renderClimateDividendSynthesis" not in _seg
+    assert "renderWiderFcvContext" not in _seg
     assert "renderRiskExposure(stageRiskExposure)" in helper
     assert (
         "renderSRCards(stageSensitivitySummary, stageResponsivenessSummary)"
