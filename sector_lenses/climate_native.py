@@ -134,8 +134,8 @@ def merge_climate_repair(
     incoming = repair if isinstance(repair, dict) else {}
     allowed = set(requested_fields)
 
-    if "schema_version" in allowed:
-        result["schema_version"] = incoming.get("schema_version")
+    if "schema_version" in allowed and "schema_version" in incoming:
+        result["schema_version"] = deepcopy(incoming["schema_version"])
 
     repair_baseline = incoming.get("fcv_baseline")
     if "fcv_baseline" in allowed and isinstance(repair_baseline, dict):
@@ -157,15 +157,20 @@ def merge_climate_repair(
                 result["fcv_baseline"] = result_baseline
             _set_path(result_baseline, relative_path, incoming_value)
 
-    result_lenses = result.get("lenses")
-    if not isinstance(result_lenses, list):
-        result_lenses = []
-        result["lenses"] = result_lenses
+    raw_result_lenses = result.get("lenses")
+    result_lenses = (
+        raw_result_lenses
+        if isinstance(raw_result_lenses, list)
+        else None
+    )
     repair_climate = _climate_lens(incoming)
     result_climate = _climate_lens(result)
 
     if "lenses.climate" in allowed and isinstance(repair_climate, dict):
         replacement_lens = deepcopy(repair_climate)
+        if result_lenses is None:
+            result_lenses = []
+            result["lenses"] = result_lenses
         if result_climate is None:
             result_lenses.append(replacement_lens)
         else:
@@ -188,6 +193,9 @@ def merge_climate_repair(
             if incoming_value is _MISSING:
                 continue
             if result_climate is None:
+                if result_lenses is None:
+                    result_lenses = []
+                    result["lenses"] = result_lenses
                 result_climate = {"lens_id": "climate"}
                 result_lenses.append(result_climate)
             _set_path(result_climate, relative_path, incoming_value)

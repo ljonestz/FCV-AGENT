@@ -536,3 +536,80 @@ def test_merge_climate_repair_preserves_values_for_missing_incoming_leaves():
         merged["lenses"][0]["integration_summary"]
         == "Replacement integration summary."
     )
+
+
+def test_merge_climate_repair_missing_schema_is_noop_and_present_is_copied():
+    primary = {
+        "schema_version": "primary-version",
+        "lenses": "preserve",
+    }
+
+    missing = merge_climate_repair(
+        primary, {}, ["schema_version"]
+    )
+    assert missing["schema_version"] == "primary-version"
+    assert missing["lenses"] == "preserve"
+
+    repair = {"schema_version": {"value": "replacement"}}
+    present = merge_climate_repair(
+        primary, repair, ["schema_version"]
+    )
+    repair["schema_version"]["value"] = "mutated"
+    assert present["schema_version"] == {"value": "replacement"}
+
+
+def test_merge_climate_repair_preserves_unrequested_malformed_lenses():
+    primary = {
+        "schema_version": "primary-version",
+        "fcv_baseline": {"sensitivity_rating": "Primary"},
+        "lenses": "preserve",
+        "findings": [],
+    }
+
+    cases = (
+        (
+            {"schema_version": "replacement"},
+            ["schema_version"],
+        ),
+        (
+            {
+                "fcv_baseline": {
+                    "sensitivity_rating": "Replacement",
+                },
+            },
+            ["fcv_baseline.sensitivity_rating"],
+        ),
+        (
+            {"lenses": []},
+            ["lenses.climate.integration_summary"],
+        ),
+    )
+    for repair, requested_fields in cases:
+        merged = merge_climate_repair(
+            primary, repair, requested_fields
+        )
+        assert merged["lenses"] == "preserve"
+
+
+def test_merge_climate_repair_creates_minimum_lenses_for_applicable_value():
+    primary = {
+        "lenses": "malformed",
+        "findings": [],
+    }
+    repair = {
+        "lenses": [{
+            "lens_id": "climate",
+            "integration_summary": "Repaired integration.",
+        }],
+    }
+
+    merged = merge_climate_repair(
+        primary,
+        repair,
+        ["lenses.climate.integration_summary"],
+    )
+
+    assert merged["lenses"] == [{
+        "lens_id": "climate",
+        "integration_summary": "Repaired integration.",
+    }]
