@@ -147,3 +147,33 @@ def test_trigger_matching_treats_spaces_and_hyphens_as_separators():
         }
 
         assert "cq6-adaptive-triggers" in candidate_ids
+
+
+def test_trigger_matching_supports_reviewed_domain_variants():
+    plan = bank.build_question_plan(
+        "flooded fisheries decentralised pastoralists "
+        "vulnerabilities adaptations"
+    )
+    candidate_ids = {
+        item["id"] for item in plan["supplementary_candidates"]
+    }
+
+    assert {
+        "cq1-hazard-delivery",
+        "cq2-access-path-dependence",
+        "cq3-shared-benefit",
+        "cq4-vulnerable-reach",
+        "cq5-delivery-institutions",
+        "cq6-adaptive-triggers",
+    } <= candidate_ids
+
+
+def test_trigger_matching_rejects_unreviewed_suffix_derivations():
+    plan = bank.build_question_plan("website hosting locales")
+    candidate_ids = {
+        item["id"] for item in plan["supplementary_candidates"]
+    }
+
+    assert "cq3-shared-benefit" not in candidate_ids
+    assert "cq5-hdp-nexus" not in candidate_ids
+    assert "cq5-delivery-institutions" not in candidate_ids

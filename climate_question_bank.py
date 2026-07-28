@@ -92,6 +92,21 @@ BANK_SOURCE_HEADLINE = (
 
 
 _SIGNAL_TOKEN = re.compile(r"[a-z0-9]+(?:&[a-z0-9]+)*")
+_REVIEWED_TRIGGER_VARIANTS = {
+    "flood": {"floods", "flooded", "flooding"},
+    "fisher": {"fishers", "fishery", "fisheries"},
+    "decentral": {
+        "decentralization",
+        "decentralisation",
+        "decentralized",
+        "decentralised",
+    },
+    "pastoral": {"pastoralism", "pastoralist", "pastoralists"},
+    "vulnerable": {"vulnerability", "vulnerabilities"},
+    "adaptive": {"adaptation", "adaptations"},
+    "community": {"communities"},
+    "insecurity": {"insecurities"},
+}
 
 
 def _project_signal_tokens(project_signals: Any) -> tuple[str, ...]:
@@ -105,20 +120,13 @@ def _project_signal_tokens(project_signals: Any) -> tuple[str, ...]:
 
 
 def _word_matches_trigger(word: str, trigger: str) -> bool:
-    """Match a trigger token to controlled common English inflections."""
+    """Match exact tokens, safe plurals, and reviewed domain variants."""
 
-    variants = {
-        trigger,
-        f"{trigger}s",
-        f"{trigger}es",
-        f"{trigger}ed",
-        f"{trigger}ing",
-    }
-    if trigger.endswith("e"):
-        variants.update({f"{trigger}d", f"{trigger[:-1]}ing"})
-    if len(trigger) > 1 and trigger.endswith("y"):
-        variants.add(f"{trigger[:-1]}ies")
-    return word in variants
+    return (
+        word == trigger
+        or word == f"{trigger}s"
+        or word in _REVIEWED_TRIGGER_VARIANTS.get(trigger, ())
+    )
 
 
 def _contains_trigger(tokens: tuple[str, ...], trigger: str) -> bool:
