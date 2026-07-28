@@ -271,7 +271,6 @@ One primary model call receives:
 It produces:
 
 - a compact FCV baseline;
-- a short climate-FCV synthesis;
 - a compact evidence trail;
 - the six-tier integration rating and summary;
 - three-part operating context;
@@ -280,8 +279,20 @@ It produces:
 - material core and supplementary question answers; and
 - the complete structured climate diagnostic.
 
-The structured diagnostic is a first-class required output. Its placement and
-schema must not make it a trailing appendix after optional prose.
+The structured diagnostic is the canonical Stage 2 result and the single source
+of truth for the reader-facing climate assessment. The model must not be asked
+to write full visible versions of the operating context, strengths and
+weaknesses, questions, or interactions and then repeat the same content in a
+hidden JSON block. Renderers build the visible readout from the validated
+structured fields.
+
+Any text streamed outside the structured result is limited to concise progress
+or orientation content and is not a second copy of the assessment. The
+diagnostic's placement and schema must not make it a trailing appendix after
+optional prose.
+
+The payload carries an explicit schema version so validation, recovery,
+rendering, and saved results agree on the contract.
 
 ### 5.6 Compact FCV baseline
 
@@ -304,6 +315,8 @@ Recovery:
 
 - receives the completed Stage 2 analysis and accepted sources;
 - requests only missing or invalid fields;
+- preserves already validated fields and deterministically merges repaired
+  fields into the versioned payload;
 - does not regenerate the full climate assessment;
 - uses the same specificity, provenance, and instrument guardrails;
 - streams progress or permits periodic server-sent-event heartbeats;
@@ -542,6 +555,10 @@ Logs must not expose project-document contents or secrets.
 - Assert the standard FCV prompt remains unchanged.
 - Assert climate selection chooses a dedicated base prompt rather than a suffix
   on `DEFAULT_PROMPTS["2"]`.
+- Assert Stage 2 does not request duplicate visible and hidden versions of the
+  climate assessment.
+- Assert the versioned structured payload is the sole input to climate
+  renderers and exports.
 
 ### 10.2 Research
 
@@ -556,6 +573,7 @@ Logs must not expose project-document contents or secrets.
 - Assert the happy path produces a complete diagnostic without recovery.
 - Assert incomplete fields trigger a bounded field-level repair.
 - Assert recovery receives only necessary context and requested fields.
+- Assert recovery preserves valid fields and merges only accepted repairs.
 - Simulate slow recovery and verify progress or heartbeat behavior.
 - Assert failed recovery cannot yield a misleading partial result.
 

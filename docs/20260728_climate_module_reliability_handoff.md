@@ -195,11 +195,14 @@ generic FCV readout.
 ## 11. Required implementation safeguards
 
 - Dedicated climate Stage 2 base prompt, not a generic prompt plus suffix.
+- One versioned structured Stage 2 payload as the single source of truth; do not
+  generate duplicate visible and hidden copies of the climate assessment.
 - Mandatory research evidence gate before Stage 2.
 - One owner for the total research deadline.
 - Retry only when sufficient budget remains.
 - Primary diagnostic required on the normal path.
 - Recovery limited to missing or invalid fields.
+- Recovery preserves valid fields and merges only validated repairs.
 - Recovery must stream or permit heartbeats.
 - Typed failure states and assessment-ID logging.
 - Specificity, provenance, and instrument-vocabulary validation.
