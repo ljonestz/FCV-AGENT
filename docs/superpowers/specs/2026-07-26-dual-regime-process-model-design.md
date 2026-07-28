@@ -1,47 +1,8 @@
 # Dual-Regime Process Model (Legacy PAD ↔ New Project Paper) — Design
 
 **Date:** 2026-07-26
-**Status:** Gate-1 reviewed (Microsoft enterprise Copilot, `results 5.docx`, 2026-07-26) — router logic CONFIRMED against the PPF PDFs; corrections folded into §0. Ready for implementation (`docs/superpowers/plans/2026-07-26-dual-regime-process-model.md`). App-wide foundation; the Climate-FCV module (`2026-07-25-climate-readout-questions-redesign-design.md`) consumes the regime-aware vocabulary produced here.
-**Sources (Copilot/WBG-LLM reviews with OPCS corpus access; Claude did not read the corpus except a maintainer-authorised scoped read):** `ChatCowork.docx`, `OPCS Regime Routing and Review Rules.docx`, `results.docx`, `results 5.docx` (all 2026-07-26). Every rule below is cited to a Published OPCS document in those reviews. Memory: `project_opcs_july2026_process_change.md`.
-
----
-
-## 0. Gate-1 review outcome (Microsoft enterprise Copilot, `results 5.docx`, 2026-07-26)
-
-Copilot verified every claim against the PPF PDFs (read the source text, not prior summaries). **The router logic — both boundary dates, the one/two-step decision tables, and the DPF/PforR/AF/MPA/restructuring routing — is CONFIRMED.** `regime_router.py` (Phase 1) needs no change. Corrections and added citations fold in below; §§1–10 remain as written except where a correction is noted here.
-
-**Confirmed catalogue numbers (use in citations):**
-- Legacy IPF preparation procedure = **OPS5.03-PROC.283** (eff 1 Jan 2026, rev 30 Apr 2026) — the pre-boundary route.
-- New-model IPF one-step = **OPS5.03-PROC.281**, two-step = **OPS5.03-PROC.282** (both eff 18 Apr 2026).
-- New-model PforR one-step = **OPS5.04-PROC.126** (eff 18 Apr 2026).
-- DPF = **OPS5.02-PROC.113** (eff 22 May 2026).
-- IPF Project Paper guidance = **OPS5.03-GUID.180** (eff 1 Jul 2026); PforR Program Paper = **OPS5.04-GUID.128** (eff 28 Jun 2026).
-- Restructuring / implementation-support controlling source = **OPS5.03-PROC.278** (eff/rev 15 Jan 2026).
-- Rapid Response = **OPS5.08-POL.125** (Bank Policy, Public, issued/rev 25 Jun 2024, eff 10 Jul 2015) — fully confirmed from the PDF.
-
-**Corrections to apply:**
-1. **A1 boundary** — procedures literally say "on or after April 17, 2026" but cover pages say effective 18 Apr; legacy PROC.283 applies to OIS before 18 Apr. Encode **≥ 2026-04-18** (done in `regime_router.py`); store the literal "April 17" wording only as a source caveat, never admit 17 Apr.
-2. **§4.3 / §5.2 — "appraisal" is NOT fully obsolete.** The claim that "appraisal"/"Decision Review" are retained ONLY for legacy + ADB is too broad: OPS5.03-DIR.123 still uses Concept/Appraisal terminology for E&S documents and clearances. Distinguish the new *preparation* review gates (TD/IR/OR) from the continuing use of "Appraisal" in E&S and external lead-lender contexts. **Terminology normalisation (§5.2) must be scoped to preparation-gate language only — do NOT globally replace "appraisal".**
-3. **§4.3 — legacy→new mapping is a crosswalk, not a formal PPF equivalence.** Tag it `reviewer_judgment`/guidance, not a mandatory procedural rule.
-4. **§5.4 A12 confirmed in full** (after upload): the DPF IR package expressly includes the IR Program Document with SORT, a Paris Alignment Assessment annex, a Fund Relations Annex, a draft Letter of Development Policy, an Updated PID, Legal Agreements, and a Prior Action Legal Evidence Form.
-5. **§5.1 B2 — the E&S decision ORDER is app logic**, not PPF text. The substantive branches are sourced (OPS5.03-DIR.123 §III.A ¶1(a)/(b)), but the non-IPF `INSTRUMENT_SPECIFIC` routing and the `UNRESOLVED` fallback must be tagged `reviewer_judgment`, not attributed to §III.A.
-6. **§5.1 B3 citation CORRECTED** — the replaced / not-replaced OP/BP lists live in the **World Bank Environmental and Social Policy for IPF, "Purpose", paragraph 1, footnote 1** (printed page 3 of the ESF), NOT "ESF Policy ¶7/fn12/¶63/fn1". Replaced list confirmed; **note OP 4.09 (not "OP/BP 4.09")**. Not replaced: OP/BP 4.03, 7.50, 7.60.
-7. **§5.5 — `reviewer_judgment` is explicitly OUTSIDE the PPF hierarchy** (policy/directive/procedure/guidance map onto it; flag reviewer_judgment as app-level). The three user-facing tags (mandatory_requirement/good_practice/advisory) are app taxonomy, not official PPF labels (PPF distinguishes Clearance vs Advisory + Recommendation/concurrence/decision ADM roles).
-8. **§5.3 C4 — the new-model timing vocabulary is application design, not authority text.** No PPF document declares it canonical or forbids "before appraisal" everywhere. Keep it as the app's controlled vocabulary; the "never emit before appraisal" rule applies to new-model *preparation-gate* timing only, not to E&S-context uses of "appraisal".
-
-**Open items still CANNOT VERIFY (do not hard-code):**
-- **D1** — no current template gives the full DPF Program Document section TOC (`dpf_sections` stays best-effort, inferred only from package requirements).
-- **D4** — no governing text establishes a distinct *program-level* MPA CDRS clearance, nor that phase 1 alone carries the program-wide climate logic. (Climate spec §12.9 MPA note stays "verify".)
-
-**Resolved open items:**
-- **D2 restructuring** [OPS5.03-PROC.278]: handled during implementation support → bypasses the preparation classifier unless a separate AF is processed. **Level 1 = exactly three cases:** (a) change from a lower safeguard category to Category A; (b) extension of the Bank Guarantee Expiration Date; (c) reliance on alternative procurement arrangements (Procurement Policy §III.F). All else Level 2; RVP decision required for a Level-2 with a PDO change, a newly-triggered safeguard policy, cumulative closing-date extension ≥ 2 years, or a safeguards deferral. (Refines the app's existing `derive_restructuring_level` — adds a third Level-1 case, the safeguard-category escalation.)
-- **D3 TA-via-IPF** [OPS5.03-DIR.123 §III.A/§III.C]: follows the IPF E&S regime; ESSs applied proportionately to the TA activities; no separate TA E&S regime.
-
-**Reviewer-found (fold into Stage 1 detection):**
-- **OIS name variant:** OPS5.03-PROC.281 expands OIS as "Operation **Information** Summary"; OPS5.03-PROC.282 as "Operation **Initiation** Summary"; DPF/PforR use "Information". **Do not use the expanded name as a routing signal** — key on the acronym + date.
-- **OPS5.03-GUID.180 applies to BOTH regimes** (new-model TD/IR and legacy PCN/PAD) — do not treat it as a new-model-only detection marker.
-- Annex 1 is the only *mandatory* annex, but Annex 2 is expressly *optional* — do not assert "no other annex allowed".
-- Registry `DocumentStatus = Published` and `BankAccessToIPD = Public / Official Use Only` are separate fields — never conflate (matches the existing source-discipline rule).
+**Status:** Design draft (pending spec review → implementation plan). App-wide foundation; the Climate-FCV module (`2026-07-25-climate-readout-questions-redesign-design.md`) consumes the regime-aware vocabulary produced here.
+**Sources (Copilot/WBG-LLM reviews with OPCS corpus access; Claude did not read the corpus except a maintainer-authorised scoped read):** `ChatCowork.docx`, `OPCS Regime Routing and Review Rules.docx`, `results.docx` (all 2026-07-26). Every rule below is cited to a Published OPCS document in those reviews. Memory: `project_opcs_july2026_process_change.md`.
 
 ---
 
@@ -107,7 +68,7 @@ elif title contains "Project Paper"/"Program Paper" and text has TD/IR/One Revie
 else: UNKNOWN_REQUIRES_MANUAL_CONFIRMATION
 ```
 **Markers** — New: "Project Paper"/"Program Paper", "Technical Design Review", "Implementation Readiness Review", "One Review", "Project Assessment Summary", "ANNEX 1: Results Framework", "Operation Information Summary", DLIs/"Program Action Plan" (PforR), catalogues OPS5.03-GUID.180 / OPS5.04-GUID.128. Legacy: "Project Concept Note"/PCN, "Concept Review", "Track 1/2", "Project Appraisal Document"/PAD, "Appraisal Stage/Package", "Decision Review". **"PID" alone is NOT decisive** (both regimes use it); a guidance catalogue number is NOT proof an operation is new-regime.
-**E&S regime router** [OPS5.03-DIR.123, §III.A ¶1; ESF replaced/not-replaced lists at World Bank E&S Policy for IPF, "Purpose" ¶1 fn1 — see §0 correction 6] — decision order (the ORDER is app logic per §0 correction 5): (A) instrument ≠ IPF → `INSTRUMENT_SPECIFIC` (route to DPF/PforR E&S provisions; never the ESS1–10 router); (B) OP/BP 4.03 applies → `PERFORMANCE_STANDARDS_OP_BP_4_03`; (C) AF where the parent is under Safeguard Policies **and** the AF addresses **exclusively** a cost overrun or financing gap → `LEGACY_SAFEGUARDS` (do NOT apply if the AF scales up/adds/changes activities or introduces new E&S risk); (D) Concept Decision date ≥ 1 Oct 2018 → `ESF_ESS1_TO_ESS10`; (E) < 1 Oct 2018 → `LEGACY_SAFEGUARDS` (verify mixed-history); (F) date/regime/parent info missing or contradictory → `UNRESOLVED` + verify flag. **Fallback markers (evidence, not decisive):** ESF = ESRC/ESRS/ESCP/SEP/ESS1–10/E&S risk terminology; legacy = Environmental Category A/B/C/FI, ISDS, "Safeguard Policies triggered", OP/BP 4.xx; OP/BP 4.03 = PS1–PS8. Never classify from a single keyword; conflicting signals → `UNRESOLVED`. **Separate operational-policy screens (not E&S regimes):** flag `op_7_50_screen` (International Waterways) and `op_7_60_screen` (Disputed Territories) — both material in FCV/cross-border contexts — as applicable *alongside* the E&S regime.
+**E&S regime router** [OPS5.03-DIR.123, §III.A ¶1; ESF Policy ¶7, fn12, ¶63, fn1] — decision order: (A) instrument ≠ IPF → `INSTRUMENT_SPECIFIC` (route to DPF/PforR E&S provisions; never the ESS1–10 router); (B) OP/BP 4.03 applies → `PERFORMANCE_STANDARDS_OP_BP_4_03`; (C) AF where the parent is under Safeguard Policies **and** the AF addresses **exclusively** a cost overrun or financing gap → `LEGACY_SAFEGUARDS` (do NOT apply if the AF scales up/adds/changes activities or introduces new E&S risk); (D) Concept Decision date ≥ 1 Oct 2018 → `ESF_ESS1_TO_ESS10`; (E) < 1 Oct 2018 → `LEGACY_SAFEGUARDS` (verify mixed-history); (F) date/regime/parent info missing or contradictory → `UNRESOLVED` + verify flag. **Fallback markers (evidence, not decisive):** ESF = ESRC/ESRS/ESCP/SEP/ESS1–10/E&S risk terminology; legacy = Environmental Category A/B/C/FI, ISDS, "Safeguard Policies triggered", OP/BP 4.xx; OP/BP 4.03 = PS1–PS8. Never classify from a single keyword; conflicting signals → `UNRESOLVED`. **Separate operational-policy screens (not E&S regimes):** flag `op_7_50_screen` (International Waterways) and `op_7_60_screen` (Disputed Territories) — both material in FCV/cross-border contexts — as applicable *alongside* the E&S regime.
 
 ### 5.2 Terminology normalisation
 Introduce an internal lifecycle class `IPF_APPRAISAL_DOCUMENT` that both PAD and Project Paper normalise to; render the displayed label per `preparation_regime`. Keep PAD/PCN/PID as legacy input types. Rename `pad_sections → appraisal_document_sections` (accept `pad_sections` for backward compatibility). Replace user-facing "PAD stage/language/sections" and "ready-to-paste PAD text" with regime-rendered equivalents. Do **not** bulk-delete "PAD" — it stays valid for legacy + policy-level concepts + ADB-led FMRF.

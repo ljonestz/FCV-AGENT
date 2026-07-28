@@ -355,28 +355,3 @@ def clean_stage2_output(stage2_output):
 ---
 
 *Last updated: 2026-07-02 — added /api/run-priority-questions, extract_focus_questions, focus_questions param for /api/download-report, priority_responses param for /api/run-followon (v9.13)*
-
-
----
-
-## Dual-regime parsers & helpers (v9.21)
-
-- `extract_regime_context(stage1_output: str, instrument: str = "IPF") -> dict` — parses
-  `%%%REGIME_CONTEXT_START/END%%%`, classifies `preparation_regime` / `es_regime` /
-  `processing_model` via `regime_router`, sets `verification_flag` when a governing signal is
-  missing/contradictory. Missing block → all-safe defaults (`unresolved_policy_source` /
-  `UNRESOLVED` / `unknown`). Stripped from display by `clean_stage1_output()`.
-- `appraisal_document_label(preparation_regime, instrument) -> str` — PAD ↔ Project Paper /
-  Program Paper / Program Document.
-- `appraisal_reference_set(preparation_regime, es_regime, instrument) -> tuple` — regime-gated
-  minimum reference set (ESS items only for ESF + IPF).
-- `build_regime_header(preparation_regime, processing_model, es_regime, instrument) -> str` —
-  compact new-model Stage 2/3 prompt header ("" for legacy/unresolved).
-- `build_minimum_reference_block(preparation_regime, es_regime, instrument) -> str` — verbatim
-  legacy block ↔ corrected new-model block for the Stage 3 `{minimum_reference_set}` placeholder.
-- `regime_router` (pure module): `classify_preparation_regime`, `classify_processing_model`,
-  `classify_es_regime`, `op_7_50_screen`, `op_7_60_screen`, `action_timing_vocab`,
-  `resolve_action_timing`.
-- `extract_priorities(...)` gains `preparation_regime` / `instrument` kwargs (new-model timing
-  remap) and mirrors `pad_sections` ↔ `appraisal_document_sections`; `authority_basis` field
-  validated (default `reviewer_judgment`). Done-event / Stage 3 requests carry `regime_context`.
