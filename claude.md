@@ -5,7 +5,6 @@
 > **Reference files** (detailed specs moved here to keep this file under 40k):
 > - `docs/reference/reference_prompt_architecture.md` — per-stage prompt specs, delimiter schemas, parsing details
 > - `docs/reference/reference_frontend_functions.md` — JS function list, Express mode architecture, removed items
-> - `docs/reference/reference_sector_lenses.md` — module packages, budgets, selection, delimiters, and parity contract
 > - `docs/reference/reference_backend_routes.md` — all routes, SSE event shapes, parsing function signatures
 
 ---
@@ -157,22 +156,6 @@ The authoritative OPCS policies, directives, and guidance notes this app's promp
   - **Distillation keepalives:** `fcv_distillation.py` now yields each completed/timeout result as it arrives and emits `keepalive`/`distilling_wait` SSE events while slower secondary docs are still pending. This removes the previous collect-all silent window before Stage 1 model streaming.
   - **Upload-size guard:** Correct Render logs showed `/api/run-express` returning `500 106`, consistent with Flask's 50MB `MAX_CONTENT_LENGTH` being exceeded by a large base64 JSON upload rather than worker OOM. Oversized uploads now return an explicit `413` JSON response, and the frontend preflights file sizes before reading/submitting files, warning when raw files would exceed the deployment limit after browser base64 encoding. Tests added: frontend timeout classification, payload-size preflight, backend 413, per-doc distillation progress, Stage 1 payload diagnostics. Full suite: 208 passed.
   - **Main/Render state for IPS handover:** PR #51 merged these PforR timeout/payload changes to `main` as merge commit `2877bf9` on 2026-07-14. Live Render checks confirmed the Morocco Green Generation PforR PAD can complete end-to-end via `/api/run-express` (all three stages streamed; about 13:42 total in one run) and Stage 1 alone completed in about 4:14. A later India STARS PforR PAD live Express test hung before HTTP response headers and timed out client-side after 30 minutes, while local PDF extraction finished in about 18 seconds; treat that as a Render worker/gateway/pre-response stall pending Render-log review. The active IPS/ITS handover is `docs/20260714_ITS_handover_p4r_timeout_patch.md`.
-- **v9.20** — Climate dedicated-module completeness hardening (branch `codex/climate-fcv-output-redesign`, 2026-07-24):
-  - **Bug:** A live South Sudan PCN run rendered a silent "hybrid" — the two climate interaction boxes appeared, but the Reflections block, integration gauge, dividends synthesis, and wider-FCV note were missing (Render log: `Stage 2 lens diagnostic invalid ... The Climate-FCV diagnostic was omitted from the Stage 2 structured output`). Root cause: nothing enforced the v9.19 dedicated-module fields (`reflections`, `integration_level`, `integration_summary`, S/R evidence). Three layers each let them slip: the validity gate (`lens_diagnostic_failure_message`) accepts a diagnostic on materiality + one interaction alone; the Haiku recovery prompt (`repair_lens_diagnostic`) was written for the pre-v9.19 dual-use contract and never requested reflections/integration, so any recovery produced a valid-but-degraded readout; and a max_tokens-truncated primary (South Sudan is the app's largest output) dropped the diagnostic tail with no detection.
-  - **Fix (full robustness):** (1) New pure helper `climate_readout_is_complete()` in `sector_lenses/pipeline.py` (complete = ≥1 grounded reflection AND non-empty `integration_summary`), plus `climate_lens_readout()`; both exported. (2) `extract_or_repair_lens_diagnostic` now triggers recovery not only on a hard failure but also when a *usable* climate diagnostic is incomplete, and **never downgrades a usable primary** — a recovered diagnostic is adopted only if the primary was unusable or the recovery is complete. (3) `repair_lens_diagnostic` prompt + compact-shape now request `integration_level`, `integration_summary`, 3–5 `reflections` (with `question_key` ∈ the six cq keys), `less_central`, and separate `sensitivity_evidence`/`responsiveness_evidence`; recovery `max_tokens` 6000→8000 and char budget 12,000→16,000. (4) Honest partial notice: when a usable readout is still incomplete after recovery, the module notice (frontend `renderClimateModuleNotice` via new `climateReadoutComplete()`; DOCX `add_climate_notice`; shared HTML via the same renderer) shows an amber "reflections and integration readout could not be generated for this run … were not substituted" line instead of silently omitting the sections. (5) Truncation observability: `_stream_stage` captures the provider `stop_reason`; both Stage 2 call sites log a warning when a climate-active Stage 2 hits `max_tokens`.
-  - **Contract note:** "Usable" (interactions + materiality) is unchanged; "complete" (adds reflections + integration_summary) is the new bar that drives recovery and the honest notice. `climate_error`/`climate_valid` are unchanged; completeness is a separate, non-blocking signal (graceful degradation preserved — an incomplete-but-usable diagnostic is never dropped to core-only). ITS/FastAPI parity: add the completeness helper + recovery-prompt fields to `FCV_BUILD_PARITY.md`.
-  - **Tests:** new `tests/test_climate_diagnostic_completeness.py` (helper, recovery-prompt fields, incomplete-triggers-recovery, no-downgrade, complete-skips-recovery) + frontend partial-notice test; existing bypass/recovery tests updated for the new complete-diagnostic contract and 8000/16,000 bounds. Full suite: 363 passed.
-- **v9.19** — Climate-FCV dedicated module output + OPCS compliance guardrails (branch `codex/climate-fcv-output-redesign`, 2026-07-24):
-  - **Dedicated module output:** selecting the Climate lens now produces a dedicated climate-FCV assessment. The six core questions (cq1_interaction, cq2_maladaptation incl. lock-in, cq3_dividends, cq4_inclusion, cq5_institutions, cq6_adaptive) are the Stage 2 internal spine; the general FCV engine is retained only as an internal input.
-  - **Diagnostic contract additions** (`sector_lenses/pipeline.py`): per-climate-lens `reflections[]` ({question_key,title,status_cue,text}), `less_central`, `integration_level` (well_integrated|partly_integrated|weakly_integrated|insufficient_evidence; safe `insufficient_evidence` default — no material→moderate), `integration_summary`, and separate `sensitivity_evidence`/`responsiveness_evidence`. Stage 3 priorities JSON adds top-level `wider_fcv_context` and per-priority `policy_status` + `specialist_referral` (`extract_priorities`).
-  - **Output redesign:** causal-strip diagram replaced by two prose interaction boxes; new "Reflections on core climate and FCV considerations" block with soft status chips; single "How well does the project integrate climate and FCV?" gauge (reframed "Indicative Climate-FCV Integration Readout") replaces the two S/R gauges in module mode; "Wider FCV context" callout; reorder to interactions → reflections → dividends → wider-FCV. Live HTML, shared HTML, and DOCX kept in parity.
-  - **OPCS compliance guardrails** (from WBG LLM review): explicit POLICY BOUNDARY (advisory only; not an ESF/ESS/ESRC determination) in prompts, UI notice, and DOCX; instrument/framework-awareness guardrail; CQ2/CQ4/CQ5 refinements (managed-risk vs new-gap; open-list vulnerability; contextual institutions); dividends never framed as requirements; cross-document consistency; two source layers (current policy vs analytical). Hybrid structured layer: `policy_status` + `specialist_referral` surfaced in exports, understated in UI.
-  - **Budgets:** Stage 3 sector-lens ceiling raised 900→1200 (`PLATFORM_STAGE_BUDGETS`) to fit the richer dedicated Stage 3 prompt; `_bounded_stage3_lenses` target 890→1100, findings cap 700→900.
-  - **Tests:** extended across pipeline, priorities, app-contract, package, and frontend suites + the South Sudan regression fixture. Full suite: 348 passed.
-- **v9.18** - Sector-lens diagnostic recovery reliability (2026-07-22):
-  - Missing or incomplete active-lens Stage 2 diagnostics trigger one dedicated Haiku recovery request. Its client has a 120-second default/read timeout, a 10-second connection timeout, and zero SDK retries.
-  - Recovered output is strictly parsed, normalized, and validated against the active-lens contract before use. Express and step-by-step routes call the same recovery function and follow the same behavior.
-  - Recovery failure is non-fatal to the core FCV assessment: the original diagnostic failure remains explicit in the parse-error payload, while invalid, failed, recovered, and unsuccessful recovery outcomes are logged.
 - **v9.12** - Express per-stage abort budgets (branch `fix/express-stage2-timeout`, 2026-06-19):
   - **Stage 2 "BodyStreamBuffer was aborted" fix:** Express mode armed a single 10-minute frontend abort timer covering Stages 1 and 2, reset only at `stage_start:3`. A slow Stage 1 (web research on a fragile-context AF) could consume the shared budget, firing the timer mid-Stage-2 and tearing the fetch stream. `armExpressTimeout(stage)` now re-arms the abort timer at every `stage_start` with per-stage budgets (`EXPRESS_STAGE_TIMEOUTS` = S1 9m / S2 8m / S3 9m), each sitting above the backend wall-clock limits (S1 8m / S2 6m / S3 8m) so the backend stage error surfaces before the frontend tears the stream. Also removes a latent Stage 3 race where the frontend 8m budget equalled the backend 8m limit.
 - **v9.13** - CERC conflict-trigger guardrail (branch `fix/cerc-violence-guardrail`, 2026-06-19):
@@ -259,15 +242,11 @@ Procfile            # Render deployment config
 
 **Two workflow modes:** Express Analysis (default — all 3 stages run automatically via `/api/run-express`) and Step-by-Step (interactive, one stage at a time via `/api/run-stage`). Same prompts, same output quality.
 
-**Optional sector lenses:** users may select up to two ordered lenses. Both workflows resolve authoritative module versions and inject the same bounded stage slices. Lens findings must map to existing OST/DNH/Strategy criteria; they do not add a score or separate recommendation list. The production Climate-FCV Lens is manual-only and never auto-suggested. After selection it screens climate-intent and wider development operations automatically, prioritizes adaptation, and activates deep mitigation only for a clear pathway. Core-only retains 4-5 substantive priorities and the lightweight Climate-FCV check; active Climate supersedes that check and uses no more than five substantive priorities with a flexible evidence-led mix. `lens_context_sources` persists optional validated Climate research and World Bank CCDR sources without making CCDR material a routine recommendation.
-
-**Climate-active dual-use contract (implemented on `codex/climate-fcv-output-redesign`):** Stage 1 runs reduced core research and one dedicated bounded trusted-source Climate pass concurrently, with one narrower retry. Stage 2 requires both directional interaction pathways with stable IDs, project/place/group/system anchors, causal steps, confidence, evidence gaps or research claim IDs, and current/project/asset-system horizons. Stage 3 retains both causal directions inside the 900-token lens ceiling and validates `climate_links` on every priority as either `linked` to recognized interaction/dividend/finding IDs or `no-material-pathway` with a concrete reason. Live HTML, shared HTML, and DOCX use the same narrative interactions, causal strips, qualitative dividend synthesis, and priority contribution panels. See `docs/20260723_climate_fcv_output_redesign_handoff.md`.
-
 ```
 STAGE 1 — Context & Extraction
 ├─ Input: appraisal/design-stage project doc (PCN/PID/PAD/AF/Restructuring; instrument type IPF/PforR/DPO/TA/MPA/IPF-DDO; regional ops supported) + optional contextual docs
-├─ Automated web research: extract_country_name() + extract_sector_name() → bounded core brief
-│  (cached by "country::sector::ccdr=<0|1>"; Climate-active runs add concurrent validated ClimateResearchBundle research)
+├─ Automated web research: extract_country_name() + extract_sector_name() → 9-search brief
+│  (cached by "country::sector"; shown as collapsible dropdown above Stage 1 output)
 ├─ Three-tier citation: Tier 1 uploaded docs → Tier 2 web research → Tier 3 training knowledge
 ├─ Output: 2–3 sentence narrative lead (required) then PROSE PARAGRAPHS (not bullets) — for EACH of:
 │    Part A (doc extract only) and Part B (contextualized, tiered citations)
@@ -486,7 +465,6 @@ DEFAULT_PROMPTS = {
 | POST | `/api/run-deeper` | Go Deeper tab content |
 | POST | `/api/run-followon` | Follow-on post-analysis queries |
 | POST | `/api/download-report` | Generate true DOCX binary via python-docx |
-| GET | `/api/sector-lenses` | Return enabled sector-lens selector catalogue |
 | GET | `/api/default-prompts` | Return current DEFAULT_PROMPTS dict |
 | GET | `/` | Main app |
 | GET | `/health` | Health check |
@@ -503,8 +481,6 @@ PROMPTS_FILE = 'prompts.json'
 ```
 
 ### 5.3 Priority Parsing (`extract_priorities()`)
-
-Optional sector provenance is normalized as `lens_ids: string[]` and `lens_relevance: string`. These fields decorate affected priorities only and never define an additional score or recommendation list.
 
 Finds `%%%JSON_START%%%...%%%JSON_END%%%`, parses via `json.loads()`, validates field values, runs `_check_specificity()` and `_check_citations()`, returns unified dict. On malformed JSON: `{error: True, message: ...}` — NOT silent failure.
 
@@ -709,7 +685,7 @@ docs/superpowers/  # Dev plans and specs
 
 ---
 
-**Last updated:** 2026-07-24
-**Current version:** FCV Project Screener v9.20
+**Last updated:** 2026-07-14
+**Current version:** FCV Project Screener v9.17
 **Claude model:** `claude-sonnet-4-6`
 **Stack:** Flask 3.0.3 + vanilla JS + Anthropic SDK + gunicorn/gevent on Render
