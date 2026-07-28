@@ -219,6 +219,51 @@ def normalize_climate_research_bundle(payload: Any) -> dict[str, Any]:
     }
 
 
+CLIMATE_AUTHORITATIVE_SOURCE_TYPES = {
+    "ccdr", "world-bank", "un", "government", "scientific",
+}
+CLIMATE_RESEARCH_MIN_SOURCES = 2
+
+
+def climate_research_evidence_gate(payload: Any) -> dict[str, Any]:
+    """Return a safe decision for the mandatory Climate-FCV research gate."""
+    bundle = normalize_climate_research_bundle(payload)
+    sources = bundle["sources"]
+    claims = bundle["claims"]
+    authoritative = any(
+        source["source_type"] in CLIMATE_AUTHORITATIVE_SOURCE_TYPES
+        for source in sources
+    )
+    project_claim = any(
+        claim["project_elements"]
+        and (
+            claim["geographies"]
+            or claim["affected_groups"]
+            or claim["systems_or_assets"]
+        )
+        for claim in claims
+    )
+    ok = (
+        bundle["status"] in {"complete", "partial"}
+        and len(sources) >= CLIMATE_RESEARCH_MIN_SOURCES
+        and authoritative
+        and project_claim
+    )
+    if ok:
+        return {"ok": True, "code": "", "message": "", "bundle": bundle}
+    code = (
+        "climate_research_failed"
+        if bundle["status"] == "failed" and not sources and not claims
+        else "climate_research_insufficient"
+    )
+    message = (
+        "The required Climate-FCV web research did not return at least two "
+        "relevant sources, including authoritative climate evidence tied to "
+        "this project's locations, groups, systems, or assets."
+    )
+    return {"ok": False, "code": code, "message": message, "bundle": bundle}
+
+
 def extract_climate_research_bundle(
     text: str,
 ) -> tuple[str, dict[str, Any]]:

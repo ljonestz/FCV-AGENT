@@ -23,9 +23,12 @@ from .models import (
 )
 from .registry import load_registry
 from .research import (
+    CLIMATE_AUTHORITATIVE_SOURCE_TYPES,
+    CLIMATE_RESEARCH_MIN_SOURCES,
     CLIMATE_RESEARCH_END,
     CLIMATE_RESEARCH_START,
     build_climate_research_prompt,
+    climate_research_evidence_gate,
     extract_climate_research_bundle,
     format_climate_research_context,
     normalize_climate_research_bundle,
@@ -79,9 +82,12 @@ __all__ = [
     "CCDR_CONTEXT_END",
     "CCDR_CONTEXT_START",
     "CCDR_RESEARCH_INSTRUCTIONS",
+    "CLIMATE_AUTHORITATIVE_SOURCE_TYPES",
     "CLIMATE_RESEARCH_END",
+    "CLIMATE_RESEARCH_MIN_SOURCES",
     "CLIMATE_RESEARCH_START",
     "build_climate_research_prompt",
+    "climate_research_evidence_gate",
     "estimate_tokens",
     "extract_ccdr_context",
     "extract_climate_research_bundle",

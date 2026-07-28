@@ -12,6 +12,7 @@ from sector_lenses.research import (
     CLIMATE_RESEARCH_END,
     CLIMATE_RESEARCH_START,
     build_climate_research_prompt,
+    climate_research_evidence_gate,
     extract_climate_research_bundle,
     format_climate_research_context,
     normalize_climate_research_bundle,
@@ -51,6 +52,45 @@ def _valid_bundle():
             "evidence_gap": "No site-level design flood standard was found.",
         }],
     }
+
+
+def _second_authoritative_source():
+    return {
+        "id": "climate-source-2",
+        "source_type": "scientific",
+        "title": "Peer-reviewed flood projection",
+        "url": "https://ipcc.ch/example",
+        "publication_date": "2024",
+    }
+
+
+def test_climate_research_gate_accepts_two_sources_and_project_claim():
+    bundle = _valid_bundle()
+    bundle["sources"].append(_second_authoritative_source())
+    bundle["claims"][0]["source_ids"].append("climate-source-2")
+    decision = climate_research_evidence_gate(bundle)
+    assert decision["ok"] is True
+    assert decision["code"] == ""
+    assert len(decision["bundle"]["sources"]) == 2
+
+
+def test_climate_research_gate_rejects_one_source():
+    decision = climate_research_evidence_gate(_valid_bundle())
+    assert decision["ok"] is False
+    assert decision["code"] == "climate_research_insufficient"
+    assert "two relevant sources" in decision["message"]
+
+
+def test_climate_research_gate_rejects_claim_without_climate_anchor():
+    bundle = _valid_bundle()
+    bundle["sources"].append(_second_authoritative_source())
+    bundle["claims"][0]["source_ids"].append("climate-source-2")
+    bundle["claims"][0]["geographies"] = []
+    bundle["claims"][0]["affected_groups"] = []
+    bundle["claims"][0]["systems_or_assets"] = []
+    decision = climate_research_evidence_gate(bundle)
+    assert decision["ok"] is False
+    assert decision["code"] == "climate_research_insufficient"
 
 
 def test_climate_research_bundle_keeps_grounded_project_specific_claims():
