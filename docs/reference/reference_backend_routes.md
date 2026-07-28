@@ -11,15 +11,13 @@
 # Core analysis route (all 3 stages)
 POST /api/run-stage
   Input: {stage, documents[], history[], user_message, prompt_override,
-          active_lenses[] (max 2), lens_versions{}, lens_diagnostic{},
           doc_type (Stage 3 only — for stage-aware prompt injection),
           uploaded_doc_names (Stage 3 only — for citation check)}
   Output: SSE stream with chunks, then:
-    Stage 1: {done, output, active_lenses[], lens_warnings[]}
+    Stage 1: {done, output}
     Stage 2: {done, output, sensitivity_rating, responsiveness_rating,
               under_hood: {recs_table, dnh_checklist, questions_map, evidence_trail},
-              rating_reasoning, lens_diagnostic, active_lenses[], lens_warnings[],
-              parse_error, parse_error_message}
+              rating_reasoning, parse_error, parse_error_message}
     Stage 3: {done, output, priorities[], fcv_rating, fcv_responsiveness_rating,
               sensitivity_summary, responsiveness_summary,
               risk_exposure: {risks_to, risks_from},
@@ -27,8 +25,7 @@ POST /api/run-stage
 
 # Express mode route (single SSE endpoint for all 3 stages)
 POST /api/run-express
-  Input: {documents[], assessment_id, review_mode, user_context, priority_questions,
-          active_lenses[], lens_versions{}}
+  Input: {documents[], assessment_id, review_mode, user_context, priority_questions}
   Output: SSE stream with events:
     assessment_id: {assessment_id}
     stage_start: {stage_start: N}
@@ -77,8 +74,6 @@ GET /health                     # Health check
 GET /how-it-works               # Workflow explanation page
 GET /admin                      # Admin panel (prompts modal)
 GET /api/default-prompts        # Get default prompts for reference
-GET /api/sector-lenses          # Enabled lens catalogue plus non-fatal load warnings
-POST /api/detect-document-type  # Document metadata plus ranked lens_suggestions[]
 
 # DOCX download route (v9.1; extended v9.13)
 POST /api/download-report
@@ -86,9 +81,6 @@ POST /api/download-report
     "summary": "<markdown string — Stage 3 executive summary>",
     "priorities": [ ...stageThreePriorities array... ],
     "focus_questions": { ...focusQuestionsResult... },  # optional (v9.13); omit or null to skip section
-    "active_lenses": [{"id": "...", "version": "...", "position": "primary"}],
-    "lens_diagnostic": {"lenses": [...], "findings": [...]},
-    "lens_context_sources": [{"id": "context-ccdr", "lens_id": "climate", "source_type": "ccdr", "url": "https://...worldbank.org/..."}],
     "metadata": {
       "date_str": "18 April 2026",
       "classification_category": "Conflict-Affected",
@@ -109,10 +101,7 @@ POST /api/download-report
         optional "Responses to Your Priority Points" section (v9.13, rendered when focus_questions
         is supplied and non-error; one subsection per response with status label, answer,
         evidence basis, linked priorities, and gap note)
-    - Appends a sector-lens source/evidence appendix when lens data is present; validated dynamic context appears under "Country context used"
     - Frontend: downloadReport() POSTs JSON payload; receives blob; triggers browser save
-
-Sector-lens catalogue records expose `activation` and `readout_sections`. Both `/api/run-stage` and `/api/run-express` carry `lens_context_sources` in request/SSE state. Stage 2 lens diagnostics include `materiality_summary`, `analysis_emphasis`, `readout_sections`, and `other_pathways` in addition to mapped findings. If an active-lens diagnostic is missing or incomplete, both routes use the same single dedicated Haiku recovery request (120-second default/read timeout, 10-second connection timeout, zero SDK retries). The response is strictly parsed, normalized, and validated against the active-lens contract before it is used. Failure remains non-fatal to the core FCV assessment, is logged, and is surfaced through the Stage 2 parse-error payload. v9.18 adds no further SSE schema change: the already-existing additive `lens_diagnostic_recovered` boolean reports successful repair, while existing fields and the diagnostic schema remain compatible.
 
 # Follow-on post-analysis route (Stage 3 bottom card)
 POST /api/run-followon
@@ -355,28 +344,3 @@ def clean_stage2_output(stage2_output):
 ---
 
 *Last updated: 2026-07-02 — added /api/run-priority-questions, extract_focus_questions, focus_questions param for /api/download-report, priority_responses param for /api/run-followon (v9.13)*
-
-
----
-
-## Dual-regime parsers & helpers (v9.21)
-
-- `extract_regime_context(stage1_output: str, instrument: str = "IPF") -> dict` — parses
-  `%%%REGIME_CONTEXT_START/END%%%`, classifies `preparation_regime` / `es_regime` /
-  `processing_model` via `regime_router`, sets `verification_flag` when a governing signal is
-  missing/contradictory. Missing block → all-safe defaults (`unresolved_policy_source` /
-  `UNRESOLVED` / `unknown`). Stripped from display by `clean_stage1_output()`.
-- `appraisal_document_label(preparation_regime, instrument) -> str` — PAD ↔ Project Paper /
-  Program Paper / Program Document.
-- `appraisal_reference_set(preparation_regime, es_regime, instrument) -> tuple` — regime-gated
-  minimum reference set (ESS items only for ESF + IPF).
-- `build_regime_header(preparation_regime, processing_model, es_regime, instrument) -> str` —
-  compact new-model Stage 2/3 prompt header ("" for legacy/unresolved).
-- `build_minimum_reference_block(preparation_regime, es_regime, instrument) -> str` — verbatim
-  legacy block ↔ corrected new-model block for the Stage 3 `{minimum_reference_set}` placeholder.
-- `regime_router` (pure module): `classify_preparation_regime`, `classify_processing_model`,
-  `classify_es_regime`, `op_7_50_screen`, `op_7_60_screen`, `action_timing_vocab`,
-  `resolve_action_timing`.
-- `extract_priorities(...)` gains `preparation_regime` / `instrument` kwargs (new-model timing
-  remap) and mirrors `pad_sections` ↔ `appraisal_document_sections`; `authority_basis` field
-  validated (default `reviewer_judgment`). Done-event / Stage 3 requests carry `regime_context`.

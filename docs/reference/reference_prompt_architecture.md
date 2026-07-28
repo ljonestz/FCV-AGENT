@@ -5,10 +5,6 @@
 
 ---
 
-## Optional Sector-Lens Overlay
-
-Both workflow paths call the same bounded composer. Stage 1 receives evidence/research intents and emits `%%%LENS_EVIDENCE_START/END%%%`. Stage 2 receives distilled guidance plus conditional questions and emits JSON in `%%%LENS_DIAGNOSTIC_START/END%%%`. Each finding contains lens/source provenance and an explicit `ost:*`, `dnh:*`, or `shift:*` mapping. Stage 3 merges overlapping findings and may add `lens_ids` and `lens_relevance` to affected priorities in the single existing recommendation set. Lenses never add a score or change the rating denominator. See `reference_sector_lenses.md` for the module schema and compatibility contract.
-
 ## Stage 1: "Context & Extraction"
 
 **Purpose:** Extract FCV-relevant content from the primary project document, enriched by distilled secondary document cards, automated web research, and Playbook Diagnostics framing.
@@ -86,11 +82,6 @@ Current upload tiering: exactly one primary project document anchors the assessm
 6. Protecting project staff and beneficiaries from security risks
 7. Monitoring for unintended negative consequences
 8. Establishing accessible and trusted grievance mechanisms
-9. Instrument-appropriate SEA/SH risk management in conflict contexts
-
-The Climate-FCV Lens may map evidence to these existing principles but does not independently rescore them.
-
-**Climate-FCV sector-lens contract:** Climate is manual-only and never auto-suggested. Core-only Stage 2 retains the lightweight conditional Climate-FCV Nexus check. Active Climate supersedes that check and emits `materiality_summary`, `analysis_emphasis`, declared `readout_sections`, and `other_pathways` in the hidden diagnostic. Analysis is adaptation-first; deep mitigation requires a clear material pathway. Optional CCDR context is non-dominant and validated separately. Core-only Stage 3 retains 4-5 substantive priorities; active-lens Stage 3 permits no more than five, with a flexible non-quota mix of core, Climate-linked, and blended priorities.
 
 **Strict [S+R] definition:**
 [S+R] only valid for: (1) inclusion/targeting of conflict-affected populations; (2) FCV logic in ToC/PDO; (3) adaptive M&E for harm + resilience; (4) GRM for state-citizen accountability.
@@ -306,46 +297,3 @@ Note: `evidence_basis` has been removed from this schema (v9.15). The `direct_an
 ---
 
 *Last updated: 2026-07-02 — added Priority Questions prompt, %%%FOCUS_QUESTIONS_START/END%%% schema, and soft-emphasis injection pattern (v9.13); added top-level `overview` field, plain-language `evidence_basis` constraint, `status` marked internal-only (v9.14); removed `evidence_basis` field, expanded `direct_answer` to one or two full paragraphs with blank-line separator, raised max_tokens to 10000 (v9.15)*
-
-
----
-
-## Dual-regime process model (v9.21)
-
-Stage 1 emits a regime-detection block alongside `%%%DOC_TYPE%%%` / `%%%INSTRUMENT_TYPE%%%` /
-`%%%TEMPORAL_CONTEXT%%%`:
-
-```
-%%%REGIME_CONTEXT_START%%%
-ois_creation_date: [YYYY-MM-DD | Unknown]
-preparation_regime_source: [where the OIS date/markers came from]
-concept_decision_or_equivalent_date: [YYYY-MM-DD | Unknown]
-concept_date_source: [...]
-op_bp_4_03_applies: [true|false]
-additional_financing_exception_applies: [true|false]
-op_7_50_screen: [true|false]   # International Waterways
-op_7_60_screen: [true|false]   # Disputed Territories
-evidence_markers: [semicolon list of exact strings keyed on]
-conflicting_evidence: [... | none]
-%%%REGIME_CONTEXT_END%%%
-```
-
-Detection keys on OIS/Concept **dates + template markers**, never the document label alone
-("PID" is not decisive; a guidance catalogue number is not proof of new-regime). Two independent
-axes: `preparation_regime` (OIS date vs 18 Apr 2026) and `es_regime` (Concept Decision date vs
-1 Oct 2018). `extract_regime_context()` parses the block and classifies both via `regime_router`.
-
-**Stage 2/3 prompt injection (both routes):** `build_regime_header(preparation_regime,
-processing_model, es_regime, instrument)` returns "" for legacy/unresolved (byte-for-byte
-unchanged) or a compact new-model header (Project/Program Paper label, one/two-step gates
-TD/IR or One Review, new-model timing vocabulary). Stage 3 injects it as the `{regime_header}`
-`.format()` kwarg together with `{minimum_reference_set}` (from `build_minimum_reference_block`);
-Stage 2 appends the header. **Stage 3 uses `.format()` kwargs, never a post-format `.replace()`**
-(a `.replace()` would leave the other placeholders and blank the prompt on `KeyError`).
-
-**Regime-gated minimum reference set:** `appraisal_reference_set(preparation_regime, es_regime,
-instrument)` returns `LEGACY_PAD_MINIMUM_REFERENCE_SET` for legacy/unresolved, the corrected
-`NEW_MODEL_MINIMUM_REFERENCE_SET` when `es_regime == ESF` and `instrument == IPF`, else
-`NEW_MODEL_NON_ESF_REFERENCE_SET` (no ESF/ESS vocabulary). Gate-1 note: "appraisal" is not
-globally replaced (the E&S Directive still uses Concept/Appraisal); only preparation-gate
-language is relabelled.

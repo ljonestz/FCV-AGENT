@@ -97,8 +97,6 @@ def test_get_seash_gender_card_guidance_replaces_placeholder_cleanly():
             instrument_guidance="",
             temporal_guardrail="",
             seash_gender_card_guidance=guidance,
-            regime_header="",
-            minimum_reference_set="",
         )
         assert "{seash_gender_card_guidance}" not in filled
         assert guidance in filled
