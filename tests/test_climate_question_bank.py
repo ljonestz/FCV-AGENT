@@ -94,3 +94,28 @@ def test_question_plan_does_not_treat_guaranteed_anchor_as_candidate():
 
     assert "cq1_interaction" in plan["anchors"]
     assert plan["supplementary_candidates"] == []
+
+
+def test_question_plan_trigger_matching_respects_word_boundaries():
+    plan = bank.build_question_plan(
+        "a broad stakeholder assessment on an island"
+    )
+    candidate_ids = {
+        item["id"] for item in plan["supplementary_candidates"]
+    }
+
+    assert "cq2-infra-horizon" not in candidate_ids
+    assert "cq2-access-path-dependence" not in candidate_ids
+
+
+def test_trigger_matching_preserves_multiword_and_hyphenated_phrases():
+    plan = bank.build_question_plan(
+        "long-term climate projection and results framework"
+    )
+    candidate_ids = {
+        item["id"] for item in plan["supplementary_candidates"]
+    }
+
+    assert "cq6-time-horizons" in candidate_ids
+    assert "cq6-adaptive-triggers" in candidate_ids
+    assert "cq6_adaptive" in plan["anchors"]

@@ -11,6 +11,7 @@ selector returns, per theme, the triggered questions that shape that theme's
 answer. Non-climate mode never calls this module.
 """
 
+import re
 from typing import Any
 
 # Six stable themes (mirror sector_lenses.pipeline._CLIMATE_REFLECTION_KEYS).
@@ -90,26 +91,44 @@ BANK_SOURCE_HEADLINE = (
 )
 
 
+def _project_signal_blob(project_signals: Any) -> str:
+    """Return normalized text for deterministic trigger matching."""
+
+    if isinstance(project_signals, (list, tuple, set)):
+        return " ".join(str(signal) for signal in project_signals).lower()
+    return str(project_signals or "").lower()
+
+
+def _triggered_question_ids(project_signals: Any) -> set[str]:
+    """Return bank IDs whose complete trigger tokens or phrases occur."""
+
+    blob = _project_signal_blob(project_signals)
+    return {
+        question["id"]
+        for question in CLIMATE_QUESTION_BANK
+        if any(
+            re.search(rf"(?<!\w){re.escape(trigger)}(?!\w)", blob)
+            for trigger in question["triggers"]
+        )
+    }
+
+
 def select_triggered_questions(project_signals: Any) -> dict[str, list[dict[str, Any]]]:
     """Return, per theme, the bank questions whose triggers fire for this project.
 
     project_signals: any object convertible to a lowercase text blob (a string,
     or a list of strings) built from Stage 1 (instrument, sector, hazards,
-    components, geography). Matching is substring-on-token, case-insensitive.
+    components, geography). Matching is boundary-aware and case-insensitive.
     Themes with no fired question are omitted. cq1 always returns its bank set
     even if triggers are thin, because the two interaction directions are
     always answered (the caller guarantees Q1/Q2).
     """
 
-    if isinstance(project_signals, (list, tuple, set)):
-        blob = " ".join(str(s) for s in project_signals)
-    else:
-        blob = str(project_signals or "")
-    blob = blob.lower()
+    triggered_ids = _triggered_question_ids(project_signals)
 
     fired: dict[str, list[dict[str, Any]]] = {}
     for q in CLIMATE_QUESTION_BANK:
-        if any(t in blob for t in q["triggers"]):
+        if q["id"] in triggered_ids:
             fired.setdefault(q["theme"], []).append(q)
     # Guarantee cq1 is present (interactions are always answered).
     if "cq1_interaction" not in fired:
@@ -129,19 +148,12 @@ def build_question_plan(project_signals: Any) -> dict[str, Any]:
     """
 
     anchors = select_triggered_questions(project_signals)
-    if isinstance(project_signals, (list, tuple, set)):
-        blob = " ".join(str(signal) for signal in project_signals)
-    else:
-        blob = str(project_signals or "")
-    blob = blob.lower()
+    triggered_ids = _triggered_question_ids(project_signals)
     supplementary_candidates: list[dict[str, str]] = []
     seen_ids: set[str] = set()
     for question in CLIMATE_QUESTION_BANK:
         question_id = question["id"]
-        materially_triggered = any(
-            trigger in blob for trigger in question["triggers"]
-        )
-        if not materially_triggered or question_id in seen_ids:
+        if question_id not in triggered_ids or question_id in seen_ids:
             continue
         supplementary_candidates.append({
             key: question[key]
