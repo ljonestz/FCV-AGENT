@@ -53,3 +53,44 @@ def test_selector_accepts_plain_string():
     fired = bank.select_triggered_questions("drought and grazing and conservancy governance")
     assert "cq1_interaction" in fired
     assert "cq3_dividends" in fired  # 'governance' fires cq3-peace-dividend
+
+
+def test_question_plan_preserves_anchors_and_surfaces_material_candidate():
+    plan = bank.build_question_plan(
+        "flood displacement humanitarian coordination cold storage"
+    )
+
+    assert "cq1_interaction" in plan["anchors"]
+    assert any(
+        item["id"] == "cq5-hdp-nexus"
+        for item in plan["supplementary_candidates"]
+    )
+    assert all(
+        set(item) == {"id", "theme", "question", "source"}
+        for item in plan["supplementary_candidates"]
+    )
+
+
+def test_question_plan_candidates_are_deterministic_and_deduplicated():
+    signals = [
+        "humanitarian displacement humanitarian",
+        "displacement and refugee coordination",
+        "humanitarian displacement",
+    ]
+
+    first = bank.build_question_plan(signals)
+    second = bank.build_question_plan(signals)
+    candidate_ids = [
+        item["id"] for item in first["supplementary_candidates"]
+    ]
+
+    assert first == second
+    assert candidate_ids.count("cq5-hdp-nexus") == 1
+    assert len(candidate_ids) == len(set(candidate_ids))
+
+
+def test_question_plan_does_not_treat_guaranteed_anchor_as_candidate():
+    plan = bank.build_question_plan("a project with no matching keywords zzz")
+
+    assert "cq1_interaction" in plan["anchors"]
+    assert plan["supplementary_candidates"] == []

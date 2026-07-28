@@ -287,6 +287,70 @@ def test_canonical_payload_normalizes_new_fields_and_bounds_them():
     }
 
 
+def test_supplementary_questions_allow_zero_answers():
+    payload = canonical_payload()
+    payload["lenses"][0]["supplementary_questions"] = []
+
+    normalized = normalize_lens_diagnostic(payload, ["climate"])
+
+    assert normalized["lenses"][0]["supplementary_questions"] == []
+
+
+def test_supplementary_questions_reject_unknown_and_duplicate_bank_ids():
+    payload = canonical_payload()
+    payload["lenses"][0]["supplementary_questions"] = [
+        {
+            "question_id": "unknown-question",
+            "text": "This entry must not survive.",
+        },
+        {
+            "question_id": "cq5-hdp-nexus",
+            "title": "Coordination",
+            "status_cue": "material_gap",
+            "source": "Defueling Conflict",
+            "text": "The named coordination forum is not specified.",
+        },
+        {
+            "question_id": "cq5-hdp-nexus",
+            "text": "A duplicate answer must not survive.",
+        },
+        {"question_id": "cq6-adaptive-triggers", "text": ""},
+    ]
+
+    normalized = normalize_lens_diagnostic(payload, ["climate"])
+    questions = normalized["lenses"][0]["supplementary_questions"]
+
+    assert questions == [{
+        "question_id": "cq5-hdp-nexus",
+        "title": "Coordination",
+        "status_cue": "material gap",
+        "source": "Defueling Conflict",
+        "text": "The named coordination forum is not specified.",
+    }]
+
+
+def test_supplementary_questions_are_capped_at_four():
+    payload = canonical_payload()
+    question_ids = [
+        "cq1-hazard-delivery",
+        "cq2-infra-horizon",
+        "cq3-peace-dividend",
+        "cq4-vulnerable-reach",
+        "cq5-hdp-nexus",
+    ]
+    payload["lenses"][0]["supplementary_questions"] = [
+        {"question_id": question_id, "text": f"Answer {index}."}
+        for index, question_id in enumerate(question_ids, start=1)
+    ]
+
+    normalized = normalize_lens_diagnostic(payload, ["climate"])
+
+    assert [
+        item["question_id"]
+        for item in normalized["lenses"][0]["supplementary_questions"]
+    ] == question_ids[:4]
+
+
 def test_complete_readout_requires_baseline_context_and_both_interactions():
     normalized = normalize_lens_diagnostic(
         canonical_payload(), ["climate"]

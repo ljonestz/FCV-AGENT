@@ -117,3 +117,38 @@ def select_triggered_questions(project_signals: Any) -> dict[str, list[dict[str,
             q for q in CLIMATE_QUESTION_BANK if q["theme"] == "cq1_interaction"
         ]
     return fired
+
+
+def build_question_plan(project_signals: Any) -> dict[str, Any]:
+    """Return stable anchor groups and eligible supplementary questions.
+
+    ``anchors`` retains the existing six-theme trigger selection contract.
+    Supplementary candidates are a deterministic shortlist, not a coverage
+    target: callers may answer zero to four only when a fired bank question
+    identifies a distinct, material project issue not covered by an anchor.
+    """
+
+    anchors = select_triggered_questions(project_signals)
+    if isinstance(project_signals, (list, tuple, set)):
+        blob = " ".join(str(signal) for signal in project_signals)
+    else:
+        blob = str(project_signals or "")
+    blob = blob.lower()
+    supplementary_candidates: list[dict[str, str]] = []
+    seen_ids: set[str] = set()
+    for question in CLIMATE_QUESTION_BANK:
+        question_id = question["id"]
+        materially_triggered = any(
+            trigger in blob for trigger in question["triggers"]
+        )
+        if not materially_triggered or question_id in seen_ids:
+            continue
+        supplementary_candidates.append({
+            key: question[key]
+            for key in ("id", "theme", "question", "source")
+        })
+        seen_ids.add(question_id)
+    return {
+        "anchors": anchors,
+        "supplementary_candidates": supplementary_candidates,
+    }
