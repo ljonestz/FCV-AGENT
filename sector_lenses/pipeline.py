@@ -869,6 +869,28 @@ def extract_lens_diagnostic(
     return result
 
 
+def _has_substantive_climate_content(payload: dict[str, Any]) -> bool:
+    """Return whether a stored envelope contains actual Climate content."""
+
+    baseline = payload.get("fcv_baseline")
+    if isinstance(baseline, dict) and any(
+        bool(value) for value in baseline.values()
+    ):
+        return True
+    lenses = payload.get("lenses")
+    if isinstance(lenses, list) and any(
+        isinstance(item, dict) and item.get("lens_id") == "climate"
+        for item in lenses
+    ):
+        return True
+    findings = payload.get("findings")
+    return isinstance(findings, list) and any(
+        isinstance(item, dict)
+        and "climate" in _list_values(item.get("lens_ids"))
+        for item in findings
+    )
+
+
 def normalize_lens_diagnostic(
     payload: dict[str, Any] | None,
     active_lens_ids: Iterable[str],
@@ -879,13 +901,15 @@ def normalize_lens_diagnostic(
 
     raw = payload if isinstance(payload, dict) else {}
     active = set(active_lens_ids)
-    if raw.get("error"):
+    climate_active = "climate" in active
+    if climate_active and raw.get("error"):
         return _error_diagnostic(str(raw.get("message", "")))
-    # Stored/client Climate payloads are strict at this boundary. Raw model
-    # extraction stays version-tolerant until the dedicated prompt migration.
+    # Stored/client Climate payloads with substantive assessment content are
+    # strict here. Empty/control envelopes and raw model extraction remain
+    # version-tolerant during the staged dedicated-prompt migration.
     if (
-        "climate" in active
-        and raw
+        climate_active
+        and _has_substantive_climate_content(raw)
         and raw.get("schema_version") != CLIMATE_NATIVE_SCHEMA_VERSION
     ):
         return _error_diagnostic(

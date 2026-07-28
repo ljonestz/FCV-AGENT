@@ -96,12 +96,39 @@ def climate_missing_fields(payload: Any) -> list[str]:
     return missing
 
 
+_MISSING = object()
+
+
+def _value_at_path(value: Any, path: tuple[str, ...]) -> Any:
+    current = value
+    for key in path:
+        if not isinstance(current, dict) or key not in current:
+            return _MISSING
+        current = current[key]
+    return current
+
+
+def _set_path(
+    target: dict[str, Any],
+    path: tuple[str, ...],
+    value: Any,
+) -> None:
+    current = target
+    for key in path[:-1]:
+        child = current.get(key)
+        if not isinstance(child, dict):
+            child = {}
+            current[key] = child
+        current = child
+    current[path[-1]] = deepcopy(value)
+
+
 def merge_climate_repair(
     primary: dict[str, Any],
     repair: dict[str, Any],
     requested_fields: list[str],
 ) -> dict[str, Any]:
-    """Merge only explicitly requested canonical Climate sections."""
+    """Deep-copy only explicitly requested canonical Climate paths."""
 
     result = deepcopy(primary) if isinstance(primary, dict) else {}
     incoming = repair if isinstance(repair, dict) else {}
@@ -110,48 +137,60 @@ def merge_climate_repair(
     if "schema_version" in allowed:
         result["schema_version"] = incoming.get("schema_version")
 
-    baseline_requested = any(
-        path == "fcv_baseline" or path.startswith("fcv_baseline.")
-        for path in allowed
-    )
-    if baseline_requested:
-        existing_baseline = result.get("fcv_baseline")
-        repair_baseline = incoming.get("fcv_baseline")
-        result["fcv_baseline"] = {
-            **(
-                existing_baseline
-                if isinstance(existing_baseline, dict)
-                else {}
-            ),
-            **(
-                repair_baseline
-                if isinstance(repair_baseline, dict)
-                else {}
-            ),
-        }
+    repair_baseline = incoming.get("fcv_baseline")
+    if "fcv_baseline" in allowed and isinstance(repair_baseline, dict):
+        result["fcv_baseline"] = deepcopy(repair_baseline)
+    else:
+        for requested in sorted(allowed):
+            prefix = "fcv_baseline."
+            if not requested.startswith(prefix):
+                continue
+            relative_path = tuple(requested[len(prefix):].split("."))
+            incoming_value = _value_at_path(
+                repair_baseline, relative_path
+            )
+            if incoming_value is _MISSING:
+                continue
+            result_baseline = result.get("fcv_baseline")
+            if not isinstance(result_baseline, dict):
+                result_baseline = {}
+                result["fcv_baseline"] = result_baseline
+            _set_path(result_baseline, relative_path, incoming_value)
 
     result_lenses = result.get("lenses")
     if not isinstance(result_lenses, list):
         result_lenses = []
         result["lenses"] = result_lenses
-    result_climate = _climate_lens(result)
     repair_climate = _climate_lens(incoming)
-    climate_paths = sorted(
-        path for path in allowed if path.startswith("lenses.climate.")
-    )
-    if (
-        result_climate is None
-        and climate_paths
-        and isinstance(repair_climate, dict)
-    ):
-        result_climate = {"lens_id": "climate"}
-        result_lenses.append(result_climate)
+    result_climate = _climate_lens(result)
 
-    if isinstance(result_climate, dict) and isinstance(repair_climate, dict):
-        for path in climate_paths:
-            key = path[len("lenses.climate."):].split(".", 1)[0]
-            if key in repair_climate:
-                result_climate[key] = deepcopy(repair_climate[key])
+    if "lenses.climate" in allowed and isinstance(repair_climate, dict):
+        replacement_lens = deepcopy(repair_climate)
+        if result_climate is None:
+            result_lenses.append(replacement_lens)
+        else:
+            climate_index = next(
+                index
+                for index, item in enumerate(result_lenses)
+                if item is result_climate
+            )
+            result_lenses[climate_index] = replacement_lens
+        result_climate = replacement_lens
+    else:
+        for requested in sorted(allowed):
+            prefix = "lenses.climate."
+            if not requested.startswith(prefix):
+                continue
+            relative_path = tuple(requested[len(prefix):].split("."))
+            incoming_value = _value_at_path(
+                repair_climate, relative_path
+            )
+            if incoming_value is _MISSING:
+                continue
+            if result_climate is None:
+                result_climate = {"lens_id": "climate"}
+                result_lenses.append(result_climate)
+            _set_path(result_climate, relative_path, incoming_value)
 
     if not isinstance(result.get("findings"), list):
         result["findings"] = []

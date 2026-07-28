@@ -153,6 +153,48 @@ def test_missing_schema_is_rejected_only_for_nonempty_climate_payloads():
     assert result["error"] is False
 
 
+def test_empty_climate_envelopes_remain_version_tolerant():
+    for payload in (
+        None,
+        {},
+        {"lenses": [], "findings": []},
+        {
+            "schema_version": "",
+            "fcv_baseline": {},
+            "lenses": [],
+            "findings": [],
+        },
+        {
+            "schema_version": "climate-native-v0",
+            "fcv_baseline": {},
+            "lenses": [],
+            "findings": [],
+        },
+    ):
+        normalized = normalize_lens_diagnostic(payload, ["climate"])
+        assert normalized["error"] is False
+
+
+def test_substantive_climate_content_requires_current_version():
+    payloads = (
+        {"lenses": [{"lens_id": "climate"}], "findings": []},
+        {
+            "lenses": [],
+            "findings": [{"lens_ids": ["climate"]}],
+        },
+        {
+            "fcv_baseline": {"sensitivity_rating": "Adequate"},
+            "lenses": [],
+            "findings": [],
+        },
+    )
+
+    for payload in payloads:
+        assert normalize_lens_diagnostic(
+            payload, ["climate"]
+        )["error"] is True
+
+
 def test_existing_error_payload_is_not_rejected_as_stale():
     payload = {
         "error": True,
@@ -315,7 +357,7 @@ def test_climate_missing_fields_returns_deterministic_dotted_paths():
     ]
 
 
-def test_merge_climate_repair_changes_only_requested_sections():
+def test_merge_climate_repair_changes_only_requested_leaves():
     primary = canonical_payload()
     primary["untouched"] = {"value": "keep"}
     primary["lenses"].append({
@@ -325,7 +367,12 @@ def test_merge_climate_repair_changes_only_requested_sections():
     repair = canonical_payload()
     repair["schema_version"] = "replacement-version"
     repair["fcv_baseline"]["sensitivity_rating"] = "Replacement"
-    repair["fcv_baseline"]["sensitivity_reasoning"] = "Replacement reasoning"
+    repair["fcv_baseline"]["sensitivity_reasoning"] = (
+        "Unrequested replacement reasoning"
+    )
+    repair["fcv_baseline"]["responsiveness_reasoning"] = (
+        "Requested replacement reasoning"
+    )
     repair_climate = repair["lenses"][0]
     repair_climate["operating_context"] = {
         "fcv_setting": "Replacement FCV.",
@@ -347,6 +394,7 @@ def test_merge_climate_repair_changes_only_requested_sections():
         [
             "schema_version",
             "fcv_baseline.sensitivity_rating",
+            "fcv_baseline.responsiveness_reasoning",
             "lenses.climate.operating_context.intersection",
             "lenses.climate.supplementary_questions",
         ],
@@ -360,9 +408,21 @@ def test_merge_climate_repair_changes_only_requested_sections():
     assert merged["fcv_baseline"]["sensitivity_rating"] == "Replacement"
     assert (
         merged["fcv_baseline"]["sensitivity_reasoning"]
-        == "Replacement reasoning"
+        == primary["fcv_baseline"]["sensitivity_reasoning"]
     )
-    assert climate["operating_context"] == repair_climate["operating_context"]
+    assert (
+        merged["fcv_baseline"]["responsiveness_reasoning"]
+        == "Requested replacement reasoning"
+    )
+    assert climate["operating_context"] == {
+        "fcv_setting": (
+            primary["lenses"][0]["operating_context"]["fcv_setting"]
+        ),
+        "climate_setting": (
+            primary["lenses"][0]["operating_context"]["climate_setting"]
+        ),
+        "intersection": "Replacement intersection.",
+    }
     assert (
         climate["supplementary_questions"]
         == repair_climate["supplementary_questions"]
@@ -375,9 +435,42 @@ def test_merge_climate_repair_changes_only_requested_sections():
     assert merged["untouched"] == primary["untouched"]
     assert merged["findings"] == primary["findings"]
     assert primary["schema_version"] == CLIMATE_NATIVE_SCHEMA_VERSION
+    repair_climate["supplementary_questions"][0]["text"] = "Mutated."
+    assert (
+        climate["supplementary_questions"][0]["text"]
+        == "Replacement text."
+    )
 
 
-def test_merge_climate_repair_creates_climate_lens_only_for_requested_field():
+def test_merge_climate_repair_replaces_requested_root_objects_by_deepcopy():
+    primary = canonical_payload()
+    primary["fcv_baseline"]["legacy_only"] = "remove"
+    repair = canonical_payload()
+    repair["fcv_baseline"] = {
+        "sensitivity_rating": "Replacement",
+        "evidence_trail": [{"claim": "Replacement claim"}],
+    }
+    repair["lenses"][0]["executive_summary"] = "Replacement summary."
+
+    merged = merge_climate_repair(
+        primary,
+        repair,
+        ["fcv_baseline", "lenses.climate"],
+    )
+
+    assert merged["fcv_baseline"] == repair["fcv_baseline"]
+    assert "legacy_only" not in merged["fcv_baseline"]
+    assert merged["lenses"][0] == repair["lenses"][0]
+    repair["fcv_baseline"]["evidence_trail"][0]["claim"] = "Mutated."
+    repair["lenses"][0]["executive_summary"] = "Mutated."
+    assert (
+        merged["fcv_baseline"]["evidence_trail"][0]["claim"]
+        == "Replacement claim"
+    )
+    assert merged["lenses"][0]["executive_summary"] == "Replacement summary."
+
+
+def test_merge_climate_repair_creates_climate_lens_only_when_requested():
     primary = {"lenses": [{"lens_id": "agriculture"}]}
     repair = {
         "lenses": [{
@@ -397,7 +490,7 @@ def test_merge_climate_repair_creates_climate_lens_only_for_requested_field():
     assert not_requested["findings"] == []
 
     requested = merge_climate_repair(
-        primary, repair, ["lenses.climate.executive_summary"]
+        primary, repair, ["lenses.climate"]
     )
     climate = next(
         lens for lens in requested["lenses"]
@@ -408,3 +501,38 @@ def test_merge_climate_repair_creates_climate_lens_only_for_requested_field():
         "executive_summary": "Repaired summary.",
     }
     assert requested["findings"] == []
+
+
+def test_merge_climate_repair_preserves_values_for_missing_incoming_leaves():
+    primary = canonical_payload()
+    repair = {
+        "fcv_baseline": {},
+        "lenses": [{
+            "lens_id": "climate",
+            "operating_context": {},
+            "integration_summary": "Replacement integration summary.",
+        }],
+    }
+
+    merged = merge_climate_repair(
+        primary,
+        repair,
+        [
+            "fcv_baseline.sensitivity_rating",
+            "lenses.climate.operating_context.intersection",
+            "lenses.climate.integration_summary",
+        ],
+    )
+
+    assert (
+        merged["fcv_baseline"]["sensitivity_rating"]
+        == primary["fcv_baseline"]["sensitivity_rating"]
+    )
+    assert (
+        merged["lenses"][0]["operating_context"]
+        == primary["lenses"][0]["operating_context"]
+    )
+    assert (
+        merged["lenses"][0]["integration_summary"]
+        == "Replacement integration summary."
+    )

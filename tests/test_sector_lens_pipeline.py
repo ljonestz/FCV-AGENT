@@ -809,3 +809,27 @@ def test_raw_extraction_preserves_future_canonical_top_level_fields():
 
     assert result["schema_version"] == CLIMATE_NATIVE_SCHEMA_VERSION
     assert result["fcv_baseline"] == payload["fcv_baseline"]
+
+
+def test_non_climate_error_envelope_retains_legacy_normalization():
+    payload = {
+        "error": True,
+        "message": "Legacy upstream error.",
+        "lenses": [],
+        "findings": [],
+    }
+    wrapped = (
+        "%%%LENS_DIAGNOSTIC_START%%%"
+        + json.dumps(payload)
+        + "%%%LENS_DIAGNOSTIC_END%%%"
+    )
+
+    normalized = normalize_lens_diagnostic(
+        payload, ["test-agriculture"]
+    )
+    legacy = extract_lens_diagnostic(
+        wrapped, ["test-agriculture"]
+    )
+
+    assert normalized == legacy
+    assert normalized["error"] is False
