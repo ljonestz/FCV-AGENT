@@ -613,3 +613,135 @@ def test_merge_climate_repair_creates_minimum_lenses_for_applicable_value():
         "lens_id": "climate",
         "integration_summary": "Repaired integration.",
     }]
+
+
+def test_merge_climate_repair_appends_missing_requested_interaction_direction():
+    primary = canonical_payload()
+    climate = primary["lenses"][0]
+    missing_interaction = copy.deepcopy(climate["interaction_readout"][1])
+    climate["interaction_readout"] = [climate["interaction_readout"][0]]
+    existing = copy.deepcopy(climate["interaction_readout"][0])
+    missing_path = (
+        "lenses.climate.interaction_readout.project-on-climate-fcv"
+    )
+
+    assert missing_path in climate_missing_fields(primary)
+    repair = {
+        "lenses": [{
+            "lens_id": "climate",
+            "interaction_readout": [missing_interaction],
+        }],
+    }
+
+    merged = merge_climate_repair(primary, repair, [missing_path])
+    merged_climate = merged["lenses"][0]
+
+    assert merged_climate["interaction_readout"] == [
+        existing,
+        missing_interaction,
+    ]
+    assert (
+        merged_climate["interaction_readout"][0]
+        is not climate["interaction_readout"][0]
+    )
+    missing_interaction["summary"] = "Mutated."
+    assert (
+        merged_climate["interaction_readout"][1]["summary"]
+        != "Mutated."
+    )
+    assert climate_readout_is_complete(
+        merged_climate,
+        baseline=merged["fcv_baseline"],
+    ) is True
+
+
+def test_merge_climate_repair_replaces_only_requested_interaction_in_place():
+    primary = canonical_payload()
+    original_other = copy.deepcopy(
+        primary["lenses"][0]["interaction_readout"][1]
+    )
+    replacement = copy.deepcopy(
+        primary["lenses"][0]["interaction_readout"][0]
+    )
+    replacement["summary"] = "Replacement interaction summary."
+    repair = {
+        "lenses": [{
+            "lens_id": "climate",
+            "interaction_readout": [replacement],
+        }],
+    }
+
+    merged = merge_climate_repair(
+        primary,
+        repair,
+        [
+            "lenses.climate.interaction_readout."
+            "climate-fcv-on-project"
+        ],
+    )
+    interactions = merged["lenses"][0]["interaction_readout"]
+
+    assert [item["direction_id"] for item in interactions] == [
+        "climate-fcv-on-project",
+        "project-on-climate-fcv",
+    ]
+    assert interactions[0] == replacement
+    assert interactions[1] == original_other
+    replacement["summary"] = "Mutated."
+    assert interactions[0]["summary"] == "Replacement interaction summary."
+
+
+def test_merge_climate_repair_missing_or_unknown_direction_is_noop():
+    primary = canonical_payload()
+    requested = (
+        "lenses.climate.interaction_readout."
+        "project-on-climate-fcv"
+    )
+    repair = {
+        "lenses": [{
+            "lens_id": "climate",
+            "interaction_readout": [
+                copy.deepcopy(
+                    primary["lenses"][0]["interaction_readout"][0]
+                ),
+            ],
+        }],
+    }
+
+    assert merge_climate_repair(primary, repair, [requested]) == primary
+
+    repair["lenses"][0]["interaction_readout"] = [{
+        "direction_id": "invented-direction",
+        "pathways": [{"pathway_id": "invented"}],
+    }]
+    assert merge_climate_repair(
+        primary,
+        repair,
+        ["lenses.climate.interaction_readout.invented-direction"],
+    ) == primary
+
+
+def test_merge_climate_repair_whole_interaction_field_still_replaces_list():
+    primary = canonical_payload()
+    replacement = [
+        copy.deepcopy(primary["lenses"][0]["interaction_readout"][1])
+    ]
+    repair = {
+        "lenses": [{
+            "lens_id": "climate",
+            "interaction_readout": replacement,
+        }],
+    }
+
+    merged = merge_climate_repair(
+        primary,
+        repair,
+        ["lenses.climate.interaction_readout"],
+    )
+
+    assert merged["lenses"][0]["interaction_readout"] == replacement
+    replacement[0]["summary"] = "Mutated."
+    assert (
+        merged["lenses"][0]["interaction_readout"][0]["summary"]
+        != "Mutated."
+    )

@@ -186,6 +186,63 @@ def merge_climate_repair(
             prefix = "lenses.climate."
             if not requested.startswith(prefix):
                 continue
+            direction_prefix = (
+                "lenses.climate.interaction_readout."
+            )
+            if requested.startswith(direction_prefix):
+                direction_id = requested[len(direction_prefix):]
+                if direction_id not in CLIMATE_REQUIRED_DIRECTIONS:
+                    continue
+                repair_interactions = (
+                    repair_climate.get("interaction_readout")
+                    if isinstance(repair_climate, dict)
+                    else None
+                )
+                incoming_interaction = next(
+                    (
+                        item
+                        for item in repair_interactions
+                        if isinstance(item, dict)
+                        and item.get("direction_id") == direction_id
+                    ),
+                    None,
+                ) if isinstance(repair_interactions, list) else None
+                if incoming_interaction is None:
+                    continue
+                if result_climate is None:
+                    if result_lenses is None:
+                        result_lenses = []
+                        result["lenses"] = result_lenses
+                    result_climate = {"lens_id": "climate"}
+                    result_lenses.append(result_climate)
+                result_interactions = result_climate.get(
+                    "interaction_readout"
+                )
+                if not isinstance(result_interactions, list):
+                    result_interactions = []
+                    result_climate["interaction_readout"] = (
+                        result_interactions
+                    )
+                existing_index = next(
+                    (
+                        index
+                        for index, item in enumerate(
+                            result_interactions
+                        )
+                        if isinstance(item, dict)
+                        and item.get("direction_id") == direction_id
+                    ),
+                    None,
+                )
+                if existing_index is None:
+                    result_interactions.append(
+                        deepcopy(incoming_interaction)
+                    )
+                else:
+                    result_interactions[existing_index] = deepcopy(
+                        incoming_interaction
+                    )
+                continue
             relative_path = tuple(requested[len(prefix):].split("."))
             incoming_value = _value_at_path(
                 repair_climate, relative_path
