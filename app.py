@@ -26,6 +26,7 @@ from sector_lenses import (
     LENS_EVIDENCE_START,
     build_stage_slice,
     climate_readout_is_complete,
+    climate_research_evidence_gate,
     detect_lens_suggestions,
     extract_ccdr_context,
     extract_lens_diagnostic,
@@ -6671,26 +6672,45 @@ def log_climate_priority_summary(
     )
 
 
+CLIMATE_RESEARCH_ATTEMPT_CAP_SECONDS = 85
+CLIMATE_RESEARCH_MINIMUM_RETRY_SECONDS = 35
+
+
 def run_climate_web_research(
     country: str,
     sector: str,
     project_profile: dict[str, Any],
     api_client,
     assessment_id: str = "",
+    deadline: float | None = None,
+    clock=time.monotonic,
+    minimum_retry_seconds: int = CLIMATE_RESEARCH_MINIMUM_RETRY_SECONDS,
 ) -> dict[str, Any]:
-    """Run one bounded Climate research request and one narrower retry."""
+    """Run Climate research within the parent assessment deadline."""
 
-    started = time.perf_counter()
+    started = clock()
+    attempts = 0
 
     def finish(bundle: dict[str, Any]) -> dict[str, Any]:
         log_climate_research_summary(
             assessment_id,
             bundle,
-            elapsed_ms=int((time.perf_counter() - started) * 1000),
+            elapsed_ms=int((clock() - started) * 1000),
         )
         return bundle
 
     for attempt, narrow in ((1, False), (2, True)):
+        remaining = (
+            CLIMATE_RESEARCH_ATTEMPT_CAP_SECONDS
+            if deadline is None
+            else max(0.0, deadline - clock())
+        )
+        if remaining <= 0:
+            break
+        if attempt == 2 and remaining < minimum_retry_seconds:
+            break
+
+        attempts = attempt
         prompt = build_climate_research_prompt(
             country,
             sector,
@@ -6708,6 +6728,7 @@ def run_climate_web_research(
                 }],
                 messages=[{"role": "user", "content": prompt}],
                 betas=["web-search-2025-03-05"],
+                timeout=min(remaining, CLIMATE_RESEARCH_ATTEMPT_CAP_SECONDS),
             )
             text = "\n".join(
                 block.text
@@ -6716,17 +6737,18 @@ def run_climate_web_research(
             )
             _, bundle = extract_climate_research_bundle(text)
             bundle["attempts"] = attempt
-            if bundle["claims"]:
-                return finish(bundle)
+            gate = climate_research_evidence_gate(bundle)
+            if gate["ok"]:
+                accepted = gate["bundle"]
+                accepted["attempts"] = attempt
+                return finish(accepted)
         except anthropic.APITimeoutError:
-            if attempt == 1:
-                continue
-            break
+            continue
         except Exception:
             break
     return finish(normalize_climate_research_bundle({
         "status": "failed",
-        "attempts": 2,
+        "attempts": attempts,
         "failure_reason": (
             "Dedicated Climate-FCV research could not be completed."
         ),
@@ -6856,6 +6878,7 @@ def _iter_stage1_research(
                 research_plan["project_profile"],
                 get_research_client(),
                 assessment_id,
+                deadline=deadline,
             )] = "climate"
 
         while futures:
@@ -6894,6 +6917,15 @@ def _iter_stage1_research(
         pool.shutdown(wait=False, cancel_futures=True)
 
     if timed_out:
+        if "climate" in futures.values():
+            results["climate_research"] = normalize_climate_research_bundle({
+                "status": "failed",
+                "attempts": 1,
+                "failure_reason": (
+                    "Climate research exceeded the assessment deadline."
+                ),
+            })
+            results["lens_context_sources"] = []
         app.logger.warning(
             "Stage 1 research budget exhausted: assessment_id=%s "
             "budget_s=%d pending=%s core_brief=%s climate_claims=%d",

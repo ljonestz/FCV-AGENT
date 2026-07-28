@@ -1,6 +1,7 @@
 """Tests for bounded, validated Climate-FCV research context."""
 
 import json
+from concurrent.futures import Future
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -222,12 +223,15 @@ class _SequencedResearchClient:
 
 
 def _valid_climate_response():
+    bundle = _valid_bundle()
+    bundle["sources"].append(_second_authoritative_source())
+    bundle["claims"][0]["source_ids"].append("climate-source-2")
     return SimpleNamespace(content=[
         SimpleNamespace(
             type="text",
             text=(
                 CLIMATE_RESEARCH_START
-                + json.dumps(_valid_bundle())
+                + json.dumps(bundle)
                 + CLIMATE_RESEARCH_END
             ),
         )
@@ -281,6 +285,47 @@ def test_climate_research_retries_once_with_narrow_query():
     assert "NARROW RETRY" in client.calls[1]["messages"][0]["content"]
     assert client.calls[1]["max_tokens"] == 3200
     assert client.calls[1]["tools"][0]["max_uses"] == 3
+
+
+def test_climate_retry_requires_remaining_parent_budget():
+    client = _SequencedResearchClient([
+        anthropic.APITimeoutError(
+            request=httpx.Request(
+                "POST", "https://api.anthropic.com/v1/messages"
+            )
+        )
+    ])
+    ticks = iter([100.0, 100.0, 166.0, 166.0])
+
+    result = app_module.run_climate_web_research(
+        "South Sudan",
+        "Natural resources",
+        {"project_elements": ["Landing sites"]},
+        client,
+        deadline=170.0,
+        clock=lambda: next(ticks),
+        minimum_retry_seconds=35,
+    )
+
+    assert result["status"] == "failed"
+    assert result["attempts"] == 1
+    assert len(client.calls) == 1
+
+
+def test_climate_request_timeout_never_exceeds_parent_remaining_time():
+    client = _SequencedResearchClient([_valid_climate_response()])
+    ticks = iter([200.0, 200.0, 200.0])
+
+    app_module.run_climate_web_research(
+        "South Sudan",
+        "Natural resources",
+        {"project_elements": ["Landing sites"]},
+        client,
+        deadline=250.0,
+        clock=lambda: next(ticks),
+    )
+
+    assert client.calls[0]["timeout"] <= 50.0
 
 
 def test_climate_research_stops_after_one_failed_retry():
@@ -356,6 +401,77 @@ def test_stage1_research_budget_completes_fast_pass(monkeypatch):
     statuses = [e.get("research_status") for e in events if "result" not in e]
     assert "research_timeout" not in statuses
     assert events[-1]["result"]["core_brief"] == "quick brief"
+
+
+def test_parent_passes_same_deadline_to_climate_worker(monkeypatch):
+    captured = {}
+
+    def fake_climate(*args, **kwargs):
+        captured["deadline"] = kwargs["deadline"]
+        return normalize_climate_research_bundle({})
+
+    monkeypatch.setattr(app_module, "run_climate_web_research", fake_climate)
+    monkeypatch.setattr(
+        app_module, "run_fcv_web_research", lambda *args, **kwargs: {"brief": "core"}
+    )
+    monkeypatch.setattr(app_module, "get_research_client", lambda: object())
+    app_module._research_cache.clear()
+    plan = {
+        "country": "Testland",
+        "sector": "Water",
+        "core": {"max_tokens": 100, "max_uses": 1},
+        "climate": {"enabled": True},
+        "project_profile": {},
+    }
+
+    list(app_module._iter_stage1_research(plan, "assessment-deadline", budget_seconds=30))
+
+    assert captured["deadline"] > 0
+
+
+def test_parent_timeout_discards_pending_climate_research(monkeypatch):
+    class ControlledPool:
+        def __init__(self):
+            self.submissions = 0
+            self.core_future = Future()
+            self.climate_future = Future()
+
+        def submit(self, *args, **kwargs):
+            self.submissions += 1
+            if self.submissions == 1:
+                self.core_future.set_result({"brief": "core"})
+                return self.core_future
+            return self.climate_future
+
+        def shutdown(self, **kwargs):
+            return None
+
+    pool = ControlledPool()
+    ticks = iter([0.0, 0.0, 1.0])
+    monkeypatch.setattr(app_module, "ThreadPoolExecutor", lambda **kwargs: pool)
+    monkeypatch.setattr(app_module.time, "monotonic", lambda: next(ticks))
+    monkeypatch.setattr(app_module, "run_fcv_web_research", lambda *args, **kwargs: None)
+    monkeypatch.setattr(app_module, "run_climate_web_research", lambda *args, **kwargs: None)
+    monkeypatch.setattr(app_module, "get_research_client", lambda: object())
+    app_module._research_cache.clear()
+    plan = {
+        "country": "Testland",
+        "sector": "Water",
+        "core": {"max_tokens": 100, "max_uses": 1},
+        "climate": {"enabled": True},
+        "project_profile": {},
+    }
+
+    events = list(app_module._iter_stage1_research(plan, "assess-climate", budget_seconds=1))
+    result = events[-1]["result"]
+
+    assert pool.climate_future.done() is False
+    assert result["climate_research"]["status"] == "failed"
+    assert result["climate_research"]["attempts"] == 1
+    assert result["climate_research"]["failure_reason"] == (
+        "Climate research exceeded the assessment deadline."
+    )
+    assert result["lens_context_sources"] == []
 
 
 def test_climate_research_telemetry_is_structural_and_private(caplog):
