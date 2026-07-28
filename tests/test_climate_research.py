@@ -93,6 +93,29 @@ def test_climate_research_gate_rejects_claim_without_climate_anchor():
     assert decision["code"] == "climate_research_insufficient"
 
 
+def test_climate_research_gate_rejects_duplicate_cited_source_url():
+    bundle = _valid_bundle()
+    duplicate = _second_authoritative_source()
+    duplicate["url"] = "https://openknowledge.worldbank.org/example/"
+    bundle["sources"].append(duplicate)
+    bundle["claims"][0]["source_ids"].append("climate-source-2")
+
+    decision = climate_research_evidence_gate(bundle)
+
+    assert decision["ok"] is False
+    assert decision["code"] == "climate_research_insufficient"
+
+
+def test_climate_research_gate_rejects_uncited_second_source():
+    bundle = _valid_bundle()
+    bundle["sources"].append(_second_authoritative_source())
+
+    decision = climate_research_evidence_gate(bundle)
+
+    assert decision["ok"] is False
+    assert decision["code"] == "climate_research_insufficient"
+
+
 def test_climate_research_bundle_keeps_grounded_project_specific_claims():
     result = normalize_climate_research_bundle(_valid_bundle())
 

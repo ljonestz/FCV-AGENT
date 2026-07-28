@@ -230,9 +230,29 @@ def climate_research_evidence_gate(payload: Any) -> dict[str, Any]:
     bundle = normalize_climate_research_bundle(payload)
     sources = bundle["sources"]
     claims = bundle["claims"]
+    cited_source_ids = {
+        source_id
+        for claim in claims
+        for source_id in claim["source_ids"]
+    }
+    distinct_cited_sources = []
+    seen_source_ids = set()
+    seen_urls = set()
+    for source in sources:
+        source_id = source["id"]
+        url_key = source["url"].lower().rstrip("/")
+        if (
+            source_id not in cited_source_ids
+            or source_id in seen_source_ids
+            or url_key in seen_urls
+        ):
+            continue
+        distinct_cited_sources.append(source)
+        seen_source_ids.add(source_id)
+        seen_urls.add(url_key)
     authoritative = any(
         source["source_type"] in CLIMATE_AUTHORITATIVE_SOURCE_TYPES
-        for source in sources
+        for source in distinct_cited_sources
     )
     project_claim = any(
         claim["project_elements"]
@@ -245,7 +265,7 @@ def climate_research_evidence_gate(payload: Any) -> dict[str, Any]:
     )
     ok = (
         bundle["status"] in {"complete", "partial"}
-        and len(sources) >= CLIMATE_RESEARCH_MIN_SOURCES
+        and len(distinct_cited_sources) >= CLIMATE_RESEARCH_MIN_SOURCES
         and authoritative
         and project_claim
     )
