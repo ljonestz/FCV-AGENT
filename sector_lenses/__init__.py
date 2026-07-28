@@ -5,6 +5,8 @@ from .climate_native import (
     CLIMATE_NATIVE_SCHEMA_VERSION,
     CLIMATE_REQUIRED_DIRECTIONS,
     CLIMATE_REQUIRED_LENS_FIELDS,
+    build_climate_stage2_prompt,
+    build_climate_stage3_prompt,
     climate_missing_fields,
     merge_climate_repair,
 )
@@ -90,6 +92,8 @@ __all__ = [
     "CCDR_CONTEXT_START",
     "CCDR_RESEARCH_INSTRUCTIONS",
     "CLIMATE_NATIVE_SCHEMA_VERSION",
+    "build_climate_stage2_prompt",
+    "build_climate_stage3_prompt",
     "CLIMATE_REQUIRED_DIRECTIONS",
     "CLIMATE_REQUIRED_LENS_FIELDS",
     "CLIMATE_AUTHORITATIVE_SOURCE_TYPES",

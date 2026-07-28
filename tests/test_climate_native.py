@@ -2,8 +2,12 @@
 
 import copy
 
+import pytest
+
 from sector_lenses import (
     CLIMATE_NATIVE_SCHEMA_VERSION,
+    build_climate_stage2_prompt,
+    build_climate_stage3_prompt,
     climate_missing_fields,
     climate_readout_is_complete,
     merge_climate_repair,
@@ -809,3 +813,171 @@ def test_merge_climate_repair_whole_interaction_field_still_replaces_list():
         merged["lenses"][0]["interaction_readout"][0]["summary"]
         != "Mutated."
     )
+
+
+def _stage2_prompt(instrument_type="IPF"):
+    return build_climate_stage2_prompt(
+        instrument_type=instrument_type,
+        document_type="PAD",
+        temporal_guardrail="Treat this as a preparation-stage PAD.",
+        regime_header="Preparation regime: current policy.",
+        project_signals=(
+            "fisheries flood displacement community institutions "
+            "Sub-component 1.2 in Jonglei"
+        ),
+        climate_research={
+            "status": "complete",
+            "sources": [{
+                "id": "climate-source-1",
+                "title": "South Sudan Climate Risk Profile",
+                "url": "https://www.worldbank.org/en/topic/climatechange",
+                "source_type": "world-bank",
+            }],
+            "claims": [{
+                "id": "climate-claim-1",
+                "claim": "Flood timing affects named landing sites.",
+                "source_ids": ["climate-source-1"],
+                "project_elements": ["Sub-component 1.2"],
+                "geographies": ["Jonglei"],
+                "affected_groups": ["Displaced households"],
+                "time_horizons": ["project-lifetime"],
+                "evidence_status": "projected",
+                "confidence": "medium",
+            }],
+        },
+        priority_questions="Focus on seasonal access to landing sites.",
+    )
+
+
+def test_dedicated_climate_stage2_prompt_is_canonical_and_generic_free():
+    prompt = _stage2_prompt()
+    generic_markers = (
+        "%%%UNDER_HOOD_START%%%",
+        "%%%UNDER_HOOD_END%%%",
+        "%%%RECS_TABLE_START%%%",
+        "%%%DNH_CHECKLIST_START%%%",
+        "%%%QUESTIONS_MAP_START%%%",
+    )
+
+    assert all(marker not in prompt for marker in generic_markers)
+    assert prompt.count("%%%LENS_DIAGNOSTIC_START%%%") == 1
+    assert prompt.count("%%%LENS_DIAGNOSTIC_END%%%") == 1
+    assert CLIMATE_NATIVE_SCHEMA_VERSION in prompt
+    assert "single source of truth" in prompt.lower()
+    for field in (
+        "fcv_baseline", "operating_context", "supplementary_questions",
+        "interaction_readout", "strengths_weaknesses",
+    ):
+        assert field in prompt
+    assert "do not run, enumerate, or recreate" in prompt.lower()
+    assert "12 operational standards" in prompt.lower()
+    assert "dnh-9" in prompt.lower()
+    assert "25-question map" in prompt.lower()
+    assert "under_hood" in prompt.lower()
+    assert "zero to four" in prompt.lower()
+    assert "payload bound, not a coverage target" in prompt.lower()
+    assert "Focus on seasonal access to landing sites." in prompt
+    assert "Flood timing affects named landing sites." in prompt
+
+
+def test_dedicated_climate_stage2_prompt_preserves_depth_and_specificity():
+    low = _stage2_prompt().lower()
+
+    for phrase in (
+        "pressure", "mediated mechanism", "named project implication",
+        "current response or gap", "proportionate adaptation",
+        "extremely low", "very well embedded", "components",
+        "subcomponents", "locations", "beneficiaries", "institutions",
+        "indicators", "document sections", "do not fabricate",
+        "cq1_interaction", "cq6_adaptive", "cq5-hdp-nexus",
+    ):
+        assert phrase in low
+
+
+@pytest.mark.parametrize(
+    ("instrument", "selected_route"),
+    [
+        ("IPF", "IPF -> ESF instruments and applicable ESS"),
+        ("PforR", "PforR -> ESSA, PAP, DLIs, and borrower systems"),
+        (
+            "DPO",
+            "DPF/DPO -> Program Document, prior actions, PSIA, "
+            "and environmental/natural-resource analysis",
+        ),
+    ],
+)
+def test_climate_stage2_prompt_instrument_routes(instrument, selected_route):
+    low = _stage2_prompt(instrument).lower()
+
+    assert f"selected instrument route: {selected_route}".lower() in low
+    assert "never apply ipf ess/escp/cerc to standalone pforr or dpf/dpo" in low
+    assert "sort only where applicable" in low
+
+
+def test_climate_stage2_prompt_preserves_opcs_and_source_safeguards():
+    low = _stage2_prompt().lower()
+
+    for phrase in (
+        "never determine paris alignment", "cdrs", "esrc",
+        "screening adequacy", "ccdr is optional evidence where available",
+        "not a mandatory process step", "asset-appropriate design horizon",
+        "do not impose a universal 20-50 year projection",
+        "risk-based analytical good practice",
+        "formal project or source commitment", "'may intensify'",
+        "'could interact with'", "never state that climate will cause conflict",
+        "project guarantees a peace dividend", "named eligible",
+        "plausible government declaration", "pdo link",
+        "never recommend an ipf-style cerc for standalone pforr or dpf",
+        "never make a generic flexibility recommendation",
+        "analytical / good-practice evidence",
+        "not opcs policy or compliance authority",
+        "reviewer judgment as mandatory",
+    ):
+        assert phrase in low
+
+
+def test_dedicated_climate_stage3_prompt_is_priorities_only():
+    prompt = build_climate_stage3_prompt(
+        instrument_type="IPF",
+        document_type="PAD",
+        diagnostic=canonical_payload(),
+        regime_header="Preparation regime: current policy.",
+    )
+    low = prompt.lower()
+
+    for phrase in (
+        "priorities only", "approximately three", "maximum of five",
+        "do not regenerate", "opening assessment", "operating context",
+        "strengths/weaknesses", "anchor or core questions",
+        "wider fcv context",
+        "canonical diagnostic is the sole analytical source",
+        "policy | directive | procedure | guidance | reviewer_judgment",
+        "copy", "without reassessment",
+    ):
+        assert phrase in low
+    assert '"authority_basis"' in prompt
+    assert '"climate_links"' in prompt
+    assert '"risk_exposure"' in prompt
+    assert '"mid_cycle_watch": []' in prompt
+    assert CLIMATE_NATIVE_SCHEMA_VERSION in prompt
+
+
+@pytest.mark.parametrize("instrument", ["IPF", "PforR", "DPO"])
+def test_climate_stage3_prompt_retains_instrument_and_lifecycle_guardrails(
+    instrument,
+):
+    low = build_climate_stage3_prompt(
+        instrument_type=instrument,
+        document_type="Additional Financing",
+        diagnostic=canonical_payload(),
+        regime_header="Preparation regime: current policy.",
+    ).lower()
+
+    for phrase in (
+        "instrument-route every action", "named eligible emergency",
+        "never an ipf-style cerc for standalone pforr or dpf/dpo",
+        "scope to what the af finances",
+        "restructuring does not automatically restart cdrs", "mpa phase",
+        "conditional compound-risk language", "analytical sources",
+    ):
+        assert phrase in low
