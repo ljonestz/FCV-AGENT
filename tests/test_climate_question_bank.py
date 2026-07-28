@@ -119,3 +119,31 @@ def test_trigger_matching_preserves_multiword_and_hyphenated_phrases():
     assert "cq6-time-horizons" in candidate_ids
     assert "cq6-adaptive-triggers" in candidate_ids
     assert "cq6_adaptive" in plan["anchors"]
+
+
+def test_trigger_matching_supports_controlled_inflections():
+    plan = bank.build_question_plan(
+        "flooding livelihoods institutions markets benefits resources"
+    )
+    candidate_ids = {
+        item["id"] for item in plan["supplementary_candidates"]
+    }
+
+    assert {
+        "cq1-hazard-delivery",
+        "cq1-access-security",
+        "cq2-access-path-dependence",
+        "cq3-peace-dividend",
+        "cq3-shared-benefit",
+        "cq5-delivery-institutions",
+    } <= candidate_ids
+
+
+def test_trigger_matching_treats_spaces_and_hyphens_as_separators():
+    for signals in ("results-framework", "early-warning"):
+        plan = bank.build_question_plan(signals)
+        candidate_ids = {
+            item["id"] for item in plan["supplementary_candidates"]
+        }
+
+        assert "cq6-adaptive-triggers" in candidate_ids

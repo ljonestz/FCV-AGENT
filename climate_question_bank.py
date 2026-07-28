@@ -91,23 +91,63 @@ BANK_SOURCE_HEADLINE = (
 )
 
 
-def _project_signal_blob(project_signals: Any) -> str:
-    """Return normalized text for deterministic trigger matching."""
+_SIGNAL_TOKEN = re.compile(r"[a-z0-9]+(?:&[a-z0-9]+)*")
+
+
+def _project_signal_tokens(project_signals: Any) -> tuple[str, ...]:
+    """Return lowercase tokens with spaces and hyphens as separators."""
 
     if isinstance(project_signals, (list, tuple, set)):
-        return " ".join(str(signal) for signal in project_signals).lower()
-    return str(project_signals or "").lower()
+        blob = " ".join(str(signal) for signal in project_signals)
+    else:
+        blob = str(project_signals or "")
+    return tuple(_SIGNAL_TOKEN.findall(blob.lower()))
+
+
+def _word_matches_trigger(word: str, trigger: str) -> bool:
+    """Match a trigger token to controlled common English inflections."""
+
+    variants = {
+        trigger,
+        f"{trigger}s",
+        f"{trigger}es",
+        f"{trigger}ed",
+        f"{trigger}ing",
+    }
+    if trigger.endswith("e"):
+        variants.update({f"{trigger}d", f"{trigger[:-1]}ing"})
+    if len(trigger) > 1 and trigger.endswith("y"):
+        variants.add(f"{trigger[:-1]}ies")
+    return word in variants
+
+
+def _contains_trigger(tokens: tuple[str, ...], trigger: str) -> bool:
+    """Match a complete token phrase with controlled word inflections."""
+
+    trigger_tokens = tuple(_SIGNAL_TOKEN.findall(trigger.lower()))
+    width = len(trigger_tokens)
+    if not width or width > len(tokens):
+        return False
+    return any(
+        all(
+            _word_matches_trigger(word, trigger_word)
+            for word, trigger_word in zip(
+                tokens[start:start + width], trigger_tokens
+            )
+        )
+        for start in range(len(tokens) - width + 1)
+    )
 
 
 def _triggered_question_ids(project_signals: Any) -> set[str]:
     """Return bank IDs whose complete trigger tokens or phrases occur."""
 
-    blob = _project_signal_blob(project_signals)
+    tokens = _project_signal_tokens(project_signals)
     return {
         question["id"]
         for question in CLIMATE_QUESTION_BANK
         if any(
-            re.search(rf"(?<!\w){re.escape(trigger)}(?!\w)", blob)
+            _contains_trigger(tokens, trigger)
             for trigger in question["triggers"]
         )
     }
