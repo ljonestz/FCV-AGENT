@@ -410,6 +410,8 @@ def test_parent_passes_same_deadline_to_climate_worker(monkeypatch):
         captured["deadline"] = kwargs["deadline"]
         return normalize_climate_research_bundle({})
 
+    fixed_now = 1000.0
+    monkeypatch.setattr(app_module.time, "monotonic", lambda: fixed_now)
     monkeypatch.setattr(app_module, "run_climate_web_research", fake_climate)
     monkeypatch.setattr(
         app_module, "run_fcv_web_research", lambda *args, **kwargs: {"brief": "core"}
@@ -426,7 +428,7 @@ def test_parent_passes_same_deadline_to_climate_worker(monkeypatch):
 
     list(app_module._iter_stage1_research(plan, "assessment-deadline", budget_seconds=30))
 
-    assert captured["deadline"] > 0
+    assert captured["deadline"] == fixed_now + 30
 
 
 def test_parent_timeout_discards_pending_climate_research(monkeypatch):
