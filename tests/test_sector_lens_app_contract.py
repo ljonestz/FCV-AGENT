@@ -7,7 +7,10 @@ from pathlib import Path
 import pytest
 
 import app as app_module
-from sector_lenses import load_registry
+from sector_lenses import (
+    CLIMATE_NATIVE_SCHEMA_VERSION,
+    load_registry,
+)
 
 
 FIXTURE_ROOT = Path(__file__).parent / "fixtures" / "sector_lenses"
@@ -17,14 +20,39 @@ SOUTH_SUDAN_FIXTURE = (
     / "climate"
     / "south_sudan_dual_use.json"
 )
+_CANONICAL_BASELINE = {
+    "sensitivity_rating": "Adequate",
+    "responsiveness_rating": "Emerging",
+    "sensitivity_reasoning": "Conflict-sensitive delivery is explicit.",
+    "responsiveness_reasoning": "A root-cause pathway is present.",
+    "evidence_trail": [{
+        "claim": "Seasonal access affects named project activities.",
+        "source_ids": ["peace-social-dividends"],
+        "project_anchor": "Project activity in the project area",
+    }],
+}
 
 
 def _add_specific_climate_paths(payload):
-    """Add compact valid pathways to positive diagnostic fixtures."""
+    """Add the canonical envelope and compact paths to positive fixtures."""
 
+    payload.setdefault("schema_version", CLIMATE_NATIVE_SCHEMA_VERSION)
+    payload.setdefault("fcv_baseline", _CANONICAL_BASELINE)
     for lens in payload.get("lenses", []):
         if lens.get("lens_id") != "climate":
             continue
+        lens.setdefault(
+            "executive_summary",
+            lens.get("materiality_summary")
+            or "Climate and FCV pressures affect the project.",
+        )
+        lens.setdefault("operating_context", {
+            "fcv_setting": "Access and institutions shape delivery.",
+            "climate_setting": "Material hazards shape project conditions.",
+            "intersection": (
+                "Climate and FCV pressures interact around project access."
+            ),
+        })
         for interaction in lens.get("interaction_readout", []):
             direction = interaction.get("direction_id", "")
             if interaction.get("pathways") or direction not in {
@@ -237,11 +265,22 @@ def test_downloaded_report_has_climate_readout_and_context_sources():
         "active_lenses": [{
             "id": "climate", "version": "1.1.0", "position": "primary"
         }],
-        "lens_diagnostic": {"lenses": [{
+        "lens_diagnostic": {
+            "schema_version": CLIMATE_NATIVE_SCHEMA_VERSION,
+            "fcv_baseline": _CANONICAL_BASELINE,
+            "lenses": [{
             "lens_id": "climate",
             "applicability": "material",
             "materiality_level": "high",
             "materiality_summary": "Drought and fragility affect delivery.",
+            "executive_summary": (
+                "Drought, access, and allocation shape project delivery."
+            ),
+            "operating_context": {
+                "fcv_setting": "Insecurity constrains access in project areas.",
+                "climate_setting": "Drought and floods affect site access.",
+                "intersection": "Hazards and insecurity constrain delivery.",
+            },
             "analysis_emphasis": ["adaptation"],
             "source_ids": ["peace-social-dividends", "context-ccdr"],
             "interaction_readout": [{
@@ -436,11 +475,22 @@ def test_downloaded_report_scales_low_climate_materiality_without_empty_dividend
         "active_lenses": [{
             "id": "climate", "version": "1.1.0", "position": "primary"
         }],
-        "lens_diagnostic": {"lenses": [{
+        "lens_diagnostic": {
+            "schema_version": CLIMATE_NATIVE_SCHEMA_VERSION,
+            "fcv_baseline": _CANONICAL_BASELINE,
+            "lenses": [{
             "lens_id": "climate",
             "applicability": "possible",
             "materiality_level": "low",
             "materiality_summary": "Climate entry points are limited.",
+            "executive_summary": (
+                "Seasonal rainfall creates a limited project interaction."
+            ),
+            "operating_context": {
+                "fcv_setting": "Core FCV conditions remain material.",
+                "climate_setting": "Seasonal rainfall may affect access.",
+                "intersection": "The overlap is limited and localized.",
+            },
             "interaction_readout": [{
                 "direction_id": "climate-fcv-on-project",
                 "summary": "Seasonal rainfall may modestly affect access.",
@@ -1308,7 +1358,13 @@ def test_valid_inline_lens_diagnostic_bypasses_recovery(monkeypatch):
             "materiality_level": "medium",
             "materiality_summary": "Flood and conflict pressures affect delivery.",
             "integration_level": "partly_integrated",
+            "integration_rating": "Adequate",
             "integration_summary": "Climate-aware but allocation untreated.",
+            "strengths_weaknesses": [{
+                "side": "strength",
+                "title": "Climate-aware design",
+                "text": "The design recognizes material climate pressures.",
+            }],
             "reflections": [{
                 "question_key": "cq2_maladaptation",
                 "title": "Maladaptation and lock-in",

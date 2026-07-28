@@ -121,12 +121,35 @@
     ]
   },
   "diagnostic": {
+    "schema_version": "climate-native-v1",
+    "fcv_baseline": {
+      "sensitivity_rating": "Adequate",
+      "responsiveness_rating": "Emerging",
+      "sensitivity_reasoning": "The design recognizes flood-access and seasonal-user risks.",
+      "responsiveness_reasoning": "Community governance creates a partial resilience pathway.",
+      "evidence_trail": [
+        {
+          "claim": "Flood timing constrains landing-site access and works sequencing.",
+          "source_ids": [
+            "climate-source-1",
+            "climate-source-2"
+          ],
+          "project_anchor": "Landing-site rehabilitation in Upper Nile"
+        }
+      ]
+    },
     "lenses": [
       {
         "lens_id": "climate",
         "applicability": "material",
         "materiality_level": "high",
         "materiality_summary": "Flood variability, seasonal mobility, and shared-resource governance are central to delivery and durable outcomes.",
+        "executive_summary": "Flood access, seasonal mobility, and resource governance form the material Climate-FCV intersection for this project.",
+        "operating_context": {
+          "fcv_setting": "Insecurity, displacement, and contested seasonal access shape delivery in Upper Nile, Jonglei, and the Sudd.",
+          "climate_setting": "Changing flood timing affects landing-site access, mobility, and shared wetland resources.",
+          "intersection": "Landing-site works and BFMU access rules can either preserve or narrow adaptive options for seasonal users."
+        },
         "analysis_emphasis": [
           "adaptation",
           "resource access",

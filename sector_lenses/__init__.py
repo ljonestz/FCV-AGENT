@@ -1,6 +1,13 @@
 """Public integration surface for the sector-lens registry foundation."""
 
 from .budgets import MAX_ACTIVE_LENSES, PLATFORM_STAGE_BUDGETS
+from .climate_native import (
+    CLIMATE_NATIVE_SCHEMA_VERSION,
+    CLIMATE_REQUIRED_DIRECTIONS,
+    CLIMATE_REQUIRED_LENS_FIELDS,
+    climate_missing_fields,
+    merge_climate_repair,
+)
 from .composer import build_stage_slice, estimate_tokens, resolve_active_lenses
 from .models import (
     ActiveLensSelection,
@@ -82,6 +89,9 @@ __all__ = [
     "CCDR_CONTEXT_END",
     "CCDR_CONTEXT_START",
     "CCDR_RESEARCH_INSTRUCTIONS",
+    "CLIMATE_NATIVE_SCHEMA_VERSION",
+    "CLIMATE_REQUIRED_DIRECTIONS",
+    "CLIMATE_REQUIRED_LENS_FIELDS",
     "CLIMATE_AUTHORITATIVE_SOURCE_TYPES",
     "CLIMATE_RESEARCH_END",
     "CLIMATE_RESEARCH_MIN_SOURCES",
@@ -101,11 +111,13 @@ __all__ = [
     "LENS_EVIDENCE_END",
     "LENS_EVIDENCE_START",
     "climate_lens_readout",
+    "climate_missing_fields",
     "climate_readout_is_complete",
     "detect_lens_suggestions",
     "extract_lens_diagnostic",
     "extract_lens_evidence",
     "lens_catalogue",
+    "merge_climate_repair",
     "merge_lens_findings",
     "normalize_lens_diagnostic",
     "normalize_priority_climate_links",

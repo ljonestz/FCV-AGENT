@@ -10,8 +10,24 @@ recovery.
 import json
 
 import app as app_module
-from sector_lenses import climate_readout_is_complete
+from sector_lenses import (
+    CLIMATE_NATIVE_SCHEMA_VERSION,
+    climate_readout_is_complete,
+)
 from sector_lenses.pipeline import climate_lens_readout
+
+
+_BASELINE = {
+    "sensitivity_rating": "Adequate",
+    "responsiveness_rating": "Emerging",
+    "sensitivity_reasoning": "Conflict-sensitive delivery is explicit.",
+    "responsiveness_reasoning": "A root-cause pathway is present.",
+    "evidence_trail": [{
+        "claim": "Flood access is seasonally constrained.",
+        "source_ids": ["climate-source-1"],
+        "project_anchor": "Sub-component 1.2 landing sites",
+    }],
+}
 
 
 def _interaction_with_pathway(direction):
@@ -42,10 +58,25 @@ def _climate_entry(*, with_reflections, with_integration, materiality_summary="B
         "applicability": "material",
         "materiality_level": "medium",
         "materiality_summary": materiality_summary,
+        "executive_summary": (
+            "Flood access and allocation are the material intersection."
+        ),
+        "operating_context": {
+            "fcv_setting": "Jonglei access is institutionally constrained.",
+            "climate_setting": "Flood timing affects landing-site access.",
+            "intersection": (
+                "Landing-site delivery depends on contested seasonal access."
+            ),
+        },
         "interaction_readout": [
             _interaction_with_pathway("climate-fcv-on-project"),
             _interaction_with_pathway("project-on-climate-fcv"),
         ],
+        "strengths_weaknesses": [{
+            "side": "strength",
+            "title": "Community delivery",
+            "text": "Named institutions support delivery.",
+        }],
         "readout_sections": [],
         "additional_pathways": [],
     }
@@ -58,35 +89,48 @@ def _climate_entry(*, with_reflections, with_integration, materiality_summary="B
         }]
     if with_integration:
         entry["integration_level"] = "partly_integrated"
+        entry["integration_rating"] = "Adequate"
         entry["integration_summary"] = "Aware but allocation untreated."
     return entry
 
 
 def _diagnostic(entry):
-    return {"lenses": [entry], "findings": []}
+    return {
+        "schema_version": CLIMATE_NATIVE_SCHEMA_VERSION,
+        "fcv_baseline": _BASELINE,
+        "lenses": [entry],
+        "findings": [],
+    }
 
 
 # ── pipeline completeness helper ─────────────────────────────────────────────
 
 def test_climate_readout_is_complete_requires_reflections_and_integration():
     complete = _climate_entry(with_reflections=True, with_integration=True)
-    assert climate_readout_is_complete(complete) is True
+    assert climate_readout_is_complete(complete, baseline=_BASELINE) is True
 
     no_reflections = _climate_entry(with_reflections=False, with_integration=True)
-    assert climate_readout_is_complete(no_reflections) is False
+    assert climate_readout_is_complete(
+        no_reflections, baseline=_BASELINE
+    ) is False
 
     no_integration = _climate_entry(with_reflections=True, with_integration=False)
-    assert climate_readout_is_complete(no_integration) is False
+    assert climate_readout_is_complete(
+        no_integration, baseline=_BASELINE
+    ) is False
 
     interactions_only = _climate_entry(with_reflections=False, with_integration=False)
-    assert climate_readout_is_complete(interactions_only) is False
+    assert climate_readout_is_complete(
+        interactions_only, baseline=_BASELINE
+    ) is False
 
-    assert climate_readout_is_complete(None) is False
+    assert climate_readout_is_complete(None, baseline=_BASELINE) is False
+    assert climate_readout_is_complete(complete) is False
     # Reflections with no grounded text do not count as complete.
     blank = _climate_entry(with_reflections=True, with_integration=True)
     blank["reflections"] = [{"question_key": "cq1_interaction", "title": "t",
                              "status_cue": "ok", "text": "   "}]
-    assert climate_readout_is_complete(blank) is False
+    assert climate_readout_is_complete(blank, baseline=_BASELINE) is False
 
 
 # ── recovery prompt requests the dedicated-module contract ───────────────────
@@ -168,7 +212,9 @@ def test_incomplete_climate_primary_triggers_recovery_and_completes(monkeypatch)
     assert recovered is True
     assert failure == ""
     entry = climate_lens_readout(diagnostic)
-    assert climate_readout_is_complete(entry) is True
+    assert climate_readout_is_complete(
+        entry, baseline=diagnostic["fcv_baseline"]
+    ) is True
     assert entry["materiality_summary"] == "RECOVERED complete"
 
 
@@ -219,15 +265,19 @@ def test_complete_climate_primary_skips_recovery(monkeypatch):
     )
     assert recovered is False
     assert failure == ""
-    assert climate_readout_is_complete(climate_lens_readout(diagnostic)) is True
+    assert climate_readout_is_complete(
+        climate_lens_readout(diagnostic),
+        baseline=diagnostic["fcv_baseline"],
+    ) is True
 
 
 def test_completeness_unchanged_with_source_field():
-    """A source-bearing reflection still counts as grounded; completeness keys on
-    >=1 grounded reflection + non-empty integration_summary (unchanged contract)."""
+    """A source-bearing reflection remains grounded in a canonical readout."""
     import sector_lenses.pipeline as p
-    entry = {"lens_id": "climate",
-             "reflections": [{"question_key": "cq2_maladaptation", "title": "t",
-                              "status_cue": "gap", "source": "X", "text": "grounded answer"}],
-             "integration_summary": "aware but untreated"}
-    assert p.climate_readout_is_complete(entry) is True
+
+    entry = _climate_entry(with_reflections=True, with_integration=True)
+    entry["reflections"][0]["source"] = "X"
+
+    assert p.climate_readout_is_complete(
+        entry, baseline=_BASELINE
+    ) is True

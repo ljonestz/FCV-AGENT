@@ -1766,7 +1766,10 @@ def extract_or_repair_lens_diagnostic(
     climate_incomplete = (
         not failure
         and climate_active
-        and not climate_readout_is_complete(climate_lens_entry(diagnostic))
+        and not climate_readout_is_complete(
+            climate_lens_entry(diagnostic),
+            baseline=diagnostic.get("fcv_baseline"),
+        )
     )
     if climate_active:
         log_climate_specificity_summary(
@@ -1797,7 +1800,10 @@ def extract_or_repair_lens_diagnostic(
     if recovered:
         repaired_complete = (
             not climate_active
-            or climate_readout_is_complete(climate_lens_entry(repaired))
+            or climate_readout_is_complete(
+                climate_lens_entry(repaired),
+                baseline=repaired.get("fcv_baseline"),
+            )
         )
         # Never downgrade a usable primary: only adopt the recovered diagnostic
         # when the primary was unusable, or when recovery is a complete readout.
@@ -9878,7 +9884,10 @@ def download_report():
         )
         _add_single_para(wording[level])
         add_field('Materiality', climate_readout.get('materiality_summary'))
-        if not climate_readout_is_complete(climate_readout):
+        if not climate_readout_is_complete(
+            climate_readout,
+            baseline=lens_diagnostic.get("fcv_baseline"),
+        ):
             _add_single_para(
                 'Note: a full Climate-FCV reflections and integration readout '
                 'could not be generated for this run. The climate-FCV '

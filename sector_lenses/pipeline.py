@@ -7,6 +7,12 @@ import re
 from copy import deepcopy
 from typing import Any, Iterable
 
+import climate_question_bank
+
+from .climate_native import (
+    CLIMATE_NATIVE_SCHEMA_VERSION,
+    CLIMATE_REQUIRED_DIRECTIONS,
+)
 from .models import LensActivationMode, LensRegistry
 
 
@@ -19,10 +25,7 @@ _VALID_STATUSES = {
     "addressed", "partially_addressed", "not_yet_addressed", "gap", "not_applicable",
 }
 _MATERIALITY_LEVELS = {"high", "medium", "low"}
-_INTERACTION_DIRECTIONS = {
-    "climate-fcv-on-project",
-    "project-on-climate-fcv",
-}
+_INTERACTION_DIRECTIONS = CLIMATE_REQUIRED_DIRECTIONS
 _CLIMATE_TIME_HORIZONS = {
     "current-near-term",
     "project-lifetime",
@@ -30,6 +33,9 @@ _CLIMATE_TIME_HORIZONS = {
 }
 _CLIMATE_CONFIDENCE_LEVELS = {"high", "medium", "low"}
 _CLIMATE_CLAIM_ID = re.compile(r"^climate-claim-[1-9][0-9]?$")
+_CLIMATE_BANK_IDS = {
+    item["id"] for item in climate_question_bank.CLIMATE_QUESTION_BANK
+}
 
 # Finding IDs look like "<slug>-finding-<n>". Validate with two non-overlapping
 # fullmatch checks split on the literal marker rather than one pattern whose
@@ -103,6 +109,88 @@ def _bounded_strings(value: Any, limit: int, length: int) -> list[str]:
         for item in _list_values(value)
         if str(item).strip()
     ][:limit]
+
+
+def _normalize_climate_baseline(value: Any) -> dict[str, Any]:
+    """Return the bounded FCV baseline embedded in a Climate diagnostic."""
+
+    raw = value if isinstance(value, dict) else {}
+    trail: list[dict[str, Any]] = []
+    for item in _list_values(raw.get("evidence_trail")):
+        if not isinstance(item, dict):
+            continue
+        claim = str(item.get("claim", "")).strip()[:500]
+        project_anchor = str(
+            item.get("project_anchor", "")
+        ).strip()[:240]
+        if claim and project_anchor:
+            trail.append({
+                "claim": claim,
+                "source_ids": _bounded_strings(
+                    item.get("source_ids"), 4, 100
+                ),
+                "project_anchor": project_anchor,
+            })
+        if len(trail) >= 6:
+            break
+    return {
+        "sensitivity_rating": str(
+            raw.get("sensitivity_rating", "")
+        ).strip()[:80],
+        "responsiveness_rating": str(
+            raw.get("responsiveness_rating", "")
+        ).strip()[:80],
+        "sensitivity_reasoning": str(
+            raw.get("sensitivity_reasoning", "")
+        ).strip()[:900],
+        "responsiveness_reasoning": str(
+            raw.get("responsiveness_reasoning", "")
+        ).strip()[:900],
+        "evidence_trail": trail,
+    }
+
+
+def _normalize_operating_context(value: Any) -> dict[str, str]:
+    """Return bounded Climate and FCV operating-context narratives."""
+
+    raw = value if isinstance(value, dict) else {}
+    return {
+        key: str(raw.get(key, "")).strip()[:1400]
+        for key in ("fcv_setting", "climate_setting", "intersection")
+    }
+
+
+def _normalize_supplementary_questions(
+    value: Any,
+) -> list[dict[str, str]]:
+    """Keep up to four bounded questions declared by the current bank."""
+
+    result: list[dict[str, str]] = []
+    seen_ids: set[str] = set()
+    for raw in _list_values(value):
+        if not isinstance(raw, dict):
+            continue
+        question_id = str(raw.get("question_id", "")).strip()
+        text = str(raw.get("text", "")).strip()[:1800]
+        if (
+            question_id not in _CLIMATE_BANK_IDS
+            or question_id in seen_ids
+            or not text
+        ):
+            continue
+        result.append({
+            "question_id": question_id,
+            "title": str(raw.get("title", "")).strip()[:200],
+            "status_cue": _soften_status_cue(
+                raw.get("status_cue", "")
+            )[:40],
+            "source": str(raw.get("source", "")).strip()[:160],
+            "text": text,
+        })
+        seen_ids.add(question_id)
+        if len(result) >= 4:
+            break
+    return result
 
 
 def _normalize_climate_pathways(
@@ -684,6 +772,17 @@ def extract_lens_diagnostic(
         if lens_id == "climate":
             normalized_lens.update({
                 "materiality_level": materiality_level,
+                "executive_summary": str(
+                    item.get("executive_summary", "")
+                ).strip()[:1800],
+                "operating_context": _normalize_operating_context(
+                    item.get("operating_context")
+                ),
+                "supplementary_questions": (
+                    _normalize_supplementary_questions(
+                        item.get("supplementary_questions")
+                    )
+                ),
                 "interaction_readout": normalized_interactions,
                 "additional_pathways": normalized_additional,
                 "reflections": reflections,
@@ -753,7 +852,21 @@ def extract_lens_diagnostic(
                 "action_target": action_target,
             }
         )
-    return {"error": False, "message": "", "lenses": lenses, "findings": findings, "truncated": truncated}
+    result = {
+        "error": False,
+        "message": "",
+        "lenses": lenses,
+        "findings": findings,
+        "truncated": truncated,
+    }
+    if "climate" in active:
+        result["schema_version"] = str(
+            data.get("schema_version", "")
+        ).strip()[:80]
+        result["fcv_baseline"] = _normalize_climate_baseline(
+            data.get("fcv_baseline")
+        )
+    return result
 
 
 def normalize_lens_diagnostic(
@@ -764,7 +877,21 @@ def normalize_lens_diagnostic(
 ) -> dict[str, Any]:
     """Apply the model-output validator to a diagnostic received from a client/session."""
 
-    serialized = json.dumps(payload or {}, ensure_ascii=False)
+    raw = payload if isinstance(payload, dict) else {}
+    active = set(active_lens_ids)
+    if raw.get("error"):
+        return _error_diagnostic(str(raw.get("message", "")))
+    # Stored/client Climate payloads are strict at this boundary. Raw model
+    # extraction stays version-tolerant until the dedicated prompt migration.
+    if (
+        "climate" in active
+        and raw
+        and raw.get("schema_version") != CLIMATE_NATIVE_SCHEMA_VERSION
+    ):
+        return _error_diagnostic(
+            "Climate diagnostic schema version was missing or unsupported."
+        )
+    serialized = json.dumps(raw, ensure_ascii=False)
     wrapped = LENS_DIAGNOSTIC_START + serialized + LENS_DIAGNOSTIC_END
     return extract_lens_diagnostic(
         wrapped,
@@ -879,30 +1006,52 @@ def climate_lens_readout(diagnostic: dict[str, Any] | None) -> dict[str, Any] | 
     return None
 
 
-def climate_readout_is_complete(climate_entry: dict[str, Any] | None) -> bool:
-    """True when a Climate entry carries the full dedicated-module readout.
-
-    A *usable* diagnostic only needs materiality plus one interaction pathway
-    (the `lens_diagnostic_failure_message` gate). A *complete* dedicated-module
-    readout additionally needs the v9.19 fields that drive the reflections block
-    and the integration gauge: at least one reflection and a non-empty
-    integration_summary. When these are absent the module silently collapses to
-    an interactions-only "hybrid" that looks like the core FCV memo. Detecting
-    it lets us (a) trigger recovery to fill the gap and (b) surface an honest
-    partial notice instead of dropping the sections silently.
-    """
+def climate_readout_is_complete(
+    climate_entry: dict[str, Any] | None,
+    *,
+    baseline: dict[str, Any] | None = None,
+) -> bool:
+    """True only for a complete canonical Climate-FCV readout."""
 
     if not isinstance(climate_entry, dict):
         return False
-    reflections = climate_entry.get("reflections") or []
+    baseline = baseline if isinstance(baseline, dict) else {}
+    baseline_complete = all(
+        baseline.get(key)
+        for key in (
+            "sensitivity_rating",
+            "responsiveness_rating",
+            "sensitivity_reasoning",
+            "responsiveness_reasoning",
+            "evidence_trail",
+        )
+    )
+    context = climate_entry.get("operating_context")
+    context_complete = isinstance(context, dict) and all(
+        context.get(key)
+        for key in ("fcv_setting", "climate_setting", "intersection")
+    )
+    reflections = climate_entry.get("reflections")
     has_reflections = isinstance(reflections, list) and any(
         isinstance(item, dict) and str(item.get("text", "")).strip()
         for item in reflections
     )
-    integration_summary = str(
-        climate_entry.get("integration_summary", "")
-    ).strip()
-    return bool(has_reflections and integration_summary)
+    interactions = climate_entry.get("interaction_readout")
+    directions = {
+        item.get("direction_id")
+        for item in interactions
+        if isinstance(item, dict) and item.get("pathways")
+    } if isinstance(interactions, list) else set()
+    return bool(
+        baseline_complete
+        and climate_entry.get("executive_summary")
+        and climate_entry.get("integration_rating")
+        and climate_entry.get("integration_summary")
+        and context_complete
+        and CLIMATE_REQUIRED_DIRECTIONS.issubset(directions)
+        and climate_entry.get("strengths_weaknesses")
+        and has_reflections
+    )
 
 
 def _extend_unique(target: list[str], values: Iterable[Any]) -> None:

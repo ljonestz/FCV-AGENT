@@ -5,6 +5,7 @@ from itertools import permutations
 from pathlib import Path
 
 from sector_lenses import (
+    CLIMATE_NATIVE_SCHEMA_VERSION,
     detect_lens_suggestions,
     extract_lens_diagnostic,
     extract_lens_evidence,
@@ -122,7 +123,9 @@ def test_diagnostic_normalizes_declared_readout_items():
 
 
 def test_climate_diagnostic_normalizes_materiality_interactions_and_pathways():
-    payload = {"lenses": [{
+    payload = {
+        "schema_version": CLIMATE_NATIVE_SCHEMA_VERSION,
+        "lenses": [{
         "lens_id": "climate",
         "applicability": "material",
         "materiality_level": "high",
@@ -201,7 +204,9 @@ def test_climate_diagnostic_normalizes_materiality_interactions_and_pathways():
 
 
 def test_climate_diagnostic_rejects_invalid_extensions_and_maps_legacy_low():
-    payload = {"lenses": [{
+    payload = {
+        "schema_version": CLIMATE_NATIVE_SCHEMA_VERSION,
+        "lenses": [{
         "lens_id": "climate",
         "applicability": "not_applicable",
         "materiality_level": "extreme",
@@ -233,7 +238,9 @@ def test_climate_diagnostic_rejects_invalid_extensions_and_maps_legacy_low():
 
 
 def test_climate_interactions_keep_specific_pathways_and_horizons():
-    payload = {"lenses": [{
+    payload = {
+        "schema_version": CLIMATE_NATIVE_SCHEMA_VERSION,
+        "lenses": [{
         "lens_id": "climate",
         "applicability": "material",
         "materiality_level": "high",
@@ -303,7 +310,9 @@ def test_climate_interactions_keep_specific_pathways_and_horizons():
 
 
 def test_generic_climate_pathway_is_suppressed():
-    payload = {"lenses": [{
+    payload = {
+        "schema_version": CLIMATE_NATIVE_SCHEMA_VERSION,
+        "lenses": [{
         "lens_id": "climate",
         "applicability": "material",
         "materiality_level": "medium",
@@ -332,7 +341,9 @@ def test_generic_climate_pathway_is_suppressed():
 
 
 def test_climate_dividend_pathway_ids_are_stable():
-    payload = {"lenses": [{
+    payload = {
+        "schema_version": CLIMATE_NATIVE_SCHEMA_VERSION,
+        "lenses": [{
         "lens_id": "climate",
         "applicability": "material",
         "readout_sections": [{
@@ -765,3 +776,36 @@ def test_is_valid_finding_id_is_linear_and_correct():
     assert not pipeline._is_valid_finding_id("")
     # Hostile input that made the old single-regex form backtrack is rejected instantly.
     assert not pipeline._is_valid_finding_id("0" * 200000)
+
+
+def test_raw_extraction_preserves_future_canonical_top_level_fields():
+    payload = {
+        "schema_version": CLIMATE_NATIVE_SCHEMA_VERSION,
+        "fcv_baseline": {
+            "sensitivity_rating": "Adequate",
+            "responsiveness_rating": "Emerging",
+            "sensitivity_reasoning": "Conflict-sensitive delivery is explicit.",
+            "responsiveness_reasoning": "A root-cause pathway is present.",
+            "evidence_trail": [{
+                "claim": "Flood access is seasonally constrained.",
+                "source_ids": ["climate-source-1"],
+                "project_anchor": "Sub-component 1.2 landing sites",
+            }],
+        },
+        "lenses": [{
+            "lens_id": "climate",
+            "applicability": "material",
+            "materiality_level": "high",
+        }],
+        "findings": [],
+    }
+    block = (
+        "%%%LENS_DIAGNOSTIC_START%%%"
+        + json.dumps(payload)
+        + "%%%LENS_DIAGNOSTIC_END%%%"
+    )
+
+    result = extract_lens_diagnostic(block, ["climate"])
+
+    assert result["schema_version"] == CLIMATE_NATIVE_SCHEMA_VERSION
+    assert result["fcv_baseline"] == payload["fcv_baseline"]
