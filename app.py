@@ -22,6 +22,7 @@ from sector_lenses.climate_native import (
 )
 from sector_lenses import (
     CCDR_RESEARCH_INSTRUCTIONS,
+    build_climate_evidence_packet,
     build_climate_research_prompt,
     build_climate_search_prompt,
     CLIMATE_RESEARCH_END,
@@ -7047,38 +7048,47 @@ def run_climate_web_research(
                 )
                 structure_timeout = min(cap_remaining, parent_remaining)
                 if structure_timeout > 0:
+                    evidence_packet = build_climate_evidence_packet(
+                        response.content,
+                        project_profile,
+                    )
+                    packet_text = json.dumps(
+                        evidence_packet,
+                        ensure_ascii=False,
+                        separators=(",", ":"),
+                    )
                     app.logger.info(
                         "Climate research attempt assessment_id=%s attempt=%d "
                         "outcome=structuring_search_results elapsed_ms=%d "
-                        "search_results=%d",
+                        "search_results=%d packet_chars=%d packet_sources=%d "
+                        "packet_notes=%s",
                         assessment_id or "unknown",
                         attempt,
                         int((time.monotonic() - attempt_started) * 1000),
                         min(search_result_count, 9),
+                        min(len(packet_text), 99_999),
+                        min(len(evidence_packet.get("sources", [])), 9),
+                        "yes" if evidence_packet.get("notes") else "no",
+                    )
+                    structuring_prompt = (
+                        "Do not search. Structure only the bounded evidence "
+                        "packet below.\n\nEVIDENCE PACKET:\n"
+                        + packet_text
+                        + "\n\n"
+                        + build_climate_research_prompt(
+                            country,
+                            sector,
+                            evidence_packet["project_profile"],
+                            narrow=True,
+                        )
                     )
                     response = api_client.beta.messages.create(
                         model="claude-haiku-4-5-20251001",
                         max_tokens=2500,
-                        messages=messages + [
-                            {
-                                "role": "assistant",
-                                "content": response.content,
-                            },
-                            {
-                                "role": "user",
-                                "content": (
-                                    "Do not search again. Use only the completed "
-                                    "web-search results above to satisfy this "
-                                    "structuring contract.\n\n"
-                                    + build_climate_research_prompt(
-                                        country,
-                                        sector,
-                                        project_profile,
-                                        narrow=True,
-                                    )
-                                ),
-                            },
-                        ],
+                        messages=[{
+                            "role": "user",
+                            "content": structuring_prompt,
+                        }],
                         timeout=structure_timeout,
                     )
                     structured_response = True

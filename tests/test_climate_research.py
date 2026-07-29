@@ -462,23 +462,50 @@ def test_climate_research_continues_one_pause_turn():
 
 def test_climate_research_structures_search_notes_without_researching():
     searched_content = [
-        SimpleNamespace(type="server_tool_use", name="web_search"),
-        SimpleNamespace(type="web_search_tool_result", content=[]),
-        SimpleNamespace(type="web_search_tool_result", content=[]),
-        SimpleNamespace(type="text", text="Search completed but output was truncated."),
+        SimpleNamespace(
+            type="server_tool_use",
+            name="web_search",
+            raw_payload="original-search-secret" * 1000,
+        ),
+        SimpleNamespace(
+            type="web_search_tool_result",
+            content=[SimpleNamespace(
+                type="web_search_result",
+                title="South Sudan CCDR",
+                url="https://www.worldbank.org/south-sudan-ccdr",
+                page_age="2025",
+                encrypted_content="encrypted-secret" * 1000,
+            )],
+        ),
+        SimpleNamespace(
+            type="web_search_tool_result",
+            content=[SimpleNamespace(
+                type="web_search_result",
+                title="UN flood evidence",
+                url="https://www.un.org/south-sudan-floods",
+                page_age="2024",
+            )],
+        ),
+        SimpleNamespace(
+            type="text",
+            text="Search completed with two relevant sources. " * 1000,
+        ),
     ]
-    truncated = SimpleNamespace(
+    searched = SimpleNamespace(
         content=searched_content,
         stop_reason="end_turn",
     )
     final = _valid_climate_response()
     final.stop_reason = "end_turn"
-    client = _SequencedResearchClient([truncated, final])
+    client = _SequencedResearchClient([searched, final])
 
     result = app_module.run_climate_web_research(
         "South Sudan",
         "Water",
-        {"locations": ["Upper Nile"]},
+        {
+            "documents": ["South Sudan PCN.docx"],
+            "document_excerpt": "Upper Nile landing sites. " * 1000,
+        },
         client,
     )
 
@@ -490,14 +517,16 @@ def test_climate_research_structures_search_notes_without_researching():
     assert "betas" not in recovery
     assert recovery["model"] == "claude-haiku-4-5-20251001"
     assert recovery["max_tokens"] == 2500
-    assert [message["role"] for message in recovery["messages"]] == [
-        "user", "assistant", "user",
-    ]
-    assert recovery["messages"][1]["content"] is searched_content
-    assert "Do not search again" in recovery["messages"][2]["content"]
-    assert CLIMATE_RESEARCH_START in recovery["messages"][2]["content"]
-    assert '"source_type"' in recovery["messages"][2]["content"]
-    assert '"time_horizons"' in recovery["messages"][2]["content"]
+    assert [message["role"] for message in recovery["messages"]] == ["user"]
+    request_text = recovery["messages"][0]["content"]
+    assert "EVIDENCE PACKET" in request_text
+    assert "original-search-secret" not in request_text
+    assert "encrypted-secret" not in request_text
+    assert CLIMATE_RESEARCH_START in request_text
+    assert "four to six" in request_text.lower()
+    assert '"source_type"' in request_text
+    assert '"time_horizons"' in request_text
+    assert len(request_text) < 20_000
 
 
 def test_climate_structuring_diagnostic_is_logged_without_content(caplog):
