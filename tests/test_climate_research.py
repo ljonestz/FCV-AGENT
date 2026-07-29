@@ -311,6 +311,63 @@ def test_climate_research_continues_one_pause_turn():
     ]
 
 
+def test_climate_research_structures_completed_search_results_without_researching():
+    searched_content = [
+        SimpleNamespace(type="server_tool_use", name="web_search"),
+        SimpleNamespace(type="web_search_tool_result", content=[]),
+        SimpleNamespace(type="web_search_tool_result", content=[]),
+        SimpleNamespace(type="text", text="Search completed but output was truncated."),
+    ]
+    truncated = SimpleNamespace(
+        content=searched_content,
+        stop_reason="max_tokens",
+    )
+    final = _valid_climate_response()
+    final.stop_reason = "end_turn"
+    client = _SequencedResearchClient([truncated, final])
+
+    result = app_module.run_climate_web_research(
+        "South Sudan",
+        "Water",
+        {"locations": ["Upper Nile"]},
+        client,
+    )
+
+    assert result["status"] == "complete"
+    assert result["attempts"] == 1
+    assert len(client.calls) == 2
+    recovery = client.calls[1]
+    assert "tools" not in recovery
+    assert "betas" not in recovery
+    assert recovery["max_tokens"] == 2500
+    assert [message["role"] for message in recovery["messages"]] == [
+        "user", "assistant", "user",
+    ]
+    assert recovery["messages"][1]["content"] is searched_content
+    assert "Do not search again" in recovery["messages"][2]["content"]
+
+
+def test_climate_research_does_not_structure_insufficient_search_results():
+    incomplete = SimpleNamespace(
+        content=[
+            SimpleNamespace(type="web_search_tool_result", content=[]),
+            SimpleNamespace(type="text", text="No structured block."),
+        ],
+        stop_reason="max_tokens",
+    )
+    client = _SequencedResearchClient([incomplete, _valid_climate_response()])
+
+    result = app_module.run_climate_web_research(
+        "South Sudan",
+        "Water",
+        {},
+        client,
+    )
+
+    assert result["status"] == "failed"
+    assert len(client.calls) == 1
+
+
 def test_climate_request_skips_when_parent_budget_is_exhausted():
     client = _SequencedResearchClient([_valid_climate_response()])
     ticks = iter([100.0, 100.0, 100.0])

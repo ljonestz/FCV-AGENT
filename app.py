@@ -6981,12 +6981,13 @@ def run_climate_web_research(
                 continuation_timeout = min(cap_remaining, parent_remaining)
                 if continuation_timeout <= 0:
                     break
+                messages = messages + [{
+                    "role": "assistant",
+                    "content": response.content,
+                }]
                 response = api_client.beta.messages.create(
                     **request_options,
-                    messages=messages + [{
-                        "role": "assistant",
-                        "content": response.content,
-                    }],
+                    messages=messages,
                     timeout=continuation_timeout,
                 )
             text = "\n".join(
@@ -6994,6 +6995,66 @@ def run_climate_web_research(
                 for block in response.content
                 if getattr(block, "type", "") == "text"
             )
+            search_result_count = sum(
+                getattr(block, "type", "") == "web_search_tool_result"
+                for block in response.content
+            )
+            block_present = (
+                CLIMATE_RESEARCH_START in text
+                and CLIMATE_RESEARCH_END in text
+            )
+            if not block_present and search_result_count >= 2:
+                cap_remaining = max(
+                    0.0,
+                    CLIMATE_RESEARCH_ATTEMPT_CAP_SECONDS
+                    - (time.monotonic() - attempt_started),
+                )
+                parent_remaining = (
+                    cap_remaining
+                    if deadline is None
+                    else max(0.0, deadline - clock())
+                )
+                structure_timeout = min(cap_remaining, parent_remaining)
+                if structure_timeout > 0:
+                    app.logger.info(
+                        "Climate research attempt assessment_id=%s attempt=%d "
+                        "outcome=structuring_search_results elapsed_ms=%d "
+                        "search_results=%d",
+                        assessment_id or "unknown",
+                        attempt,
+                        int((time.monotonic() - attempt_started) * 1000),
+                        min(search_result_count, 9),
+                    )
+                    response = api_client.beta.messages.create(
+                        model="claude-sonnet-4-6",
+                        max_tokens=2500,
+                        messages=messages + [
+                            {
+                                "role": "assistant",
+                                "content": response.content,
+                            },
+                            {
+                                "role": "user",
+                                "content": (
+                                    "Do not search again. Using only the completed "
+                                    "web-search results above and the original project "
+                                    "profile, return only the required "
+                                    f"{CLIMATE_RESEARCH_START}..."
+                                    f"{CLIMATE_RESEARCH_END} JSON block. Preserve the "
+                                    "original schema and evidence rules. If fewer than "
+                                    "two relevant sources support project-specific "
+                                    "Climate-FCV claims, return a failed bundle in that "
+                                    "block rather than inventing evidence."
+                                ),
+                            },
+                        ],
+                        timeout=structure_timeout,
+                    )
+                    text = "\n".join(
+                        block.text
+                        for block in response.content
+                        if getattr(block, "type", "") == "text"
+                    )
             _, bundle = extract_climate_research_bundle(text)
             bundle["attempts"] = attempt
             gate = climate_research_evidence_gate(bundle)
