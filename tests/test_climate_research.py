@@ -561,6 +561,12 @@ def test_climate_structuring_diagnostic_is_logged_without_content(caplog):
         )
 
     assert result["status"] == "failed"
+    assert result["failure_reason"] == (
+        "Climate evidence structuring was truncated before valid JSON completed."
+    )
+    decision = climate_research_evidence_gate(result)
+    assert "structured" in decision["message"].lower()
+    assert "two relevant sources" not in decision["message"].lower()
     assert len(client.calls) == 2
     assert "outcome=structuring_diagnostic" in caplog.text
     assert "assessment_id=assessment-diagnostic" in caplog.text

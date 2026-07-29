@@ -6945,6 +6945,7 @@ def run_climate_web_research(
 
     started = clock()
     attempts = 0
+    failure_reason = "Dedicated Climate-FCV research could not be completed."
 
     def finish(bundle: dict[str, Any]) -> dict[str, Any]:
         log_climate_research_summary(
@@ -7107,6 +7108,14 @@ def run_climate_web_research(
                     stop_reason=getattr(response, "stop_reason", ""),
                     gate_code=gate.get("code") or "ok",
                 )
+                if (
+                    diagnostic["stop_reason"] == "max_tokens"
+                    or diagnostic["json_status"] == "incomplete"
+                ):
+                    failure_reason = (
+                        "Climate evidence structuring was truncated before "
+                        "valid JSON completed."
+                    )
                 app.logger.info(
                     "Climate research attempt assessment_id=%s attempt=%d "
                     "outcome=structuring_diagnostic stop_reason=%s "
@@ -7195,9 +7204,7 @@ def run_climate_web_research(
     return finish(normalize_climate_research_bundle({
         "status": "failed",
         "attempts": attempts,
-        "failure_reason": (
-            "Dedicated Climate-FCV research could not be completed."
-        ),
+        "failure_reason": failure_reason,
     }))
 
 

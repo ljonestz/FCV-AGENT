@@ -502,7 +502,15 @@ def climate_research_evidence_gate(payload: Any) -> dict[str, Any]:
         else "climate_research_insufficient"
     )
     failure_reason = str(bundle.get("failure_reason", "")).casefold()
-    if code == "climate_research_failed" and (
+    if (
+        code == "climate_research_failed"
+        and "structuring was truncated" in failure_reason
+    ):
+        message = (
+            "Climate-FCV web evidence was found but could not be structured "
+            "into a validated research bundle. Retry the climate assessment."
+        )
+    elif code == "climate_research_failed" and (
         "deadline" in failure_reason or "timed out" in failure_reason
     ):
         message = (
