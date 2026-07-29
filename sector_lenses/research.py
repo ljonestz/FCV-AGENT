@@ -276,11 +276,20 @@ def climate_research_evidence_gate(payload: Any) -> dict[str, Any]:
         if bundle["status"] == "failed" and not sources and not claims
         else "climate_research_insufficient"
     )
-    message = (
-        "The required Climate-FCV web research did not return at least two "
-        "relevant sources, including authoritative climate evidence tied to "
-        "this project's locations, groups, systems, or assets."
-    )
+    failure_reason = str(bundle.get("failure_reason", "")).casefold()
+    if code == "climate_research_failed" and (
+        "deadline" in failure_reason or "timed out" in failure_reason
+    ):
+        message = (
+            "The required Climate-FCV web research timed out before validated "
+            "evidence could be returned. Retry the climate assessment."
+        )
+    else:
+        message = (
+            "The required Climate-FCV web research did not return at least two "
+            "relevant sources, including authoritative climate evidence tied to "
+            "this project's locations, groups, systems, or assets."
+        )
     return {"ok": False, "code": code, "message": message, "bundle": bundle}
 
 

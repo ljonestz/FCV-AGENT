@@ -545,3 +545,34 @@ def test_priority_link_telemetry_logs_counts_not_priority_content(caplog):
     assert sentinel not in caplog.text
     assert "SECRET PRIORITY TITLE" not in caplog.text
     assert "SECRET REASON" not in caplog.text
+
+
+def test_research_client_disables_hidden_sdk_retries(monkeypatch):
+    captured = {}
+    sentinel = object()
+
+    def fake_client(**kwargs):
+        captured.update(kwargs)
+        return sentinel
+
+    monkeypatch.setattr(app_module.anthropic, "Anthropic", fake_client)
+    monkeypatch.setattr(app_module, "_research_client", None)
+
+    assert app_module.get_research_client() is sentinel
+    assert captured["max_retries"] == 0
+
+
+def test_climate_research_timeout_has_specific_user_message():
+    decision = climate_research_evidence_gate(
+        normalize_climate_research_bundle({
+            "status": "failed",
+            "attempts": 1,
+            "failure_reason": "Climate research exceeded the assessment deadline.",
+        })
+    )
+
+    assert decision["code"] == "climate_research_failed"
+    assert decision["message"] == (
+        "The required Climate-FCV web research timed out before validated "
+        "evidence could be returned. Retry the climate assessment."
+    )

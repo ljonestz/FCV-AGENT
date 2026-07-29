@@ -7314,7 +7314,8 @@ def get_research_client():
     if _research_client is None:
         _research_client = anthropic.Anthropic(
             api_key=os.environ.get("ANTHROPIC_API_KEY"),
-            timeout=httpx.Timeout(timeout=120.0, connect=10.0)
+            timeout=httpx.Timeout(timeout=120.0, connect=10.0),
+            max_retries=0,
         )
     return _research_client
 
