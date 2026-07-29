@@ -383,20 +383,24 @@ def normalize_climate_research_bundle(payload: Any) -> dict[str, Any]:
     raw = payload if isinstance(payload, dict) else {}
     raw_sources = raw.get("sources")
     sources: list[dict[str, str]] = []
+    source_id_aliases: dict[str, str] = {}
     for item in raw_sources if isinstance(raw_sources, list) else []:
         if not isinstance(item, dict):
             continue
-        source_id = _bounded(item.get("id"), 80)
+        raw_source_id = _bounded(item.get("id"), 80)
         source_type = _bounded(item.get("source_type"), 40)
         url = _bounded(item.get("url"), 1000)
         title = _bounded(item.get("title"), 300)
         if (
-            not re.fullmatch(r"climate-source-[1-9][0-9]?", source_id)
+            not raw_source_id
+            or raw_source_id in source_id_aliases
             or source_type not in CLIMATE_SOURCE_TYPES
             or not title
             or not _trusted_https(url)
         ):
             continue
+        source_id = f"climate-source-{len(sources) + 1}"
+        source_id_aliases[raw_source_id] = source_id
         sources.append({
             "id": source_id,
             "lens_id": "climate",
@@ -415,7 +419,7 @@ def normalize_climate_research_bundle(payload: Any) -> dict[str, Any]:
     for item in raw_claims if isinstance(raw_claims, list) else []:
         if not isinstance(item, dict):
             continue
-        claim_id = _bounded(item.get("id"), 80)
+        claim_id = f"climate-claim-{len(claims) + 1}"
         project_elements = _strings(item.get("project_elements"), 4, 180)
         anchors = (
             _strings(item.get("geographies"), 4, 160)
@@ -423,9 +427,10 @@ def normalize_climate_research_bundle(payload: Any) -> dict[str, Any]:
             + _strings(item.get("systems_or_assets"), 4, 180)
         )
         source_ids = [
-            value
+            source_id_aliases[value]
             for value in _strings(item.get("source_ids"), 4, 80)
-            if value in allowed_sources
+            if value in source_id_aliases
+            and source_id_aliases[value] in allowed_sources
         ]
         evidence_status = _bounded(item.get("evidence_status"), 20)
         confidence = _bounded(item.get("confidence"), 20)
@@ -436,8 +441,7 @@ def normalize_climate_research_bundle(payload: Any) -> dict[str, Any]:
         ]
         claim = _bounded(item.get("claim"), 700)
         if (
-            not re.fullmatch(r"climate-claim-[1-9][0-9]?", claim_id)
-            or not claim
+            not claim
             or not project_elements
             or not anchors
             or not source_ids

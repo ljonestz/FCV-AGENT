@@ -397,6 +397,27 @@ def test_climate_structuring_diagnostic_reports_complete_object_shape():
     assert "SECRET" not in repr(summary)
 
 
+def test_climate_research_normalizes_model_generated_ids():
+    payload = _valid_bundle()
+    payload["sources"].append(_second_authoritative_source())
+    payload["sources"][0]["id"] = "source_1"
+    payload["sources"][1]["id"] = "source_2"
+    payload["claims"][0]["id"] = "claim_1"
+    payload["claims"][0]["source_ids"] = ["source_1", "source_2"]
+
+    bundle = normalize_climate_research_bundle(payload)
+
+    assert [source["id"] for source in bundle["sources"]] == [
+        "climate-source-1",
+        "climate-source-2",
+    ]
+    assert bundle["claims"][0]["id"] == "climate-claim-1"
+    assert bundle["claims"][0]["source_ids"] == [
+        "climate-source-1",
+        "climate-source-2",
+    ]
+
+
 def test_climate_research_prompt_requires_specific_temporal_claims():
     prompt = build_climate_research_prompt(
         country="South Sudan",
