@@ -6897,8 +6897,7 @@ def log_climate_priority_summary(
     )
 
 
-CLIMATE_RESEARCH_ATTEMPT_CAP_SECONDS = 85
-CLIMATE_RESEARCH_MINIMUM_RETRY_SECONDS = 35
+CLIMATE_RESEARCH_ATTEMPT_CAP_SECONDS = 135
 
 
 def run_climate_web_research(
@@ -6909,9 +6908,8 @@ def run_climate_web_research(
     assessment_id: str = "",
     deadline: float | None = None,
     clock=time.monotonic,
-    minimum_retry_seconds: int = CLIMATE_RESEARCH_MINIMUM_RETRY_SECONDS,
 ) -> dict[str, Any]:
-    """Run Climate research within the parent assessment deadline."""
+    """Run one focused Climate research request within the parent deadline."""
 
     started = clock()
     attempts = 0
@@ -6924,7 +6922,7 @@ def run_climate_web_research(
         )
         return bundle
 
-    for attempt, narrow in ((1, False), (2, True)):
+    for attempt, narrow in ((1, True),):
         remaining = (
             CLIMATE_RESEARCH_ATTEMPT_CAP_SECONDS
             if deadline is None
@@ -6932,9 +6930,6 @@ def run_climate_web_research(
         )
         if remaining <= 0:
             break
-        if attempt == 2 and remaining < minimum_retry_seconds:
-            break
-
         attempts = attempt
         attempt_started = time.monotonic()
         prompt = build_climate_research_prompt(
@@ -6946,11 +6941,11 @@ def run_climate_web_research(
         try:
             response = api_client.beta.messages.create(
                 model="claude-sonnet-4-6",
-                max_tokens=3200 if narrow else 5000,
+                max_tokens=2500,
                 tools=[{
                     "type": "web_search_20250305",
                     "name": "web_search",
-                    "max_uses": 3 if narrow else 5,
+                    "max_uses": 3,
                 }],
                 messages=[{"role": "user", "content": prompt}],
                 betas=["web-search-2025-03-05"],

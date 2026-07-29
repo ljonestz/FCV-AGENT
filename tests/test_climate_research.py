@@ -262,15 +262,8 @@ def test_climate_research_prompt_requires_specific_temporal_claims():
     assert CLIMATE_RESEARCH_START in prompt
 
 
-def test_climate_research_retries_once_with_narrow_query():
-    client = _SequencedResearchClient([
-        anthropic.APITimeoutError(
-            request=httpx.Request(
-                "POST", "https://api.anthropic.com/v1/messages"
-            )
-        ),
-        _valid_climate_response(),
-    ])
+def test_climate_research_uses_one_focused_request():
+    client = _SequencedResearchClient([_valid_climate_response()])
 
     result = app_module.run_climate_web_research(
         "South Sudan",
@@ -280,36 +273,31 @@ def test_climate_research_retries_once_with_narrow_query():
     )
 
     assert result["status"] == "complete"
-    assert result["attempts"] == 2
-    assert len(client.calls) == 2
-    assert "NARROW RETRY" in client.calls[1]["messages"][0]["content"]
-    assert client.calls[1]["max_tokens"] == 3200
-    assert client.calls[1]["tools"][0]["max_uses"] == 3
+    assert result["attempts"] == 1
+    assert len(client.calls) == 1
+    call = client.calls[0]
+    assert "FOCUSED REQUEST" in call["messages"][0]["content"]
+    assert call["max_tokens"] == 2500
+    assert call["tools"][0]["max_uses"] == 3
+    assert call["timeout"] == 135
 
 
-def test_climate_retry_requires_remaining_parent_budget():
-    client = _SequencedResearchClient([
-        anthropic.APITimeoutError(
-            request=httpx.Request(
-                "POST", "https://api.anthropic.com/v1/messages"
-            )
-        )
-    ])
-    ticks = iter([100.0, 100.0, 166.0, 166.0])
+def test_climate_request_skips_when_parent_budget_is_exhausted():
+    client = _SequencedResearchClient([_valid_climate_response()])
+    ticks = iter([100.0, 100.0, 100.0])
 
     result = app_module.run_climate_web_research(
         "South Sudan",
         "Natural resources",
         {"project_elements": ["Landing sites"]},
         client,
-        deadline=170.0,
+        deadline=100.0,
         clock=lambda: next(ticks),
-        minimum_retry_seconds=35,
     )
 
     assert result["status"] == "failed"
-    assert result["attempts"] == 1
-    assert len(client.calls) == 1
+    assert result["attempts"] == 0
+    assert client.calls == []
 
 
 def test_climate_request_timeout_never_exceeds_parent_remaining_time():
@@ -325,24 +313,24 @@ def test_climate_request_timeout_never_exceeds_parent_remaining_time():
         clock=lambda: next(ticks),
     )
 
-    assert client.calls[0]["timeout"] <= 50.0
+    assert client.calls[0]["timeout"] == 50.0
 
 
-def test_climate_research_stops_after_one_failed_retry():
-    timeout = lambda: anthropic.APITimeoutError(
+def test_climate_research_does_not_duplicate_a_timed_out_request():
+    timeout = anthropic.APITimeoutError(
         request=httpx.Request(
             "POST", "https://api.anthropic.com/v1/messages"
         )
     )
-    client = _SequencedResearchClient([timeout(), timeout()])
+    client = _SequencedResearchClient([timeout])
 
     result = app_module.run_climate_web_research(
         "South Sudan", "Water", {}, client
     )
 
     assert result["status"] == "failed"
-    assert result["attempts"] == 2
-    assert len(client.calls) == 2
+    assert result["attempts"] == 1
+    assert len(client.calls) == 1
 
 
 def test_stage1_research_budget_abandons_slow_pass(monkeypatch):

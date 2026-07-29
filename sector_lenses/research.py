@@ -84,7 +84,7 @@ def build_climate_research_prompt(
     """Build the bounded dedicated Climate-FCV research request."""
 
     scope = (
-        "NARROW RETRY: return at most six strongest claims."
+        "FOCUSED REQUEST: return four to six strongest claims."
         if narrow
         else "Return at most twelve claims, prioritizing material project pathways."
     )
