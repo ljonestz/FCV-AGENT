@@ -575,3 +575,38 @@ def test_climate_links_failure_keeps_priorities_and_counts_unlinked():
     assert "climate" in result["priorities"][0]["lens_ids"]
     assert "climate" not in result["priorities"][1]["lens_ids"]
     assert result["priorities"][1]["climate_links"] is None
+
+
+
+def test_climate_priority_completion_gate_keeps_only_valid_linked_priorities():
+    diagnostic = _climate_diag_for_test()
+    linked = _priority_for_test("Linked Bentiu priority", {
+        "status": "linked",
+        "interaction_pathway_ids": ["climate-fcv-on-project-1"],
+        "dividend_pathway_ids": [], "finding_ids": [],
+        "contribution": "Protects seasonal access in Bentiu.",
+        "strengthening_effect": "Makes delivery more reliable.", "reason": "",
+    })
+    unlinked = _priority_for_test("Unlinked Bentiu priority", {
+        "status": "linked", "interaction_pathway_ids": ["invented-id"],
+        "contribution": "Unsupported.", "strengthening_effect": "", "reason": "",
+    })
+    parsed = app_module.extract_priorities(
+        _stage3_block([linked, unlinked]), ["Doc.pdf"], ["climate"], diagnostic,
+    )
+    completed = app_module.enforce_climate_priority_provenance(parsed, diagnostic)
+    assert [p["title"] for p in completed["priorities"]] == ["Linked Bentiu priority"]
+    assert completed["priorities"][0]["lens_ids"] == ["climate"]
+    assert completed["error"] is False
+
+
+def test_climate_priority_completion_gate_fails_when_none_validate():
+    parsed = {"error": False, "priorities": [{"climate_links": {"status": "linked", "interaction_pathway_ids": ["invented-id"]}}]}
+    completed = app_module.enforce_climate_priority_provenance(
+        parsed, _climate_diag_for_test()
+    )
+    assert completed["priorities"] == []
+    assert completed["error"] is True
+    assert completed["message"] == (
+        "No validated climate-specific operational priority was produced."
+    )

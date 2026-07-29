@@ -26,6 +26,7 @@ from sector_lenses import (
     extract_climate_research_bundle,
     format_climate_research_context,
     build_climate_stage2_prompt,
+    build_climate_stage3_prompt,
     LENS_DIAGNOSTIC_END,
     LENS_DIAGNOSTIC_START,
     LENS_EVIDENCE_END,
@@ -941,6 +942,25 @@ def build_design_stage2_prompt(
         climate_research=climate_research,
         priority_questions=priority_questions,
     )
+
+def build_design_stage3_prompt(
+    *,
+    state: AnalysisState,
+    instrument_type: str,
+    document_type: str,
+    diagnostic: dict[str, Any],
+    regime_header: str,
+) -> str:
+    """Select the priorities-only prompt for Climate design Stage 3."""
+    if climate_active(state):
+        return build_climate_stage3_prompt(
+            instrument_type=instrument_type,
+            document_type=document_type,
+            diagnostic=diagnostic,
+            regime_header=regime_header,
+        )
+    return ""
+
 
 def build_lens_stage_context(
     state: AnalysisState,
@@ -7443,6 +7463,10 @@ def run_stage():
         _native_climate_stage2 = (
             not is_impl and stage == 2 and climate_active(analysis_state)
         )
+        _native_climate_stage3 = (
+            not is_impl and stage == 3 and climate_active(analysis_state)
+        )
+        secondary_snippets_s3 = []
         user_context = data.get('user_context', '').strip()  # optional user-supplied context
         priority_questions = normalize_priority_questions(data.get('priority_questions'))
         # Uploaded doc names passed by frontend (used for CPF detection in Stage 3)
@@ -7595,12 +7619,12 @@ def run_stage():
                 stage_prompt = stage_prompt + pq_block
             # messages will be fully built inside generate() for stage 1
 
-        elif user_message and not _native_climate_stage2:
+        elif user_message and not (_native_climate_stage2 or _native_climate_stage3):
             messages.append({"role": "user", "content": user_message})
         else:
             # Select stage prompt based on review mode. Climate design Stage 2
             # bypasses the generic FCV assessment machinery entirely.
-            if _native_climate_stage2:
+            if _native_climate_stage2 or _native_climate_stage3:
                 stage_prompt = ''
             elif is_impl:
                 impl_key = f'impl_{stage}'
@@ -7768,7 +7792,7 @@ def run_stage():
                 )
 
             # ── DESIGN REVIEW: Stage 3 injection ─────────────────────────────
-            elif not is_impl and stage == 3:
+            elif not is_impl and stage == 3 and not _native_climate_stage3:
                 doc_type = data.get('doc_type', document_type or 'Unknown')
                 stage_config = STAGE_GUIDANCE_MAP.get(doc_type, STAGE_GUIDANCE_MAP.get('Unknown', {}))
                 playbook_phase = stage_config.get('playbook_phase', 'Preparation')
@@ -7923,7 +7947,7 @@ def run_stage():
                     FCV_REFRESH_FRAMEWORK
                 )
 
-            if stage in (2, 3) and not _native_climate_stage2:
+            if stage in (2, 3) and not (_native_climate_stage2 or _native_climate_stage3):
                 pq_block = build_priority_questions_block(priority_questions, stage)
                 if pq_block:
                     stage_prompt = stage_prompt + pq_block
@@ -7950,6 +7974,10 @@ def run_stage():
                     'restart_required': True,
                     'lens_warnings': lens_context['warnings'],
                 }), 409
+            _native_climate_stage3_diagnostic = (
+                lens_context.get('lens_diagnostic', {})
+                if _native_climate_stage3 else {}
+            )
             if _native_climate_stage2:
                 _native_instrument = (
                     data.get('instrument_type')
@@ -7983,9 +8011,32 @@ def run_stage():
                     climate_research=data.get('climate_research'),
                     priority_questions=priority_questions,
                 )
+            elif _native_climate_stage3:
+                _native_instrument = (
+                    data.get('instrument_type')
+                    or analysis_state.instrument
+                    or 'Unknown'
+                )
+                instrument_type = _native_instrument
+                _native_regime = data.get('regime_context', {}) or {}
+                stage_prompt = build_design_stage3_prompt(
+                    state=analysis_state,
+                    instrument_type=_native_instrument,
+                    document_type=data.get('doc_type', document_type or 'Unknown'),
+                    diagnostic=_native_climate_stage3_diagnostic,
+                    regime_header=build_regime_header(
+                        _native_regime.get('preparation_regime', 'unresolved_policy_source'),
+                        _native_regime.get('processing_model', 'unknown'),
+                        _native_regime.get('es_regime', 'UNRESOLVED'),
+                        _native_instrument,
+                    ),
+                )
             elif lens_context['prompt']:
                 stage_prompt += "\n\n--- ACTIVE SECTOR LENSES ---\n" + lens_context['prompt']
-            messages.append({"role": "user", "content": stage_prompt})
+            if _native_climate_stage3:
+                messages = [{"role": "user", "content": stage_prompt}]
+            else:
+                messages.append({"role": "user", "content": stage_prompt})
 
         def workflow_events():
             research_brief_text = ''
@@ -7999,6 +8050,26 @@ def run_stage():
                 yield f"data: {json.dumps({'ping': True})}\n\n"
                 for w in extraction_warnings:
                     yield f"data: {json.dumps({'extraction_warning': w})}\n\n"
+
+                if _native_climate_stage3:
+                    _stage3_failure = lens_diagnostic_failure_message(
+                        _native_climate_stage3_diagnostic, ["climate"]
+                    )
+                    if _stage3_failure or climate_missing_fields(
+                        _native_climate_stage3_diagnostic
+                    ):
+                        yield "data: " + json.dumps(
+                            climate_blocking_failure_event(
+                                "climate_diagnostic_invalid",
+                                _stage3_failure or (
+                                    "The structured Climate-FCV assessment is "
+                                    "incomplete. Retry the climate assessment or "
+                                    "run a full FCV assessment."
+                                ),
+                                3,
+                            )
+                        ) + "\n\n"
+                        return
 
                 # ── Stage 1: build content_parts, run web research ──
                 if stage == 1:
@@ -8152,7 +8223,11 @@ def run_stage():
                 # output is compact and carries one canonical diagnostic payload.
                 _climate_active = climate_active(analysis_state)
                 _stage2_cap = 16000
-                _stage_max_tokens = 8000 if stage == 1 else (20000 if stage == 3 else _stage2_cap)
+                _stage_max_tokens = (
+                    8000 if stage == 1 else
+                    (9000 if _native_climate_stage3 else 20000) if stage == 3 else
+                    _stage2_cap
+                )
                 for event in _stream_stage(
                     messages,
                     _stage_max_tokens,
@@ -8183,7 +8258,8 @@ def run_stage():
                 if (
                     not is_impl
                     and stage in (2, 3)
-                    and not (stage == 2 and _native_climate_stage2)
+                    and not _native_climate_stage2
+                    and not _native_climate_stage3
                 ):
                     _vocab_violations = validate_instrument_vocabulary(full_text, instrument_type)
                     if _vocab_violations:
@@ -8301,10 +8377,28 @@ def run_stage():
                         full_text,
                         uploaded_doc_names_payload,
                         [item['id'] for item in lens_context['active_lenses']],
-                        lens_context.get('lens_diagnostic', {}),
+                        _native_climate_stage3_diagnostic
+                        if _native_climate_stage3
+                        else lens_context.get('lens_diagnostic', {}),
                         preparation_regime=_s3_regime.get('preparation_regime', 'unresolved_policy_source'),
                         instrument=data.get('instrument_type', '') or '',
                     )
+                    if _native_climate_stage3:
+                        parsed = enforce_climate_priority_provenance(
+                            parsed, _native_climate_stage3_diagnostic
+                        )
+                        if parsed.get('error'):
+                            yield "data: " + json.dumps(
+                                climate_blocking_failure_event(
+                                    "climate_priority_invalid",
+                                    parsed.get("message", "No validated climate-specific operational priority was produced."),
+                                    3,
+                                )
+                            ) + "\n\n"
+                            return
+                        parsed = apply_climate_baseline_to_priorities(
+                            parsed, _native_climate_stage3_diagnostic
+                        )
                     warn_on_missing_high_climate_priority(
                         parsed.get('priorities', []),
                         lens_context.get('lens_diagnostic', {}),
@@ -8342,12 +8436,16 @@ def run_stage():
                     gap_table = extract_gap_table(full_text)
                     parse_error = parsed.get('error', False)
                     parse_error_message = parsed.get('message', '')
-                    full_text_raw = full_text  # Preserve raw output before cleaning
-                    horizon = extract_horizon_considerations(full_text_raw)
-                    full_text = strip_lens_blocks(clean_stage3_output(full_text))
-                    from datetime import date
-                    header = DO_NO_HARM_HEADER.format(date=date.today().strftime('%d %B %Y'))
-                    full_text = header + full_text
+                    if _native_climate_stage3:
+                        horizon = None
+                        full_text = ''
+                    else:
+                        full_text_raw = full_text  # Preserve raw output before cleaning
+                        horizon = extract_horizon_considerations(full_text_raw)
+                        full_text = strip_lens_blocks(clean_stage3_output(full_text))
+                        from datetime import date
+                        header = DO_NO_HARM_HEADER.format(date=date.today().strftime('%d %B %Y'))
+                        full_text = header + full_text
 
                 # For Stage 1, replace the large content_parts user message with a compact
                 # placeholder before storing history. Subsequent stages only extract assistant
@@ -8384,6 +8482,12 @@ def run_stage():
                     updated_messages = [
                         {"role": "user", "content": s1_label},
                         {"role": "assistant", "content": full_text}
+                    ]
+                elif _native_climate_stage3:
+                    _process_type = None
+                    updated_messages = conversation_history + [
+                        {"role": "user", "content": "[Climate Stage 3 priorities-only prompt from validated payload]"},
+                        {"role": "assistant", "content": "[Climate-specific priorities generated from validated payload]"},
                     ]
                 else:
                     _process_type = None
@@ -8485,6 +8589,8 @@ def run_stage():
                         {'id': s['id'], 'title': s['title'], 'source': s['source']}
                         for s in secondary_snippets_s3
                     ]
+                    if _native_climate_stage3:
+                        done_data['lens_diagnostic'] = _native_climate_stage3_diagnostic
 
                 yield f"data: {json.dumps(done_data)}\n\n"
 
@@ -9434,8 +9540,29 @@ def run_express():
                 instrument_slice_s3 = get_instrument_slice(instrument_type)
                 temporal_guardrail_s3 = _build_temporal_guardrail(temporal_context, doc_type)
                 secondary_snippets_s3e = []  # initialised here; populated in design-review path below
+                _native_climate_s3 = not is_impl and climate_active(analysis_state)
+                lens_context_s3 = build_lens_stage_context(
+                    analysis_state,
+                    3,
+                    lens_diagnostic=lens_diagnostic,
+                    lens_context_sources=lens_context_sources,
+                )
 
-                if is_impl:
+                if _native_climate_s3:
+                    _e3_regime = regime_context or {}
+                    stage3_prompt = build_design_stage3_prompt(
+                        state=analysis_state,
+                        instrument_type=instrument_type,
+                        document_type=doc_type,
+                        diagnostic=lens_diagnostic,
+                        regime_header=build_regime_header(
+                            _e3_regime.get('preparation_regime', 'unresolved_policy_source'),
+                            _e3_regime.get('processing_model', 'unknown'),
+                            _e3_regime.get('es_regime', 'UNRESOLVED'),
+                            instrument_type,
+                        ),
+                    )
+                elif is_impl:
                     s3_key = 'impl_3'
                     stage3_prompt = load_prompts().get(s3_key, DEFAULT_PROMPTS.get(s3_key, ''))
                     process_slice_s3 = get_process_slice(process_type)
@@ -9572,29 +9699,29 @@ def run_express():
                             snippets_text_s3e += f"### {snip['title']}\nSource: {snip['source']}\n\n{snip['content']}\n\n---\n"
                         stage3_prompt = stage3_prompt + snippets_text_s3e
 
-                pq_block = build_priority_questions_block(priority_questions, 3)
-                if pq_block:
-                    stage3_prompt = stage3_prompt + pq_block
-                lens_context_s3 = build_lens_stage_context(
-                    analysis_state,
-                    3,
-                    lens_diagnostic=lens_diagnostic,
-                    lens_context_sources=lens_context_sources,
+                if not _native_climate_s3:
+                    pq_block = build_priority_questions_block(priority_questions, 3)
+                    if pq_block:
+                        stage3_prompt = stage3_prompt + pq_block
+                    if lens_context_s3['prompt']:
+                        stage3_prompt += "\n\n--- ACTIVE SECTOR LENSES ---\n" + lens_context_s3['prompt']
+                stage3_messages = (
+                    [{"role": "user", "content": stage3_prompt}]
+                    if _native_climate_s3 else
+                    conversation_history + [{"role": "user", "content": stage3_prompt}]
                 )
-                if lens_context_s3['prompt']:
-                    stage3_prompt += "\n\n--- ACTIVE SECTOR LENSES ---\n" + lens_context_s3['prompt']
-                # Build Stage 3 messages from conversation history
-                stage3_messages = conversation_history + [
-                    {"role": "user", "content": stage3_prompt}
-                ]
 
-                # ── Stream Stage 3 ──
-                for event in _stream_stage(stage3_messages, 20000, 3):
+                for event in _stream_stage(
+                    stage3_messages, 9000 if _native_climate_s3 else 20000, 3
+                ):
                     yield event
                 stage3_output = _stream_stage._last_result
 
                 # ── Workstream 2: silent instrument-vocabulary repair ──────────
-                _vocab_violations_s3 = validate_instrument_vocabulary(stage3_output, instrument_type)
+                _vocab_violations_s3 = (
+                    [] if _native_climate_s3
+                    else validate_instrument_vocabulary(stage3_output, instrument_type)
+                )
                 if _vocab_violations_s3:
                     stage3_output = repair_vocabulary_violations(stage3_output, instrument_type, _vocab_violations_s3, 3)
 
@@ -9604,13 +9731,31 @@ def run_express():
                     stage3_output,
                     uploaded_doc_names,
                     [item['id'] for item in lens_context_s3['active_lenses']],
-                    lens_context_s3.get('lens_diagnostic', {}),
+                    lens_diagnostic if _native_climate_s3
+                    else lens_context_s3.get('lens_diagnostic', {}),
                     preparation_regime=(regime_context or {}).get('preparation_regime', 'unresolved_policy_source'),
                     instrument=instrument_type or '',
                 )
+                if _native_climate_s3:
+                    parsed = enforce_climate_priority_provenance(
+                        parsed, lens_diagnostic
+                    )
+                    if parsed.get('error'):
+                        yield "data: " + json.dumps(
+                            climate_blocking_failure_event(
+                                "climate_priority_invalid",
+                                parsed.get("message", "No validated climate-specific operational priority was produced."),
+                                3,
+                            )
+                        ) + "\n\n"
+                        return
+                    parsed = apply_climate_baseline_to_priorities(
+                        parsed, lens_diagnostic
+                    )
                 warn_on_missing_high_climate_priority(
                     parsed.get('priorities', []),
-                    lens_context_s3.get('lens_diagnostic', {}),
+                    lens_diagnostic if _native_climate_s3
+                    else lens_context_s3.get('lens_diagnostic', {}),
                 )
                 if "climate" in {
                     item["id"] for item in lens_context_s3["active_lenses"]
@@ -9631,23 +9776,40 @@ def run_express():
                             parsed.get("climate_total", 0),
                             parsed.get("climate_unlinked", 0),
                         )
-                horizon = extract_horizon_considerations(stage3_output)
-                stage3_output_clean = strip_lens_blocks(clean_stage3_output(stage3_output))
-                header = DO_NO_HARM_HEADER.format(date=date.today().strftime('%d %B %Y'))
-                stage3_output_clean = header + stage3_output_clean
+                if _native_climate_s3:
+                    horizon = None
+                    stage3_output_clean = ''
+                else:
+                    horizon = extract_horizon_considerations(stage3_output)
+                    stage3_output_clean = strip_lens_blocks(clean_stage3_output(stage3_output))
+                    header = DO_NO_HARM_HEADER.format(date=date.today().strftime('%d %B %Y'))
+                    stage3_output_clean = header + stage3_output_clean
 
                 # Final conversation history — store compact label (not full stage3_prompt) so
                 # follow-on API calls don't carry 40k+ chars of background constants forward.
                 # The S3 assistant output is what matters for continuity; the prompt is re-injected
                 # fresh on each follow-on call. (Same pattern as S1/S2 compact labels above.)
-                s3_truncated = stage3_output[:MAX_ASSISTANT_CHARS] if len(stage3_output) > MAX_ASSISTANT_CHARS else stage3_output
-                conversation_history.append({"role": "user", "content": "[Stage 3 — recommendations and priority analysis with FCV guidance injected]"})
-                conversation_history.append({"role": "assistant", "content": s3_truncated})
+                if _native_climate_s3:
+                    conversation_history.append({
+                        "role": "user",
+                        "content": "[Climate Stage 3 priorities-only prompt from validated payload]",
+                    })
+                    conversation_history.append({
+                        "role": "assistant",
+                        "content": "[Climate-specific priorities generated from validated payload]",
+                    })
+                else:
+                    s3_truncated = stage3_output[:MAX_ASSISTANT_CHARS] if len(stage3_output) > MAX_ASSISTANT_CHARS else stage3_output
+                    conversation_history.append({"role": "user", "content": "[Stage 3 — recommendations and priority analysis with FCV guidance injected]"})
+                    conversation_history.append({"role": "assistant", "content": s3_truncated})
                 if len(conversation_history) > 20:
                     conversation_history = conversation_history[-20:]
 
                 # ── Stage 3 done event ──
-                yield f"data: {json.dumps({'stage_done': 3, 'result': stage3_output_clean, 'history': conversation_history, 'priorities': parsed.get('priorities', []), 'fcv_rating': parsed.get('fcv_rating', ''), 'fcv_responsiveness_rating': parsed.get('fcv_responsiveness_rating', ''), 'sensitivity_summary': parsed.get('sensitivity_summary', ''), 'responsiveness_summary': parsed.get('responsiveness_summary', ''), 'risk_exposure': parsed.get('risk_exposure'), 'mid_cycle_watch': parsed.get('mid_cycle_watch', []), 'dpf_watch': parsed.get('dpf_watch', []), 'p4r_watch': parsed.get('p4r_watch', []), 'regional_watch': parsed.get('regional_watch', []), 'gap_table': extract_gap_table(stage3_output), 'parse_error': parsed.get('error', False), 'parse_error_message': parsed.get('message', ''), 'horizon_considerations': horizon, 'wider_fcv_context': parsed.get('wider_fcv_context'), 'lens_context_sources': lens_context_s3['lens_context_sources'], 'active_lenses': lens_context_s3['active_lenses'], 'lens_warnings': lens_context_s3['warnings'], 'applied_snippets': [{'id': s['id'], 'title': s['title'], 'source': s['source']} for s in secondary_snippets_s3e], 'climate_unlinked': parsed.get('climate_unlinked', 0), 'climate_total': parsed.get('climate_total', 0)})}\n\n"
+                _stage3_done = {'stage_done': 3, 'result': stage3_output_clean, 'history': conversation_history, 'priorities': parsed.get('priorities', []), 'fcv_rating': parsed.get('fcv_rating', ''), 'fcv_responsiveness_rating': parsed.get('fcv_responsiveness_rating', ''), 'sensitivity_summary': parsed.get('sensitivity_summary', ''), 'responsiveness_summary': parsed.get('responsiveness_summary', ''), 'risk_exposure': parsed.get('risk_exposure'), 'mid_cycle_watch': parsed.get('mid_cycle_watch', []), 'dpf_watch': parsed.get('dpf_watch', []), 'p4r_watch': parsed.get('p4r_watch', []), 'regional_watch': parsed.get('regional_watch', []), 'gap_table': extract_gap_table(stage3_output), 'parse_error': parsed.get('error', False), 'parse_error_message': parsed.get('message', ''), 'horizon_considerations': horizon, 'wider_fcv_context': parsed.get('wider_fcv_context'), 'lens_context_sources': lens_context_s3['lens_context_sources'], 'active_lenses': lens_context_s3['active_lenses'], 'lens_warnings': lens_context_s3['warnings'], 'applied_snippets': [{'id': s['id'], 'title': s['title'], 'source': s['source']} for s in secondary_snippets_s3e], 'climate_unlinked': parsed.get('climate_unlinked', 0), 'climate_total': parsed.get('climate_total', 0)}
+                if _native_climate_s3:
+                    _stage3_done['lens_diagnostic'] = lens_diagnostic
+                yield f"data: {json.dumps(_stage3_done)}\n\n"
 
                 # ── Express complete ──
                 yield f"data: {json.dumps({'express_done': True})}\n\n"
@@ -10143,6 +10305,57 @@ def climate_materiality_level(lens: dict[str, Any] | None) -> str:
     if level in {'high', 'medium', 'low'}:
         return level
     return 'medium' if (lens or {}).get('applicability') == 'material' else 'low'
+
+
+def apply_climate_baseline_to_priorities(
+    parsed: dict[str, Any],
+    diagnostic: dict[str, Any],
+) -> dict[str, Any]:
+    """Anchor Stage 3 rating fields to the canonical FCV baseline."""
+    result = dict(parsed) if isinstance(parsed, dict) else {}
+    baseline = (
+        diagnostic.get("fcv_baseline", {})
+        if isinstance(diagnostic, dict) else {}
+    )
+    result["fcv_rating"] = str(baseline.get("sensitivity_rating", ""))
+    result["fcv_responsiveness_rating"] = str(
+        baseline.get("responsiveness_rating", "")
+    )
+    result["sensitivity_summary"] = str(
+        baseline.get("sensitivity_reasoning", "")
+    )
+    result["responsiveness_summary"] = str(
+        baseline.get("responsiveness_reasoning", "")
+    )
+    return result
+
+
+def enforce_climate_priority_provenance(
+    parsed: dict[str, Any],
+    diagnostic: dict[str, Any],
+) -> dict[str, Any]:
+    """Keep only operational priorities linked to canonical Climate evidence."""
+    result = dict(parsed) if isinstance(parsed, dict) else {}
+    valid_priorities = []
+    for priority in result.get("priorities", []):
+        if not isinstance(priority, dict):
+            continue
+        priority = dict(priority)
+        links = normalize_priority_climate_links(
+            priority.get("climate_links"), diagnostic
+        )
+        if not isinstance(links, dict) or links.get("status") != "linked":
+            continue
+        priority["climate_links"] = links
+        priority["lens_ids"] = ["climate"]
+        valid_priorities.append(priority)
+    result["priorities"] = valid_priorities[:5]
+    if not result["priorities"]:
+        result["error"] = True
+        result["message"] = (
+            "No validated climate-specific operational priority was produced."
+        )
+    return result
 
 
 def warn_on_missing_high_climate_priority(

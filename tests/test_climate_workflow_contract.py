@@ -754,3 +754,209 @@ def test_recovery_does_not_synthesize_requested_materiality():
 
     assert events[-1]["recovered"] is False
     assert events[-1]["error_code"] == "climate_diagnostic_invalid"
+
+
+
+def test_climate_stage3_route_uses_priority_prompt_only(monkeypatch):
+    captured = {}
+
+    def capture_prompt(**kwargs):
+        captured.update(kwargs)
+        return "CLIMATE PRIORITIES ONLY"
+
+    monkeypatch.setattr(app_module, "build_climate_stage3_prompt", capture_prompt)
+    diagnostic = {
+        "schema_version": "climate-native-v1",
+        "fcv_baseline": {
+            "sensitivity_rating": "Adequate",
+            "responsiveness_rating": "Low",
+        },
+        "lenses": [{"lens_id": "climate", "integration_summary": "Flood access rules are incomplete."}],
+    }
+    prompt = app_module.build_design_stage3_prompt(
+        state=app_module.AnalysisState.from_payload({"active_lenses": ["climate"]}),
+        instrument_type="IPF",
+        document_type="Project Paper",
+        diagnostic=diagnostic,
+        regime_header="ESF.",
+    )
+
+    assert prompt == "CLIMATE PRIORITIES ONLY"
+    assert captured["diagnostic"] is diagnostic
+    assert captured["instrument_type"] == "IPF"
+
+
+def test_non_climate_stage3_route_keeps_generic_selection(monkeypatch):
+    monkeypatch.setattr(
+        app_module,
+        "build_climate_stage3_prompt",
+        lambda **kwargs: (_ for _ in ()).throw(
+            AssertionError("climate builder must not run")
+        ),
+    )
+    assert app_module.build_design_stage3_prompt(
+        state=app_module.AnalysisState.from_payload({"active_lenses": []}),
+        instrument_type="IPF",
+        document_type="PAD",
+        diagnostic={},
+        regime_header="",
+    ) == ""
+
+
+
+def _climate_priority_output(pathway_id="climate-fcv-on-project-1"):
+    payload = {
+        "fcv_rating": "Adequate", "fcv_responsiveness_rating": "Low",
+        "sensitivity_summary": "Delivery accounts for access constraints.",
+        "responsiveness_summary": "Root causes are not addressed.",
+        "risk_exposure": {"risks_to": "Flood access", "risks_from": "Exclusion"},
+        "mid_cycle_watch": [], "dpf_watch": [], "p4r_watch": [], "regional_watch": [],
+        "priorities": [{
+            "title": "Sequence road works around Project area flooding",
+            "fcv_dimension": "Climate-FCV interaction", "tag": "[S+R]",
+            "refresh_shift": "Shift A: Anticipate", "risk_level": "High",
+            "the_gap": "Seasonal access rules are absent for Project area road works.",
+            "why_it_matters": "Flood closure could delay access for residents.",
+            "actions": [{"document_element": "POM work plan", "guidance": "Add seasonal sequencing for Project area road works.", "suggested_language": "Sequence works around named flood triggers."}],
+            "who_acts": "TTL and PIU", "when": "Before works", "action_timing": "required-before-appraisal",
+            "resources": "Existing supervision", "pad_sections": "Implementation arrangements",
+            "country_category_relevance": "", "implementation_note": "Track access.",
+            "cpf_alignment": None, "rra_driver_alignment": None, "change_type": "",
+            "restructuring_level": "", "priority_scope": "", "governance_level": None,
+            "policy_status": "advisory", "specialist_referral": None,
+            "authority_basis": "reviewer_judgment", "lens_ids": ["climate"],
+            "lens_relevance": "Flood access interaction.",
+            "climate_links": {"status": "linked", "interaction_pathway_ids": [pathway_id], "dividend_pathway_ids": [], "finding_ids": [], "contribution": "Protects access.", "strengthening_effect": "Improves delivery reliability.", "reason": ""},
+        }],
+    }
+    return "%%%JSON_START%%%" + json.dumps(payload) + "%%%JSON_END%%%"
+
+
+def test_standard_climate_stage3_branches_before_generic_prompt_and_compacts_history(monkeypatch):
+    calls = []
+    stage3_output = [_climate_priority_output()]
+    monkeypatch.setattr(app_module, "build_climate_stage3_prompt", lambda **kwargs: "CLIMATE PRIORITIES ONLY")
+
+    def fake_stream(messages, max_tokens, stage, **kwargs):
+        calls.append({"messages": messages, "max_tokens": max_tokens, "stage": stage})
+        fake_stream._last_result = stage3_output[0]
+        fake_stream._last_stop_reason = "end_turn"
+        yield 'data: {"chunk": "priority-json"}\n\n'
+
+    monkeypatch.setattr(app_module, "_stream_stage", fake_stream)
+    diagnostic = json.loads(json.dumps(_canonical_payload()))
+    for direction in diagnostic["lenses"][0]["interaction_readout"]:
+        for pathway in direction["pathways"]:
+            pathway["research_claim_ids"] = ["climate-claim-1"]
+    lens_sources = app_module.normalize_climate_research_bundle(
+        _valid_research()
+    )["sources"]
+    response = app_module.app.test_client().post("/api/run-stage", json={
+        "stage": 3, "active_lenses": ["climate"], "review_mode": "design",
+        "history": [{"role": "assistant", "content": "Stage 2 canonical readout."}],
+        "document_type": "PAD", "doc_type": "PAD", "instrument_type": "IPF",
+        "lens_diagnostic": diagnostic, "lens_context_sources": lens_sources, "regime_context": {},
+    })
+    done = next(e for e in _decode_sse(response) if e.get("done"))
+    stage3_call = next(c for c in calls if c["stage"] == 3)
+    assert stage3_call["messages"] == [{"role": "user", "content": "CLIMATE PRIORITIES ONLY"}]
+    assert stage3_call["max_tokens"] == 9000
+    assert done["result"] == ""
+    assert done["lens_diagnostic"]["schema_version"] == "climate-native-v1"
+    assert len(done["priorities"]) == 1
+    assert done["priorities"][0]["lens_ids"] == ["climate"]
+    assert done["fcv_rating"] == diagnostic["fcv_baseline"]["sensitivity_rating"]
+    assert done["fcv_responsiveness_rating"] == diagnostic["fcv_baseline"]["responsiveness_rating"]
+    assert done["sensitivity_summary"] == diagnostic["fcv_baseline"]["sensitivity_reasoning"]
+    assert done["responsiveness_summary"] == diagnostic["fcv_baseline"]["responsiveness_reasoning"]
+    assert done["history"][0] == {"role": "assistant", "content": "Stage 2 canonical readout."}
+    assert done["history"][-1] == {"role": "assistant", "content": "[Climate-specific priorities generated from validated payload]"}
+
+    calls_before_invalid_diagnostic = len(calls)
+    invalid_events = _decode_sse(app_module.app.test_client().post("/api/run-stage", json={
+        "stage": 3, "active_lenses": ["climate"], "review_mode": "design",
+        "history": [{"role": "assistant", "content": "Stage 2 canonical readout."}],
+        "document_type": "PAD", "doc_type": "PAD", "instrument_type": "IPF",
+        "lens_diagnostic": {"schema_version": "unsupported"},
+        "lens_context_sources": [], "regime_context": {},
+    }))
+    invalid = next(e for e in invalid_events if e.get("error_code") == "climate_diagnostic_invalid")
+    assert invalid["failed_stage"] == 3
+    assert len(calls) == calls_before_invalid_diagnostic
+    assert not any(e.get("done") for e in invalid_events)
+
+    stage3_output[0] = _climate_priority_output("invented-pathway")
+    blocked_events = _decode_sse(app_module.app.test_client().post("/api/run-stage", json={
+        "stage": 3, "active_lenses": ["climate"], "review_mode": "design",
+        "history": [{"role": "assistant", "content": "Stage 2 canonical readout."}],
+        "document_type": "PAD", "doc_type": "PAD", "instrument_type": "IPF",
+        "lens_diagnostic": diagnostic, "lens_context_sources": lens_sources, "regime_context": {},
+    }))
+    blocked = next(e for e in blocked_events if e.get("error_code") == "climate_priority_invalid")
+    assert blocked["failed_stage"] == 3
+    assert not any(e.get("done") for e in blocked_events)
+
+
+def test_express_climate_stage3_branches_before_generic_prompt_and_compacts_history(monkeypatch):
+    calls = []
+    stage3_output = [_climate_priority_output()]
+    express_diagnostic = json.loads(json.dumps(_canonical_payload()))
+    for direction in express_diagnostic["lenses"][0]["interaction_readout"]:
+        for pathway in direction["pathways"]:
+            pathway["research_claim_ids"] = ["climate-claim-1"]
+
+    def fake_stream(messages, max_tokens, stage, **kwargs):
+        calls.append({"messages": messages, "max_tokens": max_tokens, "stage": stage})
+        fake_stream._last_stop_reason = "end_turn"
+        fake_stream._last_result = (
+            "Stage 1 project extraction." if stage == 1 else
+            "%%%LENS_DIAGNOSTIC_START%%%" + json.dumps(express_diagnostic) + "%%%LENS_DIAGNOSTIC_END%%%" if stage == 2 else
+            stage3_output[0]
+        )
+        yield 'data: {"chunk": "stage"}\n\n'
+
+    monkeypatch.setattr(app_module, "_stream_stage", fake_stream)
+    monkeypatch.setattr(app_module, "build_climate_stage3_prompt", lambda **kwargs: "CLIMATE PRIORITIES ONLY")
+    monkeypatch.setattr(app_module, "extract_country_name", lambda text, client: "Exampleland")
+    monkeypatch.setattr(app_module, "extract_sector_name", lambda text, client: "Transport")
+    monkeypatch.setattr(app_module, "get_fast_client", lambda: object())
+    monkeypatch.setattr(app_module, "_iter_stage1_research", lambda *a, **k: _research_result(_valid_research()))
+    monkeypatch.setattr(app_module, "extract_instrument_type", lambda text: "IPF")
+    monkeypatch.setattr(app_module, "extract_temporal_context", lambda text: {})
+    monkeypatch.setattr(app_module, "extract_regime_context", lambda text, instrument: {})
+    monkeypatch.setattr(app_module, "extract_country_classification", lambda text: {"category": "General"})
+    monkeypatch.setattr(app_module, "extract_context_flags", lambda text: {})
+    monkeypatch.setattr(app_module, "extract_sector_context", lambda text: {"primary_sector": "Transport"})
+    monkeypatch.setattr(app_module, "extract_change_types", lambda text: [])
+    monkeypatch.setattr(app_module, "extract_prior_actions", lambda text: [])
+    monkeypatch.setattr(app_module, "extract_dlis", lambda text: [])
+    monkeypatch.setattr(app_module, "extract_country_set", lambda text: {"is_multi_country": False})
+    monkeypatch.setattr(app_module, "extract_mpa_context", lambda text: {"is_mpa": False})
+    monkeypatch.setattr(app_module, "extract_lens_evidence", lambda *args: {})
+    response = app_module.app.test_client().post("/api/run-express", json={
+        "active_lenses": ["climate"], "review_mode": "design",
+        "document_type": "PAD", "instrument_type": "IPF",
+        "documents": [{"name": "PAD.txt", "type": "text", "docRole": "primary", "content": "Named road and access activities. " * 10}],
+    })
+    done = next(e for e in _decode_sse(response) if e.get("stage_done") == 3)
+    stage3_call = next(c for c in calls if c["stage"] == 3)
+    assert stage3_call["messages"] == [{"role": "user", "content": "CLIMATE PRIORITIES ONLY"}]
+    assert stage3_call["max_tokens"] == 9000
+    assert done["result"] == ""
+    assert done["lens_diagnostic"]["schema_version"] == "climate-native-v1"
+    assert len(done["priorities"]) == 1
+    assert done["fcv_rating"] == done["lens_diagnostic"]["fcv_baseline"]["sensitivity_rating"]
+    assert done["fcv_responsiveness_rating"] == done["lens_diagnostic"]["fcv_baseline"]["responsiveness_rating"]
+    assert done["sensitivity_summary"] == done["lens_diagnostic"]["fcv_baseline"]["sensitivity_reasoning"]
+    assert done["responsiveness_summary"] == done["lens_diagnostic"]["fcv_baseline"]["responsiveness_reasoning"]
+    assert done["history"][-1] == {"role": "assistant", "content": "[Climate-specific priorities generated from validated payload]"}
+
+    stage3_output[0] = _climate_priority_output("invented-pathway")
+    blocked_events = _decode_sse(app_module.app.test_client().post("/api/run-express", json={
+        "active_lenses": ["climate"], "review_mode": "design",
+        "document_type": "PAD", "instrument_type": "IPF",
+        "documents": [{"name": "PAD.txt", "type": "text", "docRole": "primary", "content": "Named road and access activities. " * 10}],
+    }))
+    blocked = next(e for e in blocked_events if e.get("error_code") == "climate_priority_invalid")
+    assert blocked["failed_stage"] == 3
+    assert not any(e.get("stage_done") == 3 for e in blocked_events)
