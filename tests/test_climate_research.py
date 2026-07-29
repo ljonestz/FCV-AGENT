@@ -278,7 +278,7 @@ def test_climate_research_uses_one_focused_request():
     assert len(client.calls) == 1
     call = client.calls[0]
     assert "FOCUSED REQUEST" in call["messages"][0]["content"]
-    assert call["max_tokens"] == 2500
+    assert call["max_tokens"] == 4096
     assert call["tools"][0]["max_uses"] == 3
     assert call["timeout"] == 135
 

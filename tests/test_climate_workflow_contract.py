@@ -265,8 +265,9 @@ def _research_result(bundle):
 
 @pytest.mark.parametrize("endpoint", ["/api/run-stage", "/api/run-express"])
 def test_climate_research_failure_blocks_both_workflows_before_model(
-    monkeypatch, endpoint,
+    monkeypatch, endpoint, caplog,
 ):
+    caplog.set_level("INFO")
     model_calls = []
 
     def forbidden_stream(*args, **kwargs):
@@ -312,6 +313,8 @@ def test_climate_research_failure_blocks_both_workflows_before_model(
     assert model_calls == []
     assert not any(event.get("status") == "preparing_analysis" for event in events)
     assert not any(event.get("stage_done") or event.get("done") for event in events)
+    if endpoint == "/api/run-express":
+        assert "active_lenses=climate" in caplog.text
 
 
 

@@ -6942,7 +6942,7 @@ def run_climate_web_research(
             messages = [{"role": "user", "content": prompt}]
             request_options = {
                 "model": "claude-sonnet-4-6",
-                "max_tokens": 2500,
+                "max_tokens": 4096,
                 "tools": [{
                     "type": "web_search_20250305",
                     "name": "web_search",
@@ -8958,6 +8958,13 @@ def run_express():
         analysis_state = AnalysisState.from_payload(data)
         documents = data.get('documents', [])
         assessment_id = data.get('assessment_id') or str(uuid.uuid4())
+        active_lens_log = ",".join(analysis_state.active_lenses[:2]) or "none"
+        app.logger.info(
+            "/api/run-express lens selection: assessment_id=%s "
+            "active_lenses=%s",
+            assessment_id,
+            active_lens_log,
+        )
         review_mode = data.get('review_mode', 'design').strip()
         is_impl = (review_mode == 'implementation')
         user_context = data.get('user_context', '').strip()  # optional user-supplied context
