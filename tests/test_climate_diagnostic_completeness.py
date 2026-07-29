@@ -13,13 +13,14 @@ import app as app_module
 from sector_lenses import (
     CLIMATE_NATIVE_SCHEMA_VERSION,
     climate_readout_is_complete,
+    merge_climate_repair,
 )
 from sector_lenses.pipeline import climate_lens_readout
 
 
 _BASELINE = {
     "sensitivity_rating": "Adequate",
-    "responsiveness_rating": "Emerging",
+    "responsiveness_rating": "Low",
     "sensitivity_reasoning": "Conflict-sensitive delivery is explicit.",
     "responsiveness_reasoning": "A root-cause pathway is present.",
     "evidence_trail": [{
@@ -85,6 +86,7 @@ def _climate_entry(*, with_reflections, with_integration, materiality_summary="B
             "question_key": "cq2_maladaptation",
             "title": "Maladaptation and lock-in",
             "status_cue": "partial gap",
+            "source": "Project document",
             "text": "Siting is treated as engineering, not allocation.",
         }]
     if with_integration:
@@ -131,146 +133,6 @@ def test_climate_readout_is_complete_requires_reflections_and_integration():
     blank["reflections"] = [{"question_key": "cq1_interaction", "title": "t",
                              "status_cue": "ok", "text": "   "}]
     assert climate_readout_is_complete(blank, baseline=_BASELINE) is False
-
-
-# ── recovery prompt requests the dedicated-module contract ───────────────────
-
-def test_recovery_prompt_requests_dedicated_module_fields():
-    captured = {}
-
-    class FakeMessages:
-        def create(self, **kwargs):
-            captured.update(kwargs)
-            text = (
-                app_module.LENS_DIAGNOSTIC_START
-                + json.dumps({"lenses": [], "findings": []})
-                + app_module.LENS_DIAGNOSTIC_END
-            )
-            return type("Response", (), {
-                "content": [type("Text", (), {"text": text})()]
-            })()
-
-    client = type("Client", (), {"messages": FakeMessages()})()
-    app_module.repair_lens_diagnostic(
-        "Visible Stage 2 assessment",
-        ["climate"],
-        {"climate": set()},
-        {"climate": {"invest-in": set(), "deliver-through": set()}},
-        client=client,
-    )
-    prompt = captured["messages"][0]["content"]
-    for token in (
-        "reflections", "integration_level", "integration_summary",
-        "less_central", "sensitivity_evidence", "responsiveness_evidence",
-        "cq1_interaction", "cq6_adaptive",
-    ):
-        assert token in prompt, f"recovery prompt missing {token!r}"
-    # Bounded budget must still be requested (not the old 12,000 cap alone).
-    assert "16,000 characters" in prompt
-
-
-# ── orchestration: incomplete primary triggers recovery ──────────────────────
-
-def _active_climate_lenses():
-    state = app_module.AnalysisState.from_payload({"active_lenses": ["climate"]})
-    return app_module.build_lens_stage_context(state, stage=2)["active_lenses"]
-
-
-def _incomplete_primary_output():
-    entry = _climate_entry(
-        with_reflections=False, with_integration=False,
-        materiality_summary="PRIMARY interactions only",
-    )
-    return (
-        "Visible Stage 2 assessment\n"
-        + app_module.LENS_DIAGNOSTIC_START
-        + json.dumps(_diagnostic(entry))
-        + app_module.LENS_DIAGNOSTIC_END
-    )
-
-
-def test_incomplete_climate_primary_triggers_recovery_and_completes(monkeypatch):
-    complete = _diagnostic(
-        _climate_entry(with_reflections=True, with_integration=True,
-                       materiality_summary="RECOVERED complete")
-    )
-    calls = {"n": 0}
-
-    def fake_repair(*args, **kwargs):
-        calls["n"] += 1
-        return complete, True
-
-    monkeypatch.setattr(app_module, "repair_lens_diagnostic", fake_repair)
-
-    diagnostic, recovered, failure = app_module.extract_or_repair_lens_diagnostic(
-        _incomplete_primary_output(),
-        _active_climate_lenses(),
-        [],
-    )
-
-    assert calls["n"] == 1, "recovery must fire for an incomplete primary"
-    assert recovered is True
-    assert failure == ""
-    entry = climate_lens_readout(diagnostic)
-    assert climate_readout_is_complete(
-        entry, baseline=diagnostic["fcv_baseline"]
-    ) is True
-    assert entry["materiality_summary"] == "RECOVERED complete"
-
-
-def test_incomplete_primary_kept_when_recovery_stays_incomplete(monkeypatch):
-    still_incomplete = _diagnostic(
-        _climate_entry(with_reflections=False, with_integration=False,
-                       materiality_summary="RECOVERED still incomplete")
-    )
-
-    def fake_repair(*args, **kwargs):
-        return still_incomplete, True
-
-    monkeypatch.setattr(app_module, "repair_lens_diagnostic", fake_repair)
-
-    diagnostic, recovered, failure = app_module.extract_or_repair_lens_diagnostic(
-        _incomplete_primary_output(),
-        _active_climate_lenses(),
-        [],
-    )
-
-    # A usable primary must not be downgraded by a still-incomplete recovery.
-    assert recovered is False
-    assert failure == ""
-    entry = climate_lens_readout(diagnostic)
-    assert entry["materiality_summary"] == "PRIMARY interactions only"
-
-
-def test_complete_climate_primary_skips_recovery(monkeypatch):
-    complete_entry = _climate_entry(with_reflections=True, with_integration=True)
-    stage2_output = (
-        "Visible Stage 2 assessment\n"
-        + app_module.LENS_DIAGNOSTIC_START
-        + json.dumps(_diagnostic(complete_entry))
-        + app_module.LENS_DIAGNOSTIC_END
-    )
-    monkeypatch.setattr(
-        app_module,
-        "repair_lens_diagnostic",
-        lambda *a, **k: (_ for _ in ()).throw(
-            AssertionError("recovery should not run for a complete primary")
-        ),
-    )
-
-    diagnostic, recovered, failure = app_module.extract_or_repair_lens_diagnostic(
-        stage2_output,
-        _active_climate_lenses(),
-        [],
-    )
-    assert recovered is False
-    assert failure == ""
-    assert climate_readout_is_complete(
-        climate_lens_readout(diagnostic),
-        baseline=diagnostic["fcv_baseline"],
-    ) is True
-
-
 def test_completeness_unchanged_with_source_field():
     """A source-bearing reflection remains grounded in a canonical readout."""
     import sector_lenses.pipeline as p
@@ -281,3 +143,101 @@ def test_completeness_unchanged_with_source_field():
     assert p.climate_readout_is_complete(
         entry, baseline=_BASELINE
     ) is True
+
+
+
+def _active_climate_lenses():
+    state = app_module.AnalysisState.from_payload({"active_lenses": ["climate"]})
+    return app_module.build_lens_stage_context(state, stage=2)["active_lenses"]
+
+
+def _stage2_output(entry):
+    return (
+        "Visible Stage 2 assessment\n"
+        + app_module.LENS_DIAGNOSTIC_START
+        + json.dumps(_diagnostic(entry))
+        + app_module.LENS_DIAGNOSTIC_END
+    )
+
+
+def test_incomplete_primary_repairs_only_missing_fields(monkeypatch):
+    primary_entry = _climate_entry(
+        with_reflections=False,
+        with_integration=False,
+        materiality_summary="PRIMARY materiality",
+    )
+    primary_entry["executive_summary"] = "PRIMARY executive"
+    repair_entry = _climate_entry(
+        with_reflections=True,
+        with_integration=True,
+        materiality_summary="UNREQUESTED materiality",
+    )
+    repair_entry["executive_summary"] = "UNREQUESTED executive"
+    repair = _diagnostic(repair_entry)
+    observed = {}
+
+    def fake_recovery(**kwargs):
+        observed["missing_fields"] = kwargs["missing_fields"]
+        merged = merge_climate_repair(
+            kwargs["primary"], repair, kwargs["missing_fields"]
+        )
+        yield {"result": merged, "recovered": True, "error_code": ""}
+
+    monkeypatch.setattr(
+        app_module, "_iter_climate_diagnostic_recovery", fake_recovery
+    )
+    diagnostic, recovered, failure = app_module.extract_or_repair_lens_diagnostic(
+        _stage2_output(primary_entry), _active_climate_lenses(), []
+    )
+
+    assert recovered is True
+    assert failure == ""
+    climate = climate_lens_readout(diagnostic)
+    assert climate["integration_summary"] == "Aware but allocation untreated."
+    assert climate["executive_summary"] == "PRIMARY executive"
+    assert climate["materiality_summary"] == "PRIMARY materiality"
+    assert "lenses.climate.integration_summary" in observed["missing_fields"]
+
+
+def test_incomplete_primary_returns_blocking_failure_when_repair_stays_incomplete(
+    monkeypatch,
+):
+    primary_entry = _climate_entry(
+        with_reflections=False, with_integration=False
+    )
+
+    def failed_recovery(**_kwargs):
+        yield {
+            "result": {"error": True, "message": "Repair incomplete.", "lenses": [], "findings": []},
+            "recovered": False,
+            "error_code": "climate_diagnostic_invalid",
+        }
+
+    monkeypatch.setattr(
+        app_module, "_iter_climate_diagnostic_recovery", failed_recovery
+    )
+    diagnostic, recovered, failure = app_module.extract_or_repair_lens_diagnostic(
+        _stage2_output(primary_entry), _active_climate_lenses(), []
+    )
+
+    assert recovered is False
+    assert diagnostic["error"] is True
+    assert failure == "Repair incomplete."
+
+
+def test_complete_climate_primary_skips_field_recovery(monkeypatch):
+    def forbidden_recovery(**_kwargs):
+        raise AssertionError("complete primary must skip repair")
+        yield
+
+    monkeypatch.setattr(
+        app_module, "_iter_climate_diagnostic_recovery", forbidden_recovery
+    )
+    complete = _climate_entry(with_reflections=True, with_integration=True)
+    diagnostic, recovered, failure = app_module.extract_or_repair_lens_diagnostic(
+        _stage2_output(complete), _active_climate_lenses(), []
+    )
+
+    assert recovered is False
+    assert failure == ""
+    assert climate_lens_readout(diagnostic)["integration_summary"]

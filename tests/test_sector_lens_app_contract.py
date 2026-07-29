@@ -1067,299 +1067,6 @@ def test_lens_recovery_structure_reports_missing_required_interaction():
     assert summary["missing_required_interactions"] == [
         "project-on-climate-fcv"
     ]
-
-
-def test_lens_diagnostic_repair_is_bounded_and_accepts_valid_json_only():
-    repaired_payload = {
-        "lenses": [{
-            "lens_id": "climate",
-            "applicability": "material",
-            "materiality_level": "medium",
-            "materiality_summary": "Flood and conflict pressures affect delivery.",
-            "readout_sections": [],
-            "interaction_readout": [
-                {
-                    "direction_id": "climate-fcv-on-project",
-                    "summary": "Flood and insecurity disrupt delivery.",
-                },
-                {
-                    "direction_id": "project-on-climate-fcv",
-                    "summary": "Benefit rules affect trust and access.",
-                },
-            ],
-            "additional_pathways": [],
-        }],
-        "findings": [],
-    }
-
-    class FakeMessages:
-        request = None
-
-        def create(self, **kwargs):
-            self.request = kwargs
-            block = (
-                app_module.LENS_DIAGNOSTIC_START
-                + json.dumps(_add_specific_climate_paths(repaired_payload))
-                + app_module.LENS_DIAGNOSTIC_END
-            )
-            return type("Response", (), {
-                "content": [type("Text", (), {"text": block})()]
-            })()
-
-    messages = FakeMessages()
-    client = type("Client", (), {"messages": messages})()
-    repaired, recovered = app_module.repair_lens_diagnostic(
-        "Visible Stage 2 assessment " * 3000,
-        ["climate"],
-        {"climate": set()},
-        {"climate": {"invest-in": set(), "deliver-through": set()}},
-        client=client,
-    )
-
-    assert recovered is True
-    assert repaired["lenses"][0]["materiality_level"] == "medium"
-    assert messages.request["model"] == "claude-sonnet-4-6"
-    assert messages.request["max_tokens"] == 8000
-    prompt = messages.request["messages"][0]["content"]
-    assert len(prompt) < 40000
-    # The recovery prompt is the de-facto climate generator, so it must ask for
-    # the fluent per-direction narrative and reflection/dividend prose.
-    assert "narrative field" in prompt
-    assert "one specific story per direction" in prompt
-    assert "flowing plain-language" in prompt
-    # Task 3.3 - recovery requests source + rating (cheap). Reflections stay CONCISE
-    # here (not two paragraphs): the recovery is the load-bearing fallback and must
-    # finish within its 120s read timeout, so it must not be enlarged like the primary.
-    assert "integration_rating" in prompt
-    assert "source" in prompt
-    assert "concise" in prompt.lower()
-    assert "two solid" not in prompt.lower() and "two-paragraph" not in prompt.lower()
-    # Task 4B.4 - recovery must stay within the OPCS calibration boundary
-    assert "never determine" in prompt.lower()
-    assert "instrument-route" in prompt.lower()
-    assert app_module.warn_on_missing_high_climate_priority(
-        [{"title": "Core priority", "lens_ids": []}],
-        {"lenses": [{"lens_id": "climate", "materiality_level": "medium"}]},
-    ) is False
-
-
-def test_lens_diagnostic_repair_uses_recovery_client_not_fast_client(monkeypatch):
-    repaired_payload = {
-        "lenses": [{
-            "lens_id": "climate",
-            "applicability": "material",
-            "materiality_level": "medium",
-            "materiality_summary": "Flood and conflict pressures affect delivery.",
-            "interaction_readout": [
-                {"direction_id": "climate-fcv-on-project", "summary": "Delivery risk."},
-                {"direction_id": "project-on-climate-fcv", "summary": "Distribution risk."},
-            ],
-            "readout_sections": [],
-            "additional_pathways": [],
-        }],
-        "findings": [],
-    }
-
-    class FakeMessages:
-        def create(self, **kwargs):
-            text = (
-                app_module.LENS_DIAGNOSTIC_START
-                + json.dumps(_add_specific_climate_paths(repaired_payload))
-                + app_module.LENS_DIAGNOSTIC_END
-            )
-            return type("Response", (), {
-                "content": [type("Text", (), {"text": text})()]
-            })()
-
-    recovery_client = type("Client", (), {"messages": FakeMessages()})()
-    monkeypatch.setattr(
-        app_module, "get_lens_recovery_client", lambda: recovery_client
-    )
-    monkeypatch.setattr(
-        app_module,
-        "get_fast_client",
-        lambda: (_ for _ in ()).throw(AssertionError("fast client used")),
-    )
-
-    repaired, recovered = app_module.repair_lens_diagnostic(
-        "Visible Stage 2 assessment",
-        ["climate"],
-        {"climate": set()},
-        {"climate": {"invest-in": set(), "deliver-through": set()}},
-    )
-
-    assert recovered is True
-    assert repaired["lenses"][0]["materiality_level"] == "medium"
-
-
-def test_lens_diagnostic_repair_rejects_incomplete_response():
-    class FakeMessages:
-        def create(self, **kwargs):
-            text = (
-                app_module.LENS_DIAGNOSTIC_START
-                + json.dumps({"lenses": [], "findings": []})
-                + app_module.LENS_DIAGNOSTIC_END
-            )
-            return type("Response", (), {
-                "content": [type("Text", (), {"text": text})()]
-            })()
-
-    client = type("Client", (), {"messages": FakeMessages()})()
-    repaired, recovered = app_module.repair_lens_diagnostic(
-        "Visible Stage 2 assessment",
-        ["climate"],
-        {"climate": set()},
-        {"climate": {"invest-in": set(), "deliver-through": set()}},
-        client=client,
-    )
-
-    assert recovered is False
-    assert app_module.lens_diagnostic_failure_message(repaired, ["climate"])
-
-
-def test_lens_diagnostic_repair_has_capacity_for_bounded_climate_contract():
-    """Recovery must not repeat the production 3,500-token truncation."""
-
-    repaired_payload = {
-        "lenses": [{
-            "lens_id": "climate",
-            "applicability": "material",
-            "materiality_level": "high",
-            "materiality_summary": "Flood and conflict pressures affect delivery.",
-            "interaction_readout": [
-                {
-                    "direction_id": "climate-fcv-on-project",
-                    "summary": "Flood and insecurity disrupt delivery.",
-                },
-                {
-                    "direction_id": "project-on-climate-fcv",
-                    "summary": "Benefit rules affect trust and access.",
-                },
-            ],
-            "readout_sections": [],
-            "additional_pathways": [],
-        }],
-        "findings": [],
-    }
-    captured = {}
-
-    class CeilingMessages:
-        def create(self, **kwargs):
-            captured.update(kwargs)
-            if kwargs["max_tokens"] < 6000:
-                text = app_module.LENS_DIAGNOSTIC_START + '{"lenses":['
-            else:
-                text = (
-                    app_module.LENS_DIAGNOSTIC_START
-                    + json.dumps(_add_specific_climate_paths(repaired_payload))
-                    + app_module.LENS_DIAGNOSTIC_END
-                )
-            return type("Response", (), {
-                "content": [type("Text", (), {"text": text})()]
-            })()
-
-    client = type("Client", (), {"messages": CeilingMessages()})()
-    _, recovered = app_module.repair_lens_diagnostic(
-        "Visible Stage 2 assessment",
-        ["climate"],
-        {"climate": set()},
-        {"climate": {"invest-in": set(), "deliver-through": set()}},
-        client=client,
-    )
-
-    assert recovered is True
-    assert captured["max_tokens"] >= 6000
-    prompt = captured["messages"][0]["content"]
-    assert "total JSON under 16,000 characters" in prompt
-    assert "at most two items per declared readout section" in prompt
-    assert "at most five findings" in prompt
-
-
-def test_lens_diagnostic_repair_rejects_missing_climate_materiality_level():
-    """Recovery must not turn a missing required Climate level into legacy low."""
-
-    incomplete_payload = {
-        "lenses": [{
-            "lens_id": "climate",
-            "materiality_summary": "Climate-FCV interactions materially affect delivery.",
-            "interaction_readout": [{
-                "direction_id": "climate-fcv-on-project",
-                "summary": "Flood and insecurity disrupt delivery.",
-            }],
-            "readout_sections": [],
-            "additional_pathways": [],
-        }],
-        "findings": [],
-    }
-
-    class FakeMessages:
-        def create(self, **kwargs):
-            text = (
-                app_module.LENS_DIAGNOSTIC_START
-                + json.dumps(incomplete_payload)
-                + app_module.LENS_DIAGNOSTIC_END
-            )
-            return type("Response", (), {
-                "content": [type("Text", (), {"text": text})()]
-            })()
-
-    client = type("Client", (), {"messages": FakeMessages()})()
-    repaired, recovered = app_module.repair_lens_diagnostic(
-        "Visible Stage 2 assessment",
-        ["climate"],
-        {"climate": set()},
-        {"climate": {"invest-in": set(), "deliver-through": set()}},
-        client=client,
-    )
-
-    assert recovered is False
-    assert repaired["lenses"][0]["materiality_level"] == ""
-
-
-def test_unsuccessful_lens_recovery_logs_safe_structure(caplog):
-    sentinel = "SECRET PROJECT EVIDENCE MUST NOT LEAK"
-    incomplete_payload = {
-        "lenses": [{
-            "lens_id": "climate",
-            "materiality_summary": sentinel,
-            "interaction_readout": [{
-                "direction_id": "climate-fcv-on-project",
-                "summary": sentinel,
-            }],
-        }],
-        "findings": [],
-    }
-
-    class FakeMessages:
-        def create(self, **kwargs):
-            text = (
-                app_module.LENS_DIAGNOSTIC_START
-                + json.dumps(incomplete_payload)
-                + app_module.LENS_DIAGNOSTIC_END
-            )
-            return type("Response", (), {
-                "content": [type("Text", (), {"text": text})()]
-            })()
-
-    client = type("Client", (), {"messages": FakeMessages()})()
-    with caplog.at_level("WARNING", logger=app_module.app.logger.name):
-        _, recovered = app_module.repair_lens_diagnostic(
-            "Visible Stage 2 assessment",
-            ["climate"],
-            {"climate": set()},
-            {"climate": {"invest-in": set(), "deliver-through": set()}},
-            client=client,
-            assessment_id="assessment-structure",
-        )
-
-    assert recovered is False
-    assert "Lens diagnostic recovery invalid" in caplog.text
-    assert "assessment-structure" in caplog.text
-    assert '"json_status":"valid_object"' in caplog.text
-    assert '"materiality_present":false' in caplog.text
-    assert sentinel not in caplog.text
-
-
 def test_valid_inline_lens_diagnostic_bypasses_recovery(monkeypatch):
     state = app_module.AnalysisState.from_payload({"active_lenses": ["climate"]})
     active_lenses = app_module.build_lens_stage_context(state, stage=2)["active_lenses"]
@@ -1443,85 +1150,6 @@ def test_invalid_climate_diagnostic_gates_stage3_lens_instructions():
     assert "do not run the lightweight Climate-FCV check" in context["prompt"]
     assert "Treat the validated Climate-FCV materiality" not in context["prompt"]
     assert "two-way Climate-FCV interaction readout" not in context["prompt"]
-
-
-def test_lens_diagnostic_timeout_preserves_core_warning_state(caplog):
-    class TimeoutMessages:
-        def create(self, **kwargs):
-            request = app_module.httpx.Request(
-                "POST", "https://api.anthropic.com/v1/messages"
-            )
-            raise app_module.anthropic.APITimeoutError(request=request)
-
-    client = type("Client", (), {"messages": TimeoutMessages()})()
-    with caplog.at_level("WARNING", logger=app_module.app.logger.name):
-        repaired, recovered = app_module.repair_lens_diagnostic(
-            "Visible Stage 2 assessment",
-            ["climate"],
-            {"climate": set()},
-            {"climate": {"invest-in": set(), "deliver-through": set()}},
-            client=client,
-            assessment_id="assessment-test",
-        )
-
-    assert recovered is False
-    assert repaired["error"] is True
-    assert "APITimeoutError" in caplog.text
-    assert "assessment-test" in caplog.text
-    assert "elapsed_ms=" in caplog.text
-
-
-def test_lens_diagnostic_recovery_logs_assessment_elapsed_time(caplog):
-    repaired_payload = {
-        "lenses": [{
-            "lens_id": "climate",
-            "applicability": "material",
-            "materiality_level": "medium",
-            "materiality_summary": "Flood and conflict pressures affect delivery.",
-            "readout_sections": [],
-            "interaction_readout": [
-                {
-                    "direction_id": "climate-fcv-on-project",
-                    "summary": "Flood and insecurity disrupt delivery.",
-                },
-                {
-                    "direction_id": "project-on-climate-fcv",
-                    "summary": "Benefit rules affect trust and access.",
-                },
-            ],
-            "additional_pathways": [],
-        }],
-        "findings": [],
-    }
-
-    class FakeMessages:
-        def create(self, **kwargs):
-            text = (
-                app_module.LENS_DIAGNOSTIC_START
-                + json.dumps(_add_specific_climate_paths(repaired_payload))
-                + app_module.LENS_DIAGNOSTIC_END
-            )
-            return type("Response", (), {
-                "content": [type("Text", (), {"text": text})()]
-            })()
-
-    client = type("Client", (), {"messages": FakeMessages()})()
-    with caplog.at_level("INFO", logger=app_module.app.logger.name):
-        _, recovered = app_module.repair_lens_diagnostic(
-            "Visible Stage 2 assessment",
-            ["climate"],
-            {"climate": set()},
-            {"climate": {"invest-in": set(), "deliver-through": set()}},
-            client=client,
-            assessment_id="assessment-success",
-        )
-
-    assert recovered is True
-    assert "assessment-success" in caplog.text
-    assert "recovered=True" in caplog.text
-    assert "elapsed_ms=" in caplog.text
-
-
 def test_lens_recovery_client_has_bounded_timeout_and_no_sdk_retries(monkeypatch):
     captured = {}
     sentinel = object()
@@ -2390,3 +2018,141 @@ def test_workflow_bridge_does_not_kill_slow_but_streaming_run():
         "data: chunk-2\n\n", "data: chunk-3\n\n",
     ]
     assert not any('"error"' in chunk for chunk in out)
+
+
+
+def _canonical_recovery_fixture():
+    return json.loads(SOUTH_SUDAN_FIXTURE.read_text(encoding="utf-8"))["diagnostic"]
+
+
+def _active_climate_for_recovery():
+    state = app_module.AnalysisState.from_payload({"active_lenses": ["climate"]})
+    return app_module.build_lens_stage_context(state, stage=2)["active_lenses"]
+
+
+def test_field_level_climate_recovery_is_bounded_and_requests_missing_path():
+    primary = _canonical_recovery_fixture()
+    primary["lenses"][0]["integration_summary"] = ""
+    repair = _canonical_recovery_fixture()
+    repair["lenses"][0]["integration_summary"] = "Repaired integration summary."
+    captured = {}
+
+    class FakeMessages:
+        def create(self, **kwargs):
+            captured.update(kwargs)
+            text = (
+                app_module.LENS_DIAGNOSTIC_START
+                + json.dumps(repair)
+                + app_module.LENS_DIAGNOSTIC_END
+            )
+            return type("Response", (), {
+                "content": [type("Text", (), {"text": text})()]
+            })()
+
+    client = type("Client", (), {"messages": FakeMessages()})()
+    output = (
+        app_module.LENS_DIAGNOSTIC_START
+        + json.dumps(primary)
+        + app_module.LENS_DIAGNOSTIC_END
+    )
+    events = list(app_module._iter_native_climate_stage2_diagnostic(
+        stage2_output=output,
+        active_lenses=_active_climate_for_recovery(),
+        context_sources=[],
+        assessment_id="assessment-field-repair",
+        client=client,
+        max_seconds=90,
+        keepalive_interval=0.01,
+    ))
+
+    terminal = events[-1]
+    prompt = captured["messages"][0]["content"]
+    assert captured["max_tokens"] == 4500
+    assert captured["timeout"] == 90
+    assert "- lenses.climate.integration_summary" in prompt
+    assert "Do not regenerate or rewrite valid fields" in prompt
+    assert terminal["error_code"] == ""
+    assert terminal["recovered"] is True
+    assert terminal["result"]["lenses"][0]["integration_summary"] == (
+        "Repaired integration summary."
+    )
+
+
+def test_field_level_climate_recovery_rejects_incomplete_repair():
+    primary = _canonical_recovery_fixture()
+    primary["lenses"][0]["integration_summary"] = ""
+
+    class FakeMessages:
+        def create(self, **kwargs):
+            text = (
+                app_module.LENS_DIAGNOSTIC_START
+                + json.dumps({"lenses": [], "findings": []})
+                + app_module.LENS_DIAGNOSTIC_END
+            )
+            return type("Response", (), {
+                "content": [type("Text", (), {"text": text})()]
+            })()
+
+    output = (
+        app_module.LENS_DIAGNOSTIC_START
+        + json.dumps(primary)
+        + app_module.LENS_DIAGNOSTIC_END
+    )
+    events = list(app_module._iter_native_climate_stage2_diagnostic(
+        stage2_output=output,
+        active_lenses=_active_climate_for_recovery(),
+        context_sources=[],
+        assessment_id="assessment-invalid-repair",
+        client=type("Client", (), {"messages": FakeMessages()})(),
+        max_seconds=1,
+        keepalive_interval=0.01,
+    ))
+
+    assert events[-1]["recovered"] is False
+    assert events[-1]["error_code"] == "climate_diagnostic_invalid"
+
+
+
+def test_non_climate_recovery_retains_legacy_generic_contract():
+    captured = {}
+
+    class FakeMessages:
+        def create(self, **kwargs):
+            captured.update(kwargs)
+            text = (
+                app_module.LENS_DIAGNOSTIC_START
+                + json.dumps({
+                    "lenses": [{
+                        "lens_id": "agriculture",
+                        "applicability": "material",
+                        "materiality_summary": "Material delivery interaction.",
+                        "analysis_emphasis": [],
+                        "evidence": [],
+                        "source_ids": [],
+                        "readout_sections": [],
+                        "other_pathways": [],
+                    }],
+                    "findings": [],
+                })
+                + app_module.LENS_DIAGNOSTIC_END
+            )
+            return type("Response", (), {
+                "content": [type("Text", (), {"text": text})()]
+            })()
+
+    diagnostic, recovered = app_module.repair_lens_diagnostic(
+        "Visible Stage 2 assessment",
+        ["agriculture"],
+        {"agriculture": set()},
+        {"agriculture": {}},
+        client=type("Client", (), {"messages": FakeMessages()})(),
+    )
+
+    assert recovered is True
+    assert diagnostic["lenses"][0]["lens_id"] == "agriculture"
+    assert captured["model"] == "claude-sonnet-4-6"
+    assert captured["max_tokens"] == 8000
+    assert "Recover only the missing structured sector-lens diagnostic" in (
+        captured["messages"][0]["content"]
+    )
+    assert "timeout" not in captured

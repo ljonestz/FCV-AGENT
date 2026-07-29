@@ -15,6 +15,11 @@ from werkzeug.exceptions import RequestEntityTooLarge
 import anthropic
 from fcv_distillation import distill_doc_parts_stream
 import regime_router
+from sector_lenses.climate_native import (
+    build_climate_repair_prompt,
+    climate_missing_fields,
+    merge_climate_repair,
+)
 from sector_lenses import (
     CCDR_RESEARCH_INSTRUCTIONS,
     build_climate_research_prompt,
@@ -1603,6 +1608,159 @@ def lens_recovery_structure(
     return summary
 
 
+CLIMATE_RECOVERY_MAX_SECONDS = 90
+CLIMATE_RECOVERY_KEEPALIVE_SECONDS = 10
+
+
+def _iter_climate_diagnostic_recovery(
+    *,
+    primary: dict[str, Any],
+    missing_fields: list[str],
+    active_lens_ids: list[str],
+    source_ids_by_lens: dict[str, set[str]],
+    readout_schema_by_lens: dict[str, dict[str, set[str]]],
+    assessment_id: str,
+    client=None,
+    max_seconds: float = CLIMATE_RECOVERY_MAX_SECONDS,
+    keepalive_interval: float = CLIMATE_RECOVERY_KEEPALIVE_SECONDS,
+):
+    """Run one bounded field-level Climate repair with observable progress."""
+    recovery_queue = queue.Queue()
+    started = time.monotonic()
+    prompt = build_climate_repair_prompt(
+        primary=primary,
+        missing_fields=missing_fields,
+        source_ids_by_lens=source_ids_by_lens,
+    )
+
+    def run():
+        try:
+            response = (client or get_lens_recovery_client()).messages.create(
+                model="claude-sonnet-4-6",
+                max_tokens=4500,
+                messages=[{"role": "user", "content": prompt}],
+                timeout=max_seconds,
+            )
+            text = "".join(
+                str(getattr(block, "text", ""))
+                for block in getattr(response, "content", [])
+            )
+            repaired = extract_lens_diagnostic(
+                text,
+                active_lens_ids,
+                source_ids_by_lens,
+                readout_schema_by_lens,
+                strict_required_fields=True,
+            )
+            recovery_queue.put(("result", repaired))
+        except Exception as exc:
+            recovery_queue.put(("error", type(exc).__name__))
+
+    threading.Thread(target=run, daemon=True).start()
+    yield {"recovery_status": "repairing", "missing_fields": missing_fields}
+    while True:
+        elapsed = time.monotonic() - started
+        if elapsed >= max_seconds:
+            try:
+                kind, value = recovery_queue.get_nowait()
+            except queue.Empty:
+                yield {
+                    "result": {
+                        "error": True,
+                        "message": "Climate diagnostic repair timed out.",
+                        "lenses": [],
+                        "findings": [],
+                    },
+                    "recovered": False,
+                    "error_code": "climate_recovery_timeout",
+                }
+                return
+        else:
+            try:
+                kind, value = recovery_queue.get(
+                    timeout=min(keepalive_interval, max_seconds - elapsed)
+                )
+            except queue.Empty:
+                yield {"keepalive": True, "recovery_status": "repairing"}
+                continue
+        if kind == "error":
+            app.logger.warning(
+                "Climate diagnostic repair request failed: "
+                "assessment_id=%s error=%s",
+                assessment_id or "unknown",
+                value,
+            )
+            yield {
+                "result": {
+                    "error": True,
+                    "message": "Climate diagnostic repair failed.",
+                    "lenses": [],
+                    "findings": [],
+                },
+                "recovered": False,
+                "error_code": "climate_diagnostic_invalid",
+            }
+            return
+        merged = merge_climate_repair(primary, value, missing_fields)
+        merged_missing = climate_missing_fields(merged)
+        normalized = normalize_lens_diagnostic(
+            merged,
+            active_lens_ids,
+            source_ids_by_lens,
+            readout_schema_by_lens,
+        )
+        complete = (
+            not merged_missing
+            and not climate_missing_fields(normalized)
+        )
+        yield {
+            "result": normalized,
+            "recovered": complete,
+            "error_code": "" if complete else "climate_diagnostic_invalid",
+        }
+        return
+
+
+def _iter_native_climate_stage2_diagnostic(
+    *,
+    stage2_output: str,
+    active_lenses: list[dict[str, Any]],
+    context_sources: list[dict[str, Any]],
+    assessment_id: str,
+    client=None,
+    max_seconds: float = CLIMATE_RECOVERY_MAX_SECONDS,
+    keepalive_interval: float = CLIMATE_RECOVERY_KEEPALIVE_SECONDS,
+):
+    """Extract Climate Stage 2, then observably repair only missing fields."""
+    active_ids = [item["id"] for item in active_lenses]
+    source_ids = lens_source_ids(
+        active_lenses, context_sources=context_sources
+    )
+    schema = lens_readout_schema(active_lenses)
+    primary = extract_lens_diagnostic(
+        stage2_output,
+        active_ids,
+        source_ids,
+        schema,
+        strict_required_fields=True,
+    )
+    missing_fields = climate_missing_fields(primary)
+    if not missing_fields:
+        yield {"result": primary, "recovered": False, "error_code": ""}
+        return
+    yield from _iter_climate_diagnostic_recovery(
+        primary=primary,
+        missing_fields=missing_fields,
+        active_lens_ids=active_ids,
+        source_ids_by_lens=source_ids,
+        readout_schema_by_lens=schema,
+        assessment_id=assessment_id,
+        client=client,
+        max_seconds=max_seconds,
+        keepalive_interval=keepalive_interval,
+    )
+
+
 def repair_lens_diagnostic(
     stage2_output: str,
     active_lens_ids: list[str],
@@ -1615,6 +1773,37 @@ def repair_lens_diagnostic(
 
     if not active_lens_ids:
         return {}, False
+    if "climate" in active_lens_ids:
+        primary = extract_lens_diagnostic(
+            stage2_output,
+            active_lens_ids,
+            source_ids_by_lens,
+            readout_schema_by_lens,
+            strict_required_fields=True,
+        )
+        missing_fields = climate_missing_fields(primary)
+        if not missing_fields:
+            return primary, False
+        terminal = None
+        for event in _iter_climate_diagnostic_recovery(
+            primary=primary,
+            missing_fields=missing_fields,
+            active_lens_ids=active_lens_ids,
+            source_ids_by_lens=source_ids_by_lens,
+            readout_schema_by_lens=readout_schema_by_lens,
+            assessment_id=assessment_id,
+            client=client,
+        ):
+            if "result" in event:
+                terminal = event
+        if terminal:
+            return terminal["result"], bool(terminal.get("recovered"))
+        return {
+            "error": True,
+            "message": "Climate diagnostic repair did not return a result.",
+            "lenses": [],
+            "findings": [],
+        }, False
     visible = strip_lens_blocks(stage2_output or '')
     if len(visible) > 30_000:
         visible = visible[:15_000] + '\n[...middle omitted...]\n' + visible[-15_000:]
@@ -1718,11 +1907,8 @@ def repair_lens_diagnostic(
     started_at = time.monotonic()
     try:
         response = (client or get_lens_recovery_client()).messages.create(
-            # The primary Stage 2 call almost always omits the hidden diagnostic
-            # block (trailing-block fatigue), so this "recovery" is in practice
-            # the effective climate diagnostic generator. Use Sonnet (not Haiku)
-            # so the interaction narratives, reflections and dividends are fluent
-            # and project-specific rather than thin bounded fragments.
+            # Legacy generic-lens fallback retained unchanged for compatibility.
+            # Native Climate Stage 2 uses the field-level iterator above instead.
             model='claude-sonnet-4-6',
             max_tokens=8000,
             messages=[{'role': 'user', 'content': prompt}],
@@ -1791,6 +1977,34 @@ def extract_or_repair_lens_diagnostic(
     if not active_lenses:
         return {}, False, ''
     active_ids = [item['id'] for item in active_lenses]
+    if "climate" in active_ids:
+        terminal = None
+        for event in _iter_native_climate_stage2_diagnostic(
+            stage2_output=stage2_output,
+            active_lenses=active_lenses,
+            context_sources=context_sources,
+            assessment_id=assessment_id,
+        ):
+            if "result" in event:
+                terminal = event
+        if terminal is None:
+            message = "Climate diagnostic repair did not return a result."
+            return {
+                "error": True,
+                "message": message,
+                "lenses": [],
+                "findings": [],
+            }, False, message
+        result = terminal.get("result", {})
+        error_code = str(terminal.get("error_code", ""))
+        missing = climate_missing_fields(result)
+        if error_code or missing:
+            message = (
+                str(result.get("message", "")).strip()
+                or "Climate diagnostic repair was incomplete."
+            )
+            return result, False, message
+        return result, bool(terminal.get("recovered")), ""
     source_ids = lens_source_ids(
         active_lenses, context_sources=context_sources
     )
@@ -1803,89 +2017,26 @@ def extract_or_repair_lens_diagnostic(
         strict_required_fields=True,
     )
     failure = lens_diagnostic_failure_message(diagnostic, active_ids)
-    climate_active = "climate" in active_ids
-    # A usable diagnostic (passes the failure gate) can still be an incomplete
-    # dedicated Climate readout — interactions present but the reflections and
-    # integration_summary that drive the reflections block and integration gauge
-    # missing. That silently collapses the module to an interactions-only hybrid,
-    # so treat it as a recovery trigger rather than returning it as-is.
-    climate_incomplete = (
-        not failure
-        and climate_active
-        and not climate_readout_is_complete(
-            climate_lens_entry(diagnostic),
-            baseline=diagnostic.get("fcv_baseline"),
-        )
-    )
-    if climate_active:
-        log_climate_specificity_summary(
-            assessment_id,
-            climate_specificity_structure(
-                stage2_output,
-                diagnostic,
-                status="invalid" if failure else "initial",
-            ),
-        )
-    if not failure and not climate_incomplete:
+    if not failure:
         return diagnostic, False, ''
-    if failure:
-        app.logger.warning(
-            'Stage 2 lens diagnostic invalid: assessment_id=%s reason=%s',
-            assessment_id or 'unknown', failure,
-        )
-    else:
-        app.logger.info(
-            'Stage 2 climate diagnostic incomplete (missing reflections or '
-            'integration_summary); attempting recovery: assessment_id=%s',
-            assessment_id or 'unknown',
-        )
+    app.logger.warning(
+        'Stage 2 lens diagnostic invalid: assessment_id=%s reason=%s',
+        assessment_id or 'unknown', failure,
+    )
     repaired, recovered = repair_lens_diagnostic(
-        stage2_output, active_ids, source_ids, schema,
+        stage2_output,
+        active_ids,
+        source_ids,
+        schema,
         assessment_id=assessment_id,
     )
     if recovered:
-        repaired_complete = (
-            not climate_active
-            or climate_readout_is_complete(
-                climate_lens_entry(repaired),
-                baseline=repaired.get("fcv_baseline"),
-            )
-        )
-        # Never downgrade a usable primary: only adopt the recovered diagnostic
-        # when the primary was unusable, or when recovery is a complete readout.
-        if failure or repaired_complete:
-            if climate_active:
-                log_climate_specificity_summary(
-                    assessment_id,
-                    climate_specificity_structure(
-                        "",
-                        repaired,
-                        status="recovered",
-                    ),
-                )
-            app.logger.info(
-                'Stage 2 lens diagnostic recovered: assessment_id=%s',
-                assessment_id or 'unknown',
-            )
-            return repaired, True, ''
-        app.logger.info(
-            'Stage 2 climate recovery did not complete the readout; keeping the '
-            'partial primary diagnostic: assessment_id=%s',
-            assessment_id or 'unknown',
-        )
-        return diagnostic, False, ''
-    if failure:
-        app.logger.warning(
-            'Stage 2 lens diagnostic recovery unsuccessful: assessment_id=%s',
-            assessment_id or 'unknown',
-        )
-        return diagnostic, False, failure
-    app.logger.info(
-        'Stage 2 climate diagnostic incomplete and recovery unsuccessful; '
-        'keeping the partial primary diagnostic: assessment_id=%s',
+        return repaired, True, ''
+    app.logger.warning(
+        'Stage 2 lens diagnostic recovery unsuccessful: assessment_id=%s',
         assessment_id or 'unknown',
     )
-    return diagnostic, False, ''
+    return diagnostic, False, failure
 
 
 DO_NO_HARM_HEADER = """---
@@ -8067,22 +8218,64 @@ def run_stage():
                 p4r_watch = []
                 regional_watch = []
 
+                lens_recovered = False
                 if stage == 2:
-                    lens_diagnostic, _, lens_failure = (
-                        extract_or_repair_lens_diagnostic(
-                            full_text,
-                            lens_context['active_lenses'],
-                            lens_context['lens_context_sources'],
-                            assessment_id,
-                        )
-                    )
                     if _native_climate_stage2:
+                        final_recovery_event = None
+                        for recovery_event in _iter_native_climate_stage2_diagnostic(
+                            stage2_output=full_text,
+                            active_lenses=lens_context['active_lenses'],
+                            context_sources=lens_context['lens_context_sources'],
+                            assessment_id=assessment_id,
+                        ):
+                            if "result" not in recovery_event:
+                                yield f"data: {json.dumps(recovery_event)}\n\n"
+                                continue
+                            final_recovery_event = recovery_event
+                        lens_diagnostic = (
+                            final_recovery_event.get("result", {})
+                            if final_recovery_event else {}
+                        )
+                        lens_recovered = bool(
+                            final_recovery_event
+                            and final_recovery_event.get("recovered")
+                        )
+                        recovery_code = (
+                            final_recovery_event.get("error_code", "")
+                            if final_recovery_event
+                            else "climate_diagnostic_invalid"
+                        )
+                        if (
+                            not final_recovery_event
+                            or recovery_code
+                            or climate_missing_fields(lens_diagnostic)
+                        ):
+                            message = (
+                                str(lens_diagnostic.get("message", "")).strip()
+                                or "The structured Climate-FCV assessment could not be completed. Retry the climate assessment or run a full FCV assessment."
+                            )
+                            yield "data: " + json.dumps(
+                                climate_blocking_failure_event(
+                                    recovery_code or "climate_diagnostic_invalid",
+                                    message,
+                                    2,
+                                )
+                            ) + "\n\n"
+                            return
                         stage2_ratings = climate_stage2_ratings(lens_diagnostic)
                         under_hood = {}
                         category_lens = {}
-                        parse_error = bool(lens_failure)
-                        parse_error_message = lens_failure or ''
+                        parse_error = False
+                        parse_error_message = ""
                     else:
+                        lens_diagnostic, lens_recovered, lens_failure = (
+                            extract_or_repair_lens_diagnostic(
+                                full_text,
+                                lens_context['active_lenses'],
+                                lens_context['lens_context_sources'],
+                                assessment_id,
+                            )
+                        )
                         # Generic FCV Stage 2 retains its full assessment parsers.
                         stage2_ratings = extract_stage2_ratings(full_text)
                         under_hood = extract_under_hood(full_text)
@@ -8268,6 +8461,7 @@ def run_stage():
                     done_data['responsiveness_rating'] = stage2_ratings.get('responsiveness_rating', '')
                     done_data['rating_reasoning'] = stage2_ratings.get('rating_reasoning', '')
                     done_data['lens_diagnostic'] = lens_diagnostic
+                    done_data['lens_diagnostic_recovered'] = lens_recovered
                     done_data['climate_integration'] = climate_integration_payload(lens_diagnostic)
 
                 elif stage == 3:
@@ -9111,21 +9305,62 @@ def run_express():
                     stage2_output = repair_vocabulary_violations(stage2_output, instrument_type, _vocab_violations_s2, 2)
 
                 # Parse Stage 2 output
-                lens_diagnostic, lens_recovered, lens_failure = (
-                    extract_or_repair_lens_diagnostic(
-                        stage2_output,
-                        lens_context_s2['active_lenses'],
-                        lens_context_s2['lens_context_sources'],
-                        assessment_id,
-                    )
-                )
                 if _native_climate_s2:
+                    final_recovery_event = None
+                    for recovery_event in _iter_native_climate_stage2_diagnostic(
+                        stage2_output=stage2_output,
+                        active_lenses=lens_context_s2['active_lenses'],
+                        context_sources=lens_context_s2['lens_context_sources'],
+                        assessment_id=assessment_id,
+                    ):
+                        if "result" not in recovery_event:
+                            yield f"data: {json.dumps(recovery_event)}\n\n"
+                            continue
+                        final_recovery_event = recovery_event
+                    lens_diagnostic = (
+                        final_recovery_event.get("result", {})
+                        if final_recovery_event else {}
+                    )
+                    lens_recovered = bool(
+                        final_recovery_event
+                        and final_recovery_event.get("recovered")
+                    )
+                    recovery_code = (
+                        final_recovery_event.get("error_code", "")
+                        if final_recovery_event
+                        else "climate_diagnostic_invalid"
+                    )
+                    if (
+                        not final_recovery_event
+                        or recovery_code
+                        or climate_missing_fields(lens_diagnostic)
+                    ):
+                        message = (
+                            str(lens_diagnostic.get("message", "")).strip()
+                            or "The structured Climate-FCV assessment could not be completed. Retry the climate assessment or run a full FCV assessment."
+                        )
+                        yield "data: " + json.dumps(
+                            climate_blocking_failure_event(
+                                recovery_code or "climate_diagnostic_invalid",
+                                message,
+                                2,
+                            )
+                        ) + "\n\n"
+                        return
                     stage2_ratings = climate_stage2_ratings(lens_diagnostic)
                     under_hood = {}
                     category_lens_e2 = {}
-                    s2_parse_error = bool(lens_failure)
-                    s2_parse_error_msg = lens_failure or ''
+                    s2_parse_error = False
+                    s2_parse_error_msg = ""
                 else:
+                    lens_diagnostic, lens_recovered, lens_failure = (
+                        extract_or_repair_lens_diagnostic(
+                            stage2_output,
+                            lens_context_s2['active_lenses'],
+                            lens_context_s2['lens_context_sources'],
+                            assessment_id,
+                        )
+                    )
                     stage2_ratings = extract_stage2_ratings(stage2_output)
                     under_hood = extract_under_hood(stage2_output)
                     category_lens_e2 = extract_category_lens(stage2_output)

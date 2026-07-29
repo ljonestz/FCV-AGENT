@@ -1,6 +1,9 @@
 """Route-level contracts for the dedicated Climate-FCV workflow."""
 
 import json
+import time
+from types import SimpleNamespace
+
 import pytest
 
 
@@ -340,10 +343,15 @@ def test_standard_climate_stage2_uses_native_prompt_and_canonical_output(
     monkeypatch.setattr(app_module, "extract_stage2_ratings", forbidden_generic_parser)
     monkeypatch.setattr(app_module, "extract_under_hood", forbidden_generic_parser)
     monkeypatch.setattr(app_module, "extract_category_lens", forbidden_generic_parser)
+    def fake_native_diagnostic(**_kwargs):
+        yield {"recovery_status": "repairing", "missing_fields": ["lenses.climate.integration_summary"]}
+        yield {"keepalive": True, "recovery_status": "repairing"}
+        yield {"result": payload, "recovered": True, "error_code": ""}
+
     monkeypatch.setattr(
         app_module,
-        "extract_or_repair_lens_diagnostic",
-        lambda *args, **kwargs: (payload, False, ""),
+        "_iter_native_climate_stage2_diagnostic",
+        fake_native_diagnostic,
     )
     request_payload = {
         "stage": 2,
@@ -369,6 +377,9 @@ def test_standard_climate_stage2_uses_native_prompt_and_canonical_output(
     events = _decode_sse(response)
     done = next(event for event in events if event.get("done"))
 
+    assert any(event.get("recovery_status") == "repairing" for event in events)
+    assert any(event.get("keepalive") is True for event in events)
+    assert done["lens_diagnostic_recovered"] is True
     assert len(calls) == 1
     assert calls[0]["stage"] == 2
     assert calls[0]["max_tokens"] == 16000
@@ -439,7 +450,16 @@ def test_express_climate_stage2_uses_native_prompt_and_canonical_output(monkeypa
     monkeypatch.setattr(app_module, "extract_stage2_ratings", forbidden_generic_parser)
     monkeypatch.setattr(app_module, "extract_under_hood", forbidden_generic_parser)
     monkeypatch.setattr(app_module, "extract_category_lens", forbidden_generic_parser)
-    monkeypatch.setattr(app_module, "extract_or_repair_lens_diagnostic", lambda *args, **kwargs: (payload, False, ""))
+    def fake_native_diagnostic(**_kwargs):
+        yield {"recovery_status": "repairing", "missing_fields": ["lenses.climate.integration_summary"]}
+        yield {"keepalive": True, "recovery_status": "repairing"}
+        yield {"result": payload, "recovered": True, "error_code": ""}
+
+    monkeypatch.setattr(
+        app_module,
+        "_iter_native_climate_stage2_diagnostic",
+        fake_native_diagnostic,
+    )
     response = app_module.app.test_client().post("/api/run-express", json={
         "active_lenses": ["climate"],
         "documents": [{"name": "Project Appraisal Document.txt", "type": "text", "docRole": "primary", "content": "Named project road and access activities. " * 10}],
@@ -448,6 +468,9 @@ def test_express_climate_stage2_uses_native_prompt_and_canonical_output(monkeypa
     events = _decode_sse(response)
     done = next(event for event in events if event.get("stage_done") == 2)
     stage2_call = next(call for call in calls if call["stage"] == 2)
+    assert any(event.get("recovery_status") == "repairing" for event in events)
+    assert any(event.get("keepalive") is True for event in events)
+    assert done["lens_diagnostic_recovered"] is True
     assert stage2_call["max_tokens"] == 16000
     assembled = stage2_call["messages"][-1]["content"]
     assert "dedicated Climate-FCV Stage 2 assessment" in assembled
@@ -574,3 +597,160 @@ def test_express_non_climate_stage2_retains_generic_contract(monkeypatch):
     assert "--- WBG FCV Operational Manual" in assembled
     assert done["under_hood"]["questions_map"] == "questions"
     assert done["category_lens"]["classification"] == "General"
+
+
+
+class SlowRecoveryClient:
+    def __init__(self, delay_seconds: float):
+        self.delay_seconds = delay_seconds
+        self.messages = self
+
+    def create(self, **_kwargs):
+        time.sleep(self.delay_seconds)
+        content = (
+            "%%%LENS_DIAGNOSTIC_START%%%"
+            + json.dumps(_canonical_payload())
+            + "%%%LENS_DIAGNOSTIC_END%%%"
+        )
+        return SimpleNamespace(
+            content=[SimpleNamespace(type="text", text=content)]
+        )
+
+
+def test_recovery_emits_keepalive_before_slow_result():
+    events = list(app_module._iter_climate_diagnostic_recovery(
+        primary={"schema_version": "climate-native-v1", "lenses": []},
+        missing_fields=["lenses.climate"],
+        active_lens_ids=["climate"],
+        source_ids_by_lens={"climate": set()},
+        readout_schema_by_lens={"climate": {}},
+        assessment_id="assessment-recovery",
+        client=SlowRecoveryClient(delay_seconds=0.05),
+        max_seconds=1,
+        keepalive_interval=0.01,
+    ))
+
+    assert any(event.get("recovery_status") == "repairing" for event in events)
+    assert any(event.get("keepalive") is True for event in events)
+    assert "result" in events[-1]
+
+
+
+@pytest.mark.parametrize("endpoint", ["/api/run-stage", "/api/run-express"])
+def test_climate_recovery_failure_blocks_both_workflows(monkeypatch, endpoint):
+    model_stages = []
+
+    def fake_stream(messages, max_tokens, stage, **kwargs):
+        model_stages.append(stage)
+        fake_stream._last_stop_reason = "end_turn"
+        if stage == 1:
+            fake_stream._last_result = "Stage 1 project extraction."
+            yield 'data: {"chunk": "stage1"}\n\n'
+            return
+        if stage == 2:
+            fake_stream._last_result = "%%%LENS_DIAGNOSTIC_START%%%" + json.dumps(_canonical_payload()) + "%%%LENS_DIAGNOSTIC_END%%%"
+            yield 'data: {"chunk": "stage2"}\n\n'
+            return
+        raise AssertionError("Stage 3 must not run after Climate recovery failure")
+
+    def failed_recovery(**_kwargs):
+        yield {"recovery_status": "repairing", "missing_fields": ["lenses.climate.integration_summary"]}
+        yield {"keepalive": True, "recovery_status": "repairing"}
+        yield {"result": {"error": True, "message": "Climate diagnostic repair timed out.", "lenses": [], "findings": []}, "recovered": False, "error_code": "climate_recovery_timeout"}
+
+    monkeypatch.setattr(app_module, "_stream_stage", fake_stream)
+    monkeypatch.setattr(app_module, "_iter_native_climate_stage2_diagnostic", failed_recovery)
+    monkeypatch.setattr(app_module, "extract_country_name", lambda text, client: "Exampleland")
+    monkeypatch.setattr(app_module, "extract_sector_name", lambda text, client: "Transport")
+    monkeypatch.setattr(app_module, "get_fast_client", lambda: object())
+    monkeypatch.setattr(app_module, "_iter_stage1_research", lambda *a, **k: _research_result(_valid_research()))
+    monkeypatch.setattr(app_module, "extract_instrument_type", lambda text: "IPF")
+    monkeypatch.setattr(app_module, "extract_temporal_context", lambda text: {})
+    monkeypatch.setattr(app_module, "extract_regime_context", lambda text, instrument: {})
+    monkeypatch.setattr(app_module, "extract_country_classification", lambda text: {"category": "General"})
+    monkeypatch.setattr(app_module, "extract_context_flags", lambda text: {})
+    monkeypatch.setattr(app_module, "extract_sector_context", lambda text: {"primary_sector": "Transport"})
+    monkeypatch.setattr(app_module, "extract_change_types", lambda text: [])
+    monkeypatch.setattr(app_module, "extract_prior_actions", lambda text: [])
+    monkeypatch.setattr(app_module, "extract_dlis", lambda text: [])
+    monkeypatch.setattr(app_module, "extract_country_set", lambda text: {"is_multi_country": False})
+    monkeypatch.setattr(app_module, "extract_mpa_context", lambda text: {"is_mpa": False})
+    monkeypatch.setattr(app_module, "extract_lens_evidence", lambda *args: {})
+
+    request_payload = {"active_lenses": ["climate"], "document_type": "PAD", "instrument_type": "IPF", "review_mode": "design"}
+    if endpoint == "/api/run-stage":
+        request_payload.update({"stage": 2, "history": [{"role": "assistant", "content": "Stage 1 output."}], "climate_research": _valid_research(), "lens_context_sources": []})
+    else:
+        request_payload["documents"] = [{"name": "Project Appraisal Document.txt", "type": "text", "docRole": "primary", "content": "Named project road and access activities. " * 10}]
+
+    events = _decode_sse(app_module.app.test_client().post(endpoint, json=request_payload))
+    assert any(event.get("recovery_status") == "repairing" for event in events)
+    assert any(event.get("keepalive") is True for event in events)
+    failure = next(event for event in events if event.get("error_code") == "climate_recovery_timeout")
+    assert failure["failed_stage"] == 2
+    assert failure["retryable"] is True
+    assert failure["fallback"] == "full_fcv"
+    assert not any(event.get("done") and event.get("stage") == 2 for event in events)
+    assert not any(event.get("stage_done") == 2 for event in events)
+    assert 3 not in model_stages
+
+
+
+def test_recovery_iterator_times_out_without_exposing_partial_result():
+    events = list(app_module._iter_climate_diagnostic_recovery(
+        primary={"schema_version": "climate-native-v1", "lenses": []},
+        missing_fields=["lenses.climate"],
+        active_lens_ids=["climate"],
+        source_ids_by_lens={"climate": set()},
+        readout_schema_by_lens={"climate": {}},
+        assessment_id="assessment-timeout",
+        client=SlowRecoveryClient(delay_seconds=0.05),
+        max_seconds=0.01,
+        keepalive_interval=0.002,
+    ))
+
+    assert events[-1]["error_code"] == "climate_recovery_timeout"
+    assert events[-1]["recovered"] is False
+    assert events[-1]["result"]["error"] is True
+    assert not any(
+        event.get("result", {}).get("fcv_baseline")
+        for event in events
+        if isinstance(event.get("result"), dict)
+    )
+
+
+
+def test_recovery_does_not_synthesize_requested_materiality():
+    primary = json.loads(json.dumps(_canonical_payload()))
+    primary["lenses"][0]["materiality_level"] = ""
+    repair = json.loads(json.dumps(_canonical_payload()))
+    repair["lenses"][0]["materiality_level"] = ""
+
+    class BlankMaterialityClient:
+        def __init__(self):
+            self.messages = self
+
+        def create(self, **_kwargs):
+            content = (
+                "%%%LENS_DIAGNOSTIC_START%%%"
+                + json.dumps(repair)
+                + "%%%LENS_DIAGNOSTIC_END%%%"
+            )
+            return SimpleNamespace(
+                content=[SimpleNamespace(type="text", text=content)]
+            )
+
+    events = list(app_module._iter_climate_diagnostic_recovery(
+        primary=primary,
+        missing_fields=["lenses.climate.materiality_level"],
+        active_lens_ids=["climate"],
+        source_ids_by_lens={"climate": set()},
+        readout_schema_by_lens={"climate": {}},
+        assessment_id="assessment-missing-materiality",
+        client=BlankMaterialityClient(),
+        max_seconds=1,
+        keepalive_interval=0.01,
+    ))
+
+    assert events[-1]["recovered"] is False
+    assert events[-1]["error_code"] == "climate_diagnostic_invalid"
