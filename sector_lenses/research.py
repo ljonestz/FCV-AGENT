@@ -10,6 +10,7 @@ from urllib.parse import urlparse
 
 CLIMATE_RESEARCH_START = "%%%CLIMATE_RESEARCH_START%%%"
 CLIMATE_RESEARCH_END = "%%%CLIMATE_RESEARCH_END%%%"
+CLIMATE_EVIDENCE_PACKET_MAX_CHARS = 12_000
 CLIMATE_TIME_HORIZONS = {
     "current-near-term",
     "project-lifetime",
@@ -66,6 +67,88 @@ def _trusted_https(url: str) -> bool:
         host == suffix or host.endswith("." + suffix)
         for suffix in TRUSTED_CLIMATE_HOST_SUFFIXES
     )
+
+
+def _block_value(item: Any, name: str, default: Any = None) -> Any:
+    """Read one field from an SDK object or dictionary-shaped block."""
+
+    if isinstance(item, dict):
+        return item.get(name, default)
+    return getattr(item, name, default)
+
+
+def build_climate_evidence_packet(
+    content: Any,
+    project_profile: dict[str, Any],
+) -> dict[str, Any]:
+    """Convert search blocks into bounded, trusted structuring evidence."""
+
+    blocks = content if isinstance(content, list) else []
+    note_parts: list[str] = []
+    sources: list[dict[str, str]] = []
+    seen_urls: set[str] = set()
+
+    def add_source(item: Any) -> None:
+        url = _bounded(_block_value(item, "url"), 1000)
+        url_key = url.casefold().rstrip("/")
+        if not url or not _trusted_https(url) or url_key in seen_urls:
+            return
+        title = _bounded(_block_value(item, "title"), 220)
+        if not title:
+            return
+        publication_date = _bounded(
+            _block_value(item, "publication_date")
+            or _block_value(item, "page_age"),
+            40,
+        )
+        excerpt = _bounded(
+            _block_value(item, "cited_text")
+            or _block_value(item, "snippet")
+            or _block_value(item, "text"),
+            320,
+        )
+        seen_urls.add(url_key)
+        sources.append({
+            "title": title,
+            "url": url,
+            "publication_date": publication_date,
+            "excerpt": excerpt,
+        })
+
+    for block in blocks:
+        block_type = _bounded(_block_value(block, "type"), 80)
+        if block_type == "text":
+            note = _bounded(_block_value(block, "text"), 2200)
+            if note:
+                note_parts.append(note)
+            citations = _block_value(block, "citations", [])
+            for citation in citations if isinstance(citations, list) else []:
+                add_source(citation)
+        elif block_type == "web_search_tool_result":
+            results = _block_value(block, "content", [])
+            for result in results if isinstance(results, list) else []:
+                add_source(result)
+        if len(sources) >= 4:
+            break
+
+    profile = project_profile if isinstance(project_profile, dict) else {}
+    packet = {
+        "notes": _bounded("\n\n".join(note_parts), 2200),
+        "sources": sources[:4],
+        "project_profile": {
+            "documents": _strings(profile.get("documents"), 4, 180),
+            "document_excerpt": _bounded(
+                profile.get("document_excerpt"), 1800
+            ),
+        },
+    }
+    serialized = json.dumps(packet, ensure_ascii=False, separators=(",", ":"))
+    if len(serialized) > CLIMATE_EVIDENCE_PACKET_MAX_CHARS:
+        overage = len(serialized) - CLIMATE_EVIDENCE_PACKET_MAX_CHARS
+        packet["notes"] = packet["notes"][:-overage] if (
+            overage < len(packet["notes"])
+        ) else ""
+    return packet
 
 
 def _attempt_count(value: Any) -> int:

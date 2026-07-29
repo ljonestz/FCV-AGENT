@@ -11,8 +11,10 @@ from anthropic._exceptions import OverloadedError
 
 import app as app_module
 from sector_lenses.research import (
+    CLIMATE_EVIDENCE_PACKET_MAX_CHARS,
     CLIMATE_RESEARCH_END,
     CLIMATE_RESEARCH_START,
+    build_climate_evidence_packet,
     build_climate_research_prompt,
     climate_research_evidence_gate,
     extract_climate_research_bundle,
@@ -65,6 +67,89 @@ def _second_authoritative_source():
         "url": "https://ipcc.ch/example",
         "publication_date": "2024",
     }
+
+
+def test_climate_evidence_packet_is_bounded_and_excludes_raw_payloads():
+    project_profile = {
+        "documents": ["South Sudan PCN.docx"],
+        "document_excerpt": "Landing sites and access roads. " * 1000,
+    }
+    content = [
+        SimpleNamespace(
+            type="text",
+            text="Flood and drought evidence. " * 1000,
+            citations=[
+                SimpleNamespace(
+                    type="web_search_result_location",
+                    title="South Sudan Country Climate and Development Report",
+                    url="https://www.worldbank.org/example-ccdr",
+                    cited_text="Flood timing affects transport access.",
+                    page_age="2025",
+                ),
+                SimpleNamespace(
+                    type="web_search_result_location",
+                    title="Duplicate CCDR",
+                    url="https://www.worldbank.org/example-ccdr/",
+                    cited_text="Duplicate citation.",
+                    page_age="2025",
+                ),
+                SimpleNamespace(
+                    type="web_search_result_location",
+                    title="Untrusted result",
+                    url="https://example.com/untrusted",
+                    cited_text="Must not survive.",
+                    page_age="2026",
+                ),
+            ],
+        ),
+        SimpleNamespace(
+            type="web_search_tool_result",
+            content=[
+                SimpleNamespace(
+                    type="web_search_result",
+                    title="UN climate risk evidence",
+                    url="https://www.un.org/example-climate",
+                    page_age="2024",
+                    encrypted_content="encrypted-secret",
+                )
+            ],
+        ),
+    ]
+
+    packet = build_climate_evidence_packet(content, project_profile)
+    serialized = json.dumps(packet)
+
+    assert len(serialized) <= CLIMATE_EVIDENCE_PACKET_MAX_CHARS
+    assert packet["notes"]
+    assert [source["url"] for source in packet["sources"]] == [
+        "https://www.worldbank.org/example-ccdr",
+        "https://www.un.org/example-climate",
+    ]
+    assert "encrypted-secret" not in serialized
+    assert "example.com/untrusted" not in serialized
+    assert packet["project_profile"]["document_excerpt"]
+
+
+def test_climate_evidence_packet_accepts_dictionary_blocks():
+    packet = build_climate_evidence_packet(
+        [{
+            "type": "text",
+            "text": "Observed drought affects water access.",
+            "citations": [{
+                "type": "web_search_result_location",
+                "title": "UN drought evidence",
+                "url": "https://www.un.org/drought-evidence",
+                "cited_text": "Drought affects rural water systems.",
+                "page_age": "2025",
+            }],
+        }],
+        {"documents": ["PCN.docx"], "document_excerpt": "Water systems"},
+    )
+
+    assert packet["notes"] == "Observed drought affects water access."
+    assert packet["sources"][0]["title"] == "UN drought evidence"
+    assert packet["sources"][0]["publication_date"] == "2025"
+
 
 
 def test_climate_research_gate_accepts_two_sources_and_project_claim():

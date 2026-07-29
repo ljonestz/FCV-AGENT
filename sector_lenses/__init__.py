@@ -32,10 +32,12 @@ from .models import (
 )
 from .registry import load_registry
 from .research import (
+    CLIMATE_EVIDENCE_PACKET_MAX_CHARS,
     CLIMATE_AUTHORITATIVE_SOURCE_TYPES,
     CLIMATE_RESEARCH_MIN_SOURCES,
     CLIMATE_RESEARCH_END,
     CLIMATE_RESEARCH_START,
+    build_climate_evidence_packet,
     build_climate_research_prompt,
     build_climate_search_prompt,
     climate_research_evidence_gate,
@@ -98,10 +100,12 @@ __all__ = [
     "build_climate_stage3_prompt",
     "CLIMATE_REQUIRED_DIRECTIONS",
     "CLIMATE_REQUIRED_LENS_FIELDS",
+    "CLIMATE_EVIDENCE_PACKET_MAX_CHARS",
     "CLIMATE_AUTHORITATIVE_SOURCE_TYPES",
     "CLIMATE_RESEARCH_END",
     "CLIMATE_RESEARCH_MIN_SOURCES",
     "CLIMATE_RESEARCH_START",
+    "build_climate_evidence_packet",
     "build_climate_research_prompt",
     "build_climate_search_prompt",
     "climate_research_evidence_gate",
