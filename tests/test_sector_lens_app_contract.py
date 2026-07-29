@@ -9,6 +9,7 @@ import pytest
 import app as app_module
 from sector_lenses import (
     CLIMATE_NATIVE_SCHEMA_VERSION,
+    build_climate_stage2_prompt,
     load_registry,
 )
 
@@ -835,22 +836,33 @@ def test_stage2_climate_prompt_requires_reflections_and_intersection():
     assert "never a snake_case token" in prompt.replace("\n", " ")
 
 
-def test_stage2_lens_diagnostic_framed_as_mandatory_sibling_of_under_hood():
-    # Primary-emission hardening: the appended lens diagnostic block is the one that
-    # gets dropped ("trailing-block fatigue"), while the base %%%UNDER_HOOD%%% block is
-    # reliably emitted. Tie the diagnostic to UNDER_HOOD as a mandatory sibling so the
-    # model treats it as a required output, not an optional appendix.
-    state = app_module.AnalysisState.from_payload({
-        "active_lenses": ["climate"], "lens_versions": {}, "doc_type": "PAD",
-    })
-    prompt = app_module.build_lens_stage_context(
-        state, 2,
-        climate_research={"status": "failed", "attempts": 0, "sources": [], "claims": [], "failure_reason": ""},
-    )["prompt"]
-    assert "UNDER_HOOD" in prompt
-    low = prompt.lower()
-    assert "mandatory" in low
-    assert "must" in low
+def test_dedicated_climate_stage2_prompt_is_not_under_hood_sibling():
+    prompt = build_climate_stage2_prompt(
+        instrument_type="IPF",
+        document_type="PAD",
+        temporal_guardrail="Treat as preparation-stage evidence.",
+        regime_header="Preparation regime: current policy.",
+        project_signals="flood displacement community infrastructure",
+        climate_research={
+            "status": "complete",
+            "sources": [],
+            "claims": [],
+        },
+        priority_questions=[],
+    )
+
+    assert prompt.count("%%%LENS_DIAGNOSTIC_START%%%") == 1
+    assert prompt.count("%%%LENS_DIAGNOSTIC_END%%%") == 1
+    assert CLIMATE_NATIVE_SCHEMA_VERSION in prompt
+    assert "single source of truth" in prompt.lower()
+    for generic_marker in (
+        "%%%UNDER_HOOD_START%%%",
+        "%%%UNDER_HOOD_END%%%",
+        "%%%RECS_TABLE_START%%%",
+        "%%%DNH_CHECKLIST_START%%%",
+        "%%%QUESTIONS_MAP_START%%%",
+    ):
+        assert generic_marker not in prompt
 
 
 def test_stage2_climate_prompt_injects_bank_and_requests_source_and_rating():
