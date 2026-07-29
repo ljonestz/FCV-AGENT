@@ -6922,7 +6922,7 @@ def run_climate_web_research(
         )
         return bundle
 
-    for attempt, narrow in ((1, True),):
+    for attempt, narrow in ((1, True), (2, True)):
         remaining = (
             CLIMATE_RESEARCH_ATTEMPT_CAP_SECONDS
             if deadline is None
@@ -6979,6 +6979,23 @@ def run_climate_web_research(
                 accepted = gate["bundle"]
                 accepted["attempts"] = attempt
                 return finish(accepted)
+            break
+        except anthropic.APIStatusError as exc:
+            is_overloaded = type(exc).__name__ == "OverloadedError"
+            will_retry = is_overloaded and attempt == 1
+            app.logger.warning(
+                "Climate research attempt assessment_id=%s attempt=%d "
+                "outcome=%s elapsed_ms=%d retry=%s",
+                assessment_id or "unknown",
+                attempt,
+                "overloaded" if is_overloaded else "api_status_error",
+                int((time.monotonic() - attempt_started) * 1000),
+                "yes" if will_retry else "no",
+            )
+            if will_retry:
+                time.sleep(2)
+                continue
+            break
         except anthropic.APITimeoutError:
             app.logger.warning(
                 "Climate research attempt assessment_id=%s attempt=%d "
@@ -6987,7 +7004,7 @@ def run_climate_web_research(
                 attempt,
                 int((time.monotonic() - attempt_started) * 1000),
             )
-            continue
+            break
         except Exception as exc:
             app.logger.warning(
                 "Climate research attempt assessment_id=%s attempt=%d "

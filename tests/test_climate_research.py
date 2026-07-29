@@ -7,6 +7,7 @@ from types import SimpleNamespace
 
 import anthropic
 import httpx
+from anthropic._exceptions import OverloadedError
 
 import app as app_module
 from sector_lenses.research import (
@@ -314,6 +315,32 @@ def test_climate_request_timeout_never_exceeds_parent_remaining_time():
     )
 
     assert client.calls[0]["timeout"] == 50.0
+
+
+def test_climate_research_retries_one_transient_overload(monkeypatch):
+    response = httpx.Response(
+        529,
+        request=httpx.Request(
+            "POST", "https://api.anthropic.com/v1/messages"
+        ),
+    )
+    overload = OverloadedError(
+        "Service overloaded",
+        response=response,
+        body={"type": "error", "error": {"type": "overloaded_error"}},
+    )
+    client = _SequencedResearchClient([overload, _valid_climate_response()])
+    delays = []
+    monkeypatch.setattr(app_module.time, "sleep", delays.append)
+
+    result = app_module.run_climate_web_research(
+        "South Sudan", "Water", {}, client
+    )
+
+    assert result["status"] == "complete"
+    assert result["attempts"] == 2
+    assert len(client.calls) == 2
+    assert delays == [2]
 
 
 def test_climate_research_does_not_duplicate_a_timed_out_request():
