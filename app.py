@@ -23,6 +23,8 @@ from sector_lenses.climate_native import (
 from sector_lenses import (
     CCDR_RESEARCH_INSTRUCTIONS,
     build_climate_research_prompt,
+    CLIMATE_RESEARCH_END,
+    CLIMATE_RESEARCH_START,
     extract_climate_research_bundle,
     format_climate_research_context,
     build_climate_stage2_prompt,
@@ -6934,6 +6936,7 @@ def run_climate_web_research(
             break
 
         attempts = attempt
+        attempt_started = time.monotonic()
         prompt = build_climate_research_prompt(
             country,
             sector,
@@ -6961,13 +6964,44 @@ def run_climate_web_research(
             _, bundle = extract_climate_research_bundle(text)
             bundle["attempts"] = attempt
             gate = climate_research_evidence_gate(bundle)
+            app.logger.info(
+                "Climate research attempt assessment_id=%s attempt=%d "
+                "outcome=response elapsed_ms=%d block_present=%s "
+                "status=%s sources=%d claims=%d gate_code=%s",
+                assessment_id or "unknown",
+                attempt,
+                int((time.monotonic() - attempt_started) * 1000),
+                "yes" if (
+                    CLIMATE_RESEARCH_START in text
+                    and CLIMATE_RESEARCH_END in text
+                ) else "no",
+                bundle.get("status", "failed"),
+                len(bundle.get("sources", [])),
+                len(bundle.get("claims", [])),
+                gate.get("code") or "ok",
+            )
             if gate["ok"]:
                 accepted = gate["bundle"]
                 accepted["attempts"] = attempt
                 return finish(accepted)
         except anthropic.APITimeoutError:
+            app.logger.warning(
+                "Climate research attempt assessment_id=%s attempt=%d "
+                "outcome=api_timeout elapsed_ms=%d",
+                assessment_id or "unknown",
+                attempt,
+                int((time.monotonic() - attempt_started) * 1000),
+            )
             continue
-        except Exception:
+        except Exception as exc:
+            app.logger.warning(
+                "Climate research attempt assessment_id=%s attempt=%d "
+                "outcome=exception elapsed_ms=%d exception_type=%s",
+                assessment_id or "unknown",
+                attempt,
+                int((time.monotonic() - attempt_started) * 1000),
+                type(exc).__name__,
+            )
             break
     return finish(normalize_climate_research_bundle({
         "status": "failed",

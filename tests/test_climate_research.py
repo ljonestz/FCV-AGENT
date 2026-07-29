@@ -576,3 +576,23 @@ def test_climate_research_timeout_has_specific_user_message():
         "The required Climate-FCV web research timed out before validated "
         "evidence could be returned. Retry the climate assessment."
     )
+
+
+def test_climate_research_attempt_logging_identifies_response_boundary(caplog):
+    secret = "SECRET PROJECT RESPONSE TEXT"
+    response = SimpleNamespace(
+        content=[SimpleNamespace(type="text", text=secret)]
+    )
+    client = _SequencedResearchClient([response, response])
+
+    with caplog.at_level("INFO", logger=app_module.app.logger.name):
+        result = app_module.run_climate_web_research(
+            "Testland", "Water", {}, client, assessment_id="assessment-log"
+        )
+
+    assert result["status"] == "failed"
+    assert "assessment_id=assessment-log attempt=1 outcome=response" in caplog.text
+    assert "block_present=no" in caplog.text
+    assert "sources=0 claims=0" in caplog.text
+    assert "gate_code=climate_research_failed" in caplog.text
+    assert secret not in caplog.text
