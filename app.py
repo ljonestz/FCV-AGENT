@@ -6939,18 +6939,56 @@ def run_climate_web_research(
             narrow=narrow,
         )
         try:
-            response = api_client.beta.messages.create(
-                model="claude-sonnet-4-6",
-                max_tokens=2500,
-                tools=[{
+            messages = [{"role": "user", "content": prompt}]
+            request_options = {
+                "model": "claude-sonnet-4-6",
+                "max_tokens": 2500,
+                "tools": [{
                     "type": "web_search_20250305",
                     "name": "web_search",
                     "max_uses": 3,
                 }],
-                messages=[{"role": "user", "content": prompt}],
-                betas=["web-search-2025-03-05"],
+                "betas": ["web-search-2025-03-05"],
+            }
+            response = api_client.beta.messages.create(
+                **request_options,
+                messages=messages,
                 timeout=min(remaining, CLIMATE_RESEARCH_ATTEMPT_CAP_SECONDS),
             )
+            if getattr(response, "stop_reason", "") == "pause_turn":
+                block_types = [
+                    getattr(block, "type", "unknown")
+                    for block in response.content
+                ]
+                app.logger.info(
+                    "Climate research attempt assessment_id=%s attempt=%d "
+                    "outcome=pause_turn elapsed_ms=%d block_types=%s",
+                    assessment_id or "unknown",
+                    attempt,
+                    int((time.monotonic() - attempt_started) * 1000),
+                    ",".join(block_types[:10]) or "none",
+                )
+                cap_remaining = max(
+                    0.0,
+                    CLIMATE_RESEARCH_ATTEMPT_CAP_SECONDS
+                    - (time.monotonic() - attempt_started),
+                )
+                parent_remaining = (
+                    cap_remaining
+                    if deadline is None
+                    else max(0.0, deadline - clock())
+                )
+                continuation_timeout = min(cap_remaining, parent_remaining)
+                if continuation_timeout <= 0:
+                    break
+                response = api_client.beta.messages.create(
+                    **request_options,
+                    messages=messages + [{
+                        "role": "assistant",
+                        "content": response.content,
+                    }],
+                    timeout=continuation_timeout,
+                )
             text = "\n".join(
                 block.text
                 for block in response.content
@@ -6959,13 +6997,20 @@ def run_climate_web_research(
             _, bundle = extract_climate_research_bundle(text)
             bundle["attempts"] = attempt
             gate = climate_research_evidence_gate(bundle)
+            final_block_types = [
+                getattr(block, "type", "unknown")
+                for block in response.content
+            ]
             app.logger.info(
                 "Climate research attempt assessment_id=%s attempt=%d "
-                "outcome=response elapsed_ms=%d block_present=%s "
-                "status=%s sources=%d claims=%d gate_code=%s",
+                "outcome=response elapsed_ms=%d stop_reason=%s "
+                "block_types=%s block_present=%s status=%s sources=%d "
+                "claims=%d gate_code=%s",
                 assessment_id or "unknown",
                 attempt,
                 int((time.monotonic() - attempt_started) * 1000),
+                getattr(response, "stop_reason", "unknown") or "unknown",
+                ",".join(final_block_types[:10]) or "none",
                 "yes" if (
                     CLIMATE_RESEARCH_START in text
                     and CLIMATE_RESEARCH_END in text

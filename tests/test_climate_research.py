@@ -283,6 +283,34 @@ def test_climate_research_uses_one_focused_request():
     assert call["timeout"] == 135
 
 
+def test_climate_research_continues_one_pause_turn():
+    paused_content = [
+        SimpleNamespace(type="server_tool_use", name="web_search")
+    ]
+    paused = SimpleNamespace(
+        content=paused_content,
+        stop_reason="pause_turn",
+    )
+    final = _valid_climate_response()
+    final.stop_reason = "end_turn"
+    client = _SequencedResearchClient([paused, final])
+
+    result = app_module.run_climate_web_research(
+        "South Sudan",
+        "Water",
+        {},
+        client,
+    )
+
+    assert result["status"] == "complete"
+    assert result["attempts"] == 1
+    assert len(client.calls) == 2
+    assert client.calls[1]["messages"] == [
+        client.calls[0]["messages"][0],
+        {"role": "assistant", "content": paused_content},
+    ]
+
+
 def test_climate_request_skips_when_parent_budget_is_exhausted():
     client = _SequencedResearchClient([_valid_climate_response()])
     ticks = iter([100.0, 100.0, 100.0])
