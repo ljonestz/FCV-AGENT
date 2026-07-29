@@ -45,6 +45,10 @@ Optional CCDR material may enter as `context-ccdr` only with a validated World B
 
 Valid interaction directions are `climate-fcv-on-project` and `project-on-climate-fcv`. Valid horizons are `current-near-term`, `project-lifetime`, and `asset-system-lifetime`. Standard dividend pathway IDs equal their declared item IDs; additional pathway IDs use `additional-{section_id}-1|2`. Climate priority links use `linked` or `no-material-pathway`. Linked records require a recognized interaction, dividend, or finding ID plus `contribution` and `strengthening_effect`; no-material records require empty ID arrays and a concrete core-FCV reason.
 
+## Climate research provider boundary
+
+The Render build uses a bounded evidence-packet adapter between Sonnet web search and Haiku JSON structuring. The adapter accepts SDK objects or dictionaries, keeps only bounded text notes and deduplicated trusted HTTPS source metadata, and bounds the project profile before serialization. Haiku receives one fresh user message; raw tool-result blocks and encrypted content are never replayed. Packet telemetry contains counts and sizes only. This is provider-specific plumbing: it does not change the shared ClimateResearchBundle schema or the Flask/FastAPI parity contract.
+
 ## Compatibility contract
 
 The Flask and private FastAPI builds must keep these fields and delimiters aligned:
@@ -60,4 +64,4 @@ The Flask and private FastAPI builds must keep these fields and delimiters align
 
 Raw literature and source notes are never injected at runtime.
 
-*Last updated: 2026-07-24 — v9.20 diagnostic completeness (reflections + integration), recovery-prompt parity, no-downgrade adoption, honest partial notice, and stop_reason truncation logging.*
+*Last updated: 2026-07-29 - bounded Climate evidence handoff, fresh structuring request, and explicit truncation reporting.*

@@ -273,6 +273,8 @@ Procfile            # Render deployment config
 
 **Climate-active dual-use contract (implemented on `codex/climate-fcv-output-redesign`):** Stage 1 runs reduced core research and one dedicated bounded trusted-source Climate pass concurrently, with one narrower retry. Stage 2 requires both directional interaction pathways with stable IDs, project/place/group/system anchors, causal steps, confidence, evidence gaps or research claim IDs, and current/project/asset-system horizons. Stage 3 retains both causal directions inside the 900-token lens ceiling and validates `climate_links` on every priority as either `linked` to recognized interaction/dividend/finding IDs or `no-material-pathway` with a concrete reason. Live HTML, shared HTML, and DOCX use the same narrative interactions, causal strips, qualitative dividend synthesis, and priority contribution panels. See `docs/20260723_climate_fcv_output_redesign_handoff.md`.
 
+**Bounded Climate evidence handoff:** Sonnet still performs exactly two targeted web searches. If it returns search results without the validated JSON bundle, a pure adapter retains only bounded note text, trusted cited source metadata, and a bounded project profile. Haiku receives that packet in a fresh single-turn request; the original prompt, tool-use blocks, encrypted result payloads, and full assistant conversation are not replayed. The ClimateResearchBundle schema and mandatory evidence gate are unchanged. Truncated structuring output is reported separately from missing sources.
+
 ```
 STAGE 1 — Context & Extraction
 ├─ Input: appraisal/design-stage project doc (PCN/PID/PAD/AF/Restructuring; instrument type IPF/PforR/DPO/TA/MPA/IPF-DDO; regional ops supported) + optional contextual docs
