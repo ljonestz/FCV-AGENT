@@ -67,4 +67,3 @@ operational telemetry only.
 5. Rerun the same assessment once and inspect the correlated structuring log.
 6. Form one root-cause hypothesis from that evidence before proposing a
    functional change.
-

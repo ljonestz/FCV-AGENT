@@ -415,6 +415,49 @@ def test_climate_research_structures_search_notes_without_researching():
     assert '"time_horizons"' in recovery["messages"][2]["content"]
 
 
+def test_climate_structuring_diagnostic_is_logged_without_content(caplog):
+    searched = SimpleNamespace(
+        content=[
+            SimpleNamespace(type="web_search_tool_result", content=[]),
+            SimpleNamespace(type="web_search_tool_result", content=[]),
+            SimpleNamespace(type="text", text="Two searches completed."),
+        ],
+        stop_reason="end_turn",
+    )
+    secret = "SECRET PROJECT RESPONSE TEXT Upper Nile"
+    truncated_text = (
+        CLIMATE_RESEARCH_START
+        + '{"status":"partial","sources":['
+        + secret
+    )
+    truncated = SimpleNamespace(
+        content=[SimpleNamespace(type="text", text=truncated_text)],
+        stop_reason="max_tokens",
+        usage=SimpleNamespace(input_tokens=1200, output_tokens=2500),
+    )
+    client = _SequencedResearchClient([searched, truncated])
+
+    with caplog.at_level("INFO", logger=app_module.app.logger.name):
+        result = app_module.run_climate_web_research(
+            "Testland",
+            "Water",
+            {},
+            client,
+            assessment_id="assessment-diagnostic",
+        )
+
+    assert result["status"] == "failed"
+    assert len(client.calls) == 2
+    assert "outcome=structuring_diagnostic" in caplog.text
+    assert "assessment_id=assessment-diagnostic" in caplog.text
+    assert "stop_reason=max_tokens" in caplog.text
+    assert "output_tokens=2500" in caplog.text
+    assert "start_present=yes end_present=no" in caplog.text
+    assert "json_status=incomplete" in caplog.text
+    assert "gate_code=climate_research_failed" in caplog.text
+    assert secret not in caplog.text
+
+
 def test_climate_research_does_not_structure_insufficient_search_results():
     incomplete = SimpleNamespace(
         content=[

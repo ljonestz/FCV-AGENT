@@ -28,6 +28,7 @@ from sector_lenses import (
     CLIMATE_RESEARCH_START,
     extract_climate_research_bundle,
     format_climate_research_context,
+    summarize_climate_structuring_response,
     build_climate_stage2_prompt,
     build_climate_stage3_prompt,
     LENS_DIAGNOSTIC_END,
@@ -7003,6 +7004,7 @@ def run_climate_web_research(
                 CLIMATE_RESEARCH_START in text
                 and CLIMATE_RESEARCH_END in text
             )
+            structured_response = False
             if not block_present and search_result_count >= 2:
                 cap_remaining = max(
                     0.0,
@@ -7050,6 +7052,7 @@ def run_climate_web_research(
                         ],
                         timeout=structure_timeout,
                     )
+                    structured_response = True
                     text = "\n".join(
                         block.text
                         for block in response.content
@@ -7058,6 +7061,35 @@ def run_climate_web_research(
             _, bundle = extract_climate_research_bundle(text)
             bundle["attempts"] = attempt
             gate = climate_research_evidence_gate(bundle)
+            if structured_response:
+                diagnostic = summarize_climate_structuring_response(
+                    text,
+                    usage=getattr(response, "usage", None),
+                    stop_reason=getattr(response, "stop_reason", ""),
+                    gate_code=gate.get("code") or "ok",
+                )
+                app.logger.info(
+                    "Climate research attempt assessment_id=%s attempt=%d "
+                    "outcome=structuring_diagnostic stop_reason=%s "
+                    "input_tokens=%d output_tokens=%d response_chars=%d "
+                    "start_present=%s end_present=%s json_status=%s "
+                    "top_level_object=%s fields_present=%s sources_count=%d "
+                    "claims_count=%d gate_code=%s",
+                    assessment_id or "unknown",
+                    attempt,
+                    diagnostic["stop_reason"],
+                    diagnostic["input_tokens"],
+                    diagnostic["output_tokens"],
+                    diagnostic["response_chars"],
+                    "yes" if diagnostic["start_present"] else "no",
+                    "yes" if diagnostic["end_present"] else "no",
+                    diagnostic["json_status"],
+                    "yes" if diagnostic["top_level_object"] else "no",
+                    ",".join(diagnostic["fields_present"]) or "none",
+                    diagnostic["sources_count"],
+                    diagnostic["claims_count"],
+                    diagnostic["gate_code"],
+                )
             final_block_types = [
                 getattr(block, "type", "unknown")
                 for block in response.content
