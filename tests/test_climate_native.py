@@ -1015,16 +1015,18 @@ def test_climate_stage2_prompt_sets_explicit_payload_depth_bounds():
     low = _stage2_prompt().lower()
 
     for bound in (
-        "3-6 evidence_trail items",
+        "3-4 evidence_trail items",
         "three to five material reflections",
-        "up to five sensitivity_evidence items",
-        "up to five responsiveness_evidence items",
-        "up to five lens evidence items",
-        "up to ten lens source_ids",
-        "up to five evidence items and ten source_ids per interaction",
-        "up to three items per declared readout section",
-        "up to two additional_pathways per declared section",
-        "up to twenty findings",
+        "up to three sensitivity_evidence items",
+        "up to three responsiveness_evidence items",
+        "up to three lens evidence items",
+        "up to eight lens source_ids",
+        "up to three evidence items and eight source_ids per interaction",
+        "up to two items per declared readout section",
+        "up to one additional_pathway overall",
+        "up to eight findings",
+        "hard output budget",
+        "7,000 output tokens",
     ):
         assert bound in low
 
