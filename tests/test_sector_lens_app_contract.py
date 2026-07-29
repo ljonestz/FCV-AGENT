@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 import app as app_module
+import climate_question_bank
 from sector_lenses import (
     CLIMATE_NATIVE_SCHEMA_VERSION,
     build_climate_stage2_prompt,
@@ -648,6 +649,65 @@ def test_active_climate_stage2_supersedes_lightweight_core_check():
         context["prompt"]
     )
     assert "do not produce a duplicate" in context["prompt"]
+
+
+def test_native_climate_metadata_context_skips_unused_heavy_prompt():
+    state = app_module.AnalysisState.from_payload({
+        "active_lenses": ["climate"]
+    })
+    signals = " ".join(
+        trigger
+        for question in climate_question_bank.CLIMATE_QUESTION_BANK
+        for trigger in question["triggers"]
+    )
+    climate_research = {
+        "status": "complete",
+        "attempts": 1,
+        "sources": [
+            {
+                "id": "climate-source-1",
+                "source_type": "ccdr",
+                "title": "Country CCDR",
+                "url": "https://www.worldbank.org/example",
+            },
+            {
+                "id": "climate-source-2",
+                "source_type": "scientific",
+                "title": "Climate assessment",
+                "url": "https://www.ipcc.ch/example",
+            },
+        ],
+        "claims": [{
+            "id": f"climate-claim-{index}",
+            "claim": (
+                "Climate pressure affects named project delivery systems and "
+                "vulnerable groups through access and institutional constraints."
+            ),
+            "source_ids": ["climate-source-1", "climate-source-2"],
+            "geographies": ["Project area"],
+            "project_elements": ["Project component"],
+            "affected_groups": ["Affected group"],
+            "systems_or_assets": ["Delivery system"],
+            "evidence_status": "projected",
+            "confidence": "medium",
+            "time_horizons": ["project-lifetime"],
+            "evidence_gap": "Site evidence remains incomplete.",
+        } for index in range(1, 4)],
+        "failure_reason": "",
+    }
+
+    context = app_module.build_lens_stage_context(
+        state,
+        2,
+        climate_research=climate_research,
+        project_signals=signals,
+        compose_prompt=False,
+    )
+
+    assert context["active_lenses"][0]["id"] == "climate"
+    assert context["prompt"] == ""
+    assert context["estimated_tokens"] == 0
+    assert context["lens_context_sources"] == []
 
 
 def test_active_climate_stage2_requests_materiality_interactions_and_pathways():
@@ -2076,6 +2136,7 @@ def test_field_level_climate_recovery_is_bounded_and_requests_missing_path():
     assert terminal["result"]["lenses"][0]["integration_summary"] == (
         "Repaired integration summary."
     )
+
 
 
 def test_field_level_climate_recovery_rejects_incomplete_repair():

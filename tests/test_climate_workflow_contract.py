@@ -329,6 +329,16 @@ def test_standard_climate_stage2_uses_native_prompt_and_canonical_output(
     )
     calls = []
 
+    lens_context_calls = []
+    real_build_lens_stage_context = app_module.build_lens_stage_context
+
+    def track_lens_context(*args, **kwargs):
+        lens_context_calls.append({
+            "stage": args[1] if len(args) > 1 else kwargs.get("stage"),
+            "compose_prompt": kwargs.get("compose_prompt"),
+        })
+        return real_build_lens_stage_context(*args, **kwargs)
+
     def fake_stream(messages, max_tokens, stage, **kwargs):
         calls.append({
             "messages": messages,
@@ -342,6 +352,9 @@ def test_standard_climate_stage2_uses_native_prompt_and_canonical_output(
     def forbidden_generic_parser(*args, **kwargs):
         raise AssertionError("generic Stage 2 parser must not run for Climate-FCV")
 
+    monkeypatch.setattr(
+        app_module, "build_lens_stage_context", track_lens_context
+    )
     monkeypatch.setattr(app_module, "_stream_stage", fake_stream)
     monkeypatch.setattr(app_module, "extract_stage2_ratings", forbidden_generic_parser)
     monkeypatch.setattr(app_module, "extract_under_hood", forbidden_generic_parser)
@@ -408,13 +421,23 @@ def test_standard_climate_stage2_uses_native_prompt_and_canonical_output(
     assert done["under_hood"] == {}
     assert done["category_lens"] == {}
     assert done["parse_error"] is False
-
+    assert {"stage": 2, "compose_prompt": False} in lens_context_calls
 
 
 def test_express_climate_stage2_uses_native_prompt_and_canonical_output(monkeypatch):
     payload = _canonical_payload()
     raw_model_output = "%%%LENS_DIAGNOSTIC_START%%%" + json.dumps(payload) + "%%%LENS_DIAGNOSTIC_END%%%"
     calls = []
+
+    lens_context_calls = []
+    real_build_lens_stage_context = app_module.build_lens_stage_context
+
+    def track_lens_context(*args, **kwargs):
+        lens_context_calls.append({
+            "stage": args[1] if len(args) > 1 else kwargs.get("stage"),
+            "compose_prompt": kwargs.get("compose_prompt"),
+        })
+        return real_build_lens_stage_context(*args, **kwargs)
 
     def fake_stream(messages, max_tokens, stage, **kwargs):
         calls.append({"messages": messages, "max_tokens": max_tokens, "stage": stage})
@@ -433,6 +456,9 @@ def test_express_climate_stage2_uses_native_prompt_and_canonical_output(monkeypa
     def forbidden_generic_parser(*args, **kwargs):
         raise AssertionError("generic Stage 2 parser must not run for Climate-FCV")
 
+    monkeypatch.setattr(
+        app_module, "build_lens_stage_context", track_lens_context
+    )
     monkeypatch.setattr(app_module, "extract_country_name", lambda text, client: "Exampleland")
     monkeypatch.setattr(app_module, "extract_sector_name", lambda text, client: "Transport")
     monkeypatch.setattr(app_module, "get_fast_client", lambda: object())
@@ -488,7 +514,7 @@ def test_express_climate_stage2_uses_native_prompt_and_canonical_output(monkeypa
     assert done["under_hood"] == {}
     assert done["category_lens"] == {}
     assert done["parse_error"] is False
-
+    assert {"stage": 2, "compose_prompt": False} in lens_context_calls
 
 
 def test_standard_non_climate_stage2_retains_generic_contract(monkeypatch):

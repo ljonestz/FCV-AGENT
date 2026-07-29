@@ -974,6 +974,7 @@ def build_lens_stage_context(
     lens_context_sources: list[dict[str, Any]] | None = None,
     climate_research: dict[str, Any] | None = None,
     project_signals: str = "",
+    compose_prompt: bool = True,
 ) -> dict[str, Any]:
     """Resolve client lens choices and build a bounded stage-specific prompt contract."""
 
@@ -1005,6 +1006,34 @@ def build_lens_stage_context(
         lens_diagnostic_failure_message(normalized_diagnostic, active_ids)
         if stage == 3 and selection.lenses else ""
     )
+    if not compose_prompt:
+        return {
+            "active_lenses": [
+                {
+                    "id": lens.id,
+                    "version": lens.version,
+                    "position": "primary" if index == 0 else "secondary",
+                }
+                for index, lens in enumerate(selection.lenses)
+            ],
+            "warnings": [
+                {
+                    "code": warning.code,
+                    "message": warning.message,
+                    "lens_id": warning.lens_id,
+                }
+                for warning in selection.warnings
+            ],
+            "prompt": "",
+            "estimated_tokens": 0,
+            "truncated": bool(normalized_diagnostic.get("truncated")),
+            "restart_required": stage > 1 and any(
+                warning.code == "version_mismatch"
+                for warning in selection.warnings
+            ),
+            "lens_context_sources": normalized_context_sources,
+            "lens_diagnostic": normalized_diagnostic if stage == 3 else {},
+        }
     suffix = ""
     diagnostic_truncated = bool(normalized_diagnostic.get("truncated"))
     if selection.lenses and stage == 1:
@@ -8152,6 +8181,9 @@ def run_stage():
                 project_signals=_climate_project_signals(
                     analysis_state, data.get('sector_context'), _s1_history_text
                 ),
+                compose_prompt=not (
+                    _native_climate_stage2 or _native_climate_stage3
+                ),
             )
             if lens_context['restart_required']:
                 return jsonify({
@@ -9408,6 +9440,9 @@ def run_express():
                 instrument_slice = get_instrument_slice(instrument_type)
                 temporal_guardrail = _build_temporal_guardrail(temporal_context, doc_type)
 
+                _native_climate_s2 = (
+                    not is_impl and climate_active(analysis_state)
+                )
                 lens_context_s2 = build_lens_stage_context(
                     analysis_state,
                     2,
@@ -9416,9 +9451,7 @@ def run_express():
                     project_signals=_climate_project_signals(
                         analysis_state, sector_context, stage1_output[:2500]
                     ),
-                )
-                _native_climate_s2 = (
-                    not is_impl and climate_active(analysis_state)
+                    compose_prompt=not _native_climate_s2,
                 )
                 if _native_climate_s2:
                     _e2_regime = regime_context or {}
@@ -9738,6 +9771,7 @@ def run_express():
                     3,
                     lens_diagnostic=lens_diagnostic,
                     lens_context_sources=lens_context_sources,
+                    compose_prompt=not _native_climate_s3,
                 )
 
                 if _native_climate_s3:
