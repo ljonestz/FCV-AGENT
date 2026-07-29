@@ -292,6 +292,11 @@ def summarize_climate_structuring_response(
     json_status = "absent"
     top_level_object = False
     sources_count = -1
+    source_id_valid = -1
+    source_type_valid = -1
+    source_title_present = -1
+    source_url_trusted = -1
+    source_fully_valid = -1
     claims_count = -1
 
     if start_present and end_present:
@@ -312,6 +317,33 @@ def summarize_climate_structuring_response(
                 claims = payload.get("claims")
                 if isinstance(sources, list):
                     sources_count = min(len(sources), limit)
+                    source_id_valid = 0
+                    source_type_valid = 0
+                    source_title_present = 0
+                    source_url_trusted = 0
+                    source_fully_valid = 0
+                    for source in sources[:99]:
+                        if not isinstance(source, dict):
+                            continue
+                        id_ok = bool(re.fullmatch(
+                            r"climate-source-[1-9][0-9]?",
+                            _bounded(source.get("id"), 80),
+                        ))
+                        type_ok = (
+                            _bounded(source.get("source_type"), 40)
+                            in CLIMATE_SOURCE_TYPES
+                        )
+                        title_ok = bool(_bounded(source.get("title"), 300))
+                        url_ok = _trusted_https(
+                            _bounded(source.get("url"), 1000)
+                        )
+                        source_id_valid += int(id_ok)
+                        source_type_valid += int(type_ok)
+                        source_title_present += int(title_ok)
+                        source_url_trusted += int(url_ok)
+                        source_fully_valid += int(
+                            id_ok and type_ok and title_ok and url_ok
+                        )
                 if isinstance(claims, list):
                     claims_count = min(len(claims), limit)
     elif start_present or end_present:
@@ -335,6 +367,11 @@ def summarize_climate_structuring_response(
         "top_level_object": top_level_object,
         "fields_present": fields_present,
         "sources_count": sources_count,
+        "source_id_valid": source_id_valid,
+        "source_type_valid": source_type_valid,
+        "source_title_present": source_title_present,
+        "source_url_trusted": source_url_trusted,
+        "source_fully_valid": source_fully_valid,
         "claims_count": claims_count,
         "gate_code": normalized_gate_code,
     }

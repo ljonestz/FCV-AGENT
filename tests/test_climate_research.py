@@ -349,6 +349,11 @@ def test_climate_structuring_diagnostic_reports_truncation_without_text():
         "top_level_object": False,
         "fields_present": ("status", "sources"),
         "sources_count": -1,
+        "source_id_valid": -1,
+        "source_type_valid": -1,
+        "source_title_present": -1,
+        "source_url_trusted": -1,
+        "source_fully_valid": -1,
         "claims_count": -1,
         "gate_code": "climate_research_failed",
     }
@@ -383,6 +388,11 @@ def test_climate_structuring_diagnostic_reports_complete_object_shape():
         "status", "attempts", "sources", "claims", "failure_reason"
     )
     assert summary["sources_count"] == 2
+    assert summary["source_id_valid"] == 0
+    assert summary["source_type_valid"] == 0
+    assert summary["source_title_present"] == 0
+    assert summary["source_url_trusted"] == 0
+    assert summary["source_fully_valid"] == 0
     assert summary["claims_count"] == 4
     assert "SECRET" not in repr(summary)
 
@@ -575,6 +585,7 @@ def test_climate_structuring_diagnostic_is_logged_without_content(caplog):
     assert "start_present=yes end_present=no" in caplog.text
     assert "json_status=incomplete" in caplog.text
     assert "gate_code=climate_research_failed" in caplog.text
+    assert "source_checks=id:-1,type:-1,title:-1,url:-1,valid:-1" in caplog.text
     assert secret not in caplog.text
 
 

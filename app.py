@@ -7122,7 +7122,8 @@ def run_climate_web_research(
                     "input_tokens=%d output_tokens=%d response_chars=%d "
                     "start_present=%s end_present=%s json_status=%s "
                     "top_level_object=%s fields_present=%s sources_count=%d "
-                    "claims_count=%d gate_code=%s",
+                    "claims_count=%d gate_code=%s "
+                    "source_checks=id:%d,type:%d,title:%d,url:%d,valid:%d",
                     assessment_id or "unknown",
                     attempt,
                     diagnostic["stop_reason"],
@@ -7137,6 +7138,11 @@ def run_climate_web_research(
                     diagnostic["sources_count"],
                     diagnostic["claims_count"],
                     diagnostic["gate_code"],
+                    diagnostic["source_id_valid"],
+                    diagnostic["source_type_valid"],
+                    diagnostic["source_title_present"],
+                    diagnostic["source_url_trusted"],
+                    diagnostic["source_fully_valid"],
                 )
             final_block_types = [
                 getattr(block, "type", "unknown")
