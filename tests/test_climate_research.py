@@ -18,6 +18,7 @@ from sector_lenses.research import (
     extract_climate_research_bundle,
     format_climate_research_context,
     normalize_climate_research_bundle,
+    summarize_climate_structuring_response,
 )
 
 
@@ -237,6 +238,68 @@ def _valid_climate_response():
             ),
         )
     ])
+
+
+
+def test_climate_structuring_diagnostic_reports_truncation_without_text():
+    secret = "SECRET PROJECT EVIDENCE Upper Nile https://example.invalid"
+    text = CLIMATE_RESEARCH_START + '{"status":"partial","sources":[' + secret
+    usage = SimpleNamespace(input_tokens=1200, output_tokens=2500)
+
+    summary = summarize_climate_structuring_response(
+        text,
+        usage=usage,
+        stop_reason="max_tokens",
+        gate_code="climate_research_failed",
+    )
+
+    assert summary == {
+        "stop_reason": "max_tokens",
+        "input_tokens": 1200,
+        "output_tokens": 2500,
+        "response_chars": len(text),
+        "start_present": True,
+        "end_present": False,
+        "json_status": "incomplete",
+        "top_level_object": False,
+        "fields_present": ("status", "sources"),
+        "sources_count": -1,
+        "claims_count": -1,
+        "gate_code": "climate_research_failed",
+    }
+    assert secret not in repr(summary)
+
+
+def test_climate_structuring_diagnostic_reports_complete_object_shape():
+    payload = {
+        "status": "complete",
+        "attempts": 1,
+        "sources": [{}, {}],
+        "claims": [{}, {}, {}, {}],
+        "failure_reason": "",
+        "SECRET ARBITRARY KEY": "SECRET VALUE",
+    }
+    text = (
+        CLIMATE_RESEARCH_START
+        + json.dumps(payload)
+        + CLIMATE_RESEARCH_END
+    )
+
+    summary = summarize_climate_structuring_response(
+        text,
+        usage={"input_tokens": 900, "output_tokens": 700},
+        stop_reason="end_turn",
+        gate_code="",
+    )
+
+    assert summary["json_status"] == "valid"
+    assert summary["top_level_object"] is True
+    assert summary["fields_present"] == (
+        "status", "attempts", "sources", "claims", "failure_reason"
+    )
+    assert summary["sources_count"] == 2
+    assert summary["claims_count"] == 4
+    assert "SECRET" not in repr(summary)
 
 
 def test_climate_research_prompt_requires_specific_temporal_claims():

@@ -153,6 +153,110 @@ asset. Use only exact HTTPS source URLs present in the search results.
 """.strip()
 
 
+
+def summarize_climate_structuring_response(
+    text: str,
+    *,
+    usage: Any = None,
+    stop_reason: Any = "",
+    gate_code: Any = "",
+) -> dict[str, Any]:
+    """Return bounded, content-free structural telemetry."""
+
+    limit = 9_999_999
+    allowed_fields = (
+        "status",
+        "attempts",
+        "sources",
+        "claims",
+        "failure_reason",
+    )
+    allowed_stop_reasons = {
+        "end_turn",
+        "max_tokens",
+        "stop_sequence",
+        "pause_turn",
+        "refusal",
+    }
+    allowed_gate_codes = {
+        "ok",
+        "climate_research_failed",
+        "climate_research_insufficient",
+    }
+
+    def bounded_integer(value: Any, default: int = 0) -> int:
+        try:
+            return min(max(int(value), 0), limit)
+        except (TypeError, ValueError):
+            return default
+
+    def usage_value(name: str) -> int:
+        value = (
+            usage.get(name)
+            if isinstance(usage, dict)
+            else getattr(usage, name, 0)
+        )
+        return bounded_integer(value)
+
+    response_text = text if isinstance(text, str) else ""
+    start_present = CLIMATE_RESEARCH_START in response_text
+    end_present = CLIMATE_RESEARCH_END in response_text
+    fields_present = tuple(
+        field
+        for field in allowed_fields
+        if re.search(rf'"{re.escape(field)}"\s*:', response_text)
+    )
+    json_status = "absent"
+    top_level_object = False
+    sources_count = -1
+    claims_count = -1
+
+    if start_present and end_present:
+        payload_text = response_text.split(CLIMATE_RESEARCH_START, 1)[1]
+        payload_text = payload_text.split(CLIMATE_RESEARCH_END, 1)[0]
+        try:
+            payload = json.loads(payload_text.strip())
+        except (json.JSONDecodeError, TypeError, ValueError):
+            json_status = "invalid"
+        else:
+            json_status = "valid"
+            top_level_object = isinstance(payload, dict)
+            if top_level_object:
+                fields_present = tuple(
+                    field for field in allowed_fields if field in payload
+                )
+                sources = payload.get("sources")
+                claims = payload.get("claims")
+                if isinstance(sources, list):
+                    sources_count = min(len(sources), limit)
+                if isinstance(claims, list):
+                    claims_count = min(len(claims), limit)
+    elif start_present or end_present:
+        json_status = "incomplete"
+
+    normalized_stop_reason = str(stop_reason or "unknown")
+    if normalized_stop_reason not in allowed_stop_reasons:
+        normalized_stop_reason = "unknown"
+    normalized_gate_code = str(gate_code or "ok")
+    if normalized_gate_code not in allowed_gate_codes:
+        normalized_gate_code = "climate_research_failed"
+
+    return {
+        "stop_reason": normalized_stop_reason,
+        "input_tokens": usage_value("input_tokens"),
+        "output_tokens": usage_value("output_tokens"),
+        "response_chars": min(len(response_text), limit),
+        "start_present": start_present,
+        "end_present": end_present,
+        "json_status": json_status,
+        "top_level_object": top_level_object,
+        "fields_present": fields_present,
+        "sources_count": sources_count,
+        "claims_count": claims_count,
+        "gate_code": normalized_gate_code,
+    }
+
+
 def normalize_climate_research_bundle(payload: Any) -> dict[str, Any]:
     """Validate untrusted model output into a bounded research bundle."""
 
