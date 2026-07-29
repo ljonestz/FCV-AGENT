@@ -277,9 +277,10 @@ def test_climate_research_uses_one_focused_request():
     assert result["attempts"] == 1
     assert len(client.calls) == 1
     call = client.calls[0]
-    assert "FOCUSED REQUEST" in call["messages"][0]["content"]
-    assert call["max_tokens"] == 4096
-    assert call["tools"][0]["max_uses"] == 3
+    assert "SEARCH ONLY" in call["messages"][0]["content"]
+    assert CLIMATE_RESEARCH_START not in call["messages"][0]["content"]
+    assert call["max_tokens"] == 1800
+    assert call["tools"][0]["max_uses"] == 2
     assert call["timeout"] == 135
 
 
@@ -311,7 +312,7 @@ def test_climate_research_continues_one_pause_turn():
     ]
 
 
-def test_climate_research_structures_completed_search_results_without_researching():
+def test_climate_research_structures_search_notes_without_researching():
     searched_content = [
         SimpleNamespace(type="server_tool_use", name="web_search"),
         SimpleNamespace(type="web_search_tool_result", content=[]),
@@ -320,7 +321,7 @@ def test_climate_research_structures_completed_search_results_without_researchin
     ]
     truncated = SimpleNamespace(
         content=searched_content,
-        stop_reason="max_tokens",
+        stop_reason="end_turn",
     )
     final = _valid_climate_response()
     final.stop_reason = "end_turn"
@@ -339,12 +340,16 @@ def test_climate_research_structures_completed_search_results_without_researchin
     recovery = client.calls[1]
     assert "tools" not in recovery
     assert "betas" not in recovery
+    assert recovery["model"] == "claude-haiku-4-5-20251001"
     assert recovery["max_tokens"] == 2500
     assert [message["role"] for message in recovery["messages"]] == [
         "user", "assistant", "user",
     ]
     assert recovery["messages"][1]["content"] is searched_content
     assert "Do not search again" in recovery["messages"][2]["content"]
+    assert CLIMATE_RESEARCH_START in recovery["messages"][2]["content"]
+    assert '"source_type"' in recovery["messages"][2]["content"]
+    assert '"time_horizons"' in recovery["messages"][2]["content"]
 
 
 def test_climate_research_does_not_structure_insufficient_search_results():

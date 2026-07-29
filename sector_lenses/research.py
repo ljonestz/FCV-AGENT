@@ -75,6 +75,39 @@ def _attempt_count(value: Any) -> int:
         return 0
 
 
+def build_climate_search_prompt(
+    country: str,
+    sector: str,
+    project_profile: dict[str, Any],
+) -> str:
+    """Build a concise search-only request for two authoritative sources."""
+
+    profile = json.dumps(
+        project_profile if isinstance(project_profile, dict) else {},
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )
+    return f"""
+SEARCH ONLY. Research Climate-FCV conditions for {country} and this {sector}
+project. Use exactly two targeted web searches and then stop searching.
+
+Search 1: prioritize a public Country Climate and Development Report or another
+authoritative World Bank, government, UN, or scientific climate source.
+Search 2: find one complementary authoritative source addressing a material gap
+in the first source.
+
+PROJECT PROFILE:
+{profile}
+
+Return concise evidence notes, not JSON and not recommendations. For each useful
+source, give its exact title, URL, publication date if available, and only the
+findings that connect observed or projected climate pressures to the profile's
+locations, groups, project elements, systems, or assets. Distinguish current,
+project-lifetime, and longer-lived asset or system implications. Exclude generic
+country statements and untrusted sources. Keep the entire response under 900 words.
+""".strip()
+
+
 def build_climate_research_prompt(
     country: str,
     sector: str,
@@ -110,8 +143,13 @@ Every claim must name a project element and a geography, group, system, or
 asset. Do not return generic country statements. {scope}
 
 Return no prose. Return one JSON object between {CLIMATE_RESEARCH_START} and
-{CLIMATE_RESEARCH_END} with status, attempts, sources, and claims using the
-validated ClimateResearchBundle contract.
+{CLIMATE_RESEARCH_END} using this exact shape:
+{{"status":"complete|partial|failed","attempts":1,"sources":[{{"id":"climate-source-1","source_type":"ccdr|world-bank|un|government|scientific|specialist|current-operations","title":"...","url":"https://...","publication_date":"...","location":"..."}}],"claims":[{{"id":"climate-claim-1","claim":"...","source_ids":["climate-source-1"],"geographies":["..."],"project_elements":["..."],"affected_groups":["..."],"systems_or_assets":["..."],"evidence_status":"observed|projected|inferred","confidence":"high|medium|low","time_horizons":["current-near-term|project-lifetime|asset-system-lifetime"],"evidence_gap":"..."}}],"failure_reason":""}}
+
+Include four to six claims and at least two distinct cited sources, including at
+least one authoritative source. Every claim must cite a listed source, name a
+project element, and name at least one geography, affected group, system, or
+asset. Use only exact HTTPS source URLs present in the search results.
 """.strip()
 
 

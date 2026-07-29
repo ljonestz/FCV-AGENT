@@ -23,6 +23,7 @@ from sector_lenses.climate_native import (
 from sector_lenses import (
     CCDR_RESEARCH_INSTRUCTIONS,
     build_climate_research_prompt,
+    build_climate_search_prompt,
     CLIMATE_RESEARCH_END,
     CLIMATE_RESEARCH_START,
     extract_climate_research_bundle,
@@ -6909,7 +6910,7 @@ def run_climate_web_research(
     deadline: float | None = None,
     clock=time.monotonic,
 ) -> dict[str, Any]:
-    """Run one focused Climate research request within the parent deadline."""
+    """Run bounded Climate search and structuring within the parent deadline."""
 
     started = clock()
     attempts = 0
@@ -6922,7 +6923,7 @@ def run_climate_web_research(
         )
         return bundle
 
-    for attempt, narrow in ((1, True), (2, True)):
+    for attempt in (1, 2):
         remaining = (
             CLIMATE_RESEARCH_ATTEMPT_CAP_SECONDS
             if deadline is None
@@ -6932,21 +6933,20 @@ def run_climate_web_research(
             break
         attempts = attempt
         attempt_started = time.monotonic()
-        prompt = build_climate_research_prompt(
+        prompt = build_climate_search_prompt(
             country,
             sector,
             project_profile,
-            narrow=narrow,
         )
         try:
             messages = [{"role": "user", "content": prompt}]
             request_options = {
                 "model": "claude-sonnet-4-6",
-                "max_tokens": 4096,
+                "max_tokens": 1800,
                 "tools": [{
                     "type": "web_search_20250305",
                     "name": "web_search",
-                    "max_uses": 3,
+                    "max_uses": 2,
                 }],
                 "betas": ["web-search-2025-03-05"],
             }
@@ -7026,7 +7026,7 @@ def run_climate_web_research(
                         min(search_result_count, 9),
                     )
                     response = api_client.beta.messages.create(
-                        model="claude-sonnet-4-6",
+                        model="claude-haiku-4-5-20251001",
                         max_tokens=2500,
                         messages=messages + [
                             {
@@ -7036,15 +7036,15 @@ def run_climate_web_research(
                             {
                                 "role": "user",
                                 "content": (
-                                    "Do not search again. Using only the completed "
-                                    "web-search results above and the original project "
-                                    "profile, return only the required "
-                                    f"{CLIMATE_RESEARCH_START}..."
-                                    f"{CLIMATE_RESEARCH_END} JSON block. Preserve the "
-                                    "original schema and evidence rules. If fewer than "
-                                    "two relevant sources support project-specific "
-                                    "Climate-FCV claims, return a failed bundle in that "
-                                    "block rather than inventing evidence."
+                                    "Do not search again. Use only the completed "
+                                    "web-search results above to satisfy this "
+                                    "structuring contract.\n\n"
+                                    + build_climate_research_prompt(
+                                        country,
+                                        sector,
+                                        project_profile,
+                                        narrow=True,
+                                    )
                                 ),
                             },
                         ],
