@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-30
 **Branch:** `feat/climate-country-bank`
-**Status:** Approved in collaborative design; awaiting review of this written specification
+**Status:** Approved by the user on 2026-07-30; implementation planning complete
 **Supersedes:** `2026-07-30-climate-fcv-reliability-country-bank-design.md` and the bank-related assumptions in `2026-07-30-climate-fcv-country-bank-reliability.md`
 
 ## 1. Decision Summary

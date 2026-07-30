@@ -1,3 +1,9 @@
+> **SUPERSEDED ON 2026-07-30 - DO NOT EXECUTE.** Its simple profile schema,
+> model-general-knowledge source, bulk country generation, and dedicated
+> Stage 2 prompt tasks conflict with the approved evidence-bank architecture
+> and current code. Use `2026-07-30-climate-fcv-bank-pilot.md`, followed by
+> `2026-07-30-climate-fcv-bank-runtime-integration.md`.
+
 # Climate-FCV Country Bank & Reliability Re-architecture — Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
