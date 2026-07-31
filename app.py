@@ -54,8 +54,10 @@ from sector_lenses import (
     estimate_tokens,
     PLATFORM_STAGE_BUDGETS,
     resolve_active_lenses,
+    select_bank_manifest,
     strip_lens_blocks,
 )
+from sector_lenses.climate_bank import load_climate_bank
 import httpx
 from background_docs import (
     FCV_GUIDE, FCV_OPERATIONAL_MANUAL, FCV_REFRESH_FRAMEWORK,
@@ -7244,6 +7246,9 @@ def build_stage1_research_plan(
     country: str,
     sector: str,
     doc_parts: list[dict[str, Any]],
+    *,
+    country_scope: str = "single",
+    resolved_country_count: int = 1,
 ) -> dict[str, Any]:
     """Build one bounded plan shared by step-by-step and express workflows."""
 
@@ -7272,6 +7277,8 @@ def build_stage1_research_plan(
             ],
             "document_excerpt": excerpt,
         },
+        "country_scope": str(country_scope or "single").strip().lower(),
+        "resolved_country_count": max(0, int(resolved_country_count)),
     }
 
 
@@ -7308,6 +7315,10 @@ def _iter_stage1_research(
         "core_brief": "",
         "climate_research": normalize_climate_research_bundle({}),
         "lens_context_sources": [],
+        "climate_grounding": {
+            "bank_status": "unavailable",
+            "warning_code": "",
+        },
     }
     futures = {}
     deadline = time.monotonic() + max(1, budget_seconds)
@@ -7315,6 +7326,32 @@ def _iter_stage1_research(
     # NOTE: not a `with` block — the context manager's __exit__ calls
     # shutdown(wait=True), which would re-block on an abandoned research pass
     # and defeat the budget. We shut down explicitly with wait=False.
+    if climate_enabled:
+        try:
+            bank = load_climate_bank()
+            results["climate_grounding"] = select_bank_manifest(
+                bank,
+                country=country,
+                country_scope=research_plan.get("country_scope", "single"),
+                resolved_country_count=research_plan.get(
+                    "resolved_country_count", 1
+                ),
+                sector=sector,
+                project_signals=research_plan.get(
+                    "project_profile", {}
+                ).get("document_excerpt", ""),
+            )
+        except Exception:
+            results["climate_grounding"] = {
+                "bank_status": "unavailable",
+                "warning_code": "bank_unavailable",
+            }
+        if results["climate_grounding"].get("bank_status") != "ok":
+            app.logger.warning(
+                "Climate bank unavailable: assessment_id=%s code=%s",
+                assessment_id or "unknown",
+                results["climate_grounding"].get("warning_code") or "unknown",
+            )
     pool = ThreadPoolExecutor(max_workers=2)
     try:
         if cached_core:
@@ -8336,6 +8373,16 @@ def run_stage():
                             research_country,
                             research_sector,
                             doc_parts,
+                            country_scope=analysis_state.country_scope,
+                            resolved_country_count=(
+                                len(analysis_state.countries)
+                                if analysis_state.countries
+                                else (
+                                    1
+                                    if analysis_state.country_scope == "single"
+                                    else 2
+                                )
+                            ),
                         )
                         yield f"data: {json.dumps({'research_status': 'searching', 'country': research_country})}\n\n"
                         for research_event in _iter_stage1_research(
@@ -9255,6 +9302,16 @@ def run_express():
                         research_country,
                         research_sector,
                         doc_parts,
+                        country_scope=analysis_state.country_scope,
+                        resolved_country_count=(
+                            len(analysis_state.countries)
+                            if analysis_state.countries
+                            else (
+                                1
+                                if analysis_state.country_scope == "single"
+                                else 2
+                            )
+                        ),
                     )
                     yield f"data: {json.dumps({'research_status': 'searching', 'country': research_country})}\n\n"
                     for research_event in _iter_stage1_research(

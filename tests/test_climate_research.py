@@ -1,6 +1,7 @@
 """Tests for bounded, validated Climate-FCV research context."""
 
 import json
+import threading
 from concurrent.futures import Future
 from pathlib import Path
 from types import SimpleNamespace
@@ -57,6 +58,112 @@ def _valid_bundle():
             "evidence_gap": "No site-level design flood standard was found.",
         }],
     }
+
+
+def _climate_bank_plan():
+    return {
+        "country": "South Sudan",
+        "sector": "Fisheries",
+        "core": {"max_tokens": 4000, "max_uses": 3},
+        "climate": {"enabled": True},
+        "project_profile": {
+            "documents": ["South Sudan PCN.docx"],
+            "document_excerpt": "Jonglei landing sites BFMU seasonal users",
+        },
+        "country_scope": "single",
+        "resolved_country_count": 1,
+    }
+
+
+def test_bank_selection_precedes_live_research(monkeypatch):
+    calls = []
+    caller_thread = threading.get_ident()
+    monkeypatch.setattr(
+        app_module,
+        "load_climate_bank",
+        lambda: calls.append(("load", threading.get_ident())) or object(),
+    )
+    monkeypatch.setattr(
+        app_module,
+        "select_bank_manifest",
+        lambda *args, **kwargs: (
+            calls.append(("select", threading.get_ident()))
+            or {
+                "bank_status": "ok",
+                "warning_code": "",
+                "schema_version": "1.0.0",
+                "content_version": "test-1",
+                "country_iso3": "SSD",
+                "evidence_ids": ["SSD-E-001"],
+                "pathway_ids": ["SSD-P-001"],
+            }
+        ),
+    )
+    monkeypatch.setattr(
+        app_module,
+        "run_fcv_web_research",
+        lambda *args, **kwargs: {"brief": ""},
+    )
+    monkeypatch.setattr(
+        app_module,
+        "run_climate_web_research",
+        lambda *args, **kwargs: (
+            calls.append(("research", threading.get_ident()))
+            or _valid_bundle()
+        ),
+    )
+    monkeypatch.setattr(app_module, "get_research_client", lambda: object())
+    app_module._research_cache.clear()
+
+    result = list(
+        app_module._iter_stage1_research(
+            _climate_bank_plan(),
+            assessment_id="bank-order",
+        )
+    )[-1]["result"]
+
+    names = [name for name, _thread_id in calls]
+    assert names.index("select") < names.index("research")
+    assert result["climate_grounding"]["country_iso3"] == "SSD"
+    assert next(
+        thread_id for name, thread_id in calls if name == "select"
+    ) == caller_thread
+    assert next(
+        thread_id for name, thread_id in calls if name == "research"
+    ) != caller_thread
+
+
+def test_bank_selection_failure_is_nonfatal(monkeypatch):
+    monkeypatch.setattr(
+        app_module,
+        "load_climate_bank",
+        lambda: (_ for _ in ()).throw(ValueError("bad release")),
+    )
+    monkeypatch.setattr(
+        app_module,
+        "run_fcv_web_research",
+        lambda *args, **kwargs: {"brief": ""},
+    )
+    monkeypatch.setattr(
+        app_module,
+        "run_climate_web_research",
+        lambda *args, **kwargs: _valid_bundle(),
+    )
+    monkeypatch.setattr(app_module, "get_research_client", lambda: object())
+    app_module._research_cache.clear()
+
+    result = list(
+        app_module._iter_stage1_research(
+            _climate_bank_plan(),
+            assessment_id="bank-fail-open",
+        )
+    )[-1]["result"]
+
+    assert result["climate_grounding"] == {
+        "bank_status": "unavailable",
+        "warning_code": "bank_unavailable",
+    }
+    assert result["climate_research"]["status"] == "complete"
 
 
 def _second_authoritative_source():
