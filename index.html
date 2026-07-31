@@ -818,7 +818,8 @@
     }
     .ps-step{
       flex:1;padding:9px 6px;text-align:center;cursor:pointer;
-      border-right:1px solid var(--border);transition:all .15s;
+      border:0;border-right:1px solid var(--border);transition:all .15s;
+      font-family:inherit;min-width:0;
     }
     .ps-step:last-child{border-right:none;}
     .ps-num{
@@ -964,6 +965,9 @@
     .pi-risk-m{background:#dbeafe;color:#1d4ed8;}
     .pi-risk-l{background:#d1fae5;color:#065f46;}
     .pi-footer{font-size:13px;color:var(--muted);margin:0;line-height:1.5;}
+    .priority-navigation-callout{display:flex;align-items:center;gap:12px;margin:2px 0 10px;padding:11px 14px;background:#eef7fc;border:1px solid #bae6fd;border-left:4px solid var(--wbg-blue);border-radius:7px;color:#334155;font-size:13px;line-height:1.5;}
+    .priority-navigation-callout strong{color:#075985;}
+    .priority-navigation-sequence{display:inline-flex;align-items:center;justify-content:center;min-width:58px;padding:4px 8px;border-radius:999px;background:#fff;border:1px solid #7dd3fc;color:#0369a1;font-size:11px;font-weight:800;letter-spacing:.08em;white-space:nowrap;}
     .sr-legend{display:flex;flex-direction:column;gap:5px;margin:0 0 12px;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:6px;}
     .sr-legend-item{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--text);line-height:1.5;}
 
@@ -2740,9 +2744,9 @@
   function renderClimateCoreQuestions(lens){
     if(!lens)return '';
     const paras=t=>String(t||'').split(/\n\s*\n/).map(p=>p.trim()).filter(Boolean);
-    const intro='<p class="climate-readout-intro">This assessment considers how climate and FCV dynamics may affect project delivery, and how project choices may influence resilience, inclusion, peace, and conflict risks. '
+    const intro='<p class="climate-readout-intro">Below is an assessment of the core questions most relevant to how climate and FCV dynamics may affect project delivery, and how specific project choices may influence resilience, inclusion, peace, and conflict risks. '
       +'It draws on World Bank analytical frameworks including <em>Maximizing the Peace and Social Dividends of Climate Action</em>, the FCV-Sensitive Climate Action Framework, '
-      +'and the Defueling Conflict series.</p>';
+      +'and the Defueling Conflict series, and links each answer to concrete project components and delivery arrangements where the evidence supports it.</p>';
     const labels={'climate-fcv-on-project':'How climate and FCV dynamics could affect this project','project-on-climate-fcv':'How this project could affect climate and FCV dynamics'};
     const modifier={'climate-fcv-on-project':'box-inbound','project-on-climate-fcv':'box-outbound'};
     const interactions=(Array.isArray(lens.interaction_readout)?lens.interaction_readout:[])
@@ -5990,7 +5994,10 @@ ${body}
     el.innerHTML = _linkNotice + `<div class="priorities-section-hdr">Priority Actions for the Task Team</div><div class="priorities-intro ani">
       <p class="pi-lead">Based on a three-stage assessment of the project documents, <strong>${n} priority ${n === 1 ? 'action has' : 'actions have'} been identified</strong> to strengthen FCV sensitivity and responsiveness in the design and delivery of this project:</p>
       <div class="pi-list">${listItems}</div>
-      <p class="pi-footer">Toggle through the panels below to explore each priority action and concrete implementation options in more detail.</p>
+    </div>
+    <div class="priority-navigation-callout" role="note">
+      <span class="priority-navigation-sequence" aria-hidden="true">${Array.from({length:n},(_,i)=>i+1).join(' · ')}</span>
+      <span><strong>Explore all ${n} priorities.</strong> Select each numbered priority below to see its evidence, rationale, and implementation options.</span>
     </div>`;
   }
 
@@ -6001,13 +6008,13 @@ ${body}
       const fullTitle = pr.title.replace(/^Priority\s+\d+\s*[·•]\s*/i,'');
       const riskCls = pr.risk_level==='High'?'ps-risk-h':pr.risk_level==='Medium'?'ps-risk-m':'ps-risk-l';
       const riskLbl = pr.risk_level==='High'?'Priority: High':pr.risk_level==='Medium'?'Priority: Medium':pr.risk_level==='Low'?'Priority: Low':'';
-      return `<div class="ps-step ${i===currentPriority?'active':''}" id="ps-${i}" onclick="showPriority(${i})" title="${esc(pr.title)}">
+      return `<button type="button" class="ps-step ${i===currentPriority?'active':''}" id="ps-${i}" onclick="showPriority(${i})" title="${esc(pr.title)}" aria-pressed="${i===currentPriority?'true':'false'}" aria-label="Show priority ${i+1} of ${stageThreePriorities.length}: ${esc(fullTitle)}">
         <div class="ps-num">${i+1}</div>
         <div class="ps-label">${esc(fullTitle)}</div>
         <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;justify-content:center">
           ${riskLbl?`<div class="ps-risk ${riskCls}">${riskLbl}</div>`:''}
         </div>
-      </div>`;
+      </button>`;
     }).join('');
   }
 
@@ -6021,6 +6028,7 @@ ${body}
     stageThreePriorities.forEach((p2, i) => {
       const el = document.getElementById(`ps-${i}`);
       if(el) el.className = `ps-step ${i < idx ? 'done' : i === idx ? 'active' : ''}`;
+      if(el) el.setAttribute('aria-pressed', i === idx ? 'true' : 'false');
       const numEl = el ? el.querySelector('.ps-num') : null;
       if(numEl){ if(i < idx){ numEl.textContent = '✓'; } else { numEl.textContent = String(i+1); } }
     });

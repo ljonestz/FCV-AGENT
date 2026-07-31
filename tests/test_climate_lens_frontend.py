@@ -934,3 +934,13 @@ def test_priorities_intro_shows_soft_notice_when_links_unvalidated():
     source = INDEX.read_text(encoding="utf-8")
     assert "climatePriorityUnlinked" in source
     assert "provenance could not be validated" in source
+
+
+def test_priority_navigation_is_explicit_and_keyboard_operable():
+    source = INDEX.read_text(encoding="utf-8")
+
+    assert "priority-navigation-callout" in source
+    assert "Select each numbered priority" in source
+    assert '<button type="button" class="ps-step' in source
+    assert 'aria-pressed="${i===currentPriority?' in source
+    assert "setAttribute('aria-pressed'" in source

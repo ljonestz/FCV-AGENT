@@ -636,6 +636,51 @@ def test_climate_reflection_status_cues_softened_from_machine_tokens():
     assert not any("_" in cue for cue in cues)
 
 
+def test_climate_reflection_status_cues_stay_concise_for_reader_chips():
+    block = (
+        "%%%LENS_DIAGNOSTIC_START%%%"
+        '{"lenses":[{"lens_id":"climate","applicability":"material",'
+        '"materiality_level":"high","reflections":['
+        '{"question_key":"cq1_interaction","title":"a",'
+        '"status_cue":"Material gap — no design provision for maintaining inclusion after shocks",'
+        '"text":"x"},'
+        '{"question_key":"cq2_maladaptation","title":"b",'
+        '"status_cue":"Risk present — conflict-sensitivity screening required",'
+        '"text":"x"}],'
+        '"source_ids":[],"readout_sections":[],"interaction_readout":[],'
+        '"additional_pathways":[],"other_pathways":[]}],"findings":[]}'
+        "%%%LENS_DIAGNOSTIC_END%%%"
+    )
+
+    lens = extract_lens_diagnostic(block, ["climate"])["lenses"][0]
+
+    assert [item["status_cue"] for item in lens["reflections"]] == [
+        "material gap",
+        "risk present",
+    ]
+
+
+def test_climate_materiality_summary_clips_at_a_word_boundary():
+    summary = " ".join(["compound", "climate", "risk"] * 35)
+    block = (
+        "%%%LENS_DIAGNOSTIC_START%%%"
+        '{"lenses":[{"lens_id":"climate","applicability":"material",'
+        '"materiality_level":"high","materiality_summary":'
+        + json.dumps(summary)
+        + ',"source_ids":[],"readout_sections":[],"interaction_readout":[],'
+        '"additional_pathways":[],"other_pathways":[]}],"findings":[]}'
+        "%%%LENS_DIAGNOSTIC_END%%%"
+    )
+
+    materiality = extract_lens_diagnostic(block, ["climate"])["lenses"][0][
+        "materiality_summary"
+    ]
+
+    assert len(materiality) <= 600
+    assert materiality.endswith("…")
+    assert materiality[-2].isalpha()
+
+
 def test_climate_reflection_carries_source_and_long_text():
     long_text = "Paragraph one about maladaptation lock-in. " * 20 + "\n\n" + \
                 "Paragraph two naming Sub-component 1.2 cold storage. " * 20

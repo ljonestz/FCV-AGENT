@@ -1089,6 +1089,14 @@ def test_climate_stage2_prompt_sets_explicit_payload_depth_bounds():
         assert bound in low
 
 
+def test_climate_stage2_prompt_requests_component_anchored_reflection_depth():
+    low = _stage2_prompt().lower()
+
+    assert "one or two short paragraphs" in low
+    assert "specific project component" in low
+    assert "remaining gap, uncertainty, or design implication" in low
+
+
 @pytest.mark.parametrize(
     ("priority_questions", "expected_lines"),
     [
