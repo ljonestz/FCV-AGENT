@@ -11,6 +11,13 @@ from .climate_native import (
     merge_climate_repair,
 )
 from .composer import build_stage_slice, estimate_tokens, resolve_active_lenses
+from .climate_bank_selector import (
+    CLIMATE_BANK_MAX_CHARS,
+    CLIMATE_BANK_MAX_ITEMS,
+    CLIMATE_BANK_TARGET_ITEMS,
+    MATCH_WEIGHTS,
+    select_bank_manifest,
+)
 from .models import (
     ActiveLensSelection,
     DetectionConfig,
@@ -101,6 +108,9 @@ __all__ = [
     "CLIMATE_REQUIRED_DIRECTIONS",
     "CLIMATE_REQUIRED_LENS_FIELDS",
     "CLIMATE_EVIDENCE_PACKET_MAX_CHARS",
+    "CLIMATE_BANK_MAX_CHARS",
+    "CLIMATE_BANK_MAX_ITEMS",
+    "CLIMATE_BANK_TARGET_ITEMS",
     "CLIMATE_AUTHORITATIVE_SOURCE_TYPES",
     "CLIMATE_RESEARCH_END",
     "CLIMATE_RESEARCH_MIN_SOURCES",
@@ -122,6 +132,7 @@ __all__ = [
     "LENS_DIAGNOSTIC_START",
     "LENS_EVIDENCE_END",
     "LENS_EVIDENCE_START",
+    "MATCH_WEIGHTS",
     "climate_lens_readout",
     "climate_missing_fields",
     "climate_readout_is_complete",
@@ -134,5 +145,6 @@ __all__ = [
     "normalize_lens_diagnostic",
     "normalize_priority_climate_links",
     "resolve_active_lenses",
+    "select_bank_manifest",
     "strip_lens_blocks",
 ]
