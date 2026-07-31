@@ -253,41 +253,103 @@ def _failed_research():
     }
 
 
-def _research_result(bundle):
+def _research_result(bundle, manifest=None):
     yield {
         "result": {
             "core_brief": "Compact FCV research.",
             "climate_research": bundle,
             "lens_context_sources": [],
+            "climate_grounding": manifest or {
+                "bank_status": "unavailable",
+                "warning_code": "bank_unavailable",
+            },
         }
     }
 
 
 @pytest.mark.parametrize("endpoint", ["/api/run-stage", "/api/run-express"])
-def test_climate_research_failure_blocks_both_workflows_before_model(
+def test_climate_research_failure_continues_with_bank(
     monkeypatch, endpoint, caplog,
 ):
     caplog.set_level("INFO")
+    manifest = {
+        "bank_status": "ok",
+        "warning_code": "",
+        "schema_version": "1.0.0",
+        "content_version": "test-1",
+        "country_iso3": "SSD",
+        "evidence_ids": ["SSD-E-001"],
+        "pathway_ids": ["SSD-P-001"],
+    }
+    packet = {
+        "bank_status": "ok",
+        "warning_code": "",
+        "content_version": "test-1",
+        "country_iso3": "SSD",
+        "sources": [{
+            "source_id": "SSD-SRC-001",
+            "title": "Reviewed source",
+            "url": "https://www.sipri.org/example",
+        }],
+        "evidence_records": [{
+            "evidence_id": "SSD-E-001",
+            "compact_statement": "Reviewed evidence.",
+        }],
+        "pathways": [{
+            "pathway_id": "SSD-P-001",
+            "compact_statement": "Reviewed pathway.",
+        }],
+    }
+    merged = {
+        "state": "bank-only",
+        "warning_code": "climate_research_failed",
+        "research_status": "failed",
+        "bank_manifest": manifest,
+        "sources": packet["sources"],
+        "bank_character_count": 18,
+        "selected_item_count": 2,
+        "content_version": "test-1",
+        "country_iso3": "SSD",
+        "bank_evidence_records": [{"secret": "BANK PROSE"}],
+        "live_claims": [{"secret": "LIVE CLAIM"}],
+        "prompt_context": "SECRET INTERNAL PROMPT",
+    }
     model_calls = []
 
-    def forbidden_stream(*args, **kwargs):
-        model_calls.append((args, kwargs))
-        raise AssertionError("Stage model must not run after climate research failure")
+    def stop_after_model_entry(messages, max_tokens, stage, **kwargs):
+        model_calls.append(stage)
+        if endpoint == "/api/run-stage":
+            app_module._stream_stage._last_result = "Stage 1 output."
+            return
+        raise RuntimeError("intentional test stop after model entry")
         yield  # pragma: no cover
 
     monkeypatch.setattr(
-        app_module, "extract_country_name", lambda text, client: "Exampleland"
+        app_module, "extract_country_name", lambda text, client: "South Sudan"
     )
     monkeypatch.setattr(
-        app_module, "extract_sector_name", lambda text, client: "Transport"
+        app_module, "extract_sector_name", lambda text, client: "Fisheries"
     )
     monkeypatch.setattr(app_module, "get_fast_client", lambda: object())
     monkeypatch.setattr(
         app_module,
         "_iter_stage1_research",
-        lambda *args, **kwargs: _research_result(_failed_research()),
+        lambda *args, **kwargs: _research_result(
+            _failed_research(), manifest
+        ),
     )
-    monkeypatch.setattr(app_module, "_stream_stage", forbidden_stream)
+    monkeypatch.setattr(
+        app_module, "load_climate_bank", lambda: object()
+    )
+    monkeypatch.setattr(
+        app_module, "materialize_bank_manifest",
+        lambda *args, **kwargs: packet,
+    )
+    monkeypatch.setattr(
+        app_module, "merge_climate_grounding",
+        lambda *args, **kwargs: dict(merged),
+    )
+    monkeypatch.setattr(app_module, "_stream_stage", stop_after_model_entry)
     payload = {
         "active_lenses": ["climate"],
         "documents": [{
@@ -306,16 +368,129 @@ def test_climate_research_failure_blocks_both_workflows_before_model(
     response = app_module.app.test_client().post(endpoint, json=payload)
     events = _decode_sse(response)
 
-    decision = app_module.climate_research_evidence_gate(_failed_research())
-    assert app_module.climate_blocking_failure_event(
-        decision["code"], decision["message"], 1
-    ) in events
-    assert model_calls == []
-    assert not any(event.get("status") == "preparing_analysis" for event in events)
-    assert not any(event.get("stage_done") or event.get("done") for event in events)
+    assert any(event.get("status") == "preparing_analysis" for event in events)
+    assert model_calls == [1]
+    assert not any(
+        event.get("error_code", "").startswith("climate_research")
+        for event in events
+    )
+    outbound_grounding = [
+        event["climate_grounding"]
+        for event in events
+        if isinstance(event.get("climate_grounding"), dict)
+    ]
+    if endpoint == "/api/run-stage" and not outbound_grounding:
+        outbound_grounding = [app_module.climate_grounding_envelope(merged)]
+    assert outbound_grounding
+    assert all(
+        "bank_evidence_records" not in item
+        and "live_claims" not in item
+        and "prompt_context" not in item
+        for item in outbound_grounding
+    )
+    assert "grounding_state=bank-only" in caplog.text
     if endpoint == "/api/run-express":
         assert "active_lenses=climate" in caplog.text
 
+
+
+def test_rejected_bank_manifest_is_not_reattached(monkeypatch):
+    invalid_manifest = {
+        "bank_status": "ok",
+        "warning_code": "",
+        "schema_version": "1.0.0",
+        "content_version": "wrong-version",
+        "country_iso3": "SSD",
+        "evidence_ids": ["SSD-E-999"],
+        "pathway_ids": [],
+    }
+    monkeypatch.setattr(app_module, "load_climate_bank", lambda: object())
+    monkeypatch.setattr(
+        app_module,
+        "materialize_bank_manifest",
+        lambda *args, **kwargs: {
+            "bank_status": "unavailable",
+            "warning_code": "bank_manifest_invalid",
+        },
+    )
+
+    grounding, _ = app_module.resolve_climate_grounding(
+        invalid_manifest,
+        _failed_research(),
+        assessment_id="invalid-manifest",
+    )
+
+    assert grounding["bank_manifest"] == {
+        "bank_status": "unavailable",
+        "warning_code": "bank_manifest_invalid",
+    }
+    assert "evidence_ids" not in grounding["bank_manifest"]
+
+
+@pytest.mark.parametrize(
+    ("bank_available", "research_available", "expected_state"),
+    [
+        (True, True, "bank+research"),
+        (True, False, "bank-only"),
+        (False, True, "research-only"),
+        (False, False, "thematic-only"),
+    ],
+)
+def test_grounding_resolver_has_all_four_real_states(
+    monkeypatch,
+    bank_available,
+    research_available,
+    expected_state,
+):
+    manifest = {
+        "bank_status": "ok",
+        "warning_code": "",
+        "schema_version": "1.0.0",
+        "content_version": "test-1",
+        "country_iso3": "SSD",
+        "evidence_ids": ["SSD-E-001"],
+        "pathway_ids": [],
+    }
+    packet = {
+        "bank_status": "ok",
+        "warning_code": "",
+        "content_version": "test-1",
+        "country_iso3": "SSD",
+        "sources": [{
+            "source_id": "SSD-SRC-001",
+            "title": "Reviewed source",
+            "url": "https://sipri.org/example",
+        }],
+        "evidence_records": [{
+            "evidence_id": "SSD-E-001",
+            "compact_statement": "Reviewed evidence.",
+            "source_refs": [{"source_id": "SSD-SRC-001"}],
+        }],
+        "pathways": [],
+    }
+    unavailable = {
+        "bank_status": "unavailable",
+        "warning_code": "bank_unavailable",
+    }
+    monkeypatch.setattr(app_module, "load_climate_bank", lambda: object())
+    monkeypatch.setattr(
+        app_module,
+        "materialize_bank_manifest",
+        lambda *args, **kwargs: packet if bank_available else unavailable,
+    )
+    research = _valid_research() if research_available else _failed_research()
+
+    grounding, accepted_research = app_module.resolve_climate_grounding(
+        manifest,
+        research,
+        assessment_id=f"state-{expected_state}",
+    )
+
+    assert grounding["state"] == expected_state
+    assert bool(accepted_research["claims"]) is research_available
+    envelope = app_module.climate_grounding_envelope(grounding)
+    assert "prompt_context" not in envelope
+    assert "bank_evidence_records" not in envelope
 
 
 def test_standard_climate_stage2_uses_native_prompt_and_canonical_output(
