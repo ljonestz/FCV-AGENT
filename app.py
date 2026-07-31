@@ -11116,6 +11116,29 @@ def download_report():
         or climate_readout is None
     )
     climate_valid = climate_active and not climate_error
+    incoming_grounding = data.get('climate_grounding')
+    incoming_grounding = (
+        incoming_grounding if isinstance(incoming_grounding, dict) else {}
+    )
+    if climate_active:
+        report_grounding, _ = resolve_climate_grounding(
+            incoming_grounding.get('bank_manifest'),
+            data.get('climate_research'),
+            assessment_id='report-download',
+        )
+        climate_grounding = climate_grounding_envelope(report_grounding)
+    else:
+        climate_grounding = climate_grounding_envelope({})
+    climate_grounding_state = climate_grounding.get('state')
+    if climate_grounding_state not in {
+        'bank+research', 'bank-only', 'research-only', 'thematic-only',
+    }:
+        climate_grounding_state = 'thematic-only'
+    climate_bank_sources = [
+        source for source in climate_grounding.get('sources', [])
+        if isinstance(source, dict)
+        and 'bank' in source.get('provenance', [])
+    ]
     meta = data.get('metadata', {})
 
     date_str = meta.get('date_str', '')
@@ -11239,6 +11262,25 @@ def download_report():
             _add_single_para(risks_from, space_before=0)
 
     def add_climate_notice():
+        grounding_notices = {
+            'bank-only': (
+                'Live web research was unavailable for this run. The assessment '
+                'uses the reviewed country evidence bank, the project document, '
+                'and thematic Climate-FCV sources; recent or highly local '
+                'developments may be missing.'
+            ),
+            'research-only': (
+                'No reviewed country-bank release was available. The assessment '
+                'uses accepted live research, the project document, and thematic '
+                'Climate-FCV sources.'
+            ),
+            'thematic-only': (
+                'No reviewed country-bank release or accepted live research was '
+                'available. The assessment relies on the project document and '
+                'thematic Climate-FCV sources and flags country-specific evidence '
+                'limitations.'
+            ),
+        }
         if not climate_active:
             return
         _add_section_heading('How relevant is climate to this project?')
@@ -11256,6 +11298,10 @@ def download_report():
                 'retains the core FCV assessment and does not add unvalidated '
                 'climate findings.'
             )
+            if climate_grounding_state in grounding_notices:
+                _add_single_para(
+                    grounding_notices[climate_grounding_state], color=AMBER
+                )
             _add_single_para(evidence_base, size=9, color=WB_GRAY)
             return
         level = climate_materiality_level(climate_readout)
@@ -11300,6 +11346,10 @@ def download_report():
                 'unavailable and were not substituted.',
                 size=9,
                 color=AMBER,
+            )
+        if climate_grounding_state in grounding_notices:
+            _add_single_para(
+                grounding_notices[climate_grounding_state], color=AMBER
             )
         _add_single_para(evidence_base, size=9, color=WB_GRAY)
 
@@ -11898,6 +11948,28 @@ def download_report():
                         if source.url:
                             citation += f' | {source.url}'
                         _add_single_para(f'[{source.id}] {citation}', size=9, space_after=2)
+            if climate_grounding_state in {'bank+research', 'bank-only'}:
+                _add_section_heading('Reviewed country evidence bank', level=2)
+                content_version = (
+                    climate_grounding.get('content_version')
+                    or climate_grounding.get('bank_manifest', {}).get(
+                        'content_version'
+                    )
+                )
+                if content_version:
+                    _add_single_para(
+                        f'Content version: {content_version}',
+                        size=9, color=WB_GRAY, space_after=4,
+                    )
+                for source in climate_bank_sources:
+                    details = source.get('title') or source.get('source_id')
+                    if source.get('organization'):
+                        details += f' | {source["organization"]}'
+                    if source.get('publication_date'):
+                        details += f' | {source["publication_date"]}'
+                    if source.get('url'):
+                        details += f' | {source["url"]}'
+                    _add_single_para(details, size=9, space_after=2)
             if lens_context_sources:
                 _add_section_heading('Country context used', level=2)
                 for source in lens_context_sources:

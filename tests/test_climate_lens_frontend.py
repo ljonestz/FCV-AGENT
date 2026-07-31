@@ -359,6 +359,74 @@ def test_frontend_persists_climate_research_across_stages_and_reports():
     assert "lensDiagnostic={};lensContextSources=[];climateResearch={}" in source
 
 
+def test_frontend_persists_display_safe_climate_grounding_across_outputs():
+    source = INDEX.read_text(encoding="utf-8")
+
+    assert "climateGrounding={}" in source
+    assert "if(p.climate_grounding)climateGrounding=p.climate_grounding" in source
+    assert "climate_grounding:climateGrounding" in source
+    assert "climate_grounding: climateGrounding || {}" in source
+    assert (
+        "lensDiagnostic={};lensContextSources=[];climateResearch={};"
+        "climateGrounding={}"
+    ) in source
+
+
+def test_climate_grounding_notice_has_four_states_and_escapes_metadata():
+    source = INDEX.read_text(encoding="utf-8")
+    helpers = "\n".join(
+        _extract_js_function(source, name)
+        for name in [
+            "climateMaterialityLevel",
+            "climateReadoutComplete",
+            "renderClimateModuleNotice",
+        ]
+    )
+    script = f"""
+const esc = value => String(value ?? '')
+  .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+  .replace(/\"/g,'&quot;').replace(/'/g,'&#039;');
+{helpers}
+const lens = {{materiality_level:'medium', materiality_summary:'Material.', reflections:[{{text:'Grounded.'}}], integration_summary:'Integrated.'}};
+const states = {{'bank+research':'','bank-only':'Live web research was unavailable for this run.','research-only':'No reviewed country-bank release was available.','thematic-only':'No reviewed country-bank release or accepted live research was available.'}};
+for (const [state, expected] of Object.entries(states)) {{
+  const html = renderClimateModuleNotice(lens, false, {{state, content_version:'v1<script>alert(1)</script>'}});
+  if (expected && !html.includes(expected)) throw new Error(state+' notice missing');
+  if (!expected && html.includes('climate-grounding-warning')) throw new Error('bank+research should not warn');
+  if (html.includes('<script>')) throw new Error('metadata was not escaped');
+}}
+"""
+    result = subprocess.run(["node", "-e", script], capture_output=True, text=True, check=False)
+    assert result.returncode == 0, result.stderr
+
+
+def test_shared_html_lists_only_reviewed_bank_source_metadata():
+    source = INDEX.read_text(encoding="utf-8")
+    helper = _extract_js_function(source, "renderClimateGroundingSources")
+    script = f"""
+const esc = value => String(value ?? '')
+  .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+  .replace(/\"/g,'&quot;').replace(/'/g,'&#039;');
+{helper}
+const html = renderClimateGroundingSources({{
+  state:'bank-only',
+  content_version:'ssd-v1',
+  sources:[
+    {{title:'Reviewed <source>',url:'https://example.org/reviewed',provenance:['bank']}},
+    {{title:'Live source',url:'https://example.org/live',provenance:['research']}}
+  ]
+}});
+if (!html.includes('Reviewed country evidence bank')) throw new Error('heading missing');
+if (!html.includes('Content version: ssd-v1')) throw new Error('version missing');
+if (!html.includes('Reviewed &lt;source&gt;')) throw new Error('bank title missing or unsafe');
+if (!html.includes('https://example.org/reviewed')) throw new Error('bank URL missing');
+if (html.includes('Live source')) throw new Error('live source leaked into bank subsection');
+if (renderClimateGroundingSources({{state:'research-only',sources:[]}})!=='') throw new Error('research-only must not render a bank subsection');
+"""
+    result = subprocess.run(["node", "-e", script], capture_output=True, text=True, check=False)
+    assert result.returncode == 0, result.stderr
+
+
 def test_materiality_notice_uses_relevance_title_and_source_list():
     html = INDEX.read_text(encoding="utf-8")
     assert "How relevant is climate to this project?" in html

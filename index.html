@@ -2498,7 +2498,7 @@
   let countryClassification={};
   let contextFlags={};
   let sectorContext={};
-  let lensCatalogue=[],lensSuggestions=[],activeLenses=[],resolvedLensVersions={},lensDiagnostic={},lensContextSources=[],climateResearch={},lensSelectionTouched=false,lensSelectionLocked=false;
+  let lensCatalogue=[],lensSuggestions=[],activeLenses=[],resolvedLensVersions={},lensDiagnostic={},lensContextSources=[],climateResearch={},climateGrounding={},lensSelectionTouched=false,lensSelectionLocked=false;
   let stageAppliedSnippets=[];
   let sbsTimerInterval=null,sbsMessageInterval=null,sbsStartTime=null,sbsMessageIdx=0;
   // Stage 3 (Recommendations) state is declared in the Stage 3 section below
@@ -2542,7 +2542,7 @@
     if(idx>=0){activeLenses.splice(idx,1);delete resolvedLensVersions[id];changed=true;}
     else if(activeLenses.length<2){activeLenses.push(id);changed=true;}
     else showLensWarnings([{message:'Remove one active lens before selecting another.'}]);
-    if(changed){lensDiagnostic={};lensContextSources=[];climateResearch={};climateIntegration=null;}
+    if(changed){lensDiagnostic={};lensContextSources=[];climateResearch={};climateGrounding={};climateIntegration=null;}
     renderLensSelector();
   }
 
@@ -2594,11 +2594,25 @@
     return lenses.find(item=>item&&item.lens_id==='climate')||null;
   }
 
-  function renderClimateModuleNotice(lens,diagnosticError){
+  function renderClimateModuleNotice(lens,diagnosticError,grounding){
     const evidence='These reflections and recommendations draw on a core set of climate and FCV frameworks and evidence, including: Maximizing the Peace and Social Dividends of Climate Action; the FCV-Sensitive Climate Action Framework; and the Defueling Conflict series, alongside other World Bank and external sources.';
     const boundaryLine='<p class="climate-boundary">This is an advisory FCV screening readout. It does not determine ESF or ESS compliance or an environmental and social risk classification, and does not replace review by the Task Team\'s accredited E&amp;S specialist.</p>';
+    const groundingState=['bank+research','bank-only','research-only','thematic-only'].includes(grounding&&grounding.state)?grounding.state:'thematic-only';
+    const groundingWarnings={
+      'bank-only':'Live web research was unavailable for this run. The assessment uses the reviewed country evidence bank, the project document, and thematic Climate-FCV sources; recent or highly local developments may be missing.',
+      'research-only':'No reviewed country-bank release was available. The assessment uses accepted live research, the project document, and thematic Climate-FCV sources.',
+      'thematic-only':'No reviewed country-bank release or accepted live research was available. The assessment relies on the project document and thematic Climate-FCV sources and flags country-specific evidence limitations.'
+    };
+    const contentVersion=String(grounding&&(
+      grounding.content_version||(grounding.bank_manifest&&grounding.bank_manifest.content_version)
+    )||'').trim();
+    const bankMeta=(groundingState==='bank+research'||groundingState==='bank-only')
+      ?`<p class="climate-grounding-meta">Reviewed country evidence bank${contentVersion?` (content version ${esc(contentVersion)})`:''} was used for this assessment.</p>`:'';
+    const groundingWarning=groundingWarnings[groundingState]
+      ?`<p class="climate-grounding-warning">${esc(groundingWarnings[groundingState])}</p>`:'';
+    const groundingNotice=bankMeta+groundingWarning;
     if(diagnosticError||!lens){
-      return `<div class="climate-module-notice climate-module-error"><h3>How relevant is climate to this project?</h3><p>You selected the Climate-FCV module, but a validated Climate-FCV diagnostic could not be produced. The note therefore retains the core FCV assessment and does not add unvalidated climate findings.</p>${boundaryLine}<p class="climate-evidence-base">${esc(evidence)}</p></div>`;
+      return `<div class="climate-module-notice climate-module-error"><h3>How relevant is climate to this project?</h3><p>You selected the Climate-FCV module, but a validated Climate-FCV diagnostic could not be produced. The note therefore retains the core FCV assessment and does not add unvalidated climate findings.</p>${groundingNotice}${boundaryLine}<p class="climate-evidence-base">${esc(evidence)}</p></div>`;
     }
     const level=climateMaterialityLevel(lens);
     const wording={
@@ -2608,7 +2622,27 @@
     };
     const summary=lens.materiality_summary?`<p><strong>Materiality:</strong> ${esc(lens.materiality_summary)}</p>`:'';
     const partial=climateReadoutComplete(lens)?'':'<p class="climate-partial-notice">Note: a full Climate-FCV reflections and integration readout could not be generated for this run. The climate-FCV interactions below are shown, but the reflections on the core climate-FCV questions and the integration readout are unavailable and were not substituted.</p>';
-    return `<div class="climate-module-notice"><h3>How relevant is climate to this project?</h3><span class="climate-materiality-pill">${esc(level)} materiality</span><p>${esc(wording[level])}</p>${summary}${partial}${boundaryLine}<p class="climate-evidence-base">${esc(evidence)}</p></div>`;
+    return `<div class="climate-module-notice"><h3>How relevant is climate to this project?</h3><span class="climate-materiality-pill">${esc(level)} materiality</span><p>${esc(wording[level])}</p>${summary}${partial}${groundingNotice}${boundaryLine}<p class="climate-evidence-base">${esc(evidence)}</p></div>`;
+  }
+
+  function renderClimateGroundingSources(grounding){
+    const state=grounding&&grounding.state;
+    if(state!=='bank+research'&&state!=='bank-only')return '';
+    const version=String(grounding.content_version||(
+      grounding.bank_manifest&&grounding.bank_manifest.content_version
+    )||'').trim();
+    const sources=(Array.isArray(grounding.sources)?grounding.sources:[])
+      .filter(source=>source&&Array.isArray(source.provenance)&&source.provenance.includes('bank'));
+    const items=sources.map(source=>{
+      const parts=[
+        source.title||source.source_id||source.id||'Reviewed source',
+        source.organization,
+        source.publication_date,
+        source.url
+      ].filter(Boolean).map(esc);
+      return `<li>${parts.join(' | ')}</li>`;
+    }).join('');
+    return `<div class="exp-annex-break climate-grounding-sources"><h2 class="exp-section-hdr">Reviewed country evidence bank</h2>${version?`<p>Content version: ${esc(version)}</p>`:''}${items?`<ul>${items}</ul>`:''}</div>`;
   }
 
   function renderHorizonBadge(value){
@@ -3006,6 +3040,7 @@
       lensDiagnostic=savedLensState.lensDiagnostic||{};
       lensContextSources=Array.isArray(savedLensState.lensContextSources)?savedLensState.lensContextSources:[];
       climateResearch=savedLensState.climateResearch||{};
+      climateGrounding=savedLensState.climateGrounding||{};
       // If Stage 3 is present the run completed — clean up and do nothing
       if(outputs[3]){localStorage.removeItem('fcv_express_stageOutputs');localStorage.removeItem('fcv_express_stageHists');localStorage.removeItem('fcv_express_lensState');return;}
       // Partial state: at least Stage 1 exists but Stage 3 does not
@@ -3013,7 +3048,7 @@
       if(!lastStage)return;
       const currentVersions=Object.fromEntries(lensCatalogue.map(l=>[l.id,l.version]));
       const staleLens=activeLenses.some(id=>!resolvedLensVersions[id]||currentVersions[id]!==resolvedLensVersions[id]);
-      if(staleLens){activeLenses=[];resolvedLensVersions={};lensDiagnostic={};lensContextSources=[];}
+      if(staleLens){activeLenses=[];resolvedLensVersions={};lensDiagnostic={};lensContextSources=[];climateResearch={};climateGrounding={};}
       renderLensSelector();
       // Show an honest recovery prompt on the upload panel.
       const resumeDiv=document.createElement('div');
@@ -3040,7 +3075,7 @@
     localStorage.removeItem('fcv_express_stageOutputs');
     localStorage.removeItem('fcv_express_stageHists');
     localStorage.removeItem('fcv_express_lensState');
-    lensDiagnostic={};lensContextSources=[];lensSelectionLocked=false;renderLensSelector();
+    lensDiagnostic={};lensContextSources=[];climateResearch={};climateGrounding={};lensSelectionLocked=false;renderLensSelector();
     const b=document.getElementById('express-resume-banner');if(b)b.remove();
     const log=document.getElementById('debug-log');
     if(log){log.style.color='#92400e';log.textContent='Re-upload the project documents, confirm sector lenses, then begin a new Stage 1 analysis.';}
@@ -3050,7 +3085,7 @@
     localStorage.removeItem('fcv_express_stageOutputs');
     localStorage.removeItem('fcv_express_stageHists');
     localStorage.removeItem('fcv_express_lensState');
-    activeLenses=[];resolvedLensVersions={};lensDiagnostic={};lensContextSources=[];lensSelectionLocked=false;renderLensSelector();
+    activeLenses=[];resolvedLensVersions={};lensDiagnostic={};lensContextSources=[];climateResearch={};climateGrounding={};lensSelectionLocked=false;renderLensSelector();
     const b=document.getElementById('express-resume-banner');if(b)b.remove();
   }
 
@@ -3072,7 +3107,8 @@
       lensVersions: lensVersions(),
       lensDiagnostic: lensDiagnostic,
       lensContextSources: lensContextSources,
-      climateResearch: climateResearch
+      climateResearch: climateResearch,
+      climateGrounding: climateGrounding
     };
     const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
     const url = URL.createObjectURL(blob);
@@ -3130,9 +3166,10 @@
         lensDiagnostic = state.version >= 3 && state.lensDiagnostic ? state.lensDiagnostic : {};
         lensContextSources = state.version >= 3 && Array.isArray(state.lensContextSources) ? state.lensContextSources : [];
         climateResearch = state.version >= 3 && state.climateResearch ? state.climateResearch : {};
+        climateGrounding = state.version >= 3 && state.climateGrounding ? state.climateGrounding : {};
         const currentVersions=Object.fromEntries(lensCatalogue.map(l=>[l.id,l.version]));
         const staleLens=state.version>=3&&state.currentStage<3&&activeLenses.some(id=>!state.lensVersions||!state.lensVersions[id]||currentVersions[id]!==state.lensVersions[id]);
-        if(staleLens){hist=[];curS=0;stageOutputs={};stageHists={};activeLenses=[];resolvedLensVersions={};lensDiagnostic={};lensContextSources=[];lensSelectionLocked=false;renderLensSelector();document.getElementById('upload-panel').style.display='block';document.getElementById('analysis-panel').style.display='none';alert('A selected sector lens is unavailable or has been updated. Re-upload the project document and rerun from Stage 1 to avoid mixing module versions.');return;}
+        if(staleLens){hist=[];curS=0;stageOutputs={};stageHists={};activeLenses=[];resolvedLensVersions={};lensDiagnostic={};lensContextSources=[];climateResearch={};climateGrounding={};lensSelectionLocked=false;renderLensSelector();document.getElementById('upload-panel').style.display='block';document.getElementById('analysis-panel').style.display='none';alert('A selected sector lens is unavailable or has been updated. Re-upload the project document and rerun from Stage 1 to avoid mixing module versions.');return;}
         lensSelectionLocked=curS>0;renderLensSelector();
         sessionName = file.name;
         document.getElementById('upload-panel').style.display='none';
@@ -3630,7 +3667,7 @@
             if(p.research_status==='extracting_country') rsMsg='Identifying project country\u2026';
             else if(p.research_status==='searching'&&p.country){researchCountry=p.country;rsMsg='Searching FCV context: '+esc(p.country)+'\u2026';}
             else if(p.research_status==='cached'&&p.country){researchCountry=p.country;rsMsg='Loading cached FCV research\u2026';}
-            else if(p.research_status==='complete'){if(p.brief)researchBrief=p.brief;if(p.country)researchCountry=p.country;if(p.climate_research)climateResearch=p.climate_research;rsMsg='Research complete \u2014 generating analysis\u2026';}
+            else if(p.research_status==='complete'){if(p.brief)researchBrief=p.brief;if(p.country)researchCountry=p.country;if(p.climate_research)climateResearch=p.climate_research;if(p.climate_grounding)climateGrounding=p.climate_grounding;rsMsg='Research complete \u2014 generating analysis\u2026';}
             else if(p.research_status==='error'){rsMsg='Web research unavailable \u2014 proceeding\u2026';}
             if(rsMsg){const epSum=document.getElementById('ep-summary-1');if(epSum)epSum.innerHTML='<div class="ep-stage-spinner"><div class="ep-spinner-dot"></div><div class="ep-spinner-dot"></div><div class="ep-spinner-dot"></div><span>'+rsMsg+'</span></div>';}
           }
@@ -3660,6 +3697,7 @@
             const sn=p.stage_done;
             if(Array.isArray(p.lens_context_sources))lensContextSources=p.lens_context_sources;
             if(p.climate_research)climateResearch=p.climate_research;
+            if(p.climate_grounding)climateGrounding=p.climate_grounding;
 
             if(sn===1){
               stageOutputs[1]=p.result;
@@ -3858,7 +3896,7 @@
     if(analysisMode!=='express')startSbsLoadingTimers(stage);
 
     try{
-      const payload={stage,history:hist,user_message:followOn||'',document_type:docType,instrument_type:instrumentType,temporal_context:temporalContext,change_types:changeTypes,country_scope:countryScope,is_mpa:isMpa,review_mode:reviewMode,process_type:processType,user_context:(document.getElementById('user-context')?.value||'').trim(),uploaded_doc_names:[...pF.map(f=>f.name),...pkF.map(f=>f.name),...cF.map(f=>f.name)],country_classification:countryClassification,context_flags:contextFlags,sector_context:sectorContext,priority_questions:(priorityQuestions=getPriorityQuestions()),active_lenses:activeLenses,lens_versions:lensVersions(),lens_diagnostic:lensDiagnostic,lens_context_sources:lensContextSources,climate_research:climateResearch};
+      const payload={stage,history:hist,user_message:followOn||'',document_type:docType,instrument_type:instrumentType,temporal_context:temporalContext,change_types:changeTypes,country_scope:countryScope,is_mpa:isMpa,review_mode:reviewMode,process_type:processType,user_context:(document.getElementById('user-context')?.value||'').trim(),uploaded_doc_names:[...pF.map(f=>f.name),...pkF.map(f=>f.name),...cF.map(f=>f.name)],country_classification:countryClassification,context_flags:contextFlags,sector_context:sectorContext,priority_questions:(priorityQuestions=getPriorityQuestions()),active_lenses:activeLenses,lens_versions:lensVersions(),lens_diagnostic:lensDiagnostic,lens_context_sources:lensContextSources,climate_research:climateResearch,climate_grounding:climateGrounding};
       // Attach session prompt override if user has edited this stage's prompt
       if(sessionPrompts[stage]){
         payload.prompt_override = sessionPrompts[stage];
@@ -3976,6 +4014,7 @@
               if(p.active_lenses){activeLenses=p.active_lenses.map(l=>l.id);resolvedLensVersions=Object.fromEntries(p.active_lenses.map(l=>[l.id,l.version]));}
               if(Array.isArray(p.lens_context_sources))lensContextSources=p.lens_context_sources;
               if(p.climate_research)climateResearch=p.climate_research;
+              if(p.climate_grounding)climateGrounding=p.climate_grounding;
               showLensWarnings(p.lens_warnings);
               // Stage 2: capture ratings and under_hood data
               if(stage===2){
@@ -4543,7 +4582,7 @@
         !lensDiagnostic||lensDiagnostic.error||!_climateEntry
       );
       const _climateNotice=_climateActive
-        ?renderClimateModuleNotice(_climateEntry,_climateError):'';
+        ?renderClimateModuleNotice(_climateEntry,_climateError,climateGrounding):'';
       const _climateValid=_climateActive&&!_climateError;
       if(_climateValid){
         // Climate readout redesign order: notice/gauge -> model context prose ->
@@ -4984,7 +5023,7 @@
     try{localStorage.setItem('fcv_express_stageOutputs',JSON.stringify(outputs));}catch(e){}
     try{localStorage.setItem('fcv_express_stageHists',JSON.stringify(hists));}catch(e){}
     try{localStorage.setItem('fcv_express_curS',curStage);}catch(e){}
-    try{localStorage.setItem('fcv_express_lensState',JSON.stringify({activeLenses,lensVersions:lensVersions(),lensDiagnostic,lensContextSources,climateResearch}));}catch(e){}
+    try{localStorage.setItem('fcv_express_lensState',JSON.stringify({activeLenses,lensVersions:lensVersions(),lensDiagnostic,lensContextSources,climateResearch,climateGrounding}));}catch(e){}
   }
 
   function showExpressProgress(){
@@ -5151,6 +5190,7 @@
       lens_diagnostic: lensDiagnostic || {},
       lens_context_sources: lensContextSources || [],
       climate_research: climateResearch || {},
+      climate_grounding: climateGrounding || {},
       metadata: {
         date_str: dateStr,
         classification_category: cat,
@@ -5234,7 +5274,7 @@
     );
     const _exportClimateValid=_exportClimateActive&&!_exportClimateError;
     if(_exportClimateActive){
-      body+=renderClimateModuleNotice(_exportClimateEntry,_exportClimateError);
+      body+=renderClimateModuleNotice(_exportClimateEntry,_exportClimateError,climateGrounding);
     }
 
     if(summarybody){
@@ -5335,6 +5375,9 @@
     }
 
     // ── Annex: Stage 2 tables ──
+    // Reviewed structural sources are distinct from accepted live country context.
+    body += renderClimateGroundingSources(climateGrounding);
+
     if(uh && (uh.recs_table || uh.dnh_checklist || uh.questions_map)){
       body += `<div class="exp-annex-break"></div><h1 class="exp-section-hdr" style="font-size:18px">Annex: Stage 2 Assessment Tables</h1>
         <p style="font-size:12px;color:#666;font-style:italic;margin-bottom:16px">Internal analytical framework used to produce the Stage 2 assessment. Provided for transparency and peer review.</p>`;
@@ -5441,7 +5484,7 @@ ${body}
 
   function reset(){
     pF=[];cF=[];hist=[];curS=0;busy=false;stageOutputs={};stageHists={};researchBrief='';researchCountry='';priorityQuestions=[];focusQuestionsResult=null;pqPanelEnabled=true;
-    activeLenses=[];resolvedLensVersions={};lensSuggestions=[];lensDiagnostic={};lensContextSources=[];climateResearch={};climateIntegration=null;lensSelectionTouched=false;lensSelectionLocked=false;renderLensSelector();
+    activeLenses=[];resolvedLensVersions={};lensSuggestions=[];lensDiagnostic={};lensContextSources=[];climateResearch={};climateGrounding={};climateIntegration=null;lensSelectionTouched=false;lensSelectionLocked=false;renderLensSelector();
     { const _pc=document.getElementById('pq-confirm'); if(_pc){_pc.innerHTML='';_pc.style.display='none';} }
     ['stage2_timestamp','stage3_timestamp','stage3_consistency_dismissed'].forEach(k=>localStorage.removeItem(k));
     document.getElementById('upload-panel').style.display='block';

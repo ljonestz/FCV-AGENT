@@ -234,6 +234,93 @@ def test_downloaded_report_has_sector_source_and_evidence_appendix(monkeypatch):
     assert "invented-lens" not in text
 
 
+
+@pytest.mark.parametrize(
+    ("state", "expected_notice"),
+    [
+        ("bank+research", ""),
+        ("bank-only", "Live web research was unavailable for this run."),
+        ("research-only", "No reviewed country-bank release was available."),
+        ("thematic-only", "No reviewed country-bank release or accepted live research was available."),
+    ],
+)
+def test_docx_surfaces_climate_grounding_state_and_reviewed_bank_sources(
+    monkeypatch, state, expected_notice,
+):
+    from docx import Document
+
+    has_bank = state in {"bank+research", "bank-only"}
+    grounding = {
+        "state": state,
+        "content_version": "ssd-pilot-2026-07",
+        "country_iso3": "SSD",
+        "research_status": "accepted" if "research" in state else "empty",
+        "bank_manifest": {"bank_status": "ok" if has_bank else "unavailable"},
+        "sources": [{
+            "source_id": "SSD-SRC-001",
+            "title": "South Sudan reviewed climate-FCV source",
+            "organization": "Trusted institute",
+            "publication_date": "2025",
+            "url": "https://example.org/ssd-source",
+            "provenance": ["bank"],
+        }] if has_bank else [],
+    }
+    incoming_manifest = {
+        "bank_status": "ok" if has_bank else "unavailable",
+        "content_version": "ssd-pilot-2026-07" if has_bank else None,
+        "country_iso3": "SSD" if has_bank else None,
+    }
+    calls = []
+
+    def rematerialize(manifest, research, **kwargs):
+        calls.append((manifest, research, kwargs))
+        return grounding, research
+
+    monkeypatch.setattr(
+        app_module, "resolve_climate_grounding", rematerialize
+    )
+    response = app_module.app.test_client().post(
+        "/api/download-report",
+        json={
+            "summary": "# Grounding state test\nSummary.",
+            "active_lenses": [{
+                "id": "climate", "version": "1.1.0", "position": "primary",
+            }],
+            "lens_diagnostic": {"error": True},
+            "climate_grounding": {
+                "state": state,
+                "bank_manifest": incoming_manifest,
+                "sources": [{
+                    "source_id": "SSD-SRC-999",
+                    "title": "FORGED CLIENT SOURCE",
+                    "url": "https://malicious.example/source",
+                    "provenance": ["bank"],
+                }],
+                "prompt_context": "SECRET EVIDENCE PACKET",
+            },
+            "climate_research": {"status": "failed"},
+            "metadata": {"date_str": "31 July 2026"},
+        },
+    )
+
+    assert response.status_code == 200
+    document = Document(io.BytesIO(response.data))
+    text = "\n".join(paragraph.text for paragraph in document.paragraphs)
+    assert calls
+    assert calls[0][0] == incoming_manifest
+    assert "FORGED CLIENT SOURCE" not in text
+    assert "SECRET EVIDENCE PACKET" not in text
+    if expected_notice:
+        assert expected_notice in text
+    else:
+        assert "No reviewed country-bank release" not in text
+    if has_bank:
+        assert "Reviewed country evidence bank" in text
+        assert "Content version: ssd-pilot-2026-07" in text
+        assert "South Sudan reviewed climate-FCV source" in text
+        assert "https://example.org/ssd-source" in text
+    else:
+        assert "Reviewed country evidence bank" not in text
 def test_downloaded_report_has_climate_readout_and_context_sources():
     from docx import Document
 
