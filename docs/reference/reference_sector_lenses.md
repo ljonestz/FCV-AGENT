@@ -49,6 +49,23 @@ Valid interaction directions are `climate-fcv-on-project` and `project-on-climat
 
 The Render build uses a bounded evidence-packet adapter between Sonnet web search and Haiku JSON structuring. The adapter accepts SDK objects or dictionaries, keeps only bounded text notes and deduplicated trusted HTTPS source metadata, and bounds the project profile before serialization. Haiku receives one fresh user message; raw tool-result blocks and encrypted content are never replayed. Packet telemetry contains counts and sizes only. This is provider-specific plumbing: it does not change the shared ClimateResearchBundle schema or the Flask/FastAPI parity contract.
 
+
+## Climate-FCV country evidence bank
+
+`sector_lenses.climate_bank` loads schema `1.0.0` from the pinned public submodule
+or `CLIMATE_COUNTRY_BANK_PATH`. Materialization is approved-only, checksum-valid,
+review-window bounded, and non-throwing. Selection targets 8 and caps 12 items,
+admits at most two physical-baseline records, favors source diversity, and
+emphasizes qualitative vulnerability/capacity, affected groups, institutions,
+geography, sectors, project elements, systems/resources, and mediators.
+
+Grounding caps bank context at 6,000 characters, accepted live claims at 6, and
+combined context at 12,000. Its state enum is `bank+research | bank-only |
+research-only | thematic-only`. Conflicts remain visible provenance. Only
+server-rematerialized IDs matching `AAA-SRC-999` enter diagnostic source
+normalization. South Sudan is a reviewed pilot candidate, not a production
+release until human approval creates `releases/current/runtime.json`.
+
 ## Compatibility contract
 
 The Flask and private FastAPI builds must keep these fields and delimiters aligned:
@@ -60,6 +77,9 @@ The Flask and private FastAPI builds must keep these fields and delimiters align
 - Stage 3 priority: `lens_ids: string[]`, `lens_relevance: string`, and additive `climate_links` with status, interaction/dividend/finding IDs, contribution, strengthening effect, and reason;
 - Climate research: normalized `sources`, project-specific `claims`, confidence, evidence status, and the three horizon enums;
 - Climate diagnostic: stable pathway and finding IDs plus the causal pathway fields described above;
+- Climate grounding: `state`, `warning_code`, `content_version`, `country_iso3`, `research_status`, sanitized `bank_manifest`, and display-safe `sources`;
+- canonical manifest: `bank_status`, `warning_code`, `schema_version`, `content_version`, `country_iso3`, `evidence_ids`, `pathway_ids`;
+- SSE: additive `climate_grounding` on Stage 1 and Stage 2 completion events;
 - hidden delimiter names and diagnostic status/core-mapping enums.
 
 Raw literature and source notes are never injected at runtime.

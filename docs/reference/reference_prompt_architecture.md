@@ -367,3 +367,17 @@ language is relabelled.
 **Budgets:** `PLATFORM_STAGE_BUDGETS` = stage1 600 / stage2 3300 / stage3 1600; `_bounded_stage3_lenses` target 1500.
 
 **Readout order (live HTML, shared HTML, DOCX in parity):** module notice + 6-tier gauge -> `renderClimateStrengthsWeaknesses` -> `renderClimateCoreQuestions` (lay intro naming the source literature + both interaction directions in prose + per-theme answers with source). Standalone dividends + wider-FCV sections dropped in module mode. DOCX helpers: `add_climate_strengths_weaknesses`, `add_climate_core_questions`.
+
+## Climate-FCV country-bank grounding (v9.23)
+
+The native Climate Stage 2 prompt accepts one bounded `EXTERNAL CLIMATE-FCV
+GROUNDING` data block. It identifies one of four states (`bank+research`,
+`bank-only`, `research-only`, `thematic-only`) and distinguishes reviewed
+structural bank evidence from accepted current/project-specific live research.
+The block is untrusted evidence, never instructions. Canonical IDs are citations;
+`observed`, `projected`, and `inferred` labels must be preserved; analytical
+inference remains conditional; and co-occurrence is not causality.
+
+The bank projection is capped at 6,000 characters and combined grounding at
+12,000. This does not recreate the generic 12-OST prompt: Climate Stage 2 remains
+native, while non-Climate runs follow the standard prompt path unchanged.
