@@ -337,11 +337,10 @@
     .lens-other-pathways{font-size:12px;margin-top:10px;color:#475569}
     .lens-other-pathways summary{cursor:pointer;font-weight:600;color:#075985}
     .lens-badge{display:inline-flex;align-items:center;padding:3px 8px;border-radius:999px;background:#ecfeff;color:#0e7490;border:1px solid #a5f3fc;font-size:10px;font-weight:700}
-    .climate-module-notice{border:1px solid #7dd3fc;border-left:5px solid #0284c7;background:#f0f9ff;border-radius:8px;padding:14px 16px;margin:0 0 18px;color:#334155}
-    .climate-module-notice h3{font-size:14px;color:#075985;margin:2px 0 6px}
-    .climate-module-notice p{font-size:12px;line-height:1.55;margin:5px 0}
-    .climate-module-kicker{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#0369a1}
-    .climate-relevance-pill{display:inline-flex;padding:2px 8px;border-radius:999px;background:#dbeafe;color:#075985;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+    .climate-opening{margin:0 0 20px;padding:2px 0 16px;border-bottom:1px solid var(--border);color:#334155}
+    .climate-opening h3{font-size:15px;color:#0f172a;margin:2px 0 5px}
+    .climate-opening p{font-size:13px;line-height:1.65;margin:6px 0}
+    .climate-relevance-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#0369a1;margin-bottom:6px}
     .climate-evidence-base{color:#475569;font-size:11px!important}
     .climate-boundary{font-size:11px!important;color:#475569;font-style:italic}
     .climate-partial-notice{font-size:11px!important;color:#924000;background:#fff7ed;border-left:3px solid #f59e0b;padding:6px 10px;margin:6px 0;border-radius:4px}
@@ -378,7 +377,6 @@
     .reflection-row{border-left:3px solid #cbd5e1;padding:2px 0 2px 12px;margin:12px 0}
     .reflection-head{display:flex;align-items:center;gap:8px;margin:0 0 4px}
     .reflection-head strong{font-size:13px;color:#1e293b}
-    .reflection-chip{display:inline-flex;padding:1px 8px;border-radius:999px;background:#eef2f7;color:#475569;font-size:10px;font-weight:700;text-transform:lowercase}
     .reflection-row p{font-size:13px;line-height:1.6;color:#334155;margin:0 0 8px}
     .reflection-source{font-size:11px;color:#64748b;margin:4px 0 0}
     .climate-core-questions-section{margin:14px 0}
@@ -2609,15 +2607,16 @@
   }
 
   function renderClimateModuleNotice(lens,diagnosticError,grounding){
-    const evidence='These reflections and recommendations draw on a core set of climate and FCV frameworks and evidence, including: Maximizing the Peace and Social Dividends of Climate Action; the FCV-Sensitive Climate Action Framework; and the Defueling Conflict series, alongside other World Bank and external sources.';
     if(diagnosticError||!lens){
-      return `<div class="climate-module-notice climate-module-error"><div class="climate-module-kicker">Climate-FCV module</div><h3>Climate relevance to this project</h3><p>A validated Climate-FCV diagnostic could not be produced. The note therefore retains the core FCV assessment and does not add unvalidated climate findings.</p><p class="climate-evidence-base">${esc(evidence)}</p></div>`;
+      return `<section class="climate-opening"><h3>Climate relevance to this project</h3><p>A validated Climate-FCV diagnostic could not be produced. The note therefore retains the core FCV assessment and does not add unvalidated climate findings.</p></section>`;
     }
     const level=climateMaterialityLevel(lens);
     const levelLabel={high:'High',medium:'Moderate',low:'Limited'}[level]||'Limited';
-    const summary=lens.materiality_summary?`<p><strong>Why it matters:</strong> ${esc(lens.materiality_summary)}</p>`:'';
+    const scene=String(lens.executive_summary||'').trim();
+    const relevance=String(lens.materiality_summary||'').trim();
+    const narrative=(scene?esc(scene)+(relevance?' ':''):'')+(relevance?`<strong>Why it matters:</strong> ${esc(relevance)}`:'');
     const partial=climateReadoutComplete(lens)?'':'<p class="climate-partial-notice">Note: a full Climate-FCV reflections and integration readout could not be generated for this run. The climate-FCV interactions below are shown, but the reflections on the core climate-FCV questions and the integration readout are unavailable and were not substituted.</p>';
-    return `<div class="climate-module-notice"><div class="climate-module-kicker">Climate-FCV module</div><h3>Climate relevance to this project</h3><span class="climate-relevance-pill">${esc(levelLabel)} climate relevance</span>${summary}${partial}<p class="climate-evidence-base">${esc(evidence)}</p></div>`;
+    return `<section class="climate-opening"><h3>Climate relevance to this project</h3><div class="climate-relevance-label">${esc(levelLabel)} climate relevance</div>${narrative?`<p>${narrative}</p>`:''}${partial}</section>`;
   }
 
   function renderClimateGroundingSources(grounding){
@@ -2707,11 +2706,11 @@
     const items=(lens&&Array.isArray(lens.reflections)?lens.reflections:[])
       .filter(r=>r&&r.text);
     if(!items.length)return '';
-    const rows=items.map(r=>`<div class="reflection-row"><div class="reflection-head"><strong>${esc(r.title||'')}</strong>${r.status_cue?`<span class="reflection-chip">${esc(r.status_cue)}</span>`:''}</div><p>${esc(r.text)}</p></div>`).join('');
+    const rows=items.map(r=>`<div class="reflection-row"><div class="reflection-head"><strong>${esc(r.title||'')}</strong></div><p>${esc(r.text)}</p></div>`).join('');
     const less=lens.less_central?`<p class="reflection-less"><em>Less central here:</em> ${esc(lens.less_central)}</p>`:'';
     const evBlock=(title,arr)=>Array.isArray(arr)&&arr.length?`<div class="reflection-evidence"><span>${esc(title)}:</span><ul>${arr.map(e=>`<li>${esc(e)}</li>`).join('')}</ul></div>`:'';
     const evidence=evBlock('Sensitivity evidence',lens.sensitivity_evidence)+evBlock('Responsiveness evidence',lens.responsiveness_evidence);
-    return `<div class="climate-reflections-section"><div class="climate-readout-heading">Reflections on core climate and FCV considerations</div><p class="climate-readout-intro">The reflections below draw on a core set of climate and FCV frameworks and evidence, and focus on the considerations most material to this project rather than applying every principle mechanically.</p>${rows}${less}${evidence}</div>`;
+    return `<div class="climate-reflections-section"><div class="climate-readout-heading">Reflections on core climate and FCV considerations</div><p class="climate-readout-intro">The reflections below draw on a core set of climate and FCV frameworks and evidence, and focus on the considerations most relevant to this project rather than applying every principle mechanically.</p>${rows}${less}${evidence}</div>`;
   }
 
   function renderWiderFcvContext(text){
@@ -2738,7 +2737,7 @@
 
   // Climate readout redesign: a single core-questions section = lay intro naming the
   // source literature + the two interaction directions (prose) + per-theme answers,
-  // each a two-paragraph reflection with a soft status word and a source line.
+  // each a two-paragraph reflection with a framework reference.
   // Self-contained (depends only on esc + renderClimatePathwayStrip) so it renders
   // identically in the live view and the downloaded HTML.
   function renderClimateCoreQuestions(lens){
@@ -2761,9 +2760,8 @@
     const reflections=(Array.isArray(lens.reflections)?lens.reflections:[]).filter(r=>r&&r.text)
       .map(r=>{
         const body=paras(r.text).map(p=>`<p>${esc(p)}</p>`).join('');
-        const chip=r.status_cue?`<span class="reflection-chip">${esc(r.status_cue)}</span>`:'';
-        const src=r.source?`<p class="reflection-source"><em>Source:</em> ${esc(r.source)}</p>`:'';
-        return `<div class="reflection-row"><div class="reflection-head"><strong>${esc(r.title||'')}</strong>${chip}</div>${body}${src}</div>`;
+        const src=r.source?`<p class="reflection-source"><em>For further insights on why this matters, see:</em> ${esc(r.source)}</p>`:'';
+        return `<div class="reflection-row"><div class="reflection-head"><strong>${esc(r.title||'')}</strong></div>${body}${src}</div>`;
       }).join('');
     if(!interactions&&!reflections)return '';
     return `<div class="climate-core-questions-section"><div class="climate-readout-heading">Core climate and FCV questions</div>${intro}${interactions}${reflections}</div>`;
@@ -5688,12 +5686,12 @@ ${body}
 
   function climateIntegrationShortLabel(rating){
     return ({
-      'Extremely Low':'Minimal integration',
-      'Very Low':'Limited integration',
-      'Low':'Early integration',
-      'Adequate':'Partly integrated',
-      'Well Embedded':'Well integrated',
-      'Very Well Embedded':'Deeply integrated'
+      'Extremely Low':'Fundamental climate and FCV integration is needed',
+      'Very Low':'Substantial opportunities to integrate climate and FCV',
+      'Low':'Clear opportunities to strengthen climate and FCV integration',
+      'Adequate':'Opportunities to further strengthen climate and FCV elements',
+      'Well Embedded':'Targeted refinements could strengthen climate and FCV integration',
+      'Very Well Embedded':'Strong climate and FCV integration to sustain'
     })[String(rating||'')]||'Evidence limited';
   }
 
@@ -6043,7 +6041,7 @@ ${body}
     if(prevBtn) prevBtn.disabled = idx === 0;
     if(nextBtn){
       if(idx === n-1){ nextBtn.textContent = 'Done'; nextBtn.onclick = () => {}; nextBtn.disabled = true; }
-      else { nextBtn.innerHTML = 'Next <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>'; nextBtn.onclick = nextPriority; }
+      else { nextBtn.innerHTML = 'Next <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>'; nextBtn.onclick = nextPriority; nextBtn.disabled = false; }
     }
 
     // Determine risk chip class

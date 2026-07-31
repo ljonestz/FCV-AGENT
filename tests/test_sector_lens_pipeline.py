@@ -681,6 +681,32 @@ def test_climate_materiality_summary_clips_at_a_word_boundary():
     assert materiality[-2].isalpha()
 
 
+def test_climate_relevance_summary_prefers_complete_sentences_and_plain_language():
+    summary = (
+        "This operation faces high-materiality climate and FCV pressures. "
+        "Flood access affects Component 1 delivery and displaced households. "
+        + "A final sentence should be removed before it is cut in the middle. " * 20
+    )
+    block = (
+        "%%%LENS_DIAGNOSTIC_START%%%"
+        '{"lenses":[{"lens_id":"climate","applicability":"material",'
+        '"materiality_level":"high","materiality_summary":'
+        + json.dumps(summary)
+        + ',"source_ids":[],"readout_sections":[],"interaction_readout":[],'
+        '"additional_pathways":[],"other_pathways":[]}],"findings":[]}'
+        "%%%LENS_DIAGNOSTIC_END%%%"
+    )
+
+    rendered = extract_lens_diagnostic(block, ["climate"])["lenses"][0][
+        "materiality_summary"
+    ]
+
+    assert len(rendered) <= 600
+    assert rendered.endswith(".")
+    assert not rendered.endswith("…")
+    assert "materiality" not in rendered.lower()
+
+
 def test_climate_reflection_carries_source_and_long_text():
     long_text = "Paragraph one about maladaptation lock-in. " * 20 + "\n\n" + \
                 "Paragraph two naming Sub-component 1.2 cold storage. " * 20

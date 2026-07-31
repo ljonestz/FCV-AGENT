@@ -195,7 +195,7 @@ def test_incomplete_primary_repairs_only_missing_fields(monkeypatch):
     climate = climate_lens_readout(diagnostic)
     assert climate["integration_summary"] == "Aware but allocation untreated."
     assert climate["executive_summary"] == "PRIMARY executive"
-    assert climate["materiality_summary"] == "PRIMARY materiality"
+    assert climate["materiality_summary"] == "PRIMARY climate relevance"
     assert "lenses.climate.integration_summary" in observed["missing_fields"]
 
 

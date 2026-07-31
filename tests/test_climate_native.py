@@ -956,6 +956,10 @@ def test_stage2_prompt_requires_specific_and_calibrated_executive_readout():
     assert "confirmed omission" in prompt
     assert "not evidenced at concept stage" in prompt
     assert "operational mechanism" in prompt
+    assert "two or three scene-setting sentences" in prompt
+    assert "do not use the word materiality in reader-facing prose" in prompt.lower()
+    assert "one or two short paragraphs for each mandatory interaction" in prompt.lower()
+    assert "second paragraph" in prompt.lower()
 
 
 @pytest.mark.parametrize(

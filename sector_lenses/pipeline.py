@@ -337,6 +337,52 @@ def _clip_text(value: Any, limit: int) -> str:
     return candidate.rstrip(" ,;:-—") + "…"
 
 
+def _plain_climate_relevance_text(value: Any) -> str:
+    """Replace internal assessment jargon in reader-facing climate summaries."""
+
+    text = str(value or "").strip()
+    text = re.sub(
+        r"\bhigh[- ]materiality\b",
+        "high-priority",
+        text,
+        flags=re.IGNORECASE,
+    )
+    text = re.sub(
+        r"\bmedium[- ]materiality\b",
+        "moderate climate relevance",
+        text,
+        flags=re.IGNORECASE,
+    )
+    text = re.sub(
+        r"\blow[- ]materiality\b",
+        "limited climate relevance",
+        text,
+        flags=re.IGNORECASE,
+    )
+    return re.sub(
+        r"\bmateriality\b",
+        "climate relevance",
+        text,
+        flags=re.IGNORECASE,
+    )
+
+
+def _clip_complete_summary(value: Any, limit: int) -> str:
+    """Prefer complete sentences when bounding the opening climate narrative."""
+
+    text = _plain_climate_relevance_text(value)
+    if len(text) <= limit:
+        return text
+    candidate = text[:limit].rstrip()
+    sentence_ends = [
+        match.end()
+        for match in re.finditer(r"[.!?](?=\s|$)", candidate)
+    ]
+    if sentence_ends and sentence_ends[-1] >= limit // 2:
+        return candidate[:sentence_ends[-1]].rstrip()
+    return _clip_text(text, limit)
+
+
 def _concise_status_cue(value: Any) -> str:
     """Reduce model-authored status explanations to a short reader chip."""
 
@@ -790,7 +836,7 @@ def extract_lens_diagnostic(
         normalized_lens = {
             "lens_id": lens_id,
             "applicability": applicability,
-            "materiality_summary": _clip_text(
+            "materiality_summary": _clip_complete_summary(
                 item.get("materiality_summary", ""), 600
             ),
             "analysis_emphasis": [

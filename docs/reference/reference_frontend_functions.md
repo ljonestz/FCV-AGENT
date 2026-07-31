@@ -31,7 +31,7 @@
 
 ### Stage 3 priorities + Go Deeper
 - `initStage3UI()` — parse priorities from JSON, build stepper, show Priority 1
-- `showPriority(idx)` — render full priority card with zone-act layout from JSON (refresh_shift badge, actions[] loop with per-action guidance + suggested text, implementation note); no auto-load of Go Deeper
+- `showPriority(idx)` — render full priority card with zone-act layout from JSON (refresh_shift badge, actions[] loop with per-action guidance + suggested text, implementation note); re-enable Next when navigating back from the last priority; no auto-load of Go Deeper
 - `handleDeeperToggle(detailsEl, idx)` — ontoggle handler for `<details class="go-deeper">`; initialises 2 tab buttons on first open
 - `loadDeeperTab(idx, tab)` — dispatches to correct loader based on `tab`:
   - `tab: "trail"` → calls `loadAnalyticalTrail(idx)` (no API call — filters localStorage)
@@ -211,4 +211,4 @@ Both modes use identical prompts, code paths, and output quality. Express is a f
 
 ---
 
-*Last updated: 2026-07-21 - Climate-FCV readouts, context persistence, and flexible Stage 3 integration.*
+*Last updated: 2026-07-31 - Climate-FCV reader polish and priority-stepper navigation state.*

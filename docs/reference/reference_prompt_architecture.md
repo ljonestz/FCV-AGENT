@@ -366,7 +366,7 @@ language is relabelled.
 
 **Budgets:** `PLATFORM_STAGE_BUDGETS` = stage1 600 / stage2 3300 / stage3 1600; `_bounded_stage3_lenses` target 1500.
 
-**Readout order (live HTML, shared HTML, DOCX in parity):** module notice + 6-tier gauge -> `renderClimateStrengthsWeaknesses` -> `renderClimateCoreQuestions` (lay intro naming the source literature + both interaction directions in prose + per-theme answers with source). Standalone dividends + wider-FCV sections dropped in module mode. DOCX helpers: `add_climate_strengths_weaknesses`, `add_climate_core_questions`.
+**Readout order (live HTML, shared HTML, DOCX in parity):** plain opening narrative + 6-tier gauge -> `renderClimateStrengthsWeaknesses` -> `renderClimateCoreQuestions` (lay intro naming the source literature + both interaction directions in one or two component-anchored paragraphs + per-theme answers with framework references). The opening uses `executive_summary` for two-to-three scene-setting sentences and `materiality_summary` for the project-specific "Why it matters" transition. Reader-facing copy uses climate relevance/importance rather than materiality. Core-question `status_cue` remains in the canonical payload for compatibility but is not rendered. Standalone dividends + wider-FCV sections remain dropped in module mode. DOCX helpers: `add_climate_strengths_weaknesses`, `add_climate_core_questions`.
 
 ## Climate-FCV country-bank grounding (v9.23)
 
@@ -381,3 +381,9 @@ inference remains conditional; and co-occurrence is not causality.
 The bank projection is capped at 6,000 characters and combined grounding at
 12,000. This does not recreate the generic 12-OST prompt: Climate Stage 2 remains
 native, while non-Climate runs follow the standard prompt path unchanged.
+
+Live research normally makes one bounded request. A second request is allowed only
+when the first response contains a structured `partial|complete` bundle with at
+least one source and one claim and fails specifically with
+`climate_research_insufficient`. Missing structured output, structuring truncation,
+timeouts, and terminal provider failures do not use this evidence-gate retry.

@@ -7191,6 +7191,23 @@ def run_climate_web_research(
                 accepted = gate["bundle"]
                 accepted["attempts"] = attempt
                 return finish(accepted)
+            retry_insufficient = (
+                attempt == 1
+                and gate.get("code") == "climate_research_insufficient"
+                and bundle.get("status") in {"partial", "complete"}
+                and bool(bundle.get("sources"))
+                and bool(bundle.get("claims"))
+                and getattr(response, "stop_reason", "") != "max_tokens"
+            )
+            if retry_insufficient:
+                app.logger.info(
+                    "Climate research attempt assessment_id=%s attempt=%d "
+                    "outcome=evidence_gate_retry gate_code=%s",
+                    assessment_id or "unknown",
+                    attempt,
+                    gate.get("code"),
+                )
+                continue
             break
         except anthropic.APIStatusError as exc:
             is_overloaded = type(exc).__name__ == "OverloadedError"
@@ -10704,7 +10721,7 @@ def render_climate_stage2_payload(diagnostic: dict[str, Any]) -> str:
     if executive:
         sections.extend(["## Climate-FCV assessment", executive])
     if materiality:
-        sections.extend(["## Materiality", materiality])
+        sections.extend(["## Climate relevance", materiality])
     operating = lens.get("operating_context", {})
     if isinstance(operating, dict):
         context_lines = [
@@ -11286,17 +11303,10 @@ def download_report():
         if not climate_active:
             return
         _add_section_heading('How relevant is climate to this project?')
-        evidence_base = (
-            'These reflections and recommendations draw on a core set of climate '
-            'and FCV frameworks and evidence, including: Maximizing the Peace and '
-            'Social Dividends of Climate Action; the FCV-Sensitive Climate Action '
-            'Framework; and the Defueling Conflict series, alongside other World '
-            'Bank and external sources.'
-        )
         if climate_error:
             _add_single_para(
-                'You selected the Climate-FCV module, but a validated '
-                'Climate-FCV diagnostic could not be produced. The note therefore '
+                'A validated Climate-FCV diagnostic could not be produced. '
+                'The note therefore '
                 'retains the core FCV assessment and does not add unvalidated '
                 'climate findings.'
             )
@@ -11304,38 +11314,27 @@ def download_report():
                 _add_single_para(
                     grounding_notices[climate_grounding_state], color=AMBER
                 )
-            _add_single_para(evidence_base, size=9, color=WB_GRAY)
             return
         level = climate_materiality_level(climate_readout)
-        wording = {
-            'high': (
-                'You selected the Climate-FCV module. The tool has therefore '
-                'applied a strong climate emphasis across this FCV assessment, '
-                'examining how Climate-FCV risks may affect the project and how '
-                'project design could strengthen climate resilience and wider '
-                'FCV outcomes.'
-            ),
-            'medium': (
-                'You selected the Climate-FCV module. The tool has applied a '
-                'focused climate emphasis to the parts of this FCV assessment '
-                'where Climate-FCV risks, opportunities, and delivery choices '
-                'are material to the project.'
-            ),
-            'low': (
-                'You selected the Climate-FCV module. The assessment found '
-                'limited climate materiality for this project. Climate '
-                'considerations are therefore included with a light emphasis '
-                'alongside the wider FCV sensitivity and responsiveness assessment.'
-            ),
-        }
         _add_single_para(
-            f'{level.title()} materiality',
+            f'{level.title()} climate relevance',
             bold=True,
             color=WB_NAVY,
             space_after=2,
         )
-        _add_single_para(wording[level])
-        add_field('Materiality', climate_readout.get('materiality_summary'))
+        scene = str(climate_readout.get('executive_summary', '')).strip()
+        relevance = str(climate_readout.get('materiality_summary', '')).strip()
+        if scene or relevance:
+            p = doc.add_paragraph()
+            p.paragraph_format.space_after = Pt(5)
+            if scene:
+                p.add_run(scene)
+            if relevance:
+                if scene:
+                    p.add_run(' ')
+                why = p.add_run('Why it matters: ')
+                why.bold = True
+                p.add_run(relevance)
         if not climate_readout_is_complete(
             climate_readout,
             baseline=lens_diagnostic.get("fcv_baseline"),
@@ -11353,7 +11352,6 @@ def download_report():
             _add_single_para(
                 grounding_notices[climate_grounding_state], color=AMBER
             )
-        _add_single_para(evidence_base, size=9, color=WB_GRAY)
 
     def add_causal_strip(pathway):
         """Emit a single plain-language prose paragraph for one causal pathway."""
@@ -11479,8 +11477,8 @@ def download_report():
         if not sw:
             return
         _add_section_heading('How the design holds up on climate and FCV', level=2)
-        for side, heading in (('strength', 'Where the design is strong'),
-                              ('gap', 'Where the design is weak')):
+        for side, heading in (('strength', 'Where the design is stronger'),
+                              ('gap', 'Where the design could be strengthened')):
             rows = [x for x in sw if x.get('side') == side]
             if not rows:
                 continue
@@ -11494,14 +11492,14 @@ def download_report():
 
     def add_climate_core_questions():
         # Lay intro naming the source literature, then the two interaction directions,
-        # then the per-theme answers (reflections) with their soft status and source line.
+        # then the per-theme answers (reflections) with a framework reference.
         _add_section_heading('Core climate and FCV questions', level=2)
         _add_single_para(
             'These core questions draw on World Bank analytical frameworks - '
             'Maximizing the Peace and Social Dividends of Climate Action, the '
             'FCV-Sensitive Climate Action Framework, and the Defueling Conflict '
             '(peace and social dividends) series - and focus on the considerations '
-            'most material to this project rather than applying every principle mechanically.',
+            'most relevant to this project rather than applying every principle mechanically.',
             size=9, color=WB_GRAY, italic=True, space_before=0,
         )
         add_climate_interactions()
@@ -11511,15 +11509,19 @@ def download_report():
                 continue
             p = doc.add_paragraph()
             p.add_run((ref.get('title') or '').strip()).bold = True
-            if ref.get('status_cue'):
-                p.add_run(f"  [{ref['status_cue']}]")
             for para in re.split(r'\n\s*\n', str(ref.get('text', ''))):
                 para = para.strip()
                 if para:
                     _add_single_para(para, space_before=0)
             if ref.get('source'):
-                _add_single_para(f"Source: {ref['source']}", size=9, color=WB_GRAY,
-                                 italic=True, space_before=0)
+                _add_single_para(
+                    'For further insights on why this matters, see: '
+                    f"{ref['source']}",
+                    size=9,
+                    color=WB_GRAY,
+                    italic=True,
+                    space_before=0,
+                )
         less = (climate_readout or {}).get('less_central')
         if less:
             doc.add_paragraph(f'Less central here: {less}')

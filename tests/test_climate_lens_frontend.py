@@ -60,20 +60,22 @@ const esc = value => String(value ?? '')
 {helpers}
 const lens = {{
   materiality_level:'high',
+  executive_summary:'This natural resources operation works in a setting shaped by conflict, displacement, and repeated climate shocks.',
   materiality_summary:'Flood access affects Component 1 delivery.',
   reflections:[{{text:'A grounded reflection.'}}],
   integration_summary:'A complete readout.'
 }};
 const notice = renderClimateModuleNotice(lens,false,{{state:'thematic-only'}});
 for (const expected of [
-  'Climate-FCV module','Climate relevance to this project',
+  'Climate relevance to this project',
   'High climate relevance','Why it matters:',
+  'This natural resources operation works in a setting shaped by conflict, displacement, and repeated climate shocks.',
   'Flood access affects Component 1 delivery.'
 ]) {{
   if (!notice.includes(expected)) throw new Error('missing '+expected+' | '+notice);
 }}
 for (const forbidden of [
-  'materiality','reviewed country-bank release',
+  'Climate-FCV module','climate-module-notice','materiality','reviewed country-bank release',
   'advisory FCV screening readout','You selected'
 ]) {{
   if (notice.toLowerCase().includes(forbidden.toLowerCase())) throw new Error('forbidden '+forbidden+' | '+notice);
@@ -98,7 +100,7 @@ for (const [state,copy] of Object.entries(expectedEvidence)) {{
     assert result.returncode == 0, result.stderr
 
 
-def test_climate_stage3_overview_keeps_rating_compact():
+def test_climate_stage3_overview_explains_why_strengthening_is_needed():
     source = INDEX.read_text(encoding="utf-8")
     helpers = "\n".join(
         _extract_js_function(source, name)
@@ -107,8 +109,8 @@ def test_climate_stage3_overview_keeps_rating_compact():
     script = f"""
 const isClimateLensActive = () => true;
 {helpers}
-if (climateIntegrationShortLabel('Adequate') !== 'Partly integrated') {{
-  throw new Error('rating helper is not compact');
+if (climateIntegrationShortLabel('Adequate') !== 'Opportunities to further strengthen climate and FCV elements') {{
+  throw new Error('rating helper does not explain the improvement opportunity');
 }}
 const html=stage3OverviewHtml();
 for (const expected of ['stage3-overview','Climate-FCV integration','Priority overview','fcv-int-summary','pov-sb']) {{
@@ -453,6 +455,17 @@ def test_live_and_shared_priority_cards_switch_climate_panel_only_when_active():
     assert "isClimateLensActive()" in live_helper
 
 
+def test_priority_next_button_is_reenabled_after_leaving_last_priority():
+    source = INDEX.read_text(encoding="utf-8")
+    helper = _extract_js_function(source, "showPriority")
+    nav_start = helper.index("if(nextBtn)")
+    nav_end = helper.index("// Determine risk chip class", nav_start)
+    nav_logic = helper[nav_start:nav_end]
+
+    assert "nextBtn.disabled = true" in nav_logic
+    assert "nextBtn.disabled = false" in nav_logic
+
+
 def test_express_mode_surfaces_stage2_structured_diagnostic_failures():
     source = INDEX.read_text(encoding="utf-8")
     start = source.index("else if(sn===2)")
@@ -680,7 +693,7 @@ def test_climate_gauge_uses_six_tier_rating():
     assert vals[3] == "0"
 
 
-def test_core_questions_render_intro_interactions_and_theme_answers_with_source():
+def test_core_questions_render_intro_interactions_and_theme_answers_with_reference():
     html = INDEX.read_text(encoding="utf-8")
     assert "renderClimateCoreQuestions" in html
     fn = _extract_js_function(html, "renderClimateCoreQuestions")
@@ -709,6 +722,9 @@ def test_core_questions_render_intro_interactions_and_theme_answers_with_source(
     # Theme answer with its title, source line, and paragraph split
     assert "Could the design lock in maladaptation?" in out.stdout
     assert "FCV-Sensitive Climate Action Framework" in out.stdout
+    assert "For further insights on why this matters, see:" in out.stdout
+    assert "reflection-chip" not in out.stdout
+    assert "partial gap" not in out.stdout
     assert out.stdout.count("<p") >= 4  # multi-paragraph answers
 
 
@@ -729,7 +745,7 @@ def test_strengths_weaknesses_two_column_full_detail():
     assert "Named but no design response." in out.stdout
 
 
-def test_reflections_render_with_status_chips_and_intro():
+def test_reflections_render_without_status_chips():
     html = INDEX.read_text(encoding="utf-8")
     assert "renderClimateReflections" in html
     fn = _extract_js_function(html, "renderClimateReflections")
@@ -744,8 +760,8 @@ def test_reflections_render_with_status_chips_and_intro():
     out = subprocess.run(["node", "-e", script], capture_output=True, text=True)
     assert out.returncode == 0, out.stderr
     assert "Reflections on core climate and FCV considerations" in out.stdout
-    assert "reflection-chip" in out.stdout
-    assert "partial gap" in out.stdout
+    assert "reflection-chip" not in out.stdout
+    assert "partial gap" not in out.stdout
     assert "Less central here" in out.stdout
     empty = subprocess.run(["node", "-e", f"{esc}\n{fn}\nprocess.stdout.write(renderClimateReflections({{}}));"], capture_output=True, text=True)
     assert empty.returncode == 0, empty.stderr

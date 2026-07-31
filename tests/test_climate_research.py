@@ -432,6 +432,19 @@ def _valid_climate_response():
     ])
 
 
+def _insufficient_but_structured_climate_response():
+    return SimpleNamespace(content=[
+        SimpleNamespace(
+            type="text",
+            text=(
+                CLIMATE_RESEARCH_START
+                + json.dumps(_valid_bundle())
+                + CLIMATE_RESEARCH_END
+            ),
+        )
+    ])
+
+
 
 def test_climate_structuring_diagnostic_reports_truncation_without_text():
     secret = "SECRET PROJECT EVIDENCE Upper Nile https://example.invalid"
@@ -737,6 +750,41 @@ def test_climate_research_does_not_structure_insufficient_search_results():
     )
 
     assert result["status"] == "failed"
+    assert len(client.calls) == 1
+
+
+def test_climate_research_retries_once_when_structured_evidence_is_nearly_valid():
+    client = _SequencedResearchClient([
+        _insufficient_but_structured_climate_response(),
+        _valid_climate_response(),
+    ])
+
+    result = app_module.run_climate_web_research(
+        "South Sudan",
+        "Natural resources",
+        {"project_elements": ["Landing sites"]},
+        client,
+    )
+
+    assert result["status"] == "complete"
+    assert result["attempts"] == 2
+    assert len(client.calls) == 2
+
+
+def test_climate_research_does_not_retry_truncated_structured_evidence():
+    truncated = _insufficient_but_structured_climate_response()
+    truncated.stop_reason = "max_tokens"
+    client = _SequencedResearchClient([truncated, _valid_climate_response()])
+
+    result = app_module.run_climate_web_research(
+        "South Sudan",
+        "Natural resources",
+        {"project_elements": ["Landing sites"]},
+        client,
+    )
+
+    assert result["status"] == "failed"
+    assert result["attempts"] == 1
     assert len(client.calls) == 1
 
 

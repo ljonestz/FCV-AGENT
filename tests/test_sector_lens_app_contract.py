@@ -496,7 +496,8 @@ def test_downloaded_report_has_climate_readout_and_context_sources():
     text = "\n".join(paragraph.text for paragraph in document.paragraphs)
 
     assert text.index("How relevant is climate to this project?") < text.index("Summary.")
-    assert "High materiality" in text
+    assert "High climate relevance" in text
+    assert "Drought, access, and allocation shape project delivery. Why it matters: Drought and fragility affect delivery." in text
     # S/R sections are replaced by the integration line in the climate path
     assert "FCV Sensitivity" not in text
     assert "FCV Responsiveness" not in text
@@ -512,9 +513,10 @@ def test_downloaded_report_has_climate_readout_and_context_sources():
     assert "Core climate and FCV questions" in text
     assert "Maximizing the Peace and Social Dividends of Climate Action" in text
     assert "Could the design lock in maladaptation?" in text
-    assert "Source: FCV-Sensitive Climate Action Framework" in text
+    assert "For further insights on why this matters, see: FCV-Sensitive Climate Action Framework" in text
+    assert "[partial gap]" not in text
     assert "How the design holds up on climate and FCV" in text
-    assert "Where the design is strong" in text
+    assert "Where the design is stronger" in text
     assert "Community delivery" in text
     assert "Named but no design response." in text
     assert "Wider FCV context" not in text
@@ -593,7 +595,7 @@ def test_downloaded_report_scales_low_climate_materiality_without_empty_dividend
     assert response.status_code == 200
     document = Document(io.BytesIO(response.data))
     text = "\n".join(paragraph.text for paragraph in document.paragraphs)
-    assert "limited climate materiality" in text
+    assert "Low climate relevance" in text
     assert "Seasonal rainfall may modestly affect access" in text
     assert "Climate, peace and social dividends" not in text
 
