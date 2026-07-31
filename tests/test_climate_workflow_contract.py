@@ -608,7 +608,7 @@ def test_standard_climate_stage2_uses_native_prompt_and_canonical_output(
     assert done["lens_diagnostic_recovered"] is True
     assert len(calls) == 1
     assert calls[0]["stage"] == 2
-    assert calls[0]["max_tokens"] == 8000
+    assert calls[0]["max_tokens"] == 16000
     assembled = calls[0]["messages"][-1]["content"]
     assert "dedicated Climate-FCV Stage 2 assessment" in assembled
     assert assembled.count("%%%LENS_DIAGNOSTIC_START%%%") == 1
@@ -710,7 +710,7 @@ def test_express_climate_stage2_uses_native_prompt_and_canonical_output(monkeypa
     assert any(event.get("recovery_status") == "repairing" for event in events)
     assert any(event.get("keepalive") is True for event in events)
     assert done["lens_diagnostic_recovered"] is True
-    assert stage2_call["max_tokens"] == 8000
+    assert stage2_call["max_tokens"] == 16000
     assembled = stage2_call["messages"][-1]["content"]
     assert "dedicated Climate-FCV Stage 2 assessment" in assembled
     assert assembled.count("%%%LENS_DIAGNOSTIC_START%%%") == 1

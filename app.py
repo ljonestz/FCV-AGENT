@@ -8754,10 +8754,11 @@ def run_stage():
                 # a queue with a 20-second timeout.  If no chunk arrives in 20 s a
                 # keepalive event is sent, preventing any proxy from closing the SSE
                 # connection during Sonnet's time-to-first-token phase.
-                # Climate-native Stage 2 is a compact canonical payload; keep
-                # the generic 16,000-token ceiling only for standard FCV runs.
+                # Keep the 16,000-token safety ceiling for Climate-native Stage 2.
+                # The prompt targets a compact payload, but evidence-rich country
+                # assessments can exceed 8,000 tokens before the closing delimiter.
                 _climate_active = climate_active(analysis_state)
-                _stage2_cap = 8000 if _climate_active else 16000
+                _stage2_cap = 16000
                 _stage_max_tokens = (
                     8000 if stage == 1 else
                     (9000 if _native_climate_stage3 else 20000) if stage == 3 else
@@ -9954,10 +9955,11 @@ def run_express():
                 ]
 
                 # ── Stream Stage 2 ──
-                # Climate-native Stage 2 is a compact canonical payload; keep
-                # the generic 16,000-token ceiling only for standard FCV runs.
+                # Keep the 16,000-token safety ceiling for Climate-native Stage 2.
+                # The prompt targets a compact payload, but evidence-rich country
+                # assessments can exceed 8,000 tokens before the closing delimiter.
                 _climate_active_s2 = climate_active(analysis_state)
-                _stage2_cap = 8000 if _climate_active_s2 else 16000
+                _stage2_cap = 16000
                 for event in _stream_stage(stage2_messages, _stage2_cap, 2):
                     yield event
                 stage2_output = _stream_stage._last_result
