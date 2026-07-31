@@ -856,6 +856,54 @@ def _stage2_prompt(instrument_type="IPF", priority_questions=None):
     )
 
 
+def test_native_prompt_contains_bank_and_live_provenance():
+    grounding = {
+        "state": "bank+research",
+        "prompt_context": (
+            "SSD-E-001 observed reviewed evidence. "
+            "SSD-P-001 analytical-inference pathway. "
+            "climate-claim-1 current evidence."
+        ),
+    }
+    prompt = build_climate_stage2_prompt(
+        instrument_type="IPF",
+        document_type="PCN",
+        temporal_guardrail="Preparation stage.",
+        regime_header="Legacy preparation.",
+        project_signals="Jonglei fisheries landing sites",
+        climate_research={},
+        climate_grounding=grounding,
+        priority_questions=[],
+    )
+
+    assert "GROUNDING STATE: bank+research" in prompt
+    assert "SSD-E-001" in prompt
+    assert "SSD-P-001" in prompt
+    assert "climate-claim-1" in prompt
+    assert "analytical-inference" in prompt
+    assert "co-occurrence is not causality" in prompt
+
+
+def test_native_prompt_external_grounding_is_bounded():
+    prompt = build_climate_stage2_prompt(
+        instrument_type="IPF",
+        document_type="PCN",
+        temporal_guardrail="Preparation stage.",
+        regime_header="",
+        project_signals="Jonglei fisheries",
+        climate_research={},
+        climate_grounding={
+            "state": "bank-only",
+            "prompt_context": "x" * 20_000,
+        },
+        priority_questions=[],
+    )
+
+    block = prompt.split("EXTERNAL CLIMATE-FCV GROUNDING", 1)[1]
+    block = block.split("END EXTERNAL CLIMATE-FCV GROUNDING", 1)[0]
+    assert len(block) <= 12_000
+
+
 def test_dedicated_climate_stage2_prompt_is_canonical_and_generic_free():
     prompt = _stage2_prompt()
     generic_markers = (

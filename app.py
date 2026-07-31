@@ -940,6 +940,7 @@ def build_design_stage2_prompt(
     project_signals: Any,
     climate_research: Any,
     priority_questions: Any,
+    climate_grounding: Any = None,
 ) -> str:
     """Select the dedicated prompt only for Climate-FCV design reviews."""
     if not climate_active(state):
@@ -951,6 +952,7 @@ def build_design_stage2_prompt(
         regime_header=regime_header,
         project_signals=project_signals,
         climate_research=climate_research,
+        climate_grounding=climate_grounding,
         priority_questions=priority_questions,
     )
 
@@ -980,6 +982,7 @@ def build_lens_stage_context(
     lens_diagnostic: dict[str, Any] | None = None,
     lens_context_sources: list[dict[str, Any]] | None = None,
     climate_research: dict[str, Any] | None = None,
+    climate_grounding: dict[str, Any] | None = None,
     project_signals: str = "",
     compose_prompt: bool = True,
 ) -> dict[str, Any]:
@@ -1003,6 +1006,17 @@ def build_lens_stage_context(
     )
     for source in normalized_context_sources:
         source_ids_by_lens[source["lens_id"]].add(source["id"])
+    if "climate" in source_ids_by_lens and isinstance(
+        climate_grounding, dict
+    ):
+        for source_id in climate_grounding.get(
+            "_validated_bank_source_ids", []
+        ):
+            if (
+                isinstance(source_id, str)
+                and re.fullmatch(r"[A-Z]{3}-SRC-\d{3}", source_id)
+            ):
+                source_ids_by_lens["climate"].add(source_id)
     normalized_diagnostic = normalize_lens_diagnostic(
         lens_diagnostic,
         active_ids,
@@ -7608,6 +7622,17 @@ def resolve_climate_grounding(
         }
 
     grounding["bank_manifest"] = canonical_manifest
+    grounding["_validated_bank_source_ids"] = [
+        source["source_id"]
+        for source in bank_packet.get("sources", [])
+        if (
+            isinstance(source, dict)
+            and isinstance(source.get("source_id"), str)
+            and re.fullmatch(
+                r"[A-Z]{3}-SRC-\d{3}", source["source_id"]
+            )
+        )
+    ]
     grounding["research_status"] = _climate_research_status(decision)
     if not grounding.get("warning_code") and not decision.get("ok"):
         grounding["warning_code"] = decision.get("code", "")
@@ -7928,6 +7953,32 @@ def run_stage():
         _native_climate_stage3 = (
             not is_impl and stage == 3 and climate_active(analysis_state)
         )
+        server_climate_research = normalize_climate_research_bundle(
+            data.get('climate_research')
+        )
+        server_climate_grounding = {
+            "state": "thematic-only",
+            "warning_code": "",
+            "bank_manifest": {
+                "bank_status": "unavailable",
+                "warning_code": "bank_manifest_invalid",
+            },
+            "research_status": "empty",
+        }
+        if stage != 1 and climate_active(analysis_state):
+            incoming_grounding = data.get('climate_grounding')
+            incoming_grounding = (
+                incoming_grounding
+                if isinstance(incoming_grounding, dict)
+                else {}
+            )
+            server_climate_grounding, server_climate_research = (
+                resolve_climate_grounding(
+                    incoming_grounding.get("bank_manifest"),
+                    server_climate_research,
+                    assessment_id=assessment_id,
+                )
+            )
         secondary_snippets_s3 = []
         user_context = data.get('user_context', '').strip()  # optional user-supplied context
         priority_questions = normalize_priority_questions(data.get('priority_questions'))
@@ -8425,7 +8476,8 @@ def run_stage():
                 stage,
                 lens_diagnostic=data.get('lens_diagnostic'),
                 lens_context_sources=data.get('lens_context_sources'),
-                climate_research=data.get('climate_research'),
+                climate_research=server_climate_research,
+                climate_grounding=server_climate_grounding,
                 project_signals=_climate_project_signals(
                     analysis_state, data.get('sector_context'), _s1_history_text
                 ),
@@ -8473,7 +8525,8 @@ def run_stage():
                         data.get('sector_context'),
                         _s1_history_text,
                     ),
-                    climate_research=data.get('climate_research'),
+                    climate_research=server_climate_research,
+                    climate_grounding=server_climate_grounding,
                     priority_questions=priority_questions,
                 )
             elif _native_climate_stage3:
@@ -8506,34 +8559,14 @@ def run_stage():
         def workflow_events():
             research_brief_text = ''
             research_country = ''
-            climate_research = normalize_climate_research_bundle(
-                data.get('climate_research')
-            )
+            climate_research = server_climate_research
+            climate_grounding = server_climate_grounding
+            climate_manifest = climate_grounding.get("bank_manifest", {})
             lens_context_sources = list(data.get('lens_context_sources') or [])
-            incoming_grounding = data.get('climate_grounding')
-            incoming_grounding = (
-                incoming_grounding
-                if isinstance(incoming_grounding, dict)
-                else {}
-            )
-            climate_manifest = _safe_climate_bank_manifest(
-                incoming_grounding.get("bank_manifest")
-            )
-            climate_grounding = {
-                "state": "thematic-only",
-                "warning_code": "",
-                "bank_manifest": climate_manifest,
-                "research_status": "empty",
-            }
             if stage != 1 and climate_active(analysis_state):
-                climate_grounding, climate_research = (
-                    resolve_climate_grounding(
-                        climate_manifest,
-                        climate_research,
-                        assessment_id=assessment_id,
-                    )
+                lens_context_sources = climate_research.get(
+                    "sources", []
                 )
-                lens_context_sources = climate_research.get("sources", [])
             try:
                 yield f"data: {json.dumps({'assessment_id': assessment_id})}\n\n"
                 yield f"data: {json.dumps({'ping': True})}\n\n"
@@ -9757,6 +9790,7 @@ def run_express():
                     2,
                     lens_context_sources=lens_context_sources,
                     climate_research=climate_research,
+                    climate_grounding=climate_grounding,
                     project_signals=_climate_project_signals(
                         analysis_state, sector_context, stage1_output[:2500]
                     ),
@@ -9779,6 +9813,7 @@ def run_express():
                             analysis_state, sector_context, stage1_output[:2500]
                         ),
                         climate_research=climate_research,
+                        climate_grounding=climate_grounding,
                         priority_questions=priority_questions,
                     )
                 else:
@@ -10081,6 +10116,7 @@ def run_express():
                     3,
                     lens_diagnostic=lens_diagnostic,
                     lens_context_sources=lens_context_sources,
+                    climate_grounding=climate_grounding,
                     compose_prompt=not _native_climate_s3,
                 )
 

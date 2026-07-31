@@ -493,6 +493,41 @@ def test_grounding_resolver_has_all_four_real_states(
     assert "bank_evidence_records" not in envelope
 
 
+def test_only_server_validated_bank_source_ids_enter_native_context():
+    state = app_module.AnalysisState.from_payload({
+        "active_lenses": ["climate"],
+    })
+    diagnostic = _canonical_payload()
+    diagnostic["lenses"][0]["source_ids"] = ["SSD-SRC-001"]
+
+    validated = app_module.build_lens_stage_context(
+        state,
+        3,
+        lens_diagnostic=diagnostic,
+        climate_grounding={
+            "_validated_bank_source_ids": ["SSD-SRC-001"],
+        },
+        compose_prompt=False,
+    )
+    untrusted = app_module.build_lens_stage_context(
+        state,
+        3,
+        lens_diagnostic=diagnostic,
+        climate_grounding={
+            "bank_sources": [{"source_id": "SSD-SRC-001"}],
+            "sources": [{"source_id": "SSD-SRC-001"}],
+        },
+        compose_prompt=False,
+    )
+
+    assert "SSD-SRC-001" in (
+        validated["lens_diagnostic"]["lenses"][0]["source_ids"]
+    )
+    assert "SSD-SRC-001" not in (
+        untrusted["lens_diagnostic"]["lenses"][0]["source_ids"]
+    )
+
+
 def test_standard_climate_stage2_uses_native_prompt_and_canonical_output(
     monkeypatch,
 ):
