@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import sector_lenses.climate_bank_selector as selector_module
 from sector_lenses.climate_bank import (
     load_climate_bank,
     materialize_bank_manifest,
@@ -136,6 +137,29 @@ def test_selection_respects_item_and_materialized_character_bounds() -> None:
     )
     assert packet["bank_status"] == "ok"
     assert len(compact) <= CLIMATE_BANK_MAX_CHARS
+
+
+def test_all_oversized_records_fail_closed_instead_of_returning_empty_ok(
+    monkeypatch,
+) -> None:
+    original_length = selector_module._compact_packet_length
+
+    def every_selected_packet_is_oversized(packet):
+        has_records = bool(
+            packet.get("evidence_records") or packet.get("pathways")
+        )
+        if has_records:
+            return CLIMATE_BANK_MAX_CHARS + 1
+        return original_length(packet)
+
+    monkeypatch.setattr(
+        selector_module, "_compact_packet_length",
+        every_selected_packet_is_oversized,
+    )
+    assert _select("Jonglei landing sites fishers") == {
+        "bank_status": "unavailable",
+        "warning_code": "bank_packet_too_large",
+    }
 
 
 def test_unavailable_bank_warning_is_preserved() -> None:

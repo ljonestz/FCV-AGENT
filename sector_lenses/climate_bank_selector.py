@@ -463,6 +463,8 @@ def select_bank_manifest(
     selected = selected[:CLIMATE_BANK_MAX_ITEMS]
 
     while True:
+        if not selected:
+            return _unavailable("bank_packet_too_large")
         manifest = _manifest(bank, resolved, selected)
         packet = materialize_bank_manifest(bank, manifest)
         if packet.get("bank_status") != "ok":
@@ -471,6 +473,4 @@ def select_bank_manifest(
             )
         if _compact_packet_length(packet) <= CLIMATE_BANK_MAX_CHARS:
             return manifest
-        if not selected:
-            return _unavailable("bank_packet_too_large")
         selected.pop()
