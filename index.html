@@ -194,7 +194,7 @@
     /* ══════════════════════════════════════════
        MAIN CONTENT AREA
     ══════════════════════════════════════════ */
-    .main{max-width:860px;margin:0 auto;padding:28px 24px 100px}
+    .main{max-width:1180px;margin:0 auto;padding:28px 24px 100px}
 
     /* ── Card ── */
     .card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-sm);overflow:hidden}
@@ -338,9 +338,10 @@
     .lens-other-pathways summary{cursor:pointer;font-weight:600;color:#075985}
     .lens-badge{display:inline-flex;align-items:center;padding:3px 8px;border-radius:999px;background:#ecfeff;color:#0e7490;border:1px solid #a5f3fc;font-size:10px;font-weight:700}
     .climate-module-notice{border:1px solid #7dd3fc;border-left:5px solid #0284c7;background:#f0f9ff;border-radius:8px;padding:14px 16px;margin:0 0 18px;color:#334155}
-    .climate-module-notice h3{font-size:14px;color:#075985;margin:0 0 6px}
+    .climate-module-notice h3{font-size:14px;color:#075985;margin:2px 0 6px}
     .climate-module-notice p{font-size:12px;line-height:1.55;margin:5px 0}
-    .climate-materiality-pill{display:inline-flex;padding:2px 8px;border-radius:999px;background:#dbeafe;color:#075985;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+    .climate-module-kicker{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#0369a1}
+    .climate-relevance-pill{display:inline-flex;padding:2px 8px;border-radius:999px;background:#dbeafe;color:#075985;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
     .climate-evidence-base{color:#475569;font-size:11px!important}
     .climate-boundary{font-size:11px!important;color:#475569;font-style:italic}
     .climate-partial-notice{font-size:11px!important;color:#924000;background:#fff7ed;border-left:3px solid #f59e0b;padding:6px 10px;margin:6px 0;border-radius:4px}
@@ -382,21 +383,25 @@
     .reflection-source{font-size:11px;color:#64748b;margin:4px 0 0}
     .climate-core-questions-section{margin:14px 0}
     .climate-sw-section{margin:14px 0}
-    .sw-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-    @media(max-width:640px){.sw-grid{grid-template-columns:1fr}}
-    .sw-col{border-radius:8px;padding:10px 12px}
+    .sw-grid{display:grid;grid-template-columns:1fr;gap:12px}
+    .sw-col{border-radius:8px;padding:14px 16px;font-family:'Open Sans',sans-serif}
     .sw-strength{background:#f0f9f4;border:1px solid #cbead7}
     .sw-gap{background:#fdf3ef;border:1px solid #f3d4c7}
     .sw-head{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#475569;margin-bottom:8px}
     .sw-item{margin:8px 0}
-    .sw-title{font-size:13px;font-weight:700;color:#1f2937}
-    .sw-text{font-size:12.5px;line-height:1.55;color:#334155;margin:2px 0 0}
+    .sw-title{font-family:'Open Sans',sans-serif;font-size:13px;font-weight:700;line-height:1.45;color:#1f2937}
+    .sw-text{font-family:'Open Sans',sans-serif;font-size:13px!important;font-weight:400;line-height:1.6!important;color:#334155;margin:3px 0 0!important}
     .reflection-less{font-size:12px;color:#64748b;margin:10px 0 0}
     .reflection-evidence{font-size:11px;color:#64748b;margin:8px 0 0}
     .reflection-evidence span{font-weight:700;color:#475569}
     .reflection-evidence ul{margin:2px 0 0;padding-left:16px}
     .wider-fcv-note{border:1px solid var(--border);background:#f7f8fa;border-radius:8px;padding:12px 16px;margin:18px 0}
     .wider-fcv-note p{font-size:12px;line-height:1.6;color:#475569;margin:0}
+    .climate-evidence-note{border-top:1px solid var(--border);margin:22px 0 4px;padding:12px 2px 0;color:#64748b}
+    .climate-evidence-note-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#64748b}
+    .climate-evidence-note p,.climate-evidence-note summary,.climate-evidence-note li{font-size:11px;line-height:1.55;color:#64748b}
+    .climate-evidence-note p{margin:4px 0}
+    .climate-evidence-note summary{cursor:pointer;font-weight:600}
 
     /* ── Buttons ── */
     .btn{
@@ -764,16 +769,16 @@
        STAGE 4 — PRIORITY CARD SYSTEM
     ══════════════════════════════════════════ */
 
-    /* Overall Stage 3 (Recommendations) layout */
-    .stage4-layout{display:flex;gap:20px;align-items:flex-start;}
-    .stage4-main{flex:1;min-width:0;}
-
-    /* Sidebar */
-    .fcv-sidebar{
-      width:210px;flex-shrink:0;
-      position:sticky;top:24px;
-      display:flex;flex-direction:column;gap:12px;
-    }
+    /* Full-width Stage 3 overview */
+    .stage3-overview{display:grid;grid-template-columns:1fr;gap:12px;margin:0 0 16px}
+    .stage3-overview-rating{display:flex;align-items:center;gap:22px;padding:14px 18px}
+    .stage3-overview-rating-copy{min-width:190px;flex:1}
+    .stage3-overview-rating-copy .fcv-need-label{text-align:left;font-size:12px;font-style:normal;margin-top:3px}
+    .stage3-overview-rating-copy .fcv-rating-label{text-align:left;margin:0}
+    .stage3-overview-gauge{display:flex;align-items:center;justify-content:center;min-width:138px}
+    .stage3-rating-pair{display:grid;grid-template-columns:1fr 1fr;gap:16px;width:100%}
+    .stage3-rating-unit{display:flex;align-items:center;gap:14px;min-width:0}
+    .stage3-overview-priorities .pov-widget{padding:14px 18px}
     .sidebar-widget{
       background:#fff;border:1px solid var(--border);border-radius:var(--radius);
       box-shadow:var(--shadow-sm);overflow:hidden;
@@ -964,14 +969,14 @@
 
     /* Priority overview widget (replaces Risk Overview) */
     .pov-widget{padding:12px 14px;}
-    .pov-row{display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--border);cursor:pointer;}
+    .pov-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer;}
     .pov-row:last-child{border-bottom:none;}
     .pov-row:hover{background:var(--off-white);margin:-0px -2px;padding-left:2px;padding-right:2px;}
-    .pov-num{width:18px;height:18px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:var(--muted);flex-shrink:0;}
+    .pov-num{width:24px;height:24px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--muted);flex-shrink:0;}
     .pov-num.active{background:var(--wbg-navy);color:#fff;}
     .pov-num.done{background:var(--s4);color:#fff;}
-    .pov-label{font-size:10px;color:var(--text);flex:1;line-height:1.3;}
-    .pov-risk{font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;flex-shrink:0;}
+    .pov-label{font-size:12.5px;color:var(--text);flex:1;line-height:1.45;}
+    .pov-risk{font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;flex-shrink:0;}
     .pov-risk-h{background:#fee2e2;color:#991b1b;}
     .pov-risk-m{background:#fef3c7;color:#92400e;}
     .pov-risk-l{background:#d1fae5;color:#065f46;}
@@ -1377,9 +1382,14 @@
     .p-icon.active svg{fill:#1a7a4a;stroke:#1a7a4a;}
 
     @media(max-width:860px){
-      .stage4-layout{flex-direction:column;}
-      .fcv-sidebar{width:100%;position:static;}
+      .stage3-overview-rating,.stage3-rating-unit{align-items:flex-start}
+      .stage3-rating-pair{grid-template-columns:1fr}
       .priority-stepper{overflow-x:auto;}
+    }
+    @media(max-width:560px){
+      .stage3-overview-rating{flex-direction:column;gap:8px}
+      .stage3-overview-gauge{align-self:center}
+      .pov-row{align-items:flex-start}
     }
 
     /* ══════════════════════════════════════════
@@ -2596,38 +2606,25 @@
 
   function renderClimateModuleNotice(lens,diagnosticError,grounding){
     const evidence='These reflections and recommendations draw on a core set of climate and FCV frameworks and evidence, including: Maximizing the Peace and Social Dividends of Climate Action; the FCV-Sensitive Climate Action Framework; and the Defueling Conflict series, alongside other World Bank and external sources.';
-    const boundaryLine='<p class="climate-boundary">This is an advisory FCV screening readout. It does not determine ESF or ESS compliance or an environmental and social risk classification, and does not replace review by the Task Team\'s accredited E&amp;S specialist.</p>';
-    const groundingState=['bank+research','bank-only','research-only','thematic-only'].includes(grounding&&grounding.state)?grounding.state:'thematic-only';
-    const groundingWarnings={
-      'bank-only':'Live web research was unavailable for this run. The assessment uses the reviewed country evidence bank, the project document, and thematic Climate-FCV sources; recent or highly local developments may be missing.',
-      'research-only':'No reviewed country-bank release was available. The assessment uses accepted live research, the project document, and thematic Climate-FCV sources.',
-      'thematic-only':'No reviewed country-bank release or accepted live research was available. The assessment relies on the project document and thematic Climate-FCV sources and flags country-specific evidence limitations.'
-    };
-    const contentVersion=String(grounding&&(
-      grounding.content_version||(grounding.bank_manifest&&grounding.bank_manifest.content_version)
-    )||'').trim();
-    const bankMeta=(groundingState==='bank+research'||groundingState==='bank-only')
-      ?`<p class="climate-grounding-meta">Reviewed country evidence bank${contentVersion?` (content version ${esc(contentVersion)})`:''} was used for this assessment.</p>`:'';
-    const groundingWarning=groundingWarnings[groundingState]
-      ?`<p class="climate-grounding-warning">${esc(groundingWarnings[groundingState])}</p>`:'';
-    const groundingNotice=bankMeta+groundingWarning;
     if(diagnosticError||!lens){
-      return `<div class="climate-module-notice climate-module-error"><h3>How relevant is climate to this project?</h3><p>You selected the Climate-FCV module, but a validated Climate-FCV diagnostic could not be produced. The note therefore retains the core FCV assessment and does not add unvalidated climate findings.</p>${groundingNotice}${boundaryLine}<p class="climate-evidence-base">${esc(evidence)}</p></div>`;
+      return `<div class="climate-module-notice climate-module-error"><div class="climate-module-kicker">Climate-FCV module</div><h3>Climate relevance to this project</h3><p>A validated Climate-FCV diagnostic could not be produced. The note therefore retains the core FCV assessment and does not add unvalidated climate findings.</p><p class="climate-evidence-base">${esc(evidence)}</p></div>`;
     }
     const level=climateMaterialityLevel(lens);
-    const wording={
-      high:'You selected the Climate-FCV module. The tool has therefore applied a strong climate emphasis across this FCV assessment, examining how Climate-FCV risks may affect the project and how project design could strengthen climate resilience and wider FCV outcomes.',
-      medium:'You selected the Climate-FCV module. The tool has applied a focused climate emphasis to the parts of this FCV assessment where Climate-FCV risks, opportunities, and delivery choices are material to the project.',
-      low:'You selected the Climate-FCV module. The assessment found limited climate materiality for this project. Climate considerations are therefore included with a light emphasis alongside the wider FCV sensitivity and responsiveness assessment.'
-    };
-    const summary=lens.materiality_summary?`<p><strong>Materiality:</strong> ${esc(lens.materiality_summary)}</p>`:'';
+    const levelLabel={high:'High',medium:'Moderate',low:'Limited'}[level]||'Limited';
+    const summary=lens.materiality_summary?`<p><strong>Why it matters:</strong> ${esc(lens.materiality_summary)}</p>`:'';
     const partial=climateReadoutComplete(lens)?'':'<p class="climate-partial-notice">Note: a full Climate-FCV reflections and integration readout could not be generated for this run. The climate-FCV interactions below are shown, but the reflections on the core climate-FCV questions and the integration readout are unavailable and were not substituted.</p>';
-    return `<div class="climate-module-notice"><h3>How relevant is climate to this project?</h3><span class="climate-materiality-pill">${esc(level)} materiality</span><p>${esc(wording[level])}</p>${summary}${partial}${groundingNotice}${boundaryLine}<p class="climate-evidence-base">${esc(evidence)}</p></div>`;
+    return `<div class="climate-module-notice"><div class="climate-module-kicker">Climate-FCV module</div><h3>Climate relevance to this project</h3><span class="climate-relevance-pill">${esc(levelLabel)} climate relevance</span>${summary}${partial}<p class="climate-evidence-base">${esc(evidence)}</p></div>`;
   }
 
   function renderClimateGroundingSources(grounding){
-    const state=grounding&&grounding.state;
-    if(state!=='bank+research'&&state!=='bank-only')return '';
+    const state=['bank+research','bank-only','research-only','thematic-only'].includes(grounding&&grounding.state)
+      ?grounding.state:'thematic-only';
+    const summaries={
+      'bank+research':'Reviewed country evidence and current country research were used alongside the project documents and thematic Climate-FCV sources.',
+      'bank-only':'Reviewed country evidence was used alongside the project documents and thematic Climate-FCV sources. Recent developments may require separate verification.',
+      'research-only':'Current country research was used alongside the project documents and thematic Climate-FCV sources.',
+      'thematic-only':'Project documents and thematic Climate-FCV sources were used. Country-specific Climate-FCV evidence could not be verified for this run.'
+    };
     const version=String(grounding.content_version||(
       grounding.bank_manifest&&grounding.bank_manifest.content_version
     )||'').trim();
@@ -2642,7 +2639,9 @@
       ].filter(Boolean).map(esc);
       return `<li>${parts.join(' | ')}</li>`;
     }).join('');
-    return `<div class="exp-annex-break climate-grounding-sources"><h2 class="exp-section-hdr">Reviewed country evidence bank</h2>${version?`<p>Content version: ${esc(version)}</p>`:''}${items?`<ul>${items}</ul>`:''}</div>`;
+    const sourceDetails=items
+      ?`<details><summary>Reviewed country sources used</summary>${version?`<p>Content version: ${esc(version)}</p>`:''}<ul>${items}</ul></details>`:'';
+    return `<div class="climate-evidence-note"><div class="climate-evidence-note-label">Evidence basis</div><p>${esc(summaries[state])}</p>${sourceDetails}<p class="climate-boundary-note">This AI-assisted screening supports expert review and does not determine ESF or ESS compliance or an environmental and social risk classification.</p></div>`;
   }
 
   function renderHorizonBadge(value){
@@ -2717,7 +2716,7 @@
     return `<div class="wider-fcv-note"><div class="climate-readout-heading">Wider FCV context</div><p>${esc(value)}</p></div>`;
   }
 
-  // Climate readout redesign: full-detail strengths / weaknesses in two columns.
+  // Climate readout redesign: full-detail executive readout in a vertical stack.
   function renderClimateStrengthsWeaknesses(lens){
     const items=(lens&&Array.isArray(lens.strengths_weaknesses)?lens.strengths_weaknesses:[])
       .filter(x=>x&&x.title);
@@ -2728,9 +2727,9 @@
       if(!rows)return '';
       return `<div class="sw-col sw-${side}"><div class="sw-head">${esc(heading)}</div>${rows}</div>`;
     };
-    const cols=col('strength','Where the design is strong')+col('gap','Where the design is weak');
+    const cols=col('strength','Where the design is stronger')+col('gap','Where the design could be strengthened');
     if(!cols)return '';
-    return `<div class="climate-sw-section"><div class="climate-readout-heading">How the design holds up on climate and FCV</div><div class="sw-grid">${cols}</div></div>`;
+    return `<div class="climate-sw-section"><div class="climate-readout-heading">Executive readout</div><div class="sw-grid">${cols}</div></div>`;
   }
 
   // Climate readout redesign: a single core-questions section = lay intro naming the
@@ -2741,10 +2740,9 @@
   function renderClimateCoreQuestions(lens){
     if(!lens)return '';
     const paras=t=>String(t||'').split(/\n\s*\n/).map(p=>p.trim()).filter(Boolean);
-    const intro='<p class="climate-readout-intro">These core questions draw on World Bank analytical frameworks - '
-      +'<em>Maximizing the Peace and Social Dividends of Climate Action</em>, the FCV-Sensitive Climate Action Framework, '
-      +'and the Defueling Conflict (peace and social dividends) series - and focus on the considerations most material '
-      +'to this project rather than applying every principle mechanically.</p>';
+    const intro='<p class="climate-readout-intro">This assessment considers how climate and FCV dynamics may affect project delivery, and how project choices may influence resilience, inclusion, peace, and conflict risks. '
+      +'It draws on World Bank analytical frameworks including <em>Maximizing the Peace and Social Dividends of Climate Action</em>, the FCV-Sensitive Climate Action Framework, '
+      +'and the Defueling Conflict series.</p>';
     const labels={'climate-fcv-on-project':'How climate and FCV dynamics could affect this project','project-on-climate-fcv':'How this project could affect climate and FCV dynamics'};
     const modifier={'climate-fcv-on-project':'box-inbound','project-on-climate-fcv':'box-outbound'};
     const interactions=(Array.isArray(lens.interaction_readout)?lens.interaction_readout:[])
@@ -4550,7 +4548,6 @@
 
   function renderOut(stage,result,isFollowOn){
     const isLast=stage===3;
-    const hasSidebar=stage>=2;
     const c=CALLS[stage];
     let _outBodyContent;
     if(isLast){
@@ -4592,13 +4589,15 @@
           _closedProjectNotice+_padNotice+_stageBadge+_climateNotice+
           _preHtml+md(_rest)+
           renderClimateStrengthsWeaknesses(_climateEntry)+
-          renderClimateCoreQuestions(_climateEntry)
+          renderClimateCoreQuestions(_climateEntry)+
+          renderClimateGroundingSources(climateGrounding)
         )+'<div id="priorities-intro"></div>';
       }else{
         _outBodyContent=wrapSRTerms(
           _closedProjectNotice+_padNotice+_stageBadge+_climateNotice+
           _preHtml+renderRiskExposure(stageRiskExposure)+md(_rest)+
-          renderSRCards(stageSensitivitySummary,stageResponsivenessSummary)
+          renderSRCards(stageSensitivitySummary,stageResponsivenessSummary)+
+          (_climateActive?renderClimateGroundingSources(climateGrounding):'')
         )+'<div id="priorities-intro"></div>';
       }
     }else{
@@ -4632,8 +4631,8 @@
         }</div>
         <div class="callout-body"><strong>${c.t}</strong>${c.b}</div>
       </div>
-      <div class="${hasSidebar?'stage4-layout':''}">
-        <div class="${hasSidebar?'stage4-main':''}">
+      ${isLast?stage3OverviewHtml():''}
+      <div>
           <div class="out-card ani">
             <div class="out-hdr">
               <div class="out-hdr-l"><span class="dot done"></span>${NAMES[stage]}</div>
@@ -4669,8 +4668,6 @@
             </button>
           </div>
           `:''}
-        </div>
-        ${hasSidebar?`<aside class="fcv-sidebar" id="fcv-sidebar">${sidebarHtml()}</aside>`:''}
       </div>
       `;
 
@@ -5305,6 +5302,10 @@
     }
 
     // ── Priority Summary Table ──
+    if(_exportClimateActive){
+      body += renderClimateGroundingSources(climateGrounding);
+    }
+
     if(stageThreePriorities.length){
       const timingMap={'flag-for-preparation':'Flag for preparation','required-before-appraisal':'Required before Decision Review (DM/ROC)','required-before-board':'Required before Board','next-series':'Next in series','supervision':'Supervision / monitoring','pre-appraisal':'Required before Decision Review (DM/ROC)','shortly-after-OIS':'Shortly after OIS decision','before-TD-review':'Before Technical Design review','at-TD-review':'At Technical Design review','between-TD-and-IR':'Between TD and IR review','before-IR':'Before Implementation Readiness review','at-IR':'At Implementation Readiness review','before-One-Review':'Before One Review','at-One-Review':'At One Review','before-negotiations':'Before negotiations','before-Board':'Before Board','during-implementation-support':'During implementation support'};
       const tagLabels={'[S]':'Sensitivity','[R]':'Responsiveness','[S+R]':'Sensitivity + Responsiveness'};
@@ -5376,8 +5377,6 @@
 
     // ── Annex: Stage 2 tables ──
     // Reviewed structural sources are distinct from accepted live country context.
-    body += renderClimateGroundingSources(climateGrounding);
-
     if(uh && (uh.recs_table || uh.dnh_checklist || uh.questions_map)){
       body += `<div class="exp-annex-break"></div><h1 class="exp-section-hdr" style="font-size:18px">Annex: Stage 2 Assessment Tables</h1>
         <p style="font-size:12px;color:#666;font-style:italic;margin-bottom:16px">Internal analytical framework used to produce the Stage 2 assessment. Provided for transparency and peer review.</p>`;
@@ -5683,31 +5682,44 @@ ${body}
 
   // ── Sidebar ─────────────────────────────────────────────────────────────────
 
-  function sidebarHtml(){
+  function climateIntegrationShortLabel(rating){
+    return ({
+      'Extremely Low':'Minimal integration',
+      'Very Low':'Limited integration',
+      'Low':'Early integration',
+      'Adequate':'Partly integrated',
+      'Well Embedded':'Well integrated',
+      'Very Well Embedded':'Deeply integrated'
+    })[String(rating||'')]||'Evidence limited';
+  }
+
+  function stage3OverviewHtml(){
     if(isClimateLensActive()){
       return `
-      <!-- Climate-FCV Integration Gauge (single gauge in climate module mode) -->
-      <div class="sidebar-widget sidebar-widget-fcv">
-        <div class="sidebar-widget-label sr-term">How well does the project integrate climate and FCV?</div>
-        <div class="fcv-eyebrow">Indicative Climate-FCV Integration Readout</div>
-        <svg viewBox="0 0 120 80" width="120" height="80" style="display:block;margin:0 auto -4px">
+      <div class="stage3-overview">
+      <div class="sidebar-widget stage3-overview-rating">
+        <div class="stage3-overview-rating-copy">
+          <div class="sidebar-widget-label sr-term">Climate-FCV integration</div>
+          <div id="fcv-int-label" class="fcv-rating-label" style="color:var(--muted)">Analysing…</div>
+          <div id="fcv-int-summary" class="fcv-need-label"></div>
+        </div>
+        <div class="stage3-overview-gauge"><svg viewBox="0 0 120 80" width="120" height="80" aria-hidden="true">
           <path d="M15 70 A45 45 0 0 1 105 70" fill="none" stroke="#e8edf2" stroke-width="11" stroke-linecap="round"/>
           <path id="fcv-int-arc" d="M15 70 A45 45 0 0 1 105 70" fill="none" stroke="#e8edf2" stroke-width="11" stroke-linecap="round" stroke-dasharray="0 141.37"/>
-        </svg>
-        <div id="fcv-int-label" class="fcv-rating-label" style="color:var(--muted)">Analysing…</div>
-        <div id="fcv-int-summary" class="fcv-need-label"></div>
-        <div class="fcv-gauge-caveat">This AI-assisted readout supports expert review. It is not an official WBG rating, policy determination, ESF assessment, Paris Alignment assessment, or substitute for Task Team and specialist judgment.</div>
+        </svg></div>
       </div>
-      <!-- Priority overview -->
-      <div class="sidebar-widget">
+      <div class="sidebar-widget stage3-overview-priorities">
         <div class="pov-widget">
-          <div class="sidebar-widget-label">Priority Overview</div>
+          <div class="sidebar-widget-label">Priority overview</div>
           <div id="pov-sb"><div style="font-size:11px;color:var(--muted)">Loading priorities…</div></div>
         </div>
+      </div>
       </div>
       `;
     }
     return `
+      <div class="stage3-overview">
+      <div class="stage3-rating-pair">
       <!-- Sensitivity Gauge -->
       <div class="sidebar-widget">
         <div class="sidebar-widget-fcv">
@@ -5738,12 +5750,14 @@ ${body}
           <div class="fcv-need-label" id="fcv-resp-need-label"></div>
         </div>
       </div>
+      </div>
       <!-- Priority overview -->
-      <div class="sidebar-widget">
+      <div class="sidebar-widget stage3-overview-priorities">
         <div class="pov-widget">
-          <div class="sidebar-widget-label">Priority Overview</div>
+          <div class="sidebar-widget-label">Priority overview</div>
           <div id="pov-sb"><div style="font-size:11px;color:var(--muted)">Loading priorities…</div></div>
         </div>
+      </div>
       </div>
       `;
   }
@@ -5765,7 +5779,7 @@ ${body}
         if(arc)arc.setAttribute('stroke-dasharray',`${(frac*ARC_LEN).toFixed(2)} ${ARC_LEN}`);
         if(arc)arc.setAttribute('stroke',LEVEL_COLORS[tier]||'#94a3b8');
         if(label)label.textContent=rating;
-        if(summary)summary.textContent=(climateIntegration&&climateIntegration.summary)||NEED_LABELS[rating]||'';
+        if(summary)summary.textContent=climateIntegrationShortLabel(rating);
       } else {
         const frac=integrationGaugeFraction(lvl);
         if(arc)arc.setAttribute('stroke-dasharray',`${(frac*ARC_LEN).toFixed(2)} ${ARC_LEN}`);
@@ -5773,7 +5787,8 @@ ${body}
         if(arc)arc.setAttribute('stroke',intColors[String(lvl).toLowerCase()]||'#94a3b8');
         const intLabels={well_integrated:'Well integrated',partly_integrated:'Partly integrated',weakly_integrated:'Weakly integrated',insufficient_evidence:'Insufficient evidence'};
         if(label)label.textContent=intLabels[String(lvl).toLowerCase()]||(climateIntegration?'Analysing…':'Insufficient evidence');
-        if(summary)summary.textContent=climateIntegration&&climateIntegration.summary||'';
+        const shortLabels={well_integrated:'Well integrated',partly_integrated:'Partly integrated',weakly_integrated:'Early integration',insufficient_evidence:'Evidence limited'};
+        if(summary)summary.textContent=shortLabels[String(lvl).toLowerCase()]||'Evidence limited';
       }
     } else {
       const level = LEVELS.findIndex(l => l.toLowerCase() === (fcvRating||'').toLowerCase()) + 1;

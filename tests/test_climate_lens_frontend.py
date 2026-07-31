@@ -32,6 +32,121 @@ def _extract_js_function(source: str, name: str) -> str:
     raise AssertionError(f"Unterminated body for {name}()")
 
 
+def test_stage3_readout_uses_wide_single_column_layout():
+    html = INDEX.read_text(encoding="utf-8")
+
+    assert ".main{max-width:1180px" in html
+    assert ".stage3-overview{" in html
+    assert ".sw-grid{display:grid;grid-template-columns:1fr;" in html
+    assert '<aside class="fcv-sidebar"' not in html
+    assert "stage3OverviewHtml()" in html
+
+
+def test_climate_opening_uses_relevance_language_and_quiet_provenance():
+    source = INDEX.read_text(encoding="utf-8")
+    helpers = "\n".join(
+        _extract_js_function(source, name)
+        for name in (
+            "climateMaterialityLevel",
+            "climateReadoutComplete",
+            "renderClimateModuleNotice",
+            "renderClimateGroundingSources",
+        )
+    )
+    script = f"""
+const esc = value => String(value ?? '')
+  .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+  .replace(/\"/g,'&quot;').replace(/'/g,'&#039;');
+{helpers}
+const lens = {{
+  materiality_level:'high',
+  materiality_summary:'Flood access affects Component 1 delivery.',
+  reflections:[{{text:'A grounded reflection.'}}],
+  integration_summary:'A complete readout.'
+}};
+const notice = renderClimateModuleNotice(lens,false,{{state:'thematic-only'}});
+for (const expected of [
+  'Climate-FCV module','Climate relevance to this project',
+  'High climate relevance','Why it matters:',
+  'Flood access affects Component 1 delivery.'
+]) {{
+  if (!notice.includes(expected)) throw new Error('missing '+expected+' | '+notice);
+}}
+for (const forbidden of [
+  'materiality','reviewed country-bank release',
+  'advisory FCV screening readout','You selected'
+]) {{
+  if (notice.toLowerCase().includes(forbidden.toLowerCase())) throw new Error('forbidden '+forbidden+' | '+notice);
+}}
+const expectedEvidence = {{
+  'bank+research':'Reviewed country evidence and current country research',
+  'bank-only':'Reviewed country evidence',
+  'research-only':'Current country research',
+  'thematic-only':'Project documents and thematic Climate-FCV sources'
+}};
+for (const [state,copy] of Object.entries(expectedEvidence)) {{
+  const rendered=renderClimateGroundingSources({{state,sources:[]}});
+  if (!rendered.includes('Evidence basis') || !rendered.includes(copy)) throw new Error(state+' | '+rendered);
+  for (const forbidden of ['bank_missing','country-bank release','warning_code']) {{
+    if (rendered.includes(forbidden)) throw new Error(state+' leaks '+forbidden+' | '+rendered);
+  }}
+}}
+"""
+    result = subprocess.run(
+        ["node", "-e", script], capture_output=True, text=True, check=False
+    )
+    assert result.returncode == 0, result.stderr
+
+
+def test_climate_stage3_overview_keeps_rating_compact():
+    source = INDEX.read_text(encoding="utf-8")
+    helpers = "\n".join(
+        _extract_js_function(source, name)
+        for name in ("climateIntegrationShortLabel", "stage3OverviewHtml")
+    )
+    script = f"""
+const isClimateLensActive = () => true;
+{helpers}
+if (climateIntegrationShortLabel('Adequate') !== 'Partly integrated') {{
+  throw new Error('rating helper is not compact');
+}}
+const html=stage3OverviewHtml();
+for (const expected of ['stage3-overview','Climate-FCV integration','Priority overview','fcv-int-summary','pov-sb']) {{
+  if (!html.includes(expected)) throw new Error('missing '+expected+' | '+html);
+}}
+for (const forbidden of ['Indicative Climate-FCV Integration Readout','This AI-assisted readout supports expert review']) {{
+  if (html.includes(forbidden)) throw new Error('verbose gauge copy remains | '+html);
+}}
+"""
+    result = subprocess.run(
+        ["node", "-e", script], capture_output=True, text=True, check=False
+    )
+    assert result.returncode == 0, result.stderr
+
+
+def test_climate_executive_readout_is_stacked_and_constructive():
+    source = INDEX.read_text(encoding="utf-8")
+    helper = _extract_js_function(source, "renderClimateStrengthsWeaknesses")
+    script = f"""
+const esc = value => String(value ?? '')
+  .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+  .replace(/\"/g,'&quot;').replace(/'/g,'&#039;');
+{helper}
+const html=renderClimateStrengthsWeaknesses({{strengths_weaknesses:[
+  {{side:'strength',title:'Flood-resilient sites',text:'Component 1 uses raised designs.'}},
+  {{side:'gap',title:'Seasonal operating rules',text:'The PCN does not yet evidence a trigger.'}}
+]}});
+for (const expected of ['Executive readout','Where the design is stronger','Where the design could be strengthened']) {{
+  if (!html.includes(expected)) throw new Error('missing '+expected+' | '+html);
+}}
+if (html.includes('Where the design is weak')) throw new Error('old deficit language remains');
+"""
+    result = subprocess.run(
+        ["node", "-e", script], capture_output=True, text=True, check=False
+    )
+    assert result.returncode == 0, result.stderr
+
+
 def test_selector_explains_explicit_optional_selection():
     html = INDEX.read_text(encoding="utf-8")
     assert "Select up to two specialist lenses before analysis" in html
@@ -145,7 +260,7 @@ const dividends=renderClimateDividendSynthesis(high,priorities);
 const linkedPanel=renderPriorityClimateContribution(linked);
 const unlinkedPanel=renderPriorityClimateContribution(unlinked);
 const sr=renderSRNarrative('Sensitive <script>bad()</script>','Responsive','Adequate','Emerging');
-if(!notice.includes('strong climate emphasis')) throw new Error(notice);
+if(!notice.includes('High climate relevance')) throw new Error(notice);
 if(!interactions.includes('climate-interaction-box')) throw new Error(interactions);
 if(interactions.includes('causal-strip')) throw new Error('causal-strip should be gone: '+interactions);
 if(!interactions.includes('over the project')) throw new Error('prose horizon missing: '+interactions);
@@ -159,7 +274,7 @@ if(!unlinkedPanel.includes('No material dividend pathway identified')) throw new
 if(!sr.includes('FCV Sensitivity') || !sr.includes('FCV Responsiveness')) throw new Error(sr);
 if((notice+interactions+dividends+linkedPanel+unlinkedPanel+sr).includes('<script>')) throw new Error('unsafe HTML');
 const low={{materiality_level:'low',materiality_summary:'Limited.',readout_sections:[],additional_pathways:[]}};
-if(!renderClimateModuleNotice(low,false).includes('limited climate materiality')) throw new Error('low disclosure missing');
+if(!renderClimateModuleNotice(low,false).includes('Limited climate relevance')) throw new Error('low disclosure missing');
 if(renderClimateDividendSynthesis(low,[])!=='') throw new Error('empty low synthesis rendered');
 const errorNotice=renderClimateModuleNotice(null,true);
 if(!errorNotice.includes('could not be produced')) throw new Error('safe failure missing');
@@ -372,7 +487,7 @@ def test_frontend_persists_display_safe_climate_grounding_across_outputs():
     ) in source
 
 
-def test_climate_grounding_notice_has_four_states_and_escapes_metadata():
+def test_climate_grounding_notice_is_separate_from_opening_card():
     source = INDEX.read_text(encoding="utf-8")
     helpers = "\n".join(
         _extract_js_function(source, name)
@@ -380,6 +495,7 @@ def test_climate_grounding_notice_has_four_states_and_escapes_metadata():
             "climateMaterialityLevel",
             "climateReadoutComplete",
             "renderClimateModuleNotice",
+            "renderClimateGroundingSources",
         ]
     )
     script = f"""
@@ -388,12 +504,19 @@ const esc = value => String(value ?? '')
   .replace(/\"/g,'&quot;').replace(/'/g,'&#039;');
 {helpers}
 const lens = {{materiality_level:'medium', materiality_summary:'Material.', reflections:[{{text:'Grounded.'}}], integration_summary:'Integrated.'}};
-const states = {{'bank+research':'','bank-only':'Live web research was unavailable for this run.','research-only':'No reviewed country-bank release was available.','thematic-only':'No reviewed country-bank release or accepted live research was available.'}};
+const states = {{
+  'bank+research':'Reviewed country evidence and current country research',
+  'bank-only':'Reviewed country evidence',
+  'research-only':'Current country research',
+  'thematic-only':'Project documents and thematic Climate-FCV sources'
+}};
 for (const [state, expected] of Object.entries(states)) {{
-  const html = renderClimateModuleNotice(lens, false, {{state, content_version:'v1<script>alert(1)</script>'}});
-  if (expected && !html.includes(expected)) throw new Error(state+' notice missing');
-  if (!expected && html.includes('climate-grounding-warning')) throw new Error('bank+research should not warn');
-  if (html.includes('<script>')) throw new Error('metadata was not escaped');
+  const grounding={{state, content_version:'v1<script>alert(1)</script>', sources:[]}};
+  const notice = renderClimateModuleNotice(lens, false, grounding);
+  const evidence = renderClimateGroundingSources(grounding);
+  if (!evidence.includes(expected)) throw new Error(state+' evidence basis missing');
+  if (notice.includes(expected) || notice.includes('climate-grounding-warning')) throw new Error(state+' provenance leaked into opening card');
+  if ((notice+evidence).includes('<script>')) throw new Error('metadata was not escaped');
 }}
 """
     result = subprocess.run(["node", "-e", script], capture_output=True, text=True, check=False)
@@ -416,20 +539,22 @@ const html = renderClimateGroundingSources({{
     {{title:'Live source',url:'https://example.org/live',provenance:['research']}}
   ]
 }});
-if (!html.includes('Reviewed country evidence bank')) throw new Error('heading missing');
+if (!html.includes('Evidence basis')) throw new Error('heading missing');
 if (!html.includes('Content version: ssd-v1')) throw new Error('version missing');
 if (!html.includes('Reviewed &lt;source&gt;')) throw new Error('bank title missing or unsafe');
 if (!html.includes('https://example.org/reviewed')) throw new Error('bank URL missing');
 if (html.includes('Live source')) throw new Error('live source leaked into bank subsection');
-if (renderClimateGroundingSources({{state:'research-only',sources:[]}})!=='') throw new Error('research-only must not render a bank subsection');
+const researchOnly=renderClimateGroundingSources({{state:'research-only',sources:[]}});
+if (!researchOnly.includes('Current country research')) throw new Error('research-only evidence basis missing');
+if (researchOnly.includes('Reviewed country sources used')) throw new Error('research-only must not render bank source details');
 """
     result = subprocess.run(["node", "-e", script], capture_output=True, text=True, check=False)
     assert result.returncode == 0, result.stderr
 
 
-def test_materiality_notice_uses_relevance_title_and_source_list():
+def test_climate_notice_uses_relevance_title_and_source_list():
     html = INDEX.read_text(encoding="utf-8")
-    assert "How relevant is climate to this project?" in html
+    assert "Climate relevance to this project" in html
     assert "Maximizing the Peace and Social Dividends of Climate Action" in html
     assert "FCV-Sensitive Climate Action Framework" in html
     assert "Defueling Conflict" in html
@@ -518,9 +643,9 @@ def test_wider_fcv_context_renders_grey_callout_or_empty():
 
 def test_single_integration_gauge_present_in_module_mode():
     html = INDEX.read_text(encoding="utf-8")
-    assert "How well does the project integrate climate and FCV?" in html
-    assert "Indicative Climate-FCV Integration Readout" in html
-    assert "not an official WBG rating" in html  # OPCS caveat
+    assert "Climate-FCV integration" in html
+    assert "Indicative Climate-FCV Integration Readout" not in html
+    assert "climateIntegrationShortLabel" in html
     assert "climateIntegration" in html
     assert "integrationGaugeFraction" in html
     fn = _extract_js_function(html, "integrationGaugeFraction")

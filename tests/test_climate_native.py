@@ -949,6 +949,15 @@ def test_dedicated_climate_stage2_prompt_preserves_depth_and_specificity():
         assert phrase in low
 
 
+def test_stage2_prompt_requires_specific_and_calibrated_executive_readout():
+    prompt = _stage2_prompt()
+
+    assert "component, subcomponent, activity, location" in prompt
+    assert "confirmed omission" in prompt
+    assert "not evidenced at concept stage" in prompt
+    assert "operational mechanism" in prompt
+
+
 @pytest.mark.parametrize(
     ("instrument", "selected_route"),
     [
@@ -1029,7 +1038,8 @@ def test_climate_stage3_prompt_retains_instrument_and_lifecycle_guardrails(
     ).lower()
 
     for phrase in (
-        "instrument-route every action", "named eligible emergency",
+        "instrument-route every action",
+        "named eligible natural-hazard, climate, health, or economic emergency",
         "never an ipf-style cerc for standalone pforr or dpf/dpo",
         "scope to what the af finances",
         "restructuring does not automatically restart cdrs", "mpa phase",

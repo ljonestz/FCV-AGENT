@@ -2,6 +2,10 @@
 
 import app
 import background_docs
+from sector_lenses.climate_native import (
+    build_climate_stage2_prompt,
+    build_climate_stage3_prompt,
+)
 
 
 def test_stage_prompts_prohibit_cerc_for_violence_escalation_alone():
@@ -43,3 +47,30 @@ def test_no_background_guidance_treats_conflict_escalation_as_cerc_trigger():
     assert "absence should be flagged" not in risky_blocks
     assert "if conflict escalates" not in risky_blocks
     assert "inclusion of a CERC component to enable rapid reallocation" not in risky_blocks
+
+
+def test_climate_prompts_separate_cerc_from_conflict_response():
+    stage2 = build_climate_stage2_prompt(
+        instrument_type="IPF",
+        document_type="PCN",
+        temporal_guardrail="Preparation stage.",
+        regime_header="",
+        project_signals="South Sudan fisheries project.",
+        climate_research={},
+        priority_questions=[],
+    )
+    stage3 = build_climate_stage3_prompt(
+        instrument_type="IPF",
+        document_type="PCN",
+        diagnostic={},
+        regime_header="",
+    )
+
+    for prompt in (stage2, stage3):
+        assert "Never combine a CERC" in prompt
+        assert "conflict escalation, insecurity, civil unrest" in prompt
+        assert "adaptive management, restructuring, SORT updating" in prompt
+        assert (
+            "named eligible natural-hazard, climate, health, or economic"
+            in prompt
+        )
