@@ -42,15 +42,16 @@ sources; it does not terminate the Climate assessment.
 For local testing or a deployment artifact outside the submodule, set
 `CLIMATE_COUNTRY_BANK_PATH` to either the companion repository root or a specific
 `runtime.json`. The default remains the pinned public submodule. Render must
-initialize the root `.gitmodules` entry during checkout.
+initialize the root `.gitmodules` entry during checkout. The version-controlled
+`render_build.py` entry point does this before installing application dependencies.
 
 Selection is deterministic and project-specific. It targets 8 and caps 12 bank
 items, with a 6,000-character bank boundary and 12,000-character combined
 bank-plus-live boundary. The provenance states are `bank+research`, `bank-only`,
-`research-only`, and `thematic-only`; live enrichment is non-fatal. The current
-South Sudan material is a single-country pilot candidate, not an approved
-production release. The bank stores structured summaries and citations only: it
-does not redistribute raw PDFs or cite its own generated text.
+`research-only`, and `thematic-only`; live enrichment is non-fatal. The pinned
+South Sudan pilot is an approved production release with a review due date of
+2027-07-31. The bank stores structured summaries and citations only: it does not
+redistribute raw PDFs or cite its own generated text.
 
 ## Prerequisites
 
@@ -81,9 +82,12 @@ python app.py
 
 1. Connect this GitHub repo to a new Render **Web Service**
 2. Set `ANTHROPIC_API_KEY` as an environment variable in the Render dashboard
-3. Render reads `Procfile` automatically - no additional build config needed
-4. The app runs on gunicorn + gevent with a 600s timeout, required for long-running SSE streams
-5. The public Render instance currently deploys from `main`; PforR timeout/payload hardening is live on `main` as of PR #51 (`2877bf9`).
+3. Set the Render **Build Command** to `python render_build.py`; this initializes
+   the pinned public Climate-FCV bank submodule and installs requirements
+4. Render reads the `Procfile` start command automatically
+5. The app runs on gunicorn + gevent with a 1,200s timeout for long-running SSE streams
+6. Confirm the startup and Climate-grounding logs show the expected application
+   build, bank content version, and country ISO3 before acceptance testing
 
 ### Long-Running PforR Notes
 
