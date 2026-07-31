@@ -18,6 +18,12 @@ from .climate_bank_selector import (
     MATCH_WEIGHTS,
     select_bank_manifest,
 )
+from .climate_grounding import (
+    CLIMATE_COMBINED_MAX_CHARS,
+    CLIMATE_LIVE_MAX_CLAIMS,
+    CLIMATE_LIVE_TARGET_CLAIMS,
+    merge_climate_grounding,
+)
 from .models import (
     ActiveLensSelection,
     DetectionConfig,
@@ -111,6 +117,9 @@ __all__ = [
     "CLIMATE_BANK_MAX_CHARS",
     "CLIMATE_BANK_MAX_ITEMS",
     "CLIMATE_BANK_TARGET_ITEMS",
+    "CLIMATE_COMBINED_MAX_CHARS",
+    "CLIMATE_LIVE_MAX_CLAIMS",
+    "CLIMATE_LIVE_TARGET_CLAIMS",
     "CLIMATE_AUTHORITATIVE_SOURCE_TYPES",
     "CLIMATE_RESEARCH_END",
     "CLIMATE_RESEARCH_MIN_SOURCES",
@@ -141,6 +150,7 @@ __all__ = [
     "extract_lens_evidence",
     "lens_catalogue",
     "merge_climate_repair",
+    "merge_climate_grounding",
     "merge_lens_findings",
     "normalize_lens_diagnostic",
     "normalize_priority_climate_links",

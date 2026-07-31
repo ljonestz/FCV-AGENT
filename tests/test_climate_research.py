@@ -269,7 +269,7 @@ def test_climate_research_bundle_is_bounded():
 
     result = normalize_climate_research_bundle(raw)
 
-    assert len(result["claims"]) == 12
+    assert len(result["claims"]) == 6
 
 
 def test_south_sudan_research_fixture_preserves_specific_horizons():
@@ -440,6 +440,8 @@ def test_climate_research_prompt_requires_specific_temporal_claims():
     assert "Upper Nile" in prompt
     assert "asset-system-lifetime" in prompt
     assert CLIMATE_RESEARCH_START in prompt
+    assert "four to six claims" in prompt
+    assert "mandatory" not in prompt.casefold()
 
 
 def test_climate_research_uses_one_focused_request():
