@@ -1,8 +1,8 @@
 # Verified Climate-FCV Assessment Pipeline Design
 
-**Date:** 2026-08-01  
-**Branch:** `feat/climate-country-bank`  
-**Status:** Approved design  
+**Date:** 2026-08-01<br>
+**Branch:** `feat/climate-country-bank`<br>
+**Status:** Revised design for approval<br>
 **Scope:** Dedicated Climate-FCV design-review route
 
 ## 1. Objective
@@ -19,7 +19,9 @@ The redesign preserves the current module's strongest features: two-directional 
 
 The redesigned module succeeds when:
 
-- every consequential project claim resolves to an exact primary-document excerpt;
+- every consequential project claim resolves to an eligible source block and a supported excerpt match;
+- uploaded document content is isolated as untrusted evidence and cannot alter application instructions or tool use;
+- source applicability, version relationships, and unresolved contradictions are explicit;
 - study and instrument existence, scope, timing, status, and routing capability are verified separately;
 - existing project responses are represented before residual gaps are identified;
 - country evidence sharpens contextual pathways without becoming project fact;
@@ -28,7 +30,8 @@ The redesigned module succeeds when:
 - unsupported dates, statistics, thresholds, and authority claims are rejected or softened;
 - the executive readout is concise, balanced, and internally consistent;
 - web, HTML, and DOCX outputs reproduce complete structured fields without UI leakage or truncation;
-- the full workflow completes automatically without a human-review dependency; and
+- the full workflow completes automatically without a human-review dependency;
+- each run carries a privacy-safe technical manifest sufficient for reproducibility and regression diagnosis;
 - regression tests prevent recurrence of the verified South Sudan errors.
 
 ## 3. Non-goals
@@ -47,19 +50,43 @@ The redesigned module succeeds when:
 The visible three-stage user journey remains Context, Assessment, and Recommendations. Internally, the Climate route uses bounded products:
 
 1. Structured source blocks and atomic project facts.
-2. Existing project responses.
-3. Climate-FCV pathways.
-4. Residual gaps.
-5. Multidimensional judgment.
-6. Recommendation candidates, admission results, and compiled priorities.
-7. Review-readiness flags.
-8. Automated validation and targeted semantic review.
+2. Verified derived assertions.
+3. Existing project responses.
+4. Climate-FCV pathways.
+5. Residual gaps.
+6. Multidimensional judgment.
+7. Recommendation candidates, admission results, and compiled priorities.
+8. Review-readiness flags.
+9. Automated validation, targeted semantic review, and a run manifest.
 
 The authoritative source is the verified project-fact registry, not Stage 2 prose. Downstream stages may reject an upstream assertion that is unsupported by the registry. They may not silently rewrite primary facts.
 
 ## 5. Phase 1: Verified extraction
 
-### 5.1 Structured source blocks
+### 5.1 Document inventory and applicability
+
+Each uploaded file receives a document record before it can support project facts. The record includes document ID, operation match, document type and stage, version date and status, financed-scope status, and relationship to the designated primary document.
+
+Applicability is evaluated across operation identity, document type and stage, version, geography, and financed scope. Allowed states are `verified | partial | unresolved | inapplicable`. Version relationships are `latest_verified | superseded | parallel | unresolved`.
+
+Newer does not automatically mean authoritative, and document location does not establish precedence. The designated primary project document governs its own stage and scope. A package document may supplement or supersede a fact only when its applicability and relationship to the primary document are verified. A fact from a superseded document remains labelled and cannot override a contradictory fact from a newer applicable document. Unresolved conflicts remain `contradictory`; the system does not choose the convenient version.
+
+The document record uses this minimum structure:
+
+```json
+{
+  "document_id": "DOC1",
+  "operation_match": "verified",
+  "document_type": "PCN",
+  "document_stage": "concept",
+  "version_date": "2026-06-15",
+  "version_status": "latest_verified",
+  "financed_scope_status": "verified",
+  "relationship_to_primary": "primary"
+}
+```
+
+### 5.2 Structured source blocks
 
 Document extraction must preserve enough structure for stable provenance. Each extracted block contains:
 
@@ -71,13 +98,22 @@ Document extraction must preserve enough structure for stable provenance. Each e
   "heading_path": ["Project Description", "Sub-component 1.4"],
   "block_type": "paragraph",
   "table_location": null,
+  "block_hash": "sha256:<digest>",
   "text": "A feasibility study will be completed in Year 1 of implementation."
 }
 ```
 
-DOCX locators use document ID, heading path where available, body-order index, and table coordinates. PDF blocks retain page numbers where extraction supports them. The existing document character limits remain unchanged in the first implementation.
+DOCX locators use document ID, heading path where available, body-order index, and table coordinates. PDF blocks retain page numbers where extraction supports them. Each block retains a hash of the normalized extracted content. The existing document character limits remain unchanged in the first implementation.
 
-### 5.2 Atomic project facts
+### 5.3 Document-content isolation
+
+Extracted content is untrusted evidence data, never application instruction. Prompts, role assignments, requests to ignore instructions, tool requests, and output-format demands found in an uploaded document cannot modify the workflow. Model prompts place source blocks inside explicit evidence delimiters and state that enclosed content must only be analysed as documentary evidence. Tool availability and invocation remain controlled exclusively by application code.
+
+The extractor excludes comments, tracked-change metadata, document properties, fields, macros, and embedded objects unless a later feature explicitly supports and labels them. Hidden or non-body content that cannot be reliably classified is excluded. Hyperlink display text may remain evidence, but targets are stored separately and never executed.
+
+A deterministic seeded test verifies that hostile document text cannot alter schemas, routing, tools, or validation behavior.
+
+### 5.4 Atomic project facts
 
 The extractor returns bounded, decision-relevant claims rather than a general summary. The default target is no more than 60 claims and the hard maximum is 100. Claims cover components, activities, locations, groups, institutions, studies, operational instruments, scope, timing, commitments, existing mitigation, results indicators, decision gates, responsibilities, material figures, placeholders, and contradictions.
 
@@ -108,19 +144,31 @@ Allowed epistemic states are:
 
 Inference cannot enter the project-fact registry. `not_found` never becomes confirmed absence. A missing claim does not prove that the document lacks the information.
 
-### 5.3 Truth-layer verification
+`confirmed_absence` requires an explicit negative statement in eligible project evidence or a deterministic closed-field value whose documented semantics establish absence. Exhaustive search failure cannot produce confirmed absence.
 
-Code verifies that excerpts resolve exactly to cited source blocks, IDs and enums are valid, and project facts use eligible project sources. A bounded semantic check verifies that the quoted text supports the asserted relationship and has not broadened scope or omitted a material qualifier.
+### 5.5 Truth-layer verification
+
+Excerpt resolution records `verbatim_match | normalized_exact_match | bounded_fuzzy_match | unresolved`. Normalization may reconcile whitespace, line breaks, smart quotes, bullets, soft hyphens, ligatures, and table-cell boundaries without changing words. `verbatim_match` and `normalized_exact_match` qualify automatically. `bounded_fuzzy_match` requires the semantic verifier and retains the cited source block and similarity diagnostics. `unresolved` cannot support a project fact.
+
+Code verifies block hashes, excerpt resolution, IDs, enums, document applicability, and evidence eligibility. A bounded semantic check verifies that the quoted text supports the asserted relationship and has not broadened scope or omitted a material qualifier.
 
 If downstream analysis needs a fact absent from the registry, it issues a targeted request against preserved source blocks. A newly found fact enters through the same excerpt-resolution and semantic checks before it can support analysis or routing.
 
 ## 6. Phase 2: Bounded analysis
 
-### 6.1 Existing-response register
+### 6.1 Derived-assertion register
 
-Every material pathway is matched to what the project already does. Each response references project claims and records `substantial`, `partial`, `not_yet_specified`, `contradictory`, or `not_found` coverage. The analysis must represent all relevant documented measures before identifying a gap.
+Relationships inferred from verified facts are stored separately from the fact registry. Examples include a study occurring after a decision window, an instrument's documented scope not covering the proposed function, two claims contradicting each other, or an existing response only partly covering a pathway.
 
-### 6.2 Climate-FCV pathway register
+Each derived assertion records its input claim IDs, derivation type, deterministic or semantic method, explanation, confidence, and validation status. Deterministic date, set-membership, and equality relations are computed in code where possible. Semantic scope and coverage relations require a bounded verifier. A derived assertion cannot alter its input facts and cannot be treated as primary evidence.
+
+Only validated derived assertions may support a residual gap, routing decision, judgment, or recommendation.
+
+### 6.2 Existing-response register
+
+Every material pathway is matched to what the project already does. Each response references project claims and records `substantial`, `partial`, `not_yet_specified`, `contradictory`, or `not_found` coverage. Every material documented response relevant to an admitted pathway or gap must be represented before the gap is finalized.
+
+### 6.3 Climate-FCV pathway register
 
 Each pathway contains:
 
@@ -135,7 +183,7 @@ Each pathway contains:
 
 A pathway must reference at least one verified project fact and describe an actual Climate-FCV mechanism. Generic co-occurrence is suppressed. The hard maximum is three pathways per direction.
 
-### 6.3 Residual-gap register
+### 6.4 Residual-gap register
 
 A residual gap exists only after comparing a pathway with documented existing responses. Gap types are:
 
@@ -145,9 +193,9 @@ A residual gap exists only after comparing a pathway with documented existing re
 - `contradictory`
 - `evidence_gap`
 
-Each gap records project basis, existing responses considered, materiality, decision window, evidence sufficiency, and remaining uncertainty. The hard maximum is eight residual gaps. Concept-stage silence should normally be described as `not_yet_specified`, not absence.
+Each gap records project basis, existing responses considered, materiality, decision window, evidence sufficiency, and remaining uncertainty. `confirmed_omission` requires explicit evidence of omission or a validated derived assertion from a deterministic closed field; search failure alone cannot produce it. The hard maximum is eight residual gaps. Concept-stage silence should normally be described as `not_yet_specified`, not absence.
 
-### 6.4 Evidence entitlements
+### 6.5 Evidence entitlements
 
 Sources have typed permissions:
 
@@ -159,16 +207,30 @@ Sources have typed permissions:
 
 The application validates these permissions. Country-bank records enter the pathway register only and retain geography, evidence status, time horizon, source, confidence, and uncertainty.
 
-### 6.5 Multidimensional judgment
+### 6.6 Multidimensional judgment
 
-The module reports four separate judgments:
+The module reports four separate judgments. The model proposes a value, evidence IDs, and a short rationale; code validates prerequisites, allowed values, and cross-judgment coherence.
 
-- **Climate-FCV relevance:** `high | medium | low | unclear`
-- **FCV sensitivity:** `strong | moderate | limited | unclear`
-- **FCV responsiveness:** `strong | emerging | limited | not_material | unclear`
-- **Operationalization:** `embedded | partial | early | not_evidenced | unclear`
+| Judgment | Values | Decision boundary |
+|---|---|---|
+| Climate-FCV relevance | `high`, `medium`, `low`, `unclear` | High requires a verified project connection and at least one high-materiality pathway affecting the PDO, beneficiaries, core assets, delivery, or sustainability. Medium is material but conditional, localized, or less central. Low requires sufficient screening evidence that plausible connections are remote or immaterial. |
+| FCV sensitivity | `strong`, `moderate`, `limited`, `unclear` | Strong means material adverse pathways are recognized and substantially addressed without a major residual harm gap. Moderate means the main risks are recognized but responses are partial. Limited means a major verified pathway is unrecognized, weakly addressed, or aggravated by design. |
+| FCV responsiveness | `strong`, `emerging`, `limited`, `not_expected`, `unclear` | Strong requires intentional, evidenced mechanisms for resilience, inclusion, institutional legitimacy, cooperative governance, or peace and social dividends. Emerging means explicit mechanisms exist but remain incomplete. Limited means the design remains mainly at harm avoidance. Not expected means active responsiveness is not a proportionate expectation given low relevance, mandate, or project scope; it is not a negative score. |
+| Operationalization | `embedded`, `partial`, `early`, `not_evidenced`, `unclear` | Embedded requires the relevant delivery elements to be verified across requirements, responsibility, resources, indicators or verification, decision timing, and adaptation. Partial means several are present with material gaps. Early means intentions are stated but delivery arrangements are thin. Not evidenced means eligible documents contain no verified operational provisions for the stated response. |
 
-Operationalization is delivery maturity across sensitivity and responsiveness, not a third substantive FCV category. The interface uses a deterministic summary such as `High relevance · Moderate sensitivity · Emerging responsiveness · Partial operationalization`. No free overall rating is generated.
+`unclear` is forced when project applicability cannot be verified, material contradictions remain unresolved, evidence coverage is below the minimum needed for the judgment, or the proposed value cannot be reconciled with the pathway, response, and gap registers.
+
+Boundary rules include:
+
+- relevance measures materiality of the intersection, not project quality;
+- sensitivity measures recognition and avoidance or management of FCV harm;
+- responsiveness measures intentional positive resilience or peace and social-dividend mechanisms;
+- operationalization measures delivery maturity across sensitivity and responsiveness, not a third substantive FCV category;
+- a strong substantive judgment cannot be paired with `not_evidenced` operationalization without an explicit explanation of the difference between design intent and delivery evidence; and
+- no free overall rating is generated.
+
+The interface renders a deterministic summary such as `High relevance · Moderate sensitivity · Emerging responsiveness · Partial operationalization`.
+
 
 ## 7. Phase 3: Recommendation admission and compilation
 
@@ -218,6 +280,8 @@ Each admitted recommendation contains:
 
 Core fields needed for admission are mandatory. Operational home, detailed responsibility, and drafting language may be unresolved with an explicit reason.
 
+Completion evidence must be a verifiable project output, decision record, updated document section, or `team_to_define`. The compiler must not invent a threshold, deliverable, or approval record merely to fill the field.
+
 ### 7.4 Function-first routing
 
 The compiler first defines the required function, such as climate-informed siting, service continuity, conflict-sensitive access governance, adaptive monitoring, transparent benefit sharing, or inclusive representation. It then tests candidate operational homes.
@@ -232,7 +296,9 @@ Routing statuses are:
 
 Drafting language is allowed only for `verified_existing` and `verified_with_scope_change`. Where routing is unresolved, the recommendation describes the function and asks the team to determine the correct vehicle.
 
-Authority basis is limited to `project_commitment | policy | directive | procedure | guidance | reviewer_judgment`. Mandatory language requires verified formal authority or an explicit project commitment. Analytical frameworks remain advisory evidence.
+`authority_basis` is limited to `project_commitment | policy | directive | procedure | none_verified`. `recommendation_basis` separately records one or more of `project_evidence | country_context | guidance | analytical_judgment`.
+
+Mandatory language requires applicable verified formal authority or an explicit project commitment. Guidance, analytical frameworks, contextual evidence, and model judgment may support advisory recommendations but cannot independently authorize mandatory language.
 
 ### 7.5 Minimum and enhanced actions
 
@@ -254,14 +320,17 @@ Allowed categories are incomplete or referenced-but-missing climate screening; m
 
 Each flag contains only the flag, why it matters, document basis, and suggested verification. General proofreading and unverified processing requirements are excluded. Flags do not affect the four judgments unless the underlying issue independently appears in residual analysis.
 
+Deduplication checks prevent the same underlying issue from appearing as a residual gap, readiness flag, evidence limitation, and implementation caution unless each occurrence has a distinct reader function and cross-references the same underlying ID.
+
 ## 9. Phase 4: Automated validation
 
 ### 9.1 Deterministic checks
 
 Code validates:
 
-- source, block, claim, pathway, response, gap, and recommendation references;
-- exact excerpts and evidence entitlements;
+- document, block, claim, derived-assertion, pathway, response, gap, and recommendation references;
+- document applicability, block hashes, excerpt-resolution status, and evidence entitlements;
+- document-content isolation and prompt-envelope invariants;
 - allowed values and bounds;
 - recommendation admission and ranking;
 - routing support and authority language;
@@ -270,6 +339,7 @@ Code validates:
 - enhanced-action activation conditions;
 - suppression of drafting language for unresolved routing;
 - traceability of numbers, dates, and thresholds;
+- issue deduplication across gaps, flags, limitations, and cautions;
 - absence of placeholders; and
 - full structured-field parity across web, HTML, and DOCX outputs.
 
@@ -277,23 +347,43 @@ Exports are generated directly from structured data, not browser DOM text. Round
 
 ### 9.2 Semantic checks
 
-A bounded automated reviewer receives relevant source blocks and typed products. It checks claim relationships, existing mitigation, residual logic, evidence overreach, judgment coherence, recommendation proportionality, unintended consequences, and semantic duplication.
+A bounded automated reviewer receives the relevant source blocks first, followed by typed facts and derived products. It checks claim relationships, existing mitigation, residual logic, evidence overreach, judgment coherence, recommendation proportionality, unintended consequences, and semantic duplication.
+
+Reviewer independence requires a separate prompt and role, no access to generator hidden reasoning, explicit deterministic warnings as challenge targets, and sampling controls chosen for repeated-run stability. The same model deployment may be used initially, but its reviewer configuration is separately versioned. Calibration tests must measure correlated failures; a second reviewer configuration or deterministic evidence challenge is added for a risk class if the same-model review repeatedly misses it.
 
 The reviewer returns `pass | revise | block` with affected IDs and reasons. It may revise derived analysis but cannot silently alter primary facts.
 
-One bounded repair attempt is allowed. Invalid facts are re-extracted or made unusable; invalid pathways, gaps, and recommendations are revised or suppressed; unresolved routing becomes `team_to_confirm`; render failures block artifact release. The system prefers fewer verified recommendations over unsafe completeness.
+Repair occurs in three ordered steps: programmatic normalization and schema repair; one bounded semantic repair for unsupported claims or reasoning; then full revalidation. Duplicate IDs, rank gaps, enum casing, field ordering, derived display strings, and harmless serialization faults do not consume the semantic repair allowance. If semantic revalidation still fails, invalid facts are re-extracted or made unusable; invalid pathways, gaps, and recommendations are suppressed; unresolved routing becomes `team_to_confirm`; and render failures block artifact release.
 
-An additional final semantic check is triggered when a recommendation names a study or instrument, relies on a number/date/threshold, invokes formal authority, depends materially on country evidence, references contradictory facts, has only moderate evidence for high materiality, produces a deterministic warning, or includes drafting language.
+The final semantic check is genuinely conditional through a code-level `semantic_review_required()` policy. It is triggered by materially used fuzzy or contradictory evidence, formal authority or mandatory language, drafting text, scope-change or unresolved routing, derived numbers or thresholds, country evidence carrying a material causal conclusion, high materiality supported only by moderate evidence, or a deterministic warning. A high-confidence verified mention of a study or instrument does not trigger review by itself. Tests assert both trigger and non-trigger cases.
+
+The system prefers fewer verified recommendations over unsafe completeness.
 
 ### 9.3 Fully automatic workflow
 
 No human review is required or managed by the application. The standard flow completes automatically through extraction, analysis, compilation, checking, bounded repair, and rendering. The output retains a concise AI-assisted advisory disclaimer and transparent confidence limitations. Optional consultation with specialists remains outside the product workflow.
 
+### 9.4 Reproducibility manifest and observability
+
+Each assessment stores a technical run manifest containing:
+
+- schema, prompt, reviewer-prompt, extraction, normalization, and renderer versions;
+- model deployment aliases and sampling configuration;
+- source document fingerprints and applicability states;
+- country-bank release and live-research retrieval status and timestamps;
+- validation results and bounded reason codes;
+- programmatic normalization and semantic repair actions;
+- suppressed-item counts and reason codes;
+- per-call latency and token usage; and
+- cache-hit and invalidation status.
+
+The manifest is technical state, not an approval or audit workflow. It is stored with the assessment or equivalent protected session state; the reader-facing annex shows only run ID, schema version, evidence-bank release, and validation status. Operational logs remain low-cardinality and privacy-safe: they do not contain uploaded text, excerpts, prompts, recommendations, credentials, or arbitrary model output.
+
 ## 10. Phase 5: Presentation
 
 ### 10.1 Executive readout
 
-Target 500-800 words containing project/stage, a short relevance statement, the four judgments, two to four strengths, two to four residual improvement areas, zero to three decision summaries, and evidence limitations.
+Target 350-600 words containing project/stage, a short relevance statement, the four judgments, two to four strengths, two to four residual improvement areas, zero to three decision summaries, and evidence limitations. Expanded analysis remains available through progressive disclosure.
 
 ### 10.2 Ranked priority actions
 
@@ -314,14 +404,39 @@ The web interface replaces the single integration dial with four compact judgmen
 The internal call structure is:
 
 1. verified project-fact extraction;
-2. pathways, existing responses, and residual gaps;
+2. derived assertions, pathways, existing responses, and residual gaps;
 3. small judgment/residual-logic review;
 4. recommendation admission and compilation; and
 5. conditional final semantic review.
 
-The visible three-stage workflow remains unchanged. Existing per-stage timeout and output ceilings remain the starting constraint; implementation must measure latency before changing them.
+The visible three-stage workflow remains unchanged. The first implementation uses these code-enforced starting envelopes:
 
-Malformed typed output receives one bounded JSON repair. If project facts cannot be verified, dependent analysis is suppressed. If the Climate assessment cannot produce a usable truth layer, the route returns an actionable retry/fallback error rather than a confident partial assessment. Country-bank or live-research failure remains non-fatal and uses the existing grounding fallback states.
+| Call | Visible stage | Maximum selected input | Maximum output | Call timeout |
+|---|---|---:|---:|---:|
+| 1. Verified fact extraction | Assessment | 24,000 tokens | 6,000 tokens | 150 seconds |
+| 2. Bounded analysis | Assessment | 20,000 tokens | 6,000 tokens | 180 seconds |
+| 3. Judgment and residual review | Assessment | 12,000 tokens | 2,000 tokens | 60 seconds |
+| 4. Recommendation compiler | Recommendations | 16,000 tokens | 5,000 tokens | 240 seconds |
+| 5. Conditional semantic review | Recommendations | 12,000 tokens | 2,500 tokens | 120 seconds |
+
+Input ceilings apply to selected evidence and typed products, not the stored source corpus. Targeted retrieval supplies omitted blocks without passing the entire package forward.
+
+Calls 1-3 share the existing nine-minute Assessment ceiling; Calls 4-5 share the nine-minute Recommendations ceiling. The sum of individual call limits does not extend a stage deadline. Implementation records actual latency and token use and may lower or rebalance a call budget only after golden-case and representative-package measurements.
+
+Live research retains its existing 135-second non-fatal cap and may run concurrently with fact extraction when its inputs are independent. The remaining model calls are sequential because their typed dependencies are substantive. Application concurrency remains bounded by the existing assessment-worker limit.
+
+Structured and reviewer calls use no hidden SDK retries. At most one application-level retry is permitted before usable model content is received, only for a transient provider error, and only within the total stage ceiling.
+
+Cache policy is:
+
+- source blocks and verified facts are reusable within the assessment when document fingerprints and extraction version are unchanged;
+- derived products are invalidated by any source-fact, schema, prompt, reviewer, model-configuration, or applicability change;
+- country-bank packets are keyed by bank release and selector version; and
+- live-research cache entries retain retrieval timestamp, country, sector, and Climate mode.
+
+Project-document text or project facts are not reused across assessments through similarity matching.
+
+Malformed typed output first receives programmatic normalization and schema repair. Only a remaining semantic defect may use the single bounded semantic repair allowance. If project facts cannot be verified, dependent analysis is suppressed. If the Climate assessment cannot produce a usable truth layer, the route returns an actionable retry/fallback error rather than a confident partial assessment. Country-bank or live-research failure remains non-fatal and uses the existing grounding fallback states.
 
 ## 12. Compatibility and migration
 
@@ -352,23 +467,26 @@ The June 2026 PCN is the first labelled fixture. Tests require that:
 
 ### 13.2 Seeded and metamorphic tests
 
-Fixtures cover wrong-scope and wrong-timing studies, omitted mitigation, national-to-site overreach, guidance presented as requirements, duplicate priorities, unsupported thresholds, truncated fields, incorrect routing, and contradictory project information.
+Fixtures cover wrong-scope and wrong-timing studies, omitted mitigation, national-to-site overreach, guidance presented as requirements, duplicate priorities, unsupported thresholds, truncated fields, incorrect routing, contradictory or superseded project information, operation mismatch, explicit versus inferred absence, normalized and fuzzy excerpt matching, and invalid derived assertions.
 
-Metamorphic tests remove or change one fact and verify downstream behavior: routing becomes unresolved, a late study becomes inadmissible, added mitigation narrows the gap, resolved indicators remove flags, and lower confidence produces verification-oriented or suppressed actions.
+Security and control fixtures cover prompt injection in visible and hidden document content, reviewer trigger and non-trigger cases, every judgment boundary, call budgets and stage ceilings, cache invalidation, manifest versioning, and absence of document or model content from operational telemetry.
+
+Metamorphic tests remove or change one fact and verify downstream behavior: routing becomes unresolved, a late study becomes inadmissible, a newer applicable document creates or resolves a contradiction, added mitigation narrows the gap, resolved indicators remove flags, and lower confidence produces verification-oriented or suppressed actions.
 
 ### 13.3 Release acceptance
 
-Release requires zero critical grounding or routing errors, deterministic contract and export parity, repeated-run stability on the golden case, representative tests across stages and instruments, and blinded expert comparison against A/B/C on accuracy, residual-gap discipline, proportionality, actionability, evidence traceability, readability, and integrity.
+Release requires zero critical grounding or routing errors, deterministic contract and export parity, privacy-safe manifest and telemetry behavior, compliance with stage ceilings on representative packages, repeated-run stability on the golden case, representative tests across stages and instruments, and blinded expert comparison against A/B/C on accuracy, residual-gap discipline, proportionality, actionability, evidence traceability, readability, and integrity.
 
 ## 14. Implementation sequencing
 
-1. Upgrade extraction and implement the verified truth layer with deterministic checks.
-2. Add typed pathway, response, and residual-gap products plus evidence entitlements.
-3. Replace the composite rating with four judgments.
-4. Add recommendation admission, ranking, routing, and safety logic.
-5. Add deterministic and semantic validation with bounded repair.
-6. Replace Climate presentation/export with the v2 structured renderer.
-7. Add the South Sudan golden harness and broader fixtures throughout, not only at the end.
-8. Integrate and calibrate against the completed country-bank work.
+1. Establish v2 schemas, code-enforced call budgets, prompt-isolation tests, and the run-manifest skeleton.
+2. Add document applicability, structured extraction, block hashing, excerpt resolution, atomic facts, and derived assertions.
+3. Add typed pathway, response, and residual-gap products plus evidence entitlements.
+4. Replace the composite rating with four rubric-validated judgments.
+5. Add recommendation admission, ranking, routing, authority separation, and safety logic.
+6. Add deterministic normalization, semantic validation, reviewer independence, and bounded repair.
+7. Replace Climate presentation/export with the v2 structured renderer.
+8. Add the South Sudan golden harness and broader fixtures throughout, not only at the end.
+9. Integrate and calibrate against the completed country-bank work.
 
 Each increment must preserve the non-Climate route and retain a runnable verified subset. No implementation increment should depend on a human-review workflow.
