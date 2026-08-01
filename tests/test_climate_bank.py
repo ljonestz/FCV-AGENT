@@ -329,3 +329,41 @@ def test_materialized_packets_do_not_alias_loaded_release() -> None:
     assert (
         bank.release["evidence_records"][0]["compact_statement"] != "mutated"
     )
+
+CANDIDATE_FIXTURE = (
+    Path(__file__).parent
+    / "fixtures"
+    / "climate_bank"
+    / "runtime_v1_1_candidate.json"
+)
+
+
+def test_reviewed_candidate_preview_requires_explicit_path_and_opt_in(
+    monkeypatch,
+) -> None:
+    monkeypatch.delenv("CLIMATE_COUNTRY_BANK_PATH", raising=False)
+    monkeypatch.delenv("CLIMATE_COUNTRY_BANK_PREVIEW", raising=False)
+
+    default_result = load_climate_bank(CANDIDATE_FIXTURE)
+    assert default_result.status == "unavailable"
+    assert default_result.warning_code == "bank_incompatible"
+
+    monkeypatch.setenv("CLIMATE_COUNTRY_BANK_PATH", str(CANDIDATE_FIXTURE))
+    monkeypatch.setenv(
+        "CLIMATE_COUNTRY_BANK_PREVIEW", "reviewed-candidate"
+    )
+    preview = load_climate_bank()
+    assert preview.status == "ok"
+    assert preview.candidate_preview is True
+    assert preview.release["candidate"] is True
+
+    packet = materialize_bank_manifest(
+        preview,
+        {
+            **_manifest(content_version="test-1-preview"),
+            "candidate_preview": True,
+        },
+    )
+    assert packet["bank_status"] == "ok"
+    assert packet["candidate_preview"] is True
+    assert packet["evidence_records"][0]["review_status"] == "reviewed"

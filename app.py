@@ -7482,6 +7482,7 @@ _CLIMATE_BANK_MANIFEST_FIELDS = (
     "country_iso3",
     "evidence_ids",
     "pathway_ids",
+    "candidate_preview",
 )
 
 
@@ -7565,6 +7566,10 @@ def climate_grounding_envelope(value: Any) -> dict[str, Any]:
         "warning_code": str(grounding.get("warning_code") or ""),
         "content_version": grounding.get("content_version"),
         "country_iso3": grounding.get("country_iso3"),
+        "candidate_preview": (
+            grounding.get("candidate_preview") is True
+            or manifest.get("candidate_preview") is True
+        ),
         "research_status": str(
             grounding.get("research_status") or "empty"
         ),
@@ -11953,7 +11958,13 @@ def download_report():
                             citation += f' | {source.url}'
                         _add_single_para(f'[{source.id}] {citation}', size=9, space_after=2)
             if climate_grounding_state in {'bank+research', 'bank-only'}:
-                _add_section_heading('Reviewed country evidence bank', level=2)
+                bank_heading = (
+                    'Reviewed candidate country evidence bank '
+                    '(preview; not approved)'
+                    if climate_grounding.get('candidate_preview') is True
+                    else 'Reviewed country evidence bank'
+                )
+                _add_section_heading(bank_heading, level=2)
                 content_version = (
                     climate_grounding.get('content_version')
                     or climate_grounding.get('bank_manifest', {}).get(

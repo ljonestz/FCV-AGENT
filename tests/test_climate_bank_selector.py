@@ -175,3 +175,30 @@ def test_unavailable_bank_warning_is_preserved() -> None:
         "bank_status": "unavailable",
         "warning_code": "bank_missing",
     }
+
+
+def test_reviewed_candidate_flag_survives_selection_and_compaction(
+    monkeypatch,
+) -> None:
+    candidate = FIXTURE.with_name("runtime_v1_1_candidate.json")
+    monkeypatch.setenv("CLIMATE_COUNTRY_BANK_PATH", str(candidate))
+    monkeypatch.setenv(
+        "CLIMATE_COUNTRY_BANK_PREVIEW", "reviewed-candidate"
+    )
+    bank = load_climate_bank()
+
+    manifest = select_bank_manifest(
+        bank,
+        country="South Sudan",
+        country_scope="single",
+        resolved_country_count=1,
+        sector="Transport",
+        project_signals="Unity roads flood drainage",
+    )
+    assert manifest["candidate_preview"] is True
+
+    packet = materialize_bank_manifest(bank, manifest)
+    assert packet["candidate_preview"] is True
+    assert selector_module.compact_bank_packet(packet)[
+        "candidate_preview"
+    ] is True

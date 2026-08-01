@@ -1199,3 +1199,26 @@ def test_express_climate_stage3_branches_before_generic_prompt_and_compacts_hist
     blocked = next(e for e in blocked_events if e.get("error_code") == "climate_priority_invalid")
     assert blocked["failed_stage"] == 3
     assert not any(e.get("stage_done") == 3 for e in blocked_events)
+
+
+def test_candidate_preview_manifest_is_preserved_for_display() -> None:
+    manifest = {
+        "bank_status": "ok",
+        "warning_code": "",
+        "schema_version": "1.1.0",
+        "content_version": "2026.08-preview",
+        "country_iso3": "SSD",
+        "evidence_ids": ["SSD-E-020"],
+        "pathway_ids": [],
+        "candidate_preview": True,
+    }
+
+    safe = app_module._safe_climate_bank_manifest(manifest)
+    assert safe["candidate_preview"] is True
+    envelope = app_module.climate_grounding_envelope({
+        "state": "bank-only",
+        "bank_manifest": manifest,
+        "candidate_preview": True,
+    })
+    assert envelope["candidate_preview"] is True
+    assert envelope["bank_manifest"]["candidate_preview"] is True

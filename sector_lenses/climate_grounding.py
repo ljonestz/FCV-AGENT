@@ -133,6 +133,7 @@ def _bounded_bank_projection(bank: dict[str, Any]) -> tuple[dict[str, Any], str]
     bounded = {
         "content_version": projection.get("content_version"),
         "country_iso3": projection.get("country_iso3"),
+        "candidate_preview": projection.get("candidate_preview") is True,
         "sources": [],
         "evidence_records": [],
         "pathways": [],
@@ -257,6 +258,7 @@ def merge_climate_grounding(
         ),
         "content_version": bank.get("content_version"),
         "country_iso3": bank.get("country_iso3"),
+        "candidate_preview": bank.get("candidate_preview") is True,
         "research_status": research.get("status", "failed"),
         "bank_sources": bank_sources,
         "live_sources": live_sources,

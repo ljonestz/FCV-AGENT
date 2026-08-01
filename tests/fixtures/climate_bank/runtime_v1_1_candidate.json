@@ -1,0 +1,257 @@
+{
+  "schema_version": "1.1.0",
+  "content_version": "test-1-preview",
+  "generated_at": "2026-07-30T00:00:00Z",
+  "countries": {
+    "SSD": {
+      "iso3": "SSD",
+      "name": "South Sudan",
+      "aliases": [
+        "Republic of South Sudan"
+      ],
+      "status": "reviewed",
+      "reviewer": "Synthetic fixture reviewer",
+      "reviewed_on": "2026-07-30",
+      "review_due": "2099-12-31",
+      "dossier_path": "countries/SSD/dossier.md",
+      "evidence_ids": [
+        "SSD-E-001",
+        "SSD-E-002"
+      ],
+      "pathway_ids": [
+        "SSD-P-001"
+      ],
+      "decision_notes": "Synthetic approved fixture for application contract tests only.",
+      "selection_aliases": {
+        "geographies": {},
+        "sectors": {},
+        "affected_groups": {},
+        "institutions": {},
+        "systems_assets": {},
+        "hazards": {}
+      }
+    }
+  },
+  "sources": [
+    {
+      "source_id": "SSD-SRC-001",
+      "title": "Synthetic climate and livelihoods note",
+      "organization": "Example Research Organization",
+      "publication_date": "2025-01-15",
+      "publication_date_basis": "publication",
+      "url": "https://example.org/synthetic-climate-note",
+      "repository_file": null,
+      "source_type": "think-tank-report",
+      "analytical_roles": [
+        "physical-baseline",
+        "vulnerability-capacity"
+      ],
+      "country_codes": [
+        "SSD"
+      ],
+      "geographic_coverage": [
+        "South Sudan"
+      ],
+      "temporal_coverage": "Synthetic current conditions",
+      "accessed_on": "2026-07-30",
+      "methodology": "Synthetic desk review for contract tests.",
+      "limitations": "Not evidence about real-world conditions.",
+      "license_status": "open",
+      "checksum": null
+    },
+    {
+      "source_id": "SSD-SRC-002",
+      "title": "Synthetic climate-FCV pathways note",
+      "organization": "Example Public Agency",
+      "publication_date": "2025-02",
+      "publication_date_basis": "publication",
+      "url": "https://example.org/synthetic-pathways-note",
+      "repository_file": null,
+      "source_type": "government-report",
+      "analytical_roles": [
+        "direct-climate-fcv"
+      ],
+      "country_codes": [
+        "SSD"
+      ],
+      "geographic_coverage": [
+        "Jonglei",
+        "Unity"
+      ],
+      "temporal_coverage": "Synthetic current conditions",
+      "accessed_on": "2026-07-30",
+      "methodology": "Synthetic interviews and desk review for contract tests.",
+      "limitations": "Not evidence about real-world conditions.",
+      "license_status": "open",
+      "checksum": null
+    }
+  ],
+  "evidence_records": [
+    {
+      "evidence_id": "SSD-E-001",
+      "iso3": "SSD",
+      "statement": "Synthetic seasonal flooding affects access to fisheries landing sites in Jonglei.",
+      "compact_statement": "Synthetic seasonal flooding affects access to Jonglei fisheries landing sites.",
+      "evidence_status": "observed",
+      "analytical_role": "vulnerability-capacity",
+      "hazard_tags": [
+        "flood"
+      ],
+      "impact_tags": [
+        "access-disruption"
+      ],
+      "geographies": [
+        "Jonglei"
+      ],
+      "affected_groups": [
+        "fishers",
+        "seasonal users"
+      ],
+      "sectors": [
+        "fisheries"
+      ],
+      "systems_assets_resources": [
+        "landing sites",
+        "Sudd wetlands"
+      ],
+      "institutions": [
+        "BFMU"
+      ],
+      "mediator_tags": [
+        "seasonal-access"
+      ],
+      "interaction_direction": "contextual",
+      "time_horizons": [
+        "current"
+      ],
+      "scenario": null,
+      "source_refs": [
+        {
+          "source_id": "SSD-SRC-001",
+          "locator": "Synthetic section 1"
+        }
+      ],
+      "confidence": "medium",
+      "uncertainty": "Synthetic fixture content.",
+      "review_status": "reviewed",
+      "review_date": "2026-07-30",
+      "evidence_class": "climate-pressure",
+      "administrative_level": "national",
+      "ecological_level": null,
+      "refresh_tier": "structural",
+      "review_due": "2099-12-31"
+    },
+    {
+      "evidence_id": "SSD-E-002",
+      "iso3": "SSD",
+      "statement": "Synthetic flood exposure and limited drainage can interrupt feeder-road market access in Unity.",
+      "compact_statement": "Synthetic flood exposure and limited drainage can interrupt Unity feeder-road access.",
+      "evidence_status": "observed",
+      "analytical_role": "direct-climate-fcv",
+      "hazard_tags": [
+        "flood"
+      ],
+      "impact_tags": [
+        "market-access-disruption"
+      ],
+      "geographies": [
+        "Unity"
+      ],
+      "affected_groups": [
+        "rural households"
+      ],
+      "sectors": [
+        "transport"
+      ],
+      "systems_assets_resources": [
+        "feeder roads",
+        "markets"
+      ],
+      "institutions": [
+        "county road authority"
+      ],
+      "mediator_tags": [
+        "limited-drainage-capacity"
+      ],
+      "interaction_direction": "climate-to-fcv",
+      "time_horizons": [
+        "current",
+        "near-term"
+      ],
+      "scenario": null,
+      "source_refs": [
+        {
+          "source_id": "SSD-SRC-002",
+          "locator": "Synthetic section 2"
+        }
+      ],
+      "confidence": "medium",
+      "uncertainty": "Synthetic fixture content.",
+      "review_status": "approved",
+      "review_date": "2026-07-30",
+      "evidence_class": "climate-pressure",
+      "administrative_level": "national",
+      "ecological_level": null,
+      "refresh_tier": "structural",
+      "review_due": "2099-12-31"
+    }
+  ],
+  "pathways": [
+    {
+      "pathway_id": "SSD-P-001",
+      "iso3": "SSD",
+      "climate_pressure": "Synthetic seasonal flooding",
+      "documented_impact": "Interrupted access to fisheries landing sites",
+      "fcv_mediator": "Limited seasonal access arrangements",
+      "possible_consequence": "Possible livelihood tensions among seasonal users",
+      "geographies": [
+        "Jonglei"
+      ],
+      "affected_groups": [
+        "fishers",
+        "seasonal users"
+      ],
+      "sectors": [
+        "fisheries"
+      ],
+      "systems_assets_resources": [
+        "landing sites",
+        "Sudd wetlands"
+      ],
+      "institutions": [
+        "BFMU"
+      ],
+      "supporting_evidence_ids": [
+        "SSD-E-001"
+      ],
+      "link_evidence": {
+        "pressure": [
+          "SSD-E-001"
+        ],
+        "impact": [
+          "SSD-E-001"
+        ],
+        "mediator": [
+          "SSD-E-001"
+        ],
+        "consequence": [
+          "SSD-E-001"
+        ]
+      },
+      "evidence_strength": "direct",
+      "alternative_explanations": [
+        "Synthetic infrastructure constraints may independently affect access."
+      ],
+      "uncertainty": "This is a screening pathway, not a causal claim.",
+      "resilience_factors": [
+        "Seasonal access planning"
+      ],
+      "compact_statement": "Synthetic flooding may interact with access constraints to increase livelihood tensions.",
+      "interaction_direction": "climate-to-fcv",
+      "review_status": "approved",
+      "review_date": "2026-07-30"
+    }
+  ],
+  "source_manifest_checksum": "1f5375c729fb663bab8a4f1deaca6e9751061905dfc841e8bd2a6fa09a5f1e11",
+  "candidate": true
+}

@@ -21,6 +21,8 @@ from urllib.parse import urlparse
 
 
 CLIMATE_BANK_SCHEMA_VERSION = "1.0.0"
+CLIMATE_BANK_PREVIEW_SCHEMA_VERSION = "1.1.0"
+CLIMATE_BANK_PREVIEW_TOKEN = "reviewed-candidate"
 DEFAULT_RELEASE = (
     Path(__file__).resolve().parents[1]
     / "data"
@@ -49,6 +51,12 @@ _EVIDENCE_FIELDS = frozenset(
         "confidence", "uncertainty", "review_status", "review_date",
     }
 )
+_EVIDENCE_FIELDS_1_1 = _EVIDENCE_FIELDS | frozenset(
+    {
+        "evidence_class", "administrative_level", "ecological_level",
+        "refresh_tier", "review_due",
+    }
+)
 _PATHWAY_FIELDS = frozenset(
     {
         "pathway_id", "iso3", "climate_pressure", "documented_impact",
@@ -70,6 +78,15 @@ _SOURCE_FIELDS = frozenset(
     }
 )
 _EVIDENCE_STATUSES = {"observed", "projected", "inferred"}
+_EVIDENCE_CLASSES = {
+    "climate-pressure", "exposure", "sensitivity", "coping-capacity",
+    "adaptive-capacity", "institutional-capacity", "response-performance",
+    "direct-climate-fcv", "resilience-peace-capacity",
+}
+_ADMINISTRATIVE_LEVELS = {
+    "national", "state", "administrative-area", "county", "payam",
+    "boma", "site", "cross-border", "not-applicable",
+}
 _ANALYTICAL_ROLES = {
     "direct-climate-fcv", "vulnerability-capacity", "physical-baseline",
 }
@@ -126,6 +143,7 @@ class ClimateBankLoad:
     status: str
     warning_code: str
     release: dict[str, Any]
+    candidate_preview: bool = False
 
     def resolve_country(self, value: str) -> dict[str, Any] | None:
         key = str(value or "").strip().casefold()
@@ -175,7 +193,19 @@ def load_climate_bank(path: str | Path | None = None) -> ClimateBankLoad:
         return _unavailable("bank_incompatible")
     if not isinstance(release, dict):
         return _unavailable("bank_incompatible")
-    if release.get("schema_version") != CLIMATE_BANK_SCHEMA_VERSION:
+    schema_version = release.get("schema_version")
+    preview_opt_in = (
+        path is None
+        and bool(os.environ.get("CLIMATE_COUNTRY_BANK_PATH"))
+        and os.environ.get("CLIMATE_COUNTRY_BANK_PREVIEW")
+        == CLIMATE_BANK_PREVIEW_TOKEN
+    )
+    candidate_preview = (
+        schema_version == CLIMATE_BANK_PREVIEW_SCHEMA_VERSION
+        and release.get("candidate") is True
+        and preview_opt_in
+    )
+    if schema_version != CLIMATE_BANK_SCHEMA_VERSION and not candidate_preview:
         return _unavailable("bank_incompatible")
     required = (
         "content_version",
@@ -203,7 +233,9 @@ def load_climate_bank(path: str | Path | None = None) -> ClimateBankLoad:
         != release["source_manifest_checksum"]
     ):
         return _unavailable("bank_incompatible")
-    return ClimateBankLoad("ok", "", release)
+    return ClimateBankLoad(
+        "ok", "", release, candidate_preview=candidate_preview
+    )
 
 
 def _packet_unavailable(code: str) -> dict[str, str]:
@@ -243,10 +275,16 @@ def _canonical_id_list(value: Any, pattern: re.Pattern[str]) -> list[str] | None
     return value
 
 
-def _approved_record(record: dict[str, Any], iso3: str) -> bool:
+def _approved_record(
+    record: dict[str, Any],
+    iso3: str,
+    *,
+    allow_reviewed: bool = False,
+) -> bool:
+    allowed_statuses = {"approved", "reviewed"} if allow_reviewed else {"approved"}
     if (
         record.get("iso3") != iso3
-        or record.get("review_status") != "approved"
+        or record.get("review_status") not in allowed_statuses
         or not isinstance(record.get("review_date"), str)
     ):
         return False
@@ -270,11 +308,30 @@ def _string_array(value: Any, *, minimum: int = 0) -> bool:
     )
 
 
-def _valid_evidence_record(record: dict[str, Any], iso3: str) -> bool:
+def _valid_evidence_record(
+    record: dict[str, Any],
+    iso3: str,
+    *,
+    allow_reviewed: bool = False,
+) -> bool:
     scenario = record.get("scenario")
+    expected_fields = (
+        _EVIDENCE_FIELDS_1_1 if allow_reviewed else _EVIDENCE_FIELDS
+    )
+    preview_fields_valid = True
+    if allow_reviewed:
+        ecological_level = record.get("ecological_level")
+        preview_fields_valid = (
+            record.get("evidence_class") in _EVIDENCE_CLASSES
+            and record.get("administrative_level") in _ADMINISTRATIVE_LEVELS
+            and (ecological_level is None or _nonempty_string(ecological_level))
+            and record.get("refresh_tier") in {"structural", "current"}
+            and _valid_date(record.get("review_due"))
+        )
     return (
-        set(record) == _EVIDENCE_FIELDS
-        and _approved_record(record, iso3)
+        set(record) == expected_fields
+        and _approved_record(record, iso3, allow_reviewed=allow_reviewed)
+        and preview_fields_valid
         and record["evidence_id"].startswith(f"{iso3}-E-")
         and _nonempty_string(record.get("statement"))
         and _nonempty_string(record.get("compact_statement"))
@@ -297,10 +354,17 @@ def _valid_evidence_record(record: dict[str, Any], iso3: str) -> bool:
     )
 
 
-def _valid_pathway_record(record: dict[str, Any], iso3: str) -> bool:
+def _valid_pathway_record(
+    record: dict[str, Any],
+    iso3: str,
+    *,
+    allow_reviewed: bool = False,
+) -> bool:
     return (
         set(record) == _PATHWAY_FIELDS
-        and _approved_record(record, iso3)
+        and _approved_record(
+            record, iso3, allow_reviewed=allow_reviewed
+        )
         and record["pathway_id"].startswith(f"{iso3}-P-")
         and all(
             _nonempty_string(record.get(key))
@@ -489,6 +553,8 @@ def materialize_bank_manifest(
         return _packet_unavailable(code)
     if not isinstance(manifest, dict):
         return _packet_unavailable("bank_manifest_invalid")
+    if bool(manifest.get("candidate_preview", False)) != bank.candidate_preview:
+        return _packet_unavailable("bank_manifest_invalid")
 
     release = bank.release
     if manifest.get("content_version") != release.get("content_version"):
@@ -499,7 +565,12 @@ def materialize_bank_manifest(
     country = release.get("countries", {}).get(iso3)
     if not isinstance(country, dict):
         return _packet_unavailable("bank_country_unavailable")
-    if country.get("status") != "approved":
+    allowed_country_statuses = (
+        {"approved", "reviewed"}
+        if bank.candidate_preview
+        else {"approved"}
+    )
+    if country.get("status") not in allowed_country_statuses:
         return _packet_unavailable("bank_country_unapproved")
     try:
         review_due = date.fromisoformat(str(country.get("review_due", "")))
@@ -558,7 +629,9 @@ def materialize_bank_manifest(
         pathway = pathway_index.get(pathway_id)
         if (
             pathway is None
-            or not _valid_pathway_record(pathway, iso3)
+            or not _valid_pathway_record(
+                pathway, iso3, allow_reviewed=bank.candidate_preview
+            )
             or not _valid_pathway_refs(pathway, evidence_index)
         ):
             return _packet_unavailable("bank_manifest_invalid")
@@ -570,7 +643,9 @@ def materialize_bank_manifest(
         evidence = evidence_index.get(evidence_id)
         if (
             evidence is None
-            or not _valid_evidence_record(evidence, iso3)
+            or not _valid_evidence_record(
+                evidence, iso3, allow_reviewed=bank.candidate_preview
+            )
             or not _valid_evidence_refs(evidence, source_index)
         ):
             return _packet_unavailable("bank_manifest_invalid")
@@ -584,7 +659,7 @@ def materialize_bank_manifest(
             return _packet_unavailable("bank_manifest_invalid")
         selected_sources.append(source)
 
-    return {
+    packet = {
         "bank_status": "ok",
         "warning_code": "",
         "schema_version": release["schema_version"],
@@ -597,3 +672,6 @@ def materialize_bank_manifest(
         "evidence_records": deepcopy(selected_evidence),
         "pathways": deepcopy(selected_pathways),
     }
+    if bank.candidate_preview:
+        packet["candidate_preview"] = True
+    return packet

@@ -289,7 +289,7 @@ def _manifest(
     country: dict[str, Any],
     selected: list[_Candidate],
 ) -> dict[str, Any]:
-    return {
+    manifest = {
         "bank_status": "ok",
         "warning_code": "",
         "schema_version": bank.release["schema_version"],
@@ -302,6 +302,9 @@ def _manifest(
             item.record_id for item in selected if item.kind == "pathway"
         ],
     }
+    if bank.candidate_preview:
+        manifest["candidate_preview"] = True
+    return manifest
 
 
 def compact_bank_packet(packet: dict[str, Any]) -> dict[str, Any]:
@@ -347,13 +350,16 @@ def compact_bank_packet(packet: dict[str, Any]) -> dict[str, Any]:
                 )
             }
         )
-    return {
+    compact = {
         "content_version": packet.get("content_version"),
         "country_iso3": packet.get("country_iso3"),
         "sources": sources,
         "evidence_records": evidence_records,
         "pathways": pathways,
     }
+    if packet.get("candidate_preview") is True:
+        compact["candidate_preview"] = True
+    return compact
 
 
 def _compact_packet_length(packet: dict[str, Any]) -> int:

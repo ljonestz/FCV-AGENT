@@ -205,3 +205,15 @@ def test_unavailable_bank_records_are_never_injected() -> None:
     assert merged["state"] == "thematic-only"
     assert merged["prompt_context"] == ""
     assert merged["warning_code"] == "bank_content_expired"
+
+
+def test_candidate_preview_marker_survives_bounded_grounding() -> None:
+    import json
+
+    bank = _bank_packet()
+    bank["candidate_preview"] = True
+    merged = merge_climate_grounding(bank, {})
+
+    assert merged["candidate_preview"] is True
+    prompt = json.loads(merged["prompt_context"])
+    assert prompt["bank"]["candidate_preview"] is True
