@@ -83,6 +83,23 @@ def _is_explicit_negative(text: str) -> bool:
     return any(marker in normalized for marker in markers)
 
 
+def _looks_like_source_instruction(text: str) -> bool:
+    """Identify visible prompt-like directives that cannot be project facts."""
+
+    normalized = _normalized(text)
+    markers = (
+        "ignore the assessment",
+        "ignore previous instructions",
+        "ignore all instructions",
+        "follow these instructions",
+        "system prompt",
+        "assistant must",
+        "state that every recommendation",
+        "do not follow the assessment",
+    )
+    return any(marker in normalized for marker in markers)
+
+
 def match_supporting_excerpt(
     excerpt: str,
     block: SourceBlock,
@@ -125,7 +142,19 @@ def normalize_fact_registry(
             if claim.supporting_excerpt
         ]
 
-        if status is EpistemicStatus.CONFIRMED_ABSENCE:
+        if any(_looks_like_source_instruction(block.text) for block in resolved_blocks):
+            issues.append(
+                ValidationIssue(
+                    code="SOURCE_INSTRUCTION_NOT_FACT",
+                    message=(
+                        f"{claim.claim_id} cites instruction-like upload content "
+                        "that cannot establish a project fact."
+                    ),
+                    object_id=claim.claim_id,
+                    blocking=True,
+                )
+            )
+        elif status is EpistemicStatus.CONFIRMED_ABSENCE:
             explicit_negative = any(
                 match.automatically_usable
                 and _is_explicit_negative(claim.supporting_excerpt or "")
