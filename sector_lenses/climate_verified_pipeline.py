@@ -1,0 +1,660 @@
+"""Automatic, source-first orchestration for ``climate-verified-v2``.
+
+The module deliberately accepts only structured model outputs.  Each stage is
+normalized into the typed contracts, checked against stable IDs, and stripped
+of invalid dependent objects before the next stage can use it.
+"""
+
+from __future__ import annotations
+
+import hashlib
+import json
+import time
+from dataclasses import asdict, dataclass, replace
+from typing import Protocol
+
+from sector_lenses.climate_analysis import (
+    ClimatePathway,
+    ContextEvidenceRef,
+    ExistingResponse,
+    ResidualGap,
+    validate_analysis_registers,
+)
+from sector_lenses.climate_judgments import (
+    ClimateJudgments,
+    Judgment,
+    deterministic_summary,
+    validate_judgments,
+)
+from sector_lenses.climate_recommendations import (
+    CandidateRecommendation,
+    RecommendationScore,
+    ReviewReadinessFlag,
+    admit_and_rank,
+    admit_readiness_flags,
+    validate_recommendation,
+)
+from sector_lenses.climate_run_manifest import RunManifest, safe_log_summary
+from sector_lenses.climate_semantic_review import (
+    ReviewRisk,
+    semantic_review_required,
+)
+from sector_lenses.climate_source_blocks import SourceBlock, SourceDocument
+from sector_lenses.climate_truth import (
+    DerivedAssertion,
+    ProjectFactClaim,
+    normalize_fact_registry,
+    validate_derived_assertions,
+)
+from sector_lenses.climate_verified_contracts import (
+    CALL_BUDGETS,
+    CLIMATE_VERIFIED_SCHEMA_VERSION,
+    EpistemicStatus,
+)
+
+
+PROMPT_VERSIONS = {
+    "fact_extraction": "climate-facts-v2.0",
+    "bounded_analysis": "climate-analysis-v2.0",
+    "judgment_review": "climate-judgments-v2.0",
+    "recommendation_compiler": "climate-recommendations-v2.0",
+    "conditional_review": "climate-review-v2.0",
+}
+
+
+class JsonClient(Protocol):
+    def complete_json(
+        self,
+        *,
+        stage: str,
+        payload: dict[str, object],
+        timeout_seconds: int,
+        max_output_tokens: int,
+        max_transient_retries: int,
+    ) -> dict[str, object]: ...
+
+
+@dataclass(frozen=True)
+class PipelineClients:
+    assessment: JsonClient
+    reviewer: JsonClient
+
+
+def _mapping(value: object) -> dict[str, object]:
+    return value if isinstance(value, dict) else {}
+
+
+def _records(payload: dict[str, object], *names: str) -> list[dict[str, object]]:
+    for name in names:
+        value = payload.get(name)
+        if isinstance(value, list):
+            return [item for item in value if isinstance(item, dict)]
+    return []
+
+
+def _strings(value: object) -> tuple[str, ...]:
+    if not isinstance(value, (list, tuple)):
+        return ()
+    return tuple(str(item).strip() for item in value if str(item).strip())
+
+
+def _text(value: object, default: str = "") -> str:
+    cleaned = str(value or "").strip()
+    return cleaned or default
+
+
+def _as_record(value: object) -> dict[str, object]:
+    if hasattr(value, "__dataclass_fields__"):
+        return asdict(value)
+    return dict(value) if isinstance(value, dict) else {}
+
+
+def _call(
+    client: JsonClient,
+    stage: str,
+    payload: dict[str, object],
+    latency_ms: dict[str, int],
+) -> dict[str, object]:
+    budget = CALL_BUDGETS[stage]
+    started = time.monotonic()
+    result = client.complete_json(
+        stage=stage,
+        payload=payload,
+        timeout_seconds=budget.timeout_seconds,
+        max_output_tokens=budget.output_tokens,
+        max_transient_retries=1,
+    )
+    latency_ms[stage] = int((time.monotonic() - started) * 1000)
+    if not isinstance(result, dict):
+        raise ValueError(f"{stage} must return a JSON object")
+    return result
+
+
+def _fact(record: dict[str, object]) -> ProjectFactClaim:
+    return ProjectFactClaim(
+        claim_id=_text(record.get("claim_id")),
+        claim_type=_text(record.get("claim_type"), "unresolved"),
+        subject=_text(record.get("subject")),
+        predicate=_text(record.get("predicate")),
+        object_value=_text(record.get("object_value", record.get("object"))),
+        epistemic_status=_text(
+            record.get("epistemic_status", record.get("status")),
+            EpistemicStatus.NOT_FOUND.value,
+        ),
+        source_block_ids=_strings(record.get("source_block_ids")),
+        supporting_excerpt=(
+            _text(record.get("supporting_excerpt")) or None
+        ),
+        confidence=_text(record.get("confidence"), "low"),
+    )
+
+
+def _assertion(record: dict[str, object]) -> DerivedAssertion:
+    return DerivedAssertion(
+        assertion_id=_text(record.get("assertion_id")),
+        assertion_type=_text(record.get("assertion_type"), "analytical"),
+        statement=_text(record.get("statement")),
+        input_fact_ids=_strings(record.get("input_fact_ids")),
+        derivation_method=_text(record.get("derivation_method"), "semantic"),
+        explanation=_text(record.get("explanation")),
+        confidence=_text(record.get("confidence"), "low"),
+        validation_status=_text(record.get("validation_status"), "unreviewed"),
+    )
+
+
+def _response(record: dict[str, object]) -> ExistingResponse:
+    return ExistingResponse(
+        response_id=_text(record.get("response_id")),
+        project_fact_ids=_strings(record.get("project_fact_ids")),
+        pathway_ids=_strings(record.get("pathway_ids")),
+        description=_text(record.get("description")),
+        limitation=_text(record.get("limitation")),
+    )
+
+
+def _pathway(record: dict[str, object]) -> ClimatePathway:
+    return ClimatePathway(
+        pathway_id=_text(record.get("pathway_id")),
+        direction=_text(record.get("direction")),
+        chain=_strings(record.get("chain")),
+        project_anchor_ids=_strings(record.get("project_anchor_ids")),
+        evidence_ids=_strings(record.get("evidence_ids")),
+        confidence=_text(record.get("confidence"), "low"),
+    )
+
+
+def _gap(record: dict[str, object]) -> ResidualGap:
+    return ResidualGap(
+        gap_id=_text(record.get("gap_id")),
+        gap_type=_text(record.get("gap_type"), "evidence_gap"),
+        statement=_text(record.get("statement")),
+        pathway_ids=_strings(record.get("pathway_ids")),
+        project_anchor_ids=_strings(record.get("project_anchor_ids")),
+        existing_response_ids=_strings(record.get("existing_response_ids")),
+        evidence_ids=_strings(record.get("evidence_ids")),
+        confidence=_text(record.get("confidence"), "low"),
+    )
+
+
+def _judgment(record: object, fallback: str) -> Judgment:
+    item = _mapping(record)
+    return Judgment(
+        value=_text(item.get("value"), fallback),
+        evidence_ids=_strings(item.get("evidence_ids")),
+        rationale=_text(item.get("rationale"), "Evidence remains insufficient."),
+    )
+
+
+def _judgments(payload: dict[str, object]) -> ClimateJudgments:
+    source = _mapping(payload.get("judgments")) or payload
+    return ClimateJudgments(
+        relevance=_judgment(source.get("relevance"), "unclear"),
+        sensitivity=_judgment(source.get("sensitivity"), "unclear"),
+        responsiveness=_judgment(source.get("responsiveness"), "unclear"),
+        operationalization=_judgment(
+            source.get("operationalization"), "unclear"
+        ),
+    )
+
+
+def _score(record: object) -> RecommendationScore:
+    item = _mapping(record)
+    return RecommendationScore(
+        materiality=int(item.get("materiality") or 0),
+        gap_strength=int(item.get("gap_strength") or 0),
+        leverage_urgency=int(item.get("leverage_urgency") or 0),
+        evidence=int(item.get("evidence") or 0),
+        feasibility=int(item.get("feasibility") or 0),
+    )
+
+
+def _candidate(record: dict[str, object]) -> CandidateRecommendation:
+    return CandidateRecommendation(
+        recommendation_id=_text(record.get("recommendation_id")),
+        title=_text(record.get("title")),
+        pathway_ids=_strings(record.get("pathway_ids")),
+        existing_response_ids=_strings(record.get("existing_response_ids")),
+        residual_gap_ids=_strings(record.get("residual_gap_ids")),
+        project_anchor_ids=_strings(record.get("project_anchor_ids")),
+        decision=_text(record.get("decision")),
+        minimum_action=_text(record.get("minimum_action")),
+        enhanced_action=_text(record.get("enhanced_action")) or None,
+        enhanced_activation=_text(record.get("enhanced_activation")) or None,
+        routing_status=_text(record.get("routing_status"), "team_to_confirm"),
+        instrument_claim_ids=_strings(record.get("instrument_claim_ids")),
+        responsible_function=_text(
+            record.get("responsible_function"), "Task team to confirm"
+        ),
+        authority_basis=_text(record.get("authority_basis"), "none_verified"),
+        recommendation_basis=_text(
+            record.get("recommendation_basis"), "analytical_judgment"
+        ),
+        completion_evidence=_text(
+            record.get("completion_evidence"), "Task team to define"
+        ),
+        completion_evidence_status=_text(
+            record.get("completion_evidence_status"), "team_to_define"
+        ),
+        confidence=_text(record.get("confidence"), "low"),
+        limitation=_text(record.get("limitation")),
+        caution=_text(record.get("caution")),
+        drafting_language=_text(record.get("drafting_language")) or None,
+        score=_score(record.get("score")),
+        gate_results={
+            str(key): bool(value)
+            for key, value in _mapping(record.get("gate_results")).items()
+        },
+        supported_numeric_tokens=_strings(record.get("supported_numeric_tokens")),
+    )
+
+
+def _readiness_flag(record: dict[str, object]) -> ReviewReadinessFlag:
+    return ReviewReadinessFlag(
+        flag_id=_text(record.get("flag_id")),
+        category=_text(record.get("category")),
+        flag=_text(record.get("flag")),
+        why_it_matters=_text(record.get("why_it_matters")),
+        document_basis_ids=_strings(record.get("document_basis_ids")),
+        suggested_verification=_text(record.get("suggested_verification")),
+    )
+
+
+def _bounded_pathways(
+    pathways: list[ClimatePathway],
+) -> tuple[list[ClimatePathway], int]:
+    kept: list[ClimatePathway] = []
+    counts: dict[str, int] = {}
+    for pathway in pathways:
+        count = counts.get(pathway.direction, 0)
+        if count >= 3:
+            continue
+        kept.append(pathway)
+        counts[pathway.direction] = count + 1
+    return kept, len(pathways) - len(kept)
+
+
+def _validate_analysis(
+    responses: list[ExistingResponse],
+    pathways: list[ClimatePathway],
+    gaps: list[ResidualGap],
+    known_fact_ids: set[str],
+    known_context_ids: set[str],
+    confirmed_absences: set[str],
+) -> tuple[list[ExistingResponse], list[ClimatePathway], list[ResidualGap], list[str]]:
+    reasons: list[str] = []
+    for _ in range(4):
+        issues = validate_analysis_registers(
+            responses,
+            pathways,
+            gaps,
+            known_fact_ids,
+            known_context_ids,
+            confirmed_absences,
+        )
+        if not issues:
+            break
+        reasons.extend(issue.code for issue in issues)
+        invalid = {issue.object_id for issue in issues if issue.blocking}
+        next_responses = [item for item in responses if item.response_id not in invalid]
+        next_pathways = [item for item in pathways if item.pathway_id not in invalid]
+        next_gaps = [item for item in gaps if item.gap_id not in invalid]
+        if (next_responses, next_pathways, next_gaps) == (
+            responses,
+            pathways,
+            gaps,
+        ):
+            break
+        responses, pathways, gaps = next_responses, next_pathways, next_gaps
+    return responses, pathways, gaps, reasons
+
+
+def _risk(candidates: tuple[CandidateRecommendation, ...]) -> ReviewRisk:
+    drafting = any(item.drafting_language for item in candidates)
+    mandatory = any(
+        any(
+            word in (item.drafting_language or "").casefold().split()
+            for word in ("must", "shall", "required", "mandatory")
+        )
+        for item in candidates
+    )
+    return ReviewRisk(
+        mandatory_language=mandatory,
+        drafting_language=drafting,
+        verified_scope_change=any(
+            item.routing_status == "verified_with_scope_change"
+            for item in candidates
+        ),
+        unresolved_routing=any(
+            item.routing_status in {"team_to_confirm", "new_vehicle_may_be_needed"}
+            for item in candidates
+        ),
+        high_materiality_moderate_evidence=any(
+            item.score.materiality >= 3 and item.score.evidence <= 1
+            for item in candidates
+        ),
+    )
+
+
+def _applicability_fingerprint(documents: list[SourceDocument]) -> str:
+    data = [
+        {
+            "id": item.document_id,
+            "applicability": item.applicability.value,
+            "relationship": item.relationship,
+            "version": item.version_status,
+        }
+        for item in documents
+    ]
+    encoded = json.dumps(data, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
+
+
+def run_verified_climate_pipeline(
+    *,
+    source_documents: list[SourceDocument],
+    source_blocks: list[SourceBlock],
+    context_evidence: list[ContextEvidenceRef],
+    clients: PipelineClients,
+    bank_release_id: str | None,
+    run_id: str,
+) -> dict[str, object]:
+    """Run the automatic pipeline and return only validated reader objects."""
+    latency_ms: dict[str, int] = {}
+    reasons: list[str] = []
+    repairs: list[str] = []
+    suppressed = {
+        "facts": 0,
+        "derived_assertions": 0,
+        "responses": 0,
+        "pathways": 0,
+        "gaps": 0,
+        "recommendations": 0,
+        "readiness_flags": 0,
+    }
+    document_records = [_as_record(item) for item in source_documents]
+    block_records = [_as_record(item) for item in source_blocks]
+    context_records = [_as_record(item) for item in context_evidence]
+
+    fact_payload = _call(
+        clients.assessment,
+        "fact_extraction",
+        {"documents": document_records, "source_blocks": block_records},
+        latency_ms,
+    )
+    raw_facts = _records(fact_payload, "facts", "project_fact_registry")
+    facts: list[ProjectFactClaim] = []
+    for record in raw_facts:
+        try:
+            facts.append(_fact(record))
+        except (TypeError, ValueError):
+            suppressed["facts"] += 1
+            reasons.append("FACT_MALFORMED")
+    fact_result = normalize_fact_registry(facts, source_blocks)
+    reasons.extend(issue.code for issue in fact_result.blocking_issues)
+    invalid_fact_ids = {
+        issue.object_id for issue in fact_result.blocking_issues if issue.blocking
+    }
+    facts = [item for item in facts if item.claim_id not in invalid_fact_ids]
+    suppressed["facts"] += len(invalid_fact_ids)
+
+    raw_assertions = _records(
+        fact_payload, "derived_assertions", "derived_assertion_register"
+    )
+    assertions: list[DerivedAssertion] = []
+    for record in raw_assertions:
+        try:
+            assertions.append(_assertion(record))
+        except (TypeError, ValueError):
+            suppressed["derived_assertions"] += 1
+            reasons.append("DERIVATION_MALFORMED")
+    assertion_issues = validate_derived_assertions(
+        assertions, {item.claim_id for item in facts}
+    )
+    reasons.extend(issue.code for issue in assertion_issues)
+    invalid_assertions = {
+        issue.object_id for issue in assertion_issues if issue.blocking
+    }
+    assertions = [
+        item for item in assertions if item.assertion_id not in invalid_assertions
+    ]
+    suppressed["derived_assertions"] += len(invalid_assertions)
+
+    analysis_payload = _call(
+        clients.assessment,
+        "bounded_analysis",
+        {
+            "facts": [asdict(item) for item in facts],
+            "derived_assertions": [asdict(item) for item in assertions],
+            "context_evidence": context_records,
+        },
+        latency_ms,
+    )
+    responses = [
+        _response(item)
+        for item in _records(
+            analysis_payload, "existing_responses", "existing_response_register"
+        )
+    ]
+    pathways = [
+        _pathway(item)
+        for item in _records(
+            analysis_payload, "pathways", "climate_fcv_pathway_register"
+        )
+    ]
+    gaps = [
+        _gap(item)
+        for item in _records(
+            analysis_payload, "residual_gaps", "residual_gap_register"
+        )
+    ]
+    pathways, pathway_overflow = _bounded_pathways(pathways)
+    if pathway_overflow:
+        suppressed["pathways"] += pathway_overflow
+        reasons.append("PATHWAY_LIMIT_EXCEEDED")
+    if len(gaps) > 8:
+        suppressed["gaps"] += len(gaps) - 8
+        gaps = gaps[:8]
+        reasons.append("GAP_LIMIT_EXCEEDED")
+    original_counts = (len(responses), len(pathways), len(gaps))
+    fact_ids = {item.claim_id for item in facts}
+    confirmed_absences = {
+        item.claim_id
+        for item in facts
+        if item.epistemic_status == EpistemicStatus.CONFIRMED_ABSENCE.value
+    }
+    responses, pathways, gaps, analysis_reasons = _validate_analysis(
+        responses,
+        pathways,
+        gaps,
+        fact_ids,
+        {item.evidence_id for item in context_evidence},
+        confirmed_absences,
+    )
+    reasons.extend(analysis_reasons)
+    suppressed["responses"] += original_counts[0] - len(responses)
+    suppressed["pathways"] += original_counts[1] - len(pathways)
+    suppressed["gaps"] += original_counts[2] - len(gaps)
+    analysis_record = {
+        "existing_responses": [asdict(item) for item in responses],
+        "pathways": [asdict(item) for item in pathways],
+        "residual_gaps": [asdict(item) for item in gaps],
+        "opportunities_and_unintended_consequences": analysis_payload.get(
+            "opportunities_and_unintended_consequences", []
+        ),
+        "evidence_limitations": analysis_payload.get("evidence_limitations", []),
+    }
+
+    judgment_payload = _call(
+        clients.assessment,
+        "judgment_review",
+        {
+            "facts": [asdict(item) for item in facts],
+            "analysis": analysis_record,
+        },
+        latency_ms,
+    )
+    judgments = _judgments(judgment_payload)
+    known_ids = (
+        fact_ids
+        | {item.assertion_id for item in assertions}
+        | {item.response_id for item in responses}
+        | {item.pathway_id for item in pathways}
+        | {item.gap_id for item in gaps}
+        | {item.evidence_id for item in context_evidence}
+    )
+    judgment_issues = validate_judgments(judgments, known_ids)
+    if judgment_issues:
+        reasons.extend(issue.code for issue in judgment_issues)
+        for dimension in {
+            issue.object_id for issue in judgment_issues if issue.object_id
+        }:
+            judgments = replace(
+                judgments,
+                **{
+                    dimension: Judgment(
+                        value="unclear",
+                        evidence_ids=(),
+                        rationale="Automated checks found insufficient support.",
+                    )
+                },
+            )
+            repairs.append(f"normalize_{dimension}_to_unclear")
+
+    recommendation_payload = _call(
+        clients.assessment,
+        "recommendation_compiler",
+        {
+            "facts": [asdict(item) for item in facts],
+            "analysis": analysis_record,
+            "judgments": asdict(judgments),
+        },
+        latency_ms,
+    )
+    raw_candidates = _records(
+        recommendation_payload,
+        "recommendation_candidates",
+        "priorities",
+    )
+    candidates: list[CandidateRecommendation] = []
+    for record in raw_candidates:
+        try:
+            candidate = _candidate(record)
+        except (TypeError, ValueError):
+            suppressed["recommendations"] += 1
+            reasons.append("RECOMMENDATION_MALFORMED")
+            continue
+        issues = validate_recommendation(candidate, known_ids)
+        if issues:
+            suppressed["recommendations"] += 1
+            reasons.extend(issue.code for issue in issues)
+            continue
+        candidates.append(candidate)
+    priorities = admit_and_rank(candidates)
+    suppressed["recommendations"] += len(candidates) - len(priorities)
+
+    raw_flags = _records(recommendation_payload, "readiness_flags")
+    flags: list[ReviewReadinessFlag] = []
+    for record in raw_flags:
+        try:
+            flags.append(_readiness_flag(record))
+        except (TypeError, ValueError):
+            reasons.append("READINESS_FLAG_MALFORMED")
+    readiness = admit_readiness_flags(
+        flags,
+        fact_ids,
+        {item.statement for item in gaps},
+    )
+    suppressed["readiness_flags"] += len(raw_flags) - len(readiness)
+
+    review_status = "passed"
+    if priorities and semantic_review_required(_risk(priorities)):
+        review = _call(
+            clients.reviewer,
+            "conditional_review",
+            {
+                "source_blocks": block_records,
+                "facts": [asdict(item) for item in facts],
+                "analysis": analysis_record,
+                "judgments": asdict(judgments),
+                "recommendations": [asdict(item) for item in priorities],
+            },
+            latency_ms,
+        )
+        verdict = _text(review.get("verdict"), "block").casefold()
+        reasons.extend(_strings(review.get("reason_codes")))
+        if verdict != "pass":
+            suppressed["recommendations"] += len(priorities)
+            priorities = ()
+            review_status = "attention"
+
+    unique_reasons = tuple(dict.fromkeys(reasons))
+    if unique_reasons and review_status == "passed":
+        review_status = "attention"
+    applicability = _applicability_fingerprint(source_documents)
+    manifest = RunManifest(
+        run_id=run_id,
+        schema_version=CLIMATE_VERIFIED_SCHEMA_VERSION,
+        prompt_versions=PROMPT_VERSIONS,
+        reviewer_version="climate-review-v2.0",
+        extraction_version="source-blocks-v2.0",
+        normalization_version="climate-normalization-v2.0",
+        renderer_version="climate-reader-v2.0",
+        model_aliases={"assessment": "configured", "reviewer": "configured"},
+        sampling={"temperature": 0, "max_transient_retries": 1},
+        source_fingerprints=tuple(item.sha256 for item in source_documents),
+        applicability_fingerprint=applicability,
+        bank_release_id=bank_release_id,
+        live_research_timestamps=tuple(
+            item.source_ref.rsplit("retrieved=", 1)[-1]
+            for item in context_evidence
+            if item.source_ref.startswith("live:") and "retrieved=" in item.source_ref
+        ),
+        validation_reason_codes=unique_reasons,
+        repair_actions=tuple(repairs),
+        suppressed_counts=suppressed,
+        latency_ms=latency_ms,
+        token_usage={},
+        cache_state={"scope": "assessment", "status": "not_shared"},
+    )
+    preview = any(
+        item.preview_status == "preview; not approved"
+        for item in context_evidence
+    )
+    return {
+        "schema_version": CLIMATE_VERIFIED_SCHEMA_VERSION,
+        "run_id": run_id,
+        "bank_release_id": bank_release_id,
+        "evidence_status": "preview; not approved" if preview else "approved",
+        "facts": [asdict(item) for item in facts],
+        "derived_assertions": [asdict(item) for item in assertions],
+        "analysis": analysis_record,
+        "judgments": asdict(judgments),
+        "judgment_summary": deterministic_summary(judgments),
+        "priorities": [asdict(item) for item in priorities],
+        "review_readiness_flags": [asdict(item) for item in readiness],
+        "validation": {
+            "status": review_status,
+            "reason_codes": list(unique_reasons),
+        },
+        "manifest": safe_log_summary(manifest),
+    }
