@@ -12,6 +12,7 @@ from sector_lenses import (
     lens_catalogue,
     load_registry,
     merge_lens_findings,
+    normalize_climate_assessment,
     normalize_lens_diagnostic,
     normalize_priority_climate_links,
     strip_lens_blocks,
@@ -904,3 +905,44 @@ def test_non_climate_error_envelope_retains_legacy_normalization():
 
     assert normalized == legacy
     assert normalized["error"] is False
+
+
+def test_v1_climate_assessment_remains_readable_but_unverified():
+    result = normalize_climate_assessment({
+        "schema_version": "climate-native-v1",
+        "integration_rating": "Low",
+        "priorities": [],
+    })
+
+    assert result["verification_status"] == "legacy_unverified"
+    assert result["legacy"] is True
+    assert result["integration_rating"] == "Low"
+    assert "judgments" not in result
+
+
+def test_v2_climate_assessment_preserves_four_judgments():
+    result = normalize_climate_assessment({
+        "schema_version": "climate-verified-v2",
+        "judgments": {
+            "relevance": {"value": "high"},
+            "sensitivity": {"value": "moderate"},
+            "responsiveness": {"value": "emerging"},
+            "operationalization": {"value": "partial"},
+        },
+        "validation": {"status": "passed"},
+        "priorities": [],
+    })
+
+    assert result["verification_status"] == "automated_checks_passed"
+    assert result["legacy"] is False
+    assert result["judgments"]["operationalization"]["value"] == "partial"
+
+
+def test_v2_attention_is_not_mislabelled_as_passed():
+    result = normalize_climate_assessment({
+        "schema_version": "climate-verified-v2",
+        "validation": {"status": "attention"},
+        "priorities": [],
+    })
+
+    assert result["verification_status"] == "automated_checks_attention"

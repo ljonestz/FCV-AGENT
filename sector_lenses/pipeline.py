@@ -12,6 +12,7 @@ import climate_question_bank
 from .climate_native import (
     CLIMATE_NATIVE_SCHEMA_VERSION,
     CLIMATE_REQUIRED_DIRECTIONS,
+    adapt_legacy_climate_payload,
 )
 from .models import LensActivationMode, LensRegistry
 
@@ -99,6 +100,29 @@ def _list_values(value: Any) -> list[Any]:
     """Return model-provided collection values without iterating scalars."""
 
     return list(value) if isinstance(value, (list, tuple)) else []
+
+
+def normalize_climate_assessment(
+    payload: dict[str, object],
+) -> dict[str, object]:
+    """Dispatch stored Climate assessments without inventing v2 dimensions."""
+
+    if payload.get("schema_version") == "climate-verified-v2":
+        result = dict(payload)
+        validation = result.get("validation")
+        status = (
+            validation.get("status")
+            if isinstance(validation, dict)
+            else ""
+        )
+        result["verification_status"] = (
+            "automated_checks_passed"
+            if status == "passed"
+            else "automated_checks_attention"
+        )
+        result["legacy"] = False
+        return result
+    return adapt_legacy_climate_payload(payload)
 
 
 def _bounded_strings(value: Any, limit: int, length: int) -> list[str]:

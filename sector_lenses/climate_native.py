@@ -41,6 +41,22 @@ _CLIMATE_CONTEXT_FIELDS = (
 )
 
 
+def adapt_legacy_climate_payload(
+    payload: dict[str, object],
+) -> dict[str, object]:
+    """Keep v1 output readable without implying source-level verification."""
+
+    result = dict(payload)
+    result["schema_version"] = CLIMATE_NATIVE_SCHEMA_VERSION
+    result["verification_status"] = "legacy_unverified"
+    result["legacy"] = True
+    result["legacy_notice"] = (
+        "Generated under the earlier method; source-level verification "
+        "was not applied."
+    )
+    return result
+
+
 def _climate_lens(payload: Any) -> dict[str, Any] | None:
     if not isinstance(payload, dict):
         return None

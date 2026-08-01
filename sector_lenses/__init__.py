@@ -9,8 +9,20 @@ from .climate_native import (
     build_climate_stage3_prompt,
     climate_missing_fields,
     merge_climate_repair,
+    adapt_legacy_climate_payload,
 )
 from .composer import build_stage_slice, estimate_tokens, resolve_active_lenses
+from .climate_context_adapter import adapt_grounding_evidence
+from .climate_verified_pipeline import (
+    PipelineClients,
+    run_verified_climate_pipeline,
+)
+from .climate_verified_render import (
+    build_reader_model,
+    render_reader_html,
+    validate_reader_model,
+    write_reader_docx,
+)
 from .climate_bank_selector import (
     CLIMATE_BANK_MAX_CHARS,
     CLIMATE_BANK_MAX_ITEMS,
@@ -79,6 +91,7 @@ from .pipeline import (
     extract_lens_evidence,
     lens_catalogue,
     merge_lens_findings,
+    normalize_climate_assessment,
     normalize_lens_diagnostic,
     normalize_priority_climate_links,
     strip_lens_blocks,
@@ -109,6 +122,14 @@ __all__ = [
     "CCDR_CONTEXT_START",
     "CCDR_RESEARCH_INSTRUCTIONS",
     "CLIMATE_NATIVE_SCHEMA_VERSION",
+    "PipelineClients",
+    "adapt_grounding_evidence",
+    "adapt_legacy_climate_payload",
+    "run_verified_climate_pipeline",
+    "build_reader_model",
+    "render_reader_html",
+    "validate_reader_model",
+    "write_reader_docx",
     "build_climate_stage2_prompt",
     "build_climate_stage3_prompt",
     "CLIMATE_REQUIRED_DIRECTIONS",
@@ -152,6 +173,7 @@ __all__ = [
     "merge_climate_repair",
     "merge_climate_grounding",
     "merge_lens_findings",
+    "normalize_climate_assessment",
     "normalize_lens_diagnostic",
     "normalize_priority_climate_links",
     "resolve_active_lenses",
