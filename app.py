@@ -20,6 +20,17 @@ from sector_lenses.climate_native import (
     climate_missing_fields,
     merge_climate_repair,
 )
+from sector_lenses.climate_verified_client import AnthropicVerifiedJsonClient
+from sector_lenses.climate_verified_pipeline import PipelineClients
+from sector_lenses.climate_verified_runtime import (
+    run_verified_from_doc_parts,
+)
+from sector_lenses.climate_verified_render import (
+    build_reader_model,
+    validate_reader_model,
+    write_reader_docx,
+)
+from sector_lenses.pipeline import normalize_climate_assessment
 from sector_lenses import (
     CCDR_RESEARCH_INSTRUCTIONS,
     build_climate_evidence_packet,
@@ -914,6 +925,85 @@ def climate_active(state: AnalysisState) -> bool:
     """Return whether the resolved analysis state selects Climate-FCV."""
     return "climate" in (getattr(state, "active_lenses", None) or [])
 
+
+def _is_verified_climate_express(
+    state: AnalysisState,
+    is_implementation_review: bool,
+) -> bool:
+    """Use v2 only for the isolated Climate-only design-review route."""
+    active = {
+        str(item).strip()
+        for item in (getattr(state, "active_lenses", None) or [])
+        if str(item).strip()
+    }
+    return not is_implementation_review and active == {"climate"}
+
+
+def _build_verified_pipeline_clients() -> PipelineClients:
+    """Build strict JSON adapters; the verified orchestrator owns retries."""
+    return PipelineClients(
+        assessment=AnthropicVerifiedJsonClient(
+            get_client(),
+            model="claude-sonnet-4-6",
+            is_transient=_is_transient_stream_error,
+        ),
+        reviewer=AnthropicVerifiedJsonClient(
+            get_lens_recovery_client(),
+            model="claude-sonnet-4-6",
+            is_transient=_is_transient_stream_error,
+        ),
+    )
+
+
+def _iter_verified_climate_assessment(
+    *,
+    doc_parts,
+    climate_grounding,
+    clients,
+    run_id,
+    keepalive_interval=STREAM_KEEPALIVE_SECONDS,
+    maximum_wait_seconds=14 * 60,
+):
+    """Run verified-v2 with keepalives and a bounded paid-call lifetime."""
+    result_queue = queue.Queue()
+    cancel_event = threading.Event()
+    deadline = time.monotonic() + maximum_wait_seconds
+
+    def _run():
+        try:
+            result_queue.put(("result", run_verified_from_doc_parts(
+                doc_parts=doc_parts,
+                climate_grounding=climate_grounding,
+                clients=clients,
+                run_id=run_id,
+                cancel_event=cancel_event,
+                wall_clock_seconds=maximum_wait_seconds,
+            )))
+        except Exception as exc:
+            result_queue.put(("error", exc))
+
+    threading.Thread(target=_run, daemon=True).start()
+    try:
+        while True:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise TimeoutError(
+                    "Verified Climate-FCV assessment exceeded 14 minutes."
+                )
+            try:
+                kind, value = result_queue.get(
+                    timeout=min(keepalive_interval, remaining)
+                )
+            except queue.Empty:
+                yield {"keepalive": True, "stage": 2,
+                       "verified_stage": "automatic_validation"}
+                continue
+            if kind == "error":
+                raise value
+            yield {"result": value}
+            return
+    finally:
+        cancel_event.set()
 
 def climate_blocking_failure_event(
     code: str,
@@ -9635,6 +9725,114 @@ def run_express():
                 if _research_phase_ok:
                     yield f"data: {json.dumps({'research_status': 'complete', 'country': research_country, 'brief': research_brief_text, 'climate_research': climate_research, 'climate_grounding': climate_grounding_envelope(climate_grounding)})}\n\n"
 
+                # Climate-only design reviews use the source-first verified
+                # pipeline. The final country-bank packet remains contextual;
+                # it is never mixed into the project-fact source blocks.
+                if _is_verified_climate_express(analysis_state, is_impl):
+                    stage1_output = (
+                        "Project documents inventoried for verified Climate-FCV "
+                        "analysis. Context evidence will be assessed separately."
+                    )
+                    yield "data: " + json.dumps({
+                        'stage_done': 1,
+                        'result': stage1_output,
+                        'history': [],
+                        'research_brief': research_brief_text,
+                        'research_country': research_country,
+                        'climate_research': climate_research,
+                        'climate_grounding': climate_grounding_envelope(climate_grounding),
+                        'doc_type': doc_type,
+                        'instrument_type': instrument_type,
+                        'review_mode': review_mode,
+                        'active_lenses': lens_context_s1['active_lenses'],
+                        'lens_warnings': lens_context_s1['warnings'],
+                        'lens_context_sources': lens_context_sources,
+                    }) + "\n\n"
+
+                    yield f"data: {json.dumps({'stage_start': 2})}\n\n"
+                    verified_bundle = None
+                    for verified_event in _iter_verified_climate_assessment(
+                        doc_parts=doc_parts,
+                        climate_grounding=climate_grounding,
+                        clients=_build_verified_pipeline_clients(),
+                        run_id=assessment_id,
+                    ):
+                        if 'result' not in verified_event:
+                            yield f"data: {json.dumps(verified_event)}\n\n"
+                            continue
+                        verified_bundle = verified_event['result']
+                    if not isinstance(verified_bundle, dict):
+                        raise RuntimeError(
+                            "Verified Climate-FCV assessment returned no result."
+                        )
+
+                    verified_assessment = verified_bundle['assessment']
+                    verified_reader = verified_bundle['reader']
+                    verified_judgments = verified_assessment.get('judgments', {})
+                    sensitivity = verified_judgments.get(
+                        'sensitivity', {}
+                    ).get('value', '')
+                    responsiveness = verified_judgments.get(
+                        'responsiveness', {}
+                    ).get('value', '')
+                    executive = verified_reader.get('executive_readout', '')
+                    source_warnings = [
+                        {'message': code.replace('_', ' ').title()}
+                        for code in verified_bundle.get('source_warnings', [])
+                    ]
+                    stage2_output = executive or "Verified assessment complete."
+                    verified_history = [
+                        {
+                            'role': 'user',
+                            'content': (
+                                'Use the completed verified Climate-FCV assessment '
+                                'as the controlling basis for any follow-on response.'
+                            ),
+                        },
+                        {
+                            'role': 'assistant',
+                            'content': (
+                                'Verified Climate-FCV assessment (structured JSON):\n'
+                                + json.dumps(
+                                    verified_reader,
+                                    ensure_ascii=False,
+                                    separators=(',', ':'),
+                                )
+                            ),
+                        },
+                    ]
+                    yield "data: " + json.dumps({
+                        'stage_done': 2,
+                        'result': stage2_output,
+                        'display_text': stage2_output,
+                        'history': verified_history,
+                        'sensitivity_rating': sensitivity,
+                        'responsiveness_rating': responsiveness,
+                        'under_hood': {},
+                        'lens_diagnostic': {},
+                        'active_lenses': lens_context_s1['active_lenses'],
+                        'lens_warnings': source_warnings,
+                        'parse_error': False,
+                        'climate_integration': None,
+                        'climate_grounding': climate_grounding_envelope(climate_grounding),
+                        'climate_assessment': verified_assessment,
+                        'climate_reader': verified_reader,
+                    }) + "\n\n"
+
+                    yield f"data: {json.dumps({'stage_start': 3})}\n\n"
+                    yield "data: " + json.dumps({
+                        'stage_done': 3,
+                        'result': executive,
+                        'history': verified_history,
+                        'priorities': [],
+                        'active_lenses': lens_context_s1['active_lenses'],
+                        'lens_warnings': source_warnings,
+                        'climate_assessment': verified_assessment,
+                        'climate_reader': verified_reader,
+                    }) + "\n\n"
+                    yield f"data: {json.dumps({'express_done': True})}\n\n"
+                    return
+
                 # ── Assemble Stage 1 content_parts ──
                 content_parts = []
                 context_sep_added = False
@@ -11059,6 +11257,36 @@ def download_report():
     import io
 
     data = request.get_json(force=True)
+    verified_raw = data.get('climate_assessment') or {}
+    if (
+        isinstance(verified_raw, dict)
+        and verified_raw.get('schema_version') == 'climate-verified-v2'
+    ):
+        verified = normalize_climate_assessment(verified_raw)
+        reader_model = build_reader_model(verified)
+        reader_issues = validate_reader_model(reader_model)
+        if reader_issues:
+            return jsonify({
+                'error': 'Verified Climate-FCV report failed integrity checks.',
+                'reason_codes': list(reader_issues),
+            }), 422
+        verified_buf = io.BytesIO()
+        write_reader_docx(reader_model, verified_buf)
+        verified_buf.seek(0)
+        from flask import send_file
+        return send_file(
+            verified_buf,
+            mimetype=(
+                'application/vnd.openxmlformats-officedocument.'
+                'wordprocessingml.document'
+            ),
+            as_attachment=True,
+            download_name=(
+                'Climate-FCV-Verified-Assessment-'
+                + date.today().strftime('%Y-%m-%d')
+                + '.docx'
+            ),
+        )
     summary = data.get('summary', '')
     priorities = data.get('priorities', [])
     sensitivity_summary = data.get('sensitivity_summary', '')

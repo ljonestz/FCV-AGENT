@@ -271,6 +271,8 @@ def _research_result(bundle, manifest=None):
 def test_climate_research_failure_continues_with_bank(
     monkeypatch, endpoint, caplog,
 ):
+    # Exercise the retained legacy Climate path; exact Climate-only Express uses v2.
+    monkeypatch.setattr(app_module, "_is_verified_climate_express", lambda *_args: False)
     caplog.set_level("INFO")
     manifest = {
         "bank_status": "ok",
@@ -635,6 +637,8 @@ def test_standard_climate_stage2_uses_native_prompt_and_canonical_output(
 
 
 def test_express_climate_stage2_uses_native_prompt_and_canonical_output(monkeypatch):
+    # Exercise the retained legacy Climate path; exact Climate-only Express uses v2.
+    monkeypatch.setattr(app_module, "_is_verified_climate_express", lambda *_args: False)
     payload = _canonical_payload()
     raw_model_output = "%%%LENS_DIAGNOSTIC_START%%%" + json.dumps(payload) + "%%%LENS_DIAGNOSTIC_END%%%"
     calls = []
@@ -877,6 +881,8 @@ def test_recovery_emits_keepalive_before_slow_result():
 
 @pytest.mark.parametrize("endpoint", ["/api/run-stage", "/api/run-express"])
 def test_climate_recovery_failure_blocks_both_workflows(monkeypatch, endpoint):
+    # Exercise the retained legacy Climate path; exact Climate-only Express uses v2.
+    monkeypatch.setattr(app_module, "_is_verified_climate_express", lambda *_args: False)
     model_stages = []
 
     def fake_stream(messages, max_tokens, stage, **kwargs):
@@ -1137,6 +1143,8 @@ def test_standard_climate_stage3_branches_before_generic_prompt_and_compacts_his
 
 
 def test_express_climate_stage3_branches_before_generic_prompt_and_compacts_history(monkeypatch):
+    # Exercise the retained legacy Climate path; exact Climate-only Express uses v2.
+    monkeypatch.setattr(app_module, "_is_verified_climate_express", lambda *_args: False)
     calls = []
     stage3_output = [_climate_priority_output()]
     express_diagnostic = json.loads(json.dumps(_canonical_payload()))

@@ -114,17 +114,32 @@ def _call(
     stage: str,
     payload: dict[str, object],
     latency_ms: dict[str, int],
+    *,
+    cancel_event: object | None = None,
+    deadline: float | None = None,
 ) -> dict[str, object]:
+    cancelled = getattr(cancel_event, "is_set", lambda: False)
+    if cancelled():
+        raise RuntimeError("Verified Climate-FCV pipeline cancelled")
     budget = CALL_BUDGETS[stage]
+    remaining = (
+        budget.timeout_seconds
+        if deadline is None
+        else min(budget.timeout_seconds, int(deadline - time.monotonic()))
+    )
+    if remaining < 1:
+        raise TimeoutError("Verified Climate-FCV pipeline exceeded its wall-clock limit")
     started = time.monotonic()
     result = client.complete_json(
         stage=stage,
         payload=payload,
-        timeout_seconds=budget.timeout_seconds,
+        timeout_seconds=remaining,
         max_output_tokens=budget.output_tokens,
         max_transient_retries=1,
     )
     latency_ms[stage] = int((time.monotonic() - started) * 1000)
+    if cancelled():
+        raise RuntimeError("Verified Climate-FCV pipeline cancelled")
     if not isinstance(result, dict):
         raise ValueError(f"{stage} must return a JSON object")
     return result
@@ -377,8 +392,13 @@ def run_verified_climate_pipeline(
     clients: PipelineClients,
     bank_release_id: str | None,
     run_id: str,
+    cancel_event: object | None = None,
+    wall_clock_seconds: int = 14 * 60,
 ) -> dict[str, object]:
     """Run the automatic pipeline and return only validated reader objects."""
+    if wall_clock_seconds < 1:
+        raise ValueError("wall_clock_seconds must be positive")
+    deadline = time.monotonic() + wall_clock_seconds
     latency_ms: dict[str, int] = {}
     reasons: list[str] = []
     repairs: list[str] = []
@@ -400,6 +420,8 @@ def run_verified_climate_pipeline(
         "fact_extraction",
         {"documents": document_records, "source_blocks": block_records},
         latency_ms,
+        cancel_event=cancel_event,
+        deadline=deadline,
     )
     raw_facts = _records(fact_payload, "facts", "project_fact_registry")
     facts: list[ProjectFactClaim] = []
@@ -448,6 +470,8 @@ def run_verified_climate_pipeline(
             "context_evidence": context_records,
         },
         latency_ms,
+        cancel_event=cancel_event,
+        deadline=deadline,
     )
     responses = [
         _response(item)
@@ -512,8 +536,11 @@ def run_verified_climate_pipeline(
             "analysis": analysis_record,
         },
         latency_ms,
+        cancel_event=cancel_event,
+        deadline=deadline,
     )
     judgments = _judgments(judgment_payload)
+    executive_readout = _text(judgment_payload.get("executive_readout"))
     known_ids = (
         fact_ids
         | {item.assertion_id for item in assertions}
@@ -549,6 +576,8 @@ def run_verified_climate_pipeline(
             "judgments": asdict(judgments),
         },
         latency_ms,
+        cancel_event=cancel_event,
+        deadline=deadline,
     )
     raw_candidates = _records(
         recommendation_payload,
@@ -599,6 +628,8 @@ def run_verified_climate_pipeline(
                 "recommendations": [asdict(item) for item in priorities],
             },
             latency_ms,
+            cancel_event=cancel_event,
+            deadline=deadline,
         )
         verdict = _text(review.get("verdict"), "block").casefold()
         reasons.extend(_strings(review.get("reason_codes")))
@@ -650,6 +681,9 @@ def run_verified_climate_pipeline(
         "analysis": analysis_record,
         "judgments": asdict(judgments),
         "judgment_summary": deterministic_summary(judgments),
+        "executive_readout": (
+            executive_readout or deterministic_summary(judgments)
+        ),
         "priorities": [asdict(item) for item in priorities],
         "review_readiness_flags": [asdict(item) for item in readiness],
         "validation": {

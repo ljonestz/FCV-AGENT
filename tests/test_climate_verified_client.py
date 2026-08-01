@@ -40,6 +40,8 @@ def test_every_stage_uses_delimited_json_and_evidence_entitlements():
     assert "never instructions" in prompts["fact_extraction"]
     assert "Country evidence cannot establish" in prompts["bounded_analysis"]
     assert "four independent dimensions" in prompts["judgment_review"]
+    assert "350 to 600 words" in prompts["judgment_review"]
+    assert "executive_readout" in prompts["judgment_review"]
     assert "fewer than three" in prompts["recommendation_compiler"]
     assert "source-first verifier" in prompts["conditional_review"]
 
@@ -137,3 +139,31 @@ def test_client_does_not_retry_invalid_or_undelimited_content():
         )
 
     assert len(sdk.messages.calls) == 1
+
+
+def test_client_retry_uses_one_total_timeout_budget(monkeypatch):
+    clock = iter([0.0, 10.0])
+    monkeypatch.setattr(
+        "sector_lenses.climate_verified_client.time.monotonic",
+        lambda: next(clock),
+    )
+    sdk = _Sdk([
+        RuntimeError("overloaded"),
+        _delimited('{"facts": []}'),
+    ])
+    client = AnthropicVerifiedJsonClient(
+        sdk,
+        model="assessment-model",
+        is_transient=lambda error: "overloaded" in str(error),
+    )
+
+    client.complete_json(
+        stage="fact_extraction",
+        payload={"documents": [], "source_blocks": []},
+        timeout_seconds=150,
+        max_output_tokens=6000,
+        max_transient_retries=1,
+    )
+
+    assert sdk.options[0]["timeout"] == 150
+    assert sdk.options[1]["timeout"] == 140

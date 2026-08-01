@@ -412,3 +412,30 @@ Typed warnings include `bank_missing`, `bank_incompatible`,
 `bank_version_mismatch`, `bank_country_unavailable`, `bank_country_unapproved`,
 `bank_content_expired`, `bank_manifest_invalid`, `bank_scope_unsupported`, and
 `bank_packet_too_large`. All degrade without terminating the Climate run.
+
+## Verified Climate-FCV Express route (v9.24)
+
+For a design review whose resolved active-lens set is exactly `climate`,
+`/api/run-express` preserves the existing extraction, country profile, bank
+selection, live research, and final grounding steps, then dispatches to
+`climate-verified-v2`. Exactly one file explicitly placed in the Project Document
+slot may supply bounded project-fact blocks. Its applicability/version are recorded as
+`partial`/`user_designated`, not independently verified/latest; stage, geography, and
+financed scope remain unresolved. Unresolved package uploads remain in the document inventory but
+their blocks are withheld from fact extraction; multiple candidate primaries withhold
+all fact authority until precedence is resolved. Runtime blocks are deterministic
+chunks of extracted text rather than original DOCX/PDF structural locators. Uploaded
+context, country-bank evidence, and live claims remain contextual.
+The route emits the usual three completion markers for browser compatibility,
+with additive `climate_assessment` and `climate_reader` fields on Stages 2 and 3.
+No legacy Stage 1/2/3 model stream is called on this path. Keepalives are emitted
+while verified calls execute. The worker has a 14-minute wall-clock ceiling, retries
+share the call's original timeout budget, and cancellation prevents later paid calls
+after timeout or disconnect. A synchronous provider request already in flight cannot
+be killed safely and may continue until its bounded per-call timeout. Mixed-lens, implementation, step-by-step, and
+legacy-session behavior is unchanged.
+
+`POST /api/download-report` accepts `climate_assessment` when its schema is
+`climate-verified-v2`, rebuilds and validates the canonical reader model, and
+returns the verified DOCX. Reader-integrity failures return 422 with bounded reason
+codes instead of exporting a malformed report.

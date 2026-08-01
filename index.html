@@ -2554,7 +2554,7 @@
     if(idx>=0){activeLenses.splice(idx,1);delete resolvedLensVersions[id];changed=true;}
     else if(activeLenses.length<2){activeLenses.push(id);changed=true;}
     else showLensWarnings([{message:'Remove one active lens before selecting another.'}]);
-    if(changed){lensDiagnostic={};lensContextSources=[];climateResearch={};climateGrounding={};climateIntegration=null;}
+    if(changed){lensDiagnostic={};lensContextSources=[];climateResearch={};climateGrounding={};climateIntegration=null;climateVerifiedAssessment=null;climateVerifiedReader=null;}
     renderLensSelector();
   }
 
@@ -3041,7 +3041,20 @@
       lensContextSources=Array.isArray(savedLensState.lensContextSources)?savedLensState.lensContextSources:[];
       climateResearch=savedLensState.climateResearch||{};
       climateGrounding=savedLensState.climateGrounding||{};
+      climateVerifiedAssessment=savedLensState.climateVerifiedAssessment||null;
+      climateVerifiedReader=savedLensState.climateVerifiedReader||null;
       // If Stage 3 is present the run completed — clean up and do nothing
+      if(outputs[3]&&climateVerifiedAssessment&&climateVerifiedReader){
+        stageOutputs=outputs;
+        stageHists=JSON.parse(localStorage.getItem('fcv_express_stageHists')||'{}');
+        hist=stageHists[3]||[];curS=3;lensSelectionLocked=true;
+        document.getElementById('upload-panel').style.display='none';
+        document.getElementById('analysis-panel').style.display='block';
+        document.getElementById('landing-hero').style.display='none';
+        document.getElementById('stepper-wrap').style.display='';
+        setStepper(4,'done');renderOut(3,outputs[3],false);enableClickableStepper();
+        return;
+      }
       if(outputs[3]){localStorage.removeItem('fcv_express_stageOutputs');localStorage.removeItem('fcv_express_stageHists');localStorage.removeItem('fcv_express_lensState');return;}
       // Partial state: at least Stage 1 exists but Stage 3 does not
       const lastStage=outputs[2]?2:outputs[1]?1:null;
@@ -3108,7 +3121,9 @@
       lensDiagnostic: lensDiagnostic,
       lensContextSources: lensContextSources,
       climateResearch: climateResearch,
-      climateGrounding: climateGrounding
+      climateGrounding: climateGrounding,
+      climateVerifiedAssessment: climateVerifiedAssessment,
+      climateVerifiedReader: climateVerifiedReader
     };
     const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
     const url = URL.createObjectURL(blob);
@@ -3167,6 +3182,8 @@
         lensContextSources = state.version >= 3 && Array.isArray(state.lensContextSources) ? state.lensContextSources : [];
         climateResearch = state.version >= 3 && state.climateResearch ? state.climateResearch : {};
         climateGrounding = state.version >= 3 && state.climateGrounding ? state.climateGrounding : {};
+        climateVerifiedAssessment = state.climateVerifiedAssessment || null;
+        climateVerifiedReader = state.climateVerifiedReader || null;
         const currentVersions=Object.fromEntries(lensCatalogue.map(l=>[l.id,l.version]));
         const staleLens=state.version>=3&&state.currentStage<3&&activeLenses.some(id=>!state.lensVersions||!state.lensVersions[id]||currentVersions[id]!==state.lensVersions[id]);
         if(staleLens){hist=[];curS=0;stageOutputs={};stageHists={};activeLenses=[];resolvedLensVersions={};lensDiagnostic={};lensContextSources=[];climateResearch={};climateGrounding={};lensSelectionLocked=false;renderLensSelector();document.getElementById('upload-panel').style.display='block';document.getElementById('analysis-panel').style.display='none';alert('A selected sector lens is unavailable or has been updated. Re-upload the project document and rerun from Stage 1 to avoid mixing module versions.');return;}
@@ -3548,6 +3565,8 @@
   async function runExpress(){
     if(busy)return;
     busy=true;
+    climateVerifiedAssessment=null;
+    climateVerifiedReader=null;
     document.getElementById('analysis-panel').style.display='block';
     document.getElementById('stepper-wrap').style.display='none';
     document.getElementById('main').style.display='none';
@@ -3593,8 +3612,8 @@
     // context PDF + Climate research, so 12m raced the frontend. At 15m a
     // slow-but-completing run finishes and, if the model stalls, the backend's
     // ~12m Stage 1 error surfaces cleanly before this frontend backstop.
-    const EXPRESS_STAGE_TIMEOUTS={1:15*60*1000,2:10*60*1000,3:10*60*1000};
-    const EXPRESS_STAGE_LABELS={1:'15 minutes',2:'10 minutes',3:'10 minutes'};
+    const EXPRESS_STAGE_TIMEOUTS={1:15*60*1000,2:15*60*1000,3:10*60*1000};
+    const EXPRESS_STAGE_LABELS={1:'15 minutes',2:'15 minutes',3:'10 minutes'};
     let expressTimeout=null;
     function armExpressTimeout(stage){
       clearTimeout(expressTimeout);
@@ -3698,6 +3717,8 @@
             if(Array.isArray(p.lens_context_sources))lensContextSources=p.lens_context_sources;
             if(p.climate_research)climateResearch=p.climate_research;
             if(p.climate_grounding)climateGrounding=p.climate_grounding;
+            if(p.climate_assessment&&p.climate_assessment.schema_version==='climate-verified-v2')climateVerifiedAssessment=p.climate_assessment;
+            if(p.climate_reader&&typeof p.climate_reader==='object')climateVerifiedReader=p.climate_reader;
 
             if(sn===1){
               stageOutputs[1]=p.result;
@@ -3779,7 +3800,7 @@
             document.getElementById('main').style.display='';
             curS=3;setStepper(3,'done');
             renderOut(3,stageOutputs[3],false);
-            if(stageThreePriorities&&stageThreePriorities.length)initStage3UI();
+            if(!climateVerifiedAssessment&&stageThreePriorities&&stageThreePriorities.length)initStage3UI();
             renderAppliedSnippetsAttribution();
             // stage2_under_hood already written by the stage_done handler for stage 2 — no redundant write needed here
             enableClickableStepper();
@@ -4548,11 +4569,37 @@
     );
   }
 
+  function renderClimateVerifiedAssessment(reader){
+    const r=reader&&typeof reader==='object'?reader:{};
+    const executive=esc(r.executive_readout||'The verified assessment did not return an executive readout.');
+    const evidenceStatus=String(r.evidence_status||'approved');
+    const statusHtml=evidenceStatus!=='approved'?`<div class="finalized-pad-notice"><div class="fpn-body"><strong>Evidence status:</strong> ${esc(evidenceStatus)}</div></div>`:'';
+    const judgments=Array.isArray(r.judgments)?r.judgments:[];
+    const judgmentHtml=judgments.map(j=>`<section class="climate-judgment" data-climate-dimension="${esc(j.dimension)}">
+      <h3>${esc(j.title||j.dimension||'Judgment')}</h3>
+      <p><strong>${esc(String(j.value||'unclear').replaceAll('_',' '))}:</strong> ${esc(j.rationale||'Evidence remains insufficient for a firmer judgment.')}</p>
+      ${Array.isArray(j.evidence_ids)&&j.evidence_ids.length?`<p><strong>Evidence references:</strong> ${esc(j.evidence_ids.join(', '))}</p>`:''}
+    </section>`).join('');
+    const fields=[['Decision','decision'],['Minimum action','minimum_action'],['Enhanced action','enhanced_action'],['Activation condition','enhanced_activation'],['Who','responsible_function'],['Routing status','routing_status'],['Authority basis','authority_basis'],['Recommendation basis','recommendation_basis'],['Project evidence references','project_anchor_ids'],['Pathway references','pathway_ids'],['Existing-response references','existing_response_ids'],['Residual-gap references','residual_gap_ids'],['Instrument references','instrument_claim_ids'],['Completion evidence','completion_evidence'],['Completion evidence status','completion_evidence_status'],['Confidence','confidence'],['Limitation','limitation'],['Caution','caution'],['Suggested drafting','drafting_language']];
+    const priorities=Array.isArray(r.priorities)?r.priorities.slice().sort((x,y)=>(Number(x.rank)||999)-(Number(y.rank)||999)).slice(0,3):[];
+    const priorityHtml=priorities.length?priorities.map(priority=>{
+      const field=(label,key)=>{const raw=priority[key];const value=Array.isArray(raw)?raw.join(', '):raw;return value?`<p><strong>${esc(label)}:</strong> ${esc(value)}</p>`:'';};
+      return `<section class="climate-priority-card"><h3>${esc(priority.rank)}. ${esc(priority.title||'Untitled action')} (${esc(priority.recommendation_id||'')})</h3>${fields.map(([label,key])=>field(label,key)).join('')}</section>`;
+    }).join(''):'<p>No recommendation passed the admission threshold for this run.</p>';
+    const flags=Array.isArray(r.review_readiness_flags)?r.review_readiness_flags.slice(0,4):[];
+    const flagsHtml=flags.length?flags.map(flag=>`<section><h4>${esc(flag.flag||'Verification point')}</h4><p><strong>Why it matters:</strong> ${esc(flag.why_it_matters||'')}</p><p><strong>Document basis:</strong> ${esc(Array.isArray(flag.document_basis_ids)?flag.document_basis_ids.join(', '):'')}</p><p><strong>Suggested verification:</strong> ${esc(flag.suggested_verification||'')}</p></section>`).join(''):'<p>No bounded review-readiness flags were admitted.</p>';
+    const annex=r.technical_annex&&typeof r.technical_annex==='object'?r.technical_annex:{};
+    return `<article class="climate-verified-assessment"><h2>Executive readout</h2><p>${executive}</p>${statusHtml}<h2>Climate-FCV judgments</h2>${judgmentHtml}<h2>Ranked operational priorities</h2>${priorityHtml}<details><summary>Review readiness flags for task-team verification</summary>${flagsHtml}</details><details><summary>Technical annex</summary><p><strong>Run ID:</strong> ${esc(annex.run_id||'')}</p><p><strong>Schema:</strong> ${esc(annex.schema_version||'')}</p><p><strong>Country-bank release:</strong> ${esc(annex.bank_release_id||'not used')}</p><p><strong>Automated validation:</strong> ${esc(annex.validation_status||'attention')}</p></details><p class="climate-advisory">${esc(r.advisory_notice||'')}</p></article>`;
+  }
+
   function renderOut(stage,result,isFollowOn){
     const isLast=stage===3;
     const c=CALLS[stage];
+    const _verifiedV2=!!(isLast&&climateVerifiedAssessment&&climateVerifiedAssessment.schema_version==='climate-verified-v2'&&climateVerifiedReader);
     let _outBodyContent;
-    if(isLast){
+    if(_verifiedV2){
+      _outBodyContent=renderClimateVerifiedAssessment(climateVerifiedReader);
+    }else if(isLast){
       const _sp=result.split(/(?=###\s*Strengths\b)/i);
       const _pre=_sp[0]||result;
       const _rest=_sp[1]||'';
@@ -4633,7 +4680,7 @@
         }</div>
         <div class="callout-body"><strong>${c.t}</strong>${c.b}</div>
       </div>
-      ${isLast?stage3OverviewHtml():''}
+      ${isLast&&!_verifiedV2?stage3OverviewHtml():''}
       <div>
           <div class="out-card ani">
             <div class="out-hdr">
@@ -4899,6 +4946,11 @@
 
   function buildFollowOnMessages(userMsg){
     const history = hist.map(m => ({role: m.role, content: m.content}));
+    const hasVerifiedContext=history.some(m=>m.role==='assistant'&&String(m.content||'').includes('Verified Climate-FCV assessment'));
+    if(climateVerifiedReader&&!hasVerifiedContext){
+      history.push({role:'user',content:'Use the completed verified Climate-FCV assessment as the controlling basis for this follow-on response.'});
+      history.push({role:'assistant',content:'Verified Climate-FCV assessment (structured JSON):\n'+JSON.stringify(climateVerifiedReader)});
+    }
     history.push({role: 'user', content: userMsg});
     return history;
   }
@@ -4979,7 +5031,7 @@
     if(stageHists[stage])hist=stageHists[stage].slice();
     curS=stage;
     for(let i=stage+1;i<=3;i++){delete stageOutputs[i];delete stageHists[i];}
-    stageThreePriorities=[];fcvRating='';fcvResponsivenessRating='';stageWiderFcvContext=null;climatePriorityUnlinked=0;climatePriorityTotal=0;
+    stageThreePriorities=[];fcvRating='';fcvResponsivenessRating='';stageWiderFcvContext=null;climatePriorityUnlinked=0;climatePriorityTotal=0;climateVerifiedAssessment=null;climateVerifiedReader=null;
     clearUI();renderOut(stage,stageOutputs[stage],false);
     if(stage===2&&stage2UnderHood){buildUnderHoodPanels(stage2UnderHood);updateSidebar();}
     if(stage===2)renderLensDiagnostic();
@@ -5022,7 +5074,7 @@
     try{localStorage.setItem('fcv_express_stageOutputs',JSON.stringify(outputs));}catch(e){}
     try{localStorage.setItem('fcv_express_stageHists',JSON.stringify(hists));}catch(e){}
     try{localStorage.setItem('fcv_express_curS',curStage);}catch(e){}
-    try{localStorage.setItem('fcv_express_lensState',JSON.stringify({activeLenses,lensVersions:lensVersions(),lensDiagnostic,lensContextSources,climateResearch,climateGrounding}));}catch(e){}
+    try{localStorage.setItem('fcv_express_lensState',JSON.stringify({activeLenses,lensVersions:lensVersions(),lensDiagnostic,lensContextSources,climateResearch,climateGrounding,climateVerifiedAssessment: climateVerifiedAssessment,climateVerifiedReader: climateVerifiedReader}));}catch(e){}
   }
 
   function showExpressProgress(){
@@ -5190,6 +5242,8 @@
       lens_context_sources: lensContextSources || [],
       climate_research: climateResearch || {},
       climate_grounding: climateGrounding || {},
+      climate_assessment: climateVerifiedAssessment,
+      climate_reader: climateVerifiedReader,
       metadata: {
         date_str: dateStr,
         classification_category: cat,
@@ -5230,6 +5284,17 @@
   function downloadHTML(){
     if(!stageOutputs[3] && !stageThreePriorities.length){
       alert('No Stage 3 output available to export.');
+      return;
+    }
+    if(climateVerifiedAssessment&&climateVerifiedAssessment.schema_version==='climate-verified-v2'&&climateVerifiedReader){
+      const css=Array.from(document.querySelectorAll('style')).map(s=>s.textContent).join('\n');
+      const body=renderClimateVerifiedAssessment(climateVerifiedReader);
+      const documentHtml='<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Verified Climate-FCV Assessment</title><style>'+css+'</style></head><body><main style="max-width:960px;margin:32px auto;padding:0 24px">'+body+'</main></body></html>';
+      const blob=new Blob([documentHtml],{type:'text/html;charset=utf-8'});
+      const url=URL.createObjectURL(blob);
+      const link=document.createElement('a');
+      link.href=url;link.download='Climate-FCV-Verified-Assessment-'+new Date().toISOString().slice(0,10)+'.html';
+      document.body.appendChild(link);link.click();link.remove();URL.revokeObjectURL(url);
       return;
     }
 
@@ -5485,7 +5550,7 @@ ${body}
 
   function reset(){
     pF=[];cF=[];hist=[];curS=0;busy=false;stageOutputs={};stageHists={};researchBrief='';researchCountry='';priorityQuestions=[];focusQuestionsResult=null;pqPanelEnabled=true;
-    activeLenses=[];resolvedLensVersions={};lensSuggestions=[];lensDiagnostic={};lensContextSources=[];climateResearch={};climateGrounding={};climateIntegration=null;lensSelectionTouched=false;lensSelectionLocked=false;renderLensSelector();
+    activeLenses=[];resolvedLensVersions={};lensSuggestions=[];lensDiagnostic={};lensContextSources=[];climateResearch={};climateGrounding={};climateIntegration=null;climateVerifiedAssessment=null;climateVerifiedReader=null;lensSelectionTouched=false;lensSelectionLocked=false;renderLensSelector();
     { const _pc=document.getElementById('pq-confirm'); if(_pc){_pc.innerHTML='';_pc.style.display='none';} }
     ['stage2_timestamp','stage3_timestamp','stage3_consistency_dismissed'].forEach(k=>localStorage.removeItem(k));
     document.getElementById('upload-panel').style.display='block';
@@ -5654,6 +5719,8 @@ ${body}
   let fcvRating = '';
   let fcvResponsivenessRating = '';
   let climateIntegration=null; // {level, summary} from SSE
+  let climateVerifiedAssessment=null; // climate-verified-v2 structured assessment
+  let climateVerifiedReader=null; // server-validated canonical reader/export model
   let stageWiderFcvContext=null; // wider_fcv_context string from Stage 3 JSON (climate path)
   function integrationGaugeFraction(level){
     return ({well_integrated:1,partly_integrated:0.66,weakly_integrated:0.33,insufficient_evidence:0})[String(level||'').toLowerCase()]||0;

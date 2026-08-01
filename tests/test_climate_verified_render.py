@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from io import BytesIO
+
 from docx import Document
 
 from sector_lenses.climate_verified_render import (
@@ -47,10 +49,20 @@ def _assessment() -> dict[str, object]:
                 "enhanced_action": None,
                 "enhanced_activation": None,
                 "responsible_function": "Task team",
+                "routing_status": "team_to_confirm",
+                "authority_basis": "none_verified",
+                "recommendation_basis": "project_evidence",
+                "project_anchor_ids": ["PF-001"],
+                "pathway_ids": ["PW-001"],
+                "existing_response_ids": ["ER-001"],
+                "residual_gap_ids": ["RG-001"],
+                "instrument_claim_ids": [],
                 "completion_evidence": "Updated project section",
+                "completion_evidence_status": "updated_section",
                 "confidence": "medium",
                 "limitation": "Detailed parameters remain to be confirmed.",
                 "caution": "Avoid unintended exclusion.",
+                "drafting_language": "Suggested text for the verified vehicle.",
             }
             for index in range(1, 5)
         ],
@@ -93,15 +105,17 @@ def test_reader_validation_rejects_placeholder_and_duplicate_titles():
     assert "UNRESOLVED_PLACEHOLDER" in issues
 
 
-def test_html_and_docx_share_headings_and_priority_order(tmp_path):
+def test_html_and_docx_share_headings_and_priority_order():
     model = build_reader_model(_assessment())
     assert validate_reader_model(model) == ()
 
     html = render_reader_html(model)
-    output = tmp_path / "verified-climate.docx"
+    output = BytesIO()
     write_reader_docx(model, output)
+    output.seek(0)
+    document = Document(output)
     document_text = "\n".join(
-        paragraph.text for paragraph in Document(output).paragraphs
+        paragraph.text for paragraph in document.paragraphs
     )
 
     assert [html.index(heading) for heading in HEADINGS] == sorted(
@@ -116,13 +130,23 @@ def test_html_and_docx_share_headings_and_priority_order(tmp_path):
         assert identifier in document_text
         assert f"Priority {index}" in html
         assert f"Priority {index}" in document_text
+    for expected in (
+        "team_to_confirm",
+        "none_verified",
+        "project_evidence",
+        "PF-001",
+        "PW-001",
+        "RG-001",
+        "Suggested text for the verified vehicle.",
+    ):
+        assert expected in html
+        assert expected in document_text
     assert "REC-004" not in html
     assert "REC-004" not in document_text
     assert not any(
-        paragraph.text.rstrip().endswith(("[", "{", "…"))
-        for paragraph in Document(output).paragraphs
+        paragraph.text.rstrip().endswith(("[", "{", "..."))
+        for paragraph in document.paragraphs
     )
-
 
 def test_html_escapes_model_authored_content():
     assessment = _assessment()
@@ -133,3 +157,14 @@ def test_html_escapes_model_authored_content():
 
     assert "<script>" not in rendered
     assert "&lt;script&gt;" in rendered
+
+
+def test_docx_writer_accepts_an_in_memory_stream():
+    model = build_reader_model(_assessment())
+    stream = BytesIO()
+
+    returned = write_reader_docx(model, stream)
+
+    assert returned is stream
+    stream.seek(0)
+    assert Document(stream).paragraphs[0].text == HEADINGS[0]

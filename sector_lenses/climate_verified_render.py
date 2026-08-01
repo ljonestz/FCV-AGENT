@@ -25,6 +25,27 @@ HEADINGS = (
     "Review readiness flags for task-team verification",
     "Technical annex",
 )
+PRIORITY_FIELDS = (
+    ("Decision", "decision"),
+    ("Minimum action", "minimum_action"),
+    ("Enhanced action", "enhanced_action"),
+    ("Activation condition", "enhanced_activation"),
+    ("Who", "responsible_function"),
+    ("Routing status", "routing_status"),
+    ("Authority basis", "authority_basis"),
+    ("Recommendation basis", "recommendation_basis"),
+    ("Project evidence references", "project_anchor_ids"),
+    ("Pathway references", "pathway_ids"),
+    ("Existing-response references", "existing_response_ids"),
+    ("Residual-gap references", "residual_gap_ids"),
+    ("Instrument references", "instrument_claim_ids"),
+    ("Completion evidence", "completion_evidence"),
+    ("Completion evidence status", "completion_evidence_status"),
+    ("Confidence", "confidence"),
+    ("Limitation", "limitation"),
+    ("Caution", "caution"),
+    ("Suggested drafting", "drafting_language"),
+)
 ADVISORY_NOTICE = (
     "This automated screening supports task-team judgment and does not "
     "constitute an institutional adequacy or compliance decision."
@@ -48,6 +69,12 @@ def _records(value: object) -> list[dict[str, Any]]:
 
 def _text(value: object) -> str:
     return str(value or "").strip()
+
+
+def _field_text(value: object) -> str:
+    if isinstance(value, (list, tuple)):
+        return ", ".join(_text(item) for item in value if _text(item))
+    return _text(value)
 
 
 def _rank(value: object) -> int:
@@ -196,8 +223,16 @@ def render_reader_html(model: dict[str, object]) -> str:
             + html.escape(_text(judgment.get("value")).replace("_", " ").title())
             + ":</strong> "
             + html.escape(_text(judgment.get("rationale")))
-            + "</p></section>"
+            + "</p>"
         )
+        evidence_refs = _field_text(judgment.get("evidence_ids"))
+        if evidence_refs:
+            parts.append(
+                "<p><strong>Evidence references:</strong> "
+                + html.escape(evidence_refs)
+                + "</p>"
+            )
+        parts.append("</section>")
 
     parts.append(_heading(2, HEADINGS[2]))
     for priority in _records(model.get("priorities")):
@@ -207,17 +242,8 @@ def render_reader_html(model: dict[str, object]) -> str:
         parts.append(
             _heading(3, f"{rank}. {_text(priority.get('title'))} ({identifier})")
         )
-        for label, key in (
-            ("Decision", "decision"),
-            ("Minimum action", "minimum_action"),
-            ("Enhanced action", "enhanced_action"),
-            ("Activation condition", "enhanced_activation"),
-            ("Who", "responsible_function"),
-            ("Completion evidence", "completion_evidence"),
-            ("Limitation", "limitation"),
-            ("Caution", "caution"),
-        ):
-            value = _text(priority.get(key))
+        for label, key in PRIORITY_FIELDS:
+            value = _field_text(priority.get(key))
             if value:
                 parts.append(
                     f"<p><strong>{html.escape(label)}:</strong> "
@@ -233,6 +259,8 @@ def render_reader_html(model: dict[str, object]) -> str:
         parts.append(
             "<p><strong>Why it matters:</strong> "
             + html.escape(_text(flag.get("why_it_matters")))
+            + "</p><p><strong>Document basis:</strong> "
+            + html.escape(_field_text(flag.get("document_basis_ids")))
             + "</p><p><strong>Suggested verification:</strong> "
             + html.escape(_text(flag.get("suggested_verification")))
             + "</p>"
@@ -257,7 +285,7 @@ def render_reader_html(model: dict[str, object]) -> str:
 
 
 def _docx_field(document: Document, label: str, value: object) -> None:
-    text = _text(value)
+    text = _field_text(value)
     if not text:
         return
     paragraph = document.add_paragraph()
@@ -268,7 +296,7 @@ def _docx_field(document: Document, label: str, value: object) -> None:
 def write_reader_docx(model: dict[str, object], path: str | Path) -> Path:
     """Write the same reader dictionary to a compact Word document."""
 
-    output = Path(path)
+    output = path if hasattr(path, "write") else Path(path)
     document = Document()
     document.add_heading(HEADINGS[0], level=1)
     document.add_paragraph(_text(model.get("executive_readout")))
@@ -280,6 +308,9 @@ def write_reader_docx(model: dict[str, object], path: str | Path) -> Path:
         document.add_heading(_text(judgment.get("title")), level=2)
         _docx_field(document, "Judgment", judgment.get("value"))
         _docx_field(document, "Rationale", judgment.get("rationale"))
+        _docx_field(
+            document, "Evidence references", judgment.get("evidence_ids")
+        )
 
     document.add_heading(HEADINGS[2], level=1)
     for priority in _records(model.get("priorities")):
@@ -289,22 +320,14 @@ def write_reader_docx(model: dict[str, object], path: str | Path) -> Path:
             f"{rank}. {_text(priority.get('title'))} ({identifier})",
             level=2,
         )
-        for label, key in (
-            ("Decision", "decision"),
-            ("Minimum action", "minimum_action"),
-            ("Enhanced action", "enhanced_action"),
-            ("Activation condition", "enhanced_activation"),
-            ("Who", "responsible_function"),
-            ("Completion evidence", "completion_evidence"),
-            ("Limitation", "limitation"),
-            ("Caution", "caution"),
-        ):
+        for label, key in PRIORITY_FIELDS:
             _docx_field(document, label, priority.get(key))
 
     document.add_heading(HEADINGS[3], level=1)
     for flag in _records(model.get("review_readiness_flags")):
         document.add_heading(_text(flag.get("flag")), level=2)
         _docx_field(document, "Why it matters", flag.get("why_it_matters"))
+        _docx_field(document, "Document basis", flag.get("document_basis_ids"))
         _docx_field(
             document,
             "Suggested verification",

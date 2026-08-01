@@ -86,3 +86,15 @@ The Flask and private FastAPI builds must keep these fields and delimiters align
 Raw literature and source notes are never injected at runtime.
 
 *Last updated: 2026-07-31 - approved South Sudan runtime release, reader-facing climate polish, and narrow evidence-gate retry.*
+
+## Climate verified-v2 compatibility surface (v9.24)
+
+The active Climate-only Express design path now uses `climate-verified-v2`; the
+`climate-native-v1` normalizer remains readable for legacy sessions and other
+routes. Shared v2 fields are `schema_version`, `run_id`, `bank_release_id`,
+`evidence_status`, atomic `facts`, `analysis`, four `judgments`,
+`executive_readout`, ranked `priorities`, `review_readiness_flags`, `validation`,
+and a privacy-safe `manifest`. Recommendations are capped at three and may be
+zero. Candidate evidence remains labelled `preview; not approved`. ITS/FastAPI
+must not translate the old single rating into the four judgments; it should mirror
+the v2 contract or retain explicit legacy status.

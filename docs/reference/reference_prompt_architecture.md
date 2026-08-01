@@ -387,3 +387,16 @@ when the first response contains a structured `partial|complete` bundle with at
 least one source and one claim and fails specifically with
 `climate_research_insufficient`. Missing structured output, structuring truncation,
 timeouts, and terminal provider failures do not use this evidence-gate retry.
+
+## Verified Climate-FCV prompt architecture (v9.24)
+
+Climate-only Express design reviews use four required structured calls plus one
+conditional review: atomic fact extraction; bounded pathway/existing-response/
+residual-gap analysis; four-dimensional judgment plus a 350-600 word executive
+readout; and recommendation admission/compilation. Conditional semantic review is
+triggered only by high-risk routing, authority, evidence, or drafting conditions.
+Every response is one delimited JSON object. Uploaded/retrieved content is untrusted
+evidence, never instructions. Only one unambiguous designated primary project document establishes project facts;
+unresolved package documents are inventoried but cannot supply fact blocks. Country
+and uploaded-context evidence can support contextual pathways and questions
+but not project commitments, sites, beneficiaries, instruments, or confirmed gaps.

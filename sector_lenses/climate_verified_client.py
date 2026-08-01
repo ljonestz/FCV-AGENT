@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+import time
 from typing import Any
 
 from sector_lenses.climate_truth_prompts import parse_climate_json
@@ -37,12 +38,20 @@ class AnthropicVerifiedJsonClient:
         max_transient_retries: int,
     ) -> dict[str, object]:
         prompt = build_verified_stage_prompt(stage, payload)
-        configured = self._sdk_client.with_options(
-            timeout=timeout_seconds,
-            max_retries=0,
-        )
         response = None
+        started = time.monotonic()
         for attempt in range(max_transient_retries + 1):
+            remaining = (
+                timeout_seconds
+                if attempt == 0
+                else int(timeout_seconds - (time.monotonic() - started))
+            )
+            if remaining < 1:
+                raise TimeoutError(f"{stage} exceeded its retry budget")
+            configured = self._sdk_client.with_options(
+                timeout=remaining,
+                max_retries=0,
+            )
             try:
                 response = configured.messages.create(
                     model=self._model,

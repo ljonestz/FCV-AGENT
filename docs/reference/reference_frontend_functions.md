@@ -212,3 +212,18 @@ Both modes use identical prompts, code paths, and output quality. Express is a f
 ---
 
 *Last updated: 2026-07-31 - Climate-FCV reader polish and priority-stepper navigation state.*
+
+## Verified Climate-FCV reader (v9.24)
+
+`runExpress()` stores additive `climate_assessment` and canonical
+`climate_reader` SSE payloads in `climateVerifiedAssessment` and
+`climateVerifiedReader`. `renderOut()` passes the reader (not the raw assessment) to
+`renderClimateVerifiedAssessment()` and suppresses the legacy integration gauge,
+Stage 3 overview, and priority carousel. The v2 reader renders executive readout,
+four judgments, zero-to-three ranked priority cards, collapsed review-readiness
+flags, a safe technical annex, and the advisory notice. All model-authored strings
+are escaped. DOCX sends the same assessment to `/api/download-report`, where the
+server deterministically rebuilds the reader; shared HTML renders the emitted reader.
+Saved sessions and completed Express checkpoints preserve both objects, while new
+runs, lens changes, reruns, and full reset clear both. Follow-on requests carry the
+structured reader in their history. The Stage 2 Express timeout is 15 minutes.

@@ -72,8 +72,13 @@ legitimacy, cooperative governance, or plausible social dividends.
 Operationalization asks whether sensitivity or responsiveness is translated
 into requirements, responsibilities, resources, indicators, verification,
 triggers, and adaptation. Use only IDs in the supplied verified registers.
+Write an executive_readout of 350 to 600 words for a task-team reader. Start
+with what the project already does, distinguish residual gaps from items merely
+not yet specified, summarize the four judgments without inventing an overall
+rating, and preview only issues that could pass the recommendation admission
+test. Calibrate precision to the evidence and state material limitations.
 
-Return: {"relevance":{"value":"high|medium|low|unclear","evidence_ids":[],"rationale":"..."},"sensitivity":{"value":"strong|moderate|limited|unclear","evidence_ids":[],"rationale":"..."},"responsiveness":{"value":"strong|emerging|limited|not_expected|unclear","evidence_ids":[],"rationale":"..."},"operationalization":{"value":"embedded|partial|early|not_evidenced|unclear","evidence_ids":[],"rationale":"..."}}.""",
+Return: {"executive_readout":"...","relevance":{"value":"high|medium|low|unclear","evidence_ids":[],"rationale":"..."},"sensitivity":{"value":"strong|moderate|limited|unclear","evidence_ids":[],"rationale":"..."},"responsiveness":{"value":"strong|emerging|limited|not_expected|unclear","evidence_ids":[],"rationale":"..."},"operationalization":{"value":"embedded|partial|early|not_evidenced|unclear","evidence_ids":[],"rationale":"..."}}.""",
         payload,
     )
 

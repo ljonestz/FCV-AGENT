@@ -93,6 +93,9 @@ def _responses(*, unresolved_routing: bool = False):
             ],
         },
         {
+            "executive_readout": (
+                "Verified project facts support a bounded Climate-FCV readout. " * 45
+            ).strip(),
             "relevance": {
                 "value": "high",
                 "evidence_ids": ["PW-001"],
@@ -206,6 +209,7 @@ def test_four_calls_run_when_semantic_review_is_not_required():
     assert result["schema_version"] == "climate-verified-v2"
     assert result["validation"]["status"] == "passed"
     assert len(result["priorities"]) == 1
+    assert result["executive_readout"].startswith("Verified project facts")
 
 
 def test_unresolved_routing_triggers_one_source_first_review():
