@@ -46,6 +46,10 @@ PRIORITY_FIELDS = (
     ("Caution", "caution"),
     ("Suggested drafting", "drafting_language"),
 )
+SMOKE_RUNTIME_WARNING = (
+    "Smoke test: validates workflow completion only; "
+    "not a quality benchmark."
+)
 ADVISORY_NOTICE = (
     "This automated screening supports task-team judgment and does not "
     "constitute an institutional adequacy or compliance decision."
@@ -200,6 +204,12 @@ def render_reader_html(model: dict[str, object]) -> str:
     """Render escaped HTML from the canonical reader dictionary."""
 
     parts = ['<article class="climate-verified-assessment">']
+    if _text(model.get("runtime_mode")) == "smoke":
+        parts.append(
+            '<p class="climate-smoke-warning">'
+            + html.escape(SMOKE_RUNTIME_WARNING)
+            + "</p>"
+        )
     parts.append(_heading(2, HEADINGS[0]))
     parts.append(f"<p>{html.escape(_text(model.get('executive_readout')))}</p>")
     evidence_status = _text(model.get("evidence_status"))
@@ -298,6 +308,10 @@ def write_reader_docx(model: dict[str, object], path: str | Path) -> Path:
 
     output = path if hasattr(path, "write") else Path(path)
     document = Document()
+    if _text(model.get("runtime_mode")) == "smoke":
+        paragraph = document.add_paragraph(SMOKE_RUNTIME_WARNING)
+        if paragraph.runs:
+            paragraph.runs[0].bold = True
     document.add_heading(HEADINGS[0], level=1)
     document.add_paragraph(_text(model.get("executive_readout")))
     if _text(model.get("evidence_status")) != "approved":

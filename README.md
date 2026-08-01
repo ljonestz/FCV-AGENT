@@ -63,6 +63,9 @@ redistribute raw PDFs or cite its own generated text.
 | Variable | Required | Description |
 |---|---|---|
 | `ANTHROPIC_API_KEY` | **Yes** | Anthropic API key for Claude access |
+| `CLIMATE_VERIFIED_RUN_MODE` | No | `quality` (default, Sonnet) or `smoke` (Haiku). Server-only; never accepted from browser requests. |
+| `CLIMATE_VERIFIED_ASSESSMENT_MODEL` | No | Explicit server-side model override for the verified assessment call. |
+| `CLIMATE_VERIFIED_REVIEW_MODEL` | No | Explicit server-side model override for the verified reviewer call. |
 
 ## Local Setup
 
@@ -88,6 +91,22 @@ python app.py
 5. The app runs on gunicorn + gevent with a 1,200s timeout for long-running SSE streams
 6. Confirm the startup and Climate-grounding logs show the expected application
    build, bank content version, and country ISO3 before acceptance testing
+
+### Low-cost Climate workflow checks
+
+Use one commit for both services. The production service leaves
+`CLIMATE_VERIFIED_RUN_MODE` unset (or sets it to `quality`). A separate smoke
+service sets it to `smoke`, which runs the same verified Climate-FCV pipeline
+with Haiku for both structured calls. Smoke output is visibly labelled in the
+browser, HTML export, DOCX export, and technical annex; it tests orchestration
+and completeness, not analytical quality.
+
+Do not expose model selection in a request or UI control. Keep the profile in
+Render environment settings so a browser user cannot downgrade a production
+assessment. A reviewed country-bank candidate still requires the separate,
+explicit `CLIMATE_COUNTRY_BANK_PATH` and
+`CLIMATE_COUNTRY_BANK_PREVIEW=reviewed-candidate` safeguards. The smoke profile
+does not relax approval, provenance, checksum, or preview-labelling rules.
 
 ### Long-Running PforR Notes
 

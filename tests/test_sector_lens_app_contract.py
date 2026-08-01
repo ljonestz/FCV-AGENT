@@ -2317,6 +2317,17 @@ def test_verified_express_is_limited_to_climate_only_design_runs():
     assert app_module._is_verified_climate_express(mixed, False) is False
 
 
+def test_verified_client_builder_uses_server_smoke_profile(monkeypatch):
+    monkeypatch.setenv("CLIMATE_VERIFIED_RUN_MODE", "smoke")
+    monkeypatch.setattr(app_module, "get_client", lambda: object())
+    monkeypatch.setattr(app_module, "get_lens_recovery_client", lambda: object())
+
+    clients = app_module._build_verified_pipeline_clients()
+
+    assert clients.assessment._model == "claude-haiku-4-5-20251001"
+    assert clients.reviewer._model == "claude-haiku-4-5-20251001"
+
+
 def test_verified_runtime_bridge_emits_keepalives_then_result(monkeypatch):
     import time as _time
 
@@ -2388,6 +2399,7 @@ def test_verified_climate_ui_contract_is_ranked_and_multidimensional():
     assert "priority.rank" in body
     assert "priority.priority_label" not in body
     assert "High priority" not in body
+    assert "Smoke test: validates workflow completion only" in body
 
 
 def test_express_route_dispatches_verified_assessment_contract():
@@ -2420,7 +2432,10 @@ def test_verified_climate_docx_route_uses_canonical_reader():
     }
 
     response = app_module.app.test_client().post(
-        "/api/download-report", json={"climate_assessment": assessment}
+        "/api/download-report", json={
+            "climate_assessment": assessment,
+            "climate_reader": {"runtime_mode": "smoke"},
+        }
     )
 
     assert response.status_code == 200
@@ -2429,6 +2444,7 @@ def test_verified_climate_docx_route_uses_canonical_reader():
     text = "\n".join(item.text for item in document.paragraphs)
     assert "Climate-FCV judgments" in text
     assert "preview; not approved" in text
+    assert "Smoke test: validates workflow completion only" in text
 
 
 def test_browser_exports_verified_climate_assessment_object():
@@ -2457,6 +2473,7 @@ def test_verified_climate_express_timeout_covers_full_automatic_review():
 
 
 def test_climate_only_express_route_returns_verified_v2_without_legacy_stage(monkeypatch):
+    monkeypatch.setenv("CLIMATE_VERIFIED_RUN_MODE", "smoke")
     assessment = {
         "schema_version": "climate-verified-v2",
         "run_id": "route-v2",
@@ -2526,3 +2543,4 @@ def test_climate_only_express_route_returns_verified_v2_without_legacy_stage(mon
     assert '"schema_version": "climate-verified-v2"' in body
     assert '"stage_done": 3' in body
     assert '"express_done": true' in body
+    assert '"runtime_mode": "smoke"' in body

@@ -4571,6 +4571,8 @@
 
   function renderClimateVerifiedAssessment(reader){
     const r=reader&&typeof reader==='object'?reader:{};
+    const runtimeMode=String(r.runtime_mode||'quality').toLowerCase();
+    const smokeHtml=runtimeMode==='smoke'?`<div class="finalized-pad-notice"><div class="fpn-body"><strong>Smoke test: validates workflow completion only; not a quality benchmark.</strong></div></div>`:'';
     const executive=esc(r.executive_readout||'The verified assessment did not return an executive readout.');
     const evidenceStatus=String(r.evidence_status||'approved');
     const statusHtml=evidenceStatus!=='approved'?`<div class="finalized-pad-notice"><div class="fpn-body"><strong>Evidence status:</strong> ${esc(evidenceStatus)}</div></div>`:'';
@@ -4589,7 +4591,7 @@
     const flags=Array.isArray(r.review_readiness_flags)?r.review_readiness_flags.slice(0,4):[];
     const flagsHtml=flags.length?flags.map(flag=>`<section><h4>${esc(flag.flag||'Verification point')}</h4><p><strong>Why it matters:</strong> ${esc(flag.why_it_matters||'')}</p><p><strong>Document basis:</strong> ${esc(Array.isArray(flag.document_basis_ids)?flag.document_basis_ids.join(', '):'')}</p><p><strong>Suggested verification:</strong> ${esc(flag.suggested_verification||'')}</p></section>`).join(''):'<p>No bounded review-readiness flags were admitted.</p>';
     const annex=r.technical_annex&&typeof r.technical_annex==='object'?r.technical_annex:{};
-    return `<article class="climate-verified-assessment"><h2>Executive readout</h2><p>${executive}</p>${statusHtml}<h2>Climate-FCV judgments</h2>${judgmentHtml}<h2>Ranked operational priorities</h2>${priorityHtml}<details><summary>Review readiness flags for task-team verification</summary>${flagsHtml}</details><details><summary>Technical annex</summary><p><strong>Run ID:</strong> ${esc(annex.run_id||'')}</p><p><strong>Schema:</strong> ${esc(annex.schema_version||'')}</p><p><strong>Country-bank release:</strong> ${esc(annex.bank_release_id||'not used')}</p><p><strong>Automated validation:</strong> ${esc(annex.validation_status||'attention')}</p></details><p class="climate-advisory">${esc(r.advisory_notice||'')}</p></article>`;
+    return `<article class="climate-verified-assessment">${smokeHtml}<h2>Executive readout</h2><p>${executive}</p>${statusHtml}<h2>Climate-FCV judgments</h2>${judgmentHtml}<h2>Ranked operational priorities</h2>${priorityHtml}<details><summary>Review readiness flags for task-team verification</summary>${flagsHtml}</details><details><summary>Technical annex</summary><p><strong>Run ID:</strong> ${esc(annex.run_id||'')}</p><p><strong>Schema:</strong> ${esc(annex.schema_version||'')}</p><p><strong>Country-bank release:</strong> ${esc(annex.bank_release_id||'not used')}</p><p><strong>Automated validation:</strong> ${esc(annex.validation_status||'attention')}</p></details><p class="climate-advisory">${esc(r.advisory_notice||'')}</p></article>`;
   }
 
   function renderOut(stage,result,isFollowOn){

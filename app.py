@@ -20,6 +20,7 @@ from sector_lenses.climate_native import (
     climate_missing_fields,
     merge_climate_repair,
 )
+from sector_lenses.climate_runtime_config import load_verified_climate_runtime
 from sector_lenses.climate_verified_client import AnthropicVerifiedJsonClient
 from sector_lenses.climate_verified_pipeline import PipelineClients
 from sector_lenses.climate_verified_runtime import (
@@ -940,16 +941,17 @@ def _is_verified_climate_express(
 
 
 def _build_verified_pipeline_clients() -> PipelineClients:
-    """Build strict JSON adapters; the verified orchestrator owns retries."""
+    """Build strict JSON adapters from the server-only runtime profile."""
+    runtime = load_verified_climate_runtime()
     return PipelineClients(
         assessment=AnthropicVerifiedJsonClient(
             get_client(),
-            model="claude-sonnet-4-6",
+            model=runtime.assessment_model,
             is_transient=_is_transient_stream_error,
         ),
         reviewer=AnthropicVerifiedJsonClient(
             get_lens_recovery_client(),
-            model="claude-sonnet-4-6",
+            model=runtime.reviewer_model,
             is_transient=_is_transient_stream_error,
         ),
     )
@@ -7936,10 +7938,12 @@ BUILD_MARKER = os.environ.get("RENDER_GIT_COMMIT", "")[:12] or "dev"
 
 @app.route('/health')
 def health():
+    verified_runtime = load_verified_climate_runtime()
     return jsonify({
         'status': 'ok',
         'build': BUILD_MARKER,
         'stage1_research_budget_s': STAGE1_RESEARCH_BUDGET_SECONDS,
+        'climate_verified_run_mode': verified_runtime.mode,
     })
 
 
@@ -9750,6 +9754,7 @@ def run_express():
                     }) + "\n\n"
 
                     yield f"data: {json.dumps({'stage_start': 2})}\n\n"
+                    verified_runtime = load_verified_climate_runtime()
                     verified_bundle = None
                     for verified_event in _iter_verified_climate_assessment(
                         doc_parts=doc_parts,
@@ -9766,8 +9771,15 @@ def run_express():
                             "Verified Climate-FCV assessment returned no result."
                         )
 
-                    verified_assessment = verified_bundle['assessment']
-                    verified_reader = verified_bundle['reader']
+                    verified_assessment = dict(verified_bundle['assessment'])
+                    verified_reader = dict(verified_bundle['reader'])
+                    verified_assessment['runtime_mode'] = verified_runtime.mode
+                    verified_reader['runtime_mode'] = verified_runtime.mode
+                    verified_annex = dict(
+                        verified_reader.get('technical_annex') or {}
+                    )
+                    verified_annex['runtime_mode'] = verified_runtime.mode
+                    verified_reader['technical_annex'] = verified_annex
                     verified_judgments = verified_assessment.get('judgments', {})
                     sensitivity = verified_judgments.get(
                         'sensitivity', {}
@@ -11264,6 +11276,17 @@ def download_report():
     ):
         verified = normalize_climate_assessment(verified_raw)
         reader_model = build_reader_model(verified)
+        incoming_reader = data.get('climate_reader') or {}
+        runtime_mode = (
+            incoming_reader.get('runtime_mode')
+            if isinstance(incoming_reader, dict)
+            else None
+        )
+        if runtime_mode in {'quality', 'smoke'}:
+            reader_model['runtime_mode'] = runtime_mode
+            reader_annex = dict(reader_model.get('technical_annex') or {})
+            reader_annex['runtime_mode'] = runtime_mode
+            reader_model['technical_annex'] = reader_annex
         reader_issues = validate_reader_model(reader_model)
         if reader_issues:
             return jsonify({

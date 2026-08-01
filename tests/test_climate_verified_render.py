@@ -168,3 +168,31 @@ def test_docx_writer_accepts_an_in_memory_stream():
     assert returned is stream
     stream.seek(0)
     assert Document(stream).paragraphs[0].text == HEADINGS[0]
+
+
+def test_smoke_runtime_is_watermarked_in_html_and_docx():
+    model = build_reader_model(_assessment())
+    model["runtime_mode"] = "smoke"
+    model["technical_annex"]["runtime_mode"] = "smoke"
+
+    rendered = render_reader_html(model)
+    stream = BytesIO()
+    write_reader_docx(model, stream)
+    stream.seek(0)
+    document_text = "\n".join(
+        paragraph.text for paragraph in Document(stream).paragraphs
+    )
+
+    warning = (
+        "Smoke test: validates workflow completion only; "
+        "not a quality benchmark."
+    )
+    assert warning in rendered
+    assert warning in document_text
+
+
+def test_quality_runtime_does_not_show_smoke_watermark():
+    model = build_reader_model(_assessment())
+    model["runtime_mode"] = "quality"
+
+    assert "Smoke test:" not in render_reader_html(model)
