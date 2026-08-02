@@ -13,7 +13,7 @@ def test_verified_schema_and_call_budgets_are_stable():
     assert CLIMATE_VERIFIED_SCHEMA_VERSION == "climate-verified-v2"
     assert CALL_BUDGETS["fact_extraction"].input_tokens == 24_000
     assert CALL_BUDGETS["fact_extraction"].output_tokens == 16_000
-    assert CALL_BUDGETS["fact_extraction"].timeout_seconds == 150
+    assert CALL_BUDGETS["fact_extraction"].timeout_seconds == 300
     assert CALL_BUDGETS["bounded_analysis"].timeout_seconds == 180
     assert CALL_BUDGETS["judgment_review"].timeout_seconds == 60
     assert CALL_BUDGETS["judgment_review"].output_tokens == 4_000
