@@ -45,7 +45,7 @@ class CallBudget:
 CALL_BUDGETS = {
     "fact_extraction": CallBudget(24_000, 16_000, 150),
     "bounded_analysis": CallBudget(20_000, 6_000, 180),
-    "judgment_review": CallBudget(12_000, 2_000, 60),
+    "judgment_review": CallBudget(12_000, 4_000, 60),
     "recommendation_compiler": CallBudget(16_000, 5_000, 240),
     "conditional_review": CallBudget(12_000, 2_500, 120),
 }

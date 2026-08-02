@@ -16,6 +16,7 @@ def test_verified_schema_and_call_budgets_are_stable():
     assert CALL_BUDGETS["fact_extraction"].timeout_seconds == 150
     assert CALL_BUDGETS["bounded_analysis"].timeout_seconds == 180
     assert CALL_BUDGETS["judgment_review"].timeout_seconds == 60
+    assert CALL_BUDGETS["judgment_review"].output_tokens == 4_000
     assert CALL_BUDGETS["recommendation_compiler"].timeout_seconds == 240
     assert CALL_BUDGETS["conditional_review"].timeout_seconds == 120
 
