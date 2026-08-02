@@ -56,7 +56,11 @@ ADVISORY_NOTICE = (
 )
 _PLACEHOLDER = re.compile(
     r"(?:\[\s*(?:tbd|todo|insert|placeholder)[^\]]*\]|"
-    r"\b(?:tbd|todo|lorem ipsum|placeholder)\b)",
+    r"\b(?:tbd|todo|lorem ipsum)\b)",
+    re.IGNORECASE,
+)
+_BARE_PLACEHOLDER = re.compile(
+    r"^\s*placeholder(?:\s+text)?[.!]?\s*$",
     re.IGNORECASE,
 )
 
@@ -185,7 +189,10 @@ def validate_reader_model(model: dict[str, object]) -> tuple[str, ...]:
     if any(not all(_text(item.get(key)) for key in required) for item in priorities):
         issues.append("PRIORITY_FIELD_INCOMPLETE")
 
-    if any(_PLACEHOLDER.search(value) for value in _all_strings(model)):
+    if any(
+        _PLACEHOLDER.search(value) or _BARE_PLACEHOLDER.fullmatch(value)
+        for value in _all_strings(model)
+    ):
         issues.append("UNRESOLVED_PLACEHOLDER")
     if any(
         value.rstrip().endswith(("[", "{", "…"))

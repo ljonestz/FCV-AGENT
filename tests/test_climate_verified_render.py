@@ -105,6 +105,15 @@ def test_reader_validation_rejects_placeholder_and_duplicate_titles():
     assert "UNRESOLVED_PLACEHOLDER" in issues
 
 
+def test_reader_allows_readiness_flag_to_describe_project_placeholder():
+    model = build_reader_model(_assessment())
+    flag = model["review_readiness_flags"][0]
+    flag["category"] = "material_placeholder"
+    flag["flag"] = "The climate screening field remains a placeholder."
+
+    assert validate_reader_model(model) == ()
+
+
 def test_html_and_docx_share_headings_and_priority_order():
     model = build_reader_model(_assessment())
     assert validate_reader_model(model) == ()
