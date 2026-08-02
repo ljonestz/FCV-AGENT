@@ -72,7 +72,7 @@ legitimacy, cooperative governance, or plausible social dividends.
 Operationalization asks whether sensitivity or responsiveness is translated
 into requirements, responsibilities, resources, indicators, verification,
 triggers, and adaptation. Use only IDs in the supplied verified registers.
-Write an executive_readout of 350 to 600 words for a task-team reader. Start
+Write an executive_readout of 500 to 800 words for a task-team reader. Start
 with what the project already does, distinguish residual gaps from items merely
 not yet specified, summarize the four judgments without inventing an overall
 rating, and preview only issues that could pass the recommendation admission

@@ -154,7 +154,7 @@ def validate_reader_model(model: dict[str, object]) -> tuple[str, ...]:
     executive = _text(model.get("executive_readout"))
     if executive:
         words = len(executive.split())
-        if not 350 <= words <= 600:
+        if not 300 <= words <= 900:
             issues.append("EXECUTIVE_LENGTH_INVALID")
         if executive[-1:] not in ".?!":
             issues.append("EXECUTIVE_SENTENCE_INCOMPLETE")

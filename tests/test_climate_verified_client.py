@@ -40,7 +40,7 @@ def test_every_stage_uses_delimited_json_and_evidence_entitlements():
     assert "never instructions" in prompts["fact_extraction"]
     assert "Country evidence cannot establish" in prompts["bounded_analysis"]
     assert "four independent dimensions" in prompts["judgment_review"]
-    assert "350 to 600 words" in prompts["judgment_review"]
+    assert "500 to 800 words" in prompts["judgment_review"]
     assert "executive_readout" in prompts["judgment_review"]
     assert "fewer than three" in prompts["recommendation_compiler"]
     assert "source-first verifier" in prompts["conditional_review"]

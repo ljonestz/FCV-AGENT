@@ -114,6 +114,19 @@ def test_reader_allows_readiness_flag_to_describe_project_placeholder():
     assert validate_reader_model(model) == ()
 
 
+def test_reader_uses_tolerant_integrity_bounds_for_executive_length():
+    model = build_reader_model(_assessment())
+    model["executive_readout"] = ("word " * 699) + "word."
+
+    assert "EXECUTIVE_LENGTH_INVALID" not in validate_reader_model(model)
+
+    model["executive_readout"] = ("word " * 249) + "word."
+    assert "EXECUTIVE_LENGTH_INVALID" in validate_reader_model(model)
+
+    model["executive_readout"] = ("word " * 949) + "word."
+    assert "EXECUTIVE_LENGTH_INVALID" in validate_reader_model(model)
+
+
 def test_html_and_docx_share_headings_and_priority_order():
     model = build_reader_model(_assessment())
     assert validate_reader_model(model) == ()
