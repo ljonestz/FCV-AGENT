@@ -54,6 +54,7 @@ class _Text:
 @dataclass
 class _Response:
     content: list[_Text]
+    stop_reason: str = "end_turn"
 
 
 class _Messages:
@@ -139,6 +140,33 @@ def test_client_does_not_retry_invalid_or_undelimited_content():
         )
 
     assert len(sdk.messages.calls) == 1
+
+
+def test_client_reports_content_free_diagnostics_for_truncated_payload():
+    response_text = f'{START}\n{{"facts": []}}'
+    sdk = _Sdk([response_text])
+    client = AnthropicVerifiedJsonClient(sdk, model="assessment-model")
+    sdk.messages.create = lambda **_kwargs: _Response(
+        [_Text(response_text)],
+        stop_reason="max_tokens",
+    )
+
+    with pytest.raises(ValueError) as error:
+        client.complete_json(
+            stage="fact_extraction",
+            payload={"documents": [], "source_blocks": []},
+            timeout_seconds=150,
+            max_output_tokens=6000,
+            max_transient_retries=1,
+        )
+
+    message = str(error.value)
+    assert "stage=fact_extraction" in message
+    assert "stop_reason=max_tokens" in message
+    assert "start_markers=1" in message
+    assert "end_markers=0" in message
+    assert f"characters={len(response_text)}" in message
+    assert '{"facts": []}' not in message
 
 
 def test_client_retry_uses_one_total_timeout_budget(monkeypatch):

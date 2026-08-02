@@ -6,7 +6,7 @@ from collections.abc import Callable
 import time
 from typing import Any
 
-from sector_lenses.climate_truth_prompts import parse_climate_json
+from sector_lenses.climate_truth_prompts import END, START, parse_climate_json
 from sector_lenses.climate_verified_prompts import build_verified_stage_prompt
 
 
@@ -73,4 +73,12 @@ class AnthropicVerifiedJsonClient:
             for item in content
             if getattr(item, "text", "")
         )
-        return parse_climate_json(text)
+        try:
+            return parse_climate_json(text)
+        except ValueError as error:
+            stop_reason = getattr(response, "stop_reason", None) or "unknown"
+            raise ValueError(
+                f"{error} (stage={stage}; stop_reason={stop_reason}; "
+                f"characters={len(text)}; start_markers={text.count(START)}; "
+                f"end_markers={text.count(END)})"
+            ) from error
