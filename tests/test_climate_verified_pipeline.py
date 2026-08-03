@@ -456,15 +456,18 @@ def test_model_cannot_self_attest_an_unsourced_numeric_token():
 
     result = run_verified_climate_pipeline(
         **_arguments(),
-        clients=PipelineClients(FakeClient(responses, []), FakeClient([], [])),
+        clients=PipelineClients(FakeClient(responses, []), _pass_review_client()),
     )
 
-    assert result["priorities"] == []
+    assert result["priorities"][0]["decision"] == "Complete the review."
     diagnostics = result["recommendation_diagnostics"]
-    assert diagnostics["unsupported_numeric_tokens"] == ["2027"]
+    assert diagnostics["unsupported_numeric_tokens"] == []
+    assert "RECOMMENDATION_UNSUPPORTED_PRECISION_REMOVED" in (
+        result["manifest"]["repair_actions"]
+    )
 
 
-def test_numeric_validation_exposes_only_bounded_unsupported_tokens():
+def test_numeric_repair_removes_only_bounded_unsupported_tokens():
     responses = _responses()
     recommendation = responses[3]["recommendation_candidates"][0]
     recommendation["minimum_action"] = (
@@ -473,26 +476,16 @@ def test_numeric_validation_exposes_only_bounded_unsupported_tokens():
 
     result = run_verified_climate_pipeline(
         **_arguments(),
-        clients=PipelineClients(FakeClient(responses, []), FakeClient([], [])),
+        clients=PipelineClients(FakeClient(responses, []), _pass_review_client()),
     )
 
-    assert result["priorities"] == []
+    assert result["priorities"][0]["minimum_action"] == (
+        "Update Components before the review."
+    )
     diagnostics = result["recommendation_diagnostics"]
-    assert diagnostics["reason_codes"] == ["RECOMMENDATION_NUMBER_UNSUPPORTED"]
-    assert diagnostics["unsupported_numeric_tokens"] == ["1", "2", "2027"]
-    assert diagnostics["candidate_suppressions"] == [
-        {
-            "recommendation_id": "REC-001",
-            "stage": "validation",
-            "reason_codes": ["RECOMMENDATION_NUMBER_UNSUPPORTED"],
-            "unsupported_numeric_fields": [
-                {
-                    "field": "minimum_action",
-                    "tokens": ["1", "2", "2027"],
-                }
-            ],
-        }
-    ]
+    assert diagnostics["reason_codes"] == []
+    assert diagnostics["unsupported_numeric_tokens"] == []
+    assert diagnostics["candidate_suppressions"] == []
 
 
 def test_bad_fact_suppresses_dependent_analysis_and_recommendation():

@@ -44,6 +44,7 @@ from sector_lenses.climate_recommendations import (
     normalize_drafting_blocks,
     numeric_tokens_in_text,
     normalize_optional_enhancement,
+    normalize_unsupported_core_precision,
     unsupported_numeric_tokens,
     validate_recommendation,
 )
@@ -888,6 +889,8 @@ def run_verified_climate_pipeline(
         )
         candidate, enhancement_repairs = normalize_optional_enhancement(candidate)
         repairs.extend(enhancement_repairs)
+        candidate, precision_repairs = normalize_unsupported_core_precision(candidate)
+        repairs.extend(precision_repairs)
         drafting_context = DraftingValidationContext(
             known_ids=frozenset(known_ids),
             guidance_ids=frozenset(item.guidance_id for item in guidance),

@@ -282,6 +282,65 @@ def normalize_optional_enhancement(
     )
 
 
+def _without_numeric_tokens(text: str, unsupported: set[str]) -> str:
+    cleaned = NUMERIC_TOKEN_PATTERN.sub(
+        lambda match: "" if match.group(0) in unsupported else match.group(0),
+        text,
+    )
+    cleaned = re.sub(
+        r"[ ]+([,.;:])",
+        lambda match: match.group(1),
+        cleaned,
+    )
+    cleaned = " ".join(cleaned.split())
+    cleaned = re.sub(
+        r"\b(?:and|or)\s+(?=(?:before|after|during|for|to|in|on|with|under)\b)",
+        "",
+        cleaned,
+    )
+    cleaned = re.sub(
+        r"\b(?:in|by|before|after|during|on|for)(?=[,.;:]|$)",
+        "",
+        cleaned,
+    )
+    return re.sub(r"[ ]+([,.;:])", lambda match: match.group(1), cleaned)
+
+
+def normalize_unsupported_core_precision(
+    candidate: CandidateRecommendation,
+) -> tuple[CandidateRecommendation, tuple[str, ...]]:
+    """Remove unsupported numeric precision while retaining core prose."""
+
+    fields = {
+        "decision": candidate.decision,
+        "minimum_action": candidate.minimum_action,
+        "completion_evidence": candidate.completion_evidence,
+    }
+    unsupported = {
+        token
+        for value in fields.values()
+        for token in numeric_tokens_in_text(value)
+        if token not in candidate.supported_numeric_tokens
+    }
+    if not unsupported:
+        return candidate, ()
+    cleaned = {
+        name: _without_numeric_tokens(value, unsupported)
+        for name, value in fields.items()
+    }
+    if not all(cleaned.values()):
+        return candidate, ()
+    return (
+        replace(
+            candidate,
+            decision=cleaned["decision"],
+            minimum_action=cleaned["minimum_action"],
+            completion_evidence=cleaned["completion_evidence"],
+        ),
+        ("RECOMMENDATION_UNSUPPORTED_PRECISION_REMOVED",),
+    )
+
+
 def validate_recommendation(
     candidate: CandidateRecommendation,
 

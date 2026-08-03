@@ -9,6 +9,7 @@ from sector_lenses.climate_recommendations import (
     admit_readiness_flags,
     normalize_optional_enhancement,
     validate_recommendation,
+    normalize_unsupported_core_precision,
 )
 
 
@@ -263,3 +264,32 @@ def test_unsupported_optional_enhancement_is_dropped_without_weakening_core():
     assert normalized.enhanced_action is None
     assert normalized.enhanced_activation is None
     assert repairs == ("ENHANCED_UNSUPPORTED_PRECISION_DROPPED",)
+
+
+def test_unsupported_core_number_is_removed_without_dropping_action():
+    candidate = replace(
+        _candidate(),
+        minimum_action="Update the 2023 risk framework for implementation.",
+        supported_numeric_tokens=(),
+    )
+
+    normalized, repairs = normalize_unsupported_core_precision(candidate)
+
+    assert normalized.decision == candidate.decision
+    assert normalized.minimum_action == (
+        "Update the risk framework for implementation."
+    )
+    assert normalized.completion_evidence == candidate.completion_evidence
+    assert repairs == ("RECOMMENDATION_UNSUPPORTED_PRECISION_REMOVED",)
+
+
+def test_unsupported_component_numbers_do_not_leave_dangling_grammar():
+    candidate = replace(
+        _candidate(),
+        minimum_action="Update Components 1 and 2 before the 2027 review.",
+        supported_numeric_tokens=(),
+    )
+
+    normalized, _ = normalize_unsupported_core_precision(candidate)
+
+    assert normalized.minimum_action == "Update Components before the review."
