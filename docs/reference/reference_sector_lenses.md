@@ -87,9 +87,9 @@ Raw literature and source notes are never injected at runtime.
 
 *Last updated: 2026-07-31 - approved South Sudan runtime release, reader-facing climate polish, and narrow evidence-gate retry.*
 
-## Climate verified-v2 compatibility surface (v9.24)
+## Climate verified-v2.1 compatibility surface (v9.25)
 
-The active Climate-only Express design path now uses `climate-verified-v2`; the
+The active Climate-only Express design path now uses `climate-verified-v2.1`; the
 `climate-native-v1` normalizer remains readable for legacy sessions and other
 routes. Shared v2 fields are `schema_version`, `run_id`, `bank_release_id`,
 `evidence_status`, atomic `facts`, `analysis`, four `judgments`,
@@ -114,3 +114,19 @@ failed named gates, and the three-priority cap. No candidate or project prose is
 included. The canonical reader copies the safe summary into its technical annex.
 When no priority survives, both canonical HTML and DOCX render the same explicit
 no-recommendation admission message instead of leaving an empty section.
+
+Each admitted priority requires a structured current-document drafting block;
+a second operational-instrument block is nullable and is retained only when it
+is distinct and linked to an evidenced named instrument. Drafting carries a
+bounded guidance ID and uses `standard_document_advisory` when the normal PCN or
+PAD destination is advisory rather than a confirmed project commitment. The
+compiler alone receives the versioned operational-guidance packet; the packet is
+not project evidence and does not claim to reproduce OPCS or ESF policy text.
+
+Readiness flags carry `residual_gap_ids` and are suppressed when they duplicate
+the residual gaps behind final priorities. Judgment values, including unclear or
+not-evidenced states, require resolvable evidence IDs. The canonical reader derives
+`priority_summary` after admission and semantic review, counts accepted live
+research from distinct `CE-LIVE-*` evidence IDs, and keeps drafting labels,
+destinations, status, guidance basis, provenance count, and the
+`preview; not approved` label in parity across browser, HTML, and DOCX outputs.

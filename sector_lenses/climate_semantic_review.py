@@ -81,6 +81,9 @@ def build_reviewer_prompt(
 Check existing mitigation before residual gaps, evidence entitlement,
 recommendation proportionality, routing scope and timing, authority,
 rating coherence, duplication, and unintended consequences.
+Check current-document and operational-instrument drafting separately for
+target existence and scope, representation of existing mitigation, residual
+improvement, actor, timing, and authority, and unsupported technical precision.
 Return pass, revise, or block with claim IDs and reason codes.
 Do not reveal hidden reasoning and do not broadly rewrite the assessment.
 

@@ -11333,7 +11333,7 @@ def download_report():
     verified_raw = data.get('climate_assessment') or {}
     if (
         isinstance(verified_raw, dict)
-        and verified_raw.get('schema_version') == 'climate-verified-v2'
+        and verified_raw.get('schema_version') == 'climate-verified-v2.1'
     ):
         verified = normalize_climate_assessment(verified_raw)
         reader_model = build_reader_model(verified)

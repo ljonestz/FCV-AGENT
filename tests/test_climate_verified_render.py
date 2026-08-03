@@ -19,7 +19,7 @@ def _assessment() -> dict[str, object]:
         "the documented response remains at an early operational stage. "
     )
     return {
-        "schema_version": "climate-verified-v2",
+        "schema_version": "climate-verified-v2.1",
         "run_id": "run-1",
         "bank_release_id": "ssd-2026.08",
         "evidence_status": "preview; not approved",
@@ -49,7 +49,7 @@ def _assessment() -> dict[str, object]:
                 "enhanced_action": None,
                 "enhanced_activation": None,
                 "responsible_function": "Task team",
-                "routing_status": "team_to_confirm",
+                "routing_status": "standard_document_advisory",
                 "authority_basis": "none_verified",
                 "recommendation_basis": "project_evidence",
                 "project_anchor_ids": ["PF-001"],
@@ -62,7 +62,29 @@ def _assessment() -> dict[str, object]:
                 "confidence": "medium",
                 "limitation": "Detailed parameters remain to be confirmed.",
                 "caution": "Avoid unintended exclusion.",
-                "drafting_language": "Suggested text for the verified vehicle.",
+                "current_document_drafting": {
+                    "target_document": "PCN",
+                    "target_section": "Project Description",
+                    "drafting_status": "advisory_proposal",
+                    "text": (
+                        "Suggested targeted text for the current project document. "
+                        * 12
+                    ).strip(),
+                    "project_basis_ids": ["PF-001"],
+                    "gap_basis_ids": ["RG-001"],
+                    "guidance_ids": ["GUIDE-PCN-DESIGN"],
+                },
+                "operational_instrument_drafting": ({
+                    "target_document": "Security Risk Management Plan",
+                    "target_section": "Continuity arrangements",
+                    "drafting_status": "existing_commitment",
+                    "text": (
+                        "Distinct operational instrument text for continuity. " * 12
+                    ).strip(),
+                    "project_basis_ids": ["PF-001"],
+                    "gap_basis_ids": ["RG-001"],
+                    "guidance_ids": ["GUIDE-FCV-CONTINUITY"],
+                } if index == 1 else None),
             }
             for index in range(1, 5)
         ],
@@ -97,11 +119,16 @@ def test_reader_has_four_dimensions_priority_cap_and_safe_annex():
 
     assert len(model["judgments"]) == 4
     assert len(model["priorities"]) == 3
+    assert model["priority_summary"] == {
+        "count": 3,
+        "titles": ["Priority 1", "Priority 2", "Priority 3"],
+        "statement": "Three final operational priorities are presented: Priority 1; Priority 2; Priority 3.",
+    }
     assert "overall_rating" not in model
     assert model["evidence_status"] == "preview; not approved"
     assert model["technical_annex"] == {
         "run_id": "run-1",
-        "schema_version": "climate-verified-v2",
+        "schema_version": "climate-verified-v2.1",
         "bank_release_id": "ssd-2026.08",
         "validation_status": "passed",
         "recommendation_candidate_count": 3,
@@ -113,7 +140,15 @@ def test_reader_has_four_dimensions_priority_cap_and_safe_annex():
         "unsupported_numeric_tokens": [],
         "semantic_review_object_ids": [],
         "candidate_suppressions": [],
+        "live_research_count": 0,
     }
+
+
+def test_priority_summary_count_must_match_final_priorities():
+    model = build_reader_model(_assessment())
+    model["priority_summary"]["count"] = 2
+
+    assert "PRIORITY_SUMMARY_MISMATCH" in validate_reader_model(model)
 
 
 def test_reader_annex_preserves_bounded_candidate_suppression_path():
@@ -200,13 +235,18 @@ def test_html_and_docx_share_headings_and_priority_order():
         assert f"Priority {index}" in html
         assert f"Priority {index}" in document_text
     for expected in (
-        "team_to_confirm",
+        "standard_document_advisory",
         "none_verified",
         "project_evidence",
         "PF-001",
         "PW-001",
         "RG-001",
-        "Suggested text for the verified vehicle.",
+        "Current document drafting",
+        "Operational instrument drafting",
+        "Suggested targeted text for the current project document.",
+        "Distinct operational instrument text for continuity.",
+        "GUIDE-PCN-DESIGN",
+        "GUIDE-FCV-CONTINUITY",
     ):
         assert expected in html
         assert expected in document_text
@@ -215,6 +255,11 @@ def test_html_and_docx_share_headings_and_priority_order():
     assert not any(
         paragraph.text.rstrip().endswith(("[", "{", "..."))
         for paragraph in document.paragraphs
+    )
+    assert html.count("Operational instrument drafting") == 1
+    assert document_text.count("Operational instrument drafting") == 1
+    assert html.index("Current document drafting") < html.index(
+        "Operational instrument drafting"
     )
 
 def test_zero_priority_message_is_shared_by_html_and_docx():

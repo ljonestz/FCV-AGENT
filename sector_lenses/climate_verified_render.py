@@ -49,7 +49,6 @@ PRIORITY_FIELDS = (
     ("Confidence", "confidence"),
     ("Limitation", "limitation"),
     ("Caution", "caution"),
-    ("Suggested drafting", "drafting_language"),
 )
 SMOKE_RUNTIME_WARNING = (
     "Smoke test: validates workflow completion only; "
@@ -115,6 +114,25 @@ def _no_priority_message(model: dict[str, object]) -> str:
     return NO_RECOMMENDATION_MESSAGE
 
 
+def _priority_summary(priorities: list[dict[str, Any]]) -> dict[str, object]:
+    titles = [_text(item.get("title")) for item in priorities]
+    count = len(titles)
+    if count == 0:
+        statement = (
+            "No final operational priority was admitted after validation and "
+            "semantic review."
+        )
+    else:
+        number_word = {1: "One", 2: "Two", 3: "Three"}.get(count, str(count))
+        noun = "priority is" if count == 1 else "priorities are"
+        statement = (
+            f"{number_word} final operational {noun} presented: "
+            + "; ".join(titles)
+            + "."
+        )
+    return {"count": count, "titles": titles, "statement": statement}
+
+
 def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
     """Project a verified assessment into the only reader-facing structure."""
 
@@ -149,6 +167,7 @@ def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
         "judgments": judgments,
         "priorities": [dict(item) for item in priorities],
         "review_readiness_flags": [dict(item) for item in flags],
+        "priority_summary": _priority_summary(priorities),
         "evidence_status": _text(assessment.get("evidence_status")) or "approved",
         "technical_annex": {
             "run_id": _text(assessment.get("run_id")),
@@ -167,6 +186,9 @@ def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
             "semantic_reviewer_invoked": diagnostics.get(
                 "reviewer_invoked", False
             ),
+            "live_research_count": _mapping(
+                assessment.get("manifest")
+            ).get("live_research_count", 0),
             "semantic_reviewer_verdict": _text(
                 diagnostics.get("reviewer_verdict")
             ) or "not_invoked",
@@ -239,8 +261,40 @@ def validate_reader_model(model: dict[str, object]) -> tuple[str, ...]:
         "minimum_action",
         "confidence",
     )
+    drafting_required = (
+        "target_document",
+        "target_section",
+        "drafting_status",
+        "text",
+        "project_basis_ids",
+        "gap_basis_ids",
+        "guidance_ids",
+    )
+    for priority in priorities:
+        current = _mapping(priority.get("current_document_drafting"))
+        if not current or any(key not in current for key in drafting_required):
+            issues.append("CURRENT_DRAFTING_INCOMPLETE")
+        optional_value = priority.get("operational_instrument_drafting")
+        if optional_value is not None and not isinstance(optional_value, dict):
+            issues.append("OPERATIONAL_DRAFTING_MALFORMED")
+        for block in (current, _mapping(optional_value)):
+            if not block:
+                continue
+            draft_text = _text(block.get("text"))
+            if not draft_text or draft_text[-1:] not in ".?!":
+                issues.append("DRAFTING_TEXT_INCOMPLETE")
+
     if any(not all(_text(item.get(key)) for key in required) for item in priorities):
         issues.append("PRIORITY_FIELD_INCOMPLETE")
+    summary = _mapping(model.get("priority_summary"))
+    summary_titles = summary.get("titles")
+    if (
+        summary.get("count") != len(priorities)
+        or summary_titles != [_text(item.get("title")) for item in priorities]
+        or not _text(summary.get("statement"))
+    ):
+        issues.append("PRIORITY_SUMMARY_MISMATCH")
+
 
     if any(
         _PLACEHOLDER.search(value) or _BARE_PLACEHOLDER.fullmatch(value)
@@ -258,6 +312,33 @@ def validate_reader_model(model: dict[str, object]) -> tuple[str, ...]:
 
 def _heading(level: int, text: str) -> str:
     return f"<h{level}>{html.escape(text)}</h{level}>"
+
+
+def _drafting_html(label: str, value: object) -> str:
+    block = _mapping(value)
+    if not block:
+        return ""
+    parts = ['<section class="climate-drafting-block">']
+    parts.append(_heading(4, label))
+    for field_label, key in (
+        ("Target document", "target_document"),
+        ("Target section", "target_section"),
+        ("Drafting status", "drafting_status"),
+        ("Guidance basis", "guidance_ids"),
+    ):
+        field_value = _field_text(block.get(key))
+        if field_value:
+            parts.append(
+                f"<p><strong>{html.escape(field_label)}:</strong> "
+                f"{html.escape(field_value)}</p>"
+            )
+    parts.append(
+        '<div class="climate-drafting-text">'
+        + html.escape(_text(block.get("text")))
+        + "</div>"
+    )
+    parts.append("</section>")
+    return "".join(parts)
 
 
 def render_reader_html(model: dict[str, object]) -> str:
@@ -306,6 +387,13 @@ def render_reader_html(model: dict[str, object]) -> str:
 
     parts.append(_heading(2, HEADINGS[2]))
     priorities = _records(model.get("priorities"))
+    priority_summary = _mapping(model.get("priority_summary"))
+    if _text(priority_summary.get("statement")):
+        parts.append(
+            '<p class="climate-priority-summary">'
+            + html.escape(_text(priority_summary.get("statement")))
+            + "</p>"
+        )
     if not priorities:
         parts.append(f"<p>{html.escape(_no_priority_message(model))}</p>")
     for priority in priorities:
@@ -322,6 +410,15 @@ def render_reader_html(model: dict[str, object]) -> str:
                     f"<p><strong>{html.escape(label)}:</strong> "
                     f"{html.escape(value)}</p>"
                 )
+            if key == "minimum_action":
+                parts.append(_drafting_html(
+                    "Current document drafting",
+                    priority.get("current_document_drafting"),
+                ))
+                parts.append(_drafting_html(
+                    "Operational instrument drafting",
+                    priority.get("operational_instrument_drafting"),
+                ))
         parts.append("</section>")
 
     parts.append("<details><summary>")
@@ -366,6 +463,18 @@ def _docx_field(document: Document, label: str, value: object) -> None:
     paragraph.add_run(text)
 
 
+def _docx_drafting(document: Document, label: str, value: object) -> None:
+    block = _mapping(value)
+    if not block:
+        return
+    document.add_heading(label, level=3)
+    _docx_field(document, "Target document", block.get("target_document"))
+    _docx_field(document, "Target section", block.get("target_section"))
+    _docx_field(document, "Drafting status", block.get("drafting_status"))
+    _docx_field(document, "Guidance basis", block.get("guidance_ids"))
+    document.add_paragraph(_text(block.get("text")))
+
+
 def write_reader_docx(model: dict[str, object], path: str | Path) -> Path:
     """Write the same reader dictionary to a compact Word document."""
 
@@ -391,6 +500,9 @@ def write_reader_docx(model: dict[str, object], path: str | Path) -> Path:
 
     document.add_heading(HEADINGS[2], level=1)
     priorities = _records(model.get("priorities"))
+    priority_summary = _mapping(model.get("priority_summary"))
+    if _text(priority_summary.get("statement")):
+        document.add_paragraph(_text(priority_summary.get("statement")))
     if not priorities:
         document.add_paragraph(_no_priority_message(model))
     for priority in priorities:
@@ -402,6 +514,15 @@ def write_reader_docx(model: dict[str, object], path: str | Path) -> Path:
         )
         for label, key in PRIORITY_FIELDS:
             _docx_field(document, label, priority.get(key))
+            if key == "minimum_action":
+                _docx_drafting(
+                    document, "Current document drafting",
+                    priority.get("current_document_drafting"),
+                )
+                _docx_drafting(
+                    document, "Operational instrument drafting",
+                    priority.get("operational_instrument_drafting"),
+                )
 
     document.add_heading(HEADINGS[3], level=1)
     for flag in _records(model.get("review_readiness_flags")):

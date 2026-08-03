@@ -25,12 +25,6 @@ ALLOWED = {
         "unclear",
     },
 }
-EVIDENCE_REQUIRED_EXCEPT = {
-    "relevance": {"unclear"},
-    "sensitivity": {"unclear"},
-    "responsiveness": {"unclear", "not_expected"},
-    "operationalization": {"unclear", "not_evidenced"},
-}
 
 
 @dataclass(frozen=True)
@@ -74,14 +68,11 @@ def validate_judgments(
                     True,
                 )
             )
-        if (
-            judgment.value not in EVIDENCE_REQUIRED_EXCEPT[dimension]
-            and not judgment.evidence_ids
-        ):
+        if not judgment.evidence_ids:
             issues.append(
                 ValidationIssue(
-                    f"{dimension.upper()}_EVIDENCE_MISSING",
-                    f"{dimension} must be unclear without evidence.",
+                    "JUDGMENT_EVIDENCE_MISSING",
+                    f"{dimension} has no resolvable evidence reference.",
                     dimension,
                     True,
                 )

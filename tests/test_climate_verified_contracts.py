@@ -10,7 +10,7 @@ from sector_lenses.climate_verified_contracts import (
 
 
 def test_verified_schema_and_call_budgets_are_stable():
-    assert CLIMATE_VERIFIED_SCHEMA_VERSION == "climate-verified-v2"
+    assert CLIMATE_VERIFIED_SCHEMA_VERSION == "climate-verified-v2.1"
     assert CALL_BUDGETS["fact_extraction"].input_tokens == 24_000
     assert CALL_BUDGETS["fact_extraction"].output_tokens == 16_000
     assert CALL_BUDGETS["fact_extraction"].timeout_seconds == 300

@@ -42,7 +42,7 @@ and never more than 100.
 Keep subject, predicate, object, and assertion prose to 45 words or fewer.
 Keep each verbatim supporting excerpt to 60 words or fewer.
 
-Return: {"schema_version":"climate-verified-v2","facts":[{"claim_id":"PF-001","claim_type":"...","subject":"...","predicate":"...","object":"...","epistemic_status":"explicit|confirmed_absence|not_found|not_yet_specified|contradictory|not_applicable","source_block_ids":["..."],"supporting_excerpt":"... or null","confidence":"high|medium|low"}],"derived_assertions":[]}.""",
+Return: {"schema_version":"climate-verified-v2.1","facts":[{"claim_id":"PF-001","claim_type":"...","subject":"...","predicate":"...","object":"...","epistemic_status":"explicit|confirmed_absence|not_found|not_yet_specified|contradictory|not_applicable","source_block_ids":["..."],"supporting_excerpt":"... or null","confidence":"high|medium|low"}],"derived_assertions":[]}.""",
         payload,
     )
 
@@ -83,12 +83,14 @@ Responsiveness asks whether design actively strengthens resilience, inclusion,
 legitimacy, cooperative governance, or plausible social dividends.
 Operationalization asks whether sensitivity or responsiveness is translated
 into requirements, responsibilities, resources, indicators, verification,
-triggers, and adaptation. Use only IDs in the supplied verified registers.
+triggers, and adaptation. Every dimension, including unclear, not_expected, and
+not_evidenced, must cite at least one ID from the supplied verified registers.
 Write an executive_readout of 500 to 800 words for a task-team reader. Start
 with what the project already does, distinguish residual gaps from items merely
 not yet specified, summarize the four judgments without inventing an overall
-rating, and preview only issues that could pass the recommendation admission
-test. Every previewed issue must name the credited existing response and explain
+rating. Discuss material residual issues without stating or implying how many
+will pass the later recommendation threshold. Every previewed issue must name
+the credited existing response and explain
 what remains. Keep preparation and implementation milestones separate; do not
 imply dependency unless an explicit project fact establishes it. Calibrate
 precision to the evidence and state material limitations.
@@ -130,7 +132,7 @@ wording. Review-readiness flags are non-scoring, source-linked, and limited to
 four. Keep free-text values other than drafting text to 45 words or fewer. Do not
 repeat the evidence package or add prose outside the requested fields.
 
-Return: {"recommendation_candidates":[{"recommendation_id":"REC-001","title":"...","pathway_ids":[],"existing_response_ids":[],"residual_gap_ids":[],"project_anchor_ids":[],"decision":"...","minimum_action":"...","enhanced_action":null,"enhanced_activation":null,"routing_status":"verified_existing|verified_with_scope_change|standard_document_advisory|not_applicable","instrument_claim_ids":[],"responsible_function":"...","authority_basis":"project_commitment|policy|directive|procedure|none_verified","recommendation_basis":"project_evidence|country_context|guidance|analytical_judgment","completion_evidence":"...","completion_evidence_status":"output|decision_record|updated_section|team_to_define","confidence":"high|medium|low","limitation":"...","caution":"...","current_document_drafting":{"target_document":"PCN","target_section":"Project Description","drafting_status":"existing_commitment|advisory_proposal","text":"...","project_basis_ids":[],"gap_basis_ids":[],"guidance_ids":[]},"operational_instrument_drafting":null,"supported_numeric_tokens":[],"score":{"materiality":0,"gap_strength":0,"leverage_urgency":0,"evidence":0,"feasibility":0},"gate_results":{"connection":true,"residuality":true,"materiality":true,"actionability":true,"timing":true,"distinctiveness":true}}],"readiness_flags":[{"flag_id":"RF-001","category":"incomplete_climate_screening|document_inconsistency|unresolved_indicator|processing_route_question|missing_operational_home|material_placeholder","flag":"...","why_it_matters":"...","document_basis_ids":[],"suggested_verification":"..."}]}""",
+Return: {"recommendation_candidates":[{"recommendation_id":"REC-001","title":"...","pathway_ids":[],"existing_response_ids":[],"residual_gap_ids":[],"project_anchor_ids":[],"decision":"...","minimum_action":"...","enhanced_action":null,"enhanced_activation":null,"routing_status":"verified_existing|verified_with_scope_change|standard_document_advisory|not_applicable","instrument_claim_ids":[],"responsible_function":"...","authority_basis":"project_commitment|policy|directive|procedure|none_verified","recommendation_basis":"project_evidence|country_context|guidance|analytical_judgment","completion_evidence":"...","completion_evidence_status":"output|decision_record|updated_section|team_to_define","confidence":"high|medium|low","limitation":"...","caution":"...","current_document_drafting":{"target_document":"PCN","target_section":"Project Description","drafting_status":"existing_commitment|advisory_proposal","text":"...","project_basis_ids":[],"gap_basis_ids":[],"guidance_ids":[]},"operational_instrument_drafting":null,"supported_numeric_tokens":[],"score":{"materiality":0,"gap_strength":0,"leverage_urgency":0,"evidence":0,"feasibility":0},"gate_results":{"connection":true,"residuality":true,"materiality":true,"actionability":true,"timing":true,"distinctiveness":true}}],"readiness_flags":[{"flag_id":"RF-001","category":"incomplete_climate_screening|document_inconsistency|unresolved_indicator|processing_route_question|missing_operational_home|material_placeholder","flag":"...","why_it_matters":"...","document_basis_ids":[],"residual_gap_ids":[],"suggested_verification":"..."}]}""",
         payload,
     )
 

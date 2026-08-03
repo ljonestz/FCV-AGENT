@@ -90,6 +90,17 @@ def test_live_claim_keeps_url_scope_and_retrieval_context():
     assert claim.preview_status is None
 
 
+def test_live_claim_with_any_unresolved_source_is_rejected():
+    bundle = _research_bundle()
+    bundle["claims"][0]["source_ids"] = [
+        "climate-source-1",
+        "missing-source",
+    ]
+    grounding = merge_climate_grounding({}, bundle)
+
+    assert adapt_grounding_evidence(grounding) == ()
+
+
 def test_malformed_or_unsourced_context_is_discarded():
     grounding = {
         "bank_evidence_records": [{"evidence_id": "SSD-E-001"}],

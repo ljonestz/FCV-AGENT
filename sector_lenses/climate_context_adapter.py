@@ -143,14 +143,19 @@ def adapt_grounding_evidence(
     for claim in _dict_list(grounding.get("live_claims")):
         identifier = _text(claim.get("id"))
         statement = _text(claim.get("claim"))
-        source_ids = [
+        declared_source_ids = [
             _text(item)
             for item in claim.get("source_ids", [])
-            if _text(item) in live_source_urls
+            if _text(item)
         ]
-        if not identifier or not statement or not source_ids:
+        if (
+            not identifier
+            or not statement
+            or not declared_source_ids
+            or any(item not in live_source_urls for item in declared_source_ids)
+        ):
             continue
-        primary_url = live_source_urls[source_ids[0]]
+        primary_url = live_source_urls[declared_source_ids[0]]
         result.append(
             ContextEvidenceRef(
                 evidence_id=f"CE-LIVE-{identifier}",

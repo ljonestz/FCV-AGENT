@@ -167,6 +167,7 @@ class ReviewReadinessFlag:
     why_it_matters: str
     document_basis_ids: tuple[str, ...]
     suggested_verification: str
+    residual_gap_ids: tuple[str, ...]
 
 
 def _issue(
@@ -336,6 +337,88 @@ def validate_recommendation(
                     f"{candidate.recommendation_id} has an unverified instrument target.",
                     candidate,
                 )
+            )
+    if drafting_context:
+        linked_fact_ids = set(candidate.project_anchor_ids) | set(
+            candidate.instrument_claim_ids
+        )
+        linked_fact_text = " ".join(
+            drafting_context.project_fact_text.get(identifier, "")
+            for identifier in linked_fact_ids
+        ).casefold()
+        operational_text = " ".join(
+            value
+            for value in (
+                candidate.decision,
+                candidate.minimum_action,
+                candidate.enhanced_action,
+                candidate.enhanced_activation,
+                candidate.completion_evidence,
+                *(
+                    block.text
+                    for block in drafting_blocks
+                ),
+            )
+            if value
+        ).casefold()
+        named_instruments = (
+            "project operations manual",
+            "security risk management plan",
+            "environmental and social commitment plan",
+            "environmental and social management framework",
+            "results framework",
+        )
+        if any(
+            phrase in operational_text and phrase not in linked_fact_text
+            for phrase in named_instruments
+        ):
+            issues.append(
+                _issue(
+                    "DRAFTING_INSTRUMENT_UNVERIFIED",
+                    f"{candidate.recommendation_id} invents an instrument claim.",
+                    candidate,
+                )
+            )
+        if (
+            re.search(r"\b(?:focal point|steering committee|coordination unit)\b", operational_text)
+            and not re.search(
+                r"\b(?:focal point|steering committee|coordination unit)\b",
+                linked_fact_text,
+            )
+        ):
+            issues.append(
+                _issue(
+                    "DRAFTING_ACTOR_UNVERIFIED",
+                    f"{candidate.recommendation_id} invents an operational actor.",
+                    candidate,
+                )
+            )
+        if (
+            re.search(r"\bbefore (?:effectiveness|appraisal|board approval)\b", operational_text)
+            and not re.search(
+                r"\bbefore (?:effectiveness|appraisal|board approval)\b",
+                linked_fact_text,
+            )
+        ):
+            issues.append(
+                _issue(
+                    "DRAFTING_TIMING_UNVERIFIED",
+                    f"{candidate.recommendation_id} invents a formal timing claim.",
+                    candidate,
+                )
+            )
+        if (
+            re.search(r"\b(?:hydrometeorological|hydromet) system\b", operational_text)
+            and not re.search(
+                r"\b(?:hydrometeorological|hydromet) system\b", linked_fact_text
+            )
+        ):
+            issues.append(
+                _issue(
+                    "DRAFTING_SYSTEM_UNVERIFIED",
+                    f"{candidate.recommendation_id} invents a technical system.",
+                    candidate,
+                )
         )
     for block in drafting_blocks:
         if block.drafting_status not in DRAFTING_STATUSES:
@@ -343,6 +426,15 @@ def validate_recommendation(
                 _issue(
                     "DRAFTING_STATUS_INVALID",
                     f"{candidate.recommendation_id} has invalid drafting status.",
+                    candidate,
+                )
+            )
+        word_count = len(block.text.split())
+        if not 60 <= word_count <= 180:
+            issues.append(
+                _issue(
+                    "DRAFTING_LENGTH_INVALID",
+                    f"{candidate.recommendation_id} drafting length is invalid.",
                     candidate,
                 )
             )
@@ -481,9 +573,14 @@ def admit_readiness_flags(
     flags: list[ReviewReadinessFlag],
     known_project_ids: set[str],
     reserved_statements: set[str],
+    *,
+    known_gap_ids: set[str] | None = None,
+    admitted_gap_ids: set[str] | None = None,
 ) -> tuple[ReviewReadinessFlag, ...]:
     reserved = {_normalized_sentence(item) for item in reserved_statements}
     admitted: list[ReviewReadinessFlag] = []
+    known_gaps = known_gap_ids or set()
+    admitted_gaps = admitted_gap_ids or set()
     for flag in flags:
         if flag.category not in READINESS_CATEGORIES:
             continue
@@ -492,6 +589,10 @@ def admit_readiness_flags(
         if set(flag.document_basis_ids) - known_project_ids:
             continue
         if _normalized_sentence(flag.flag) in reserved:
+            continue
+        if set(flag.residual_gap_ids) - known_gaps:
+            continue
+        if set(flag.residual_gap_ids) & admitted_gaps:
             continue
         admitted.append(flag)
         if len(admitted) == 4:

@@ -1,4 +1,4 @@
-"""Runtime bridge from uploaded document parts to ``climate-verified-v2``.
+"""Runtime bridge from uploaded document parts to ``climate-verified-v2.1``.
 
 Only project and package-instrument uploads can establish project facts.
 Context uploads and the country bank cross the boundary as contextual evidence.

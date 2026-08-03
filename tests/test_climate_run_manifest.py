@@ -8,7 +8,7 @@ from sector_lenses.climate_run_manifest import (
 def test_cache_key_changes_with_authoritative_dependency():
     base = {
         "source_fingerprints": ("doc-a",),
-        "schema_version": "climate-verified-v2",
+        "schema_version": "climate-verified-v2.1",
         "prompt_version": "facts-v1",
         "reviewer_version": "review-v1",
         "model_alias": "assessment",
@@ -22,7 +22,7 @@ def test_cache_key_changes_with_authoritative_dependency():
 def test_safe_log_summary_excludes_project_text_and_prompts():
     manifest = RunManifest(
         run_id="run-123",
-        schema_version="climate-verified-v2",
+        schema_version="climate-verified-v2.1",
         prompt_versions={"facts": "facts-v1"},
         reviewer_version="review-v1",
         extraction_version="blocks-v1",
@@ -34,6 +34,7 @@ def test_safe_log_summary_excludes_project_text_and_prompts():
         applicability_fingerprint="app-a",
         bank_release_id="ssd-2026-08",
         live_research_timestamps=(),
+        accepted_live_evidence_ids=("CE-LIVE-claim-1", "CE-LIVE-claim-1"),
         validation_reason_codes=("FACT_SOURCE_UNRESOLVED",),
         repair_actions=("normalize_enums",),
         suppressed_counts={"recommendations": 1},
@@ -49,3 +50,4 @@ def test_safe_log_summary_excludes_project_text_and_prompts():
     assert summary["validation_reason_codes"] == [
         "FACT_SOURCE_UNRESOLVED"
     ]
+    assert summary["live_research_count"] == 1

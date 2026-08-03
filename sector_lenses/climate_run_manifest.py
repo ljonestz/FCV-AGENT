@@ -23,6 +23,7 @@ class RunManifest:
     bank_release_id: str | None
     live_research_timestamps: tuple[str, ...]
     validation_reason_codes: tuple[str, ...]
+    accepted_live_evidence_ids: tuple[str, ...]
     repair_actions: tuple[str, ...]
     suppressed_counts: dict[str, int]
     latency_ms: dict[str, int]
@@ -68,7 +69,7 @@ def safe_log_summary(manifest: RunManifest) -> dict[str, object]:
         "source_count": len(data["source_fingerprints"]),
         "applicability_fingerprint": data["applicability_fingerprint"],
         "bank_release_id": data["bank_release_id"],
-        "live_research_count": len(data["live_research_timestamps"]),
+        "live_research_count": len(set(data["accepted_live_evidence_ids"])),
         "validation_reason_codes": list(data["validation_reason_codes"]),
         "repair_actions": list(data["repair_actions"]),
         "suppressed_counts": data["suppressed_counts"],
