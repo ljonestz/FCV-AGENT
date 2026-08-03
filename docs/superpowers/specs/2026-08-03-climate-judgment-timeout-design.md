@@ -15,3 +15,9 @@ Add content-free diagnostics at the verified JSON client boundary. For each fail
 ## Verification
 
 Regression tests will establish that the judgment budget is 120 seconds, telemetry contains only bounded metadata, exhausted retry budgets preserve the original exception class/status, and retries continue to share one total budget. Existing Climate-FCV client, pipeline, workflow, rendering, and export tests must remain green. The deployed branch will be smoke-tested before one explicitly authorized replacement quality run. The full successful assessment and reader payload will be saved as JSON, and the complete reader note will be rendered to a new Markdown file labelled `preview; not approved`.
+
+## Smoke-discovered compiler bound
+
+The first post-fix smoke run reached `recommendation_compiler` but the cheap model exhausted the existing 5,000-token output ceiling and omitted the closing delimiter. The compiler contract implied, but did not explicitly state, the maximum-three-candidate rule and did not bound individual free-text values.
+
+Keep the existing output-token ceiling. Make the contract explicit: return at most three recommendation candidates, preserve fewer when fewer pass, keep every free-text value to 45 words or fewer, and do not repeat the evidence package or add prose outside requested fields. Version this prompt as `climate-recommendations-v2.2`. This constrains verbosity without weakening admission gates or analytical content.

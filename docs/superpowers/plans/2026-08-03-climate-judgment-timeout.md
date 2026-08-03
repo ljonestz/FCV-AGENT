@@ -55,6 +55,26 @@ Run: `python -m pytest tests/test_climate_verified_contracts.py tests/test_clima
 
 Expected: all tests pass.
 
+### Task 2A: Bound recommendation output
+
+**Files:**
+- Modify: `sector_lenses/climate_verified_prompts.py`
+- Modify: `sector_lenses/climate_verified_pipeline.py`
+- Modify: `tests/test_climate_verified_client.py`
+- Modify: `tests/test_climate_verified_pipeline.py`
+
+- [ ] **Step 1: Add failing prompt-contract and manifest-version tests**
+
+Require an explicit maximum of three candidates, a 45-word free-text bound, and prompt version `climate-recommendations-v2.2`.
+
+- [ ] **Step 2: Implement the bounded prompt contract**
+
+Add only the explicit cardinality and field-length constraints; retain the 5,000-token ceiling and all existing gates.
+
+- [ ] **Step 3: Run focused tests and verify GREEN**
+
+Run the prompt-contract and manifest tests and expect both to pass.
+
 ### Task 3: Verify, deploy, and capture the replacement result
 
 **Files:**

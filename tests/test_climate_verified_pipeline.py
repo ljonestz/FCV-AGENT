@@ -392,6 +392,10 @@ def test_manifest_is_privacy_safe_and_scoped_to_the_run():
         first["manifest"]["prompt_versions"]["judgment_review"]
         == "climate-judgments-v2.1"
     )
+    assert (
+        first["manifest"]["prompt_versions"]["recommendation_compiler"]
+        == "climate-recommendations-v2.2"
+    )
     assert set(first["manifest"]["prompt_versions"]) == {
         "fact_extraction",
         "bounded_analysis",

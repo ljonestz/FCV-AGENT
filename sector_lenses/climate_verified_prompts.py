@@ -97,8 +97,8 @@ def _recommendation_prompt(payload: dict[str, object]) -> str:
     return _common(
         """Compile only recommendations that pass connection, residuality,
 materiality, actionability, timing, distinctiveness, and comparative-importance
-tests. Return fewer than three recommendations when fewer pass; never manufacture
-one for symmetry and never label all as High. Route to an existing instrument
+tests. Return at most three recommendation candidates. Return fewer than three
+when fewer pass; never manufacture one for symmetry and never label all as High. Route to an existing instrument
 only when existence, scope, timing, and authority are verified separately.
 Otherwise use team_to_confirm or new_vehicle_may_be_needed and suppress drafting
 language. Minimum action must be proportionate. Enhanced action requires a
@@ -107,7 +107,8 @@ requirements, or completion evidence. If a digit is needed in decision, action,
 activation, completion-evidence, or drafting text, copy it from a linked verified
 project fact and repeat the exact token in supported_numeric_tokens; otherwise
 use non-numeric wording. Review-readiness flags are non-scoring,
-source-linked, and limited to four.
+source-linked, and limited to four. Keep every free-text value to 45 words or fewer. Do not repeat the evidence package or add prose outside the requested
+fields.
 
 Return: {"recommendation_candidates":[{"recommendation_id":"REC-001","title":"...","pathway_ids":[],"existing_response_ids":[],"residual_gap_ids":[],"project_anchor_ids":[],"decision":"...","minimum_action":"...","enhanced_action":null,"enhanced_activation":null,"routing_status":"verified_existing|verified_with_scope_change|new_vehicle_may_be_needed|team_to_confirm|not_applicable","instrument_claim_ids":[],"responsible_function":"...","authority_basis":"project_commitment|policy|directive|procedure|none_verified","recommendation_basis":"project_evidence|country_context|guidance|analytical_judgment","completion_evidence":"...","completion_evidence_status":"output|decision_record|updated_section|team_to_define","confidence":"high|medium|low","limitation":"...","caution":"...","drafting_language":null,"supported_numeric_tokens":[],"score":{"materiality":0,"gap_strength":0,"leverage_urgency":0,"evidence":0,"feasibility":0},"gate_results":{"connection":true,"residuality":true,"materiality":true,"actionability":true,"timing":true,"distinctiveness":true}}],"readiness_flags":[{"flag_id":"RF-001","category":"incomplete_climate_screening|document_inconsistency|unresolved_indicator|processing_route_question|missing_operational_home|material_placeholder","flag":"...","why_it_matters":"...","document_basis_ids":[],"suggested_verification":"..."}]}""",
         payload,

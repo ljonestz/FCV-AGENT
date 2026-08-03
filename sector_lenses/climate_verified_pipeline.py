@@ -60,7 +60,7 @@ PROMPT_VERSIONS = {
     "fact_extraction": "climate-facts-v2.1",
     "bounded_analysis": "climate-analysis-v2.1",
     "judgment_review": "climate-judgments-v2.1",
-    "recommendation_compiler": "climate-recommendations-v2.1",
+    "recommendation_compiler": "climate-recommendations-v2.2",
     "conditional_review": "climate-review-v2.0",
 }
 
