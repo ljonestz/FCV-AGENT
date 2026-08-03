@@ -46,6 +46,8 @@ def test_every_stage_uses_delimited_json_and_evidence_entitlements():
     assert "at most three recommendation candidates" in prompts["recommendation_compiler"]
     assert "45 words or fewer" in prompts["recommendation_compiler"]
     assert "source-first verifier" in prompts["conditional_review"]
+    assert "at most 12 reason_codes and 12 object_ids" in prompts["conditional_review"]
+    assert "500 words or fewer" in prompts["conditional_review"]
     assert "material risk-response table row" in prompts["fact_extraction"]
     assert (
         "administrative names and generic background"

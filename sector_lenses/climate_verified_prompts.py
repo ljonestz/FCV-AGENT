@@ -121,9 +121,7 @@ def _review_prompt(payload: dict[str, object]) -> str:
 before residual gaps; project-fact provenance; country-evidence entitlements;
 recommendation proportionality; instrument scope, timing, and authority; rating
 coherence; duplication; and unintended consequences. Do not broadly rewrite.
-Return {"verdict":"pass|revise|block","reason_codes":[],"object_ids":[]}.
-Use revise only when one bounded correction could resolve the issue; otherwise
-block the affected object.""",
+Return exactly one object and no other prose: {"verdict":"pass|revise|block","reason_codes":[],"object_ids":[]}. Return at most 12 reason_codes and 12 object_ids. Keep the entire response to 500 words or fewer. Use revise only when one bounded correction could resolve the issue; otherwise block the affected object.""",
         payload,
     )
 

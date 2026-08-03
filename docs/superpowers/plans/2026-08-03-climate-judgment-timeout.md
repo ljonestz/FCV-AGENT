@@ -75,6 +75,26 @@ Add only the explicit cardinality and field-length constraints; retain the 5,000
 
 Run the prompt-contract and manifest tests and expect both to pass.
 
+### Task 2B: Bound conditional semantic review output
+
+**Files:**
+- Modify: `sector_lenses/climate_verified_prompts.py`
+- Modify: `sector_lenses/climate_verified_pipeline.py`
+- Modify: `tests/test_climate_verified_client.py`
+- Modify: `tests/test_climate_verified_pipeline.py`
+
+- [ ] **Step 1: Add failing review-contract and manifest-version tests**
+
+Require one object, at most 12 reason codes and object IDs, a 500-word response limit, and prompt version `climate-review-v2.1`.
+
+- [ ] **Step 2: Implement the bounded review contract**
+
+Add only the explicit output-shape and cardinality constraints; retain the semantic review, 2,500-token ceiling, and fail-safe behavior.
+
+- [ ] **Step 3: Run focused tests and verify GREEN**
+
+Run the prompt-contract and manifest tests and expect both to pass.
+
 ### Task 3: Verify, deploy, and capture the replacement result
 
 **Files:**
