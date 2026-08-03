@@ -371,4 +371,3 @@ vanilla JavaScript, python-docx, pytest.
 7. Report the saved output path, exact deployed commit, test results, quality
    findings, remaining limitations, and the separate optional Cowork guidance
    review plan.
-

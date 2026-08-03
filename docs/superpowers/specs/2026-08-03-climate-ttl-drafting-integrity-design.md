@@ -1,7 +1,7 @@
 # Climate-FCV TTL Drafting and Integrity Design
 
-Date: 2026-08-03  
-Branch: `feat/climate-country-bank`  
+Date: 2026-08-03
+Branch: `feat/climate-country-bank`
 Status: Approved design; implementation planning pending
 
 ## 1. Purpose
@@ -278,4 +278,3 @@ Implementation follows test-driven development:
 - changing `fcv-agent.onrender.com`;
 - a visual redesign; and
 - a separate paid drafting-model stage.
-
