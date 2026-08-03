@@ -2567,3 +2567,25 @@ def test_climate_only_express_route_returns_verified_v2_without_legacy_stage(mon
     assert '"stage_done": 3' in body
     assert '"express_done": true' in body
     assert '"runtime_mode": "smoke"' in body
+
+
+def test_verified_climate_failure_log_includes_bounded_schema_reason(caplog):
+    diagnostic = {
+        "stage": "recommendation_compiler",
+        "attempt": 1,
+        "elapsed_ms": 274,
+        "exception_type": "BadRequestError",
+        "status_code": 400,
+        "prompt_chars": 37495,
+        "timeout_seconds": 240,
+        "remaining_seconds": 239,
+        "provider_error_type": "invalid_request_error",
+        "provider_failure_code": "schema_rejected",
+        "schema_path": "properties.recommendation_candidates.items.type",
+    }
+
+    with caplog.at_level("WARNING"):
+        app_module._log_verified_climate_call_failure(diagnostic)
+
+    assert "provider_failure_code=schema_rejected" in caplog.text
+    assert "schema_path=properties.recommendation_candidates.items.type" in caplog.text

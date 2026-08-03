@@ -945,7 +945,8 @@ def _log_verified_climate_call_failure(diagnostic: dict[str, object]) -> None:
     app.logger.warning(
         "Climate verified call failure stage=%s attempt=%s elapsed_ms=%s "
         "exception_type=%s status_code=%s prompt_chars=%s "
-        "timeout_seconds=%s remaining_seconds=%s",
+        "timeout_seconds=%s remaining_seconds=%s provider_error_type=%s "
+        "provider_failure_code=%s schema_path=%s",
         diagnostic.get("stage"),
         diagnostic.get("attempt"),
         diagnostic.get("elapsed_ms"),
@@ -954,6 +955,9 @@ def _log_verified_climate_call_failure(diagnostic: dict[str, object]) -> None:
         diagnostic.get("prompt_chars"),
         diagnostic.get("timeout_seconds"),
         diagnostic.get("remaining_seconds"),
+        diagnostic.get("provider_error_type"),
+        diagnostic.get("provider_failure_code"),
+        diagnostic.get("schema_path"),
     )
 
 

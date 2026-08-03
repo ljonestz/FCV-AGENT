@@ -200,6 +200,9 @@ def test_client_emits_only_content_free_failed_attempt_diagnostics():
         "prompt_chars",
         "timeout_seconds",
         "remaining_seconds",
+        "provider_error_type",
+        "provider_failure_code",
+        "schema_path",
     }
     assert diagnostics[0]["stage"] == "judgment_review"
     assert diagnostics[0]["attempt"] == 1
@@ -208,6 +211,48 @@ def test_client_emits_only_content_free_failed_attempt_diagnostics():
     assert diagnostics[0]["timeout_seconds"] == 120
     assert diagnostics[0]["prompt_chars"] > 0
     assert "sensitive provider detail" not in str(diagnostics)
+
+
+def test_client_emits_bounded_schema_rejection_diagnostic():
+    class ProviderFailure(RuntimeError):
+        status_code = 400
+        body = {
+            "type": "error",
+            "error": {
+                "type": "invalid_request_error",
+                "message": (
+                    "Invalid schema at "
+                    "properties.recommendation_candidates.items.properties."
+                    "operational_instrument_drafting.type; "
+                    "secret project wording must not be logged"
+                ),
+            },
+        }
+
+    diagnostics = []
+    client = AnthropicVerifiedJsonClient(
+        _Sdk([ProviderFailure("unrestricted sensitive detail")]),
+        model="assessment-model",
+        diagnostic_sink=diagnostics.append,
+    )
+
+    with pytest.raises(ProviderFailure):
+        client.complete_json(
+            stage="recommendation_compiler",
+            payload={"recommendations": []},
+            timeout_seconds=240,
+            max_output_tokens=8_000,
+            max_transient_retries=0,
+        )
+
+    assert diagnostics[0]["provider_error_type"] == "invalid_request_error"
+    assert diagnostics[0]["provider_failure_code"] == "schema_rejected"
+    assert diagnostics[0]["schema_path"] == (
+        "properties.recommendation_candidates.items.properties."
+        "operational_instrument_drafting.type"
+    )
+    assert "secret project wording" not in str(diagnostics)
+    assert "unrestricted sensitive detail" not in str(diagnostics)
 
 
 def test_client_exhausted_retry_budget_preserves_original_failure(monkeypatch):
