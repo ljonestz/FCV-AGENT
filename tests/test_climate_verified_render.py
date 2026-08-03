@@ -188,6 +188,24 @@ def test_html_and_docx_share_headings_and_priority_order():
         for paragraph in document.paragraphs
     )
 
+def test_zero_priority_message_is_shared_by_html_and_docx():
+    assessment = _assessment()
+    assessment["priorities"] = []
+    model = build_reader_model(assessment)
+
+    rendered = render_reader_html(model)
+    stream = BytesIO()
+    write_reader_docx(model, stream)
+    stream.seek(0)
+    document_text = "\n".join(
+        paragraph.text for paragraph in Document(stream).paragraphs
+    )
+
+    message = "No recommendation passed the admission threshold for this run."
+    assert message in rendered
+    assert message in document_text
+
+
 def test_html_escapes_model_authored_content():
     assessment = _assessment()
     assessment["priorities"][0]["title"] = "<script>alert('x')</script>"

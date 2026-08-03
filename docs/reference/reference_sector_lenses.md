@@ -112,3 +112,5 @@ remain blocking.
 Deterministic admission failures distinguish total score, materiality, missing or
 failed named gates, and the three-priority cap. No candidate or project prose is
 included. The canonical reader copies the safe summary into its technical annex.
+When no priority survives, both canonical HTML and DOCX render the same explicit
+no-recommendation admission message instead of leaving an empty section.

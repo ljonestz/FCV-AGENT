@@ -18,6 +18,11 @@ DIMENSIONS = (
     ("responsiveness", "FCV responsiveness"),
     ("operationalization", "Operationalization"),
 )
+NO_RECOMMENDATION_MESSAGE = (
+    "No recommendation passed the admission threshold for this run."
+)
+
+
 HEADINGS = (
     "Executive readout",
     "Climate-FCV judgments",
@@ -272,7 +277,10 @@ def render_reader_html(model: dict[str, object]) -> str:
         parts.append("</section>")
 
     parts.append(_heading(2, HEADINGS[2]))
-    for priority in _records(model.get("priorities")):
+    priorities = _records(model.get("priorities"))
+    if not priorities:
+        parts.append(f"<p>{html.escape(NO_RECOMMENDATION_MESSAGE)}</p>")
+    for priority in priorities:
         rank = _rank(priority.get("rank"))
         identifier = _text(priority.get("recommendation_id"))
         parts.append('<section class="climate-priority">')
@@ -354,7 +362,10 @@ def write_reader_docx(model: dict[str, object], path: str | Path) -> Path:
         )
 
     document.add_heading(HEADINGS[2], level=1)
-    for priority in _records(model.get("priorities")):
+    priorities = _records(model.get("priorities"))
+    if not priorities:
+        document.add_paragraph(NO_RECOMMENDATION_MESSAGE)
+    for priority in priorities:
         rank = _rank(priority.get("rank"))
         identifier = _text(priority.get("recommendation_id"))
         document.add_heading(

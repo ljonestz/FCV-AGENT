@@ -438,7 +438,8 @@ legacy-session behavior is unchanged.
 `POST /api/download-report` accepts `climate_assessment` when its schema is
 `climate-verified-v2`, rebuilds and validates the canonical reader model, and
 returns the verified DOCX. Reader-integrity failures return 422 with bounded reason
-codes instead of exporting a malformed report.
+codes instead of exporting a malformed report. Zero-priority verified exports
+retain the reader's explicit no-recommendation admission message in HTML and DOCX.
 
 Completed verified runs emit one bounded `Climate recommendation diagnostics`
 application-log line with counts, semantic-review state, up to 12 reason codes,
