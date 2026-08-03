@@ -113,6 +113,39 @@ Append `executive_words=<count>` only when `EXECUTIVE_LENGTH_INVALID` is present
 
 Verify the telemetry regression and the complete Climate-FCV suite before a cheap diagnostic smoke run.
 
+### Task 2D: Replace delimiter-only transport with native structured outputs
+
+**Files:**
+- Create: `sector_lenses/climate_verified_schemas.py`
+- Create: `tests/test_climate_verified_schemas.py`
+- Modify: `sector_lenses/climate_verified_client.py`
+- Modify: `sector_lenses/climate_verified_prompts.py`
+- Modify: `sector_lenses/climate_verified_pipeline.py`
+- Modify: `tests/test_climate_verified_client.py`
+- Modify: `tests/test_climate_verified_pipeline.py`
+
+- [x] **Step 1: Reproduce the cross-stage failure pattern**
+
+Confirm separate `max_tokens` truncations in recommendation compilation, conditional review, and bounded analysis.
+
+- [x] **Step 2: Lock the native schema contract with failing tests**
+
+Require schemas for all five stages, closed nested objects, independent schema copies, provider `output_config`, raw JSON parsing, and content-free truncation/refusal errors.
+
+- [x] **Step 3: Implement schema-constrained transport**
+
+Add stage schemas and pass them through the Anthropic SDK. Preserve all existing domain validators and retry budgets.
+
+- [x] **Step 4: Bound unsupported length/cardinality constraints in prompts**
+
+Add concise fact, analysis, and judgment bounds while retaining the existing compiler and reviewer bounds and all output-token ceilings.
+
+- [ ] **Step 5: Run the complete regression and deployed smoke gate**
+
+Do not initiate the paid quality run until the South Sudan smoke workflow completes coherently.
+
+---
+
 ### Task 3: Verify, deploy, and capture the replacement result
 
 **Files:**

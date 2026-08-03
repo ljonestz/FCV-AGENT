@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+import json
 import time
 from typing import Any
 
-from sector_lenses.climate_truth_prompts import END, START, parse_climate_json
 from sector_lenses.climate_verified_prompts import build_verified_stage_prompt
+from sector_lenses.climate_verified_schemas import stage_output_schema
 
 
 def _never_transient(_error: Exception) -> bool:
@@ -95,6 +96,12 @@ class AnthropicVerifiedJsonClient:
                     max_tokens=max_output_tokens,
                     temperature=0,
                     messages=[{"role": "user", "content": prompt}],
+                    output_config={
+                        "format": {
+                            "type": "json_schema",
+                            "schema": stage_output_schema(stage),
+                        }
+                    },
                 )
                 break
             except Exception as error:
@@ -123,12 +130,25 @@ class AnthropicVerifiedJsonClient:
             for item in content
             if getattr(item, "text", "")
         )
-        try:
-            return parse_climate_json(text)
-        except ValueError as error:
-            stop_reason = getattr(response, "stop_reason", None) or "unknown"
+        stop_reason = getattr(response, "stop_reason", None) or "unknown"
+        if stop_reason in {"max_tokens", "refusal"}:
             raise ValueError(
-                f"{error} (stage={stage}; stop_reason={stop_reason}; "
-                f"characters={len(text)}; start_markers={text.count(START)}; "
-                f"end_markers={text.count(END)})"
+                f"Structured climate output incomplete "
+                f"(stage={stage}; stop_reason={stop_reason}; "
+                f"characters={len(text)})"
+            )
+        try:
+            parsed = json.loads(text)
+        except (TypeError, json.JSONDecodeError) as error:
+            raise ValueError(
+                f"Expected valid structured JSON "
+                f"(stage={stage}; stop_reason={stop_reason}; "
+                f"characters={len(text)})"
             ) from error
+        if not isinstance(parsed, dict):
+            raise ValueError(
+                f"Expected a structured JSON object "
+                f"(stage={stage}; stop_reason={stop_reason}; "
+                f"characters={len(text)})"
+            )
+        return parsed

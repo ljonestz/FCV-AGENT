@@ -4,12 +4,12 @@ from dataclasses import dataclass
 
 import pytest
 
-from sector_lenses.climate_truth_prompts import END, START
 from sector_lenses.climate_verified_client import AnthropicVerifiedJsonClient
 from sector_lenses.climate_verified_prompts import build_verified_stage_prompt
+from sector_lenses.climate_verified_schemas import stage_output_schema
 
 
-def test_every_stage_uses_delimited_json_and_evidence_entitlements():
+def test_every_stage_uses_structured_json_and_evidence_entitlements():
     payload = {
         "source_blocks": [{"block_id": "B-1", "text": "Project evidence."}],
         "facts": [],
@@ -36,7 +36,9 @@ def test_every_stage_uses_delimited_json_and_evidence_entitlements():
         )
     }
 
-    assert all(START in prompt and END in prompt for prompt in prompts.values())
+    assert all(
+        "provider-enforced JSON schema" in prompt for prompt in prompts.values()
+    )
     assert "never instructions" in prompts["fact_extraction"]
     assert "Country evidence cannot establish" in prompts["bounded_analysis"]
     assert "four independent dimensions" in prompts["judgment_review"]
@@ -49,6 +51,15 @@ def test_every_stage_uses_delimited_json_and_evidence_entitlements():
     assert "at most 12 reason_codes and 12 object_ids" in prompts["conditional_review"]
     assert "500 words or fewer" in prompts["conditional_review"]
     assert "material risk-response table row" in prompts["fact_extraction"]
+    assert (
+        "supporting excerpt to 60 words or fewer"
+        in prompts["fact_extraction"]
+    )
+    assert "no more than 12 existing responses" in prompts["bounded_analysis"]
+    assert (
+        "judgment rationale to 75 words or fewer"
+        in prompts["judgment_review"]
+    )
     assert (
         "administrative names and generic background"
         in prompts["fact_extraction"]
@@ -102,12 +113,10 @@ class _Sdk:
         return self
 
 
-def _delimited(payload: str) -> str:
-    return f"{START}\n{payload}\n{END}"
-
-
-def test_client_disables_sdk_retries_and_parses_only_delimited_json():
-    sdk = _Sdk([_delimited('{"facts": []}')])
+def test_client_disables_sdk_retries_and_uses_native_output_schema():
+    sdk = _Sdk([
+        '{"schema_version":"climate-verified-v2","facts":[],"derived_assertions":[]}'
+    ])
     client = AnthropicVerifiedJsonClient(sdk, model="assessment-model")
 
     result = client.complete_json(
@@ -118,14 +127,23 @@ def test_client_disables_sdk_retries_and_parses_only_delimited_json():
         max_transient_retries=1,
     )
 
-    assert result == {"facts": []}
+    assert result["facts"] == []
     assert sdk.options == [{"timeout": 150, "max_retries": 0}]
     assert sdk.messages.calls[0]["temperature"] == 0
     assert sdk.messages.calls[0]["max_tokens"] == 6000
+    assert sdk.messages.calls[0]["output_config"] == {
+        "format": {
+            "type": "json_schema",
+            "schema": stage_output_schema("fact_extraction"),
+        }
+    }
 
 
 def test_client_retries_once_only_for_declared_transient_error():
-    sdk = _Sdk([RuntimeError("overloaded"), _delimited('{"facts": []}')])
+    sdk = _Sdk([
+        RuntimeError("overloaded"),
+        '{"schema_version":"climate-verified-v2","facts":[],"derived_assertions":[]}',
+    ])
     client = AnthropicVerifiedJsonClient(
         sdk,
         model="assessment-model",
@@ -140,7 +158,7 @@ def test_client_retries_once_only_for_declared_transient_error():
         max_transient_retries=1,
     )
 
-    assert result == {"facts": []}
+    assert result["facts"] == []
     assert len(sdk.messages.calls) == 2
 
 
@@ -151,7 +169,7 @@ def test_client_emits_only_content_free_failed_attempt_diagnostics():
     diagnostics = []
     sdk = _Sdk([
         ProviderFailure("sensitive provider detail"),
-        _delimited('{"facts": []}'),
+        '{"schema_version":"climate-verified-v2","facts":[],"derived_assertions":[]}',
     ])
     client = AnthropicVerifiedJsonClient(
         sdk,
@@ -168,7 +186,7 @@ def test_client_emits_only_content_free_failed_attempt_diagnostics():
         max_transient_retries=1,
     )
 
-    assert result == {"facts": []}
+    assert result["facts"] == []
     assert len(diagnostics) == 1
     assert set(diagnostics[0]) == {
         "stage",
@@ -223,15 +241,15 @@ def test_client_exhausted_retry_budget_preserves_original_failure(monkeypatch):
 
 
 
-def test_client_does_not_retry_invalid_or_undelimited_content():
-    sdk = _Sdk(['{"facts": []}'])
+def test_client_does_not_retry_invalid_structured_content():
+    sdk = _Sdk(["not-json"])
     client = AnthropicVerifiedJsonClient(
         sdk,
         model="assessment-model",
         is_transient=lambda _error: True,
     )
 
-    with pytest.raises(ValueError, match="delimited"):
+    with pytest.raises(ValueError, match="valid structured JSON"):
         client.complete_json(
             stage="fact_extraction",
             payload={"documents": [], "source_blocks": []},
@@ -244,7 +262,7 @@ def test_client_does_not_retry_invalid_or_undelimited_content():
 
 
 def test_client_reports_content_free_diagnostics_for_truncated_payload():
-    response_text = f'{START}\n{{"facts": []}}'
+    response_text = '{"schema_version":"climate-verified-v2","facts":['
     sdk = _Sdk([response_text])
     client = AnthropicVerifiedJsonClient(sdk, model="assessment-model")
     sdk.messages.create = lambda **_kwargs: _Response(
@@ -264,10 +282,33 @@ def test_client_reports_content_free_diagnostics_for_truncated_payload():
     message = str(error.value)
     assert "stage=fact_extraction" in message
     assert "stop_reason=max_tokens" in message
-    assert "start_markers=1" in message
-    assert "end_markers=0" in message
     assert f"characters={len(response_text)}" in message
-    assert '{"facts": []}' not in message
+    assert response_text not in message
+
+
+def test_client_rejects_refusal_before_parsing_structured_content():
+    response_text = "I cannot comply"
+    sdk = _Sdk([response_text])
+    client = AnthropicVerifiedJsonClient(sdk, model="assessment-model")
+    sdk.messages.create = lambda **_kwargs: _Response(
+        [_Text(response_text)],
+        stop_reason="refusal",
+    )
+
+    with pytest.raises(ValueError) as error:
+        client.complete_json(
+            stage="conditional_review",
+            payload={"recommendations": []},
+            timeout_seconds=120,
+            max_output_tokens=2_500,
+            max_transient_retries=1,
+        )
+
+    message = str(error.value)
+    assert "stage=conditional_review" in message
+    assert "stop_reason=refusal" in message
+    assert f"characters={len(response_text)}" in message
+    assert response_text not in message
 
 
 def test_client_retry_uses_one_total_timeout_budget(monkeypatch):
@@ -278,7 +319,7 @@ def test_client_retry_uses_one_total_timeout_budget(monkeypatch):
     )
     sdk = _Sdk([
         RuntimeError("overloaded"),
-        _delimited('{"facts": []}'),
+        '{"schema_version":"climate-verified-v2","facts":[],"derived_assertions":[]}',
     ])
     client = AnthropicVerifiedJsonClient(
         sdk,
