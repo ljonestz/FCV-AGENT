@@ -140,7 +140,7 @@ Add stage schemas and pass them through the Anthropic SDK. Preserve all existing
 
 Add concise fact, analysis, and judgment bounds while retaining the existing compiler and reviewer bounds and all output-token ceilings.
 
-- [ ] **Step 5: Run the complete regression and deployed smoke gate**
+- [x] **Step 5: Run the complete regression and deployed smoke gate**
 
 Do not initiate the paid quality run until the South Sudan smoke workflow completes coherently.
 
@@ -166,7 +166,7 @@ Emit at most three candidate trace records and carry them into the canonical rea
 
 Verify candidate telemetry plus the complete verified runtime, reader, export, workflow, and app-contract surface.
 
-- [ ] **Step 4: Deploy and rerun the cheap South Sudan diagnostic**
+- [x] **Step 4: Deploy and rerun the cheap South Sudan diagnostic**
 
 Use the field-level trace to identify the exact numeric-precision defect before changing recommendation behavior.
 
@@ -196,7 +196,7 @@ Distinguish recommendation defects from the residual gaps they address, preserve
 
 Focused client/pipeline/render tests and the full Climate-FCV suite pass before deployment.
 
-- [ ] **Step 5: Deploy and rerun South Sudan in smoke**
+- [x] **Step 5: Deploy and rerun South Sudan in smoke**
 
 Require coherent reader output before authorizing the paid quality run.
 
@@ -207,26 +207,26 @@ Require coherent reader output before authorizing the paid quality run.
 **Files:**
 - Create after success: `docs/20260803_south-sudan-climate-quality-output.md`
 
-- [ ] **Step 1: Run the Climate-FCV regression suite**
+- [x] **Step 1: Run the Climate-FCV regression suite**
 
 Run the verified runtime, client, contracts, pipeline, prompt, workflow, rendering, and app-contract tests plus `compileall`.
 
-- [ ] **Step 2: Commit and push the bounded fix**
+- [x] **Step 2: Commit and push the bounded fix**
 
 Commit message: `fix: allow bounded climate judgment completion`.
 
-- [ ] **Step 3: Verify the deployed commit in smoke mode**
+- [x] **Step 3: Verify the deployed commit in smoke mode**
 
 Confirm `/health`, run one South Sudan smoke workflow, and verify all stages, SSD bank selection, reader validation, and exports.
 
-- [ ] **Step 4: Run the authorized replacement quality assessment**
+- [x] **Step 4: Run the authorized replacement quality assessment**
 
 Switch only `fcv-agent-1` to quality, confirm `/health`, run the PCN once, and save the full SSE, assessment, and reader payloads.
 
-- [ ] **Step 5: Create and validate the Markdown note**
+- [x] **Step 5: Create and validate the Markdown note**
 
 Render every reader section and technical-annex field to `docs/20260803_south-sudan-climate-quality-output.md`. Confirm the preview label, complete recommendations or semantic-withholding explanation, reason codes, no truncation, and exact run/build identifiers.
 
-- [ ] **Step 6: Restore smoke mode**
+- [x] **Step 6: Restore smoke mode**
 
 Set only `fcv-agent-1` back to smoke and confirm `/health` before reporting results.
