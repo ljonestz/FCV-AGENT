@@ -730,7 +730,7 @@ def run_verified_climate_pipeline(
         reviewer_version="climate-review-v2.0",
         extraction_version="source-blocks-v2.0",
         normalization_version="climate-normalization-v2.0",
-        renderer_version="climate-reader-v2.0",
+        renderer_version="climate-reader-v2.1",
         model_aliases={"assessment": "configured", "reviewer": "configured"},
         sampling={"temperature": 0, "max_transient_retries": 1},
         source_fingerprints=tuple(item.sha256 for item in source_documents),
