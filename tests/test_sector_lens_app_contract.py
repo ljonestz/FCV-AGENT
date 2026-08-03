@@ -2336,8 +2336,10 @@ def test_verified_runtime_bridge_emits_keepalives_then_result(monkeypatch):
         "reader": {"executive_readout": "Verified."},
         "source_warnings": [],
     }
+    captured = {}
 
-    def fake_run(**_kwargs):
+    def fake_run(**kwargs):
+        captured.update(kwargs)
         _time.sleep(0.04)
         return expected
 
@@ -2347,11 +2349,15 @@ def test_verified_runtime_bridge_emits_keepalives_then_result(monkeypatch):
         climate_grounding={},
         clients=object(),
         run_id="verified-runtime-test",
+        doc_type="PCN",
+        instrument_type="IPF",
         keepalive_interval=0.01,
     ))
 
     assert any(item.get("keepalive") is True for item in events[:-1])
     assert events[-1] == {"result": expected}
+    assert captured["doc_type"] == "PCN"
+    assert captured["instrument_type"] == "IPF"
 
 
 def test_verified_runtime_bridge_cancels_after_wall_clock(monkeypatch):

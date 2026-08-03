@@ -983,6 +983,8 @@ def _iter_verified_climate_assessment(
     clients,
     run_id,
     keepalive_interval=STREAM_KEEPALIVE_SECONDS,
+    doc_type="Unknown",
+    instrument_type="Unknown",
     maximum_wait_seconds=14 * 60,
 ):
     """Run verified-v2 with keepalives and a bounded paid-call lifetime."""
@@ -999,6 +1001,8 @@ def _iter_verified_climate_assessment(
                 run_id=run_id,
                 cancel_event=cancel_event,
                 wall_clock_seconds=maximum_wait_seconds,
+                doc_type=doc_type,
+                instrument_type=instrument_type,
             )))
         except Exception as exc:
             result_queue.put(("error", exc))
@@ -9780,6 +9784,8 @@ def run_express():
                         climate_grounding=climate_grounding,
                         clients=_build_verified_pipeline_clients(),
                         run_id=assessment_id,
+                        doc_type=doc_type,
+                        instrument_type=instrument_type,
                     ):
                         if 'result' not in verified_event:
                             yield f"data: {json.dumps(verified_event)}\n\n"
