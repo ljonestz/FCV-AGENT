@@ -25,6 +25,17 @@ class FakeClient:
         return self.responses.pop(0)
 
 
+def _pass_review_client() -> FakeClient:
+    return FakeClient(
+        [{
+            "verdict": "pass",
+            "reason_codes": [],
+            "object_ids": [],
+        }],
+        [],
+    )
+
+
 def _source() -> tuple[list[SourceDocument], list[SourceBlock]]:
     document = SourceDocument(
         document_id="DOC-1",
@@ -141,7 +152,16 @@ def _responses(*, unresolved_routing: bool = False):
                     "confidence": "medium",
                     "limitation": "Site-level conditions remain to be verified.",
                     "caution": "Avoid restricting necessary seasonal mobility.",
-                    "drafting_language": None,
+                    "current_document_drafting": {
+                        "target_document": "PCN",
+                        "target_section": "Project Description",
+                        "drafting_status": "existing_commitment",
+                        "text": ("Add bounded project design language here. " * 18).strip(),
+                        "project_basis_ids": ["PF-001"],
+                        "gap_basis_ids": ["RG-001"],
+                        "guidance_ids": ["GUIDE-PCN-DESIGN"],
+                    },
+                    "operational_instrument_drafting": None,
                     "score": {
                         "materiality": 3,
                         "gap_strength": 2,
@@ -182,12 +202,21 @@ def _arguments():
         "context_evidence": context,
         "bank_release_id": "2026.08",
         "run_id": "run-test",
+        "doc_type": "PCN",
+        "instrument_type": "IPF",
     }
 
 
 def test_four_calls_run_when_semantic_review_is_not_required():
     assessment = FakeClient(_responses(), [])
-    reviewer = FakeClient([], [])
+    reviewer = FakeClient(
+        [{
+            "verdict": "pass",
+            "reason_codes": [],
+            "object_ids": [],
+        }],
+        [],
+    )
     result = run_verified_climate_pipeline(
         **_arguments(),
         clients=PipelineClients(assessment, reviewer),
@@ -206,15 +235,20 @@ def test_four_calls_run_when_semantic_review_is_not_required():
         240,
     ]
     assert all(call["max_transient_retries"] == 1 for call in assessment.calls)
-    assert reviewer.calls == []
+    assert [call["stage"] for call in reviewer.calls] == ["conditional_review"]
     assert result["schema_version"] == "climate-verified-v2"
     assert result["validation"]["status"] == "passed"
     assert len(result["priorities"]) == 1
+    compiler_payload = assessment.calls[-1]["payload"]
+    assert compiler_payload["guidance_registry_version"] == "climate-guidance-v1"
+    assert "GUIDE-PCN-DESIGN" in {
+        item["guidance_id"] for item in compiler_payload["operational_guidance"]
+    }
     assert result["executive_readout"].startswith("Verified project facts")
 
 
 def test_unresolved_routing_triggers_one_source_first_review():
-    assessment = FakeClient(_responses(unresolved_routing=True), [])
+    assessment = FakeClient(_responses(), [])
     reviewer = FakeClient(
         [
             {
@@ -260,7 +294,7 @@ def test_unresolved_routing_triggers_one_source_first_review():
 
 
 def test_semantic_review_targets_only_affected_recommendations():
-    responses = _responses(unresolved_routing=True)
+    responses = _responses()
     second = deepcopy(responses[3]["recommendation_candidates"][0])
     second["recommendation_id"] = "REC-002"
     second["title"] = "Confirm a second bounded site decision"
@@ -310,7 +344,7 @@ def test_semantic_review_reason_codes_are_bounded():
     result = run_verified_climate_pipeline(
         **_arguments(),
         clients=PipelineClients(
-            FakeClient(_responses(unresolved_routing=True), []),
+            FakeClient(_responses(), []),
             reviewer,
         ),
     )
@@ -335,7 +369,7 @@ def test_semantic_review_with_unresolved_targets_fails_safe():
     result = run_verified_climate_pipeline(
         **_arguments(),
         clients=PipelineClients(
-            FakeClient(_responses(unresolved_routing=True), []),
+            FakeClient(_responses(), []),
             reviewer,
         ),
     )
@@ -404,7 +438,7 @@ def test_source_linked_numeric_label_is_supported_without_model_echo():
     )
     result = run_verified_climate_pipeline(
         **arguments,
-        clients=PipelineClients(FakeClient(responses, []), FakeClient([], [])),
+        clients=PipelineClients(FakeClient(responses, []), _pass_review_client()),
     )
 
     assert len(result["priorities"]) == 1
@@ -477,12 +511,12 @@ def test_bad_fact_suppresses_dependent_analysis_and_recommendation():
 def test_manifest_is_privacy_safe_and_scoped_to_the_run():
     first = run_verified_climate_pipeline(
         **_arguments(),
-        clients=PipelineClients(FakeClient(_responses(), []), FakeClient([], [])),
+        clients=PipelineClients(FakeClient(_responses(), []), _pass_review_client()),
     )
     second_args = {**_arguments(), "run_id": "run-two"}
     second = run_verified_climate_pipeline(
         **second_args,
-        clients=PipelineClients(FakeClient(_responses(), []), FakeClient([], [])),
+        clients=PipelineClients(FakeClient(_responses(), []), _pass_review_client()),
     )
 
     assert first["manifest"]["run_id"] == "run-test"
@@ -537,7 +571,7 @@ def test_preview_label_survives_into_reader_payload():
     ]
     result = run_verified_climate_pipeline(
         **args,
-        clients=PipelineClients(FakeClient(_responses(), []), FakeClient([], [])),
+        clients=PipelineClients(FakeClient(_responses(), []), _pass_review_client()),
     )
 
     assert result["evidence_status"] == "preview; not approved"

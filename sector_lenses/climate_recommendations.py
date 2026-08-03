@@ -11,8 +11,7 @@ from sector_lenses.climate_verified_contracts import ValidationIssue
 ROUTING_STATUSES = {
     "verified_existing",
     "verified_with_scope_change",
-    "new_vehicle_may_be_needed",
-    "team_to_confirm",
+    "standard_document_advisory",
     "not_applicable",
 }
 AUTHORITY_BASES = {
@@ -56,6 +55,59 @@ REQUIRED_GATES = {
     "timing",
     "distinctiveness",
 }
+DRAFTING_STATUSES = {"existing_commitment", "advisory_proposal"}
+
+
+@dataclass(frozen=True)
+class DraftingBlock:
+    target_document: str
+    target_section: str
+    drafting_status: str
+    text: str
+    project_basis_ids: tuple[str, ...]
+    gap_basis_ids: tuple[str, ...]
+    guidance_ids: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class DraftingValidationContext:
+    known_ids: frozenset[str]
+    guidance_ids: frozenset[str]
+    current_document: str
+    standard_targets: frozenset[tuple[str, str]]
+    project_fact_text: dict[str, str]
+    project_fact_types: dict[str, str]
+
+
+def _normalized_target(block: DraftingBlock) -> tuple[str, str]:
+    return (
+        " ".join(block.target_document.casefold().split()),
+        " ".join(block.target_section.casefold().split()),
+    )
+
+
+def _draft_tokens(block: DraftingBlock) -> set[str]:
+    return set(re.findall(r"\b[a-z]{3,}\b", block.text.casefold()))
+
+
+def normalize_drafting_blocks(candidate):
+    """Drop an optional drafting block that repeats the required block."""
+
+    current = candidate.current_document_drafting
+    optional = candidate.operational_instrument_drafting
+    if current is None or optional is None:
+        return candidate, ()
+    current_tokens = _draft_tokens(current)
+    optional_tokens = _draft_tokens(optional)
+    union = current_tokens | optional_tokens
+    overlap = len(current_tokens & optional_tokens) / len(union) if union else 1.0
+    if _normalized_target(current) == _normalized_target(optional) or overlap >= 0.8:
+        return replace(candidate, operational_instrument_drafting=None), (
+            "DRAFTING_SECOND_BLOCK_REDUNDANT",
+        )
+    return candidate, ()
+
+
 
 
 @dataclass(frozen=True)
@@ -99,7 +151,8 @@ class CandidateRecommendation:
     confidence: str
     limitation: str
     caution: str
-    drafting_language: str | None
+    current_document_drafting: DraftingBlock | None
+    operational_instrument_drafting: DraftingBlock | None
     score: RecommendationScore
     gate_results: dict[str, bool]
     rank: int | None = None
@@ -149,7 +202,16 @@ def unsupported_numeric_tokens(
             candidate.enhanced_action,
             candidate.enhanced_activation,
             candidate.completion_evidence,
-            candidate.drafting_language,
+            (
+                candidate.current_document_drafting.text
+                if candidate.current_document_drafting
+                else None
+            ),
+            (
+                candidate.operational_instrument_drafting.text
+                if candidate.operational_instrument_drafting
+                else None
+            ),
         )
         if value
     )
@@ -161,6 +223,8 @@ def unsupported_numeric_tokens(
 def validate_recommendation(
     candidate: CandidateRecommendation,
     known_ids: set[str],
+    *,
+    drafting_context: DraftingValidationContext | None = None,
 ) -> tuple[ValidationIssue, ...]:
     issues: list[ValidationIssue] = []
     linked_ids = (
@@ -210,20 +274,122 @@ def validate_recommendation(
                 candidate,
             )
         )
-    if (
-        candidate.drafting_language
-        and candidate.routing_status
-        not in {"verified_existing", "verified_with_scope_change"}
-    ):
+    drafting_blocks = tuple(
+        block
+        for block in (
+            candidate.current_document_drafting,
+            candidate.operational_instrument_drafting,
+        )
+        if block is not None
+    )
+    if candidate.current_document_drafting is None:
         issues.append(
             _issue(
-                "DRAFTING_ROUTING_UNVERIFIED",
-                f"{candidate.recommendation_id} drafting is not safely routed.",
+                "DRAFTING_CURRENT_MISSING",
+                f"{candidate.recommendation_id} has no current-document drafting.",
                 candidate,
             )
         )
+    if drafting_context and candidate.current_document_drafting:
+        current_target = _normalized_target(
+            candidate.current_document_drafting
+        )
+        current_document = " ".join(
+            drafting_context.current_document.casefold().split()
+        )
+        if (
+            current_target[0] != current_document
+            or current_target not in drafting_context.standard_targets
+        ):
+            issues.append(
+                _issue(
+                    "DRAFTING_CURRENT_TARGET_INVALID",
+                    f"{candidate.recommendation_id} has an invalid current target.",
+                    candidate,
+                )
+            )
+    if drafting_context and candidate.operational_instrument_drafting:
+        optional = candidate.operational_instrument_drafting
+        optional_document = " ".join(
+            optional.target_document.casefold().split()
+        )
+        linked_named_instruments = {
+            identifier
+            for identifier in optional.project_basis_ids
+            if identifier in candidate.instrument_claim_ids
+            and drafting_context.project_fact_types.get(identifier)
+            == "named_instrument"
+        }
+        target_is_evidenced = any(
+            optional_document
+            in " ".join(
+                drafting_context.project_fact_text.get(identifier, "")
+                .casefold()
+                .split()
+            )
+            for identifier in linked_named_instruments
+        )
+        if not target_is_evidenced:
+            issues.append(
+                _issue(
+                    "DRAFTING_INSTRUMENT_UNVERIFIED",
+                    f"{candidate.recommendation_id} has an unverified instrument target.",
+                    candidate,
+                )
+        )
+    for block in drafting_blocks:
+        if block.drafting_status not in DRAFTING_STATUSES:
+            issues.append(
+                _issue(
+                    "DRAFTING_STATUS_INVALID",
+                    f"{candidate.recommendation_id} has invalid drafting status.",
+                    candidate,
+                )
+            )
+        drafting_refs = set(
+            block.project_basis_ids
+            + block.gap_basis_ids
+            + block.guidance_ids
+        )
+        accepted_refs = set(known_ids)
+        if drafting_context:
+            accepted_refs |= set(drafting_context.guidance_ids)
+        if drafting_refs - accepted_refs:
+            issues.append(
+                _issue(
+                    "DRAFTING_REF_INVALID",
+                    f"{candidate.recommendation_id} drafting has unknown references.",
+                    candidate,
+                )
+            )
+        if (
+            set(block.project_basis_ids)
+            - (set(candidate.project_anchor_ids) | set(candidate.instrument_claim_ids))
+            or set(block.gap_basis_ids) - set(candidate.residual_gap_ids)
+        ):
+            issues.append(
+                _issue(
+                    "DRAFTING_BASIS_MISMATCH",
+                    f"{candidate.recommendation_id} drafting exceeds its evidence basis.",
+                    candidate,
+                )
+            )
+        if (
+            drafting_context
+            and set(block.guidance_ids) - set(drafting_context.guidance_ids)
+        ):
+            issues.append(
+                _issue(
+                    "DRAFTING_GUIDANCE_INVALID",
+                    f"{candidate.recommendation_id} drafting cites unknown guidance.",
+                    candidate,
+                )
+            )
     drafting_tokens = set(
-        re.findall(r"\b[a-z]+\b", (candidate.drafting_language or "").casefold())
+        re.findall(
+            r"\b[a-z]+\b",
+            " ".join(block.text for block in drafting_blocks).casefold(),
+        )
     )
     if (
         drafting_tokens & {"must", "shall", "required", "mandatory"}

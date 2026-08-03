@@ -2,6 +2,7 @@ from dataclasses import replace
 
 from sector_lenses.climate_recommendations import (
     CandidateRecommendation,
+    DraftingBlock,
     RecommendationScore,
     ReviewReadinessFlag,
     admit_and_rank,
@@ -11,6 +12,18 @@ from sector_lenses.climate_recommendations import (
 
 
 KNOWN_IDS = {"PW-001", "ER-001", "RG-001", "PF-001", "PF-010"}
+def _draft(text: str = "Add proportionate continuity language to this section."):
+    return DraftingBlock(
+        target_document="PCN",
+        target_section="Project Description",
+        drafting_status="existing_commitment",
+        text=text,
+        project_basis_ids=("PF-001",),
+        gap_basis_ids=("RG-001",),
+        guidance_ids=(),
+    )
+
+
 
 
 def _candidate(
@@ -41,7 +54,8 @@ def _candidate(
         confidence="high",
         limitation="Site thresholds remain for the task team to define.",
         caution="Avoid hardening boundaries that require seasonal mobility.",
-        drafting_language=None,
+        current_document_drafting=_draft(),
+        operational_instrument_drafting=None,
         score=score or RecommendationScore(3, 2, 2, 2, 1),
         gate_results={
             "connection": True,
@@ -75,22 +89,22 @@ def test_failed_admission_gate_suppresses_candidate():
     assert admit_and_rank([replace(candidate, gate_results=gates)]) == ()
 
 
-def test_drafting_is_blocked_when_routing_is_unresolved():
+def test_team_confirmation_is_not_an_admissible_route():
     candidate = replace(
         _candidate(),
         routing_status="team_to_confirm",
         instrument_claim_ids=(),
-        drafting_language="The POM shall include a trigger.",
+        operational_instrument_drafting=None,
     )
     issues = validate_recommendation(candidate, KNOWN_IDS - {"PF-010"})
-    assert any(issue.code == "DRAFTING_ROUTING_UNVERIFIED" for issue in issues)
+    assert any(issue.code == "ROUTING_STATUS_INVALID" for issue in issues)
 
 
 def test_mandatory_language_requires_verified_formal_authority():
     candidate = replace(
         _candidate(),
         authority_basis="none_verified",
-        drafting_language="The team must adopt this requirement.",
+        current_document_drafting=_draft("The team must adopt this requirement."),
     )
     issues = validate_recommendation(candidate, KNOWN_IDS)
     assert any(issue.code == "MANDATORY_AUTHORITY_UNVERIFIED" for issue in issues)
@@ -199,3 +213,11 @@ def test_readiness_duplicate_of_residual_gap_is_suppressed():
         {"the action has no identified operational home"},
     )
     assert admitted == ()
+
+
+def test_structured_drafting_types_are_available():
+    import sector_lenses.climate_recommendations as recommendations
+
+    assert hasattr(recommendations, "DraftingBlock")
+    assert hasattr(recommendations, "DraftingValidationContext")
+    assert hasattr(recommendations, "normalize_drafting_blocks")

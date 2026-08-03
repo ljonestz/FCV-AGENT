@@ -19,6 +19,12 @@ def _object(properties: dict[str, object]) -> dict[str, object]:
     }
 
 
+def _nullable_object(schema: dict[str, object]) -> dict[str, object]:
+    result = deepcopy(schema)
+    result["type"] = ["object", "null"]
+    return result
+
+
 def _string(description: str = "") -> dict[str, object]:
     schema: dict[str, object] = {"type": "string"}
     if description:
@@ -162,6 +168,20 @@ GATE_SCHEMA = _object(
     }
 )
 
+DRAFTING_SCHEMA = _object(
+    {
+        "target_document": _string("Document or verified instrument name."),
+        "target_section": _string("Specific section or provision."),
+        "drafting_status": _enum(
+            ("existing_commitment", "advisory_proposal")
+        ),
+        "text": _string("Ready-to-adapt drafting of 90 to 160 words."),
+        "project_basis_ids": _strings(),
+        "gap_basis_ids": _strings(),
+        "guidance_ids": _strings(),
+    }
+)
+
 CANDIDATE_SCHEMA = _object(
     {
         "recommendation_id": _string(),
@@ -178,8 +198,7 @@ CANDIDATE_SCHEMA = _object(
             (
                 "verified_existing",
                 "verified_with_scope_change",
-                "new_vehicle_may_be_needed",
-                "team_to_confirm",
+                "standard_document_advisory",
                 "not_applicable",
             )
         ),
@@ -198,7 +217,8 @@ CANDIDATE_SCHEMA = _object(
         "confidence": _enum(CONFIDENCE),
         "limitation": _string("45 words or fewer."),
         "caution": _string("45 words or fewer."),
-        "drafting_language": _nullable_string("45 words or fewer, or null."),
+        "current_document_drafting": DRAFTING_SCHEMA,
+        "operational_instrument_drafting": _nullable_object(DRAFTING_SCHEMA),
         "supported_numeric_tokens": _strings(),
         "score": SCORE_SCHEMA,
         "gate_results": GATE_SCHEMA,

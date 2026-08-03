@@ -1,5 +1,6 @@
 """Automatic, source-first orchestration for ``climate-verified-v2``.
 
+
 The module deliberately accepts only structured model outputs.  Each stage is
 normalized into the typed contracts, checked against stable IDs, and stripped
 of invalid dependent objects before the next stage can use it.
@@ -26,13 +27,20 @@ from sector_lenses.climate_judgments import (
     deterministic_summary,
     validate_judgments,
 )
+from sector_lenses.climate_operational_guidance import (
+    GUIDANCE_REGISTRY_VERSION,
+    select_operational_guidance,
+)
 from sector_lenses.climate_recommendations import (
     CandidateRecommendation,
+    DraftingBlock,
+    DraftingValidationContext,
     RecommendationScore,
     ReviewReadinessFlag,
     admit_and_rank,
     admission_failure_codes,
     admit_readiness_flags,
+    normalize_drafting_blocks,
     numeric_tokens_in_text,
     unsupported_numeric_tokens,
     validate_recommendation,
@@ -263,6 +271,21 @@ def _score(record: object) -> RecommendationScore:
     )
 
 
+def _drafting_block(record: object) -> DraftingBlock | None:
+    item = _mapping(record)
+    if not item:
+        return None
+    return DraftingBlock(
+        target_document=_text(item.get("target_document")),
+        target_section=_text(item.get("target_section")),
+        drafting_status=_text(item.get("drafting_status")),
+        text=_text(item.get("text")),
+        project_basis_ids=_strings(item.get("project_basis_ids")),
+        gap_basis_ids=_strings(item.get("gap_basis_ids")),
+        guidance_ids=_strings(item.get("guidance_ids")),
+    )
+
+
 def _candidate(record: dict[str, object]) -> CandidateRecommendation:
     return CandidateRecommendation(
         recommendation_id=_text(record.get("recommendation_id")),
@@ -275,7 +298,7 @@ def _candidate(record: dict[str, object]) -> CandidateRecommendation:
         minimum_action=_text(record.get("minimum_action")),
         enhanced_action=_text(record.get("enhanced_action")) or None,
         enhanced_activation=_text(record.get("enhanced_activation")) or None,
-        routing_status=_text(record.get("routing_status"), "team_to_confirm"),
+        routing_status=_text(record.get("routing_status"), "not_applicable"),
         instrument_claim_ids=_strings(record.get("instrument_claim_ids")),
         responsible_function=_text(
             record.get("responsible_function"), "Task team to confirm"
@@ -293,7 +316,12 @@ def _candidate(record: dict[str, object]) -> CandidateRecommendation:
         confidence=_text(record.get("confidence"), "low"),
         limitation=_text(record.get("limitation")),
         caution=_text(record.get("caution")),
-        drafting_language=_text(record.get("drafting_language")) or None,
+        current_document_drafting=_drafting_block(
+            record.get("current_document_drafting")
+        ),
+        operational_instrument_drafting=_drafting_block(
+            record.get("operational_instrument_drafting")
+        ),
         score=_score(record.get("score")),
         gate_results={
             str(key): bool(value)
@@ -335,15 +363,21 @@ def _unsupported_numeric_fields(
 ) -> list[dict[str, object]]:
     supported = set(candidate.supported_numeric_tokens)
     fields: list[dict[str, object]] = []
-    for name in (
+    values = {
         "decision",
         "minimum_action",
         "enhanced_action",
         "enhanced_activation",
         "completion_evidence",
-        "drafting_language",
-    ):
-        value = getattr(candidate, name)
+    }
+    field_values = [(name, getattr(candidate, name)) for name in values]
+    field_values.extend((
+        ("current_document_drafting.text", candidate.current_document_drafting.text)
+        if candidate.current_document_drafting else ("current_document_drafting.text", ""),
+        ("operational_instrument_drafting.text", candidate.operational_instrument_drafting.text)
+        if candidate.operational_instrument_drafting else ("operational_instrument_drafting.text", ""),
+    ))
+    for name, value in field_values:
         tokens = sorted(
             set(numeric_tokens_in_text(value or "")) - supported
         )[:12]
@@ -413,10 +447,21 @@ def _validate_analysis(
 
 
 def _risk(candidates: tuple[CandidateRecommendation, ...]) -> ReviewRisk:
-    drafting = any(item.drafting_language for item in candidates)
+    drafting = any(
+        item.current_document_drafting
+        or item.operational_instrument_drafting
+        for item in candidates
+    )
     mandatory = any(
         any(
-            word in (item.drafting_language or "").casefold().split()
+            word in " ".join(
+                block.text
+                for block in (
+                    item.current_document_drafting,
+                    item.operational_instrument_drafting,
+                )
+                if block
+            ).casefold().split()
             for word in ("must", "shall", "required", "mandatory")
         )
         for item in candidates
@@ -428,10 +473,7 @@ def _risk(candidates: tuple[CandidateRecommendation, ...]) -> ReviewRisk:
             item.routing_status == "verified_with_scope_change"
             for item in candidates
         ),
-        unresolved_routing=any(
-            item.routing_status in {"team_to_confirm", "new_vehicle_may_be_needed"}
-            for item in candidates
-        ),
+        unresolved_routing=False,
         high_materiality_moderate_evidence=any(
             item.score.materiality >= 3 and item.score.evidence <= 1
             for item in candidates
@@ -462,6 +504,8 @@ def run_verified_climate_pipeline(
     bank_release_id: str | None,
     run_id: str,
     cancel_event: object | None = None,
+    doc_type: str = "Unknown",
+    instrument_type: str = "Unknown",
     wall_clock_seconds: int = 14 * 60,
 ) -> dict[str, object]:
     """Run the automatic pipeline and return only validated reader objects."""
@@ -480,6 +524,10 @@ def run_verified_climate_pipeline(
         "recommendations": 0,
         "readiness_flags": 0,
     }
+    guidance = select_operational_guidance(
+        doc_type=doc_type,
+        instrument_type=instrument_type,
+    )
     document_records = [_as_record(item) for item in source_documents]
     block_records = [_as_record(item) for item in source_blocks]
     context_records = [_as_record(item) for item in context_evidence]
@@ -643,6 +691,8 @@ def run_verified_climate_pipeline(
             "facts": [asdict(item) for item in facts],
             "analysis": analysis_record,
             "judgments": asdict(judgments),
+            "guidance_registry_version": GUIDANCE_REGISTRY_VERSION,
+            "operational_guidance": [item.as_record() for item in guidance],
         },
         latency_ms,
         cancel_event=cancel_event,
@@ -679,6 +729,8 @@ def run_verified_climate_pipeline(
                 )
             continue
         parsed_candidate_count += 1
+        candidate, drafting_repairs = normalize_drafting_blocks(candidate)
+        repairs.extend(drafting_repairs)
         source_numeric_tokens = _source_linked_numeric_tokens(candidate, facts)
         candidate = replace(
             candidate,
@@ -687,7 +739,23 @@ def run_verified_climate_pipeline(
         for token in unsupported_numeric_tokens(candidate):
             if token not in unsupported_numbers and len(unsupported_numbers) < 12:
                 unsupported_numbers.append(token)
-        issues = validate_recommendation(candidate, known_ids)
+        drafting_context = DraftingValidationContext(
+            known_ids=frozenset(known_ids),
+            guidance_ids=frozenset(item.guidance_id for item in guidance),
+            current_document=doc_type,
+            standard_targets=frozenset(
+                target for item in guidance for target in item.permitted_targets
+            ),
+            project_fact_text={
+                item.claim_id: " ".join(
+                    (item.subject, item.predicate, item.object_value)
+                ) for item in facts
+            },
+            project_fact_types={item.claim_id: item.claim_type for item in facts},
+        )
+        issues = validate_recommendation(
+            candidate, known_ids, drafting_context=drafting_context
+        )
         if issues:
             suppressed["recommendations"] += 1
             reasons.extend(issue.code for issue in issues)

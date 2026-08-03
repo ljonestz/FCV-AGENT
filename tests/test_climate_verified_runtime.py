@@ -177,11 +177,15 @@ def test_runtime_preserves_candidate_preview_and_uses_grounding_adapter(monkeypa
         climate_grounding=grounding,
         clients=object(),
         run_id="run-preview",
+        doc_type="PCN",
+        instrument_type="IPF",
     )
 
     assert captured["bank_release_id"] == "2026.08"
     assert captured["context_evidence"][0].evidence_class == "country"
     assert captured["context_evidence"][0].preview_status == "preview; not approved"
+    assert captured["doc_type"] == "PCN"
+    assert captured["instrument_type"] == "IPF"
     uploaded = [
         item for item in captured["context_evidence"]
         if item.source_kind == "uploaded_context"

@@ -267,6 +267,8 @@ def run_verified_from_doc_parts(
     clients: PipelineClients,
     run_id: str,
     cancel_event: object | None = None,
+    doc_type: str = "Unknown",
+    instrument_type: str = "Unknown",
     wall_clock_seconds: int = 14 * 60,
 ) -> dict[str, object]:
     """Run verified-v2 from the final extraction and grounding contracts."""
@@ -284,6 +286,8 @@ def run_verified_from_doc_parts(
         run_id=run_id,
         cancel_event=cancel_event,
         wall_clock_seconds=wall_clock_seconds,
+        doc_type=doc_type,
+        instrument_type=instrument_type,
     )
     normalized = normalize_climate_assessment(assessment)
     reader = build_reader_model(normalized)
