@@ -9772,6 +9772,34 @@ def run_express():
                         )
 
                     verified_assessment = dict(verified_bundle['assessment'])
+                    verified_diagnostics = dict(
+                        verified_assessment.get('recommendation_diagnostics')
+                        or {}
+                    )
+                    diagnostic_reason_codes = [
+                        str(code)[:64]
+                        for code in verified_diagnostics.get(
+                            'reason_codes', []
+                        )[:12]
+                    ]
+                    app.logger.info(
+                        'Climate recommendation diagnostics assessment_id=%s '
+                        'raw_candidate_count=%s parsed_candidate_count=%s '
+                        'valid_candidate_count=%s admitted_count=%s '
+                        'final_priority_count=%s reviewer_invoked=%s '
+                        'reviewer_verdict=%s reason_codes=%s',
+                        assessment_id or "unknown",
+                        verified_diagnostics.get('raw_candidate_count', 0),
+                        verified_diagnostics.get('parsed_candidate_count', 0),
+                        verified_diagnostics.get('valid_candidate_count', 0),
+                        verified_diagnostics.get('admitted_count', 0),
+                        verified_diagnostics.get('final_priority_count', 0),
+                        verified_diagnostics.get('reviewer_invoked', False),
+                        verified_diagnostics.get(
+                            'reviewer_verdict', 'not_invoked'
+                        ),
+                        ','.join(diagnostic_reason_codes) or 'none',
+                    )
                     verified_reader = dict(verified_bundle['reader'])
                     verified_assessment['runtime_mode'] = verified_runtime.mode
                     verified_reader['runtime_mode'] = verified_runtime.mode

@@ -230,6 +230,63 @@ def test_unresolved_routing_triggers_one_source_first_review():
     assert result["validation"]["status"] == "attention"
     assert result["priorities"] == []
     assert result["manifest"]["suppressed_counts"]["recommendations"] == 1
+    assert result["recommendation_diagnostics"] == {
+        "raw_candidate_count": 1,
+        "parsed_candidate_count": 1,
+        "valid_candidate_count": 1,
+        "admitted_count": 1,
+        "final_priority_count": 0,
+        "reviewer_invoked": True,
+        "reviewer_verdict": "revise",
+        "reason_codes": ["ROUTING_SCOPE_UNVERIFIED"],
+    }
+
+
+def test_semantic_review_reason_codes_are_bounded():
+    reviewer = FakeClient(
+        [{"verdict": "revise", "reason_codes": ["routing scope needs review"]}],
+        [],
+    )
+    result = run_verified_climate_pipeline(
+        **_arguments(),
+        clients=PipelineClients(
+            FakeClient(_responses(unresolved_routing=True), []),
+            reviewer,
+        ),
+    )
+
+    assert result["recommendation_diagnostics"]["reason_codes"] == [
+        "SEMANTIC_REVIEW_REASON_INVALID"
+    ]
+
+
+def test_admission_suppression_exposes_bounded_reason_codes():
+    responses = _responses()
+    recommendation = responses[3]["recommendation_candidates"][0]
+    recommendation["score"]["materiality"] = 1
+    recommendation["gate_results"]["timing"] = False
+
+    result = run_verified_climate_pipeline(
+        **_arguments(),
+        clients=PipelineClients(FakeClient(responses, []), FakeClient([], [])),
+    )
+
+    assert result["priorities"] == []
+    assert result["recommendation_diagnostics"] == {
+        "raw_candidate_count": 1,
+        "parsed_candidate_count": 1,
+        "valid_candidate_count": 1,
+        "admitted_count": 0,
+        "final_priority_count": 0,
+        "reviewer_invoked": False,
+        "reviewer_verdict": "not_invoked",
+        "reason_codes": [
+            "ADMISSION_MATERIALITY_BELOW_MIN",
+            "ADMISSION_GATE_FAILED_TIMING",
+        ],
+    }
+
+
 
 
 def test_bad_fact_suppresses_dependent_analysis_and_recommendation():

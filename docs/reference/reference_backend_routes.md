@@ -439,3 +439,7 @@ legacy-session behavior is unchanged.
 `climate-verified-v2`, rebuilds and validates the canonical reader model, and
 returns the verified DOCX. Reader-integrity failures return 422 with bounded reason
 codes instead of exporting a malformed report.
+
+Completed verified runs emit one bounded `Climate recommendation diagnostics`
+application-log line with counts, semantic-review state, and up to 12 reason codes.
+It never logs candidate text, source excerpts, or model reasoning.

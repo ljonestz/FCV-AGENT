@@ -76,6 +76,16 @@ def _assessment() -> dict[str, object]:
             }
         ],
         "validation": {"status": "passed"},
+        "recommendation_diagnostics": {
+            "raw_candidate_count": 3,
+            "parsed_candidate_count": 3,
+            "valid_candidate_count": 3,
+            "admitted_count": 3,
+            "final_priority_count": 3,
+            "reviewer_invoked": False,
+            "reviewer_verdict": "not_invoked",
+            "reason_codes": [],
+        },
     }
 
 
@@ -91,6 +101,12 @@ def test_reader_has_four_dimensions_priority_cap_and_safe_annex():
         "schema_version": "climate-verified-v2",
         "bank_release_id": "ssd-2026.08",
         "validation_status": "passed",
+        "recommendation_candidate_count": 3,
+        "recommendation_admitted_count": 3,
+        "recommendation_final_count": 3,
+        "semantic_reviewer_invoked": False,
+        "semantic_reviewer_verdict": "not_invoked",
+        "recommendation_reason_codes": [],
     }
 
 

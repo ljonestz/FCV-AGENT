@@ -31,6 +31,7 @@ from sector_lenses.climate_recommendations import (
     RecommendationScore,
     ReviewReadinessFlag,
     admit_and_rank,
+    admission_failure_codes,
     admit_readiness_flags,
     validate_recommendation,
 )
@@ -96,6 +97,23 @@ def _strings(value: object) -> tuple[str, ...]:
     if not isinstance(value, (list, tuple)):
         return ()
     return tuple(str(item).strip() for item in value if str(item).strip())
+
+
+def _bounded_reason_codes(value: object) -> list[str]:
+    codes: list[str] = []
+    for item in _strings(value):
+        code = item.upper()
+        if (
+            len(code) > 64
+            or not code[0].isalpha()
+            or not code.replace("_", "").isalnum()
+        ):
+            code = "SEMANTIC_REVIEW_REASON_INVALID"
+        if code not in codes:
+            codes.append(code)
+        if len(codes) == 12:
+            break
+    return codes
 
 
 def _text(value: object, default: str = "") -> str:
@@ -584,6 +602,8 @@ def run_verified_climate_pipeline(
         "recommendation_candidates",
         "priorities",
     )
+    recommendation_reasons: list[str] = []
+    parsed_candidate_count = 0
     candidates: list[CandidateRecommendation] = []
     for record in raw_candidates:
         try:
@@ -591,15 +611,30 @@ def run_verified_climate_pipeline(
         except (TypeError, ValueError):
             suppressed["recommendations"] += 1
             reasons.append("RECOMMENDATION_MALFORMED")
+            recommendation_reasons.append("RECOMMENDATION_MALFORMED")
             continue
+        parsed_candidate_count += 1
         issues = validate_recommendation(candidate, known_ids)
         if issues:
             suppressed["recommendations"] += 1
             reasons.extend(issue.code for issue in issues)
+            recommendation_reasons.extend(issue.code for issue in issues)
             continue
         candidates.append(candidate)
+
+    admitted_count = 0
+    for candidate in candidates:
+        failure_codes = admission_failure_codes(candidate)
+        if failure_codes:
+            recommendation_reasons.extend(failure_codes)
+            reasons.extend(failure_codes)
+        else:
+            admitted_count += 1
     priorities = admit_and_rank(candidates)
     suppressed["recommendations"] += len(candidates) - len(priorities)
+    if admitted_count > len(priorities):
+        recommendation_reasons.append("ADMISSION_PRIORITY_CAP")
+        reasons.append("ADMISSION_PRIORITY_CAP")
 
     raw_flags = _records(recommendation_payload, "readiness_flags")
     flags: list[ReviewReadinessFlag] = []
@@ -616,7 +651,10 @@ def run_verified_climate_pipeline(
     suppressed["readiness_flags"] += len(raw_flags) - len(readiness)
 
     review_status = "passed"
+    reviewer_invoked = False
+    reviewer_verdict = "not_invoked"
     if priorities and semantic_review_required(_risk(priorities)):
+        reviewer_invoked = True
         review = _call(
             clients.reviewer,
             "conditional_review",
@@ -631,9 +669,14 @@ def run_verified_climate_pipeline(
             cancel_event=cancel_event,
             deadline=deadline,
         )
-        verdict = _text(review.get("verdict"), "block").casefold()
-        reasons.extend(_strings(review.get("reason_codes")))
-        if verdict != "pass":
+        reviewer_verdict = _text(review.get("verdict"), "block").casefold()
+        review_reasons = _bounded_reason_codes(review.get("reason_codes"))
+        if reviewer_verdict not in {"pass", "revise", "block"}:
+            reviewer_verdict = "block"
+            review_reasons.append("SEMANTIC_REVIEW_VERDICT_INVALID")
+        reasons.extend(review_reasons)
+        recommendation_reasons.extend(review_reasons)
+        if reviewer_verdict != "pass":
             suppressed["recommendations"] += len(priorities)
             priorities = ()
             review_status = "attention"
@@ -689,6 +732,16 @@ def run_verified_climate_pipeline(
         "validation": {
             "status": review_status,
             "reason_codes": list(unique_reasons),
+        },
+        "recommendation_diagnostics": {
+            "raw_candidate_count": len(raw_candidates),
+            "parsed_candidate_count": parsed_candidate_count,
+            "valid_candidate_count": len(candidates),
+            "admitted_count": admitted_count,
+            "final_priority_count": len(priorities),
+            "reviewer_invoked": reviewer_invoked,
+            "reviewer_verdict": reviewer_verdict,
+            "reason_codes": list(dict.fromkeys(recommendation_reasons))[:12],
         },
         "manifest": safe_log_summary(manifest),
     }

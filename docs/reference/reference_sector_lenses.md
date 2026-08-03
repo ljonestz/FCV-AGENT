@@ -98,3 +98,10 @@ and a privacy-safe `manifest`. Recommendations are capped at three and may be
 zero. Candidate evidence remains labelled `preview; not approved`. ITS/FastAPI
 must not translate the old single rating into the four judgments; it should mirror
 the v2 contract or retain explicit legacy status.
+
+Recommendation suppression is observable through additive privacy-safe
+`recommendation_diagnostics`: raw, parsed, structurally valid, gate-admitted,
+and final counts; semantic-review invocation/verdict; and at most 12 reason codes.
+Deterministic admission failures distinguish total score, materiality, missing or
+failed named gates, and the three-priority cap. No candidate or project prose is
+included. The canonical reader copies the safe summary into its technical annex.

@@ -2408,6 +2408,8 @@ def test_express_route_dispatches_verified_assessment_contract():
     assert "run_verified_from_doc_parts" in source
     assert "'climate_assessment': verified_assessment" in source
     assert "'climate_reader': verified_reader" in source
+    assert "Climate recommendation diagnostics" in source
+    assert "'recommendation_diagnostics'" in source
 
 
 def test_verified_climate_docx_route_uses_canonical_reader():

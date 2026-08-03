@@ -117,6 +117,7 @@ def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
     )[:3]
     flags = _records(assessment.get("review_readiness_flags"))[:4]
     validation = _mapping(assessment.get("validation"))
+    diagnostics = _mapping(assessment.get("recommendation_diagnostics"))
     executive = _text(assessment.get("executive_readout")) or _text(
         assessment.get("judgment_summary")
     )
@@ -131,6 +132,22 @@ def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
             "schema_version": _text(assessment.get("schema_version")),
             "bank_release_id": _text(assessment.get("bank_release_id")),
             "validation_status": _text(validation.get("status")),
+            "recommendation_candidate_count": diagnostics.get(
+                "raw_candidate_count", 0
+            ),
+            "recommendation_admitted_count": diagnostics.get(
+                "admitted_count", 0
+            ),
+            "recommendation_final_count": diagnostics.get(
+                "final_priority_count", 0
+            ),
+            "semantic_reviewer_invoked": diagnostics.get(
+                "reviewer_invoked", False
+            ),
+            "semantic_reviewer_verdict": _text(
+                diagnostics.get("reviewer_verdict")
+            ) or "not_invoked",
+            "recommendation_reason_codes": diagnostics.get("reason_codes", []),
         },
         "advisory_notice": ADVISORY_NOTICE,
     }

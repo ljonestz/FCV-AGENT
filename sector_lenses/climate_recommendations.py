@@ -241,6 +241,24 @@ def validate_recommendation(
     return tuple(issues)
 
 
+def admission_failure_codes(
+    candidate: CandidateRecommendation,
+) -> tuple[str, ...]:
+    """Return stable reason codes for deterministic admission failures."""
+
+    codes: list[str] = []
+    if candidate.score.total < 6:
+        codes.append("ADMISSION_SCORE_BELOW_MIN")
+    if candidate.score.materiality < 2:
+        codes.append("ADMISSION_MATERIALITY_BELOW_MIN")
+    for gate in sorted(REQUIRED_GATES):
+        if gate not in candidate.gate_results:
+            codes.append(f"ADMISSION_GATE_MISSING_{gate.upper()}")
+        elif not candidate.gate_results[gate]:
+            codes.append(f"ADMISSION_GATE_FAILED_{gate.upper()}")
+    return tuple(codes)
+
+
 def admit_and_rank(
     candidates: list[CandidateRecommendation],
 ) -> tuple[CandidateRecommendation, ...]:
