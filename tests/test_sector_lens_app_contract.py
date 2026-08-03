@@ -2400,6 +2400,13 @@ def test_verified_climate_ui_contract_is_ranked_and_multidimensional():
     assert "priority.priority_label" not in body
     assert "High priority" not in body
     assert "Smoke test: validates workflow completion only" in body
+    assert (
+        "passed deterministic admission but ${admittedCount===1?'was':'were'} withheld"
+        in body
+    )
+    assert "recommendation_admitted_count" in body
+    assert "semantic_reviewer_verdict" in body
+    assert "recommendation_reason_codes" in body
 
 
 def test_express_route_dispatches_verified_assessment_contract():

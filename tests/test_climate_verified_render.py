@@ -206,6 +206,38 @@ def test_zero_priority_message_is_shared_by_html_and_docx():
     assert message in document_text
 
 
+def test_semantic_review_suppression_is_explained_in_html_and_docx():
+    assessment = _assessment()
+    assessment["priorities"] = []
+    assessment["recommendation_diagnostics"] = {
+        "raw_candidate_count": 3,
+        "admitted_count": 3,
+        "final_priority_count": 0,
+        "reviewer_invoked": True,
+        "reviewer_verdict": "revise",
+        "reason_codes": ["PROJECT_FACT_PROVENANCE_UNSUPPORTED"],
+    }
+    model = build_reader_model(assessment)
+
+    rendered = render_reader_html(model)
+    stream = BytesIO()
+    write_reader_docx(model, stream)
+    stream.seek(0)
+    document_text = "\n".join(
+        paragraph.text for paragraph in Document(stream).paragraphs
+    )
+
+    message = (
+        "3 recommendation candidates passed deterministic admission but were "
+        "withheld after semantic review. Review outcome: revise. See the "
+        "technical annex."
+    )
+    assert message in rendered
+    assert message in document_text
+    assert "No recommendation passed the admission threshold" not in rendered
+    assert "No recommendation passed the admission threshold" not in document_text
+
+
 def test_html_escapes_model_authored_content():
     assessment = _assessment()
     assessment["priorities"][0]["title"] = "<script>alert('x')</script>"

@@ -4583,15 +4583,22 @@
       ${Array.isArray(j.evidence_ids)&&j.evidence_ids.length?`<p><strong>Evidence references:</strong> ${esc(j.evidence_ids.join(', '))}</p>`:''}
     </section>`).join('');
     const fields=[['Decision','decision'],['Minimum action','minimum_action'],['Enhanced action','enhanced_action'],['Activation condition','enhanced_activation'],['Who','responsible_function'],['Routing status','routing_status'],['Authority basis','authority_basis'],['Recommendation basis','recommendation_basis'],['Project evidence references','project_anchor_ids'],['Pathway references','pathway_ids'],['Existing-response references','existing_response_ids'],['Residual-gap references','residual_gap_ids'],['Instrument references','instrument_claim_ids'],['Completion evidence','completion_evidence'],['Completion evidence status','completion_evidence_status'],['Confidence','confidence'],['Limitation','limitation'],['Caution','caution'],['Suggested drafting','drafting_language']];
+    const annex=r.technical_annex&&typeof r.technical_annex==='object'?r.technical_annex:{};
+    const admittedCount=Number(annex.recommendation_admitted_count)||0;
+    const reviewerVerdict=String(annex.semantic_reviewer_verdict||'not_invoked').toLowerCase();
+    const withheldMessage=admittedCount>0&&['revise','block'].includes(reviewerVerdict)
+      ?`${admittedCount} recommendation ${admittedCount===1?'candidate':'candidates'} passed deterministic admission but ${admittedCount===1?'was':'were'} withheld after semantic review. Review outcome: ${reviewerVerdict}. See the technical annex.`
+      :'No recommendation passed the admission threshold for this run.';
     const priorities=Array.isArray(r.priorities)?r.priorities.slice().sort((x,y)=>(Number(x.rank)||999)-(Number(y.rank)||999)).slice(0,3):[];
     const priorityHtml=priorities.length?priorities.map(priority=>{
       const field=(label,key)=>{const raw=priority[key];const value=Array.isArray(raw)?raw.join(', '):raw;return value?`<p><strong>${esc(label)}:</strong> ${esc(value)}</p>`:'';};
       return `<section class="climate-priority-card"><h3>${esc(priority.rank)}. ${esc(priority.title||'Untitled action')} (${esc(priority.recommendation_id||'')})</h3>${fields.map(([label,key])=>field(label,key)).join('')}</section>`;
-    }).join(''):'<p>No recommendation passed the admission threshold for this run.</p>';
+    }).join(''):`<p>${esc(withheldMessage)}</p>`;
     const flags=Array.isArray(r.review_readiness_flags)?r.review_readiness_flags.slice(0,4):[];
     const flagsHtml=flags.length?flags.map(flag=>`<section><h4>${esc(flag.flag||'Verification point')}</h4><p><strong>Why it matters:</strong> ${esc(flag.why_it_matters||'')}</p><p><strong>Document basis:</strong> ${esc(Array.isArray(flag.document_basis_ids)?flag.document_basis_ids.join(', '):'')}</p><p><strong>Suggested verification:</strong> ${esc(flag.suggested_verification||'')}</p></section>`).join(''):'<p>No bounded review-readiness flags were admitted.</p>';
-    const annex=r.technical_annex&&typeof r.technical_annex==='object'?r.technical_annex:{};
-    return `<article class="climate-verified-assessment">${smokeHtml}<h2>Executive readout</h2><p>${executive}</p>${statusHtml}<h2>Climate-FCV judgments</h2>${judgmentHtml}<h2>Ranked operational priorities</h2>${priorityHtml}<details><summary>Review readiness flags for task-team verification</summary>${flagsHtml}</details><details><summary>Technical annex</summary><p><strong>Run ID:</strong> ${esc(annex.run_id||'')}</p><p><strong>Schema:</strong> ${esc(annex.schema_version||'')}</p><p><strong>Country-bank release:</strong> ${esc(annex.bank_release_id||'not used')}</p><p><strong>Automated validation:</strong> ${esc(annex.validation_status||'attention')}</p></details><p class="climate-advisory">${esc(r.advisory_notice||'')}</p></article>`;
+    const annexFields=[['Run ID','run_id'],['Schema','schema_version'],['Country-bank release','bank_release_id'],['Automated validation','validation_status'],['Recommendation candidate count','recommendation_candidate_count'],['Recommendation admitted count','recommendation_admitted_count'],['Recommendation final count','recommendation_final_count'],['Semantic reviewer invoked','semantic_reviewer_invoked'],['Semantic reviewer verdict','semantic_reviewer_verdict'],['Recommendation reason codes','recommendation_reason_codes'],['Unsupported numeric tokens','unsupported_numeric_tokens'],['Runtime mode','runtime_mode']];
+    const annexHtml=annexFields.map(([label,key])=>{const raw=annex[key];const value=Array.isArray(raw)?raw.join(', '):raw;return `<p><strong>${esc(label)}:</strong> ${esc(value??'')}</p>`;}).join('');
+    return `<article class="climate-verified-assessment">${smokeHtml}<h2>Executive readout</h2><p>${executive}</p>${statusHtml}<h2>Climate-FCV judgments</h2>${judgmentHtml}<h2>Ranked operational priorities</h2>${priorityHtml}<details><summary>Review readiness flags for task-team verification</summary>${flagsHtml}</details><details><summary>Technical annex</summary>${annexHtml}</details><p class="climate-advisory">${esc(r.advisory_notice||'')}</p></article>`;
   }
 
   function renderOut(stage,result,isFollowOn){

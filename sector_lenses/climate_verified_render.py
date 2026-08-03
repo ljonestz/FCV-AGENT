@@ -97,6 +97,24 @@ def _rank(value: object) -> int:
         return 999
 
 
+def _no_priority_message(model: dict[str, object]) -> str:
+    annex = _mapping(model.get("technical_annex"))
+    try:
+        admitted = int(annex.get("recommendation_admitted_count", 0))
+    except (TypeError, ValueError):
+        admitted = 0
+    verdict = _text(annex.get("semantic_reviewer_verdict")).casefold()
+    if admitted > 0 and verdict in {"revise", "block"}:
+        noun = "candidate" if admitted == 1 else "candidates"
+        verb = "was" if admitted == 1 else "were"
+        return (
+            f"{admitted} recommendation {noun} passed deterministic admission "
+            f"but {verb} withheld after semantic review. Review outcome: "
+            f"{verdict}. See the technical annex."
+        )
+    return NO_RECOMMENDATION_MESSAGE
+
+
 def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
     """Project a verified assessment into the only reader-facing structure."""
 
@@ -279,7 +297,7 @@ def render_reader_html(model: dict[str, object]) -> str:
     parts.append(_heading(2, HEADINGS[2]))
     priorities = _records(model.get("priorities"))
     if not priorities:
-        parts.append(f"<p>{html.escape(NO_RECOMMENDATION_MESSAGE)}</p>")
+        parts.append(f"<p>{html.escape(_no_priority_message(model))}</p>")
     for priority in priorities:
         rank = _rank(priority.get("rank"))
         identifier = _text(priority.get("recommendation_id"))
@@ -364,7 +382,7 @@ def write_reader_docx(model: dict[str, object], path: str | Path) -> Path:
     document.add_heading(HEADINGS[2], level=1)
     priorities = _records(model.get("priorities"))
     if not priorities:
-        document.add_paragraph(NO_RECOMMENDATION_MESSAGE)
+        document.add_paragraph(_no_priority_message(model))
     for priority in priorities:
         rank = _rank(priority.get("rank"))
         identifier = _text(priority.get("recommendation_id"))
