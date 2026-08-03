@@ -330,6 +330,28 @@ def _source_linked_numeric_tokens(
     return tuple(sorted(numeric_tokens))
 
 
+def _unsupported_numeric_fields(
+    candidate: CandidateRecommendation,
+) -> list[dict[str, object]]:
+    supported = set(candidate.supported_numeric_tokens)
+    fields: list[dict[str, object]] = []
+    for name in (
+        "decision",
+        "minimum_action",
+        "enhanced_action",
+        "enhanced_activation",
+        "completion_evidence",
+        "drafting_language",
+    ):
+        value = getattr(candidate, name)
+        tokens = sorted(
+            set(numeric_tokens_in_text(value or "")) - supported
+        )[:12]
+        if tokens:
+            fields.append({"field": name, "tokens": tokens})
+    return fields
+
+
 def _readiness_flag(record: dict[str, object]) -> ReviewReadinessFlag:
     return ReviewReadinessFlag(
         flag_id=_text(record.get("flag_id")),
@@ -633,6 +655,7 @@ def run_verified_climate_pipeline(
     )
     recommendation_reasons: list[str] = []
     unsupported_numbers: list[str] = []
+    candidate_suppressions: list[dict[str, object]] = []
     parsed_candidate_count = 0
     candidates: list[CandidateRecommendation] = []
     for record in raw_candidates:
@@ -642,6 +665,18 @@ def run_verified_climate_pipeline(
             suppressed["recommendations"] += 1
             reasons.append("RECOMMENDATION_MALFORMED")
             recommendation_reasons.append("RECOMMENDATION_MALFORMED")
+            if len(candidate_suppressions) < 3:
+                candidate_suppressions.append(
+                    {
+                        "recommendation_id": _text(
+                            record.get("recommendation_id"),
+                            "unresolved_candidate",
+                        ),
+                        "stage": "parsing",
+                        "reason_codes": ["RECOMMENDATION_MALFORMED"],
+                        "unsupported_numeric_fields": [],
+                    }
+                )
             continue
         parsed_candidate_count += 1
         source_numeric_tokens = _source_linked_numeric_tokens(candidate, facts)
@@ -657,6 +692,19 @@ def run_verified_climate_pipeline(
             suppressed["recommendations"] += 1
             reasons.extend(issue.code for issue in issues)
             recommendation_reasons.extend(issue.code for issue in issues)
+            if len(candidate_suppressions) < 3:
+                candidate_suppressions.append(
+                    {
+                        "recommendation_id": candidate.recommendation_id,
+                        "stage": "validation",
+                        "reason_codes": list(
+                            dict.fromkeys(issue.code for issue in issues)
+                        )[:12],
+                        "unsupported_numeric_fields": (
+                            _unsupported_numeric_fields(candidate)
+                        ),
+                    }
+                )
             continue
         candidates.append(candidate)
 
@@ -666,6 +714,15 @@ def run_verified_climate_pipeline(
         if failure_codes:
             recommendation_reasons.extend(failure_codes)
             reasons.extend(failure_codes)
+            if len(candidate_suppressions) < 3:
+                candidate_suppressions.append(
+                    {
+                        "recommendation_id": candidate.recommendation_id,
+                        "stage": "admission",
+                        "reason_codes": list(failure_codes)[:12],
+                        "unsupported_numeric_fields": [],
+                    }
+                )
         else:
             admitted_count += 1
     priorities = admit_and_rank(candidates)
@@ -715,6 +772,17 @@ def run_verified_climate_pipeline(
         reasons.extend(review_reasons)
         recommendation_reasons.extend(review_reasons)
         if reviewer_verdict != "pass":
+            for candidate in priorities:
+                if len(candidate_suppressions) == 3:
+                    break
+                candidate_suppressions.append(
+                    {
+                        "recommendation_id": candidate.recommendation_id,
+                        "stage": "semantic_review",
+                        "reason_codes": review_reasons[:12],
+                        "unsupported_numeric_fields": [],
+                    }
+                )
             suppressed["recommendations"] += len(priorities)
             priorities = ()
             review_status = "attention"
@@ -781,6 +849,7 @@ def run_verified_climate_pipeline(
             "reviewer_verdict": reviewer_verdict,
             "reason_codes": list(dict.fromkeys(recommendation_reasons))[:12],
             "unsupported_numeric_tokens": unsupported_numbers,
+            "candidate_suppressions": candidate_suppressions,
         },
         "manifest": safe_log_summary(manifest),
     }

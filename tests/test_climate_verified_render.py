@@ -86,6 +86,7 @@ def _assessment() -> dict[str, object]:
             "reviewer_verdict": "not_invoked",
             "reason_codes": [],
             "unsupported_numeric_tokens": [],
+            "candidate_suppressions": [],
         },
     }
 
@@ -109,7 +110,27 @@ def test_reader_has_four_dimensions_priority_cap_and_safe_annex():
         "semantic_reviewer_verdict": "not_invoked",
         "recommendation_reason_codes": [],
         "unsupported_numeric_tokens": [],
+        "candidate_suppressions": [],
     }
+
+
+def test_reader_annex_preserves_bounded_candidate_suppression_path():
+    assessment = _assessment()
+    detail = {
+        "recommendation_id": "REC-001",
+        "stage": "validation",
+        "reason_codes": ["RECOMMENDATION_NUMBER_UNSUPPORTED"],
+        "unsupported_numeric_fields": [
+            {"field": "minimum_action", "tokens": ["30"]}
+        ],
+    }
+    assessment["recommendation_diagnostics"]["candidate_suppressions"] = [
+        detail
+    ]
+
+    model = build_reader_model(assessment)
+
+    assert model["technical_annex"]["candidate_suppressions"] == [detail]
 
 
 def test_reader_validation_rejects_placeholder_and_duplicate_titles():

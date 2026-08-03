@@ -174,6 +174,9 @@ def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
             "unsupported_numeric_tokens": diagnostics.get(
                 "unsupported_numeric_tokens", []
             ),
+            "candidate_suppressions": _records(
+                diagnostics.get("candidate_suppressions")
+            )[:3],
         },
         "advisory_notice": ADVISORY_NOTICE,
     }

@@ -146,6 +146,32 @@ Do not initiate the paid quality run until the South Sudan smoke workflow comple
 
 ---
 
+### Task 2E: Trace candidate suppression without exposing prose
+
+**Files:**
+- Modify: `sector_lenses/climate_verified_pipeline.py`
+- Modify: `sector_lenses/climate_verified_render.py`
+- Modify: `tests/test_climate_verified_pipeline.py`
+- Modify: `tests/test_climate_verified_render.py`
+
+- [x] **Step 1: Add failing candidate-stage regression tests**
+
+Require bounded candidate IDs, suppression stages, stable reason codes, and numeric field names/tokens for validation, admission, and semantic-review suppression.
+
+- [x] **Step 2: Implement content-free candidate traces**
+
+Emit at most three candidate trace records and carry them into the canonical reader technical annex.
+
+- [x] **Step 3: Run the focused and core regression suites**
+
+Verify candidate telemetry plus the complete verified runtime, reader, export, workflow, and app-contract surface.
+
+- [ ] **Step 4: Deploy and rerun the cheap South Sudan diagnostic**
+
+Use the field-level trace to identify the exact numeric-precision defect before changing recommendation behavior.
+
+---
+
 ### Task 3: Verify, deploy, and capture the replacement result
 
 **Files:**
