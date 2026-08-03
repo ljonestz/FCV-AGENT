@@ -42,6 +42,9 @@ READINESS_CATEGORIES = {
     "missing_operational_home",
     "material_placeholder",
 }
+LIST_MARKER_PATTERN = re.compile(
+    r"(?<![A-Za-z0-9])(?:\(\d{1,2}\)|\d{1,2}[.)])(?=\s)"
+)
 NUMERIC_TOKEN_PATTERN = re.compile(
     r"(?<![A-Za-z]-)\b\d+(?:\.\d+)?%?\b"
 )
@@ -129,7 +132,8 @@ def _issue(
 def numeric_tokens_in_text(text: str) -> tuple[str, ...]:
     """Return numeric claims while excluding suffixes of structured IDs."""
 
-    return tuple(sorted(set(NUMERIC_TOKEN_PATTERN.findall(text))))
+    prose = LIST_MARKER_PATTERN.sub("", text)
+    return tuple(sorted(set(NUMERIC_TOKEN_PATTERN.findall(prose))))
 
 
 def unsupported_numeric_tokens(

@@ -126,6 +126,22 @@ def test_unsupported_date_or_number_is_blocking():
     )
 
 
+def test_numbered_list_markers_are_not_treated_as_numeric_claims():
+    candidate = replace(
+        _candidate(),
+        minimum_action=(
+            "Use these checks: (1) exposure; (2) access; (3) inclusion; "
+            "(4) monitoring; (5) verification; (6) escalation; "
+            "(7) feedback; (8) adaptation."
+        ),
+    )
+    issues = validate_recommendation(candidate, KNOWN_IDS)
+    assert not any(
+        issue.code == "RECOMMENDATION_NUMBER_UNSUPPORTED"
+        for issue in issues
+    )
+
+
 def test_internal_reference_suffixes_are_not_treated_as_numeric_claims():
     candidate = replace(
         _candidate(),

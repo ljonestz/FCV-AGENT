@@ -106,7 +106,8 @@ and at most 12 unsupported numeric tokens. Numeric component or subcomponent
 labels are accepted only when they occur in a project fact explicitly linked by
 the candidate. The pipeline derives support from the linked fact and ignores
 model self-attestation; suffixes of structured references such as PF-055 and RG-029
-are not treated as numeric claims. Unsourced dates, thresholds, and quantities
+and numbered-list markers such as (1) are not treated as numeric claims.
+Unsourced dates, thresholds, and quantities
 remain blocking.
 Deterministic admission failures distinguish total score, materiality, missing or
 failed named gates, and the three-priority cap. No candidate or project prose is
