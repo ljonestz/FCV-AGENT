@@ -441,5 +441,6 @@ returns the verified DOCX. Reader-integrity failures return 422 with bounded rea
 codes instead of exporting a malformed report.
 
 Completed verified runs emit one bounded `Climate recommendation diagnostics`
-application-log line with counts, semantic-review state, and up to 12 reason codes.
-It never logs candidate text, source excerpts, or model reasoning.
+application-log line with counts, semantic-review state, up to 12 reason codes,
+and up to 12 unsupported numeric tokens. It never logs candidate text, source
+excerpts, or model reasoning.

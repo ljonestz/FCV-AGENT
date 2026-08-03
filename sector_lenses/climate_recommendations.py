@@ -123,6 +123,28 @@ def _issue(
     )
 
 
+def unsupported_numeric_tokens(
+    candidate: CandidateRecommendation,
+) -> tuple[str, ...]:
+    """Return bounded, content-free numeric tokens lacking declared support."""
+
+    numeric_text = " ".join(
+        value
+        for value in (
+            candidate.decision,
+            candidate.minimum_action,
+            candidate.enhanced_action,
+            candidate.enhanced_activation,
+            candidate.completion_evidence,
+            candidate.drafting_language,
+        )
+        if value
+    )
+    numeric_tokens = set(re.findall(r"\b\d+(?:\.\d+)?%?\b", numeric_text))
+    unsupported = numeric_tokens - set(candidate.supported_numeric_tokens)
+    return tuple(sorted(unsupported))[:12]
+
+
 def validate_recommendation(
     candidate: CandidateRecommendation,
     known_ids: set[str],
@@ -213,20 +235,7 @@ def validate_recommendation(
                 candidate,
             )
         )
-    numeric_text = " ".join(
-        value
-        for value in (
-            candidate.decision,
-            candidate.minimum_action,
-            candidate.enhanced_action,
-            candidate.enhanced_activation,
-            candidate.completion_evidence,
-            candidate.drafting_language,
-        )
-        if value
-    )
-    numeric_tokens = set(re.findall(r"\b\d+(?:\.\d+)?%?\b", numeric_text))
-    unsupported = numeric_tokens - set(candidate.supported_numeric_tokens)
+    unsupported = unsupported_numeric_tokens(candidate)
     if unsupported:
         issues.append(
             _issue(

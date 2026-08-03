@@ -9782,12 +9782,19 @@ def run_express():
                             'reason_codes', []
                         )[:12]
                     ]
+                    diagnostic_numeric_tokens = [
+                        str(token)[:16]
+                        for token in verified_diagnostics.get(
+                            'unsupported_numeric_tokens', []
+                        )[:12]
+                    ]
                     app.logger.info(
                         'Climate recommendation diagnostics assessment_id=%s '
                         'raw_candidate_count=%s parsed_candidate_count=%s '
                         'valid_candidate_count=%s admitted_count=%s '
                         'final_priority_count=%s reviewer_invoked=%s '
-                        'reviewer_verdict=%s reason_codes=%s',
+                        'reviewer_verdict=%s reason_codes=%s '
+                        'unsupported_numeric_tokens=%s',
                         assessment_id or "unknown",
                         verified_diagnostics.get('raw_candidate_count', 0),
                         verified_diagnostics.get('parsed_candidate_count', 0),
@@ -9799,6 +9806,7 @@ def run_express():
                             'reviewer_verdict', 'not_invoked'
                         ),
                         ','.join(diagnostic_reason_codes) or 'none',
+                        ','.join(diagnostic_numeric_tokens) or 'none',
                     )
                     verified_reader = dict(verified_bundle['reader'])
                     verified_assessment['runtime_mode'] = verified_runtime.mode

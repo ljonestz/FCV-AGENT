@@ -239,6 +239,7 @@ def test_unresolved_routing_triggers_one_source_first_review():
         "reviewer_invoked": True,
         "reviewer_verdict": "revise",
         "reason_codes": ["ROUTING_SCOPE_UNVERIFIED"],
+        "unsupported_numeric_tokens": [],
     }
 
 
@@ -284,9 +285,28 @@ def test_admission_suppression_exposes_bounded_reason_codes():
             "ADMISSION_MATERIALITY_BELOW_MIN",
             "ADMISSION_GATE_FAILED_TIMING",
         ],
+        "unsupported_numeric_tokens": [],
     }
 
 
+
+
+def test_numeric_validation_exposes_only_bounded_unsupported_tokens():
+    responses = _responses()
+    recommendation = responses[3]["recommendation_candidates"][0]
+    recommendation["minimum_action"] = (
+        "Update Components 1 and 2 before the 2027 review."
+    )
+
+    result = run_verified_climate_pipeline(
+        **_arguments(),
+        clients=PipelineClients(FakeClient(responses, []), FakeClient([], [])),
+    )
+
+    assert result["priorities"] == []
+    diagnostics = result["recommendation_diagnostics"]
+    assert diagnostics["reason_codes"] == ["RECOMMENDATION_NUMBER_UNSUPPORTED"]
+    assert diagnostics["unsupported_numeric_tokens"] == ["1", "2", "2027"]
 
 
 def test_bad_fact_suppresses_dependent_analysis_and_recommendation():

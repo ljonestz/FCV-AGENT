@@ -148,6 +148,9 @@ def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
                 diagnostics.get("reviewer_verdict")
             ) or "not_invoked",
             "recommendation_reason_codes": diagnostics.get("reason_codes", []),
+            "unsupported_numeric_tokens": diagnostics.get(
+                "unsupported_numeric_tokens", []
+            ),
         },
         "advisory_notice": ADVISORY_NOTICE,
     }

@@ -85,6 +85,7 @@ def _assessment() -> dict[str, object]:
             "reviewer_invoked": False,
             "reviewer_verdict": "not_invoked",
             "reason_codes": [],
+            "unsupported_numeric_tokens": [],
         },
     }
 
@@ -107,6 +108,7 @@ def test_reader_has_four_dimensions_priority_cap_and_safe_annex():
         "semantic_reviewer_invoked": False,
         "semantic_reviewer_verdict": "not_invoked",
         "recommendation_reason_codes": [],
+        "unsupported_numeric_tokens": [],
     }
 
 

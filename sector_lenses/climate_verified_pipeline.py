@@ -33,6 +33,7 @@ from sector_lenses.climate_recommendations import (
     admit_and_rank,
     admission_failure_codes,
     admit_readiness_flags,
+    unsupported_numeric_tokens,
     validate_recommendation,
 )
 from sector_lenses.climate_run_manifest import RunManifest, safe_log_summary
@@ -603,6 +604,7 @@ def run_verified_climate_pipeline(
         "priorities",
     )
     recommendation_reasons: list[str] = []
+    unsupported_numbers: list[str] = []
     parsed_candidate_count = 0
     candidates: list[CandidateRecommendation] = []
     for record in raw_candidates:
@@ -614,6 +616,9 @@ def run_verified_climate_pipeline(
             recommendation_reasons.append("RECOMMENDATION_MALFORMED")
             continue
         parsed_candidate_count += 1
+        for token in unsupported_numeric_tokens(candidate):
+            if token not in unsupported_numbers and len(unsupported_numbers) < 12:
+                unsupported_numbers.append(token)
         issues = validate_recommendation(candidate, known_ids)
         if issues:
             suppressed["recommendations"] += 1
@@ -742,6 +747,7 @@ def run_verified_climate_pipeline(
             "reviewer_invoked": reviewer_invoked,
             "reviewer_verdict": reviewer_verdict,
             "reason_codes": list(dict.fromkeys(recommendation_reasons))[:12],
+            "unsupported_numeric_tokens": unsupported_numbers,
         },
         "manifest": safe_log_summary(manifest),
     }
