@@ -95,6 +95,24 @@ Add only the explicit output-shape and cardinality constraints; retain the seman
 
 Run the prompt-contract and manifest tests and expect both to pass.
 
+### Task 2C: Diagnose executive-readout length integrity
+
+**Files:**
+- Modify: `sector_lenses/climate_verified_runtime.py`
+- Modify: `tests/test_climate_verified_runtime.py`
+
+- [ ] **Step 1: Add a failing integrity-telemetry test**
+
+Require reader-integrity errors caused by executive length to include only the calculated word count.
+
+- [ ] **Step 2: Add the bounded diagnostic**
+
+Append `executive_words=<count>` only when `EXECUTIVE_LENGTH_INVALID` is present; do not expose prose.
+
+- [ ] **Step 3: Run focused and full tests**
+
+Verify the telemetry regression and the complete Climate-FCV suite before a cheap diagnostic smoke run.
+
 ### Task 3: Verify, deploy, and capture the replacement result
 
 **Files:**

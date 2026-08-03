@@ -289,8 +289,14 @@ def run_verified_from_doc_parts(
     reader = build_reader_model(normalized)
     reader_issues = validate_reader_model(reader)
     if reader_issues:
+        detail_suffix = ""
+        if "EXECUTIVE_LENGTH_INVALID" in reader_issues:
+            executive_words = len(
+                str(reader.get("executive_readout") or "").split()
+            )
+            detail_suffix = f"; executive_words={executive_words}"
         raise ValueError(
-            "READER_INTEGRITY: " + ", ".join(reader_issues)
+            "READER_INTEGRITY: " + ", ".join(reader_issues) + detail_suffix
         )
     return {
         "assessment": normalized,

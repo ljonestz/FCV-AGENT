@@ -216,7 +216,10 @@ def test_runtime_blocks_reader_integrity_failure(monkeypatch):
         "sector_lenses.climate_verified_runtime.run_verified_climate_pipeline",
         invalid_pipeline,
     )
-    with pytest.raises(ValueError, match="READER_INTEGRITY"):
+    with pytest.raises(
+        ValueError,
+        match=r"READER_INTEGRITY: .*EXECUTIVE_LENGTH_INVALID.*executive_words=2",
+    ):
         run_verified_from_doc_parts(
             doc_parts=_doc_parts(),
             climate_grounding={},
