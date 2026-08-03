@@ -341,9 +341,46 @@ def normalize_unsupported_core_precision(
     )
 
 
+def normalize_unverified_completion_actor(
+    candidate: CandidateRecommendation,
+    drafting_context: DraftingValidationContext,
+) -> tuple[CandidateRecommendation, tuple[str, ...]]:
+    """Generalize an unsupported actor only in completion-evidence prose."""
+
+    linked_ids = set(candidate.project_anchor_ids) | set(
+        candidate.instrument_claim_ids
+    )
+    linked_text = " ".join(
+        drafting_context.project_fact_text.get(identifier, "")
+        for identifier in linked_ids
+    ).casefold()
+    completion = candidate.completion_evidence
+    changed = False
+    for phrase in ("focal point", "steering committee", "coordination unit"):
+        if phrase not in completion.casefold() or phrase in linked_text:
+            continue
+
+        def _replacement(match: re.Match[str]) -> str:
+            value = "responsible project function"
+            return value.capitalize() if match.group(0)[0].isupper() else value
+
+        completion = re.sub(
+            rf"\b{re.escape(phrase)}\b",
+            _replacement,
+            completion,
+            flags=re.IGNORECASE,
+        )
+        changed = True
+    if not changed:
+        return candidate, ()
+    return (
+        replace(candidate, completion_evidence=completion),
+        ("COMPLETION_EVIDENCE_ACTOR_GENERALIZED",),
+    )
+
+
 def validate_recommendation(
     candidate: CandidateRecommendation,
-
     known_ids: set[str],
     *,
     drafting_context: DraftingValidationContext | None = None,

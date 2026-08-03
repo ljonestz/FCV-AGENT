@@ -169,6 +169,9 @@ def select_operational_guidance(
         entry
         for entry in OPERATIONAL_GUIDANCE
         if document in entry.document_types
-        and instrument in entry.instrument_types
+        and (
+            instrument in entry.instrument_types
+            or instrument in {"", "unknown"}
+        )
     )
     return selected[:MAX_GUIDANCE_PACKET_SIZE]

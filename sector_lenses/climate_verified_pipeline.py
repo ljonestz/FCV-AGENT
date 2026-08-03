@@ -44,6 +44,7 @@ from sector_lenses.climate_recommendations import (
     normalize_drafting_blocks,
     numeric_tokens_in_text,
     normalize_optional_enhancement,
+    normalize_unverified_completion_actor,
     normalize_unsupported_core_precision,
     unsupported_numeric_tokens,
     validate_recommendation,
@@ -905,6 +906,11 @@ def run_verified_climate_pipeline(
             },
             project_fact_types={item.claim_id: item.claim_type for item in facts},
         )
+        candidate, actor_repairs = normalize_unverified_completion_actor(
+            candidate,
+            drafting_context,
+        )
+        repairs.extend(actor_repairs)
         candidate, evidence_repairs = normalize_drafting_blocks(
             candidate,
             current_document=doc_type,

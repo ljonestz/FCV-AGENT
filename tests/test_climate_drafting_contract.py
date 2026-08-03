@@ -6,6 +6,7 @@ from sector_lenses.climate_recommendations import (
     DraftingValidationContext,
     RecommendationScore,
     normalize_drafting_blocks,
+    normalize_unverified_completion_actor,
     validate_recommendation,
 )
 
@@ -320,3 +321,28 @@ def test_normalization_drops_optional_block_with_mismatched_instrument_target():
 
     assert normalized.operational_instrument_drafting is None
     assert "DRAFTING_OPTIONAL_UNVERIFIED_DROPPED" in repairs
+
+
+def test_unverified_completion_actor_is_generalized_before_validation() -> None:
+    candidate = replace(
+        _candidate(),
+        completion_evidence="Coordination unit records the agreed update.",
+    )
+
+    normalized, repairs = normalize_unverified_completion_actor(
+        candidate,
+        _context(),
+    )
+
+    assert normalized.completion_evidence == (
+        "Responsible project function records the agreed update."
+    )
+    assert repairs == ("COMPLETION_EVIDENCE_ACTOR_GENERALIZED",)
+    assert "DRAFTING_ACTOR_UNVERIFIED" not in {
+        issue.code
+        for issue in validate_recommendation(
+            normalized,
+            KNOWN_IDS,
+            drafting_context=_context(),
+        )
+    }

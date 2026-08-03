@@ -43,3 +43,17 @@ def test_unknown_document_type_returns_no_guidance() -> None:
         doc_type="unknown",
         instrument_type="IPF",
     ) == ()
+
+
+def test_known_pcn_with_unknown_instrument_gets_document_scoped_guidance() -> None:
+    packet = select_operational_guidance(
+        doc_type="PCN",
+        instrument_type="Unknown",
+    )
+
+    assert packet
+    assert all("pcn" in entry.document_types for entry in packet)
+    assert all(
+        any(target[0] == "pcn" for target in entry.permitted_targets)
+        for entry in packet
+    )
