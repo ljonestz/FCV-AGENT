@@ -940,6 +940,23 @@ def _is_verified_climate_express(
     return not is_implementation_review and active == {"climate"}
 
 
+def _log_verified_climate_call_failure(diagnostic: dict[str, object]) -> None:
+    """Log allowlisted provider-failure metadata without model content."""
+    app.logger.warning(
+        "Climate verified call failure stage=%s attempt=%s elapsed_ms=%s "
+        "exception_type=%s status_code=%s prompt_chars=%s "
+        "timeout_seconds=%s remaining_seconds=%s",
+        diagnostic.get("stage"),
+        diagnostic.get("attempt"),
+        diagnostic.get("elapsed_ms"),
+        diagnostic.get("exception_type"),
+        diagnostic.get("status_code"),
+        diagnostic.get("prompt_chars"),
+        diagnostic.get("timeout_seconds"),
+        diagnostic.get("remaining_seconds"),
+    )
+
+
 def _build_verified_pipeline_clients() -> PipelineClients:
     """Build strict JSON adapters from the server-only runtime profile."""
     runtime = load_verified_climate_runtime()
@@ -948,11 +965,13 @@ def _build_verified_pipeline_clients() -> PipelineClients:
             get_client(),
             model=runtime.assessment_model,
             is_transient=_is_transient_stream_error,
+            diagnostic_sink=_log_verified_climate_call_failure,
         ),
         reviewer=AnthropicVerifiedJsonClient(
             get_lens_recovery_client(),
             model=runtime.reviewer_model,
             is_transient=_is_transient_stream_error,
+            diagnostic_sink=_log_verified_climate_call_failure,
         ),
     )
 

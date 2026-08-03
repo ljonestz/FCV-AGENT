@@ -23,10 +23,51 @@ class AnthropicVerifiedJsonClient:
         *,
         model: str,
         is_transient: Callable[[Exception], bool] | None = None,
+        diagnostic_sink: Callable[[dict[str, object]], None] | None = None,
     ) -> None:
         self._sdk_client = sdk_client
         self._model = model
         self._is_transient = is_transient or _never_transient
+        self._diagnostic_sink = diagnostic_sink
+
+    def _emit_failure_diagnostic(
+        self,
+        *,
+        stage: str,
+        attempt: int,
+        elapsed_ms: int,
+        error: Exception,
+        prompt_chars: int,
+        timeout_seconds: int,
+        remaining_seconds: int,
+    ) -> None:
+        if self._diagnostic_sink is None:
+            return
+        diagnostic = {
+            "stage": stage,
+            "attempt": attempt,
+            "elapsed_ms": elapsed_ms,
+            "exception_type": type(error).__name__,
+            "status_code": getattr(error, "status_code", None),
+            "prompt_chars": prompt_chars,
+            "timeout_seconds": timeout_seconds,
+            "remaining_seconds": remaining_seconds,
+        }
+        try:
+            self._diagnostic_sink(diagnostic)
+        except Exception:
+            pass
+
+    @staticmethod
+    def _retry_budget_error(stage: str, error: Exception) -> TimeoutError:
+        status_code = getattr(error, "status_code", None)
+        status_suffix = (
+            f" status={status_code}" if status_code is not None else ""
+        )
+        return TimeoutError(
+            f"{stage} exceeded its retry budget after "
+            f"{type(error).__name__}{status_suffix}"
+        )
 
     def complete_json(
         self,
@@ -40,12 +81,8 @@ class AnthropicVerifiedJsonClient:
         prompt = build_verified_stage_prompt(stage, payload)
         response = None
         started = time.monotonic()
+        remaining = timeout_seconds
         for attempt in range(max_transient_retries + 1):
-            remaining = (
-                timeout_seconds
-                if attempt == 0
-                else int(timeout_seconds - (time.monotonic() - started))
-            )
             if remaining < 1:
                 raise TimeoutError(f"{stage} exceeded its retry budget")
             configured = self._sdk_client.with_options(
@@ -61,8 +98,21 @@ class AnthropicVerifiedJsonClient:
                 )
                 break
             except Exception as error:
+                elapsed_seconds = time.monotonic() - started
+                remaining = max(0, int(timeout_seconds - elapsed_seconds))
+                self._emit_failure_diagnostic(
+                    stage=stage,
+                    attempt=attempt + 1,
+                    elapsed_ms=int(elapsed_seconds * 1000),
+                    error=error,
+                    prompt_chars=len(prompt),
+                    timeout_seconds=timeout_seconds,
+                    remaining_seconds=remaining,
+                )
                 if attempt >= max_transient_retries or not self._is_transient(error):
                     raise
+                if remaining < 1:
+                    raise self._retry_budget_error(stage, error) from error
         if response is None:
             raise RuntimeError(f"No response returned for {stage}")
         content = getattr(response, "content", None)

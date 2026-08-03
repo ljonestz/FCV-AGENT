@@ -140,6 +140,85 @@ def test_client_retries_once_only_for_declared_transient_error():
     assert len(sdk.messages.calls) == 2
 
 
+def test_client_emits_only_content_free_failed_attempt_diagnostics():
+    class ProviderFailure(RuntimeError):
+        status_code = 529
+
+    diagnostics = []
+    sdk = _Sdk([
+        ProviderFailure("sensitive provider detail"),
+        _delimited('{"facts": []}'),
+    ])
+    client = AnthropicVerifiedJsonClient(
+        sdk,
+        model="assessment-model",
+        is_transient=lambda _error: True,
+        diagnostic_sink=diagnostics.append,
+    )
+
+    result = client.complete_json(
+        stage="judgment_review",
+        payload={"facts": [], "analysis": {}},
+        timeout_seconds=120,
+        max_output_tokens=4_000,
+        max_transient_retries=1,
+    )
+
+    assert result == {"facts": []}
+    assert len(diagnostics) == 1
+    assert set(diagnostics[0]) == {
+        "stage",
+        "attempt",
+        "elapsed_ms",
+        "exception_type",
+        "status_code",
+        "prompt_chars",
+        "timeout_seconds",
+        "remaining_seconds",
+    }
+    assert diagnostics[0]["stage"] == "judgment_review"
+    assert diagnostics[0]["attempt"] == 1
+    assert diagnostics[0]["exception_type"] == "ProviderFailure"
+    assert diagnostics[0]["status_code"] == 529
+    assert diagnostics[0]["timeout_seconds"] == 120
+    assert diagnostics[0]["prompt_chars"] > 0
+    assert "sensitive provider detail" not in str(diagnostics)
+
+
+def test_client_exhausted_retry_budget_preserves_original_failure(monkeypatch):
+    class ProviderFailure(RuntimeError):
+        status_code = 529
+
+    failure = ProviderFailure("sensitive provider detail")
+    clock = iter([0.0, 120.2])
+    monkeypatch.setattr(
+        "sector_lenses.climate_verified_client.time.monotonic",
+        lambda: next(clock),
+    )
+    sdk = _Sdk([failure])
+    client = AnthropicVerifiedJsonClient(
+        sdk,
+        model="assessment-model",
+        is_transient=lambda _error: True,
+    )
+
+    with pytest.raises(
+        TimeoutError,
+        match=r"judgment_review exceeded its retry budget after ProviderFailure.*529",
+    ) as error:
+        client.complete_json(
+            stage="judgment_review",
+            payload={"facts": [], "analysis": {}},
+            timeout_seconds=120,
+            max_output_tokens=4_000,
+            max_transient_retries=1,
+        )
+
+    assert error.value.__cause__ is failure
+    assert "sensitive provider detail" not in str(error.value)
+
+
+
 def test_client_does_not_retry_invalid_or_undelimited_content():
     sdk = _Sdk(['{"facts": []}'])
     client = AnthropicVerifiedJsonClient(
