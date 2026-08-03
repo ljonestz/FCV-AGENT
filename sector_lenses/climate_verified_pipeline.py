@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import time
 from dataclasses import asdict, dataclass, replace
 from typing import Protocol
@@ -59,7 +60,7 @@ PROMPT_VERSIONS = {
     "fact_extraction": "climate-facts-v2.0",
     "bounded_analysis": "climate-analysis-v2.0",
     "judgment_review": "climate-judgments-v2.0",
-    "recommendation_compiler": "climate-recommendations-v2.0",
+    "recommendation_compiler": "climate-recommendations-v2.1",
     "conditional_review": "climate-review-v2.0",
 }
 
@@ -300,6 +301,33 @@ def _candidate(record: dict[str, object]) -> CandidateRecommendation:
         },
         supported_numeric_tokens=_strings(record.get("supported_numeric_tokens")),
     )
+
+
+def _source_linked_numeric_tokens(
+    candidate: CandidateRecommendation,
+    facts: list[ProjectFactClaim],
+) -> tuple[str, ...]:
+    """Return numeric tokens present in project facts linked by the candidate."""
+
+    linked_fact_ids = set(candidate.project_anchor_ids) | set(
+        candidate.instrument_claim_ids
+    )
+    numeric_tokens: set[str] = set()
+    for fact in facts:
+        if fact.claim_id not in linked_fact_ids:
+            continue
+        fact_text = " ".join(
+            value
+            for value in (
+                fact.subject,
+                fact.predicate,
+                fact.object_value,
+                fact.supporting_excerpt,
+            )
+            if value
+        )
+        numeric_tokens.update(re.findall(r"\b\d+(?:\.\d+)?%?\b", fact_text))
+    return tuple(sorted(numeric_tokens))
 
 
 def _readiness_flag(record: dict[str, object]) -> ReviewReadinessFlag:
@@ -616,6 +644,11 @@ def run_verified_climate_pipeline(
             recommendation_reasons.append("RECOMMENDATION_MALFORMED")
             continue
         parsed_candidate_count += 1
+        source_numeric_tokens = _source_linked_numeric_tokens(candidate, facts)
+        candidate = replace(
+            candidate,
+            supported_numeric_tokens=source_numeric_tokens,
+        )
         for token in unsupported_numeric_tokens(candidate):
             if token not in unsupported_numbers and len(unsupported_numbers) < 12:
                 unsupported_numbers.append(token)

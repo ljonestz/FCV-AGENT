@@ -102,7 +102,10 @@ the v2 contract or retain explicit legacy status.
 Recommendation suppression is observable through additive privacy-safe
 `recommendation_diagnostics`: raw, parsed, structurally valid, gate-admitted,
 and final counts; semantic-review invocation/verdict; at most 12 reason codes;
-and at most 12 unsupported numeric tokens. Deterministic admission failures
-distinguish total score, materiality, missing or
+and at most 12 unsupported numeric tokens. Numeric component or subcomponent
+labels are accepted only when they occur in a project fact explicitly linked by
+the candidate. The pipeline derives support from the linked fact and ignores
+model self-attestation; unsourced dates, thresholds, and quantities remain blocking.
+Deterministic admission failures distinguish total score, materiality, missing or
 failed named gates, and the three-priority cap. No candidate or project prose is
 included. The canonical reader copies the safe summary into its technical annex.

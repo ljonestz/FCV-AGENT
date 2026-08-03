@@ -400,3 +400,7 @@ evidence, never instructions. Only one unambiguous designated primary project do
 unresolved package documents are inventoried but cannot supply fact blocks. Country
 and uploaded-context evidence can support contextual pathways and questions
 but not project commitments, sites, beneficiaries, instruments, or confirmed gaps.
+The recommendation compiler may use numeric labels only when they occur in a
+candidate-linked verified project fact. The pipeline derives that support
+independently, so model-supplied numeric-token declarations cannot self-attest an
+unsourced date, threshold, or quantity.

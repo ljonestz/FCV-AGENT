@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from sector_lenses.climate_analysis import ContextEvidenceRef
 from sector_lenses.climate_source_blocks import (
@@ -289,6 +289,47 @@ def test_admission_suppression_exposes_bounded_reason_codes():
     }
 
 
+def test_source_linked_numeric_label_is_supported_without_model_echo():
+    responses = _responses()
+    fact = responses[0]["facts"][0]
+    excerpt = (
+        "The Project Operations Manual will define Component 1.4 site selection."
+    )
+    fact["object"] = "Component 1.4 site selection"
+    fact["supporting_excerpt"] = excerpt
+    recommendation = responses[3]["recommendation_candidates"][0]
+    recommendation["decision"] = "Confirm the Component 1.4 site-selection method."
+
+    arguments = _arguments()
+    arguments["source_blocks"][0] = replace(
+        arguments["source_blocks"][0],
+        text=excerpt,
+    )
+    result = run_verified_climate_pipeline(
+        **arguments,
+        clients=PipelineClients(FakeClient(responses, []), FakeClient([], [])),
+    )
+
+    assert len(result["priorities"]) == 1
+    assert (
+        result["recommendation_diagnostics"]["unsupported_numeric_tokens"] == []
+    )
+
+
+def test_model_cannot_self_attest_an_unsourced_numeric_token():
+    responses = _responses()
+    recommendation = responses[3]["recommendation_candidates"][0]
+    recommendation["decision"] = "Complete the review in 2027."
+    recommendation["supported_numeric_tokens"] = ["2027"]
+
+    result = run_verified_climate_pipeline(
+        **_arguments(),
+        clients=PipelineClients(FakeClient(responses, []), FakeClient([], [])),
+    )
+
+    assert result["priorities"] == []
+    diagnostics = result["recommendation_diagnostics"]
+    assert diagnostics["unsupported_numeric_tokens"] == ["2027"]
 
 
 def test_numeric_validation_exposes_only_bounded_unsupported_tokens():
