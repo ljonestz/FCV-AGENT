@@ -37,3 +37,10 @@ Because unsupported schema length/cardinality constraints are not enforced by co
 ## Candidate-level suppression trace
 
 The first schema-constrained smoke run completed all five verified stages and produced three parsed recommendation candidates, but all three were rejected before admission. Existing aggregate telemetry identified deterministic validation and `RECOMMENDATION_NUMBER_UNSUPPORTED`, with no semantic reviewer invocation. To identify the precise candidate field without logging prose, add a maximum-three `candidate_suppressions` trace. Each entry contains only the stable recommendation ID, suppression stage (`parsing`, `validation`, `admission`, or `semantic_review`), up to 12 stable reason codes, and the names of fields containing unsupported numeric tokens with up to 12 digit tokens. Carry the bounded trace into the canonical reader technical annex and exports.
+
+
+## Semantic-review targeting correction
+
+The second schema-constrained smoke run completed parsing, deterministic validation, and admission for all three South Sudan candidates, then withheld all three at conditional semantic review. Candidate traces showed that the reviewer returned residual-gap and unresolved-capacity descriptions rather than recommendation-specific defects. The runtime also discarded every admitted priority for any non-pass verdict, even though the review contract exposed object_ids.
+
+Advance the conditional-review prompt to climate-review-v2.3. Require revise/block findings to identify defects in the recommendation itself and to target only affected REC- identifiers. An unresolved indicator, protocol, capacity, or adaptation measure can be the valid purpose of a recommendation and is not independently a defect. Suppress only valid targeted recommendation IDs. If a non-pass verdict provides no target that resolves to an admitted recommendation, preserve fail-safe behavior by suppressing all admitted recommendations and add SEMANTIC_REVIEW_TARGET_UNRESOLVED. Carry the bounded target IDs into the canonical reader annex. Admission thresholds and country-bank generation remain unchanged.

@@ -170,6 +170,36 @@ Verify candidate telemetry plus the complete verified runtime, reader, export, w
 
 Use the field-level trace to identify the exact numeric-precision defect before changing recommendation behavior.
 
+### Task 2F: Target semantic-review suppression
+
+**Files:**
+- Modify: sector_lenses/climate_verified_pipeline.py
+- Modify: sector_lenses/climate_verified_prompts.py
+- Modify: sector_lenses/climate_verified_render.py
+- Modify: tests/test_climate_verified_client.py
+- Modify: tests/test_climate_verified_pipeline.py
+- Modify: tests/test_climate_verified_render.py
+
+- [x] **Step 1: Reproduce the suppression location**
+
+Confirm that candidates parse, validate, and pass admission before semantic review removes them.
+
+- [x] **Step 2: Add targeted-suppression and fail-safe regressions**
+
+Require valid REC- targets to suppress only affected recommendations; unresolved targets must suppress all and emit SEMANTIC_REVIEW_TARGET_UNRESOLVED.
+
+- [x] **Step 3: Correct reviewer scope and implement targeting**
+
+Distinguish recommendation defects from the residual gaps they address, preserve unaffected priorities, and expose bounded semantic-review target IDs in the reader annex.
+
+- [x] **Step 4: Run focused and complete regression suites**
+
+Focused client/pipeline/render tests and the full Climate-FCV suite pass before deployment.
+
+- [ ] **Step 5: Deploy and rerun South Sudan in smoke**
+
+Require coherent reader output before authorizing the paid quality run.
+
 ---
 
 ### Task 3: Verify, deploy, and capture the replacement result

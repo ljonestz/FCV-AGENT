@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from copy import deepcopy
 from dataclasses import dataclass, replace
 
 from sector_lenses.climate_analysis import ContextEvidenceRef
@@ -215,7 +216,13 @@ def test_four_calls_run_when_semantic_review_is_not_required():
 def test_unresolved_routing_triggers_one_source_first_review():
     assessment = FakeClient(_responses(unresolved_routing=True), [])
     reviewer = FakeClient(
-        [{"verdict": "revise", "reason_codes": ["ROUTING_SCOPE_UNVERIFIED"]}],
+        [
+            {
+                "verdict": "revise",
+                "reason_codes": ["ROUTING_SCOPE_UNVERIFIED"],
+                "object_ids": ["REC-001"],
+            }
+        ],
         [],
     )
     result = run_verified_climate_pipeline(
@@ -240,6 +247,7 @@ def test_unresolved_routing_triggers_one_source_first_review():
         "reviewer_verdict": "revise",
         "reason_codes": ["ROUTING_SCOPE_UNVERIFIED"],
         "unsupported_numeric_tokens": [],
+        "semantic_review_object_ids": ["REC-001"],
         "candidate_suppressions": [
             {
                 "recommendation_id": "REC-001",
@@ -251,9 +259,52 @@ def test_unresolved_routing_triggers_one_source_first_review():
     }
 
 
+def test_semantic_review_targets_only_affected_recommendations():
+    responses = _responses(unresolved_routing=True)
+    second = deepcopy(responses[3]["recommendation_candidates"][0])
+    second["recommendation_id"] = "REC-002"
+    second["title"] = "Confirm a second bounded site decision"
+    responses[3]["recommendation_candidates"].append(second)
+    reviewer = FakeClient(
+        [
+            {
+                "verdict": "revise",
+                "reason_codes": ["ROUTING_SCOPE_UNVERIFIED"],
+                "object_ids": ["REC-001"],
+            }
+        ],
+        [],
+    )
+
+    result = run_verified_climate_pipeline(
+        **_arguments(),
+        clients=PipelineClients(FakeClient(responses, []), reviewer),
+    )
+
+    assert [item["recommendation_id"] for item in result["priorities"]] == [
+        "REC-002"
+    ]
+    diagnostics = result["recommendation_diagnostics"]
+    assert diagnostics["semantic_review_object_ids"] == ["REC-001"]
+    assert diagnostics["candidate_suppressions"] == [
+        {
+            "recommendation_id": "REC-001",
+            "stage": "semantic_review",
+            "reason_codes": ["ROUTING_SCOPE_UNVERIFIED"],
+            "unsupported_numeric_fields": [],
+        }
+    ]
+
+
 def test_semantic_review_reason_codes_are_bounded():
     reviewer = FakeClient(
-        [{"verdict": "revise", "reason_codes": ["routing scope needs review"]}],
+        [
+            {
+                "verdict": "revise",
+                "reason_codes": ["routing scope needs review"],
+                "object_ids": ["REC-001"],
+            }
+        ],
         [],
     )
     result = run_verified_climate_pipeline(
@@ -267,6 +318,32 @@ def test_semantic_review_reason_codes_are_bounded():
     assert result["recommendation_diagnostics"]["reason_codes"] == [
         "SEMANTIC_REVIEW_REASON_INVALID"
     ]
+
+
+def test_semantic_review_with_unresolved_targets_fails_safe():
+    reviewer = FakeClient(
+        [
+            {
+                "verdict": "revise",
+                "reason_codes": ["ROUTING_SCOPE_UNVERIFIED"],
+                "object_ids": ["RG-001"],
+            }
+        ],
+        [],
+    )
+
+    result = run_verified_climate_pipeline(
+        **_arguments(),
+        clients=PipelineClients(
+            FakeClient(_responses(unresolved_routing=True), []),
+            reviewer,
+        ),
+    )
+
+    assert result["priorities"] == []
+    diagnostics = result["recommendation_diagnostics"]
+    assert diagnostics["semantic_review_object_ids"] == ["REC-001"]
+    assert "SEMANTIC_REVIEW_TARGET_UNRESOLVED" in diagnostics["reason_codes"]
 
 
 def test_admission_suppression_exposes_bounded_reason_codes():
@@ -294,6 +371,7 @@ def test_admission_suppression_exposes_bounded_reason_codes():
             "ADMISSION_GATE_FAILED_TIMING",
         ],
         "unsupported_numeric_tokens": [],
+        "semantic_review_object_ids": [],
         "candidate_suppressions": [
             {
                 "recommendation_id": "REC-001",
@@ -430,7 +508,7 @@ def test_manifest_is_privacy_safe_and_scoped_to_the_run():
     )
     assert (
         first["manifest"]["prompt_versions"]["conditional_review"]
-        == "climate-review-v2.2"
+        == "climate-review-v2.3"
     )
     assert set(first["manifest"]["prompt_versions"]) == {
         "fact_extraction",

@@ -61,7 +61,7 @@ PROMPT_VERSIONS = {
     "bounded_analysis": "climate-analysis-v2.2",
     "judgment_review": "climate-judgments-v2.2",
     "recommendation_compiler": "climate-recommendations-v2.3",
-    "conditional_review": "climate-review-v2.2",
+    "conditional_review": "climate-review-v2.3",
 }
 
 
@@ -748,6 +748,7 @@ def run_verified_climate_pipeline(
     review_status = "passed"
     reviewer_invoked = False
     reviewer_verdict = "not_invoked"
+    semantic_review_object_ids: list[str] = []
     if priorities and semantic_review_required(_risk(priorities)):
         reviewer_invoked = True
         review = _call(
@@ -766,13 +767,30 @@ def run_verified_climate_pipeline(
         )
         reviewer_verdict = _text(review.get("verdict"), "block").casefold()
         review_reasons = _bounded_reason_codes(review.get("reason_codes"))
+        priority_ids = {item.recommendation_id for item in priorities}
+        semantic_review_object_ids = list(
+            dict.fromkeys(
+                object_id
+                for object_id in _strings(review.get("object_ids"))
+                if object_id in priority_ids
+            )
+        )[:12]
         if reviewer_verdict not in {"pass", "revise", "block"}:
             reviewer_verdict = "block"
             review_reasons.append("SEMANTIC_REVIEW_VERDICT_INVALID")
+        if reviewer_verdict != "pass" and not semantic_review_object_ids:
+            review_reasons.append("SEMANTIC_REVIEW_TARGET_UNRESOLVED")
+            semantic_review_object_ids = sorted(priority_ids)
         reasons.extend(review_reasons)
         recommendation_reasons.extend(review_reasons)
         if reviewer_verdict != "pass":
-            for candidate in priorities:
+            affected_ids = set(semantic_review_object_ids)
+            affected = [
+                candidate
+                for candidate in priorities
+                if candidate.recommendation_id in affected_ids
+            ]
+            for candidate in affected:
                 if len(candidate_suppressions) == 3:
                     break
                 candidate_suppressions.append(
@@ -783,8 +801,12 @@ def run_verified_climate_pipeline(
                         "unsupported_numeric_fields": [],
                     }
                 )
-            suppressed["recommendations"] += len(priorities)
-            priorities = ()
+            suppressed["recommendations"] += len(affected)
+            priorities = tuple(
+                candidate
+                for candidate in priorities
+                if candidate.recommendation_id not in affected_ids
+            )
             review_status = "attention"
 
     unique_reasons = tuple(dict.fromkeys(reasons))
@@ -849,6 +871,7 @@ def run_verified_climate_pipeline(
             "reviewer_verdict": reviewer_verdict,
             "reason_codes": list(dict.fromkeys(recommendation_reasons))[:12],
             "unsupported_numeric_tokens": unsupported_numbers,
+            "semantic_review_object_ids": semantic_review_object_ids,
             "candidate_suppressions": candidate_suppressions,
         },
         "manifest": safe_log_summary(manifest),

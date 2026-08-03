@@ -174,6 +174,13 @@ def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
             "unsupported_numeric_tokens": diagnostics.get(
                 "unsupported_numeric_tokens", []
             ),
+            "semantic_review_object_ids": [
+                _text(item)
+                for item in diagnostics.get("semantic_review_object_ids", [])
+                if _text(item)
+            ][:12] if isinstance(
+                diagnostics.get("semantic_review_object_ids"), list
+            ) else [],
             "candidate_suppressions": _records(
                 diagnostics.get("candidate_suppressions")
             )[:3],
