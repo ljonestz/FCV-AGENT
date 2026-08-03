@@ -7,6 +7,7 @@ from sector_lenses.climate_recommendations import (
     ReviewReadinessFlag,
     admit_and_rank,
     admit_readiness_flags,
+    normalize_optional_enhancement,
     validate_recommendation,
 )
 
@@ -245,3 +246,20 @@ def test_structured_drafting_types_are_available():
     assert hasattr(recommendations, "DraftingBlock")
     assert hasattr(recommendations, "DraftingValidationContext")
     assert hasattr(recommendations, "normalize_drafting_blocks")
+
+
+def test_unsupported_optional_enhancement_is_dropped_without_weakening_core():
+    candidate = replace(
+        _candidate(),
+        enhanced_action="Review 14 additional sites.",
+        enhanced_activation="Activate within 30 days.",
+        supported_numeric_tokens=(),
+    )
+
+    normalized, repairs = normalize_optional_enhancement(candidate)
+
+    assert normalized.decision == candidate.decision
+    assert normalized.minimum_action == candidate.minimum_action
+    assert normalized.enhanced_action is None
+    assert normalized.enhanced_activation is None
+    assert repairs == ("ENHANCED_UNSUPPORTED_PRECISION_DROPPED",)

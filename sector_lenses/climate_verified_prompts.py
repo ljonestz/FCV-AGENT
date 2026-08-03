@@ -138,14 +138,17 @@ existing_commitment only when linked project evidence supports that status;
 otherwise use advisory_proposal. Add at most one operational_instrument block
 only when it is separately useful and targets a named instrument supported by
 the candidate's instrument_claim_ids. The second block must not repeat the
-first.
+first. When instrument_claim_ids is empty, Return only the current_document block.
 
 Cite only supplied project, residual-gap, and guidance IDs. Guidance selects a
 safe drafting destination but does not prove a project fact, commitment, actor,
 system, timing, authority, or formal requirement. Do not alter the supplied
 recommendation decision, action, routing, score, or gates. Do not invent dates,
-thresholds, actors, instruments, systems, or mandatory wording. If a digit is
-needed, copy it from a linked verified project fact.
+thresholds, actors, instruments, systems, or mandatory wording. Use no digits in drafting text.
+Do not use the phrases focal point, steering committee, or
+coordination unit unless the exact phrase appears in a supplied linked fact.
+For project_basis_ids, copy only candidate project_anchor_ids or
+instrument_claim_ids. For gap_basis_ids, copy only candidate residual_gap_ids.
 
 Return: {"drafting_sets":[{"recommendation_id":"REC-001","drafting_blocks":[{"drafting_role":"current_document|operational_instrument","target_document":"PCN","target_section":"Project Description","drafting_status":"existing_commitment|advisory_proposal","text":"...","project_basis_ids":[],"gap_basis_ids":[],"guidance_ids":[]}]}]}""",
         payload,

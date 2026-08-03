@@ -43,6 +43,7 @@ from sector_lenses.climate_recommendations import (
     admit_readiness_flags,
     normalize_drafting_blocks,
     numeric_tokens_in_text,
+    normalize_optional_enhancement,
     unsupported_numeric_tokens,
     validate_recommendation,
 )
@@ -875,16 +876,18 @@ def run_verified_climate_pipeline(
                 )
             continue
         parsed_candidate_count += 1
-        candidate, drafting_repairs = normalize_drafting_blocks(candidate)
+        candidate, drafting_repairs = normalize_drafting_blocks(
+            candidate,
+            current_document=doc_type,
+        )
         repairs.extend(drafting_repairs)
         source_numeric_tokens = _source_linked_numeric_tokens(candidate, facts)
         candidate = replace(
             candidate,
             supported_numeric_tokens=source_numeric_tokens,
         )
-        for token in unsupported_numeric_tokens(candidate):
-            if token not in unsupported_numbers and len(unsupported_numbers) < 12:
-                unsupported_numbers.append(token)
+        candidate, enhancement_repairs = normalize_optional_enhancement(candidate)
+        repairs.extend(enhancement_repairs)
         drafting_context = DraftingValidationContext(
             known_ids=frozenset(known_ids),
             guidance_ids=frozenset(item.guidance_id for item in guidance),
@@ -899,6 +902,15 @@ def run_verified_climate_pipeline(
             },
             project_fact_types={item.claim_id: item.claim_type for item in facts},
         )
+        candidate, evidence_repairs = normalize_drafting_blocks(
+            candidate,
+            current_document=doc_type,
+            drafting_context=drafting_context,
+        )
+        repairs.extend(evidence_repairs)
+        for token in unsupported_numeric_tokens(candidate):
+            if token not in unsupported_numbers and len(unsupported_numbers) < 12:
+                unsupported_numbers.append(token)
         issues = validate_recommendation(
             candidate, known_ids, drafting_context=drafting_context
         )

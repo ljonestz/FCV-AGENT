@@ -113,6 +113,28 @@ def test_repetitive_second_block_is_dropped_without_suppressing_candidate() -> N
     assert repairs == ("DRAFTING_SECOND_BLOCK_REDUNDANT",)
 
 
+
+def test_drafting_normalization_canonicalizes_current_target_and_drops_unverified_optional():
+    optional = _draft(
+        document="Project Operations Manual",
+        section="Implementation arrangements",
+        text=("Use separate operational language for delivery arrangements. " * 16),
+    )
+    candidate = replace(
+        _candidate(),
+        current_document_drafting=_draft(document="Project Concept Note (PCN)"),
+        operational_instrument_drafting=optional,
+    )
+
+    normalized, repairs = normalize_drafting_blocks(
+        candidate,
+        current_document="PCN",
+    )
+
+    assert normalized.current_document_drafting.target_document == "PCN"
+    assert normalized.operational_instrument_drafting is None
+    assert set(repairs) == {"DRAFTING_CURRENT_TARGET_CANONICALIZED", "DRAFTING_OPTIONAL_UNVERIFIED_DROPPED"}
+
 def test_unknown_guidance_reference_blocks_drafting() -> None:
     candidate = replace(
         _candidate(),
@@ -275,3 +297,26 @@ def test_implausibly_short_drafting_is_blocked() -> None:
         drafting_context=_context(),
     )
     assert "DRAFTING_LENGTH_INVALID" in {issue.code for issue in issues}
+
+
+def test_normalization_drops_optional_block_with_mismatched_instrument_target():
+    optional = _draft(
+        document="Project Operations Manual",
+        section="Implementation arrangements",
+        project_basis_id="PF-010",
+        text=("Use distinct operational language for delivery arrangements. " * 16),
+    )
+    candidate = replace(
+        _candidate(),
+        instrument_claim_ids=("PF-010",),
+        operational_instrument_drafting=optional,
+    )
+
+    normalized, repairs = normalize_drafting_blocks(
+        candidate,
+        current_document="PCN",
+        drafting_context=_context(),
+    )
+
+    assert normalized.operational_instrument_drafting is None
+    assert "DRAFTING_OPTIONAL_UNVERIFIED_DROPPED" in repairs

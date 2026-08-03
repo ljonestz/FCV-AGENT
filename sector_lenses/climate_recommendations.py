@@ -90,23 +90,60 @@ def _draft_tokens(block: DraftingBlock) -> set[str]:
     return set(re.findall(r"\b[a-z]{3,}\b", block.text.casefold()))
 
 
-def normalize_drafting_blocks(candidate):
+def normalize_drafting_blocks(
+    candidate,
+    *,
+    current_document: str | None = None,
+    drafting_context: DraftingValidationContext | None = None,
+):
     """Drop an optional drafting block that repeats the required block."""
 
+    repairs: list[str] = []
     current = candidate.current_document_drafting
     optional = candidate.operational_instrument_drafting
+    if current is not None and current_document:
+        normalized_document = " ".join(current_document.casefold().split())
+        if _normalized_target(current)[0] != normalized_document:
+            current = replace(current, target_document=current_document)
+            candidate = replace(candidate, current_document_drafting=current)
+            repairs.append("DRAFTING_CURRENT_TARGET_CANONICALIZED")
     if current is None or optional is None:
-        return candidate, ()
+        return candidate, tuple(repairs)
     current_tokens = _draft_tokens(current)
     optional_tokens = _draft_tokens(optional)
     union = current_tokens | optional_tokens
     overlap = len(current_tokens & optional_tokens) / len(union) if union else 1.0
     if _normalized_target(current) == _normalized_target(optional) or overlap >= 0.8:
-        return replace(candidate, operational_instrument_drafting=None), (
-            "DRAFTING_SECOND_BLOCK_REDUNDANT",
+        repairs.append("DRAFTING_SECOND_BLOCK_REDUNDANT")
+        return replace(candidate, operational_instrument_drafting=None), tuple(repairs)
+    if not candidate.instrument_claim_ids:
+        repairs.append("DRAFTING_OPTIONAL_UNVERIFIED_DROPPED")
+        return replace(candidate, operational_instrument_drafting=None), tuple(repairs)
+    if drafting_context:
+        optional_document = " ".join(
+            optional.target_document.casefold().split()
         )
-    return candidate, ()
+        linked_named_instruments = {
+            identifier
+            for identifier in optional.project_basis_ids
+            if identifier in candidate.instrument_claim_ids
+            and drafting_context.project_fact_types.get(identifier)
+            == "named_instrument"
+        }
+        target_is_evidenced = any(
+            optional_document
+            in " ".join(
+                drafting_context.project_fact_text.get(identifier, "")
+                .casefold()
+                .split()
+            )
+            for identifier in linked_named_instruments
+        )
+        if not target_is_evidenced:
+            repairs.append("DRAFTING_OPTIONAL_UNVERIFIED_DROPPED")
+            return replace(candidate, operational_instrument_drafting=None), tuple(repairs)
 
+    return candidate, tuple(repairs)
 
 
 
@@ -221,8 +258,33 @@ def unsupported_numeric_tokens(
     return tuple(sorted(unsupported))[:12]
 
 
+def normalize_optional_enhancement(
+    candidate: CandidateRecommendation,
+) -> tuple[CandidateRecommendation, tuple[str, ...]]:
+    """Drop optional enhancement prose when its precision is unsupported."""
+
+    enhancement_text = " ".join(
+        value
+        for value in (
+            candidate.enhanced_action,
+            candidate.enhanced_activation,
+        )
+        if value
+    )
+    unsupported = set(numeric_tokens_in_text(enhancement_text)) - set(
+        candidate.supported_numeric_tokens
+    )
+    if not unsupported:
+        return candidate, ()
+    return (
+        replace(candidate, enhanced_action=None, enhanced_activation=None),
+        ("ENHANCED_UNSUPPORTED_PRECISION_DROPPED",),
+    )
+
+
 def validate_recommendation(
     candidate: CandidateRecommendation,
+
     known_ids: set[str],
     *,
     drafting_context: DraftingValidationContext | None = None,
