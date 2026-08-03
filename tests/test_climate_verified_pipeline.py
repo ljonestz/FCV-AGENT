@@ -10,6 +10,7 @@ from sector_lenses.climate_source_blocks import (
     SourceDocument,
 )
 from sector_lenses.climate_verified_pipeline import (
+    _candidate,
     PipelineClients,
     run_verified_climate_pipeline,
 )
@@ -610,3 +611,21 @@ def test_preview_label_survives_into_reader_payload():
     )
 
     assert result["evidence_status"] == "preview; not approved"
+
+
+def test_candidate_maps_compact_drafting_blocks_to_domain_fields():
+    record = deepcopy(_responses()[3]["recommendation_candidates"][0])
+    current = record.pop("current_document_drafting")
+    record.pop("operational_instrument_drafting")
+    record["drafting_blocks"] = [
+        {"drafting_role": "current_document", **current}
+    ]
+
+    candidate = _candidate(record)
+
+    assert candidate.current_document_drafting is not None
+    assert (
+        candidate.current_document_drafting.target_section
+        == "Project Description"
+    )
+    assert candidate.operational_instrument_drafting is None

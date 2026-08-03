@@ -19,12 +19,6 @@ def _object(properties: dict[str, object]) -> dict[str, object]:
     }
 
 
-def _nullable_object(schema: dict[str, object]) -> dict[str, object]:
-    result = deepcopy(schema)
-    result["type"] = ["object", "null"]
-    return result
-
-
 def _string(description: str = "") -> dict[str, object]:
     schema: dict[str, object] = {"type": "string"}
     if description:
@@ -182,6 +176,15 @@ DRAFTING_SCHEMA = _object(
     }
 )
 
+DRAFTING_BLOCK_SCHEMA = _object(
+    {
+        "drafting_role": _enum(
+            ("current_document", "operational_instrument")
+        ),
+        **DRAFTING_SCHEMA["properties"],
+    }
+)
+
 CANDIDATE_SCHEMA = _object(
     {
         "recommendation_id": _string(),
@@ -217,8 +220,10 @@ CANDIDATE_SCHEMA = _object(
         "confidence": _enum(CONFIDENCE),
         "limitation": _string("45 words or fewer."),
         "caution": _string("45 words or fewer."),
-        "current_document_drafting": DRAFTING_SCHEMA,
-        "operational_instrument_drafting": _nullable_object(DRAFTING_SCHEMA),
+        "drafting_blocks": {
+            "type": "array",
+            "items": DRAFTING_BLOCK_SCHEMA,
+        },
         "supported_numeric_tokens": _strings(),
         "score": SCORE_SCHEMA,
         "gate_results": GATE_SCHEMA,

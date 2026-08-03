@@ -287,7 +287,43 @@ def _drafting_block(record: object) -> DraftingBlock | None:
     )
 
 
+def _candidate_drafting_blocks(
+    record: dict[str, object],
+) -> tuple[DraftingBlock | None, DraftingBlock | None]:
+    """Map compact transport blocks to the stable domain fields."""
+
+    if "drafting_blocks" not in record:
+        return (
+            _drafting_block(record.get("current_document_drafting")),
+            _drafting_block(record.get("operational_instrument_drafting")),
+        )
+
+    raw_blocks = record.get("drafting_blocks")
+    if not isinstance(raw_blocks, list):
+        raise ValueError("drafting_blocks must be a list")
+    current = None
+    operational = None
+    for raw_block in raw_blocks:
+        item = _mapping(raw_block)
+        role = _text(item.get("drafting_role"))
+        block = _drafting_block(item)
+        if block is None:
+            raise ValueError("drafting block is empty")
+        if role == "current_document":
+            if current is not None:
+                raise ValueError("duplicate current-document drafting block")
+            current = block
+        elif role == "operational_instrument":
+            if operational is not None:
+                raise ValueError("duplicate operational drafting block")
+            operational = block
+        else:
+            raise ValueError("unsupported drafting role")
+    return current, operational
+
+
 def _candidate(record: dict[str, object]) -> CandidateRecommendation:
+    current_drafting, operational_drafting = _candidate_drafting_blocks(record)
     return CandidateRecommendation(
         recommendation_id=_text(record.get("recommendation_id")),
         title=_text(record.get("title")),
@@ -317,12 +353,8 @@ def _candidate(record: dict[str, object]) -> CandidateRecommendation:
         confidence=_text(record.get("confidence"), "low"),
         limitation=_text(record.get("limitation")),
         caution=_text(record.get("caution")),
-        current_document_drafting=_drafting_block(
-            record.get("current_document_drafting")
-        ),
-        operational_instrument_drafting=_drafting_block(
-            record.get("operational_instrument_drafting")
-        ),
+        current_document_drafting=current_drafting,
+        operational_instrument_drafting=operational_drafting,
         score=_score(record.get("score")),
         gate_results={
             str(key): bool(value)

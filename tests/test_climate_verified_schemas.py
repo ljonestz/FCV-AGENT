@@ -1,3 +1,5 @@
+import json
+
 from sector_lenses.climate_verified_schemas import (
     STAGE_OUTPUT_SCHEMAS,
     stage_output_schema,
@@ -45,12 +47,14 @@ def test_recommendation_schema_requires_structured_current_and_optional_drafting
     properties = candidate["properties"]
 
     assert "drafting_language" not in properties
-    assert "current_document_drafting" in candidate["required"]
-    assert "operational_instrument_drafting" in candidate["required"]
-    assert properties["current_document_drafting"]["type"] == "object"
-    assert properties["operational_instrument_drafting"]["type"] == [
-        "object",
-        "null",
+    assert "current_document_drafting" not in properties
+    assert "operational_instrument_drafting" not in properties
+    assert "drafting_blocks" in candidate["required"]
+    assert properties["drafting_blocks"]["type"] == "array"
+    drafting = properties["drafting_blocks"]["items"]
+    assert drafting["properties"]["drafting_role"]["enum"] == [
+        "current_document",
+        "operational_instrument",
     ]
     assert set(properties["routing_status"]["enum"]) == {
         "verified_existing",
@@ -58,7 +62,7 @@ def test_recommendation_schema_requires_structured_current_and_optional_drafting
         "standard_document_advisory",
         "not_applicable",
     }
-    assert properties["current_document_drafting"]["properties"][
+    assert drafting["properties"][
         "drafting_status"
     ]["enum"] == ["existing_commitment", "advisory_proposal"]
     readiness = schema["properties"]["readiness_flags"]["items"]
@@ -67,3 +71,10 @@ def test_recommendation_schema_requires_structured_current_and_optional_drafting
         "type": "array",
         "items": {"type": "string"},
     }
+
+
+def test_recommendation_transport_schema_stays_below_complexity_budget() -> None:
+    schema = stage_output_schema("recommendation_compiler")
+
+    assert len(json.dumps(schema, separators=(",", ":"))) <= 4_800
+    assert json.dumps(schema).count('"drafting_status": {') == 1
