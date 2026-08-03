@@ -618,6 +618,22 @@ python3 app.py   # http://localhost:5000
 - **Env vars:** `ANTHROPIC_API_KEY` (required)
 - Auto-deploys on push/merge to connected branch
 
+### Render service separation (mandatory)
+
+- **ITS/stable service:** `https://fcv-agent.onrender.com` must remain connected to `main`. ITS colleagues use this service. Never repoint it to a feature branch or use it for branch testing.
+- **Branch-testing service:** `https://fcv-agent-1.onrender.com` is the only Render service to use for feature-branch and Climate-FCV testing. Point this service at the branch under test.
+- Before any live test, verify the linked branch in the Render service header and verify the deployed build through `/health` where supported. Do not infer the deployed branch from page content alone.
+- Keep service-specific build commands separate. Stable `main` uses `pip install -r requirements.txt`; the Climate-FCV testing branch may use `python render_build.py` because that branch carries the companion-bank build helper. Do not copy the testing service's build command onto the stable service.
+
+### Cost-controlled live testing (mandatory)
+
+Use the same verified Climate-FCV architecture in two passes:
+
+1. **Smoke pass first:** set `CLIMATE_VERIFIED_RUN_MODE=smoke` on the branch-testing service. This uses the cheap model profile and tests upload, extraction, country-bank loading, stage completion, schema parsing, validation, rendering, and export. Smoke output is for workflow verification only and must not be treated as an analytical quality benchmark.
+2. **Quality pass only after smoke passes:** set `CLIMATE_VERIFIED_RUN_MODE=quality` and run the minimum representative case needed to assess analytical accuracy, relevance, coherence, and TTL utility. Avoid repeated quality reruns while deterministic or integration defects remain.
+
+Never run either pass against the ITS/stable service. If a quality run exposes a deterministic failure, reproduce and fix it through tests or the smoke profile before paying for another quality run.
+
 ### GitHub Security & Branch Workflow
 - `main` is protected: changes go through pull requests. No approving review is currently required (`required_approving_review_count: 0`), so PRs can be merged programmatically (e.g. `gh pr merge`); open review conversations must still be resolved first, and protection applies to admins.
 - Branch protection dismisses stale approvals, requires conversation resolution, applies to admins, and blocks force pushes and branch deletion.
