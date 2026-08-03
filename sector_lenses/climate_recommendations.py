@@ -42,6 +42,9 @@ READINESS_CATEGORIES = {
     "missing_operational_home",
     "material_placeholder",
 }
+NUMERIC_TOKEN_PATTERN = re.compile(
+    r"(?<![A-Za-z]-)\b\d+(?:\.\d+)?%?\b"
+)
 REQUIRED_GATES = {
     "connection",
     "residuality",
@@ -123,6 +126,12 @@ def _issue(
     )
 
 
+def numeric_tokens_in_text(text: str) -> tuple[str, ...]:
+    """Return numeric claims while excluding suffixes of structured IDs."""
+
+    return tuple(sorted(set(NUMERIC_TOKEN_PATTERN.findall(text))))
+
+
 def unsupported_numeric_tokens(
     candidate: CandidateRecommendation,
 ) -> tuple[str, ...]:
@@ -140,7 +149,7 @@ def unsupported_numeric_tokens(
         )
         if value
     )
-    numeric_tokens = set(re.findall(r"\b\d+(?:\.\d+)?%?\b", numeric_text))
+    numeric_tokens = set(numeric_tokens_in_text(numeric_text))
     unsupported = numeric_tokens - set(candidate.supported_numeric_tokens)
     return tuple(sorted(unsupported))[:12]
 

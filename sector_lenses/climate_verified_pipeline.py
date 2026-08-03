@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import re
 import time
 from dataclasses import asdict, dataclass, replace
 from typing import Protocol
@@ -34,6 +33,7 @@ from sector_lenses.climate_recommendations import (
     admit_and_rank,
     admission_failure_codes,
     admit_readiness_flags,
+    numeric_tokens_in_text,
     unsupported_numeric_tokens,
     validate_recommendation,
 )
@@ -326,7 +326,7 @@ def _source_linked_numeric_tokens(
             )
             if value
         )
-        numeric_tokens.update(re.findall(r"\b\d+(?:\.\d+)?%?\b", fact_text))
+        numeric_tokens.update(numeric_tokens_in_text(fact_text))
     return tuple(sorted(numeric_tokens))
 
 

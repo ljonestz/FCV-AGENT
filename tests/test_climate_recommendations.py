@@ -126,6 +126,18 @@ def test_unsupported_date_or_number_is_blocking():
     )
 
 
+def test_internal_reference_suffixes_are_not_treated_as_numeric_claims():
+    candidate = replace(
+        _candidate(),
+        decision="Resolve PF-055 against RG-029 before appraisal.",
+    )
+    issues = validate_recommendation(candidate, KNOWN_IDS)
+    assert not any(
+        issue.code == "RECOMMENDATION_NUMBER_UNSUPPORTED"
+        for issue in issues
+    )
+
+
 def test_source_linked_numeric_tokens_are_allowed():
     candidate = replace(
         _candidate(),
