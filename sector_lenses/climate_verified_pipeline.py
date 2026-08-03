@@ -1,4 +1,4 @@
-"""Automatic, source-first orchestration for ``climate-verified-v2``.
+"""Automatic, source-first orchestration for ``climate-verified-v2.1``.
 
 
 The module deliberately accepts only structured model outputs.  Each stage is
@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import time
 from dataclasses import asdict, dataclass, replace
 from typing import Protocol
@@ -67,9 +68,9 @@ from sector_lenses.climate_verified_contracts import (
 PROMPT_VERSIONS = {
     "fact_extraction": "climate-facts-v2.2",
     "bounded_analysis": "climate-analysis-v2.2",
-    "judgment_review": "climate-judgments-v2.2",
-    "recommendation_compiler": "climate-recommendations-v2.3",
-    "conditional_review": "climate-review-v2.3",
+    "judgment_review": "climate-judgments-v2.3",
+    "recommendation_compiler": "climate-recommendations-v2.4",
+    "conditional_review": "climate-review-v2.4",
 }
 
 
@@ -363,13 +364,13 @@ def _unsupported_numeric_fields(
 ) -> list[dict[str, object]]:
     supported = set(candidate.supported_numeric_tokens)
     fields: list[dict[str, object]] = []
-    values = {
+    values = (
         "decision",
         "minimum_action",
         "enhanced_action",
         "enhanced_activation",
         "completion_evidence",
-    }
+    )
     field_values = [(name, getattr(candidate, name)) for name in values]
     field_values.extend((
         ("current_document_drafting.text", candidate.current_document_drafting.text)
@@ -385,6 +386,63 @@ def _unsupported_numeric_fields(
             fields.append({"field": name, "tokens": tokens})
     return fields
 
+def _unsupported_precision_fields(
+    candidate: CandidateRecommendation,
+    issue_codes: set[str],
+) -> list[dict[str, str]]:
+    """Return bounded field paths and reason codes without logging prose."""
+
+    patterns = {
+        "DRAFTING_INSTRUMENT_UNVERIFIED": re.compile(
+            r"\b(?:project operations manual|security risk management plan|"
+            r"environmental and social commitment plan|environmental and social "
+            r"management framework|results framework)\b",
+            re.IGNORECASE,
+        ),
+        "DRAFTING_ACTOR_UNVERIFIED": re.compile(
+            r"\b(?:focal point|steering committee|coordination unit)\b",
+            re.IGNORECASE,
+        ),
+        "DRAFTING_TIMING_UNVERIFIED": re.compile(
+            r"\bbefore (?:effectiveness|appraisal|board approval)\b",
+            re.IGNORECASE,
+        ),
+        "DRAFTING_SYSTEM_UNVERIFIED": re.compile(
+            r"\b(?:hydrometeorological|hydromet) system\b",
+            re.IGNORECASE,
+        ),
+    }
+    field_values = (
+        ("decision", candidate.decision),
+        ("minimum_action", candidate.minimum_action),
+        ("enhanced_action", candidate.enhanced_action or ""),
+        ("enhanced_activation", candidate.enhanced_activation or ""),
+        ("completion_evidence", candidate.completion_evidence),
+        (
+            "current_document_drafting.text",
+            candidate.current_document_drafting.text
+            if candidate.current_document_drafting else "",
+        ),
+        (
+            "operational_instrument_drafting.target_document",
+            candidate.operational_instrument_drafting.target_document
+            if candidate.operational_instrument_drafting else "",
+        ),
+        (
+            "operational_instrument_drafting.text",
+            candidate.operational_instrument_drafting.text
+            if candidate.operational_instrument_drafting else "",
+        ),
+    )
+    return [
+        {"field": field, "reason_code": code}
+        for code, pattern in patterns.items()
+        if code in issue_codes
+        for field, value in field_values
+        if pattern.search(value)
+    ][:12]
+
+
 
 def _readiness_flag(record: dict[str, object]) -> ReviewReadinessFlag:
     return ReviewReadinessFlag(
@@ -394,6 +452,7 @@ def _readiness_flag(record: dict[str, object]) -> ReviewReadinessFlag:
         why_it_matters=_text(record.get("why_it_matters")),
         document_basis_ids=_strings(record.get("document_basis_ids")),
         suggested_verification=_text(record.get("suggested_verification")),
+        residual_gap_ids=_strings(record.get("residual_gap_ids")),
     )
 
 
@@ -773,6 +832,14 @@ def run_verified_climate_pipeline(
                         ),
                     }
                 )
+                precision_fields = _unsupported_precision_fields(
+                    candidate,
+                    {issue.code for issue in issues},
+                )
+                if precision_fields:
+                    candidate_suppressions[-1][
+                        "unsupported_precision_fields"
+                    ] = precision_fields
             continue
         candidates.append(candidate)
 
@@ -810,6 +877,10 @@ def run_verified_climate_pipeline(
         flags,
         fact_ids,
         {item.statement for item in gaps},
+        known_gap_ids={item.gap_id for item in gaps},
+        admitted_gap_ids={
+            gap_id for item in priorities for gap_id in item.residual_gap_ids
+        },
     )
     suppressed["readiness_flags"] += len(raw_flags) - len(readiness)
 
@@ -885,10 +956,10 @@ def run_verified_climate_pipeline(
         run_id=run_id,
         schema_version=CLIMATE_VERIFIED_SCHEMA_VERSION,
         prompt_versions=PROMPT_VERSIONS,
-        reviewer_version="climate-review-v2.0",
+        reviewer_version="climate-review-v2.1",
         extraction_version="source-blocks-v2.1",
-        normalization_version="climate-normalization-v2.0",
-        renderer_version="climate-reader-v2.1",
+        normalization_version="climate-normalization-v2.1",
+        renderer_version="climate-reader-v2.2",
         model_aliases={"assessment": "configured", "reviewer": "configured"},
         sampling={"temperature": 0, "max_transient_retries": 1},
         source_fingerprints=tuple(item.sha256 for item in source_documents),
@@ -902,6 +973,12 @@ def run_verified_climate_pipeline(
         validation_reason_codes=unique_reasons,
         repair_actions=tuple(repairs),
         suppressed_counts=suppressed,
+        accepted_live_evidence_ids=tuple(
+            sorted({
+                item.evidence_id for item in context_evidence
+                if item.evidence_id.startswith("CE-LIVE-")
+            })
+        ),
         latency_ms=latency_ms,
         token_usage={},
         cache_state={"scope": "assessment", "status": "not_shared"},

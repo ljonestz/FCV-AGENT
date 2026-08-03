@@ -107,7 +107,7 @@ def normalize_climate_assessment(
 ) -> dict[str, object]:
     """Dispatch stored Climate assessments without inventing v2 dimensions."""
 
-    if payload.get("schema_version") == "climate-verified-v2":
+    if payload.get("schema_version") == "climate-verified-v2.1":
         result = dict(payload)
         validation = result.get("validation")
         status = (

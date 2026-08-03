@@ -129,7 +129,7 @@ def test_runtime_preserves_candidate_preview_and_uses_grounding_adapter(monkeypa
     def fake_pipeline(**kwargs):
         captured.update(kwargs)
         return {
-            "schema_version": "climate-verified-v2",
+            "schema_version": "climate-verified-v2.1",
             "run_id": kwargs["run_id"],
             "bank_release_id": kwargs["bank_release_id"],
             "evidence_status": "preview; not approved",
@@ -200,7 +200,7 @@ def test_runtime_preserves_candidate_preview_and_uses_grounding_adapter(monkeypa
 def test_runtime_blocks_reader_integrity_failure(monkeypatch):
     def invalid_pipeline(**kwargs):
         return {
-            "schema_version": "climate-verified-v2",
+            "schema_version": "climate-verified-v2.1",
             "run_id": kwargs["run_id"],
             "bank_release_id": kwargs["bank_release_id"],
             "evidence_status": "approved",

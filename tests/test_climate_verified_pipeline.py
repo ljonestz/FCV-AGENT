@@ -120,7 +120,7 @@ def _responses(*, unresolved_routing: bool = False):
             },
             "responsiveness": {
                 "value": "not_expected",
-                "evidence_ids": [],
+                "evidence_ids": ["PF-001"],
                 "rationale": "Responsiveness is not required for this design choice.",
             },
             "operationalization": {
@@ -236,7 +236,7 @@ def test_four_calls_run_when_semantic_review_is_not_required():
     ]
     assert all(call["max_transient_retries"] == 1 for call in assessment.calls)
     assert [call["stage"] for call in reviewer.calls] == ["conditional_review"]
-    assert result["schema_version"] == "climate-verified-v2"
+    assert result["schema_version"] == "climate-verified-v2.1"
     assert result["validation"]["status"] == "passed"
     assert len(result["priorities"]) == 1
     compiler_payload = assessment.calls[-1]["payload"]
@@ -508,6 +508,41 @@ def test_bad_fact_suppresses_dependent_analysis_and_recommendation():
     assert "FACT_SOURCE_UNRESOLVED" in result["validation"]["reason_codes"]
 
 
+def test_precision_suppression_exposes_only_field_path_and_reason_code():
+    responses = _responses()
+    recommendation = responses[3]["recommendation_candidates"][0]
+    recommendation["current_document_drafting"]["text"] = (
+        "A hydrometeorological system will establish continuity alerts and "
+        "procedures for access disruption. " * 8
+    ).strip()
+
+    result = run_verified_climate_pipeline(
+        **_arguments(),
+        clients=PipelineClients(
+            FakeClient(responses, []),
+            FakeClient([], []),
+        ),
+    )
+
+    assert result["priorities"] == []
+    diagnostics = result["recommendation_diagnostics"]
+    assert diagnostics["reason_codes"] == ["DRAFTING_SYSTEM_UNVERIFIED"]
+    assert diagnostics["candidate_suppressions"] == [
+        {
+            "recommendation_id": "REC-001",
+            "stage": "validation",
+            "reason_codes": ["DRAFTING_SYSTEM_UNVERIFIED"],
+            "unsupported_numeric_fields": [],
+            "unsupported_precision_fields": [
+                {
+                    "field": "current_document_drafting.text",
+                    "reason_code": "DRAFTING_SYSTEM_UNVERIFIED",
+                }
+            ],
+        }
+    ]
+
+
 def test_manifest_is_privacy_safe_and_scoped_to_the_run():
     first = run_verified_climate_pipeline(
         **_arguments(),
@@ -522,7 +557,7 @@ def test_manifest_is_privacy_safe_and_scoped_to_the_run():
     assert first["manifest"]["run_id"] == "run-test"
     assert second["manifest"]["run_id"] == "run-two"
     assert first["manifest"]["source_count"] == 1
-    assert first["manifest"]["renderer_version"] == "climate-reader-v2.1"
+    assert first["manifest"]["renderer_version"] == "climate-reader-v2.2"
     assert first["manifest"]["extraction_version"] == "source-blocks-v2.1"
     assert (
         first["manifest"]["prompt_versions"]["fact_extraction"]
@@ -534,15 +569,15 @@ def test_manifest_is_privacy_safe_and_scoped_to_the_run():
     )
     assert (
         first["manifest"]["prompt_versions"]["judgment_review"]
-        == "climate-judgments-v2.2"
+        == "climate-judgments-v2.3"
     )
     assert (
         first["manifest"]["prompt_versions"]["recommendation_compiler"]
-        == "climate-recommendations-v2.3"
+        == "climate-recommendations-v2.4"
     )
     assert (
         first["manifest"]["prompt_versions"]["conditional_review"]
-        == "climate-review-v2.3"
+        == "climate-review-v2.4"
     )
     assert set(first["manifest"]["prompt_versions"]) == {
         "fact_extraction",

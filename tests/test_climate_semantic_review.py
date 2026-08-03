@@ -48,3 +48,8 @@ def test_reviewer_receives_sources_and_objects_not_prose_alone():
     assert prompt.index("source_blocks") < prompt.index("recommendations")
     assert "pass, revise, or block" in prompt
     assert "claim IDs and reason codes" in prompt
+    assert "current-document and operational-instrument drafting" in prompt
+    assert "existing mitigation" in prompt
+    assert "actor, timing, and authority" in prompt
+    assert "unsupported technical precision" in prompt
+    assert "target existence and scope" in prompt

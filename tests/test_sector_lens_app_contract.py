@@ -2332,7 +2332,7 @@ def test_verified_runtime_bridge_emits_keepalives_then_result(monkeypatch):
     import time as _time
 
     expected = {
-        "assessment": {"schema_version": "climate-verified-v2"},
+        "assessment": {"schema_version": "climate-verified-v2.1"},
         "reader": {"executive_readout": "Verified."},
         "source_warnings": [],
     }
@@ -2412,6 +2412,14 @@ def test_verified_climate_ui_contract_is_ranked_and_multidimensional():
     )
     assert "recommendation_admitted_count" in body
     assert "semantic_reviewer_verdict" in body
+    assert "current_document_drafting" in body
+    assert "operational_instrument_drafting" in body
+    assert "Current document drafting" in body
+    assert "Operational instrument drafting" in body
+    assert "Guidance basis" in body
+    assert "priority_summary" in body
+    assert "live_research_count" in body
+    assert "drafting_language" not in body
     assert "recommendation_reason_codes" in body
 
 
@@ -2430,7 +2438,7 @@ def test_verified_climate_docx_route_uses_canonical_reader():
         "Verified project evidence supports a material pathway and a bounded response. "
     )
     assessment = {
-        "schema_version": "climate-verified-v2",
+        "schema_version": "climate-verified-v2.1",
         "run_id": "route-run",
         "bank_release_id": "2026.08",
         "evidence_status": "preview; not approved",
@@ -2490,7 +2498,7 @@ def test_verified_climate_express_timeout_covers_full_automatic_review():
 def test_climate_only_express_route_returns_verified_v2_without_legacy_stage(monkeypatch):
     monkeypatch.setenv("CLIMATE_VERIFIED_RUN_MODE", "smoke")
     assessment = {
-        "schema_version": "climate-verified-v2",
+        "schema_version": "climate-verified-v2.1",
         "run_id": "route-v2",
         "bank_release_id": "2026.08",
         "evidence_status": "preview; not approved",
@@ -2555,7 +2563,7 @@ def test_climate_only_express_route_returns_verified_v2_without_legacy_stage(mon
 
     body = response.get_data(as_text=True)
     assert response.status_code == 200
-    assert '"schema_version": "climate-verified-v2"' in body
+    assert '"schema_version": "climate-verified-v2.1"' in body
     assert '"stage_done": 3' in body
     assert '"express_done": true' in body
     assert '"runtime_mode": "smoke"' in body

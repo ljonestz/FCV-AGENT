@@ -189,6 +189,7 @@ def test_readiness_flags_are_capped_non_scoring_and_evidence_linked():
             flag=f"Inconsistency {index}",
             why_it_matters="It prevents verification.",
             document_basis_ids=("PF-001",),
+            residual_gap_ids=(),
             suggested_verification="Confirm the controlling value.",
         )
         for index in range(5)
@@ -205,12 +206,35 @@ def test_readiness_duplicate_of_residual_gap_is_suppressed():
         flag="The action has no identified operational home.",
         why_it_matters="Routing cannot be verified.",
         document_basis_ids=("PF-001",),
+        residual_gap_ids=("RG-001",),
         suggested_verification="Confirm an operational vehicle.",
     )
     admitted = admit_readiness_flags(
         [flag],
         {"PF-001"},
         {"the action has no identified operational home"},
+        known_gap_ids={"RG-001"},
+        admitted_gap_ids={"RG-001"},
+    )
+    assert admitted == ()
+
+
+def test_readiness_paraphrase_is_suppressed_by_shared_gap_id():
+    flag = ReviewReadinessFlag(
+        flag_id="RF-2",
+        category="missing_operational_home",
+        flag="Clarify where the proposed response will be housed.",
+        why_it_matters="The implementation destination is unresolved.",
+        document_basis_ids=("PF-001",),
+        residual_gap_ids=("RG-001",),
+        suggested_verification="Confirm the appropriate project section.",
+    )
+    admitted = admit_readiness_flags(
+        [flag],
+        {"PF-001"},
+        set(),
+        known_gap_ids={"RG-001"},
+        admitted_gap_ids={"RG-001"},
     )
     assert admitted == ()
 

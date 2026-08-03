@@ -922,7 +922,7 @@ def test_v1_climate_assessment_remains_readable_but_unverified():
 
 def test_v2_climate_assessment_preserves_four_judgments():
     result = normalize_climate_assessment({
-        "schema_version": "climate-verified-v2",
+        "schema_version": "climate-verified-v2.1",
         "judgments": {
             "relevance": {"value": "high"},
             "sensitivity": {"value": "moderate"},
@@ -940,7 +940,7 @@ def test_v2_climate_assessment_preserves_four_judgments():
 
 def test_v2_attention_is_not_mislabelled_as_passed():
     result = normalize_climate_assessment({
-        "schema_version": "climate-verified-v2",
+        "schema_version": "climate-verified-v2.1",
         "validation": {"status": "attention"},
         "priorities": [],
     })

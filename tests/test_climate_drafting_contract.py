@@ -189,3 +189,89 @@ def test_team_confirmation_is_not_an_admissible_route() -> None:
         drafting_context=_context(),
     )
     assert "ROUTING_STATUS_INVALID" in {issue.code for issue in issues}
+
+
+def _drafting_issue_codes(text: str) -> set[str]:
+    candidate = replace(
+        _candidate(),
+        current_document_drafting=_draft(text=text),
+    )
+    return {
+        issue.code
+        for issue in validate_recommendation(
+            candidate,
+            KNOWN_IDS,
+            drafting_context=_context(),
+        )
+    }
+
+
+def test_invented_psc_security_plan_focal_point_is_blocked() -> None:
+    codes = _drafting_issue_codes(
+        "The PSC Security Risk Management Plan focal point will coordinate "
+        "continuity decisions and report implementation constraints through "
+        "the project governance structure."
+    )
+    assert "DRAFTING_ACTOR_UNVERIFIED" in codes
+
+
+def test_unsupported_before_effectiveness_timing_is_blocked() -> None:
+    codes = _drafting_issue_codes(
+        "The task team will complete and approve the continuity arrangements "
+        "before effectiveness, with implementation following the documented "
+        "decision."
+    )
+    assert "DRAFTING_TIMING_UNVERIFIED" in codes
+
+
+def test_invented_project_operations_manual_is_blocked() -> None:
+    codes = _drafting_issue_codes(
+        "The Project Operations Manual will establish the continuity process "
+        "and assign responsibilities for disrupted access."
+    )
+    assert "DRAFTING_INSTRUMENT_UNVERIFIED" in codes
+
+
+def test_unsupported_hydrometeorological_system_is_blocked() -> None:
+    codes = _drafting_issue_codes(
+        "The project will establish a hydrometeorological system to support "
+        "site-level early warning and continuity decisions."
+    )
+    assert "DRAFTING_SYSTEM_UNVERIFIED" in codes
+
+
+def test_linked_named_instrument_can_be_used_in_drafting_text() -> None:
+    candidate = replace(
+        _candidate(),
+        instrument_claim_ids=("PF-010",),
+        current_document_drafting=_draft(
+            project_basis_id="PF-010",
+            text=(
+                "The Security Risk Management Plan covers continuity and the "
+                "project description will explain how that existing measure "
+                "addresses the supported access disruption pathway."
+            ),
+        ),
+    )
+    codes = {
+        issue.code
+        for issue in validate_recommendation(
+            candidate,
+            KNOWN_IDS,
+            drafting_context=_context(),
+        )
+    }
+    assert "DRAFTING_INSTRUMENT_UNVERIFIED" not in codes
+
+
+def test_implausibly_short_drafting_is_blocked() -> None:
+    candidate = replace(
+        _candidate(),
+        current_document_drafting=_draft(text="Add continuity language."),
+    )
+    issues = validate_recommendation(
+        candidate,
+        KNOWN_IDS,
+        drafting_context=_context(),
+    )
+    assert "DRAFTING_LENGTH_INVALID" in {issue.code for issue in issues}

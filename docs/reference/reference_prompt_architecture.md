@@ -404,3 +404,23 @@ The recommendation compiler may use numeric labels only when they occur in a
 candidate-linked verified project fact. The pipeline derives that support
 independently, so model-supplied numeric-token declarations cannot self-attest an
 unsourced date, threshold, or quantity.
+
+## Verified Climate-FCV drafting integrity (v9.25)
+
+Only the recommendation compiler receives the bounded, versioned operational-
+guidance packet selected for the detected document and instrument type. The
+packet identifies permitted drafting destinations and wording boundaries; it is
+advisory context, not project evidence or a substitute for OPCS/ESF source text.
+Every admitted priority must contain a structured 90-160 word current-document
+drafting block. A second block is optional and may target an operational
+instrument only when that named instrument and its relationship to the project
+are evidenced.
+
+Deterministic checks reject unsupported actors, instruments, technical systems,
+effectiveness/appraisal timing, mandatory wording, evidence references, and
+duplicative optional drafting. Bounded telemetry records only field paths and
+reason codes. Conditional semantic review evaluates both drafting blocks against
+existing mitigation, residual gaps, destination, scope, actor, timing, authority,
+and unsupported technical precision. The judgment call must assess the four
+dimensions from evidence and must not predict how many recommendations a later
+admission stage will retain.

@@ -242,6 +242,7 @@ READINESS_SCHEMA = _object(
         "why_it_matters": _string("45 words or fewer."),
         "document_basis_ids": _strings(),
         "suggested_verification": _string("45 words or fewer."),
+        "residual_gap_ids": _strings(),
     }
 )
 
@@ -249,7 +250,7 @@ READINESS_SCHEMA = _object(
 STAGE_OUTPUT_SCHEMAS: dict[str, dict[str, object]] = {
     "fact_extraction": _object(
         {
-            "schema_version": _enum(("climate-verified-v2",)),
+            "schema_version": _enum(("climate-verified-v2.1",)),
             "facts": {
                 "type": "array",
                 "items": FACT_SCHEMA,

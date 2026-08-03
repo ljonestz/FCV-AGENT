@@ -38,11 +38,41 @@ def test_missing_evidence_blocks_confident_values():
     )
     issues = validate_judgments(judgments, set())
     assert {issue.code for issue in issues} == {
-        "RELEVANCE_EVIDENCE_MISSING",
-        "SENSITIVITY_EVIDENCE_MISSING",
-        "RESPONSIVENESS_EVIDENCE_MISSING",
-        "OPERATIONALIZATION_EVIDENCE_MISSING",
+        "JUDGMENT_EVIDENCE_MISSING",
         "OPERATIONALIZATION_DELIVERY_EVIDENCE_MISSING",
+    }
+
+
+    missing_dimensions = {
+        issue.object_id
+        for issue in issues
+        if issue.code == "JUDGMENT_EVIDENCE_MISSING"
+    }
+    assert missing_dimensions == {
+        "relevance",
+        "sensitivity",
+        "responsiveness",
+        "operationalization",
+    }
+
+
+def test_negative_and_unclear_judgments_still_need_evidence() -> None:
+    judgments = ClimateJudgments(
+        relevance=Judgment("unclear", (), "Evidence remains unresolved."),
+        sensitivity=Judgment("limited", ("ER-001",), "Bounded evidence."),
+        responsiveness=Judgment("not_expected", (), "Not expected."),
+        operationalization=Judgment("not_evidenced", (), "Not evidenced."),
+    )
+    issues = validate_judgments(judgments, {"ER-001"})
+    missing_dimensions = {
+        issue.object_id
+        for issue in issues
+        if issue.code == "JUDGMENT_EVIDENCE_MISSING"
+    }
+    assert missing_dimensions == {
+        "relevance",
+        "responsiveness",
+        "operationalization",
     }
 
 

@@ -118,7 +118,7 @@ class _Sdk:
 
 def test_client_disables_sdk_retries_and_uses_native_output_schema():
     sdk = _Sdk([
-        '{"schema_version":"climate-verified-v2","facts":[],"derived_assertions":[]}'
+        '{"schema_version":"climate-verified-v2.1","facts":[],"derived_assertions":[]}'
     ])
     client = AnthropicVerifiedJsonClient(sdk, model="assessment-model")
 
@@ -145,7 +145,7 @@ def test_client_disables_sdk_retries_and_uses_native_output_schema():
 def test_client_retries_once_only_for_declared_transient_error():
     sdk = _Sdk([
         RuntimeError("overloaded"),
-        '{"schema_version":"climate-verified-v2","facts":[],"derived_assertions":[]}',
+        '{"schema_version":"climate-verified-v2.1","facts":[],"derived_assertions":[]}',
     ])
     client = AnthropicVerifiedJsonClient(
         sdk,
@@ -172,7 +172,7 @@ def test_client_emits_only_content_free_failed_attempt_diagnostics():
     diagnostics = []
     sdk = _Sdk([
         ProviderFailure("sensitive provider detail"),
-        '{"schema_version":"climate-verified-v2","facts":[],"derived_assertions":[]}',
+        '{"schema_version":"climate-verified-v2.1","facts":[],"derived_assertions":[]}',
     ])
     client = AnthropicVerifiedJsonClient(
         sdk,
@@ -265,7 +265,7 @@ def test_client_does_not_retry_invalid_structured_content():
 
 
 def test_client_reports_content_free_diagnostics_for_truncated_payload():
-    response_text = '{"schema_version":"climate-verified-v2","facts":['
+    response_text = '{"schema_version":"climate-verified-v2.1","facts":['
     sdk = _Sdk([response_text])
     client = AnthropicVerifiedJsonClient(sdk, model="assessment-model")
     sdk.messages.create = lambda **_kwargs: _Response(
@@ -322,7 +322,7 @@ def test_client_retry_uses_one_total_timeout_budget(monkeypatch):
     )
     sdk = _Sdk([
         RuntimeError("overloaded"),
-        '{"schema_version":"climate-verified-v2","facts":[],"derived_assertions":[]}',
+        '{"schema_version":"climate-verified-v2.1","facts":[],"derived_assertions":[]}',
     ])
     client = AnthropicVerifiedJsonClient(
         sdk,

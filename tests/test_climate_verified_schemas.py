@@ -61,3 +61,9 @@ def test_recommendation_schema_requires_structured_current_and_optional_drafting
     assert properties["current_document_drafting"]["properties"][
         "drafting_status"
     ]["enum"] == ["existing_commitment", "advisory_proposal"]
+    readiness = schema["properties"]["readiness_flags"]["items"]
+    assert "residual_gap_ids" in readiness["required"]
+    assert readiness["properties"]["residual_gap_ids"] == {
+        "type": "array",
+        "items": {"type": "string"},
+    }

@@ -6,7 +6,7 @@ from dataclasses import asdict, dataclass
 from enum import Enum
 
 
-CLIMATE_VERIFIED_SCHEMA_VERSION = "climate-verified-v2"
+CLIMATE_VERIFIED_SCHEMA_VERSION = "climate-verified-v2.1"
 DEFAULT_FACT_LIMIT = 60
 HARD_FACT_LIMIT = 100
 
