@@ -220,13 +220,20 @@ CANDIDATE_SCHEMA = _object(
         "confidence": _enum(CONFIDENCE),
         "limitation": _string("45 words or fewer."),
         "caution": _string("45 words or fewer."),
+        "supported_numeric_tokens": _strings(),
+        "score": SCORE_SCHEMA,
+        "gate_results": GATE_SCHEMA,
+    }
+)
+
+
+DRAFTING_SET_SCHEMA = _object(
+    {
+        "recommendation_id": _string(),
         "drafting_blocks": {
             "type": "array",
             "items": DRAFTING_BLOCK_SCHEMA,
         },
-        "supported_numeric_tokens": _strings(),
-        "score": SCORE_SCHEMA,
-        "gate_results": GATE_SCHEMA,
     }
 )
 
@@ -319,6 +326,15 @@ STAGE_OUTPUT_SCHEMAS: dict[str, dict[str, object]] = {
                 "type": "array",
                 "items": READINESS_SCHEMA,
                 "description": "No more than four source-linked readiness flags.",
+            },
+        }
+    ),
+    "drafting_compiler": _object(
+        {
+            "drafting_sets": {
+                "type": "array",
+                "items": DRAFTING_SET_SCHEMA,
+                "description": "One set for each supplied recommendation.",
             },
         }
     ),

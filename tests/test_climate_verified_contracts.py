@@ -18,6 +18,8 @@ def test_verified_schema_and_call_budgets_are_stable():
     assert CALL_BUDGETS["judgment_review"].timeout_seconds == 120
     assert CALL_BUDGETS["judgment_review"].output_tokens == 4_000
     assert CALL_BUDGETS["recommendation_compiler"].timeout_seconds == 240
+    assert CALL_BUDGETS["drafting_compiler"].timeout_seconds == 240
+    assert CALL_BUDGETS["drafting_compiler"].output_tokens == 5_000
     assert CALL_BUDGETS["conditional_review"].timeout_seconds == 120
 
 

@@ -48,6 +48,7 @@ CALL_BUDGETS = {
     "judgment_review": CallBudget(12_000, 4_000, 120),
     "recommendation_compiler": CallBudget(16_000, 5_000, 240),
     "conditional_review": CallBudget(12_000, 2_500, 120),
+    "drafting_compiler": CallBudget(16_000, 5_000, 240),
 }
 
 

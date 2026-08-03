@@ -11,6 +11,7 @@ STAGES = {
     "bounded_analysis",
     "judgment_review",
     "recommendation_compiler",
+    "drafting_compiler",
     "conditional_review",
 }
 
@@ -49,9 +50,11 @@ def test_recommendation_schema_requires_structured_current_and_optional_drafting
     assert "drafting_language" not in properties
     assert "current_document_drafting" not in properties
     assert "operational_instrument_drafting" not in properties
-    assert "drafting_blocks" in candidate["required"]
-    assert properties["drafting_blocks"]["type"] == "array"
-    drafting = properties["drafting_blocks"]["items"]
+    assert "drafting_blocks" not in properties
+    drafting_schema = stage_output_schema("drafting_compiler")
+    drafting_set = drafting_schema["properties"]["drafting_sets"]["items"]
+    assert "drafting_blocks" in drafting_set["required"]
+    drafting = drafting_set["properties"]["drafting_blocks"]["items"]
     assert drafting["properties"]["drafting_role"]["enum"] == [
         "current_document",
         "operational_instrument",
@@ -75,6 +78,9 @@ def test_recommendation_schema_requires_structured_current_and_optional_drafting
 
 def test_recommendation_transport_schema_stays_below_complexity_budget() -> None:
     schema = stage_output_schema("recommendation_compiler")
+    drafting_schema = stage_output_schema("drafting_compiler")
 
-    assert len(json.dumps(schema, separators=(",", ":"))) <= 4_800
-    assert json.dumps(schema).count('"drafting_status": {') == 1
+    assert len(json.dumps(schema, separators=(",", ":"))) <= 4_100
+    assert '"drafting_status": {' not in json.dumps(schema)
+    assert len(json.dumps(drafting_schema, separators=(",", ":"))) <= 1_500
+    assert json.dumps(drafting_schema).count('"drafting_status": {') == 1

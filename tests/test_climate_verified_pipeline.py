@@ -580,11 +580,16 @@ def test_manifest_is_privacy_safe_and_scoped_to_the_run():
         first["manifest"]["prompt_versions"]["conditional_review"]
         == "climate-review-v2.4"
     )
+    assert (
+        first["manifest"]["prompt_versions"]["drafting_compiler"]
+        == "climate-drafting-v1.0"
+    )
     assert set(first["manifest"]["prompt_versions"]) == {
         "fact_extraction",
         "bounded_analysis",
         "judgment_review",
         "recommendation_compiler",
+        "drafting_compiler",
         "conditional_review",
     }
     manifest_text = str(first["manifest"])
@@ -629,3 +634,40 @@ def test_candidate_maps_compact_drafting_blocks_to_domain_fields():
         == "Project Description"
     )
     assert candidate.operational_instrument_drafting is None
+
+
+def test_missing_transport_drafting_uses_bounded_drafting_compiler():
+    responses = _responses()
+    recommendation = responses[3]["recommendation_candidates"][0]
+    current = recommendation.pop("current_document_drafting")
+    recommendation.pop("operational_instrument_drafting")
+    responses.append({
+        "drafting_sets": [{
+            "recommendation_id": "REC-001",
+            "drafting_blocks": [{
+                "drafting_role": "current_document",
+                **current,
+            }],
+        }],
+    })
+    assessment = FakeClient(responses, [])
+
+    result = run_verified_climate_pipeline(
+        **_arguments(),
+        clients=PipelineClients(assessment, _pass_review_client()),
+    )
+
+    assert [call["stage"] for call in assessment.calls] == [
+        "fact_extraction",
+        "bounded_analysis",
+        "judgment_review",
+        "recommendation_compiler",
+        "drafting_compiler",
+    ]
+    assert result["priorities"][0]["current_document_drafting"]["text"] == (
+        current["text"]
+    )
+    drafting_payload = assessment.calls[-1]["payload"]
+    assert drafting_payload["recommendation_candidates"][0][
+        "recommendation_id"
+    ] == "REC-001"

@@ -71,6 +71,7 @@ PROMPT_VERSIONS = {
     "judgment_review": "climate-judgments-v2.3",
     "recommendation_compiler": "climate-recommendations-v2.4",
     "conditional_review": "climate-review-v2.4",
+    "drafting_compiler": "climate-drafting-v1.0",
 }
 
 
@@ -794,6 +795,60 @@ def run_verified_climate_pipeline(
         "recommendation_candidates",
         "priorities",
     )
+    candidates_missing_drafting = [
+        record
+        for record in raw_candidates
+        if not any(
+            key in record
+            for key in (
+                "drafting_blocks",
+                "current_document_drafting",
+                "operational_instrument_drafting",
+            )
+        )
+    ]
+    if candidates_missing_drafting:
+        drafting_payload = _call(
+            clients.assessment,
+            "drafting_compiler",
+            {
+                "facts": [asdict(item) for item in facts],
+                "analysis": analysis_record,
+                "judgments": asdict(judgments),
+                "recommendation_candidates": candidates_missing_drafting,
+                "current_document": doc_type,
+                "instrument_type": instrument_type,
+                "guidance_registry_version": GUIDANCE_REGISTRY_VERSION,
+                "operational_guidance": [
+                    item.as_record() for item in guidance
+                ],
+            },
+            latency_ms,
+            cancel_event=cancel_event,
+            deadline=deadline,
+        )
+        blocks_by_recommendation: dict[str, object] = {}
+        duplicate_drafting_ids: set[str] = set()
+        for drafting_set in _records(drafting_payload, "drafting_sets"):
+            recommendation_id = _text(
+                drafting_set.get("recommendation_id")
+            )
+            if not recommendation_id:
+                continue
+            if recommendation_id in blocks_by_recommendation:
+                duplicate_drafting_ids.add(recommendation_id)
+                blocks_by_recommendation.pop(recommendation_id, None)
+                continue
+            if recommendation_id not in duplicate_drafting_ids:
+                blocks_by_recommendation[recommendation_id] = (
+                    drafting_set.get("drafting_blocks")
+                )
+        for record in candidates_missing_drafting:
+            recommendation_id = _text(record.get("recommendation_id"))
+            if recommendation_id in blocks_by_recommendation:
+                record["drafting_blocks"] = blocks_by_recommendation[
+                    recommendation_id
+                ]
     recommendation_reasons: list[str] = []
     unsupported_numbers: list[str] = []
     candidate_suppressions: list[dict[str, object]] = []

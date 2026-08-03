@@ -32,6 +32,7 @@ def test_every_stage_uses_structured_json_and_evidence_entitlements():
             "bounded_analysis",
             "judgment_review",
             "recommendation_compiler",
+            "drafting_compiler",
             "conditional_review",
         )
     }
@@ -47,6 +48,8 @@ def test_every_stage_uses_structured_json_and_evidence_entitlements():
     assert "fewer than three" in prompts["recommendation_compiler"]
     assert "at most three recommendation candidates" in prompts["recommendation_compiler"]
     assert "45 words or fewer" in prompts["recommendation_compiler"]
+    assert "exactly one current_document block" in prompts["drafting_compiler"]
+    assert "at most one operational_instrument block" in prompts["drafting_compiler"]
     assert "source-first verifier" in prompts["conditional_review"]
     assert "defects in the recommendation" in prompts["conditional_review"]
     assert "valid purpose of a recommendation" in prompts["conditional_review"]

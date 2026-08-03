@@ -115,26 +115,39 @@ ask the task team to confirm routing. Credit existing mitigation before defining
 the residual improvement. Minimum action must be proportionate. Enhanced action
 requires a specific activation condition.
 
-Every admitted candidate needs a drafting_blocks array containing exactly one
-current_document block: 90 to 160 words of ready-to-adapt text for the current
-document, labelled existing_commitment only when project evidence supports that
-status and otherwise advisory_proposal. Add at most one
-operational_instrument block only when a separately useful block targets a named
-instrument supported by instrument_claim_ids; otherwise return only the
-current_document block. The second block must not repeat the first. Both blocks
-cite only supplied project, gap, and guidance IDs. Guidance selects a safe
-destination but does not prove a project fact, commitment, or formal
-requirement.
-
 Do not invent dates, thresholds, actors, instruments, systems, formal requirements,
 or completion evidence. If a digit is needed in decision, action, activation,
-completion-evidence, or drafting text, copy it from a linked verified project fact
+completion-evidence, copy it from a linked verified project fact
 and repeat the exact token in supported_numeric_tokens; otherwise use non-numeric
 wording. Review-readiness flags are non-scoring, source-linked, and limited to
-four. Keep free-text values other than drafting text to 45 words or fewer. Do not
+four. Keep free-text values to 45 words or fewer. Do not
 repeat the evidence package or add prose outside the requested fields.
 
-Return: {"recommendation_candidates":[{"recommendation_id":"REC-001","title":"...","pathway_ids":[],"existing_response_ids":[],"residual_gap_ids":[],"project_anchor_ids":[],"decision":"...","minimum_action":"...","enhanced_action":null,"enhanced_activation":null,"routing_status":"verified_existing|verified_with_scope_change|standard_document_advisory|not_applicable","instrument_claim_ids":[],"responsible_function":"...","authority_basis":"project_commitment|policy|directive|procedure|none_verified","recommendation_basis":"project_evidence|country_context|guidance|analytical_judgment","completion_evidence":"...","completion_evidence_status":"output|decision_record|updated_section|team_to_define","confidence":"high|medium|low","limitation":"...","caution":"...","drafting_blocks":[{"drafting_role":"current_document","target_document":"PCN","target_section":"Project Description","drafting_status":"existing_commitment|advisory_proposal","text":"...","project_basis_ids":[],"gap_basis_ids":[],"guidance_ids":[]}],"supported_numeric_tokens":[],"score":{"materiality":0,"gap_strength":0,"leverage_urgency":0,"evidence":0,"feasibility":0},"gate_results":{"connection":true,"residuality":true,"materiality":true,"actionability":true,"timing":true,"distinctiveness":true}}],"readiness_flags":[{"flag_id":"RF-001","category":"incomplete_climate_screening|document_inconsistency|unresolved_indicator|processing_route_question|missing_operational_home|material_placeholder","flag":"...","why_it_matters":"...","document_basis_ids":[],"residual_gap_ids":[],"suggested_verification":"..."}]}""",
+Return: {"recommendation_candidates":[{"recommendation_id":"REC-001","title":"...","pathway_ids":[],"existing_response_ids":[],"residual_gap_ids":[],"project_anchor_ids":[],"decision":"...","minimum_action":"...","enhanced_action":null,"enhanced_activation":null,"routing_status":"verified_existing|verified_with_scope_change|standard_document_advisory|not_applicable","instrument_claim_ids":[],"responsible_function":"...","authority_basis":"project_commitment|policy|directive|procedure|none_verified","recommendation_basis":"project_evidence|country_context|guidance|analytical_judgment","completion_evidence":"...","completion_evidence_status":"output|decision_record|updated_section|team_to_define","confidence":"high|medium|low","limitation":"...","caution":"...","supported_numeric_tokens":[],"score":{"materiality":0,"gap_strength":0,"leverage_urgency":0,"evidence":0,"feasibility":0},"gate_results":{"connection":true,"residuality":true,"materiality":true,"actionability":true,"timing":true,"distinctiveness":true}}],"readiness_flags":[{"flag_id":"RF-001","category":"incomplete_climate_screening|document_inconsistency|unresolved_indicator|processing_route_question|missing_operational_home|material_placeholder","flag":"...","why_it_matters":"...","document_basis_ids":[],"residual_gap_ids":[],"suggested_verification":"..."}]}""",
+        payload,
+    )
+
+
+def _drafting_prompt(payload: dict[str, object]) -> str:
+    return _common(
+        """Draft ready-to-adapt project-document language only for the supplied
+recommendation candidates. Return one drafting set per recommendation ID. Each
+set must contain exactly one current_document block of 90 to 160 words, targeted
+to the supplied current document and a specific section. Label it
+existing_commitment only when linked project evidence supports that status;
+otherwise use advisory_proposal. Add at most one operational_instrument block
+only when it is separately useful and targets a named instrument supported by
+the candidate's instrument_claim_ids. The second block must not repeat the
+first.
+
+Cite only supplied project, residual-gap, and guidance IDs. Guidance selects a
+safe drafting destination but does not prove a project fact, commitment, actor,
+system, timing, authority, or formal requirement. Do not alter the supplied
+recommendation decision, action, routing, score, or gates. Do not invent dates,
+thresholds, actors, instruments, systems, or mandatory wording. If a digit is
+needed, copy it from a linked verified project fact.
+
+Return: {"drafting_sets":[{"recommendation_id":"REC-001","drafting_blocks":[{"drafting_role":"current_document|operational_instrument","target_document":"PCN","target_section":"Project Description","drafting_status":"existing_commitment|advisory_proposal","text":"...","project_basis_ids":[],"gap_basis_ids":[],"guidance_ids":[]}]}]}""",
         payload,
     )
 
@@ -160,6 +173,7 @@ def build_verified_stage_prompt(
         "judgment_review": _judgment_prompt,
         "recommendation_compiler": _recommendation_prompt,
         "conditional_review": _review_prompt,
+        "drafting_compiler": _drafting_prompt,
     }
     try:
         builder = builders[stage]
