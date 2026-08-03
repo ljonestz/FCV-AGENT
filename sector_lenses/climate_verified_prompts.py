@@ -32,6 +32,8 @@ def _fact_prompt(payload: dict[str, object]) -> str:
         """Extract an atomic project-fact registry for a Climate-FCV screening.
 Use project documents only. Keep existence, scope, timing, authority, status,
 location, beneficiary, activity, indicator, and decision gate as separate facts.
+Prioritize every material risk-response table row and each distinct documented
+control over administrative names and generic background.
 An exact instrument name does not establish its scope, timing, or authority.
 not_found is not confirmed_absence. confirmed_absence requires explicit negative
 language in a cited block. Each explicit fact needs source_block_ids and a short
@@ -48,6 +50,11 @@ def _analysis_prompt(payload: dict[str, object]) -> str:
     return _common(
         """Build bounded Climate-FCV analysis registers from verified project facts.
 First represent material existing project responses; then identify what remains.
+Credit risk-register controls, E&S measures, sequencing, monitoring, grievance,
+and implementation arrangements before stating a residual gap. Treat
+functionally equivalent documented controls as existing responses even when a
+generic label is absent. Keep preparation and implementation milestones
+separate; do not imply dependency unless an explicit project fact establishes it.
 Country evidence cannot establish a project site fact, beneficiary fact,
 instrument, commitment, or project gap. It may support plausible contextual
 pathways and questions only. Guidance supports options, not proof of a gap.
@@ -76,7 +83,10 @@ Write an executive_readout of 500 to 800 words for a task-team reader. Start
 with what the project already does, distinguish residual gaps from items merely
 not yet specified, summarize the four judgments without inventing an overall
 rating, and preview only issues that could pass the recommendation admission
-test. Calibrate precision to the evidence and state material limitations.
+test. Every previewed issue must name the credited existing response and explain
+what remains. Keep preparation and implementation milestones separate; do not
+imply dependency unless an explicit project fact establishes it. Calibrate
+precision to the evidence and state material limitations.
 
 Return: {"executive_readout":"...","relevance":{"value":"high|medium|low|unclear","evidence_ids":[],"rationale":"..."},"sensitivity":{"value":"strong|moderate|limited|unclear","evidence_ids":[],"rationale":"..."},"responsiveness":{"value":"strong|emerging|limited|not_expected|unclear","evidence_ids":[],"rationale":"..."},"operationalization":{"value":"embedded|partial|early|not_evidenced|unclear","evidence_ids":[],"rationale":"..."}}.""",
         payload,

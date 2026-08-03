@@ -45,6 +45,29 @@ def test_source_preparation_is_stable_bounded_and_excludes_context_facts():
     )
 
 
+def test_source_preparation_keeps_risk_control_row_cohesive():
+    risk_row = (
+        "16 | Synthetic resource-conflict risk. Project investments may intensify "
+        "disputes over access. | The security plan maps conflict risks at each "
+        "site before investment. Boundary and tenure verification are mandatory "
+        "preconditions. The grievance mechanism provides community recourse."
+    )
+    result = prepare_verified_sources([{
+        "label": "PROJECT DOCUMENT",
+        "name": "synthetic-pcn.docx",
+        "raw_text": (
+            risk_row
+            + "\n\nThe geographic scope will be confirmed during preparation."
+            + "\n\nA feasibility study will occur in Year 1 of implementation."
+        ),
+    }], maximum_chars=5000)
+
+    assert len(result.blocks) == 3
+    assert result.blocks[0].text == risk_row
+    assert result.blocks[1].text.endswith("during preparation.")
+    assert result.blocks[2].text.endswith("Year 1 of implementation.")
+
+
 def test_source_preparation_prioritizes_operational_blocks_under_cap():
     filler = "General background without operational detail. " * 100
     parts = [{

@@ -69,17 +69,24 @@ def _sha256(value: str) -> str:
 
 
 def _chunks(text: str, size: int) -> list[str]:
-    """Split paragraphs deterministically without creating over-large blocks."""
+    """Keep logical paragraphs intact while bounding over-large blocks."""
 
     result: list[str] = []
-    paragraphs = re.split(r"\n\s*\n|(?<=\.)\s+(?=[A-Z])", text)
+    paragraphs = re.split(r"\n\s*\n", text)
     for raw in paragraphs:
         value = normalize_block_text(raw)
         while value:
             if len(value) <= size:
                 result.append(value)
                 break
-            cut = value.rfind(" ", 0, size + 1)
+            window = value[: size + 1]
+            sentence_cuts = [
+                match.end()
+                for match in re.finditer(r"[.!?](?=\s)", window)
+            ]
+            cut = sentence_cuts[-1] if sentence_cuts else 0
+            if cut < max(80, size // 3):
+                cut = value.rfind(" ", 0, size + 1)
             if cut < max(80, size // 3):
                 cut = size
             result.append(value[:cut].strip())

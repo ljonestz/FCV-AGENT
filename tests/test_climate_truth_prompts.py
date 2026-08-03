@@ -45,6 +45,8 @@ def test_fact_prompt_places_untrusted_content_after_fixed_rules():
     )
     assert "maximum 100" in prompt
     assert "not_found is not confirmed_absence" in prompt
+    assert "material risk-response table row" in prompt
+    assert "administrative names and generic background" in prompt
 
 
 def test_targeted_prompt_names_question_and_limits_blocks():

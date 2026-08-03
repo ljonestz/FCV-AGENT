@@ -44,6 +44,24 @@ def test_every_stage_uses_delimited_json_and_evidence_entitlements():
     assert "executive_readout" in prompts["judgment_review"]
     assert "fewer than three" in prompts["recommendation_compiler"]
     assert "source-first verifier" in prompts["conditional_review"]
+    assert "material risk-response table row" in prompts["fact_extraction"]
+    assert (
+        "administrative names and generic background"
+        in prompts["fact_extraction"]
+    )
+    assert (
+        "functionally equivalent documented controls"
+        in prompts["bounded_analysis"]
+    )
+    assert (
+        "preparation and implementation milestones"
+        in prompts["bounded_analysis"]
+    )
+    assert "credited existing response" in prompts["judgment_review"]
+    assert (
+        "preparation and implementation milestones"
+        in prompts["judgment_review"]
+    )
 
 
 @dataclass

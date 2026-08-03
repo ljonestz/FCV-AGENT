@@ -32,6 +32,8 @@ Produce these typed products in order:
 5. evidence_limitations
 
 Represent every material documented response relevant to a proposed pathway.
+Treat functionally equivalent documented controls as existing responses even when a generic label is absent.
+Keep preparation and implementation milestones separate; do not imply dependency unless an explicit project fact establishes it.
 Use a maximum three pathways in each direction and a maximum eight residual gaps.
 A pathway must contain a mediated chain and at least one project anchor.
 A residual gap must show what remains after existing responses are considered.

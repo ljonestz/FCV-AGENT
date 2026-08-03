@@ -379,6 +379,19 @@ def test_manifest_is_privacy_safe_and_scoped_to_the_run():
     assert second["manifest"]["run_id"] == "run-two"
     assert first["manifest"]["source_count"] == 1
     assert first["manifest"]["renderer_version"] == "climate-reader-v2.1"
+    assert first["manifest"]["extraction_version"] == "source-blocks-v2.1"
+    assert (
+        first["manifest"]["prompt_versions"]["fact_extraction"]
+        == "climate-facts-v2.1"
+    )
+    assert (
+        first["manifest"]["prompt_versions"]["bounded_analysis"]
+        == "climate-analysis-v2.1"
+    )
+    assert (
+        first["manifest"]["prompt_versions"]["judgment_review"]
+        == "climate-judgments-v2.1"
+    )
     assert set(first["manifest"]["prompt_versions"]) == {
         "fact_extraction",
         "bounded_analysis",

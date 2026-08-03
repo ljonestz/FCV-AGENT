@@ -57,9 +57,9 @@ from sector_lenses.climate_verified_contracts import (
 
 
 PROMPT_VERSIONS = {
-    "fact_extraction": "climate-facts-v2.0",
-    "bounded_analysis": "climate-analysis-v2.0",
-    "judgment_review": "climate-judgments-v2.0",
+    "fact_extraction": "climate-facts-v2.1",
+    "bounded_analysis": "climate-analysis-v2.1",
+    "judgment_review": "climate-judgments-v2.1",
     "recommendation_compiler": "climate-recommendations-v2.1",
     "conditional_review": "climate-review-v2.0",
 }
@@ -728,7 +728,7 @@ def run_verified_climate_pipeline(
         schema_version=CLIMATE_VERIFIED_SCHEMA_VERSION,
         prompt_versions=PROMPT_VERSIONS,
         reviewer_version="climate-review-v2.0",
-        extraction_version="source-blocks-v2.0",
+        extraction_version="source-blocks-v2.1",
         normalization_version="climate-normalization-v2.0",
         renderer_version="climate-reader-v2.1",
         model_aliases={"assessment": "configured", "reviewer": "configured"},

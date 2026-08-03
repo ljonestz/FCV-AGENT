@@ -15,6 +15,8 @@ def test_analysis_prompt_makes_evidence_entitlements_explicit():
     assert "Country evidence may support plausible context and pathways" in prompt
     assert "must not establish a project site fact" in prompt
     assert "Represent every material documented response" in prompt
+    assert "functionally equivalent documented controls" in prompt
+    assert "preparation and implementation milestones" in prompt
     assert "maximum three pathways in each direction" in prompt
     assert "maximum eight residual gaps" in prompt
 
