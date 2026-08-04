@@ -148,10 +148,11 @@ set must contain exactly one current_document block of 90 to 160 words, targeted
 to the supplied current document and a specific section. Copy target_document and target_section exactly
 from one permitted_targets tuple
 in the cited operational-guidance entry; do not paraphrase either field.
-Begin the current_document text with a short bracketed placement cue showing
-where the language should sit within that section - for example "[Add at the
-start of this section]" or "[Insert after the paragraph on conflict-risk
-mapping]" - so the reader knows exactly where it goes; never use page numbers.
+Begin the current_document text with a short placement note in plain prose (no
+square brackets) stating exactly where in that section the language should sit -
+for example "Add at the start of this section:" or "Place immediately after the
+paragraph on conflict-risk mapping:" - then give the drafting language. Never
+use square brackets, placeholder markers, TBD/TODO, or page numbers.
 Label the block existing_commitment only when linked project evidence supports
 that status; otherwise use advisory_proposal. Add at most one operational_instrument block
 only when it is separately useful and targets a
