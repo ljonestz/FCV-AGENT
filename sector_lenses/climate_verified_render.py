@@ -667,6 +667,53 @@ def render_reader_html(model: dict[str, object]) -> str:
             f"{html.escape(_text(value))}</p>"
         )
     parts.append("</details>")
+
+    trail = _mapping(model.get("evidence_trail"))
+    if trail:
+        sources = model.get("sources") or []
+        parts.append('<details class="climate-fold"><summary>How this analysis was produced</summary>')
+        parts.append(f'<p>{html.escape(_text(trail.get("methodology_note")))}</p>')
+        pathways = _records(trail.get("pathways"))
+        if pathways:
+            parts.append("<h4>Pathways</h4><ul>")
+            for p in pathways:
+                parts.append(
+                    f'<li><strong>{html.escape(_text(p.get("direction_label")))}:</strong> '
+                    f'{html.escape(_text(p.get("chain_prose")))}</li>')
+            parts.append("</ul>")
+        key = _records(trail.get("evidence_key"))
+        if key:
+            parts.append("<h4>Evidence key</h4><ul>")
+            for e in key:
+                parts.append(
+                    f'<li><strong>{html.escape(_text(e.get("id")))}</strong> '
+                    f'({html.escape(_text(e.get("type_label")))}): '
+                    f'{html.escape(_text(e.get("text")))}</li>')
+            parts.append("</ul>")
+        if sources:
+            parts.append("<h4>Sources &amp; further reading</h4>")
+            parts.append('<p>The climate lens draws on the core WBG climate-FCV literature:</p><ul>')
+            for s in sources:
+                sm = _mapping(s)
+                title = html.escape(_text(sm.get("title")))
+                url = sm.get("url")
+                if isinstance(url, str) and url.startswith("https://"):
+                    parts.append(f'<li><a href="{html.escape(url)}" target="_blank" rel="noopener">{title}</a></li>')
+                else:
+                    parts.append(f"<li>{title}</li>")
+            parts.append("</ul>")
+        d = _mapping(trail.get("diagnostics"))
+        if d:
+            parts.append('<details class="climate-fold"><summary>Run diagnostics</summary><ul>')
+            parts.append(f'<li>Recommendation candidates: {html.escape(str(d.get("candidate_count")))} '
+                         f'&rarr; admitted {html.escape(str(d.get("admitted_count")))} '
+                         f'&rarr; final {html.escape(str(d.get("final_count")))}</li>')
+            parts.append(f'<li>Conditional review: {html.escape(_text(d.get("reviewer_verdict")))}</li>')
+            parts.append(f'<li>Live-research items used: {html.escape(str(d.get("live_research_count")))}</li>')
+            parts.append(f'<li>Country-bank release: {html.escape(_text(d.get("bank_release")) or "none")}</li>')
+            parts.append("</ul></details>")
+        parts.append("</details>")
+
     parts.append(
         '<p class="climate-advisory">'
         + html.escape(_text(model.get("advisory_notice")))
@@ -784,6 +831,41 @@ def write_reader_docx(model: dict[str, object], path: str | Path) -> Path:
     document.add_heading(HEADINGS[4], level=1)
     for key, value in _mapping(model.get("technical_annex")).items():
         _docx_field(document, key.replace("_", " ").title(), value)
+
+    trail = _mapping(model.get("evidence_trail"))
+    if trail:
+        document.add_heading("How this analysis was produced", level=1)
+        document.add_paragraph(_text(trail.get("methodology_note")))
+        pathways = _records(trail.get("pathways"))
+        if pathways:
+            document.add_heading("Pathways", level=2)
+            for p in pathways:
+                document.add_paragraph(
+                    f'{_text(p.get("direction_label"))}: {_text(p.get("chain_prose"))}')
+        key = _records(trail.get("evidence_key"))
+        if key:
+            document.add_heading("Evidence key", level=2)
+            for e in key:
+                document.add_paragraph(
+                    f'{_text(e.get("id"))} ({_text(e.get("type_label"))}): {_text(e.get("text"))}')
+        sources = model.get("sources") or []
+        if sources:
+            document.add_heading("Sources & further reading", level=2)
+            for s in sources:
+                sm = _mapping(s)
+                url = sm.get("url")
+                suffix = f' - {url}' if isinstance(url, str) and url.startswith("https://") else ""
+                document.add_paragraph(f'{_text(sm.get("title"))}{suffix}')
+        d = _mapping(trail.get("diagnostics"))
+        if d:
+            document.add_heading("Run diagnostics", level=2)
+            document.add_paragraph(
+                f'Recommendation candidates: {d.get("candidate_count")} -> '
+                f'admitted {d.get("admitted_count")} -> final {d.get("final_count")}; '
+                f'conditional review: {_text(d.get("reviewer_verdict"))}; '
+                f'live-research items used: {d.get("live_research_count")}; '
+                f'country-bank release: {_text(d.get("bank_release")) or "none"}.')
+
     document.add_paragraph(_text(model.get("advisory_notice")))
     document.save(output)
     return output

@@ -84,10 +84,16 @@ def test_chain_prose_handles_short_and_nonstring_chains():
     assert mixed.endswith(".") and "a" in mixed
 
 
+from io import BytesIO
+
+from docx import Document
+
 from sector_lenses.climate_verified_render import (
     attach_provenance,
     build_reader_model,
+    render_reader_html,
     validate_reader_model,
+    write_reader_docx,
 )
 from tests.test_climate_verified_render import _assessment as _reader_assessment
 
@@ -102,3 +108,24 @@ def test_attach_provenance_is_additive_and_non_gating():
     assert len(model["sources"]) >= 5
     assert all("title" in s for s in model["sources"])
     assert validate_reader_model(model) == before
+
+
+def _reader_with_trail():
+    model = build_reader_model(_reader_assessment())
+    attach_provenance(model, _assessment())
+    return model
+
+
+def test_annex_renders_in_html_and_docx():
+    model = _reader_with_trail()
+    html = render_reader_html(model)
+    assert "How this analysis was produced" in html
+    assert "flood-prone fisheries" in html            # evidence key resolved text
+    assert ("Sources &amp; further reading" in html) or ("Sources & further reading" in html)
+    assert "FCV-Sensitive Climate Action Framework" in html  # a static framework
+    stream = BytesIO()
+    write_reader_docx(model, stream)
+    stream.seek(0)
+    text = "\n".join(p.text for p in Document(stream).paragraphs)
+    assert "How this analysis was produced" in text
+    assert "FCV-Sensitive Climate Action Framework" in text
