@@ -7,6 +7,7 @@ from sector_lenses.climate_recommendations import (
     RecommendationScore,
     normalize_drafting_blocks,
     normalize_unverified_completion_actor,
+    normalize_unverified_drafting_actor,
     normalize_unsupported_drafting_precision,
     validate_recommendation,
 )
@@ -322,6 +323,45 @@ def test_normalization_drops_optional_block_with_mismatched_instrument_target():
 
     assert normalized.operational_instrument_drafting is None
     assert "DRAFTING_OPTIONAL_UNVERIFIED_DROPPED" in repairs
+
+
+def test_unverified_drafting_actor_is_generalized_before_validation() -> None:
+    candidate = replace(
+        _candidate(),
+        current_document_drafting=_draft(
+            text=("Establish a focal point to record the agreed update. " * 6),
+        ),
+    )
+
+    normalized, repairs = normalize_unverified_drafting_actor(candidate, _context())
+
+    assert repairs == ("DRAFTING_ACTOR_GENERALIZED",)
+    text = normalized.current_document_drafting.text.casefold()
+    assert "focal point" not in text
+    assert "responsible project function" in text
+    assert "DRAFTING_ACTOR_UNVERIFIED" not in {
+        issue.code
+        for issue in validate_recommendation(
+            normalized, KNOWN_IDS, drafting_context=_context()
+        )
+    }
+
+
+def test_drafting_actor_generalized_in_action_prose() -> None:
+    candidate = replace(
+        _candidate(),
+        minimum_action="Task a steering committee to update the document.",
+    )
+    normalized, repairs = normalize_unverified_drafting_actor(candidate, _context())
+    assert repairs == ("DRAFTING_ACTOR_GENERALIZED",)
+    assert "steering committee" not in normalized.minimum_action.casefold()
+
+
+def test_drafting_actor_noop_when_absent() -> None:
+    candidate = _candidate()
+    normalized, repairs = normalize_unverified_drafting_actor(candidate, _context())
+    assert repairs == ()
+    assert normalized is candidate
 
 
 def test_unverified_completion_actor_is_generalized_before_validation() -> None:

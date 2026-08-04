@@ -410,6 +410,75 @@ def normalize_unverified_completion_actor(
     )
 
 
+def normalize_unverified_drafting_actor(
+    candidate: CandidateRecommendation,
+    drafting_context: DraftingValidationContext,
+) -> tuple[CandidateRecommendation, tuple[str, ...]]:
+    """Generalize an unsupported operational actor across drafting text and
+    action prose, mirroring the completion-evidence repair.
+
+    The DRAFTING_ACTOR_UNVERIFIED check scans the action fields and drafting
+    block text as well as completion evidence, so an invented "focal point",
+    "steering committee", or "coordination unit" in any of those fields would
+    otherwise suppress an otherwise-grounded recommendation. A phrase that is
+    genuinely supported by a linked project fact is preserved unchanged."""
+
+    linked_ids = set(candidate.project_anchor_ids) | set(
+        candidate.instrument_claim_ids
+    )
+    linked_text = " ".join(
+        drafting_context.project_fact_text.get(identifier, "")
+        for identifier in linked_ids
+    ).casefold()
+
+    def _generalize(text: str | None) -> tuple[str | None, bool]:
+        if not text:
+            return text, False
+        changed = False
+        for phrase in ("focal point", "steering committee", "coordination unit"):
+            if phrase not in text.casefold() or phrase in linked_text:
+                continue
+
+            def _replacement(match: re.Match[str]) -> str:
+                value = "responsible project function"
+                return value.capitalize() if match.group(0)[0].isupper() else value
+
+            new_text = re.sub(
+                rf"\b{re.escape(phrase)}\b",
+                _replacement,
+                text,
+                flags=re.IGNORECASE,
+            )
+            if new_text != text:
+                text = new_text
+                changed = True
+        return text, changed
+
+    updates: dict[str, object] = {}
+    for field_name in (
+        "decision",
+        "minimum_action",
+        "enhanced_action",
+        "enhanced_activation",
+    ):
+        new_value, changed = _generalize(getattr(candidate, field_name))
+        if changed:
+            updates[field_name] = new_value
+    for field_name in (
+        "current_document_drafting",
+        "operational_instrument_drafting",
+    ):
+        block = getattr(candidate, field_name)
+        if block is None:
+            continue
+        new_text, changed = _generalize(block.text)
+        if changed:
+            updates[field_name] = replace(block, text=new_text)
+    if not updates:
+        return candidate, ()
+    return replace(candidate, **updates), ("DRAFTING_ACTOR_GENERALIZED",)
+
+
 def normalize_recommendation_references(
     candidate: CandidateRecommendation,
     known_ids: set[str],
