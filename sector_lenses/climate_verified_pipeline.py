@@ -525,7 +525,7 @@ def _integrity_readiness_flags(
             continue
         if set(flag.document_basis_ids) - known_block_ids:
             continue
-        kept.append(flag)
+        kept.append(replace(flag, residual_gap_ids=()))
     return kept
 
 
@@ -544,13 +544,13 @@ def _merge_readiness_flags(
     merged: list[ReviewReadinessFlag] = []
     seen: set[tuple[str, str]] = set()
     for flag in [*integrity, *model]:
+        if len(merged) == cap:
+            break
         key = (flag.category, _normalized_sentence(flag.flag))
         if key in seen:
             continue
         seen.add(key)
         merged.append(flag)
-        if len(merged) == cap:
-            break
     return tuple(merged)
 
 

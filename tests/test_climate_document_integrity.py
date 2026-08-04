@@ -2,6 +2,12 @@ from __future__ import annotations
 
 import json
 
+from sector_lenses.climate_recommendations import ReviewReadinessFlag
+from sector_lenses.climate_verified_pipeline import (
+    _integrity_readiness_flags,
+    _merge_readiness_flags,
+)
+from sector_lenses.climate_verified_prompts import build_verified_stage_prompt
 from sector_lenses.climate_verified_schemas import (
     READINESS_SCHEMA,
     stage_output_schema,
@@ -23,9 +29,6 @@ def test_recommendation_schema_still_within_budget():
     assert len(json.dumps(schema, separators=(",", ":"))) <= 4_100
 
 
-from sector_lenses.climate_verified_prompts import build_verified_stage_prompt
-
-
 def test_fact_prompt_requests_generic_document_integrity_scan():
     prompt = build_verified_stage_prompt("fact_extraction", {})
     lowered = prompt.lower()
@@ -38,13 +41,6 @@ def test_fact_prompt_requests_generic_document_integrity_scan():
     # It must stay inside the document (no external inference) and be source-linked.
     assert "do not infer" in lowered or "not infer" in lowered
     assert "document_basis_ids" in prompt
-
-
-from sector_lenses.climate_recommendations import ReviewReadinessFlag
-from sector_lenses.climate_verified_pipeline import (
-    _integrity_readiness_flags,
-    _merge_readiness_flags,
-)
 
 
 def _finding(flag_id, category, flag, block_id):
@@ -65,6 +61,8 @@ def test_integrity_findings_require_a_known_block_and_valid_category():
             _finding("DIF-1", "document_inconsistency", "Totals disagree.", "B-1"),
             _finding("DIF-2", "material_placeholder", "Placeholder left.", "B-UNKNOWN"),
             _finding("DIF-3", "not_a_category", "Bad category.", "B-1"),
+            {**_finding("DIF-4", "material_placeholder", "No basis.", "B-1"),
+             "document_basis_ids": []},
         ]
     }
     flags = _integrity_readiness_flags(payload, {"B-1", "B-2"})
@@ -88,3 +86,15 @@ def test_merge_prioritises_integrity_findings_dedupes_and_caps():
     assert ids[0] == "DIF-1"          # integrity first
     assert "RF-1" not in ids          # deduped against DIF-1
     assert "RF-2" in ids              # distinct model flag retained
+
+
+def test_integrity_flags_drop_residual_gap_references():
+    payload = {
+        "document_integrity_findings": [
+            {**_finding("DIF-1", "document_inconsistency", "Totals disagree.", "B-1"),
+             "residual_gap_ids": ["RG-9"]},
+        ]
+    }
+    flags = _integrity_readiness_flags(payload, {"B-1"})
+    assert len(flags) == 1
+    assert flags[0].residual_gap_ids == ()
