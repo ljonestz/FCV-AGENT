@@ -4600,10 +4600,10 @@
     const withheldMessage=admittedCount>0&&['revise','block'].includes(reviewerVerdict)
       ?`${admittedCount} recommendation ${admittedCount===1?'candidate':'candidates'} passed deterministic admission but ${admittedCount===1?'was':'were'} withheld after semantic review. Review outcome: ${reviewerVerdict}. See the technical annex.`
       :'No recommendation passed the admission threshold for this run.';
-    const priorities=Array.isArray(r.priorities)?r.priorities.slice().sort((x,y)=>(Number(x.rank)||999)-(Number(y.rank)||999)).slice(0,3):[];
-    const priorityHtml=priorities.length?priorities.map(priority=>{
     const prioritySummary=r.priority_summary&&typeof r.priority_summary==='object'?r.priority_summary:{};
     const prioritySummaryHtml=prioritySummary.statement?`<p class="climate-priority-summary">${esc(prioritySummary.statement)}</p>`:'';
+    const priorities=Array.isArray(r.priorities)?r.priorities.slice().sort((x,y)=>(Number(x.rank)||999)-(Number(y.rank)||999)).slice(0,3):[];
+    const priorityHtml=priorities.length?priorities.map(priority=>{
       const field=(label,key)=>{const raw=priority[key];const value=Array.isArray(raw)?raw.join(', '):raw;return value?`<p><strong>${esc(label)}:</strong> ${esc(value)}</p>`:'';};
       const fieldHtml=fields.map(([label,key])=>field(label,key)+(key==='minimum_action'
         ?draftingBlock('Current document drafting',priority.current_document_drafting)+draftingBlock('Operational instrument drafting',priority.operational_instrument_drafting)
