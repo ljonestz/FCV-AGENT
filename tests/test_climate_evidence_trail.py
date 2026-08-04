@@ -82,3 +82,23 @@ def test_chain_prose_handles_short_and_nonstring_chains():
     # None / non-string elements are tolerated (dropped), no crash
     mixed = _chain_prose(["a", None, "c", "d"])
     assert mixed.endswith(".") and "a" in mixed
+
+
+from sector_lenses.climate_verified_render import (
+    attach_provenance,
+    build_reader_model,
+    validate_reader_model,
+)
+from tests.test_climate_verified_render import _assessment as _reader_assessment
+
+
+def test_attach_provenance_is_additive_and_non_gating():
+    model = build_reader_model(_reader_assessment())
+    before = validate_reader_model(model)
+    raw = _assessment()  # from this test module: has analysis/facts/diagnostics
+    attach_provenance(model, raw)
+    assert "evidence_trail" in model and "sources" in model
+    assert model["evidence_trail"]["pathways"]  # projected
+    assert len(model["sources"]) >= 5
+    assert all("title" in s for s in model["sources"])
+    assert validate_reader_model(model) == before

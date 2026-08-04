@@ -9,6 +9,7 @@ from typing import Any
 
 from docx import Document
 
+from climate_question_bank import CLIMATE_LITERATURE_REFERENCES
 from sector_lenses.climate_judgments import ALLOWED
 
 
@@ -390,6 +391,17 @@ def build_evidence_trail(assessment: dict[str, object]) -> dict[str, object]:
         "evidence_key": evidence_key,
         "diagnostics": diagnostics,
     }
+
+
+def attach_provenance(reader: dict[str, object], assessment: dict[str, object]) -> dict[str, object]:
+    """Attach the evidence trail and static literature references to a reader.
+
+    Called after build_reader_model/validate_reader_model so it is additive and
+    never affects reader-integrity validation.
+    """
+    reader["evidence_trail"] = build_evidence_trail(assessment)
+    reader["sources"] = [dict(entry) for entry in CLIMATE_LITERATURE_REFERENCES]
+    return reader
 
 
 def _all_strings(value: object):

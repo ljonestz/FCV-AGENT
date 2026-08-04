@@ -23,6 +23,7 @@ from sector_lenses.climate_verified_pipeline import (
     run_verified_climate_pipeline,
 )
 from sector_lenses.climate_verified_render import (
+    attach_provenance,
     build_reader_model,
     validate_reader_model,
 )
@@ -354,6 +355,7 @@ def run_verified_from_doc_parts(
     normalized = normalize_climate_assessment(assessment)
     reader = build_reader_model(normalized)
     reader_issues = validate_reader_model(reader)
+    attach_provenance(reader, assessment)
     if reader_issues:
         detail_suffix = ""
         if "EXECUTIVE_LENGTH_INVALID" in reader_issues:
