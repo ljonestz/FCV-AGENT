@@ -35,7 +35,8 @@ def test_fact_extraction_schema_exposes_document_integrity_findings():
 
 def test_recommendation_schema_still_within_budget():
     schema = stage_output_schema("recommendation_compiler")
-    assert len(json.dumps(schema, separators=(",", ":"))) <= 4_100
+    size = len(json.dumps(schema, separators=(",", ":")))
+    assert size <= 4_100, f"recommendation_compiler schema grew to {size} chars; budget is 4100"
 
 
 def test_fact_prompt_requests_generic_document_integrity_scan():
@@ -72,6 +73,9 @@ def test_integrity_findings_require_a_known_block_and_valid_category():
             _finding("DIF-3", "not_a_category", "Bad category.", "B-1"),
             {**_finding("DIF-4", "material_placeholder", "No basis.", "B-1"),
              "document_basis_ids": []},
+            _finding("DIF-5", "missing_operational_home", "Design gap, not a defect.", "B-1"),
+            {**_finding("DIF-6", "document_inconsistency", "Mixed ids.", "B-1"),
+             "document_basis_ids": ["B-1", "B-UNKNOWN"]},
         ]
     }
     flags = _integrity_readiness_flags(payload, {"B-1", "B-2"})

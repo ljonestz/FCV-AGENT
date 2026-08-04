@@ -76,6 +76,10 @@ from sector_lenses.climate_verified_schemas import (
 )
 
 
+# Document-integrity findings never use missing_operational_home (a design gap,
+# not a document defect); align validation with the fact-stage prompt.
+_INTEGRITY_CATEGORIES = READINESS_CATEGORIES - {"missing_operational_home"}
+
 PROMPT_VERSIONS = {
     "fact_extraction": "climate-facts-v2.2",
     "bounded_analysis": "climate-analysis-v2.2",
@@ -519,7 +523,7 @@ def _integrity_readiness_flags(
             flag = _readiness_flag(record)
         except (TypeError, ValueError):
             continue
-        if flag.category not in READINESS_CATEGORIES:
+        if flag.category not in _INTEGRITY_CATEGORIES:
             continue
         if not flag.document_basis_ids:
             continue
@@ -551,6 +555,8 @@ def _merge_readiness_flags(
             continue
         seen.add(key)
         merged.append(flag)
+    # Suppression accounting counts a model flag deduped by an equivalent
+    # integrity flag as suppressed; the point still surfaces via the integrity flag.
     return tuple(merged)
 
 
