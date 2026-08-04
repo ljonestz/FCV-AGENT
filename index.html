@@ -4810,7 +4810,9 @@
       `;
 
     // Annotate glossary terms with hover tooltips
-    setTimeout(function(){ annotateGlossaryTerms(document.getElementById('out-txt')); }, 100);
+    // The verified Climate-FCV reader is written in plain prose; inline glossary
+    // expansions create run-ons that break the clean layout, so skip them here.
+    if(!_verifiedV2) setTimeout(function(){ annotateGlossaryTerms(document.getElementById('out-txt')); }, 100);
 
     // Mark Stage 3 (Recommendations) so CSS can remove the .out-body scroll constraint
     if(isLast) document.getElementById('stage-disp').classList.add('s3-active');
