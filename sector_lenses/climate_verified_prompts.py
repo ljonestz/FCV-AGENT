@@ -49,7 +49,23 @@ and never more than 100.
 Keep subject, predicate, object, and assertion prose to 45 words or fewer.
 Keep each verbatim supporting excerpt to 60 words or fewer.
 
-Return: {"schema_version":"climate-verified-v2.1","facts":[{"claim_id":"PF-001","claim_type":"...","subject":"...","predicate":"...","object":"...","epistemic_status":"explicit|confirmed_absence|not_found|not_yet_specified|contradictory|not_applicable","source_block_ids":["..."],"supporting_excerpt":"... or null","confidence":"high|medium|low"}],"derived_assertions":[]}.""",
+Also return document_integrity_findings: verifiable defects in the uploaded
+document itself, judged only against the document text you were given. Detect
+four generic classes and nothing else: (1) two stated values that contradict
+each other, or a narrative statement that contradicts a system-generated table
+value; (2) a template field or section that is present but empty; (3) a
+placeholder, a bracketed author query, or a "to be updated", "to be deleted",
+or "to be confirmed" marker left in the text; (4) a classification, category, or
+checkbox that the template presents and that is left unmarked where the
+surrounding context indicates it should be considered. Use only these categories:
+document_inconsistency, incomplete_climate_screening, unresolved_indicator,
+processing_route_question, material_placeholder. Each finding needs at least one
+source_block_id in document_basis_ids and a short verbatim excerpt inside flag.
+Emit nothing for a class that is absent. Do not infer defects from outside the
+document and do not treat a normal design choice as a defect. Return at most six
+findings.
+
+Return: {"schema_version":"climate-verified-v2.1","facts":[{"claim_id":"PF-001","claim_type":"...","subject":"...","predicate":"...","object":"...","epistemic_status":"explicit|confirmed_absence|not_found|not_yet_specified|contradictory|not_applicable","source_block_ids":["..."],"supporting_excerpt":"... or null","confidence":"high|medium|low"}],"derived_assertions":[],"document_integrity_findings":[{"flag_id":"DIF-001","category":"document_inconsistency|incomplete_climate_screening|unresolved_indicator|processing_route_question|material_placeholder","flag":"...","why_it_matters":"...","document_basis_ids":["..."],"suggested_verification":"...","residual_gap_ids":[]}]}.""",
         payload,
     )
 
