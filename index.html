@@ -4581,19 +4581,19 @@
       <h3>${esc(j.title||j.dimension||'Judgment')}</h3>
       ${j.description?`<p class="climate-judgment-desc" style="color:#4b5563;font-style:italic;margin:2px 0 6px">${esc(j.description)}</p>`:''}
       <p><strong>${esc(String(j.value||'unclear').replaceAll('_',' '))}:</strong> ${esc(j.rationale||'Evidence remains insufficient for a firmer judgment.')}</p>
-      ${Array.isArray(j.evidence_ids)&&j.evidence_ids.length?`<p><strong>Evidence references:</strong> ${esc(j.evidence_ids.join(', '))}</p>`:''}
+      ${Array.isArray(j.evidence_ids)&&j.evidence_ids.length?`<p style="color:#6b7280;font-size:12px;margin:4px 0 0">Sources: ${esc(j.evidence_ids.join(', '))}</p>`:''}
     </section>`).join('');
     const draftingBlock=(label,block)=>{
       if(!block||typeof block!=='object')return '';
-      const guidance=Array.isArray(block.guidance_ids)?block.guidance_ids.join(', '):'';
+      const dest=[block.target_document,block.target_section].filter(Boolean).map(esc).join(' – ');
       return `<section class="climate-drafting-block"><h4>${esc(label)}</h4>`+
-        `<p><strong>Target document:</strong> ${esc(block.target_document||'')}</p>`+
-        `<p><strong>Target section:</strong> ${esc(block.target_section||'')}</p>`+
-        `<p><strong>Drafting status:</strong> ${esc(block.drafting_status||'')}</p>`+
-        (guidance?`<p><strong>Guidance basis:</strong> ${esc(guidance)}</p>`:'')+
+        (dest?`<p style="color:#6b7280;font-size:12px;margin:0 0 4px">For: ${dest}</p>`:'')+
         `<div class="climate-drafting-text">${esc(block.text||'')}</div></section>`;
     };
-    const fields=[['Decision','decision'],['Minimum action','minimum_action'],['Enhanced action','enhanced_action'],['Activation condition','enhanced_activation'],['Who','responsible_function'],['Routing status','routing_status'],['Authority basis','authority_basis'],['Recommendation basis','recommendation_basis'],['Project evidence references','project_anchor_ids'],['Pathway references','pathway_ids'],['Existing-response references','existing_response_ids'],['Residual-gap references','residual_gap_ids'],['Instrument references','instrument_claim_ids'],['Completion evidence','completion_evidence'],['Completion evidence status','completion_evidence_status'],['Confidence','confidence'],['Limitation','limitation'],['Caution','caution']];
+    // User-facing content stays front-and-centre; internal routing metadata and
+    // coded reference lists are tucked into a collapsible "Evidence & routing detail".
+    const primaryFields=[['Recommendation','decision'],['Minimum action','minimum_action'],['Enhanced action (optional)','enhanced_action'],['When to escalate','enhanced_activation'],['Who acts','responsible_function'],['What "done" looks like','completion_evidence'],['Confidence','confidence'],['Limitation','limitation'],['Caution','caution']];
+    const detailFields=[['Routing status','routing_status'],['Authority basis','authority_basis'],['Recommendation basis','recommendation_basis'],['Completion evidence status','completion_evidence_status'],['Project evidence references','project_anchor_ids'],['Pathway references','pathway_ids'],['Existing-response references','existing_response_ids'],['Residual-gap references','residual_gap_ids'],['Instrument references','instrument_claim_ids']];
     const annex=r.technical_annex&&typeof r.technical_annex==='object'?r.technical_annex:{};
     const admittedCount=Number(annex.recommendation_admitted_count)||0;
     const reviewerVerdict=String(annex.semantic_reviewer_verdict||'not_invoked').toLowerCase();
@@ -4605,10 +4605,12 @@
     const priorities=Array.isArray(r.priorities)?r.priorities.slice().sort((x,y)=>(Number(x.rank)||999)-(Number(y.rank)||999)).slice(0,3):[];
     const priorityHtml=priorities.length?priorities.map(priority=>{
       const field=(label,key)=>{const raw=priority[key];const value=Array.isArray(raw)?raw.join(', '):raw;return value?`<p><strong>${esc(label)}:</strong> ${esc(value)}</p>`:'';};
-      const fieldHtml=fields.map(([label,key])=>field(label,key)+(key==='minimum_action'
-        ?draftingBlock('Current document drafting',priority.current_document_drafting)+draftingBlock('Operational instrument drafting',priority.operational_instrument_drafting)
+      const primaryHtml=primaryFields.map(([label,key])=>field(label,key)+(key==='minimum_action'
+        ?draftingBlock('Suggested drafting for the current document',priority.current_document_drafting)+draftingBlock('Suggested drafting for an operational instrument',priority.operational_instrument_drafting)
         :'')).join('');
-      return `<section class="climate-priority-card"><h3>${esc(priority.rank)}. ${esc(priority.title||'Untitled action')} (${esc(priority.recommendation_id||'')})</h3>${fieldHtml}</section>`;
+      const detailInner=detailFields.map(([label,key])=>field(label,key)).join('');
+      const detailHtml=detailInner?`<details class="climate-priority-detail"><summary>Evidence &amp; routing detail</summary>${detailInner}</details>`:'';
+      return `<section class="climate-priority-card"><h3>${esc(priority.rank)}. ${esc(priority.title||'Untitled action')}</h3>${primaryHtml}${detailHtml}</section>`;
     }).join(''):`<p>${esc(withheldMessage)}</p>`;
     const flags=Array.isArray(r.review_readiness_flags)?r.review_readiness_flags.slice(0,4):[];
     const flagsHtml=flags.length?flags.map(flag=>`<section><h4>${esc(flag.flag||'Verification point')}</h4><p><strong>Why it matters:</strong> ${esc(flag.why_it_matters||'')}</p><p><strong>Document basis:</strong> ${esc(Array.isArray(flag.document_basis_ids)?flag.document_basis_ids.join(', '):'')}</p><p><strong>Suggested verification:</strong> ${esc(flag.suggested_verification||'')}</p></section>`).join(''):'<p>No bounded review-readiness flags were admitted.</p>';
