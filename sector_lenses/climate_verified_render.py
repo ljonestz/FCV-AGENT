@@ -375,8 +375,16 @@ def render_reader_html(model: dict[str, object]) -> str:
     parts.append(_heading(2, HEADINGS[0]))
     for _exec_para in re.split(r"\n\s*\n+", _text(model.get("executive_readout")).strip()):
         _exec_para = _exec_para.strip()
-        if _exec_para:
-            parts.append(f"<p>{html.escape(_exec_para)}</p>")
+        if not _exec_para:
+            continue
+        _m = re.match(r"^(.*?[.!?])(\s+)([\s\S]*)$", _exec_para)
+        if _m:
+            parts.append(
+                f"<p><strong>{html.escape(_m.group(1))}</strong>"
+                f"{html.escape(_m.group(2) + _m.group(3))}</p>"
+            )
+        else:
+            parts.append(f"<p><strong>{html.escape(_exec_para)}</strong></p>")
     evidence_status = _text(model.get("evidence_status"))
     if evidence_status != "approved":
         parts.append(
@@ -524,8 +532,15 @@ def write_reader_docx(model: dict[str, object], path: str | Path) -> Path:
     document.add_heading(HEADINGS[0], level=1)
     for _exec_para in re.split(r"\n\s*\n+", _text(model.get("executive_readout")).strip()):
         _exec_para = _exec_para.strip()
-        if _exec_para:
-            document.add_paragraph(_exec_para)
+        if not _exec_para:
+            continue
+        _m = re.match(r"^(.*?[.!?])(\s+)([\s\S]*)$", _exec_para)
+        _paragraph = document.add_paragraph()
+        if _m:
+            _paragraph.add_run(_m.group(1)).bold = True
+            _paragraph.add_run(_m.group(2) + _m.group(3))
+        else:
+            _paragraph.add_run(_exec_para).bold = True
     if _text(model.get("evidence_status")) != "approved":
         _docx_field(document, "Evidence status", model.get("evidence_status"))
 

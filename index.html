@@ -413,8 +413,9 @@
     .cj{position:relative;background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:14px 15px 13px 18px;box-shadow:var(--shadow-sm);overflow:hidden}
     .cj::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px}
     .cj-good::before{background:#1A9850}.cj-mid::before{background:#E8A800}.cj-low::before{background:#D73027}.cj-unclear::before{background:#9AA3AF}
-    .cj-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 6px}
-    .cj-title{font-family:'Open Sans',sans-serif;font-size:12.5px;font-weight:700;color:var(--wbg-navy);line-height:1.25}
+    .cj-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin:0 0 8px}
+    .cj-title{font-family:'Open Sans',sans-serif;font-size:12.5px;font-weight:700;color:var(--wbg-navy);line-height:1.4}
+    .cj-title .cj-q{font-weight:400;font-style:italic;color:#475569}
     .cj-badge{flex:none;font-size:10px;font-weight:700;text-transform:capitalize;letter-spacing:.03em;padding:3px 10px;border-radius:20px;color:#fff;white-space:nowrap}
     .cj-good .cj-badge{background:#1A9850}.cj-mid .cj-badge{background:#E8A800}.cj-low .cj-badge{background:#D73027}.cj-unclear .cj-badge{background:#9AA3AF}
     .cj-desc{font-size:12px;font-style:italic;color:#64748b;margin:0 0 8px;line-height:1.4}
@@ -4617,7 +4618,9 @@
     const runtimeMode=String(r.runtime_mode||'quality').toLowerCase();
     const smokeHtml=runtimeMode==='smoke'?`<div class="finalized-pad-notice"><div class="fpn-body"><strong>Smoke test: validates workflow completion only; not a quality benchmark.</strong></div></div>`:'';
     const executive=esc(r.executive_readout||'The verified assessment did not return an executive readout.');
-    const execHtml=(String(r.executive_readout||'').split(/\n\s*\n+/).map(p=>p.trim()).filter(Boolean).map(p=>`<p>${esc(p)}</p>`).join(''))||`<p>${executive}</p>`;
+    // WB technical-report style: bold the active first sentence of each paragraph.
+    const boldFirstSentence=p=>{const m=p.match(/^(.*?[.!?])(\s+)([\s\S]*)$/);return m?`<strong>${esc(m[1])}</strong>${esc(m[2]+m[3])}`:`<strong>${esc(p)}</strong>`;};
+    const execHtml=(String(r.executive_readout||'').split(/\n\s*\n+/).map(p=>p.trim()).filter(Boolean).map(p=>`<p>${boldFirstSentence(p)}</p>`).join(''))||`<p>${executive}</p>`;
     const evidenceStatus=String(r.evidence_status||'approved');
     const statusHtml=evidenceStatus!=='approved'?`<div class="finalized-pad-notice"><div class="fpn-body"><strong>Evidence status:</strong> ${esc(evidenceStatus)}</div></div>`:'';
     const judgments=Array.isArray(r.judgments)?r.judgments:[];
@@ -4628,9 +4631,10 @@
       return 'unclear';};
     const judgmentHtml=judgments.map(j=>{
       const val=esc(String(j.value||'unclear').replaceAll('_',' '));
+      // Combined subheader: bold short title + colon, then the full question in italics.
+      const head=`<span class="cj-title"><strong>${esc(j.title||j.dimension||'Judgment')}:</strong>${j.description?` <em class="cj-q">${esc(j.description)}</em>`:''}</span>`;
       return `<section class="cj cj-${ratingTone(j.value)}" data-climate-dimension="${esc(j.dimension)}">`+
-        `<div class="cj-head"><span class="cj-title">${esc(j.title||j.dimension||'Judgment')}</span><span class="cj-badge">${val}</span></div>`+
-        (j.description?`<p class="cj-desc">${esc(j.description)}</p>`:'')+
+        `<div class="cj-head">${head}<span class="cj-badge">${val}</span></div>`+
         `<p class="cj-rat">${esc(j.rationale||'Evidence remains insufficient for a firmer judgment.')}</p>`+
         (Array.isArray(j.evidence_ids)&&j.evidence_ids.length?`<p class="cj-src">Sources: ${esc(j.evidence_ids.join(', '))}</p>`:'')+
       `</section>`;}).join('');
