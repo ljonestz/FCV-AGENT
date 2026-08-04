@@ -129,3 +129,4 @@ def test_annex_renders_in_html_and_docx():
     text = "\n".join(p.text for p in Document(stream).paragraphs)
     assert "How this analysis was produced" in text
     assert "FCV-Sensitive Climate Action Framework" in text
+    assert "flood-prone fisheries" in text   # resolved evidence-key text in DOCX

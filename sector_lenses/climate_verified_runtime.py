@@ -355,6 +355,10 @@ def run_verified_from_doc_parts(
     normalized = normalize_climate_assessment(assessment)
     reader = build_reader_model(normalized)
     reader_issues = validate_reader_model(reader)
+    # Project the evidence trail from the raw verified assessment (the pipeline's
+    # canonical output with facts/analysis/diagnostics), not `normalized`, so the
+    # trail never depends on the general normalizer's shape. Attached AFTER
+    # validation so it can never affect the reader-integrity gate.
     attach_provenance(reader, assessment)
     if reader_issues:
         detail_suffix = ""
