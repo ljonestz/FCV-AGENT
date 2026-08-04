@@ -571,7 +571,7 @@ def test_manifest_is_privacy_safe_and_scoped_to_the_run():
     )
     assert (
         first["manifest"]["prompt_versions"]["conditional_review"]
-        == "climate-review-v2.4"
+        == "climate-review-v2.5"
     )
     assert (
         first["manifest"]["prompt_versions"]["drafting_compiler"]

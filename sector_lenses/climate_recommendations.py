@@ -341,6 +341,37 @@ def normalize_unsupported_core_precision(
     )
 
 
+def normalize_unsupported_drafting_precision(
+    candidate: CandidateRecommendation,
+) -> tuple[CandidateRecommendation, tuple[str, ...]]:
+    """Remove unsupported digits from drafting while preserving useful prose."""
+
+    changed = False
+    for field_name in (
+        "current_document_drafting",
+        "operational_instrument_drafting",
+    ):
+        block = getattr(candidate, field_name)
+        if block is None:
+            continue
+        unsupported = set(numeric_tokens_in_text(block.text)) - set(
+            candidate.supported_numeric_tokens
+        )
+        if not unsupported:
+            continue
+        cleaned = _without_numeric_tokens(block.text, unsupported)
+        if not cleaned:
+            continue
+        candidate = replace(
+            candidate,
+            **{field_name: replace(block, text=cleaned)},
+        )
+        changed = True
+    if not changed:
+        return candidate, ()
+    return candidate, ("DRAFTING_UNSUPPORTED_PRECISION_REMOVED",)
+
+
 def normalize_unverified_completion_actor(
     candidate: CandidateRecommendation,
     drafting_context: DraftingValidationContext,

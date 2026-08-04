@@ -84,3 +84,12 @@ def test_recommendation_transport_schema_stays_below_complexity_budget() -> None
     assert '"drafting_status": {' not in json.dumps(schema)
     assert len(json.dumps(drafting_schema, separators=(",", ":"))) <= 1_500
     assert json.dumps(drafting_schema).count('"drafting_status": {') == 1
+
+
+def test_semantic_review_schema_allows_only_recommendation_defect_codes() -> None:
+    schema = stage_output_schema("conditional_review")
+    codes = schema["properties"]["reason_codes"]["items"]["enum"]
+
+    assert "ROUTING_SCOPE_UNVERIFIED" in codes
+    assert "INCOMPLETE_OPERATIONALIZATION" not in codes
+    assert "MISSING_CONTINGENCY_PROTOCOL" not in codes

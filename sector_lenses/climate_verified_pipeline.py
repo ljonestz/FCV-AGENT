@@ -43,6 +43,7 @@ from sector_lenses.climate_recommendations import (
     admit_readiness_flags,
     normalize_drafting_blocks,
     numeric_tokens_in_text,
+    normalize_unsupported_drafting_precision,
     normalize_optional_enhancement,
     normalize_unverified_completion_actor,
     normalize_unsupported_core_precision,
@@ -66,6 +67,9 @@ from sector_lenses.climate_verified_contracts import (
     CLIMATE_VERIFIED_SCHEMA_VERSION,
     EpistemicStatus,
 )
+from sector_lenses.climate_verified_schemas import (
+    SEMANTIC_REVIEW_REASON_CODES,
+)
 
 
 PROMPT_VERSIONS = {
@@ -73,7 +77,7 @@ PROMPT_VERSIONS = {
     "bounded_analysis": "climate-analysis-v2.2",
     "judgment_review": "climate-judgments-v2.3",
     "recommendation_compiler": "climate-recommendations-v2.4",
-    "conditional_review": "climate-review-v2.4",
+    "conditional_review": "climate-review-v2.5",
     "drafting_compiler": "climate-drafting-v1.0",
 }
 
@@ -123,6 +127,8 @@ def _bounded_reason_codes(value: object) -> list[str]:
             or not code[0].isalpha()
             or not code.replace("_", "").isalnum()
         ):
+            code = "SEMANTIC_REVIEW_REASON_INVALID"
+        if code not in SEMANTIC_REVIEW_REASON_CODES:
             code = "SEMANTIC_REVIEW_REASON_INVALID"
         if code not in codes:
             codes.append(code)
@@ -892,6 +898,10 @@ def run_verified_climate_pipeline(
         repairs.extend(enhancement_repairs)
         candidate, precision_repairs = normalize_unsupported_core_precision(candidate)
         repairs.extend(precision_repairs)
+        candidate, drafting_precision_repairs = (
+            normalize_unsupported_drafting_precision(candidate)
+        )
+        repairs.extend(drafting_precision_repairs)
         drafting_context = DraftingValidationContext(
             known_ids=frozenset(known_ids),
             guidance_ids=frozenset(item.guidance_id for item in guidance),

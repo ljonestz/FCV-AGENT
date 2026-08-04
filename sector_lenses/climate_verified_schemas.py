@@ -48,6 +48,22 @@ def _strings(description: str = "") -> dict[str, object]:
 
 
 CONFIDENCE = ("high", "medium", "low")
+SEMANTIC_REVIEW_REASON_CODES = (
+    "PROJECT_FACT_UNSUPPORTED",
+    "EXISTING_MITIGATION_MISREPRESENTED",
+    "RESIDUAL_GAP_UNSUPPORTED",
+    "RECOMMENDATION_DISPROPORTIONATE",
+    "ROUTING_SCOPE_UNVERIFIED",
+    "TIMING_UNSUPPORTED",
+    "AUTHORITY_UNSUPPORTED",
+    "DRAFTING_TARGET_UNVERIFIED",
+    "DRAFTING_SCOPE_UNSUPPORTED",
+    "DRAFTING_DUPLICATIVE",
+    "DRAFTING_TECHNICAL_PRECISION_UNSUPPORTED",
+    "UNINTENDED_CONSEQUENCE_UNADDRESSED",
+    "RATING_INCOHERENT",
+    "RECOMMENDATION_DUPLICATIVE",
+)
 
 
 FACT_SCHEMA = _object(
@@ -341,7 +357,13 @@ STAGE_OUTPUT_SCHEMAS: dict[str, dict[str, object]] = {
     "conditional_review": _object(
         {
             "verdict": _enum(("pass", "revise", "block")),
-            "reason_codes": _strings("No more than 12 bounded reason codes."),
+            "reason_codes": {
+                "type": "array",
+                "items": _enum(SEMANTIC_REVIEW_REASON_CODES),
+                "description": (
+                    "No more than 12 recommendation-defect reason codes."
+                ),
+            },
             "object_ids": _strings("No more than 12 affected object IDs."),
         }
     ),

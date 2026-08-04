@@ -7,6 +7,7 @@ from sector_lenses.climate_recommendations import (
     RecommendationScore,
     normalize_drafting_blocks,
     normalize_unverified_completion_actor,
+    normalize_unsupported_drafting_precision,
     validate_recommendation,
 )
 
@@ -339,6 +340,31 @@ def test_unverified_completion_actor_is_generalized_before_validation() -> None:
     )
     assert repairs == ("COMPLETION_EVIDENCE_ACTOR_GENERALIZED",)
     assert "DRAFTING_ACTOR_UNVERIFIED" not in {
+        issue.code
+        for issue in validate_recommendation(
+            normalized,
+            KNOWN_IDS,
+            drafting_context=_context(),
+        )
+
+    }
+
+def test_unsupported_drafting_number_is_removed_without_suppressing_candidate():
+    text = (
+        "Update Component 1.2 language with a proportionate description of "
+        "the supported continuity action and its implementation approach. " * 8
+    )
+    candidate = replace(
+        _candidate(),
+        current_document_drafting=_draft(text=text),
+        supported_numeric_tokens=(),
+    )
+
+    normalized, repairs = normalize_unsupported_drafting_precision(candidate)
+
+    assert "1.2" not in normalized.current_document_drafting.text
+    assert repairs == ("DRAFTING_UNSUPPORTED_PRECISION_REMOVED",)
+    assert "RECOMMENDATION_NUMBER_UNSUPPORTED" not in {
         issue.code
         for issue in validate_recommendation(
             normalized,

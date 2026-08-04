@@ -4,6 +4,10 @@ from __future__ import annotations
 
 import json
 
+from sector_lenses.climate_verified_schemas import (
+    SEMANTIC_REVIEW_REASON_CODES,
+)
+
 
 def _package(payload: dict[str, object]) -> str:
     return json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
@@ -158,12 +162,17 @@ Return: {"drafting_sets":[{"recommendation_id":"REC-001","drafting_blocks":[{"dr
 
 
 def _review_prompt(payload: dict[str, object]) -> str:
+    allowed_reason_codes = ", ".join(SEMANTIC_REVIEW_REASON_CODES)
     return _common(
         """Act as a source-first verifier, not an editor. Check existing mitigation
 before residual gaps; project-fact provenance; country-evidence entitlements;
 recommendation proportionality; instrument scope, timing, and authority; rating
 coherence; duplication; and unintended consequences. Identify defects in the recommendation, not the residual gap it is meant to address. Asking the task team to specify an unresolved indicator, protocol, capacity, or adaptation measure is a valid purpose of a recommendation and is not itself a reason to revise or block. Do not broadly rewrite. For revise or block, object_ids must contain only affected REC- identifiers; do not include gap, fact, response, or pathway IDs.
-Return exactly one object and no other prose: {"verdict":"pass|revise|block","reason_codes":[],"object_ids":[]}. Return at most 12 reason_codes and 12 object_ids. Keep the entire response to 500 words or fewer. Use revise only when one bounded correction could resolve a recommendation defect; otherwise block the affected recommendation.""",
+Use only these defect reason codes: {semantic_reason_codes}.
+Return exactly one object and no other prose: {"verdict":"pass|revise|block","reason_codes":[],"object_ids":[]}. Return at most 12 reason_codes and 12 object_ids. Keep the entire response to 500 words or fewer. Use revise only when one bounded correction could resolve a recommendation defect; otherwise block the affected recommendation.""".replace(
+            "{semantic_reason_codes}",
+            allowed_reason_codes,
+        ),
         payload,
     )
 

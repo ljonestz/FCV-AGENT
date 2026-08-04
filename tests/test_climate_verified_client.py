@@ -57,6 +57,8 @@ def test_every_stage_uses_structured_json_and_evidence_entitlements():
     assert "Use no digits in decision, minimum_action" in prompts["recommendation_compiler"]
     assert "source-first verifier" in prompts["conditional_review"]
     assert "defects in the recommendation" in prompts["conditional_review"]
+    assert "Use only these defect reason codes" in prompts["conditional_review"]
+    assert "ROUTING_SCOPE_UNVERIFIED" in prompts["conditional_review"]
     assert "valid purpose of a recommendation" in prompts["conditional_review"]
     assert "affected REC-" in prompts["conditional_review"]
     assert "at most 12 reason_codes and 12 object_ids" in prompts["conditional_review"]
