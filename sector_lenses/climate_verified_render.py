@@ -265,6 +265,128 @@ def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
     })
 
 
+_METHODOLOGY_NOTE = (
+    "This analysis was produced by a verified pipeline: it extracts atomic "
+    "project facts from the uploaded document, maps how climate and FCV "
+    "pressures interact through evidence-anchored pathways, judges four "
+    "dimensions against that evidence, compiles only recommendations that pass "
+    "deterministic admission tests, and applies a conditional review. Every "
+    "judgement and recommendation is tied to the references listed below."
+)
+
+_ID_TYPE_LABELS = {
+    "PF": "Project fact", "RG": "Residual gap", "ER": "Existing response",
+    "PW": "Climate-FCV pathway", "CE-LIVE": "Live research", "CE": "Context evidence",
+}
+
+
+def _id_type(identifier: str) -> str:
+    if identifier.upper().startswith("CE-LIVE"):
+        return "CE-LIVE"
+    prefix = identifier.split("-", 1)[0].upper()
+    return prefix
+
+
+def _chain_prose(chain: list) -> str:
+    parts = [_text(c) for c in chain if _text(c)]
+    if len(parts) >= 3:
+        return f"{parts[0]}, leading through {parts[1]}, to {parts[2]}."
+    return "; ".join(parts) + ("." if parts else "")
+
+
+def build_evidence_trail(assessment: dict[str, object]) -> dict[str, object]:
+    """Project a plain-language evidence trail from the raw verified assessment.
+
+    Deterministic; resolves only IDs actually cited in judgments/priorities.
+    """
+    analysis = _mapping(assessment.get("analysis"))
+    facts = {_text(f.get("claim_id")): f for f in _records(assessment.get("facts"))}
+    responses = {_text(r.get("response_id")): r
+                 for r in _records(analysis.get("existing_responses"))}
+    gaps = {_text(g.get("gap_id")): g
+            for g in _records(analysis.get("residual_gaps"))}
+    pathways_raw = _records(analysis.get("pathways"))
+    pathways_by_id = {_text(p.get("pathway_id")): p for p in pathways_raw}
+
+    pathways = []
+    for p in pathways_raw:
+        direction = _text(p.get("direction"))
+        label = ("Climate -> FCV" if direction == "climate_to_fcv"
+                 else "FCV -> Climate" if direction == "fcv_to_climate"
+                 else direction or "Pathway")
+        pathways.append({
+            "direction_label": label,
+            "chain_prose": _chain_prose(
+                p.get("chain") if isinstance(p.get("chain"), list) else []
+            ),
+            "anchor_ids": [_text(a) for a in p.get("project_anchor_ids", []) if _text(a)]
+            if isinstance(p.get("project_anchor_ids"), (list, tuple)) else [],
+        })
+
+    cited: list[str] = []
+    judgments = _mapping(assessment.get("judgments"))
+    for value in judgments.values():
+        jm = _mapping(value)
+        eids = jm.get("evidence_ids")
+        if isinstance(eids, (list, tuple)):
+            for eid in eids:
+                if _text(eid):
+                    cited.append(_text(eid))
+    for pr in _records(assessment.get("priorities")):
+        for field in ("project_anchor_ids", "pathway_ids", "existing_response_ids",
+                      "residual_gap_ids", "instrument_claim_ids"):
+            vals = pr.get(field)
+            if isinstance(vals, (list, tuple)):
+                cited.extend(_text(v) for v in vals if _text(v))
+
+    seen: set[str] = set()
+    evidence_key = []
+    for cid in cited:
+        if cid in seen:
+            continue
+        seen.add(cid)
+        t = _id_type(cid)
+        label = _ID_TYPE_LABELS.get(t, "Reference")
+        if cid in facts:
+            f = facts[cid]
+            text = " ".join(
+                x for x in (_text(f.get("subject")), _text(f.get("predicate")),
+                             _text(f.get("object"))) if x
+            ) or _text(f.get("supporting_excerpt"))
+        elif cid in gaps:
+            text = _text(gaps[cid].get("statement"))
+        elif cid in responses:
+            text = _text(responses[cid].get("description"))
+        elif cid in pathways_by_id:
+            text = _chain_prose(
+                pathways_by_id[cid].get("chain")
+                if isinstance(pathways_by_id[cid].get("chain"), list) else []
+            )
+        elif t == "CE-LIVE":
+            text = "Accepted live-research evidence for this run."
+        else:
+            text = "Reference not resolved."
+        evidence_key.append({"id": cid, "type_label": label, "text": text})
+
+    diag = _mapping(assessment.get("recommendation_diagnostics"))
+    manifest = _mapping(assessment.get("manifest"))
+    diagnostics = {
+        "candidate_count": diag.get("raw_candidate_count", 0),
+        "admitted_count": diag.get("admitted_count", 0),
+        "final_count": diag.get("final_priority_count", 0),
+        "reviewer_verdict": _text(diag.get("reviewer_verdict")) or "not_invoked",
+        "live_research_count": manifest.get("live_research_count", 0),
+        "bank_release": _text(assessment.get("bank_release_id")),
+        "evidence_status": _text(assessment.get("evidence_status")),
+    }
+    return {
+        "methodology_note": _METHODOLOGY_NOTE,
+        "pathways": pathways,
+        "evidence_key": evidence_key,
+        "diagnostics": diagnostics,
+    }
+
+
 def _all_strings(value: object):
     if isinstance(value, str):
         yield value
