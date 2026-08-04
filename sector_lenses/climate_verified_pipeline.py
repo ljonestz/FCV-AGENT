@@ -36,8 +36,10 @@ from sector_lenses.climate_recommendations import (
     CandidateRecommendation,
     DraftingBlock,
     DraftingValidationContext,
+    READINESS_CATEGORIES,
     RecommendationScore,
     ReviewReadinessFlag,
+    _normalized_sentence,
     admit_and_rank,
     admission_failure_codes,
     admit_readiness_flags,
@@ -501,6 +503,57 @@ def _readiness_flag(record: dict[str, object]) -> ReviewReadinessFlag:
     )
 
 
+def _integrity_readiness_flags(
+    fact_payload: dict[str, object],
+    known_block_ids: set[str],
+) -> list[ReviewReadinessFlag]:
+    """Convert fact-stage document-integrity findings to readiness flags.
+
+    Kept only when the category is valid and every document_basis_id is a real
+    source block; this is the deterministic, source-linked path that guarantees
+    genuine defects surface even when the recommendation stage emits none.
+    """
+    kept: list[ReviewReadinessFlag] = []
+    for record in _records(fact_payload, "document_integrity_findings"):
+        try:
+            flag = _readiness_flag(record)
+        except (TypeError, ValueError):
+            continue
+        if flag.category not in READINESS_CATEGORIES:
+            continue
+        if not flag.document_basis_ids:
+            continue
+        if set(flag.document_basis_ids) - known_block_ids:
+            continue
+        kept.append(flag)
+    return kept
+
+
+def _merge_readiness_flags(
+    integrity: list[ReviewReadinessFlag],
+    model: tuple[ReviewReadinessFlag, ...],
+    *,
+    cap: int = 4,
+) -> tuple[ReviewReadinessFlag, ...]:
+    """Merge deterministic integrity findings ahead of model flags.
+
+    Integrity findings take priority (they are the confirm-before-gate items),
+    duplicates are collapsed by (category, normalised flag text), and the total
+    is capped to preserve the existing "no more than four" reader contract.
+    """
+    merged: list[ReviewReadinessFlag] = []
+    seen: set[tuple[str, str]] = set()
+    for flag in [*integrity, *model]:
+        key = (flag.category, _normalized_sentence(flag.flag))
+        if key in seen:
+            continue
+        seen.add(key)
+        merged.append(flag)
+        if len(merged) == cap:
+            break
+    return tuple(merged)
+
+
 def _bounded_pathways(
     pathways: list[ClimatePathway],
 ) -> tuple[list[ClimatePathway], int]:
@@ -635,6 +688,7 @@ def run_verified_climate_pipeline(
     document_records = [_as_record(item) for item in source_documents]
     block_records = [_as_record(item) for item in source_blocks]
     context_records = [_as_record(item) for item in context_evidence]
+    known_block_ids = {block.block_id for block in source_blocks}
 
     fact_payload = _call(
         clients.assessment,
@@ -1012,7 +1066,7 @@ def run_verified_climate_pipeline(
             flags.append(_readiness_flag(record))
         except (TypeError, ValueError):
             reasons.append("READINESS_FLAG_MALFORMED")
-    readiness = admit_readiness_flags(
+    model_readiness = admit_readiness_flags(
         flags,
         fact_ids,
         {item.statement for item in gaps},
@@ -1021,7 +1075,11 @@ def run_verified_climate_pipeline(
             gap_id for item in priorities for gap_id in item.residual_gap_ids
         },
     )
-    suppressed["readiness_flags"] += len(raw_flags) - len(readiness)
+    integrity_flags = _integrity_readiness_flags(fact_payload, known_block_ids)
+    readiness = _merge_readiness_flags(integrity_flags, model_readiness, cap=4)
+    suppressed["readiness_flags"] += (
+        len(raw_flags) + len(integrity_flags) - len(readiness)
+    )
 
     review_status = "passed"
     reviewer_invoked = False

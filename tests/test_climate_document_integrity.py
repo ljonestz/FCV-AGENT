@@ -38,3 +38,53 @@ def test_fact_prompt_requests_generic_document_integrity_scan():
     # It must stay inside the document (no external inference) and be source-linked.
     assert "do not infer" in lowered or "not infer" in lowered
     assert "document_basis_ids" in prompt
+
+
+from sector_lenses.climate_recommendations import ReviewReadinessFlag
+from sector_lenses.climate_verified_pipeline import (
+    _integrity_readiness_flags,
+    _merge_readiness_flags,
+)
+
+
+def _finding(flag_id, category, flag, block_id):
+    return {
+        "flag_id": flag_id,
+        "category": category,
+        "flag": flag,
+        "why_it_matters": "A reviewer will question this at the gate.",
+        "document_basis_ids": [block_id],
+        "suggested_verification": "Confirm against the source document.",
+        "residual_gap_ids": [],
+    }
+
+
+def test_integrity_findings_require_a_known_block_and_valid_category():
+    payload = {
+        "document_integrity_findings": [
+            _finding("DIF-1", "document_inconsistency", "Totals disagree.", "B-1"),
+            _finding("DIF-2", "material_placeholder", "Placeholder left.", "B-UNKNOWN"),
+            _finding("DIF-3", "not_a_category", "Bad category.", "B-1"),
+        ]
+    }
+    flags = _integrity_readiness_flags(payload, {"B-1", "B-2"})
+    kept = {f.flag_id for f in flags}
+    assert kept == {"DIF-1"}  # unknown block and bad category dropped
+
+
+def test_merge_prioritises_integrity_findings_dedupes_and_caps():
+    integrity = [
+        ReviewReadinessFlag("DIF-1", "document_inconsistency", "Totals disagree.",
+                            "why", ("B-1",), "verify", ()),
+    ]
+    model = [
+        ReviewReadinessFlag("RF-1", "document_inconsistency", "totals disagree",
+                            "why", ("PF-1",), "verify", ()),  # dupe of DIF-1 by text+category
+        ReviewReadinessFlag("RF-2", "unresolved_indicator", "Indicator blank.",
+                            "why", ("PF-2",), "verify", ()),
+    ]
+    merged = _merge_readiness_flags(integrity, model, cap=4)
+    ids = [f.flag_id for f in merged]
+    assert ids[0] == "DIF-1"          # integrity first
+    assert "RF-1" not in ids          # deduped against DIF-1
+    assert "RF-2" in ids              # distinct model flag retained
