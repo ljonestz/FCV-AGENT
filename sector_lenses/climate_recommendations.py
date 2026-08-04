@@ -410,6 +410,53 @@ def normalize_unverified_completion_actor(
     )
 
 
+def normalize_recommendation_references(
+    candidate: CandidateRecommendation,
+    known_ids: set[str],
+) -> tuple[CandidateRecommendation, tuple[str, ...]]:
+    """Strip references to unknown IDs so a single stray reference does not
+    suppress an otherwise-grounded recommendation.
+
+    Essential grounding gates are downgraded when stripping removes the last
+    supporting reference: residuality when no residual-gap reference survives,
+    and connection when neither a pathway nor an existing-response reference
+    survives. An ungrounded recommendation therefore still fails admission
+    rather than being admitted on a hollow claim."""
+
+    repairs: list[str] = []
+
+    def _filter(ids: tuple[str, ...]) -> tuple[str, ...]:
+        kept = tuple(identifier for identifier in ids if identifier in known_ids)
+        if len(kept) != len(ids):
+            repairs.append("stripped")
+        return kept
+
+    pathway = _filter(candidate.pathway_ids)
+    responses = _filter(candidate.existing_response_ids)
+    gaps = _filter(candidate.residual_gap_ids)
+    anchors = _filter(candidate.project_anchor_ids)
+    instruments = _filter(candidate.instrument_claim_ids)
+    if not repairs:
+        return candidate, ()
+
+    gate_results = dict(candidate.gate_results)
+    if not gaps:
+        gate_results["residuality"] = False
+    if not pathway and not responses:
+        gate_results["connection"] = False
+
+    repaired = replace(
+        candidate,
+        pathway_ids=pathway,
+        existing_response_ids=responses,
+        residual_gap_ids=gaps,
+        project_anchor_ids=anchors,
+        instrument_claim_ids=instruments,
+        gate_results=gate_results,
+    )
+    return repaired, ("RECOMMENDATION_INVALID_REFS_STRIPPED",)
+
+
 def validate_recommendation(
     candidate: CandidateRecommendation,
     known_ids: set[str],

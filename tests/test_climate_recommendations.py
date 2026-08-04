@@ -8,6 +8,7 @@ from sector_lenses.climate_recommendations import (
     admit_and_rank,
     admit_readiness_flags,
     normalize_optional_enhancement,
+    normalize_recommendation_references,
     validate_recommendation,
     normalize_unsupported_core_precision,
 )
@@ -26,6 +27,41 @@ def _draft(text: str = "Add proportionate continuity language to this section.")
     )
 
 
+
+
+def test_normalize_references_strips_stray_invalid_ref_and_survives():
+    # A single hallucinated reference should be stripped, not suppress the
+    # whole recommendation. The valid grounding (gap + response) remains, so
+    # RECOMMENDATION_REF_INVALID no longer fires.
+    candidate = replace(
+        _candidate("REC-01"),
+        instrument_claim_ids=("PF-010", "PF-999"),  # PF-999 not in KNOWN_IDS
+    )
+    repaired, repairs = normalize_recommendation_references(candidate, KNOWN_IDS)
+    assert repairs == ("RECOMMENDATION_INVALID_REFS_STRIPPED",)
+    assert repaired.instrument_claim_ids == ("PF-010",)
+    assert repaired.residual_gap_ids == ("RG-001",)
+    assert repaired.gate_results["residuality"] is True
+    codes = {issue.code for issue in validate_recommendation(repaired, KNOWN_IDS)}
+    assert "RECOMMENDATION_REF_INVALID" not in codes
+
+
+def test_normalize_references_downgrades_gate_when_grounding_lost():
+    # If every residual-gap reference is invalid, stripping leaves the
+    # recommendation ungrounded; the residuality gate is downgraded so it
+    # still fails admission rather than being admitted on a hollow claim.
+    candidate = replace(_candidate("REC-02"), residual_gap_ids=("RG-999",))
+    repaired, repairs = normalize_recommendation_references(candidate, KNOWN_IDS)
+    assert repairs == ("RECOMMENDATION_INVALID_REFS_STRIPPED",)
+    assert repaired.residual_gap_ids == ()
+    assert repaired.gate_results["residuality"] is False
+
+
+def test_normalize_references_noop_when_all_valid():
+    candidate = _candidate("REC-03")
+    repaired, repairs = normalize_recommendation_references(candidate, KNOWN_IDS)
+    assert repairs == ()
+    assert repaired is candidate
 
 
 def _candidate(

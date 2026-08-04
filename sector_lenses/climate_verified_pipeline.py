@@ -45,6 +45,7 @@ from sector_lenses.climate_recommendations import (
     numeric_tokens_in_text,
     normalize_unsupported_drafting_precision,
     normalize_optional_enhancement,
+    normalize_recommendation_references,
     normalize_unverified_completion_actor,
     normalize_unsupported_core_precision,
     unsupported_numeric_tokens,
@@ -927,6 +928,10 @@ def run_verified_climate_pipeline(
             drafting_context=drafting_context,
         )
         repairs.extend(evidence_repairs)
+        candidate, ref_repairs = normalize_recommendation_references(
+            candidate, known_ids
+        )
+        repairs.extend(ref_repairs)
         for token in unsupported_numeric_tokens(candidate):
             if token not in unsupported_numbers and len(unsupported_numbers) < 12:
                 unsupported_numbers.append(token)
