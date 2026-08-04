@@ -293,6 +293,14 @@ STAGE_OUTPUT_SCHEMAS: dict[str, dict[str, object]] = {
                 "items": ASSERTION_SCHEMA,
                 "description": "Only essential derived assertions.",
             },
+            "document_integrity_findings": {
+                "type": "array",
+                "items": READINESS_SCHEMA,
+                "description": (
+                    "Verifiable defects in the uploaded document itself; "
+                    "empty array when none are present."
+                ),
+            },
         }
     ),
     "bounded_analysis": _object(
