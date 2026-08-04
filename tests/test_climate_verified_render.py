@@ -159,6 +159,27 @@ def test_judgment_evidence_ids_render_from_tuple_and_list():
     assert by_dimension["sensitivity"]["evidence_ids"] == ["PF-002"]
 
 
+def test_priority_narrative_renders_in_reader_html_and_docx():
+    assessment = _assessment()
+    assessment["priorities"][0]["narrative"] = (
+        "First paragraph tells the story of the gap and what to do.\n\n"
+        "Second paragraph covers who leads it and what done looks like."
+    )
+    model = build_reader_model(assessment)
+    assert model["priorities"][0]["narrative"].startswith("First paragraph")
+
+    html = render_reader_html(model)
+    assert "First paragraph tells the story of the gap" in html
+    assert "Second paragraph covers who leads it" in html
+
+    buffer = BytesIO()
+    write_reader_docx(model, buffer)
+    buffer.seek(0)
+    text = "\n".join(p.text for p in Document(buffer).paragraphs)
+    assert "First paragraph tells the story of the gap" in text
+    assert "Second paragraph covers who leads it" in text
+
+
 def test_priority_summary_count_must_match_final_priorities():
     model = build_reader_model(_assessment())
     model["priority_summary"]["count"] = 2

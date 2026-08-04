@@ -431,6 +431,12 @@ def render_reader_html(model: dict[str, object]) -> str:
         parts.append(
             _heading(3, f"{rank}. {_text(priority.get('title'))} ({identifier})")
         )
+        narrative = _text(priority.get("narrative"))
+        if narrative:
+            for para in re.split(r"\n\s*\n+", narrative.strip()):
+                para = para.strip()
+                if para:
+                    parts.append(f"<p>{html.escape(para)}</p>")
         for label, key in PRIORITY_FIELDS:
             value = _field_text(priority.get(key))
             if value:
@@ -545,6 +551,12 @@ def write_reader_docx(model: dict[str, object], path: str | Path) -> Path:
             f"{rank}. {_text(priority.get('title'))} ({identifier})",
             level=2,
         )
+        narrative = _text(priority.get("narrative"))
+        if narrative:
+            for para in re.split(r"\n\s*\n+", narrative.strip()):
+                para = para.strip()
+                if para:
+                    document.add_paragraph(para)
         for label, key in PRIORITY_FIELDS:
             _docx_field(document, label, priority.get(key))
             if key == "minimum_action":

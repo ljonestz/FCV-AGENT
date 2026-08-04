@@ -236,6 +236,10 @@ CANDIDATE_SCHEMA = _object(
         "confidence": _enum(CONFIDENCE),
         "limitation": _string("45 words or fewer."),
         "caution": _string("45 words or fewer."),
+        "narrative": _string(
+            "Two or three short plain-prose paragraphs telling the story; "
+            "no new claims or digits."
+        ),
         "supported_numeric_tokens": _strings(),
         "score": SCORE_SCHEMA,
         "gate_results": GATE_SCHEMA,

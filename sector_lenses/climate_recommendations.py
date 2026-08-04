@@ -194,6 +194,7 @@ class CandidateRecommendation:
     gate_results: dict[str, bool]
     rank: int | None = None
     supported_numeric_tokens: tuple[str, ...] = ()
+    narrative: str = ""
 
 
 @dataclass(frozen=True)

@@ -373,6 +373,7 @@ def _candidate(record: dict[str, object]) -> CandidateRecommendation:
             for key, value in _mapping(record.get("gate_results")).items()
         },
         supported_numeric_tokens=_strings(record.get("supported_numeric_tokens")),
+        narrative=_text(record.get("narrative")),
     )
 
 
