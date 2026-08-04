@@ -2414,9 +2414,11 @@ def test_verified_climate_ui_contract_is_ranked_and_multidimensional():
     assert "semantic_reviewer_verdict" in body
     assert "current_document_drafting" in body
     assert "operational_instrument_drafting" in body
-    assert "Current document drafting" in body
-    assert "Operational instrument drafting" in body
-    assert "Guidance basis" in body
+    assert "Suggested drafting for the current document" in body
+    assert "Suggested drafting for an operational instrument" in body
+    # Internal routing/coded-reference fields are demoted into a collapsible
+    # "Evidence & routing detail" rather than shown front-and-centre.
+    assert "Evidence &amp; routing detail" in body
     assert "priority_summary" in body
     assert "live_research_count" in body
     assert "drafting_language" not in body
