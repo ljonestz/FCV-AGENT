@@ -325,6 +325,37 @@ def test_normalization_drops_optional_block_with_mismatched_instrument_target():
     assert "DRAFTING_OPTIONAL_UNVERIFIED_DROPPED" in repairs
 
 
+def test_standard_nomenclature_is_advisory_not_blocking() -> None:
+    # Referencing standard WBG instruments, process milestones, and mandatory
+    # phrasing is recorded for the annex but must NOT suppress an otherwise
+    # grounded recommendation (only blocking issues suppress).
+    candidate = replace(
+        _candidate(),
+        minimum_action="Update the Security Risk Management Plan before appraisal.",
+        current_document_drafting=_draft(
+            text=(
+                "The borrower must maintain continuity. "
+                + ("Draft language " * 40)
+                + "complete."
+            ),
+        ),
+    )
+
+    issues = validate_recommendation(
+        candidate, KNOWN_IDS, drafting_context=_context()
+    )
+    by_code = {issue.code: issue for issue in issues}
+    for code in (
+        "DRAFTING_INSTRUMENT_UNVERIFIED",
+        "DRAFTING_TIMING_UNVERIFIED",
+        "MANDATORY_AUTHORITY_UNVERIFIED",
+    ):
+        assert code in by_code, f"{code} should still be emitted for the annex"
+        assert by_code[code].blocking is False, f"{code} must be advisory"
+    # With only advisory issues, there are no blocking issues -> admitted.
+    assert [issue for issue in issues if issue.blocking] == []
+
+
 def test_unverified_drafting_actor_is_generalized_before_validation() -> None:
     candidate = replace(
         _candidate(),

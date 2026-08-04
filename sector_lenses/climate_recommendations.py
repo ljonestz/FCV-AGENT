@@ -211,12 +211,14 @@ def _issue(
     code: str,
     message: str,
     candidate: CandidateRecommendation,
+    *,
+    blocking: bool = True,
 ) -> ValidationIssue:
     return ValidationIssue(
         code=code,
         message=message,
         object_id=candidate.recommendation_id,
-        blocking=True,
+        blocking=blocking,
     )
 
 
@@ -677,11 +679,17 @@ def validate_recommendation(
             phrase in operational_text and phrase not in linked_fact_text
             for phrase in named_instruments
         ):
+            # Advisory only: these five are standard WBG instrument names, not
+            # project-specific fabrications. Referencing them in suggested
+            # drafting is legitimate FCV practice, so the flag is recorded for
+            # the technical annex but does not suppress the recommendation.
             issues.append(
                 _issue(
                     "DRAFTING_INSTRUMENT_UNVERIFIED",
-                    f"{candidate.recommendation_id} invents an instrument claim.",
+                    f"{candidate.recommendation_id} references a standard "
+                    "instrument not tied to a project fact.",
                     candidate,
+                    blocking=False,
                 )
             )
         if (
@@ -705,11 +713,16 @@ def validate_recommendation(
                 linked_fact_text,
             )
         ):
+            # Advisory only: appraisal/Board/effectiveness are standard WBG
+            # process milestones, so naming them in suggested drafting is
+            # recorded but does not suppress the recommendation.
             issues.append(
                 _issue(
                     "DRAFTING_TIMING_UNVERIFIED",
-                    f"{candidate.recommendation_id} invents a formal timing claim.",
+                    f"{candidate.recommendation_id} names a standard process "
+                    "milestone not tied to a project fact.",
                     candidate,
+                    blocking=False,
                 )
             )
         if (
@@ -793,6 +806,9 @@ def validate_recommendation(
         and candidate.authority_basis
         not in {"project_commitment", "policy", "directive", "procedure"}
     ):
+        # Advisory only: mandatory phrasing without a verified authority basis
+        # is flagged for the annex (so the TTL softens it) but does not suppress
+        # the recommendation.
         issues.append(
             _issue(
                 "MANDATORY_AUTHORITY_UNVERIFIED",
@@ -801,6 +817,7 @@ def validate_recommendation(
                     "without verified authority."
                 ),
                 candidate,
+                blocking=False,
             )
         )
     if candidate.completion_evidence_status not in COMPLETION_EVIDENCE_STATUSES:

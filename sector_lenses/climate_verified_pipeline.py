@@ -944,17 +944,26 @@ def run_verified_climate_pipeline(
         issues = validate_recommendation(
             candidate, known_ids, drafting_context=drafting_context
         )
-        if issues:
+        # Only blocking issues suppress a recommendation. Advisory issues
+        # (e.g. references to standard WBG instruments, process milestones, or
+        # mandatory phrasing) are recorded for the technical annex but do not
+        # drop an otherwise-grounded recommendation.
+        blocking_issues = [issue for issue in issues if issue.blocking]
+        if blocking_issues:
             suppressed["recommendations"] += 1
-            reasons.extend(issue.code for issue in issues)
-            recommendation_reasons.extend(issue.code for issue in issues)
+            reasons.extend(issue.code for issue in blocking_issues)
+            recommendation_reasons.extend(
+                issue.code for issue in blocking_issues
+            )
             if len(candidate_suppressions) < 3:
                 candidate_suppressions.append(
                     {
                         "recommendation_id": candidate.recommendation_id,
                         "stage": "validation",
                         "reason_codes": list(
-                            dict.fromkeys(issue.code for issue in issues)
+                            dict.fromkeys(
+                                issue.code for issue in blocking_issues
+                            )
                         )[:12],
                         "unsupported_numeric_fields": (
                             _unsupported_numeric_fields(candidate)
@@ -963,7 +972,7 @@ def run_verified_climate_pipeline(
                 )
                 precision_fields = _unsupported_precision_fields(
                     candidate,
-                    {issue.code for issue in issues},
+                    {issue.code for issue in blocking_issues},
                 )
                 if precision_fields:
                     candidate_suppressions[-1][
