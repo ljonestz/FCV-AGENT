@@ -13,10 +13,30 @@ from sector_lenses.climate_judgments import ALLOWED
 
 
 DIMENSIONS = (
-    ("relevance", "Climate-FCV relevance"),
-    ("sensitivity", "FCV sensitivity"),
-    ("responsiveness", "FCV responsiveness"),
-    ("operationalization", "Operationalization"),
+    (
+        "relevance",
+        "Climate-FCV relevance",
+        "How strongly do climate and FCV pressures intersect in this "
+        "project's context and objectives?",
+    ),
+    (
+        "sensitivity",
+        "Climate & FCV sensitivity",
+        "Is the project designed to recognise and avoid worsening climate- "
+        "and FCV-related risks (do no harm)?",
+    ),
+    (
+        "responsiveness",
+        "Climate & FCV responsiveness",
+        "Does the project actively build climate resilience and address the "
+        "drivers of fragility, conflict, and violence?",
+    ),
+    (
+        "operationalization",
+        "From intent to delivery (operationalization)",
+        "Are these intentions turned into concrete requirements, roles, "
+        "indicators, and triggers the team can act on?",
+    ),
 )
 NO_RECOMMENDATION_MESSAGE = (
     "No recommendation passed the admission threshold for this run."
@@ -138,11 +158,12 @@ def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
 
     raw_judgments = _mapping(assessment.get("judgments"))
     judgments = []
-    for key, title in DIMENSIONS:
+    for key, title, description in DIMENSIONS:
         judgment = _mapping(raw_judgments.get(key))
         judgments.append({
             "dimension": key,
             "title": title,
+            "description": description,
             "value": _text(judgment.get("value")),
             "rationale": _text(judgment.get("rationale")),
             "evidence_ids": [
@@ -236,7 +257,7 @@ def validate_reader_model(model: dict[str, object]) -> tuple[str, ...]:
 
     judgments = _records(model.get("judgments"))
     if [item.get("dimension") for item in judgments] != [
-        key for key, _ in DIMENSIONS
+        key for key, _, _ in DIMENSIONS
     ]:
         issues.append("JUDGMENT_DIMENSIONS_INCOMPLETE")
     for judgment in judgments:
@@ -369,6 +390,13 @@ def render_reader_html(model: dict[str, object]) -> str:
             + '">'
         )
         parts.append(_heading(3, _text(judgment.get("title"))))
+        description = _text(judgment.get("description"))
+        if description:
+            parts.append(
+                '<p class="climate-judgment-desc"><em>'
+                + html.escape(description)
+                + "</em></p>"
+            )
         parts.append(
             "<p><strong>"
             + html.escape(_text(judgment.get("value")).replace("_", " ").title())
@@ -492,6 +520,11 @@ def write_reader_docx(model: dict[str, object], path: str | Path) -> Path:
     document.add_heading(HEADINGS[1], level=1)
     for judgment in _records(model.get("judgments")):
         document.add_heading(_text(judgment.get("title")), level=2)
+        description = _text(judgment.get("description"))
+        if description:
+            paragraph = document.add_paragraph(description)
+            if paragraph.runs:
+                paragraph.runs[0].italic = True
         _docx_field(document, "Judgment", judgment.get("value"))
         _docx_field(document, "Rationale", judgment.get("rationale"))
         _docx_field(

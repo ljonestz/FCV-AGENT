@@ -4579,6 +4579,7 @@
     const judgments=Array.isArray(r.judgments)?r.judgments:[];
     const judgmentHtml=judgments.map(j=>`<section class="climate-judgment" data-climate-dimension="${esc(j.dimension)}">
       <h3>${esc(j.title||j.dimension||'Judgment')}</h3>
+      ${j.description?`<p class="climate-judgment-desc" style="color:#4b5563;font-style:italic;margin:2px 0 6px">${esc(j.description)}</p>`:''}
       <p><strong>${esc(String(j.value||'unclear').replaceAll('_',' '))}:</strong> ${esc(j.rationale||'Evidence remains insufficient for a firmer judgment.')}</p>
       ${Array.isArray(j.evidence_ids)&&j.evidence_ids.length?`<p><strong>Evidence references:</strong> ${esc(j.evidence_ids.join(', '))}</p>`:''}
     </section>`).join('');
