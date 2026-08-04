@@ -89,6 +89,39 @@ _BARE_PLACEHOLDER = re.compile(
 )
 
 
+def _scrub_placeholder_text(text: str) -> str:
+    """Strip model-emitted placeholder cues from a single reader string.
+
+    A single stray '[insert ...]'/'[tbd]'/bare 'tbd'/'todo' from the model must
+    not hard-fail an entire (paid) run at the reader-integrity gate. Remove the
+    cue and keep the surrounding prose, mirroring the deterministic
+    vocabulary-scrub pattern used elsewhere in the app. Genuinely structural
+    problems (empty required fields, truncation) still surface downstream.
+    """
+    if not text:
+        return text
+    cleaned = _PLACEHOLDER.sub("", text)
+    if _BARE_PLACEHOLDER.fullmatch(cleaned.strip()):
+        cleaned = ""
+    cleaned = re.sub(r"\(\s*\)", "", cleaned)            # empty parens left behind
+    cleaned = re.sub(r"[ \t]+([.,;:!?])", r"\1", cleaned)  # space before punctuation
+    cleaned = re.sub(r"[ \t]{2,}", " ", cleaned)          # collapse space runs (keep newlines)
+    return cleaned.strip()
+
+
+def _scrub_placeholders(value: object) -> object:
+    """Recursively scrub placeholder cues from every string leaf in a reader."""
+    if isinstance(value, str):
+        return _scrub_placeholder_text(value)
+    if isinstance(value, dict):
+        return {key: _scrub_placeholders(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_scrub_placeholders(item) for item in value]
+    if isinstance(value, tuple):
+        return tuple(_scrub_placeholders(item) for item in value)
+    return value
+
+
 def _mapping(value: object) -> dict[str, Any]:
     return value if isinstance(value, dict) else {}
 
@@ -183,7 +216,7 @@ def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
     executive = _text(assessment.get("executive_readout")) or _text(
         assessment.get("judgment_summary")
     )
-    return {
+    return _scrub_placeholders({
         "executive_readout": executive,
         "judgments": judgments,
         "priorities": [dict(item) for item in priorities],
@@ -229,7 +262,7 @@ def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
             )[:3],
         },
         "advisory_notice": ADVISORY_NOTICE,
-    }
+    })
 
 
 def _all_strings(value: object):
