@@ -142,6 +142,19 @@ ask the task team to confirm routing. Credit existing mitigation before defining
 the residual improvement. Minimum action must be proportionate. Enhanced action
 requires a specific activation condition.
 
+When the verified fact registry contains location or named-entity facts relevant
+to a recommendation's target, name the specific site(s) or entity from the
+registry rather than a generic placeholder such as "each location" or "the
+relevant sites"; when no such fact exists, keep the general phrasing. In the
+narrative, and only when a corresponding milestone fact was extracted, refer to
+the relevant preparation milestone by name (for example the concept or decision
+review, appraisal, negotiations, board, or effectiveness, or the applicable
+new-model equivalent) rather than by any date; never introduce a date. Add one
+short clause on the review risk - what a reviewer would raise at the next gate if
+the item is left unaddressed - framed as analytical judgement. Make clear in plain
+language whether the item is mainly a do-no-harm (sensitivity) concern or one that
+strengthens responsiveness. Add no digits and no new claims.
+
 Do not invent dates, thresholds, actors, instruments, systems, formal requirements,
 or completion evidence. Use no digits in decision, minimum_action,
 enhanced_action, enhanced_activation, or completion_evidence; express supported
