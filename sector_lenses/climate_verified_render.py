@@ -502,6 +502,10 @@ def render_reader_html(model: dict[str, object]) -> str:
     parts.append("<details><summary>")
     parts.append(html.escape(HEADINGS[3]))
     parts.append("</summary>")
+    parts.append(
+        "<p>Confirm these before the decision meeting; they are document items to resolve,"
+        " distinct from the design recommendations above.</p>"
+    )
     for flag in _records(model.get("review_readiness_flags")):
         parts.append(_heading(3, _text(flag.get("flag"))))
         parts.append(
@@ -624,6 +628,10 @@ def write_reader_docx(model: dict[str, object], path: str | Path) -> Path:
                 )
 
     document.add_heading(HEADINGS[3], level=1)
+    document.add_paragraph(
+        "Confirm these before the decision meeting; they are document items to resolve,"
+        " distinct from the design recommendations above."
+    )
     for flag in _records(model.get("review_readiness_flags")):
         document.add_heading(_text(flag.get("flag")), level=2)
         _docx_field(document, "Why it matters", flag.get("why_it_matters"))

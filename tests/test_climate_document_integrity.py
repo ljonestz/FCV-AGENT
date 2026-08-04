@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import json
+from io import BytesIO
+
+from docx import Document
 
 from sector_lenses.climate_recommendations import ReviewReadinessFlag
 from sector_lenses.climate_verified_pipeline import (
@@ -8,10 +11,16 @@ from sector_lenses.climate_verified_pipeline import (
     _merge_readiness_flags,
 )
 from sector_lenses.climate_verified_prompts import build_verified_stage_prompt
+from sector_lenses.climate_verified_render import (
+    build_reader_model,
+    render_reader_html,
+    write_reader_docx,
+)
 from sector_lenses.climate_verified_schemas import (
     READINESS_SCHEMA,
     stage_output_schema,
 )
+from tests.test_climate_verified_render import _assessment
 
 
 def test_fact_extraction_schema_exposes_document_integrity_findings():
@@ -98,3 +107,17 @@ def test_integrity_flags_drop_residual_gap_references():
     flags = _integrity_readiness_flags(payload, {"B-1"})
     assert len(flags) == 1
     assert flags[0].residual_gap_ids == ()
+
+
+INTRO = "Confirm these before the decision meeting"
+
+
+def test_points_to_check_intro_present_in_html_and_docx():
+    model = build_reader_model(_assessment())
+    html = render_reader_html(model)
+    assert INTRO in html
+    stream = BytesIO()
+    write_reader_docx(model, stream)
+    stream.seek(0)
+    text = "\n".join(p.text for p in Document(stream).paragraphs)
+    assert INTRO in text
