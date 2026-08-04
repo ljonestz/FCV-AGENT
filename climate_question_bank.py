@@ -90,6 +90,26 @@ BANK_SOURCE_HEADLINE = (
     "the Defueling Conflict (peace and social dividends) series",
 )
 
+# Core WBG climate-FCV literature the lens draws on. url is a canonical public
+# WBG URL only where verified; None (name-only) otherwise. NEVER put an
+# unverified URL here.
+CLIMATE_LITERATURE_REFERENCES: list[dict[str, object]] = [
+    {
+        "title": "Maximizing the Peace and Social Dividends of Climate Action",
+        "url": "https://www.worldbank.org/en/topic/fragilityconflictviolence/publication/maximizing-the-peace-and-social-dividends-of-climate-action",
+    },
+    {
+        "title": "FCV-Sensitive Climate Action Framework",
+        "url": "https://www.worldbank.org/en/topic/fragilityconflictviolence/publication/framework-for-promoting-fcv-sensitive-climate-action",
+    },
+    {
+        "title": "Defueling Conflict",
+        "url": "https://www.worldbank.org/en/topic/environment/publication/defueling-conflict-environment-and-natural-resource-management-as-a-pathway-to-peace",
+    },
+    {"title": "Conflict-Sensitive Climate Action Compendium", "url": None},
+    {"title": "CCDR guidance note", "url": None},
+]
+
 
 _SIGNAL_TOKEN = re.compile(r"[a-z0-9]+(?:&[a-z0-9]+)*")
 _REVIEWED_TRIGGER_VARIANTS = {
