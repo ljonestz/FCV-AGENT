@@ -14,3 +14,10 @@ def test_recommendation_prompt_requires_site_instantiation_and_ttl_framing():
     assert "review" in lowered and ("would raise" in lowered or "flag at" in lowered)
     # Sensitivity vs responsiveness framing per recommendation.
     assert "sensitivity" in lowered and "responsiveness" in lowered
+
+
+def test_judgment_prompt_guards_against_false_formal_rating():
+    prompt = build_verified_stage_prompt("judgment_review", {})
+    lowered = prompt.lower()
+    assert "formally rated" in lowered
+    assert "not a" in lowered and "rating category" in lowered

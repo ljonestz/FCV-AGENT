@@ -122,6 +122,10 @@ each covering one clear theme, so a reader can scan the key takeaways.
 Write each judgment rationale as three to five plain-language sentences (roughly
 60-110 words) that a non-specialist can follow; avoid abrupt one-line fragments,
 and explain the reasoning rather than just stating a verdict.
+Do not describe a dimension as formally rated unless it is an actual rating
+category in the document; if a dimension (for example climate risk) is stated
+only in narrative and is not a rating category, describe it as narrative-stated
+rather than formally rated.
 
 Return: {"executive_readout":"...","relevance":{"value":"high|medium|low|unclear","evidence_ids":[],"rationale":"..."},"sensitivity":{"value":"strong|moderate|limited|unclear","evidence_ids":[],"rationale":"..."},"responsiveness":{"value":"strong|emerging|limited|not_expected|unclear","evidence_ids":[],"rationale":"..."},"operationalization":{"value":"embedded|partial|early|not_evidenced|unclear","evidence_ids":[],"rationale":"..."}}.""",
         payload,
