@@ -373,7 +373,10 @@ def render_reader_html(model: dict[str, object]) -> str:
             + "</p>"
         )
     parts.append(_heading(2, HEADINGS[0]))
-    parts.append(f"<p>{html.escape(_text(model.get('executive_readout')))}</p>")
+    for _exec_para in re.split(r"\n\s*\n+", _text(model.get("executive_readout")).strip()):
+        _exec_para = _exec_para.strip()
+        if _exec_para:
+            parts.append(f"<p>{html.escape(_exec_para)}</p>")
     evidence_status = _text(model.get("evidence_status"))
     if evidence_status != "approved":
         parts.append(
@@ -519,7 +522,10 @@ def write_reader_docx(model: dict[str, object], path: str | Path) -> Path:
         if paragraph.runs:
             paragraph.runs[0].bold = True
     document.add_heading(HEADINGS[0], level=1)
-    document.add_paragraph(_text(model.get("executive_readout")))
+    for _exec_para in re.split(r"\n\s*\n+", _text(model.get("executive_readout")).strip()):
+        _exec_para = _exec_para.strip()
+        if _exec_para:
+            document.add_paragraph(_exec_para)
     if _text(model.get("evidence_status")) != "approved":
         _docx_field(document, "Evidence status", model.get("evidence_status"))
 

@@ -4617,6 +4617,7 @@
     const runtimeMode=String(r.runtime_mode||'quality').toLowerCase();
     const smokeHtml=runtimeMode==='smoke'?`<div class="finalized-pad-notice"><div class="fpn-body"><strong>Smoke test: validates workflow completion only; not a quality benchmark.</strong></div></div>`:'';
     const executive=esc(r.executive_readout||'The verified assessment did not return an executive readout.');
+    const execHtml=(String(r.executive_readout||'').split(/\n\s*\n+/).map(p=>p.trim()).filter(Boolean).map(p=>`<p>${esc(p)}</p>`).join(''))||`<p>${executive}</p>`;
     const evidenceStatus=String(r.evidence_status||'approved');
     const statusHtml=evidenceStatus!=='approved'?`<div class="finalized-pad-notice"><div class="fpn-body"><strong>Evidence status:</strong> ${esc(evidenceStatus)}</div></div>`:'';
     const judgments=Array.isArray(r.judgments)?r.judgments:[];
@@ -4648,7 +4649,7 @@
     const admittedCount=Number(annex.recommendation_admitted_count)||0;
     const reviewerVerdict=String(annex.semantic_reviewer_verdict||'not_invoked').toLowerCase();
     const withheldMessage=admittedCount>0&&['revise','block'].includes(reviewerVerdict)
-      ?`${admittedCount} recommendation ${admittedCount===1?'candidate':'candidates'} passed deterministic admission but ${admittedCount===1?'was':'were'} withheld after semantic review. Review outcome: ${reviewerVerdict}. See the technical annex.`
+      ?`${admittedCount} recommendation ${admittedCount===1?'candidate':'candidates'} passed the checks but ${admittedCount===1?'was':'were'} held back on review (outcome: ${reviewerVerdict}). Re-run or refine the document to surface actionable recommendations.`
       :'No recommendation passed the admission threshold for this run.';
     const prioritySummary=r.priority_summary&&typeof r.priority_summary==='object'?r.priority_summary:{};
     const prioritySummaryHtml=prioritySummary.statement?`<p class="climate-priority-summary">${esc(prioritySummary.statement)}</p>`:'';
@@ -4662,16 +4663,18 @@
       const bodyHtml=narr
         ?narr.split(/\n\s*\n+/).map(p=>p.trim()).filter(Boolean).map(p=>`<p class="pc-narr">${esc(p)}</p>`).join('')+draftHtml
         :primaryFields.map(([label,key])=>field(label,key)+(key==='minimum_action'?draftHtml:'')).join('');
+      // Only the TTL-useful fields go in the breakdown; app-internal routing,
+      // authority basis, and coded reference lists (detailFields) are dropped.
       const breakdown=narr?primaryFields.map(([label,key])=>field(label,key)).join(''):'';
-      const detailInner=breakdown+detailFields.map(([label,key])=>field(label,key)).join('');
-      const detailHtml=detailInner?`<details class="climate-priority-detail"><summary>${narr?'Recommendation details':'Evidence &amp; routing detail'}</summary>${detailInner}</details>`:'';
+      const detailHtml=breakdown?`<details class="climate-priority-detail"><summary>Recommendation details</summary>${breakdown}</details>`:'';
       return `<section class="climate-priority-card"><div class="pc-top"><span class="pc-rank">${esc(priority.rank)}</span><h3 class="pc-title">${esc(priority.title||'Untitled action')}</h3></div>${bodyHtml}${detailHtml}</section>`;
     }).join(''):`<p>${esc(withheldMessage)}</p>`;
     const flags=Array.isArray(r.review_readiness_flags)?r.review_readiness_flags.slice(0,4):[];
-    const flagsHtml=flags.length?flags.map(flag=>`<section><h4>${esc(flag.flag||'Verification point')}</h4><p><strong>Why it matters:</strong> ${esc(flag.why_it_matters||'')}</p><p><strong>Document basis:</strong> ${esc(Array.isArray(flag.document_basis_ids)?flag.document_basis_ids.join(', '):'')}</p><p><strong>Suggested verification:</strong> ${esc(flag.suggested_verification||'')}</p></section>`).join(''):'<p>No bounded review-readiness flags were admitted.</p>';
+    const flagsIntro='<p style="color:#4b5563;margin:0 0 11px">These are points the team should confirm before the concept or decision meeting - not gaps to fix now, just things to check.</p>';
+    const flagsHtml=flags.length?flagsIntro+flags.map(flag=>`<section style="margin:0 0 13px"><h4 style="font-family:\'Open Sans\',sans-serif;font-size:13px;font-weight:700;color:#002244;margin:0 0 4px;text-transform:none;letter-spacing:0">${esc(flag.flag||'Point to verify')}</h4><p style="margin:0 0 4px">${esc(flag.why_it_matters||'')}</p><p style="margin:0;color:#4b5563"><strong>How to check:</strong> ${esc(flag.suggested_verification||'')}</p></section>`).join(''):'<p>No points were flagged for verification in this run.</p>';
     const annexFields=[['Run ID','run_id'],['Schema','schema_version'],['Country-bank release','bank_release_id'],['Automated validation','validation_status'],['Live research claims accepted','live_research_count'],['Recommendation candidate count','recommendation_candidate_count'],['Recommendation admitted count','recommendation_admitted_count'],['Recommendation final count','recommendation_final_count'],['Semantic reviewer invoked','semantic_reviewer_invoked'],['Semantic reviewer verdict','semantic_reviewer_verdict'],['Recommendation reason codes','recommendation_reason_codes'],['Unsupported numeric tokens','unsupported_numeric_tokens'],['Runtime mode','runtime_mode']];
     const annexHtml=annexFields.map(([label,key])=>{const raw=annex[key];const value=Array.isArray(raw)?raw.join(', '):raw;return `<p><strong>${esc(label)}:</strong> ${esc(value??'')}</p>`;}).join('');
-    return `<article class="climate-verified-assessment">${smokeHtml}<h2>Executive readout</h2><div class="climate-exec"><p>${executive}</p></div>${statusHtml}<h2>Climate-FCV judgments</h2><div class="cj-grid">${judgmentHtml}</div><h2>Ranked operational priorities</h2>${prioritySummaryHtml}${priorityHtml}<details class="climate-fold"><summary>Review readiness flags for task-team verification</summary>${flagsHtml}</details><details class="climate-fold"><summary>Technical annex</summary>${annexHtml}</details><p class="climate-advisory">${esc(r.advisory_notice||'')}</p></article>`;
+    return `<article class="climate-verified-assessment">${smokeHtml}<h2>Executive readout</h2><div class="climate-exec">${execHtml}</div>${statusHtml}<h2>Climate-FCV judgments</h2><div class="cj-grid">${judgmentHtml}</div><h2>Ranked operational priorities</h2>${prioritySummaryHtml}${priorityHtml}<details class="climate-fold"><summary>Points to check before the decision meeting</summary>${flagsHtml}</details><p class="climate-advisory">${esc(r.advisory_notice||'')}</p></article>`;
   }
 
   function renderOut(stage,result,isFollowOn){

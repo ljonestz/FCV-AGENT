@@ -70,7 +70,7 @@ def test_every_stage_uses_structured_json_and_evidence_entitlements():
     )
     assert "no more than 12 existing responses" in prompts["bounded_analysis"]
     assert (
-        "judgment rationale to 75 words or fewer"
+        "three to five plain-language sentences"
         in prompts["judgment_review"]
     )
     assert (

@@ -97,8 +97,12 @@ will pass the later recommendation threshold. Every previewed issue must name
 the credited existing response and explain
 what remains. Keep preparation and implementation milestones separate; do not
 imply dependency unless an explicit project fact establishes it. Calibrate
-precision to the evidence and state material limitations.
-Keep each judgment rationale to 75 words or fewer.
+precision to the evidence and state material limitations. Write the
+executive_readout as three to five short paragraphs separated by a blank line,
+each covering one clear theme, so a reader can scan the key takeaways.
+Write each judgment rationale as three to five plain-language sentences (roughly
+60-110 words) that a non-specialist can follow; avoid abrupt one-line fragments,
+and explain the reasoning rather than just stating a verdict.
 
 Return: {"executive_readout":"...","relevance":{"value":"high|medium|low|unclear","evidence_ids":[],"rationale":"..."},"sensitivity":{"value":"strong|moderate|limited|unclear","evidence_ids":[],"rationale":"..."},"responsiveness":{"value":"strong|emerging|limited|not_expected|unclear","evidence_ids":[],"rationale":"..."},"operationalization":{"value":"embedded|partial|early|not_evidenced|unclear","evidence_ids":[],"rationale":"..."}}.""",
         payload,
@@ -144,6 +148,10 @@ set must contain exactly one current_document block of 90 to 160 words, targeted
 to the supplied current document and a specific section. Copy target_document and target_section exactly
 from one permitted_targets tuple
 in the cited operational-guidance entry; do not paraphrase either field.
+Begin the current_document text with a short bracketed placement cue showing
+where the language should sit within that section - for example "[Add at the
+start of this section]" or "[Insert after the paragraph on conflict-risk
+mapping]" - so the reader knows exactly where it goes; never use page numbers.
 Label the block existing_commitment only when linked project evidence supports
 that status; otherwise use advisory_proposal. Add at most one operational_instrument block
 only when it is separately useful and targets a

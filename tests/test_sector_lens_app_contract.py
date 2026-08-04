@@ -2398,7 +2398,7 @@ def test_verified_climate_ui_contract_is_ranked_and_multidimensional():
         "operationalization",
     ):
         assert f'data-climate-dimension="${{esc(j.dimension)}}"' in html
-    assert "Review readiness flags for task-team verification" in html
+    assert "Points to check before the decision meeting" in html
     start = html.index("function renderClimateVerifiedAssessment")
     end = html.index("\n  function ", start + 20)
     body = html[start:end]
@@ -2407,7 +2407,7 @@ def test_verified_climate_ui_contract_is_ranked_and_multidimensional():
     assert "High priority" not in body
     assert "Smoke test: validates workflow completion only" in body
     assert (
-        "passed deterministic admission but ${admittedCount===1?'was':'were'} withheld"
+        "passed the checks but ${admittedCount===1?'was':'were'} held back on review"
         in body
     )
     assert "recommendation_admitted_count" in body
@@ -2416,9 +2416,11 @@ def test_verified_climate_ui_contract_is_ranked_and_multidimensional():
     assert "operational_instrument_drafting" in body
     assert "Suggested drafting for the current document" in body
     assert "Suggested drafting for an operational instrument" in body
-    # Internal routing/coded-reference fields are demoted into a collapsible
-    # "Evidence & routing detail" rather than shown front-and-centre.
-    assert "Evidence &amp; routing detail" in body
+    # The card leads with the model narrative; the useful structured fields fold
+    # into a "Recommendation details" collapsible, and app-internal routing/coded
+    # references are dropped from the user view entirely.
+    assert "Recommendation details" in body
+    assert "pc-narr" in body
     assert "priority_summary" in body
     assert "live_research_count" in body
     assert "drafting_language" not in body
