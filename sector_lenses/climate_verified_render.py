@@ -290,7 +290,8 @@ def _id_type(identifier: str) -> str:
 def _chain_prose(chain: list) -> str:
     parts = [_text(c) for c in chain if _text(c)]
     if len(parts) >= 3:
-        return f"{parts[0]}, leading through {parts[1]}, to {parts[2]}."
+        middle = ", ".join(parts[1:-1])
+        return f"{parts[0]}, leading through {middle}, to {parts[-1]}."
     return "; ".join(parts) + ("." if parts else "")
 
 
@@ -298,6 +299,8 @@ def build_evidence_trail(assessment: dict[str, object]) -> dict[str, object]:
     """Project a plain-language evidence trail from the raw verified assessment.
 
     Deterministic; resolves only IDs actually cited in judgments/priorities.
+    Resolution priority for a cited ID: facts > residual gaps > existing
+    responses > pathways, then CE-LIVE / CE stubs, then "reference not resolved".
     """
     analysis = _mapping(assessment.get("analysis"))
     facts = {_text(f.get("claim_id")): f for f in _records(assessment.get("facts"))}
@@ -364,6 +367,8 @@ def build_evidence_trail(assessment: dict[str, object]) -> dict[str, object]:
             )
         elif t == "CE-LIVE":
             text = "Accepted live-research evidence for this run."
+        elif t == "CE":
+            text = "Context evidence cited for this run (summary not stored)."
         else:
             text = "Reference not resolved."
         evidence_key.append({"id": cid, "type_label": label, "text": text})

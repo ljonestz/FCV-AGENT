@@ -66,3 +66,19 @@ def test_unresolvable_cited_id_gets_neutral_label():
     assert "CE-LIVE-7" in key
     assert key["CE-LIVE-7"]["type_label"].lower().startswith("live") or \
            "not resolved" in key["CE-LIVE-7"]["text"].lower()
+
+
+def test_chain_prose_keeps_all_elements_when_more_than_three():
+    from sector_lenses.climate_verified_render import _chain_prose
+    out = _chain_prose(["pressure", "mid1", "mid2", "consequence"])
+    assert "pressure" in out and "mid1" in out and "mid2" in out
+    assert out.rstrip(".").endswith("consequence")
+
+
+def test_chain_prose_handles_short_and_nonstring_chains():
+    from sector_lenses.climate_verified_render import _chain_prose
+    short = _chain_prose(["a", "b"])
+    assert "a" in short and "b" in short and short.endswith(".")
+    # None / non-string elements are tolerated (dropped), no crash
+    mixed = _chain_prose(["a", None, "c", "d"])
+    assert mixed.endswith(".") and "a" in mixed
