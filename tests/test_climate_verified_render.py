@@ -144,6 +144,21 @@ def test_reader_has_four_dimensions_priority_cap_and_safe_annex():
     }
 
 
+def test_judgment_evidence_ids_render_from_tuple_and_list():
+    # The pipeline stores judgments via dataclasses.asdict(), which preserves
+    # Judgment.evidence_ids as a tuple. The reader must surface those IDs, not
+    # drop them because they are a tuple rather than a list.
+    assessment = _assessment()
+    assessment["judgments"]["relevance"]["evidence_ids"] = ("PF-001", "CE-001")
+    assessment["judgments"]["sensitivity"]["evidence_ids"] = ["PF-002"]
+
+    model = build_reader_model(assessment)
+    by_dimension = {item["dimension"]: item for item in model["judgments"]}
+
+    assert by_dimension["relevance"]["evidence_ids"] == ["PF-001", "CE-001"]
+    assert by_dimension["sensitivity"]["evidence_ids"] == ["PF-002"]
+
+
 def test_priority_summary_count_must_match_final_priorities():
     model = build_reader_model(_assessment())
     model["priority_summary"]["count"] = 2

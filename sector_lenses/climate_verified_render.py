@@ -149,7 +149,7 @@ def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
                 _text(item)
                 for item in judgment.get("evidence_ids", [])
                 if _text(item)
-            ] if isinstance(judgment.get("evidence_ids"), list) else [],
+            ] if isinstance(judgment.get("evidence_ids"), (list, tuple)) else [],
         })
 
     priorities = sorted(
