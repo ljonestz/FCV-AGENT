@@ -113,7 +113,7 @@ def test_integrity_flags_drop_residual_gap_references():
     assert flags[0].residual_gap_ids == ()
 
 
-INTRO = "Confirm these before the decision meeting"
+INTRO = "none is a reason to stop the project"
 
 
 def test_points_to_check_intro_present_in_html_and_docx():

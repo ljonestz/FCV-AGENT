@@ -48,8 +48,15 @@ HEADINGS = (
     "Executive readout",
     "Climate-FCV judgments",
     "Ranked operational priorities",
-    "Review readiness flags for task-team verification",
+    "Points to check before the decision meeting",
     "Technical annex",
+)
+# Lay-comprehensible intro shared by the points-to-check section across all three
+# render surfaces (server HTML, DOCX, and the frontend renderer).
+POINTS_TO_CHECK_INTRO = (
+    "These are smaller things for the team to confirm or consider before the concept "
+    "or decision meeting. They are not the main recommendations above, and none is a "
+    "reason to stop the project - think of them as a checklist."
 )
 PRIORITY_FIELDS = (
     ("Decision", "decision"),
@@ -641,10 +648,7 @@ def render_reader_html(model: dict[str, object]) -> str:
     parts.append("<details><summary>")
     parts.append(html.escape(HEADINGS[3]))
     parts.append("</summary>")
-    parts.append(
-        "<p>Confirm these before the decision meeting; they are document items to resolve,"
-        " distinct from the design recommendations above.</p>"
-    )
+    parts.append(f"<p>{html.escape(POINTS_TO_CHECK_INTRO)}</p>")
     for flag in _records(model.get("review_readiness_flags")):
         parts.append(_heading(3, _text(flag.get("flag"))))
         parts.append(
@@ -675,7 +679,12 @@ def render_reader_html(model: dict[str, object]) -> str:
         parts.append(f'<p>{html.escape(_text(trail.get("methodology_note")))}</p>')
         pathways = _records(trail.get("pathways"))
         if pathways:
-            parts.append("<h4>Pathways</h4><ul>")
+            parts.append("<h4>Pathways</h4>")
+            parts.append(
+                "<p>Pathways are the specific ways climate pressures and fragility feed "
+                "into each other in this project. Each one is a short chain from a cause to "
+                "an effect.</p><ul>"
+            )
             for p in pathways:
                 parts.append(
                     f'<li><strong>{html.escape(_text(p.get("direction_label")))}:</strong> '
@@ -683,7 +692,13 @@ def render_reader_html(model: dict[str, object]) -> str:
             parts.append("</ul>")
         key = _records(trail.get("evidence_key"))
         if key:
-            parts.append("<h4>Evidence key</h4><ul>")
+            parts.append("<h4>Evidence key</h4>")
+            parts.append(
+                "<p>The evidence key explains every reference code used above (for example "
+                "PF- for a project fact, RG- for a residual gap, ER- for an existing "
+                "response, PW- for a pathway), so each finding can be traced to its "
+                "source.</p><ul>"
+            )
             for e in key:
                 parts.append(
                     f'<li><strong>{html.escape(_text(e.get("id")))}</strong> '
@@ -692,15 +707,24 @@ def render_reader_html(model: dict[str, object]) -> str:
             parts.append("</ul>")
         if sources:
             parts.append("<h4>Sources &amp; further reading</h4>")
-            parts.append('<p>The climate lens draws on the core WBG climate-FCV literature:</p><ul>')
+            parts.append(
+                "<p>This analysis draws on the World Bank's core guidance on climate "
+                "action in fragile and conflict-affected settings. Linked titles open the "
+                "World Bank publication page if you want to read more.</p><ul>"
+            )
             for s in sources:
                 sm = _mapping(s)
                 title = html.escape(_text(sm.get("title")))
+                desc = html.escape(_text(sm.get("description")))
                 url = sm.get("url")
                 if isinstance(url, str) and url.startswith("https://"):
-                    parts.append(f'<li><a href="{html.escape(url)}" target="_blank" rel="noopener">{title}</a></li>')
+                    label = f'<a href="{html.escape(url)}" target="_blank" rel="noopener">{title}</a>'
+                    tail = f" - {desc}" if desc else ""
                 else:
-                    parts.append(f"<li>{title}</li>")
+                    note = " (reference only; no public link is shown until one is confirmed)"
+                    label = title
+                    tail = f" - {desc}{note}" if desc else note
+                parts.append(f"<li>{label}{tail}</li>")
             parts.append("</ul>")
         d = _mapping(trail.get("diagnostics"))
         if d:
@@ -814,10 +838,7 @@ def write_reader_docx(model: dict[str, object], path: str | Path) -> Path:
                 )
 
     document.add_heading(HEADINGS[3], level=1)
-    document.add_paragraph(
-        "Confirm these before the decision meeting; they are document items to resolve,"
-        " distinct from the design recommendations above."
-    )
+    document.add_paragraph(POINTS_TO_CHECK_INTRO)
     for flag in _records(model.get("review_readiness_flags")):
         document.add_heading(_text(flag.get("flag")), level=2)
         _docx_field(document, "Why it matters", flag.get("why_it_matters"))
@@ -839,23 +860,44 @@ def write_reader_docx(model: dict[str, object], path: str | Path) -> Path:
         pathways = _records(trail.get("pathways"))
         if pathways:
             document.add_heading("Pathways", level=2)
+            document.add_paragraph(
+                "Pathways are the specific ways climate pressures and fragility feed into "
+                "each other in this project. Each one is a short chain from a cause to an "
+                "effect."
+            )
             for p in pathways:
                 document.add_paragraph(
                     f'{_text(p.get("direction_label"))}: {_text(p.get("chain_prose"))}')
         key = _records(trail.get("evidence_key"))
         if key:
             document.add_heading("Evidence key", level=2)
+            document.add_paragraph(
+                "The evidence key explains every reference code used above (for example "
+                "PF- for a project fact, RG- for a residual gap, ER- for an existing "
+                "response, PW- for a pathway), so each finding can be traced to its source."
+            )
             for e in key:
                 document.add_paragraph(
                     f'{_text(e.get("id"))} ({_text(e.get("type_label"))}): {_text(e.get("text"))}')
         sources = model.get("sources") or []
         if sources:
             document.add_heading("Sources & further reading", level=2)
+            document.add_paragraph(
+                "This analysis draws on the World Bank's core guidance on climate action "
+                "in fragile and conflict-affected settings."
+            )
             for s in sources:
                 sm = _mapping(s)
+                title = _text(sm.get("title"))
+                desc = _text(sm.get("description"))
                 url = sm.get("url")
-                suffix = f' - {url}' if isinstance(url, str) and url.startswith("https://") else ""
-                document.add_paragraph(f'{_text(sm.get("title"))}{suffix}')
+                if isinstance(url, str) and url.startswith("https://"):
+                    tail = f" - {desc}" if desc else ""
+                    line = f"{title}{tail} ({url})"
+                else:
+                    note = " (reference only; no public link is shown until one is confirmed)"
+                    line = f"{title} - {desc}{note}" if desc else f"{title}{note}"
+                document.add_paragraph(line)
         d = _mapping(trail.get("diagnostics"))
         if d:
             document.add_heading("Run diagnostics", level=2)

@@ -130,3 +130,26 @@ def test_annex_renders_in_html_and_docx():
     assert "How this analysis was produced" in text
     assert "FCV-Sensitive Climate Action Framework" in text
     assert "flood-prone fisheries" in text   # resolved evidence-key text in DOCX
+
+
+def test_lay_comprehensibility_annex_and_sources(tmp_path):
+    """WS1: plain-language intros, source descriptions, name-only marking, unified label."""
+    model = _reader_with_trail()
+    html = render_reader_html(model)
+    stream = BytesIO()
+    write_reader_docx(model, stream)
+    stream.seek(0)
+    docx_text = "\n".join(p.text for p in Document(stream).paragraphs)
+
+    for text in (html, docx_text):
+        # Provenance intros explaining what pathways / the evidence key are.
+        assert "short chain from a cause to an effect" in text
+        assert "traced to its source" in text
+        # Source descriptions render for a lay reader.
+        assert "do no harm" in text                       # FCV-Sensitive description
+        assert "pathway to peace" in text                 # Defueling Conflict description
+        # Name-only sources (url=None) are explicitly marked, never fabricated.
+        assert "no public link is shown until one is confirmed" in text
+        # Parity: the TTL-friendly points-to-check label is used on every surface.
+        assert "Points to check before the decision meeting" in text
+        assert "Review readiness flags for task-team verification" not in text

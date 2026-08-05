@@ -92,22 +92,34 @@ BANK_SOURCE_HEADLINE = (
 
 # Core WBG climate-FCV literature the lens draws on. url is a canonical public
 # WBG URL only where verified; None (name-only) otherwise. NEVER put an
-# unverified URL here.
+# unverified URL here. description is a short plain-language line explaining what
+# the source is, for a lay reader who has not seen it before.
 CLIMATE_LITERATURE_REFERENCES: list[dict[str, object]] = [
     {
         "title": "Maximizing the Peace and Social Dividends of Climate Action",
         "url": "https://www.worldbank.org/en/topic/fragilityconflictviolence/publication/maximizing-the-peace-and-social-dividends-of-climate-action",
+        "description": "how climate action can also reduce conflict and build social cohesion, not just deliver climate outputs.",
     },
     {
         "title": "FCV-Sensitive Climate Action Framework",
         "url": "https://www.worldbank.org/en/topic/fragilityconflictviolence/publication/framework-for-promoting-fcv-sensitive-climate-action",
+        "description": "the World Bank's framework for designing climate projects that do no harm and stay workable in fragile and conflict-affected settings.",
     },
     {
         "title": "Defueling Conflict",
         "url": "https://www.worldbank.org/en/topic/environment/publication/defueling-conflict-environment-and-natural-resource-management-as-a-pathway-to-peace",
+        "description": "how managing the environment and natural resources can be a pathway to peace.",
     },
-    {"title": "Conflict-Sensitive Climate Action Compendium", "url": None},
-    {"title": "CCDR guidance note", "url": None},
+    {
+        "title": "Conflict-Sensitive Climate Action Compendium",
+        "url": None,
+        "description": "practical, case-based guidance on making climate programming conflict-sensitive.",
+    },
+    {
+        "title": "CCDR guidance note",
+        "url": None,
+        "description": "World Bank Country Climate and Development Report guidance on climate priorities in a country's development.",
+    },
 ]
 
 
