@@ -232,7 +232,7 @@ def test_four_calls_run_when_semantic_review_is_not_required():
     assert [call["timeout_seconds"] for call in assessment.calls] == [
         300,
         180,
-        120,
+        240,
         240,
     ]
     assert all(call["max_transient_retries"] == 1 for call in assessment.calls)
