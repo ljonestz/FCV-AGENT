@@ -295,6 +295,16 @@ READINESS_SCHEMA = _object(
 )
 
 
+MINOR_CLIMATE_POINT_SCHEMA = _object(
+    {
+        "point": _string("20 words or fewer."),
+        "why": _string("45 words or fewer."),
+        "how_to_check": _string("45 words or fewer."),
+        "residual_gap_ids": _strings(),
+    }
+)
+
+
 STAGE_OUTPUT_SCHEMAS: dict[str, dict[str, object]] = {
     "fact_extraction": _object(
         {
@@ -364,6 +374,14 @@ STAGE_OUTPUT_SCHEMAS: dict[str, dict[str, object]] = {
                     "Three to five evidence-grounded answers to the supplied "
                     "triggered core climate-FCV questions, each distinct from the "
                     "executive readout. Empty array if none can be evidenced."
+                ),
+            },
+            "minor_climate_points": {
+                "type": "array",
+                "items": MINOR_CLIMATE_POINT_SCHEMA,
+                "description": (
+                    "Up to three smaller climate/FCV points tied to a residual "
+                    "gap that may not warrant a full recommendation. Empty if none."
                 ),
             },
         }

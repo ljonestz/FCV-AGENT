@@ -353,6 +353,46 @@ def _admit_core_questions(
     return admitted
 
 
+def _admit_minor_climate_points(
+    payload: dict[str, object],
+    known_gap_ids: set[str],
+    admitted_gap_ids: set[str],
+    reserved_texts: set[str],
+) -> list[dict[str, object]]:
+    """Keep smaller climate/FCV points tied to a non-admitted residual gap.
+
+    Evidence-gated: each point must cite at least one residual_gap_id that exists
+    and is not already covered by an admitted priority. Deduped against reserved
+    texts (priority titles and readiness-flag text) and capped at three.
+    """
+    admitted: list[dict[str, object]] = []
+    seen: set[str] = set()
+    for record in _records(payload, "minor_climate_points"):
+        point = _text(record.get("point"))
+        if not point:
+            continue
+        normalized = _normalized_sentence(point)
+        if normalized in reserved_texts or normalized in seen:
+            continue
+        gap_ids = [
+            gap_id
+            for gap_id in _strings(record.get("residual_gap_ids"))
+            if gap_id in known_gap_ids and gap_id not in admitted_gap_ids
+        ]
+        if not gap_ids:
+            continue
+        seen.add(normalized)
+        admitted.append({
+            "point": point,
+            "why": _text(record.get("why")),
+            "how_to_check": _text(record.get("how_to_check")),
+            "residual_gap_ids": gap_ids,
+        })
+        if len(admitted) >= 3:
+            break
+    return admitted
+
+
 def _score(record: object) -> RecommendationScore:
     item = _mapping(record)
     return RecommendationScore(
@@ -1167,6 +1207,13 @@ def run_verified_climate_pipeline(
     suppressed["readiness_flags"] += (
         len(raw_flags) + len(integrity_flags) - len(readiness)
     )
+    minor_climate_points = _admit_minor_climate_points(
+        judgment_payload,
+        {item.gap_id for item in gaps},
+        {gap_id for item in priorities for gap_id in item.residual_gap_ids},
+        {_normalized_sentence(item.title) for item in priorities}
+        | {_normalized_sentence(flag.flag) for flag in readiness},
+    )
 
     review_status = "passed"
     reviewer_invoked = False
@@ -1287,6 +1334,7 @@ def run_verified_climate_pipeline(
         "core_questions": core_questions,
         "priorities": [asdict(item) for item in priorities],
         "review_readiness_flags": [asdict(item) for item in readiness],
+        "minor_climate_points": minor_climate_points,
         "validation": {
             "status": review_status,
             "reason_codes": list(unique_reasons),

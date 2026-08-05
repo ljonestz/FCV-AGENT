@@ -141,7 +141,15 @@ the team should check. Skip any supplied question you cannot ground in the
 verified evidence rather than padding; return an empty array only if none can be
 grounded.
 
-Return: {"executive_readout":"...","relevance":{"value":"high|medium|low|unclear","evidence_ids":[],"rationale":"..."},"sensitivity":{"value":"strong|moderate|limited|unclear","evidence_ids":[],"rationale":"..."},"responsiveness":{"value":"strong|emerging|limited|not_expected|unclear","evidence_ids":[],"rationale":"..."},"operationalization":{"value":"embedded|partial|early|not_evidenced|unclear","evidence_ids":[],"rationale":"..."},"core_questions":[{"question_id":"cq2-infra-horizon","theme":"cq2_maladaptation","question":"...","source":"...","summary":"...","evidence_ids":["RG-001"],"watch":"..."}]}.""",
+Also return minor_climate_points: up to three smaller climate or FCV points, each
+tied to a residual_gap_id from the analysis that is worth a brief mention but may
+not warrant a full recommendation - a minor issue the team could add, consider,
+or edit in the current document, and never a reason to stop the project. Give a
+short point, why it is worth a look, and how to check, in plain language grounded
+in that residual gap. Add no new claims and no digits. Return an empty array if
+there are no such smaller points.
+
+Return: {"executive_readout":"...","relevance":{"value":"high|medium|low|unclear","evidence_ids":[],"rationale":"..."},"sensitivity":{"value":"strong|moderate|limited|unclear","evidence_ids":[],"rationale":"..."},"responsiveness":{"value":"strong|emerging|limited|not_expected|unclear","evidence_ids":[],"rationale":"..."},"operationalization":{"value":"embedded|partial|early|not_evidenced|unclear","evidence_ids":[],"rationale":"..."},"core_questions":[{"question_id":"cq2-infra-horizon","theme":"cq2_maladaptation","question":"...","source":"...","summary":"...","evidence_ids":["RG-001"],"watch":"..."}],"minor_climate_points":[{"point":"...","why":"...","how_to_check":"...","residual_gap_ids":["RG-002"]}]}.""",
         payload,
     )
 

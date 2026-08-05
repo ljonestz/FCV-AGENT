@@ -260,6 +260,17 @@ def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
         key=lambda item: (_rank(item.get("rank")), _text(item.get("title"))),
     )[:3]
     flags = _records(assessment.get("review_readiness_flags"))[:4]
+    minor_climate_points = [
+        {
+            "point": _text(item.get("point")),
+            "why": _text(item.get("why")),
+            "how_to_check": _text(item.get("how_to_check")),
+            "residual_gap_ids": [
+                _text(g) for g in item.get("residual_gap_ids", []) if _text(g)
+            ] if isinstance(item.get("residual_gap_ids"), (list, tuple)) else [],
+        }
+        for item in _records(assessment.get("minor_climate_points"))
+    ][:3]
     validation = _mapping(assessment.get("validation"))
     diagnostics = _mapping(assessment.get("recommendation_diagnostics"))
     executive = _text(assessment.get("executive_readout")) or _text(
@@ -272,6 +283,7 @@ def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
         "core_questions": core_questions,
         "priorities": [dict(item) for item in priorities],
         "review_readiness_flags": [dict(item) for item in flags],
+        "minor_climate_points": minor_climate_points,
         "priority_summary": _priority_summary(priorities),
         "evidence_status": _text(assessment.get("evidence_status")) or "approved",
         "technical_annex": {
@@ -699,7 +711,10 @@ def render_reader_html(model: dict[str, object]) -> str:
     parts.append(html.escape(HEADINGS[3]))
     parts.append("</summary>")
     parts.append(f"<p>{html.escape(POINTS_TO_CHECK_INTRO)}</p>")
-    for flag in _records(model.get("review_readiness_flags")):
+    doc_flags = _records(model.get("review_readiness_flags"))
+    if doc_flags:
+        parts.append("<h4>Document points to confirm</h4>")
+    for flag in doc_flags:
         parts.append(_heading(3, _text(flag.get("flag"))))
         parts.append(
             "<p><strong>Why it matters:</strong> "
@@ -710,6 +725,29 @@ def render_reader_html(model: dict[str, object]) -> str:
             + html.escape(_text(flag.get("suggested_verification")))
             + "</p>"
         )
+    minor_points = _records(model.get("minor_climate_points"))
+    if minor_points:
+        parts.append("<h4>Smaller climate &amp; fragility points to consider</h4>")
+        parts.append(
+            "<p>These are smaller, climate- and fragility-specific points that were "
+            "not large enough to become a recommendation above, but are still worth "
+            "a look.</p>"
+        )
+        for point in minor_points:
+            parts.append(_heading(3, _text(point.get("point"))))
+            parts.append("<p>" + html.escape(_text(point.get("why"))) + "</p>")
+            parts.append(
+                "<p><strong>How to check:</strong> "
+                + html.escape(_text(point.get("how_to_check")))
+                + "</p>"
+            )
+            refs = _field_text(point.get("residual_gap_ids"))
+            if refs:
+                parts.append(
+                    '<p class="climate-core-evidence"><strong>Evidence:</strong> '
+                    + html.escape(refs)
+                    + "</p>"
+                )
     parts.append("</details>")
 
     parts.append("<details><summary>")
@@ -899,8 +937,11 @@ def write_reader_docx(model: dict[str, object], path: str | Path) -> Path:
 
     document.add_heading(HEADINGS[3], level=1)
     document.add_paragraph(POINTS_TO_CHECK_INTRO)
-    for flag in _records(model.get("review_readiness_flags")):
-        document.add_heading(_text(flag.get("flag")), level=2)
+    doc_flags = _records(model.get("review_readiness_flags"))
+    if doc_flags:
+        document.add_heading("Document points to confirm", level=2)
+    for flag in doc_flags:
+        document.add_heading(_text(flag.get("flag")), level=3)
         _docx_field(document, "Why it matters", flag.get("why_it_matters"))
         _docx_field(document, "Document basis", flag.get("document_basis_ids"))
         _docx_field(
@@ -908,6 +949,21 @@ def write_reader_docx(model: dict[str, object], path: str | Path) -> Path:
             "Suggested verification",
             flag.get("suggested_verification"),
         )
+    minor_points = _records(model.get("minor_climate_points"))
+    if minor_points:
+        document.add_heading(
+            "Smaller climate & fragility points to consider", level=2
+        )
+        document.add_paragraph(
+            "These are smaller, climate- and fragility-specific points that were "
+            "not large enough to become a recommendation above, but are still "
+            "worth a look."
+        )
+        for point in minor_points:
+            document.add_heading(_text(point.get("point")), level=3)
+            document.add_paragraph(_text(point.get("why")))
+            _docx_field(document, "How to check", point.get("how_to_check"))
+            _docx_field(document, "Evidence", point.get("residual_gap_ids"))
 
     document.add_heading(HEADINGS[4], level=1)
     for key, value in _mapping(model.get("technical_annex")).items():
