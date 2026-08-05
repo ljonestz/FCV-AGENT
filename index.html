@@ -4671,7 +4671,7 @@
       // Only the TTL-useful fields go in the breakdown; app-internal routing,
       // authority basis, and coded reference lists (detailFields) are dropped.
       const breakdown=narr?primaryFields.map(([label,key])=>field(label,key)).join(''):'';
-      const detailHtml=breakdown?`<details class="climate-priority-detail"><summary>Recommendation details</summary>${breakdown}</details>`:'';
+      const detailHtml=breakdown?`<details class="climate-priority-detail"><summary>Recommendation details</summary><p style="color:#4b5563;margin:6px 0 9px;font-size:13px">The same recommendation set out field by field - the decision to take, the minimum action, who leads it, and what "done" looks like.</p>${breakdown}</details>`:'';
       return `<section class="climate-priority-card"><div class="pc-top"><span class="pc-rank">${esc(priority.rank)}</span><h3 class="pc-title">${esc(priority.title||'Untitled action')}</h3></div>${bodyHtml}${detailHtml}</section>`;
     }).join(''):`<p>${esc(withheldMessage)}</p>`;
     const flags=Array.isArray(r.review_readiness_flags)?r.review_readiness_flags.slice(0,4):[];
