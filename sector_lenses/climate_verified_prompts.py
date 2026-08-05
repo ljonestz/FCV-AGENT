@@ -132,7 +132,8 @@ questions selected for this project from World Bank climate-and-fragility
 guidance. Answer three to five of them - only those you can ground in the
 verified registers - and return them as core_questions. For each answer, copy
 question_id and theme exactly as supplied, restate the question in plain
-language, name its source, and write a 40 to 90 word summary a non-specialist
+language, name its source, and write a fuller summary of roughly 120 to 220
+words in two short paragraphs separated by a blank line, that a non-specialist
 can follow. Each summary must add NEW detail and MUST NOT repeat the
 executive_readout or a judgment rationale: frame it as a design question to
 resolve or a strength to note, cite at least one evidence ID in evidence_ids,

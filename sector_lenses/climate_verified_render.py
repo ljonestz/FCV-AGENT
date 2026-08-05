@@ -42,14 +42,40 @@ DIMENSIONS = (
 NO_RECOMMENDATION_MESSAGE = (
     "No recommendation passed the admission threshold for this run."
 )
-# The compact "overall reads" strip shown above the core-question cards. The
-# fourth judgment dimension (relevance) is retained internally for calibration
-# but omitted here because it restates the executive readout.
-_READS_DIMENSIONS = (
-    ("sensitivity", "Sensitivity"),
-    ("responsiveness", "Responsiveness"),
-    ("operationalization", "From intent to delivery"),
+# Headline rating shown above the core-question cards: how sensitive the project
+# is to climate and FCV considerations, on a Limited -> Moderate -> Strong scale
+# derived from the (retained) internal `sensitivity` judgment. Higher is better
+# (more strongly designed to recognise and avoid worsening climate/FCV risk).
+_SENSITIVITY_SCALE_LABELS = ("Limited", "Moderate", "Strong")
+SENSITIVITY_RATING_QUESTION = (
+    "How sensitive is this project to climate and FCV considerations?"
 )
+SENSITIVITY_RATING_CAVEAT = (
+    "This is a subjective judgement on the part of this AI tool and does not "
+    "constitute an official WBG rating."
+)
+_SENSITIVITY_RATING = {
+    "strong": {
+        "label": "Strong", "level": 3, "tone": "good",
+        "description": "The project is strongly designed to recognise climate and "
+        "conflict risks and to avoid making them worse.",
+    },
+    "moderate": {
+        "label": "Moderate", "level": 2, "tone": "mid",
+        "description": "The project recognises several climate and conflict risks, "
+        "but gaps remain in how it avoids making them worse.",
+    },
+    "limited": {
+        "label": "Limited", "level": 1, "tone": "low",
+        "description": "The project shows limited attention to recognising climate "
+        "and conflict risks and avoiding harm - an area to strengthen.",
+    },
+    "unclear": {
+        "label": "Not yet clear", "level": 0, "tone": "unclear",
+        "description": "There is not yet enough in the document to judge how well "
+        "the project recognises climate and conflict risks and avoids harm.",
+    },
+}
 CORE_QUESTIONS_INTRO = (
     "This section works through the core questions that the World Bank's "
     "climate-and-fragility guidance asks of a project in a conflict-affected "
@@ -244,16 +270,24 @@ def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
         for q in _records(assessment.get("core_questions"))
     ]
     by_dimension = {item["dimension"]: item for item in judgments}
-    judgment_reads = [
-        {
-            "label": label,
-            "value": _text(by_dimension.get(dimension, {}).get("value"))
-            .replace("_", " ")
-            .capitalize(),
-        }
-        for dimension, label in _READS_DIMENSIONS
-        if _text(by_dimension.get(dimension, {}).get("value"))
-    ]
+    sensitivity_judgment = by_dimension.get("sensitivity", {})
+    sensitivity_value = _text(sensitivity_judgment.get("value")).lower() or "unclear"
+    rating = _SENSITIVITY_RATING.get(
+        sensitivity_value, _SENSITIVITY_RATING["unclear"]
+    )
+    climate_sensitivity_rating = {
+        "value": sensitivity_value,
+        "label": rating["label"],
+        "level": rating["level"],
+        "tone": rating["tone"],
+        "scale": list(_SENSITIVITY_SCALE_LABELS),
+        "question": SENSITIVITY_RATING_QUESTION,
+        "description": rating["description"],
+        "caveat": SENSITIVITY_RATING_CAVEAT,
+        "evidence_ids": [
+            _text(e) for e in sensitivity_judgment.get("evidence_ids", []) if _text(e)
+        ] if isinstance(sensitivity_judgment.get("evidence_ids"), (list, tuple)) else [],
+    }
 
     priorities = sorted(
         _records(assessment.get("priorities")),
@@ -279,7 +313,7 @@ def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
     return _scrub_placeholders({
         "executive_readout": executive,
         "judgments": judgments,
-        "judgment_reads": judgment_reads,
+        "climate_sensitivity_rating": climate_sensitivity_rating,
         "core_questions": core_questions,
         "priorities": [dict(item) for item in priorities],
         "review_readiness_flags": [dict(item) for item in flags],
@@ -329,12 +363,15 @@ def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
 
 
 _METHODOLOGY_NOTE = (
-    "This analysis was produced by a verified pipeline: it extracts atomic "
-    "project facts from the uploaded document, maps how climate and FCV "
-    "pressures interact through evidence-anchored pathways, judges four "
-    "dimensions against that evidence, compiles only recommendations that pass "
-    "deterministic admission tests, and applies a conditional review. Every "
-    "judgement and recommendation is tied to the references listed below."
+    "Here is how this analysis was put together, in plain terms. The tool first "
+    "reads your document and pulls out the concrete facts it can find - what the "
+    "project will do, where, for whom, and what safeguards it already includes. "
+    "It then looks at how climate pressures and conflict or fragility affect each "
+    "other in this setting, and checks every finding against those facts. It only "
+    "offers a recommendation when the evidence clearly supports one, and a second "
+    "automated check removes anything that over-reaches. Nothing here is invented: "
+    "each point is tied to a specific piece of evidence, shown with a short code "
+    "that the evidence key below explains."
 )
 
 _ID_TYPE_LABELS = {
@@ -376,15 +413,20 @@ def build_evidence_trail(assessment: dict[str, object]) -> dict[str, object]:
 
     pathways = []
     for p in pathways_raw:
+        chain_prose = _chain_prose(
+            p.get("chain") if isinstance(p.get("chain"), list) else []
+        )
+        if not chain_prose:
+            # A pathway with no chain prose (e.g. a thin model run) would render
+            # as a naked "Climate -> FCV:" label; drop it rather than show a stub.
+            continue
         direction = _text(p.get("direction"))
         label = ("Climate -> FCV" if direction == "climate_to_fcv"
                  else "FCV -> Climate" if direction == "fcv_to_climate"
                  else direction or "Pathway")
         pathways.append({
             "direction_label": label,
-            "chain_prose": _chain_prose(
-                p.get("chain") if isinstance(p.get("chain"), list) else []
-            ),
+            "chain_prose": chain_prose,
             "anchor_ids": [_text(a) for a in p.get("project_anchor_ids", []) if _text(a)]
             if isinstance(p.get("project_anchor_ids"), (list, tuple)) else [],
         })
@@ -434,6 +476,10 @@ def build_evidence_trail(assessment: dict[str, object]) -> dict[str, object]:
             text = "Context evidence cited for this run (summary not stored)."
         else:
             text = "Reference not resolved."
+        if not _text(text):
+            # Skip entries that resolve to nothing (e.g. a cited pathway whose
+            # chain came back empty) rather than showing a bare code with no text.
+            continue
         evidence_key.append({"id": cid, "type_label": label, "text": text})
 
     diag = _mapping(assessment.get("recommendation_diagnostics"))
@@ -596,6 +642,53 @@ def _drafting_html(label: str, value: object) -> str:
     return "".join(parts)
 
 
+_RATING_TONE_COLORS = {
+    "good": "#1A9850", "mid": "#E8A33D", "low": "#D73027", "unclear": "#9aa4b2",
+}
+
+
+def _sensitivity_rating_html(rating: dict[str, object]) -> str:
+    """Render the headline climate & FCV sensitivity rating as a scale."""
+    level = _rank(rating.get("level"))
+    tone = _text(rating.get("tone")) or "unclear"
+    active = _RATING_TONE_COLORS.get(tone, "#9aa4b2")
+    scale = rating.get("scale") if isinstance(rating.get("scale"), list) else []
+    segments = []
+    for index, label in enumerate(scale, start=1):
+        is_active = index == level
+        bg = active if is_active else "#EEF0F3"
+        color = "#fff" if is_active else "#6b7280"
+        weight = "700" if is_active else "400"
+        segments.append(
+            f'<span style="flex:1;text-align:center;padding:6px 4px;background:{bg};'
+            f'color:{color};font-weight:{weight};font-size:12px">'
+            f"{html.escape(_text(label))}</span>"
+        )
+    scale_html = (
+        '<div style="display:flex;gap:3px;margin:7px 0 9px;border-radius:6px;'
+        'overflow:hidden;max-width:360px">' + "".join(segments) + "</div>"
+    )
+    evidence = _field_text(rating.get("evidence_ids"))
+    evidence_html = (
+        '<p class="climate-core-evidence" style="margin:2px 0 0"><strong>Evidence:'
+        f"</strong> {html.escape(evidence)}</p>" if evidence else ""
+    )
+    return (
+        '<div class="climate-sens-rating" style="background:#F7F8FA;border:1px '
+        'solid #E2E6EC;border-radius:8px;padding:12px 14px;margin:0 0 14px">'
+        f'<p style="margin:0 0 2px"><strong>'
+        f'{html.escape(_text(rating.get("question")))}</strong></p>'
+        f'<p style="margin:0;font-size:18px;font-weight:700;color:{active}">'
+        f'{html.escape(_text(rating.get("label")))}</p>'
+        + scale_html
+        + f'<p style="margin:0 0 4px">{html.escape(_text(rating.get("description")))}</p>'
+        + evidence_html
+        + '<p style="margin:6px 0 0;font-size:12px;color:#6b7280">'
+        + html.escape(_text(rating.get("caveat")))
+        + "</p></div>"
+    )
+
+
 def render_reader_html(model: dict[str, object]) -> str:
     """Render escaped HTML from the canonical reader dictionary."""
 
@@ -629,18 +722,9 @@ def render_reader_html(model: dict[str, object]) -> str:
 
     parts.append(_heading(2, HEADINGS[1]))
     parts.append(f"<p>{html.escape(CORE_QUESTIONS_INTRO)}</p>")
-    reads = _records(model.get("judgment_reads"))
-    if reads:
-        strip = " &nbsp;&middot;&nbsp; ".join(
-            f'{html.escape(_text(r.get("label")))} '
-            f'<strong>{html.escape(_text(r.get("value")))}</strong>'
-            for r in reads
-        )
-        parts.append(
-            '<p class="climate-reads"><strong>The tool\'s overall reads:</strong> '
-            + strip
-            + "</p>"
-        )
+    rating = _mapping(model.get("climate_sensitivity_rating"))
+    if rating:
+        parts.append(_sensitivity_rating_html(rating))
     for question in _records(model.get("core_questions")):
         parts.append('<section class="climate-core-question">')
         parts.append(_heading(3, _text(question.get("question"))))
@@ -650,7 +734,10 @@ def render_reader_html(model: dict[str, object]) -> str:
                 '<p class="climate-core-source">For further insights on why this '
                 "matters, see: <em>" + html.escape(source) + "</em></p>"
             )
-        parts.append("<p>" + html.escape(_text(question.get("summary"))) + "</p>")
+        for para in re.split(r"\n\s*\n+", _text(question.get("summary")).strip()):
+            para = para.strip()
+            if para:
+                parts.append("<p>" + html.escape(para) + "</p>")
         watch = _text(question.get("watch"))
         if watch:
             parts.append(
@@ -881,15 +968,20 @@ def write_reader_docx(model: dict[str, object], path: str | Path) -> Path:
 
     document.add_heading(HEADINGS[1], level=1)
     document.add_paragraph(CORE_QUESTIONS_INTRO)
-    reads = _records(model.get("judgment_reads"))
-    if reads:
+    rating = _mapping(model.get("climate_sensitivity_rating"))
+    if rating:
         paragraph = document.add_paragraph()
-        paragraph.add_run("The tool's overall reads: ").bold = True
+        paragraph.add_run(f"{_text(rating.get('question'))} ").bold = True
+        scale = rating.get("scale") if isinstance(rating.get("scale"), list) else []
         paragraph.add_run(
-            "  |  ".join(
-                f'{_text(r.get("label"))} {_text(r.get("value"))}' for r in reads
-            )
+            f"Rating: {_text(rating.get('label'))}"
+            + (f" (scale: {' - '.join(_text(s) for s in scale)})" if scale else "")
         )
+        document.add_paragraph(_text(rating.get("description")))
+        _docx_field(document, "Evidence", rating.get("evidence_ids"))
+        caveat = document.add_paragraph(_text(rating.get("caveat")))
+        if caveat.runs:
+            caveat.runs[0].italic = True
     for question in _records(model.get("core_questions")):
         document.add_heading(_text(question.get("question")), level=2)
         source = _text(question.get("source"))
@@ -899,7 +991,10 @@ def write_reader_docx(model: dict[str, object], path: str | Path) -> Path:
                 f"For further insights on why this matters, see: {source}"
             )
             run.italic = True
-        document.add_paragraph(_text(question.get("summary")))
+        for para in re.split(r"\n\s*\n+", _text(question.get("summary")).strip()):
+            para = para.strip()
+            if para:
+                document.add_paragraph(para)
         _docx_field(document, "What to watch", question.get("watch"))
         _docx_field(document, "Evidence", question.get("evidence_ids"))
 

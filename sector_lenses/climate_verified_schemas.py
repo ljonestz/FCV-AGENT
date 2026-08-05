@@ -164,7 +164,8 @@ CORE_QUESTION_SCHEMA = _object(
         "question": _string("The plain-language question, restated for the reader."),
         "source": _string("Short source-framework attribution."),
         "summary": _string(
-            "Evidence-grounded answer of 40 to 90 words, distinct from the "
+            "Evidence-grounded answer of roughly 120 to 220 words in one or two "
+            "short paragraphs separated by a blank line, distinct from the "
             "executive readout; a design question to resolve, never a promise."
         ),
         "evidence_ids": _strings(),

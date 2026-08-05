@@ -83,30 +83,62 @@ def _assessment_with_core_questions() -> dict[str, object]:
     }
 
 
-def test_reader_model_carries_core_questions_and_reads_strip():
+def test_reader_model_carries_core_questions_and_sensitivity_rating():
     model = build_reader_model(_assessment_with_core_questions())
     assert model["core_questions"][0]["question_id"] == "cq2-infra-horizon"
-    labels = [r["label"] for r in model["judgment_reads"]]
-    # Reads strip keeps the three calibration dimensions and omits relevance.
-    assert labels == ["Sensitivity", "Responsiveness", "From intent to delivery"]
-    assert all(r["value"] for r in model["judgment_reads"])
+    assert "judgment_reads" not in model  # replaced by the sensitivity rating
+    rating = model["climate_sensitivity_rating"]
+    # Derived from the retained internal `sensitivity` judgment (value=strong).
+    assert rating["value"] == "strong"
+    assert rating["label"] == "Strong"
+    assert rating["level"] == 3
+    assert rating["scale"] == ["Limited", "Moderate", "Strong"]
+    assert "sensitive" in rating["question"].lower()
+    assert rating["caveat"]
+
+
+def test_sensitivity_rating_maps_each_value():
+    for value, (label, level) in {
+        "strong": ("Strong", 3),
+        "moderate": ("Moderate", 2),
+        "limited": ("Limited", 1),
+        "unclear": ("Not yet clear", 0),
+    }.items():
+        assessment = _assessment_with_core_questions()
+        assessment["judgments"]["sensitivity"]["value"] = value
+        rating = build_reader_model(assessment)["climate_sensitivity_rating"]
+        assert (rating["label"], rating["level"]) == (label, level)
 
 
 def test_core_questions_render_in_html_and_docx():
     model = build_reader_model(_assessment_with_core_questions())
     html = render_reader_html(model)
     assert "Core climate-FCV questions" in html
-    assert "The tool's overall reads" in html
+    assert "How sensitive is this project to climate and FCV considerations?" in html
+    assert ">Strong<" in html and "Moderate" in html and "Limited" in html  # scale
     assert "Is infrastructure sized for future climate conditions?" in html
     assert "For further insights on why this matters" in html
     assert "What to watch" in html
+    assert "The tool's overall reads" not in html  # old strip removed
     stream = BytesIO()
     write_reader_docx(model, stream)
     stream.seek(0)
     text = "\n".join(p.text for p in Document(stream).paragraphs)
     assert "Core climate-FCV questions" in text
-    assert "overall reads" in text
+    assert "How sensitive is this project" in text
+    assert "Rating: Strong" in text
     assert "Is infrastructure sized for future climate conditions?" in text
+
+
+def test_core_question_summary_renders_as_paragraphs():
+    assessment = _assessment_with_core_questions()
+    assessment["core_questions"][0]["summary"] = "First paragraph here.\n\nSecond paragraph here."
+    html = render_reader_html(build_reader_model(assessment))
+    assert "First paragraph here." in html and "Second paragraph here." in html
+    assert html.count("First paragraph here.") == 1
+    # Two separate <p> blocks, not one run-on.
+    assert "First paragraph here.</p>" in html
+    assert "Second paragraph here." in html
 
 
 def test_reader_without_core_questions_still_renders():
@@ -117,6 +149,6 @@ def test_reader_without_core_questions_still_renders():
     assert model["core_questions"] == []
     html = render_reader_html(model)
     assert "Core climate-FCV questions" in html
-    assert "The tool's overall reads" in html  # reads strip still shown
+    assert "How sensitive is this project" in html  # rating still shown
     stream = BytesIO()
     write_reader_docx(model, stream)  # must not raise

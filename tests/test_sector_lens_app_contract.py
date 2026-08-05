@@ -2395,8 +2395,11 @@ def test_verified_climate_ui_contract_is_ranked_and_multidimensional():
     # literature-grounded, evidence-gated question cards replace the old four
     # judgment boxes.
     assert "Core climate-FCV questions" in html
-    assert "judgment_reads" in html
-    assert "The tool's overall reads" in html
+    # Headline sensitivity rating (from server data) replaces the old reads strip.
+    assert "climate_sensitivity_rating" in html
+    assert "csr.question" in html
+    assert "csr.scale" in html
+    assert "The tool's overall reads" not in html
     assert "core_questions" in html
     assert "For further insights on why this matters" in html
     assert "Points to check before the decision meeting" in html

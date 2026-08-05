@@ -4627,18 +4627,28 @@
     // values, relevance omitted as it echoes the exec readout) + literature-
     // grounded, evidence-gated question cards. Replaces the old judgment boxes.
     const CORE_QUESTIONS_INTRO="This section works through the core questions that the World Bank's climate-and-fragility guidance asks of a project in a conflict-affected setting. Each answer draws only on your document and the evidence gathered for this run, and is kept separate from the executive summary above so it adds new detail rather than repeating it.";
-    const judgmentReads=Array.isArray(r.judgment_reads)?r.judgment_reads:[];
-    const readsStrip=judgmentReads.length
-      ?`<p class="climate-reads" style="background:#EEF0F3;border-radius:8px;padding:9px 12px;margin:0 0 12px;font-size:13px;color:#374151"><strong>The tool's overall reads:</strong> ${judgmentReads.map(rd=>`${esc(rd.label||'')} <strong>${esc(rd.value||'')}</strong>`).join(' &nbsp;&middot;&nbsp; ')}</p>`
-      :'';
+    // Headline rating: how sensitive the project is to climate & FCV, on a
+    // Limited -> Moderate -> Strong scale (replaces the old generic reads strip).
+    const csr=r.climate_sensitivity_rating&&typeof r.climate_sensitivity_rating==='object'?r.climate_sensitivity_rating:null;
+    const ratingHtml=(()=>{
+      if(!csr)return '';
+      const tones={good:'#1A9850',mid:'#E8A33D',low:'#D73027',unclear:'#9aa4b2'};
+      const active=tones[csr.tone]||'#9aa4b2';
+      const level=Number(csr.level)||0;
+      const scale=Array.isArray(csr.scale)?csr.scale:[];
+      const segs=scale.map((lab,i)=>{const on=(i+1)===level;return `<span style="flex:1;text-align:center;padding:6px 4px;background:${on?active:'#EEF0F3'};color:${on?'#fff':'#6b7280'};font-weight:${on?'700':'400'};font-size:12px">${esc(lab)}</span>`;}).join('');
+      const ev=Array.isArray(csr.evidence_ids)&&csr.evidence_ids.length?`<p class="cj-src" style="margin:2px 0 0">Evidence: ${esc(csr.evidence_ids.join(', '))}</p>`:'';
+      return `<div class="climate-sens-rating" style="background:#F7F8FA;border:1px solid #E2E6EC;border-radius:8px;padding:12px 14px;margin:0 0 14px"><p style="margin:0 0 2px"><strong>${esc(csr.question||'')}</strong></p><p style="margin:0;font-size:18px;font-weight:700;color:${active}">${esc(csr.label||'')}</p><div style="display:flex;gap:3px;margin:7px 0 9px;border-radius:6px;overflow:hidden;max-width:360px">${segs}</div><p style="margin:0 0 4px">${esc(csr.description||'')}</p>${ev}<p style="margin:6px 0 0;font-size:12px;color:#6b7280">${esc(csr.caveat||'')}</p></div>`;
+    })();
     const coreQuestions=Array.isArray(r.core_questions)?r.core_questions:[];
     const coreQuestionsHtml=coreQuestions.map(q=>{
       const src=q.source?`<p style="color:#009FDA;font-size:12px;margin:0 0 6px">For further insights on why this matters, see: <em>${esc(q.source)}</em></p>`:'';
+      const summ=String(q.summary||'').split(/\n\s*\n+/).map(p=>p.trim()).filter(Boolean).map(p=>`<p style="margin:0 0 7px">${esc(p)}</p>`).join('');
       const watch=q.watch?`<p style="margin:0;color:#374151"><strong>What to watch:</strong> ${esc(q.watch)}</p>`:'';
       const ev=Array.isArray(q.evidence_ids)&&q.evidence_ids.length?`<p class="cj-src" style="margin:4px 0 0">Evidence: ${esc(q.evidence_ids.join(', '))}</p>`:'';
-      return `<section class="cj climate-core-question"><h3 style="font-size:15px;font-weight:700;color:#002244;margin:0 0 5px">${esc(q.question||'')}</h3>${src}<p style="margin:0 0 7px">${esc(q.summary||'')}</p>${watch}${ev}</section>`;
+      return `<section class="cj climate-core-question"><h3 style="font-size:15px;font-weight:700;color:#002244;margin:0 0 5px">${esc(q.question||'')}</h3>${src}${summ}${watch}${ev}</section>`;
     }).join('');
-    const coreQuestionsSection=`<h2>Core climate-FCV questions</h2><p style="color:#4b5563;margin:0 0 11px">${esc(CORE_QUESTIONS_INTRO)}</p>${readsStrip}${coreQuestionsHtml}`;
+    const coreQuestionsSection=`<h2>Core climate-FCV questions</h2><p style="color:#4b5563;margin:0 0 11px">${esc(CORE_QUESTIONS_INTRO)}</p>${ratingHtml}${coreQuestionsHtml}`;
     const draftingBlock=(label,block)=>{
       if(!block||typeof block!=='object')return '';
       const dest=[block.target_document,block.target_section].filter(Boolean).map(esc).join(' – ');
