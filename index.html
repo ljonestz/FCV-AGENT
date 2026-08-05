@@ -4623,21 +4623,22 @@
     const execHtml=(String(r.executive_readout||'').split(/\n\s*\n+/).map(p=>p.trim()).filter(Boolean).map(p=>`<p>${boldFirstSentence(p)}</p>`).join(''))||`<p>${executive}</p>`;
     const evidenceStatus=String(r.evidence_status||'approved');
     const statusHtml=evidenceStatus!=='approved'?`<div class="finalized-pad-notice"><div class="fpn-body"><strong>Evidence status:</strong> ${esc(evidenceStatus)}</div></div>`:'';
-    const judgments=Array.isArray(r.judgments)?r.judgments:[];
-    const ratingTone=v=>{const s=String(v||'').toLowerCase();
-      if(/\b(high|strong|embedded)\b/.test(s)||/well/.test(s))return 'good';
-      if(/\b(moderate|emerging|partial|medium|early|expected)\b/.test(s))return 'mid';
-      if(/\b(low|limited|weak|not.?evidenced|insufficient|absent|none)\b/.test(s))return 'low';
-      return 'unclear';};
-    const judgmentHtml=judgments.map(j=>{
-      const val=esc(String(j.value||'unclear').replaceAll('_',' '));
-      // Combined subheader: bold short title + colon, then the full question in italics.
-      const head=`<span class="cj-title"><strong>${esc(j.title||j.dimension||'Judgment')}:</strong>${j.description?` <em class="cj-q">${esc(j.description)}</em>`:''}</span>`;
-      return `<section class="cj cj-${ratingTone(j.value)}" data-climate-dimension="${esc(j.dimension)}">`+
-        `<div class="cj-head">${head}<span class="cj-badge">${val}</span></div>`+
-        `<p class="cj-rat">${esc(j.rationale||'Evidence remains insufficient for a firmer judgment.')}</p>`+
-        (Array.isArray(j.evidence_ids)&&j.evidence_ids.length?`<p class="cj-src">Sources: ${esc(j.evidence_ids.join(', '))}</p>`:'')+
-      `</section>`;}).join('');
+    // Core climate-FCV questions: a compact "overall reads" strip (calibration
+    // values, relevance omitted as it echoes the exec readout) + literature-
+    // grounded, evidence-gated question cards. Replaces the old judgment boxes.
+    const CORE_QUESTIONS_INTRO="This section works through the core questions that the World Bank's climate-and-fragility guidance asks of a project in a conflict-affected setting. Each answer draws only on your document and the evidence gathered for this run, and is kept separate from the executive summary above so it adds new detail rather than repeating it.";
+    const judgmentReads=Array.isArray(r.judgment_reads)?r.judgment_reads:[];
+    const readsStrip=judgmentReads.length
+      ?`<p class="climate-reads" style="background:#EEF0F3;border-radius:8px;padding:9px 12px;margin:0 0 12px;font-size:13px;color:#374151"><strong>The tool's overall reads:</strong> ${judgmentReads.map(rd=>`${esc(rd.label||'')} <strong>${esc(rd.value||'')}</strong>`).join(' &nbsp;&middot;&nbsp; ')}</p>`
+      :'';
+    const coreQuestions=Array.isArray(r.core_questions)?r.core_questions:[];
+    const coreQuestionsHtml=coreQuestions.map(q=>{
+      const src=q.source?`<p style="color:#009FDA;font-size:12px;margin:0 0 6px">For further insights on why this matters, see: <em>${esc(q.source)}</em></p>`:'';
+      const watch=q.watch?`<p style="margin:0;color:#374151"><strong>What to watch:</strong> ${esc(q.watch)}</p>`:'';
+      const ev=Array.isArray(q.evidence_ids)&&q.evidence_ids.length?`<p class="cj-src" style="margin:4px 0 0">Evidence: ${esc(q.evidence_ids.join(', '))}</p>`:'';
+      return `<section class="cj climate-core-question"><h3 style="font-size:15px;font-weight:700;color:#002244;margin:0 0 5px">${esc(q.question||'')}</h3>${src}<p style="margin:0 0 7px">${esc(q.summary||'')}</p>${watch}${ev}</section>`;
+    }).join('');
+    const coreQuestionsSection=`<h2>Core climate-FCV questions</h2><p style="color:#4b5563;margin:0 0 11px">${esc(CORE_QUESTIONS_INTRO)}</p>${readsStrip}${coreQuestionsHtml}`;
     const draftingBlock=(label,block)=>{
       if(!block||typeof block!=='object')return '';
       const dest=[block.target_document,block.target_section].filter(Boolean).map(esc).join(' – ');
@@ -4732,7 +4733,7 @@
       }
       provenanceHtml = `<details class="climate-fold"><summary>How this analysis was produced</summary>${etInner}</details>`;
     }
-    return `<article class="climate-verified-assessment">${smokeHtml}<h2>Executive readout</h2><div class="climate-exec">${execHtml}</div>${statusHtml}<h2>Climate-FCV judgments</h2><div class="cj-grid">${judgmentHtml}</div><h2>Ranked operational priorities</h2>${prioritySummaryHtml}${priorityHtml}<details class="climate-fold"><summary>Points to check before the decision meeting</summary>${flagsHtml}</details>${provenanceHtml}<p class="climate-advisory">${esc(r.advisory_notice||'')}</p></article>`;
+    return `<article class="climate-verified-assessment">${smokeHtml}<h2>Executive readout</h2><div class="climate-exec">${execHtml}</div>${statusHtml}${coreQuestionsSection}<h2>Ranked operational priorities</h2>${prioritySummaryHtml}${priorityHtml}<details class="climate-fold"><summary>Points to check before the decision meeting</summary>${flagsHtml}</details>${provenanceHtml}<p class="climate-advisory">${esc(r.advisory_notice||'')}</p></article>`;
   }
 
   function renderOut(stage,result,isFollowOn){

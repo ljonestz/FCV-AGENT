@@ -157,6 +157,22 @@ def _judgment(values: tuple[str, ...]) -> dict[str, object]:
     )
 
 
+CORE_QUESTION_SCHEMA = _object(
+    {
+        "question_id": _string("Bank question id, for example cq2-infra-horizon."),
+        "theme": _string("One of the six core climate-FCV themes."),
+        "question": _string("The plain-language question, restated for the reader."),
+        "source": _string("Short source-framework attribution."),
+        "summary": _string(
+            "Evidence-grounded answer of 40 to 90 words, distinct from the "
+            "executive readout; a design question to resolve, never a promise."
+        ),
+        "evidence_ids": _strings(),
+        "watch": _string("One short line naming what to check. 30 words or fewer."),
+    }
+)
+
+
 SCORE_SCHEMA = _object(
     {
         "materiality": {"type": "integer"},
@@ -341,6 +357,15 @@ STAGE_OUTPUT_SCHEMAS: dict[str, dict[str, object]] = {
             "operationalization": _judgment(
                 ("embedded", "partial", "early", "not_evidenced", "unclear")
             ),
+            "core_questions": {
+                "type": "array",
+                "items": CORE_QUESTION_SCHEMA,
+                "description": (
+                    "Three to five evidence-grounded answers to the supplied "
+                    "triggered core climate-FCV questions, each distinct from the "
+                    "executive readout. Empty array if none can be evidenced."
+                ),
+            },
         }
     ),
     "recommendation_compiler": _object(

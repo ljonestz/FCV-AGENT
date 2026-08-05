@@ -2391,13 +2391,14 @@ def test_verified_climate_ui_contract_is_ranked_and_multidimensional():
     )
 
     assert "renderClimateVerifiedAssessment" in html
-    for dimension in (
-        "relevance",
-        "sensitivity",
-        "responsiveness",
-        "operationalization",
-    ):
-        assert f'data-climate-dimension="${{esc(j.dimension)}}"' in html
+    # Core climate-FCV questions: a compact reads strip (calibration values) plus
+    # literature-grounded, evidence-gated question cards replace the old four
+    # judgment boxes.
+    assert "Core climate-FCV questions" in html
+    assert "judgment_reads" in html
+    assert "The tool's overall reads" in html
+    assert "core_questions" in html
+    assert "For further insights on why this matters" in html
     assert "Points to check before the decision meeting" in html
     start = html.index("function renderClimateVerifiedAssessment")
     end = html.index("\n  function ", start + 20)
@@ -2469,7 +2470,7 @@ def test_verified_climate_docx_route_uses_canonical_reader():
     from docx import Document
     document = Document(io.BytesIO(response.data))
     text = "\n".join(item.text for item in document.paragraphs)
-    assert "Climate-FCV judgments" in text
+    assert "Core climate-FCV questions" in text
     assert "preview; not approved" in text
     assert "Smoke test: validates workflow completion only" in text
 

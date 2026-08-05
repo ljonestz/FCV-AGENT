@@ -15,6 +15,8 @@ import time
 from dataclasses import asdict, dataclass, replace
 from typing import Protocol
 
+import climate_question_bank
+
 from sector_lenses.climate_analysis import (
     ClimatePathway,
     ContextEvidenceRef,
@@ -277,6 +279,78 @@ def _judgments(payload: dict[str, object]) -> ClimateJudgments:
             source.get("operationalization"), "unclear"
         ),
     )
+
+
+_CORE_QUESTION_CAP = 5
+
+
+def _core_question_signals(facts: list) -> list[str]:
+    """Build a lowercase-able signal list from verified facts for bank triggering."""
+    signals: list[str] = []
+    for item in facts:
+        record = asdict(item) if hasattr(item, "__dataclass_fields__") else _mapping(item)
+        for value in record.values():
+            if isinstance(value, str) and value:
+                signals.append(value)
+            elif isinstance(value, (list, tuple)):
+                signals.extend(v for v in value if isinstance(v, str) and v)
+    return signals
+
+
+def _core_questions_to_answer(facts: list) -> list[dict[str, str]]:
+    """Select up to six triggered core-question-bank items to pose at judgment."""
+    plan = climate_question_bank.build_question_plan(_core_question_signals(facts))
+    candidates = plan.get("supplementary_candidates") or []
+    posed: list[dict[str, str]] = []
+    for question in candidates[:6]:
+        question_id = _text(question.get("id"))
+        if not question_id:
+            continue
+        posed.append({
+            "id": question_id,
+            "theme": _text(question.get("theme")),
+            "question": _text(question.get("question")),
+            "source": _text(question.get("source")),
+        })
+    return posed
+
+
+def _admit_core_questions(
+    payload: dict[str, object],
+    allowed_ids: set[str],
+    known_ids: set[str],
+) -> list[dict[str, object]]:
+    """Keep only evidence-grounded answers to the posed core questions.
+
+    Evidence-gated: an answer survives only when its question_id was actually
+    posed and at least one cited evidence_id resolves to a known register ID.
+    Drops duplicates and caps the reader-facing set.
+    """
+    admitted: list[dict[str, object]] = []
+    seen: set[str] = set()
+    for record in _records(payload, "core_questions"):
+        question_id = _text(record.get("question_id"))
+        summary = _text(record.get("summary"))
+        if not question_id or question_id not in allowed_ids or question_id in seen:
+            continue
+        if not summary:
+            continue
+        evidence_ids = [e for e in _strings(record.get("evidence_ids")) if e in known_ids]
+        if not evidence_ids:
+            continue
+        seen.add(question_id)
+        admitted.append({
+            "question_id": question_id,
+            "theme": _text(record.get("theme")),
+            "question": _text(record.get("question")),
+            "source": _text(record.get("source")),
+            "summary": summary,
+            "evidence_ids": evidence_ids,
+            "watch": _text(record.get("watch")),
+        })
+        if len(admitted) >= _CORE_QUESTION_CAP:
+            break
+    return admitted
 
 
 def _score(record: object) -> RecommendationScore:
@@ -809,12 +883,14 @@ def run_verified_climate_pipeline(
         "evidence_limitations": analysis_payload.get("evidence_limitations", []),
     }
 
+    posed_core_questions = _core_questions_to_answer(facts)
     judgment_payload = _call(
         clients.assessment,
         "judgment_review",
         {
             "facts": [asdict(item) for item in facts],
             "analysis": analysis_record,
+            "core_questions_to_answer": posed_core_questions,
         },
         latency_ms,
         cancel_event=cancel_event,
@@ -829,6 +905,11 @@ def run_verified_climate_pipeline(
         | {item.pathway_id for item in pathways}
         | {item.gap_id for item in gaps}
         | {item.evidence_id for item in context_evidence}
+    )
+    core_questions = _admit_core_questions(
+        judgment_payload,
+        {question["id"] for question in posed_core_questions},
+        known_ids,
     )
     judgment_issues = validate_judgments(judgments, known_ids)
     if judgment_issues:
@@ -1203,6 +1284,7 @@ def run_verified_climate_pipeline(
         "executive_readout": (
             executive_readout or deterministic_summary(judgments)
         ),
+        "core_questions": core_questions,
         "priorities": [asdict(item) for item in priorities],
         "review_readiness_flags": [asdict(item) for item in readiness],
         "validation": {

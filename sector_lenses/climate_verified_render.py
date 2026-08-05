@@ -42,11 +42,26 @@ DIMENSIONS = (
 NO_RECOMMENDATION_MESSAGE = (
     "No recommendation passed the admission threshold for this run."
 )
+# The compact "overall reads" strip shown above the core-question cards. The
+# fourth judgment dimension (relevance) is retained internally for calibration
+# but omitted here because it restates the executive readout.
+_READS_DIMENSIONS = (
+    ("sensitivity", "Sensitivity"),
+    ("responsiveness", "Responsiveness"),
+    ("operationalization", "From intent to delivery"),
+)
+CORE_QUESTIONS_INTRO = (
+    "This section works through the core questions that the World Bank's "
+    "climate-and-fragility guidance asks of a project in a conflict-affected "
+    "setting. Each answer draws only on your document and the evidence gathered "
+    "for this run, and is kept separate from the executive summary above so it "
+    "adds new detail rather than repeating it."
+)
 
 
 HEADINGS = (
     "Executive readout",
-    "Climate-FCV judgments",
+    "Core climate-FCV questions",
     "Ranked operational priorities",
     "Points to check before the decision meeting",
     "Technical annex",
@@ -214,6 +229,32 @@ def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
             ] if isinstance(judgment.get("evidence_ids"), (list, tuple)) else [],
         })
 
+    core_questions = [
+        {
+            "question_id": _text(q.get("question_id")),
+            "theme": _text(q.get("theme")),
+            "question": _text(q.get("question")),
+            "source": _text(q.get("source")),
+            "summary": _text(q.get("summary")),
+            "evidence_ids": [
+                _text(e) for e in q.get("evidence_ids", []) if _text(e)
+            ] if isinstance(q.get("evidence_ids"), (list, tuple)) else [],
+            "watch": _text(q.get("watch")),
+        }
+        for q in _records(assessment.get("core_questions"))
+    ]
+    by_dimension = {item["dimension"]: item for item in judgments}
+    judgment_reads = [
+        {
+            "label": label,
+            "value": _text(by_dimension.get(dimension, {}).get("value"))
+            .replace("_", " ")
+            .capitalize(),
+        }
+        for dimension, label in _READS_DIMENSIONS
+        if _text(by_dimension.get(dimension, {}).get("value"))
+    ]
+
     priorities = sorted(
         _records(assessment.get("priorities")),
         key=lambda item: (_rank(item.get("rank")), _text(item.get("title"))),
@@ -227,6 +268,8 @@ def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
     return _scrub_placeholders({
         "executive_readout": executive,
         "judgments": judgments,
+        "judgment_reads": judgment_reads,
+        "core_questions": core_questions,
         "priorities": [dict(item) for item in priorities],
         "review_readiness_flags": [dict(item) for item in flags],
         "priority_summary": _priority_summary(priorities),
@@ -573,31 +616,38 @@ def render_reader_html(model: dict[str, object]) -> str:
         )
 
     parts.append(_heading(2, HEADINGS[1]))
-    for judgment in _records(model.get("judgments")):
-        parts.append(
-            '<section class="climate-judgment" data-climate-dimension="'
-            + html.escape(_text(judgment.get("dimension")))
-            + '">'
+    parts.append(f"<p>{html.escape(CORE_QUESTIONS_INTRO)}</p>")
+    reads = _records(model.get("judgment_reads"))
+    if reads:
+        strip = " &nbsp;&middot;&nbsp; ".join(
+            f'{html.escape(_text(r.get("label")))} '
+            f'<strong>{html.escape(_text(r.get("value")))}</strong>'
+            for r in reads
         )
-        parts.append(_heading(3, _text(judgment.get("title"))))
-        description = _text(judgment.get("description"))
-        if description:
-            parts.append(
-                '<p class="climate-judgment-desc"><em>'
-                + html.escape(description)
-                + "</em></p>"
-            )
         parts.append(
-            "<p><strong>"
-            + html.escape(_text(judgment.get("value")).replace("_", " ").title())
-            + ":</strong> "
-            + html.escape(_text(judgment.get("rationale")))
+            '<p class="climate-reads"><strong>The tool\'s overall reads:</strong> '
+            + strip
             + "</p>"
         )
-        evidence_refs = _field_text(judgment.get("evidence_ids"))
+    for question in _records(model.get("core_questions")):
+        parts.append('<section class="climate-core-question">')
+        parts.append(_heading(3, _text(question.get("question"))))
+        source = _text(question.get("source"))
+        if source:
+            parts.append(
+                '<p class="climate-core-source">For further insights on why this '
+                "matters, see: <em>" + html.escape(source) + "</em></p>"
+            )
+        parts.append("<p>" + html.escape(_text(question.get("summary"))) + "</p>")
+        watch = _text(question.get("watch"))
+        if watch:
+            parts.append(
+                "<p><strong>What to watch:</strong> " + html.escape(watch) + "</p>"
+            )
+        evidence_refs = _field_text(question.get("evidence_ids"))
         if evidence_refs:
             parts.append(
-                "<p><strong>Evidence references:</strong> "
+                '<p class="climate-core-evidence"><strong>Evidence:</strong> '
                 + html.escape(evidence_refs)
                 + "</p>"
             )
@@ -792,18 +842,28 @@ def write_reader_docx(model: dict[str, object], path: str | Path) -> Path:
         _docx_field(document, "Evidence status", model.get("evidence_status"))
 
     document.add_heading(HEADINGS[1], level=1)
-    for judgment in _records(model.get("judgments")):
-        document.add_heading(_text(judgment.get("title")), level=2)
-        description = _text(judgment.get("description"))
-        if description:
-            paragraph = document.add_paragraph(description)
-            if paragraph.runs:
-                paragraph.runs[0].italic = True
-        _docx_field(document, "Judgment", judgment.get("value"))
-        _docx_field(document, "Rationale", judgment.get("rationale"))
-        _docx_field(
-            document, "Evidence references", judgment.get("evidence_ids")
+    document.add_paragraph(CORE_QUESTIONS_INTRO)
+    reads = _records(model.get("judgment_reads"))
+    if reads:
+        paragraph = document.add_paragraph()
+        paragraph.add_run("The tool's overall reads: ").bold = True
+        paragraph.add_run(
+            "  |  ".join(
+                f'{_text(r.get("label"))} {_text(r.get("value"))}' for r in reads
+            )
         )
+    for question in _records(model.get("core_questions")):
+        document.add_heading(_text(question.get("question")), level=2)
+        source = _text(question.get("source"))
+        if source:
+            paragraph = document.add_paragraph()
+            run = paragraph.add_run(
+                f"For further insights on why this matters, see: {source}"
+            )
+            run.italic = True
+        document.add_paragraph(_text(question.get("summary")))
+        _docx_field(document, "What to watch", question.get("watch"))
+        _docx_field(document, "Evidence", question.get("evidence_ids"))
 
     document.add_heading(HEADINGS[2], level=1)
     priorities = _records(model.get("priorities"))

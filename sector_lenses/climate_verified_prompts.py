@@ -127,7 +127,21 @@ category in the document; if a dimension (for example climate risk) is stated
 only in narrative and is not a rating category, describe it as narrative-stated
 rather than formally rated.
 
-Return: {"executive_readout":"...","relevance":{"value":"high|medium|low|unclear","evidence_ids":[],"rationale":"..."},"sensitivity":{"value":"strong|moderate|limited|unclear","evidence_ids":[],"rationale":"..."},"responsiveness":{"value":"strong|emerging|limited|not_expected|unclear","evidence_ids":[],"rationale":"..."},"operationalization":{"value":"embedded|partial|early|not_evidenced|unclear","evidence_ids":[],"rationale":"..."}}.""",
+You are also given core_questions_to_answer: a short list of core climate-FCV
+questions selected for this project from World Bank climate-and-fragility
+guidance. Answer three to five of them - only those you can ground in the
+verified registers - and return them as core_questions. For each answer, copy
+question_id and theme exactly as supplied, restate the question in plain
+language, name its source, and write a 40 to 90 word summary a non-specialist
+can follow. Each summary must add NEW detail and MUST NOT repeat the
+executive_readout or a judgment rationale: frame it as a design question to
+resolve or a strength to note, cite at least one evidence ID in evidence_ids,
+never promise or predict an outcome, and add a one-line watch note saying what
+the team should check. Skip any supplied question you cannot ground in the
+verified evidence rather than padding; return an empty array only if none can be
+grounded.
+
+Return: {"executive_readout":"...","relevance":{"value":"high|medium|low|unclear","evidence_ids":[],"rationale":"..."},"sensitivity":{"value":"strong|moderate|limited|unclear","evidence_ids":[],"rationale":"..."},"responsiveness":{"value":"strong|emerging|limited|not_expected|unclear","evidence_ids":[],"rationale":"..."},"operationalization":{"value":"embedded|partial|early|not_evidenced|unclear","evidence_ids":[],"rationale":"..."},"core_questions":[{"question_id":"cq2-infra-horizon","theme":"cq2_maladaptation","question":"...","source":"...","summary":"...","evidence_ids":["RG-001"],"watch":"..."}]}.""",
         payload,
     )
 
