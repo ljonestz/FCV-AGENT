@@ -43,6 +43,20 @@ def test_build_reader_model_scrubs_bracket_placeholder_so_run_survives():
     assert model["priorities"][0]["minimum_action"].startswith(
         "Complete the proportionate minimum action"
     )
+
+
+def test_build_reader_model_normalises_em_and_en_dashes():
+    """Em/en dashes (and stray replacement chars) become ASCII hyphens on every surface."""
+    assessment = _assessment()
+    assessment["executive_readout"] = (
+        "The objective—to strengthen resilience—is clear. "
+        "Coverage is 40–50 percent. A mojibaked dash�here too. "
+    ) * 12
+    model = build_reader_model(assessment)
+    readout = model["executive_readout"]
+    assert "—" not in readout and "–" not in readout and "�" not in readout
+    assert "objective - to strengthen resilience - is clear" in readout
+    assert "40-50 percent" in readout
     assert model["priorities"][0]["minimum_action"].endswith(".")
 
 

@@ -91,17 +91,21 @@ def test_reader_model_carries_core_questions_and_sensitivity_rating():
     # Derived from the retained internal `sensitivity` judgment (value=strong).
     assert rating["value"] == "strong"
     assert rating["label"] == "Strong"
-    assert rating["level"] == 3
-    assert rating["scale"] == ["Limited", "Moderate", "Strong"]
+    assert rating["level"] == 4  # 5-point scale: strong is the 4th of 5
+    assert rating["scale"] == [
+        "Very Limited", "Limited", "Moderate", "Strong", "Very Strong",
+    ]
     assert "sensitive" in rating["question"].lower()
     assert rating["caveat"]
 
 
 def test_sensitivity_rating_maps_each_value():
     for value, (label, level) in {
-        "strong": ("Strong", 3),
-        "moderate": ("Moderate", 2),
-        "limited": ("Limited", 1),
+        "very_strong": ("Very Strong", 5),
+        "strong": ("Strong", 4),
+        "moderate": ("Moderate", 3),
+        "limited": ("Limited", 2),
+        "very_limited": ("Very Limited", 1),
         "unclear": ("Not yet clear", 0),
     }.items():
         assessment = _assessment_with_core_questions()

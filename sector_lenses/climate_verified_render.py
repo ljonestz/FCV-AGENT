@@ -46,7 +46,9 @@ NO_RECOMMENDATION_MESSAGE = (
 # is to climate and FCV considerations, on a Limited -> Moderate -> Strong scale
 # derived from the (retained) internal `sensitivity` judgment. Higher is better
 # (more strongly designed to recognise and avoid worsening climate/FCV risk).
-_SENSITIVITY_SCALE_LABELS = ("Limited", "Moderate", "Strong")
+_SENSITIVITY_SCALE_LABELS = (
+    "Very Limited", "Limited", "Moderate", "Strong", "Very Strong",
+)
 SENSITIVITY_RATING_QUESTION = (
     "How sensitive is this project to climate and FCV considerations?"
 )
@@ -55,20 +57,30 @@ SENSITIVITY_RATING_CAVEAT = (
     "constitute an official WBG rating."
 )
 _SENSITIVITY_RATING = {
+    "very_strong": {
+        "label": "Very Strong", "level": 5, "tone": "good",
+        "description": "The project is very strongly designed to recognise climate "
+        "and conflict risks and to avoid making them worse.",
+    },
     "strong": {
-        "label": "Strong", "level": 3, "tone": "good",
+        "label": "Strong", "level": 4, "tone": "good",
         "description": "The project is strongly designed to recognise climate and "
         "conflict risks and to avoid making them worse.",
     },
     "moderate": {
-        "label": "Moderate", "level": 2, "tone": "mid",
+        "label": "Moderate", "level": 3, "tone": "mid",
         "description": "The project recognises several climate and conflict risks, "
         "but gaps remain in how it avoids making them worse.",
     },
     "limited": {
-        "label": "Limited", "level": 1, "tone": "low",
+        "label": "Limited", "level": 2, "tone": "low",
         "description": "The project shows limited attention to recognising climate "
         "and conflict risks and avoiding harm - an area to strengthen.",
+    },
+    "very_limited": {
+        "label": "Very Limited", "level": 1, "tone": "low",
+        "description": "The project shows very limited attention to recognising "
+        "climate and conflict risks and avoiding harm - a priority to strengthen.",
     },
     "unclear": {
         "label": "Not yet clear", "level": 0, "tone": "unclear",
@@ -149,6 +161,11 @@ def _scrub_placeholder_text(text: str) -> str:
     """
     if not text:
         return text
+    # Normalise em/en dashes (and any mis-decoded replacement char) to ASCII
+    # hyphens. Model prose sometimes uses em dashes which (a) mojibake to a stray
+    # replacement character in the exported HTML/DOCX and (b) violate house style;
+    # doing this in the shared scrub fixes every reader surface at once.
+    text = text.replace("—", " - ").replace("–", "-").replace("�", "-")
     cleaned = _PLACEHOLDER.sub("", text)
     if _BARE_PLACEHOLDER.fullmatch(cleaned.strip()):
         cleaned = ""

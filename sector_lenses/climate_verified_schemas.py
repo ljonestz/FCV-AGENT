@@ -360,7 +360,8 @@ STAGE_OUTPUT_SCHEMAS: dict[str, dict[str, object]] = {
             "executive_readout": _string("Between 500 and 800 words."),
             "relevance": _judgment(("high", "medium", "low", "unclear")),
             "sensitivity": _judgment(
-                ("strong", "moderate", "limited", "unclear")
+                ("very_strong", "strong", "moderate", "limited",
+                 "very_limited", "unclear")
             ),
             "responsiveness": _judgment(
                 ("strong", "emerging", "limited", "not_expected", "unclear")

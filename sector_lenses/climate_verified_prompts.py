@@ -101,7 +101,10 @@ def _judgment_prompt(payload: dict[str, object]) -> str:
     return _common(
         """Assess four independent dimensions; do not produce an overall rating.
 Relevance asks whether the Climate-FCV intersection is material. Sensitivity asks
-whether design recognizes relevant FCV dynamics and avoids aggravating risks.
+whether design recognizes relevant FCV dynamics and avoids aggravating risks;
+rate it on a five-point scale - very_strong, strong, moderate, limited, or
+very_limited (or unclear when the evidence is insufficient) - reserving the
+extremes for clearly strong or clearly weak evidence.
 Responsiveness asks whether design actively strengthens resilience, inclusion,
 legitimacy, cooperative governance, or plausible social dividends.
 Operationalization asks whether sensitivity or responsiveness is translated
@@ -150,7 +153,7 @@ short point, why it is worth a look, and how to check, in plain language grounde
 in that residual gap. Add no new claims and no digits. Return an empty array if
 there are no such smaller points.
 
-Return: {"executive_readout":"...","relevance":{"value":"high|medium|low|unclear","evidence_ids":[],"rationale":"..."},"sensitivity":{"value":"strong|moderate|limited|unclear","evidence_ids":[],"rationale":"..."},"responsiveness":{"value":"strong|emerging|limited|not_expected|unclear","evidence_ids":[],"rationale":"..."},"operationalization":{"value":"embedded|partial|early|not_evidenced|unclear","evidence_ids":[],"rationale":"..."},"core_questions":[{"question_id":"cq2-infra-horizon","theme":"cq2_maladaptation","question":"...","source":"...","summary":"...","evidence_ids":["RG-001"],"watch":"..."}],"minor_climate_points":[{"point":"...","why":"...","how_to_check":"...","residual_gap_ids":["RG-002"]}]}.""",
+Return: {"executive_readout":"...","relevance":{"value":"high|medium|low|unclear","evidence_ids":[],"rationale":"..."},"sensitivity":{"value":"very_strong|strong|moderate|limited|very_limited|unclear","evidence_ids":[],"rationale":"..."},"responsiveness":{"value":"strong|emerging|limited|not_expected|unclear","evidence_ids":[],"rationale":"..."},"operationalization":{"value":"embedded|partial|early|not_evidenced|unclear","evidence_ids":[],"rationale":"..."},"core_questions":[{"question_id":"cq2-infra-horizon","theme":"cq2_maladaptation","question":"...","source":"...","summary":"...","evidence_ids":["RG-001"],"watch":"..."}],"minor_climate_points":[{"point":"...","why":"...","how_to_check":"...","residual_gap_ids":["RG-002"]}]}.""",
         payload,
     )
 
