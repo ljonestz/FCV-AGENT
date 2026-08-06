@@ -201,9 +201,14 @@ source-linked, and limited to four. Keep free-text values to 45 words or fewer.
 The narrative is the one exception: write it as two or three short paragraphs of
 plain, flowing prose (about 110-220 words) that tell the task team the story -
 the gap and why it matters, what to do and how, who leads it, the optional deeper
-step and when it is warranted, and what done looks like. Weave in the same
-substance as the structured fields; add no new claims and no unsupported digits.
-Do not repeat the evidence package or add prose outside the requested fields.
+step and when it is warranted, and what done looks like. Cover the same substance
+as the structured fields but do not restate them phrase for phrase, and do not
+reproduce the suggested-drafting language: the narrative explains the reasoning
+and what to change, the structured fields give the breakdown, and the drafting
+block (added later) supplies the ready-to-use text - keep the three distinct so
+the reader is not told the same thing three times. Add no new claims and no
+unsupported digits. Do not repeat the evidence package or add prose outside the
+requested fields.
 
 Return: {"recommendation_candidates":[{"recommendation_id":"REC-001","title":"...","pathway_ids":[],"existing_response_ids":[],"residual_gap_ids":[],"project_anchor_ids":[],"decision":"...","minimum_action":"...","enhanced_action":null,"enhanced_activation":null,"routing_status":"verified_existing|verified_with_scope_change|standard_document_advisory|not_applicable","instrument_claim_ids":[],"responsible_function":"...","authority_basis":"project_commitment|policy|directive|procedure|none_verified","recommendation_basis":"project_evidence|country_context|guidance|analytical_judgment","completion_evidence":"...","completion_evidence_status":"output|decision_record|updated_section|team_to_define","confidence":"high|medium|low","limitation":"...","caution":"...","narrative":"...","supported_numeric_tokens":[],"score":{"materiality":0,"gap_strength":0,"leverage_urgency":0,"evidence":0,"feasibility":0},"gate_results":{"connection":true,"residuality":true,"materiality":true,"actionability":true,"timing":true,"distinctiveness":true}}],"readiness_flags":[{"flag_id":"RF-001","category":"incomplete_climate_screening|document_inconsistency|unresolved_indicator|processing_route_question|missing_operational_home|material_placeholder","flag":"...","why_it_matters":"...","document_basis_ids":[],"residual_gap_ids":[],"suggested_verification":"..."}]}""",
         payload,
