@@ -244,3 +244,48 @@ def build_question_plan(project_signals: Any) -> dict[str, Any]:
         "anchors": anchors,
         "supplementary_candidates": supplementary_candidates,
     }
+
+
+# Deeper political-economy driver questions for the VERIFIED reader only. Each is
+# explicitly tied to the climate/environmental dimension (never a standalone FCV
+# governance question) and worded as a design question, never a prediction. The
+# core CLIMATE_QUESTION_BANK above and the dedicated-module path are untouched.
+CLIMATE_DRIVER_QUESTIONS: list[dict[str, Any]] = [
+    {"id": "dq-rents-capture", "theme": "driver_rents",
+     "question": "As climate investment or adaptation raises the value of the natural resource this project supports, who ends up controlling that added value - and does the design guard against elite capture of the climate dividend rather than entrenching it?",
+     "source": "Maximizing the Peace and Social Dividends of Climate Action",
+     "triggers": ["resource", "revenue", "rent", "concession", "royalties", "fisheries", "forest", "mineral", "oil", "fish", "timber", "wildlife"]},
+    {"id": "dq-value-chain", "theme": "driver_value_chain",
+     "question": "As climate-resilient infrastructure or practices make this resource more productive or profitable, who along the value chain is positioned to capture the gains - and does the design protect the smallholders and communities the climate investment is meant to benefit?",
+     "source": "Defueling Conflict",
+     "triggers": ["value chain", "market", "trader", "processing", "cold chain", "cooperative", "price", "middlemen", "aggregation", "storage"]},
+    {"id": "dq-representation", "theme": "driver_representation",
+     "question": "Do the climate and natural-resource governance bodies the project creates (co-management units, conservancies, water or forest committees) genuinely seat the rival or marginalised groups who share the climate-affected resource, or do they reproduce existing exclusion?",
+     "source": "Conflict-Sensitive Climate Action Compendium",
+     "triggers": ["committee", "conservancy", "co-management", "quota", "community", "representation", "governance", "association", "management unit"]},
+    {"id": "dq-tenure-displacement", "theme": "driver_tenure",
+     "question": "Where climate change is already shifting the resource base (drought, flooding, shifting stocks or rangelands) or the project sites new climate infrastructure, whose often-contested tenure or access rights are affected - and could the design harden exclusion or trigger displacement?",
+     "source": "Defueling Conflict",
+     "triggers": ["land", "tenure", "allocation", "grazing", "resettlement", "displacement", "boundary", "pastoral", "rights", "access"]},
+    {"id": "dq-security-economy", "theme": "driver_security_economy",
+     "question": "Could the climate-valuable resources, routes, or revenues this project strengthens feed a conflict economy or create incentives for armed actors to compete for control?",
+     "source": "Defueling Conflict",
+     "triggers": ["armed", "checkpoint", "route", "security", "illicit", "insurgent", "control", "smuggling", "militia", "trafficking"]},
+]
+
+
+def select_triggered_drivers(project_signals: Any) -> list[dict[str, str]]:
+    """Return the driver-depth questions whose triggers fire for this project.
+
+    Verified-reader only: the core CLIMATE_QUESTION_BANK and the dedicated-module
+    selectors are unaffected. Matching reuses the boundary-aware trigger logic.
+    """
+    tokens = _project_signal_tokens(project_signals)
+    fired: list[dict[str, str]] = []
+    for question in CLIMATE_DRIVER_QUESTIONS:
+        if any(_contains_trigger(tokens, trigger) for trigger in question["triggers"]):
+            fired.append({
+                key: question[key]
+                for key in ("id", "theme", "question", "source")
+            })
+    return fired

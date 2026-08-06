@@ -373,7 +373,7 @@ STAGE_OUTPUT_SCHEMAS: dict[str, dict[str, object]] = {
                 "type": "array",
                 "items": CORE_QUESTION_SCHEMA,
                 "description": (
-                    "Three to five evidence-grounded answers to the supplied "
+                    "Three to seven evidence-grounded answers to the supplied "
                     "triggered core climate-FCV questions, each distinct from the "
                     "executive readout. Empty array if none can be evidenced."
                 ),

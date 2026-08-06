@@ -281,7 +281,7 @@ def _judgments(payload: dict[str, object]) -> ClimateJudgments:
     )
 
 
-_CORE_QUESTION_CAP = 5
+_CORE_QUESTION_CAP = 7
 
 
 def _core_question_signals(facts: list) -> list[str]:
@@ -298,14 +298,23 @@ def _core_question_signals(facts: list) -> list[str]:
 
 
 def _core_questions_to_answer(facts: list) -> list[dict[str, str]]:
-    """Select up to six triggered core-question-bank items to pose at judgment."""
-    plan = climate_question_bank.build_question_plan(_core_question_signals(facts))
-    candidates = plan.get("supplementary_candidates") or []
+    """Pose triggered core-question-bank items plus deeper driver questions.
+
+    Combines up to six triggered core-bank candidates with the triggered
+    driver-depth questions (deduped by id) so the deeper political-economy probes
+    surface alongside the climate-interaction questions.
+    """
+    signals = _core_question_signals(facts)
+    plan = climate_question_bank.build_question_plan(signals)
+    candidates = list((plan.get("supplementary_candidates") or [])[:6])
+    candidates += climate_question_bank.select_triggered_drivers(signals)
     posed: list[dict[str, str]] = []
-    for question in candidates[:6]:
+    seen: set[str] = set()
+    for question in candidates:
         question_id = _text(question.get("id"))
-        if not question_id:
+        if not question_id or question_id in seen:
             continue
+        seen.add(question_id)
         posed.append({
             "id": question_id,
             "theme": _text(question.get("theme")),

@@ -132,8 +132,16 @@ rather than formally rated.
 
 You are also given core_questions_to_answer: a short list of core climate-FCV
 questions selected for this project from World Bank climate-and-fragility
-guidance. Answer three to five of them - only those you can ground in the
-verified registers - and return them as core_questions. For each answer, copy
+guidance. Answer three to seven of them - only those you can ground in the
+verified registers - and return them as core_questions. The supplied set includes
+deeper political-economy driver questions (for example resource rents and elite
+capture, value-chain capture, intercommunal representation, tenure and
+displacement, or a conflict economy) that are tied to the climate and
+environmental dimension; probe these where the evidence supports them, alongside
+the climate-interaction questions. For any driver question, never predict who will
+capture value or how named elites, groups, or armed actors will behave, and make
+no unsupported claim about specific actors - keep it a design question grounded
+strictly in the document and its climate/environmental angle. For each answer, copy
 question_id and theme exactly as supplied, restate the question in plain
 language, name its source, and write a fuller summary of roughly 120 to 220
 words in two short paragraphs separated by a blank line, that a non-specialist
