@@ -2515,6 +2515,44 @@ def derive_restructuring_level(change_types: list[str] | tuple[str, ...] | str) 
     return {"level": None, "authority": None, "reason": "No restructuring change types detected."}
 
 
+def extract_doc_checks(stage1_output: str) -> list[dict[str, str]]:
+    """Extract light document-integrity findings from a %%%DOC_CHECKS%%% block.
+
+    Document-text-only defects a TTL might miss - two values that contradict each
+    other, an empty template field, a leftover placeholder or author query, or an
+    unmarked classification. Tolerant of JSON (a list, or {"findings": [...]}) or
+    an empty block; returns [] when absent or malformed. Capped at 5, since this
+    is a light-touch aid, not the tool's main purpose.
+    """
+    m = re.search(
+        r'%%%DOC_CHECKS_START%%%(.*?)%%%DOC_CHECKS_END%%%',
+        stage1_output or '', re.DOTALL | re.IGNORECASE,
+    )
+    if not m:
+        return []
+    block = m.group(1).strip()
+    try:
+        parsed = json.loads(block)
+        raw = parsed if isinstance(parsed, list) else parsed.get("findings", [])
+    except (json.JSONDecodeError, ValueError, TypeError):
+        raw = []
+    findings: list[dict[str, str]] = []
+    for item in raw if isinstance(raw, list) else []:
+        if not isinstance(item, dict):
+            continue
+        finding = str(item.get("finding", "") or "").strip()
+        if not finding:
+            continue
+        findings.append({
+            "finding": finding[:300],
+            "why_it_matters": str(item.get("why_it_matters", "") or "").strip()[:300],
+            "where": str(item.get("where", "") or "").strip()[:200],
+        })
+        if len(findings) >= 5:
+            break
+    return findings
+
+
 def extract_change_types(stage1_output: str) -> dict[str, Any]:
     """Extract mid-cycle change types from %%%CHANGE_TYPE_START/END%%% block."""
     pattern = r'%%%CHANGE_TYPE_START%%%(.*?)%%%CHANGE_TYPE_END%%%'
@@ -3939,6 +3977,12 @@ countries: [semicolon-separated list of financed borrower/beneficiary countries]
 regional_pdo: [true / false]
 implementing_entity: [national government ministry, or a regional body such as IGAD / ECOWAS / TDB if cross-border delivery]
 %%%COUNTRY_SET_END%%%
+
+Always output this light document-integrity block. From the uploaded document text ONLY, note up to five verifiable defects in the document itself: two stated values that contradict each other (or a narrative statement that contradicts a system-generated table value); a template field or section that is present but left empty; a leftover placeholder, bracketed author query, or a "to be updated / to be deleted / to be confirmed" marker; or a classification, category, or checkbox the template presents that is left unmarked where the surrounding context indicates it should be considered. Do NOT infer defects from outside the document, and do NOT treat a normal design choice as a defect. Output an empty findings list if none are present. This is a light aid for the team to confirm, not the tool's main purpose.
+
+%%%DOC_CHECKS_START%%%
+{"findings": [{"finding": "short description of the document defect", "why_it_matters": "one clause on why it is worth confirming", "where": "the section, field, or table where it appears"}]}
+%%%DOC_CHECKS_END%%%
 
 If the operation is a Multiphase Programmatic Approach (MPA), also output this block; otherwise set is_mpa to false.
 
@@ -5692,6 +5736,7 @@ def clean_stage1_output(text):
     text = re.sub(r'%%%COUNTRY_CLASSIFICATION_START%%%.*?%%%COUNTRY_CLASSIFICATION_END%%%\n?', '', text, flags=re.DOTALL)
     text = re.sub(r'%%%SECTOR_CONTEXT_START%%%.*?%%%SECTOR_CONTEXT_END%%%\n?', '', text, flags=re.DOTALL)
     text = re.sub(r'%%%CONTEXT_FLAGS_START%%%.*?%%%CONTEXT_FLAGS_END%%%\n?', '', text, flags=re.DOTALL)
+    text = re.sub(r'%%%DOC_CHECKS_START%%%.*?%%%DOC_CHECKS_END%%%\n?', '', text, flags=re.DOTALL)
     # Clean up extra blank lines left by removal
     text = re.sub(r'\n{3,}', '\n\n', text).strip()
     return text
@@ -9146,6 +9191,7 @@ def run_stage():
                     _dlis = extract_dlis(full_text)
                     _country_set = extract_country_set(full_text)
                     _mpa_context = extract_mpa_context(full_text)
+                    _doc_checks = extract_doc_checks(full_text)
                     _s1_primary_names = [dp['name'] for dp in doc_parts if dp['label'] == 'PROJECT DOCUMENT']
                     _s1_package_names = [dp['name'] for dp in doc_parts if dp['label'] == 'PACKAGE INSTRUMENT']
                     _s1_context_names = [dp['name'] for dp in doc_parts if dp['label'] == 'CONTEXT DOCUMENT']
@@ -9208,6 +9254,7 @@ def run_stage():
                     'dlis': _dlis if stage == 1 else None,
                     'country_set': _country_set if stage == 1 else None,
                     'mpa_context': _mpa_context if stage == 1 else None,
+                    'doc_checks': _doc_checks if stage == 1 else None,
                     'country_scope': (('multi' if (isinstance(_country_set, dict) and _country_set.get('is_multi_country')) else 'single') if stage == 1 else None),
                     'is_mpa': ((_mpa_context.get('is_mpa', False) if isinstance(_mpa_context, dict) else False) if stage == 1 else None),
                     'review_mode': review_mode,
@@ -10040,6 +10087,7 @@ def run_express():
                 dlis = extract_dlis(stage1_output)
                 country_set = extract_country_set(stage1_output)
                 mpa_context = extract_mpa_context(stage1_output)
+                doc_checks = extract_doc_checks(stage1_output)
                 _cscope_x = 'multi' if country_set.get('is_multi_country') else 'single'
                 _is_mpa_x = mpa_context.get('is_mpa', False)
                 if is_impl:
@@ -10070,7 +10118,7 @@ def run_express():
                 lens_evidence_s1 = extract_lens_evidence(
                     stage1_output, [item['id'] for item in lens_context_s1['active_lenses']]
                 ) if lens_context_s1['active_lenses'] else {}
-                yield f"data: {json.dumps({'stage_done': 1, 'result': stage1_display, 'history': conversation_history, 'research_brief': research_brief_text, 'research_country': research_country, 'climate_research': climate_research, 'climate_grounding': climate_grounding_envelope(climate_grounding), 'doc_type': doc_type, 'instrument_type': instrument_type, 'temporal_context': temporal_context, 'regime_context': regime_context, 'process_type': process_type if is_impl else None, 'country_classification': country_classification, 'context_flags': context_flags, 'sector_context': sector_context, 'change_types': change_types, 'prior_actions': prior_actions, 'dlis': dlis, 'country_set': country_set, 'mpa_context': mpa_context, 'country_scope': _cscope_x, 'is_mpa': _is_mpa_x, 'review_mode': review_mode, 'active_lenses': lens_context_s1['active_lenses'], 'lens_warnings': lens_context_s1['warnings'], 'lens_evidence': lens_evidence_s1, 'lens_context_sources': lens_context_sources})}\n\n"
+                yield f"data: {json.dumps({'stage_done': 1, 'result': stage1_display, 'history': conversation_history, 'research_brief': research_brief_text, 'research_country': research_country, 'climate_research': climate_research, 'climate_grounding': climate_grounding_envelope(climate_grounding), 'doc_type': doc_type, 'instrument_type': instrument_type, 'temporal_context': temporal_context, 'regime_context': regime_context, 'process_type': process_type if is_impl else None, 'country_classification': country_classification, 'context_flags': context_flags, 'sector_context': sector_context, 'change_types': change_types, 'prior_actions': prior_actions, 'dlis': dlis, 'country_set': country_set, 'mpa_context': mpa_context, 'doc_checks': doc_checks, 'country_scope': _cscope_x, 'is_mpa': _is_mpa_x, 'review_mode': review_mode, 'active_lenses': lens_context_s1['active_lenses'], 'lens_warnings': lens_context_s1['warnings'], 'lens_evidence': lens_evidence_s1, 'lens_context_sources': lens_context_sources})}\n\n"
 
                 # ════════════════════════════════════════════════════════════
                 # STAGE 2 — FCV Assessment

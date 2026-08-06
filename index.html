@@ -2542,6 +2542,7 @@
     return 'Project Paper';
   }
   let changeTypes={};
+  let docChecks=[];
   let midCycleWatch=[];
   let dpfWatch=[];
   let p4rWatch=[];
@@ -3777,6 +3778,7 @@
               if(p.context_flags)contextFlags=p.context_flags;
               if(p.sector_context)sectorContext=p.sector_context;
               if(p.change_types)changeTypes=p.change_types;
+              if(Array.isArray(p.doc_checks))docChecks=p.doc_checks;
               if(p.active_lenses){activeLenses=p.active_lenses.map(l=>l.id);resolvedLensVersions=Object.fromEntries(p.active_lenses.map(l=>[l.id,l.version]));}
               showLensWarnings(p.lens_warnings);
               const cat=countryClassification.category||'General';
@@ -4108,6 +4110,7 @@
                 if(p.context_flags)contextFlags=p.context_flags;
                 if(p.sector_context)sectorContext=p.sector_context;
                 if(p.change_types)changeTypes=p.change_types;
+                if(Array.isArray(p.doc_checks))docChecks=p.doc_checks;
               }
               renderOut(stage,renderResult,followOn);setStepper(stage,'done');
               enableClickableStepper();
@@ -4789,6 +4792,7 @@
       const _climateNotice=_climateActive
         ?renderClimateModuleNotice(_climateEntry,_climateError,climateGrounding):'';
       const _climateValid=_climateActive&&!_climateError;
+      const docChecksHtml=(Array.isArray(docChecks)&&docChecks.length)?`<details style="margin-top:18px;border:1px solid #E2E6EC;border-radius:8px;padding:8px 14px;background:#F7F8FA"><summary style="cursor:pointer;font-weight:700;color:#002244">Points to check in the document</summary><p style="color:#4b5563;margin:8px 0 10px">A light automated check of the uploaded document for things worth confirming - placeholders, empty fields, or values that do not match. This is not the main analysis, just a checklist.</p>${docChecks.map(dc=>`<section style="margin:0 0 11px"><p style="font-weight:700;color:#002244;margin:0 0 3px">${esc(dc.finding||'')}</p>${dc.why_it_matters?`<p style="margin:0 0 3px">${esc(dc.why_it_matters)}</p>`:''}${dc.where?`<p style="margin:0;color:#6b7280;font-size:12px">Where: ${esc(dc.where)}</p>`:''}</section>`).join('')}</details>`:'';
       if(_climateValid){
         // Climate readout redesign order: notice/gauge -> model context prose ->
         // full-detail strengths & weaknesses -> core-questions (interactions + theme
@@ -4799,14 +4803,14 @@
           renderClimateStrengthsWeaknesses(_climateEntry)+
           renderClimateCoreQuestions(_climateEntry)+
           renderClimateGroundingSources(climateGrounding)
-        )+'<div id="priorities-intro"></div>';
+        )+'<div id="priorities-intro"></div>'+docChecksHtml;
       }else{
         _outBodyContent=wrapSRTerms(
           _closedProjectNotice+_padNotice+_stageBadge+_climateNotice+
           _preHtml+renderRiskExposure(stageRiskExposure)+md(_rest)+
           renderSRCards(stageSensitivitySummary,stageResponsivenessSummary)+
           (_climateActive?renderClimateGroundingSources(climateGrounding):'')
-        )+'<div id="priorities-intro"></div>';
+        )+'<div id="priorities-intro"></div>'+docChecksHtml;
       }
     }else{
       const cleanResult = stage===1 ? result.replace(/\n*%%%DOC_TYPE:[^%\n]*%%%\n*/g,'') : result;
