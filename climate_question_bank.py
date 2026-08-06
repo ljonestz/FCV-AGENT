@@ -117,8 +117,8 @@ CLIMATE_LITERATURE_REFERENCES: list[dict[str, object]] = [
     },
     {
         "title": "CCDR guidance note",
-        "url": None,
-        "description": "World Bank Country Climate and Development Report guidance on climate priorities in a country's development.",
+        "url": "https://documents.worldbank.org/en/publication/documents-reports/documentdetail/099021025050037410",
+        "description": "World Bank approach note on promoting FCV-sensitive climate action in Country Climate and Development Reports.",
     },
 ]
 
