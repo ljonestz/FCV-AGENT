@@ -9,6 +9,8 @@
 
 ---
 
+> **Project state:** for the current branch map, open PRs, deployment status, and outstanding items, see `docs/20260618_PROJECT_STATE.md`.
+
 ## Overview
 
 This is a **World Bank FCV (Fragility, Conflict, and Violence) Project Screener** — a Flask-based web app that guides Task Team Leaders (TTLs) through a **3-stage workflow** to assess how well a World Bank project integrates FCV considerations and generate targeted, actionable recommendations.

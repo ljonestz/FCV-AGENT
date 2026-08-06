@@ -2,6 +2,8 @@
 
 A Flask web application that guides World Bank Task Team Leaders (TTLs) through a structured 3-stage workflow to assess and improve FCV (Fragility, Conflict & Violence) integration in project design.
 
+> **Current status & where everything is:** see [`docs/20260618_PROJECT_STATE.md`](docs/20260618_PROJECT_STATE.md) for the live branch map, open PRs, deployment state, and outstanding items. As of 2026-06-18 the phase 0-6 knowledge-base expansion and OPCS policy corrections are staged in PR #29 and not yet merged into `main`.
+
 ## What it does
 
 Upload a WBG appraisal or design-stage document (PCN, PID, PAD, Additional Financing, Restructuring Paper, DPF/DPO Program Document, PforR document, MPA, or regional operation) and optionally a Country Partnership Framework or other contextual document. Choose your workflow:
@@ -60,6 +62,8 @@ PforR/P4R project documents generate the largest outputs in the app because Stag
 
 Recent live checks against `https://fcv-agent.onrender.com/` confirmed that the Morocco Green Generation PforR PAD can complete end-to-end. A later India STARS PforR PAD test hung before response headers, which should be treated as a live Render worker/gateway stall until Render logs show otherwise.
 
+> **Deployment caveat (2026-06-18):** if the Render service has a dashboard **Start Command** of `python app.py`, it overrides the `Procfile` and runs the Flask dev server instead of gunicorn. Clear the Start Command (or set it to the gunicorn line from `Procfile`) so production uses gunicorn + gevent. See `docs/20260618_PROJECT_STATE.md` section 5.
+
 ## Concurrency
 
 The app isolates state per browser tab via a per-assessment ID. Express Analysis runs off the request thread via a background executor. Combined with multi-worker gunicorn settings in `Procfile`, multiple users and sessions can run assessments concurrently.
@@ -77,6 +81,7 @@ The app isolates state per browser tab via a per-assessment ID. Express Analysis
 
 ## Documentation
 
+- `docs/20260618_PROJECT_STATE.md` — current project state: branches, open PRs, deployment, outstanding items
 - `CLAUDE.md` — full developer guide: architecture, prompt design, stage pipeline, design decisions
 - `docs/reference/` — detailed reference docs for prompts, routes, and frontend functions
 - `docs/fcv-agent-knowledge-architecture.html` — visual overview of how knowledge sources flow through the pipeline
