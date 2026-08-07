@@ -524,8 +524,14 @@ def attach_provenance(reader: dict[str, object], assessment: dict[str, object]) 
     Called after build_reader_model/validate_reader_model so it is additive and
     never affects reader-integrity validation.
     """
-    reader["evidence_trail"] = build_evidence_trail(assessment)
-    reader["sources"] = [dict(entry) for entry in CLIMATE_LITERATURE_REFERENCES]
+    # Scrub dashes/placeholders here too: attach_provenance runs AFTER
+    # build_reader_model's _scrub_placeholders pass, so model-generated
+    # evidence-trail text and source descriptions would otherwise keep em/en
+    # dashes (house style is ASCII hyphens) and any stray placeholder cue.
+    reader["evidence_trail"] = _scrub_placeholders(build_evidence_trail(assessment))
+    reader["sources"] = _scrub_placeholders(
+        [dict(entry) for entry in CLIMATE_LITERATURE_REFERENCES]
+    )
     return reader
 
 

@@ -132,6 +132,25 @@ def test_annex_renders_in_html_and_docx():
     assert "flood-prone fisheries" in text   # resolved evidence-key text in DOCX
 
 
+def test_provenance_normalises_em_en_dashes_in_evidence_trail():
+    """attach_provenance runs after build_reader_model's scrub, so evidence-trail
+    text (model-generated) must still have em/en dashes normalised to ASCII."""
+    model = build_reader_model(_reader_assessment())
+    raw = _assessment()
+    # Inject em/en dashes into model-generated evidence text.
+    raw["analysis"]["residual_gaps"][0]["statement"] = (
+        "Adaptive triggers — e.g. flood thresholds – not specified."
+    )
+    raw["facts"][0]["object"] = "flood–prone fisheries"
+    attach_provenance(model, raw)
+    key = {e["id"]: e for e in model["evidence_trail"]["evidence_key"]}
+    for entry in key.values():
+        assert "—" not in entry["text"] and "–" not in entry["text"]
+    # The RG statement is preserved as prose, just with ASCII hyphens.
+    assert "Adaptive triggers" in key["RG-1"]["text"]
+    assert "not specified" in key["RG-1"]["text"]
+
+
 def test_lay_comprehensibility_annex_and_sources(tmp_path):
     """WS1: plain-language intros, source descriptions, name-only marking, unified label."""
     model = _reader_with_trail()
