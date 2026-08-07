@@ -271,6 +271,14 @@ CLIMATE_DRIVER_QUESTIONS: list[dict[str, Any]] = [
      "question": "Could the climate-valuable resources, routes, or revenues this project strengthens feed a conflict economy or create incentives for armed actors to compete for control?",
      "source": "Defueling Conflict",
      "triggers": ["armed", "checkpoint", "route", "security", "illicit", "insurgent", "control", "smuggling", "militia", "trafficking"]},
+    {"id": "dq-geo-overlap", "theme": "driver_geo_overlap",
+     "question": "Do the project's climate activities actually land in the specific places where conflict and fragility are worst, or does the geographic footprint of the climate investment miss - or avoid - the most fragile districts it is meant to help?",
+     "source": "FCV-Sensitive Climate Action Framework",
+     "triggers": ["conflict-affected", "district", "region", "state", "province", "county", "target area", "geographic", "location", "site selection", "hotspot", "border"]},
+    {"id": "dq-participation-quality", "theme": "driver_participation_quality",
+     "question": "Beyond meeting a representation quota, does the design monitor the quality of participation - whether women, displaced people, and marginalised groups actually have voice in the climate and resource decisions (closures, allocations, benefit-sharing) that affect them?",
+     "source": "Conflict-Sensitive Climate Action Compendium",
+     "triggers": ["quota", "representation", "participation", "consultation", "inclusion", "women", "youth", "marginalised", "marginalized", "voice", "decision-making", "membership"]},
 ]
 
 

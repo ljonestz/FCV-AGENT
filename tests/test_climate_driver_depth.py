@@ -56,3 +56,18 @@ def test_core_questions_to_answer_includes_triggered_drivers():
 
 def test_core_question_cap_raised_to_seven():
     assert _CORE_QUESTION_CAP == 7
+
+
+def test_new_driver_questions_fire_on_generic_triggers():
+    ids = {q["id"] for q in qb.CLIMATE_DRIVER_QUESTIONS}
+    assert {"dq-geo-overlap", "dq-participation-quality"} <= ids
+    # Geo-overlap fires on conflict-location language.
+    geo = qb.select_triggered_drivers(
+        "Activities are concentrated in conflict-affected districts."
+    )
+    assert any(q["id"] == "dq-geo-overlap" for q in geo)
+    # Participation quality fires on representation/quota language.
+    part = qb.select_triggered_drivers(
+        "The project mandates a women's quota on each committee."
+    )
+    assert any(q["id"] == "dq-participation-quality" for q in part)
