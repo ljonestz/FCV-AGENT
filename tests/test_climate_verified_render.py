@@ -89,6 +89,35 @@ def test_visible_tiers_hide_routing_metadata_and_evidence_codes():
     assert "Evidence key" in html2
 
 
+def test_quick_fixes_are_visible_not_collapsed():
+    assessment = {
+        "executive_readout": "Alpha sentence. " * 60,
+        "judgments": {
+            "sensitivity": {
+                "value": "moderate", "rationale": "Because.", "evidence_ids": []
+            }
+        },
+        "priorities": [],
+        "minor_climate_points": [
+            {"point": "Reconcile the figure", "why": "Two values differ.",
+             "how_to_check": "Confirm the cost across cover and tables.",
+             "residual_gap_ids": []}
+        ],
+        "review_readiness_flags": [
+            {"flag": "Empty screening field", "why_it_matters": "Template field blank.",
+             "document_basis_ids": [], "suggested_verification": "Confirm before the meeting."}
+        ],
+    }
+    html = render_reader_html(build_reader_model(assessment))
+    quick = html.split("Ranked operational priorities", 1)[1]
+    head, _, _annex = quick.partition("Technical annex")
+    assert "Reconcile the figure" in head
+    assert "Empty screening field" in head
+    assert "How to address" in head
+    # The quick-fix block is a visible section, not a collapsed <details>.
+    assert "<summary>Points to check" not in head
+
+
 def _assessment() -> dict[str, object]:
     sentence = (
         "The project evidence supports a material Climate-FCV pathway, while "

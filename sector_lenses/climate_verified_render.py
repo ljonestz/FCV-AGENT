@@ -803,9 +803,9 @@ def render_reader_html(model: dict[str, object]) -> str:
                 ))
         parts.append("</section>")
 
-    parts.append("<details><summary>")
-    parts.append(html.escape(HEADINGS[3]))
-    parts.append("</summary>")
+    # Quick fixes: a visible tier (not a collapsed fold) so smaller issues get
+    # prominence with a brief how-to-address, rather than being buried.
+    parts.append(_heading(2, HEADINGS[3]))
     parts.append(f"<p>{html.escape(POINTS_TO_CHECK_INTRO)}</p>")
     doc_flags = _records(model.get("review_readiness_flags"))
     if doc_flags:
@@ -831,11 +831,10 @@ def render_reader_html(model: dict[str, object]) -> str:
             parts.append(_heading(3, _text(point.get("point"))))
             parts.append("<p>" + html.escape(_text(point.get("why"))) + "</p>")
             parts.append(
-                "<p><strong>How to check:</strong> "
+                "<p><strong>How to address:</strong> "
                 + html.escape(_text(point.get("how_to_check")))
                 + "</p>"
             )
-    parts.append("</details>")
 
     parts.append("<details><summary>")
     parts.append(html.escape(HEADINGS[4]))
@@ -1056,7 +1055,7 @@ def write_reader_docx(model: dict[str, object], path: str | Path) -> Path:
         for point in minor_points:
             document.add_heading(_text(point.get("point")), level=3)
             document.add_paragraph(_text(point.get("why")))
-            _docx_field(document, "How to check", point.get("how_to_check"))
+            _docx_field(document, "How to address", point.get("how_to_check"))
 
     document.add_heading(HEADINGS[4], level=1)
     for key, value in _mapping(model.get("technical_annex")).items():
