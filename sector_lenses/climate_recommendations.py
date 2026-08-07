@@ -881,7 +881,7 @@ def admit_and_rank(
             -item.score.evidence,
             item.recommendation_id,
         ),
-    )[:3]
+    )[:5]
     return tuple(
         replace(candidate, rank=index)
         for index, candidate in enumerate(ordered, start=1)

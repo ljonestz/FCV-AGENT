@@ -114,10 +114,10 @@ def test_admission_requires_six_points_and_medium_materiality():
     assert result[0].rank == 1
 
 
-def test_at_most_three_are_ranked_without_high_badges():
-    result = admit_and_rank([_candidate(f"REC-0{i}") for i in range(1, 5)])
-    assert len(result) == 3
-    assert [item.rank for item in result] == [1, 2, 3]
+def test_up_to_five_are_ranked_without_high_badges():
+    result = admit_and_rank([_candidate(f"REC-0{i}") for i in range(1, 7)])
+    assert len(result) == 5
+    assert [item.rank for item in result] == [1, 2, 3, 4, 5]
     assert not hasattr(result[0], "priority_label")
 
 

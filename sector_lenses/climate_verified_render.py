@@ -309,7 +309,7 @@ def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
     priorities = sorted(
         _records(assessment.get("priorities")),
         key=lambda item: (_rank(item.get("rank")), _text(item.get("title"))),
-    )[:3]
+    )[:5]
     flags = _records(assessment.get("review_readiness_flags"))[:4]
     minor_climate_points = [
         {

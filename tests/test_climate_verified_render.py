@@ -6,11 +6,29 @@ from docx import Document
 
 from sector_lenses.climate_verified_render import (
     HEADINGS,
+    attach_provenance,
     build_reader_model,
     render_reader_html,
     validate_reader_model,
     write_reader_docx,
 )
+
+
+def test_build_reader_model_keeps_up_to_five_priorities():
+    assessment = {
+        "executive_readout": "One. Two. Three.",
+        "judgments": {},
+        "priorities": [
+            {"rank": i, "title": f"Priority {i}", "recommendation_id": f"REC-00{i}"}
+            for i in range(1, 7)  # six candidates
+        ],
+    }
+    model = build_reader_model(assessment)
+    # Cap is five, not three; a sixth is dropped.
+    assert len(model["priorities"]) == 5
+    assert [p["title"] for p in model["priorities"]] == [
+        f"Priority {i}" for i in range(1, 6)
+    ]
 
 
 def _assessment() -> dict[str, object]:
@@ -118,11 +136,12 @@ def test_reader_has_four_dimensions_priority_cap_and_safe_annex():
     model = build_reader_model(_assessment())
 
     assert len(model["judgments"]) == 4
-    assert len(model["priorities"]) == 3
+    # Fixture supplies four priorities; the cap is now five, so all four survive.
+    assert len(model["priorities"]) == 4
     assert model["priority_summary"] == {
-        "count": 3,
-        "titles": ["Priority 1", "Priority 2", "Priority 3"],
-        "statement": "Three final operational priorities are presented: Priority 1; Priority 2; Priority 3.",
+        "count": 4,
+        "titles": ["Priority 1", "Priority 2", "Priority 3", "Priority 4"],
+        "statement": "4 final operational priorities are presented: Priority 1; Priority 2; Priority 3; Priority 4.",
     }
     assert "overall_rating" not in model
     assert model["evidence_status"] == "preview; not approved"
@@ -264,7 +283,7 @@ def test_html_and_docx_share_headings_and_priority_order():
     assert [document_text.index(heading) for heading in HEADINGS] == sorted(
         document_text.index(heading) for heading in HEADINGS
     )
-    for index in range(1, 4):
+    for index in range(1, 5):
         identifier = f"REC-00{index}"
         assert identifier in html
         assert identifier in document_text
@@ -286,8 +305,6 @@ def test_html_and_docx_share_headings_and_priority_order():
     ):
         assert expected in html
         assert expected in document_text
-    assert "REC-004" not in html
-    assert "REC-004" not in document_text
     assert not any(
         paragraph.text.rstrip().endswith(("[", "{", "..."))
         for paragraph in document.paragraphs

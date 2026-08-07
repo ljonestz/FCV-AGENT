@@ -4671,7 +4671,7 @@
       :'No recommendation passed the admission threshold for this run.';
     const prioritySummary=r.priority_summary&&typeof r.priority_summary==='object'?r.priority_summary:{};
     const prioritySummaryHtml=prioritySummary.statement?`<p class="climate-priority-summary">${esc(prioritySummary.statement)}</p>`:'';
-    const priorities=Array.isArray(r.priorities)?r.priorities.slice().sort((x,y)=>(Number(x.rank)||999)-(Number(y.rank)||999)).slice(0,3):[];
+    const priorities=Array.isArray(r.priorities)?r.priorities.slice().sort((x,y)=>(Number(x.rank)||999)-(Number(y.rank)||999)).slice(0,5):[];
     const priorityHtml=priorities.length?priorities.map(priority=>{
       const field=(label,key)=>{const raw=priority[key];const value=Array.isArray(raw)?raw.join(', '):raw;return value?`<p><strong>${esc(label)}:</strong> ${esc(value)}</p>`:'';};
       const draftHtml=draftingBlock('Suggested drafting for the current document',priority.current_document_drafting)+draftingBlock('Suggested drafting for an operational instrument',priority.operational_instrument_drafting);

@@ -170,8 +170,9 @@ def _recommendation_prompt(payload: dict[str, object]) -> str:
     return _common(
         """Compile only recommendations that pass connection, residuality,
 materiality, actionability, timing, distinctiveness, and comparative-importance
-tests. Return at most three recommendation candidates. Return fewer than three
-when fewer pass; never manufacture one for symmetry and never label all as High. Route to an existing instrument
+tests. Return at most five recommendation candidates, and go beyond three only
+where materiality clearly warrants it. Return fewer when fewer pass; never
+manufacture one for symmetry or to reach a number, and never label all as High. Route to an existing instrument
 only when existence, scope, timing, and authority are verified separately.
 When no existing vehicle is evidenced, use standard_document_advisory and target
 the current stage document only where the supplied operational-guidance packet
