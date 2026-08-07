@@ -31,6 +31,24 @@ def test_build_reader_model_keeps_up_to_five_priorities():
     ]
 
 
+def test_rating_scale_renders_in_overview_before_core_questions():
+    assessment = {
+        "executive_readout": "Alpha sentence. " * 60,
+        "judgments": {
+            "sensitivity": {
+                "value": "moderate", "rationale": "Because.", "evidence_ids": []
+            }
+        },
+        "priorities": [],
+    }
+    html = render_reader_html(build_reader_model(assessment))
+    rating_pos = html.find("climate-sens-rating")
+    core_pos = html.find("Core climate-FCV questions")
+    assert rating_pos != -1 and core_pos != -1
+    # The rating sits in the overview, above the core-questions section.
+    assert rating_pos < core_pos
+
+
 def _assessment() -> dict[str, object]:
     sentence = (
         "The project evidence supports a material Climate-FCV pathway, while "

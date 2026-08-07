@@ -4651,7 +4651,7 @@
       const ev=Array.isArray(q.evidence_ids)&&q.evidence_ids.length?`<p class="cj-src" style="margin:4px 0 0">Evidence: ${esc(q.evidence_ids.join(', '))}</p>`:'';
       return `<section class="cj climate-core-question"><h3 style="font-size:15px;font-weight:700;color:#002244;margin:0 0 5px">${esc(q.question||'')}</h3>${src}${summ}${watch}${ev}</section>`;
     }).join('');
-    const coreQuestionsSection=`<h2>Core climate-FCV questions</h2><p style="color:#4b5563;margin:0 0 11px">${esc(CORE_QUESTIONS_INTRO)}</p>${ratingHtml}${coreQuestionsHtml}`;
+    const coreQuestionsSection=`<h2>Core climate-FCV questions</h2><p style="color:#4b5563;margin:0 0 11px">${esc(CORE_QUESTIONS_INTRO)}</p>${coreQuestionsHtml}`;
     const draftingBlock=(label,block)=>{
       if(!block||typeof block!=='object')return '';
       const dest=[block.target_document,block.target_section].filter(Boolean).map(esc).join(' – ');
@@ -4751,7 +4751,7 @@
       }
       provenanceHtml = `<details class="climate-fold"><summary>How this analysis was produced</summary>${etInner}</details>`;
     }
-    return `<article class="climate-verified-assessment">${smokeHtml}<h2>Executive readout</h2><div class="climate-exec">${execHtml}</div>${statusHtml}${coreQuestionsSection}<h2>Ranked operational priorities</h2>${prioritySummaryHtml}${priorityHtml}<details class="climate-fold"><summary>Points to check before the decision meeting</summary>${flagsHtml}</details>${provenanceHtml}<p class="climate-advisory">${esc(r.advisory_notice||'')}</p></article>`;
+    return `<article class="climate-verified-assessment">${smokeHtml}<h2>Executive readout</h2><div class="climate-exec">${execHtml}</div>${statusHtml}${ratingHtml}${coreQuestionsSection}<h2>Ranked operational priorities</h2>${prioritySummaryHtml}${priorityHtml}<details class="climate-fold"><summary>Points to check before the decision meeting</summary>${flagsHtml}</details>${provenanceHtml}<p class="climate-advisory">${esc(r.advisory_notice||'')}</p></article>`;
   }
 
   function renderOut(stage,result,isFollowOn){

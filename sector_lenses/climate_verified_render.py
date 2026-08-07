@@ -743,11 +743,14 @@ def render_reader_html(model: dict[str, object]) -> str:
             + "</p>"
         )
 
-    parts.append(_heading(2, HEADINGS[1]))
-    parts.append(f"<p>{html.escape(CORE_QUESTIONS_INTRO)}</p>")
+    # Overview: the headline sensitivity rating sits directly under the executive
+    # readout (above the core questions) so the reader gets the scale up front.
     rating = _mapping(model.get("climate_sensitivity_rating"))
     if rating:
         parts.append(_sensitivity_rating_html(rating))
+
+    parts.append(_heading(2, HEADINGS[1]))
+    parts.append(f"<p>{html.escape(CORE_QUESTIONS_INTRO)}</p>")
     for question in _records(model.get("core_questions")):
         parts.append('<section class="climate-core-question">')
         parts.append(_heading(3, _text(question.get("question"))))
@@ -989,8 +992,7 @@ def write_reader_docx(model: dict[str, object], path: str | Path) -> Path:
     if _text(model.get("evidence_status")) != "approved":
         _docx_field(document, "Evidence status", model.get("evidence_status"))
 
-    document.add_heading(HEADINGS[1], level=1)
-    document.add_paragraph(CORE_QUESTIONS_INTRO)
+    # Overview: rating first (directly under the readout), then the core questions.
     rating = _mapping(model.get("climate_sensitivity_rating"))
     if rating:
         paragraph = document.add_paragraph()
@@ -1005,6 +1007,9 @@ def write_reader_docx(model: dict[str, object], path: str | Path) -> Path:
         caveat = document.add_paragraph(_text(rating.get("caveat")))
         if caveat.runs:
             caveat.runs[0].italic = True
+
+    document.add_heading(HEADINGS[1], level=1)
+    document.add_paragraph(CORE_QUESTIONS_INTRO)
     for question in _records(model.get("core_questions")):
         document.add_heading(_text(question.get("question")), level=2)
         source = _text(question.get("source"))
