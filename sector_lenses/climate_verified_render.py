@@ -111,20 +111,16 @@ POINTS_TO_CHECK_INTRO = (
     "or decision meeting. They are not the main recommendations above, and none is a "
     "reason to stop the project - think of them as a checklist."
 )
+# Reader-facing priority rows only. Model-internal routing/authority fields and
+# coded reference lists (routing_status, authority_basis, recommendation_basis,
+# *_ids) are deliberately excluded from every visible surface; the audit trail
+# lives in the "How this analysis was produced" fold instead.
 PRIORITY_FIELDS = (
     ("Decision", "decision"),
     ("Minimum action", "minimum_action"),
     ("Enhanced action", "enhanced_action"),
     ("Activation condition", "enhanced_activation"),
     ("Who", "responsible_function"),
-    ("Routing status", "routing_status"),
-    ("Authority basis", "authority_basis"),
-    ("Recommendation basis", "recommendation_basis"),
-    ("Project evidence references", "project_anchor_ids"),
-    ("Pathway references", "pathway_ids"),
-    ("Existing-response references", "existing_response_ids"),
-    ("Residual-gap references", "residual_gap_ids"),
-    ("Instrument references", "instrument_claim_ids"),
     ("Completion evidence", "completion_evidence"),
     ("Completion evidence status", "completion_evidence_status"),
     ("Confidence", "confidence"),
@@ -691,11 +687,6 @@ def _sensitivity_rating_html(rating: dict[str, object]) -> str:
         '<div style="display:flex;gap:3px;margin:7px 0 9px;border-radius:6px;'
         'overflow:hidden;max-width:360px">' + "".join(segments) + "</div>"
     )
-    evidence = _field_text(rating.get("evidence_ids"))
-    evidence_html = (
-        '<p class="climate-core-evidence" style="margin:2px 0 0"><strong>Evidence:'
-        f"</strong> {html.escape(evidence)}</p>" if evidence else ""
-    )
     return (
         '<div class="climate-sens-rating" style="background:#F7F8FA;border:1px '
         'solid #E2E6EC;border-radius:8px;padding:12px 14px;margin:0 0 14px">'
@@ -705,7 +696,6 @@ def _sensitivity_rating_html(rating: dict[str, object]) -> str:
         f'{html.escape(_text(rating.get("label")))}</p>'
         + scale_html
         + f'<p style="margin:0 0 4px">{html.escape(_text(rating.get("description")))}</p>'
-        + evidence_html
         + '<p style="margin:6px 0 0;font-size:12px;color:#6b7280">'
         + html.escape(_text(rating.get("caveat")))
         + "</p></div>"
@@ -769,13 +759,6 @@ def render_reader_html(model: dict[str, object]) -> str:
             parts.append(
                 "<p><strong>What to watch:</strong> " + html.escape(watch) + "</p>"
             )
-        evidence_refs = _field_text(question.get("evidence_ids"))
-        if evidence_refs:
-            parts.append(
-                '<p class="climate-core-evidence"><strong>Evidence:</strong> '
-                + html.escape(evidence_refs)
-                + "</p>"
-            )
         parts.append("</section>")
 
     parts.append(_heading(2, HEADINGS[2]))
@@ -832,8 +815,6 @@ def render_reader_html(model: dict[str, object]) -> str:
         parts.append(
             "<p><strong>Why it matters:</strong> "
             + html.escape(_text(flag.get("why_it_matters")))
-            + "</p><p><strong>Document basis:</strong> "
-            + html.escape(_field_text(flag.get("document_basis_ids")))
             + "</p><p><strong>Suggested verification:</strong> "
             + html.escape(_text(flag.get("suggested_verification")))
             + "</p>"
@@ -854,13 +835,6 @@ def render_reader_html(model: dict[str, object]) -> str:
                 + html.escape(_text(point.get("how_to_check")))
                 + "</p>"
             )
-            refs = _field_text(point.get("residual_gap_ids"))
-            if refs:
-                parts.append(
-                    '<p class="climate-core-evidence"><strong>Evidence:</strong> '
-                    + html.escape(refs)
-                    + "</p>"
-                )
     parts.append("</details>")
 
     parts.append("<details><summary>")
@@ -1003,7 +977,6 @@ def write_reader_docx(model: dict[str, object], path: str | Path) -> Path:
             + (f" (scale: {' - '.join(_text(s) for s in scale)})" if scale else "")
         )
         document.add_paragraph(_text(rating.get("description")))
-        _docx_field(document, "Evidence", rating.get("evidence_ids"))
         caveat = document.add_paragraph(_text(rating.get("caveat")))
         if caveat.runs:
             caveat.runs[0].italic = True
@@ -1024,7 +997,6 @@ def write_reader_docx(model: dict[str, object], path: str | Path) -> Path:
             if para:
                 document.add_paragraph(para)
         _docx_field(document, "What to watch", question.get("watch"))
-        _docx_field(document, "Evidence", question.get("evidence_ids"))
 
     document.add_heading(HEADINGS[2], level=1)
     priorities = _records(model.get("priorities"))
@@ -1066,7 +1038,6 @@ def write_reader_docx(model: dict[str, object], path: str | Path) -> Path:
     for flag in doc_flags:
         document.add_heading(_text(flag.get("flag")), level=3)
         _docx_field(document, "Why it matters", flag.get("why_it_matters"))
-        _docx_field(document, "Document basis", flag.get("document_basis_ids"))
         _docx_field(
             document,
             "Suggested verification",
@@ -1086,7 +1057,6 @@ def write_reader_docx(model: dict[str, object], path: str | Path) -> Path:
             document.add_heading(_text(point.get("point")), level=3)
             document.add_paragraph(_text(point.get("why")))
             _docx_field(document, "How to check", point.get("how_to_check"))
-            _docx_field(document, "Evidence", point.get("residual_gap_ids"))
 
     document.add_heading(HEADINGS[4], level=1)
     for key, value in _mapping(model.get("technical_annex")).items():

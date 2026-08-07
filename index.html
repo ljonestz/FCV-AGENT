@@ -4640,16 +4640,14 @@
       const level=Number(csr.level)||0;
       const scale=Array.isArray(csr.scale)?csr.scale:[];
       const segs=scale.map((lab,i)=>{const on=(i+1)===level;return `<span style="flex:1;text-align:center;padding:6px 4px;background:${on?active:'#EEF0F3'};color:${on?'#fff':'#6b7280'};font-weight:${on?'700':'400'};font-size:12px">${esc(lab)}</span>`;}).join('');
-      const ev=Array.isArray(csr.evidence_ids)&&csr.evidence_ids.length?`<p class="cj-src" style="margin:2px 0 0">Evidence: ${esc(csr.evidence_ids.join(', '))}</p>`:'';
-      return `<div class="climate-sens-rating" style="background:#F7F8FA;border:1px solid #E2E6EC;border-radius:8px;padding:12px 14px;margin:0 0 14px"><p style="margin:0 0 2px"><strong>${esc(csr.question||'')}</strong></p><p style="margin:0;font-size:18px;font-weight:700;color:${active}">${esc(csr.label||'')}</p><div style="display:flex;gap:3px;margin:7px 0 9px;border-radius:6px;overflow:hidden;max-width:360px">${segs}</div><p style="margin:0 0 4px">${esc(csr.description||'')}</p>${ev}<p style="margin:6px 0 0;font-size:12px;color:#6b7280">${esc(csr.caveat||'')}</p></div>`;
+      return `<div class="climate-sens-rating" style="background:#F7F8FA;border:1px solid #E2E6EC;border-radius:8px;padding:12px 14px;margin:0 0 14px"><p style="margin:0 0 2px"><strong>${esc(csr.question||'')}</strong></p><p style="margin:0;font-size:18px;font-weight:700;color:${active}">${esc(csr.label||'')}</p><div style="display:flex;gap:3px;margin:7px 0 9px;border-radius:6px;overflow:hidden;max-width:360px">${segs}</div><p style="margin:0 0 4px">${esc(csr.description||'')}</p><p style="margin:6px 0 0;font-size:12px;color:#6b7280">${esc(csr.caveat||'')}</p></div>`;
     })();
     const coreQuestions=Array.isArray(r.core_questions)?r.core_questions:[];
     const coreQuestionsHtml=coreQuestions.map(q=>{
       const src=q.source?`<p style="color:#009FDA;font-size:12px;margin:0 0 6px">For further insights on why this matters, see: <em>${esc(q.source)}</em></p>`:'';
       const summ=String(q.summary||'').split(/\n\s*\n+/).map(p=>p.trim()).filter(Boolean).map(p=>`<p style="margin:0 0 7px">${esc(p)}</p>`).join('');
       const watch=q.watch?`<p style="margin:0;color:#374151"><strong>What to watch:</strong> ${esc(q.watch)}</p>`:'';
-      const ev=Array.isArray(q.evidence_ids)&&q.evidence_ids.length?`<p class="cj-src" style="margin:4px 0 0">Evidence: ${esc(q.evidence_ids.join(', '))}</p>`:'';
-      return `<section class="cj climate-core-question"><h3 style="font-size:15px;font-weight:700;color:#002244;margin:0 0 5px">${esc(q.question||'')}</h3>${src}${summ}${watch}${ev}</section>`;
+      return `<section class="cj climate-core-question"><h3 style="font-size:15px;font-weight:700;color:#002244;margin:0 0 5px">${esc(q.question||'')}</h3>${src}${summ}${watch}</section>`;
     }).join('');
     const coreQuestionsSection=`<h2>Core climate-FCV questions</h2><p style="color:#4b5563;margin:0 0 11px">${esc(CORE_QUESTIONS_INTRO)}</p>${coreQuestionsHtml}`;
     const draftingBlock=(label,block)=>{
@@ -4662,7 +4660,6 @@
     // User-facing content stays front-and-centre; internal routing metadata and
     // coded reference lists are tucked into a collapsible "Evidence & routing detail".
     const primaryFields=[['Recommendation','decision'],['Minimum action','minimum_action'],['Enhanced action (optional)','enhanced_action'],['When to escalate','enhanced_activation'],['Who acts','responsible_function'],['What "done" looks like','completion_evidence'],['Confidence','confidence'],['Limitation','limitation'],['Caution','caution']];
-    const detailFields=[['Routing status','routing_status'],['Authority basis','authority_basis'],['Recommendation basis','recommendation_basis'],['Completion evidence status','completion_evidence_status'],['Project evidence references','project_anchor_ids'],['Pathway references','pathway_ids'],['Existing-response references','existing_response_ids'],['Residual-gap references','residual_gap_ids'],['Instrument references','instrument_claim_ids']];
     const annex=r.technical_annex&&typeof r.technical_annex==='object'?r.technical_annex:{};
     const admittedCount=Number(annex.recommendation_admitted_count)||0;
     const reviewerVerdict=String(annex.semantic_reviewer_verdict||'not_invoked').toLowerCase();
@@ -4693,7 +4690,7 @@
     const ptcGroupHead=t=>`<h4 style="font-family:\'Open Sans\',sans-serif;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;margin:14px 0 6px">${esc(t)}</h4>`;
     const ptcItem=(title,body,check,ev)=>`<section style="margin:0 0 13px"><h4 style="font-family:\'Open Sans\',sans-serif;font-size:13px;font-weight:700;color:#002244;margin:0 0 4px;text-transform:none;letter-spacing:0">${esc(title)}</h4><p style="margin:0 0 4px">${esc(body)}</p><p style="margin:0;color:#4b5563"><strong>How to check:</strong> ${esc(check)}</p>${ev}</section>`;
     const docFlagsHtml=flags.length?ptcGroupHead('Document points to confirm')+flags.map(flag=>ptcItem(flag.flag||'Point to verify',flag.why_it_matters||'',flag.suggested_verification||'','')).join(''):'';
-    const minorPointsHtml=minorPoints.length?ptcGroupHead('Smaller climate & fragility points to consider')+'<p style="color:#4b5563;margin:0 0 8px">These are smaller, climate- and fragility-specific points that were not large enough to become a recommendation above, but are still worth a look.</p>'+minorPoints.map(pt=>ptcItem(pt.point||'',pt.why||'',pt.how_to_check||'',Array.isArray(pt.residual_gap_ids)&&pt.residual_gap_ids.length?`<p class="cj-src" style="margin:4px 0 0">Evidence: ${esc(pt.residual_gap_ids.join(', '))}</p>`:'')).join(''):'';
+    const minorPointsHtml=minorPoints.length?ptcGroupHead('Smaller climate & fragility points to consider')+'<p style="color:#4b5563;margin:0 0 8px">These are smaller, climate- and fragility-specific points that were not large enough to become a recommendation above, but are still worth a look.</p>'+minorPoints.map(pt=>ptcItem(pt.point||'',pt.why||'',pt.how_to_check||'','')).join(''):'';
     const flagsHtml=(flags.length||minorPoints.length)?flagsIntro+docFlagsHtml+minorPointsHtml:'<p>No points were flagged for verification in this run.</p>';
     const annexFields=[['Run ID','run_id'],['Schema','schema_version'],['Country-bank release','bank_release_id'],['Automated validation','validation_status'],['Live research claims accepted','live_research_count'],['Recommendation candidate count','recommendation_candidate_count'],['Recommendation admitted count','recommendation_admitted_count'],['Recommendation final count','recommendation_final_count'],['Semantic reviewer invoked','semantic_reviewer_invoked'],['Semantic reviewer verdict','semantic_reviewer_verdict'],['Recommendation reason codes','recommendation_reason_codes'],['Unsupported numeric tokens','unsupported_numeric_tokens'],['Runtime mode','runtime_mode']];
     const annexHtml=annexFields.map(([label,key])=>{const raw=annex[key];const value=Array.isArray(raw)?raw.join(', '):raw;return `<p><strong>${esc(label)}:</strong> ${esc(value??'')}</p>`;}).join('');

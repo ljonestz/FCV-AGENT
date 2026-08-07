@@ -393,7 +393,7 @@ STAGE_OUTPUT_SCHEMAS: dict[str, dict[str, object]] = {
             "recommendation_candidates": {
                 "type": "array",
                 "items": CANDIDATE_SCHEMA,
-                "description": "No more than five admitted candidates; use more than three only where materiality clearly warrants.",
+                "description": "No more than five admitted candidates.",
             },
             "readiness_flags": {
                 "type": "array",

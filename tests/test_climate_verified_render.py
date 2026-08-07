@@ -49,6 +49,46 @@ def test_rating_scale_renders_in_overview_before_core_questions():
     assert rating_pos < core_pos
 
 
+def test_visible_tiers_hide_routing_metadata_and_evidence_codes():
+    assessment = {
+        "executive_readout": "Alpha sentence. " * 60,
+        "judgments": {
+            "sensitivity": {
+                "value": "moderate", "rationale": "Because.", "evidence_ids": ["PF-001"]
+            }
+        },
+        "priorities": [{
+            "rank": 1, "title": "Do the thing", "recommendation_id": "REC-001",
+            "decision": "Do it.", "minimum_action": "Add a clause.", "confidence": "high",
+            "routing_status": "standard_document_advisory", "authority_basis": "none_verified",
+            "recommendation_basis": "project_evidence", "pathway_ids": ["PW-001"],
+            "project_anchor_ids": ["PF-001"],
+            "current_document_drafting": {
+                "target_document": "PCN", "target_section": "X",
+                "drafting_status": "advisory_proposal", "text": "Add text.",
+                "project_basis_ids": [], "gap_basis_ids": [], "guidance_ids": [],
+            },
+        }],
+    }
+    model = build_reader_model(assessment)
+    html = render_reader_html(model)
+    # Priority card must not show the internal routing metadata rows.
+    assert "Routing status" not in html
+    assert "Authority basis" not in html
+    assert "Recommendation basis" not in html
+    assert "Pathway references" not in html
+    # The priority body must not leak raw evidence codes.
+    priorities_section = html.split("Ranked operational priorities", 1)[1].split(
+        "Points to check", 1
+    )[0]
+    assert "PW-001" not in priorities_section
+    assert "PF-001" not in priorities_section
+    # But the evidence key in the provenance fold still resolves codes.
+    model = attach_provenance(model, assessment)
+    html2 = render_reader_html(model)
+    assert "Evidence key" in html2
+
+
 def _assessment() -> dict[str, object]:
     sentence = (
         "The project evidence supports a material Climate-FCV pathway, while "
@@ -307,13 +347,9 @@ def test_html_and_docx_share_headings_and_priority_order():
         assert identifier in document_text
         assert f"Priority {index}" in html
         assert f"Priority {index}" in document_text
+    # Drafting blocks stay; model-internal routing metadata and raw evidence
+    # codes are no longer rendered in the visible priority card.
     for expected in (
-        "standard_document_advisory",
-        "none_verified",
-        "project_evidence",
-        "PF-001",
-        "PW-001",
-        "RG-001",
         "Current document drafting",
         "Operational instrument drafting",
         "Suggested targeted text for the current project document.",
@@ -323,6 +359,9 @@ def test_html_and_docx_share_headings_and_priority_order():
     ):
         assert expected in html
         assert expected in document_text
+    for removed in ("standard_document_advisory", "none_verified", "project_evidence"):
+        assert removed not in html
+        assert removed not in document_text
     assert not any(
         paragraph.text.rstrip().endswith(("[", "{", "..."))
         for paragraph in document.paragraphs
