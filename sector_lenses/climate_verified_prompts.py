@@ -149,9 +149,15 @@ can follow. Each summary must add NEW detail and MUST NOT repeat the
 executive_readout or a judgment rationale: frame it as a design question to
 resolve or a strength to note, cite at least one evidence ID in evidence_ids,
 never promise or predict an outcome, and add a one-line watch note saying what
-the team should check. Skip any supplied question you cannot ground in the
-verified evidence rather than padding; return an empty array only if none can be
-grounded.
+the team should check. Keep each answer diagnostic: describe what the document
+does and does not do and give the watch note, but do not propose the fix in the
+answer. Where an issue is material enough to act on, it must instead appear once
+as a ranked operational priority (that priority carries the mechanism and
+drafting); do not also restate that fix in the core-question answer. Assign each
+finding to exactly one place - a ranked priority, a smaller point to address, or
+a watch note - never more than one. Skip any supplied question you cannot ground
+in the verified evidence rather than padding; return an empty array only if none
+can be grounded.
 
 Also return minor_climate_points: up to three smaller climate or FCV points, each
 tied to a residual_gap_id from the analysis that is worth a brief mention but may

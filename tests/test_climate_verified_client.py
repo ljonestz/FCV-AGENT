@@ -92,6 +92,20 @@ def test_every_stage_uses_structured_json_and_evidence_entitlements():
     )
 
 
+def test_judgment_prompt_states_diagnose_vs_act_and_promotion_rule():
+    payload = {
+        "source_blocks": [], "facts": [], "context_evidence": [],
+        "analysis": {}, "judgments": {}, "recommendations": [],
+    }
+    prompt = build_verified_stage_prompt("judgment_review", payload).lower()
+    # Core-question answers stay diagnostic; the fix lives once, in a priority.
+    assert "do not propose the fix" in prompt
+    assert "ranked operational priority" in prompt
+    assert "material" in prompt
+    # One-finding-one-tier discipline.
+    assert "exactly one place" in prompt
+
+
 @dataclass
 class _Text:
     text: str
