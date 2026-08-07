@@ -4646,8 +4646,7 @@
     const coreQuestionsHtml=coreQuestions.map(q=>{
       const src=q.source?`<p style="color:#009FDA;font-size:12px;margin:0 0 6px">For further insights on why this matters, see: <em>${esc(q.source)}</em></p>`:'';
       const summ=String(q.summary||'').split(/\n\s*\n+/).map(p=>p.trim()).filter(Boolean).map(p=>`<p style="margin:0 0 7px">${esc(p)}</p>`).join('');
-      const watch=q.watch?`<p style="margin:0;color:#374151"><strong>What to watch:</strong> ${esc(q.watch)}</p>`:'';
-      return `<section class="cj climate-core-question"><h3 style="font-size:15px;font-weight:700;color:#002244;margin:0 0 5px">${esc(q.question||'')}</h3>${src}${summ}${watch}</section>`;
+      return `<section class="cj climate-core-question"><h3 style="font-size:15px;font-weight:700;color:#002244;margin:0 0 5px">${esc(q.question||'')}</h3>${src}${summ}</section>`;
     }).join('');
     const coreQuestionsSection=`<h2>Core climate-FCV questions</h2><p style="color:#4b5563;margin:0 0 11px">${esc(CORE_QUESTIONS_INTRO)}</p>${coreQuestionsHtml}`;
     const draftingBlock=(label,block)=>{
@@ -4692,6 +4691,9 @@
     const docFlagsHtml=flags.length?ptcGroupHead('Document points to confirm')+flags.map(flag=>ptcItem(flag.flag||'Point to verify',flag.why_it_matters||'',flag.suggested_verification||'','')).join(''):'';
     const minorPointsHtml=minorPoints.length?ptcGroupHead('Smaller climate & fragility points to consider')+'<p style="color:#4b5563;margin:0 0 8px">These are smaller, climate- and fragility-specific points that were not large enough to become a recommendation above, but are still worth a look.</p>'+minorPoints.map(pt=>ptcItem(pt.point||'',pt.why||'',pt.how_to_check||'','')).join(''):'';
     const flagsHtml=(flags.length||minorPoints.length)?flagsIntro+docFlagsHtml+minorPointsHtml:'<p>No points were flagged for verification in this run.</p>';
+    // Watch: monitor-only points, consolidated from the core-question watch notes.
+    const watchList=(Array.isArray(r.core_questions)?r.core_questions:[]).map(q=>({q:q.question||'',w:q.watch||''})).filter(x=>x.w);
+    const watchHtml=watchList.length?`<section class="climate-watch"><h2>What to keep an eye on</h2><p style="color:#4b5563;margin:0 0 8px">These are things to monitor as the project develops. They are not actions to take now - just points to keep in view.</p><ul>${watchList.map(x=>`<li>${x.q?`<strong>${esc(x.q)}</strong> `:''}${esc(x.w)}</li>`).join('')}</ul></section>`:'';
     const annexFields=[['Run ID','run_id'],['Schema','schema_version'],['Country-bank release','bank_release_id'],['Automated validation','validation_status'],['Live research claims accepted','live_research_count'],['Recommendation candidate count','recommendation_candidate_count'],['Recommendation admitted count','recommendation_admitted_count'],['Recommendation final count','recommendation_final_count'],['Semantic reviewer invoked','semantic_reviewer_invoked'],['Semantic reviewer verdict','semantic_reviewer_verdict'],['Recommendation reason codes','recommendation_reason_codes'],['Unsupported numeric tokens','unsupported_numeric_tokens'],['Runtime mode','runtime_mode']];
     const annexHtml=annexFields.map(([label,key])=>{const raw=annex[key];const value=Array.isArray(raw)?raw.join(', '):raw;return `<p><strong>${esc(label)}:</strong> ${esc(value??'')}</p>`;}).join('');
     // Provenance annex — "How this analysis was produced"
@@ -4748,7 +4750,7 @@
       }
       provenanceHtml = `<details class="climate-fold"><summary>How this analysis was produced</summary>${etInner}</details>`;
     }
-    return `<article class="climate-verified-assessment">${smokeHtml}<h2>Executive readout</h2><div class="climate-exec">${execHtml}</div>${statusHtml}${ratingHtml}${coreQuestionsSection}<h2>Ranked operational priorities</h2>${prioritySummaryHtml}${priorityHtml}<section class="climate-quick-fixes"><h2>Points to check before the decision meeting</h2>${flagsHtml}</section>${provenanceHtml}<p class="climate-advisory">${esc(r.advisory_notice||'')}</p></article>`;
+    return `<article class="climate-verified-assessment">${smokeHtml}<h2>Executive readout</h2><div class="climate-exec">${execHtml}</div>${statusHtml}${ratingHtml}${coreQuestionsSection}<h2>Ranked operational priorities</h2>${prioritySummaryHtml}${priorityHtml}<section class="climate-quick-fixes"><h2>Points to check before the decision meeting</h2>${flagsHtml}</section>${watchHtml}${provenanceHtml}<p class="climate-advisory">${esc(r.advisory_notice||'')}</p></article>`;
   }
 
   function renderOut(stage,result,isFollowOn){

@@ -103,6 +103,7 @@ HEADINGS = (
     "Ranked operational priorities",
     "Points to check before the decision meeting",
     "Technical annex",
+    "What to keep an eye on",
 )
 # Lay-comprehensible intro shared by the points-to-check section across all three
 # render surfaces (server HTML, DOCX, and the frontend renderer).
@@ -754,11 +755,6 @@ def render_reader_html(model: dict[str, object]) -> str:
             para = para.strip()
             if para:
                 parts.append("<p>" + html.escape(para) + "</p>")
-        watch = _text(question.get("watch"))
-        if watch:
-            parts.append(
-                "<p><strong>What to watch:</strong> " + html.escape(watch) + "</p>"
-            )
         parts.append("</section>")
 
     parts.append(_heading(2, HEADINGS[2]))
@@ -835,6 +831,26 @@ def render_reader_html(model: dict[str, object]) -> str:
                 + html.escape(_text(point.get("how_to_check")))
                 + "</p>"
             )
+
+    # Watch: monitor-only points, consolidated from the core-question watch notes.
+    watch_items = [
+        (_text(q.get("question")), _text(q.get("watch")))
+        for q in _records(model.get("core_questions"))
+        if _text(q.get("watch"))
+    ]
+    if watch_items:
+        parts.append(_heading(2, HEADINGS[5]))
+        parts.append(
+            "<p>These are things to monitor as the project develops. They are not "
+            "actions to take now - just points to keep in view.</p><ul>"
+        )
+        for question_text, watch_text in watch_items:
+            lead = (
+                f"<strong>{html.escape(question_text)}</strong> "
+                if question_text else ""
+            )
+            parts.append(f"<li>{lead}{html.escape(watch_text)}</li>")
+        parts.append("</ul>")
 
     parts.append("<details><summary>")
     parts.append(html.escape(HEADINGS[4]))
@@ -995,7 +1011,6 @@ def write_reader_docx(model: dict[str, object], path: str | Path) -> Path:
             para = para.strip()
             if para:
                 document.add_paragraph(para)
-        _docx_field(document, "What to watch", question.get("watch"))
 
     document.add_heading(HEADINGS[2], level=1)
     priorities = _records(model.get("priorities"))
@@ -1056,6 +1071,21 @@ def write_reader_docx(model: dict[str, object], path: str | Path) -> Path:
             document.add_heading(_text(point.get("point")), level=3)
             document.add_paragraph(_text(point.get("why")))
             _docx_field(document, "How to address", point.get("how_to_check"))
+
+    watch_items = [
+        (_text(q.get("question")), _text(q.get("watch")))
+        for q in _records(model.get("core_questions"))
+        if _text(q.get("watch"))
+    ]
+    if watch_items:
+        document.add_heading(HEADINGS[5], level=1)
+        document.add_paragraph(
+            "These are things to monitor as the project develops. They are not "
+            "actions to take now - just points to keep in view."
+        )
+        for question_text, watch_text in watch_items:
+            prefix = f"{question_text}: " if question_text else ""
+            document.add_paragraph(f"{prefix}{watch_text}")
 
     document.add_heading(HEADINGS[4], level=1)
     for key, value in _mapping(model.get("technical_annex")).items():

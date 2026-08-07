@@ -122,7 +122,9 @@ def test_core_questions_render_in_html_and_docx():
     assert ">Strong<" in html and "Moderate" in html and "Limited" in html  # scale
     assert "Is infrastructure sized for future climate conditions?" in html
     assert "For further insights on why this matters" in html
-    assert "What to watch" in html
+    # Watch notes are relocated to the standalone Watch section (no inline line).
+    assert "What to keep an eye on" in html
+    assert "What to watch" not in html
     assert "The tool's overall reads" not in html  # old strip removed
     stream = BytesIO()
     write_reader_docx(model, stream)

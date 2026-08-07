@@ -118,6 +118,31 @@ def test_quick_fixes_are_visible_not_collapsed():
     assert "<summary>Points to check" not in head
 
 
+def test_watch_lines_render_in_standalone_section_not_inline():
+    assessment = {
+        "executive_readout": "Alpha sentence. " * 60,
+        "judgments": {
+            "sensitivity": {
+                "value": "moderate", "rationale": "Because.", "evidence_ids": []
+            }
+        },
+        "priorities": [],
+        "core_questions": [
+            {"question_id": "cq1", "theme": "cq1_interaction", "question": "Does X hold?",
+             "source": "Guidance", "summary": "A finding.", "evidence_ids": [],
+             "watch": "Keep an eye on the flood season."}
+        ],
+    }
+    html = render_reader_html(build_reader_model(assessment))
+    # Watch content appears in the standalone section, not inline in the card.
+    assert "What to keep an eye on" in html
+    assert "Keep an eye on the flood season." in html
+    core_block = html.split("Core climate-FCV questions", 1)[1].split(
+        "Ranked operational priorities", 1
+    )[0]
+    assert "What to watch" not in core_block
+
+
 def _assessment() -> dict[str, object]:
     sentence = (
         "The project evidence supports a material Climate-FCV pathway, while "
@@ -364,12 +389,13 @@ def test_html_and_docx_share_headings_and_priority_order():
         paragraph.text for paragraph in document.paragraphs
     )
 
-    assert [html.index(heading) for heading in HEADINGS] == sorted(
-        html.index(heading) for heading in HEADINGS
+    # HTML and DOCX render the same present headings in the same visual order
+    # (robust to conditionally-rendered sections such as the Watch section).
+    by_html = sorted((h for h in HEADINGS if h in html), key=html.index)
+    by_docx = sorted(
+        (h for h in HEADINGS if h in document_text), key=document_text.index
     )
-    assert [document_text.index(heading) for heading in HEADINGS] == sorted(
-        document_text.index(heading) for heading in HEADINGS
-    )
+    assert by_html == by_docx
     for index in range(1, 5):
         identifier = f"REC-00{index}"
         assert identifier in html
