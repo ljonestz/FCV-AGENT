@@ -106,6 +106,18 @@ def test_judgment_prompt_states_diagnose_vs_act_and_promotion_rule():
     assert "exactly one place" in prompt
 
 
+def test_common_prompt_carries_calibration_guardrails():
+    payload = {
+        "source_blocks": [], "facts": [], "context_evidence": [],
+        "analysis": {}, "judgments": {}, "recommendations": [],
+    }
+    prompt = build_verified_stage_prompt("fact_extraction", payload).lower()
+    # Acronym-from-source, verb fidelity, and verified-vs-attributed calibration.
+    assert "acronym" in prompt
+    assert "affected" in prompt
+    assert "unverified context" in prompt
+
+
 @dataclass
 class _Text:
     text: str
