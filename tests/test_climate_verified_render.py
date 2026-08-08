@@ -87,6 +87,24 @@ def test_overview_summary_renders_in_overview_box_at_the_very_top():
     assert summary_pos < exec_heading_pos
 
 
+def test_rating_graphic_precedes_summary_text_within_the_box():
+    assessment = {
+        "executive_readout": "Alpha sentence. " * 60,
+        "overview_summary": "OVERVIEW_MARKER first. Second overall sentence. Third one.",
+        "judgments": {
+            "sensitivity": {"value": "strong", "rationale": "Because.", "evidence_ids": []}
+        },
+        "priorities": [],
+    }
+    html = render_reader_html(build_reader_model(assessment))
+    question_pos = html.find(SENSITIVITY_RATING_QUESTION)
+    summary_pos = html.find("OVERVIEW_MARKER")
+    assert question_pos != -1 and summary_pos != -1
+    # The "How sensitive" graphic (question + label + scale) sits at the very top
+    # of the card, above the overview summary text.
+    assert question_pos < summary_pos
+
+
 def test_overview_summary_renders_in_docx_before_executive_readout():
     assessment = {
         "executive_readout": "Alpha sentence one. Beta sentence two.",
@@ -100,9 +118,14 @@ def test_overview_summary_renders_in_docx_before_executive_readout():
     write_reader_docx(build_reader_model(assessment), stream)
     stream.seek(0)
     texts = [p.text for p in Document(stream).paragraphs]
+    question_idx = next(
+        i for i, t in enumerate(texts) if t.startswith(SENSITIVITY_RATING_QUESTION)
+    )
     summary_idx = next(i for i, t in enumerate(texts) if "OVERVIEW_MARKER" in t)
     exec_idx = next(i for i, t in enumerate(texts) if t == HEADINGS[0])
-    assert summary_idx < exec_idx
+    # Graphic (rating question line) first, then the summary text, then the
+    # fuller Executive readout heading below.
+    assert question_idx < summary_idx < exec_idx
 
 
 def test_overview_box_renders_without_summary_when_absent():

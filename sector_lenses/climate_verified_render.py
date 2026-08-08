@@ -704,13 +704,15 @@ def _sensitivity_rating_html(rating: dict[str, object]) -> str:
     return (
         '<div class="climate-sens-rating" style="background:#F7F8FA;border:1px '
         'solid #E2E6EC;border-radius:8px;padding:12px 14px;margin:0 0 14px">'
-        + summary_html
+        # Graphic first: the "How sensitive" question, rating label, and scale.
         + f'<p style="margin:0 0 2px"><strong>'
         f'{html.escape(_text(rating.get("question")))}</strong></p>'
         f'<p style="margin:0;font-size:18px;font-weight:700;color:{active}">'
         f'{html.escape(_text(rating.get("label")))}</p>'
         + scale_html
         + f'<p style="margin:0 0 4px">{html.escape(_text(rating.get("description")))}</p>'
+        # Then the overall summary text below the graphic.
+        + summary_html
         + '<p style="margin:6px 0 0;font-size:12px;color:#6b7280">'
         + html.escape(_text(rating.get("caveat")))
         + "</p></div>"
@@ -985,9 +987,7 @@ def write_reader_docx(model: dict[str, object], path: str | Path) -> Path:
     # Executive readout as detail below (parity with the HTML surface).
     rating = _mapping(model.get("climate_sensitivity_rating"))
     if rating:
-        summary = _text(rating.get("overview_summary"))
-        if summary:
-            document.add_paragraph(summary)
+        # Graphic first: the rating question, label and scale.
         paragraph = document.add_paragraph()
         paragraph.add_run(f"{_text(rating.get('question'))} ").bold = True
         scale = rating.get("scale") if isinstance(rating.get("scale"), list) else []
@@ -996,6 +996,10 @@ def write_reader_docx(model: dict[str, object], path: str | Path) -> Path:
             + (f" (scale: {' - '.join(_text(s) for s in scale)})" if scale else "")
         )
         document.add_paragraph(_text(rating.get("description")))
+        # Then the overall summary text below the graphic.
+        summary = _text(rating.get("overview_summary"))
+        if summary:
+            document.add_paragraph(summary)
         caveat = document.add_paragraph(_text(rating.get("caveat")))
         if caveat.runs:
             caveat.runs[0].italic = True

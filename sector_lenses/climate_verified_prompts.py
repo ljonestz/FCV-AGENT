@@ -122,8 +122,11 @@ Operationalization asks whether sensitivity or responsiveness is translated
 into requirements, responsibilities, resources, indicators, verification,
 triggers, and adaptation. Every dimension, including unclear, not_expected, and
 not_evidenced, must cite at least one ID from the supplied verified registers.
-Write an executive_readout of 500 to 800 words for a task-team reader. Start
-with what the project already does, distinguish residual gaps from items merely
+Write an executive_readout of 500 to 800 words for a task-team reader. Do not
+reopen it with the one-sentence project identification and financing figure that
+the overview_summary already states; assume the reader has just read the
+overview and start instead with what the project already does on climate and
+FCV. Then distinguish residual gaps from items merely
 not yet specified, summarize the four judgments without inventing an overall
 rating. Discuss material residual issues without stating or implying how many
 will pass the later recommendation threshold. Every previewed issue must name

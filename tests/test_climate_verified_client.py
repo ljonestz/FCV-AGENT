@@ -46,6 +46,9 @@ def test_every_stage_uses_structured_json_and_evidence_entitlements():
     assert "500 to 800 words" in prompts["judgment_review"]
     assert "executive_readout" in prompts["judgment_review"]
     assert "overview_summary" in prompts["judgment_review"]
+    # The executive readout must not re-open with the project identification the
+    # overview_summary already states (duplication minimisation).
+    assert "the overview_summary already states" in prompts["judgment_review"]
     assert "Return fewer when fewer pass" in prompts["recommendation_compiler"]
     assert "at most five recommendation candidates" in prompts["recommendation_compiler"]
     assert "45 words or fewer" in prompts["recommendation_compiler"]
