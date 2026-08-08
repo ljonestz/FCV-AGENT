@@ -289,6 +289,7 @@ def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
     rating = _SENSITIVITY_RATING.get(
         sensitivity_value, _SENSITIVITY_RATING["unclear"]
     )
+    overview_summary = _text(assessment.get("overview_summary"))
     climate_sensitivity_rating = {
         "value": sensitivity_value,
         "label": rating["label"],
@@ -296,6 +297,10 @@ def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
         "tone": rating["tone"],
         "scale": list(_SENSITIVITY_SCALE_LABELS),
         "question": SENSITIVITY_RATING_QUESTION,
+        # 3-4 sentence plain-language overall summary embedded in the top overview
+        # block; empty for older/blank runs, in which case the card shows only the
+        # level gloss (graceful degradation).
+        "overview_summary": overview_summary,
         "description": rating["description"],
         "caveat": SENSITIVITY_RATING_CAVEAT,
         "evidence_ids": [
@@ -326,6 +331,7 @@ def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
     )
     return _scrub_placeholders({
         "executive_readout": executive,
+        "overview_summary": overview_summary,
         "judgments": judgments,
         "climate_sensitivity_rating": climate_sensitivity_rating,
         "core_questions": core_questions,
@@ -688,10 +694,18 @@ def _sensitivity_rating_html(rating: dict[str, object]) -> str:
         '<div style="display:flex;gap:3px;margin:7px 0 9px;border-radius:6px;'
         'overflow:hidden;max-width:360px">' + "".join(segments) + "</div>"
     )
+    summary = _text(rating.get("overview_summary"))
+    summary_html = (
+        f'<p style="margin:0 0 10px;font-size:14px;line-height:1.5">'
+        f"{html.escape(summary)}</p>"
+        if summary
+        else ""
+    )
     return (
         '<div class="climate-sens-rating" style="background:#F7F8FA;border:1px '
         'solid #E2E6EC;border-radius:8px;padding:12px 14px;margin:0 0 14px">'
-        f'<p style="margin:0 0 2px"><strong>'
+        + summary_html
+        + f'<p style="margin:0 0 2px"><strong>'
         f'{html.escape(_text(rating.get("question")))}</strong></p>'
         f'<p style="margin:0;font-size:18px;font-weight:700;color:{active}">'
         f'{html.escape(_text(rating.get("label")))}</p>'
@@ -713,6 +727,20 @@ def render_reader_html(model: dict[str, object]) -> str:
             + html.escape(SMOKE_RUNTIME_WARNING)
             + "</p>"
         )
+    # Overview at the very top: the headline sensitivity rating card carries the
+    # 3-4 sentence plain-language overall summary, so the reader gets the whole
+    # takeaway up front. The fuller Executive readout follows as detail below.
+    rating = _mapping(model.get("climate_sensitivity_rating"))
+    if rating:
+        parts.append(_sensitivity_rating_html(rating))
+    evidence_status = _text(model.get("evidence_status"))
+    if evidence_status != "approved":
+        parts.append(
+            '<p class="climate-evidence-status">'
+            + html.escape(evidence_status)
+            + "</p>"
+        )
+
     parts.append(_heading(2, HEADINGS[0]))
     for _exec_para in re.split(r"\n\s*\n+", _text(model.get("executive_readout")).strip()):
         _exec_para = _exec_para.strip()
@@ -726,19 +754,6 @@ def render_reader_html(model: dict[str, object]) -> str:
             )
         else:
             parts.append(f"<p><strong>{html.escape(_exec_para)}</strong></p>")
-    evidence_status = _text(model.get("evidence_status"))
-    if evidence_status != "approved":
-        parts.append(
-            '<p class="climate-evidence-status">'
-            + html.escape(evidence_status)
-            + "</p>"
-        )
-
-    # Overview: the headline sensitivity rating sits directly under the executive
-    # readout (above the core questions) so the reader gets the scale up front.
-    rating = _mapping(model.get("climate_sensitivity_rating"))
-    if rating:
-        parts.append(_sensitivity_rating_html(rating))
 
     parts.append(_heading(2, HEADINGS[1]))
     parts.append(f"<p>{html.escape(CORE_QUESTIONS_INTRO)}</p>")
@@ -966,6 +981,27 @@ def write_reader_docx(model: dict[str, object], path: str | Path) -> Path:
         paragraph = document.add_paragraph(SMOKE_RUNTIME_WARNING)
         if paragraph.runs:
             paragraph.runs[0].bold = True
+    # Overview at the very top: the summary + rating come first, then the fuller
+    # Executive readout as detail below (parity with the HTML surface).
+    rating = _mapping(model.get("climate_sensitivity_rating"))
+    if rating:
+        summary = _text(rating.get("overview_summary"))
+        if summary:
+            document.add_paragraph(summary)
+        paragraph = document.add_paragraph()
+        paragraph.add_run(f"{_text(rating.get('question'))} ").bold = True
+        scale = rating.get("scale") if isinstance(rating.get("scale"), list) else []
+        paragraph.add_run(
+            f"Rating: {_text(rating.get('label'))}"
+            + (f" (scale: {' - '.join(_text(s) for s in scale)})" if scale else "")
+        )
+        document.add_paragraph(_text(rating.get("description")))
+        caveat = document.add_paragraph(_text(rating.get("caveat")))
+        if caveat.runs:
+            caveat.runs[0].italic = True
+    if _text(model.get("evidence_status")) != "approved":
+        _docx_field(document, "Evidence status", model.get("evidence_status"))
+
     document.add_heading(HEADINGS[0], level=1)
     for _exec_para in re.split(r"\n\s*\n+", _text(model.get("executive_readout")).strip()):
         _exec_para = _exec_para.strip()
@@ -978,23 +1014,6 @@ def write_reader_docx(model: dict[str, object], path: str | Path) -> Path:
             _paragraph.add_run(_m.group(2) + _m.group(3))
         else:
             _paragraph.add_run(_exec_para).bold = True
-    if _text(model.get("evidence_status")) != "approved":
-        _docx_field(document, "Evidence status", model.get("evidence_status"))
-
-    # Overview: rating first (directly under the readout), then the core questions.
-    rating = _mapping(model.get("climate_sensitivity_rating"))
-    if rating:
-        paragraph = document.add_paragraph()
-        paragraph.add_run(f"{_text(rating.get('question'))} ").bold = True
-        scale = rating.get("scale") if isinstance(rating.get("scale"), list) else []
-        paragraph.add_run(
-            f"Rating: {_text(rating.get('label'))}"
-            + (f" (scale: {' - '.join(_text(s) for s in scale)})" if scale else "")
-        )
-        document.add_paragraph(_text(rating.get("description")))
-        caveat = document.add_paragraph(_text(rating.get("caveat")))
-        if caveat.runs:
-            caveat.runs[0].italic = True
 
     document.add_heading(HEADINGS[1], level=1)
     document.add_paragraph(CORE_QUESTIONS_INTRO)

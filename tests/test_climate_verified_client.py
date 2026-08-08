@@ -45,6 +45,7 @@ def test_every_stage_uses_structured_json_and_evidence_entitlements():
     assert "four independent dimensions" in prompts["judgment_review"]
     assert "500 to 800 words" in prompts["judgment_review"]
     assert "executive_readout" in prompts["judgment_review"]
+    assert "overview_summary" in prompts["judgment_review"]
     assert "Return fewer when fewer pass" in prompts["recommendation_compiler"]
     assert "at most five recommendation candidates" in prompts["recommendation_compiler"]
     assert "45 words or fewer" in prompts["recommendation_compiler"]

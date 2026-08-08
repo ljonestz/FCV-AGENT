@@ -133,6 +133,13 @@ imply dependency unless an explicit project fact establishes it. Calibrate
 precision to the evidence and state material limitations. Write the
 executive_readout as three to five short paragraphs separated by a blank line,
 each covering one clear theme, so a reader can scan the key takeaways.
+Also write an overview_summary of three to four plain-language sentences that
+gives the single high-level takeaway for the top of the report: what the project
+is, how well it recognises and responds to the climate-FCV intersection overall,
+and the most important residual gap. It must reflect the same evidence as the
+executive_readout but be materially shorter, must not state or imply an overall
+numeric rating, and must not simply repeat the executive_readout's opening
+sentence verbatim.
 Write each judgment rationale as three to five plain-language sentences (roughly
 60-110 words) that a non-specialist can follow; avoid abrupt one-line fragments,
 and explain the reasoning rather than just stating a verdict.
@@ -178,7 +185,7 @@ short point, why it is worth a look, and how to check, in plain language grounde
 in that residual gap. Add no new claims and no digits. Return an empty array if
 there are no such smaller points.
 
-Return: {"executive_readout":"...","relevance":{"value":"high|medium|low|unclear","evidence_ids":[],"rationale":"..."},"sensitivity":{"value":"very_strong|strong|moderate|limited|very_limited|unclear","evidence_ids":[],"rationale":"..."},"responsiveness":{"value":"strong|emerging|limited|not_expected|unclear","evidence_ids":[],"rationale":"..."},"operationalization":{"value":"embedded|partial|early|not_evidenced|unclear","evidence_ids":[],"rationale":"..."},"core_questions":[{"question_id":"cq2-infra-horizon","theme":"cq2_maladaptation","question":"...","source":"...","summary":"...","evidence_ids":["RG-001"],"watch":"..."}],"minor_climate_points":[{"point":"...","why":"...","how_to_check":"...","residual_gap_ids":["RG-002"]}]}.""",
+Return: {"executive_readout":"...","overview_summary":"...","relevance":{"value":"high|medium|low|unclear","evidence_ids":[],"rationale":"..."},"sensitivity":{"value":"very_strong|strong|moderate|limited|very_limited|unclear","evidence_ids":[],"rationale":"..."},"responsiveness":{"value":"strong|emerging|limited|not_expected|unclear","evidence_ids":[],"rationale":"..."},"operationalization":{"value":"embedded|partial|early|not_evidenced|unclear","evidence_ids":[],"rationale":"..."},"core_questions":[{"question_id":"cq2-infra-horizon","theme":"cq2_maladaptation","question":"...","source":"...","summary":"...","evidence_ids":["RG-001"],"watch":"..."}],"minor_climate_points":[{"point":"...","why":"...","how_to_check":"...","residual_gap_ids":["RG-002"]}]}.""",
         payload,
     )
 

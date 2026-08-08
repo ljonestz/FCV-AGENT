@@ -358,6 +358,11 @@ STAGE_OUTPUT_SCHEMAS: dict[str, dict[str, object]] = {
     "judgment_review": _object(
         {
             "executive_readout": _string("Between 500 and 800 words."),
+            "overview_summary": _string(
+                "A three-to-four sentence plain-language overall summary for the "
+                "top-of-report overview, distinct from and shorter than the "
+                "executive_readout."
+            ),
             "relevance": _judgment(("high", "medium", "low", "unclear")),
             "sensitivity": _judgment(
                 ("very_strong", "strong", "moderate", "limited",

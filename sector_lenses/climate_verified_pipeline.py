@@ -947,6 +947,7 @@ def run_verified_climate_pipeline(
     )
     judgments = _judgments(judgment_payload)
     executive_readout = _text(judgment_payload.get("executive_readout"))
+    overview_summary = _text(judgment_payload.get("overview_summary"))
     known_ids = (
         fact_ids
         | {item.assertion_id for item in assertions}
@@ -1340,6 +1341,7 @@ def run_verified_climate_pipeline(
         "executive_readout": (
             executive_readout or deterministic_summary(judgments)
         ),
+        "overview_summary": overview_summary,
         "core_questions": core_questions,
         "priorities": [asdict(item) for item in priorities],
         "review_readiness_flags": [asdict(item) for item in readiness],

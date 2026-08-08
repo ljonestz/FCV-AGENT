@@ -6,6 +6,7 @@ from docx import Document
 
 from sector_lenses.climate_verified_render import (
     HEADINGS,
+    SENSITIVITY_RATING_QUESTION,
     attach_provenance,
     build_reader_model,
     render_reader_html,
@@ -47,6 +48,78 @@ def test_rating_scale_renders_in_overview_before_core_questions():
     assert rating_pos != -1 and core_pos != -1
     # The rating sits in the overview, above the core-questions section.
     assert rating_pos < core_pos
+
+
+def test_build_reader_model_carries_overview_summary_into_rating_block():
+    assessment = {
+        "executive_readout": "Alpha. Beta. Gamma.",
+        "overview_summary": "OVERVIEW_MARKER first. Second overall sentence. Third.",
+        "judgments": {
+            "sensitivity": {"value": "strong", "rationale": "Because.", "evidence_ids": []}
+        },
+        "priorities": [],
+    }
+    model = build_reader_model(assessment)
+    assert model["overview_summary"].startswith("OVERVIEW_MARKER")
+    # The factored overview block (the rating unit) carries the summary too.
+    assert model["climate_sensitivity_rating"]["overview_summary"].startswith(
+        "OVERVIEW_MARKER"
+    )
+
+
+def test_overview_summary_renders_in_overview_box_at_the_very_top():
+    assessment = {
+        "executive_readout": "Alpha sentence. " * 60,
+        "overview_summary": "OVERVIEW_MARKER first. Second overall sentence. Third one.",
+        "judgments": {
+            "sensitivity": {"value": "strong", "rationale": "Because.", "evidence_ids": []}
+        },
+        "priorities": [],
+    }
+    html = render_reader_html(build_reader_model(assessment))
+    summary_pos = html.find("OVERVIEW_MARKER")
+    rating_pos = html.find("climate-sens-rating")
+    exec_heading_pos = html.find("Executive readout")
+    assert summary_pos != -1 and rating_pos != -1 and exec_heading_pos != -1
+    # The 3-4 sentence overall summary is embedded in the rating card, and the
+    # whole overview block sits ABOVE the fuller Executive readout section.
+    assert rating_pos < summary_pos
+    assert summary_pos < exec_heading_pos
+
+
+def test_overview_summary_renders_in_docx_before_executive_readout():
+    assessment = {
+        "executive_readout": "Alpha sentence one. Beta sentence two.",
+        "overview_summary": "OVERVIEW_MARKER first. Second overall sentence. Third one.",
+        "judgments": {
+            "sensitivity": {"value": "strong", "rationale": "Because.", "evidence_ids": []}
+        },
+        "priorities": [],
+    }
+    stream = BytesIO()
+    write_reader_docx(build_reader_model(assessment), stream)
+    stream.seek(0)
+    texts = [p.text for p in Document(stream).paragraphs]
+    summary_idx = next(i for i, t in enumerate(texts) if "OVERVIEW_MARKER" in t)
+    exec_idx = next(i for i, t in enumerate(texts) if t == HEADINGS[0])
+    assert summary_idx < exec_idx
+
+
+def test_overview_box_renders_without_summary_when_absent():
+    assessment = {
+        "executive_readout": "Alpha. Beta. Gamma.",
+        "judgments": {
+            "sensitivity": {"value": "strong", "rationale": "Because.", "evidence_ids": []}
+        },
+        "priorities": [],
+    }
+    model = build_reader_model(assessment)
+    assert model["overview_summary"] == ""
+    html = render_reader_html(model)
+    # Graceful degradation: the rating card still renders (with its level gloss),
+    # just with no embedded overall summary.
+    assert "climate-sens-rating" in html
+    assert "strongly designed to recognise" in html
 
 
 def test_visible_tiers_hide_routing_metadata_and_evidence_codes():
@@ -496,7 +569,10 @@ def test_docx_writer_accepts_an_in_memory_stream():
 
     assert returned is stream
     stream.seek(0)
-    assert Document(stream).paragraphs[0].text == HEADINGS[0]
+    texts = [p.text for p in Document(stream).paragraphs]
+    # The overview block now leads; the Executive readout heading follows below it.
+    assert texts[0].startswith(SENSITIVITY_RATING_QUESTION)
+    assert HEADINGS[0] in texts
 
 
 def test_smoke_runtime_is_watermarked_in_html_and_docx():
