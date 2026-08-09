@@ -2406,6 +2406,13 @@ def test_verified_climate_ui_contract_is_ranked_and_multidimensional():
     start = html.index("function renderClimateVerifiedAssessment")
     end = html.index("\n  function ", start + 20)
     body = html[start:end]
+    assert ".climate-verified-assessment{" in html
+    assert ".climate-report-section{" in html
+    assert ".climate-section-heading{" in html
+    assert ".climate-guidance{" in html
+    assert "@media(max-width:760px)" in html
+    assert "buildClimateGuidanceItems" in html
+    assert "renderClimateRelevantGuidance" in body
     assert "priority.rank" in body
     assert "priority.priority_label" not in body
     assert "High priority" not in body
@@ -2429,6 +2436,19 @@ def test_verified_climate_ui_contract_is_ranked_and_multidimensional():
     assert "live_research_count" in body
     assert "drafting_language" not in body
     assert "recommendation_reason_codes" in body
+    assert body.index("minorPointsHtml") < body.index("docFlagsHtml")
+
+
+def test_verified_climate_html_export_reuses_refreshed_reader_and_styles():
+    html = (Path(app_module.__file__).parent / "index.html").read_text(
+        encoding="utf-8"
+    )
+    start = html.index("function downloadHTML")
+    end = html.index("\n  function ", start + 20)
+    helper = html[start:end]
+    assert "renderClimateVerifiedAssessment(climateVerifiedReader)" in helper
+    assert "document.querySelectorAll('style')" in helper
+    assert 'name="viewport"' in helper
 
 
 def test_express_route_dispatches_verified_assessment_contract():

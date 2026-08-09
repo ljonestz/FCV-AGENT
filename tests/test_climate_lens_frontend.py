@@ -1043,9 +1043,69 @@ for (const expected of [
   'Seasonal flooding and insecurity can disrupt works. The project needs agreed triggers for pausing and restarting activity.',
   'These triggers should be discussed with local delivery partners. They can reduce uneven access to project benefits.',
   'Include seasonal access triggers in the implementation arrangements.',
-  'Recommendation details', 'climate-report-section', 'climate-section-heading', 'climate-section-number'
+  'Recommendation details', '<article class="climate-verified-assessment">',
+  '<section class="climate-report-section', '<header class="climate-section-heading">',
+  '<details class="climate-priority-detail">'
 ]) {{
   if (!html.includes(expected)) throw new Error('missing preserved reader detail: ' + expected + ' | ' + html);
+}}
+const headingPattern = new RegExp('<header class="climate-section-heading"><span class="climate-section-number">([0-9]{{2}})</span><h2>([^<]+)</h2></header>', 'g');
+const headings = Array.from(html.matchAll(headingPattern), match => [match[1], match[2]]);
+const expectedHeadings = [
+  ['01', 'Overview'],
+  ['02', 'Core climate-FCV questions'],
+  ['03', 'Ranked operational priorities'],
+  ['04', 'Points to check before the decision meeting'],
+  ['05', 'What to keep an eye on']
+];
+if (JSON.stringify(headings) !== JSON.stringify(expectedHeadings)) {{
+  throw new Error('numbered section sequence is not gap-free: ' + JSON.stringify(headings) + ' | ' + html);
+}}
+"""
+    result = subprocess.run(
+        ["node", "-e", script], capture_output=True, text=True, check=False
+    )
+    assert result.returncode == 0, result.stderr
+
+
+def test_verified_reader_fallback_numbers_methodology_last_without_unsafe_values():
+    source = INDEX.read_text(encoding="utf-8")
+    renderer = _extract_js_function(source, "renderClimateVerifiedAssessment")
+    reader = {
+        "executive_readout": "The project needs a bounded climate-FCV review.",
+        "evidence_trail": {
+            "methodology_note": "The analysis used project evidence and the country bank."
+        },
+    }
+    script = f"""
+{_js_escape_helper()}
+const renderClimateRelevantGuidance = () => '';
+{renderer}
+const html = renderClimateVerifiedAssessment({json.dumps(reader)});
+for (const expected of [
+  'The project needs a bounded climate-FCV review.',
+  'No points were flagged for verification in this run.',
+  'Method, evidence key, sources, limitations, and diagnostics'
+]) {{
+  if (!html.includes(expected)) throw new Error('missing fallback content: ' + expected + ' | ' + html);
+}}
+for (const unsafe of ['undefined', '[object Object]']) {{
+  if (html.includes(unsafe)) throw new Error('unsafe rendered value: ' + unsafe + ' | ' + html);
+}}
+const headingPattern = new RegExp('<header class="climate-section-heading"><span class="climate-section-number">([0-9]{{2}})</span><h2>([^<]+)</h2></header>', 'g');
+const headings = Array.from(html.matchAll(headingPattern), match => [match[1], match[2]]);
+const expectedHeadings = [
+  ['01', 'Overview'],
+  ['02', 'Core climate-FCV questions'],
+  ['03', 'Ranked operational priorities'],
+  ['04', 'Points to check before the decision meeting'],
+  ['05', 'How this analysis was produced']
+];
+if (JSON.stringify(headings) !== JSON.stringify(expectedHeadings)) {{
+  throw new Error('fallback section sequence is not gap-free or methodology is not final: ' + JSON.stringify(headings) + ' | ' + html);
+}}
+if (!html.includes('<details class="climate-fold"><summary>Method, evidence key, sources, limitations, and diagnostics</summary>')) {{
+  throw new Error('methodology disclosure summary repeats or omits its contents label | ' + html);
 }}
 """
     result = subprocess.run(
