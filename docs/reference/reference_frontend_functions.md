@@ -211,19 +211,42 @@ Both modes use identical prompts, code paths, and output quality. Express is a f
 
 ---
 
-*Last updated: 2026-07-31 - Climate-FCV reader polish and priority-stepper navigation state.*
+*Last updated: 2026-08-09 - Verified Climate-FCV HTML reader refresh.*
 
-## Verified Climate-FCV reader (v9.24)
+## Verified Climate-FCV reader (v9.34)
 
 `runExpress()` stores additive `climate_assessment` and canonical
 `climate_reader` SSE payloads in `climateVerifiedAssessment` and
 `climateVerifiedReader`. `renderOut()` passes the reader (not the raw assessment) to
 `renderClimateVerifiedAssessment()` and suppresses the legacy integration gauge,
-Stage 3 overview, and priority carousel. The v2 reader renders executive readout,
-four judgments, zero-to-three ranked priority cards, collapsed review-readiness
-flags, a safe technical annex, and the advisory notice. All model-authored strings
-are escaped. DOCX sends the same assessment to `/api/download-report`, where the
-server deterministically rebuilds the reader; shared HTML renders the emitted reader.
-Saved sessions and completed Express checkpoints preserve both objects, while new
-runs, lens changes, reruns, and full reset clear both. Follow-on requests carry the
-structured reader in their history. The Stage 2 Express timeout is 15 minutes.
+Stage 3 overview, and priority carousel. The HTML renderer produces a prose-led,
+numbered report: Overview; core questions; ranked operational priorities; points to
+check; an optional watch section; optional relevant WBG guidance; and, when present,
+the final methodology/evidence disclosure. Priority narrative, suggested drafting,
+recommendation details, readiness checks, watch items, provenance, and diagnostics
+remain in the reader. Within points to check, smaller Climate-FCV considerations
+precede document checks. All model-authored strings are escaped.
+
+- `isPublicWorldBankHttpsUrl(value)` accepts only HTTPS URLs on `worldbank.org` or
+  its subdomains, with no username, password, or non-default port. It rejects malformed
+  URLs and non-World Bank hosts.
+- `normalizeClimateSourceTitle(value)` applies NFKD normalization, lowercase,
+  `&`-to-`and` conversion, non-alphanumeric collapsing, and trimming. Matching uses
+  equality of this exact normalized key, not fuzzy or substring matching.
+- `buildClimateGuidanceItems(reader)` joins only the current `core_questions[].source`
+  titles to `sources[].title` on that key. A joined source is retained only when its
+  URL passes the World Bank HTTPS allowlist; it reuses the source title/description
+  and up to two current question titles. Unmatched, invalid, or unreferenced sources
+  are omitted rather than promoted.
+- `renderClimateRelevantGuidance(reader)` renders those derived items as the optional
+  project-relevant guidance section and returns an empty string when none qualify.
+- `renderClimateVerifiedAssessment(reader)` owns the numbered-section counter and
+  section order. Live output and standalone HTML export both call this renderer and
+  use the same scoped Climate reader stylesheet, so numbering, content, and order do
+  not fork. DOCX continues to use its server-side renderer and is unchanged.
+
+DOCX sends the same assessment to `/api/download-report`, where the server
+deterministically rebuilds the reader. Saved sessions and completed Express
+checkpoints preserve both reader objects, while new runs, lens changes, reruns, and
+full reset clear both. Follow-on requests carry the structured reader in their
+history. The Stage 2 Express timeout is 15 minutes.
