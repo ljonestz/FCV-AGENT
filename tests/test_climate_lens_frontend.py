@@ -1052,3 +1052,118 @@ for (const expected of [
         ["node", "-e", script], capture_output=True, text=True, check=False
     )
     assert result.returncode == 0, result.stderr
+
+
+def test_public_world_bank_https_url_accepts_only_world_bank_hosts():
+    source = INDEX.read_text(encoding="utf-8")
+    helper = _extract_js_function(source, "isPublicWorldBankHttpsUrl")
+    script = f"""
+{helper}
+const accepted = [
+  'https://www.worldbank.org/report',
+  'https://documents1.worldbank.org/report'
+];
+const rejected = [
+  'http://www.worldbank.org/report',
+  'https://',
+  'https://localhost/report',
+  'https://127.0.0.1/report',
+  'https://[::1]/report',
+  'https://user:pass@www.worldbank.org/report',
+  'https://worldbank.org.evil.example/report'
+];
+for (const url of accepted) {{
+  if (!isPublicWorldBankHttpsUrl(url)) throw new Error('rejected valid World Bank URL: '+url);
+}}
+for (const url of rejected) {{
+  if (isPublicWorldBankHttpsUrl(url)) throw new Error('accepted unsafe URL: '+url);
+}}
+"""
+    result = subprocess.run(
+        ["node", "-e", script], capture_output=True, text=True, check=False
+    )
+    assert result.returncode == 0, result.stderr
+
+
+def test_verified_reader_guidance_includes_only_sources_used_by_current_questions():
+    source = INDEX.read_text(encoding="utf-8")
+    helpers = "\n".join(
+        _extract_js_function(source, name)
+        for name in (
+            "isPublicWorldBankHttpsUrl",
+            "normalizeClimateSourceTitle",
+            "buildClimateGuidanceItems",
+            "renderClimateRelevantGuidance",
+        )
+    )
+    reader = {
+        "core_questions": [
+            {
+                "question": "How can compound shocks affect delivery?",
+                "source": "FCV-Sensitive Climate Action Framework",
+            },
+            {
+                "question": "Can shared benefits reduce tension?",
+                "source": (
+                    "Maximizing the Peace and Social Dividends of Climate Action"
+                ),
+            },
+            {
+                "question": "What internal guidance should inform delivery?",
+                "source": "Internal Climate-FCV Working Note",
+            },
+        ],
+        "sources": [
+            {
+                "title": "FCV-Sensitive Climate Action Framework",
+                "url": "https://documents.worldbank.org/fcv-sensitive-framework",
+                "description": "A framework for climate action in FCV settings.",
+            },
+            {
+                "title": (
+                    "Maximizing the Peace and Social Dividends of Climate Action"
+                ),
+                "url": "https://documents.worldbank.org/peace-social-dividends",
+                "description": "Practical guidance on peace and social dividends.",
+            },
+            {
+                "title": "Standard Climate Change Action Plan",
+                "url": "https://documents.worldbank.org/climate-action-plan",
+                "description": "General climate guidance unrelated to these questions.",
+            },
+            {
+                "title": "Internal Climate-FCV Working Note",
+                "url": "",
+                "description": "Internal source with no confirmed public URL.",
+            },
+        ],
+    }
+    script = f"""
+{_js_escape_helper()}
+{helpers}
+const reader = {json.dumps(reader)};
+const items = buildClimateGuidanceItems(reader);
+if (items.length !== 2) throw new Error('expected exactly two matched public sources | '+JSON.stringify(items));
+const html = renderClimateRelevantGuidance(reader);
+for (const expected of [
+  'Relevant WBG guidance for this project',
+  'FCV-Sensitive Climate Action Framework',
+  'Maximizing the Peace and Social Dividends of Climate Action',
+  'A framework for climate action in FCV settings.',
+  'Practical guidance on peace and social dividends.',
+  'Most useful for following up on',
+  'How can compound shocks affect delivery?',
+  'Can shared benefits reduce tension?'
+]) {{
+  if (!html.includes(expected)) throw new Error('missing relevant guidance content: '+expected+' | '+html);
+}}
+for (const omitted of ['Standard Climate Change Action Plan', 'Internal Climate-FCV Working Note']) {{
+  if (html.includes(omitted)) throw new Error('promoted unrelated or non-public source: '+omitted+' | '+html);
+}}
+const empty = renderClimateRelevantGuidance({{core_questions:[],sources:reader.sources}});
+if (empty !== '') throw new Error('guidance must be omitted without current question matches | '+empty);
+"""
+    result = subprocess.run(
+        ["node", "-e", script], capture_output=True, text=True, check=False
+    )
+    assert result.returncode == 0, result.stderr
