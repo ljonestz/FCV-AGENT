@@ -32,6 +32,14 @@ def _extract_js_function(source: str, name: str) -> str:
     raise AssertionError(f"Unterminated body for {name}()")
 
 
+def _js_escape_helper() -> str:
+    return """
+const esc = value => String(value ?? '')
+  .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+  .replace(/\"/g,'&quot;').replace(/'/g,'&#039;');
+"""
+
+
 def test_stage3_readout_uses_wide_single_column_layout():
     html = INDEX.read_text(encoding="utf-8")
 
@@ -960,3 +968,87 @@ def test_priority_navigation_is_explicit_and_keyboard_operable():
     assert '<button type="button" class="ps-step' in source
     assert 'aria-pressed="${i===currentPriority?' in source
     assert "setAttribute('aria-pressed'" in source
+
+
+def test_verified_reader_visual_refresh_preserves_depth_and_orders_sections():
+    source = INDEX.read_text(encoding="utf-8")
+    renderer = _extract_js_function(source, "renderClimateVerifiedAssessment")
+    reader = {
+        "evidence_status": "approved",
+        "executive_readout": (
+            "The project needs climate-aware delivery rules. They should be agreed before appraisal.\n\n"
+            "These rules can protect access during shocks. They also support fairer decisions."
+        ),
+        "climate_sensitivity_rating": {
+            "question": "How climate-sensitive is this project?", "label": "Moderate", "level": 2,
+            "tone": "mid", "scale": ["Limited", "Moderate", "Strong"],
+            "description": "Climate and FCV factors need further design work.",
+            "overview_summary": "The current design identifies risks but needs clearer operating rules.",
+            "caveat": "This is an advisory assessment.",
+        },
+        "core_questions": [{
+            "question": "How could flooding and insecurity affect delivery?",
+            "source": "Climate-FCV guidance",
+            "summary": "Flooding can close access routes during insecure periods.\n\nDelivery plans should account for seasonal constraints.",
+            "watch": "Monitor whether seasonal access conditions change.",
+        }],
+        "priorities": [{
+            "rank": 1, "title": "Set seasonal delivery rules",
+            "narrative": (
+                "Seasonal flooding and insecurity can disrupt works. The project needs agreed triggers for pausing and restarting activity.\n\n"
+                "These triggers should be discussed with local delivery partners. They can reduce uneven access to project benefits."
+            ),
+            "current_document_drafting": {
+                "target_document": "Project Appraisal Document", "target_section": "Implementation arrangements",
+                "text": "Include seasonal access triggers in the implementation arrangements.",
+            },
+            "decision": "Agree the trigger approach before appraisal.",
+            "minimum_action": "Define the operational thresholds with delivery partners.",
+            "responsible_function": "Task Team Leader and implementing agency.",
+            "completion_evidence": "Approved seasonal delivery protocol.",
+        }],
+        "minor_climate_points": [{
+            "point": "Check local communication channels", "why": "Seasonal users may not receive timely updates.",
+            "how_to_check": "Confirm channels with community representatives.",
+        }],
+        "review_readiness_flags": [{
+            "flag": "Confirm the works calendar", "why_it_matters": "The current calendar does not show seasonal constraints.",
+            "suggested_verification": "Confirm the calendar before the decision meeting.",
+        }],
+        "sources": [], "advisory_notice": "Use this assessment alongside specialist judgement.",
+    }
+    script = f"""
+{_js_escape_helper()}
+const renderClimateRelevantGuidance = () => '';
+{renderer}
+const html = renderClimateVerifiedAssessment({json.dumps(reader)});
+const orderedSections = [
+  'Overview', 'Core climate-FCV questions', 'Ranked operational priorities',
+  'Points to check before the decision meeting', 'What to keep an eye on'
+];
+let previous = -1;
+for (const section of orderedSections) {{
+  const current = html.indexOf(section);
+  if (current === -1 || current <= previous) {{
+    throw new Error('section hierarchy is missing or out of order: ' + section + ' | ' + html);
+  }}
+  previous = current;
+}}
+const minorIndex = html.indexOf('Smaller climate and fragility points to consider');
+const documentIndex = html.indexOf('Document points to confirm');
+if (minorIndex < 0 || documentIndex < 0 || minorIndex >= documentIndex) {{
+  throw new Error('smaller climate points must appear before document points | ' + html);
+}}
+for (const expected of [
+  'Seasonal flooding and insecurity can disrupt works. The project needs agreed triggers for pausing and restarting activity.',
+  'These triggers should be discussed with local delivery partners. They can reduce uneven access to project benefits.',
+  'Include seasonal access triggers in the implementation arrangements.',
+  'Recommendation details', 'climate-report-section', 'climate-section-heading', 'climate-section-number'
+]) {{
+  if (!html.includes(expected)) throw new Error('missing preserved reader detail: ' + expected + ' | ' + html);
+}}
+"""
+    result = subprocess.run(
+        ["node", "-e", script], capture_output=True, text=True, check=False
+    )
+    assert result.returncode == 0, result.stderr
