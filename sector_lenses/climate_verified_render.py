@@ -211,34 +211,64 @@ def _normalized_source_title(value: object) -> str:
 
 
 def _is_public_world_bank_url(value: object) -> bool:
-    """Accept only standard-port HTTPS URLs on the public World Bank domain."""
+    """Accept only a fail-closed HTTPS authority on World Bank's DNS domain."""
 
     if not isinstance(value, str):
         return False
     try:
         parsed = urlsplit(value)
-        hostname = parsed.hostname.casefold() if parsed.hostname else ""
-        port = parsed.port
     except ValueError:
         return False
-    return (
-        parsed.scheme.casefold() == "https"
-        and bool(parsed.netloc)
-        and parsed.username is None
-        and parsed.password is None
-        and port is None
-        and (hostname == "worldbank.org" or hostname.endswith(".worldbank.org"))
-    )
+    authority = parsed.netloc
+    if (
+        parsed.scheme.casefold() != "https"
+        or not authority
+        or not authority.isascii()
+        or any(character in authority for character in ("%", "@", ":", "[", "]"))
+        or parsed.username is not None
+        or parsed.password is not None
+    ):
+        return False
+    hostname = authority.casefold()
+    labels = hostname.split(".")
+    if any(
+        not label
+        or len(label) > 63
+        or label.startswith("-")
+        or label.endswith("-")
+        or label.startswith("xn--")
+        or not re.fullmatch(r"[a-z0-9-]+", label)
+        for label in labels
+    ):
+        return False
+    return hostname == "worldbank.org" or hostname.endswith(".worldbank.org")
+
+
+def _complete_sentence(value: object) -> str:
+    """Normalize a verified prose fragment into one complete sentence."""
+
+    text = re.sub(r"\s+", " ", _text(value)).strip()
+    if not text:
+        return ""
+    return text if text[-1] in ".!?" else f"{text}."
 
 
 def _first_sentence(value: object) -> str:
-    """Return the first sentence from a verified summary's first paragraph."""
+    """Return a complete first sentence without splitting common abbreviations."""
 
     first_paragraph = re.split(r"\r?\n\s*\r?\n", _text(value), maxsplit=1)[0].strip()
-    if not first_paragraph:
-        return ""
-    match = re.match(r"(.+?[.!?])(?:\s|$)", first_paragraph, flags=re.DOTALL)
-    return (match.group(1) if match else first_paragraph).strip()
+    abbreviations = ("e.g.", "i.e.", "u.n.")
+    for index, character in enumerate(first_paragraph):
+        if character in "!?":
+            return _complete_sentence(first_paragraph[:index + 1])
+        if character != ".":
+            continue
+        prefix = first_paragraph[:index + 1].casefold()
+        next_character = first_paragraph[index + 1:index + 2]
+        if next_character.isalnum() or any(prefix.endswith(item) for item in abbreviations):
+            continue
+        return _complete_sentence(first_paragraph[:index + 1])
+    return _complete_sentence(first_paragraph)
 
 
 def _distinct_texts(values: list[object], limit: int) -> list[str]:
@@ -258,6 +288,24 @@ def _distinct_texts(values: list[object], limit: int) -> list[str]:
     return selected
 
 
+def _deduplicated_questions(matches: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Keep exact source/summary/watch duplicates from inflating rank or prose."""
+
+    selected: list[dict[str, Any]] = []
+    seen: set[tuple[str, str, str]] = set()
+    for question in matches:
+        identity = (
+            _normalized_source_title(question.get("source")),
+            re.sub(r"\s+", " ", _text(question.get("summary"))).casefold(),
+            re.sub(r"\s+", " ", _text(question.get("watch"))).casefold(),
+        )
+        if identity in seen:
+            continue
+        seen.add(identity)
+        selected.append(question)
+    return selected
+
+
 def build_climate_guidance_items(
     core_questions: object,
     sources: object,
@@ -271,12 +319,18 @@ def build_climate_guidance_items(
             matched_by_source.setdefault(source_key, []).append(question)
 
     ranked: list[tuple[int, int, dict[str, str]]] = []
+    emitted_source_keys: set[str] = set()
     for catalog_order, source in enumerate(_records(sources)):
         title = _text(source.get("title"))
         source_key = _normalized_source_title(title)
-        matches = matched_by_source.get(source_key, [])
+        matches = _deduplicated_questions(matched_by_source.get(source_key, []))
         url = source.get("url")
-        if not title or not matches or not _is_public_world_bank_url(url):
+        if (
+            not title
+            or source_key in emitted_source_keys
+            or not matches
+            or not _is_public_world_bank_url(url)
+        ):
             continue
         matched_summaries = _distinct_texts(
             [question.get("summary") for question in matches],
@@ -287,10 +341,15 @@ def build_climate_guidance_items(
             limit=2,
         )
         watches = _distinct_texts([question.get("watch") for question in matches], limit=1)
-        project_use = "For this project, " + " ".join(summaries + watches)
-        project_use = project_use.rstrip() + (
-            " Use this guidance to refine project design and implementation choices."
-        )
+        fragments: list[str] = []
+        for fragment in summaries + watches:
+            completed = _complete_sentence(fragment)
+            if completed:
+                fragments.append(completed)
+        if not fragments:
+            continue
+        project_use = "For this project, " + " ".join(fragments)
+        project_use += " Use this guidance to refine project design and implementation choices."
         practical_value = _text(source.get("practical_value")) or _text(source.get("description"))
         ranked.append((
             -len(matches),
@@ -302,6 +361,7 @@ def build_climate_guidance_items(
                 "project_use": project_use,
             },
         ))
+        emitted_source_keys.add(source_key)
     return [item for _, _, item in sorted(ranked)[:4]]
 
 

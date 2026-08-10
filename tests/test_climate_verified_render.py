@@ -102,6 +102,72 @@ def test_attach_provenance_adds_guidance_items_after_reader_validation():
     attach_provenance(reader, assessment)
 
     assert [item["title"] for item in reader["guidance_items"]] == ["Defueling Conflict"]
+def test_build_climate_guidance_items_rejects_malformed_authorities_fail_closed():
+    core_questions = [{"source": "Eligible", "summary": "Verified finding."}]
+    malformed_urls = [
+        "https://.worldbank.org/path",
+        "https://foo..worldbank.org/path",
+        "https://-foo.worldbank.org/path",
+        "https://foo-.worldbank.org/path",
+        "https://foo_bar.worldbank.org/path",
+        "https://" + ("a" * 64) + ".worldbank.org/path",
+        "https://www.worldbank.org%2e/path",
+        "https://worldbank.org:/path",
+        "https://[::1]/path",
+        "https://[::1/path",
+        "https://user%3Apassword@www.worldbank.org/path",
+        "https://www.w\u00f8rldbank.org/path",
+        "https://www.worldbank.org./path",
+    ]
+
+    for url in malformed_urls:
+        assert build_climate_guidance_items(
+            core_questions, [{"title": "Eligible", "url": url}]
+        ) == []
+    allowed = build_climate_guidance_items(
+        core_questions,
+        [{"title": "Eligible", "url": "https://WWW.WORLDBANK.ORG/path"}],
+    )
+    assert [item["url"] for item in allowed] == ["https://WWW.WORLDBANK.ORG/path"]
+
+
+def test_build_climate_guidance_items_skips_empty_findings_and_completes_sentences():
+    source = {"title": "Eligible", "url": "https://www.worldbank.org/guide"}
+
+    assert build_climate_guidance_items(
+        [{"source": "Eligible", "summary": "", "watch": ""}], [source]
+    ) == []
+    guidance = build_climate_guidance_items([
+        {"question": "Question title must never appear.", "source": "Eligible", "summary": "U.N. agencies coordinate flood access.", "watch": "Watch flood triggers"},
+        {"source": "eligible", "summary": "e.g. community consultation should guide siting.", "watch": "watch flood triggers"},
+    ], [source])
+
+    assert guidance[0]["project_use"] == (
+        "For this project, U.N. agencies coordinate flood access. "
+        "e.g. community consultation should guide siting. Watch flood triggers. "
+        "Use this guidance to refine project design and implementation choices."
+    )
+    assert "Question title must never appear" not in str(guidance)
+
+
+def test_build_climate_guidance_items_deduplicates_questions_and_catalog_sources():
+    sources = [
+        {"title": "Defueling Conflict", "url": "https://www.worldbank.org/defueling"},
+        {"title": "FCV-Sensitive Climate Action Framework", "url": "https://www.worldbank.org/framework"},
+        {"title": "fcv sensitive climate action framework", "url": "https://www.worldbank.org/duplicate"},
+    ]
+    duplicated_question = {"source": "FCV-Sensitive Climate Action Framework", "summary": "Flood risk needs adaptive delivery.", "watch": "Monitor access."}
+    core_questions = [
+        duplicated_question,
+        dict(duplicated_question),
+        {"source": "Defueling Conflict", "summary": "Water governance can reduce tensions."},
+    ]
+
+    guidance = build_climate_guidance_items(core_questions, sources)
+
+    assert [item["title"] for item in guidance] == [
+        "Defueling Conflict", "FCV-Sensitive Climate Action Framework"
+    ]
 def test_build_reader_model_keeps_up_to_five_priorities():
     assessment = {
         "executive_readout": "One. Two. Three.",
