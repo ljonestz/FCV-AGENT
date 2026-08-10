@@ -161,19 +161,19 @@ Both modes use identical prompts, code paths, and output quality. Express is a f
 5. On failure: `showExpressError(stage, msg)` shows red card with "Retry" and "Switch to step-by-step" options
 
 **Abort timeout budget (Express):**
-- Stage 1: 9 minutes
-- Stage 2: 10 minutes
+- Stage 1: 15 minutes
+- Stage 2: 15 minutes
 - Stage 3: 10 minutes
 - `requestErrorMessage()` preserves custom `AbortController.abort(new Error(...))` timeout messages, while still using `Could not reach the server.` for true network/fetch failures.
 
 **Abort timeout budget (Step-by-step):**
-- Stage 1: 9 minutes (includes web research)
+- Stage 1: 15 minutes (includes web research)
 - Stage 2: 10 minutes
 - Stage 3: 10 minutes (longest output - 20k max tokens)
 
-**Upload payload preflight:**
-- `uploadPayloadLimitMessage(primaryFiles, packageFiles, contextFiles)` estimates raw file size after browser base64 encoding and blocks likely-over-limit uploads before reading or posting files.
-- This mirrors backend `413 RequestEntityTooLarge` handling for Render's JSON request cap. It is especially relevant for multi-document PforR runs with PAD + ESSA + fiduciary/package files.
+**Upload sizing helper (not currently wired):**
+- `uploadPayloadLimitMessage(primaryFiles, packageFiles, contextFiles)` can estimate raw file size after browser base64 encoding and return an over-limit message.
+- No current upload path calls this legacy helper, so it does not block a request. Active count limits are enforced separately by `addFiles()`, `selectFilesWithinUploadCap()`, and the polling/FormData fallback paths.
 
 **Progress screen elements** (inside `#express-progress`):
 - `#ep-accent` — 4px gradient accent bar
@@ -211,42 +211,85 @@ Both modes use identical prompts, code paths, and output quality. Express is a f
 
 ---
 
-*Last updated: 2026-08-09 - Verified Climate-FCV HTML reader refresh.*
+*Last updated: 2026-08-10 - Verified Climate-FCV reader hierarchy and guidance refinement.*
 
-## Verified Climate-FCV reader (v9.34)
+## Verified Climate-FCV reader (v9.35)
 
-`runExpress()` stores additive `climate_assessment` and canonical
-`climate_reader` SSE payloads in `climateVerifiedAssessment` and
-`climateVerifiedReader`. `renderOut()` passes the reader (not the raw assessment) to
+`runExpress()` stores additive `climate_assessment` and canonical `climate_reader`
+SSE payloads in `climateVerifiedAssessment` and `climateVerifiedReader`.
+`renderOut()` passes the reader, rather than the raw assessment, to
 `renderClimateVerifiedAssessment()` and suppresses the legacy integration gauge,
-Stage 3 overview, and priority carousel. The HTML renderer produces a prose-led,
-numbered report: Overview; core questions; ranked operational priorities; points to
-check; an optional watch section; optional relevant WBG guidance; and, when present,
-the final methodology/evidence disclosure. Priority narrative, suggested drafting,
-recommendation details, readiness checks, watch items, provenance, and diagnostics
-remain in the reader. Within points to check, smaller Climate-FCV considerations
-precede document checks. All model-authored strings are escaped.
+Stage 3 overview, and priority carousel. Saved sessions and completed Express
+checkpoints preserve both objects; new runs, lens changes, reruns, and full reset
+clear them. Follow-on requests carry the structured reader in their history.
 
-- `isPublicWorldBankHttpsUrl(value)` accepts only HTTPS URLs on `worldbank.org` or
-  its subdomains, with no username, password, or non-default port. It rejects malformed
-  URLs and non-World Bank hosts.
+### Reader rendering and hierarchy
+
+- `renderClimateVerifiedAssessment(reader)` is the shared live/standalone HTML
+  renderer. It owns section numbering and renders: Overview; core questions; ranked
+  operational priorities; optional points to check; optional watch items; optional
+  project-specific WBG guidance; and the method/limitations/sources disclosure. It
+  escapes model-authored strings and uses the neutral empty-state copy: "No
+  operational priorities were identified in this assessment. Review the core
+  questions and points to check below."
+- The Overview contains the one restrained visual panel for the sensitivity rating;
+  executive and core-question prose remain in the normal reading flow. A narrative
+  transition introduces the full priorities section instead of repeating its titles.
+- Priority 1 is open by default in live and standalone HTML; later priorities are
+  closed native `<details>` elements. All narrative, suggested drafting, and
+  structured recommendation detail remains in the DOM. The server-side DOCX renderer
+  keeps every priority fully expanded.
+- Smaller Climate-FCV points, document checks, and watch items are numbered. Smaller
+  Climate-FCV points precede document checks. The reader no longer displays the
+  evidence-status label, technical annex, evidence key, recommendation/run
+  diagnostics, or internal reviewer verdicts. The smoke-mode warning and the method,
+  pathways, limitations, and Sources & further reading content remain.
+- `installClimatePrintDisclosureHandler(root)` records the open state of reader
+  priority/detail/method disclosures on `beforeprint`, opens them for print, and
+  restores the exact prior state on `afterprint`. It is installed for the live page.
+- `climatePrintDisclosureScript()` serializes that same lifecycle into a standalone
+  HTML export. `downloadHTML()` reuses `renderClimateVerifiedAssessment()` plus the
+  page's scoped styles and print lifecycle, so the shared HTML does not fork from the
+  live reader. `downloadReport()` sends the canonical reader to the server, which
+  deterministically rebuilds the fully expanded DOCX.
+
+### Project-specific WBG guidance
+
+- `isPublicWorldBankHttpsUrl(value)` accepts only well-formed HTTPS URLs on
+  `worldbank.org` or valid subdomains. It rejects credentials, ports, encoded or
+  malformed authorities, invalid DNS labels, IDN labels, trailing-dot hosts, and
+  non-World Bank hosts.
 - `normalizeClimateSourceTitle(value)` applies NFKD normalization, lowercase,
-  `&`-to-`and` conversion, non-alphanumeric collapsing, and trimming. Matching uses
-  equality of this exact normalized key, not fuzzy or substring matching.
-- `buildClimateGuidanceItems(reader)` joins only the current `core_questions[].source`
-  titles to `sources[].title` on that key. A joined source is retained only when its
-  URL passes the World Bank HTTPS allowlist; it reuses the source title/description
-  and up to two current question titles. Unmatched, invalid, or unreferenced sources
-  are omitted rather than promoted.
-- `renderClimateRelevantGuidance(reader)` renders those derived items as the optional
-  project-relevant guidance section and returns an empty string when none qualify.
-- `renderClimateVerifiedAssessment(reader)` owns the numbered-section counter and
-  section order. Live output and standalone HTML export both call this renderer and
-  use the same scoped Climate reader stylesheet, so numbering, content, and order do
-  not fork. DOCX continues to use its server-side renderer and is unchanged.
+  `&`-to-`and` conversion, non-alphanumeric collapsing, and trimming. Guidance
+  matching uses equality of this normalized key, not fuzzy or substring matching.
+- `buildClimateGuidanceItems(reader)` is the safe compatibility path for readers
+  saved before canonical `guidance_items` existed. It joins deduplicated current core
+  questions to deduplicated sources by normalized title, admits only public World
+  Bank HTTPS sources with usable project-specific content, ranks by matched-question
+  count then catalogue order, and returns at most four items. It never pads the list
+  with unmatched publications.
+- `renderClimateRelevantGuidance(reader)` prefers canonical
+  `reader.guidance_items`; it invokes `buildClimateGuidanceItems(reader)` when that
+  property is absent or is not an array. It validates and deduplicates the final
+  items, then renders
+  the publication title/link, `practical_value`, and `project_use`. Empty or unsafe
+  sets omit the section entirely. Canonical generation normally selects two to four
+  relevant sources when enough valid matches exist, but fewer are retained rather
+  than padding with a fixed reading list.
 
-DOCX sends the same assessment to `/api/download-report`, where the server
-deterministically rebuilds the reader. Saved sessions and completed Express
-checkpoints preserve both reader objects, while new runs, lens changes, reruns, and
-full reset clear both. Follow-on requests carry the structured reader in their
-history. The Stage 2 Express timeout is 15 minutes.
+### Landing-page document capacity
+
+- `selectFilesWithinUploadCap(files, existingFiles, limit)` applies the same
+  duplicate-aware cap logic used by drag/drop and standard file selection. With
+  `MAX_PACK = 10`, the project-package zone accepts up to ten supporting documents
+  and rejects additional files without displacing accepted ones. Polling and
+  FormData fallback paths enforce the same limit.
+- `uploadPayloadLimitMessage(primaryFiles, packageFiles, contextFiles)` separately
+  estimates base64-expanded request size and returns a warning string, but no current
+  upload path calls it. It therefore does not enforce a payload-size limit.
+- The executable frontend contract test covers the eleven-file boundary and verifies
+  that a full ten-document package cannot accept another file.
+
+This release changes deterministic reader assembly and presentation only. It does
+not change Climate-FCV prompts, schemas, model calls, ratings, or
+recommendation/evidence admission. The Stage 2 Express timeout remains 15 minutes.
