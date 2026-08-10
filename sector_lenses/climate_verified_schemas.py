@@ -19,12 +19,6 @@ def _object(properties: dict[str, object]) -> dict[str, object]:
     }
 
 
-def _nullable_object(schema: dict[str, object]) -> dict[str, object]:
-    result = deepcopy(schema)
-    result["type"] = ["object", "null"]
-    return result
-
-
 def _string(description: str = "") -> dict[str, object]:
     schema: dict[str, object] = {"type": "string"}
     if description:
@@ -54,6 +48,22 @@ def _strings(description: str = "") -> dict[str, object]:
 
 
 CONFIDENCE = ("high", "medium", "low")
+SEMANTIC_REVIEW_REASON_CODES = (
+    "PROJECT_FACT_UNSUPPORTED",
+    "EXISTING_MITIGATION_MISREPRESENTED",
+    "RESIDUAL_GAP_UNSUPPORTED",
+    "RECOMMENDATION_DISPROPORTIONATE",
+    "ROUTING_SCOPE_UNVERIFIED",
+    "TIMING_UNSUPPORTED",
+    "AUTHORITY_UNSUPPORTED",
+    "DRAFTING_TARGET_UNVERIFIED",
+    "DRAFTING_SCOPE_UNSUPPORTED",
+    "DRAFTING_DUPLICATIVE",
+    "DRAFTING_TECHNICAL_PRECISION_UNSUPPORTED",
+    "UNINTENDED_CONSEQUENCE_UNADDRESSED",
+    "RATING_INCOHERENT",
+    "RECOMMENDATION_DUPLICATIVE",
+)
 
 
 FACT_SCHEMA = _object(
@@ -147,6 +157,23 @@ def _judgment(values: tuple[str, ...]) -> dict[str, object]:
     )
 
 
+CORE_QUESTION_SCHEMA = _object(
+    {
+        "question_id": _string("Bank question id, for example cq2-infra-horizon."),
+        "theme": _string("One of the six core climate-FCV themes."),
+        "question": _string("The plain-language question, restated for the reader."),
+        "source": _string("Short source-framework attribution."),
+        "summary": _string(
+            "Evidence-grounded answer of roughly 120 to 220 words in one or two "
+            "short paragraphs separated by a blank line, distinct from the "
+            "executive readout; a design question to resolve, never a promise."
+        ),
+        "evidence_ids": _strings(),
+        "watch": _string("One short line naming what to check. 30 words or fewer."),
+    }
+)
+
+
 SCORE_SCHEMA = _object(
     {
         "materiality": {"type": "integer"},
@@ -179,6 +206,15 @@ DRAFTING_SCHEMA = _object(
         "project_basis_ids": _strings(),
         "gap_basis_ids": _strings(),
         "guidance_ids": _strings(),
+    }
+)
+
+DRAFTING_BLOCK_SCHEMA = _object(
+    {
+        "drafting_role": _enum(
+            ("current_document", "operational_instrument")
+        ),
+        **DRAFTING_SCHEMA["properties"],
     }
 )
 
@@ -217,11 +253,24 @@ CANDIDATE_SCHEMA = _object(
         "confidence": _enum(CONFIDENCE),
         "limitation": _string("45 words or fewer."),
         "caution": _string("45 words or fewer."),
-        "current_document_drafting": DRAFTING_SCHEMA,
-        "operational_instrument_drafting": _nullable_object(DRAFTING_SCHEMA),
+        "narrative": _string(
+            "Two or three short plain-prose paragraphs telling the story; "
+            "no new claims or digits."
+        ),
         "supported_numeric_tokens": _strings(),
         "score": SCORE_SCHEMA,
         "gate_results": GATE_SCHEMA,
+    }
+)
+
+
+DRAFTING_SET_SCHEMA = _object(
+    {
+        "recommendation_id": _string(),
+        "drafting_blocks": {
+            "type": "array",
+            "items": DRAFTING_BLOCK_SCHEMA,
+        },
     }
 )
 
@@ -247,6 +296,16 @@ READINESS_SCHEMA = _object(
 )
 
 
+MINOR_CLIMATE_POINT_SCHEMA = _object(
+    {
+        "point": _string("20 words or fewer."),
+        "why": _string("45 words or fewer."),
+        "how_to_check": _string("45 words or fewer."),
+        "residual_gap_ids": _strings(),
+    }
+)
+
+
 STAGE_OUTPUT_SCHEMAS: dict[str, dict[str, object]] = {
     "fact_extraction": _object(
         {
@@ -260,6 +319,14 @@ STAGE_OUTPUT_SCHEMAS: dict[str, dict[str, object]] = {
                 "type": "array",
                 "items": ASSERTION_SCHEMA,
                 "description": "Only essential derived assertions.",
+            },
+            "document_integrity_findings": {
+                "type": "array",
+                "items": READINESS_SCHEMA,
+                "description": (
+                    "Verifiable defects in the uploaded document itself; "
+                    "empty array when none are present."
+                ),
             },
         }
     ),
@@ -291,9 +358,15 @@ STAGE_OUTPUT_SCHEMAS: dict[str, dict[str, object]] = {
     "judgment_review": _object(
         {
             "executive_readout": _string("Between 500 and 800 words."),
+            "overview_summary": _string(
+                "A three-to-four sentence plain-language overall summary for the "
+                "top-of-report overview, distinct from and shorter than the "
+                "executive_readout."
+            ),
             "relevance": _judgment(("high", "medium", "low", "unclear")),
             "sensitivity": _judgment(
-                ("strong", "moderate", "limited", "unclear")
+                ("very_strong", "strong", "moderate", "limited",
+                 "very_limited", "unclear")
             ),
             "responsiveness": _judgment(
                 ("strong", "emerging", "limited", "not_expected", "unclear")
@@ -301,6 +374,23 @@ STAGE_OUTPUT_SCHEMAS: dict[str, dict[str, object]] = {
             "operationalization": _judgment(
                 ("embedded", "partial", "early", "not_evidenced", "unclear")
             ),
+            "core_questions": {
+                "type": "array",
+                "items": CORE_QUESTION_SCHEMA,
+                "description": (
+                    "Three to seven evidence-grounded answers to the supplied "
+                    "triggered core climate-FCV questions, each distinct from the "
+                    "executive readout. Empty array if none can be evidenced."
+                ),
+            },
+            "minor_climate_points": {
+                "type": "array",
+                "items": MINOR_CLIMATE_POINT_SCHEMA,
+                "description": (
+                    "Up to three smaller climate/FCV points tied to a residual "
+                    "gap that may not warrant a full recommendation. Empty if none."
+                ),
+            },
         }
     ),
     "recommendation_compiler": _object(
@@ -308,7 +398,7 @@ STAGE_OUTPUT_SCHEMAS: dict[str, dict[str, object]] = {
             "recommendation_candidates": {
                 "type": "array",
                 "items": CANDIDATE_SCHEMA,
-                "description": "No more than three admitted candidates.",
+                "description": "No more than five admitted candidates.",
             },
             "readiness_flags": {
                 "type": "array",
@@ -317,10 +407,25 @@ STAGE_OUTPUT_SCHEMAS: dict[str, dict[str, object]] = {
             },
         }
     ),
+    "drafting_compiler": _object(
+        {
+            "drafting_sets": {
+                "type": "array",
+                "items": DRAFTING_SET_SCHEMA,
+                "description": "One set for each supplied recommendation.",
+            },
+        }
+    ),
     "conditional_review": _object(
         {
             "verdict": _enum(("pass", "revise", "block")),
-            "reason_codes": _strings("No more than 12 bounded reason codes."),
+            "reason_codes": {
+                "type": "array",
+                "items": _enum(SEMANTIC_REVIEW_REASON_CODES),
+                "description": (
+                    "No more than 12 recommendation-defect reason codes."
+                ),
+            },
             "object_ids": _strings("No more than 12 affected object IDs."),
         }
     ),

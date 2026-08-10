@@ -90,23 +90,60 @@ def _draft_tokens(block: DraftingBlock) -> set[str]:
     return set(re.findall(r"\b[a-z]{3,}\b", block.text.casefold()))
 
 
-def normalize_drafting_blocks(candidate):
+def normalize_drafting_blocks(
+    candidate,
+    *,
+    current_document: str | None = None,
+    drafting_context: DraftingValidationContext | None = None,
+):
     """Drop an optional drafting block that repeats the required block."""
 
+    repairs: list[str] = []
     current = candidate.current_document_drafting
     optional = candidate.operational_instrument_drafting
+    if current is not None and current_document:
+        normalized_document = " ".join(current_document.casefold().split())
+        if _normalized_target(current)[0] != normalized_document:
+            current = replace(current, target_document=current_document)
+            candidate = replace(candidate, current_document_drafting=current)
+            repairs.append("DRAFTING_CURRENT_TARGET_CANONICALIZED")
     if current is None or optional is None:
-        return candidate, ()
+        return candidate, tuple(repairs)
     current_tokens = _draft_tokens(current)
     optional_tokens = _draft_tokens(optional)
     union = current_tokens | optional_tokens
     overlap = len(current_tokens & optional_tokens) / len(union) if union else 1.0
     if _normalized_target(current) == _normalized_target(optional) or overlap >= 0.8:
-        return replace(candidate, operational_instrument_drafting=None), (
-            "DRAFTING_SECOND_BLOCK_REDUNDANT",
+        repairs.append("DRAFTING_SECOND_BLOCK_REDUNDANT")
+        return replace(candidate, operational_instrument_drafting=None), tuple(repairs)
+    if not candidate.instrument_claim_ids:
+        repairs.append("DRAFTING_OPTIONAL_UNVERIFIED_DROPPED")
+        return replace(candidate, operational_instrument_drafting=None), tuple(repairs)
+    if drafting_context:
+        optional_document = " ".join(
+            optional.target_document.casefold().split()
         )
-    return candidate, ()
+        linked_named_instruments = {
+            identifier
+            for identifier in optional.project_basis_ids
+            if identifier in candidate.instrument_claim_ids
+            and drafting_context.project_fact_types.get(identifier)
+            == "named_instrument"
+        }
+        target_is_evidenced = any(
+            optional_document
+            in " ".join(
+                drafting_context.project_fact_text.get(identifier, "")
+                .casefold()
+                .split()
+            )
+            for identifier in linked_named_instruments
+        )
+        if not target_is_evidenced:
+            repairs.append("DRAFTING_OPTIONAL_UNVERIFIED_DROPPED")
+            return replace(candidate, operational_instrument_drafting=None), tuple(repairs)
 
+    return candidate, tuple(repairs)
 
 
 
@@ -157,6 +194,7 @@ class CandidateRecommendation:
     gate_results: dict[str, bool]
     rank: int | None = None
     supported_numeric_tokens: tuple[str, ...] = ()
+    narrative: str = ""
 
 
 @dataclass(frozen=True)
@@ -174,12 +212,14 @@ def _issue(
     code: str,
     message: str,
     candidate: CandidateRecommendation,
+    *,
+    blocking: bool = True,
 ) -> ValidationIssue:
     return ValidationIssue(
         code=code,
         message=message,
         object_id=candidate.recommendation_id,
-        blocking=True,
+        blocking=blocking,
     )
 
 
@@ -219,6 +259,274 @@ def unsupported_numeric_tokens(
     numeric_tokens = set(numeric_tokens_in_text(numeric_text))
     unsupported = numeric_tokens - set(candidate.supported_numeric_tokens)
     return tuple(sorted(unsupported))[:12]
+
+
+def normalize_optional_enhancement(
+    candidate: CandidateRecommendation,
+) -> tuple[CandidateRecommendation, tuple[str, ...]]:
+    """Drop optional enhancement prose when its precision is unsupported."""
+
+    enhancement_text = " ".join(
+        value
+        for value in (
+            candidate.enhanced_action,
+            candidate.enhanced_activation,
+        )
+        if value
+    )
+    unsupported = set(numeric_tokens_in_text(enhancement_text)) - set(
+        candidate.supported_numeric_tokens
+    )
+    if not unsupported:
+        return candidate, ()
+    return (
+        replace(candidate, enhanced_action=None, enhanced_activation=None),
+        ("ENHANCED_UNSUPPORTED_PRECISION_DROPPED",),
+    )
+
+
+def _without_numeric_tokens(text: str, unsupported: set[str]) -> str:
+    cleaned = NUMERIC_TOKEN_PATTERN.sub(
+        lambda match: "" if match.group(0) in unsupported else match.group(0),
+        text,
+    )
+    cleaned = re.sub(
+        r"[ ]+([,.;:])",
+        lambda match: match.group(1),
+        cleaned,
+    )
+    cleaned = " ".join(cleaned.split())
+    cleaned = re.sub(
+        r"\b(?:and|or)\s+(?=(?:before|after|during|for|to|in|on|with|under)\b)",
+        "",
+        cleaned,
+    )
+    cleaned = re.sub(
+        r"\b(?:in|by|before|after|during|on|for)(?=[,.;:]|$)",
+        "",
+        cleaned,
+    )
+    return re.sub(r"[ ]+([,.;:])", lambda match: match.group(1), cleaned)
+
+
+def normalize_unsupported_core_precision(
+    candidate: CandidateRecommendation,
+) -> tuple[CandidateRecommendation, tuple[str, ...]]:
+    """Remove unsupported numeric precision while retaining core prose."""
+
+    fields = {
+        "decision": candidate.decision,
+        "minimum_action": candidate.minimum_action,
+        "completion_evidence": candidate.completion_evidence,
+    }
+    unsupported = {
+        token
+        for value in fields.values()
+        for token in numeric_tokens_in_text(value)
+        if token not in candidate.supported_numeric_tokens
+    }
+    if not unsupported:
+        return candidate, ()
+    cleaned = {
+        name: _without_numeric_tokens(value, unsupported)
+        for name, value in fields.items()
+    }
+    if not all(cleaned.values()):
+        return candidate, ()
+    return (
+        replace(
+            candidate,
+            decision=cleaned["decision"],
+            minimum_action=cleaned["minimum_action"],
+            completion_evidence=cleaned["completion_evidence"],
+        ),
+        ("RECOMMENDATION_UNSUPPORTED_PRECISION_REMOVED",),
+    )
+
+
+def normalize_unsupported_drafting_precision(
+    candidate: CandidateRecommendation,
+) -> tuple[CandidateRecommendation, tuple[str, ...]]:
+    """Remove unsupported digits from drafting while preserving useful prose."""
+
+    changed = False
+    for field_name in (
+        "current_document_drafting",
+        "operational_instrument_drafting",
+    ):
+        block = getattr(candidate, field_name)
+        if block is None:
+            continue
+        unsupported = set(numeric_tokens_in_text(block.text)) - set(
+            candidate.supported_numeric_tokens
+        )
+        if not unsupported:
+            continue
+        cleaned = _without_numeric_tokens(block.text, unsupported)
+        if not cleaned:
+            continue
+        candidate = replace(
+            candidate,
+            **{field_name: replace(block, text=cleaned)},
+        )
+        changed = True
+    if not changed:
+        return candidate, ()
+    return candidate, ("DRAFTING_UNSUPPORTED_PRECISION_REMOVED",)
+
+
+def normalize_unverified_completion_actor(
+    candidate: CandidateRecommendation,
+    drafting_context: DraftingValidationContext,
+) -> tuple[CandidateRecommendation, tuple[str, ...]]:
+    """Generalize an unsupported actor only in completion-evidence prose."""
+
+    linked_ids = set(candidate.project_anchor_ids) | set(
+        candidate.instrument_claim_ids
+    )
+    linked_text = " ".join(
+        drafting_context.project_fact_text.get(identifier, "")
+        for identifier in linked_ids
+    ).casefold()
+    completion = candidate.completion_evidence
+    changed = False
+    for phrase in ("focal point", "steering committee", "coordination unit"):
+        if phrase not in completion.casefold() or phrase in linked_text:
+            continue
+
+        def _replacement(match: re.Match[str]) -> str:
+            value = "responsible project function"
+            return value.capitalize() if match.group(0)[0].isupper() else value
+
+        completion = re.sub(
+            rf"\b{re.escape(phrase)}\b",
+            _replacement,
+            completion,
+            flags=re.IGNORECASE,
+        )
+        changed = True
+    if not changed:
+        return candidate, ()
+    return (
+        replace(candidate, completion_evidence=completion),
+        ("COMPLETION_EVIDENCE_ACTOR_GENERALIZED",),
+    )
+
+
+def normalize_unverified_drafting_actor(
+    candidate: CandidateRecommendation,
+    drafting_context: DraftingValidationContext,
+) -> tuple[CandidateRecommendation, tuple[str, ...]]:
+    """Generalize an unsupported operational actor across drafting text and
+    action prose, mirroring the completion-evidence repair.
+
+    The DRAFTING_ACTOR_UNVERIFIED check scans the action fields and drafting
+    block text as well as completion evidence, so an invented "focal point",
+    "steering committee", or "coordination unit" in any of those fields would
+    otherwise suppress an otherwise-grounded recommendation. A phrase that is
+    genuinely supported by a linked project fact is preserved unchanged."""
+
+    linked_ids = set(candidate.project_anchor_ids) | set(
+        candidate.instrument_claim_ids
+    )
+    linked_text = " ".join(
+        drafting_context.project_fact_text.get(identifier, "")
+        for identifier in linked_ids
+    ).casefold()
+
+    def _generalize(text: str | None) -> tuple[str | None, bool]:
+        if not text:
+            return text, False
+        changed = False
+        for phrase in ("focal point", "steering committee", "coordination unit"):
+            if phrase not in text.casefold() or phrase in linked_text:
+                continue
+
+            def _replacement(match: re.Match[str]) -> str:
+                value = "responsible project function"
+                return value.capitalize() if match.group(0)[0].isupper() else value
+
+            new_text = re.sub(
+                rf"\b{re.escape(phrase)}\b",
+                _replacement,
+                text,
+                flags=re.IGNORECASE,
+            )
+            if new_text != text:
+                text = new_text
+                changed = True
+        return text, changed
+
+    updates: dict[str, object] = {}
+    for field_name in (
+        "decision",
+        "minimum_action",
+        "enhanced_action",
+        "enhanced_activation",
+    ):
+        new_value, changed = _generalize(getattr(candidate, field_name))
+        if changed:
+            updates[field_name] = new_value
+    for field_name in (
+        "current_document_drafting",
+        "operational_instrument_drafting",
+    ):
+        block = getattr(candidate, field_name)
+        if block is None:
+            continue
+        new_text, changed = _generalize(block.text)
+        if changed:
+            updates[field_name] = replace(block, text=new_text)
+    if not updates:
+        return candidate, ()
+    return replace(candidate, **updates), ("DRAFTING_ACTOR_GENERALIZED",)
+
+
+def normalize_recommendation_references(
+    candidate: CandidateRecommendation,
+    known_ids: set[str],
+) -> tuple[CandidateRecommendation, tuple[str, ...]]:
+    """Strip references to unknown IDs so a single stray reference does not
+    suppress an otherwise-grounded recommendation.
+
+    Essential grounding gates are downgraded when stripping removes the last
+    supporting reference: residuality when no residual-gap reference survives,
+    and connection when neither a pathway nor an existing-response reference
+    survives. An ungrounded recommendation therefore still fails admission
+    rather than being admitted on a hollow claim."""
+
+    repairs: list[str] = []
+
+    def _filter(ids: tuple[str, ...]) -> tuple[str, ...]:
+        kept = tuple(identifier for identifier in ids if identifier in known_ids)
+        if len(kept) != len(ids):
+            repairs.append("stripped")
+        return kept
+
+    pathway = _filter(candidate.pathway_ids)
+    responses = _filter(candidate.existing_response_ids)
+    gaps = _filter(candidate.residual_gap_ids)
+    anchors = _filter(candidate.project_anchor_ids)
+    instruments = _filter(candidate.instrument_claim_ids)
+    if not repairs:
+        return candidate, ()
+
+    gate_results = dict(candidate.gate_results)
+    if not gaps:
+        gate_results["residuality"] = False
+    if not pathway and not responses:
+        gate_results["connection"] = False
+
+    repaired = replace(
+        candidate,
+        pathway_ids=pathway,
+        existing_response_ids=responses,
+        residual_gap_ids=gaps,
+        project_anchor_ids=anchors,
+        instrument_claim_ids=instruments,
+        gate_results=gate_results,
+    )
+    return repaired, ("RECOMMENDATION_INVALID_REFS_STRIPPED",)
 
 
 def validate_recommendation(
@@ -372,11 +680,17 @@ def validate_recommendation(
             phrase in operational_text and phrase not in linked_fact_text
             for phrase in named_instruments
         ):
+            # Advisory only: these five are standard WBG instrument names, not
+            # project-specific fabrications. Referencing them in suggested
+            # drafting is legitimate FCV practice, so the flag is recorded for
+            # the technical annex but does not suppress the recommendation.
             issues.append(
                 _issue(
                     "DRAFTING_INSTRUMENT_UNVERIFIED",
-                    f"{candidate.recommendation_id} invents an instrument claim.",
+                    f"{candidate.recommendation_id} references a standard "
+                    "instrument not tied to a project fact.",
                     candidate,
+                    blocking=False,
                 )
             )
         if (
@@ -400,11 +714,16 @@ def validate_recommendation(
                 linked_fact_text,
             )
         ):
+            # Advisory only: appraisal/Board/effectiveness are standard WBG
+            # process milestones, so naming them in suggested drafting is
+            # recorded but does not suppress the recommendation.
             issues.append(
                 _issue(
                     "DRAFTING_TIMING_UNVERIFIED",
-                    f"{candidate.recommendation_id} invents a formal timing claim.",
+                    f"{candidate.recommendation_id} names a standard process "
+                    "milestone not tied to a project fact.",
                     candidate,
+                    blocking=False,
                 )
             )
         if (
@@ -488,6 +807,9 @@ def validate_recommendation(
         and candidate.authority_basis
         not in {"project_commitment", "policy", "directive", "procedure"}
     ):
+        # Advisory only: mandatory phrasing without a verified authority basis
+        # is flagged for the annex (so the TTL softens it) but does not suppress
+        # the recommendation.
         issues.append(
             _issue(
                 "MANDATORY_AUTHORITY_UNVERIFIED",
@@ -496,6 +818,7 @@ def validate_recommendation(
                     "without verified authority."
                 ),
                 candidate,
+                blocking=False,
             )
         )
     if candidate.completion_evidence_status not in COMPLETION_EVIDENCE_STATUSES:
@@ -558,7 +881,7 @@ def admit_and_rank(
             -item.score.evidence,
             item.recommendation_id,
         ),
-    )[:3]
+    )[:5]
     return tuple(
         replace(candidate, rank=index)
         for index, candidate in enumerate(ordered, start=1)

@@ -15,9 +15,18 @@ def test_verified_schema_and_call_budgets_are_stable():
     assert CALL_BUDGETS["fact_extraction"].output_tokens == 16_000
     assert CALL_BUDGETS["fact_extraction"].timeout_seconds == 300
     assert CALL_BUDGETS["bounded_analysis"].timeout_seconds == 180
-    assert CALL_BUDGETS["judgment_review"].timeout_seconds == 120
-    assert CALL_BUDGETS["judgment_review"].output_tokens == 4_000
+    # judgment_review now also emits core_questions (~2 paragraphs x5) and
+    # minor_climate_points, so its output budget was raised from 4k to 9k tokens
+    # (and timeout 120->240) to avoid max_tokens truncation on the quality model.
+    assert CALL_BUDGETS["judgment_review"].timeout_seconds == 240
+    assert CALL_BUDGETS["judgment_review"].output_tokens == 9_000
     assert CALL_BUDGETS["recommendation_compiler"].timeout_seconds == 240
+    # The priority cap was raised 3->5 (v9.32), so the compiler can emit up to five
+    # candidates (each with a 2-3 paragraph narrative + fields); output budget was
+    # raised 5k->9k to avoid max_tokens truncation on the quality model.
+    assert CALL_BUDGETS["recommendation_compiler"].output_tokens == 9_000
+    assert CALL_BUDGETS["drafting_compiler"].timeout_seconds == 240
+    assert CALL_BUDGETS["drafting_compiler"].output_tokens == 5_000
     assert CALL_BUDGETS["conditional_review"].timeout_seconds == 120
 
 

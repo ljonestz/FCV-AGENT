@@ -10,6 +10,7 @@ from sector_lenses.climate_source_blocks import (
     SourceDocument,
 )
 from sector_lenses.climate_verified_pipeline import (
+    _candidate,
     PipelineClients,
     run_verified_climate_pipeline,
 )
@@ -231,7 +232,7 @@ def test_four_calls_run_when_semantic_review_is_not_required():
     assert [call["timeout_seconds"] for call in assessment.calls] == [
         300,
         180,
-        120,
+        240,
         240,
     ]
     assert all(call["max_transient_retries"] == 1 for call in assessment.calls)
@@ -455,15 +456,18 @@ def test_model_cannot_self_attest_an_unsourced_numeric_token():
 
     result = run_verified_climate_pipeline(
         **_arguments(),
-        clients=PipelineClients(FakeClient(responses, []), FakeClient([], [])),
+        clients=PipelineClients(FakeClient(responses, []), _pass_review_client()),
     )
 
-    assert result["priorities"] == []
+    assert result["priorities"][0]["decision"] == "Complete the review."
     diagnostics = result["recommendation_diagnostics"]
-    assert diagnostics["unsupported_numeric_tokens"] == ["2027"]
+    assert diagnostics["unsupported_numeric_tokens"] == []
+    assert "RECOMMENDATION_UNSUPPORTED_PRECISION_REMOVED" in (
+        result["manifest"]["repair_actions"]
+    )
 
 
-def test_numeric_validation_exposes_only_bounded_unsupported_tokens():
+def test_numeric_repair_removes_only_bounded_unsupported_tokens():
     responses = _responses()
     recommendation = responses[3]["recommendation_candidates"][0]
     recommendation["minimum_action"] = (
@@ -472,26 +476,16 @@ def test_numeric_validation_exposes_only_bounded_unsupported_tokens():
 
     result = run_verified_climate_pipeline(
         **_arguments(),
-        clients=PipelineClients(FakeClient(responses, []), FakeClient([], [])),
+        clients=PipelineClients(FakeClient(responses, []), _pass_review_client()),
     )
 
-    assert result["priorities"] == []
+    assert result["priorities"][0]["minimum_action"] == (
+        "Update Components before the review."
+    )
     diagnostics = result["recommendation_diagnostics"]
-    assert diagnostics["reason_codes"] == ["RECOMMENDATION_NUMBER_UNSUPPORTED"]
-    assert diagnostics["unsupported_numeric_tokens"] == ["1", "2", "2027"]
-    assert diagnostics["candidate_suppressions"] == [
-        {
-            "recommendation_id": "REC-001",
-            "stage": "validation",
-            "reason_codes": ["RECOMMENDATION_NUMBER_UNSUPPORTED"],
-            "unsupported_numeric_fields": [
-                {
-                    "field": "minimum_action",
-                    "tokens": ["1", "2", "2027"],
-                }
-            ],
-        }
-    ]
+    assert diagnostics["reason_codes"] == []
+    assert diagnostics["unsupported_numeric_tokens"] == []
+    assert diagnostics["candidate_suppressions"] == []
 
 
 def test_bad_fact_suppresses_dependent_analysis_and_recommendation():
@@ -577,13 +571,18 @@ def test_manifest_is_privacy_safe_and_scoped_to_the_run():
     )
     assert (
         first["manifest"]["prompt_versions"]["conditional_review"]
-        == "climate-review-v2.4"
+        == "climate-review-v2.5"
+    )
+    assert (
+        first["manifest"]["prompt_versions"]["drafting_compiler"]
+        == "climate-drafting-v1.0"
     )
     assert set(first["manifest"]["prompt_versions"]) == {
         "fact_extraction",
         "bounded_analysis",
         "judgment_review",
         "recommendation_compiler",
+        "drafting_compiler",
         "conditional_review",
     }
     manifest_text = str(first["manifest"])
@@ -610,3 +609,58 @@ def test_preview_label_survives_into_reader_payload():
     )
 
     assert result["evidence_status"] == "preview; not approved"
+
+
+def test_candidate_maps_compact_drafting_blocks_to_domain_fields():
+    record = deepcopy(_responses()[3]["recommendation_candidates"][0])
+    current = record.pop("current_document_drafting")
+    record.pop("operational_instrument_drafting")
+    record["drafting_blocks"] = [
+        {"drafting_role": "current_document", **current}
+    ]
+
+    candidate = _candidate(record)
+
+    assert candidate.current_document_drafting is not None
+    assert (
+        candidate.current_document_drafting.target_section
+        == "Project Description"
+    )
+    assert candidate.operational_instrument_drafting is None
+
+
+def test_missing_transport_drafting_uses_bounded_drafting_compiler():
+    responses = _responses()
+    recommendation = responses[3]["recommendation_candidates"][0]
+    current = recommendation.pop("current_document_drafting")
+    recommendation.pop("operational_instrument_drafting")
+    responses.append({
+        "drafting_sets": [{
+            "recommendation_id": "REC-001",
+            "drafting_blocks": [{
+                "drafting_role": "current_document",
+                **current,
+            }],
+        }],
+    })
+    assessment = FakeClient(responses, [])
+
+    result = run_verified_climate_pipeline(
+        **_arguments(),
+        clients=PipelineClients(assessment, _pass_review_client()),
+    )
+
+    assert [call["stage"] for call in assessment.calls] == [
+        "fact_extraction",
+        "bounded_analysis",
+        "judgment_review",
+        "recommendation_compiler",
+        "drafting_compiler",
+    ]
+    assert result["priorities"][0]["current_document_drafting"]["text"] == (
+        current["text"]
+    )
+    drafting_payload = assessment.calls[-1]["payload"]
+    assert drafting_payload["recommendation_candidates"][0][
+        "recommendation_id"
+    ] == "REC-001"

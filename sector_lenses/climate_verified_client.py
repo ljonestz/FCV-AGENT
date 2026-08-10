@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 import json
+import re
 import time
 from typing import Any
 
@@ -13,6 +14,44 @@ from sector_lenses.climate_verified_schemas import stage_output_schema
 
 def _never_transient(_error: Exception) -> bool:
     return False
+
+
+def _bounded_provider_failure_details(
+    error: Exception,
+) -> dict[str, str | None]:
+    """Classify provider failures without retaining unrestricted messages."""
+
+    provider_error_type = None
+    message = ""
+    body = getattr(error, "body", None)
+    if isinstance(body, dict):
+        nested = body.get("error")
+        if isinstance(nested, dict):
+            raw_type = nested.get("type")
+            if isinstance(raw_type, str) and re.fullmatch(
+                r"[a-z0-9_]{1,64}", raw_type
+            ):
+                provider_error_type = raw_type
+            raw_message = nested.get("message")
+            if isinstance(raw_message, str):
+                message = raw_message
+
+    normalized = message.lower()
+    failure_code = None
+    if "schema" in normalized or "output_config.format" in normalized:
+        failure_code = "schema_rejected"
+    elif provider_error_type == "invalid_request_error":
+        failure_code = "invalid_request"
+
+    path_match = re.search(
+        r"properties(?:[.][A-Za-z0-9_-]+)+",
+        message,
+    )
+    return {
+        "provider_error_type": provider_error_type,
+        "provider_failure_code": failure_code,
+        "schema_path": path_match.group(0)[:240] if path_match else None,
+    }
 
 
 class AnthropicVerifiedJsonClient:
@@ -54,6 +93,7 @@ class AnthropicVerifiedJsonClient:
             "timeout_seconds": timeout_seconds,
             "remaining_seconds": remaining_seconds,
         }
+        diagnostic.update(_bounded_provider_failure_details(error))
         try:
             self._diagnostic_sink(diagnostic)
         except Exception:

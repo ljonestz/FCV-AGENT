@@ -401,7 +401,114 @@
     .climate-evidence-note p{margin:4px 0}
     .climate-evidence-note summary{cursor:pointer;font-weight:600}
 
-    /* ── Buttons ── */
+    /* ── Verified Climate-FCV reader — designed presentation ── */
+    .climate-verified-assessment{max-width:820px;margin:0 auto;font-size:14px;color:var(--text);line-height:1.68}
+    .climate-verified-assessment .climate-report-section{margin:0 0 34px}
+    .climate-verified-assessment .climate-section-heading{display:flex;align-items:baseline;gap:14px;border-bottom:1px solid var(--border);padding:0 0 10px;margin:0 0 18px}
+    .climate-verified-assessment .climate-section-number{flex:none;font-family:'Open Sans',sans-serif;font-size:12px;font-weight:700;letter-spacing:.08em;color:var(--wbg-blue)}
+    .climate-verified-assessment .climate-section-heading h2{font-family:'Open Sans',sans-serif;font-size:22px;font-weight:600;line-height:1.3;text-transform:none;letter-spacing:0;color:var(--wbg-navy);border:0!important;padding:0;margin:0}
+    .climate-verified-assessment .climate-subheading{font-family:'Open Sans',sans-serif;font-size:15px;font-weight:700;color:var(--wbg-navy);margin:22px 0 9px}
+    .climate-verified-assessment .climate-section-intro{color:#4b5563;margin:0 0 16px}
+    .climate-verified-assessment .climate-sens-rating{--climate-rating-color:#9aa4b2;margin:0 0 22px}
+    .climate-verified-assessment .climate-overview-panel{background:#fff;border:1px solid #d7e1e7;border-left:5px solid var(--climate-rating-color,#147a3d);border-radius:10px;padding:20px;margin:0 0 24px}
+    .climate-verified-assessment .climate-rating-question{font-size:13px;font-weight:600;color:#4b5563;margin:0 0 3px}
+    .climate-verified-assessment .climate-rating-label{font-family:'Open Sans',sans-serif;font-size:22px;font-weight:700;color:var(--climate-rating-color);margin:0}
+    .climate-verified-assessment .climate-rating-scale{display:flex;gap:4px;max-width:420px;margin:10px 0 13px}
+    .climate-verified-assessment .climate-rating-segment{flex:1;text-align:center;padding:6px 5px;background:var(--wb-gray-100,#EEF0F3);color:#6b7280;font-size:12px;border-radius:2px}
+    .climate-verified-assessment .climate-rating-segment.is-active{background:var(--climate-rating-color);color:#fff;font-weight:700}
+    .climate-verified-assessment .climate-rating-description{font-weight:600;color:#243244;margin:0 0 4px}
+    .climate-verified-assessment .climate-overview-summary{margin:0 0 8px}
+    .climate-verified-assessment .climate-rating-caveat{font-size:12px;color:#6b7280;margin:0}
+    .climate-verified-assessment .climate-exec{border-left:3px solid var(--wbg-blue);padding:2px 0 2px 16px;margin:0}
+    .climate-verified-assessment .climate-exec p{margin:0 0 11px;line-height:1.72;color:#1f2937;font-size:14px}
+    .climate-verified-assessment .climate-exec p:last-child{margin-bottom:0}
+    .climate-verified-assessment .climate-core-question{background:transparent;border-top:1px solid var(--border);padding:18px 0 12px;margin:0}
+    .climate-verified-assessment .climate-core-question h3{font-family:'Open Sans',sans-serif;font-size:16px;font-weight:700;line-height:1.45;color:var(--wbg-navy);margin:0 0 6px}
+    .climate-verified-assessment .climate-question-source{font-size:12px;color:var(--wbg-blue);margin:0 0 9px}
+    .climate-verified-assessment .climate-core-question>p:not(.climate-question-source){margin:0 0 9px}
+    .climate-verified-assessment .climate-priority-summary{background:#eef7fb;border:1px solid #cfe9f4;border-left:4px solid var(--wbg-blue);border-radius:var(--radius-sm);padding:12px 15px;margin:0 0 14px;font-size:13px;color:#0b4a63;line-height:1.58}
+    .climate-verified-assessment .climate-priority-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);margin:0 0 10px;overflow:hidden}
+    .climate-verified-assessment .climate-priority-card>summary{display:flex;align-items:flex-start;gap:12px;padding:15px 18px;cursor:pointer;list-style:none}
+    .climate-verified-assessment .climate-priority-card>summary::-webkit-details-marker{display:none}
+    .climate-verified-assessment .climate-priority-card>summary:hover{background:#f8fafc}
+    .climate-verified-assessment .climate-priority-card>summary:focus-visible{outline:3px solid #f2a900;outline-offset:-3px}
+    .climate-verified-assessment .climate-priority-card>summary::after{content:"\25B8";flex:none;margin-left:auto;color:var(--wbg-blue);font-size:16px;line-height:26px;transition:transform .15s ease}
+    .climate-verified-assessment .climate-priority-card[open]>summary{border-bottom:1px solid #e5e7eb}
+    .climate-verified-assessment .climate-priority-card[open]>summary::after{transform:rotate(90deg)}
+    .climate-verified-assessment .pc-rank{flex:none;width:26px;height:26px;border-radius:50%;background:var(--s3);color:#fff;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;font-family:'Open Sans',sans-serif}
+    .climate-verified-assessment .climate-priority-card h3.pc-title{display:flex!important;align-items:flex-start;gap:12px;flex:1;min-width:0;font-family:'Open Sans',sans-serif!important;font-size:15px!important;font-weight:700!important;color:var(--wbg-navy)!important;margin:2px 0 0!important;text-transform:none!important;letter-spacing:0!important;line-height:1.45!important}
+    .climate-verified-assessment .pc-title-text{display:block;min-width:0}
+    .climate-verified-assessment .climate-priority-body{padding:16px 18px}
+    .climate-verified-assessment .climate-priority-body .pc-narr{font-size:14px;line-height:1.68;color:#1f2937;margin:0 0 11px}
+    .climate-verified-assessment .climate-priority-body>p{margin:0 0 8px;font-size:13.5px;line-height:1.5;color:#374151}
+    .climate-verified-assessment .climate-priority-body>p>strong{color:var(--wbg-navy);font-weight:700}
+    .climate-verified-assessment .climate-drafting-block{background:#fff8f0;border:1px solid #f6dfc0;border-radius:var(--radius-sm);padding:11px 13px 12px;margin:10px 0 12px}
+    .climate-verified-assessment .climate-drafting-block h4{font-family:'Open Sans',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#9a5b00;margin:0 0 7px;display:flex;align-items:center;gap:6px}
+    .climate-verified-assessment .climate-drafting-block h4::before{content:"\270E";font-size:13px}
+    .climate-verified-assessment .climate-drafting-destination{font-size:11px;color:#7b5b2b;margin:0 0 6px}
+    .climate-verified-assessment .climate-drafting-text{font-size:13px;line-height:1.55;color:#3f3016;background:var(--white);border:1px solid #f0e3d0;border-radius:4px;padding:10px 12px}
+    .climate-verified-assessment .climate-priority-detail,.climate-verified-assessment .climate-fold{border-top:1px solid var(--border);margin-top:11px;padding-top:9px}
+    .climate-verified-assessment .climate-fold{margin-top:18px}
+    .climate-verified-assessment .climate-priority-detail>summary,.climate-verified-assessment .climate-fold>summary{cursor:pointer;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;list-style:none;padding:2px 0}
+    .climate-verified-assessment .climate-priority-detail>summary:focus-visible,.climate-verified-assessment .climate-fold>summary:focus-visible{outline:2px solid var(--wbg-blue);outline-offset:2px}
+    .climate-verified-assessment .climate-priority-detail>summary::-webkit-details-marker,.climate-verified-assessment .climate-fold>summary::-webkit-details-marker{display:none}
+    .climate-verified-assessment .climate-priority-detail>summary::before,.climate-verified-assessment .climate-fold>summary::before{content:"\25B8";display:inline-block;margin-right:7px;transition:transform .15s;color:var(--wbg-blue)}
+    .climate-verified-assessment .climate-priority-detail[open]>summary::before,.climate-verified-assessment .climate-fold[open]>summary::before{transform:rotate(90deg)}
+    .climate-verified-assessment .climate-priority-detail>p{font-size:12px;color:#64748b;margin:7px 0 0}
+    .climate-verified-assessment .climate-priority-detail>p>strong{color:#64748b}
+    .climate-verified-assessment .climate-fold>section{margin:8px 0 10px}
+    .climate-verified-assessment .climate-fold>p{font-size:12px;color:#64748b;margin:5px 0}
+    .climate-verified-assessment .climate-check-intro{color:#4b5563;margin:0 0 16px}
+    .climate-verified-assessment .climate-check-group{border-top:1px solid var(--border);padding:16px 0 3px;margin:0}
+    .climate-verified-assessment .climate-check-group h3{font-family:'Open Sans',sans-serif;font-size:15px;font-weight:700;color:var(--wbg-navy);margin:0 0 7px}
+    .climate-verified-assessment .climate-numbered-item{display:grid;grid-template-columns:34px minmax(0,1fr);gap:10px;border-top:1px solid #eef0f3;padding:12px 0 8px;margin:0}
+    .climate-verified-assessment .climate-item-number{font-weight:700;color:var(--wbg-blue);font-variant-numeric:tabular-nums;line-height:1.45}
+    .climate-verified-assessment .climate-check-item h4{font-family:'Open Sans',sans-serif;font-size:13px;font-weight:700;color:var(--wbg-navy);margin:0 0 4px;text-transform:none;letter-spacing:0}
+    .climate-verified-assessment .climate-check-item p,.climate-verified-assessment .climate-watch-item p{margin:0 0 4px}
+    .climate-verified-assessment .climate-check-action{color:#4b5563}
+    .climate-verified-assessment .climate-watch-intro{color:#4b5563;margin:0 0 8px}
+    .climate-verified-assessment .climate-guidance{background:transparent;padding:0}
+    .climate-verified-assessment .climate-guidance-disclosure{border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+    .climate-verified-assessment .climate-guidance-disclosure>summary{cursor:pointer;list-style:none;padding:13px 0;font-family:'Open Sans',sans-serif;font-size:15px;font-weight:700;color:var(--wbg-navy)}
+    .climate-verified-assessment .climate-guidance-disclosure>summary::-webkit-details-marker{display:none}
+    .climate-verified-assessment .climate-guidance-disclosure>summary::before{content:"\25B8";display:inline-block;margin-right:8px;color:var(--wbg-blue);transition:transform .15s}
+    .climate-verified-assessment .climate-guidance-disclosure[open]>summary::before{transform:rotate(90deg)}
+    .climate-verified-assessment .climate-guidance-disclosure>summary:focus-visible{outline:3px solid #f2a900;outline-offset:2px}
+    .climate-verified-assessment .climate-guidance-body{padding:0 0 4px}
+    .climate-verified-assessment .climate-guidance-intro{color:#5f594f;margin:0 0 8px}
+    .climate-verified-assessment .climate-guidance-item{border-top:1px solid #e5e7eb;padding:14px 0 12px;margin:0}
+    .climate-verified-assessment .climate-guidance-item h3{font-family:'Open Sans',sans-serif;font-size:14px;font-weight:700;line-height:1.45;margin:0 0 5px}
+    .climate-verified-assessment .climate-guidance-item p{color:#4b5563;margin:0 0 6px}
+    .climate-verified-assessment .climate-guidance-item a{color:var(--wbg-blue);text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:2px}
+    .climate-verified-assessment .climate-guidance-item a:hover,.climate-verified-assessment .climate-guidance-item a:focus-visible{color:#005a8b;text-decoration-thickness:2px}
+    .climate-verified-assessment .climate-guidance-item a:focus-visible{outline:3px solid #f2a900;outline-offset:2px}
+    .climate-verified-assessment .climate-guidance-value{font-weight:600;color:#374151!important}
+    .climate-verified-assessment .climate-guidance-use{font-size:13px;color:#5f594f!important;margin-bottom:0!important}
+    .climate-verified-assessment .climate-advisory{font-size:11px;color:#64748b;font-style:italic;margin:18px 0 0;padding-top:11px;border-top:1px solid var(--border)}
+    @media(max-width:760px){
+      .climate-verified-assessment{line-height:1.62}
+      .climate-verified-assessment .climate-report-section{margin-bottom:30px}
+      .climate-verified-assessment .climate-section-heading{gap:10px;margin-bottom:15px}
+      .climate-verified-assessment .climate-section-heading h2{font-size:19px}
+      .climate-verified-assessment .climate-overview-panel{padding:16px}
+      .climate-verified-assessment .climate-rating-scale{max-width:none}
+      .climate-verified-assessment .climate-rating-segment{padding:6px 2px;font-size:11px}
+      .climate-verified-assessment .climate-priority-card>summary{padding:13px 14px}
+      .climate-verified-assessment .climate-priority-body{padding:14px}
+      .climate-verified-assessment .climate-numbered-item{grid-template-columns:28px minmax(0,1fr);gap:8px}
+      .climate-verified-assessment .climate-guidance-disclosure>summary{padding:12px 0}
+    }
+    @media print{
+      .climate-verified-assessment .climate-priority-card{break-inside:avoid}
+      .climate-verified-assessment .climate-priority-card:not([open])>.climate-priority-body{display:block!important}
+      .climate-verified-assessment .climate-priority-detail:not([open])>:not(summary){display:block!important}
+      .climate-verified-assessment .climate-fold:not([open])>:not(summary){display:block!important}
+      .climate-verified-assessment .climate-guidance-disclosure:not([open])>:not(summary){display:block!important}
+      .climate-verified-assessment .climate-priority-card>summary::after{display:none}
+      .climate-verified-assessment a{color:#000;text-decoration:underline}
+    }
+
+    /* Buttons */
     .btn{
       display:inline-flex;align-items:center;gap:7px;
       border:none;border-radius:var(--radius-sm);
@@ -2498,6 +2605,7 @@
     return 'Project Paper';
   }
   let changeTypes={};
+  let docChecks=[];
   let midCycleWatch=[];
   let dpfWatch=[];
   let p4rWatch=[];
@@ -3299,20 +3407,27 @@
     if(changed) renderChips();
   }, 600);
 
+  function selectFilesWithinUploadCap(files, existingFiles, limit) {
+    const accepted=[];
+    let skipped=0;
+    const names=new Set((existingFiles||[]).map(file=>file&&file.name).filter(Boolean));
+    (files||[]).forEach(file=>{
+      if(!file||names.has(file.name))return;
+      if((existingFiles||[]).length+accepted.length>=limit){skipped++;return;}
+      accepted.push(file);
+      names.add(file.name);
+    });
+    return {accepted,skipped};
+  }
+
   function addFiles(files, arr, type) {
-    let added = 0;
-    let skipped = 0;
-    files.forEach(f => {
-      const maxForType = type === 'p' ? MAX_PRIMARY : type === 'pack' ? MAX_PACK : type === 'c' ? MAX_CTX : Infinity;
-      if (arr.length >= maxForType) {
-        skipped++;
-        return;
-      }
-      if (!arr.find(x => x.name === f.name)) {
-        arr.push(f);
-        added++;
-        fetchFileMetadata(f);
-      }
+    const maxForType = type === 'p' ? MAX_PRIMARY : type === 'pack' ? MAX_PACK : type === 'c' ? MAX_CTX : Infinity;
+    const selection=selectFilesWithinUploadCap(files,arr,maxForType);
+    const added=selection.accepted.length;
+    const skipped=selection.skipped;
+    selection.accepted.forEach(file=>{
+      arr.push(file);
+      fetchFileMetadata(file);
     });
     if (skipped > 0) {
       const hint = document.getElementById(type === 'p' ? 'zone-hint-primary' : type === 'c' ? 'zone-hint-context' : 'zone-hint-package');
@@ -3733,6 +3848,7 @@
               if(p.context_flags)contextFlags=p.context_flags;
               if(p.sector_context)sectorContext=p.sector_context;
               if(p.change_types)changeTypes=p.change_types;
+              if(Array.isArray(p.doc_checks))docChecks=p.doc_checks;
               if(p.active_lenses){activeLenses=p.active_lenses.map(l=>l.id);resolvedLensVersions=Object.fromEntries(p.active_lenses.map(l=>[l.id,l.version]));}
               showLensWarnings(p.lens_warnings);
               const cat=countryClassification.category||'General';
@@ -4064,6 +4180,7 @@
                 if(p.context_flags)contextFlags=p.context_flags;
                 if(p.sector_context)sectorContext=p.sector_context;
                 if(p.change_types)changeTypes=p.change_types;
+                if(Array.isArray(p.doc_checks))docChecks=p.doc_checks;
               }
               renderOut(stage,renderResult,followOn);setStepper(stage,'done');
               enableClickableStepper();
@@ -4569,51 +4686,266 @@
     );
   }
 
+  function isPublicWorldBankHttpsUrl(value){
+    const raw=String(value??'').trim();
+    if(!/^https:\/\//i.test(raw))return false;
+    const authority=raw.slice(raw.indexOf('//')+2).split(/[/?#]/,1)[0];
+    if(!authority||authority.includes('@')||authority.includes(':')||authority.includes('%')||authority.endsWith('.'))return false;
+    const labels=authority.toLowerCase().split('.');
+    if(authority.length>253||labels.some(label=>!label||label.length>63||label.startsWith('xn--')||!/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/.test(label)))return false;
+    try{
+      const parsed=new URL(raw);
+      const hostname=parsed.hostname.toLowerCase();
+      return parsed.protocol==='https:'&&
+        !parsed.username&&
+        !parsed.password&&
+        !parsed.port&&
+        (hostname==='worldbank.org'||hostname.endsWith('.worldbank.org'));
+    }catch(_error){
+      return false;
+    }
+  }
+
+  function normalizeClimateSourceTitle(value){
+    return String(value??'')
+      .normalize('NFKD')
+      .toLowerCase()
+      .replace(/&/g,' and ')
+      .replace(/[^a-z0-9]+/g,' ')
+      .trim();
+  }
+
+  function buildClimateGuidanceItems(reader){
+    const r=reader&&typeof reader==='object'?reader:{};
+    const coreQuestions=Array.isArray(r.core_questions)?r.core_questions:[];
+    const sources=Array.isArray(r.sources)?r.sources:[];
+    const questionsBySource=new Map();
+    const completeSentence=value=>{
+      const text=String(value??'').trim().replace(/\s+/g,' ');
+      const terminalText=text.replace(/[\x22\x27)\]\x7d\u201d\u2019]+$/g,'');
+      return text&&terminalText&&!/[.!?]$/.test(terminalText)?`${text}.`:text;
+    };
+    const normalizeIdentityText=value=>String(value??'').trim().replace(/\s+/g,' ').toLowerCase();
+    coreQuestions.forEach(question=>{
+      if(!question||typeof question!=='object')return;
+      const sourceKey=normalizeClimateSourceTitle(question.source);
+      if(!sourceKey)return;
+      const questionText=completeSentence(question.question);
+      const watch=completeSentence(question.watch);
+      const questionId=String(question.question_id??'').trim().replace(/\s+/g,' ').toLowerCase();
+      const summaryIdentity=normalizeIdentityText(question.summary);
+      const watchIdentity=normalizeIdentityText(question.watch);
+      const identity=questionId?`question_id:${questionId}`:`content:${sourceKey}|${summaryIdentity}|${watchIdentity}`;
+      const matched=questionsBySource.get(sourceKey)||[];
+      if(!matched.some(item=>item.identity===identity))matched.push({question:questionText,watch,identity});
+      questionsBySource.set(sourceKey,matched);
+    });
+    const candidates=[];
+    const seenSources=new Set();
+    sources.forEach((source,sourceOrder)=>{
+      if(!source||typeof source!=='object')return;
+      const title=String(source.title??'').trim();
+      const titleKey=normalizeClimateSourceTitle(title);
+      const url=String(source.url??'').trim();
+      if(!titleKey||seenSources.has(titleKey)||!isPublicWorldBankHttpsUrl(url))return;
+      seenSources.add(titleKey);
+      const matches=questionsBySource.get(titleKey)||[];
+      if(!matches.length)return;
+      const watch=matches.find(match=>match.watch)?.watch||'';
+      const questionText=matches.find(match=>match.question)?.question||'';
+      const projectUse=watch
+        ?`For this project, use the source to address this follow-up: ${watch}`
+        :(questionText?`For this project, use the source to examine this question: ${questionText}`:'');
+      if(!projectUse)return;
+      candidates.push({
+        title,
+        url,
+        practical_value:String(source.practical_value||source.description||'').trim(),
+        project_use:projectUse,
+        match_count:matches.length,
+        source_order:sourceOrder
+      });
+    });
+    return candidates
+      .sort((a,b)=>b.match_count-a.match_count||a.source_order-b.source_order)
+      .slice(0,4)
+      .map(({match_count,source_order,...item})=>item);
+  }
+
+  function renderClimateRelevantGuidance(reader){
+    const r=reader&&typeof reader==='object'?reader:{};
+    const hasCanonical=Object.prototype.hasOwnProperty.call(r,'guidance_items')&&Array.isArray(r.guidance_items);
+    const rawItems=hasCanonical?r.guidance_items:buildClimateGuidanceItems(r);
+    const items=[];
+    const seenItemKeys=new Set();
+    rawItems.forEach(item=>{
+      if(!item||typeof item!=='object'||items.length>=4)return;
+      const title=String(item.title??'').trim();
+      const itemKey=normalizeClimateSourceTitle(title);
+      const practicalValue=String(item.practical_value??'').trim();
+      const projectUse=String(item.project_use??'').trim();
+      if(!itemKey||seenItemKeys.has(itemKey)||(!practicalValue&&!projectUse)||!isPublicWorldBankHttpsUrl(item.url))return;
+      seenItemKeys.add(itemKey);
+      items.push({title,url:String(item.url).trim(),practical_value:practicalValue,project_use:projectUse});
+    });
+    if(!items.length)return '';
+    const itemHtml=items.map(item=>{
+      const practical=item.practical_value?`<p class="climate-guidance-value">${esc(item.practical_value)}</p>`:'';
+      const projectUse=item.project_use?`<p class="climate-guidance-use">${esc(item.project_use)}</p>`:'';
+      return `<article class="climate-guidance-item"><h3><a href="${esc(item.url)}" target="_blank" rel="noopener">${esc(item.title||'World Bank guidance')}</a></h3>${practical}${projectUse}</article>`;
+    }).join('');
+    return `<details class="climate-guidance-disclosure"><summary>Where the team can go for more detailed follow-up</summary><div class="climate-guidance-body" data-section-label="Relevant WBG guidance for this project"><p class="climate-guidance-intro">These sources are selected because they speak directly to the current findings. This is not a standard reading list.</p>${itemHtml}</div></details>`;
+  }
+
+  function installClimatePrintDisclosureHandler(root){
+    const scope=root&&typeof root.querySelectorAll==='function'?root:null;
+    const eventTarget=scope&&scope.defaultView?scope.defaultView:(typeof window!=='undefined'?window:null);
+    if(!scope||!eventTarget||typeof eventTarget.addEventListener!=='function')return null;
+    const selector='details.climate-priority-card, details.climate-priority-detail, details.climate-fold, details.climate-guidance-disclosure';
+    let priorStates=null;
+    const beforePrint=()=>{
+      if(priorStates!==null)return;
+      priorStates=Array.from(scope.querySelectorAll(selector)).map(element=>({element,open:element.open}));
+      priorStates.forEach(state=>{state.element.open=true;});
+    };
+    const afterPrint=()=>{
+      if(priorStates===null)return;
+      priorStates.forEach(state=>{state.element.open=state.open;});
+      priorStates=null;
+    };
+    eventTarget.addEventListener('beforeprint',beforePrint);
+    eventTarget.addEventListener('afterprint',afterPrint);
+    return {beforePrint,afterPrint};
+  }
+
+  function climatePrintDisclosureScript(){
+    return `<script>${installClimatePrintDisclosureHandler.toString()};installClimatePrintDisclosureHandler(document);<\/script>`;
+  }
+
+  installClimatePrintDisclosureHandler(document);
+
   function renderClimateVerifiedAssessment(reader){
     const r=reader&&typeof reader==='object'?reader:{};
+    const relevantGuidanceHtml=renderClimateRelevantGuidance(r);
     const runtimeMode=String(r.runtime_mode||'quality').toLowerCase();
     const smokeHtml=runtimeMode==='smoke'?`<div class="finalized-pad-notice"><div class="fpn-body"><strong>Smoke test: validates workflow completion only; not a quality benchmark.</strong></div></div>`:'';
     const executive=esc(r.executive_readout||'The verified assessment did not return an executive readout.');
-    const evidenceStatus=String(r.evidence_status||'approved');
-    const statusHtml=evidenceStatus!=='approved'?`<div class="finalized-pad-notice"><div class="fpn-body"><strong>Evidence status:</strong> ${esc(evidenceStatus)}</div></div>`:'';
-    const judgments=Array.isArray(r.judgments)?r.judgments:[];
-    const judgmentHtml=judgments.map(j=>`<section class="climate-judgment" data-climate-dimension="${esc(j.dimension)}">
-      <h3>${esc(j.title||j.dimension||'Judgment')}</h3>
-      <p><strong>${esc(String(j.value||'unclear').replaceAll('_',' '))}:</strong> ${esc(j.rationale||'Evidence remains insufficient for a firmer judgment.')}</p>
-      ${Array.isArray(j.evidence_ids)&&j.evidence_ids.length?`<p><strong>Evidence references:</strong> ${esc(j.evidence_ids.join(', '))}</p>`:''}
-    </section>`).join('');
+    const boldFirstSentence=p=>{const m=p.match(/^(.*?[.!?])(\s+)([\s\S]*)$/);return m?`<strong>${esc(m[1])}</strong>${esc(m[2]+m[3])}`:`<strong>${esc(p)}</strong>`;};
+    const execHtml=(String(r.executive_readout||'').split(/\n\s*\n+/).map(p=>p.trim()).filter(Boolean).map(p=>`<p>${boldFirstSentence(p)}</p>`).join(''))||`<p>${executive}</p>`;
+    let climateSectionNumber=0;
+    const nextClimateSectionHeading=title=>{
+      climateSectionNumber+=1;
+      const number=String(climateSectionNumber).padStart(2,'0');
+      return `<header class="climate-section-heading"><span class="climate-section-number">${number}</span><h2>${esc(title)}</h2></header>`;
+    };
+    const climateReportSection=(title,className,body)=>
+      `<section class="climate-report-section ${className}">${nextClimateSectionHeading(title)}${body}</section>`;
+    const CORE_QUESTIONS_INTRO="This section works through the core questions that the World Bank's climate-and-fragility guidance asks of a project in a conflict-affected setting. Each answer draws only on your document and the evidence gathered for this run, and is kept separate from the executive summary above so it adds new detail rather than repeating it.";
+    const csr=r.climate_sensitivity_rating&&typeof r.climate_sensitivity_rating==='object'?r.climate_sensitivity_rating:null;
+    const ratingHtml=(()=>{
+      if(!csr)return '';
+      const tones={good:'#147A3D',mid:'#8A5A00',low:'#B42318',unclear:'#5F6B7A'};
+      const active=tones[csr.tone]||'#5F6B7A';
+      const level=Number(csr.level)||0;
+      const scale=Array.isArray(csr.scale)?csr.scale:[];
+      const segments=scale.map((label,index)=>{
+        const activeClass=(index+1)===level?' is-active':'';
+        return `<span class="climate-rating-segment${activeClass}">${esc(label)}</span>`;
+      }).join('');
+      const overview=csr.overview_summary?`<p class="climate-overview-summary">${esc(csr.overview_summary)}</p>`:'';
+      const caveat=csr.caveat?`<p class="climate-rating-caveat">${esc(csr.caveat)}</p>`:'';
+      return `<section class="climate-sens-rating climate-overview-panel" style="--climate-rating-color:${active}"><p class="climate-rating-question">${esc(csr.question||'')}</p><p class="climate-rating-label">${esc(csr.label||'')}</p><div class="climate-rating-scale">${segments}</div><p class="climate-rating-description">${esc(csr.description||'')}</p>${overview}${caveat}</section>`;
+    })();
+    const coreQuestions=Array.isArray(r.core_questions)?r.core_questions:[];
+    const coreQuestionsHtml=coreQuestions.map(question=>{
+      const source=question.source?`<p class="climate-question-source">For further insights on why this matters, see: <em>${esc(question.source)}</em></p>`:'';
+      const summary=String(question.summary||'').split(/\n\s*\n+/).map(p=>p.trim()).filter(Boolean).map(p=>`<p>${esc(p)}</p>`).join('');
+      return `<section class="climate-core-question"><h3>${esc(question.question||'')}</h3>${source}${summary}</section>`;
+    }).join('');
+    const coreQuestionsBodyHtml=`<p class="climate-section-intro">${esc(CORE_QUESTIONS_INTRO)}</p>${coreQuestionsHtml}`;
     const draftingBlock=(label,block)=>{
       if(!block||typeof block!=='object')return '';
-      const guidance=Array.isArray(block.guidance_ids)?block.guidance_ids.join(', '):'';
-      return `<section class="climate-drafting-block"><h4>${esc(label)}</h4>`+
-        `<p><strong>Target document:</strong> ${esc(block.target_document||'')}</p>`+
-        `<p><strong>Target section:</strong> ${esc(block.target_section||'')}</p>`+
-        `<p><strong>Drafting status:</strong> ${esc(block.drafting_status||'')}</p>`+
-        (guidance?`<p><strong>Guidance basis:</strong> ${esc(guidance)}</p>`:'')+
-        `<div class="climate-drafting-text">${esc(block.text||'')}</div></section>`;
+      const destination=[block.target_document,block.target_section].filter(Boolean).map(esc).join(' - ');
+      const destinationHtml=destination?`<p class="climate-drafting-destination">For: ${destination}</p>`:'';
+      const text=block.text?`<div class="climate-drafting-text">${esc(block.text)}</div>`:'';
+      if(!destinationHtml&&!text)return '';
+      return `<section class="climate-drafting-block"><h4>${esc(label)}</h4>${destinationHtml}${text}</section>`;
     };
-    const fields=[['Decision','decision'],['Minimum action','minimum_action'],['Enhanced action','enhanced_action'],['Activation condition','enhanced_activation'],['Who','responsible_function'],['Routing status','routing_status'],['Authority basis','authority_basis'],['Recommendation basis','recommendation_basis'],['Project evidence references','project_anchor_ids'],['Pathway references','pathway_ids'],['Existing-response references','existing_response_ids'],['Residual-gap references','residual_gap_ids'],['Instrument references','instrument_claim_ids'],['Completion evidence','completion_evidence'],['Completion evidence status','completion_evidence_status'],['Confidence','confidence'],['Limitation','limitation'],['Caution','caution']];
-    const annex=r.technical_annex&&typeof r.technical_annex==='object'?r.technical_annex:{};
-    const admittedCount=Number(annex.recommendation_admitted_count)||0;
-    const reviewerVerdict=String(annex.semantic_reviewer_verdict||'not_invoked').toLowerCase();
-    const withheldMessage=admittedCount>0&&['revise','block'].includes(reviewerVerdict)
-      ?`${admittedCount} recommendation ${admittedCount===1?'candidate':'candidates'} passed deterministic admission but ${admittedCount===1?'was':'were'} withheld after semantic review. Review outcome: ${reviewerVerdict}. See the technical annex.`
-      :'No recommendation passed the admission threshold for this run.';
-    const priorities=Array.isArray(r.priorities)?r.priorities.slice().sort((x,y)=>(Number(x.rank)||999)-(Number(y.rank)||999)).slice(0,3):[];
-    const priorityHtml=priorities.length?priorities.map(priority=>{
-    const prioritySummary=r.priority_summary&&typeof r.priority_summary==='object'?r.priority_summary:{};
-    const prioritySummaryHtml=prioritySummary.statement?`<p class="climate-priority-summary">${esc(prioritySummary.statement)}</p>`:'';
-      const field=(label,key)=>{const raw=priority[key];const value=Array.isArray(raw)?raw.join(', '):raw;return value?`<p><strong>${esc(label)}:</strong> ${esc(value)}</p>`:'';};
-      const fieldHtml=fields.map(([label,key])=>field(label,key)+(key==='minimum_action'
-        ?draftingBlock('Current document drafting',priority.current_document_drafting)+draftingBlock('Operational instrument drafting',priority.operational_instrument_drafting)
-        :'')).join('');
-      return `<section class="climate-priority-card"><h3>${esc(priority.rank)}. ${esc(priority.title||'Untitled action')} (${esc(priority.recommendation_id||'')})</h3>${fieldHtml}</section>`;
-    }).join(''):`<p>${esc(withheldMessage)}</p>`;
+    const primaryFields=[['Recommendation','decision'],['Minimum action','minimum_action'],['Enhanced action (optional)','enhanced_action'],['When to escalate','enhanced_activation'],['Who acts','responsible_function'],['What "done" looks like','completion_evidence'],['Confidence','confidence'],['Limitation','limitation'],['Caution','caution']];
+    const noPriorityMessage='No operational priorities were identified in this assessment. Review the core questions and points to check below.';
+    const priorities=Array.isArray(r.priorities)?r.priorities.slice().sort((a,b)=>(Number(a.rank)||999)-(Number(b.rank)||999)).slice(0,5):[];
+    const priorityNoun=priorities.length===1?'priority':'priorities';
+    const prioritySummaryHtml=priorities.length?`<p class="climate-priority-summary">Drawing on the overview and core climate-FCV questions, the analysis identifies ${priorities.length} main operational ${priorityNoun} for strengthening climate resilience, conflict sensitivity and implementation readiness in this project. These are followed by secondary points to check before the decision meeting and issues to keep under review as preparation advances.</p>`:'';
+    const priorityHtml=priorities.length?priorities.map((priority,index)=>{
+      const field=(label,key)=>{
+        const raw=priority[key];
+        const value=Array.isArray(raw)?raw.join(', '):raw;
+        return value?`<p><strong>${esc(label)}:</strong> ${esc(value)}</p>`:'';
+      };
+      const draftHtml=draftingBlock('Suggested drafting for the current document',priority.current_document_drafting)+draftingBlock('Suggested drafting for an operational instrument',priority.operational_instrument_drafting);
+      const narrative=String(priority.narrative||'').trim();
+      const narrativeHtml=narrative?narrative.split(/\n\s*\n+/).map(p=>p.trim()).filter(Boolean).map(p=>`<p class="pc-narr">${esc(p)}</p>`).join(''):'';
+      const bodyHtml=narrativeHtml?narrativeHtml+draftHtml:primaryFields.map(([label,key])=>field(label,key)+(key==='minimum_action'?draftHtml:'')).join('');
+      const breakdown=narrativeHtml?primaryFields.map(([label,key])=>field(label,key)).join(''):'';
+      const detailHtml=breakdown?`<details class="climate-priority-detail"><summary>Recommendation details</summary><p class="climate-priority-detail-intro">The same recommendation set out field by field - the decision to take, the minimum action, who leads it, and what "done" looks like.</p>${breakdown}</details>`:'';
+      const open=index===0?' open':'';
+      return `<details class="climate-priority-card"${open}><summary><h3 class="pc-title"><span class="pc-rank">${esc(priority.rank||index+1)}</span><span class="pc-title-text">${esc(priority.title||'Untitled action')}</span></h3></summary><div class="climate-priority-body">${bodyHtml}${detailHtml}</div></details>`;
+    }).join(''):`<p>${esc(noPriorityMessage)}</p>`;
     const flags=Array.isArray(r.review_readiness_flags)?r.review_readiness_flags.slice(0,4):[];
-    const flagsHtml=flags.length?flags.map(flag=>`<section><h4>${esc(flag.flag||'Verification point')}</h4><p><strong>Why it matters:</strong> ${esc(flag.why_it_matters||'')}</p><p><strong>Document basis:</strong> ${esc(Array.isArray(flag.document_basis_ids)?flag.document_basis_ids.join(', '):'')}</p><p><strong>Suggested verification:</strong> ${esc(flag.suggested_verification||'')}</p></section>`).join(''):'<p>No bounded review-readiness flags were admitted.</p>';
-    const annexFields=[['Run ID','run_id'],['Schema','schema_version'],['Country-bank release','bank_release_id'],['Automated validation','validation_status'],['Live research claims accepted','live_research_count'],['Recommendation candidate count','recommendation_candidate_count'],['Recommendation admitted count','recommendation_admitted_count'],['Recommendation final count','recommendation_final_count'],['Semantic reviewer invoked','semantic_reviewer_invoked'],['Semantic reviewer verdict','semantic_reviewer_verdict'],['Recommendation reason codes','recommendation_reason_codes'],['Unsupported numeric tokens','unsupported_numeric_tokens'],['Runtime mode','runtime_mode']];
-    const annexHtml=annexFields.map(([label,key])=>{const raw=annex[key];const value=Array.isArray(raw)?raw.join(', '):raw;return `<p><strong>${esc(label)}:</strong> ${esc(value??'')}</p>`;}).join('');
-    return `<article class="climate-verified-assessment">${smokeHtml}<h2>Executive readout</h2><p>${executive}</p>${statusHtml}<h2>Climate-FCV judgments</h2>${judgmentHtml}<h2>Ranked operational priorities</h2>${prioritySummaryHtml}${priorityHtml}<details><summary>Review readiness flags for task-team verification</summary>${flagsHtml}</details><details><summary>Technical annex</summary>${annexHtml}</details><p class="climate-advisory">${esc(r.advisory_notice||'')}</p></article>`;
+    const minorPoints=Array.isArray(r.minor_climate_points)?r.minor_climate_points.slice(0,3):[];
+    const flagsIntro='<p class="climate-check-intro">These are smaller things for the team to confirm or consider before the concept or decision meeting. They are not the main recommendations above, and none is a reason to stop the project - think of them as a checklist.</p>';
+    const numberedCheckItem=(title,body,check,index)=>`<section class="climate-check-item climate-numbered-item"><span class="climate-item-number">${String(index+1).padStart(2,'0')}</span><div class="climate-numbered-content"><h4>${esc(title)}</h4><p>${esc(body)}</p><p class="climate-check-action"><strong>How to address:</strong> ${esc(check)}</p></div></section>`;
+    const minorPointsHtml=minorPoints.length?`<section class="climate-check-group"><h3>Smaller climate and fragility points to consider</h3><p class="climate-check-intro">These are smaller, climate- and fragility-specific points that were not large enough to become a recommendation above, but are still worth a look.</p>${minorPoints.map((point,index)=>numberedCheckItem(point.point||'',point.why||'',point.how_to_check||'',index)).join('')}</section>`:'';
+    const docFlagsHtml=flags.length?`<section class="climate-check-group"><h3>Document points to confirm</h3>${flags.map((flag,index)=>numberedCheckItem(flag.flag||'Point to verify',flag.why_it_matters||'',flag.suggested_verification||'',index)).join('')}</section>`:'';
+    const pointsToCheckBodyHtml=(flags.length||minorPoints.length)?flagsIntro+minorPointsHtml+docFlagsHtml:'';
+    const watchList=coreQuestions.map(question=>({question:question.question||'',watch:question.watch||''})).filter(item=>item.watch);
+    const watchBodyHtml=watchList.length?`<p class="climate-watch-intro">These are things to monitor as the project develops. They are not actions to take now - just points to keep in view.</p>${watchList.map((item,index)=>`<section class="climate-numbered-item climate-watch-item"><span class="climate-item-number">${String(index+1).padStart(2,'0')}</span><div class="climate-numbered-content"><p>${item.question?`<strong>${esc(item.question)}</strong> `:''}${esc(item.watch)}</p></div></section>`).join('')}`:'';
+    let provenanceHtml='';
+    const trail=r.evidence_trail&&typeof r.evidence_trail==='object'?r.evidence_trail:null;
+    const sources=Array.isArray(r.sources)?r.sources:[];
+    if(trail||sources.length){
+      let inner='';
+      if(trail&&trail.methodology_note)inner+=`<p>${esc(trail.methodology_note)}</p>`;
+      const pathways=trail&&Array.isArray(trail.pathways)?trail.pathways:[];
+      if(pathways.length){
+        inner+='<h4>Pathways</h4><p>Pathways are the specific ways climate pressures and fragility feed into each other in this project. Each one is a short chain from a cause to an effect.</p><ul>';
+        pathways.forEach(pathway=>{inner+=`<li><strong>${esc(pathway.direction_label||'')}:</strong> ${esc(pathway.chain_prose||'')}</li>`;});
+        inner+='</ul>';
+      }
+      const limitationsRaw=trail?trail.limitations:'';
+      const limitations=Array.isArray(limitationsRaw)?limitationsRaw.filter(Boolean).join(' '):String(limitationsRaw||'').trim();
+      inner+='<h4>Limitations</h4>';
+      inner+=`<p>${esc(limitations||'This automated screening is advisory and is limited by the coverage and detail of the uploaded documents. The team should confirm material findings through project and country expertise.')}</p>`;
+      if(sources.length){
+        inner+='<h4>Sources &amp; further reading</h4><p>This analysis draws on the World Bank\'s core guidance on climate action in fragile and conflict-affected settings. Linked titles open the World Bank publication page if you want to read more.</p><ul>';
+        sources.forEach(source=>{
+          if(!source||typeof source!=='object')return;
+          const title=esc(source.title||'');
+          const description=esc(source.description||'');
+          const url=String(source.url||'');
+          if(isPublicWorldBankHttpsUrl(url)){
+            inner+=`<li><a href="${esc(url)}" target="_blank" rel="noopener">${title}</a>${description?` - ${description}`:''}</li>`;
+          }else{
+            const note=' (reference only; no public link is shown until one is confirmed)';
+            inner+=`<li>${title}${description?` - ${description}`:''}${note}</li>`;
+          }
+        });
+        inner+='</ul>';
+      }
+      provenanceHtml=`<details class="climate-fold"><summary>Method, limitations, and sources</summary>${inner}</details>`;
+    }
+    const overviewBodyHtml=`${ratingHtml}<h3 class="climate-subheading">Executive readout</h3><div class="climate-exec">${execHtml}</div>`;
+    const prioritiesBodyHtml=`${prioritySummaryHtml}${priorityHtml}`;
+    const numberedSections=
+      climateReportSection('Overview','climate-overview',overviewBodyHtml)+
+      climateReportSection('Core climate-FCV questions','climate-core-questions',coreQuestionsBodyHtml)+
+      climateReportSection('Ranked operational priorities','climate-priorities',prioritiesBodyHtml)+
+      (pointsToCheckBodyHtml?climateReportSection('Points to check before the decision meeting','climate-points-to-check',pointsToCheckBodyHtml):'')+
+      (watchBodyHtml?climateReportSection('What to keep an eye on','climate-watch',watchBodyHtml):'')+
+      (relevantGuidanceHtml?climateReportSection('Relevant WBG guidance for this project','climate-guidance',relevantGuidanceHtml):'')+
+      (provenanceHtml?climateReportSection('How this analysis was produced','climate-methodology-section',provenanceHtml):'');
+    const advisoryHtml=r.advisory_notice?`<p class="climate-advisory">${esc(r.advisory_notice)}</p>`:'';
+    return `<article class="climate-verified-assessment">${smokeHtml}${numberedSections}${advisoryHtml}</article>`;
   }
 
   function renderOut(stage,result,isFollowOn){
@@ -4654,6 +4986,7 @@
       const _climateNotice=_climateActive
         ?renderClimateModuleNotice(_climateEntry,_climateError,climateGrounding):'';
       const _climateValid=_climateActive&&!_climateError;
+      const docChecksHtml=(Array.isArray(docChecks)&&docChecks.length)?`<details style="margin-top:18px;border:1px solid #E2E6EC;border-radius:8px;padding:8px 14px;background:#F7F8FA"><summary style="cursor:pointer;font-weight:700;color:#002244">Points to check in the document</summary><p style="color:#4b5563;margin:8px 0 10px">A light automated check of the uploaded document for things worth confirming - placeholders, empty fields, or values that do not match. This is not the main analysis, just a checklist.</p>${docChecks.map(dc=>`<section style="margin:0 0 11px"><p style="font-weight:700;color:#002244;margin:0 0 3px">${esc(dc.finding||'')}</p>${dc.why_it_matters?`<p style="margin:0 0 3px">${esc(dc.why_it_matters)}</p>`:''}${dc.where?`<p style="margin:0;color:#6b7280;font-size:12px">Where: ${esc(dc.where)}</p>`:''}</section>`).join('')}</details>`:'';
       if(_climateValid){
         // Climate readout redesign order: notice/gauge -> model context prose ->
         // full-detail strengths & weaknesses -> core-questions (interactions + theme
@@ -4664,14 +4997,14 @@
           renderClimateStrengthsWeaknesses(_climateEntry)+
           renderClimateCoreQuestions(_climateEntry)+
           renderClimateGroundingSources(climateGrounding)
-        )+'<div id="priorities-intro"></div>';
+        )+'<div id="priorities-intro"></div>'+docChecksHtml;
       }else{
         _outBodyContent=wrapSRTerms(
           _closedProjectNotice+_padNotice+_stageBadge+_climateNotice+
           _preHtml+renderRiskExposure(stageRiskExposure)+md(_rest)+
           renderSRCards(stageSensitivitySummary,stageResponsivenessSummary)+
           (_climateActive?renderClimateGroundingSources(climateGrounding):'')
-        )+'<div id="priorities-intro"></div>';
+        )+'<div id="priorities-intro"></div>'+docChecksHtml;
       }
     }else{
       const cleanResult = stage===1 ? result.replace(/\n*%%%DOC_TYPE:[^%\n]*%%%\n*/g,'') : result;
@@ -4745,7 +5078,9 @@
       `;
 
     // Annotate glossary terms with hover tooltips
-    setTimeout(function(){ annotateGlossaryTerms(document.getElementById('out-txt')); }, 100);
+    // The verified Climate-FCV reader is written in plain prose; inline glossary
+    // expansions create run-ons that break the clean layout, so skip them here.
+    if(!_verifiedV2) setTimeout(function(){ annotateGlossaryTerms(document.getElementById('out-txt')); }, 100);
 
     // Mark Stage 3 (Recommendations) so CSS can remove the .out-body scroll constraint
     if(isLast) document.getElementById('stage-disp').classList.add('s3-active');
@@ -5313,7 +5648,8 @@
     if(climateVerifiedAssessment&&climateVerifiedAssessment.schema_version==='climate-verified-v2.1'&&climateVerifiedReader){
       const css=Array.from(document.querySelectorAll('style')).map(s=>s.textContent).join('\n');
       const body=renderClimateVerifiedAssessment(climateVerifiedReader);
-      const documentHtml='<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Verified Climate-FCV Assessment</title><style>'+css+'</style></head><body><main style="max-width:960px;margin:32px auto;padding:0 24px">'+body+'</main></body></html>';
+      const printBehavior=climatePrintDisclosureScript();
+      const documentHtml='<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Verified Climate-FCV Assessment</title><style>'+css+'</style></head><body><main style="max-width:960px;margin:32px auto;padding:0 24px">'+body+'</main>'+printBehavior+'</body></html>';
       const blob=new Blob([documentHtml],{type:'text/html;charset=utf-8'});
       const url=URL.createObjectURL(blob);
       const link=document.createElement('a');

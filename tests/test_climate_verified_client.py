@@ -32,6 +32,7 @@ def test_every_stage_uses_structured_json_and_evidence_entitlements():
             "bounded_analysis",
             "judgment_review",
             "recommendation_compiler",
+            "drafting_compiler",
             "conditional_review",
         )
     }
@@ -44,11 +45,24 @@ def test_every_stage_uses_structured_json_and_evidence_entitlements():
     assert "four independent dimensions" in prompts["judgment_review"]
     assert "500 to 800 words" in prompts["judgment_review"]
     assert "executive_readout" in prompts["judgment_review"]
-    assert "fewer than three" in prompts["recommendation_compiler"]
-    assert "at most three recommendation candidates" in prompts["recommendation_compiler"]
+    assert "overview_summary" in prompts["judgment_review"]
+    # The executive readout must not re-open with the project identification the
+    # overview_summary already states (duplication minimisation).
+    assert "the overview_summary already states" in prompts["judgment_review"]
+    assert "Return fewer when fewer pass" in prompts["recommendation_compiler"]
+    assert "at most five recommendation candidates" in prompts["recommendation_compiler"]
     assert "45 words or fewer" in prompts["recommendation_compiler"]
+    assert "exactly one current_document block" in prompts["drafting_compiler"]
+    assert "at most one operational_instrument block" in prompts["drafting_compiler"]
+    assert "Do not use the phrases focal point" in prompts["drafting_compiler"]
+    assert "Return only the current_document block" in prompts["drafting_compiler"]
+    assert "Use no digits in drafting text" in prompts["drafting_compiler"]
+    assert "Copy target_document and target_section exactly" in prompts["drafting_compiler"]
+    assert "Use no digits in decision, minimum_action" in prompts["recommendation_compiler"]
     assert "source-first verifier" in prompts["conditional_review"]
     assert "defects in the recommendation" in prompts["conditional_review"]
+    assert "Use only these defect reason codes" in prompts["conditional_review"]
+    assert "ROUTING_SCOPE_UNVERIFIED" in prompts["conditional_review"]
     assert "valid purpose of a recommendation" in prompts["conditional_review"]
     assert "affected REC-" in prompts["conditional_review"]
     assert "at most 12 reason_codes and 12 object_ids" in prompts["conditional_review"]
@@ -60,7 +74,7 @@ def test_every_stage_uses_structured_json_and_evidence_entitlements():
     )
     assert "no more than 12 existing responses" in prompts["bounded_analysis"]
     assert (
-        "judgment rationale to 75 words or fewer"
+        "three to five plain-language sentences"
         in prompts["judgment_review"]
     )
     assert (
@@ -80,6 +94,32 @@ def test_every_stage_uses_structured_json_and_evidence_entitlements():
         "preparation and implementation milestones"
         in prompts["judgment_review"]
     )
+
+
+def test_judgment_prompt_states_diagnose_vs_act_and_promotion_rule():
+    payload = {
+        "source_blocks": [], "facts": [], "context_evidence": [],
+        "analysis": {}, "judgments": {}, "recommendations": [],
+    }
+    prompt = build_verified_stage_prompt("judgment_review", payload).lower()
+    # Core-question answers stay diagnostic; the fix lives once, in a priority.
+    assert "do not propose the fix" in prompt
+    assert "ranked operational priority" in prompt
+    assert "material" in prompt
+    # One-finding-one-tier discipline.
+    assert "exactly one place" in prompt
+
+
+def test_common_prompt_carries_calibration_guardrails():
+    payload = {
+        "source_blocks": [], "facts": [], "context_evidence": [],
+        "analysis": {}, "judgments": {}, "recommendations": [],
+    }
+    prompt = build_verified_stage_prompt("fact_extraction", payload).lower()
+    # Acronym-from-source, verb fidelity, and verified-vs-attributed calibration.
+    assert "acronym" in prompt
+    assert "affected" in prompt
+    assert "unverified context" in prompt
 
 
 @dataclass
@@ -200,6 +240,9 @@ def test_client_emits_only_content_free_failed_attempt_diagnostics():
         "prompt_chars",
         "timeout_seconds",
         "remaining_seconds",
+        "provider_error_type",
+        "provider_failure_code",
+        "schema_path",
     }
     assert diagnostics[0]["stage"] == "judgment_review"
     assert diagnostics[0]["attempt"] == 1
@@ -208,6 +251,48 @@ def test_client_emits_only_content_free_failed_attempt_diagnostics():
     assert diagnostics[0]["timeout_seconds"] == 120
     assert diagnostics[0]["prompt_chars"] > 0
     assert "sensitive provider detail" not in str(diagnostics)
+
+
+def test_client_emits_bounded_schema_rejection_diagnostic():
+    class ProviderFailure(RuntimeError):
+        status_code = 400
+        body = {
+            "type": "error",
+            "error": {
+                "type": "invalid_request_error",
+                "message": (
+                    "Invalid schema at "
+                    "properties.recommendation_candidates.items.properties."
+                    "operational_instrument_drafting.type; "
+                    "secret project wording must not be logged"
+                ),
+            },
+        }
+
+    diagnostics = []
+    client = AnthropicVerifiedJsonClient(
+        _Sdk([ProviderFailure("unrestricted sensitive detail")]),
+        model="assessment-model",
+        diagnostic_sink=diagnostics.append,
+    )
+
+    with pytest.raises(ProviderFailure):
+        client.complete_json(
+            stage="recommendation_compiler",
+            payload={"recommendations": []},
+            timeout_seconds=240,
+            max_output_tokens=8_000,
+            max_transient_retries=0,
+        )
+
+    assert diagnostics[0]["provider_error_type"] == "invalid_request_error"
+    assert diagnostics[0]["provider_failure_code"] == "schema_rejected"
+    assert diagnostics[0]["schema_path"] == (
+        "properties.recommendation_candidates.items.properties."
+        "operational_instrument_drafting.type"
+    )
+    assert "secret project wording" not in str(diagnostics)
+    assert "unrestricted sensitive detail" not in str(diagnostics)
 
 
 def test_client_exhausted_retry_budget_preserves_original_failure(monkeypatch):

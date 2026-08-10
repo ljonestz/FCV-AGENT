@@ -32,6 +32,14 @@ def _extract_js_function(source: str, name: str) -> str:
     raise AssertionError(f"Unterminated body for {name}()")
 
 
+def _js_escape_helper() -> str:
+    return """
+const esc = value => String(value ?? '')
+  .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+  .replace(/\"/g,'&quot;').replace(/'/g,'&#039;');
+"""
+
+
 def test_stage3_readout_uses_wide_single_column_layout():
     html = INDEX.read_text(encoding="utf-8")
 
@@ -960,3 +968,828 @@ def test_priority_navigation_is_explicit_and_keyboard_operable():
     assert '<button type="button" class="ps-step' in source
     assert 'aria-pressed="${i===currentPriority?' in source
     assert "setAttribute('aria-pressed'" in source
+
+
+def test_verified_reader_visual_refresh_preserves_depth_and_orders_sections():
+    source = INDEX.read_text(encoding="utf-8")
+    renderer = _extract_js_function(source, "renderClimateVerifiedAssessment")
+    url_helper = _extract_js_function(source, "isPublicWorldBankHttpsUrl")
+    reader = {
+        "evidence_status": "preview; not approved",
+        "executive_readout": (
+            "The project needs climate-aware delivery rules. They should be agreed before appraisal.\n\n"
+            "These rules can protect access during shocks. They also support fairer decisions."
+        ),
+        "climate_sensitivity_rating": {
+            "question": "How climate-sensitive is this project?", "label": "Moderate", "level": 2,
+            "tone": "mid", "scale": ["Limited", "Moderate", "Strong"],
+            "description": "Climate and FCV factors need further design work.",
+            "overview_summary": "The current design identifies risks but needs clearer operating rules.",
+            "caveat": "This is an advisory assessment.",
+        },
+        "core_questions": [{
+            "question": "How could flooding and insecurity affect delivery?",
+            "source": "Climate-FCV guidance",
+            "summary": "Flooding can close access routes during insecure periods.\n\nDelivery plans should account for seasonal constraints.",
+            "watch": "Monitor whether seasonal access conditions change.",
+        }, {
+            "question": "Could benefit rules affect trust?",
+            "source": "Peace dividends guidance",
+            "summary": "BFMUs bring competing resource users into shared governance.",
+            "watch": "Monitor whether excluded groups can influence decisions.",
+        }, {
+            "question": "Could natural-resource pressure intensify tension?",
+            "source": "Defueling Conflict",
+            "summary": "Scarcity can sharpen disputes around access and authority.",
+            "watch": "Monitor whether local disputes change during dry seasons.",
+        }],
+        "priorities": [{
+            "rank": 1, "title": "Set seasonal delivery rules",
+            "narrative": (
+                "Seasonal flooding and insecurity can disrupt works. The project needs agreed triggers for pausing and restarting activity.\n\n"
+                "These triggers should be discussed with local delivery partners. They can reduce uneven access to project benefits."
+            ),
+            "current_document_drafting": {
+                "target_document": "Project Appraisal Document", "target_section": "Implementation arrangements",
+                "text": "Include seasonal access triggers in the implementation arrangements.",
+            },
+            "decision": "Agree the trigger approach before appraisal.",
+            "minimum_action": "Define the operational thresholds with delivery partners.",
+            "responsible_function": "Task Team Leader and implementing agency.",
+            "completion_evidence": "Approved seasonal delivery protocol.",
+        }, {
+            "rank": 2, "title": "Strengthen shared resource governance",
+            "narrative": "BFMUs bring competing resource users into shared governance.",
+            "decision": "Confirm representation and dispute-resolution rules.",
+            "minimum_action": "Agree transparent membership and escalation rules.",
+        }, {
+            "rank": 3, "title": "Sequence restoration with access agreements",
+            "narrative": "Restoration changes access to contested resources and therefore needs locally legitimate sequencing.",
+            "decision": "Sequence works after access agreements are documented.",
+            "minimum_action": "Record locally agreed access conditions.",
+        }, {
+            "rank": 4, "title": "Prepare for changing delivery conditions",
+            "narrative": "Complete drafting paragraph for priority four.",
+            "decision": "Review triggers at each implementation checkpoint.",
+            "minimum_action": "Assign a named owner for trigger reviews.",
+            "current_document_drafting": {
+                "target_document": "Project Appraisal Document",
+                "target_section": "Implementation arrangements",
+                "text": "Retain the complete priority-four drafting language.",
+            },
+        }],
+        "minor_climate_points": [{
+            "point": "Check local communication channels", "why": "Seasonal users may not receive timely updates.",
+            "how_to_check": "Confirm channels with community representatives.",
+        }, {
+            "point": "Confirm dry-season access", "why": "Access constraints may change who benefits.",
+            "how_to_check": "Check access assumptions with mobile groups.",
+        }],
+        "review_readiness_flags": [{
+            "flag": "Confirm the works calendar", "why_it_matters": "The current calendar does not show seasonal constraints.",
+            "suggested_verification": "Confirm the calendar before the decision meeting.",
+        }, {
+            "flag": "Confirm grievance escalation", "why_it_matters": "Escalation roles are not yet explicit.",
+            "suggested_verification": "Name the responsible function before appraisal.",
+        }],
+        "evidence_trail": {
+            "methodology_note": "The analysis used project evidence and the country bank.",
+            "pathways": [{"direction_label": "Climate and FCV on project", "chain_prose": "Flooding and insecurity reduce access."}],
+            "limitations": "The uploaded concept note does not yet include final implementation protocols.",
+            "evidence_key": [{"id": "PF-01", "type_label": "Project fact", "text": "Old technical code."}],
+            "diagnostics": {"candidate_count": 4, "admitted_count": 4, "final_count": 4},
+        },
+        "sources": [{
+            "title": "Climate-FCV guidance", "url": "https://documents.worldbank.org/climate-fcv",
+            "description": "Core climate and fragility guidance.",
+        }],
+        "advisory_notice": "Use this assessment alongside specialist judgement.",
+    }
+    script = f"""
+{_js_escape_helper()}
+const renderClimateRelevantGuidance = () => '';
+{url_helper}
+{renderer}
+const html = renderClimateVerifiedAssessment({json.dumps(reader)});
+const orderedSections = [
+  'Overview', 'Core climate-FCV questions', 'Ranked operational priorities',
+  'Points to check before the decision meeting', 'What to keep an eye on'
+];
+let previous = -1;
+for (const section of orderedSections) {{
+  const current = html.indexOf(section);
+  if (current === -1 || current <= previous) {{
+    throw new Error('section hierarchy is missing or out of order: ' + section + ' | ' + html);
+  }}
+  previous = current;
+}}
+const minorIndex = html.indexOf('Smaller climate and fragility points to consider');
+const documentIndex = html.indexOf('Document points to confirm');
+if (minorIndex < 0 || documentIndex < 0 || minorIndex >= documentIndex) {{
+  throw new Error('smaller climate points must appear before document points | ' + html);
+}}
+for (const expected of [
+  'Seasonal flooding and insecurity can disrupt works. The project needs agreed triggers for pausing and restarting activity.',
+  'These triggers should be discussed with local delivery partners. They can reduce uneven access to project benefits.',
+  'Include seasonal access triggers in the implementation arrangements.',
+  'Recommendation details', '<article class="climate-verified-assessment">',
+  '<section class="climate-report-section', '<header class="climate-section-heading">',
+  '<details class="climate-priority-detail">',
+  'Complete drafting paragraph for priority four.',
+  'Retain the complete priority-four drafting language.',
+  'identifies 4 main operational priorities',
+  'Method, limitations, and sources',
+  'The uploaded concept note does not yet include final implementation protocols.',
+  'Sources &amp; further reading'
+]) {{
+  if (!html.includes(expected)) throw new Error('missing preserved reader detail: ' + expected + ' | ' + html);
+}}
+if (!html.includes('class="climate-sens-rating climate-overview-panel"')) {{
+  throw new Error('overview panel missing | ' + html);
+}}
+if ((html.match(/climate-overview-panel/g)||[]).length !== 1) {{
+  throw new Error('overview must use one restrained panel | ' + html);
+}}
+if ((html.match(/<details class="climate-priority-card"/g)||[]).length !== 4) {{
+  throw new Error('all priorities must be native disclosures | ' + html);
+}}
+if ((html.match(/<details class="climate-priority-card" open/g)||[]).length !== 1) {{
+  throw new Error('only priority one should be open | ' + html);
+}}
+if ((html.match(/class="climate-item-number"/g)||[]).length < 7) {{
+  throw new Error('checks and watch items must be visibly numbered | ' + html);
+}}
+for (const removed of ['Evidence status:', 'Evidence key', 'Run diagnostics', 'final operational priorities are presented:']) {{
+  if (html.includes(removed)) throw new Error('reader clutter remains: ' + removed + ' | ' + html);
+}}
+const headingPattern = new RegExp('<header class="climate-section-heading"><span class="climate-section-number">([0-9]{{2}})</span><h2>([^<]+)</h2></header>', 'g');
+const headings = Array.from(html.matchAll(headingPattern), match => [match[1], match[2]]);
+const expectedHeadings = [
+  ['01', 'Overview'],
+  ['02', 'Core climate-FCV questions'],
+  ['03', 'Ranked operational priorities'],
+  ['04', 'Points to check before the decision meeting'],
+  ['05', 'What to keep an eye on'],
+  ['06', 'How this analysis was produced']
+];
+if (JSON.stringify(headings) !== JSON.stringify(expectedHeadings)) {{
+  throw new Error('numbered section sequence is not gap-free: ' + JSON.stringify(headings) + ' | ' + html);
+}}
+"""
+    result = subprocess.run(
+        ["node", "-e", script], capture_output=True, text=True, check=False
+    )
+    assert result.returncode == 0, result.stderr
+
+
+def test_verified_reader_fallback_numbers_methodology_last_without_unsafe_values():
+    source = INDEX.read_text(encoding="utf-8")
+    renderer = _extract_js_function(source, "renderClimateVerifiedAssessment")
+    reader = {
+        "executive_readout": "The project needs a bounded climate-FCV review.",
+        "evidence_trail": {
+            "methodology_note": "The analysis used project evidence and the country bank."
+        },
+    }
+    script = f"""
+{_js_escape_helper()}
+const renderClimateRelevantGuidance = () => '';
+{renderer}
+const html = renderClimateVerifiedAssessment({json.dumps(reader)});
+for (const expected of [
+  'The project needs a bounded climate-FCV review.',
+  'Method, limitations, and sources'
+]) {{
+  if (!html.includes(expected)) throw new Error('missing fallback content: ' + expected + ' | ' + html);
+}}
+for (const unsafe of ['undefined', '[object Object]']) {{
+  if (html.includes(unsafe)) throw new Error('unsafe rendered value: ' + unsafe + ' | ' + html);
+}}
+if (html.includes('Points to check before the decision meeting')) {{
+  throw new Error('empty points section should be suppressed | ' + html);
+}}
+const headingPattern = new RegExp('<header class="climate-section-heading"><span class="climate-section-number">([0-9]{{2}})</span><h2>([^<]+)</h2></header>', 'g');
+const headings = Array.from(html.matchAll(headingPattern), match => [match[1], match[2]]);
+const expectedHeadings = [
+  ['01', 'Overview'],
+  ['02', 'Core climate-FCV questions'],
+  ['03', 'Ranked operational priorities'],
+  ['04', 'How this analysis was produced']
+];
+if (JSON.stringify(headings) !== JSON.stringify(expectedHeadings)) {{
+  throw new Error('fallback section sequence is not gap-free or methodology is not final: ' + JSON.stringify(headings) + ' | ' + html);
+}}
+if (!html.includes('<details class="climate-fold"><summary>Method, limitations, and sources</summary>')) {{
+  throw new Error('methodology disclosure summary repeats or omits its contents label | ' + html);
+}}
+"""
+    result = subprocess.run(
+        ["node", "-e", script], capture_output=True, text=True, check=False
+    )
+    assert result.returncode == 0, result.stderr
+
+
+def test_public_world_bank_https_url_accepts_only_world_bank_hosts():
+    source = INDEX.read_text(encoding="utf-8")
+    helper = _extract_js_function(source, "isPublicWorldBankHttpsUrl")
+    script = f"""
+{helper}
+const accepted = [
+  'https://www.worldbank.org/report',
+  'https://documents1.worldbank.org/report'
+];
+const rejected = [
+  'http://www.worldbank.org/report',
+  'https://',
+  'https://localhost/report',
+  'https://127.0.0.1/report',
+  'https://[::1]/report',
+  'https://user:pass@www.worldbank.org/report',
+  'https://worldbank.org.evil.example/report',
+  'https://.worldbank.org/report',
+  'https://foo..worldbank.org/report',
+  'https://-bad.worldbank.org/report',
+  'https://bad-.worldbank.org/report',
+  'https://bad_name.worldbank.org/report',
+  'https://www.worldbank.org./report',
+  'https://worldbank.org:443/report',
+  'https://xn--bcher-kva.worldbank.org/report'
+];
+for (const url of accepted) {{
+  if (!isPublicWorldBankHttpsUrl(url)) throw new Error('rejected valid World Bank URL: '+url);
+}}
+for (const url of rejected) {{
+  if (isPublicWorldBankHttpsUrl(url)) throw new Error('accepted unsafe URL: '+url);
+}}
+"""
+    result = subprocess.run(
+        ["node", "-e", script], capture_output=True, text=True, check=False
+    )
+    assert result.returncode == 0, result.stderr
+
+
+def test_verified_reader_guidance_prefers_canonical_project_specific_items():
+    source = INDEX.read_text(encoding="utf-8")
+    helpers = "\n".join(
+        _extract_js_function(source, name)
+        for name in (
+            "isPublicWorldBankHttpsUrl",
+            "normalizeClimateSourceTitle",
+            "buildClimateGuidanceItems",
+            "renderClimateRelevantGuidance",
+        )
+    )
+    reader = {
+        "guidance_items": [{
+            "title": "Defueling Conflict",
+            "url": "https://documents.worldbank.org/defueling-conflict",
+            "practical_value": "Use this source to assess natural-resource governance risks.",
+            "project_use": "For this project, use it to test BFMU representation and dispute-resolution rules.",
+        }],
+        "core_questions": [{
+            "source": "FCV-Sensitive Climate Action Framework",
+            "summary": "This fallback content must not replace canonical guidance.",
+        }],
+        "sources": [{
+            "title": "FCV-Sensitive Climate Action Framework",
+            "url": "https://documents.worldbank.org/fcv-sensitive-framework",
+            "description": "A framework for climate action in FCV settings.",
+        }],
+    }
+    script = f"""
+{_js_escape_helper()}
+{helpers}
+const reader = {json.dumps(reader)};
+const html = renderClimateRelevantGuidance(reader);
+for (const expected of [
+  'Relevant WBG guidance for this project',
+  'Defueling Conflict',
+  'Use this source to assess natural-resource governance risks.',
+  'For this project, use it to test BFMU representation and dispute-resolution rules.'
+]) {{
+  if (!html.includes(expected)) throw new Error('missing relevant guidance content: '+expected+' | '+html);
+}}
+for (const omitted of ['Most useful for following up on', 'FCV-Sensitive Climate Action Framework']) {{
+  if (html.includes(omitted)) throw new Error('canonical guidance was not preferred: '+omitted+' | '+html);
+}}
+"""
+    result = subprocess.run(
+        ["node", "-e", script], capture_output=True, text=True, check=False
+    )
+    assert result.returncode == 0, result.stderr
+
+
+def test_verified_reader_guidance_fallback_is_bounded_and_project_specific():
+    source = INDEX.read_text(encoding="utf-8")
+    helpers = "\n".join(
+        _extract_js_function(source, name)
+        for name in (
+            "isPublicWorldBankHttpsUrl",
+            "normalizeClimateSourceTitle",
+            "buildClimateGuidanceItems",
+            "renderClimateRelevantGuidance",
+        )
+    )
+    reader = {
+        "core_questions": [
+            {"source": "Source A", "question": "Can representation remain inclusive?", "watch": "Check representation before appraisal."},
+            {"source": "Source A", "question": "Can access agreements reduce disputes?"},
+            {"source": "Source B", "question": "Can seasonal triggers protect continuity?"},
+            {"source": "Source C", "question": "Can transparent benefit rules support trust?"},
+            {"source": "Source D", "question": "Can monitoring identify changing tensions?"},
+            {"source": "Source E", "question": "Must this fifth source be capped?"},
+            {"source": "Unsafe source", "question": "Must this remain excluded?"},
+        ],
+        "sources": [
+            {"title": f"Source {label}", "url": f"https://documents.worldbank.org/{label.lower()}", "practical_value": f"Practical value {label}."}
+            for label in "ABCDE"
+        ] + [{"title": "Unsafe source", "url": "https://worldbank.org.evil.example/report", "description": "Unsafe."}],
+    }
+    script = f"""
+{_js_escape_helper()}
+{helpers}
+const reader = {json.dumps(reader)};
+const items = buildClimateGuidanceItems(reader);
+if (items.length !== 4) throw new Error('fallback must cap at four | '+JSON.stringify(items));
+if (items[0].title !== 'Source A') throw new Error('fallback ranking is not deterministic | '+JSON.stringify(items));
+if (items[0].project_use !== 'For this project, use the source to address this follow-up: Check representation before appraisal.') throw new Error('watch follow-up mismatch | '+JSON.stringify(items));
+const html = renderClimateRelevantGuidance(reader);
+for (const expected of ['Practical value A.', 'For this project,', 'Check representation before appraisal.']) {{
+  if (!html.includes(expected)) throw new Error('fallback prose missing: '+expected+' | '+html);
+}}
+for (const omitted of ['Source E', 'Unsafe source', 'Most useful for following up on']) {{
+  if (html.includes(omitted)) throw new Error('fallback promoted excluded source: '+omitted+' | '+html);
+}}
+const watchOnly = buildClimateGuidanceItems({{
+  core_questions:[{{source:'Watch source',watch:'Confirm local representation'}}],
+  sources:[{{title:'Watch source',url:'https://documents.worldbank.org/watch',description:'Watch guidance.'}}]
+}});
+if (watchOnly[0].project_use !== 'For this project, use the source to address this follow-up: Confirm local representation.') {{
+  throw new Error('watch-only fallback must remain grammatical | '+JSON.stringify(watchOnly));
+}}
+const empty = renderClimateRelevantGuidance({{core_questions:[],sources:reader.sources}});
+if (empty !== '') throw new Error('guidance must be omitted without current question matches | '+empty);
+"""
+    result = subprocess.run(
+        ["node", "-e", script], capture_output=True, text=True, check=False
+    )
+    assert result.returncode == 0, result.stderr
+
+
+def test_verified_reader_balanced_styles_cover_mobile_print_and_accessibility():
+    source = INDEX.read_text(encoding="utf-8")
+    for expected in (
+        ".climate-overview-panel{",
+        ".climate-priority-card>summary{",
+        ".climate-priority-card>summary:focus-visible{",
+        ".climate-numbered-item{",
+        "@media(max-width:760px)",
+        "@media print",
+        ".climate-priority-card:not([open])>.climate-priority-body",
+        ".climate-priority-detail:not([open])>:not(summary)",
+    ):
+        assert expected in source
+
+
+
+def test_print_expands_every_closed_reader_disclosure_with_its_content():
+    source = INDEX.read_text(encoding="utf-8")
+    renderer = _extract_js_function(source, "renderClimateVerifiedAssessment")
+    script = f"""
+{_js_escape_helper()}
+const renderClimateRelevantGuidance = () => '';
+{renderer}
+const html = renderClimateVerifiedAssessment({{
+  executive_readout:'Reader overview.',
+  priorities:[
+    {{rank:1,title:'First priority',narrative:'First narrative.',decision:'First decision.'}},
+    {{rank:2,title:'Second priority',narrative:'Closed priority narrative.',decision:'Closed priority decision.'}}
+  ],
+  evidence_trail:{{
+    methodology_note:'Closed method text.',
+    limitations:'Closed limitations text.'
+  }}
+}});
+for (const expected of [
+  '<details class="climate-priority-card"><summary>',
+  '<details class="climate-priority-detail"><summary>Recommendation details</summary>',
+  '<details class="climate-fold"><summary>Method, limitations, and sources</summary>',
+  'Closed priority narrative.', 'Closed priority decision.',
+  'Closed method text.', 'Closed limitations text.'
+]) {{
+  if (!html.includes(expected)) throw new Error('closed disclosure/content missing: '+expected+' | '+html);
+}}
+"""
+    result = subprocess.run(
+        ["node", "-e", script], capture_output=True, text=True, check=False
+    )
+    assert result.returncode == 0, result.stderr
+
+    print_block = source[source.index("@media print{"):source.index("\n\n    /* Buttons */")]
+    assert ".climate-priority-card:not([open])>.climate-priority-body" in print_block
+    assert ".climate-priority-detail:not([open])>:not(summary)" in print_block
+    assert ".climate-fold:not([open])>:not(summary)" in print_block
+
+
+def test_priority_summary_contains_one_valid_heading_with_rank_inside():
+    source = INDEX.read_text(encoding="utf-8")
+    renderer = _extract_js_function(source, "renderClimateVerifiedAssessment")
+    script = f"""
+{_js_escape_helper()}
+const renderClimateRelevantGuidance = () => '';
+{renderer}
+const html = renderClimateVerifiedAssessment({{
+  priorities:[{{rank:1,title:'Accessible priority',narrative:'Full priority prose.'}}]
+}});
+if (!html.includes('<summary><h3 class="pc-title"><span class="pc-rank">1</span><span class="pc-title-text">Accessible priority</span></h3></summary>')) {{
+  throw new Error('priority summary does not use one valid heading with rank inside | '+html);
+}}
+if (html.includes('</span><h3 class="pc-title">')) {{
+  throw new Error('rank remains a sibling of the summary heading | '+html);
+}}
+"""
+    result = subprocess.run(
+        ["node", "-e", script], capture_output=True, text=True, check=False
+    )
+    assert result.returncode == 0, result.stderr
+
+
+
+def test_fallback_question_id_dedup_matches_canonical_ranking():
+    source = INDEX.read_text(encoding="utf-8")
+    helpers = "\n".join(
+        _extract_js_function(source, name)
+        for name in (
+            "isPublicWorldBankHttpsUrl",
+            "normalizeClimateSourceTitle",
+            "buildClimateGuidanceItems",
+        )
+    )
+    script = f"""
+{helpers}
+const items=buildClimateGuidanceItems({{
+  core_questions:[
+    {{question_id:' Q-01 ',source:'Source A',watch:'First rendering.'}},
+    {{question_id:'q-01',source:'Source A',watch:'Changed duplicate rendering.'}},
+    {{question_id:'Q-02',source:'Source B',question:'Distinct B one?'}},
+    {{question_id:'Q-03',source:'Source B',question:'Distinct B two?'}}
+  ],
+  sources:[
+    {{title:'Source A',url:'https://documents.worldbank.org/a',description:'A value.'}},
+    {{title:'Source B',url:'https://documents.worldbank.org/b',description:'B value.'}}
+  ]
+}});
+if (items.map(item=>item.title).join(',') !== 'Source B,Source A') {{
+  throw new Error('question_id duplicates inflated fallback ranking | '+JSON.stringify(items));
+}}
+if (items[1].project_use.includes('Changed duplicate rendering.')) {{
+  throw new Error('later rendering of the same question_id was not removed | '+JSON.stringify(items));
+}}
+"""
+    result = subprocess.run(
+        ["node", "-e", script], capture_output=True, text=True, check=False
+    )
+    assert result.returncode == 0, result.stderr
+
+
+def test_fallback_content_dedup_and_summary_only_ranking_match_canonical():
+    source = INDEX.read_text(encoding="utf-8")
+    helpers = "\n".join(
+        _extract_js_function(source, name)
+        for name in (
+            "isPublicWorldBankHttpsUrl",
+            "normalizeClimateSourceTitle",
+            "buildClimateGuidanceItems",
+        )
+    )
+    script = f"""
+{helpers}
+const items=buildClimateGuidanceItems({{
+  core_questions:[
+    {{source:'Source A',summary:'Same summary',question:'First rendering?',watch:'Same watch.'}},
+    {{source:'Source A',summary:'Same summary',question:'Second rendering?',watch:'Same watch.'}},
+    {{source:'Source B',summary:'Usable row',question:'Usable question?'}},
+    {{source:'Source B',summary:'Summary-only ranking row'}}
+  ],
+  sources:[
+    {{title:'Source A',url:'https://documents.worldbank.org/a',description:'A value.'}},
+    {{title:'Source B',url:'https://documents.worldbank.org/b',description:'B value.'}}
+  ]
+}});
+if (items.map(item=>item.title).join(',') !== 'Source B,Source A') {{
+  throw new Error('content fallback ranking diverges from canonical | '+JSON.stringify(items));
+}}
+"""
+    result = subprocess.run(
+        ["node", "-e", script], capture_output=True, text=True, check=False
+    )
+    assert result.returncode == 0, result.stderr
+
+
+def test_fallback_sentence_completion_handles_closing_quotes_and_brackets():
+    source = INDEX.read_text(encoding="utf-8")
+    helpers = "\n".join(
+        _extract_js_function(source, name)
+        for name in (
+            "isPublicWorldBankHttpsUrl",
+            "normalizeClimateSourceTitle",
+            "buildClimateGuidanceItems",
+        )
+    )
+    cases = [
+        {
+            "title": "Curly quote",
+            "core_question": {"watch": "The project is \u201chigh risk.\u201d"},
+            "expected": "For this project, use the source to address this follow-up: The project is \u201chigh risk.\u201d",
+        },
+        {
+            "title": "Closing bracket",
+            "core_question": {"question": "Can the team verify this?]"},
+            "expected": "For this project, use the source to examine this question: Can the team verify this?]",
+        },
+        {
+            "title": "Straight double quote",
+            "core_question": {"watch": 'The project is "high risk."'},
+            "expected": 'For this project, use the source to address this follow-up: The project is "high risk."',
+        },
+        {
+            "title": "Straight apostrophe",
+            "core_question": {"watch": "The project is 'high risk.'"},
+            "expected": "For this project, use the source to address this follow-up: The project is 'high risk.'",
+        },
+        {
+            "title": "Closing brace",
+            "core_question": {"question": "Can the team verify this?}"},
+            "expected": "For this project, use the source to examine this question: Can the team verify this?}",
+        },
+    ]
+    script = f"""
+{helpers}
+const cases={json.dumps(cases)};
+for (const testCase of cases) {{
+  const items=buildClimateGuidanceItems({{
+    core_questions:[{{source:testCase.title,...testCase.core_question}}],
+    sources:[{{title:testCase.title,url:'https://documents.worldbank.org/punctuation',description:'Punctuation value.'}}]
+  }});
+  const actual=items[0]?.project_use;
+  if (actual !== testCase.expected) {{
+    throw new Error(`sentence completion mismatch for ${{testCase.title}} | expected=${{testCase.expected}} | actual=${{actual}}`);
+  }}
+}}
+"""
+    result = subprocess.run(
+        ["node", "-e", script], capture_output=True, text=True, check=False
+    )
+    assert result.returncode == 0, result.stderr
+
+
+def test_canonical_guidance_deduplicates_titles_and_skips_empty_cards():
+    source = INDEX.read_text(encoding="utf-8")
+    helpers = "\n".join(
+        _extract_js_function(source, name)
+        for name in (
+            "isPublicWorldBankHttpsUrl",
+            "normalizeClimateSourceTitle",
+            "buildClimateGuidanceItems",
+            "renderClimateRelevantGuidance",
+        )
+    )
+    reader = {
+      'guidance_items':[
+        {'title':'Defueling & Conflict','url':'https://documents.worldbank.org/first','practical_value':'First practical value.','project_use':'First project use.'},
+        {'title':'Defueling and Conflict','url':'https://documents.worldbank.org/duplicate','practical_value':'Duplicate practical value.','project_use':'Duplicate project use.'},
+        {'title':'   ','url':'https://documents.worldbank.org/blank','practical_value':'No meaningful title.','project_use':'Should not render.'},
+        {'title':'Empty prose','url':'https://documents.worldbank.org/empty','practical_value':'','project_use':''},
+        {'title':'One useful field','url':'https://documents.worldbank.org/one','practical_value':'Useful practical value.','project_use':''}
+      ]
+    }
+    script = f"""
+{_js_escape_helper()}
+{helpers}
+const html=renderClimateRelevantGuidance({json.dumps(reader)});
+if ((html.match(/Defueling &amp; Conflict/g)||[]).length !== 1) throw new Error('canonical title not rendered once | '+html);
+for (const omitted of ['Defueling and Conflict','Duplicate practical value.','No meaningful title.','Empty prose']) {{
+  if (html.includes(omitted)) throw new Error('invalid or duplicate canonical card rendered: '+omitted+' | '+html);
+}}
+for (const expected of ['First practical value.','First project use.','One useful field','Useful practical value.']) {{
+  if (!html.includes(expected)) throw new Error('valid canonical content omitted: '+expected+' | '+html);
+}}
+"""
+    result = subprocess.run(
+        ["node", "-e", script], capture_output=True, text=True, check=False
+    )
+    assert result.returncode == 0, result.stderr
+
+
+
+def test_zero_priority_reader_is_neutral_and_hides_diagnostic_verdicts():
+    source = INDEX.read_text(encoding="utf-8")
+    renderer = _extract_js_function(source, "renderClimateVerifiedAssessment")
+    script = f"""
+{_js_escape_helper()}
+const renderClimateRelevantGuidance = () => '';
+{renderer}
+const html=renderClimateVerifiedAssessment({{
+  priorities:[],
+  technical_annex:{{recommendation_admitted_count:3,semantic_reviewer_verdict:'block'}}
+}});
+if (!html.includes('No operational priorities were identified in this assessment. Review the core questions and points to check below.')) {{
+  throw new Error('neutral zero-priority message missing | '+html);
+}}
+for (const diagnostic of ['3 recommendation','candidate','held back','block','outcome:']) {{
+  if (html.includes(diagnostic)) throw new Error('zero-priority diagnostics leaked: '+diagnostic+' | '+html);
+}}
+"""
+    result = subprocess.run(
+        ["node", "-e", script], capture_output=True, text=True, check=False
+    )
+    assert result.returncode == 0, result.stderr
+
+
+
+def test_chromium_print_opens_exported_disclosures_and_restores_screen_state():
+    from playwright.sync_api import sync_playwright
+
+    source = INDEX.read_text(encoding="utf-8")
+    renderer = _extract_js_function(source, "renderClimateVerifiedAssessment")
+    url_helper = _extract_js_function(source, "isPublicWorldBankHttpsUrl")
+    body_script = f"""
+{_js_escape_helper()}
+const renderClimateRelevantGuidance = () => '';
+{url_helper}
+{renderer}
+console.log(renderClimateVerifiedAssessment({{
+  executive_readout:'Print lifecycle overview.',
+  priorities:[
+    {{rank:1,title:'Open priority',narrative:'Open priority prose.',decision:'Open decision.'}},
+    {{rank:2,title:'Closed priority',narrative:'Closed priority prose.',decision:'Closed decision.'}}
+  ],
+  evidence_trail:{{
+    methodology_note:'Method text for print.',
+    limitations:'Limitations text for print.'
+  }},
+  sources:[{{title:'Source text for print',url:'https://documents.worldbank.org/print-source',description:'Source description for print.'}}]
+}}));
+"""
+    body_result = subprocess.run(
+        ["node", "-e", body_script], capture_output=True, text=True, check=False
+    )
+    assert body_result.returncode == 0, body_result.stderr
+
+    try:
+        handler = _extract_js_function(source, "installClimatePrintDisclosureHandler")
+        script_builder = _extract_js_function(source, "climatePrintDisclosureScript")
+    except AssertionError:
+        handler_script = ""
+    else:
+        script_result = subprocess.run(
+            ["node", "-e", f"{handler}\n{script_builder}\nconsole.log(climatePrintDisclosureScript());"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert script_result.returncode == 0, script_result.stderr
+        handler_script = script_result.stdout
+
+    css = "\n".join(re.findall(r"<style[^>]*>([\s\S]*?)</style>", source))
+    exported_html = (
+        '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>'
+        + css
+        + "</style></head><body>"
+        + body_result.stdout
+        + '<details class="climate-guidance-disclosure"><summary>Closed guidance follow-up</summary><div>Closed guidance text for print.</div></details>'
+        + '<details class="climate-guidance-disclosure" open><summary>Pre-opened guidance follow-up</summary><div>Pre-opened guidance text for print.</div></details>'
+        + handler_script
+        + "</body></html>"
+    )
+
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch(headless=True)
+        page = browser.new_page()
+        page.set_content(exported_html, wait_until="load")
+        details = page.locator("details.climate-priority-card, details.climate-priority-detail, details.climate-fold, details.climate-guidance-disclosure")
+        prior_states = details.evaluate_all("elements => elements.map(element => element.open)")
+        assert prior_states == [True, False, False, False, False, False, True]
+        assert page.get_by_text("Open priority prose.").is_visible()
+        assert not page.get_by_text("Closed priority prose.").is_visible()
+        assert not page.get_by_text("Method text for print.").is_visible()
+        assert not page.get_by_text("Limitations text for print.").is_visible()
+        assert not page.get_by_text("Source text for print").is_visible()
+        assert not page.get_by_text("Closed guidance text for print.").is_visible()
+        assert page.get_by_text("Pre-opened guidance text for print.").is_visible()
+
+        page.emulate_media(media="print")
+        page.evaluate("window.dispatchEvent(new Event('beforeprint'))")
+        assert details.evaluate_all("elements => elements.every(element => element.open)")
+        assert page.get_by_text("Closed priority prose.").is_visible()
+        assert page.get_by_text("Closed decision.").is_visible()
+        assert page.get_by_text("Method text for print.").is_visible()
+        assert page.get_by_text("Limitations text for print.").is_visible()
+        assert page.get_by_text("Source text for print").is_visible()
+        assert page.get_by_text("Closed guidance text for print.").is_visible()
+        assert page.get_by_text("Pre-opened guidance text for print.").is_visible()
+
+        page.evaluate("window.dispatchEvent(new Event('afterprint'))")
+        page.emulate_media(media="screen")
+        assert details.evaluate_all("elements => elements.map(element => element.open)") == prior_states
+        assert page.get_by_text("Open priority prose.").is_visible()
+        assert not page.get_by_text("Closed priority prose.").is_visible()
+        assert not page.get_by_text("Method text for print.").is_visible()
+        assert not page.get_by_text("Closed guidance text for print.").is_visible()
+        assert page.get_by_text("Pre-opened guidance text for print.").is_visible()
+        browser.close()
+
+    download_helper = _extract_js_function(source, "downloadHTML")
+    assert "climatePrintDisclosureScript()" in download_helper
+
+
+def test_relevant_guidance_uses_one_closed_native_disclosure():
+    source = INDEX.read_text(encoding="utf-8")
+    helpers = "\n".join(
+        _extract_js_function(source, name)
+        for name in (
+            "isPublicWorldBankHttpsUrl",
+            "normalizeClimateSourceTitle",
+            "buildClimateGuidanceItems",
+            "renderClimateRelevantGuidance",
+        )
+    )
+    reader = {
+        "guidance_items": [{
+            "title": "Defueling Conflict",
+            "url": "https://documents.worldbank.org/defueling",
+            "practical_value": "Use this source to examine natural-resource governance.",
+            "project_use": "For this project, use it to check BFMU access rules.",
+        }],
+    }
+    script = f"""
+{_js_escape_helper()}
+{helpers}
+const html=renderClimateRelevantGuidance({json.dumps(reader)});
+if ((html.match(/<details class="climate-guidance-disclosure">/g)||[]).length !== 1) {{
+  throw new Error('guidance must use one closed disclosure | '+html);
+}}
+if (html.includes('<details class="climate-guidance-disclosure" open>')) {{
+  throw new Error('guidance disclosure must be closed initially | '+html);
+}}
+if (!html.includes('<summary>Where the team can go for more detailed follow-up</summary>')) {{
+  throw new Error('guidance summary is missing | '+html);
+}}
+if (!html.includes('<article class="climate-guidance-item"><h3>')) {{
+  throw new Error('guidance source must continue the section heading hierarchy | '+html);
+}}
+const body=html.split('<summary>')[1];
+if ((body.match(/<details/g)||[]).length !== 0) {{
+  throw new Error('individual sources must not become nested disclosures | '+html);
+}}
+"""
+    result = subprocess.run(
+        ["node", "-e", script], capture_output=True, text=True, check=False
+    )
+    assert result.returncode == 0, result.stderr
+
+
+def test_guidance_fallback_uses_short_verified_follow_up_not_summary_copy():
+    source = INDEX.read_text(encoding="utf-8")
+    helpers = "\n".join(
+        _extract_js_function(source, name)
+        for name in (
+            "isPublicWorldBankHttpsUrl",
+            "normalizeClimateSourceTitle",
+            "buildClimateGuidanceItems",
+        )
+    )
+    reader = {
+        "core_questions": [{
+            "source": "FCV-Sensitive Climate Action Framework",
+            "question": "Can delivery remain workable during floods?",
+            "summary": "This long assessment paragraph must not be copied into guidance.",
+            "watch": "Confirm U.N. access at Pariang, e.g. during flood closures",
+        }],
+        "sources": [{
+            "title": "FCV-Sensitive Climate Action Framework",
+            "url": "https://documents.worldbank.org/framework",
+            "practical_value": "Use this source to stress-test delivery.",
+        }],
+    }
+    script = f"""
+{helpers}
+const items=buildClimateGuidanceItems({json.dumps(reader)});
+const expected='For this project, use the source to address this follow-up: Confirm U.N. access at Pariang, e.g. during flood closures.';
+if (items.length !== 1 || items[0].project_use !== expected) {{
+  throw new Error('short project follow-up mismatch | '+JSON.stringify(items));
+}}
+if (JSON.stringify(items).includes('long assessment paragraph')) {{
+  throw new Error('full assessment summary leaked into guidance | '+JSON.stringify(items));
+}}
+"""
+    result = subprocess.run(
+        ["node", "-e", script], capture_output=True, text=True, check=False
+    )
+    assert result.returncode == 0, result.stderr
+
+
+def test_print_handler_includes_guidance_disclosure_state():
+    source = INDEX.read_text(encoding="utf-8")
+    handler = _extract_js_function(source, "installClimatePrintDisclosureHandler")
+    assert "details.climate-guidance-disclosure" in handler

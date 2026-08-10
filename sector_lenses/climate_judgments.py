@@ -9,7 +9,14 @@ from sector_lenses.climate_verified_contracts import ValidationIssue
 
 ALLOWED = {
     "relevance": {"high", "medium", "low", "unclear"},
-    "sensitivity": {"strong", "moderate", "limited", "unclear"},
+    "sensitivity": {
+        "very_strong",
+        "strong",
+        "moderate",
+        "limited",
+        "very_limited",
+        "unclear",
+    },
     "responsiveness": {
         "strong",
         "emerging",

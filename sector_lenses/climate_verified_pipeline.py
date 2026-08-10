@@ -15,6 +15,8 @@ import time
 from dataclasses import asdict, dataclass, replace
 from typing import Protocol
 
+import climate_question_bank
+
 from sector_lenses.climate_analysis import (
     ClimatePathway,
     ContextEvidenceRef,
@@ -36,13 +38,21 @@ from sector_lenses.climate_recommendations import (
     CandidateRecommendation,
     DraftingBlock,
     DraftingValidationContext,
+    READINESS_CATEGORIES,
     RecommendationScore,
     ReviewReadinessFlag,
+    _normalized_sentence,
     admit_and_rank,
     admission_failure_codes,
     admit_readiness_flags,
     normalize_drafting_blocks,
     numeric_tokens_in_text,
+    normalize_unsupported_drafting_precision,
+    normalize_optional_enhancement,
+    normalize_recommendation_references,
+    normalize_unverified_completion_actor,
+    normalize_unverified_drafting_actor,
+    normalize_unsupported_core_precision,
     unsupported_numeric_tokens,
     validate_recommendation,
 )
@@ -63,14 +73,22 @@ from sector_lenses.climate_verified_contracts import (
     CLIMATE_VERIFIED_SCHEMA_VERSION,
     EpistemicStatus,
 )
+from sector_lenses.climate_verified_schemas import (
+    SEMANTIC_REVIEW_REASON_CODES,
+)
 
+
+# Document-integrity findings never use missing_operational_home (a design gap,
+# not a document defect); align validation with the fact-stage prompt.
+_INTEGRITY_CATEGORIES = READINESS_CATEGORIES - {"missing_operational_home"}
 
 PROMPT_VERSIONS = {
     "fact_extraction": "climate-facts-v2.2",
     "bounded_analysis": "climate-analysis-v2.2",
     "judgment_review": "climate-judgments-v2.3",
     "recommendation_compiler": "climate-recommendations-v2.4",
-    "conditional_review": "climate-review-v2.4",
+    "conditional_review": "climate-review-v2.5",
+    "drafting_compiler": "climate-drafting-v1.0",
 }
 
 
@@ -119,6 +137,8 @@ def _bounded_reason_codes(value: object) -> list[str]:
             or not code[0].isalpha()
             or not code.replace("_", "").isalnum()
         ):
+            code = "SEMANTIC_REVIEW_REASON_INVALID"
+        if code not in SEMANTIC_REVIEW_REASON_CODES:
             code = "SEMANTIC_REVIEW_REASON_INVALID"
         if code not in codes:
             codes.append(code)
@@ -261,6 +281,127 @@ def _judgments(payload: dict[str, object]) -> ClimateJudgments:
     )
 
 
+_CORE_QUESTION_CAP = 7
+
+
+def _core_question_signals(facts: list) -> list[str]:
+    """Build a lowercase-able signal list from verified facts for bank triggering."""
+    signals: list[str] = []
+    for item in facts:
+        record = asdict(item) if hasattr(item, "__dataclass_fields__") else _mapping(item)
+        for value in record.values():
+            if isinstance(value, str) and value:
+                signals.append(value)
+            elif isinstance(value, (list, tuple)):
+                signals.extend(v for v in value if isinstance(v, str) and v)
+    return signals
+
+
+def _core_questions_to_answer(facts: list) -> list[dict[str, str]]:
+    """Pose triggered core-question-bank items plus deeper driver questions.
+
+    Combines up to six triggered core-bank candidates with the triggered
+    driver-depth questions (deduped by id) so the deeper political-economy probes
+    surface alongside the climate-interaction questions.
+    """
+    signals = _core_question_signals(facts)
+    plan = climate_question_bank.build_question_plan(signals)
+    candidates = list((plan.get("supplementary_candidates") or [])[:6])
+    candidates += climate_question_bank.select_triggered_drivers(signals)
+    posed: list[dict[str, str]] = []
+    seen: set[str] = set()
+    for question in candidates:
+        question_id = _text(question.get("id"))
+        if not question_id or question_id in seen:
+            continue
+        seen.add(question_id)
+        posed.append({
+            "id": question_id,
+            "theme": _text(question.get("theme")),
+            "question": _text(question.get("question")),
+            "source": _text(question.get("source")),
+        })
+    return posed
+
+
+def _admit_core_questions(
+    payload: dict[str, object],
+    allowed_ids: set[str],
+    known_ids: set[str],
+) -> list[dict[str, object]]:
+    """Keep only evidence-grounded answers to the posed core questions.
+
+    Evidence-gated: an answer survives only when its question_id was actually
+    posed and at least one cited evidence_id resolves to a known register ID.
+    Drops duplicates and caps the reader-facing set.
+    """
+    admitted: list[dict[str, object]] = []
+    seen: set[str] = set()
+    for record in _records(payload, "core_questions"):
+        question_id = _text(record.get("question_id"))
+        summary = _text(record.get("summary"))
+        if not question_id or question_id not in allowed_ids or question_id in seen:
+            continue
+        if not summary:
+            continue
+        evidence_ids = [e for e in _strings(record.get("evidence_ids")) if e in known_ids]
+        if not evidence_ids:
+            continue
+        seen.add(question_id)
+        admitted.append({
+            "question_id": question_id,
+            "theme": _text(record.get("theme")),
+            "question": _text(record.get("question")),
+            "source": _text(record.get("source")),
+            "summary": summary,
+            "evidence_ids": evidence_ids,
+            "watch": _text(record.get("watch")),
+        })
+        if len(admitted) >= _CORE_QUESTION_CAP:
+            break
+    return admitted
+
+
+def _admit_minor_climate_points(
+    payload: dict[str, object],
+    known_gap_ids: set[str],
+    admitted_gap_ids: set[str],
+    reserved_texts: set[str],
+) -> list[dict[str, object]]:
+    """Keep smaller climate/FCV points tied to a non-admitted residual gap.
+
+    Evidence-gated: each point must cite at least one residual_gap_id that exists
+    and is not already covered by an admitted priority. Deduped against reserved
+    texts (priority titles and readiness-flag text) and capped at three.
+    """
+    admitted: list[dict[str, object]] = []
+    seen: set[str] = set()
+    for record in _records(payload, "minor_climate_points"):
+        point = _text(record.get("point"))
+        if not point:
+            continue
+        normalized = _normalized_sentence(point)
+        if normalized in reserved_texts or normalized in seen:
+            continue
+        gap_ids = [
+            gap_id
+            for gap_id in _strings(record.get("residual_gap_ids"))
+            if gap_id in known_gap_ids and gap_id not in admitted_gap_ids
+        ]
+        if not gap_ids:
+            continue
+        seen.add(normalized)
+        admitted.append({
+            "point": point,
+            "why": _text(record.get("why")),
+            "how_to_check": _text(record.get("how_to_check")),
+            "residual_gap_ids": gap_ids,
+        })
+        if len(admitted) >= 3:
+            break
+    return admitted
+
+
 def _score(record: object) -> RecommendationScore:
     item = _mapping(record)
     return RecommendationScore(
@@ -287,7 +428,43 @@ def _drafting_block(record: object) -> DraftingBlock | None:
     )
 
 
+def _candidate_drafting_blocks(
+    record: dict[str, object],
+) -> tuple[DraftingBlock | None, DraftingBlock | None]:
+    """Map compact transport blocks to the stable domain fields."""
+
+    if "drafting_blocks" not in record:
+        return (
+            _drafting_block(record.get("current_document_drafting")),
+            _drafting_block(record.get("operational_instrument_drafting")),
+        )
+
+    raw_blocks = record.get("drafting_blocks")
+    if not isinstance(raw_blocks, list):
+        raise ValueError("drafting_blocks must be a list")
+    current = None
+    operational = None
+    for raw_block in raw_blocks:
+        item = _mapping(raw_block)
+        role = _text(item.get("drafting_role"))
+        block = _drafting_block(item)
+        if block is None:
+            raise ValueError("drafting block is empty")
+        if role == "current_document":
+            if current is not None:
+                raise ValueError("duplicate current-document drafting block")
+            current = block
+        elif role == "operational_instrument":
+            if operational is not None:
+                raise ValueError("duplicate operational drafting block")
+            operational = block
+        else:
+            raise ValueError("unsupported drafting role")
+    return current, operational
+
+
 def _candidate(record: dict[str, object]) -> CandidateRecommendation:
+    current_drafting, operational_drafting = _candidate_drafting_blocks(record)
     return CandidateRecommendation(
         recommendation_id=_text(record.get("recommendation_id")),
         title=_text(record.get("title")),
@@ -317,18 +494,15 @@ def _candidate(record: dict[str, object]) -> CandidateRecommendation:
         confidence=_text(record.get("confidence"), "low"),
         limitation=_text(record.get("limitation")),
         caution=_text(record.get("caution")),
-        current_document_drafting=_drafting_block(
-            record.get("current_document_drafting")
-        ),
-        operational_instrument_drafting=_drafting_block(
-            record.get("operational_instrument_drafting")
-        ),
+        current_document_drafting=current_drafting,
+        operational_instrument_drafting=operational_drafting,
         score=_score(record.get("score")),
         gate_results={
             str(key): bool(value)
             for key, value in _mapping(record.get("gate_results")).items()
         },
         supported_numeric_tokens=_strings(record.get("supported_numeric_tokens")),
+        narrative=_text(record.get("narrative")),
     )
 
 
@@ -454,6 +628,59 @@ def _readiness_flag(record: dict[str, object]) -> ReviewReadinessFlag:
         suggested_verification=_text(record.get("suggested_verification")),
         residual_gap_ids=_strings(record.get("residual_gap_ids")),
     )
+
+
+def _integrity_readiness_flags(
+    fact_payload: dict[str, object],
+    known_block_ids: set[str],
+) -> list[ReviewReadinessFlag]:
+    """Convert fact-stage document-integrity findings to readiness flags.
+
+    Kept only when the category is valid and every document_basis_id is a real
+    source block; this is the deterministic, source-linked path that guarantees
+    genuine defects surface even when the recommendation stage emits none.
+    """
+    kept: list[ReviewReadinessFlag] = []
+    for record in _records(fact_payload, "document_integrity_findings"):
+        try:
+            flag = _readiness_flag(record)
+        except (TypeError, ValueError):
+            continue
+        if flag.category not in _INTEGRITY_CATEGORIES:
+            continue
+        if not flag.document_basis_ids:
+            continue
+        if set(flag.document_basis_ids) - known_block_ids:
+            continue
+        kept.append(replace(flag, residual_gap_ids=()))
+    return kept
+
+
+def _merge_readiness_flags(
+    integrity: list[ReviewReadinessFlag],
+    model: tuple[ReviewReadinessFlag, ...],
+    *,
+    cap: int = 4,
+) -> tuple[ReviewReadinessFlag, ...]:
+    """Merge deterministic integrity findings ahead of model flags.
+
+    Integrity findings take priority (they are the confirm-before-gate items),
+    duplicates are collapsed by (category, normalised flag text), and the total
+    is capped to preserve the existing "no more than four" reader contract.
+    """
+    merged: list[ReviewReadinessFlag] = []
+    seen: set[tuple[str, str]] = set()
+    for flag in [*integrity, *model]:
+        if len(merged) == cap:
+            break
+        key = (flag.category, _normalized_sentence(flag.flag))
+        if key in seen:
+            continue
+        seen.add(key)
+        merged.append(flag)
+    # Suppression accounting counts a model flag deduped by an equivalent
+    # integrity flag as suppressed; the point still surfaces via the integrity flag.
+    return tuple(merged)
 
 
 def _bounded_pathways(
@@ -590,6 +817,7 @@ def run_verified_climate_pipeline(
     document_records = [_as_record(item) for item in source_documents]
     block_records = [_as_record(item) for item in source_blocks]
     context_records = [_as_record(item) for item in context_evidence]
+    known_block_ids = {block.block_id for block in source_blocks}
 
     fact_payload = _call(
         clients.assessment,
@@ -704,12 +932,14 @@ def run_verified_climate_pipeline(
         "evidence_limitations": analysis_payload.get("evidence_limitations", []),
     }
 
+    posed_core_questions = _core_questions_to_answer(facts)
     judgment_payload = _call(
         clients.assessment,
         "judgment_review",
         {
             "facts": [asdict(item) for item in facts],
             "analysis": analysis_record,
+            "core_questions_to_answer": posed_core_questions,
         },
         latency_ms,
         cancel_event=cancel_event,
@@ -717,6 +947,7 @@ def run_verified_climate_pipeline(
     )
     judgments = _judgments(judgment_payload)
     executive_readout = _text(judgment_payload.get("executive_readout"))
+    overview_summary = _text(judgment_payload.get("overview_summary"))
     known_ids = (
         fact_ids
         | {item.assertion_id for item in assertions}
@@ -724,6 +955,11 @@ def run_verified_climate_pipeline(
         | {item.pathway_id for item in pathways}
         | {item.gap_id for item in gaps}
         | {item.evidence_id for item in context_evidence}
+    )
+    core_questions = _admit_core_questions(
+        judgment_payload,
+        {question["id"] for question in posed_core_questions},
+        known_ids,
     )
     judgment_issues = validate_judgments(judgments, known_ids)
     if judgment_issues:
@@ -762,6 +998,60 @@ def run_verified_climate_pipeline(
         "recommendation_candidates",
         "priorities",
     )
+    candidates_missing_drafting = [
+        record
+        for record in raw_candidates
+        if not any(
+            key in record
+            for key in (
+                "drafting_blocks",
+                "current_document_drafting",
+                "operational_instrument_drafting",
+            )
+        )
+    ]
+    if candidates_missing_drafting:
+        drafting_payload = _call(
+            clients.assessment,
+            "drafting_compiler",
+            {
+                "facts": [asdict(item) for item in facts],
+                "analysis": analysis_record,
+                "judgments": asdict(judgments),
+                "recommendation_candidates": candidates_missing_drafting,
+                "current_document": doc_type,
+                "instrument_type": instrument_type,
+                "guidance_registry_version": GUIDANCE_REGISTRY_VERSION,
+                "operational_guidance": [
+                    item.as_record() for item in guidance
+                ],
+            },
+            latency_ms,
+            cancel_event=cancel_event,
+            deadline=deadline,
+        )
+        blocks_by_recommendation: dict[str, object] = {}
+        duplicate_drafting_ids: set[str] = set()
+        for drafting_set in _records(drafting_payload, "drafting_sets"):
+            recommendation_id = _text(
+                drafting_set.get("recommendation_id")
+            )
+            if not recommendation_id:
+                continue
+            if recommendation_id in blocks_by_recommendation:
+                duplicate_drafting_ids.add(recommendation_id)
+                blocks_by_recommendation.pop(recommendation_id, None)
+                continue
+            if recommendation_id not in duplicate_drafting_ids:
+                blocks_by_recommendation[recommendation_id] = (
+                    drafting_set.get("drafting_blocks")
+                )
+        for record in candidates_missing_drafting:
+            recommendation_id = _text(record.get("recommendation_id"))
+            if recommendation_id in blocks_by_recommendation:
+                record["drafting_blocks"] = blocks_by_recommendation[
+                    recommendation_id
+                ]
     recommendation_reasons: list[str] = []
     unsupported_numbers: list[str] = []
     candidate_suppressions: list[dict[str, object]] = []
@@ -788,16 +1078,24 @@ def run_verified_climate_pipeline(
                 )
             continue
         parsed_candidate_count += 1
-        candidate, drafting_repairs = normalize_drafting_blocks(candidate)
+        candidate, drafting_repairs = normalize_drafting_blocks(
+            candidate,
+            current_document=doc_type,
+        )
         repairs.extend(drafting_repairs)
         source_numeric_tokens = _source_linked_numeric_tokens(candidate, facts)
         candidate = replace(
             candidate,
             supported_numeric_tokens=source_numeric_tokens,
         )
-        for token in unsupported_numeric_tokens(candidate):
-            if token not in unsupported_numbers and len(unsupported_numbers) < 12:
-                unsupported_numbers.append(token)
+        candidate, enhancement_repairs = normalize_optional_enhancement(candidate)
+        repairs.extend(enhancement_repairs)
+        candidate, precision_repairs = normalize_unsupported_core_precision(candidate)
+        repairs.extend(precision_repairs)
+        candidate, drafting_precision_repairs = (
+            normalize_unsupported_drafting_precision(candidate)
+        )
+        repairs.extend(drafting_precision_repairs)
         drafting_context = DraftingValidationContext(
             known_ids=frozenset(known_ids),
             guidance_ids=frozenset(item.guidance_id for item in guidance),
@@ -812,20 +1110,52 @@ def run_verified_climate_pipeline(
             },
             project_fact_types={item.claim_id: item.claim_type for item in facts},
         )
+        candidate, actor_repairs = normalize_unverified_completion_actor(
+            candidate,
+            drafting_context,
+        )
+        repairs.extend(actor_repairs)
+        candidate, drafting_actor_repairs = normalize_unverified_drafting_actor(
+            candidate,
+            drafting_context,
+        )
+        repairs.extend(drafting_actor_repairs)
+        candidate, evidence_repairs = normalize_drafting_blocks(
+            candidate,
+            current_document=doc_type,
+            drafting_context=drafting_context,
+        )
+        repairs.extend(evidence_repairs)
+        candidate, ref_repairs = normalize_recommendation_references(
+            candidate, known_ids
+        )
+        repairs.extend(ref_repairs)
+        for token in unsupported_numeric_tokens(candidate):
+            if token not in unsupported_numbers and len(unsupported_numbers) < 12:
+                unsupported_numbers.append(token)
         issues = validate_recommendation(
             candidate, known_ids, drafting_context=drafting_context
         )
-        if issues:
+        # Only blocking issues suppress a recommendation. Advisory issues
+        # (e.g. references to standard WBG instruments, process milestones, or
+        # mandatory phrasing) are recorded for the technical annex but do not
+        # drop an otherwise-grounded recommendation.
+        blocking_issues = [issue for issue in issues if issue.blocking]
+        if blocking_issues:
             suppressed["recommendations"] += 1
-            reasons.extend(issue.code for issue in issues)
-            recommendation_reasons.extend(issue.code for issue in issues)
+            reasons.extend(issue.code for issue in blocking_issues)
+            recommendation_reasons.extend(
+                issue.code for issue in blocking_issues
+            )
             if len(candidate_suppressions) < 3:
                 candidate_suppressions.append(
                     {
                         "recommendation_id": candidate.recommendation_id,
                         "stage": "validation",
                         "reason_codes": list(
-                            dict.fromkeys(issue.code for issue in issues)
+                            dict.fromkeys(
+                                issue.code for issue in blocking_issues
+                            )
                         )[:12],
                         "unsupported_numeric_fields": (
                             _unsupported_numeric_fields(candidate)
@@ -834,7 +1164,7 @@ def run_verified_climate_pipeline(
                 )
                 precision_fields = _unsupported_precision_fields(
                     candidate,
-                    {issue.code for issue in issues},
+                    {issue.code for issue in blocking_issues},
                 )
                 if precision_fields:
                     candidate_suppressions[-1][
@@ -873,7 +1203,7 @@ def run_verified_climate_pipeline(
             flags.append(_readiness_flag(record))
         except (TypeError, ValueError):
             reasons.append("READINESS_FLAG_MALFORMED")
-    readiness = admit_readiness_flags(
+    model_readiness = admit_readiness_flags(
         flags,
         fact_ids,
         {item.statement for item in gaps},
@@ -882,7 +1212,18 @@ def run_verified_climate_pipeline(
             gap_id for item in priorities for gap_id in item.residual_gap_ids
         },
     )
-    suppressed["readiness_flags"] += len(raw_flags) - len(readiness)
+    integrity_flags = _integrity_readiness_flags(fact_payload, known_block_ids)
+    readiness = _merge_readiness_flags(integrity_flags, model_readiness, cap=4)
+    suppressed["readiness_flags"] += (
+        len(raw_flags) + len(integrity_flags) - len(readiness)
+    )
+    minor_climate_points = _admit_minor_climate_points(
+        judgment_payload,
+        {item.gap_id for item in gaps},
+        {gap_id for item in priorities for gap_id in item.residual_gap_ids},
+        {_normalized_sentence(item.title) for item in priorities}
+        | {_normalized_sentence(flag.flag) for flag in readiness},
+    )
 
     review_status = "passed"
     reviewer_invoked = False
@@ -1000,8 +1341,11 @@ def run_verified_climate_pipeline(
         "executive_readout": (
             executive_readout or deterministic_summary(judgments)
         ),
+        "overview_summary": overview_summary,
+        "core_questions": core_questions,
         "priorities": [asdict(item) for item in priorities],
         "review_readiness_flags": [asdict(item) for item in readiness],
+        "minor_climate_points": minor_climate_points,
         "validation": {
             "status": review_status,
             "reason_codes": list(unique_reasons),

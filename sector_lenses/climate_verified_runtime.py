@@ -23,6 +23,7 @@ from sector_lenses.climate_verified_pipeline import (
     run_verified_climate_pipeline,
 )
 from sector_lenses.climate_verified_render import (
+    attach_provenance,
     build_reader_model,
     validate_reader_model,
 )
@@ -62,6 +63,63 @@ class PreparedClimateSources:
     documents: tuple[SourceDocument, ...]
     blocks: tuple[SourceBlock, ...]
     warning_codes: tuple[str, ...]
+
+
+def resolve_verified_document_context(
+    prepared: PreparedClimateSources,
+    *,
+    doc_type: str,
+    instrument_type: str,
+) -> tuple[str, str]:
+    """Resolve missing routing context from explicit primary-source markers."""
+
+    resolved_document = str(doc_type or "Unknown").strip() or "Unknown"
+    resolved_instrument = (
+        str(instrument_type or "Unknown").strip() or "Unknown"
+    )
+    primary_ids = {
+        item.document_id
+        for item in prepared.documents
+        if item.relationship == "primary"
+    }
+    filenames = " ".join(
+        item.filename
+        for item in prepared.documents
+        if item.document_id in primary_ids
+    ).casefold()
+    source_text = " ".join(
+        item.text
+        for item in prepared.blocks
+        if item.document_id in primary_ids
+    ).casefold()
+
+    if resolved_document.casefold() == "unknown":
+        document_markers = (
+            (r"\bproject concept note\b|\bpcn\b", "PCN"),
+            (r"\bproject appraisal document\b|\bpad\b", "PAD"),
+            (r"\bproject information document\b|\bpid\b", "PID"),
+        )
+        for pattern, value in document_markers:
+            full_name_pattern = pattern.split("|")[0]
+            if re.search(pattern, filenames) or re.search(
+                full_name_pattern,
+                source_text,
+            ):
+                resolved_document = value
+                break
+
+    if resolved_instrument.casefold() == "unknown":
+        instrument_markers = (
+            (r"\binvestment project financing\b|\bipf\b", "IPF"),
+            (r"\bprogram(?:-| )for(?:-| )results\b|\bpforr\b|\bp4r\b", "PforR"),
+            (r"\bdevelopment policy (?:financing|operation)\b|\bdpo\b", "DPO"),
+        )
+        for pattern, value in instrument_markers:
+            if re.search(pattern, source_text):
+                resolved_instrument = value
+                break
+
+    return resolved_document, resolved_instrument
 
 
 def _sha256(value: str) -> str:
@@ -274,6 +332,11 @@ def run_verified_from_doc_parts(
     """Run verified-v2 from the final extraction and grounding contracts."""
 
     prepared = prepare_verified_sources(doc_parts)
+    doc_type, instrument_type = resolve_verified_document_context(
+        prepared,
+        doc_type=doc_type,
+        instrument_type=instrument_type,
+    )
     context = list(adapt_grounding_evidence(climate_grounding))
     context.extend(_uploaded_context_evidence(doc_parts))
     grounding = climate_grounding if isinstance(climate_grounding, dict) else {}
@@ -292,6 +355,11 @@ def run_verified_from_doc_parts(
     normalized = normalize_climate_assessment(assessment)
     reader = build_reader_model(normalized)
     reader_issues = validate_reader_model(reader)
+    # Project the evidence trail from the raw verified assessment (the pipeline's
+    # canonical output with facts/analysis/diagnostics), not `normalized`, so the
+    # trail never depends on the general normalizer's shape. Attached AFTER
+    # validation so it can never affect the reader-integrity gate.
+    attach_provenance(reader, assessment)
     if reader_issues:
         detail_suffix = ""
         if "EXECUTIVE_LENGTH_INVALID" in reader_issues:

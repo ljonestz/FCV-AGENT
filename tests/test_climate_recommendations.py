@@ -7,7 +7,10 @@ from sector_lenses.climate_recommendations import (
     ReviewReadinessFlag,
     admit_and_rank,
     admit_readiness_flags,
+    normalize_optional_enhancement,
+    normalize_recommendation_references,
     validate_recommendation,
+    normalize_unsupported_core_precision,
 )
 
 
@@ -24,6 +27,41 @@ def _draft(text: str = "Add proportionate continuity language to this section.")
     )
 
 
+
+
+def test_normalize_references_strips_stray_invalid_ref_and_survives():
+    # A single hallucinated reference should be stripped, not suppress the
+    # whole recommendation. The valid grounding (gap + response) remains, so
+    # RECOMMENDATION_REF_INVALID no longer fires.
+    candidate = replace(
+        _candidate("REC-01"),
+        instrument_claim_ids=("PF-010", "PF-999"),  # PF-999 not in KNOWN_IDS
+    )
+    repaired, repairs = normalize_recommendation_references(candidate, KNOWN_IDS)
+    assert repairs == ("RECOMMENDATION_INVALID_REFS_STRIPPED",)
+    assert repaired.instrument_claim_ids == ("PF-010",)
+    assert repaired.residual_gap_ids == ("RG-001",)
+    assert repaired.gate_results["residuality"] is True
+    codes = {issue.code for issue in validate_recommendation(repaired, KNOWN_IDS)}
+    assert "RECOMMENDATION_REF_INVALID" not in codes
+
+
+def test_normalize_references_downgrades_gate_when_grounding_lost():
+    # If every residual-gap reference is invalid, stripping leaves the
+    # recommendation ungrounded; the residuality gate is downgraded so it
+    # still fails admission rather than being admitted on a hollow claim.
+    candidate = replace(_candidate("REC-02"), residual_gap_ids=("RG-999",))
+    repaired, repairs = normalize_recommendation_references(candidate, KNOWN_IDS)
+    assert repairs == ("RECOMMENDATION_INVALID_REFS_STRIPPED",)
+    assert repaired.residual_gap_ids == ()
+    assert repaired.gate_results["residuality"] is False
+
+
+def test_normalize_references_noop_when_all_valid():
+    candidate = _candidate("REC-03")
+    repaired, repairs = normalize_recommendation_references(candidate, KNOWN_IDS)
+    assert repairs == ()
+    assert repaired is candidate
 
 
 def _candidate(
@@ -76,10 +114,10 @@ def test_admission_requires_six_points_and_medium_materiality():
     assert result[0].rank == 1
 
 
-def test_at_most_three_are_ranked_without_high_badges():
-    result = admit_and_rank([_candidate(f"REC-0{i}") for i in range(1, 5)])
-    assert len(result) == 3
-    assert [item.rank for item in result] == [1, 2, 3]
+def test_up_to_five_are_ranked_without_high_badges():
+    result = admit_and_rank([_candidate(f"REC-0{i}") for i in range(1, 7)])
+    assert len(result) == 5
+    assert [item.rank for item in result] == [1, 2, 3, 4, 5]
     assert not hasattr(result[0], "priority_label")
 
 
@@ -245,3 +283,49 @@ def test_structured_drafting_types_are_available():
     assert hasattr(recommendations, "DraftingBlock")
     assert hasattr(recommendations, "DraftingValidationContext")
     assert hasattr(recommendations, "normalize_drafting_blocks")
+
+
+def test_unsupported_optional_enhancement_is_dropped_without_weakening_core():
+    candidate = replace(
+        _candidate(),
+        enhanced_action="Review 14 additional sites.",
+        enhanced_activation="Activate within 30 days.",
+        supported_numeric_tokens=(),
+    )
+
+    normalized, repairs = normalize_optional_enhancement(candidate)
+
+    assert normalized.decision == candidate.decision
+    assert normalized.minimum_action == candidate.minimum_action
+    assert normalized.enhanced_action is None
+    assert normalized.enhanced_activation is None
+    assert repairs == ("ENHANCED_UNSUPPORTED_PRECISION_DROPPED",)
+
+
+def test_unsupported_core_number_is_removed_without_dropping_action():
+    candidate = replace(
+        _candidate(),
+        minimum_action="Update the 2023 risk framework for implementation.",
+        supported_numeric_tokens=(),
+    )
+
+    normalized, repairs = normalize_unsupported_core_precision(candidate)
+
+    assert normalized.decision == candidate.decision
+    assert normalized.minimum_action == (
+        "Update the risk framework for implementation."
+    )
+    assert normalized.completion_evidence == candidate.completion_evidence
+    assert repairs == ("RECOMMENDATION_UNSUPPORTED_PRECISION_REMOVED",)
+
+
+def test_unsupported_component_numbers_do_not_leave_dangling_grammar():
+    candidate = replace(
+        _candidate(),
+        minimum_action="Update Components 1 and 2 before the 2027 review.",
+        supported_numeric_tokens=(),
+    )
+
+    normalized, _ = normalize_unsupported_core_precision(candidate)
+
+    assert normalized.minimum_action == "Update Components before the review."

@@ -4,6 +4,7 @@ import pytest
 
 from sector_lenses.climate_verified_runtime import (
     prepare_verified_sources,
+    resolve_verified_document_context,
     run_verified_from_doc_parts,
 )
 
@@ -230,3 +231,34 @@ def test_runtime_blocks_reader_integrity_failure(monkeypatch):
             clients=object(),
             run_id="invalid-reader",
         )
+
+
+def test_unknown_context_resolves_from_explicit_primary_source_markers():
+    prepared = prepare_verified_sources([{
+        "label": "PROJECT DOCUMENT",
+        "name": "Project Concept Note (PCN)_Draft.docx",
+        "raw_text": (
+            "Financing Instrument: Investment Project Financing.\n\n"
+            "The project description defines the proposed activities."
+        ),
+    }])
+
+    assert resolve_verified_document_context(
+        prepared,
+        doc_type="Unknown",
+        instrument_type="Unknown",
+    ) == ("PCN", "IPF")
+
+
+def test_pcn_marker_does_not_invent_missing_instrument_type():
+    prepared = prepare_verified_sources([{
+        "label": "PROJECT DOCUMENT",
+        "name": "Project Concept Note (PCN)_Draft.docx",
+        "raw_text": "The project description defines the proposed activities.",
+    }])
+
+    assert resolve_verified_document_context(
+        prepared,
+        doc_type="Unknown",
+        instrument_type="Unknown",
+    ) == ("PCN", "Unknown")
