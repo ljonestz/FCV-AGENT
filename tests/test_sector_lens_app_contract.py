@@ -2,6 +2,8 @@
 
 import json
 import io
+import re
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -2417,12 +2419,10 @@ def test_verified_climate_ui_contract_is_ranked_and_multidimensional():
     assert "priority.priority_label" not in body
     assert "High priority" not in body
     assert "Smoke test: validates workflow completion only" in body
-    assert (
-        "passed the checks but ${admittedCount===1?'was':'were'} held back on review"
-        in body
-    )
-    assert "recommendation_admitted_count" in body
-    assert "semantic_reviewer_verdict" in body
+    assert "recommendation_admitted_count" not in body
+    assert "semantic_reviewer_verdict" not in body
+    assert "held back on review" not in body
+    assert "No operational priorities were identified in this assessment. Review the core questions and points to check below." in body
     assert "current_document_drafting" in body
     assert "operational_instrument_drafting" in body
     assert "Suggested drafting for the current document" in body
@@ -2432,11 +2432,54 @@ def test_verified_climate_ui_contract_is_ranked_and_multidimensional():
     # references are dropped from the user view entirely.
     assert "Recommendation details" in body
     assert "pc-narr" in body
-    assert "priority_summary" in body
-    assert "live_research_count" in body
+    assert "priority_summary" not in body
+    assert "Evidence key" not in body
+    assert "Run diagnostics" not in body
+    assert "Evidence status:" not in body
     assert "drafting_language" not in body
-    assert "recommendation_reason_codes" in body
+    assert "recommendation_reason_codes" not in body
     assert body.index("minorPointsHtml") < body.index("docFlagsHtml")
+    assert 'class="climate-sens-rating climate-overview-panel"' in body
+    assert '<details class="climate-priority-card"' in body
+    assert "Method, limitations, and sources" in body
+
+
+
+def test_landing_page_retains_ten_document_package_capacity():
+    html = (Path(app_module.__file__).parent / "index.html").read_text(
+        encoding="utf-8"
+    )
+    assert 'id="ipack" name="package_doc" multiple' in html
+    assert "const MAX_PACK = 10;" in html
+
+    match = re.search(r"function\s+selectFilesWithinUploadCap\s*\(", html)
+    assert match, "missing executable upload-cap helper"
+    brace = html.find("{", match.end())
+    depth = 0
+    helper = ""
+    for index in range(brace, len(html)):
+        if html[index] == "{":
+            depth += 1
+        elif html[index] == "}":
+            depth -= 1
+            if depth == 0:
+                helper = html[match.start():index + 1]
+                break
+    assert helper
+    script = f"""
+{helper}
+const files=Array.from({{length:11}},(_,index)=>({{name:`document-${{index+1}}.docx`}}));
+const selection=selectFilesWithinUploadCap(files,[],10);
+if(selection.accepted.length!==10) throw new Error('expected ten accepted | '+JSON.stringify(selection));
+if(selection.skipped!==1) throw new Error('expected eleventh rejected | '+JSON.stringify(selection));
+if(selection.accepted.some(file=>file.name==='document-11.docx')) throw new Error('eleventh file was accepted');
+const next=selectFilesWithinUploadCap([{{name:'document-12.docx'}}],selection.accepted,10);
+if(next.accepted.length!==0||next.skipped!==1) throw new Error('full package accepted another file | '+JSON.stringify(next));
+"""
+    result = subprocess.run(
+        ["node", "-e", script], capture_output=True, text=True, check=False
+    )
+    assert result.returncode == 0, result.stderr
 
 
 def test_verified_climate_html_export_reuses_refreshed_reader_and_styles():
@@ -2494,7 +2537,7 @@ def test_verified_climate_docx_route_uses_canonical_reader():
     document = Document(io.BytesIO(response.data))
     text = "\n".join(item.text for item in document.paragraphs)
     assert "Core climate-FCV questions" in text
-    assert "preview; not approved" in text
+    assert "preview; not approved" not in text
     assert "Smoke test: validates workflow completion only" in text
 
 
