@@ -31,7 +31,7 @@ def test_build_climate_guidance_items_uses_matched_south_sudan_findings_only():
         {"title": "Defueling Conflict", "url": "https://www.worldbank.org/defueling", "practical_value": "Must not be padded."},
     ]
     core_questions = [
-        {"question": "Question title must never appear.", "source": "fcv sensitive climate action framework", "summary": "Flooding around Pariang can interrupt BFMU access during the rainy season. A later sentence must not be included.\n\nA second paragraph is excluded.", "watch": "Track flood-season access constraints for BFMU teams."},
+            {"question": "Question title must never appear.", "source": "fcv sensitive climate action framework", "summary": "Flooding around Pariang can interrupt BFMU access during the rainy season. Delivery partners should update flood access plans before deployment.\n\nA second paragraph is excluded.", "watch": "Track flood-season access constraints for BFMU teams."},
         {"question": "Another title that must never appear.", "source": "Maximizing the Peace and Social Dividends of Climate Action", "summary": "Shared water points for host and displaced households can reduce tensions in Pariang.", "watch": "Check whether benefit allocation remains inclusive after shocks."},
         {"source": "maximizing the peace and social dividends of climate action", "summary": "Flood response should keep displaced households connected to services.", "watch": "Check whether benefit allocation remains inclusive after shocks."},
     ]
@@ -42,7 +42,7 @@ def test_build_climate_guidance_items_uses_matched_south_sudan_findings_only():
     assert "Flood response should keep displaced households connected to services." in guidance[0]["project_use"]
     assert guidance[0]["project_use"].count("Check whether benefit allocation remains inclusive after shocks.") == 1
     assert "Flooding around Pariang can interrupt BFMU access during the rainy season." in guidance[1]["project_use"]
-    assert "A later sentence" not in guidance[1]["project_use"]
+    assert "Delivery partners should update flood access plans before deployment." in guidance[1]["project_use"]
     assert "A second paragraph" not in guidance[1]["project_use"]
     assert "Question title must never appear" not in str(guidance)
     assert all(set(item) == {"title", "url", "practical_value", "project_use"} for item in guidance)
@@ -168,39 +168,23 @@ def test_build_climate_guidance_items_deduplicates_questions_and_catalog_sources
     assert [item["title"] for item in guidance] == [
         "Defueling Conflict", "FCV-Sensitive Climate Action Framework"
     ]
-def test_build_climate_guidance_items_bounds_abbreviations_and_closing_punctuation():
+def test_build_climate_guidance_items_preserves_complete_first_paragraph_only():
     source = {"title": "Eligible", "url": "https://www.worldbank.org/guide"}
-    cases = [
-        (
-            "U.S. agencies coordinate flood access. Later text is excluded.",
-            "U.S. agencies coordinate flood access.",
-            "Later text is excluded.",
-        ),
-        (
-            "Delivery adapts through local partners, etc. during floods. Later text is excluded.",
-            "Delivery adapts through local partners, etc. during floods.",
-            "Later text is excluded.",
-        ),
-        (
-            'The team said ("flooding delays BFMU access.") Next text is excluded.',
-            'The team said ("flooding delays BFMU access.")',
-            "Next text is excluded.",
-        ),
-        (
-            "Coordination is led by the U.N.",
-            "Coordination is led by the U.N.",
-            "",
-        ),
-    ]
+    summary = (
+        "U.S. agencies coordinate flood access, etc. during the rainy season. "
+        "Dr. Amina confirms the contingency.\n\n"
+        "This subsequent paragraph must not appear."
+    )
 
-    for summary, expected, excluded in cases:
-        guidance = build_climate_guidance_items(
-            [{"source": "Eligible", "summary": summary}], [source]
-        )
-        project_use = guidance[0]["project_use"]
-        assert expected in project_use
-        if excluded:
-            assert excluded not in project_use
+    guidance = build_climate_guidance_items(
+        [{"source": "Eligible", "summary": summary}], [source]
+    )
+
+    assert guidance[0]["project_use"] == (
+        "For this project, U.S. agencies coordinate flood access, etc. during the rainy season. "
+        "Dr. Amina confirms the contingency. "
+        "Use this guidance to refine project design and implementation choices."
+    )
 
 
 def test_build_climate_guidance_items_rejects_overlong_dns_authority():
@@ -228,46 +212,27 @@ def test_build_climate_guidance_items_deduplicates_by_question_id():
     assert [item["title"] for item in guidance] == [
         "Defueling Conflict", "FCV-Sensitive Climate Action Framework"
     ]
-def test_build_climate_guidance_items_preserves_exact_sentence_boundaries():
+def test_build_climate_guidance_items_preserves_exact_complete_first_paragraphs():
     source = {"title": "Eligible", "url": "https://www.worldbank.org/guide"}
     suffix = " Use this guidance to refine project design and implementation choices."
     cases = [
-        (
-            "e.g. Pariang and Bentiu require flood-access planning. Later text is excluded.",
-            "e.g. Pariang and Bentiu require flood-access planning.",
-        ),
-        (
-            "U.S. Government teams should prepare for shocks. Later text is excluded.",
-            "U.S. Government teams should prepare for shocks.",
-        ),
-        (
-            "Package No. 2 needs a delivery contingency. Later text is excluded.",
-            "Package No. 2 needs a delivery contingency.",
-        ),
-        (
-            "The project is \"high risk.\" Later text is excluded.",
-            "The project is \"high risk.\"",
-        ),
-        (
-            "The project is \u201chigh risk.\u201d Later text is excluded.",
-            "The project is \u201chigh risk.\u201d",
-        ),
-        (
-            "The project is [high risk.] Later text is excluded.",
-            "The project is [high risk.]",
-        ),
-        (
-            "Coordination is led by the U.N.",
-            "Coordination is led by the U.N.",
-        ),
+        "Coordination is led by the U.N.",
+        "The note covers access, etc.",
+        "Dr. Amina coordinates\nflood access planning.",
+        "Flood access may fail... teams need contingencies.",
+        "The project is \"high risk.\"",
+        "The project is \u201chigh risk.\u201d",
+        "The project is [high risk.]",
     ]
 
-    for summary, selected_sentence in cases:
+    for paragraph in cases:
         guidance = build_climate_guidance_items(
-            [{"source": "Eligible", "summary": summary}], [source]
+            [{"source": "Eligible", "summary": "\n\n" + paragraph + "\n\nSecond paragraph excluded."}],
+            [source],
         )
+        normalized = " ".join(paragraph.split())
         assert guidance[0]["project_use"] == (
-            "For this project, " + selected_sentence + suffix
+            "For this project, " + normalized + suffix
         )
 def test_build_reader_model_keeps_up_to_five_priorities():
     assessment = {

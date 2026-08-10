@@ -260,43 +260,13 @@ def _complete_sentence(value: object) -> str:
     return text if terminal_text and terminal_text[-1] in ".!?" else f"{text}."
 
 
-def _period_continues_abbreviation(text: str, index: int, sentence_end: int) -> bool:
-    """Identify non-terminal abbreviation forms without relying on case after it."""
+def _first_paragraph(value: object) -> str:
+    """Return the complete first non-empty paragraph from a verified finding."""
 
-    following = text[sentence_end:].lstrip()
-    if not following:
-        return False
-    if text[index + 1:index + 2].isalnum():
-        return True
-    token_match = re.search(r"([A-Za-z]+(?:\.[A-Za-z]+)*)\.$", text[:index + 1])
-    token = token_match.group(1) if token_match else ""
-    is_initialism = bool(re.fullmatch(r"(?:[A-Za-z]\.)+[A-Za-z]", token))
-    return (
-        is_initialism
-        or token.casefold() == "etc"
-        or (token.casefold() == "no" and following[:1].isdigit())
-    )
-
-
-def _first_sentence(value: object) -> str:
-    """Return a bounded sentence with abbreviation-aware terminal punctuation."""
-
-    first_paragraph = re.split(r"\r?\n\s*\r?\n", _text(value), maxsplit=1)[0].strip()
-    for index, character in enumerate(first_paragraph):
-        if character not in ".!?":
-            continue
-        sentence_end = index + 1
-        while (
-            sentence_end < len(first_paragraph)
-            and first_paragraph[sentence_end] in _SENTENCE_CLOSING_MARKS
-        ):
-            sentence_end += 1
-        if character == "." and _period_continues_abbreviation(
-            first_paragraph, index, sentence_end
-        ):
-            continue
-        return _complete_sentence(first_paragraph[:sentence_end])
-    return _complete_sentence(first_paragraph)
+    for paragraph in re.split(r"\r?\n\s*\r?\n", _text(value)):
+        if _text(paragraph):
+            return _complete_sentence(paragraph)
+    return ""
 
 
 def _distinct_texts(values: list[object], limit: int) -> list[str]:
@@ -371,7 +341,7 @@ def build_climate_guidance_items(
             limit=2,
         )
         summaries = _distinct_texts(
-            [_first_sentence(summary) for summary in matched_summaries],
+            [_first_paragraph(summary) for summary in matched_summaries],
             limit=2,
         )
         watches = _distinct_texts([question.get("watch") for question in matches], limit=1)
