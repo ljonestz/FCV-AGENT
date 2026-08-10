@@ -531,3 +531,119 @@ git push origin HEAD:refs/heads/codex/climate-country-bank-deploy
 ```
 
 Do not merge into the stable ITS branch or run another paid quality assessment without explicit user approval.
+
+### Task 6: Collapse and Shorten Relevant WBG Guidance
+
+**Files:**
+- Modify: `sector_lenses/climate_verified_render.py`
+- Modify: `index.html`
+- Modify: `tests/test_climate_verified_render.py`
+- Modify: `tests/test_climate_lens_frontend.py`
+- Modify: `tests/test_sector_lens_app_contract.py` only if the shared print/export contract requires it
+- Regenerate in place: `output/20260810_south-sudan-climate-fcv-refined-preview.html`
+
+- [ ] **Step 1: Write failing canonical guidance tests**
+
+Add tests that require `build_climate_guidance_items()` to retain source
+selection and ranking while emitting one controlled practical-value sentence
+and one project-specific follow-up sentence. Assert that full summary
+paragraphs, second matched summaries and generic tail copy are absent. Include
+fixtures with abbreviations, punctuation, HTML-sensitive text, an empty watch
+with a non-empty question fallback, and an empty watch/question pair that is
+not promoted.
+
+- [ ] **Step 2: Write failing canonical HTML and DOCX tests**
+
+Require canonical HTML to keep the numbered guidance section heading and wrap
+the entire body in exactly one closed
+`<details class="climate-guidance-disclosure">` whose summary is `Where the
+team can go for more detailed follow-up`. Assert that source articles are not
+nested disclosures. Require DOCX to contain the same short source prose in
+expanded form, including the follow-up heading.
+
+- [ ] **Step 3: Write failing live/standalone and print tests**
+
+Require `renderClimateRelevantGuidance()` to emit the same single closed native
+disclosure and short two-line source treatment for canonical readers and the
+old-reader fallback. Extend the real print-lifecycle test so the guidance
+disclosure opens on `beforeprint` and returns to its prior closed state on
+`afterprint`. Preserve a pre-opened state exactly.
+
+- [ ] **Step 4: Run the new tests and verify RED**
+
+```powershell
+& 'C:\WBG\Python313\python.exe' -m pytest tests\test_climate_verified_render.py tests\test_climate_lens_frontend.py tests\test_sector_lens_app_contract.py -q -p no:cacheprovider --basetemp='.tmp\pytest-guidance-follow-up-red-20260810'
+```
+
+Expected: failures show the current expanded guidance body, copied summary
+paragraphs and missing guidance selector in the print-state handler.
+
+- [ ] **Step 5: Implement the canonical short guidance contract**
+
+In `build_climate_guidance_items()`, replace summary-paragraph assembly with a
+small helper that selects the first distinct non-empty matched `watch` value and
+returns `For this project, use the source to address this follow-up: <watch>`.
+When no watch is available, use the first matched non-empty `question` as
+`For this project, use the source to examine this question: <question>`.
+Complete terminal punctuation without splitting or truncating sentences. Omit
+items that have neither a watch nor a question. Keep the practical-value field,
+ranking, source cap, source deduplication and URL validation unchanged.
+
+Wrap all canonical HTML guidance content in one closed native disclosure. Keep
+the numbered section heading outside it. In DOCX, add the follow-up heading and
+render all source content normally, with no collapsed Word content.
+
+- [ ] **Step 6: Implement matching live and standalone behavior**
+
+Mirror the canonical project-use helper in `buildClimateGuidanceItems()` for
+old saved readers. Make `renderClimateRelevantGuidance()` return one closed
+`details.climate-guidance-disclosure` containing the intro and every selected
+source. Add the guidance disclosure to the shared print selector so live and
+standalone exports open it for printing and restore its prior state afterward.
+Add scoped focus and mobile styles without adding per-source cards or nested
+disclosures.
+
+- [ ] **Step 7: Run focused tests and verify GREEN**
+
+Run the Step 4 command with basetemp
+`.tmp\pytest-guidance-follow-up-green-20260810`. Expected: all selected tests
+pass.
+
+- [ ] **Step 8: Regenerate the existing South Sudan preview without an LLM call**
+
+```powershell
+$env:PYTHONPATH='.'
+& 'C:\WBG\Python313\python.exe' output\20260810_generate-south-sudan-refined-preview.py
+```
+
+Assert the generated preview has one closed guidance disclosure, three source
+items, no copied full assessment paragraphs in guidance, and the existing seven
+core questions and four full priorities.
+
+- [ ] **Step 9: Complete browser and repository verification**
+
+Inspect the regenerated preview at desktop and a viewport no wider than 760 px.
+Check disclosure readability, keyboard focus, no horizontal overflow, print
+expansion and exact state restoration. Then run:
+
+```powershell
+& 'C:\WBG\Python313\python.exe' -m pytest tests -q -p no:cacheprovider --basetemp='.tmp\pytest-guidance-follow-up-all-20260810'
+git diff --check
+git status --short
+```
+
+Expected: every tracked test passes, `git diff --check` is clean, and existing
+untracked handover/output files remain preserved.
+
+- [ ] **Step 10: Obtain independent reviews and commit**
+
+Request one spec-compliance review and one code-quality review against the
+approved follow-up. Address findings, rerun affected tests, then commit only the
+tracked implementation/test/documentation changes with:
+
+```powershell
+git add -- sector_lenses/climate_verified_render.py index.html tests/test_climate_verified_render.py tests/test_climate_lens_frontend.py tests/test_sector_lens_app_contract.py docs/superpowers/specs/2026-08-10-climate-reader-guidance-hierarchy-refinement-design.md docs/superpowers/plans/2026-08-10-climate-reader-guidance-hierarchy-refinement.md
+git commit -m "feat: streamline climate guidance follow-up"
+```
+
+Do not push until the user asks or approves the prepared branch push.

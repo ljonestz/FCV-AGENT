@@ -96,6 +96,28 @@ For the South Sudan PCN, the intended form is:
 
 The source catalog is not fixed to those three. Other confirmed core WBG material, including the Conflict-Sensitive Climate Action Compendium and CCDR guidance, can appear when admitted questions make them more relevant. Missing or unverified public URLs remain in the further-reading list as unlinked references but are not promoted into the tailored guidance section.
 
+#### Approved follow-up: collapsed, shorter guidance
+
+Keep the numbered `Relevant WBG guidance for this project` report section, but
+place its complete body in one collapsed native disclosure titled `Where the
+team can go for more detailed follow-up`. Do not create a separate disclosure
+for each source.
+
+Each selected source has two short, high-level prose lines:
+
+1. one sentence explaining what the source offers, using the controlled
+   `practical_value` metadata already attached to the public WBG source; and
+2. one sentence explaining the specific project follow-up it supports, using
+   the first verified `watch` cue among that source's matched core questions,
+   with the matched core-question text as a fallback when no watch cue exists.
+
+Do not copy full core-question summary paragraphs into this section. Preserve
+the existing deterministic source selection, ranking, deduplication, four-item
+cap and public-URL validation. The same short prose appears in canonical HTML,
+live HTML, standalone HTML and DOCX. DOCX remains fully expanded. HTML print
+handling opens the single guidance disclosure and restores its exact prior
+screen state after printing.
+
 ### 7. How This Analysis Was Produced
 
 Retain one disclosure titled `Method, limitations, and sources`. It contains:
