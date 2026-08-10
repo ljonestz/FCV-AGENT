@@ -116,20 +116,53 @@ def _reader_with_trail():
     return model
 
 
-def test_annex_renders_in_html_and_docx():
+def test_evidence_limitations_project_through_attached_reader_to_html_and_docx():
+    model = build_reader_model(_reader_assessment())
+    before = validate_reader_model(model)
+    raw = _assessment()
+    raw["analysis"]["evidence_limitations"] = [
+        "The concept note does not include final site designs.",
+        "No separate conflict assessment was uploaded.",
+    ]
+
+    attach_provenance(model, raw)
+
+    assert validate_reader_model(model) == before
+    assert model["evidence_trail"]["limitations"] == (
+        "The concept note does not include final site designs. "
+        "No separate conflict assessment was uploaded."
+    )
+    html = render_reader_html(model)
+    assert "<h4>Limitations</h4>" in html
+    assert "The concept note does not include final site designs." in html
+    assert "No separate conflict assessment was uploaded." in html
+    stream = BytesIO()
+    write_reader_docx(model, stream)
+    stream.seek(0)
+    docx_text = "\n".join(p.text for p in Document(stream).paragraphs)
+    assert "Limitations" in docx_text
+    assert "The concept note does not include final site designs." in docx_text
+    assert "No separate conflict assessment was uploaded." in docx_text
+
+
+def test_method_sources_render_without_internal_evidence_or_diagnostics():
     model = _reader_with_trail()
     html = render_reader_html(model)
-    assert "How this analysis was produced" in html
-    assert "flood-prone fisheries" in html            # evidence key resolved text
+    assert "Method, limitations, and sources" in html
+    assert "flood-prone fisheries" not in html
+    assert "Evidence key" not in html
+    assert "Run diagnostics" not in html
     assert ("Sources &amp; further reading" in html) or ("Sources & further reading" in html)
     assert "FCV-Sensitive Climate Action Framework" in html  # a static framework
     stream = BytesIO()
     write_reader_docx(model, stream)
     stream.seek(0)
     text = "\n".join(p.text for p in Document(stream).paragraphs)
-    assert "How this analysis was produced" in text
+    assert "Method, limitations, and sources" in text
     assert "FCV-Sensitive Climate Action Framework" in text
-    assert "flood-prone fisheries" in text   # resolved evidence-key text in DOCX
+    assert "flood-prone fisheries" not in text
+    assert "Evidence key" not in text
+    assert "Run diagnostics" not in text
 
 
 def test_provenance_normalises_em_en_dashes_in_evidence_trail():
@@ -151,8 +184,8 @@ def test_provenance_normalises_em_en_dashes_in_evidence_trail():
     assert "not specified" in key["RG-1"]["text"]
 
 
-def test_lay_comprehensibility_annex_and_sources(tmp_path):
-    """WS1: plain-language intros, source descriptions, name-only marking, unified label."""
+def test_lay_comprehensibility_method_and_sources():
+    """Method retains plain-language pathways and useful source descriptions."""
     model = _reader_with_trail()
     html = render_reader_html(model)
     stream = BytesIO()
@@ -161,9 +194,9 @@ def test_lay_comprehensibility_annex_and_sources(tmp_path):
     docx_text = "\n".join(p.text for p in Document(stream).paragraphs)
 
     for text in (html, docx_text):
-        # Provenance intros explaining what pathways / the evidence key are.
+        # The reader retains a plain-language pathway explanation.
         assert "short chain from a cause to an effect" in text
-        assert "traced to its source" in text
+        assert "traced to its source" not in text
         # Source descriptions render for a lay reader.
         assert "do no harm" in text                       # FCV-Sensitive description
         assert "pathway to peace" in text                 # Defueling Conflict description

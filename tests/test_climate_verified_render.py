@@ -398,10 +398,11 @@ def test_visible_tiers_hide_routing_metadata_and_evidence_codes():
     )[0]
     assert "PW-001" not in priorities_section
     assert "PF-001" not in priorities_section
-    # But the evidence key in the provenance fold still resolves codes.
+    # Provenance remains attached internally but raw codes stay out of the reader.
     model = attach_provenance(model, assessment)
     html2 = render_reader_html(model)
-    assert "Evidence key" in html2
+    assert "Evidence key" not in html2
+    assert "PF-001" not in html2
 
 
 def test_quick_fixes_are_visible_not_collapsed():
@@ -425,12 +426,12 @@ def test_quick_fixes_are_visible_not_collapsed():
     }
     html = render_reader_html(build_reader_model(assessment))
     quick = html.split("Ranked operational priorities", 1)[1]
-    head, _, _annex = quick.partition("Technical annex")
-    assert "Reconcile the figure" in head
-    assert "Empty screening field" in head
-    assert "How to address" in head
+    assert "Reconcile the figure" in quick
+    assert "Empty screening field" in quick
+    assert "How to address" in quick
+    assert "Technical annex" not in quick
     # The quick-fix block is a visible section, not a collapsed <details>.
-    assert "<summary>Points to check" not in head
+    assert "<summary>Points to check" not in quick
 
 
 def test_watch_lines_render_in_standalone_section_not_inline():
@@ -568,7 +569,13 @@ def test_reader_has_four_dimensions_priority_cap_and_safe_annex():
     assert model["priority_summary"] == {
         "count": 4,
         "titles": ["Priority 1", "Priority 2", "Priority 3", "Priority 4"],
-        "statement": "4 final operational priorities are presented: Priority 1; Priority 2; Priority 3; Priority 4.",
+        "statement": (
+            "Drawing on the overview and core climate-FCV questions, the analysis "
+            "identifies 4 main operational priorities for strengthening climate "
+            "resilience, conflict sensitivity and implementation readiness in this "
+            "project. These are followed by secondary points to check before the "
+            "decision meeting and issues to keep under review as preparation advances."
+        ),
     }
     assert "overall_rating" not in model
     assert model["evidence_status"] == "preview; not approved"
@@ -742,6 +749,147 @@ def test_html_and_docx_share_headings_and_priority_order():
         "Operational instrument drafting"
     )
 
+
+def _reader_with_balanced_hierarchy_content() -> dict[str, object]:
+    assessment = _assessment()
+    assessment["minor_climate_points"] = [{
+        "point": "Confirm heat safeguards for field teams.",
+        "why": "Hotter working conditions may affect delivery.",
+        "how_to_check": "Check the ESMP and contractor procedures.",
+        "residual_gap_ids": ["RG-002"],
+    }]
+    assessment["core_questions"] = [
+        {
+            "question_id": "cq1",
+            "theme": "cq1_interaction",
+            "question": "Can shared institutions reduce resource tensions?",
+            "source": "Maximizing the Peace and Social Dividends of Climate Action",
+            "summary": "BFMUs bring competing resource users into shared governance.",
+            "evidence_ids": [],
+            "watch": "Track whether benefit-sharing remains inclusive.",
+        },
+        {
+            "question_id": "cq2",
+            "theme": "cq2_conflict_sensitivity",
+            "question": "Will delivery remain workable during floods?",
+            "source": "FCV-Sensitive Climate Action Framework",
+            "summary": "Flood access arrangements need to cover remote sites.",
+            "evidence_ids": [],
+            "watch": "Review combined flood-conflict contingencies.",
+        },
+    ]
+    assessment["priorities"][3]["narrative"] = (
+        "Complete drafting paragraph for priority four."
+    )
+    model = build_reader_model(assessment)
+    model["guidance_items"] = [{
+        "title": "Maximizing the Peace and Social Dividends of Climate Action",
+        "url": "https://www.worldbank.org/peace-dividends",
+        "practical_value": "Use this source to identify positive peace outcomes.",
+        "project_use": "For this project, BFMUs can strengthen shared governance.",
+    }]
+    model["sources"] = [{
+        "title": "Maximizing the Peace and Social Dividends of Climate Action",
+        "url": "https://www.worldbank.org/peace-dividends",
+        "description": "Guidance on peace and social dividends.",
+    }]
+    model["evidence_trail"] = {
+        "methodology_note": "The analysis used verified project evidence.",
+        "pathways": [{
+            "direction_label": "Climate -> FCV",
+            "chain_prose": "Flood disruption can increase resource tensions.",
+        }],
+        "limitations": "The analysis depends on the uploaded document's detail.",
+        "evidence_key": [{"id": "PF-001", "type_label": "Project fact", "text": "Hidden."}],
+        "diagnostics": {"candidate_count": 4, "final_count": 4},
+    }
+    return model
+
+
+def test_html_uses_balanced_hierarchy_without_reader_clutter():
+    model = _reader_with_balanced_hierarchy_content()
+    html = render_reader_html(model)
+
+    assert '<section class="climate-overview-panel climate-sens-rating"' in html
+    assert html.count("climate-overview-panel") == 1
+    assert '<section class="climate-overview-panel"><div' not in html
+    assert html.index("climate-overview-panel") < html.index("Executive readout")
+    assert html.count('<details class="climate-priority-disclosure" open>') == 1
+    assert html.count('<details class="climate-priority-disclosure">') == 3
+    assert '<summary><h3 class="climate-priority-title">1. Priority 1' in html
+    assert "Suggested targeted text for the current project document." in html
+    assert "Distinct operational instrument text for continuity." in html
+    assert "Complete drafting paragraph for priority four." in html
+    assert html.index("Smaller climate &amp; fragility points") < html.index(
+        "Document points to confirm"
+    )
+    assert "<h3>Smaller climate &amp; fragility points to consider</h3>" in html
+    assert "<h4>Confirm heat safeguards for field teams.</h4>" in html
+    assert "<h3>Document points to confirm</h3>" in html
+    assert "<h4>Two sections state different financing totals.</h4>" in html
+    assert html.count('class="climate-item-number"') == 4
+    assert html.count('<span class="climate-item-number">01</span>') == 3
+    assert '<span class="climate-item-number">02</span>' in html
+    assert html.index("Relevant WBG guidance for this project") < html.index(
+        "Method, limitations, and sources"
+    )
+    assert "Use this source to identify positive peace outcomes." in html
+    assert "For this project, BFMUs can strengthen shared governance." in html
+    assert "The analysis depends on the uploaded document&#x27;s detail." in html
+    assert "Sources &amp; further reading" in html
+    for removed in (
+        "Evidence status", "preview; not approved", "Technical annex",
+        "Evidence key", "Run diagnostics",
+    ):
+        assert removed not in html
+
+
+def test_html_heading_structure_is_ordered_and_priorities_navigable():
+    html = render_reader_html(_reader_with_balanced_hierarchy_content())
+
+    assert html.count('<summary><h3 class="climate-priority-title">') == 4
+    assert '<summary><h3 class="climate-priority-title">1. Priority 1' in html
+    assert "<h2>Points to check before the decision meeting</h2>" in html
+    assert "<h3>Smaller climate &amp; fragility points to consider</h3>" in html
+    assert "<h4>Confirm heat safeguards for field teams.</h4>" in html
+    assert "<h3>Document points to confirm</h3>" in html
+    assert "<h4>Two sections state different financing totals.</h4>" in html
+
+
+def test_docx_matches_balanced_reader_content_and_keeps_all_priorities():
+    model = _reader_with_balanced_hierarchy_content()
+    stream = BytesIO()
+    write_reader_docx(model, stream)
+    stream.seek(0)
+    text = "\n".join(paragraph.text for paragraph in Document(stream).paragraphs)
+
+    for index in range(1, 5):
+        assert f"Priority {index}" in text
+    assert "Suggested targeted text for the current project document." in text
+    assert "Distinct operational instrument text for continuity." in text
+    assert "Complete drafting paragraph for priority four." in text
+    assert text.index("Smaller climate & fragility points") < text.index(
+        "Document points to confirm"
+    )
+    assert "01 Confirm heat safeguards for field teams." in text
+    assert "01 Two sections state different financing totals." in text
+    assert "01 Can shared institutions reduce resource tensions?" in text
+    assert "02 Will delivery remain workable during floods?" in text
+    assert text.index("Relevant WBG guidance for this project") < text.index(
+        "Method, limitations, and sources"
+    )
+    assert "Use this source to identify positive peace outcomes." in text
+    assert "For this project, BFMUs can strengthen shared governance." in text
+    assert "https://www.worldbank.org/peace-dividends" in text
+    assert "The analysis depends on the uploaded document's detail." in text
+    assert "Sources & further reading" in text
+    for removed in (
+        "Evidence status", "preview; not approved", "Technical annex",
+        "Evidence key", "Run diagnostics",
+    ):
+        assert removed not in text
+
+
 def test_zero_priority_message_is_shared_by_html_and_docx():
     assessment = _assessment()
     assessment["priorities"] = []
@@ -756,8 +904,10 @@ def test_zero_priority_message_is_shared_by_html_and_docx():
     )
 
     message = "No recommendation passed the admission threshold for this run."
-    assert message in rendered
-    assert message in document_text
+    assert rendered.count(message) == 1
+    assert document_text.count(message) == 1
+    assert "No final operational priority was admitted" not in rendered
+    assert "No final operational priority was admitted" not in document_text
 
 
 def test_semantic_review_suppression_is_explained_in_html_and_docx():
@@ -783,8 +933,7 @@ def test_semantic_review_suppression_is_explained_in_html_and_docx():
 
     message = (
         "3 recommendation candidates passed deterministic admission but were "
-        "withheld after semantic review. Review outcome: revise. See the "
-        "technical annex."
+        "withheld after semantic review. Review outcome: revise."
     )
     assert message in rendered
     assert message in document_text

@@ -104,7 +104,6 @@ HEADINGS = (
     "Core climate-FCV questions",
     "Ranked operational priorities",
     "Points to check before the decision meeting",
-    "Technical annex",
     "What to keep an eye on",
 )
 # Lay-comprehensible intro shared by the points-to-check section across all three
@@ -116,8 +115,7 @@ POINTS_TO_CHECK_INTRO = (
 )
 # Reader-facing priority rows only. Model-internal routing/authority fields and
 # coded reference lists (routing_status, authority_basis, recommendation_basis,
-# *_ids) are deliberately excluded from every visible surface; the audit trail
-# lives in the "How this analysis was produced" fold instead.
+# *_ids) remain available to validation but are excluded from visible surfaces.
 PRIORITY_FIELDS = (
     ("Decision", "decision"),
     ("Minimum action", "minimum_action"),
@@ -395,7 +393,7 @@ def _no_priority_message(model: dict[str, object]) -> str:
         return (
             f"{admitted} recommendation {noun} passed deterministic admission "
             f"but {verb} withheld after semantic review. Review outcome: "
-            f"{verdict}. See the technical annex."
+            f"{verdict}."
         )
     return NO_RECOMMENDATION_MESSAGE
 
@@ -409,12 +407,13 @@ def _priority_summary(priorities: list[dict[str, Any]]) -> dict[str, object]:
             "semantic review."
         )
     else:
-        number_word = {1: "One", 2: "Two", 3: "Three"}.get(count, str(count))
-        noun = "priority is" if count == 1 else "priorities are"
+        noun = "priority" if count == 1 else "priorities"
         statement = (
-            f"{number_word} final operational {noun} presented: "
-            + "; ".join(titles)
-            + "."
+            "Drawing on the overview and core climate-FCV questions, the analysis "
+            f"identifies {count} main operational {noun} for strengthening climate "
+            "resilience, conflict sensitivity and implementation readiness in this "
+            "project. These are followed by secondary points to check before the "
+            "decision meeting and issues to keep under review as preparation advances."
         )
     return {"count": count, "titles": titles, "statement": statement}
 
@@ -560,8 +559,8 @@ _METHODOLOGY_NOTE = (
     "other in this setting, and checks every finding against those facts. It only "
     "offers a recommendation when the evidence clearly supports one, and a second "
     "automated check removes anything that over-reaches. Nothing here is invented: "
-    "each point is tied to a specific piece of evidence, shown with a short code "
-    "that the evidence key below explains."
+    "each point is tied to specific project evidence retained by the validation "
+    "pipeline, even though internal reference codes are not shown in the reader."
 )
 
 _ID_TYPE_LABELS = {
@@ -683,9 +682,18 @@ def build_evidence_trail(assessment: dict[str, object]) -> dict[str, object]:
         "bank_release": _text(assessment.get("bank_release_id")),
         "evidence_status": _text(assessment.get("evidence_status")),
     }
+    limitations_raw = analysis.get("evidence_limitations")
+    if isinstance(limitations_raw, (list, tuple)):
+        limitations = " ".join(
+            _text(item) for item in limitations_raw if _text(item)
+        )
+    else:
+        limitations = _text(limitations_raw)
+
     return {
         "methodology_note": _METHODOLOGY_NOTE,
         "pathways": pathways,
+        "limitations": limitations,
         "evidence_key": evidence_key,
         "diagnostics": diagnostics,
     }
@@ -873,8 +881,9 @@ def _sensitivity_rating_html(rating: dict[str, object]) -> str:
         else ""
     )
     return (
-        '<div class="climate-sens-rating" style="background:#F7F8FA;border:1px '
-        'solid #E2E6EC;border-radius:8px;padding:12px 14px;margin:0 0 14px">'
+        '<section class="climate-overview-panel climate-sens-rating" '
+        'style="background:#fff;border:1px solid #D7E1E7;border-left:5px solid '
+        f'{active};border-radius:10px;padding:18px 20px;margin:0 0 24px">'
         # Graphic first: the "How sensitive" question, rating label, and scale.
         + f'<p style="margin:0 0 2px"><strong>'
         f'{html.escape(_text(rating.get("question")))}</strong></p>'
@@ -886,7 +895,7 @@ def _sensitivity_rating_html(rating: dict[str, object]) -> str:
         + summary_html
         + '<p style="margin:6px 0 0;font-size:12px;color:#6b7280">'
         + html.escape(_text(rating.get("caveat")))
-        + "</p></div>"
+        + "</p></section>"
     )
 
 
@@ -906,13 +915,6 @@ def render_reader_html(model: dict[str, object]) -> str:
     rating = _mapping(model.get("climate_sensitivity_rating"))
     if rating:
         parts.append(_sensitivity_rating_html(rating))
-    evidence_status = _text(model.get("evidence_status"))
-    if evidence_status != "approved":
-        parts.append(
-            '<p class="climate-evidence-status">'
-            + html.escape(evidence_status)
-            + "</p>"
-        )
 
     parts.append(_heading(2, HEADINGS[0]))
     for _exec_para in re.split(r"\n\s*\n+", _text(model.get("executive_readout")).strip()):
@@ -948,7 +950,7 @@ def render_reader_html(model: dict[str, object]) -> str:
     parts.append(_heading(2, HEADINGS[2]))
     priorities = _records(model.get("priorities"))
     priority_summary = _mapping(model.get("priority_summary"))
-    if _text(priority_summary.get("statement")):
+    if priorities and _text(priority_summary.get("statement")):
         parts.append(
             '<p class="climate-priority-summary">'
             + html.escape(_text(priority_summary.get("statement")))
@@ -956,13 +958,21 @@ def render_reader_html(model: dict[str, object]) -> str:
         )
     if not priorities:
         parts.append(f"<p>{html.escape(_no_priority_message(model))}</p>")
-    for priority in priorities:
+    for priority_index, priority in enumerate(priorities):
         rank = _rank(priority.get("rank"))
         identifier = _text(priority.get("recommendation_id"))
-        parts.append('<section class="climate-priority">')
+        open_attribute = " open" if priority_index == 0 else ""
         parts.append(
-            _heading(3, f"{rank}. {_text(priority.get('title'))} ({identifier})")
+            f'<details class="climate-priority-disclosure"{open_attribute}>'
         )
+        parts.append(
+            '<summary><h3 class="climate-priority-title">'
+            + html.escape(
+                f"{rank}. {_text(priority.get('title'))} ({identifier})"
+            )
+            + "</h3></summary>"
+        )
+        parts.append('<div class="climate-priority-body">')
         narrative = _text(priority.get("narrative"))
         if narrative:
             for para in re.split(r"\n\s*\n+", narrative.strip()):
@@ -985,104 +995,134 @@ def render_reader_html(model: dict[str, object]) -> str:
                     "Operational instrument drafting",
                     priority.get("operational_instrument_drafting"),
                 ))
-        parts.append("</section>")
+        parts.append("</div></details>")
 
-    # Quick fixes: a visible tier (not a collapsed fold) so smaller issues get
-    # prominence with a brief how-to-address, rather than being buried.
-    parts.append(_heading(2, HEADINGS[3]))
-    parts.append(f"<p>{html.escape(POINTS_TO_CHECK_INTRO)}</p>")
-    doc_flags = _records(model.get("review_readiness_flags"))
-    if doc_flags:
-        parts.append("<h4>Document points to confirm</h4>")
-    for flag in doc_flags:
-        parts.append(_heading(3, _text(flag.get("flag"))))
-        parts.append(
-            "<p><strong>Why it matters:</strong> "
-            + html.escape(_text(flag.get("why_it_matters")))
-            + "</p><p><strong>Suggested verification:</strong> "
-            + html.escape(_text(flag.get("suggested_verification")))
-            + "</p>"
-        )
+    # Secondary points remain visible, prose-led and locally numbered.
     minor_points = _records(model.get("minor_climate_points"))
-    if minor_points:
-        parts.append("<h4>Smaller climate &amp; fragility points to consider</h4>")
-        parts.append(
-            "<p>These are smaller, climate- and fragility-specific points that were "
-            "not large enough to become a recommendation above, but are still worth "
-            "a look.</p>"
-        )
-        for point in minor_points:
-            parts.append(_heading(3, _text(point.get("point"))))
-            parts.append("<p>" + html.escape(_text(point.get("why"))) + "</p>")
+    doc_flags = _records(model.get("review_readiness_flags"))
+    if minor_points or doc_flags:
+        parts.append(_heading(2, HEADINGS[3]))
+        parts.append(f"<p>{html.escape(POINTS_TO_CHECK_INTRO)}</p>")
+        if minor_points:
+            parts.append("<h3>Smaller climate &amp; fragility points to consider</h3>")
             parts.append(
-                "<p><strong>How to address:</strong> "
-                + html.escape(_text(point.get("how_to_check")))
-                + "</p>"
+                "<p>These are smaller, climate- and fragility-specific points that were "
+                "not large enough to become a recommendation above, but are still worth "
+                "a look.</p>"
+            )
+            for index, point in enumerate(minor_points, start=1):
+                parts.append('<section class="climate-numbered-item">')
+                parts.append(
+                    f'<span class="climate-item-number">{index:02d}</span>'
+                    '<div class="climate-numbered-content">'
+                )
+                parts.append(_heading(4, _text(point.get("point"))))
+                parts.append("<p>" + html.escape(_text(point.get("why"))) + "</p>")
+                parts.append(
+                    "<p><strong>How to address:</strong> "
+                    + html.escape(_text(point.get("how_to_check")))
+                    + "</p></div></section>"
+                )
+
+        if doc_flags:
+            parts.append("<h3>Document points to confirm</h3>")
+        for index, flag in enumerate(doc_flags, start=1):
+            parts.append('<section class="climate-numbered-item">')
+            parts.append(
+                f'<span class="climate-item-number">{index:02d}</span>'
+                '<div class="climate-numbered-content">'
+            )
+            parts.append(_heading(4, _text(flag.get("flag"))))
+            parts.append(
+                "<p><strong>Why it matters:</strong> "
+                + html.escape(_text(flag.get("why_it_matters")))
+                + "</p><p><strong>Suggested verification:</strong> "
+                + html.escape(_text(flag.get("suggested_verification")))
+                + "</p></div></section>"
             )
 
-    # Watch: monitor-only points, consolidated from the core-question watch notes.
     watch_items = [
         (_text(q.get("question")), _text(q.get("watch")))
         for q in _records(model.get("core_questions"))
         if _text(q.get("watch"))
     ]
     if watch_items:
-        parts.append(_heading(2, HEADINGS[5]))
+        parts.append(_heading(2, HEADINGS[4]))
         parts.append(
             "<p>These are things to monitor as the project develops. They are not "
-            "actions to take now - just points to keep in view.</p><ul>"
+            "actions to take now - just points to keep in view.</p>"
         )
-        for question_text, watch_text in watch_items:
+        for index, (question_text, watch_text) in enumerate(watch_items, start=1):
             lead = (
                 f"<strong>{html.escape(question_text)}</strong> "
                 if question_text else ""
             )
-            parts.append(f"<li>{lead}{html.escape(watch_text)}</li>")
-        parts.append("</ul>")
+            parts.append(
+                '<section class="climate-numbered-item climate-watch-item">'
+                f'<span class="climate-item-number">{index:02d}</span>'
+                '<div class="climate-numbered-content">'
+                f"<p>{lead}{html.escape(watch_text)}</p>"
+                "</div></section>"
+            )
 
-    parts.append("<details><summary>")
-    parts.append(html.escape(HEADINGS[4]))
-    parts.append("</summary>")
-    for key, value in _mapping(model.get("technical_annex")).items():
-        parts.append(
-            f"<p><strong>{html.escape(key.replace('_', ' ').title())}:</strong> "
-            f"{html.escape(_text(value))}</p>"
-        )
-    parts.append("</details>")
+    guidance_items = [
+        item for item in _records(model.get("guidance_items"))
+        if _is_public_world_bank_url(item.get("url"))
+    ]
+    if guidance_items:
+        parts.append(_heading(2, "Relevant WBG guidance for this project"))
+        for item in guidance_items:
+            title = html.escape(_text(item.get("title")))
+            url = html.escape(_text(item.get("url")))
+            parts.append('<article class="climate-guidance-item">')
+            parts.append(
+                f'<h3><a href="{url}" target="_blank" rel="noopener">'
+                f"{title}</a></h3>"
+            )
+            practical_value = _text(item.get("practical_value"))
+            if practical_value:
+                parts.append(
+                    '<p class="climate-guidance-value">'
+                    + html.escape(practical_value)
+                    + "</p>"
+                )
+            project_use = _text(item.get("project_use"))
+            if project_use:
+                parts.append(
+                    '<p class="climate-guidance-use">'
+                    + html.escape(project_use)
+                    + "</p>"
+                )
+            parts.append("</article>")
 
     trail = _mapping(model.get("evidence_trail"))
-    if trail:
-        sources = model.get("sources") or []
-        parts.append('<details class="climate-fold"><summary>How this analysis was produced</summary>')
-        parts.append(f'<p>{html.escape(_text(trail.get("methodology_note")))}</p>')
+    sources = model.get("sources") or []
+    if trail or sources:
+        parts.append(
+            '<details class="climate-fold"><summary>'
+            "Method, limitations, and sources</summary>"
+        )
+        methodology_note = _text(trail.get("methodology_note"))
+        if methodology_note:
+            parts.append(f"<p>{html.escape(methodology_note)}</p>")
         pathways = _records(trail.get("pathways"))
         if pathways:
             parts.append("<h4>Pathways</h4>")
             parts.append(
                 "<p>Pathways are the specific ways climate pressures and fragility feed "
-                "into each other in this project. Each one is a short chain from a cause to "
-                "an effect.</p><ul>"
+                "into each other in this project. Each one is a short chain from a cause "
+                "to an effect.</p><ul>"
             )
-            for p in pathways:
+            for pathway in pathways:
                 parts.append(
-                    f'<li><strong>{html.escape(_text(p.get("direction_label")))}:</strong> '
-                    f'{html.escape(_text(p.get("chain_prose")))}</li>')
+                    f'<li><strong>{html.escape(_text(pathway.get("direction_label")))}:'
+                    f'</strong> {html.escape(_text(pathway.get("chain_prose")))}</li>'
+                )
             parts.append("</ul>")
-        key = _records(trail.get("evidence_key"))
-        if key:
-            parts.append("<h4>Evidence key</h4>")
-            parts.append(
-                "<p>The evidence key explains every reference code used above (for example "
-                "PF- for a project fact, RG- for a residual gap, ER- for an existing "
-                "response, PW- for a pathway), so each finding can be traced to its "
-                "source.</p><ul>"
-            )
-            for e in key:
-                parts.append(
-                    f'<li><strong>{html.escape(_text(e.get("id")))}</strong> '
-                    f'({html.escape(_text(e.get("type_label")))}): '
-                    f'{html.escape(_text(e.get("text")))}</li>')
-            parts.append("</ul>")
+        limitations = _field_text(trail.get("limitations"))
+        if limitations:
+            parts.append("<h4>Limitations</h4>")
+            parts.append(f"<p>{html.escape(limitations)}</p>")
         if sources:
             parts.append("<h4>Sources &amp; further reading</h4>")
             parts.append(
@@ -1090,30 +1130,25 @@ def render_reader_html(model: dict[str, object]) -> str:
                 "action in fragile and conflict-affected settings. Linked titles open the "
                 "World Bank publication page if you want to read more.</p><ul>"
             )
-            for s in sources:
-                sm = _mapping(s)
-                title = html.escape(_text(sm.get("title")))
-                desc = html.escape(_text(sm.get("description")))
-                url = sm.get("url")
+            for source in sources:
+                source_map = _mapping(source)
+                title = html.escape(_text(source_map.get("title")))
+                description = html.escape(_text(source_map.get("description")))
+                url = source_map.get("url")
                 if isinstance(url, str) and url.startswith("https://"):
-                    label = f'<a href="{html.escape(url)}" target="_blank" rel="noopener">{title}</a>'
-                    tail = f" - {desc}" if desc else ""
+                    label = (
+                        f'<a href="{html.escape(url)}" target="_blank" '
+                        f'rel="noopener">{title}</a>'
+                    )
+                    tail = f" - {description}" if description else ""
                 else:
-                    note = " (reference only; no public link is shown until one is confirmed)"
+                    note = (
+                        " (reference only; no public link is shown until one is confirmed)"
+                    )
                     label = title
-                    tail = f" - {desc}{note}" if desc else note
+                    tail = f" - {description}{note}" if description else note
                 parts.append(f"<li>{label}{tail}</li>")
             parts.append("</ul>")
-        d = _mapping(trail.get("diagnostics"))
-        if d:
-            parts.append('<details class="climate-fold"><summary>Run diagnostics</summary><ul>')
-            parts.append(f'<li>Recommendation candidates: {html.escape(str(d.get("candidate_count")))} '
-                         f'&rarr; admitted {html.escape(str(d.get("admitted_count")))} '
-                         f'&rarr; final {html.escape(str(d.get("final_count")))}</li>')
-            parts.append(f'<li>Conditional review: {html.escape(_text(d.get("reviewer_verdict")))}</li>')
-            parts.append(f'<li>Live-research items used: {html.escape(str(d.get("live_research_count")))}</li>')
-            parts.append(f'<li>Country-bank release: {html.escape(_text(d.get("bank_release")) or "none")}</li>')
-            parts.append("</ul></details>")
         parts.append("</details>")
 
     parts.append(
@@ -1174,9 +1209,6 @@ def write_reader_docx(model: dict[str, object], path: str | Path) -> Path:
         caveat = document.add_paragraph(_text(rating.get("caveat")))
         if caveat.runs:
             caveat.runs[0].italic = True
-    if _text(model.get("evidence_status")) != "approved":
-        _docx_field(document, "Evidence status", model.get("evidence_status"))
-
     document.add_heading(HEADINGS[0], level=1)
     for _exec_para in re.split(r"\n\s*\n+", _text(model.get("executive_readout")).strip()):
         _exec_para = _exec_para.strip()
@@ -1209,7 +1241,7 @@ def write_reader_docx(model: dict[str, object], path: str | Path) -> Path:
     document.add_heading(HEADINGS[2], level=1)
     priorities = _records(model.get("priorities"))
     priority_summary = _mapping(model.get("priority_summary"))
-    if _text(priority_summary.get("statement")):
+    if priorities and _text(priority_summary.get("statement")):
         document.add_paragraph(_text(priority_summary.get("statement")))
     if not priorities:
         document.add_paragraph(_no_priority_message(model))
@@ -1238,33 +1270,39 @@ def write_reader_docx(model: dict[str, object], path: str | Path) -> Path:
                     priority.get("operational_instrument_drafting"),
                 )
 
-    document.add_heading(HEADINGS[3], level=1)
-    document.add_paragraph(POINTS_TO_CHECK_INTRO)
-    doc_flags = _records(model.get("review_readiness_flags"))
-    if doc_flags:
-        document.add_heading("Document points to confirm", level=2)
-    for flag in doc_flags:
-        document.add_heading(_text(flag.get("flag")), level=3)
-        _docx_field(document, "Why it matters", flag.get("why_it_matters"))
-        _docx_field(
-            document,
-            "Suggested verification",
-            flag.get("suggested_verification"),
-        )
     minor_points = _records(model.get("minor_climate_points"))
-    if minor_points:
-        document.add_heading(
-            "Smaller climate & fragility points to consider", level=2
-        )
-        document.add_paragraph(
-            "These are smaller, climate- and fragility-specific points that were "
-            "not large enough to become a recommendation above, but are still "
-            "worth a look."
-        )
-        for point in minor_points:
-            document.add_heading(_text(point.get("point")), level=3)
-            document.add_paragraph(_text(point.get("why")))
-            _docx_field(document, "How to address", point.get("how_to_check"))
+    doc_flags = _records(model.get("review_readiness_flags"))
+    if minor_points or doc_flags:
+        document.add_heading(HEADINGS[3], level=1)
+        document.add_paragraph(POINTS_TO_CHECK_INTRO)
+        if minor_points:
+            document.add_heading(
+                "Smaller climate & fragility points to consider", level=2
+            )
+            document.add_paragraph(
+                "These are smaller, climate- and fragility-specific points that were "
+                "not large enough to become a recommendation above, but are still "
+                "worth a look."
+            )
+            for index, point in enumerate(minor_points, start=1):
+                document.add_heading(
+                    f"{index:02d} {_text(point.get('point'))}", level=3
+                )
+                document.add_paragraph(_text(point.get("why")))
+                _docx_field(document, "How to address", point.get("how_to_check"))
+
+        if doc_flags:
+            document.add_heading("Document points to confirm", level=2)
+        for index, flag in enumerate(doc_flags, start=1):
+            document.add_heading(
+                f"{index:02d} {_text(flag.get('flag'))}", level=3
+            )
+            _docx_field(document, "Why it matters", flag.get("why_it_matters"))
+            _docx_field(
+                document,
+                "Suggested verification",
+                flag.get("suggested_verification"),
+            )
 
     watch_items = [
         (_text(q.get("question")), _text(q.get("watch")))
@@ -1272,23 +1310,38 @@ def write_reader_docx(model: dict[str, object], path: str | Path) -> Path:
         if _text(q.get("watch"))
     ]
     if watch_items:
-        document.add_heading(HEADINGS[5], level=1)
+        document.add_heading(HEADINGS[4], level=1)
         document.add_paragraph(
             "These are things to monitor as the project develops. They are not "
             "actions to take now - just points to keep in view."
         )
-        for question_text, watch_text in watch_items:
+        for index, (question_text, watch_text) in enumerate(watch_items, start=1):
             prefix = f"{question_text}: " if question_text else ""
-            document.add_paragraph(f"{prefix}{watch_text}")
+            document.add_paragraph(f"{index:02d} {prefix}{watch_text}")
 
-    document.add_heading(HEADINGS[4], level=1)
-    for key, value in _mapping(model.get("technical_annex")).items():
-        _docx_field(document, key.replace("_", " ").title(), value)
+    guidance_items = [
+        item for item in _records(model.get("guidance_items"))
+        if _is_public_world_bank_url(item.get("url"))
+    ]
+    if guidance_items:
+        document.add_heading("Relevant WBG guidance for this project", level=1)
+        for item in guidance_items:
+            document.add_heading(_text(item.get("title")), level=2)
+            practical_value = _text(item.get("practical_value"))
+            if practical_value:
+                document.add_paragraph(practical_value)
+            project_use = _text(item.get("project_use"))
+            if project_use:
+                document.add_paragraph(project_use)
+            document.add_paragraph(_text(item.get("url")))
 
     trail = _mapping(model.get("evidence_trail"))
-    if trail:
-        document.add_heading("How this analysis was produced", level=1)
-        document.add_paragraph(_text(trail.get("methodology_note")))
+    sources = model.get("sources") or []
+    if trail or sources:
+        document.add_heading("Method, limitations, and sources", level=1)
+        methodology_note = _text(trail.get("methodology_note"))
+        if methodology_note:
+            document.add_paragraph(methodology_note)
         pathways = _records(trail.get("pathways"))
         if pathways:
             document.add_heading("Pathways", level=2)
@@ -1297,48 +1350,38 @@ def write_reader_docx(model: dict[str, object], path: str | Path) -> Path:
                 "each other in this project. Each one is a short chain from a cause to an "
                 "effect."
             )
-            for p in pathways:
+            for pathway in pathways:
                 document.add_paragraph(
-                    f'{_text(p.get("direction_label"))}: {_text(p.get("chain_prose"))}')
-        key = _records(trail.get("evidence_key"))
-        if key:
-            document.add_heading("Evidence key", level=2)
-            document.add_paragraph(
-                "The evidence key explains every reference code used above (for example "
-                "PF- for a project fact, RG- for a residual gap, ER- for an existing "
-                "response, PW- for a pathway), so each finding can be traced to its source."
-            )
-            for e in key:
-                document.add_paragraph(
-                    f'{_text(e.get("id"))} ({_text(e.get("type_label"))}): {_text(e.get("text"))}')
-        sources = model.get("sources") or []
+                    f'{_text(pathway.get("direction_label"))}: '
+                    f'{_text(pathway.get("chain_prose"))}'
+                )
+        limitations = _field_text(trail.get("limitations"))
+        if limitations:
+            document.add_heading("Limitations", level=2)
+            document.add_paragraph(limitations)
         if sources:
             document.add_heading("Sources & further reading", level=2)
             document.add_paragraph(
                 "This analysis draws on the World Bank's core guidance on climate action "
                 "in fragile and conflict-affected settings."
             )
-            for s in sources:
-                sm = _mapping(s)
-                title = _text(sm.get("title"))
-                desc = _text(sm.get("description"))
-                url = sm.get("url")
+            for source in sources:
+                source_map = _mapping(source)
+                title = _text(source_map.get("title"))
+                description = _text(source_map.get("description"))
+                url = source_map.get("url")
                 if isinstance(url, str) and url.startswith("https://"):
-                    tail = f" - {desc}" if desc else ""
+                    tail = f" - {description}" if description else ""
                     line = f"{title}{tail} ({url})"
                 else:
-                    note = " (reference only; no public link is shown until one is confirmed)"
-                    line = f"{title} - {desc}{note}" if desc else f"{title}{note}"
+                    note = (
+                        " (reference only; no public link is shown until one is confirmed)"
+                    )
+                    line = (
+                        f"{title} - {description}{note}"
+                        if description else f"{title}{note}"
+                    )
                 document.add_paragraph(line)
-        d = _mapping(trail.get("diagnostics"))
-        if d:
-            document.add_heading("Run diagnostics", level=2)
-            document.add_paragraph(
-                f'Recommendation candidates: {d.get("candidate_count")} -> '
-                f'admitted {d.get("admitted_count")} -> final {d.get("final_count")}; '
-                f'conditional review: {_text(d.get("reviewer_verdict"))}; '
-                f'live-research items used: {d.get("live_research_count")}; '
-                f'country-bank release: {_text(d.get("bank_release")) or "none"}.')
 
     document.add_paragraph(_text(model.get("advisory_notice")))
     document.save(output)

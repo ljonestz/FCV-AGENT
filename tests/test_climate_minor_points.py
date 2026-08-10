@@ -7,6 +7,7 @@ from docx import Document
 
 from sector_lenses.climate_verified_pipeline import _admit_minor_climate_points
 from sector_lenses.climate_verified_render import (
+    POINTS_TO_CHECK_INTRO,
     build_reader_model,
     render_reader_html,
     write_reader_docx,
@@ -79,6 +80,10 @@ def test_reader_and_render_show_two_points_to_check_groups():
     assert "Document points to confirm" in html
     assert "Smaller climate &amp; fragility points to consider" in html
     assert "Heat exposure for site workers is not addressed" in html
+    assert html.index("Smaller climate &amp; fragility points") < html.index(
+        "Document points to confirm"
+    )
+    assert html.count('class="climate-item-number"') == 2
     stream = BytesIO()
     write_reader_docx(model, stream)
     stream.seek(0)
@@ -86,6 +91,26 @@ def test_reader_and_render_show_two_points_to_check_groups():
     assert "Document points to confirm" in text
     assert "Smaller climate & fragility points to consider" in text
     assert "Heat exposure for site workers is not addressed" in text
+    assert text.index("Smaller climate & fragility points") < text.index(
+        "Document points to confirm"
+    )
+    assert "01 Heat exposure for site workers is not addressed" in text
+    assert "01 Placeholder value in the results framework" in text
+
+
+def test_reader_suppresses_points_section_when_both_groups_are_empty():
+    model = build_reader_model(_assessment(minor=False))
+    model["review_readiness_flags"] = []
+
+    html = render_reader_html(model)
+    assert "Points to check before the decision meeting" not in html
+    assert POINTS_TO_CHECK_INTRO not in html
+    stream = BytesIO()
+    write_reader_docx(model, stream)
+    stream.seek(0)
+    text = "\n".join(p.text for p in Document(stream).paragraphs)
+    assert "Points to check before the decision meeting" not in text
+    assert POINTS_TO_CHECK_INTRO not in text
 
 
 def test_render_without_minor_points_omits_second_group():
