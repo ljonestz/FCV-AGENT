@@ -228,6 +228,47 @@ def test_build_climate_guidance_items_deduplicates_by_question_id():
     assert [item["title"] for item in guidance] == [
         "Defueling Conflict", "FCV-Sensitive Climate Action Framework"
     ]
+def test_build_climate_guidance_items_preserves_exact_sentence_boundaries():
+    source = {"title": "Eligible", "url": "https://www.worldbank.org/guide"}
+    suffix = " Use this guidance to refine project design and implementation choices."
+    cases = [
+        (
+            "e.g. Pariang and Bentiu require flood-access planning. Later text is excluded.",
+            "e.g. Pariang and Bentiu require flood-access planning.",
+        ),
+        (
+            "U.S. Government teams should prepare for shocks. Later text is excluded.",
+            "U.S. Government teams should prepare for shocks.",
+        ),
+        (
+            "Package No. 2 needs a delivery contingency. Later text is excluded.",
+            "Package No. 2 needs a delivery contingency.",
+        ),
+        (
+            "The project is \"high risk.\" Later text is excluded.",
+            "The project is \"high risk.\"",
+        ),
+        (
+            "The project is \u201chigh risk.\u201d Later text is excluded.",
+            "The project is \u201chigh risk.\u201d",
+        ),
+        (
+            "The project is [high risk.] Later text is excluded.",
+            "The project is [high risk.]",
+        ),
+        (
+            "Coordination is led by the U.N.",
+            "Coordination is led by the U.N.",
+        ),
+    ]
+
+    for summary, selected_sentence in cases:
+        guidance = build_climate_guidance_items(
+            [{"source": "Eligible", "summary": summary}], [source]
+        )
+        assert guidance[0]["project_use"] == (
+            "For this project, " + selected_sentence + suffix
+        )
 def test_build_reader_model_keeps_up_to_five_priorities():
     assessment = {
         "executive_readout": "One. Two. Three.",

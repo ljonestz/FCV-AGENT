@@ -247,31 +247,54 @@ def _is_public_world_bank_url(value: object) -> bool:
     return hostname == "worldbank.org" or hostname.endswith(".worldbank.org")
 
 
+_SENTENCE_CLOSING_MARKS = "\"')]}\u201d\u2019"
+
+
 def _complete_sentence(value: object) -> str:
     """Normalize a verified prose fragment into one complete sentence."""
 
     text = re.sub(r"\s+", " ", _text(value)).strip()
     if not text:
         return ""
-    return text if text[-1] in ".!?" else f"{text}."
+    terminal_text = text.rstrip(_SENTENCE_CLOSING_MARKS)
+    return text if terminal_text and terminal_text[-1] in ".!?" else f"{text}."
+
+
+def _period_continues_abbreviation(text: str, index: int, sentence_end: int) -> bool:
+    """Identify non-terminal abbreviation forms without relying on case after it."""
+
+    following = text[sentence_end:].lstrip()
+    if not following:
+        return False
+    if text[index + 1:index + 2].isalnum():
+        return True
+    token_match = re.search(r"([A-Za-z]+(?:\.[A-Za-z]+)*)\.$", text[:index + 1])
+    token = token_match.group(1) if token_match else ""
+    is_initialism = bool(re.fullmatch(r"(?:[A-Za-z]\.)+[A-Za-z]", token))
+    return (
+        is_initialism
+        or token.casefold() == "etc"
+        or (token.casefold() == "no" and following[:1].isdigit())
+    )
 
 
 def _first_sentence(value: object) -> str:
-    """Return a bounded sentence while preserving abbreviations and closing marks."""
+    """Return a bounded sentence with abbreviation-aware terminal punctuation."""
 
     first_paragraph = re.split(r"\r?\n\s*\r?\n", _text(value), maxsplit=1)[0].strip()
-    closing_marks = '"\'??)]}'
     for index, character in enumerate(first_paragraph):
         if character not in ".!?":
             continue
         sentence_end = index + 1
-        while sentence_end < len(first_paragraph) and first_paragraph[sentence_end] in closing_marks:
+        while (
+            sentence_end < len(first_paragraph)
+            and first_paragraph[sentence_end] in _SENTENCE_CLOSING_MARKS
+        ):
             sentence_end += 1
-        if character == ".":
-            direct_next = first_paragraph[index + 1:index + 2]
-            following = first_paragraph[sentence_end:].lstrip()[:1]
-            if direct_next.isalnum() or following.islower():
-                continue
+        if character == "." and _period_continues_abbreviation(
+            first_paragraph, index, sentence_end
+        ):
+            continue
         return _complete_sentence(first_paragraph[:sentence_end])
     return _complete_sentence(first_paragraph)
 
