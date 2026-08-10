@@ -1,0 +1,30 @@
+{
+  "country": "South Sudan",
+  "instrument": "IPF",
+  "document_stage": "PID",
+  "geographies": ["Silver Lake County"],
+  "sectors": ["health", "WASH"],
+  "project_elements": ["rural water points", "solar-powered health clinics"],
+  "affected_groups": ["children under five", "pregnant women"],
+  "institutions": ["county water board", "Ministry of Health"],
+  "systems_assets": ["boreholes", "primary health centres"],
+  "documented_hazards": ["extreme heat", "water scarcity"],
+  "time_horizons": ["near-term"],
+  "signal_metadata": [
+    {"field": "geographies", "canonical_value": "Silver Lake County", "source": "document", "confidence": "high"},
+    {"field": "sectors", "canonical_value": "health", "source": "document", "confidence": "high"},
+    {"field": "sectors", "canonical_value": "WASH", "source": "document", "confidence": "high"},
+    {"field": "project_elements", "canonical_value": "rural water points", "source": "document", "confidence": "high"},
+    {"field": "project_elements", "canonical_value": "solar-powered health clinics", "source": "document", "confidence": "high"},
+    {"field": "affected_groups", "canonical_value": "children under five", "source": "document", "confidence": "high"},
+    {"field": "affected_groups", "canonical_value": "pregnant women", "source": "document", "confidence": "high"},
+    {"field": "institutions", "canonical_value": "county water board", "source": "document", "confidence": "high"},
+    {"field": "institutions", "canonical_value": "Ministry of Health", "source": "document", "confidence": "high"},
+    {"field": "systems_assets", "canonical_value": "boreholes", "source": "document", "confidence": "high"},
+    {"field": "systems_assets", "canonical_value": "primary health centres", "source": "document", "confidence": "high"},
+    {"field": "documented_hazards", "canonical_value": "extreme heat", "source": "document", "confidence": "high"},
+    {"field": "documented_hazards", "canonical_value": "water scarcity", "source": "document", "confidence": "high"},
+    {"field": "time_horizons", "canonical_value": "near-term", "source": "document", "confidence": "high"}
+  ],
+  "unresolved": []
+}

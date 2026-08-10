@@ -13,6 +13,18 @@ from .climate_native import (
 )
 from .composer import build_stage_slice, estimate_tokens, resolve_active_lenses
 from .climate_context_adapter import adapt_grounding_evidence
+from .climate_project_profile import (
+    MAX_ALIASES_PER_CANONICAL,
+    MAX_CANDIDATES_PER_FIELD,
+    MAX_CATALOG_CANONICALS_PER_FIELD,
+    MAX_DOCUMENT_CHARS,
+    MAX_SIGNAL_METADATA,
+    MAX_UNRESOLVED,
+    MAX_VALUES_PER_FIELD,
+    ProjectClimateProfile,
+    SignalMatch,
+    build_project_climate_profile,
+)
 from .climate_verified_pipeline import (
     PipelineClients,
     run_verified_climate_pipeline,
@@ -113,6 +125,13 @@ __all__ = [
     "LensSource",
     "LensStatus",
     "MAX_ACTIVE_LENSES",
+    "MAX_ALIASES_PER_CANONICAL",
+    "MAX_CANDIDATES_PER_FIELD",
+    "MAX_CATALOG_CANONICALS_PER_FIELD",
+    "MAX_DOCUMENT_CHARS",
+    "MAX_SIGNAL_METADATA",
+    "MAX_UNRESOLVED",
+    "MAX_VALUES_PER_FIELD",
     "PLATFORM_STAGE_BUDGETS",
     "SectorLens",
     "StageBudgets",
@@ -123,6 +142,8 @@ __all__ = [
     "CCDR_RESEARCH_INSTRUCTIONS",
     "CLIMATE_NATIVE_SCHEMA_VERSION",
     "PipelineClients",
+    "ProjectClimateProfile",
+    "SignalMatch",
     "adapt_grounding_evidence",
     "adapt_legacy_climate_payload",
     "run_verified_climate_pipeline",
@@ -132,6 +153,7 @@ __all__ = [
     "write_reader_docx",
     "build_climate_stage2_prompt",
     "build_climate_stage3_prompt",
+    "build_project_climate_profile",
     "CLIMATE_REQUIRED_DIRECTIONS",
     "CLIMATE_REQUIRED_LENS_FIELDS",
     "CLIMATE_EVIDENCE_PACKET_MAX_CHARS",

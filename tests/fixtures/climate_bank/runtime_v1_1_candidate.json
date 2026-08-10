@@ -23,12 +23,74 @@
       ],
       "decision_notes": "Synthetic approved fixture for application contract tests only.",
       "selection_aliases": {
-        "geographies": {},
-        "sectors": {},
-        "affected_groups": {},
-        "institutions": {},
-        "systems_assets": {},
-        "hazards": {}
+        "geographies": {
+          "Blue Marsh County": ["Blue Marsh"],
+          "Greenplain County": ["Greenplain"],
+          "Hope Valley County": ["Hope Valley"],
+          "Northern Arc County": ["Northern Arc"],
+          "Red Ridge County": ["Red Ridge"],
+          "Silver Lake County": ["Silver Lake"]
+        },
+        "sectors": {
+          "agriculture": ["crop production"],
+          "community resilience": ["local resilience"],
+          "fisheries": ["fishery"],
+          "forestry": ["forest management"],
+          "health": ["health services"],
+          "infrastructure": ["public infrastructure"],
+          "livestock": ["animal health"],
+          "natural-resource management": ["natural resource management", "NRM"],
+          "social protection": ["safety nets"],
+          "transport": ["road transport"],
+          "WASH": ["water, sanitation and hygiene"]
+        },
+        "affected_groups": {
+          "children under five": ["young children"],
+          "fishers": ["fishing households"],
+          "forest user groups": ["forest users"],
+          "host communities": ["host-community members"],
+          "internally displaced households": ["displaced households"],
+          "pastoral households": ["pastoralists"],
+          "pregnant women": ["expectant mothers"],
+          "rural households": ["rural residents"],
+          "smallholder farmers": ["women farmers"],
+          "traders": ["market traders"]
+        },
+        "institutions": {
+          "community forestry committees": ["forest committees"],
+          "community resilience committees": ["resilience committees"],
+          "county road authority": ["road authority"],
+          "county veterinary service": ["veterinary service"],
+          "county water board": ["water board"],
+          "Ministry of Aquatic Resources": ["aquatic resources ministry"],
+          "Ministry of Food Systems": ["food systems ministry"],
+          "Ministry of Health": ["health ministry"],
+          "municipal works department": ["works department"],
+          "Social Protection Agency": ["social protection office"]
+        },
+        "systems_assets": {
+          "boreholes": ["rural boreholes"],
+          "community shelters": ["resilience shelters"],
+          "feeder roads": ["farm-to-market roads"],
+          "fish landing sites": ["landing sites"],
+          "irrigation canals": ["canal network"],
+          "livestock markets": ["cattle markets"],
+          "mangrove nurseries": ["tree nurseries"],
+          "payment registry": ["beneficiary registry"],
+          "primary health centres": ["rural clinics"],
+          "river bridge": ["crossing bridge"]
+        },
+        "hazards": {
+          "drought": ["dry conditions"],
+          "extreme heat": ["heatwave"],
+          "flash flooding": ["flash floods"],
+          "landslide": ["slope failure"],
+          "prolonged dry spell": ["extended dry spell"],
+          "riverine flooding": ["river flooding"],
+          "seasonal flooding": ["seasonal floods"],
+          "water scarcity": ["water shortage"],
+          "wildfire": ["bushfire"]
+        }
       }
     }
   },
