@@ -4,10 +4,12 @@ from io import BytesIO
 
 from docx import Document
 
+from climate_question_bank import CLIMATE_LITERATURE_REFERENCES
 from sector_lenses.climate_verified_render import (
     HEADINGS,
     SENSITIVITY_RATING_QUESTION,
     attach_provenance,
+    build_climate_guidance_items,
     build_reader_model,
     render_reader_html,
     validate_reader_model,
@@ -15,6 +17,91 @@ from sector_lenses.climate_verified_render import (
 )
 
 
+def test_build_climate_guidance_items_builds_a_matched_item():
+    guidance = build_climate_guidance_items(
+        [{"source": "Eligible", "summary": "Verified project finding."}],
+        [{"title": "Eligible", "url": "https://www.worldbank.org/guide", "description": "Guidance."}],
+    )
+    assert guidance[0]["title"] == "Eligible"
+
+def test_build_climate_guidance_items_uses_matched_south_sudan_findings_only():
+    sources = [
+        {"title": "FCV-Sensitive Climate Action Framework", "url": "https://www.worldbank.org/framework", "practical_value": "Stress-test climate action."},
+        {"title": "Maximizing the Peace & Social Dividends of Climate Action", "url": "https://documents.worldbank.org/dividends", "practical_value": "Identify peace dividends."},
+        {"title": "Defueling Conflict", "url": "https://www.worldbank.org/defueling", "practical_value": "Must not be padded."},
+    ]
+    core_questions = [
+        {"question": "Question title must never appear.", "source": "fcv sensitive climate action framework", "summary": "Flooding around Pariang can interrupt BFMU access during the rainy season. A later sentence must not be included.\n\nA second paragraph is excluded.", "watch": "Track flood-season access constraints for BFMU teams."},
+        {"question": "Another title that must never appear.", "source": "Maximizing the Peace and Social Dividends of Climate Action", "summary": "Shared water points for host and displaced households can reduce tensions in Pariang.", "watch": "Check whether benefit allocation remains inclusive after shocks."},
+        {"source": "maximizing the peace and social dividends of climate action", "summary": "Flood response should keep displaced households connected to services.", "watch": "Check whether benefit allocation remains inclusive after shocks."},
+    ]
+
+    guidance = build_climate_guidance_items(core_questions, sources)
+
+    assert [item["title"] for item in guidance] == ["Maximizing the Peace & Social Dividends of Climate Action", "FCV-Sensitive Climate Action Framework"]
+    assert "Flood response should keep displaced households connected to services." in guidance[0]["project_use"]
+    assert guidance[0]["project_use"].count("Check whether benefit allocation remains inclusive after shocks.") == 1
+    assert "Flooding around Pariang can interrupt BFMU access during the rainy season." in guidance[1]["project_use"]
+    assert "A later sentence" not in guidance[1]["project_use"]
+    assert "A second paragraph" not in guidance[1]["project_use"]
+    assert "Question title must never appear" not in str(guidance)
+    assert all(set(item) == {"title", "url", "practical_value", "project_use"} for item in guidance)
+
+
+def test_build_climate_guidance_items_rejects_nonpublic_urls_and_does_not_pad():
+    core_questions = [{"source": "Eligible", "summary": "Verified finding."}]
+    bad_urls = ["http://www.worldbank.org/no", "https://example.org/no", "https://localhost/no", "https://127.0.0.1/no", "https://user:password@www.worldbank.org/no", "https://www.worldbank.org:443/no", "https://www.worldbank.org:8443/no", "https://www.worldbank.org:bad/no", "https:///missing-host"]
+
+    for url in bad_urls:
+        assert build_climate_guidance_items(core_questions, [{"title": "Eligible", "url": url}]) == []
+    guidance = build_climate_guidance_items(
+        [{"source": "Defueling Conflict", "summary": "Water governance can lower local tensions."}],
+        [{"title": "Defueling Conflict", "url": "https://www.worldbank.org/defueling", "description": "Natural resource governance guidance."}, {"title": "CCDR guidance note", "url": "https://www.worldbank.org/ccdr", "description": "Unmatched."}],
+    )
+    assert [item["title"] for item in guidance] == ["Defueling Conflict"]
+    assert guidance[0]["practical_value"] == "Natural resource governance guidance."
+
+
+def test_build_climate_guidance_items_ranks_caps_and_preserves_catalog_order():
+    sources = [{"title": title, "url": f"https://www.worldbank.org/{index}", "practical_value": f"Value {index}."} for index, title in enumerate(("One", "Two", "Three", "Four", "Five"), start=1)]
+    core_questions = [
+        {"question": "Internal question title", "source": "One", "summary": "One first."},
+        {"source": "one", "summary": "One second."},
+        {"source": "Two", "summary": "Two first."},
+        {"source": "Three", "summary": "Three first."},
+        {"source": "Four", "summary": "Four first."},
+        {"source": "Five", "summary": "Five first."},
+    ]
+
+    guidance = build_climate_guidance_items(core_questions, sources)
+
+    assert [item["title"] for item in guidance] == ["One", "Two", "Three", "Four"]
+    assert guidance[0]["project_use"].startswith("For this project, One first. One second.")
+    assert "Internal question title" not in str(guidance)
+    assert all("match_count" not in item and "catalog_order" not in item for item in guidance)
+
+
+def test_climate_literature_references_include_exact_practical_values():
+    values = {entry["title"]: entry.get("practical_value") for entry in CLIMATE_LITERATURE_REFERENCES}
+
+    assert values == {
+        "Maximizing the Peace and Social Dividends of Climate Action": "Use this source to identify how climate action can strengthen peace and social outcomes, and where project design can maximize those dividends.",
+        "FCV-Sensitive Climate Action Framework": "Use this source to stress-test whether climate action is conflict-sensitive, avoids harm and remains deliverable in fragile settings.",
+        "Defueling Conflict": "Use this source to assess how environmental and natural-resource governance can reduce conflict risks and create incentives for cooperation.",
+        "Conflict-Sensitive Climate Action Compendium": "Use this source for practical examples of adapting climate programming to conflict dynamics, exclusion risks and changing implementation conditions.",
+        "CCDR guidance note": "Use this source to connect country-level climate and FCV diagnostics to operational priorities, sequencing and investment choices.",
+    }
+
+
+def test_attach_provenance_adds_guidance_items_after_reader_validation():
+    assessment = _assessment()
+    assessment["core_questions"] = [{"source": "Defueling Conflict", "summary": "Water governance can lower local tensions."}]
+    reader = build_reader_model(assessment)
+    assert validate_reader_model(reader) == ()
+
+    attach_provenance(reader, assessment)
+
+    assert [item["title"] for item in reader["guidance_items"]] == ["Defueling Conflict"]
 def test_build_reader_model_keeps_up_to_five_priorities():
     assessment = {
         "executive_readout": "One. Two. Three.",

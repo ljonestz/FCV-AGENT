@@ -99,26 +99,31 @@ CLIMATE_LITERATURE_REFERENCES: list[dict[str, object]] = [
         "title": "Maximizing the Peace and Social Dividends of Climate Action",
         "url": "https://www.worldbank.org/en/topic/fragilityconflictviolence/publication/maximizing-the-peace-and-social-dividends-of-climate-action",
         "description": "how climate action can also reduce conflict and build social cohesion, not just deliver climate outputs.",
+        "practical_value": "Use this source to identify how climate action can strengthen peace and social outcomes, and where project design can maximize those dividends.",
     },
     {
         "title": "FCV-Sensitive Climate Action Framework",
         "url": "https://www.worldbank.org/en/topic/fragilityconflictviolence/publication/framework-for-promoting-fcv-sensitive-climate-action",
         "description": "the World Bank's framework for designing climate projects that do no harm and stay workable in fragile and conflict-affected settings.",
+        "practical_value": "Use this source to stress-test whether climate action is conflict-sensitive, avoids harm and remains deliverable in fragile settings.",
     },
     {
         "title": "Defueling Conflict",
         "url": "https://www.worldbank.org/en/topic/environment/publication/defueling-conflict-environment-and-natural-resource-management-as-a-pathway-to-peace",
         "description": "how managing the environment and natural resources can be a pathway to peace.",
+        "practical_value": "Use this source to assess how environmental and natural-resource governance can reduce conflict risks and create incentives for cooperation.",
     },
     {
         "title": "Conflict-Sensitive Climate Action Compendium",
         "url": None,
         "description": "practical, case-based guidance on making climate programming conflict-sensitive.",
+        "practical_value": "Use this source for practical examples of adapting climate programming to conflict dynamics, exclusion risks and changing implementation conditions.",
     },
     {
         "title": "CCDR guidance note",
         "url": "https://documents.worldbank.org/en/publication/documents-reports/documentdetail/099021025050037410",
         "description": "World Bank approach note on promoting FCV-sensitive climate action in Country Climate and Development Reports.",
+        "practical_value": "Use this source to connect country-level climate and FCV diagnostics to operational priorities, sequencing and investment choices.",
     },
 ]
 

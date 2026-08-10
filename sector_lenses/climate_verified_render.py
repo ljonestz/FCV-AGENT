@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import html
 import re
+import unicodedata
+from urllib.parse import urlsplit
 from pathlib import Path
 from typing import Any
 
@@ -197,6 +199,110 @@ def _records(value: object) -> list[dict[str, Any]]:
 
 def _text(value: object) -> str:
     return str(value or "").strip()
+
+
+def _normalized_source_title(value: object) -> str:
+    """Return a stable, punctuation-insensitive key for source matching."""
+
+    normalized = unicodedata.normalize("NFKD", _text(value)).casefold()
+    normalized = normalized.replace("&", " and ")
+    ascii_text = normalized.encode("ascii", "ignore").decode("ascii")
+    return re.sub(r"[^a-z0-9]+", " ", ascii_text).strip()
+
+
+def _is_public_world_bank_url(value: object) -> bool:
+    """Accept only standard-port HTTPS URLs on the public World Bank domain."""
+
+    if not isinstance(value, str):
+        return False
+    try:
+        parsed = urlsplit(value)
+        hostname = parsed.hostname.casefold() if parsed.hostname else ""
+        port = parsed.port
+    except ValueError:
+        return False
+    return (
+        parsed.scheme.casefold() == "https"
+        and bool(parsed.netloc)
+        and parsed.username is None
+        and parsed.password is None
+        and port is None
+        and (hostname == "worldbank.org" or hostname.endswith(".worldbank.org"))
+    )
+
+
+def _first_sentence(value: object) -> str:
+    """Return the first sentence from a verified summary's first paragraph."""
+
+    first_paragraph = re.split(r"\r?\n\s*\r?\n", _text(value), maxsplit=1)[0].strip()
+    if not first_paragraph:
+        return ""
+    match = re.match(r"(.+?[.!?])(?:\s|$)", first_paragraph, flags=re.DOTALL)
+    return (match.group(1) if match else first_paragraph).strip()
+
+
+def _distinct_texts(values: list[object], limit: int) -> list[str]:
+    """Keep non-empty strings in first-seen order, ignoring case/space repeats."""
+
+    selected: list[str] = []
+    seen: set[str] = set()
+    for value in values:
+        text = _text(value)
+        key = re.sub(r"\s+", " ", text).casefold()
+        if not text or key in seen:
+            continue
+        seen.add(key)
+        selected.append(text)
+        if len(selected) >= limit:
+            break
+    return selected
+
+
+def build_climate_guidance_items(
+    core_questions: object,
+    sources: object,
+) -> list[dict[str, str]]:
+    """Build ranked, matched-only project guidance from verified reader fields."""
+
+    matched_by_source: dict[str, list[dict[str, Any]]] = {}
+    for question in _records(core_questions):
+        source_key = _normalized_source_title(question.get("source"))
+        if source_key:
+            matched_by_source.setdefault(source_key, []).append(question)
+
+    ranked: list[tuple[int, int, dict[str, str]]] = []
+    for catalog_order, source in enumerate(_records(sources)):
+        title = _text(source.get("title"))
+        source_key = _normalized_source_title(title)
+        matches = matched_by_source.get(source_key, [])
+        url = source.get("url")
+        if not title or not matches or not _is_public_world_bank_url(url):
+            continue
+        matched_summaries = _distinct_texts(
+            [question.get("summary") for question in matches],
+            limit=2,
+        )
+        summaries = _distinct_texts(
+            [_first_sentence(summary) for summary in matched_summaries],
+            limit=2,
+        )
+        watches = _distinct_texts([question.get("watch") for question in matches], limit=1)
+        project_use = "For this project, " + " ".join(summaries + watches)
+        project_use = project_use.rstrip() + (
+            " Use this guidance to refine project design and implementation choices."
+        )
+        practical_value = _text(source.get("practical_value")) or _text(source.get("description"))
+        ranked.append((
+            -len(matches),
+            catalog_order,
+            {
+                "title": title,
+                "url": str(url),
+                "practical_value": practical_value,
+                "project_use": project_use,
+            },
+        ))
+    return [item for _, _, item in sorted(ranked)[:4]]
 
 
 def _field_text(value: object) -> str:
@@ -535,6 +641,7 @@ def attach_provenance(reader: dict[str, object], assessment: dict[str, object]) 
     reader["sources"] = _scrub_placeholders(
         [dict(entry) for entry in CLIMATE_LITERATURE_REFERENCES]
     )
+    reader["guidance_items"] = build_climate_guidance_items(reader.get("core_questions"), reader.get("sources"))
     return reader
 
 
