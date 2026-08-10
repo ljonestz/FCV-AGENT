@@ -1,0 +1,99 @@
+{
+  "bank_version": "1",
+  "generated": "2026-07-30",
+  "profiles": {
+    "SSD": {
+      "country": "South Sudan",
+      "iso3": "SSD",
+      "fcs_category": "Conflict",
+      "climate_vulnerability": "Climate exposure is high and combines with conflict, displacement, livelihood insecurity, and limited institutional reach to constrain resilience.",
+      "climate_vulnerability_basis": "Qualitative application of the triple-burden framing: material climate stress, low coping capacity, and weak peace and social dynamics can reinforce one another, while any project-level pathway still requires local verification.",
+      "primary_hazards": [
+        "Flooding and prolonged waterlogging that disrupt access, settlements, services, and seasonal livelihoods",
+        "Drought and rainfall variability affecting water, pasture, crops, and livestock-dependent livelihoods",
+        "Extreme heat that can compound pressure on health, labor, water demand, and service delivery"
+      ],
+      "climate_fragility_pathways": [
+        "Climate shocks can disrupt mobility, markets, and service access in already insecure areas, increasing livelihood stress and implementation constraints.",
+        "Changes in the availability or timing of water and pasture can sharpen disputes when access rights, user groups, and dispute-resolution arrangements are unclear or unevenly legitimate.",
+        "Siting or benefit decisions that overlook mobile, displaced, host, and secondary resource users can reinforce exclusion or create new grievances.",
+        "Climate-related livelihood losses can increase negative coping and competition, but peace or social dividends depend on credible inclusion, benefit sharing, and monitoring rather than on environmental investment alone."
+      ],
+      "hotspot_regions": [
+        "Flood-prone riverine, wetland-connected, and low-lying livelihood areas where physical access and service continuity can fail",
+        "Drought-exposed pastoral and agropastoral corridors where seasonal mobility and overlapping resource claims require explicit analysis",
+        "Displacement-affected settlements and host-community resource catchments where demand for land, water, services, and livelihoods converges"
+      ],
+      "displacement_and_resource_dynamics": "Repeated displacement and mobility can bring displaced people, host communities, pastoralists, farmers, and other resource users into overlapping systems of land, water, pasture, and service access. Analysis should identify primary, seasonal, mobile, displaced, host, and secondary users, including whose rights and preferences may be missed when consultation is limited by insecurity.",
+      "adaptation_entry_points": [
+        "Map resource users, mobility patterns, access rights, and conflict actors before deciding sites, boundaries, eligibility, or benefit rules.",
+        "Use transparent allocation and benefit-sharing arrangements with accessible dispute resolution and representation of displaced, host, mobile, and less-visible users.",
+        "Treat grievance, access, and participation data as early-warning and management information with clear owners and adjustment triggers.",
+        "Sequence activities flexibly through locally grounded delivery partners and test whether inclusion commitments remain workable during shocks or insecurity.",
+        "Frame prospective peace and social dividends around a specific mechanism, practical action, adverse-effect check, and monitoring approach."
+      ],
+      "key_uncertainties": [
+        "Hazard severity, timing, and local interaction with insecurity vary substantially across places and seasons.",
+        "Access constraints can bias consultation toward safer locations and underrepresent mobile or conflict-affected users.",
+        "Local resource rights, authority, and dispute-resolution legitimacy require project-specific verification.",
+        "Positive cohesion or legitimacy effects are prospective and cannot be assumed from adaptation investment alone."
+      ],
+      "sources": [
+        "defueling_conflict",
+        "peace_social_dividends",
+        "fcv_climate_compendium",
+        "general-knowledge"
+      ],
+      "generated_with": "Human-curated synthesis of unrestricted source notes and general knowledge; no live API",
+      "bank_version": "1"
+    },
+    "TCD": {
+      "country": "Chad",
+      "iso3": "TCD",
+      "fcs_category": "Conflict",
+      "climate_vulnerability": "Climate stress is closely tied to natural-resource livelihoods, mobility, displacement, uneven institutional reach, and conflict-sensitive delivery constraints.",
+      "climate_vulnerability_basis": "Qualitative synthesis of the source-note frameworks, including operational lessons from a Chad natural-resource and climate pilot; those lessons inform questions and safeguards but are not assumed to apply uniformly across the country.",
+      "primary_hazards": [
+        "Drought and rainfall variability affecting water, rangelands, crops, livestock, and seasonal mobility",
+        "Flooding that can damage assets, isolate communities, and interrupt markets and project access",
+        "Extreme heat and land degradation pressures that can weaken already climate-sensitive livelihoods"
+      ],
+      "climate_fragility_pathways": [
+        "Climate pressure on land, water, pasture, and livelihoods can interact with institutions, access rules, incentives, and political economy; scarcity alone is not a sufficient conflict explanation.",
+        "Resource boundaries, siting, and management rules can generate grievances when seasonal, mobile, displaced, host, or secondary users are not recognized.",
+        "Insecurity can restrict consultation and partner coverage, causing safer or more accessible groups to shape decisions at the expense of less-visible users.",
+        "Committees and communications can support legitimacy and cooperation only where participation rules, representation, benefit distribution, and grievance response are credible.",
+        "Changing access and conflict conditions can make fixed implementation sequences ineffective or harmful unless monitoring leads to timely adjustment."
+      ],
+      "hotspot_regions": [
+        "Drought-exposed pastoral and agropastoral corridors where mobility and access rules shape resource relations",
+        "Flood-prone settlements and transport or market links where climate shocks compound physical-access constraints",
+        "Displacement-affected host areas where land, water, services, and livelihood demands overlap",
+        "Natural-resource investment sites where insecure access may narrow consultation or monitoring coverage"
+      ],
+      "displacement_and_resource_dynamics": "Displacement, seasonal mobility, and natural-resource dependence create overlapping claims among displaced people, host communities, pastoralists, farmers, and secondary users. Resource decisions should therefore account for who uses an area at different times, how rights are recognized, who participates in committees, and whether insecurity prevents some groups from being heard.",
+      "adaptation_entry_points": [
+        "Map primary, seasonal, mobile, displaced, host, and secondary users before siting infrastructure or defining resource boundaries and access rules.",
+        "Stress-test committee composition, communication channels, and participation procedures for legitimacy and practical reach beyond safer locations.",
+        "Establish transparent allocation, benefit-sharing, and accessible dispute-resolution arrangements tied to identifiable resource mechanisms.",
+        "Use grievance trends, access information, and participation gaps as management and early-warning inputs with explicit adjustment decisions.",
+        "Build flexible sequencing and locally grounded delivery arrangements that can adapt when insecurity or physical access changes.",
+        "Pursue cohesion, institutional legitimacy, or livelihood dividends only where a project-specific pathway and proportional monitoring plan can be stated."
+      ],
+      "key_uncertainties": [
+        "The relevance of the Chad pilot's operational lessons varies by sector, location, institution, and project design.",
+        "Security and seasonal access can change partner coverage and whose interests are captured through consultation.",
+        "Informal and formal resource rights, mobility patterns, and local authority relationships require current local verification.",
+        "Climate and conflict monitoring may be incomplete, delayed, or unable to distinguish correlation from a causal resource mechanism."
+      ],
+      "sources": [
+        "defueling_conflict",
+        "peace_social_dividends",
+        "fcv_climate_compendium",
+        "general-knowledge"
+      ],
+      "generated_with": "Human-curated synthesis of unrestricted source notes and general knowledge; no live API",
+      "bank_version": "1"
+    }
+  }
+}
