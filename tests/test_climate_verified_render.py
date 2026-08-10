@@ -168,6 +168,66 @@ def test_build_climate_guidance_items_deduplicates_questions_and_catalog_sources
     assert [item["title"] for item in guidance] == [
         "Defueling Conflict", "FCV-Sensitive Climate Action Framework"
     ]
+def test_build_climate_guidance_items_bounds_abbreviations_and_closing_punctuation():
+    source = {"title": "Eligible", "url": "https://www.worldbank.org/guide"}
+    cases = [
+        (
+            "U.S. agencies coordinate flood access. Later text is excluded.",
+            "U.S. agencies coordinate flood access.",
+            "Later text is excluded.",
+        ),
+        (
+            "Delivery adapts through local partners, etc. during floods. Later text is excluded.",
+            "Delivery adapts through local partners, etc. during floods.",
+            "Later text is excluded.",
+        ),
+        (
+            'The team said ("flooding delays BFMU access.") Next text is excluded.',
+            'The team said ("flooding delays BFMU access.")',
+            "Next text is excluded.",
+        ),
+        (
+            "Coordination is led by the U.N.",
+            "Coordination is led by the U.N.",
+            "",
+        ),
+    ]
+
+    for summary, expected, excluded in cases:
+        guidance = build_climate_guidance_items(
+            [{"source": "Eligible", "summary": summary}], [source]
+        )
+        project_use = guidance[0]["project_use"]
+        assert expected in project_use
+        if excluded:
+            assert excluded not in project_use
+
+
+def test_build_climate_guidance_items_rejects_overlong_dns_authority():
+    hostname = ".".join(["a" * 63] * 4 + ["worldbank", "org"])
+
+    assert build_climate_guidance_items(
+        [{"source": "Eligible", "summary": "Verified finding."}],
+        [{"title": "Eligible", "url": f"https://{hostname}/guide"}],
+    ) == []
+
+
+def test_build_climate_guidance_items_deduplicates_by_question_id():
+    sources = [
+        {"title": "Defueling Conflict", "url": "https://www.worldbank.org/defueling"},
+        {"title": "FCV-Sensitive Climate Action Framework", "url": "https://www.worldbank.org/framework"},
+    ]
+    core_questions = [
+        {"question_id": "cq-1", "source": "FCV-Sensitive Climate Action Framework", "summary": "Flood risk needs adaptive delivery."},
+        {"question_id": "cq-1", "source": "FCV-Sensitive Climate Action Framework", "summary": "Changed text must not increase the match count."},
+        {"question_id": "cq-2", "source": "Defueling Conflict", "summary": "Water governance can reduce tensions."},
+    ]
+
+    guidance = build_climate_guidance_items(core_questions, sources)
+
+    assert [item["title"] for item in guidance] == [
+        "Defueling Conflict", "FCV-Sensitive Climate Action Framework"
+    ]
 def test_build_reader_model_keeps_up_to_five_priorities():
     assessment = {
         "executive_readout": "One. Two. Three.",

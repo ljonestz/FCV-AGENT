@@ -231,14 +231,17 @@ def _is_public_world_bank_url(value: object) -> bool:
         return False
     hostname = authority.casefold()
     labels = hostname.split(".")
-    if any(
-        not label
-        or len(label) > 63
-        or label.startswith("-")
-        or label.endswith("-")
-        or label.startswith("xn--")
-        or not re.fullmatch(r"[a-z0-9-]+", label)
-        for label in labels
+    if (
+        len(hostname) > 253
+        or any(
+            not label
+            or len(label) > 63
+            or label.startswith("-")
+            or label.endswith("-")
+            or label.startswith("xn--")
+            or not re.fullmatch(r"[a-z0-9-]+", label)
+            for label in labels
+        )
     ):
         return False
     return hostname == "worldbank.org" or hostname.endswith(".worldbank.org")
@@ -254,20 +257,22 @@ def _complete_sentence(value: object) -> str:
 
 
 def _first_sentence(value: object) -> str:
-    """Return a complete first sentence without splitting common abbreviations."""
+    """Return a bounded sentence while preserving abbreviations and closing marks."""
 
     first_paragraph = re.split(r"\r?\n\s*\r?\n", _text(value), maxsplit=1)[0].strip()
-    abbreviations = ("e.g.", "i.e.", "u.n.")
+    closing_marks = '"\'??)]}'
     for index, character in enumerate(first_paragraph):
-        if character in "!?":
-            return _complete_sentence(first_paragraph[:index + 1])
-        if character != ".":
+        if character not in ".!?":
             continue
-        prefix = first_paragraph[:index + 1].casefold()
-        next_character = first_paragraph[index + 1:index + 2]
-        if next_character.isalnum() or any(prefix.endswith(item) for item in abbreviations):
-            continue
-        return _complete_sentence(first_paragraph[:index + 1])
+        sentence_end = index + 1
+        while sentence_end < len(first_paragraph) and first_paragraph[sentence_end] in closing_marks:
+            sentence_end += 1
+        if character == ".":
+            direct_next = first_paragraph[index + 1:index + 2]
+            following = first_paragraph[sentence_end:].lstrip()[:1]
+            if direct_next.isalnum() or following.islower():
+                continue
+        return _complete_sentence(first_paragraph[:sentence_end])
     return _complete_sentence(first_paragraph)
 
 
@@ -289,15 +294,21 @@ def _distinct_texts(values: list[object], limit: int) -> list[str]:
 
 
 def _deduplicated_questions(matches: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Keep exact source/summary/watch duplicates from inflating rank or prose."""
+    """Deduplicate by stable ID, otherwise by normalized verified source content."""
 
     selected: list[dict[str, Any]] = []
-    seen: set[tuple[str, str, str]] = set()
+    seen: set[tuple[str, ...]] = set()
     for question in matches:
+        question_id = _text(question.get("question_id")).casefold()
         identity = (
-            _normalized_source_title(question.get("source")),
-            re.sub(r"\s+", " ", _text(question.get("summary"))).casefold(),
-            re.sub(r"\s+", " ", _text(question.get("watch"))).casefold(),
+            ("question_id", question_id)
+            if question_id
+            else (
+                "content",
+                _normalized_source_title(question.get("source")),
+                re.sub(r"\s+", " ", _text(question.get("summary"))).casefold(),
+                re.sub(r"\s+", " ", _text(question.get("watch"))).casefold(),
+            )
         )
         if identity in seen:
             continue
