@@ -259,15 +259,6 @@ def _complete_sentence(value: object) -> str:
     return text if terminal_text and terminal_text[-1] in ".!?" else f"{text}."
 
 
-def _first_paragraph(value: object) -> str:
-    """Return the complete first non-empty paragraph from a verified finding."""
-
-    for paragraph in re.split(r"\r?\n\s*\r?\n", _text(value)):
-        if _text(paragraph):
-            return _complete_sentence(paragraph)
-    return ""
-
-
 def _distinct_texts(values: list[object], limit: int) -> list[str]:
     """Keep non-empty strings in first-seen order, ignoring case/space repeats."""
 
@@ -309,6 +300,30 @@ def _deduplicated_questions(matches: list[dict[str, Any]]) -> list[dict[str, Any
     return selected
 
 
+def _guidance_project_use(matches: list[dict[str, Any]]) -> str:
+    """Return one short project-specific follow-up from verified reader fields."""
+
+    watches = _distinct_texts(
+        [question.get("watch") for question in matches],
+        limit=1,
+    )
+    if watches:
+        return (
+            "For this project, use the source to address this follow-up: "
+            + _complete_sentence(watches[0])
+        )
+    questions = _distinct_texts(
+        [question.get("question") for question in matches],
+        limit=1,
+    )
+    if questions:
+        return (
+            "For this project, use the source to examine this question: "
+            + _complete_sentence(questions[0])
+        )
+    return ""
+
+
 def build_climate_guidance_items(
     core_questions: object,
     sources: object,
@@ -335,24 +350,9 @@ def build_climate_guidance_items(
             or not _is_public_world_bank_url(url)
         ):
             continue
-        matched_summaries = _distinct_texts(
-            [question.get("summary") for question in matches],
-            limit=2,
-        )
-        summaries = _distinct_texts(
-            [_first_paragraph(summary) for summary in matched_summaries],
-            limit=2,
-        )
-        watches = _distinct_texts([question.get("watch") for question in matches], limit=1)
-        fragments: list[str] = []
-        for fragment in summaries + watches:
-            completed = _complete_sentence(fragment)
-            if completed:
-                fragments.append(completed)
-        if not fragments:
+        project_use = _guidance_project_use(matches)
+        if not project_use:
             continue
-        project_use = "For this project, " + " ".join(fragments)
-        project_use += " Use this guidance to refine project design and implementation choices."
         practical_value = _text(source.get("practical_value")) or _text(source.get("description"))
         ranked.append((
             -len(matches),
@@ -1060,6 +1060,13 @@ def render_reader_html(model: dict[str, object]) -> str:
     ]
     if guidance_items:
         parts.append(_heading(2, "Relevant WBG guidance for this project"))
+        parts.append(
+            '<details class="climate-guidance-disclosure"><summary>'
+            "Where the team can go for more detailed follow-up</summary>"
+            '<div class="climate-guidance-body">'
+            "<p>These sources are selected because they speak directly to the "
+            "current findings. This is not a standard reading list.</p>"
+        )
         for item in guidance_items:
             title = html.escape(_text(item.get("title")))
             url = html.escape(_text(item.get("url")))
@@ -1083,6 +1090,7 @@ def render_reader_html(model: dict[str, object]) -> str:
                     + "</p>"
                 )
             parts.append("</article>")
+        parts.append("</div></details>")
 
     trail = _mapping(model.get("evidence_trail"))
     sources = model.get("sources") or []
@@ -1314,8 +1322,9 @@ def write_reader_docx(model: dict[str, object], path: str | Path) -> Path:
     ]
     if guidance_items:
         document.add_heading("Relevant WBG guidance for this project", level=1)
+        document.add_heading("Where the team can go for more detailed follow-up", level=2)
         for item in guidance_items:
-            document.add_heading(_text(item.get("title")), level=2)
+            document.add_heading(_text(item.get("title")), level=3)
             practical_value = _text(item.get("practical_value"))
             if practical_value:
                 document.add_paragraph(practical_value)

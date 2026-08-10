@@ -468,10 +468,16 @@
     .climate-verified-assessment .climate-check-action{color:#4b5563}
     .climate-verified-assessment .climate-watch-intro{color:#4b5563;margin:0 0 8px}
     .climate-verified-assessment .climate-guidance{background:transparent;padding:0}
-    .climate-verified-assessment .climate-guidance-title{font-family:'Open Sans',sans-serif;font-size:15px;font-weight:700;color:var(--wbg-navy);margin:0 0 6px}
+    .climate-verified-assessment .climate-guidance-disclosure{border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+    .climate-verified-assessment .climate-guidance-disclosure>summary{cursor:pointer;list-style:none;padding:13px 0;font-family:'Open Sans',sans-serif;font-size:15px;font-weight:700;color:var(--wbg-navy)}
+    .climate-verified-assessment .climate-guidance-disclosure>summary::-webkit-details-marker{display:none}
+    .climate-verified-assessment .climate-guidance-disclosure>summary::before{content:"\25B8";display:inline-block;margin-right:8px;color:var(--wbg-blue);transition:transform .15s}
+    .climate-verified-assessment .climate-guidance-disclosure[open]>summary::before{transform:rotate(90deg)}
+    .climate-verified-assessment .climate-guidance-disclosure>summary:focus-visible{outline:3px solid #f2a900;outline-offset:2px}
+    .climate-verified-assessment .climate-guidance-body{padding:0 0 4px}
     .climate-verified-assessment .climate-guidance-intro{color:#5f594f;margin:0 0 8px}
     .climate-verified-assessment .climate-guidance-item{border-top:1px solid #e5e7eb;padding:14px 0 12px;margin:0}
-    .climate-verified-assessment .climate-guidance-item h4{font-family:'Open Sans',sans-serif;font-size:14px;font-weight:700;line-height:1.45;margin:0 0 5px}
+    .climate-verified-assessment .climate-guidance-item h3{font-family:'Open Sans',sans-serif;font-size:14px;font-weight:700;line-height:1.45;margin:0 0 5px}
     .climate-verified-assessment .climate-guidance-item p{color:#4b5563;margin:0 0 6px}
     .climate-verified-assessment .climate-guidance-item a{color:var(--wbg-blue);text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:2px}
     .climate-verified-assessment .climate-guidance-item a:hover,.climate-verified-assessment .climate-guidance-item a:focus-visible{color:#005a8b;text-decoration-thickness:2px}
@@ -490,12 +496,14 @@
       .climate-verified-assessment .climate-priority-card>summary{padding:13px 14px}
       .climate-verified-assessment .climate-priority-body{padding:14px}
       .climate-verified-assessment .climate-numbered-item{grid-template-columns:28px minmax(0,1fr);gap:8px}
+      .climate-verified-assessment .climate-guidance-disclosure>summary{padding:12px 0}
     }
     @media print{
       .climate-verified-assessment .climate-priority-card{break-inside:avoid}
       .climate-verified-assessment .climate-priority-card:not([open])>.climate-priority-body{display:block!important}
       .climate-verified-assessment .climate-priority-detail:not([open])>:not(summary){display:block!important}
       .climate-verified-assessment .climate-fold:not([open])>:not(summary){display:block!important}
+      .climate-verified-assessment .climate-guidance-disclosure:not([open])>:not(summary){display:block!important}
       .climate-verified-assessment .climate-priority-card>summary::after{display:none}
       .climate-verified-assessment a{color:#000;text-decoration:underline}
     }
@@ -4714,19 +4722,22 @@
     const questionsBySource=new Map();
     const completeSentence=value=>{
       const text=String(value??'').trim().replace(/\s+/g,' ');
-      return text&&!/[.!?]$/.test(text)?`${text}.`:text;
+      const terminalText=text.replace(/[\x22\x27)\]\x7d\u201d\u2019]+$/g,'');
+      return text&&terminalText&&!/[.!?]$/.test(terminalText)?`${text}.`:text;
     };
+    const normalizeIdentityText=value=>String(value??'').trim().replace(/\s+/g,' ').toLowerCase();
     coreQuestions.forEach(question=>{
       if(!question||typeof question!=='object')return;
       const sourceKey=normalizeClimateSourceTitle(question.source);
       if(!sourceKey)return;
-      const summary=completeSentence(String(question.summary??'').split(/\n\s*\n+/)[0]);
+      const questionText=completeSentence(question.question);
       const watch=completeSentence(question.watch);
-      if(!summary&&!watch)return;
       const questionId=String(question.question_id??'').trim().replace(/\s+/g,' ').toLowerCase();
-      const identity=questionId?`question_id:${questionId}`:`content:${sourceKey}|${summary.toLowerCase()}|${watch.toLowerCase()}`;
+      const summaryIdentity=normalizeIdentityText(question.summary);
+      const watchIdentity=normalizeIdentityText(question.watch);
+      const identity=questionId?`question_id:${questionId}`:`content:${sourceKey}|${summaryIdentity}|${watchIdentity}`;
       const matched=questionsBySource.get(sourceKey)||[];
-      if(!matched.some(item=>item.identity===identity))matched.push({summary,watch,identity});
+      if(!matched.some(item=>item.identity===identity))matched.push({question:questionText,watch,identity});
       questionsBySource.set(sourceKey,matched);
     });
     const candidates=[];
@@ -4740,15 +4751,12 @@
       seenSources.add(titleKey);
       const matches=questionsBySource.get(titleKey)||[];
       if(!matches.length)return;
-      const summaries=[];
-      let watch='';
-      matches.forEach(match=>{
-        if(match.summary&&summaries.length<2&&!summaries.includes(match.summary))summaries.push(match.summary);
-        if(!watch&&match.watch)watch=match.watch;
-      });
-      if(!summaries.length&&!watch)return;
-      let projectUse=summaries.length?`For this project, ${summaries.join(' ')}`:'';
-      if(watch)projectUse=projectUse?`${projectUse} The team can use the source to follow up on: ${watch}`:`For this project, the team can use the source to follow up on: ${watch}`;
+      const watch=matches.find(match=>match.watch)?.watch||'';
+      const questionText=matches.find(match=>match.question)?.question||'';
+      const projectUse=watch
+        ?`For this project, use the source to address this follow-up: ${watch}`
+        :(questionText?`For this project, use the source to examine this question: ${questionText}`:'');
+      if(!projectUse)return;
       candidates.push({
         title,
         url,
@@ -4784,16 +4792,16 @@
     const itemHtml=items.map(item=>{
       const practical=item.practical_value?`<p class="climate-guidance-value">${esc(item.practical_value)}</p>`:'';
       const projectUse=item.project_use?`<p class="climate-guidance-use">${esc(item.project_use)}</p>`:'';
-      return `<article class="climate-guidance-item"><h4><a href="${esc(item.url)}" target="_blank" rel="noopener">${esc(item.title||'World Bank guidance')}</a></h4>${practical}${projectUse}</article>`;
+      return `<article class="climate-guidance-item"><h3><a href="${esc(item.url)}" target="_blank" rel="noopener">${esc(item.title||'World Bank guidance')}</a></h3>${practical}${projectUse}</article>`;
     }).join('');
-    return `<div class="climate-guidance-body" data-section-label="Relevant WBG guidance for this project"><h3 class="climate-guidance-title">Where the team can go for more detailed follow-up</h3><p class="climate-guidance-intro">These sources are selected because they speak directly to the current findings. This is not a standard reading list.</p>${itemHtml}</div>`;
+    return `<details class="climate-guidance-disclosure"><summary>Where the team can go for more detailed follow-up</summary><div class="climate-guidance-body" data-section-label="Relevant WBG guidance for this project"><p class="climate-guidance-intro">These sources are selected because they speak directly to the current findings. This is not a standard reading list.</p>${itemHtml}</div></details>`;
   }
 
   function installClimatePrintDisclosureHandler(root){
     const scope=root&&typeof root.querySelectorAll==='function'?root:null;
     const eventTarget=scope&&scope.defaultView?scope.defaultView:(typeof window!=='undefined'?window:null);
     if(!scope||!eventTarget||typeof eventTarget.addEventListener!=='function')return null;
-    const selector='details.climate-priority-card, details.climate-priority-detail, details.climate-fold';
+    const selector='details.climate-priority-card, details.climate-priority-detail, details.climate-fold, details.climate-guidance-disclosure';
     let priorStates=null;
     const beforePrint=()=>{
       if(priorStates!==null)return;

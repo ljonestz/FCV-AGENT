@@ -267,12 +267,17 @@ clear them. Follow-on requests carry the structured reader in their history.
   questions to deduplicated sources by normalized title, admits only public World
   Bank HTTPS sources with usable project-specific content, ranks by matched-question
   count then catalogue order, and returns at most four items. It never pads the list
-  with unmatched publications.
+  with unmatched publications. Each fallback item uses one controlled source-value
+  sentence plus the first verified watch cue, or the matched question when no watch
+  cue exists; it does not copy full core-question summaries.
 - `renderClimateRelevantGuidance(reader)` prefers canonical
   `reader.guidance_items`; it invokes `buildClimateGuidanceItems(reader)` when that
   property is absent or is not an array. It validates and deduplicates the final
-  items, then renders
-  the publication title/link, `practical_value`, and `project_use`. Empty or unsafe
+  items, then renders one collapsed native disclosure containing every publication
+  title/link, `practical_value`, and `project_use`. It does not create one
+  disclosure per source. Printing temporarily opens the shared disclosure and
+  restores its exact prior state; DOCX renders the same shortened content expanded.
+  Empty or unsafe
   sets omit the section entirely. Canonical generation normally selects two to four
   relevant sources when enough valid matches exist, but fewer are retained rather
   than padding with a fixed reading list.
