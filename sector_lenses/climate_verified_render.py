@@ -42,7 +42,8 @@ DIMENSIONS = (
     ),
 )
 NO_RECOMMENDATION_MESSAGE = (
-    "No recommendation passed the admission threshold for this run."
+    "No operational priorities were identified in this assessment. Review the "
+    "core questions and points to check below."
 )
 # Headline rating shown above the core-question cards: how sensitive the project
 # is to climate and FCV considerations, on a Limited -> Moderate -> Strong scale
@@ -380,21 +381,9 @@ def _rank(value: object) -> int:
         return 999
 
 
-def _no_priority_message(model: dict[str, object]) -> str:
-    annex = _mapping(model.get("technical_annex"))
-    try:
-        admitted = int(annex.get("recommendation_admitted_count", 0))
-    except (TypeError, ValueError):
-        admitted = 0
-    verdict = _text(annex.get("semantic_reviewer_verdict")).casefold()
-    if admitted > 0 and verdict in {"revise", "block"}:
-        noun = "candidate" if admitted == 1 else "candidates"
-        verb = "was" if admitted == 1 else "were"
-        return (
-            f"{admitted} recommendation {noun} passed deterministic admission "
-            f"but {verb} withheld after semantic review. Review outcome: "
-            f"{verdict}."
-        )
+def _no_priority_message(_model: dict[str, object]) -> str:
+    """Return one neutral reader explanation without internal run diagnostics."""
+
     return NO_RECOMMENDATION_MESSAGE
 
 

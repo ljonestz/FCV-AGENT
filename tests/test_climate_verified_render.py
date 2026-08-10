@@ -903,19 +903,19 @@ def test_zero_priority_message_is_shared_by_html_and_docx():
         paragraph.text for paragraph in Document(stream).paragraphs
     )
 
-    message = "No recommendation passed the admission threshold for this run."
+    message = "No operational priorities were identified in this assessment. Review the core questions and points to check below."
     assert rendered.count(message) == 1
     assert document_text.count(message) == 1
     assert "No final operational priority was admitted" not in rendered
     assert "No final operational priority was admitted" not in document_text
 
 
-def test_semantic_review_suppression_is_explained_in_html_and_docx():
+def test_zero_priority_output_hides_admission_and_review_diagnostics():
     assessment = _assessment()
     assessment["priorities"] = []
     assessment["recommendation_diagnostics"] = {
-        "raw_candidate_count": 3,
-        "admitted_count": 3,
+        "raw_candidate_count": 41,
+        "admitted_count": 37,
         "final_priority_count": 0,
         "reviewer_invoked": True,
         "reviewer_verdict": "revise",
@@ -931,14 +931,12 @@ def test_semantic_review_suppression_is_explained_in_html_and_docx():
         paragraph.text for paragraph in Document(stream).paragraphs
     )
 
-    message = (
-        "3 recommendation candidates passed deterministic admission but were "
-        "withheld after semantic review. Review outcome: revise."
-    )
-    assert message in rendered
-    assert message in document_text
-    assert "No recommendation passed the admission threshold" not in rendered
-    assert "No recommendation passed the admission threshold" not in document_text
+    message = "No operational priorities were identified in this assessment. Review the core questions and points to check below."
+    for output in (rendered, document_text):
+        assert output.count(message) == 1
+        assert "37 recommendation" not in output
+        assert "revise" not in output
+        assert "Review outcome" not in output
 
 
 def test_html_escapes_model_authored_content():
