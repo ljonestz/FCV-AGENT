@@ -185,6 +185,23 @@ def _responses(*, unresolved_routing: bool = False):
     ]
 
 
+def _with_integrity_finding(responses):
+    responses[0]["document_integrity_findings"] = [
+        {
+            "flag_id": "DIF-001",
+            "category": "material_placeholder",
+            "flag": "The target remains a placeholder.",
+            "why_it_matters": "The expected result cannot be verified.",
+            "document_basis_ids": ["DOC-1-B-1"],
+            "suggested_verification": (
+                "Populate the target from the source document."
+            ),
+            "residual_gap_ids": [],
+        }
+    ]
+    return responses
+
+
 def _arguments():
     documents, blocks = _source()
     context = [
@@ -246,6 +263,118 @@ def test_four_calls_run_when_semantic_review_is_not_required():
         item["guidance_id"] for item in compiler_payload["operational_guidance"]
     }
     assert result["executive_readout"].startswith("Verified project facts")
+
+
+def test_validated_document_checks_are_reserved_for_both_compilers():
+    responses = _with_integrity_finding(_responses())
+    recommendation = responses[3]["recommendation_candidates"][0]
+    del recommendation["current_document_drafting"]
+    del recommendation["operational_instrument_drafting"]
+    assessment = FakeClient(responses + [{"drafting_sets": []}], [])
+
+    run_verified_climate_pipeline(
+        **_arguments(),
+        clients=PipelineClients(assessment, FakeClient([], [])),
+    )
+
+    recommendation_payload = next(
+        call["payload"]
+        for call in assessment.calls
+        if call["stage"] == "recommendation_compiler"
+    )
+    drafting_payload = next(
+        call["payload"]
+        for call in assessment.calls
+        if call["stage"] == "drafting_compiler"
+    )
+    expected = [
+        {
+            "flag_id": "DIF-001",
+            "category": "material_placeholder",
+            "flag": "The target remains a placeholder.",
+            "document_basis_ids": ["DOC-1-B-1"],
+            "suggested_verification": (
+                "Populate the target from the source document."
+            ),
+        }
+    ]
+    assert recommendation_payload["reserved_document_checks"] == expected
+    assert drafting_payload["reserved_document_checks"] == expected
+
+
+def test_document_only_candidate_is_suppressed_but_check_remains():
+    responses = _with_integrity_finding(_responses())
+    candidate = responses[3]["recommendation_candidates"][0]
+    candidate["decision"] = "Populate the placeholder target in the results table."
+    candidate["minimum_action"] = "Complete the unfinished document section."
+    candidate["enhanced_action"] = None
+    candidate["enhanced_activation"] = None
+
+    result = run_verified_climate_pipeline(
+        **_arguments(),
+        clients=PipelineClients(FakeClient(responses, []), FakeClient([], [])),
+    )
+
+    assert result["priorities"] == []
+    assert [item["flag_id"] for item in result["review_readiness_flags"]] == [
+        "DIF-001"
+    ]
+    assert result["recommendation_diagnostics"]["candidate_suppressions"] == [
+        {
+            "recommendation_id": "REC-001",
+            "stage": "grounding",
+            "reason_codes": ["ADMISSION_DUPLICATES_DOCUMENT_CHECK"],
+            "unsupported_numeric_fields": [],
+        }
+    ]
+
+
+def test_context_only_site_protocol_is_suppressed_with_bounded_diagnostic():
+    responses = _responses()
+    candidate = responses[3]["recommendation_candidates"][0]
+    candidate["recommendation_basis"] = "country_context"
+    candidate["instrument_claim_ids"] = []
+    candidate["decision"] = "Establish a herder-fisher agreement at project sites."
+    candidate["minimum_action"] = "Create a site protocol and assign an actor."
+
+    result = run_verified_climate_pipeline(
+        **_arguments(),
+        clients=PipelineClients(FakeClient(responses, []), FakeClient([], [])),
+    )
+
+    assert result["priorities"] == []
+    suppression = result["recommendation_diagnostics"][
+        "candidate_suppressions"
+    ][0]
+    assert suppression == {
+        "recommendation_id": "REC-001",
+        "stage": "grounding",
+        "reason_codes": ["RECOMMENDATION_CONTEXT_PROMOTION_UNSUPPORTED"],
+        "unsupported_numeric_fields": [],
+    }
+    assert "herder" not in str(suppression).casefold()
+
+
+def test_context_only_applicability_check_remains_admissible():
+    responses = _responses()
+    candidate = responses[3]["recommendation_candidates"][0]
+    candidate["recommendation_basis"] = "country_context"
+    candidate["instrument_claim_ids"] = []
+    candidate["decision"] = (
+        "Assess whether seasonal resource conflict applies at project sites."
+    )
+    candidate["minimum_action"] = (
+        "Confirm applicability before deciding a response."
+    )
+
+    result = run_verified_climate_pipeline(
+        **_arguments(),
+        clients=PipelineClients(FakeClient(responses, []), _pass_review_client()),
+    )
+
+    assert [item["recommendation_id"] for item in result["priorities"]] == [
+        "REC-001"
+    ]
 
 
 def test_unresolved_routing_triggers_one_source_first_review():
@@ -567,15 +696,15 @@ def test_manifest_is_privacy_safe_and_scoped_to_the_run():
     )
     assert (
         first["manifest"]["prompt_versions"]["recommendation_compiler"]
-        == "climate-recommendations-v2.4"
+        == "climate-recommendations-v2.5"
     )
     assert (
         first["manifest"]["prompt_versions"]["conditional_review"]
-        == "climate-review-v2.5"
+        == "climate-review-v2.6"
     )
     assert (
         first["manifest"]["prompt_versions"]["drafting_compiler"]
-        == "climate-drafting-v1.0"
+        == "climate-drafting-v1.1"
     )
     assert set(first["manifest"]["prompt_versions"]) == {
         "fact_extraction",

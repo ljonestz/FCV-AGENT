@@ -39,12 +39,14 @@ from sector_lenses.climate_recommendations import (
     DraftingBlock,
     DraftingValidationContext,
     READINESS_CATEGORIES,
+    RecommendationGroundingContext,
     RecommendationScore,
     ReviewReadinessFlag,
     _normalized_sentence,
     admit_and_rank,
     admission_failure_codes,
     admit_readiness_flags,
+    deterministic_grounding_failure_codes,
     normalize_drafting_blocks,
     numeric_tokens_in_text,
     normalize_unsupported_drafting_precision,
@@ -86,9 +88,9 @@ PROMPT_VERSIONS = {
     "fact_extraction": "climate-facts-v2.2",
     "bounded_analysis": "climate-analysis-v2.2",
     "judgment_review": "climate-judgments-v2.3",
-    "recommendation_compiler": "climate-recommendations-v2.4",
-    "conditional_review": "climate-review-v2.5",
-    "drafting_compiler": "climate-drafting-v1.0",
+    "recommendation_compiler": "climate-recommendations-v2.5",
+    "conditional_review": "climate-review-v2.6",
+    "drafting_compiler": "climate-drafting-v1.1",
 }
 
 
@@ -865,6 +867,18 @@ def run_verified_climate_pipeline(
     ]
     suppressed["derived_assertions"] += len(invalid_assertions)
 
+    integrity_flags = _integrity_readiness_flags(fact_payload, known_block_ids)
+    reserved_document_checks = [
+        {
+            "flag_id": item.flag_id,
+            "category": item.category,
+            "flag": item.flag,
+            "document_basis_ids": list(item.document_basis_ids),
+            "suggested_verification": item.suggested_verification,
+        }
+        for item in integrity_flags
+    ]
+
     analysis_payload = _call(
         clients.assessment,
         "bounded_analysis",
@@ -988,6 +1002,7 @@ def run_verified_climate_pipeline(
             "judgments": asdict(judgments),
             "guidance_registry_version": GUIDANCE_REGISTRY_VERSION,
             "operational_guidance": [item.as_record() for item in guidance],
+            "reserved_document_checks": reserved_document_checks,
         },
         latency_ms,
         cancel_event=cancel_event,
@@ -1025,6 +1040,7 @@ def run_verified_climate_pipeline(
                 "operational_guidance": [
                     item.as_record() for item in guidance
                 ],
+                "reserved_document_checks": reserved_document_checks,
             },
             latency_ms,
             cancel_event=cancel_event,
@@ -1173,9 +1189,28 @@ def run_verified_climate_pipeline(
             continue
         candidates.append(candidate)
 
+    grounding_context = RecommendationGroundingContext(
+        gap_types={item.gap_id: item.gap_type for item in gaps},
+        gap_pathway_ids={
+            item.gap_id: frozenset(item.pathway_ids) for item in gaps
+        },
+        fact_source_blocks={
+            item.claim_id: frozenset(item.source_block_ids) for item in facts
+        },
+        integrity_source_blocks=frozenset(
+            block_id
+            for item in integrity_flags
+            for block_id in item.document_basis_ids
+        ),
+    )
+    grounded_candidates: list[CandidateRecommendation] = []
     admitted_count = 0
     for candidate in candidates:
-        failure_codes = admission_failure_codes(candidate)
+        grounding_codes = deterministic_grounding_failure_codes(
+            candidate,
+            grounding_context,
+        )
+        failure_codes = grounding_codes + admission_failure_codes(candidate)
         if failure_codes:
             recommendation_reasons.extend(failure_codes)
             reasons.extend(failure_codes)
@@ -1183,14 +1218,15 @@ def run_verified_climate_pipeline(
                 candidate_suppressions.append(
                     {
                         "recommendation_id": candidate.recommendation_id,
-                        "stage": "admission",
+                        "stage": "grounding" if grounding_codes else "admission",
                         "reason_codes": list(failure_codes)[:12],
                         "unsupported_numeric_fields": [],
                     }
                 )
         else:
+            grounded_candidates.append(candidate)
             admitted_count += 1
-    priorities = admit_and_rank(candidates)
+    priorities = admit_and_rank(grounded_candidates)
     suppressed["recommendations"] += len(candidates) - len(priorities)
     if admitted_count > len(priorities):
         recommendation_reasons.append("ADMISSION_PRIORITY_CAP")
@@ -1212,7 +1248,6 @@ def run_verified_climate_pipeline(
             gap_id for item in priorities for gap_id in item.residual_gap_ids
         },
     )
-    integrity_flags = _integrity_readiness_flags(fact_payload, known_block_ids)
     readiness = _merge_readiness_flags(integrity_flags, model_readiness, cap=4)
     suppressed["readiness_flags"] += (
         len(raw_flags) + len(integrity_flags) - len(readiness)
@@ -1240,6 +1275,7 @@ def run_verified_climate_pipeline(
                 "analysis": analysis_record,
                 "judgments": asdict(judgments),
                 "recommendations": [asdict(item) for item in priorities],
+                "reserved_document_checks": reserved_document_checks,
             },
             latency_ms,
             cancel_event=cancel_event,

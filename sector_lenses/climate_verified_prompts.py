@@ -201,6 +201,14 @@ tests. Return at most five recommendation candidates, and go beyond three only
 where materiality clearly warrants it. Return fewer when fewer pass; never
 manufacture one for symmetry or to reach a number, and never label all as High. Route to an existing instrument
 only when existence, scope, timing, and authority are verified separately.
+The supplied reserved_document_checks already own the document-check tier.
+Do not restate or operationalize one as a recommendation unless an independently
+supported confirmed omission or partial-response pathway gap requires action
+beyond completing, populating, deleting, reconciling, or repairing the document.
+Country context alone may raise a materiality question, but it may support only
+an action to assess, verify, or confirm applicability before deciding a response.
+It cannot establish a site-specific instrument, agreement, protocol, actor,
+system, or commitment without a linked project fact confirming that condition.
 When no existing vehicle is evidenced, use standard_document_advisory and target
 the current stage document only where the supplied operational-guidance packet
 permits it. If neither destination is safe, fail actionability or timing; do not
@@ -256,6 +264,10 @@ square brackets) stating exactly where in that section the language should sit -
 for example "Add at the start of this section:" or "Place immediately after the
 paragraph on conflict-risk mapping:" - then give the drafting language. Never
 use square brackets, placeholder markers, TBD/TODO, or page numbers.
+The supplied reserved_document_checks remain document checks and must not be
+turned into recommendation drafting. Use a numbered Component, Sub-component,
+Section, Annex, or Year label only when that exact label is present in a linked
+project fact; otherwise use a neutral document label that remains grammatical.
 Label the block existing_commitment only when linked project evidence supports
 that status; otherwise use advisory_proposal. Add at most one operational_instrument block
 only when it is separately useful and targets a
@@ -285,6 +297,11 @@ def _review_prompt(payload: dict[str, object]) -> str:
 before residual gaps; project-fact provenance; country-evidence entitlements;
 recommendation proportionality; instrument scope, timing, and authority; rating
 coherence; duplication; and unintended consequences. Identify defects in the recommendation, not the residual gap it is meant to address. Asking the task team to specify an unresolved indicator, protocol, capacity, or adaptation measure is a valid purpose of a recommendation and is not itself a reason to revise or block. Do not broadly rewrite. For revise or block, object_ids must contain only affected REC- identifiers; do not include gap, fact, response, or pathway IDs.
+Remember that country context alone cannot establish a site-specific project
+obligation; it may support only a conditional applicability check until a
+project fact confirms the condition. A reserved_document_checks item remains in
+its document-check tier unless the recommendation cites an independent
+substantive pathway gap.
 Use only these defect reason codes: {semantic_reason_codes}.
 Return exactly one object and no other prose: {"verdict":"pass|revise|block","reason_codes":[],"object_ids":[]}. Return at most 12 reason_codes and 12 object_ids. Keep the entire response to 500 words or fewer. Use revise only when one bounded correction could resolve a recommendation defect; otherwise block the affected recommendation.""".replace(
             "{semantic_reason_codes}",
