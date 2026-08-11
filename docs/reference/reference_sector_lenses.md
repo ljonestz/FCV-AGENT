@@ -54,18 +54,63 @@ The Render build uses a bounded evidence-packet adapter between Sonnet web searc
 
 `sector_lenses.climate_bank` loads schema `1.0.0` from the pinned public submodule
 or `CLIMATE_COUNTRY_BANK_PATH`. Materialization is approved-only, checksum-valid,
-review-window bounded, and non-throwing. Selection targets 8 and caps 12 items,
-admits at most two physical-baseline records, favors source diversity, and
-emphasizes qualitative vulnerability/capacity, affected groups, institutions,
-geography, sectors, project elements, systems/resources, and mediators.
+review-window bounded, and non-throwing. Climate-active step-by-step and Express
+preparation build the same immutable `ProjectClimateProfile` and pass it directly
+to selection. The profile contains country, instrument, document
+stage, and bounded controlled values for geography, sector, project element,
+affected group, institution, system/asset, documented hazard, and time horizon.
+It recognizes only unambiguous, boundary-aware aliases explicitly present in at
+most 12,000 characters of project-document text. Bank-candidate signals may be
+recorded as `source=bank-candidate`, `confidence=candidate`, and `unresolved`, but
+they do not become project facts or selected profile values without an explicit
+document match. The public projection contains no source excerpts.
+
+Selection targets 8 and caps 12 items. It uses controlled relevance weights,
+requires at least one material matched field, balances climate pressure,
+vulnerability/capacity, institutional response, and both pathway directions,
+favors source diversity, rejects near duplicates, and suppresses stale current
+evidence or pathways with stale current support. Its safe manifest diagnostics
+contain only selected canonical IDs, integer `score`, allowlisted
+`matched_fields`, controlled `balance_role`, optional `staleness`, bounded
+`suppressed` rows, and `missing_classes`. Suppression values are
+`stale_current`, `stale_support`, `near_duplicate`, `source_diversity`,
+`low_relevance`, `packet_bound`, and `target_reached`. Profile/type, scope,
+country, release, manifest, and size failures use existing non-throwing
+`warning_code` fallbacks; `bank_profile_invalid` is additive.
+
+Server rematerialization returns full canonical sources, evidence, and pathways
+for provenance plus explicit `selected_evidence_ids`, `selected_pathway_ids`,
+`selected_capsule_ids`, and allowlisted `project_relevance`. Prompt projection
+uses separate evidence capsules with `id`, `evidence_class`, `claim`,
+`geographies`, `affected_groups`, `systems_assets_resources`,
+`project_relevance`, `evidence_status`, `uncertainty`, and `source_ids`; pathway
+capsules carry `id`, `direction`, `climate_pressure`, `fcv_mediator`,
+`possible_consequence`, `geographies`, `systems_assets_resources`,
+`evidence_strength`, `uncertainty`, and `supporting_evidence_ids`. Source links
+use canonical IDs only. Schema 1.0 compatibility maps `physical-baseline` to
+`climate-pressure`, `vulnerability-capacity` to `sensitivity`, and other legacy
+analytical roles conservatively to `direct-climate-fcv`; release content is not
+mutated.
 
 Grounding caps bank context at 6,000 characters, accepted live claims at 6, and
-combined context at 12,000. Its state enum is `bank+research | bank-only |
-research-only | thematic-only`. Conflicts remain visible provenance. Only
+combined context at 12,000. Oversized bank projections drop whole
+lowest-priority capsules, never partial claim or uncertainty strings. Its state
+enum is `bank+research | bank-only | research-only | thematic-only`. Conflicts
+remain visible provenance. Only
 server-rematerialized IDs matching `AAA-SRC-999` enter diagnostic source
 normalization. South Sudan is approved in production content version
 `2026.07.south-sudan-pilot`; the runtime projection selects at most 12 records
 from its 19 approved evidence records and seven approved pathways.
+
+Live research continues to receive the existing bounded project input, makes no
+additional search or model call, and remains non-fatal. This increment does not
+change prompts, ratings, recommendations, reader hierarchy, generic-FCV routes,
+approval/provenance gates, or the reviewed companion-bank release. Deferred work
+includes literature or bank-content expansion, candidate promotion, additional
+countries, multi-country allocation, and gap-directed live-research questions or
+new evidence-gate telemetry. Reviewed country-bank content remains owned only by
+the pinned companion bank; the application repository stores runtime logic and
+contracts, not duplicate release content or raw source PDFs.
 
 ## Compatibility contract
 
@@ -79,13 +124,15 @@ The Flask and private FastAPI builds must keep these fields and delimiters align
 - Climate research: normalized `sources`, project-specific `claims`, confidence, evidence status, and the three horizon enums;
 - Climate diagnostic: stable pathway and finding IDs plus the causal pathway fields described above;
 - Climate grounding: `state`, `warning_code`, `content_version`, `country_iso3`, `research_status`, sanitized `bank_manifest`, and display-safe `sources`;
-- canonical manifest: `bank_status`, `warning_code`, `schema_version`, `content_version`, `country_iso3`, `evidence_ids`, `pathway_ids`;
+- project profile: country/instrument/document-stage metadata; the eight controlled signal arrays; bounded `signal_metadata` with field, canonical value, `document|bank-candidate` source and `high|candidate` confidence; and bounded `unresolved` candidate keys;
+- canonical manifest: `bank_status`, `warning_code`, `schema_version`, `content_version`, `country_iso3`, `evidence_ids`, `pathway_ids`, and sanitized selection `diagnostics`;
+- rematerialized bank packet: explicit selected evidence/pathway/capsule IDs and allowlisted `project_relevance`, with rich evidence/pathway capsules only in the compact prompt projection;
 - SSE: additive `climate_grounding` on Stage 1 and Stage 2 completion events;
 - hidden delimiter names and diagnostic status/core-mapping enums.
 
 Raw literature and source notes are never injected at runtime.
 
-*Last updated: 2026-07-31 - approved South Sudan runtime release, reader-facing climate polish, and narrow evidence-gate retry.*
+*Last updated: 2026-08-11 - deterministic project-profile selection and rich bank-capsule compatibility.*
 
 ## Climate verified-v2.1 compatibility surface (v9.25)
 
