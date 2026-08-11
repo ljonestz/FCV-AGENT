@@ -74,8 +74,8 @@ DOCUMENT_ACTION_PATTERN = re.compile(
     re.IGNORECASE,
 )
 DOCUMENT_OBJECT_PATTERN = re.compile(
-    r"\b(?:placeholder|draft|section|table|field|cross-reference|document|"
-    r"target|indicator)\b",
+    r"\b(?:placeholders?|drafts?|sections?|tables?|fields?|cross-references?|"
+    r"documents?|targets?|indicators?|frameworks?)\b",
     re.IGNORECASE,
 )
 SUBSTANTIVE_ACTION_PATTERN = re.compile(
@@ -84,13 +84,13 @@ SUBSTANTIVE_ACTION_PATTERN = re.compile(
     re.IGNORECASE,
 )
 PROJECT_OBLIGATION_ACTION_PATTERN = re.compile(
-    r"\b(?:establish|create|adopt|require|mandate|set up|formalize|introduce|"
-    r"assign)\b",
+    r"\b(?:establish|create|adopt|require|mandate|set up|formalize|formalise|"
+    r"introduce|assign|develop|designate|institute)\b",
     re.IGNORECASE,
 )
 PROJECT_OBLIGATION_OBJECT_PATTERN = re.compile(
-    r"\b(?:instrument|agreement|protocol|actor|system|committee|unit|"
-    r"mechanism|commitment)\b",
+    r"\b(?:instruments?|agreements?|protocols?|actors?|systems?|"
+    r"committee(?:s)?|units?|mechanisms?|commitments?)\b",
     re.IGNORECASE,
 )
 

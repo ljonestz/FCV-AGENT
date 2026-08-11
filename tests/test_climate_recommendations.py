@@ -299,6 +299,20 @@ def test_document_completion_candidate_is_reserved_for_document_checks():
     ) == ("ADMISSION_DUPLICATES_DOCUMENT_CHECK",)
 
 
+def test_plural_document_targets_are_reserved_for_document_checks():
+    candidate = replace(
+        _candidate(),
+        decision="Populate numeric targets in the results framework.",
+        minimum_action="Complete the unfinished risk section.",
+        enhanced_action=None,
+        enhanced_activation=None,
+    )
+
+    assert deterministic_grounding_failure_codes(
+        candidate, _grounding_context()
+    ) == ("ADMISSION_DUPLICATES_DOCUMENT_CHECK",)
+
+
 def test_independent_climate_fcv_design_gap_sharing_block_is_retained():
     candidate = replace(
         _candidate(),
@@ -369,6 +383,19 @@ def test_unrelated_instrument_does_not_authorize_context_only_obligation():
         instrument_claim_ids=("PF-010",),
         decision="Establish a herder-fisher agreement at each project site.",
         minimum_action="Create a site protocol and assign a new coordination actor.",
+    )
+
+    assert deterministic_grounding_failure_codes(
+        candidate, _grounding_context()
+    ) == ("RECOMMENDATION_CONTEXT_PROMOTION_UNSUPPORTED",)
+
+
+def test_context_only_candidate_cannot_develop_plural_obligations():
+    candidate = replace(
+        _candidate(),
+        recommendation_basis="country_context",
+        decision="Develop site agreements for seasonal resource use.",
+        minimum_action="Designate coordination actors and create protocols.",
     )
 
     assert deterministic_grounding_failure_codes(
