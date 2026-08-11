@@ -121,35 +121,45 @@ def _has_conflict(value: Any) -> bool:
 
 
 def _bounded_bank_projection(bank: dict[str, Any]) -> tuple[dict[str, Any], str]:
-    """Use the canonical compact projection and drop whole items to fit."""
+    """Drop lowest-priority capsules whole until the bank projection fits."""
 
     if bank.get("bank_status") != "ok":
         return {}, ""
-    compact_input = deepcopy(bank)
-    projection = compact_bank_packet(compact_input)
+    projection = compact_bank_packet(deepcopy(bank))
     if not projection:
         return {}, ""
 
-    bounded = {
-        "content_version": projection.get("content_version"),
-        "country_iso3": projection.get("country_iso3"),
-        "candidate_preview": projection.get("candidate_preview") is True,
-        "sources": [],
-        "evidence_records": [],
-        "pathways": [],
-    }
-    for field in ("sources", "evidence_records", "pathways"):
-        items = projection.get(field)
-        for item in items if isinstance(items, list) else []:
-            candidate = deepcopy(bounded)
-            candidate[field].append(item)
-            if len(_compact_json(candidate)) > CLIMATE_BANK_MAX_CHARS:
-                continue
-            bounded = candidate
-    serialized = _compact_json(bounded)
-    if not bounded["evidence_records"] and not bounded["pathways"]:
+    evidence = projection.get("evidence_capsules", [])
+    pathways = projection.get("pathway_capsules", [])
+    if not isinstance(evidence, list) or not isinstance(pathways, list):
         return {}, ""
-    return bounded, serialized
+    available_ids = {
+        item.get("id")
+        for item in [*evidence, *pathways]
+        if isinstance(item, dict)
+    }
+    priority = bank.get("selected_capsule_ids")
+    if not isinstance(priority, list):
+        priority = [
+            item.get("id")
+            for item in [*evidence, *pathways]
+            if isinstance(item, dict)
+        ]
+    priority = [item for item in priority if item in available_ids]
+    priority.extend(sorted(available_ids - set(priority)))
+
+    while len(_compact_json(projection)) > CLIMATE_BANK_MAX_CHARS and priority:
+        dropped_id = priority.pop()
+        for field in ("evidence_capsules", "pathway_capsules"):
+            projection[field] = [
+                item
+                for item in projection[field]
+                if not isinstance(item, dict) or item.get("id") != dropped_id
+            ]
+    if not projection["evidence_capsules"] and not projection["pathway_capsules"]:
+        return {}, ""
+    serialized = _compact_json(projection)
+    return projection, serialized
 
 
 def _bounded_live_projection(
@@ -269,7 +279,10 @@ def merge_climate_grounding(
         "prompt_context": prompt_context,
         "bank_character_count": len(bank_context),
         "combined_character_count": len(prompt_context),
-        "selected_item_count": len(bank_evidence) + len(bank_pathways),
+        "selected_item_count": (
+            len(bank_projection.get("evidence_capsules", []))
+            + len(bank_projection.get("pathway_capsules", []))
+        ),
         "has_conflicting_evidence": _has_conflict(
             [bank_evidence, bank_pathways, live_claims]
         ),

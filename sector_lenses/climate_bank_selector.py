@@ -464,54 +464,89 @@ def _manifest(
 
 
 def compact_bank_packet(packet: dict[str, Any]) -> dict[str, Any]:
-    """Project canonical records into the bounded Stage-2 grounding shape."""
+    """Project explicitly selected canonical records into rich capsules."""
 
     if not isinstance(packet, dict) or packet.get("bank_status") != "ok":
         return {}
-    sources = []
-    for source in packet.get("sources", []):
-        if not isinstance(source, dict):
+    evidence_records = {
+        record.get("evidence_id"): record
+        for record in packet.get("evidence_records", [])
+        if isinstance(record, dict) and isinstance(record.get("evidence_id"), str)
+    }
+    pathway_records = {
+        record.get("pathway_id"): record
+        for record in packet.get("pathways", [])
+        if isinstance(record, dict) and isinstance(record.get("pathway_id"), str)
+    }
+    selected_evidence_ids = packet.get("selected_evidence_ids")
+    if not isinstance(selected_evidence_ids, list):
+        selected_evidence_ids = list(evidence_records)
+    selected_pathway_ids = packet.get("selected_pathway_ids")
+    if not isinstance(selected_pathway_ids, list):
+        selected_pathway_ids = list(pathway_records)
+    relevance = packet.get("project_relevance", {})
+    if not isinstance(relevance, dict):
+        relevance = {}
+
+    evidence_capsules = []
+    for evidence_id in selected_evidence_ids:
+        record = evidence_records.get(evidence_id)
+        if not record:
             continue
-        sources.append({"source_id": source.get("source_id")})
-    evidence_records = []
-    for record in packet.get("evidence_records", []):
-        if not isinstance(record, dict):
+        evidence_class = record.get("evidence_class")
+        if not isinstance(evidence_class, str):
+            evidence_class = _V1_ROLE_MAP.get(
+                str(record.get("analytical_role", "")),
+                "direct-climate-fcv",
+            )
+        evidence_capsules.append({
+            "id": evidence_id,
+            "evidence_class": evidence_class,
+            "claim": record.get("compact_statement"),
+            "geographies": record.get("geographies", []),
+            "affected_groups": record.get("affected_groups", []),
+            "systems_assets_resources": record.get(
+                "systems_assets_resources", []
+            ),
+            "project_relevance": relevance.get(
+                evidence_id, {"score": 0, "matched_fields": []}
+            ),
+            "evidence_status": record.get("evidence_status"),
+            "uncertainty": record.get("uncertainty"),
+            "source_ids": [
+                ref.get("source_id")
+                for ref in record.get("source_refs", [])
+                if isinstance(ref, dict) and isinstance(ref.get("source_id"), str)
+            ],
+        })
+
+    pathway_capsules = []
+    for pathway_id in selected_pathway_ids:
+        record = pathway_records.get(pathway_id)
+        if not record:
             continue
-        evidence_records.append(
-            {
-                **{
-                    key: record.get(key)
-                    for key in (
-                        "evidence_id", "compact_statement", "evidence_status",
-                        "analytical_role",
-                    )
-                },
-                "source_ids": [
-                    ref.get("source_id")
-                    for ref in record.get("source_refs", [])
-                    if isinstance(ref, dict)
-                ],
-            }
-        )
-    pathways = []
-    for record in packet.get("pathways", []):
-        if not isinstance(record, dict):
-            continue
-        pathways.append(
-            {
-                key: record.get(key)
-                for key in (
-                    "pathway_id", "compact_statement", "evidence_strength",
-                    "supporting_evidence_ids", "interaction_direction",
-                )
-            }
-        )
+        pathway_capsules.append({
+            "id": pathway_id,
+            "direction": record.get("interaction_direction"),
+            "climate_pressure": record.get("climate_pressure"),
+            "fcv_mediator": record.get("fcv_mediator"),
+            "possible_consequence": record.get("possible_consequence"),
+            "geographies": record.get("geographies", []),
+            "systems_assets_resources": record.get(
+                "systems_assets_resources", []
+            ),
+            "evidence_strength": record.get("evidence_strength"),
+            "uncertainty": record.get("uncertainty"),
+            "supporting_evidence_ids": record.get(
+                "supporting_evidence_ids", []
+            ),
+        })
+
     compact = {
         "content_version": packet.get("content_version"),
         "country_iso3": packet.get("country_iso3"),
-        "sources": sources,
-        "evidence_records": evidence_records,
-        "pathways": pathways,
+        "evidence_capsules": evidence_capsules,
+        "pathway_capsules": pathway_capsules,
     }
     if packet.get("candidate_preview") is True:
         compact["candidate_preview"] = True

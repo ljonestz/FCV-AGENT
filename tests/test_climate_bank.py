@@ -11,6 +11,8 @@ from sector_lenses.climate_bank import (
     load_climate_bank,
     materialize_bank_manifest,
 )
+from sector_lenses.climate_bank_selector import compact_bank_packet
+from sector_lenses.climate_grounding import merge_climate_grounding
 
 
 FIXTURE = Path(__file__).parent / "fixtures" / "climate_bank" / "runtime_v1.json"
@@ -261,6 +263,63 @@ def test_pathway_materialization_includes_canonical_support_records() -> None:
     ]
 
 
+def test_pathway_support_is_materialized_but_not_counted_as_selected_evidence(
+) -> None:
+    manifest = _manifest(evidence_ids=[], pathway_ids=["SSD-P-001"])
+    manifest["diagnostics"] = {
+        "selected": [{
+            "id": "SSD-P-001",
+            "score": 37,
+            "matched_fields": ["geographies", "project_elements"],
+            "balance_role": "climate-to-fcv-pathway",
+        }],
+        "suppressed": [],
+        "missing_classes": [],
+    }
+    packet = materialize_bank_manifest(load_climate_bank(FIXTURE), manifest)
+
+    assert [item["evidence_id"] for item in packet["evidence_records"]] == [
+        "SSD-E-001"
+    ]
+    compact = compact_bank_packet(packet)
+    assert compact["evidence_capsules"] == []
+    assert [item["id"] for item in compact["pathway_capsules"]] == [
+        "SSD-P-001"
+    ]
+    assert merge_climate_grounding(packet, {})["selected_item_count"] == 1
+
+
+def test_materialization_adds_only_controlled_project_relevance_without_mutation(
+) -> None:
+    bank = load_climate_bank(FIXTURE)
+    canonical_before = copy.deepcopy(bank.release)
+    manifest = _manifest(evidence_ids=["SSD-E-001"], pathway_ids=[])
+    manifest["diagnostics"] = {
+        "selected": [{
+            "id": "SSD-E-001",
+            "score": 999,
+            "matched_fields": [
+                "geographies", "systems_assets", "not-controlled",
+            ],
+            "balance_role": "sensitivity",
+            "uploaded_text": "must not cross the boundary",
+        }],
+        "suppressed": [],
+        "missing_classes": [],
+    }
+
+    packet = materialize_bank_manifest(bank, manifest)
+
+    assert packet["project_relevance"] == {
+        "SSD-E-001": {
+            "score": 999,
+            "matched_fields": ["geographies", "systems_assets"],
+        }
+    }
+
+
+    assert "uploaded_text" not in str(packet["project_relevance"])
+    assert bank.release == canonical_before
 def test_materialization_rejects_cross_country_evidence_prefix(
     tmp_path: Path,
 ) -> None:

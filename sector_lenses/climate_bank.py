@@ -96,6 +96,10 @@ _EVIDENCE_DIRECTIONS = {
 _PATHWAY_DIRECTIONS = {
     "climate-to-fcv", "fcv-to-climate", "bidirectional",
 }
+_PROJECT_RELEVANCE_FIELDS = {
+    "geographies", "project_elements", "sectors", "affected_groups",
+    "institutions", "systems_assets", "documented_hazards", "time_horizons",
+}
 _TIME_HORIZONS = {
     "historical", "current", "near-term", "medium-term", "long-term",
 }
@@ -659,6 +663,32 @@ def materialize_bank_manifest(
             return _packet_unavailable("bank_manifest_invalid")
         selected_sources.append(source)
 
+    explicit_ids = {*selected_evidence_ids, *selected_pathway_ids}
+    project_relevance: dict[str, dict[str, Any]] = {}
+    selected_capsule_ids: list[str] = []
+    diagnostics = manifest.get("diagnostics")
+    selected_diagnostics = (
+        diagnostics.get("selected", [])
+        if isinstance(diagnostics, dict)
+        else []
+    )
+    for row in selected_diagnostics:
+        if not isinstance(row, dict) or row.get("id") not in explicit_ids:
+            continue
+        record_id = row["id"]
+        if record_id not in selected_capsule_ids:
+            selected_capsule_ids.append(record_id)
+        matched_fields = row.get("matched_fields", [])
+        project_relevance[record_id] = {
+            "score": row.get("score") if isinstance(row.get("score"), int) else 0,
+            "matched_fields": [
+                field
+                for field in matched_fields
+                if isinstance(field, str) and field in _PROJECT_RELEVANCE_FIELDS
+            ][:len(_PROJECT_RELEVANCE_FIELDS)],
+        }
+    selected_capsule_ids.extend(sorted(explicit_ids - set(selected_capsule_ids)))
+
     packet = {
         "bank_status": "ok",
         "warning_code": "",
@@ -671,6 +701,10 @@ def materialize_bank_manifest(
         "sources": deepcopy(selected_sources),
         "evidence_records": deepcopy(selected_evidence),
         "pathways": deepcopy(selected_pathways),
+        "selected_evidence_ids": list(selected_evidence_ids),
+        "selected_pathway_ids": list(selected_pathway_ids),
+        "selected_capsule_ids": selected_capsule_ids,
+        "project_relevance": project_relevance,
     }
     if bank.candidate_preview:
         packet["candidate_preview"] = True
