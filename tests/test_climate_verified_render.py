@@ -599,6 +599,50 @@ def test_reader_has_four_dimensions_priority_cap_and_safe_annex():
     }
 
 
+def test_bank_provenance_is_additive_and_preserves_reader_hierarchy():
+    control_assessment = _assessment()
+    control = build_reader_model(control_assessment)
+    attach_provenance(control, control_assessment)
+    assessment = _assessment()
+    assessment["judgments"]["relevance"]["evidence_ids"] = [
+        "CE-BANK-SSD-E-027"
+    ]
+    model = build_reader_model(assessment)
+
+    attach_provenance(model, assessment)
+
+    rating_fields = ("dimension", "value", "rationale")
+    assert [
+        tuple(item.get(field) for field in rating_fields)
+        for item in model["judgments"]
+    ] == [
+        tuple(item.get(field) for field in rating_fields)
+        for item in control["judgments"]
+    ]
+    for key in (
+        "priorities", "core_questions", "priority_summary", "guidance_items",
+    ):
+        assert model[key] == control[key]
+    assert model["evidence_status"] == "preview; not approved"
+    evidence_key = {
+        item["id"]: item
+        for item in model["evidence_trail"]["evidence_key"]
+    }
+    assert evidence_key["CE-BANK-SSD-E-027"]["type_label"] == (
+        "Context evidence"
+    )
+    html = render_reader_html(model)
+    control_html = render_reader_html(control)
+    assert {
+        heading: heading in html for heading in HEADINGS
+    } == {
+        heading: heading in control_html for heading in HEADINGS
+    }
+    positions = [html.index(heading) for heading in HEADINGS if heading in html]
+    assert positions == sorted(positions)
+    assert positions[-1] < html.index("Method, limitations, and sources")
+
+
 def test_judgment_evidence_ids_render_from_tuple_and_list():
     # The pipeline stores judgments via dataclasses.asdict(), which preserves
     # Judgment.evidence_ids as a tuple. The reader must surface those IDs, not

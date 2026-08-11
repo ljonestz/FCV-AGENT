@@ -156,6 +156,14 @@ def test_runtime_preserves_candidate_preview_and_uses_grounding_adapter(monkeypa
     grounding = {
         "content_version": "2026.08",
         "candidate_preview": True,
+        "selected_evidence_ids": ["SSD-E-027"],
+        "selected_pathway_ids": [],
+        "project_relevance": {
+            "SSD-E-027": {
+                "score": 24,
+                "matched_fields": ["geographies", "systems_assets"],
+            },
+        },
         "bank_sources": [
             {"source_id": "SSD-SRC-016", "url": "https://example.org/source"}
         ],
@@ -163,10 +171,11 @@ def test_runtime_preserves_candidate_preview_and_uses_grounding_adapter(monkeypa
             {
                 "evidence_id": "SSD-E-027",
                 "evidence_class": "exposure",
-                "administrative_level": "national",
+                "administrative_level": "county",
+                "geographies": ["Rubkona"],
                 "compact_statement": "Severe-year flooding can disrupt access.",
                 "source_refs": [{"source_id": "SSD-SRC-016"}],
-                "confidence": "medium",
+                "confidence": "high",
             }
         ],
         "bank_pathways": [],
@@ -184,6 +193,15 @@ def test_runtime_preserves_candidate_preview_and_uses_grounding_adapter(monkeypa
 
     assert captured["bank_release_id"] == "2026.08"
     assert captured["context_evidence"][0].evidence_class == "country"
+    assert captured["context_evidence"][0].evidence_id == (
+        "CE-BANK-SSD-E-027"
+    )
+    assert captured["context_evidence"][0].scope == "county: Rubkona"
+    assert captured["context_evidence"][0].confidence == "high"
+    assert captured["context_evidence"][0].context_class == "exposure"
+    assert captured["context_evidence"][0].source_ref == (
+        "bank-preview:2026.08:SSD-E-027"
+    )
     assert captured["context_evidence"][0].preview_status == "preview; not approved"
     assert captured["doc_type"] == "PCN"
     assert captured["instrument_type"] == "IPF"

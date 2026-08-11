@@ -109,3 +109,35 @@ def test_malformed_or_unsourced_context_is_discarded():
         "live_claims": [{"id": "claim-1", "claim": "Unsupported"}],
     }
     assert adapt_grounding_evidence(grounding) == ()
+
+
+def test_rich_selected_bank_records_keep_verified_context_contract():
+    packet = _candidate_bank_packet()
+    packet["selected_evidence_ids"] = ["SSD-E-001"]
+    packet["selected_pathway_ids"] = ["SSD-P-001"]
+    packet["project_relevance"] = {
+        "SSD-E-001": {
+            "score": 29,
+            "matched_fields": ["geographies", "systems_assets"],
+        },
+    }
+    record = packet["evidence_records"][0]
+    record["affected_groups"] = ["seasonal road users"]
+    record["systems_assets_resources"] = ["feeder roads"]
+    record["uncertainty"] = "County-level variation remains material."
+
+    evidence = adapt_grounding_evidence(
+        merge_climate_grounding(packet, {})
+    )
+    by_id = {item.evidence_id: item for item in evidence}
+
+    selected = by_id["CE-BANK-SSD-E-001"]
+    assert selected.scope == "state: Unity"
+    assert selected.confidence == "high"
+    assert selected.context_class == "climate-pressure"
+    assert selected.source_ref == "bank-preview:2026.08:SSD-E-001"
+    assert selected.preview_status == "preview; not approved"
+    assert evidence_can_support(selected, "project_design_fact") is False
+    pathway = by_id["CE-BANK-SSD-P-001"]
+    assert pathway.context_class == "climate-to-fcv-pathway"
+    assert pathway.source_ref == "bank-preview:2026.08:SSD-P-001"

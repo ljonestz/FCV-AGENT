@@ -68,6 +68,25 @@ def test_unresolvable_cited_id_gets_neutral_label():
            "not resolved" in key["CE-LIVE-7"]["text"].lower()
 
 
+def test_canonical_bank_evidence_ids_remain_resolvable_in_reader_trail():
+    assessment = _assessment()
+    assessment["judgments"]["relevance"]["evidence_ids"] = [
+        "CE-BANK-SSD-E-027",
+        "CE-BANK-SSD-P-004",
+    ]
+
+    trail = build_evidence_trail(assessment)
+    key = {entry["id"]: entry for entry in trail["evidence_key"]}
+
+    assert set(key) >= {"CE-BANK-SSD-E-027", "CE-BANK-SSD-P-004"}
+    for identifier in ("CE-BANK-SSD-E-027", "CE-BANK-SSD-P-004"):
+        assert key[identifier]["type_label"] == "Context evidence"
+        assert key[identifier]["text"] == (
+            "Context evidence cited for this run (summary not stored)."
+        )
+        assert "not resolved" not in key[identifier]["text"].lower()
+
+
 def test_chain_prose_keeps_all_elements_when_more_than_three():
     from sector_lenses.climate_verified_render import _chain_prose
     out = _chain_prose(["pressure", "mid1", "mid2", "consequence"])
