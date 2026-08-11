@@ -47,6 +47,16 @@ LIST_MARKER_PATTERN = re.compile(
 NUMERIC_TOKEN_PATTERN = re.compile(
     r"(?<![A-Za-z]-)\b\d+(?:\.\d+)?%?\b"
 )
+NUMBERED_DOCUMENT_LABEL_PATTERN = re.compile(
+    r"\b(?:the\s+)?(?P<label>sub[- ]?component|component|section|annex)\s+"
+    r"(?P<number>\d+(?:\.\d+)*)\b",
+    re.IGNORECASE,
+)
+YEAR_LABEL_PATTERN = re.compile(
+    r"\b(?:(?:in|during)\s+)?(?:the\s+)?year\s+"
+    r"(?P<number>\d+(?:\.\d+)*)\b",
+    re.IGNORECASE,
+)
 REQUIRED_GATES = {
     "connection",
     "residuality",
@@ -285,7 +295,36 @@ def normalize_optional_enhancement(
     )
 
 
+def _repair_unsupported_numeric_labels(
+    text: str,
+    unsupported: set[str],
+) -> str:
+    """Replace an unsupported numbered label without leaving broken prose."""
+
+    replacements = {
+        "component": "the relevant component",
+        "sub-component": "the relevant sub-component",
+        "sub component": "the relevant sub-component",
+        "section": "the relevant section",
+        "annex": "the relevant annex",
+    }
+
+    def replace_document_label(match: re.Match[str]) -> str:
+        if match.group("number") not in unsupported:
+            return match.group(0)
+        return replacements[match.group("label").casefold()]
+
+    def replace_year_label(match: re.Match[str]) -> str:
+        if match.group("number") not in unsupported:
+            return match.group(0)
+        return "during the relevant preparation year"
+
+    repaired = NUMBERED_DOCUMENT_LABEL_PATTERN.sub(replace_document_label, text)
+    return YEAR_LABEL_PATTERN.sub(replace_year_label, repaired)
+
+
 def _without_numeric_tokens(text: str, unsupported: set[str]) -> str:
+    text = _repair_unsupported_numeric_labels(text, unsupported)
     cleaned = NUMERIC_TOKEN_PATTERN.sub(
         lambda match: "" if match.group(0) in unsupported else match.group(0),
         text,

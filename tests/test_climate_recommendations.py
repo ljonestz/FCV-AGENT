@@ -9,6 +9,7 @@ from sector_lenses.climate_recommendations import (
     admit_readiness_flags,
     normalize_optional_enhancement,
     normalize_recommendation_references,
+    normalize_unsupported_drafting_precision,
     validate_recommendation,
     normalize_unsupported_core_precision,
 )
@@ -216,6 +217,58 @@ def test_source_linked_numeric_tokens_are_allowed():
     assert not any(
         issue.code == "RECOMMENDATION_NUMBER_UNSUPPORTED"
         for issue in issues
+    )
+
+
+def test_supported_drafting_label_is_preserved_whole():
+    candidate = replace(
+        _candidate(),
+        current_document_drafting=_draft(
+            "Add this under Sub-component 1.4 before the risk discussion."
+        ),
+        supported_numeric_tokens=("1.4",),
+    )
+
+    normalized, repairs = normalize_unsupported_drafting_precision(candidate)
+
+    assert normalized.current_document_drafting.text == (
+        "Add this under Sub-component 1.4 before the risk discussion."
+    )
+    assert repairs == ()
+
+
+def test_unsupported_drafting_label_is_replaced_as_a_whole_phrase():
+    candidate = replace(
+        _candidate(),
+        current_document_drafting=_draft(
+            "Add this under Sub-component 1.4 before the risk discussion."
+        ),
+        supported_numeric_tokens=(),
+    )
+
+    normalized, repairs = normalize_unsupported_drafting_precision(candidate)
+
+    assert normalized.current_document_drafting.text == (
+        "Add this under the relevant sub-component before the risk discussion."
+    )
+    assert "under Sub-component" not in normalized.current_document_drafting.text
+    assert repairs == ("DRAFTING_UNSUPPORTED_PRECISION_REMOVED",)
+
+
+def test_unsupported_year_label_uses_preparation_year_wording():
+    candidate = replace(
+        _candidate(),
+        current_document_drafting=_draft(
+            "Record the review in Year 2 and update Annex 3."
+        ),
+        supported_numeric_tokens=(),
+    )
+
+    normalized, _ = normalize_unsupported_drafting_precision(candidate)
+
+    assert normalized.current_document_drafting.text == (
+        "Record the review during the relevant preparation year and update "
+        "the relevant annex."
     )
 
 
