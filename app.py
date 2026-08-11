@@ -34,6 +34,7 @@ from sector_lenses.climate_verified_render import (
 from sector_lenses.pipeline import normalize_climate_assessment
 from sector_lenses import (
     CCDR_RESEARCH_INSTRUCTIONS,
+    build_project_climate_profile,
     build_climate_evidence_packet,
     build_climate_research_prompt,
     build_climate_search_prompt,
@@ -7448,6 +7449,8 @@ def build_stage1_research_plan(
     *,
     country_scope: str = "single",
     resolved_country_count: int = 1,
+    instrument: str = "Unknown",
+    document_stage: str = "Unknown",
 ) -> dict[str, Any]:
     """Build one bounded plan shared by step-by-step and express workflows."""
 
@@ -7475,6 +7478,12 @@ def build_stage1_research_plan(
                 for part in project_parts[:4]
             ],
             "document_excerpt": excerpt,
+        },
+        "profile_metadata": {
+            "instrument": str(instrument or "Unknown").strip() or "Unknown",
+            "document_stage": (
+                str(document_stage or "Unknown").strip() or "Unknown"
+            ),
         },
         "country_scope": str(country_scope or "single").strip().lower(),
         "resolved_country_count": max(0, int(resolved_country_count)),
@@ -7528,18 +7537,56 @@ def _iter_stage1_research(
     if climate_enabled:
         try:
             bank = load_climate_bank()
-            results["climate_grounding"] = select_bank_manifest(
-                bank,
-                country=country,
-                country_scope=research_plan.get("country_scope", "single"),
-                resolved_country_count=research_plan.get(
-                    "resolved_country_count", 1
-                ),
-                sector=sector,
-                project_signals=research_plan.get(
-                    "project_profile", {}
-                ).get("document_excerpt", ""),
+            resolved_country = bank.resolve_country(country)
+            selection_aliases = (
+                resolved_country.get("selection_aliases", {})
+                if isinstance(resolved_country, dict)
+                else {}
             )
+            profile_input = research_plan.get("project_profile", {})
+            profile_input = (
+                profile_input if isinstance(profile_input, dict) else {}
+            )
+            profile_metadata = research_plan.get("profile_metadata", {})
+            profile_metadata = (
+                profile_metadata if isinstance(profile_metadata, dict) else {}
+            )
+            try:
+                project_profile = build_project_climate_profile(
+                    document_text=str(
+                        profile_input.get("document_excerpt") or ""
+                    ),
+                    country=country,
+                    instrument=str(
+                        profile_metadata.get("instrument") or "Unknown"
+                    ),
+                    document_stage=str(
+                        profile_metadata.get("document_stage") or "Unknown"
+                    ),
+                    selection_aliases=(
+                        selection_aliases
+                        if isinstance(selection_aliases, dict)
+                        else {}
+                    ),
+                )
+            except Exception:
+                results["climate_grounding"] = {
+                    "bank_status": "unavailable",
+                    "warning_code": "bank_profile_invalid",
+                }
+            else:
+                results["climate_grounding"] = select_bank_manifest(
+                    bank,
+                    country=country,
+                    country_scope=research_plan.get(
+                        "country_scope", "single"
+                    ),
+                    resolved_country_count=research_plan.get(
+                        "resolved_country_count", 1
+                    ),
+                    sector=sector,
+                    project_profile=project_profile,
+                )
         except Exception:
             results["climate_grounding"] = {
                 "bank_status": "unavailable",
@@ -7649,6 +7696,93 @@ _CLIMATE_BANK_MANIFEST_FIELDS = (
     "candidate_preview",
 )
 
+_CLIMATE_DIAGNOSTIC_MATCH_FIELDS = {
+    "geographies", "sectors", "project_elements", "affected_groups",
+    "institutions", "systems_assets", "documented_hazards", "time_horizons",
+}
+_CLIMATE_DIAGNOSTIC_BALANCE_ROLES = {
+    "climate-pressure", "exposure", "sensitivity", "coping-capacity",
+    "adaptive-capacity", "institutional-capacity", "response-performance",
+    "direct-climate-fcv", "resilience-peace-capacity",
+    "climate-to-fcv-pathway", "fcv-to-climate-pathway",
+    "bidirectional-pathway",
+}
+_CLIMATE_DIAGNOSTIC_REASONS = {
+    "stale_current", "stale_support", "near_duplicate", "source_diversity",
+    "low_relevance", "packet_bound", "target_reached",
+}
+_CLIMATE_DIAGNOSTIC_MISSING_CLASSES = {
+    "climate-pressure", "vulnerability-capacity", "institution-response",
+    "climate-to-fcv-pathway", "reverse-or-bidirectional-pathway",
+}
+_CLIMATE_DIAGNOSTIC_STALENESS = {"stale_current", "stale_support"}
+_CLIMATE_DIAGNOSTIC_ID = re.compile(r"[A-Z]{3}-[EP]-\d{3}")
+
+
+def _safe_climate_bank_diagnostics(value: Any) -> dict[str, Any]:
+    """Allowlist bounded selector diagnostics without retaining project text."""
+
+    diagnostics = value if isinstance(value, dict) else {}
+    selected: list[dict[str, Any]] = []
+    selected_rows = diagnostics.get("selected", [])
+    selected_rows = selected_rows if isinstance(selected_rows, list) else []
+    for raw in selected_rows[:12]:
+        if not isinstance(raw, dict):
+            continue
+        record_id = raw.get("id")
+        score = raw.get("score")
+        balance_role = raw.get("balance_role")
+        if (
+            not isinstance(record_id, str)
+            or _CLIMATE_DIAGNOSTIC_ID.fullmatch(record_id) is None
+            or not isinstance(score, int)
+            or isinstance(score, bool)
+            or balance_role not in _CLIMATE_DIAGNOSTIC_BALANCE_ROLES
+        ):
+            continue
+        matched_fields = raw.get("matched_fields", [])
+        safe_row: dict[str, Any] = {
+            "id": record_id,
+            "score": min(max(score, 0), 1000),
+            "matched_fields": list(dict.fromkeys(
+                field
+                for field in matched_fields
+                if field in _CLIMATE_DIAGNOSTIC_MATCH_FIELDS
+            ))[:8] if isinstance(matched_fields, list) else [],
+            "balance_role": balance_role,
+        }
+        if raw.get("staleness") in _CLIMATE_DIAGNOSTIC_STALENESS:
+            safe_row["staleness"] = raw["staleness"]
+        selected.append(safe_row)
+
+    suppressed: list[dict[str, str]] = []
+    suppressed_rows = diagnostics.get("suppressed", [])
+    suppressed_rows = (
+        suppressed_rows if isinstance(suppressed_rows, list) else []
+    )
+    for raw in suppressed_rows[:12]:
+        if not isinstance(raw, dict):
+            continue
+        record_id = raw.get("id")
+        reason = raw.get("reason")
+        if (
+            isinstance(record_id, str)
+            and _CLIMATE_DIAGNOSTIC_ID.fullmatch(record_id) is not None
+            and reason in _CLIMATE_DIAGNOSTIC_REASONS
+        ):
+            suppressed.append({"id": record_id, "reason": reason})
+
+    missing_classes = diagnostics.get("missing_classes", [])
+    return {
+        "selected": selected,
+        "suppressed": suppressed,
+        "missing_classes": list(dict.fromkeys(
+            item
+            for item in missing_classes
+            if item in _CLIMATE_DIAGNOSTIC_MISSING_CLASSES
+        ))[:9] if isinstance(missing_classes, list) else [],
+    }
+
 
 def _safe_climate_bank_manifest(value: Any) -> dict[str, Any]:
     """Retain only canonical bank-selection metadata across requests."""
@@ -7658,11 +7792,16 @@ def _safe_climate_bank_manifest(value: Any) -> dict[str, Any]:
             "bank_status": "unavailable",
             "warning_code": "bank_manifest_invalid",
         }
-    return {
+    safe = {
         key: value[key]
         for key in _CLIMATE_BANK_MANIFEST_FIELDS
         if key in value
     }
+    if isinstance(value.get("diagnostics"), dict):
+        safe["diagnostics"] = _safe_climate_bank_diagnostics(
+            value["diagnostics"]
+        )
+    return safe
 
 
 def _climate_research_status(
@@ -8816,6 +8955,8 @@ def run_stage():
                                     else 2
                                 )
                             ),
+                            instrument=analysis_state.instrument,
+                            document_stage=analysis_state.doc_type,
                         )
                         yield f"data: {json.dumps({'research_status': 'searching', 'country': research_country})}\n\n"
                         for research_event in _iter_stage1_research(
@@ -9762,6 +9903,8 @@ def run_express():
                                 else 2
                             )
                         ),
+                        instrument=analysis_state.instrument,
+                        document_stage=analysis_state.doc_type,
                     )
                     yield f"data: {json.dumps({'research_status': 'searching', 'country': research_country})}\n\n"
                     for research_event in _iter_stage1_research(

@@ -1757,12 +1757,19 @@ def test_climate_active_research_plan_balances_core_and_climate():
                 "The project rehabilitates landing sites and conservancies."
             ),
         }],
+        instrument="IPF",
+        document_stage="PAD",
     )
 
     assert plan["core"] == {"max_tokens": 4000, "max_uses": 3}
     assert plan["climate"]["enabled"] is True
     assert "Upper Nile" in plan["project_profile"]["document_excerpt"]
     assert plan["project_profile"]["documents"] == ["Concept Note"]
+    assert plan["profile_metadata"] == {
+        "instrument": "IPF",
+        "document_stage": "PAD",
+    }
+    assert set(plan["project_profile"]) == {"documents", "document_excerpt"}
 
 
 def test_core_only_research_plan_preserves_current_budget():
@@ -1785,6 +1792,8 @@ def test_express_and_step_routes_emit_climate_research_context():
     assert source.count("format_climate_research_context(climate_research)") >= 2
     assert source.count("_iter_stage1_research(") >= 3
     assert source.count("research_plan, assessment_id") >= 2
+    assert source.count("instrument=analysis_state.instrument") >= 2
+    assert source.count("document_stage=analysis_state.doc_type") >= 2
 
 
 def test_stage3_climate_prompt_uses_prose_and_wider_context():

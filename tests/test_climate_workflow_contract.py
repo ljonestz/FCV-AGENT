@@ -8,7 +8,7 @@ import pytest
 
 
 import app as app_module
-from sector_lenses import CLIMATE_NATIVE_SCHEMA_VERSION
+from sector_lenses import CLIMATE_NATIVE_SCHEMA_VERSION, ProjectClimateProfile
 
 
 def _decode_sse(response):
@@ -264,6 +264,265 @@ def _research_result(bundle, manifest=None):
                 "warning_code": "bank_unavailable",
             },
         }
+    }
+
+
+class _ProfileBank:
+    def __init__(self):
+        self.release = {"schema_version": "1.1.0"}
+        self._country = {
+            "iso3": "SSD",
+            "name": "South Sudan",
+            "selection_aliases": {
+                "geographies": {
+                    "Blue Marsh County": ["Blue Marsh"],
+                },
+                "sectors": {"fisheries": ["fishery"]},
+                "affected_groups": {
+                    "fishers": ["fishing households"],
+                },
+                "institutions": {},
+                "systems_assets": {
+                    "fish landing sites": ["landing sites"],
+                },
+                "documented_hazards": {"flooding": ["flood"]},
+            },
+        }
+
+    def resolve_country(self, value):
+        return self._country if str(value).casefold() == "south sudan" else None
+
+
+def _profile_research_plan(*, climate_enabled=True):
+    return app_module.build_stage1_research_plan(
+        active_lens_ids=["climate"] if climate_enabled else [],
+        country="South Sudan",
+        sector="Fisheries",
+        doc_parts=[{
+            "label": "PROJECT DOCUMENT",
+            "name": "Project Appraisal Document.txt",
+            "raw_text": (
+                "A fishery project in Blue Marsh will rehabilitate landing "
+                "sites for fishing households exposed to flood risk."
+            ),
+        }],
+        instrument="IPF",
+        document_stage="PAD",
+    )
+
+
+def test_shared_research_path_builds_one_profile_without_changing_live_input(
+    monkeypatch,
+):
+    bank = _ProfileBank()
+    built_profiles = []
+    selected_profiles = []
+    live_inputs = []
+    client_calls = []
+    real_builder = app_module.build_project_climate_profile
+
+    def capture_build(**kwargs):
+        profile = real_builder(**kwargs)
+        built_profiles.append(profile)
+        return profile
+
+    def capture_selection(_bank, **kwargs):
+        selected_profiles.append(kwargs.get("project_profile"))
+        assert "project_signals" not in kwargs
+        return {
+            "bank_status": "ok",
+            "warning_code": "",
+            "schema_version": "1.1.0",
+            "content_version": "test-1",
+            "country_iso3": "SSD",
+            "evidence_ids": [],
+            "pathway_ids": [],
+            "diagnostics": {
+                "selected": [],
+                "suppressed": [],
+                "missing_classes": [],
+            },
+        }
+
+    def capture_live(_country, _sector, project_input, *_args, **_kwargs):
+        live_inputs.append(project_input)
+        return _valid_research()
+
+    def research_client():
+        client_calls.append(object())
+        return client_calls[-1]
+
+    app_module._research_cache.clear()
+    monkeypatch.setattr(app_module, "load_climate_bank", lambda: bank)
+    monkeypatch.setattr(
+        app_module, "build_project_climate_profile", capture_build
+    )
+    monkeypatch.setattr(app_module, "select_bank_manifest", capture_selection)
+    monkeypatch.setattr(
+        app_module,
+        "run_fcv_web_research",
+        lambda *_args, **_kwargs: {"brief": "Core research."},
+    )
+    monkeypatch.setattr(app_module, "run_climate_web_research", capture_live)
+    monkeypatch.setattr(app_module, "get_research_client", research_client)
+
+    plan = _profile_research_plan()
+    events = list(app_module._iter_stage1_research(plan, "profile-shared"))
+    result = events[-1]["result"]
+
+    assert len(built_profiles) == 1
+    assert selected_profiles == built_profiles
+    assert isinstance(selected_profiles[0], ProjectClimateProfile)
+    assert selected_profiles[0].to_public_dict()["geographies"] == [
+        "Blue Marsh County"
+    ]
+    assert selected_profiles[0].instrument == "IPF"
+    assert selected_profiles[0].document_stage == "PAD"
+    assert live_inputs == [plan["project_profile"]]
+    assert live_inputs[0]["document_excerpt"].startswith("A fishery project")
+    assert set(live_inputs[0]) == {"documents", "document_excerpt"}
+    assert len(client_calls) == 2
+    assert result["climate_research"]["status"] == "complete"
+
+
+def test_profile_failure_degrades_bank_without_blocking_live_research(
+    monkeypatch,
+):
+    app_module._research_cache.clear()
+    monkeypatch.setattr(app_module, "load_climate_bank", _ProfileBank)
+    monkeypatch.setattr(
+        app_module,
+        "build_project_climate_profile",
+        lambda **_kwargs: (_ for _ in ()).throw(ValueError("bad profile")),
+        raising=False,
+    )
+    monkeypatch.setattr(
+        app_module,
+        "select_bank_manifest",
+        lambda *_args, **_kwargs: pytest.fail(
+            "selection must not receive a failed profile"
+        ),
+    )
+    monkeypatch.setattr(
+        app_module,
+        "run_fcv_web_research",
+        lambda *_args, **_kwargs: {"brief": "Core research."},
+    )
+    monkeypatch.setattr(
+        app_module,
+        "run_climate_web_research",
+        lambda *_args, **_kwargs: _valid_research(),
+    )
+    monkeypatch.setattr(app_module, "get_research_client", object)
+
+    events = list(app_module._iter_stage1_research(
+        _profile_research_plan(), "profile-failure"
+    ))
+    result = events[-1]["result"]
+
+    assert result["climate_grounding"] == {
+        "bank_status": "unavailable",
+        "warning_code": "bank_profile_invalid",
+    }
+    assert result["climate_research"]["status"] == "complete"
+
+
+def test_climate_disabled_research_does_not_build_profile_or_load_bank(
+    monkeypatch,
+):
+    app_module._research_cache.clear()
+    monkeypatch.setattr(
+        app_module,
+        "build_project_climate_profile",
+        lambda **_kwargs: pytest.fail("profile must remain Climate-only"),
+        raising=False,
+    )
+    monkeypatch.setattr(
+        app_module,
+        "load_climate_bank",
+        lambda: pytest.fail("generic FCV research must not load climate bank"),
+    )
+    monkeypatch.setattr(
+        app_module,
+        "run_fcv_web_research",
+        lambda *_args, **_kwargs: {"brief": "Core research."},
+    )
+    monkeypatch.setattr(app_module, "get_research_client", object)
+
+    events = list(app_module._iter_stage1_research(
+        _profile_research_plan(climate_enabled=False), "profile-disabled"
+    ))
+
+    assert events[-1]["result"]["core_brief"] == "Core research."
+    assert events[-1]["result"]["climate_grounding"]["bank_status"] == (
+        "unavailable"
+    )
+
+
+def test_browser_manifest_keeps_only_controlled_selection_diagnostics():
+    safe = app_module._safe_climate_bank_manifest({
+        "bank_status": "ok",
+        "warning_code": "",
+        "schema_version": "1.1.0",
+        "content_version": "test-1",
+        "country_iso3": "SSD",
+        "evidence_ids": ["SSD-E-001"],
+        "pathway_ids": [],
+        "project_profile": {"uploaded_text": "CONFIDENTIAL PROFILE"},
+        "diagnostics": {
+            "selected": [{
+                "id": "SSD-E-001",
+                "score": 19,
+                "matched_fields": ["geographies", "uploaded_text"],
+                "balance_role": "climate-pressure",
+                "staleness": "stale_current",
+                "claim": "CONFIDENTIAL DIAGNOSTIC PROSE",
+            }],
+            "suppressed": [{
+                "id": "SSD-E-002",
+                "reason": "low_relevance",
+                "excerpt": "CONFIDENTIAL EXCERPT",
+            }],
+            "missing_classes": [
+                "institution-response",
+                "CONFIDENTIAL CLASS",
+            ],
+        },
+    })
+
+    assert "project_profile" not in safe
+    assert safe["diagnostics"] == {
+        "selected": [{
+            "id": "SSD-E-001",
+            "score": 19,
+            "matched_fields": ["geographies"],
+            "balance_role": "climate-pressure",
+            "staleness": "stale_current",
+        }],
+        "suppressed": [{
+            "id": "SSD-E-002",
+            "reason": "low_relevance",
+        }],
+        "missing_classes": ["institution-response"],
+    }
+    serialized = json.dumps(safe, sort_keys=True)
+    assert "CONFIDENTIAL" not in serialized
+
+
+def test_browser_manifest_rejects_malformed_diagnostic_containers():
+    safe = app_module._safe_climate_bank_manifest({
+        "bank_status": "ok",
+        "diagnostics": {
+            "selected": {"id": "SSD-E-001"},
+            "suppressed": "SSD-E-002",
+            "missing_classes": {"institution-response": True},
+        },
+    })
+
+    assert safe["diagnostics"] == {
+        "selected": [],
+        "suppressed": [],
+        "missing_classes": [],
     }
 
 
