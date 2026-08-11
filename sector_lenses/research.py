@@ -202,7 +202,7 @@ def build_climate_research_prompt(
     scope = (
         "FOCUSED REQUEST: return four to six strongest claims."
         if narrow
-        else "Return at most twelve claims, prioritizing material project pathways."
+        else "Return four to six claims, prioritizing material project pathways."
     )
     profile = json.dumps(
         project_profile if isinstance(project_profile, dict) else {},
@@ -228,6 +228,10 @@ asset. Do not return generic country statements. {scope}
 Return no prose. Return one JSON object between {CLIMATE_RESEARCH_START} and
 {CLIMATE_RESEARCH_END} using this exact shape:
 {{"status":"complete|partial|failed","attempts":1,"sources":[{{"id":"climate-source-1","source_type":"ccdr|world-bank|un|government|scientific|specialist|current-operations","title":"...","url":"https://...","publication_date":"...","location":"..."}}],"claims":[{{"id":"climate-claim-1","claim":"...","source_ids":["climate-source-1"],"geographies":["..."],"project_elements":["..."],"affected_groups":["..."],"systems_or_assets":["..."],"evidence_status":"observed|projected|inferred","confidence":"high|medium|low","time_horizons":["current-near-term|project-lifetime|asset-system-lifetime"],"evidence_gap":"..."}}],"failure_reason":""}}
+
+When a material contradiction is present, add optional claim fields
+"conflicts_with":["SSD-E-001|climate-claim-2"] and
+"conflict_note":"Concise explanation of the contradictory evidence."
 
 Include four to six claims and at least two distinct cited sources, including at
 least one authoritative source. Every claim must cite a listed source, name a
@@ -415,10 +419,19 @@ def normalize_climate_research_bundle(payload: Any) -> dict[str, Any]:
 
     allowed_sources = {item["id"] for item in sources}
     raw_claims = raw.get("claims")
+    raw_claim_items = raw_claims if isinstance(raw_claims, list) else []
+    raw_claim_ids = {
+        _bounded(item.get("id"), 80)
+        for item in raw_claim_items
+        if isinstance(item, dict)
+        and _bounded(item.get("id"), 80)
+    }
+    claim_id_aliases: dict[str, str] = {}
     claims: list[dict[str, Any]] = []
-    for item in raw_claims if isinstance(raw_claims, list) else []:
+    for item in raw_claim_items:
         if not isinstance(item, dict):
             continue
+        raw_claim_id = _bounded(item.get("id"), 80)
         claim_id = f"climate-claim-{len(claims) + 1}"
         project_elements = _strings(item.get("project_elements"), 4, 180)
         anchors = (
@@ -450,6 +463,8 @@ def normalize_climate_research_bundle(payload: Any) -> dict[str, Any]:
             or not horizons
         ):
             continue
+        if raw_claim_id and raw_claim_id not in claim_id_aliases:
+            claim_id_aliases[raw_claim_id] = claim_id
         claims.append({
             "id": claim_id,
             "claim": claim,
@@ -464,9 +479,26 @@ def normalize_climate_research_bundle(payload: Any) -> dict[str, Any]:
             "confidence": confidence,
             "time_horizons": horizons,
             "evidence_gap": _bounded(item.get("evidence_gap"), 500),
+            "_raw_conflicts_with": _strings(
+                item.get("conflicts_with"), 6, 80
+            ),
+            "conflict_note": _bounded(item.get("conflict_note"), 400),
         })
-        if len(claims) == 12:
+        if len(claims) == 6:
             break
+
+    for claim in claims:
+        remapped_conflicts: list[str] = []
+        for conflict_id in claim.pop("_raw_conflicts_with"):
+            if conflict_id in raw_claim_ids:
+                conflict_id = claim_id_aliases.get(conflict_id, "")
+            if (
+                conflict_id
+                and conflict_id != claim["id"]
+                and conflict_id not in remapped_conflicts
+            ):
+                remapped_conflicts.append(conflict_id)
+        claim["conflicts_with"] = remapped_conflicts
 
     requested_status = _bounded(raw.get("status"), 20)
     status = (
@@ -492,7 +524,7 @@ CLIMATE_RESEARCH_MIN_SOURCES = 2
 
 
 def climate_research_evidence_gate(payload: Any) -> dict[str, Any]:
-    """Return a safe decision for the mandatory Climate-FCV research gate."""
+    """Return a safe quality decision for Climate-FCV web research."""
     bundle = normalize_climate_research_bundle(payload)
     sources = bundle["sources"]
     claims = bundle["claims"]

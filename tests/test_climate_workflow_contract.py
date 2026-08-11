@@ -8,7 +8,7 @@ import pytest
 
 
 import app as app_module
-from sector_lenses import CLIMATE_NATIVE_SCHEMA_VERSION
+from sector_lenses import CLIMATE_NATIVE_SCHEMA_VERSION, ProjectClimateProfile
 
 
 def _decode_sse(response):
@@ -253,41 +253,364 @@ def _failed_research():
     }
 
 
-def _research_result(bundle):
+def _research_result(bundle, manifest=None):
     yield {
         "result": {
             "core_brief": "Compact FCV research.",
             "climate_research": bundle,
             "lens_context_sources": [],
+            "climate_grounding": manifest or {
+                "bank_status": "unavailable",
+                "warning_code": "bank_unavailable",
+            },
         }
     }
 
 
+class _ProfileBank:
+    def __init__(self):
+        self.release = {"schema_version": "1.1.0"}
+        self._country = {
+            "iso3": "SSD",
+            "name": "South Sudan",
+            "selection_aliases": {
+                "geographies": {
+                    "Blue Marsh County": ["Blue Marsh"],
+                },
+                "sectors": {"fisheries": ["fishery"]},
+                "affected_groups": {
+                    "fishers": ["fishing households"],
+                },
+                "institutions": {},
+                "systems_assets": {
+                    "fish landing sites": ["landing sites"],
+                },
+                "documented_hazards": {"flooding": ["flood"]},
+            },
+        }
+
+    def resolve_country(self, value):
+        return self._country if str(value).casefold() == "south sudan" else None
+
+
+def _profile_research_plan(*, climate_enabled=True):
+    return app_module.build_stage1_research_plan(
+        active_lens_ids=["climate"] if climate_enabled else [],
+        country="South Sudan",
+        sector="Fisheries",
+        doc_parts=[{
+            "label": "PROJECT DOCUMENT",
+            "name": "Project Appraisal Document.txt",
+            "raw_text": (
+                "A fishery project in Blue Marsh will rehabilitate landing "
+                "sites for fishing households exposed to flood risk."
+            ),
+        }],
+        instrument="IPF",
+        document_stage="PAD",
+    )
+
+
+def test_shared_research_path_builds_one_profile_without_changing_live_input(
+    monkeypatch,
+):
+    bank = _ProfileBank()
+    built_profiles = []
+    selected_profiles = []
+    live_inputs = []
+    client_calls = []
+    real_builder = app_module.build_project_climate_profile
+
+    def capture_build(**kwargs):
+        profile = real_builder(**kwargs)
+        built_profiles.append(profile)
+        return profile
+
+    def capture_selection(_bank, **kwargs):
+        selected_profiles.append(kwargs.get("project_profile"))
+        assert "project_signals" not in kwargs
+        return {
+            "bank_status": "ok",
+            "warning_code": "",
+            "schema_version": "1.1.0",
+            "content_version": "test-1",
+            "country_iso3": "SSD",
+            "evidence_ids": [],
+            "pathway_ids": [],
+            "diagnostics": {
+                "selected": [],
+                "suppressed": [],
+                "missing_classes": [],
+            },
+        }
+
+    def capture_live(_country, _sector, project_input, *_args, **_kwargs):
+        live_inputs.append(project_input)
+        return _valid_research()
+
+    def research_client():
+        client_calls.append(object())
+        return client_calls[-1]
+
+    app_module._research_cache.clear()
+    monkeypatch.setattr(app_module, "load_climate_bank", lambda: bank)
+    monkeypatch.setattr(
+        app_module, "build_project_climate_profile", capture_build
+    )
+    monkeypatch.setattr(app_module, "select_bank_manifest", capture_selection)
+    monkeypatch.setattr(
+        app_module,
+        "run_fcv_web_research",
+        lambda *_args, **_kwargs: {"brief": "Core research."},
+    )
+    monkeypatch.setattr(app_module, "run_climate_web_research", capture_live)
+    monkeypatch.setattr(app_module, "get_research_client", research_client)
+
+    plan = _profile_research_plan()
+    events = list(app_module._iter_stage1_research(plan, "profile-shared"))
+    result = events[-1]["result"]
+
+    assert len(built_profiles) == 1
+    assert selected_profiles == built_profiles
+    assert isinstance(selected_profiles[0], ProjectClimateProfile)
+    assert selected_profiles[0].to_public_dict()["geographies"] == [
+        "Blue Marsh County"
+    ]
+    assert selected_profiles[0].instrument == "IPF"
+    assert selected_profiles[0].document_stage == "PAD"
+    assert live_inputs == [plan["project_profile"]]
+    assert live_inputs[0]["document_excerpt"].startswith("A fishery project")
+    assert set(live_inputs[0]) == {"documents", "document_excerpt"}
+    assert len(client_calls) == 2
+    assert result["climate_research"]["status"] == "complete"
+
+
+def test_profile_failure_degrades_bank_without_blocking_live_research(
+    monkeypatch,
+):
+    app_module._research_cache.clear()
+    monkeypatch.setattr(app_module, "load_climate_bank", _ProfileBank)
+    monkeypatch.setattr(
+        app_module,
+        "build_project_climate_profile",
+        lambda **_kwargs: (_ for _ in ()).throw(ValueError("bad profile")),
+        raising=False,
+    )
+    monkeypatch.setattr(
+        app_module,
+        "select_bank_manifest",
+        lambda *_args, **_kwargs: pytest.fail(
+            "selection must not receive a failed profile"
+        ),
+    )
+    monkeypatch.setattr(
+        app_module,
+        "run_fcv_web_research",
+        lambda *_args, **_kwargs: {"brief": "Core research."},
+    )
+    monkeypatch.setattr(
+        app_module,
+        "run_climate_web_research",
+        lambda *_args, **_kwargs: _valid_research(),
+    )
+    monkeypatch.setattr(app_module, "get_research_client", object)
+
+    events = list(app_module._iter_stage1_research(
+        _profile_research_plan(), "profile-failure"
+    ))
+    result = events[-1]["result"]
+
+    assert result["climate_grounding"] == {
+        "bank_status": "unavailable",
+        "warning_code": "bank_profile_invalid",
+    }
+    assert result["climate_research"]["status"] == "complete"
+
+
+def test_climate_disabled_research_does_not_build_profile_or_load_bank(
+    monkeypatch,
+):
+    app_module._research_cache.clear()
+    monkeypatch.setattr(
+        app_module,
+        "build_project_climate_profile",
+        lambda **_kwargs: pytest.fail("profile must remain Climate-only"),
+        raising=False,
+    )
+    monkeypatch.setattr(
+        app_module,
+        "load_climate_bank",
+        lambda: pytest.fail("generic FCV research must not load climate bank"),
+    )
+    monkeypatch.setattr(
+        app_module,
+        "run_fcv_web_research",
+        lambda *_args, **_kwargs: {"brief": "Core research."},
+    )
+    monkeypatch.setattr(app_module, "get_research_client", object)
+
+    events = list(app_module._iter_stage1_research(
+        _profile_research_plan(climate_enabled=False), "profile-disabled"
+    ))
+
+    assert events[-1]["result"]["core_brief"] == "Core research."
+    assert events[-1]["result"]["climate_grounding"]["bank_status"] == (
+        "unavailable"
+    )
+
+
+def test_browser_manifest_keeps_only_controlled_selection_diagnostics():
+    safe = app_module._safe_climate_bank_manifest({
+        "bank_status": "ok",
+        "warning_code": "",
+        "schema_version": "1.1.0",
+        "content_version": "test-1",
+        "country_iso3": "SSD",
+        "evidence_ids": ["SSD-E-001"],
+        "pathway_ids": [],
+        "project_profile": {"uploaded_text": "CONFIDENTIAL PROFILE"},
+        "diagnostics": {
+            "selected": [{
+                "id": "SSD-E-001",
+                "score": 19,
+                "matched_fields": ["geographies", "uploaded_text"],
+                "balance_role": "climate-pressure",
+                "staleness": "stale_current",
+                "claim": "CONFIDENTIAL DIAGNOSTIC PROSE",
+            }],
+            "suppressed": [{
+                "id": "SSD-E-002",
+                "reason": "low_relevance",
+                "excerpt": "CONFIDENTIAL EXCERPT",
+            }],
+            "missing_classes": [
+                "institution-response",
+                "CONFIDENTIAL CLASS",
+            ],
+        },
+    })
+
+    assert "project_profile" not in safe
+    assert safe["diagnostics"] == {
+        "selected": [{
+            "id": "SSD-E-001",
+            "score": 19,
+            "matched_fields": ["geographies"],
+            "balance_role": "climate-pressure",
+            "staleness": "stale_current",
+        }],
+        "suppressed": [{
+            "id": "SSD-E-002",
+            "reason": "low_relevance",
+        }],
+        "missing_classes": ["institution-response"],
+    }
+    serialized = json.dumps(safe, sort_keys=True)
+    assert "CONFIDENTIAL" not in serialized
+
+
+def test_browser_manifest_rejects_malformed_diagnostic_containers():
+    safe = app_module._safe_climate_bank_manifest({
+        "bank_status": "ok",
+        "diagnostics": {
+            "selected": {"id": "SSD-E-001"},
+            "suppressed": "SSD-E-002",
+            "missing_classes": {"institution-response": True},
+        },
+    })
+
+    assert safe["diagnostics"] == {
+        "selected": [],
+        "suppressed": [],
+        "missing_classes": [],
+    }
+
+
 @pytest.mark.parametrize("endpoint", ["/api/run-stage", "/api/run-express"])
-def test_climate_research_failure_blocks_both_workflows_before_model(
+def test_climate_research_failure_continues_with_bank(
     monkeypatch, endpoint, caplog,
 ):
+    # Exercise the retained legacy Climate path; exact Climate-only Express uses v2.
+    monkeypatch.setattr(app_module, "_is_verified_climate_express", lambda *_args: False)
     caplog.set_level("INFO")
+    manifest = {
+        "bank_status": "ok",
+        "warning_code": "",
+        "schema_version": "1.0.0",
+        "content_version": "test-1",
+        "country_iso3": "SSD",
+        "evidence_ids": ["SSD-E-001"],
+        "pathway_ids": ["SSD-P-001"],
+    }
+    packet = {
+        "bank_status": "ok",
+        "warning_code": "",
+        "content_version": "test-1",
+        "country_iso3": "SSD",
+        "sources": [{
+            "source_id": "SSD-SRC-001",
+            "title": "Reviewed source",
+            "url": "https://www.sipri.org/example",
+        }],
+        "evidence_records": [{
+            "evidence_id": "SSD-E-001",
+            "compact_statement": "Reviewed evidence.",
+        }],
+        "pathways": [{
+            "pathway_id": "SSD-P-001",
+            "compact_statement": "Reviewed pathway.",
+        }],
+    }
+    merged = {
+        "state": "bank-only",
+        "warning_code": "climate_research_failed",
+        "research_status": "failed",
+        "bank_manifest": manifest,
+        "sources": packet["sources"],
+        "bank_character_count": 18,
+        "selected_item_count": 2,
+        "content_version": "test-1",
+        "country_iso3": "SSD",
+        "bank_evidence_records": [{"secret": "BANK PROSE"}],
+        "live_claims": [{"secret": "LIVE CLAIM"}],
+        "prompt_context": "SECRET INTERNAL PROMPT",
+    }
     model_calls = []
 
-    def forbidden_stream(*args, **kwargs):
-        model_calls.append((args, kwargs))
-        raise AssertionError("Stage model must not run after climate research failure")
+    def stop_after_model_entry(messages, max_tokens, stage, **kwargs):
+        model_calls.append(stage)
+        if endpoint == "/api/run-stage":
+            app_module._stream_stage._last_result = "Stage 1 output."
+            return
+        raise RuntimeError("intentional test stop after model entry")
         yield  # pragma: no cover
 
     monkeypatch.setattr(
-        app_module, "extract_country_name", lambda text, client: "Exampleland"
+        app_module, "extract_country_name", lambda text, client: "South Sudan"
     )
     monkeypatch.setattr(
-        app_module, "extract_sector_name", lambda text, client: "Transport"
+        app_module, "extract_sector_name", lambda text, client: "Fisheries"
     )
     monkeypatch.setattr(app_module, "get_fast_client", lambda: object())
     monkeypatch.setattr(
         app_module,
         "_iter_stage1_research",
-        lambda *args, **kwargs: _research_result(_failed_research()),
+        lambda *args, **kwargs: _research_result(
+            _failed_research(), manifest
+        ),
     )
-    monkeypatch.setattr(app_module, "_stream_stage", forbidden_stream)
+    monkeypatch.setattr(
+        app_module, "load_climate_bank", lambda: object()
+    )
+    monkeypatch.setattr(
+        app_module, "materialize_bank_manifest",
+        lambda *args, **kwargs: packet,
+    )
+    monkeypatch.setattr(
+        app_module, "merge_climate_grounding",
+        lambda *args, **kwargs: dict(merged),
+    )
+    monkeypatch.setattr(app_module, "_stream_stage", stop_after_model_entry)
     payload = {
         "active_lenses": ["climate"],
         "documents": [{
@@ -306,16 +629,164 @@ def test_climate_research_failure_blocks_both_workflows_before_model(
     response = app_module.app.test_client().post(endpoint, json=payload)
     events = _decode_sse(response)
 
-    decision = app_module.climate_research_evidence_gate(_failed_research())
-    assert app_module.climate_blocking_failure_event(
-        decision["code"], decision["message"], 1
-    ) in events
-    assert model_calls == []
-    assert not any(event.get("status") == "preparing_analysis" for event in events)
-    assert not any(event.get("stage_done") or event.get("done") for event in events)
+    assert any(event.get("status") == "preparing_analysis" for event in events)
+    assert model_calls == [1]
+    assert not any(
+        event.get("error_code", "").startswith("climate_research")
+        for event in events
+    )
+    outbound_grounding = [
+        event["climate_grounding"]
+        for event in events
+        if isinstance(event.get("climate_grounding"), dict)
+    ]
+    if endpoint == "/api/run-stage" and not outbound_grounding:
+        outbound_grounding = [app_module.climate_grounding_envelope(merged)]
+    assert outbound_grounding
+    assert all(
+        "bank_evidence_records" not in item
+        and "live_claims" not in item
+        and "prompt_context" not in item
+        for item in outbound_grounding
+    )
+    assert "grounding_state=bank-only" in caplog.text
     if endpoint == "/api/run-express":
         assert "active_lenses=climate" in caplog.text
 
+
+
+def test_rejected_bank_manifest_is_not_reattached(monkeypatch):
+    invalid_manifest = {
+        "bank_status": "ok",
+        "warning_code": "",
+        "schema_version": "1.0.0",
+        "content_version": "wrong-version",
+        "country_iso3": "SSD",
+        "evidence_ids": ["SSD-E-999"],
+        "pathway_ids": [],
+    }
+    monkeypatch.setattr(app_module, "load_climate_bank", lambda: object())
+    monkeypatch.setattr(
+        app_module,
+        "materialize_bank_manifest",
+        lambda *args, **kwargs: {
+            "bank_status": "unavailable",
+            "warning_code": "bank_manifest_invalid",
+        },
+    )
+
+    grounding, _ = app_module.resolve_climate_grounding(
+        invalid_manifest,
+        _failed_research(),
+        assessment_id="invalid-manifest",
+    )
+
+    assert grounding["bank_manifest"] == {
+        "bank_status": "unavailable",
+        "warning_code": "bank_manifest_invalid",
+    }
+    assert "evidence_ids" not in grounding["bank_manifest"]
+
+
+@pytest.mark.parametrize(
+    ("bank_available", "research_available", "expected_state"),
+    [
+        (True, True, "bank+research"),
+        (True, False, "bank-only"),
+        (False, True, "research-only"),
+        (False, False, "thematic-only"),
+    ],
+)
+def test_grounding_resolver_has_all_four_real_states(
+    monkeypatch,
+    bank_available,
+    research_available,
+    expected_state,
+):
+    manifest = {
+        "bank_status": "ok",
+        "warning_code": "",
+        "schema_version": "1.0.0",
+        "content_version": "test-1",
+        "country_iso3": "SSD",
+        "evidence_ids": ["SSD-E-001"],
+        "pathway_ids": [],
+    }
+    packet = {
+        "bank_status": "ok",
+        "warning_code": "",
+        "content_version": "test-1",
+        "country_iso3": "SSD",
+        "sources": [{
+            "source_id": "SSD-SRC-001",
+            "title": "Reviewed source",
+            "url": "https://sipri.org/example",
+        }],
+        "evidence_records": [{
+            "evidence_id": "SSD-E-001",
+            "compact_statement": "Reviewed evidence.",
+            "source_refs": [{"source_id": "SSD-SRC-001"}],
+        }],
+        "pathways": [],
+    }
+    unavailable = {
+        "bank_status": "unavailable",
+        "warning_code": "bank_unavailable",
+    }
+    monkeypatch.setattr(app_module, "load_climate_bank", lambda: object())
+    monkeypatch.setattr(
+        app_module,
+        "materialize_bank_manifest",
+        lambda *args, **kwargs: packet if bank_available else unavailable,
+    )
+    research = _valid_research() if research_available else _failed_research()
+
+    grounding, accepted_research = app_module.resolve_climate_grounding(
+        manifest,
+        research,
+        assessment_id=f"state-{expected_state}",
+    )
+
+    assert grounding["state"] == expected_state
+    assert bool(accepted_research["claims"]) is research_available
+    envelope = app_module.climate_grounding_envelope(grounding)
+    assert "prompt_context" not in envelope
+    assert "bank_evidence_records" not in envelope
+
+
+def test_only_server_validated_bank_source_ids_enter_native_context():
+    state = app_module.AnalysisState.from_payload({
+        "active_lenses": ["climate"],
+    })
+    diagnostic = _canonical_payload()
+    diagnostic["lenses"][0]["source_ids"] = ["SSD-SRC-001"]
+
+    validated = app_module.build_lens_stage_context(
+        state,
+        3,
+        lens_diagnostic=diagnostic,
+        climate_grounding={
+            "_validated_bank_source_ids": ["SSD-SRC-001"],
+        },
+        compose_prompt=False,
+    )
+    untrusted = app_module.build_lens_stage_context(
+        state,
+        3,
+        lens_diagnostic=diagnostic,
+        climate_grounding={
+            "bank_sources": [{"source_id": "SSD-SRC-001"}],
+            "sources": [{"source_id": "SSD-SRC-001"}],
+        },
+        compose_prompt=False,
+    )
+
+    assert "SSD-SRC-001" in (
+        validated["lens_diagnostic"]["lenses"][0]["source_ids"]
+    )
+    assert "SSD-SRC-001" not in (
+        untrusted["lens_diagnostic"]["lenses"][0]["source_ids"]
+    )
 
 
 def test_standard_climate_stage2_uses_native_prompt_and_canonical_output(
@@ -398,7 +869,7 @@ def test_standard_climate_stage2_uses_native_prompt_and_canonical_output(
     assert done["lens_diagnostic_recovered"] is True
     assert len(calls) == 1
     assert calls[0]["stage"] == 2
-    assert calls[0]["max_tokens"] == 8000
+    assert calls[0]["max_tokens"] == 16000
     assembled = calls[0]["messages"][-1]["content"]
     assert "dedicated Climate-FCV Stage 2 assessment" in assembled
     assert assembled.count("%%%LENS_DIAGNOSTIC_START%%%") == 1
@@ -425,6 +896,8 @@ def test_standard_climate_stage2_uses_native_prompt_and_canonical_output(
 
 
 def test_express_climate_stage2_uses_native_prompt_and_canonical_output(monkeypatch):
+    # Exercise the retained legacy Climate path; exact Climate-only Express uses v2.
+    monkeypatch.setattr(app_module, "_is_verified_climate_express", lambda *_args: False)
     payload = _canonical_payload()
     raw_model_output = "%%%LENS_DIAGNOSTIC_START%%%" + json.dumps(payload) + "%%%LENS_DIAGNOSTIC_END%%%"
     calls = []
@@ -500,7 +973,7 @@ def test_express_climate_stage2_uses_native_prompt_and_canonical_output(monkeypa
     assert any(event.get("recovery_status") == "repairing" for event in events)
     assert any(event.get("keepalive") is True for event in events)
     assert done["lens_diagnostic_recovered"] is True
-    assert stage2_call["max_tokens"] == 8000
+    assert stage2_call["max_tokens"] == 16000
     assembled = stage2_call["messages"][-1]["content"]
     assert "dedicated Climate-FCV Stage 2 assessment" in assembled
     assert assembled.count("%%%LENS_DIAGNOSTIC_START%%%") == 1
@@ -667,6 +1140,8 @@ def test_recovery_emits_keepalive_before_slow_result():
 
 @pytest.mark.parametrize("endpoint", ["/api/run-stage", "/api/run-express"])
 def test_climate_recovery_failure_blocks_both_workflows(monkeypatch, endpoint):
+    # Exercise the retained legacy Climate path; exact Climate-only Express uses v2.
+    monkeypatch.setattr(app_module, "_is_verified_climate_express", lambda *_args: False)
     model_stages = []
 
     def fake_stream(messages, max_tokens, stage, **kwargs):
@@ -927,6 +1402,8 @@ def test_standard_climate_stage3_branches_before_generic_prompt_and_compacts_his
 
 
 def test_express_climate_stage3_branches_before_generic_prompt_and_compacts_history(monkeypatch):
+    # Exercise the retained legacy Climate path; exact Climate-only Express uses v2.
+    monkeypatch.setattr(app_module, "_is_verified_climate_express", lambda *_args: False)
     calls = []
     stage3_output = [_climate_priority_output()]
     express_diagnostic = json.loads(json.dumps(_canonical_payload()))
@@ -989,3 +1466,26 @@ def test_express_climate_stage3_branches_before_generic_prompt_and_compacts_hist
     blocked = next(e for e in blocked_events if e.get("error_code") == "climate_priority_invalid")
     assert blocked["failed_stage"] == 3
     assert not any(e.get("stage_done") == 3 for e in blocked_events)
+
+
+def test_candidate_preview_manifest_is_preserved_for_display() -> None:
+    manifest = {
+        "bank_status": "ok",
+        "warning_code": "",
+        "schema_version": "1.1.0",
+        "content_version": "2026.08-preview",
+        "country_iso3": "SSD",
+        "evidence_ids": ["SSD-E-020"],
+        "pathway_ids": [],
+        "candidate_preview": True,
+    }
+
+    safe = app_module._safe_climate_bank_manifest(manifest)
+    assert safe["candidate_preview"] is True
+    envelope = app_module.climate_grounding_envelope({
+        "state": "bank-only",
+        "bank_manifest": manifest,
+        "candidate_preview": True,
+    })
+    assert envelope["candidate_preview"] is True
+    assert envelope["bank_manifest"]["candidate_preview"] is True

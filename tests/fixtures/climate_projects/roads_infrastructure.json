@@ -1,0 +1,31 @@
+{
+  "country": "South Sudan",
+  "instrument": "PforR",
+  "document_stage": "PAD",
+  "geographies": ["Red Ridge County"],
+  "sectors": ["infrastructure", "transport"],
+  "project_elements": ["all-weather road rehabilitation", "bridge upgrades"],
+  "affected_groups": ["rural households", "traders"],
+  "institutions": ["county road authority", "municipal works department"],
+  "systems_assets": ["feeder roads", "river bridge"],
+  "documented_hazards": ["flash flooding", "landslide"],
+  "time_horizons": ["current", "long-term"],
+  "signal_metadata": [
+    {"field": "geographies", "canonical_value": "Red Ridge County", "source": "document", "confidence": "high"},
+    {"field": "sectors", "canonical_value": "infrastructure", "source": "document", "confidence": "high"},
+    {"field": "sectors", "canonical_value": "transport", "source": "document", "confidence": "high"},
+    {"field": "project_elements", "canonical_value": "all-weather road rehabilitation", "source": "document", "confidence": "high"},
+    {"field": "project_elements", "canonical_value": "bridge upgrades", "source": "document", "confidence": "high"},
+    {"field": "affected_groups", "canonical_value": "rural households", "source": "document", "confidence": "high"},
+    {"field": "affected_groups", "canonical_value": "traders", "source": "document", "confidence": "high"},
+    {"field": "institutions", "canonical_value": "county road authority", "source": "document", "confidence": "high"},
+    {"field": "institutions", "canonical_value": "municipal works department", "source": "document", "confidence": "high"},
+    {"field": "systems_assets", "canonical_value": "feeder roads", "source": "document", "confidence": "high"},
+    {"field": "systems_assets", "canonical_value": "river bridge", "source": "document", "confidence": "high"},
+    {"field": "documented_hazards", "canonical_value": "flash flooding", "source": "document", "confidence": "high"},
+    {"field": "documented_hazards", "canonical_value": "landslide", "source": "document", "confidence": "high"},
+    {"field": "time_horizons", "canonical_value": "current", "source": "document", "confidence": "high"},
+    {"field": "time_horizons", "canonical_value": "long-term", "source": "document", "confidence": "high"}
+  ],
+  "unresolved": []
+}

@@ -1,0 +1,31 @@
+{
+  "country": "South Sudan",
+  "instrument": "IPF",
+  "document_stage": "PCN",
+  "geographies": ["Blue Marsh County"],
+  "sectors": ["fisheries", "forestry", "natural-resource management"],
+  "project_elements": ["cold-chain facilities", "community forest management plans"],
+  "affected_groups": ["fishers", "forest user groups"],
+  "institutions": ["community forestry committees", "Ministry of Aquatic Resources"],
+  "systems_assets": ["fish landing sites", "mangrove nurseries"],
+  "documented_hazards": ["seasonal flooding", "wildfire"],
+  "time_horizons": ["medium-term"],
+  "signal_metadata": [
+    {"field": "geographies", "canonical_value": "Blue Marsh County", "source": "document", "confidence": "high"},
+    {"field": "sectors", "canonical_value": "fisheries", "source": "document", "confidence": "high"},
+    {"field": "sectors", "canonical_value": "forestry", "source": "document", "confidence": "high"},
+    {"field": "sectors", "canonical_value": "natural-resource management", "source": "document", "confidence": "high"},
+    {"field": "project_elements", "canonical_value": "cold-chain facilities", "source": "document", "confidence": "high"},
+    {"field": "project_elements", "canonical_value": "community forest management plans", "source": "document", "confidence": "high"},
+    {"field": "affected_groups", "canonical_value": "fishers", "source": "document", "confidence": "high"},
+    {"field": "affected_groups", "canonical_value": "forest user groups", "source": "document", "confidence": "high"},
+    {"field": "institutions", "canonical_value": "community forestry committees", "source": "document", "confidence": "high"},
+    {"field": "institutions", "canonical_value": "Ministry of Aquatic Resources", "source": "document", "confidence": "high"},
+    {"field": "systems_assets", "canonical_value": "fish landing sites", "source": "document", "confidence": "high"},
+    {"field": "systems_assets", "canonical_value": "mangrove nurseries", "source": "document", "confidence": "high"},
+    {"field": "documented_hazards", "canonical_value": "seasonal flooding", "source": "document", "confidence": "high"},
+    {"field": "documented_hazards", "canonical_value": "wildfire", "source": "document", "confidence": "high"},
+    {"field": "time_horizons", "canonical_value": "medium-term", "source": "document", "confidence": "high"}
+  ],
+  "unresolved": []
+}

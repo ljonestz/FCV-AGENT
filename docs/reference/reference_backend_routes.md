@@ -392,3 +392,56 @@ def clean_stage2_output(stage2_output):
 - `build_lens_stage_context(..., project_signals="")` — injects the triggered bank + §12 calibration into the Stage 2 climate suffix; drops `wider_fcv_context` and adds §12.5/§12.9 guardrails to the Stage 3 climate prefix.
 - `climate_integration_payload(diagnostic)` now returns `{level, rating, summary}`.
 - DOCX (`download_report`): `add_climate_strengths_weaknesses()` + `add_climate_core_questions()` replace the standalone reflections/dividend/wider-FCV sections in climate mode.
+
+## Climate-FCV country-bank route contract (v9.23)
+
+Stage 1 in both `/api/run-express` and `/api/run-stage` selects a compact bank
+manifest before live research. Completion events include `climate_grounding`
+alongside `climate_research`. Stage 2 accepts only
+`climate_grounding.bank_manifest`, rematerializes canonical records from the
+pinned server release, and ignores browser-supplied source/evidence prose.
+`/api/download-report` uses the same resolver before rendering provenance.
+
+The browser envelope contains `state`, `warning_code`, `content_version`,
+`country_iso3`, `research_status`, a sanitized `bank_manifest`, and bounded source
+metadata. It excludes `prompt_context`, evidence/pathway records, and live claims.
+Manifest fields are `bank_status`, `warning_code`, `schema_version`,
+`content_version`, `country_iso3`, `evidence_ids`, and `pathway_ids`.
+
+Typed warnings include `bank_missing`, `bank_incompatible`,
+`bank_version_mismatch`, `bank_country_unavailable`, `bank_country_unapproved`,
+`bank_content_expired`, `bank_manifest_invalid`, `bank_scope_unsupported`, and
+`bank_packet_too_large`. All degrade without terminating the Climate run.
+
+## Verified Climate-FCV Express route (v9.24)
+
+For a design review whose resolved active-lens set is exactly `climate`,
+`/api/run-express` preserves the existing extraction, country profile, bank
+selection, live research, and final grounding steps, then dispatches to
+`climate-verified-v2`. Exactly one file explicitly placed in the Project Document
+slot may supply bounded project-fact blocks. Its applicability/version are recorded as
+`partial`/`user_designated`, not independently verified/latest; stage, geography, and
+financed scope remain unresolved. Unresolved package uploads remain in the document inventory but
+their blocks are withheld from fact extraction; multiple candidate primaries withhold
+all fact authority until precedence is resolved. Runtime blocks are deterministic
+chunks of extracted text rather than original DOCX/PDF structural locators. Uploaded
+context, country-bank evidence, and live claims remain contextual.
+The route emits the usual three completion markers for browser compatibility,
+with additive `climate_assessment` and `climate_reader` fields on Stages 2 and 3.
+No legacy Stage 1/2/3 model stream is called on this path. Keepalives are emitted
+while verified calls execute. The worker has a 14-minute wall-clock ceiling, retries
+share the call's original timeout budget, and cancellation prevents later paid calls
+after timeout or disconnect. A synchronous provider request already in flight cannot
+be killed safely and may continue until its bounded per-call timeout. Mixed-lens, implementation, step-by-step, and
+legacy-session behavior is unchanged.
+
+`POST /api/download-report` accepts `climate_assessment` when its schema is
+`climate-verified-v2`, rebuilds and validates the canonical reader model, and
+returns the verified DOCX. Reader-integrity failures return 422 with bounded reason
+codes instead of exporting a malformed report. Zero-priority verified exports
+retain the reader's explicit no-recommendation admission message in HTML and DOCX.
+
+Completed verified runs emit one bounded `Climate recommendation diagnostics`
+application-log line with counts, semantic-review state, up to 12 reason codes,
+and up to 12 unsupported numeric tokens. It never logs candidate text, source
+excerpts, or model reasoning.

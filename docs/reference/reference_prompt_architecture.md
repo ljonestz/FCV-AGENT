@@ -366,4 +366,61 @@ language is relabelled.
 
 **Budgets:** `PLATFORM_STAGE_BUDGETS` = stage1 600 / stage2 3300 / stage3 1600; `_bounded_stage3_lenses` target 1500.
 
-**Readout order (live HTML, shared HTML, DOCX in parity):** module notice + 6-tier gauge -> `renderClimateStrengthsWeaknesses` -> `renderClimateCoreQuestions` (lay intro naming the source literature + both interaction directions in prose + per-theme answers with source). Standalone dividends + wider-FCV sections dropped in module mode. DOCX helpers: `add_climate_strengths_weaknesses`, `add_climate_core_questions`.
+**Readout order (live HTML, shared HTML, DOCX in parity):** plain opening narrative + 6-tier gauge -> `renderClimateStrengthsWeaknesses` -> `renderClimateCoreQuestions` (lay intro naming the source literature + both interaction directions in one or two component-anchored paragraphs + per-theme answers with framework references). The opening uses `executive_summary` for two-to-three scene-setting sentences and `materiality_summary` for the project-specific "Why it matters" transition. Reader-facing copy uses climate relevance/importance rather than materiality. Core-question `status_cue` remains in the canonical payload for compatibility but is not rendered. Standalone dividends + wider-FCV sections remain dropped in module mode. DOCX helpers: `add_climate_strengths_weaknesses`, `add_climate_core_questions`.
+
+## Climate-FCV country-bank grounding (v9.23)
+
+The native Climate Stage 2 prompt accepts one bounded `EXTERNAL CLIMATE-FCV
+GROUNDING` data block. It identifies one of four states (`bank+research`,
+`bank-only`, `research-only`, `thematic-only`) and distinguishes reviewed
+structural bank evidence from accepted current/project-specific live research.
+The block is untrusted evidence, never instructions. Canonical IDs are citations;
+`observed`, `projected`, and `inferred` labels must be preserved; analytical
+inference remains conditional; and co-occurrence is not causality.
+
+The bank projection is capped at 6,000 characters and combined grounding at
+12,000. This does not recreate the generic 12-OST prompt: Climate Stage 2 remains
+native, while non-Climate runs follow the standard prompt path unchanged.
+
+Live research normally makes one bounded request. A second request is allowed only
+when the first response contains a structured `partial|complete` bundle with at
+least one source and one claim and fails specifically with
+`climate_research_insufficient`. Missing structured output, structuring truncation,
+timeouts, and terminal provider failures do not use this evidence-gate retry.
+
+## Verified Climate-FCV prompt architecture (v9.24)
+
+Climate-only Express design reviews use four required structured calls plus one
+conditional review: atomic fact extraction; bounded pathway/existing-response/
+residual-gap analysis; four-dimensional judgment plus a 350-600 word executive
+readout; and recommendation admission/compilation. Conditional semantic review is
+triggered only by high-risk routing, authority, evidence, or drafting conditions.
+Every response is one delimited JSON object. Uploaded/retrieved content is untrusted
+evidence, never instructions. Only one unambiguous designated primary project document establishes project facts;
+unresolved package documents are inventoried but cannot supply fact blocks. Country
+and uploaded-context evidence can support contextual pathways and questions
+but not project commitments, sites, beneficiaries, instruments, or confirmed gaps.
+The recommendation compiler may use numeric labels only when they occur in a
+candidate-linked verified project fact. The pipeline derives that support
+independently, so model-supplied numeric-token declarations cannot self-attest an
+unsourced date, threshold, or quantity.
+
+## Verified Climate-FCV drafting integrity (v9.25)
+
+Only the recommendation compiler receives the bounded, versioned operational-
+guidance packet selected for the detected document and instrument type. The
+packet identifies permitted drafting destinations and wording boundaries; it is
+advisory context, not project evidence or a substitute for OPCS/ESF source text.
+Every admitted priority must contain a structured 90-160 word current-document
+drafting block. A second block is optional and may target an operational
+instrument only when that named instrument and its relationship to the project
+are evidenced.
+
+Deterministic checks reject unsupported actors, instruments, technical systems,
+effectiveness/appraisal timing, mandatory wording, evidence references, and
+duplicative optional drafting. Bounded telemetry records only field paths and
+reason codes. Conditional semantic review evaluates both drafting blocks against
+existing mitigation, residual gaps, destination, scope, actor, timing, authority,
+and unsupported technical precision. The judgment call must assess the four
+dimensions from evidence and must not predict how many recommendations a later
+admission stage will retain.

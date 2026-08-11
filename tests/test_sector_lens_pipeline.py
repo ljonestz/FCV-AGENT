@@ -12,6 +12,7 @@ from sector_lenses import (
     lens_catalogue,
     load_registry,
     merge_lens_findings,
+    normalize_climate_assessment,
     normalize_lens_diagnostic,
     normalize_priority_climate_links,
     strip_lens_blocks,
@@ -636,6 +637,77 @@ def test_climate_reflection_status_cues_softened_from_machine_tokens():
     assert not any("_" in cue for cue in cues)
 
 
+def test_climate_reflection_status_cues_stay_concise_for_reader_chips():
+    block = (
+        "%%%LENS_DIAGNOSTIC_START%%%"
+        '{"lenses":[{"lens_id":"climate","applicability":"material",'
+        '"materiality_level":"high","reflections":['
+        '{"question_key":"cq1_interaction","title":"a",'
+        '"status_cue":"Material gap — no design provision for maintaining inclusion after shocks",'
+        '"text":"x"},'
+        '{"question_key":"cq2_maladaptation","title":"b",'
+        '"status_cue":"Risk present — conflict-sensitivity screening required",'
+        '"text":"x"}],'
+        '"source_ids":[],"readout_sections":[],"interaction_readout":[],'
+        '"additional_pathways":[],"other_pathways":[]}],"findings":[]}'
+        "%%%LENS_DIAGNOSTIC_END%%%"
+    )
+
+    lens = extract_lens_diagnostic(block, ["climate"])["lenses"][0]
+
+    assert [item["status_cue"] for item in lens["reflections"]] == [
+        "material gap",
+        "risk present",
+    ]
+
+
+def test_climate_materiality_summary_clips_at_a_word_boundary():
+    summary = " ".join(["compound", "climate", "risk"] * 35)
+    block = (
+        "%%%LENS_DIAGNOSTIC_START%%%"
+        '{"lenses":[{"lens_id":"climate","applicability":"material",'
+        '"materiality_level":"high","materiality_summary":'
+        + json.dumps(summary)
+        + ',"source_ids":[],"readout_sections":[],"interaction_readout":[],'
+        '"additional_pathways":[],"other_pathways":[]}],"findings":[]}'
+        "%%%LENS_DIAGNOSTIC_END%%%"
+    )
+
+    materiality = extract_lens_diagnostic(block, ["climate"])["lenses"][0][
+        "materiality_summary"
+    ]
+
+    assert len(materiality) <= 600
+    assert materiality.endswith("…")
+    assert materiality[-2].isalpha()
+
+
+def test_climate_relevance_summary_prefers_complete_sentences_and_plain_language():
+    summary = (
+        "This operation faces high-materiality climate and FCV pressures. "
+        "Flood access affects Component 1 delivery and displaced households. "
+        + "A final sentence should be removed before it is cut in the middle. " * 20
+    )
+    block = (
+        "%%%LENS_DIAGNOSTIC_START%%%"
+        '{"lenses":[{"lens_id":"climate","applicability":"material",'
+        '"materiality_level":"high","materiality_summary":'
+        + json.dumps(summary)
+        + ',"source_ids":[],"readout_sections":[],"interaction_readout":[],'
+        '"additional_pathways":[],"other_pathways":[]}],"findings":[]}'
+        "%%%LENS_DIAGNOSTIC_END%%%"
+    )
+
+    rendered = extract_lens_diagnostic(block, ["climate"])["lenses"][0][
+        "materiality_summary"
+    ]
+
+    assert len(rendered) <= 600
+    assert rendered.endswith(".")
+    assert not rendered.endswith("…")
+    assert "materiality" not in rendered.lower()
+
+
 def test_climate_reflection_carries_source_and_long_text():
     long_text = "Paragraph one about maladaptation lock-in. " * 20 + "\n\n" + \
                 "Paragraph two naming Sub-component 1.2 cold storage. " * 20
@@ -833,3 +905,44 @@ def test_non_climate_error_envelope_retains_legacy_normalization():
 
     assert normalized == legacy
     assert normalized["error"] is False
+
+
+def test_v1_climate_assessment_remains_readable_but_unverified():
+    result = normalize_climate_assessment({
+        "schema_version": "climate-native-v1",
+        "integration_rating": "Low",
+        "priorities": [],
+    })
+
+    assert result["verification_status"] == "legacy_unverified"
+    assert result["legacy"] is True
+    assert result["integration_rating"] == "Low"
+    assert "judgments" not in result
+
+
+def test_v2_climate_assessment_preserves_four_judgments():
+    result = normalize_climate_assessment({
+        "schema_version": "climate-verified-v2.1",
+        "judgments": {
+            "relevance": {"value": "high"},
+            "sensitivity": {"value": "moderate"},
+            "responsiveness": {"value": "emerging"},
+            "operationalization": {"value": "partial"},
+        },
+        "validation": {"status": "passed"},
+        "priorities": [],
+    })
+
+    assert result["verification_status"] == "automated_checks_passed"
+    assert result["legacy"] is False
+    assert result["judgments"]["operationalization"]["value"] == "partial"
+
+
+def test_v2_attention_is_not_mislabelled_as_passed():
+    result = normalize_climate_assessment({
+        "schema_version": "climate-verified-v2.1",
+        "validation": {"status": "attention"},
+        "priorities": [],
+    })
+
+    assert result["verification_status"] == "automated_checks_attention"

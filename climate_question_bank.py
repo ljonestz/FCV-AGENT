@@ -90,6 +90,43 @@ BANK_SOURCE_HEADLINE = (
     "the Defueling Conflict (peace and social dividends) series",
 )
 
+# Core WBG climate-FCV literature the lens draws on. url is a canonical public
+# WBG URL only where verified; None (name-only) otherwise. NEVER put an
+# unverified URL here. description is a short plain-language line explaining what
+# the source is, for a lay reader who has not seen it before.
+CLIMATE_LITERATURE_REFERENCES: list[dict[str, object]] = [
+    {
+        "title": "Maximizing the Peace and Social Dividends of Climate Action",
+        "url": "https://www.worldbank.org/en/topic/fragilityconflictviolence/publication/maximizing-the-peace-and-social-dividends-of-climate-action",
+        "description": "how climate action can also reduce conflict and build social cohesion, not just deliver climate outputs.",
+        "practical_value": "Use this source to identify how climate action can strengthen peace and social outcomes, and where project design can maximize those dividends.",
+    },
+    {
+        "title": "FCV-Sensitive Climate Action Framework",
+        "url": "https://www.worldbank.org/en/topic/fragilityconflictviolence/publication/framework-for-promoting-fcv-sensitive-climate-action",
+        "description": "the World Bank's framework for designing climate projects that do no harm and stay workable in fragile and conflict-affected settings.",
+        "practical_value": "Use this source to stress-test whether climate action is conflict-sensitive, avoids harm and remains deliverable in fragile settings.",
+    },
+    {
+        "title": "Defueling Conflict",
+        "url": "https://www.worldbank.org/en/topic/environment/publication/defueling-conflict-environment-and-natural-resource-management-as-a-pathway-to-peace",
+        "description": "how managing the environment and natural resources can be a pathway to peace.",
+        "practical_value": "Use this source to assess how environmental and natural-resource governance can reduce conflict risks and create incentives for cooperation.",
+    },
+    {
+        "title": "Conflict-Sensitive Climate Action Compendium",
+        "url": None,
+        "description": "practical, case-based guidance on making climate programming conflict-sensitive.",
+        "practical_value": "Use this source for practical examples of adapting climate programming to conflict dynamics, exclusion risks and changing implementation conditions.",
+    },
+    {
+        "title": "CCDR guidance note",
+        "url": "https://documents.worldbank.org/en/publication/documents-reports/documentdetail/099021025050037410",
+        "description": "World Bank approach note on promoting FCV-sensitive climate action in Country Climate and Development Reports.",
+        "practical_value": "Use this source to connect country-level climate and FCV diagnostics to operational priorities, sequencing and investment choices.",
+    },
+]
+
 
 _SIGNAL_TOKEN = re.compile(r"[a-z0-9]+(?:&[a-z0-9]+)*")
 _REVIEWED_TRIGGER_VARIANTS = {
@@ -212,3 +249,56 @@ def build_question_plan(project_signals: Any) -> dict[str, Any]:
         "anchors": anchors,
         "supplementary_candidates": supplementary_candidates,
     }
+
+
+# Deeper political-economy driver questions for the VERIFIED reader only. Each is
+# explicitly tied to the climate/environmental dimension (never a standalone FCV
+# governance question) and worded as a design question, never a prediction. The
+# core CLIMATE_QUESTION_BANK above and the dedicated-module path are untouched.
+CLIMATE_DRIVER_QUESTIONS: list[dict[str, Any]] = [
+    {"id": "dq-rents-capture", "theme": "driver_rents",
+     "question": "As climate investment or adaptation raises the value of the natural resource this project supports, who ends up controlling that added value - and does the design guard against elite capture of the climate dividend rather than entrenching it?",
+     "source": "Maximizing the Peace and Social Dividends of Climate Action",
+     "triggers": ["resource", "revenue", "rent", "concession", "royalties", "fisheries", "forest", "mineral", "oil", "fish", "timber", "wildlife"]},
+    {"id": "dq-value-chain", "theme": "driver_value_chain",
+     "question": "As climate-resilient infrastructure or practices make this resource more productive or profitable, who along the value chain is positioned to capture the gains - and does the design protect the smallholders and communities the climate investment is meant to benefit?",
+     "source": "Defueling Conflict",
+     "triggers": ["value chain", "market", "trader", "processing", "cold chain", "cooperative", "price", "middlemen", "aggregation", "storage"]},
+    {"id": "dq-representation", "theme": "driver_representation",
+     "question": "Do the climate and natural-resource governance bodies the project creates (co-management units, conservancies, water or forest committees) genuinely seat the rival or marginalised groups who share the climate-affected resource, or do they reproduce existing exclusion?",
+     "source": "Conflict-Sensitive Climate Action Compendium",
+     "triggers": ["committee", "conservancy", "co-management", "quota", "community", "representation", "governance", "association", "management unit"]},
+    {"id": "dq-tenure-displacement", "theme": "driver_tenure",
+     "question": "Where climate change is already shifting the resource base (drought, flooding, shifting stocks or rangelands) or the project sites new climate infrastructure, whose often-contested tenure or access rights are affected - and could the design harden exclusion or trigger displacement?",
+     "source": "Defueling Conflict",
+     "triggers": ["land", "tenure", "allocation", "grazing", "resettlement", "displacement", "boundary", "pastoral", "rights", "access"]},
+    {"id": "dq-security-economy", "theme": "driver_security_economy",
+     "question": "Could the climate-valuable resources, routes, or revenues this project strengthens feed a conflict economy or create incentives for armed actors to compete for control?",
+     "source": "Defueling Conflict",
+     "triggers": ["armed", "checkpoint", "route", "security", "illicit", "insurgent", "control", "smuggling", "militia", "trafficking"]},
+    {"id": "dq-geo-overlap", "theme": "driver_geo_overlap",
+     "question": "Do the project's climate activities actually land in the specific places where conflict and fragility are worst, or does the geographic footprint of the climate investment miss - or avoid - the most fragile districts it is meant to help?",
+     "source": "FCV-Sensitive Climate Action Framework",
+     "triggers": ["conflict-affected", "district", "region", "state", "province", "county", "target area", "geographic", "location", "site selection", "hotspot", "border"]},
+    {"id": "dq-participation-quality", "theme": "driver_participation_quality",
+     "question": "Beyond meeting a representation quota, does the design monitor the quality of participation - whether women, displaced people, and marginalised groups actually have voice in the climate and resource decisions (closures, allocations, benefit-sharing) that affect them?",
+     "source": "Conflict-Sensitive Climate Action Compendium",
+     "triggers": ["quota", "representation", "participation", "consultation", "inclusion", "women", "youth", "marginalised", "marginalized", "voice", "decision-making", "membership"]},
+]
+
+
+def select_triggered_drivers(project_signals: Any) -> list[dict[str, str]]:
+    """Return the driver-depth questions whose triggers fire for this project.
+
+    Verified-reader only: the core CLIMATE_QUESTION_BANK and the dedicated-module
+    selectors are unaffected. Matching reuses the boundary-aware trigger logic.
+    """
+    tokens = _project_signal_tokens(project_signals)
+    fired: list[dict[str, str]] = []
+    for question in CLIMATE_DRIVER_QUESTIONS:
+        if any(_contains_trigger(tokens, trigger) for trigger in question["triggers"]):
+            fired.append({
+                key: question[key]
+                for key in ("id", "theme", "question", "source")
+            })
+    return fired

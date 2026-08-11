@@ -21,6 +21,38 @@ Users may select up to two specialist lenses before analysis. The production Cli
 
 Core-only runs retain the standard 4-5 substantive priorities and the lightweight conditional Climate-FCV check. Active-lens runs supersede that lightweight check, use one integrated list of no more than five substantive priorities, and apply a flexible evidence-led mix of core, Climate-linked, and blended actions. Optional CCDR material is validated contextual support and must not dominate recommendations.
 
+### Climate-FCV country evidence bank
+
+The Climate-FCV lens can use a public, version-pinned companion repository at
+`data/climate-fcv-country-bank`. Clone this application with submodules, or
+initialize it after cloning:
+
+```bash
+git clone --recurse-submodules https://github.com/ljonestz/FCV-AGENT.git
+git submodule update --init --recursive  # existing clone
+```
+
+The runtime reads only `releases/current/runtime.json`. A country is usable only
+when that release passes schema/checksum checks and the country record is
+approved and within its review window. Draft and reviewed candidates are never
+promoted automatically. Missing, stale, incompatible, unapproved, unsupported
+multi-country, or oversized content degrades safely to live research or thematic
+sources; it does not terminate the Climate assessment.
+
+For local testing or a deployment artifact outside the submodule, set
+`CLIMATE_COUNTRY_BANK_PATH` to either the companion repository root or a specific
+`runtime.json`. The default remains the pinned public submodule. Render must
+initialize the root `.gitmodules` entry during checkout. The version-controlled
+`render_build.py` entry point does this before installing application dependencies.
+
+Selection is deterministic and project-specific. It targets 8 and caps 12 bank
+items, with a 6,000-character bank boundary and 12,000-character combined
+bank-plus-live boundary. The provenance states are `bank+research`, `bank-only`,
+`research-only`, and `thematic-only`; live enrichment is non-fatal. The pinned
+South Sudan pilot is an approved production release with a review due date of
+2027-07-31. The bank stores structured summaries and citations only: it does not
+redistribute raw PDFs or cite its own generated text.
+
 ## Prerequisites
 
 - Python 3.10+
@@ -31,6 +63,9 @@ Core-only runs retain the standard 4-5 substantive priorities and the lightweigh
 | Variable | Required | Description |
 |---|---|---|
 | `ANTHROPIC_API_KEY` | **Yes** | Anthropic API key for Claude access |
+| `CLIMATE_VERIFIED_RUN_MODE` | No | `quality` (default, Sonnet) or `smoke` (Haiku). Server-only; never accepted from browser requests. |
+| `CLIMATE_VERIFIED_ASSESSMENT_MODEL` | No | Explicit server-side model override for the verified assessment call. |
+| `CLIMATE_VERIFIED_REVIEW_MODEL` | No | Explicit server-side model override for the verified reviewer call. |
 
 ## Local Setup
 
@@ -50,9 +85,28 @@ python app.py
 
 1. Connect this GitHub repo to a new Render **Web Service**
 2. Set `ANTHROPIC_API_KEY` as an environment variable in the Render dashboard
-3. Render reads `Procfile` automatically - no additional build config needed
-4. The app runs on gunicorn + gevent with a 600s timeout, required for long-running SSE streams
-5. The public Render instance currently deploys from `main`; PforR timeout/payload hardening is live on `main` as of PR #51 (`2877bf9`).
+3. Set the Render **Build Command** to `python render_build.py`; this initializes
+   the pinned public Climate-FCV bank submodule and installs requirements
+4. Render reads the `Procfile` start command automatically
+5. The app runs on gunicorn + gevent with a 1,200s timeout for long-running SSE streams
+6. Confirm the startup and Climate-grounding logs show the expected application
+   build, bank content version, and country ISO3 before acceptance testing
+
+### Low-cost Climate workflow checks
+
+Use one commit for both services. The production service leaves
+`CLIMATE_VERIFIED_RUN_MODE` unset (or sets it to `quality`). A separate smoke
+service sets it to `smoke`, which runs the same verified Climate-FCV pipeline
+with Haiku for both structured calls. Smoke output is visibly labelled in the
+browser, HTML export, DOCX export, and technical annex; it tests orchestration
+and completeness, not analytical quality.
+
+Do not expose model selection in a request or UI control. Keep the profile in
+Render environment settings so a browser user cannot downgrade a production
+assessment. A reviewed country-bank candidate still requires the separate,
+explicit `CLIMATE_COUNTRY_BANK_PATH` and
+`CLIMATE_COUNTRY_BANK_PREVIEW=reviewed-candidate` safeguards. The smoke profile
+does not relax approval, provenance, checksum, or preview-labelling rules.
 
 ### Long-Running PforR Notes
 

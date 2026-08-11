@@ -2,6 +2,8 @@
 
 import json
 import io
+import re
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -234,6 +236,93 @@ def test_downloaded_report_has_sector_source_and_evidence_appendix(monkeypatch):
     assert "invented-lens" not in text
 
 
+
+@pytest.mark.parametrize(
+    ("state", "expected_notice"),
+    [
+        ("bank+research", ""),
+        ("bank-only", "Live web research was unavailable for this run."),
+        ("research-only", "No reviewed country-bank release was available."),
+        ("thematic-only", "No reviewed country-bank release or accepted live research was available."),
+    ],
+)
+def test_docx_surfaces_climate_grounding_state_and_reviewed_bank_sources(
+    monkeypatch, state, expected_notice,
+):
+    from docx import Document
+
+    has_bank = state in {"bank+research", "bank-only"}
+    grounding = {
+        "state": state,
+        "content_version": "ssd-pilot-2026-07",
+        "country_iso3": "SSD",
+        "research_status": "accepted" if "research" in state else "empty",
+        "bank_manifest": {"bank_status": "ok" if has_bank else "unavailable"},
+        "sources": [{
+            "source_id": "SSD-SRC-001",
+            "title": "South Sudan reviewed climate-FCV source",
+            "organization": "Trusted institute",
+            "publication_date": "2025",
+            "url": "https://example.org/ssd-source",
+            "provenance": ["bank"],
+        }] if has_bank else [],
+    }
+    incoming_manifest = {
+        "bank_status": "ok" if has_bank else "unavailable",
+        "content_version": "ssd-pilot-2026-07" if has_bank else None,
+        "country_iso3": "SSD" if has_bank else None,
+    }
+    calls = []
+
+    def rematerialize(manifest, research, **kwargs):
+        calls.append((manifest, research, kwargs))
+        return grounding, research
+
+    monkeypatch.setattr(
+        app_module, "resolve_climate_grounding", rematerialize
+    )
+    response = app_module.app.test_client().post(
+        "/api/download-report",
+        json={
+            "summary": "# Grounding state test\nSummary.",
+            "active_lenses": [{
+                "id": "climate", "version": "1.1.0", "position": "primary",
+            }],
+            "lens_diagnostic": {"error": True},
+            "climate_grounding": {
+                "state": state,
+                "bank_manifest": incoming_manifest,
+                "sources": [{
+                    "source_id": "SSD-SRC-999",
+                    "title": "FORGED CLIENT SOURCE",
+                    "url": "https://malicious.example/source",
+                    "provenance": ["bank"],
+                }],
+                "prompt_context": "SECRET EVIDENCE PACKET",
+            },
+            "climate_research": {"status": "failed"},
+            "metadata": {"date_str": "31 July 2026"},
+        },
+    )
+
+    assert response.status_code == 200
+    document = Document(io.BytesIO(response.data))
+    text = "\n".join(paragraph.text for paragraph in document.paragraphs)
+    assert calls
+    assert calls[0][0] == incoming_manifest
+    assert "FORGED CLIENT SOURCE" not in text
+    assert "SECRET EVIDENCE PACKET" not in text
+    if expected_notice:
+        assert expected_notice in text
+    else:
+        assert "No reviewed country-bank release" not in text
+    if has_bank:
+        assert "Reviewed country evidence bank" in text
+        assert "Content version: ssd-pilot-2026-07" in text
+        assert "South Sudan reviewed climate-FCV source" in text
+        assert "https://example.org/ssd-source" in text
+    else:
+        assert "Reviewed country evidence bank" not in text
 def test_downloaded_report_has_climate_readout_and_context_sources():
     from docx import Document
 
@@ -409,7 +498,8 @@ def test_downloaded_report_has_climate_readout_and_context_sources():
     text = "\n".join(paragraph.text for paragraph in document.paragraphs)
 
     assert text.index("How relevant is climate to this project?") < text.index("Summary.")
-    assert "High materiality" in text
+    assert "High climate relevance" in text
+    assert "Drought, access, and allocation shape project delivery. Why it matters: Drought and fragility affect delivery." in text
     # S/R sections are replaced by the integration line in the climate path
     assert "FCV Sensitivity" not in text
     assert "FCV Responsiveness" not in text
@@ -425,9 +515,10 @@ def test_downloaded_report_has_climate_readout_and_context_sources():
     assert "Core climate and FCV questions" in text
     assert "Maximizing the Peace and Social Dividends of Climate Action" in text
     assert "Could the design lock in maladaptation?" in text
-    assert "Source: FCV-Sensitive Climate Action Framework" in text
+    assert "For further insights on why this matters, see: FCV-Sensitive Climate Action Framework" in text
+    assert "[partial gap]" not in text
     assert "How the design holds up on climate and FCV" in text
-    assert "Where the design is strong" in text
+    assert "Where the design is stronger" in text
     assert "Community delivery" in text
     assert "Named but no design response." in text
     assert "Wider FCV context" not in text
@@ -506,7 +597,7 @@ def test_downloaded_report_scales_low_climate_materiality_without_empty_dividend
     assert response.status_code == 200
     document = Document(io.BytesIO(response.data))
     text = "\n".join(paragraph.text for paragraph in document.paragraphs)
-    assert "limited climate materiality" in text
+    assert "Low climate relevance" in text
     assert "Seasonal rainfall may modestly affect access" in text
     assert "Climate, peace and social dividends" not in text
 
@@ -1666,12 +1757,19 @@ def test_climate_active_research_plan_balances_core_and_climate():
                 "The project rehabilitates landing sites and conservancies."
             ),
         }],
+        instrument="IPF",
+        document_stage="PAD",
     )
 
     assert plan["core"] == {"max_tokens": 4000, "max_uses": 3}
     assert plan["climate"]["enabled"] is True
     assert "Upper Nile" in plan["project_profile"]["document_excerpt"]
     assert plan["project_profile"]["documents"] == ["Concept Note"]
+    assert plan["profile_metadata"] == {
+        "instrument": "IPF",
+        "document_stage": "PAD",
+    }
+    assert set(plan["project_profile"]) == {"documents", "document_excerpt"}
 
 
 def test_core_only_research_plan_preserves_current_budget():
@@ -1694,6 +1792,8 @@ def test_express_and_step_routes_emit_climate_research_context():
     assert source.count("format_climate_research_context(climate_research)") >= 2
     assert source.count("_iter_stage1_research(") >= 3
     assert source.count("research_plan, assessment_id") >= 2
+    assert source.count("instrument=analysis_state.instrument") >= 2
+    assert source.count("document_stage=analysis_state.doc_type") >= 2
 
 
 def test_stage3_climate_prompt_uses_prose_and_wider_context():
@@ -2217,3 +2317,355 @@ def test_non_climate_recovery_retains_legacy_generic_contract():
         captured["messages"][0]["content"]
     )
     assert "timeout" not in captured
+
+
+def test_verified_express_is_limited_to_climate_only_design_runs():
+    climate = app_module.AnalysisState(active_lenses=["climate"])
+    mixed = app_module.AnalysisState(active_lenses=["climate", "agriculture"])
+
+    assert app_module._is_verified_climate_express(climate, False) is True
+    assert app_module._is_verified_climate_express(climate, True) is False
+    assert app_module._is_verified_climate_express(mixed, False) is False
+
+
+def test_verified_client_builder_uses_server_smoke_profile(monkeypatch):
+    monkeypatch.setenv("CLIMATE_VERIFIED_RUN_MODE", "smoke")
+    monkeypatch.setattr(app_module, "get_client", lambda: object())
+    monkeypatch.setattr(app_module, "get_lens_recovery_client", lambda: object())
+
+    clients = app_module._build_verified_pipeline_clients()
+
+    assert clients.assessment._model == "claude-haiku-4-5-20251001"
+    assert clients.reviewer._model == "claude-haiku-4-5-20251001"
+
+
+def test_verified_runtime_bridge_emits_keepalives_then_result(monkeypatch):
+    import time as _time
+
+    expected = {
+        "assessment": {"schema_version": "climate-verified-v2.1"},
+        "reader": {"executive_readout": "Verified."},
+        "source_warnings": [],
+    }
+    captured = {}
+
+    def fake_run(**kwargs):
+        captured.update(kwargs)
+        _time.sleep(0.04)
+        return expected
+
+    monkeypatch.setattr(app_module, "run_verified_from_doc_parts", fake_run)
+    events = list(app_module._iter_verified_climate_assessment(
+        doc_parts=[],
+        climate_grounding={},
+        clients=object(),
+        run_id="verified-runtime-test",
+        doc_type="PCN",
+        instrument_type="IPF",
+        keepalive_interval=0.01,
+    ))
+
+    assert any(item.get("keepalive") is True for item in events[:-1])
+    assert events[-1] == {"result": expected}
+    assert captured["doc_type"] == "PCN"
+    assert captured["instrument_type"] == "IPF"
+
+
+def test_verified_runtime_bridge_cancels_after_wall_clock(monkeypatch):
+    import time as _time
+
+    captured = {}
+
+    def fake_run(**kwargs):
+        captured["cancel_event"] = kwargs["cancel_event"]
+        while not kwargs["cancel_event"].is_set():
+            _time.sleep(0.005)
+        raise RuntimeError("cancelled")
+
+    monkeypatch.setattr(app_module, "run_verified_from_doc_parts", fake_run)
+    with pytest.raises(TimeoutError, match="14 minutes"):
+        list(app_module._iter_verified_climate_assessment(
+            doc_parts=[],
+            climate_grounding={},
+            clients=object(),
+            run_id="verified-timeout-test",
+            keepalive_interval=0.005,
+            maximum_wait_seconds=0.02,
+        ))
+
+    assert captured["cancel_event"].is_set()
+
+
+def test_verified_climate_ui_contract_is_ranked_and_multidimensional():
+    html = (Path(app_module.__file__).parent / "index.html").read_text(
+        encoding="utf-8"
+    )
+
+    assert "renderClimateVerifiedAssessment" in html
+    # Core climate-FCV questions: a compact reads strip (calibration values) plus
+    # literature-grounded, evidence-gated question cards replace the old four
+    # judgment boxes.
+    assert "Core climate-FCV questions" in html
+    # Headline sensitivity rating (from server data) replaces the old reads strip.
+    assert "climate_sensitivity_rating" in html
+    assert "csr.question" in html
+    assert "csr.scale" in html
+    assert "The tool's overall reads" not in html
+    assert "core_questions" in html
+    assert "For further insights on why this matters" in html
+    assert "Points to check before the decision meeting" in html
+    start = html.index("function renderClimateVerifiedAssessment")
+    end = html.index("\n  function ", start + 20)
+    body = html[start:end]
+    assert ".climate-verified-assessment{" in html
+    assert ".climate-report-section{" in html
+    assert ".climate-section-heading{" in html
+    assert ".climate-guidance{" in html
+    assert "@media(max-width:760px)" in html
+    assert "buildClimateGuidanceItems" in html
+    assert "renderClimateRelevantGuidance" in body
+    assert "priority.rank" in body
+    assert "priority.priority_label" not in body
+    assert "High priority" not in body
+    assert "Smoke test: validates workflow completion only" in body
+    assert "recommendation_admitted_count" not in body
+    assert "semantic_reviewer_verdict" not in body
+    assert "held back on review" not in body
+    assert "No operational priorities were identified in this assessment. Review the core questions and points to check below." in body
+    assert "current_document_drafting" in body
+    assert "operational_instrument_drafting" in body
+    assert "Suggested drafting for the current document" in body
+    assert "Suggested drafting for an operational instrument" in body
+    # The card leads with the model narrative; the useful structured fields fold
+    # into a "Recommendation details" collapsible, and app-internal routing/coded
+    # references are dropped from the user view entirely.
+    assert "Recommendation details" in body
+    assert "pc-narr" in body
+    assert "priority_summary" not in body
+    assert "Evidence key" not in body
+    assert "Run diagnostics" not in body
+    assert "Evidence status:" not in body
+    assert "drafting_language" not in body
+    assert "recommendation_reason_codes" not in body
+    assert body.index("minorPointsHtml") < body.index("docFlagsHtml")
+    assert 'class="climate-sens-rating climate-overview-panel"' in body
+    assert '<details class="climate-priority-card"' in body
+    assert "Method, limitations, and sources" in body
+
+
+
+def test_landing_page_retains_ten_document_package_capacity():
+    html = (Path(app_module.__file__).parent / "index.html").read_text(
+        encoding="utf-8"
+    )
+    assert 'id="ipack" name="package_doc" multiple' in html
+    assert "const MAX_PACK = 10;" in html
+
+    match = re.search(r"function\s+selectFilesWithinUploadCap\s*\(", html)
+    assert match, "missing executable upload-cap helper"
+    brace = html.find("{", match.end())
+    depth = 0
+    helper = ""
+    for index in range(brace, len(html)):
+        if html[index] == "{":
+            depth += 1
+        elif html[index] == "}":
+            depth -= 1
+            if depth == 0:
+                helper = html[match.start():index + 1]
+                break
+    assert helper
+    script = f"""
+{helper}
+const files=Array.from({{length:11}},(_,index)=>({{name:`document-${{index+1}}.docx`}}));
+const selection=selectFilesWithinUploadCap(files,[],10);
+if(selection.accepted.length!==10) throw new Error('expected ten accepted | '+JSON.stringify(selection));
+if(selection.skipped!==1) throw new Error('expected eleventh rejected | '+JSON.stringify(selection));
+if(selection.accepted.some(file=>file.name==='document-11.docx')) throw new Error('eleventh file was accepted');
+const next=selectFilesWithinUploadCap([{{name:'document-12.docx'}}],selection.accepted,10);
+if(next.accepted.length!==0||next.skipped!==1) throw new Error('full package accepted another file | '+JSON.stringify(next));
+"""
+    result = subprocess.run(
+        ["node", "-e", script], capture_output=True, text=True, check=False
+    )
+    assert result.returncode == 0, result.stderr
+
+
+def test_verified_climate_html_export_reuses_refreshed_reader_and_styles():
+    html = (Path(app_module.__file__).parent / "index.html").read_text(
+        encoding="utf-8"
+    )
+    start = html.index("function downloadHTML")
+    end = html.index("\n  function ", start + 20)
+    helper = html[start:end]
+    assert "renderClimateVerifiedAssessment(climateVerifiedReader)" in helper
+    assert "document.querySelectorAll('style')" in helper
+    assert 'name="viewport"' in helper
+
+
+def test_express_route_dispatches_verified_assessment_contract():
+    source = Path(app_module.__file__).read_text(encoding="utf-8")
+
+    assert "run_verified_from_doc_parts" in source
+    assert "'climate_assessment': verified_assessment" in source
+    assert "'climate_reader': verified_reader" in source
+    assert "Climate recommendation diagnostics" in source
+    assert "'recommendation_diagnostics'" in source
+
+
+def test_verified_climate_docx_route_uses_canonical_reader():
+    sentence = (
+        "Verified project evidence supports a material pathway and a bounded response. "
+    )
+    assessment = {
+        "schema_version": "climate-verified-v2.1",
+        "run_id": "route-run",
+        "bank_release_id": "2026.08",
+        "evidence_status": "preview; not approved",
+        "executive_readout": (sentence * 50).strip(),
+        "judgments": {
+            "relevance": {"value": "high", "rationale": "Material."},
+            "sensitivity": {"value": "moderate", "rationale": "Partial."},
+            "responsiveness": {"value": "emerging", "rationale": "Emerging."},
+            "operationalization": {"value": "partial", "rationale": "Partial."},
+        },
+        "priorities": [],
+        "review_readiness_flags": [],
+        "validation": {"status": "passed"},
+    }
+
+    response = app_module.app.test_client().post(
+        "/api/download-report", json={
+            "climate_assessment": assessment,
+            "climate_reader": {"runtime_mode": "smoke"},
+        }
+    )
+
+    assert response.status_code == 200
+    from docx import Document
+    document = Document(io.BytesIO(response.data))
+    text = "\n".join(item.text for item in document.paragraphs)
+    assert "Core climate-FCV questions" in text
+    assert "preview; not approved" not in text
+    assert "Smoke test: validates workflow completion only" in text
+
+
+def test_browser_exports_verified_climate_assessment_object():
+    html = (Path(app_module.__file__).parent / "index.html").read_text(encoding="utf-8")
+    assert "climate_assessment: climateVerifiedAssessment" in html
+    assert "renderClimateVerifiedAssessment(climateVerifiedReader)" in html
+
+
+def test_verified_climate_reader_drives_ui_followon_and_persistence():
+    html = (Path(app_module.__file__).parent / "index.html").read_text(
+        encoding="utf-8"
+    )
+
+    assert "climateVerifiedReader=p.climate_reader" in html
+    assert "renderClimateVerifiedAssessment(climateVerifiedReader)" in html
+    assert "JSON.stringify(climateVerifiedReader" in html
+    assert "climateVerifiedAssessment: climateVerifiedAssessment" in html
+    assert "climateVerifiedReader: climateVerifiedReader" in html
+
+
+def test_verified_climate_express_timeout_covers_full_automatic_review():
+    html = (Path(app_module.__file__).parent / "index.html").read_text(encoding="utf-8")
+    assert "2:15*60*1000" in html
+    assert "2:'15 minutes'" in html
+    assert html.count("climateVerifiedAssessment=null") >= 5
+
+
+def test_climate_only_express_route_returns_verified_v2_without_legacy_stage(monkeypatch):
+    monkeypatch.setenv("CLIMATE_VERIFIED_RUN_MODE", "smoke")
+    assessment = {
+        "schema_version": "climate-verified-v2.1",
+        "run_id": "route-v2",
+        "bank_release_id": "2026.08",
+        "evidence_status": "preview; not approved",
+        "executive_readout": "Verified Climate-FCV readout.",
+        "judgment_summary": "High relevance; moderate sensitivity.",
+        "judgments": {
+            "relevance": {"value": "high", "rationale": "Material."},
+            "sensitivity": {"value": "moderate", "rationale": "Partial."},
+            "responsiveness": {"value": "emerging", "rationale": "Emerging."},
+            "operationalization": {"value": "partial", "rationale": "Partial."},
+        },
+        "priorities": [],
+        "review_readiness_flags": [],
+        "validation": {"status": "passed"},
+    }
+    reader = {"executive_readout": assessment["executive_readout"]}
+
+    monkeypatch.setattr(app_module, "get_fast_client", lambda: object())
+    monkeypatch.setattr(app_module, "extract_country_name", lambda *_: "South Sudan")
+    monkeypatch.setattr(app_module, "extract_sector_name", lambda *_: "Fisheries")
+    monkeypatch.setattr(app_module, "build_stage1_research_plan", lambda *_args, **_kwargs: {})
+    monkeypatch.setattr(app_module, "_iter_stage1_research", lambda *_args, **_kwargs: iter([{
+        "result": {
+            "core_brief": "",
+            "climate_research": {},
+            "lens_context_sources": [],
+            "climate_grounding": {},
+        }
+    }]))
+    grounding = {
+        "state": "bank-only",
+        "content_version": "2026.08",
+        "candidate_preview": True,
+        "bank_sources": [],
+        "bank_evidence_records": [],
+        "bank_pathways": [],
+        "live_claims": [],
+    }
+    monkeypatch.setattr(
+        app_module, "resolve_climate_grounding", lambda *_args, **_kwargs: (grounding, {})
+    )
+    monkeypatch.setattr(app_module, "_build_verified_pipeline_clients", lambda: object())
+    monkeypatch.setattr(app_module, "_iter_verified_climate_assessment", lambda **_kwargs: iter([{
+        "result": {"assessment": assessment, "reader": reader, "source_warnings": []}
+    }]))
+    monkeypatch.setattr(
+        app_module, "_stream_stage",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("legacy stage called")),
+    )
+
+    response = app_module.app.test_client().post("/api/run-express", json={
+        "assessment_id": "route-v2",
+        "documents": [{
+            "name": "pcn.txt",
+            "type": "text",
+            "content": "South Sudan fisheries project with flood and conflict risks.",
+            "docRole": "primary",
+        }],
+        "active_lenses": ["climate"],
+        "review_mode": "design",
+    })
+
+    body = response.get_data(as_text=True)
+    assert response.status_code == 200
+    assert '"schema_version": "climate-verified-v2.1"' in body
+    assert '"stage_done": 3' in body
+    assert '"express_done": true' in body
+    assert '"runtime_mode": "smoke"' in body
+
+
+def test_verified_climate_failure_log_includes_bounded_schema_reason(caplog):
+    diagnostic = {
+        "stage": "recommendation_compiler",
+        "attempt": 1,
+        "elapsed_ms": 274,
+        "exception_type": "BadRequestError",
+        "status_code": 400,
+        "prompt_chars": 37495,
+        "timeout_seconds": 240,
+        "remaining_seconds": 239,
+        "provider_error_type": "invalid_request_error",
+        "provider_failure_code": "schema_rejected",
+        "schema_path": "properties.recommendation_candidates.items.type",
+    }
+
+    with caplog.at_level("WARNING"):
+        app_module._log_verified_climate_call_failure(diagnostic)
+
+    assert "provider_failure_code=schema_rejected" in caplog.text
+    assert "schema_path=properties.recommendation_candidates.items.type" in caplog.text

@@ -1,0 +1,31 @@
+{
+  "country": "South Sudan",
+  "instrument": "IPF",
+  "document_stage": "AF",
+  "geographies": ["Hope Valley County"],
+  "sectors": ["community resilience", "social protection"],
+  "project_elements": ["cash transfers", "community resilience grants"],
+  "affected_groups": ["host communities", "internally displaced households"],
+  "institutions": ["community resilience committees", "Social Protection Agency"],
+  "systems_assets": ["community shelters", "payment registry"],
+  "documented_hazards": ["prolonged dry spell", "riverine flooding"],
+  "time_horizons": ["current", "medium-term"],
+  "signal_metadata": [
+    {"field": "geographies", "canonical_value": "Hope Valley County", "source": "document", "confidence": "high"},
+    {"field": "sectors", "canonical_value": "community resilience", "source": "document", "confidence": "high"},
+    {"field": "sectors", "canonical_value": "social protection", "source": "document", "confidence": "high"},
+    {"field": "project_elements", "canonical_value": "cash transfers", "source": "document", "confidence": "high"},
+    {"field": "project_elements", "canonical_value": "community resilience grants", "source": "document", "confidence": "high"},
+    {"field": "affected_groups", "canonical_value": "host communities", "source": "document", "confidence": "high"},
+    {"field": "affected_groups", "canonical_value": "internally displaced households", "source": "document", "confidence": "high"},
+    {"field": "institutions", "canonical_value": "community resilience committees", "source": "document", "confidence": "high"},
+    {"field": "institutions", "canonical_value": "Social Protection Agency", "source": "document", "confidence": "high"},
+    {"field": "systems_assets", "canonical_value": "community shelters", "source": "document", "confidence": "high"},
+    {"field": "systems_assets", "canonical_value": "payment registry", "source": "document", "confidence": "high"},
+    {"field": "documented_hazards", "canonical_value": "prolonged dry spell", "source": "document", "confidence": "high"},
+    {"field": "documented_hazards", "canonical_value": "riverine flooding", "source": "document", "confidence": "high"},
+    {"field": "time_horizons", "canonical_value": "current", "source": "document", "confidence": "high"},
+    {"field": "time_horizons", "canonical_value": "medium-term", "source": "document", "confidence": "high"}
+  ],
+  "unresolved": []
+}

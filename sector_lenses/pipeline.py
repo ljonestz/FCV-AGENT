@@ -12,6 +12,7 @@ import climate_question_bank
 from .climate_native import (
     CLIMATE_NATIVE_SCHEMA_VERSION,
     CLIMATE_REQUIRED_DIRECTIONS,
+    adapt_legacy_climate_payload,
 )
 from .models import LensActivationMode, LensRegistry
 
@@ -101,6 +102,29 @@ def _list_values(value: Any) -> list[Any]:
     return list(value) if isinstance(value, (list, tuple)) else []
 
 
+def normalize_climate_assessment(
+    payload: dict[str, object],
+) -> dict[str, object]:
+    """Dispatch stored Climate assessments without inventing v2 dimensions."""
+
+    if payload.get("schema_version") == "climate-verified-v2.1":
+        result = dict(payload)
+        validation = result.get("validation")
+        status = (
+            validation.get("status")
+            if isinstance(validation, dict)
+            else ""
+        )
+        result["verification_status"] = (
+            "automated_checks_passed"
+            if status == "passed"
+            else "automated_checks_attention"
+        )
+        result["legacy"] = False
+        return result
+    return adapt_legacy_climate_payload(payload)
+
+
 def _bounded_strings(value: Any, limit: int, length: int) -> list[str]:
     """Return bounded, non-empty strings from a model-provided collection."""
 
@@ -181,9 +205,7 @@ def _normalize_supplementary_questions(
         result.append({
             "question_id": question_id,
             "title": str(raw.get("title", "")).strip()[:200],
-            "status_cue": _soften_status_cue(
-                raw.get("status_cue", "")
-            )[:40],
+            "status_cue": _concise_status_cue(raw.get("status_cue", "")),
             "source": str(raw.get("source", "")).strip()[:160],
             "text": text,
         })
@@ -324,6 +346,92 @@ def _soften_status_cue(value: Any) -> str:
     return raw.replace("_", " ")
 
 
+def _clip_text(value: Any, limit: int) -> str:
+    """Clip display text without leaving a visibly broken final word."""
+
+    text = str(value or "").strip()
+    if len(text) <= limit:
+        return text
+    if limit <= 1:
+        return "…"[:limit]
+    candidate = text[: limit - 1].rstrip()
+    boundary = max(candidate.rfind(" "), candidate.rfind("\n"))
+    if boundary >= max(1, (limit - 1) // 2):
+        candidate = candidate[:boundary]
+    return candidate.rstrip(" ,;:-—") + "…"
+
+
+def _plain_climate_relevance_text(value: Any) -> str:
+    """Replace internal assessment jargon in reader-facing climate summaries."""
+
+    text = str(value or "").strip()
+    text = re.sub(
+        r"\bhigh[- ]materiality\b",
+        "high-priority",
+        text,
+        flags=re.IGNORECASE,
+    )
+    text = re.sub(
+        r"\bmedium[- ]materiality\b",
+        "moderate climate relevance",
+        text,
+        flags=re.IGNORECASE,
+    )
+    text = re.sub(
+        r"\blow[- ]materiality\b",
+        "limited climate relevance",
+        text,
+        flags=re.IGNORECASE,
+    )
+    return re.sub(
+        r"\bmateriality\b",
+        "climate relevance",
+        text,
+        flags=re.IGNORECASE,
+    )
+
+
+def _clip_complete_summary(value: Any, limit: int) -> str:
+    """Prefer complete sentences when bounding the opening climate narrative."""
+
+    text = _plain_climate_relevance_text(value)
+    if len(text) <= limit:
+        return text
+    candidate = text[:limit].rstrip()
+    sentence_ends = [
+        match.end()
+        for match in re.finditer(r"[.!?](?=\s|$)", candidate)
+    ]
+    if sentence_ends and sentence_ends[-1] >= limit // 2:
+        return candidate[:sentence_ends[-1]].rstrip()
+    return _clip_text(text, limit)
+
+
+def _concise_status_cue(value: Any) -> str:
+    """Reduce model-authored status explanations to a short reader chip."""
+
+    softened = _soften_status_cue(value)
+    key = softened.lower().strip()
+    for prefix, label in (
+        ("material gap", "material gap"),
+        ("risk present", "risk present"),
+        ("partially addressed", "partially addressed"),
+        ("partial gap", "partial gap"),
+        ("not yet addressed", "not yet addressed"),
+        ("not yet specified", "not yet specified"),
+        ("well recognised", "well recognised"),
+        ("well recognized", "well recognised"),
+        ("unclaimed opportunity", "unclaimed opportunity"),
+        ("insufficient evidence", "insufficient evidence"),
+        ("potential", "potential"),
+        ("strong", "strong"),
+        ("addressed", "addressed"),
+    ):
+        if key.startswith(prefix):
+            return label
+    return _clip_text(softened, 36)
+
+
 def _normalize_climate_reflections(value: Any) -> list[dict[str, Any]]:
     """Validate and bound climate diagnostic reflection (theme answer) entries.
 
@@ -343,7 +451,7 @@ def _normalize_climate_reflections(value: Any) -> list[dict[str, Any]]:
         reflections.append({
             "question_key": key,
             "title": str(raw.get("title", "")).strip()[:160],
-            "status_cue": _soften_status_cue(raw.get("status_cue", ""))[:40],
+            "status_cue": _concise_status_cue(raw.get("status_cue", "")),
             "source": str(raw.get("source", "")).strip()[:120],
             "text": text,
         })
@@ -752,9 +860,9 @@ def extract_lens_diagnostic(
         normalized_lens = {
             "lens_id": lens_id,
             "applicability": applicability,
-            "materiality_summary": str(
-                item.get("materiality_summary", "")
-            ).strip()[:600],
+            "materiality_summary": _clip_complete_summary(
+                item.get("materiality_summary", ""), 600
+            ),
             "analysis_emphasis": [
                 str(value).strip()[:100]
                 for value in _list_values(item.get("analysis_emphasis"))

@@ -26,14 +26,14 @@ Clients send ordered `active_lenses` (maximum two) and optional `lens_versions`.
 
 Dedicated Climate-FCV Stages 2 and 3 use its metadata-only mode (`compose_prompt=False`) because their canonical native prompt builders replace the legacy sector-lens prompt. Metadata-only mode retains resolved lenses, warnings, context sources, version checks, and Stage 3 diagnostic normalization.
 
-- Stage 1 injects evidence requests and research intents. The model emits hidden JSON between `%%%LENS_EVIDENCE_START%%%` and `%%%LENS_EVIDENCE_END%%%`. Climate-active runs also execute a dedicated bounded trusted-source research pass and one narrower retry; normalized `ClimateResearchBundle` claims join Stage 1 and Stage 2 context without changing core-only research.
+- Stage 1 injects evidence requests and research intents. The model emits hidden JSON between `%%%LENS_EVIDENCE_START%%%` and `%%%LENS_EVIDENCE_END%%%`. Climate-active runs also execute a dedicated bounded trusted-source research pass. A second pass is allowed only when structured evidence with sources and claims narrowly fails `climate_research_insufficient`; missing output, truncation, timeout, and terminal provider errors are not duplicated. Normalized `ClimateResearchBundle` claims join Stage 1 and Stage 2 context without changing core-only research.
 - Stage 2 injects distilled guidance, applicable questions, and bounded normalized Climate claims. The model emits JSON between `%%%LENS_DIAGNOSTIC_START%%%` and `%%%LENS_DIAGNOSTIC_END%%%`, with `lenses[]` and `findings[]`. Climate interaction entries contain stable project-specific `pathways` for both fixed directions. Each pathway includes pressure, mechanism, project implication, design response, project/location/group/system anchors, time horizons, research claim IDs or an evidence gap, and confidence. Lens entries also include `materiality_summary`, `analysis_emphasis`, `readout_sections`, and `other_pathways`; undeclared or generic entries are dropped. Findings include deterministic `finding_id` values plus `lens_ids`, evidence, status, source IDs, core mappings, mechanism, geography, and action target.
 - Before Stage 3, findings are merged when mappings, mechanism, geography, and action target match. Contributing lens and source IDs are retained.
 - Stage 3 integrates findings into the opening assessment, operational context, two-way risk narrative, strengths, gaps, and existing priority set. Climate compaction prioritizes both directional pathways and recognized dividend IDs within the 900-token platform ceiling. Every priority in a valid Climate-active run carries validated `climate_links`; affected priorities derive `lens_ids` and `lens_relevance` from recognized diagnostic IDs. No separate score or recommendation set is permitted.
 
 One lens may use its module allowance up to the platform ceiling. With two lenses, the platform budget is split two-thirds to the primary lens and one-third to the secondary lens. Questions are included in priority order, as whole blocks, and reported as truncated when they cannot fit.
 
-Hidden blocks are removed from displayed prose. An invalid Climate diagnostic triggers one bounded structured recovery attempt; terminal failure retains the core assessment and suppresses unvalidated Climate claims. Stage 2 renders materiality, declared readouts, and compact other pathways. Climate-active Stage 3 renders two stacked directional narratives, causal strips, time-horizon badges, qualitative dividend synthesis, and priority contribution panels. Live HTML, shared HTML, and DOCX use the same validated structures.
+Hidden blocks are removed from displayed prose. An invalid Climate diagnostic triggers one bounded structured recovery attempt; terminal failure retains the core assessment and suppresses unvalidated Climate claims. Stage 2 retains the internal materiality field and declared readouts, while reader-facing output uses climate relevance language. Climate-active Stage 3 renders a plain scene-setting opening, two stacked directional narratives of up to two short component-anchored paragraphs, a six-tier integration gauge with a concise improvement message, core questions without status chips, framework references, and priority contribution panels. Live HTML, shared HTML, and DOCX use the same validated structures.
 
 **Diagnostic completeness (v9.20).** A Climate diagnostic is *usable* when it has materiality plus one interaction pathway, and *complete* when it additionally carries at least one grounded reflection and a non-empty `integration_summary` (`climate_readout_is_complete()`). Recovery fires on either a hard failure or a usable-but-incomplete readout, and the bounded recovery request asks for the full dedicated-module contract (`reflections`, `integration_level`, `integration_summary`, `less_central`, `sensitivity_evidence`, `responsiveness_evidence`). A usable primary is never downgraded: a recovered diagnostic is adopted only when the primary was unusable or the recovery is complete. When a usable readout is still incomplete after recovery, the module notice (frontend, shared HTML, and DOCX) shows an honest partial notice rather than silently omitting the reflections/integration sections. `_stream_stage` records the provider `stop_reason` so a climate-active Stage 2 `max_tokens` truncation is logged.
 
@@ -49,6 +49,69 @@ Valid interaction directions are `climate-fcv-on-project` and `project-on-climat
 
 The Render build uses a bounded evidence-packet adapter between Sonnet web search and Haiku JSON structuring. The adapter accepts SDK objects or dictionaries, keeps only bounded text notes and deduplicated trusted HTTPS source metadata, and bounds the project profile before serialization. Haiku receives one fresh user message; raw tool-result blocks and encrypted content are never replayed. Packet telemetry contains counts and sizes only. This is provider-specific plumbing: it does not change the shared ClimateResearchBundle schema or the Flask/FastAPI parity contract.
 
+
+## Climate-FCV country evidence bank
+
+`sector_lenses.climate_bank` loads schema `1.0.0` from the pinned public submodule
+or `CLIMATE_COUNTRY_BANK_PATH`. Materialization is approved-only, checksum-valid,
+review-window bounded, and non-throwing. Climate-active step-by-step and Express
+preparation build the same immutable `ProjectClimateProfile` and pass it directly
+to selection. The profile contains country, instrument, document
+stage, and bounded controlled values for geography, sector, project element,
+affected group, institution, system/asset, documented hazard, and time horizon.
+It recognizes only unambiguous, boundary-aware aliases explicitly present in at
+most 12,000 characters of project-document text. Bank-candidate signals may be
+recorded as `source=bank-candidate`, `confidence=candidate`, and `unresolved`, but
+they do not become project facts or selected profile values without an explicit
+document match. The public projection contains no source excerpts.
+
+Selection targets 8 and caps 12 items. It uses controlled relevance weights,
+requires at least one material matched field, balances climate pressure,
+vulnerability/capacity, institutional response, and both pathway directions,
+favors source diversity, rejects near duplicates, and suppresses stale current
+evidence or pathways with stale current support. Its safe manifest diagnostics
+contain only selected canonical IDs, integer `score`, allowlisted
+`matched_fields`, controlled `balance_role`, optional `staleness`, bounded
+`suppressed` rows, and `missing_classes`. Suppression values are
+`stale_current`, `stale_support`, `near_duplicate`, `source_diversity`,
+`low_relevance`, `packet_bound`, and `target_reached`. Profile/type, scope,
+country, release, manifest, and size failures use existing non-throwing
+`warning_code` fallbacks; `bank_profile_invalid` is additive.
+
+Server rematerialization returns full canonical sources, evidence, and pathways
+for provenance plus explicit `selected_evidence_ids`, `selected_pathway_ids`,
+`selected_capsule_ids`, and allowlisted `project_relevance`. Prompt projection
+uses separate evidence capsules with `id`, `evidence_class`, `claim`,
+`geographies`, `affected_groups`, `systems_assets_resources`,
+`project_relevance`, `evidence_status`, `uncertainty`, and `source_ids`; pathway
+capsules carry `id`, `direction`, `climate_pressure`, `fcv_mediator`,
+`possible_consequence`, `geographies`, `systems_assets_resources`,
+`evidence_strength`, `uncertainty`, and `supporting_evidence_ids`. Source links
+use canonical IDs only. Schema 1.0 compatibility maps `physical-baseline` to
+`climate-pressure`, `vulnerability-capacity` to `sensitivity`, and other legacy
+analytical roles conservatively to `direct-climate-fcv`; release content is not
+mutated.
+
+Grounding caps bank context at 6,000 characters, accepted live claims at 6, and
+combined context at 12,000. Oversized bank projections drop whole
+lowest-priority capsules, never partial claim or uncertainty strings. Its state
+enum is `bank+research | bank-only | research-only | thematic-only`. Conflicts
+remain visible provenance. Only
+server-rematerialized IDs matching `AAA-SRC-999` enter diagnostic source
+normalization. South Sudan is approved in production content version
+`2026.07.south-sudan-pilot`; the runtime projection selects at most 12 records
+from its 19 approved evidence records and seven approved pathways.
+
+Live research continues to receive the existing bounded project input, makes no
+additional search or model call, and remains non-fatal. This increment does not
+change prompts, ratings, recommendations, reader hierarchy, generic-FCV routes,
+approval/provenance gates, or the reviewed companion-bank release. Deferred work
+includes literature or bank-content expansion, candidate promotion, additional
+countries, multi-country allocation, and gap-directed live-research questions or
+new evidence-gate telemetry. Reviewed country-bank content remains owned only by
+the pinned companion bank; the application repository stores runtime logic and
+contracts, not duplicate release content or raw source PDFs.
+
 ## Compatibility contract
 
 The Flask and private FastAPI builds must keep these fields and delimiters aligned:
@@ -60,8 +123,57 @@ The Flask and private FastAPI builds must keep these fields and delimiters align
 - Stage 3 priority: `lens_ids: string[]`, `lens_relevance: string`, and additive `climate_links` with status, interaction/dividend/finding IDs, contribution, strengthening effect, and reason;
 - Climate research: normalized `sources`, project-specific `claims`, confidence, evidence status, and the three horizon enums;
 - Climate diagnostic: stable pathway and finding IDs plus the causal pathway fields described above;
+- Climate grounding: `state`, `warning_code`, `content_version`, `country_iso3`, `research_status`, sanitized `bank_manifest`, and display-safe `sources`;
+- project profile: country/instrument/document-stage metadata; the eight controlled signal arrays; bounded `signal_metadata` with field, canonical value, `document|bank-candidate` source and `high|candidate` confidence; and bounded `unresolved` candidate keys;
+- canonical manifest: `bank_status`, `warning_code`, `schema_version`, `content_version`, `country_iso3`, `evidence_ids`, `pathway_ids`, and sanitized selection `diagnostics`;
+- rematerialized bank packet: explicit selected evidence/pathway/capsule IDs and allowlisted `project_relevance`, with rich evidence/pathway capsules only in the compact prompt projection;
+- SSE: additive `climate_grounding` on Stage 1 and Stage 2 completion events;
 - hidden delimiter names and diagnostic status/core-mapping enums.
 
 Raw literature and source notes are never injected at runtime.
 
-*Last updated: 2026-07-29 - bounded Climate evidence handoff, fresh structuring request, and explicit truncation reporting.*
+*Last updated: 2026-08-11 - deterministic project-profile selection and rich bank-capsule compatibility.*
+
+## Climate verified-v2.1 compatibility surface (v9.25)
+
+The active Climate-only Express design path now uses `climate-verified-v2.1`; the
+`climate-native-v1` normalizer remains readable for legacy sessions and other
+routes. Shared v2 fields are `schema_version`, `run_id`, `bank_release_id`,
+`evidence_status`, atomic `facts`, `analysis`, four `judgments`,
+`executive_readout`, ranked `priorities`, `review_readiness_flags`, `validation`,
+and a privacy-safe `manifest`. Recommendations are capped at three and may be
+zero. Candidate evidence remains labelled `preview; not approved`. ITS/FastAPI
+must not translate the old single rating into the four judgments; it should mirror
+the v2 contract or retain explicit legacy status.
+
+Recommendation suppression is observable through additive privacy-safe
+`recommendation_diagnostics`: raw, parsed, structurally valid, gate-admitted,
+and final counts; semantic-review invocation/verdict; at most 12 reason codes;
+and at most 12 unsupported numeric tokens. Numeric component or subcomponent
+labels are accepted only when they occur in a project fact explicitly linked by
+the candidate. The pipeline derives support from the linked fact and ignores
+model self-attestation; suffixes of structured references such as PF-055 and RG-029
+and numbered-list markers such as (1) are not treated as numeric claims.
+Unsourced dates, thresholds, and quantities
+remain blocking.
+Deterministic admission failures distinguish total score, materiality, missing or
+failed named gates, and the three-priority cap. No candidate or project prose is
+included. The canonical reader copies the safe summary into its technical annex.
+When no priority survives, both canonical HTML and DOCX render the same explicit
+no-recommendation admission message instead of leaving an empty section.
+
+Each admitted priority requires a structured current-document drafting block;
+a second operational-instrument block is nullable and is retained only when it
+is distinct and linked to an evidenced named instrument. Drafting carries a
+bounded guidance ID and uses `standard_document_advisory` when the normal PCN or
+PAD destination is advisory rather than a confirmed project commitment. The
+compiler alone receives the versioned operational-guidance packet; the packet is
+not project evidence and does not claim to reproduce OPCS or ESF policy text.
+
+Readiness flags carry `residual_gap_ids` and are suppressed when they duplicate
+the residual gaps behind final priorities. Judgment values, including unclear or
+not-evidenced states, require resolvable evidence IDs. The canonical reader derives
+`priority_summary` after admission and semantic review, counts accepted live
+research from distinct `CE-LIVE-*` evidence IDs, and keeps drafting labels,
+destinations, status, guidance basis, provenance count, and the
+`preview; not approved` label in parity across browser, HTML, and DOCX outputs.

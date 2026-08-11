@@ -1,0 +1,31 @@
+{
+  "country": "South Sudan",
+  "instrument": "IPF",
+  "document_stage": "PAD",
+  "geographies": ["Northern Arc County"],
+  "sectors": ["agriculture", "livestock"],
+  "project_elements": ["irrigation schemes", "livestock vaccination"],
+  "affected_groups": ["pastoral households", "smallholder farmers"],
+  "institutions": ["county veterinary service", "Ministry of Food Systems"],
+  "systems_assets": ["irrigation canals", "livestock markets"],
+  "documented_hazards": ["drought", "extreme heat"],
+  "time_horizons": ["current", "near-term"],
+  "signal_metadata": [
+    {"field": "geographies", "canonical_value": "Northern Arc County", "source": "document", "confidence": "high"},
+    {"field": "sectors", "canonical_value": "agriculture", "source": "document", "confidence": "high"},
+    {"field": "sectors", "canonical_value": "livestock", "source": "document", "confidence": "high"},
+    {"field": "project_elements", "canonical_value": "irrigation schemes", "source": "document", "confidence": "high"},
+    {"field": "project_elements", "canonical_value": "livestock vaccination", "source": "document", "confidence": "high"},
+    {"field": "affected_groups", "canonical_value": "pastoral households", "source": "document", "confidence": "high"},
+    {"field": "affected_groups", "canonical_value": "smallholder farmers", "source": "document", "confidence": "high"},
+    {"field": "institutions", "canonical_value": "county veterinary service", "source": "document", "confidence": "high"},
+    {"field": "institutions", "canonical_value": "Ministry of Food Systems", "source": "document", "confidence": "high"},
+    {"field": "systems_assets", "canonical_value": "irrigation canals", "source": "document", "confidence": "high"},
+    {"field": "systems_assets", "canonical_value": "livestock markets", "source": "document", "confidence": "high"},
+    {"field": "documented_hazards", "canonical_value": "drought", "source": "document", "confidence": "high"},
+    {"field": "documented_hazards", "canonical_value": "extreme heat", "source": "document", "confidence": "high"},
+    {"field": "time_horizons", "canonical_value": "current", "source": "document", "confidence": "high"},
+    {"field": "time_horizons", "canonical_value": "near-term", "source": "document", "confidence": "high"}
+  ],
+  "unresolved": []
+}
