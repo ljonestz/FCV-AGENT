@@ -66,6 +66,33 @@ REQUIRED_GATES = {
     "distinctiveness",
 }
 DRAFTING_STATUSES = {"existing_commitment", "advisory_proposal"}
+DOCUMENT_GAP_TYPES = {"not_yet_specified", "contradictory"}
+SUBSTANTIVE_GAP_TYPES = {"confirmed_omission", "partial_response"}
+DOCUMENT_ACTION_PATTERN = re.compile(
+    r"\b(?:complete|populate|fill|replace|remove|delete|reconcile|correct|"
+    r"repair|update)\b",
+    re.IGNORECASE,
+)
+DOCUMENT_OBJECT_PATTERN = re.compile(
+    r"\b(?:placeholder|draft|section|table|field|cross-reference|document|"
+    r"target|indicator)\b",
+    re.IGNORECASE,
+)
+SUBSTANTIVE_ACTION_PATTERN = re.compile(
+    r"\b(?:implement|construct|operate|deliver|train|finance|procure|deploy|"
+    r"enforce|maintain)\b",
+    re.IGNORECASE,
+)
+PROJECT_OBLIGATION_ACTION_PATTERN = re.compile(
+    r"\b(?:establish|create|adopt|require|mandate|set up|formalize|introduce|"
+    r"assign)\b",
+    re.IGNORECASE,
+)
+PROJECT_OBLIGATION_OBJECT_PATTERN = re.compile(
+    r"\b(?:instrument|agreement|protocol|actor|system|committee|unit|"
+    r"mechanism|commitment)\b",
+    re.IGNORECASE,
+)
 
 
 @dataclass(frozen=True)
@@ -205,6 +232,100 @@ class CandidateRecommendation:
     rank: int | None = None
     supported_numeric_tokens: tuple[str, ...] = ()
     narrative: str = ""
+
+
+@dataclass(frozen=True)
+class RecommendationGroundingContext:
+    gap_types: dict[str, str]
+    gap_pathway_ids: dict[str, frozenset[str]]
+    fact_source_blocks: dict[str, frozenset[str]]
+    integrity_source_blocks: frozenset[str]
+
+
+def _candidate_action_text(candidate: CandidateRecommendation) -> str:
+    return " ".join(
+        value
+        for value in (
+            candidate.decision,
+            candidate.minimum_action,
+            candidate.enhanced_action,
+            candidate.completion_evidence,
+        )
+        if value
+    )
+
+
+def _is_document_completion_action(text: str) -> bool:
+    return bool(
+        DOCUMENT_ACTION_PATTERN.search(text)
+        and DOCUMENT_OBJECT_PATTERN.search(text)
+        and not SUBSTANTIVE_ACTION_PATTERN.search(text)
+    )
+
+
+def _duplicates_reserved_document_check(
+    candidate: CandidateRecommendation,
+    context: RecommendationGroundingContext,
+) -> bool:
+    gap_types = {
+        context.gap_types.get(gap_id)
+        for gap_id in candidate.residual_gap_ids
+    }
+    if not gap_types or None in gap_types:
+        return False
+    if any(
+        context.gap_types.get(gap_id) in SUBSTANTIVE_GAP_TYPES
+        and context.gap_pathway_ids.get(gap_id)
+        for gap_id in candidate.residual_gap_ids
+    ):
+        return False
+    if not gap_types <= DOCUMENT_GAP_TYPES:
+        return False
+    linked_blocks = {
+        block_id
+        for fact_id in candidate.project_anchor_ids
+        for block_id in context.fact_source_blocks.get(fact_id, frozenset())
+    }
+    if not linked_blocks or not linked_blocks <= context.integrity_source_blocks:
+        return False
+    actions = tuple(
+        value
+        for value in (
+            candidate.decision,
+            candidate.minimum_action,
+            candidate.enhanced_action,
+        )
+        if value
+    )
+    return bool(actions) and all(
+        _is_document_completion_action(item) for item in actions
+    )
+
+
+def _promotes_context_to_project_obligation(
+    candidate: CandidateRecommendation,
+) -> bool:
+    if candidate.recommendation_basis != "country_context":
+        return False
+    action = _candidate_action_text(candidate)
+    return bool(
+        PROJECT_OBLIGATION_ACTION_PATTERN.search(action)
+        and PROJECT_OBLIGATION_OBJECT_PATTERN.search(action)
+    )
+
+
+def deterministic_grounding_failure_codes(
+    candidate: CandidateRecommendation,
+    context: RecommendationGroundingContext,
+) -> tuple[str, ...]:
+    """Return content-free deterministic grounding failures before ranking."""
+
+    codes: list[str] = []
+    if _duplicates_reserved_document_check(candidate, context):
+        codes.append("ADMISSION_DUPLICATES_DOCUMENT_CHECK")
+    if _promotes_context_to_project_obligation(candidate):
+        codes.append("RECOMMENDATION_CONTEXT_PROMOTION_UNSUPPORTED")
+    return tuple(codes)
 
 
 @dataclass(frozen=True)

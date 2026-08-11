@@ -3,10 +3,12 @@ from dataclasses import replace
 from sector_lenses.climate_recommendations import (
     CandidateRecommendation,
     DraftingBlock,
+    RecommendationGroundingContext,
     RecommendationScore,
     ReviewReadinessFlag,
     admit_and_rank,
     admit_readiness_flags,
+    deterministic_grounding_failure_codes,
     normalize_optional_enhancement,
     normalize_recommendation_references,
     normalize_unsupported_drafting_precision,
@@ -270,6 +272,135 @@ def test_unsupported_year_label_uses_preparation_year_wording():
         "Record the review during the relevant preparation year and update "
         "the relevant annex."
     )
+
+
+def _grounding_context(**overrides):
+    values = {
+        "gap_types": {"RG-001": "not_yet_specified"},
+        "gap_pathway_ids": {"RG-001": frozenset({"PW-001"})},
+        "fact_source_blocks": {"PF-001": frozenset({"DOC-1-B-1"})},
+        "integrity_source_blocks": frozenset({"DOC-1-B-1"}),
+    }
+    values.update(overrides)
+    return RecommendationGroundingContext(**values)
+
+
+def test_document_completion_candidate_is_reserved_for_document_checks():
+    candidate = replace(
+        _candidate(),
+        decision="Populate the placeholder target in the results table.",
+        minimum_action="Complete the unfinished document section.",
+        enhanced_action=None,
+        enhanced_activation=None,
+    )
+
+    assert deterministic_grounding_failure_codes(
+        candidate, _grounding_context()
+    ) == ("ADMISSION_DUPLICATES_DOCUMENT_CHECK",)
+
+
+def test_independent_climate_fcv_design_gap_sharing_block_is_retained():
+    candidate = replace(
+        _candidate(),
+        decision="Define a continuity response for flood-related access disruption.",
+    )
+    context = _grounding_context(
+        gap_types={"RG-001": "partial_response"},
+    )
+
+    assert deterministic_grounding_failure_codes(candidate, context) == ()
+
+
+def test_document_candidate_needs_structural_source_overlap_to_be_suppressed():
+    candidate = replace(
+        _candidate(),
+        decision="Populate the placeholder target in the results table.",
+    )
+    context = _grounding_context(
+        integrity_source_blocks=frozenset({"DOC-1-B-9"}),
+    )
+
+    assert deterministic_grounding_failure_codes(candidate, context) == ()
+
+
+def test_document_candidate_with_operational_action_is_retained():
+    candidate = replace(
+        _candidate(),
+        decision="Populate the placeholder and implement access safeguards.",
+    )
+
+    assert deterministic_grounding_failure_codes(
+        candidate, _grounding_context()
+    ) == ()
+
+
+def test_document_candidate_with_substantive_enhancement_is_retained():
+    candidate = replace(
+        _candidate(),
+        decision="Populate the placeholder target in the results table.",
+        minimum_action="Complete the unfinished document section.",
+        enhanced_action="Assess options for maintaining seasonal access.",
+        enhanced_activation="Use the options where access disruption is material.",
+    )
+
+    assert deterministic_grounding_failure_codes(
+        candidate, _grounding_context()
+    ) == ()
+
+
+def test_context_only_candidate_cannot_mandate_new_protocol():
+    candidate = replace(
+        _candidate(),
+        recommendation_basis="country_context",
+        instrument_claim_ids=(),
+        decision="Establish a herder-fisher agreement at each project site.",
+        minimum_action="Create a site protocol and assign a new coordination actor.",
+    )
+
+    assert deterministic_grounding_failure_codes(
+        candidate, _grounding_context()
+    ) == ("RECOMMENDATION_CONTEXT_PROMOTION_UNSUPPORTED",)
+
+
+def test_unrelated_instrument_does_not_authorize_context_only_obligation():
+    candidate = replace(
+        _candidate(),
+        recommendation_basis="country_context",
+        instrument_claim_ids=("PF-010",),
+        decision="Establish a herder-fisher agreement at each project site.",
+        minimum_action="Create a site protocol and assign a new coordination actor.",
+    )
+
+    assert deterministic_grounding_failure_codes(
+        candidate, _grounding_context()
+    ) == ("RECOMMENDATION_CONTEXT_PROMOTION_UNSUPPORTED",)
+
+
+def test_context_only_candidate_may_verify_applicability():
+    candidate = replace(
+        _candidate(),
+        recommendation_basis="country_context",
+        instrument_claim_ids=(),
+        decision="Assess whether seasonal resource conflict applies at project sites.",
+        minimum_action="Confirm applicability before deciding a response.",
+    )
+
+    assert deterministic_grounding_failure_codes(
+        candidate, _grounding_context()
+    ) == ()
+
+
+def test_project_evidence_can_support_proportionate_project_action():
+    candidate = replace(
+        _candidate(),
+        recommendation_basis="project_evidence",
+        decision="Update the documented site-selection method.",
+    )
+
+    assert deterministic_grounding_failure_codes(
+        candidate,
+        _grounding_context(gap_types={"RG-001": "partial_response"}),
+    ) == ()
 
 
 def test_readiness_flags_are_capped_non_scoring_and_evidence_linked():
