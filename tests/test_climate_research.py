@@ -81,7 +81,12 @@ def test_bank_selection_precedes_live_research(monkeypatch):
     monkeypatch.setattr(
         app_module,
         "load_climate_bank",
-        lambda: calls.append(("load", threading.get_ident())) or object(),
+        lambda: (
+            calls.append(("load", threading.get_ident()))
+            or SimpleNamespace(
+                resolve_country=lambda _country: {"selection_aliases": {}}
+            )
+        ),
     )
     monkeypatch.setattr(
         app_module,
