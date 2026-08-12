@@ -3270,7 +3270,7 @@ def extract_temporal_context(stage1_output: str) -> dict:
     """Extract temporal context from Stage 1 output.
     Looks for %%%TEMPORAL_CONTEXT_START%%%...%%%TEMPORAL_CONTEXT_END%%% block.
     Returns dict with approval_date, closing_date, safeguards_framework,
-    other_temporal_markers, lifecycle_status.
+    other_temporal_markers, lifecycle_status, processing_track.
     """
     pattern = r'%%%TEMPORAL_CONTEXT_START%%%(.*?)%%%TEMPORAL_CONTEXT_END%%%'
     m = re.search(pattern, stage1_output, re.DOTALL)
@@ -3281,6 +3281,7 @@ def extract_temporal_context(stage1_output: str) -> dict:
             'safeguards_framework': 'Unknown',
             'other_temporal_markers': 'None identified',
             'lifecycle_status': 'Unknown',
+            'processing_track': 'Unknown',
             'error': True
         }
     block = m.group(1).strip()
@@ -3293,6 +3294,13 @@ def extract_temporal_context(stage1_output: str) -> dict:
     # of historical runs are active-project screenings, not closed ones.
     lm = re.search(r'lifecycle_status:\s*(.+)', block)
     ctx['lifecycle_status'] = lm.group(1).strip() if lm else 'active'
+    pm = re.search(r'processing_track:\s*(.+)', block)
+    processing_track = pm.group(1).strip() if pm else 'Unknown'
+    ctx['processing_track'] = (
+        processing_track
+        if processing_track in {'standard', 'consolidated_condensed'}
+        else 'Unknown'
+    )
     return ctx
 
 
@@ -3918,6 +3926,7 @@ closing_date: [Project closing date if available, in format YYYY-MM or "Unknown"
 safeguards_framework: [One of: ESF / OP-BP / ESSA / PSIA / Unknown — determined from the document, NOT assumed]
 other_temporal_markers: [Any restructuring dates, AF dates, or other significant temporal markers, or "None identified"]
 lifecycle_status: [One of: "active" | "closed - <brief reason>" | "Unknown" — set to "closed - <reason>" ONLY if the document itself contains explicit closure/completion signals: it is an Implementation Completion and Results Report (ICR), it explicitly states the project has closed, was cancelled, or was dropped, or the closing_date above is clearly in the past AND the document text discusses results/lessons-learned in a completed-project register rather than a design or supervision register. Do not infer closure from the closing_date alone — a PAD or AF whose closing date has passed but which is being screened for a NEW restructuring or AF is still active for that purpose. When genuinely uncertain, use "active".]
+processing_track: [One of: standard / consolidated_condensed / Unknown — use a named track only when the document explicitly identifies the applicable preparation procedure or contains an unambiguous procedural marker. Do not infer the track from document dates, approval dates, or current calendar date.]
 %%%TEMPORAL_CONTEXT_END%%%
 
 After the temporal block, ALWAYS emit this regime-detection block (all fields present; use "Unknown"/"false" when a signal is absent — never guess):
