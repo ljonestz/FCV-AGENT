@@ -377,6 +377,16 @@ def test_stage3_renderer_defines_climate_state_for_its_full_template():
     )
 
 
+def test_watch_list_uses_the_app_markdown_function():
+    source = (ROOT / "index.html").read_text(encoding="utf-8")
+    horizon = source[
+        source.index("function renderHorizonPanel("):
+        source.index("function renderPrioritiesIntro()")
+    ]
+    assert "?md(text):" in horizon
+    assert "md.render" not in horizon
+
+
 def test_normal_detailed_stage3_uses_the_restored_vertical_sidebar():
     source = (ROOT / "index.html").read_text(encoding="utf-8")
     sidebar = source[source.index("function normalStage3SidebarHtml()"):source.index("function stage3OverviewHtml()")]

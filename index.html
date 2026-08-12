@@ -6228,7 +6228,7 @@ ${body}
     const panel=document.createElement('details');
     panel.id='horizon-panel';
     panel.className='horizon-panel ani';
-    const rendered=typeof md!=='undefined'?md.render(text):text.replace(/\n/g,'<br>');
+    const rendered=typeof md!=='undefined'?md(text):text.replace(/\n/g,'<br>');
     panel.innerHTML='<summary>Watch List for Supervision — Risks to Monitor During Implementation</summary>'
       +'<div class="horizon-body">'
       +'<p class="horizon-disclaimer">These are FCV risks or dynamics the team cannot act on now but should monitor during implementation. They do not affect the FCV ratings above.</p>'
