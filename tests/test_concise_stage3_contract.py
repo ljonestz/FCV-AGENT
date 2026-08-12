@@ -20,6 +20,12 @@ _STAGE3_OUTPUT = "%%%JSON_START%%%" + json.dumps({
         "implementation_note": "Prepare.", "cpf_alignment": None,
         "rra_driver_alignment": None,
     }],
+    "concise_readout": {
+        "headline": "A concise headline.",
+        "overview": "A concise overview.",
+        "strengths": [{"title": "Strength", "text": "A strength."}],
+        "priority_intro": "Priority introduction.",
+    },
 }) + "%%%JSON_END%%%"
 
 
@@ -187,3 +193,61 @@ def test_concise_lifecycle_context_unknown_is_conservative():
     text = app.build_concise_lifecycle_context("PCN", {})
     assert "When to address" in text
     assert "do not assert an unverified procedural gate" in text
+
+
+def test_both_stage3_sse_paths_return_concise_readout(monkeypatch):
+    def fake_lens_context(*_args, **_kwargs):
+        return _lens_context([])
+
+    def fake_stream(_messages, _max_tokens, stage, **_kwargs):
+        fake_stream._last_result = (
+            "Stage 1 output." if stage == 1 else
+            "Stage 2 output." if stage == 2 else _STAGE3_OUTPUT
+        )
+        fake_stream._last_stop_reason = "end_turn"
+        yield 'data: {"chunk": "stage"}\n\n'
+
+    monkeypatch.setattr(app, "build_lens_stage_context", fake_lens_context)
+    monkeypatch.setattr(app, "_stream_stage", fake_stream)
+    step_response = app.app.test_client().post("/api/run-stage", json={
+        "stage": 3,
+        "history": [{"role": "assistant", "content": "Stage 2 output."}],
+        "document_type": "PAD", "doc_type": "PAD", "instrument_type": "IPF",
+        "review_mode": "design", "temporal_context": {"processing_track": "standard"},
+        "regime_context": {},
+    })
+    assert step_response.status_code == 200
+    step_events = [json.loads(line[6:]) for line in step_response.get_data(as_text=True).splitlines()
+                   if line.startswith("data: ")]
+    step_done = next(event for event in step_events if event.get("done"))
+
+    monkeypatch.setattr(app, "extract_country_name", lambda _text, _client: "Exampleland")
+    monkeypatch.setattr(app, "extract_sector_name", lambda _text, _client: "Transport")
+    monkeypatch.setattr(app, "get_fast_client", lambda: object())
+    monkeypatch.setattr(app, "_iter_stage1_research", lambda *_args, **_kwargs: iter(()))
+    monkeypatch.setattr(app, "extract_instrument_type", lambda _text: "IPF")
+    monkeypatch.setattr(app, "extract_temporal_context", lambda _text: {"processing_track": "standard"})
+    monkeypatch.setattr(app, "extract_regime_context", lambda _text, _instrument: {})
+    monkeypatch.setattr(app, "extract_country_classification", lambda _text: {"category": "General"})
+    monkeypatch.setattr(app, "extract_context_flags", lambda _text: {})
+    monkeypatch.setattr(app, "extract_sector_context", lambda _text: {"primary_sector": "Transport"})
+    monkeypatch.setattr(app, "extract_change_types", lambda _text: [])
+    monkeypatch.setattr(app, "extract_prior_actions", lambda _text: [])
+    monkeypatch.setattr(app, "extract_dlis", lambda _text: [])
+    monkeypatch.setattr(app, "extract_country_set", lambda _text: {"is_multi_country": False})
+    monkeypatch.setattr(app, "extract_mpa_context", lambda _text: {"is_mpa": False})
+    monkeypatch.setattr(app, "extract_lens_evidence", lambda *_args: {})
+    express_response = app.app.test_client().post("/api/run-express", json={
+        "documents": [{"name": "PAD.txt", "type": "text", "docRole": "primary", "content": "Project delivery."}],
+        "document_type": "PAD", "instrument_type": "IPF", "review_mode": "design",
+    })
+    assert express_response.status_code == 200
+    express_events = [json.loads(line[6:]) for line in express_response.get_data(as_text=True).splitlines()
+                      if line.startswith("data: ")]
+    express_done = next(event for event in express_events if event.get("stage_done") == 3)
+
+    expected = {"headline": "A concise headline.", "overview": "A concise overview.",
+                "strengths": [{"title": "Strength", "text": "A strength."}],
+                "priority_intro": "Priority introduction."}
+    assert step_done["concise_readout"] == expected
+    assert express_done["concise_readout"] == expected

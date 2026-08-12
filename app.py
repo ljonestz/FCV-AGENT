@@ -9427,6 +9427,7 @@ def run_stage():
                     'result': display_full_text,
                     'history': updated_messages,
                     'stage': stage,
+                    'concise_readout': None,
                     'parse_error': parse_error,
                     'parse_error_message': parse_error_message,
                     'research_brief': research_brief_text if stage == 1 else None,
@@ -9497,6 +9498,7 @@ def run_stage():
                     done_data['dpf_watch'] = dpf_watch
                     done_data['p4r_watch'] = p4r_watch
                     done_data['regional_watch'] = regional_watch
+                    done_data['concise_readout'] = parsed.get('concise_readout')
                     done_data['horizon_considerations'] = horizon
                     done_data['wider_fcv_context'] = parsed.get('wider_fcv_context')
                     done_data['climate_unlinked'] = parsed.get('climate_unlinked', 0)
@@ -10926,7 +10928,7 @@ def run_express():
                     conversation_history = conversation_history[-20:]
 
                 # ── Stage 3 done event ──
-                _stage3_done = {'stage_done': 3, 'result': stage3_output_clean, 'history': conversation_history, 'priorities': parsed.get('priorities', []), 'fcv_rating': parsed.get('fcv_rating', ''), 'fcv_responsiveness_rating': parsed.get('fcv_responsiveness_rating', ''), 'sensitivity_summary': parsed.get('sensitivity_summary', ''), 'responsiveness_summary': parsed.get('responsiveness_summary', ''), 'risk_exposure': parsed.get('risk_exposure'), 'mid_cycle_watch': parsed.get('mid_cycle_watch', []), 'dpf_watch': parsed.get('dpf_watch', []), 'p4r_watch': parsed.get('p4r_watch', []), 'regional_watch': parsed.get('regional_watch', []), 'gap_table': extract_gap_table(stage3_output), 'parse_error': parsed.get('error', False), 'parse_error_message': parsed.get('message', ''), 'horizon_considerations': horizon, 'wider_fcv_context': parsed.get('wider_fcv_context'), 'lens_context_sources': lens_context_s3['lens_context_sources'], 'active_lenses': lens_context_s3['active_lenses'], 'lens_warnings': lens_context_s3['warnings'], 'applied_snippets': [{'id': s['id'], 'title': s['title'], 'source': s['source']} for s in secondary_snippets_s3e], 'climate_unlinked': parsed.get('climate_unlinked', 0), 'climate_total': parsed.get('climate_total', 0)}
+                _stage3_done = {'stage_done': 3, 'result': stage3_output_clean, 'history': conversation_history, 'priorities': parsed.get('priorities', []), 'fcv_rating': parsed.get('fcv_rating', ''), 'fcv_responsiveness_rating': parsed.get('fcv_responsiveness_rating', ''), 'sensitivity_summary': parsed.get('sensitivity_summary', ''), 'responsiveness_summary': parsed.get('responsiveness_summary', ''), 'risk_exposure': parsed.get('risk_exposure'), 'mid_cycle_watch': parsed.get('mid_cycle_watch', []), 'dpf_watch': parsed.get('dpf_watch', []), 'p4r_watch': parsed.get('p4r_watch', []), 'regional_watch': parsed.get('regional_watch', []), 'concise_readout': parsed.get('concise_readout'), 'gap_table': extract_gap_table(stage3_output), 'parse_error': parsed.get('error', False), 'parse_error_message': parsed.get('message', ''), 'horizon_considerations': horizon, 'wider_fcv_context': parsed.get('wider_fcv_context'), 'lens_context_sources': lens_context_s3['lens_context_sources'], 'active_lenses': lens_context_s3['active_lenses'], 'lens_warnings': lens_context_s3['warnings'], 'applied_snippets': [{'id': s['id'], 'title': s['title'], 'source': s['source']} for s in secondary_snippets_s3e], 'climate_unlinked': parsed.get('climate_unlinked', 0), 'climate_total': parsed.get('climate_total', 0)}
                 if _native_climate_s3:
                     _stage3_done['lens_diagnostic'] = lens_diagnostic
                 yield f"data: {json.dumps(_stage3_done)}\n\n"
