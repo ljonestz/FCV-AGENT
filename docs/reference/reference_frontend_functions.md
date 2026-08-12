@@ -31,6 +31,10 @@
 
 ### Stage 3 priorities + Go Deeper
 - `initStage3UI()` — parse priorities from JSON, build stepper, show Priority 1
+- `supportsConciseStage3View()` — enables the Summary/Detailed view control only for general core Stage 3; active lens and verified Climate-FCV reader paths retain their specialist readers.
+- `stage3ViewToggleHtml()` / `setStage3View(view, preservePriority=true)` / `handleStage3ViewKeydown(event)` — render and operate the accessible Summary and Detailed analysis tabs. A valid core `concise_readout` opens Summary by default; without it, Summary is disabled and Detailed analysis is shown with an availability notice.
+- `renderConciseOverview()` — renders the five-minute headline, overview, strengths, and optional priority introduction from `stageConciseReadout`.
+- `getConcisePriority(pr)` / `showConcisePriority(idx)` — render the concise priority card. If a valid overview exists but an individual `priority.concise` is absent, `getConcisePriority()` derives a display-only card from the authoritative detailed priority (`title`, gap/why, actions, and implementation note); it never changes the detailed priority data.
 - `showPriority(idx)` — render full priority card with zone-act layout from JSON (refresh_shift badge, actions[] loop with per-action guidance + suggested text, implementation note); re-enable Next when navigating back from the last priority; no auto-load of Go Deeper
 - `handleDeeperToggle(detailsEl, idx)` — ontoggle handler for `<details class="go-deeper">`; initialises 2 tab buttons on first open
 - `loadDeeperTab(idx, tab)` — dispatches to correct loader based on `tab`:
@@ -146,6 +150,8 @@
 - **Step-by-Step**: Each stage calls `/api/run-stage` individually; user refines before proceeding.
 
 Both modes use identical prompts, code paths, and output quality. Express is a frontend orchestration change only.
+
+For eligible core Stage 3 design reviews, both modes open the additive concise Summary view when the Stage 3 completion payload contains a valid `concise_readout`; the Detailed analysis tab remains available and authoritative. The concise readout is produced within the existing Stage 3 request, not by a browser-triggered follow-up call.
 
 **State variable:** `let analysisMode = 'express'` (persisted to `localStorage.fcv_analysis_mode`). `selectMode(mode)` updates state + card UI.
 

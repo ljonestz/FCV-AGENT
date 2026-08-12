@@ -23,7 +23,7 @@ POST /api/run-stage
     Stage 3: {done, output, priorities[], fcv_rating, fcv_responsiveness_rating,
               sensitivity_summary, responsiveness_summary,
               risk_exposure: {risks_to, risks_from},
-              parse_error, parse_error_message}
+              parse_error, parse_error_message, concise_readout?}
 
 # Express mode route (single SSE endpoint for all 3 stages)
 POST /api/run-express
@@ -47,6 +47,8 @@ POST /api/run-express
     8 min, Stage 2: 9 min, Stage 3: 9 min) so a provider stream that keeps the
     SSE alive without completing returns a clear stage error instead of running
     indefinitely.
+
+For Stage 3, both completion payloads add `concise_readout` only for an eligible core design review: no implementation-review mode, no active sector lenses, and no native verified Climate-FCV path. The field is omitted for all other paths. It is the normalized optional overview from the same Stage 3 model call; priority-level `concise` objects stay inside each item in `priorities[]`. Detailed fields and priorities remain authoritative, and missing or malformed concise fields do not make Stage 3 parsing fail.
 
 # Oversized upload handling
 POST /api/run-stage and POST /api/run-express
@@ -271,6 +273,8 @@ def extract_priorities(stage3_output, uploaded_doc_names=None):
 # Each priority has 13 core fields + specificity_warning (bool) + citation_warnings (list)
 ```
 
+For eligible core Stage 3 output, the return shape additionally has `concise_readout: dict | None`, and each detailed priority has `concise: dict | None`. `concise_readout` contains only `headline`, `overview`, `strengths` (`title`, `text`), and `priority_intro`. A priority `concise` contains only `title`, `why`, `how`, `suggested_wording` (`document_element`, `text`), and `project_cycle` (`primary_label`, `primary_text`, `secondary_label`, `secondary_text`).
+
 **Backwards compatibility:** `extract_priorities()` converts old `recommendation` string field to single-item `actions[]` array if present.
 
 ---
@@ -334,9 +338,17 @@ def clean_stage2_output(stage2_output):
     "evidence_trail": "..."
   },
   "parse_error": false,
-  "parse_error_message": ""
+  "parse_error_message": "",
+  "concise_readout": {
+    "headline": "...",
+    "overview": "...",
+    "strengths": [{"title": "...", "text": "..."}],
+    "priority_intro": "..."
+  }
 }
 ```
+
+`concise_readout` is optional and core-only in both the `/api/run-stage` Stage 3 done event and the `/api/run-express` Stage 3 `stage_done` event.
 
 **Stage 3:**
 ```json

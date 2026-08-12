@@ -303,6 +303,8 @@ Procfile            # Render deployment config
 
 ### 1.3 Three-Stage Pipeline
 
+**Core Stage 3 readout:** The existing Stage 3 core request can return an optional concise presentation layer in its single model call. It adds `concise_readout` (`headline`, `overview`, `strengths[{title,text}]`, `priority_intro`) and optional per-priority `concise` (`title`, `why`, `how[]`, `suggested_wording{document_element,text}`, `project_cycle{primary_label,primary_text,secondary_label,secondary_text}`), without altering detailed analysis. It runs only for core design reviews with no active lenses; implementation, active-lens, and native verified Climate-FCV flows omit it. Detailed priorities remain authoritative.
+
 **Current upload tiering:** Zone 1 accepts exactly one primary project document; Zone 2 accepts up to 10 package documents that are distilled into key-signal cards; Zone 3 accepts up to 3 contextual documents distilled into RRA driver / CPF pillar cards or generic context cards.
 
 **Two workflow modes:** Express Analysis (default — all 3 stages run automatically via `/api/run-express`) and Step-by-Step (interactive, one stage at a time via `/api/run-stage`). Same prompts, same output quality.
@@ -558,6 +560,8 @@ Optional sector provenance is normalized as `lens_ids: string[]` and `lens_relev
 
 Finds `%%%JSON_START%%%...%%%JSON_END%%%`, parses via `json.loads()`, validates field values, runs `_check_specificity()` and `_check_citations()`, returns unified dict. On malformed JSON: `{error: True, message: ...}` — NOT silent failure.
 
+For core design Stage 3 runs without active lenses, the same single model call may also return optional `concise_readout` (`headline`, `overview`, `strengths[{title,text}]`, `priority_intro`) and optional per-priority `concise` (`title`, `why`, `how[]`, `suggested_wording{document_element,text}`, `project_cycle{primary_label,primary_text,secondary_label,secondary_text}`). These presentation fields are normalized independently: invalid concise data becomes `None` and does not invalidate the authoritative detailed result.
+
 ### 5.4 Stage 2 Parsing
 
 - `extract_stage2_ratings()` → `{sensitivity_rating, responsiveness_rating, rating_reasoning}`
@@ -594,6 +598,7 @@ Stage 2 emits `%%%UNDER_HOOD_START/END%%%` delimiter block. After Stage 2 comple
 - **Citation warning:** amber badge if `priority.citation_warnings.length > 0`
 - **Under the Hood parse error banner:** yellow banner if `extract_under_hood()` fails; raw text shown as fallback
 - **Stage consistency banner:** yellow banner at Stage 3 if Stage 2 was re-run after Stage 3
+- **Concise Stage 3 readout:** eligible core design reviews open a five-minute Summary tab when valid `concise_readout` data arrives. Detailed analysis remains available and authoritative. Without the overview, Summary is disabled and Detailed analysis is shown; a missing per-priority concise object uses a display-only projection of its detailed priority.
 
 ---
 
@@ -706,6 +711,8 @@ Citation hallucination guard: Stage 3 prompt explicitly prohibits fabricating do
 - [ ] Stage 2 gauges animate; ratings are plausible
 - [ ] Stage 3 priorities include geographic callouts and `refresh_shift` badges
 - [ ] Stage 3 lifecycle framing matches doc type (PCN vs PAD framing)
+- [ ] Eligible core-only Stage 3 opens Summary from a valid concise overview, with Detailed analysis preserving authoritative priorities
+- [ ] Missing/malformed concise data leaves Detailed analysis available; active-lens, verified Climate-FCV, and implementation-review paths omit `concise_readout`
 - [ ] Go Deeper Trail tab renders instantly from Stage 2 data
 - [ ] Go Deeper Playbook tab loads relevant guidance
 - [ ] Follow-on card works with at least 2 pre-fill chips
@@ -775,7 +782,7 @@ docs/superpowers/  # Dev plans and specs
 
 ---
 
-**Last updated:** 2026-08-05
-**Current version:** FCV Project Screener v9.30
+**Last updated:** 2026-08-12
+**Current version:** FCV Project Screener v9.31
 **Claude model:** `claude-sonnet-4-6`
 **Stack:** Flask 3.0.3 + vanilla JS + Anthropic SDK + gunicorn/gevent on Render

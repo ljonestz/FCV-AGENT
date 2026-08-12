@@ -140,6 +140,14 @@ If in doubt → [S] or [R].
 
 **Purpose:** Generate a formal, memo-ready Recommendations Note with actionable priority cards, tailored to the project's lifecycle stage using Playbook guidance.
 
+### Optional concise on-screen readout (core design reviews only)
+
+The resolved **core** Stage 3 prompt appends `CONCISE_STAGE3_OUTPUT_CONTRACT` in the same single model call that produces the detailed narrative and JSON. It is not a second summarisation call. The additive presentation fields must preserve the detailed findings, ratings, priority order, and actions: the detailed Stage 3 analysis remains authoritative. The contract is not appended for implementation reviews, native verified Climate-FCV runs, or any active sector lens.
+
+`concise_readout` is optional. Its exact children are `headline`, `overview`, `strengths` (objects with `title` and `text`), and `priority_intro`. The prompt requests one headline, a 100-150 word overview, exactly three short strength objects, and a short priority introduction. Parsing accepts only non-empty `headline`, `overview`, and at least one valid strength object (retaining at most three); `priority_intro` may be empty. Invalid or absent data normalizes to `null` without affecting detailed output.
+
+Each detailed priority may also carry optional `concise` with these exact children: `title`, `why`, `how` (string array), `suggested_wording` (`document_element`, `text`), and `project_cycle` (`primary_label`, `primary_text`, `secondary_label`, `secondary_text`). The prompt requests a 70-110 word `why`, two to four `how` actions, a ready-to-paste passage, and lifecycle labels calibrated to the document stage. Parsing requires non-empty `title`, `why`, at least one `how` item, `suggested_wording.document_element`, `suggested_wording.text`, `project_cycle.primary_label`, and `project_cycle.primary_text`; it retains at most four `how` items. A malformed concise priority becomes `null` and never invalidates the detailed priority.
+
 **Stage-awareness logic (doc_type passed in request body):**
 - PCN/PID → PLAYBOOK_PREPARATION, timing: "Identification / Preparation"
 - PAD → PLAYBOOK_PREPARATION, timing: "Preparation / Appraisal"
