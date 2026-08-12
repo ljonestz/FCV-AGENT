@@ -381,3 +381,21 @@ def test_stage3_keyboard_activation_targets_the_live_re_rendered_tab():
     assert 'aria-controls="out-txt"' in source
     keyboard = source[source.index("function handleStage3ViewKeydown("):source.index("function setStage3View(")]
     assert "document.getElementById(tabs[next].id).focus()" in keyboard
+
+
+def test_exports_remain_bound_to_full_stage3_data():
+    source = (ROOT / "index.html").read_text(encoding="utf-8")
+    report = source[source.index("function downloadReport"):source.index("function downloadHTML")]
+    html_export = source[source.index("function downloadHTML"):source.index("function _buildExportPriorityCard")]
+    assert "stageOutputs[3]" in report
+    assert "stageThreePriorities" in report
+    assert "stageOutputs[3]" in html_export
+    assert "stageThreePriorities" in html_export
+    assert "stageConciseReadout" not in report
+    assert "stageConciseReadout" not in html_export
+
+
+def test_mode_copy_explains_detail_without_setup_choice():
+    source = (ROOT / "index.html").read_text(encoding="utf-8")
+    assert "opens with a concise recommendations summary" in source
+    assert "Review and refine the detailed Stage 1 and Stage 2 analysis" in source
