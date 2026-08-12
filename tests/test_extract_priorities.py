@@ -714,3 +714,43 @@ def test_extract_priorities_caps_concise_lists():
     )
     result = extract_priorities(text)
     assert result["priorities"][0]["concise"]["how"] == ["one", "two", "three", "four"]
+
+
+def test_extract_priorities_keeps_valid_strengths_after_invalid_entries():
+    payload = json.loads(re.search(
+        r'%%%JSON_START%%%(.*?)%%%JSON_END%%%', _concise_fixture(), re.DOTALL
+    ).group(1))
+    payload["concise_readout"]["strengths"] = [
+        None,
+        {"title": "", "text": "Blank title."},
+        {"title": "Missing text", "text": "   "},
+        {"title": "First valid", "text": "One."},
+        {"title": "Second valid", "text": "Two."},
+        {"title": "Third valid", "text": "Three."},
+        {"title": "Fourth valid", "text": "Four."},
+    ]
+
+    result = extract_priorities(
+        "%%%JSON_START%%%\n" + json.dumps(payload) + "\n%%%JSON_END%%%"
+    )
+
+    assert [strength["title"] for strength in result["concise_readout"]["strengths"]] == [
+        "First valid", "Second valid", "Third valid",
+    ]
+
+
+def test_extract_priorities_keeps_valid_how_after_invalid_entries():
+    payload = json.loads(re.search(
+        r'%%%JSON_START%%%(.*?)%%%JSON_END%%%', _concise_fixture(), re.DOTALL
+    ).group(1))
+    payload["priorities"][0]["concise"]["how"] = [
+        None, " ", 7, "one", "two", "three", "four", "five",
+    ]
+
+    result = extract_priorities(
+        "%%%JSON_START%%%\n" + json.dumps(payload) + "\n%%%JSON_END%%%"
+    )
+
+    assert result["priorities"][0]["concise"]["how"] == [
+        "one", "two", "three", "four",
+    ]

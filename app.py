@@ -5971,13 +5971,15 @@ def _normalize_concise_readout(value):
     if not isinstance(value, dict) or not isinstance(value.get('strengths'), list):
         return None
     strengths = []
-    for item in value['strengths'][:3]:
+    for item in value['strengths']:
         if not isinstance(item, dict):
             continue
         title = _clean_concise_string(item.get('title'))
         text = _clean_concise_string(item.get('text'))
         if title and text:
             strengths.append({'title': title, 'text': text})
+            if len(strengths) == 3:
+                break
     headline = _clean_concise_string(value.get('headline'))
     overview = _clean_concise_string(value.get('overview'))
     priority_intro = _clean_concise_string(value.get('priority_intro'))
@@ -5999,14 +6001,17 @@ def _normalize_concise_priority(value):
     cycle = value.get('project_cycle')
     if not isinstance(suggested, dict) or not isinstance(cycle, dict):
         return None
+    how = []
+    for item in value['how']:
+        cleaned = _clean_concise_string(item)
+        if cleaned:
+            how.append(cleaned)
+            if len(how) == 4:
+                break
     normalized = {
         'title': _clean_concise_string(value.get('title')),
         'why': _clean_concise_string(value.get('why')),
-        'how': [
-            _clean_concise_string(item)
-            for item in value['how'][:4]
-            if _clean_concise_string(item)
-        ],
+        'how': how,
         'suggested_wording': {
             'document_element': _clean_concise_string(suggested.get('document_element')),
             'text': _clean_concise_string(suggested.get('text')),
