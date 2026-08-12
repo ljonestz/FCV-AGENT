@@ -74,6 +74,18 @@ def test_extract_temporal_context_rejects_unsupported_processing_track():
     assert ctx["processing_track"] == "Unknown"
 
 
+def test_extract_temporal_context_requires_exact_processing_track_field():
+    from app import extract_temporal_context
+
+    text = (
+        "%%%TEMPORAL_CONTEXT_START%%%\n"
+        "proposed_processing_track: standard\n"
+        "%%%TEMPORAL_CONTEXT_END%%%\n"
+    )
+    ctx = extract_temporal_context(text)
+    assert ctx["processing_track"] == "Unknown"
+
+
 def test_extract_temporal_context_defaults_legacy_processing_track_to_unknown():
     from app import extract_temporal_context
 

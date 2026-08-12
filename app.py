@@ -3294,7 +3294,7 @@ def extract_temporal_context(stage1_output: str) -> dict:
     # of historical runs are active-project screenings, not closed ones.
     lm = re.search(r'lifecycle_status:\s*(.+)', block)
     ctx['lifecycle_status'] = lm.group(1).strip() if lm else 'active'
-    pm = re.search(r'processing_track:\s*(.+)', block)
+    pm = re.search(r'^processing_track:\s*(.+)', block, re.MULTILINE)
     processing_track = pm.group(1).strip() if pm else 'Unknown'
     ctx['processing_track'] = (
         processing_track
