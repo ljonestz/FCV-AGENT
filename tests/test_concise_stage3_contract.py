@@ -1,7 +1,9 @@
 import json
 from pathlib import Path
+import re
 
 import app
+import pytest
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -387,15 +389,49 @@ def test_exports_remain_bound_to_full_stage3_data():
     source = (ROOT / "index.html").read_text(encoding="utf-8")
     report = source[source.index("function downloadReport"):source.index("function downloadHTML")]
     html_export = source[source.index("function downloadHTML"):source.index("function _buildExportPriorityCard")]
-    assert "stageOutputs[3]" in report
-    assert "stageThreePriorities" in report
-    assert "stageOutputs[3]" in html_export
-    assert "stageThreePriorities" in html_export
-    assert "stageConciseReadout" not in report
-    assert "stageConciseReadout" not in html_export
+    priority_card = source[source.index("function _buildExportPriorityCard"):source.index("function reset()")]
+
+    def assert_full_export_flow(report_source, html_source, priority_card_source):
+        assert "let execSummary = stageOutputs[3] || '';" in report_source
+        assert "summary: execSummary," in report_source
+        assert "priorities: stageThreePriorities," in report_source
+        assert "body: JSON.stringify(payload)" in report_source
+        assert "let rawSummary = stageOutputs[3] || '';" in html_source
+        assert "const pRows=stageThreePriorities.map((pr,i)=>" in html_source
+        assert "stageThreePriorities.forEach((pr,i)=>{" in html_source
+        assert "_buildExportPriorityCard(pr, i, stageThreePriorities.length)" in html_source
+        assert "stageConciseReadout" not in report_source
+        assert "stageConciseReadout" not in html_source
+        assert "stageConciseReadout" not in priority_card_source
+
+    assert_full_export_flow(report, html_export, priority_card)
+    with pytest.raises(AssertionError):
+        assert_full_export_flow(report.replace("priorities: stageThreePriorities,", ""), html_export, priority_card)
+    with pytest.raises(AssertionError):
+        assert_full_export_flow(
+            report, html_export.replace("stageThreePriorities.forEach((pr,i)=>{", ""), priority_card
+        )
 
 
 def test_mode_copy_explains_detail_without_setup_choice():
     source = (ROOT / "index.html").read_text(encoding="utf-8")
-    assert "opens with a concise recommendations summary" in source
-    assert "Review and refine the detailed Stage 1 and Stage 2 analysis" in source
+    express_card = re.search(
+        r'<div class="mode-card selected" id="mode-express".*?</div>\s*'
+        r'<div class="mode-card" id="mode-stepbystep"',
+        source,
+        re.DOTALL,
+    ).group(0)
+    step_by_step_card = re.search(
+        r'<div class="mode-card" id="mode-stepbystep".*?<div class="mode-desc">.*?</div>',
+        source,
+        re.DOTALL,
+    ).group(0)
+
+    assert (
+        '<div class="mode-desc">Runs all stages automatically and opens with a concise recommendations summary. '
+        'The full analysis remains available.</div>'
+    ) in express_card
+    assert (
+        '<div class="mode-desc">Review and refine the detailed Stage 1 and Stage 2 analysis before receiving the '
+        'same concise-first Recommendations Note.</div>'
+    ) in step_by_step_card
