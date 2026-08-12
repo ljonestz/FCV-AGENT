@@ -338,13 +338,7 @@ def clean_stage2_output(stage2_output):
     "evidence_trail": "..."
   },
   "parse_error": false,
-  "parse_error_message": "",
-  "concise_readout": {
-    "headline": "...",
-    "overview": "...",
-    "strengths": [{"title": "...", "text": "..."}],
-    "priority_intro": "..."
-  }
+  "parse_error_message": ""
 }
 ```
 
@@ -360,7 +354,13 @@ def clean_stage2_output(stage2_output):
   "responsiveness_summary": "...",
   "risk_exposure": {"risks_to": "...", "risks_from": "..."},
   "parse_error": false,
-  "parse_error_message": ""
+  "parse_error_message": "",
+  "concise_readout": {
+    "headline": "...",
+    "overview": "...",
+    "strengths": [{"title": "...", "text": "..."}],
+    "priority_intro": "..."
+  }
 }
 ```
 
