@@ -4890,7 +4890,7 @@
                 <button class="copy-btn" id="copy-btn" onclick="copyOut()">Copy all</button>
               </div>
             </div>
-            <div class="out-body" id="out-txt">${isLast ? `${supportsConciseStage3 ? stage3ViewToggleHtml() : ''}${conciseUnavailable}${_outBodyContent}` : _outBodyContent}</div>
+            <div class="out-body" id="out-txt"${supportsConciseStage3?' role="tabpanel" aria-labelledby="stage3-summary-tab"':''}>${isLast ? `${supportsConciseStage3 ? stage3ViewToggleHtml() : ''}${conciseUnavailable}${_outBodyContent}` : _outBodyContent}</div>
           </div>
           ${isLast?`
           <!-- ── PRIORITY STEPPER ── -->
@@ -6296,9 +6296,9 @@ ${body}
     // The default concise view renders the Summary tab with aria-selected="true".
     const summaryAvailable=!!stageConciseReadout;
     return `<div class="stage3-viewbar">
-      <div class="stage3-view-tabs" role="tablist" aria-label="Recommendations detail level">
-        <button id="stage3-summary-tab" class="stage3-view-tab ${stage3View==='summary'?'active':''}" role="tab" aria-selected="${stage3View==='summary'}" ${summaryAvailable?'':'disabled'} onclick="setStage3View('summary')">Summary</button>
-        <button id="stage3-detailed-tab" class="stage3-view-tab ${stage3View==='detailed'?'active':''}" role="tab" aria-selected="${stage3View==='detailed'}" onclick="setStage3View('detailed')">Detailed analysis</button>
+      <div class="stage3-view-tabs" role="tablist" aria-label="Recommendations detail level" onkeydown="handleStage3ViewKeydown(event)">
+        <button id="stage3-summary-tab" class="stage3-view-tab ${stage3View==='summary'?'active':''}" role="tab" aria-controls="stage3-view-panel" aria-selected="${stage3View==='summary'}" tabindex="${stage3View==='summary'?'0':'-1'}" ${summaryAvailable?'':'disabled'} onclick="setStage3View('summary')">Summary</button>
+        <button id="stage3-detailed-tab" class="stage3-view-tab ${stage3View==='detailed'?'active':''}" role="tab" aria-controls="stage3-view-panel" aria-selected="${stage3View==='detailed'}" tabindex="${stage3View==='detailed'?'0':'-1'}" onclick="setStage3View('detailed')">Detailed analysis</button>
       </div>
       <div class="stage3-download-note">Downloads include the comprehensive analysis.</div>
     </div>`;
@@ -6326,17 +6326,28 @@ ${body}
     cardArea.innerHTML=`<article class="concise-priority-card ani"><header class="concise-priority-head"><span class="concise-priority-num">${idx+1}</span><div><div class="concise-priority-kicker">Priority ${idx+1} of ${stageThreePriorities.length}</div><h3>${esc(concise.title)}</h3></div>${pr.risk_level?`<span class="concise-risk">${esc(pr.risk_level)}</span>`:''}</header><section><h4>Why this is suggested</h4><p>${esc(concise.why)}</p></section><section class="concise-how"><h4>How it can be addressed</h4><ul>${how}</ul></section>${wording.text?`<section class="concise-wording"><h4>Suggested wording for the current document</h4><p>${esc(wording.text)}</p><div class="concise-wording-target">For: ${esc(wording.document_element)}</div></section>`:''}<aside class="concise-cycle"><h4>Where this fits in the project cycle</h4><div><strong>${esc(cycle.primary_label||'When to address')}</strong><p>${esc(cycle.primary_text||'')}</p></div>${cycle.secondary_label||cycle.secondary_text?`<div><strong>${esc(cycle.secondary_label||'Next step')}</strong><p>${esc(cycle.secondary_text||'')}</p></div>`:''}</aside><details class="concise-specialist"><summary>Specialist reasoning, evidence and operational references</summary><p>${esc(pr.the_gap||'')}</p><p>${esc(pr.country_category_relevance||'')}</p></details></article>`;
   }
 
+  function handleStage3ViewKeydown(event){
+    const tabs=Array.from(document.querySelectorAll('.stage3-view-tab:not([disabled])'));
+    const current=tabs.indexOf(document.activeElement);
+    if(current<0 || !['ArrowLeft','ArrowRight','Home','End'].includes(event.key)) return;
+    event.preventDefault();
+    const next=event.key==='Home'?0:event.key==='End'?tabs.length-1:(current+(event.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length;
+    const view=tabs[next].id==='stage3-summary-tab'?'summary':'detailed';
+    setStage3View(view);
+    tabs[next].focus();
+  }
+
   function setStage3View(view, preservePriority=true){
     if(!supportsConciseStage3View()) return;
     if(view==='summary'&&!stageConciseReadout)view='detailed';
     stage3View=view;
     const summaryTab=document.getElementById('stage3-summary-tab'), detailedTab=document.getElementById('stage3-detailed-tab');
     [summaryTab,detailedTab].forEach(tab=>{if(tab)tab.classList.remove('active')});
-    if(summaryTab){summaryTab.classList.toggle('active',view==='summary');summaryTab.setAttribute('aria-selected',String(view==='summary'));}
-    if(detailedTab){detailedTab.classList.toggle('active',view==='detailed');detailedTab.setAttribute('aria-selected',String(view==='detailed'));}
+    if(summaryTab){summaryTab.classList.toggle('active',view==='summary');summaryTab.setAttribute('aria-selected',String(view==='summary'));summaryTab.tabIndex=view==='summary'?0:-1;}
+    if(detailedTab){detailedTab.classList.toggle('active',view==='detailed');detailedTab.setAttribute('aria-selected',String(view==='detailed'));detailedTab.tabIndex=view==='detailed'?0:-1;}
     const overview=document.getElementById('stage3-overview-wrap'); if(overview)overview.style.display=view==='summary'?'none':'block';
     const out=document.getElementById('out-txt');
-    if(out){out.innerHTML=stage3ViewToggleHtml()+(view==='summary'?renderConciseOverview():conciseUnavailableHtml()+stage3DetailedHtml);}
+    if(out){out.setAttribute('aria-labelledby',view==='summary'?'stage3-summary-tab':'stage3-detailed-tab');out.innerHTML=stage3ViewToggleHtml()+(view==='summary'?renderConciseOverview():conciseUnavailableHtml()+stage3DetailedHtml);}
     renderPrioritiesIntro();renderPriorityStepper();showPriority(preservePriority?currentPriority:0);
   }
 
@@ -6351,7 +6362,10 @@ ${body}
       if(navEl)navEl.style.display='flex';
       if(counterEl)counterEl.textContent=`Priority ${idx+1} of ${stageThreePriorities.length}`;
       if(prevBtn)prevBtn.disabled=idx===0;
-      if(nextBtn)nextBtn.disabled=idx===stageThreePriorities.length-1;
+      if(nextBtn){
+        if(idx===stageThreePriorities.length-1){nextBtn.textContent='Done';nextBtn.onclick=()=>{};nextBtn.disabled=true;}
+        else{nextBtn.innerHTML='Next <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>';nextBtn.onclick=nextPriority;nextBtn.disabled=false;}
+      }
       showConcisePriority(idx);updateSidebar();
       const conciseCard=document.getElementById('priority-card-area');if(conciseCard)conciseCard.scrollIntoView({behavior:'smooth',block:'nearest'});
       return;

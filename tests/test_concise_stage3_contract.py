@@ -351,3 +351,26 @@ def test_frontend_uses_concise_titles_only_in_summary_navigation():
     sidebar = source[source.index("function updateSidebar()"):source.index("function initStage3UI()")]
     assert "stage3View === 'summary' ? getConcisePriority(pr).title : pr.title" in stepper
     assert "stage3View === 'summary' ? getConcisePriority(pr).title : pr.title" in sidebar
+
+
+def test_concise_priority_navigation_restores_next_after_done():
+    source = (ROOT / "index.html").read_text(encoding="utf-8")
+    helper = source[source.index("function showPriority("):source.index("function nextPriority()")]
+    concise_branch = helper[helper.index("if(stage3View==='summary'&&stageConciseReadout)"):helper.index("currentPriority = idx;")]
+    assert "nextBtn.textContent='Done'" in concise_branch
+    assert "nextBtn.onclick=()=>{}" in concise_branch
+    assert "nextBtn.onclick=nextPriority" in concise_branch
+    assert "nextBtn.disabled=false" in concise_branch
+
+
+def test_stage3_tabs_have_panel_and_keyboard_roving_semantics():
+    source = (ROOT / "index.html").read_text(encoding="utf-8")
+    toggle = source[source.index("function stage3ViewToggleHtml()"):source.index("function renderConciseOverview()")]
+    keyboard = source[source.index("function handleStage3ViewKeydown("):source.index("function setStage3View(")]
+    assert 'aria-controls="stage3-view-panel"' in toggle
+    assert 'tabindex="${stage3View===\'summary\'?\'0\':\'-1\'}"' in toggle
+    assert 'onkeydown="handleStage3ViewKeydown(event)"' in toggle
+    assert 'role="tabpanel"' in source
+    for key in ("ArrowLeft", "ArrowRight", "Home", "End"):
+        assert key in keyboard
+    assert "tabs[next].focus()" in keyboard
