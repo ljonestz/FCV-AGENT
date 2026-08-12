@@ -32,13 +32,15 @@ def _extract_js_function(source: str, name: str) -> str:
     raise AssertionError(f"Unterminated body for {name}()")
 
 
-def test_stage3_readout_uses_wide_single_column_layout():
+def test_stage3_readout_keeps_climate_overview_separate_from_core_sidebar():
     html = INDEX.read_text(encoding="utf-8")
 
     assert ".main{max-width:1180px" in html
     assert ".stage3-overview{" in html
     assert ".sw-grid{display:grid;grid-template-columns:1fr;" in html
-    assert '<aside class="fcv-sidebar"' not in html
+    assert 'function normalStage3SidebarHtml()' in html
+    assert '<aside class="fcv-sidebar"' in html
+    assert "if(!isClimateLensActive()) return '';" in html
     assert "stage3OverviewHtml()" in html
 
 

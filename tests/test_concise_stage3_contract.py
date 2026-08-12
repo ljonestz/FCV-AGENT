@@ -331,6 +331,28 @@ def test_frontend_scopes_concise_ui_to_normal_core_route():
     assert "supportsConciseStage3 ? stage3ViewToggleHtml() : ''" in source
 
 
+def test_normal_detailed_stage3_uses_the_restored_vertical_sidebar():
+    source = (ROOT / "index.html").read_text(encoding="utf-8")
+    sidebar = source[source.index("function normalStage3SidebarHtml()"):source.index("function stage3OverviewHtml()")]
+    assert 'class="fcv-sidebar"' in sidebar
+    for gauge_id in (
+        "fcv-arc-fill", "fcv-shield-path", "fcv-rating-label",
+        "fcv-resp-arc-fill", "fcv-resp-leaf-path", "fcv-resp-rating-label", "pov-sb",
+    ):
+        assert f'id="{gauge_id}"' in sidebar
+    assert "stage3View==='detailed'" in source
+    assert "normalStage3SidebarHtml()" in source
+
+
+def test_normal_stage3_sidebar_is_sticky_on_desktop_and_stacks_on_narrow_screens():
+    source = (ROOT / "index.html").read_text(encoding="utf-8")
+    assert ".stage3-content-layout{display:grid;grid-template-columns:minmax(0,1fr) 210px;" in source
+    assert ".fcv-sidebar{position:sticky;top:20px;" in source
+    assert ".stage3-content-layout.stage3-summary-layout{grid-template-columns:minmax(0,1fr)}" in source
+    assert ".stage3-content-layout.stage3-summary-layout .fcv-sidebar{display:none}" in source
+    assert "@media (max-width:700px){.stage3-content-layout{grid-template-columns:1fr" in source
+
+
 def test_frontend_initialization_uses_the_core_route_capability_gate():
     source = (ROOT / "index.html").read_text(encoding="utf-8")
     assert "function supportsConciseStage3View()" in source

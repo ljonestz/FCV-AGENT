@@ -813,6 +813,11 @@
 
     /* Full-width Stage 3 overview */
     .stage3-overview{display:grid;grid-template-columns:1fr;gap:12px;margin:0 0 16px}
+    .stage3-content-layout{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:18px;align-items:start}
+    .fcv-sidebar{position:sticky;top:20px;display:grid;gap:12px}
+    .stage3-content-layout.stage3-summary-layout{grid-template-columns:minmax(0,1fr)}
+    .stage3-content-layout.stage3-summary-layout .fcv-sidebar{display:none}
+    @media (max-width:700px){.stage3-content-layout{grid-template-columns:1fr}.fcv-sidebar{position:static}}
     .stage3-overview-rating{display:flex;align-items:center;gap:22px;padding:14px 18px}
     .stage3-overview-rating-copy{min-width:190px;flex:1}
     .stage3-overview-rating-copy .fcv-need-label{text-align:left;font-size:12px;font-style:normal;margin-top:3px}
@@ -4873,8 +4878,8 @@
         }</div>
         <div class="callout-body"><strong>${c.t}</strong>${c.b}</div>
       </div>
-      ${isLast&&!_verifiedV2?`<div id="stage3-overview-wrap" style="display:${stage3View==='summary'?'none':'block'}">${stage3OverviewHtml()}</div>`:''}
-      <div>
+      ${isLast&&_climateActive&&!_verifiedV2?`<div id="stage3-overview-wrap">${stage3OverviewHtml()}</div>`:''}
+      ${isLast&&!_verifiedV2&&!_climateActive?`<div id="stage3-content-layout" class="stage3-content-layout ${stage3View==='summary'?'stage3-summary-layout':''}"><div class="stage3-content-main">`:'<div>'}
           <div class="out-card ani">
             <div class="out-hdr">
               <div class="out-hdr-l"><span class="dot done"></span>${NAMES[stage]}</div>
@@ -4910,7 +4915,7 @@
             </button>
           </div>
           `:''}
-      </div>
+      ${isLast&&!_verifiedV2&&!_climateActive?`${normalStage3SidebarHtml()}</div>`:'</div>'}
       `;
 
     // Annotate glossary terms with hover tooltips
@@ -5969,9 +5974,40 @@ ${body}
     })[String(rating||'')]||'Evidence limited';
   }
 
+  function normalStage3SidebarHtml(){
+    return `
+      <aside class="fcv-sidebar" aria-label="FCV assessment overview">
+        <div class="sidebar-widget">
+          <div class="sidebar-widget-fcv">
+            <div class="sidebar-widget-label sr-term" title="FCV Sensitivity: is the project aware of and designed for the FCV context? Contextual awareness, conflict-informed design, Do No Harm, FCV-adapted operations.">FCV Sensitivity</div>
+            <svg viewBox="0 0 120 80" width="120" height="80" style="display:block;margin:0 auto -4px">
+              <path d="M15 70 A45 45 0 0 1 105 70" fill="none" stroke="#e8edf2" stroke-width="11" stroke-linecap="round"/>
+              <path id="fcv-arc-fill" d="M15 70 A45 45 0 0 1 105 70" fill="none" stroke="#e8edf2" stroke-width="11" stroke-linecap="round" stroke-dasharray="0 141.37"/>
+              <g transform="translate(60,47)"><path id="fcv-shield-path" d="M0-14L-9-10v9c0 7 5 12.5 9 14.5 4-2 9-7.5 9-14.5v-9L0-14z" fill="#c8d8c8"/></g>
+            </svg>
+            <div class="fcv-rating-label" id="fcv-rating-label" style="color:var(--muted)">Analysing…</div>
+            <div class="fcv-need-label" id="fcv-need-label"></div>
+          </div>
+        </div>
+        <div class="sidebar-widget">
+          <div class="sidebar-widget-fcv">
+            <div class="sidebar-widget-label sr-term" title="FCV Responsiveness: does the project actively work to change the FCV situation? Addresses root causes, builds resilience, leverages FCV tools for transformative impact.">FCV Responsiveness</div>
+            <svg viewBox="0 0 120 80" width="120" height="80" style="display:block;margin:0 auto -4px">
+              <path d="M15 70 A45 45 0 0 1 105 70" fill="none" stroke="#e8edf2" stroke-width="11" stroke-linecap="round"/>
+              <path id="fcv-resp-arc-fill" d="M15 70 A45 45 0 0 1 105 70" fill="none" stroke="#e8edf2" stroke-width="11" stroke-linecap="round" stroke-dasharray="0 141.37"/>
+              <g transform="translate(60,47)"><path id="fcv-resp-leaf-path" d="M0-13 C6-13 12-8 12-1 C12 6 6 13 0 16 C-6 13 -12 6 -12-1 C-12-8 -6-13 0-13z" fill="#c8d8c8"/></g>
+            </svg>
+            <div class="fcv-rating-label" id="fcv-resp-rating-label" style="color:var(--muted)">Analysing…</div>
+            <div class="fcv-need-label" id="fcv-resp-need-label"></div>
+          </div>
+        </div>
+        <div class="sidebar-widget stage3-overview-priorities"><div class="pov-widget"><div class="sidebar-widget-label">Priority overview</div><div id="pov-sb"><div style="font-size:11px;color:var(--muted)">Loading priorities…</div></div></div></div>
+      </aside>`;
+  }
+
   function stage3OverviewHtml(){
-    if(isClimateLensActive()){
-      return `
+    if(!isClimateLensActive()) return '';
+    return `
       <div class="stage3-overview">
       <div class="sidebar-widget stage3-overview-rating">
         <div class="stage3-overview-rating-copy">
@@ -5984,50 +6020,6 @@ ${body}
           <path id="fcv-int-arc" d="M15 70 A45 45 0 0 1 105 70" fill="none" stroke="#e8edf2" stroke-width="11" stroke-linecap="round" stroke-dasharray="0 141.37"/>
         </svg></div>
       </div>
-      <div class="sidebar-widget stage3-overview-priorities">
-        <div class="pov-widget">
-          <div class="sidebar-widget-label">Priority overview</div>
-          <div id="pov-sb"><div style="font-size:11px;color:var(--muted)">Loading priorities…</div></div>
-        </div>
-      </div>
-      </div>
-      `;
-    }
-    return `
-      <div class="stage3-overview">
-      <div class="stage3-rating-pair">
-      <!-- Sensitivity Gauge -->
-      <div class="sidebar-widget">
-        <div class="sidebar-widget-fcv">
-          <div class="sidebar-widget-label sr-term" title="FCV Sensitivity: is the project aware of and designed for the FCV context? Contextual awareness, conflict-informed design, Do No Harm, FCV-adapted operations.">FCV Sensitivity</div>
-          <svg viewBox="0 0 120 80" width="120" height="80" style="display:block;margin:0 auto -4px">
-            <path d="M15 70 A45 45 0 0 1 105 70" fill="none" stroke="#e8edf2" stroke-width="11" stroke-linecap="round"/>
-            <path id="fcv-arc-fill" d="M15 70 A45 45 0 0 1 105 70" fill="none" stroke="#e8edf2" stroke-width="11" stroke-linecap="round" stroke-dasharray="0 141.37"/>
-            <g transform="translate(60,47)">
-              <path id="fcv-shield-path" d="M0-14L-9-10v9c0 7 5 12.5 9 14.5 4-2 9-7.5 9-14.5v-9L0-14z" fill="#c8d8c8"/>
-            </g>
-          </svg>
-          <div class="fcv-rating-label" id="fcv-rating-label" style="color:var(--muted)">Analysing…</div>
-          <div class="fcv-need-label" id="fcv-need-label"></div>
-        </div>
-      </div>
-      <!-- Responsiveness Gauge -->
-      <div class="sidebar-widget">
-        <div class="sidebar-widget-fcv">
-          <div class="sidebar-widget-label sr-term" title="FCV Responsiveness: does the project actively work to change the FCV situation? Addresses root causes, builds resilience, leverages FCV tools for transformative impact.">FCV Responsiveness</div>
-          <svg viewBox="0 0 120 80" width="120" height="80" style="display:block;margin:0 auto -4px">
-            <path d="M15 70 A45 45 0 0 1 105 70" fill="none" stroke="#e8edf2" stroke-width="11" stroke-linecap="round"/>
-            <path id="fcv-resp-arc-fill" d="M15 70 A45 45 0 0 1 105 70" fill="none" stroke="#e8edf2" stroke-width="11" stroke-linecap="round" stroke-dasharray="0 141.37"/>
-            <g transform="translate(60,47)">
-              <path id="fcv-resp-leaf-path" d="M0-13 C6-13 12-8 12-1 C12 6 6 13 0 16 C-6 13 -12 6 -12-1 C-12-8 -6-13 0-13z" fill="#c8d8c8"/>
-            </g>
-          </svg>
-          <div class="fcv-rating-label" id="fcv-resp-rating-label" style="color:var(--muted)">Analysing…</div>
-          <div class="fcv-need-label" id="fcv-resp-need-label"></div>
-        </div>
-      </div>
-      </div>
-      <!-- Priority overview -->
       <div class="sidebar-widget stage3-overview-priorities">
         <div class="pov-widget">
           <div class="sidebar-widget-label">Priority overview</div>
@@ -6346,6 +6338,8 @@ ${body}
     if(summaryTab){summaryTab.classList.toggle('active',view==='summary');summaryTab.setAttribute('aria-selected',String(view==='summary'));summaryTab.tabIndex=view==='summary'?0:-1;}
     if(detailedTab){detailedTab.classList.toggle('active',view==='detailed');detailedTab.setAttribute('aria-selected',String(view==='detailed'));detailedTab.tabIndex=view==='detailed'?0:-1;}
     const overview=document.getElementById('stage3-overview-wrap'); if(overview)overview.style.display=view==='summary'?'none':'block';
+    const contentLayout=document.getElementById('stage3-content-layout');
+    if(contentLayout) contentLayout.classList.toggle('stage3-summary-layout',view==='summary');
     const out=document.getElementById('out-txt');
     if(out){out.setAttribute('aria-labelledby',view==='summary'?'stage3-summary-tab':'stage3-detailed-tab');out.innerHTML=stage3ViewToggleHtml()+(view==='summary'?renderConciseOverview():conciseUnavailableHtml()+stage3DetailedHtml);}
     renderPrioritiesIntro();renderPriorityStepper();showPriority(preservePriority?currentPriority:0);
