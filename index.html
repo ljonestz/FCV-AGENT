@@ -4783,9 +4783,7 @@
     const c=CALLS[stage];
     const _verifiedV2=!!(isLast&&climateVerifiedAssessment&&climateVerifiedAssessment.schema_version==='climate-verified-v2.1'&&climateVerifiedReader);
     const supportsConciseStage3 = isLast && !isClimateLensActive() && !_verifiedV2;
-    const conciseUnavailable = supportsConciseStage3 && !stageConciseReadout
-      ? `<div class="callout info" data-diagnostic="concise_readout_unavailable">The concise view was unavailable; the full analysis is shown.</div>`
-      : '';
+    const conciseUnavailable = supportsConciseStage3 ? conciseUnavailableHtml() : '';
     let _outBodyContent;
     if(_verifiedV2){
       _outBodyContent=renderClimateVerifiedAssessment(climateVerifiedReader);
@@ -5923,6 +5921,14 @@ ${body}
   let climateVerifiedAssessment=null; // climate-verified-v2.1 structured assessment
   let climateVerifiedReader=null; // server-validated canonical reader/export model
   let stageWiderFcvContext=null; // wider_fcv_context string from Stage 3 JSON (climate path)
+  function supportsConciseStage3View(){
+    return !isClimateLensActive() && !(climateVerifiedAssessment&&climateVerifiedAssessment.schema_version==='climate-verified-v2.1'&&climateVerifiedReader);
+  }
+  function conciseUnavailableHtml(){
+    return !stageConciseReadout
+      ? `<div class="callout info" data-diagnostic="concise_readout_unavailable">The concise view was unavailable; the full analysis is shown.</div>`
+      : '';
+  }
   function integrationGaugeFraction(level){
     return ({well_integrated:1,partly_integrated:0.66,weakly_integrated:0.33,insufficient_evidence:0})[String(level||'').toLowerCase()]||0;
   }
@@ -6091,7 +6097,7 @@ ${body}
     const povEl = document.getElementById('pov-sb');
     if(povEl && n){
       povEl.innerHTML = stageThreePriorities.map((pr, i) => {
-        const label = pr.title.replace(/^Priority\s+\d+\s*[·•]\s*/i,'');
+        const label = (stage3View === 'summary' ? getConcisePriority(pr).title : pr.title).replace(/^Priority\s+\d+\s*[·•]\s*/i,'');
         const isDone = i < currentPriority;
         const isActive = i === currentPriority;
         const riskCls = pr.risk_level==='High'?'pov-risk-h':pr.risk_level==='Medium'?'pov-risk-m':'pov-risk-l';
@@ -6123,7 +6129,8 @@ ${body}
     currentPriority = 0;
     renderPrioritiesIntro();
     renderPriorityStepper();
-    setStage3View(stage3View, false);
+    if(supportsConciseStage3View()) setStage3View(stage3View, false);
+    else { stage3View='detailed'; showPriority(0); }
     updateSidebar();
     // Render Horizon Considerations panel if available
     if(horizonConsiderations && horizonConsiderations.trim()){
@@ -6235,7 +6242,8 @@ ${body}
       +'<p class="horizon-disclaimer">These are FCV risks or dynamics the team cannot act on now but should monitor during implementation. They do not affect the FCV ratings above.</p>'
       +rendered
       +'</div>';
-    container.appendChild(panel);
+    if(!stage3DetailedHtml.includes('id="horizon-panel"')) stage3DetailedHtml += panel.outerHTML;
+    if(stage3View !== 'summary') container.appendChild(panel);
   }
 
   function renderPrioritiesIntro(){
@@ -6271,10 +6279,10 @@ ${body}
     const el = document.getElementById('priority-stepper');
     if(!el) return;
     el.innerHTML = stageThreePriorities.map((pr, i) => {
-      const fullTitle = pr.title.replace(/^Priority\s+\d+\s*[·•]\s*/i,'');
+      const fullTitle = (stage3View === 'summary' ? getConcisePriority(pr).title : pr.title).replace(/^Priority\s+\d+\s*[·•]\s*/i,'');
       const riskCls = pr.risk_level==='High'?'ps-risk-h':pr.risk_level==='Medium'?'ps-risk-m':'ps-risk-l';
       const riskLbl = pr.risk_level==='High'?'Priority: High':pr.risk_level==='Medium'?'Priority: Medium':pr.risk_level==='Low'?'Priority: Low':'';
-      return `<button type="button" class="ps-step ${i===currentPriority?'active':''}" id="ps-${i}" onclick="showPriority(${i})" title="${esc(pr.title)}" aria-pressed="${i===currentPriority?'true':'false'}" aria-label="Show priority ${i+1} of ${stageThreePriorities.length}: ${esc(fullTitle)}">
+      return `<button type="button" class="ps-step ${i===currentPriority?'active':''}" id="ps-${i}" onclick="showPriority(${i})" title="${esc(fullTitle)}" aria-pressed="${i===currentPriority?'true':'false'}" aria-label="Show priority ${i+1} of ${stageThreePriorities.length}: ${esc(fullTitle)}">
         <div class="ps-num">${i+1}</div>
         <div class="ps-label">${esc(fullTitle)}</div>
         <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;justify-content:center">
@@ -6319,6 +6327,7 @@ ${body}
   }
 
   function setStage3View(view, preservePriority=true){
+    if(!supportsConciseStage3View()) return;
     if(view==='summary'&&!stageConciseReadout)view='detailed';
     stage3View=view;
     const summaryTab=document.getElementById('stage3-summary-tab'), detailedTab=document.getElementById('stage3-detailed-tab');
@@ -6327,14 +6336,15 @@ ${body}
     if(detailedTab){detailedTab.classList.toggle('active',view==='detailed');detailedTab.setAttribute('aria-selected',String(view==='detailed'));}
     const overview=document.getElementById('stage3-overview-wrap'); if(overview)overview.style.display=view==='summary'?'none':'block';
     const out=document.getElementById('out-txt');
-    if(out){out.innerHTML=stage3ViewToggleHtml()+(view==='summary'?renderConciseOverview():stage3DetailedHtml);}
+    if(out){out.innerHTML=stage3ViewToggleHtml()+(view==='summary'?renderConciseOverview():conciseUnavailableHtml()+stage3DetailedHtml);}
     renderPrioritiesIntro();renderPriorityStepper();showPriority(preservePriority?currentPriority:0);
   }
 
   function showPriority(idx){
-    if(!stageThreePriorities[idx]) return;
-    currentPriority=idx;
+    const pr = stageThreePriorities[idx];
+    if(!pr) return;
     if(stage3View==='summary'&&stageConciseReadout){
+      currentPriority=idx;
       renderPriorityStepper();
       const navEl=document.getElementById('pc-nav'), counterEl=document.getElementById('pc-nav-counter');
       const prevBtn=document.getElementById('pc-prev-btn'), nextBtn=document.getElementById('pc-next-btn');
@@ -6343,13 +6353,9 @@ ${body}
       if(prevBtn)prevBtn.disabled=idx===0;
       if(nextBtn)nextBtn.disabled=idx===stageThreePriorities.length-1;
       showConcisePriority(idx);updateSidebar();
-      const cardArea=document.getElementById('priority-card-area');if(cardArea)cardArea.scrollIntoView({behavior:'smooth',block:'nearest'});
-    }else showDetailedPriority(idx);
-  }
-
-  function showDetailedPriority(idx){
-    const pr = stageThreePriorities[idx];
-    if(!pr) return;
+      const conciseCard=document.getElementById('priority-card-area');if(conciseCard)conciseCard.scrollIntoView({behavior:'smooth',block:'nearest'});
+      return;
+    }
     currentPriority = idx;
     const n = stageThreePriorities.length;
 

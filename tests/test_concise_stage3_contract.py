@@ -327,3 +327,27 @@ def test_frontend_scopes_concise_ui_to_normal_core_route():
     source = (ROOT / "index.html").read_text(encoding="utf-8")
     assert "const supportsConciseStage3 = isLast && !isClimateLensActive() && !_verifiedV2" in source
     assert "supportsConciseStage3 ? stage3ViewToggleHtml() : ''" in source
+
+
+def test_frontend_initialization_uses_the_core_route_capability_gate():
+    source = (ROOT / "index.html").read_text(encoding="utf-8")
+    assert "function supportsConciseStage3View()" in source
+    init = source[source.index("function initStage3UI()"):source.index("async function maybeRunPriorityQuestions")]
+    assert "supportsConciseStage3View()" in init
+
+
+def test_frontend_preserves_legacy_notice_and_watch_list_when_switching_views():
+    source = (ROOT / "index.html").read_text(encoding="utf-8")
+    switcher = source[source.index("function setStage3View("):source.index("function showPriority(")]
+    horizon = source[source.index("function renderHorizonPanel("):source.index("function renderPrioritiesIntro()")]
+    assert "conciseUnavailableHtml()" in switcher
+    assert "stage3DetailedHtml += panel.outerHTML" in horizon
+    assert "if(stage3View !== 'summary') container.appendChild(panel);" in horizon
+
+
+def test_frontend_uses_concise_titles_only_in_summary_navigation():
+    source = (ROOT / "index.html").read_text(encoding="utf-8")
+    stepper = source[source.index("function renderPriorityStepper()"):source.index("function stage3ViewToggleHtml()")]
+    sidebar = source[source.index("function updateSidebar()"):source.index("function initStage3UI()")]
+    assert "stage3View === 'summary' ? getConcisePriority(pr).title : pr.title" in stepper
+    assert "stage3View === 'summary' ? getConcisePriority(pr).title : pr.title" in sidebar
