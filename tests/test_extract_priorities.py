@@ -610,3 +610,107 @@ def test_climate_priority_completion_gate_fails_when_none_validate():
     assert completed["message"] == (
         "No validated climate-specific operational priority was produced."
     )
+
+
+# -- Concise Stage 3 presentation layer --------------------------------------
+
+def _concise_fixture(priority_concise=True, top_level=True):
+    payload = {
+        "fcv_rating": "Adequate",
+        "fcv_responsiveness_rating": "Low",
+        "sensitivity_summary": "Detailed sensitivity summary.",
+        "responsiveness_summary": "Detailed responsiveness summary.",
+        "risk_exposure": {"risks_to": "Risk to.", "risks_from": "Risk from."},
+        "mid_cycle_watch": [],
+        "dpf_watch": [],
+        "p4r_watch": [],
+        "regional_watch": [],
+        "priorities": [{
+            "title": "Priority 1 - Plan for disruption",
+            "fcv_dimension": "Security",
+            "tag": "[S]",
+            "refresh_shift": "Shift A: Anticipate",
+            "risk_level": "High",
+            "the_gap": "Jonglei delivery depends on local committees.",
+            "why_it_matters": "Conflict could interrupt delivery.",
+            "actions": [{
+                "document_element": "Project Description",
+                "guidance": "Add three delivery modes.",
+                "suggested_language": "The project will use flexible delivery arrangements."
+            }],
+            "who_acts": "TTL",
+            "when": "Identification",
+            "action_timing": "flag-for-preparation",
+            "resources": "Minimal (existing budget)",
+            "pad_sections": "Project Description",
+            "country_category_relevance": "Relevant in a conflict-affected context.",
+            "implementation_note": "Complete operating rules during preparation.",
+            "cpf_alignment": None,
+            "rra_driver_alignment": None,
+            "change_type": None,
+            "restructuring_level": None,
+            "priority_scope": None,
+            "governance_level": None,
+        }]
+    }
+    if top_level:
+        payload["concise_readout"] = {
+            "headline": "Strong concept; delivery needs a fallback.",
+            "overview": "The project has a sound foundation but needs adaptive delivery.",
+            "strengths": [
+                {"title": "Conflict-aware design", "text": "Governance is a project outcome."}
+            ],
+            "priority_intro": "Five actions would strengthen delivery."
+        }
+    if priority_concise:
+        payload["priorities"][0]["concise"] = {
+            "title": "Plan for disruption to local committees",
+            "why": "Conflict may interrupt the bodies on which delivery depends.",
+            "how": ["Add three delivery modes.", "Define triggers during preparation."],
+            "suggested_wording": {
+                "document_element": "Project Description",
+                "text": "The project will use flexible delivery arrangements."
+            },
+            "project_cycle": {
+                "primary_label": "Commit in the PCN",
+                "primary_text": "State the adaptive logic now.",
+                "secondary_label": "Develop during preparation",
+                "secondary_text": "Define triggers and responsibilities."
+            }
+        }
+    return "%%%JSON_START%%%\n" + json.dumps(payload) + "\n%%%JSON_END%%%"
+
+
+def test_extract_priorities_returns_concise_layer():
+    result = extract_priorities(_concise_fixture())
+    assert result["concise_readout"]["headline"].startswith("Strong concept")
+    assert result["priorities"][0]["concise"]["how"] == [
+        "Add three delivery modes.",
+        "Define triggers during preparation.",
+    ]
+
+
+def test_extract_priorities_legacy_payload_has_no_concise_layer():
+    result = extract_priorities(_concise_fixture(False, False))
+    assert result["concise_readout"] is None
+    assert result["priorities"][0]["concise"] is None
+
+
+def test_extract_priorities_discards_malformed_concise_layer_only():
+    text = _concise_fixture().replace(
+        '"strengths": [{"title": "Conflict-aware design", "text": "Governance is a project outcome."}]',
+        '"strengths": "not-a-list"',
+    )
+    result = extract_priorities(text)
+    assert result["error"] is False
+    assert result["concise_readout"] is None
+    assert result["priorities"][0]["concise"] is not None
+
+
+def test_extract_priorities_caps_concise_lists():
+    text = _concise_fixture().replace(
+        '"how": ["Add three delivery modes.", "Define triggers during preparation."]',
+        '"how": ["one", "two", "three", "four", "five"]',
+    )
+    result = extract_priorities(text)
+    assert result["priorities"][0]["concise"]["how"] == ["one", "two", "three", "four"]

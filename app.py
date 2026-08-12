@@ -5961,6 +5961,74 @@ def _safe_run(para):
     return para.runs[0] if para.runs else para.add_run()
 
 
+def _clean_concise_string(value) -> str:
+    """Return a stripped concise-schema string, or an empty string."""
+    return value.strip() if isinstance(value, str) else ''
+
+
+def _normalize_concise_readout(value):
+    """Validate the optional concise Stage 3 overview without affecting details."""
+    if not isinstance(value, dict) or not isinstance(value.get('strengths'), list):
+        return None
+    strengths = []
+    for item in value['strengths'][:3]:
+        if not isinstance(item, dict):
+            continue
+        title = _clean_concise_string(item.get('title'))
+        text = _clean_concise_string(item.get('text'))
+        if title and text:
+            strengths.append({'title': title, 'text': text})
+    headline = _clean_concise_string(value.get('headline'))
+    overview = _clean_concise_string(value.get('overview'))
+    priority_intro = _clean_concise_string(value.get('priority_intro'))
+    if not headline or not overview or not strengths:
+        return None
+    return {
+        'headline': headline,
+        'overview': overview,
+        'strengths': strengths,
+        'priority_intro': priority_intro,
+    }
+
+
+def _normalize_concise_priority(value):
+    """Validate an optional concise priority while preserving detailed fields."""
+    if not isinstance(value, dict) or not isinstance(value.get('how'), list):
+        return None
+    suggested = value.get('suggested_wording')
+    cycle = value.get('project_cycle')
+    if not isinstance(suggested, dict) or not isinstance(cycle, dict):
+        return None
+    normalized = {
+        'title': _clean_concise_string(value.get('title')),
+        'why': _clean_concise_string(value.get('why')),
+        'how': [
+            _clean_concise_string(item)
+            for item in value['how'][:4]
+            if _clean_concise_string(item)
+        ],
+        'suggested_wording': {
+            'document_element': _clean_concise_string(suggested.get('document_element')),
+            'text': _clean_concise_string(suggested.get('text')),
+        },
+        'project_cycle': {
+            key: _clean_concise_string(cycle.get(key))
+            for key in (
+                'primary_label', 'primary_text',
+                'secondary_label', 'secondary_text',
+            )
+        },
+    }
+    required = (
+        normalized['title'], normalized['why'], normalized['how'],
+        normalized['suggested_wording']['document_element'],
+        normalized['suggested_wording']['text'],
+        normalized['project_cycle']['primary_label'],
+        normalized['project_cycle']['primary_text'],
+    )
+    return normalized if all(required) else None
+
+
 def extract_priorities(
     text: str,
     uploaded_doc_names: list = None,
@@ -5990,6 +6058,7 @@ def extract_priorities(
         'dpf_watch': [],
         'p4r_watch': [],
         'regional_watch': [],
+        'concise_readout': None,
     }
 
     m = re.search(r'%%%JSON_START%%%(.*?)%%%JSON_END%%%', text, re.DOTALL)
@@ -6016,6 +6085,7 @@ def extract_priorities(
     for pr in priorities_raw:
         if not isinstance(pr, dict):
             continue
+        pr['concise'] = _normalize_concise_priority(pr.get('concise'))
         # Fill missing priority fields
         for field in _REQUIRED_PRIORITY_FIELDS:
             if field not in pr:
@@ -6244,6 +6314,7 @@ def extract_priorities(
         'dpf_watch': data.get('dpf_watch', []),
         'p4r_watch': data.get('p4r_watch', []),
         'regional_watch': data.get('regional_watch', []),
+        'concise_readout': _normalize_concise_readout(data.get('concise_readout')),
         'wider_fcv_context': wider_fcv_context,
         'climate_unlinked': climate_unlinked,
         'climate_total': climate_total,
