@@ -216,3 +216,13 @@ Model ceiling: never exceed gpt-5.6-sol with medium reasoning. Use terra medium 
 
 First action: complete the interrupted Task 1 code-quality re-review for range 3b5886e..eb484d17. Do not begin Task 2 until Task 1 is approved and its focused tests are independently rerun. Then continue the nine-task implementation plan sequentially. Preserve the Climate verified reader, comprehensive downloads, unrelated user changes, and the private dual-build parity requirement.
 ```
+
+## Final verification
+
+- Focused final suite: **159 passed** (lifecycle, extract priorities, concise contract, grounding guardrails, climate frontend/render/runtime).
+- Full suite: `python -m pytest tests -q -p no:cacheprovider` with normal temporary-directory access: **892 passed in 56.86s**.
+- Frontend storage helpers: `node tests/test_frontend_storage_helpers.js` passed.
+- Final `git diff --check` baseline was clean.
+- Final independent review: **APPROVED**.
+
+Caveat: no live-browser visual test was run because there was no local saved/API-free Stage 3 fixture or session.
