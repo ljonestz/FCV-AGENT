@@ -366,6 +366,17 @@ def test_frontend_scopes_concise_ui_to_normal_core_route():
     assert "supportsConciseStage3 ? stage3ViewToggleHtml() : ''" in source
 
 
+def test_stage3_renderer_defines_climate_state_for_its_full_template():
+    source = (ROOT / "index.html").read_text(encoding="utf-8")
+    render = source[
+        source.index("function renderOut("):
+        source.index("// Annotate glossary terms", source.index("function renderOut("))
+    ]
+    assert render.index("const _climateActive=isClimateLensActive();") < render.index(
+        "if(_verifiedV2)"
+    )
+
+
 def test_normal_detailed_stage3_uses_the_restored_vertical_sidebar():
     source = (ROOT / "index.html").read_text(encoding="utf-8")
     sidebar = source[source.index("function normalStage3SidebarHtml()"):source.index("function stage3OverviewHtml()")]

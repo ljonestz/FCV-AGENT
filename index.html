@@ -4787,6 +4787,7 @@
     const isLast=stage===3;
     const c=CALLS[stage];
     const _verifiedV2=!!(isLast&&climateVerifiedAssessment&&climateVerifiedAssessment.schema_version==='climate-verified-v2.1'&&climateVerifiedReader);
+    const _climateActive=isClimateLensActive();
     const supportsConciseStage3 = isLast && supportsConciseStage3View();
     const conciseUnavailable = supportsConciseStage3 ? conciseUnavailableHtml() : '';
     let _outBodyContent;
@@ -4815,7 +4816,6 @@
         return html.replace(/(<p>)((?:Based on|This analysis places)[^<]*<\/p>)/,'<div class="classification-framing-para">$1$2</div>');
       }
       const _preHtml = styleClassificationFraming(md(_pre));
-      const _climateActive=isClimateLensActive();
       const _climateEntry=climateLensEntry(lensDiagnostic);
       const _climateError=_climateActive&&(
         !lensDiagnostic||lensDiagnostic.error||!_climateEntry
