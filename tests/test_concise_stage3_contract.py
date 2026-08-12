@@ -1,6 +1,10 @@
 import json
+from pathlib import Path
 
 import app
+
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
 _STAGE3_OUTPUT = "%%%JSON_START%%%" + json.dumps({
@@ -294,3 +298,32 @@ def test_both_stage3_sse_paths_return_concise_readout(monkeypatch):
 
     assert "concise_readout" not in lens_step_done
     assert "concise_readout" not in lens_express_done
+
+
+def test_frontend_has_accessible_stage3_view_switch():
+    source = (ROOT / "index.html").read_text(encoding="utf-8")
+    assert 'role="tablist"' in source
+    assert 'id="stage3-summary-tab"' in source
+    assert 'id="stage3-detailed-tab"' in source
+    assert 'aria-selected="true"' in source
+    assert "function setStage3View(view" in source
+
+
+def test_frontend_has_concise_renderers_and_fallback():
+    source = (ROOT / "index.html").read_text(encoding="utf-8")
+    assert "function renderConciseOverview()" in source
+    assert "function getConcisePriority(pr)" in source
+    assert "function showConcisePriority(idx)" in source
+    assert "concise_readout_unavailable" in source
+
+
+def test_frontend_defaults_new_stage3_result_to_summary():
+    source = (ROOT / "index.html").read_text(encoding="utf-8")
+    assert "!isClimateLensActive() && stageConciseReadout ? 'summary' : 'detailed'" in source
+    assert "setStage3View(stage3View, false)" in source
+
+
+def test_frontend_scopes_concise_ui_to_normal_core_route():
+    source = (ROOT / "index.html").read_text(encoding="utf-8")
+    assert "const supportsConciseStage3 = isLast && !isClimateLensActive() && !_verifiedV2" in source
+    assert "supportsConciseStage3 ? stage3ViewToggleHtml() : ''" in source

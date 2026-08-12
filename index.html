@@ -996,6 +996,27 @@
     .horizon-panel .horizon-disclaimer{font-size:11px;font-style:italic;color:#888;margin-bottom:8px;}
 
     .priorities-intro{margin-bottom:14px;}
+    .stage3-viewbar{display:flex;justify-content:space-between;align-items:center;gap:14px;margin:0 0 16px;padding:10px 12px;background:#fafbfd;border:1px solid var(--border);border-radius:8px}
+    .stage3-view-tabs{display:flex;gap:3px;padding:3px;background:#e8edf1;border-radius:7px}
+    .stage3-view-tab{border:0;background:transparent;padding:7px 14px;border-radius:5px;color:var(--muted);font-weight:600;cursor:pointer}
+    .stage3-view-tab.active{background:#fff;color:var(--wbg-navy);box-shadow:0 1px 4px rgba(0,34,68,.15)}
+    .stage3-view-tab:focus-visible{outline:3px solid #f2a900;outline-offset:2px}
+    .stage3-download-note{font-size:11px;color:var(--muted)}
+    .concise-readout{font-size:14px;line-height:1.65}
+    .concise-read-time,.concise-section-label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;font-weight:700;color:var(--wbg-blue)}
+    .concise-headline{font-family:Georgia,serif!important;font-size:22px!important;color:var(--wbg-navy)!important;border:0!important;margin:5px 0 10px!important}
+    .concise-strengths{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:10px 0 22px}
+    .concise-strength{padding:12px;background:#edf8f2;border:1px solid #cae4d5;border-radius:7px}
+    .concise-strength strong{display:block;color:#176a42;margin-bottom:3px}
+    .concise-priority-card{background:#fff;border:1px solid var(--border);border-radius:9px;overflow:hidden;margin-bottom:14px}
+    .concise-priority-head{display:grid;grid-template-columns:34px 1fr auto;gap:12px;padding:16px 18px;border-bottom:1px solid var(--border)}
+    .concise-priority-num{width:29px;height:29px;border-radius:50%;display:grid;place-items:center;background:var(--wbg-navy);color:#fff;font-weight:700}
+    .concise-priority-card section,.concise-cycle{padding:15px 18px;border-bottom:1px solid var(--border)}
+    .concise-priority-card h4{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--wbg-navy);margin:0 0 6px}
+    .concise-how{background:#f6f9fb;border-left:4px solid var(--wbg-blue)}
+    .concise-wording{background:#fff8e9}
+    .concise-cycle{background:#fafbfd;display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .concise-specialist summary{padding:12px 18px;color:var(--wbg-blue);font-weight:600;cursor:pointer}
     .priorities-section-hdr{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--s4);margin:20px 0 10px;padding-bottom:6px;border-bottom:2px solid var(--s4);}
     .pi-lead{font-size:15px;color:var(--text);line-height:1.6;margin:0 0 10px;}
     .pi-list{display:flex;flex-direction:column;gap:5px;margin-bottom:10px;}
@@ -1432,6 +1453,7 @@
       .stage3-rating-pair{grid-template-columns:1fr}
       .priority-stepper{overflow-x:auto;}
     }
+    @media(max-width:760px){.stage3-viewbar{align-items:flex-start;flex-direction:column}.concise-strengths,.concise-cycle{grid-template-columns:1fr}}
     @media(max-width:560px){
       .stage3-overview-rating{flex-direction:column;gap:8px}
       .stage3-overview-gauge{align-self:center}
@@ -3818,6 +3840,8 @@
               if(p.fcv_rating)fcvRating=p.fcv_rating;
               if(p.fcv_responsiveness_rating)fcvResponsivenessRating=p.fcv_responsiveness_rating;
               if(p.priorities)stageThreePriorities=p.priorities;
+              stageConciseReadout=p.concise_readout||null;
+              stage3View=!isClimateLensActive() && stageConciseReadout ? 'summary' : 'detailed';
               if(p.climate_unlinked!==undefined)climatePriorityUnlinked=p.climate_unlinked;
               if(p.climate_total!==undefined)climatePriorityTotal=p.climate_total;
               if(p.wider_fcv_context!==undefined)stageWiderFcvContext=p.wider_fcv_context||null;
@@ -4091,7 +4115,7 @@
                 if(p.lens_diagnostic)lensDiagnostic=p.lens_diagnostic;
                 if(p.climate_integration!==undefined)climateIntegration=p.climate_integration;
               }
-              if(stage===3){stageGapTable=p.gap_table||null;stageRiskExposure=p.risk_exposure||null;stageSensitivitySummary=p.sensitivity_summary||'';stageResponsivenessSummary=p.responsiveness_summary||'';midCycleWatch=p.mid_cycle_watch||[];dpfWatch=p.dpf_watch||[];p4rWatch=p.p4r_watch||[];regionalWatch=p.regional_watch||[];if(p.fcv_rating)fcvRating=p.fcv_rating;if(p.fcv_responsiveness_rating)fcvResponsivenessRating=p.fcv_responsiveness_rating;if(p.applied_snippets)stageAppliedSnippets=p.applied_snippets;}
+              if(stage===3){stageGapTable=p.gap_table||null;stageRiskExposure=p.risk_exposure||null;stageSensitivitySummary=p.sensitivity_summary||'';stageResponsivenessSummary=p.responsiveness_summary||'';midCycleWatch=p.mid_cycle_watch||[];dpfWatch=p.dpf_watch||[];p4rWatch=p.p4r_watch||[];regionalWatch=p.regional_watch||[];if(p.fcv_rating)fcvRating=p.fcv_rating;if(p.fcv_responsiveness_rating)fcvResponsivenessRating=p.fcv_responsiveness_rating;if(p.applied_snippets)stageAppliedSnippets=p.applied_snippets;stageConciseReadout=p.concise_readout||null;stage3View=!isClimateLensActive() && stageConciseReadout ? 'summary' : 'detailed';}
               // Write timestamps BEFORE renderOut so the consistency check inside renderOut reads the current run's value
               // Stage 2 completion also clears any previously dismissed banner on Stage 3
               if(stage===2){ fcvSafeLocalStorageSet('stage2_timestamp', Date.now()); localStorage.removeItem('stage3_consistency_dismissed'); }
@@ -4758,6 +4782,10 @@
     const isLast=stage===3;
     const c=CALLS[stage];
     const _verifiedV2=!!(isLast&&climateVerifiedAssessment&&climateVerifiedAssessment.schema_version==='climate-verified-v2.1'&&climateVerifiedReader);
+    const supportsConciseStage3 = isLast && !isClimateLensActive() && !_verifiedV2;
+    const conciseUnavailable = supportsConciseStage3 && !stageConciseReadout
+      ? `<div class="callout info" data-diagnostic="concise_readout_unavailable">The concise view was unavailable; the full analysis is shown.</div>`
+      : '';
     let _outBodyContent;
     if(_verifiedV2){
       _outBodyContent=renderClimateVerifiedAssessment(climateVerifiedReader);
@@ -4826,6 +4854,10 @@
         _outBodyContent = wrapSRTerms(catBadge + srDefPrefix + md(cleanResult));
       }
     }
+    if(isLast){
+      stage3DetailedHtml = _outBodyContent;
+      if(supportsConciseStage3 && stageConciseReadout) _outBodyContent = renderConciseOverview();
+    }
     document.getElementById('stage-disp').innerHTML=`
       <div class="stage-hdr ani">
         <div class="stage-badge ${COL[stage]}">${stage}</div>
@@ -4843,7 +4875,7 @@
         }</div>
         <div class="callout-body"><strong>${c.t}</strong>${c.b}</div>
       </div>
-      ${isLast&&!_verifiedV2?stage3OverviewHtml():''}
+      ${isLast&&!_verifiedV2?`<div id="stage3-overview-wrap" style="display:${stage3View==='summary'?'none':'block'}">${stage3OverviewHtml()}</div>`:''}
       <div>
           <div class="out-card ani">
             <div class="out-hdr">
@@ -4860,7 +4892,7 @@
                 <button class="copy-btn" id="copy-btn" onclick="copyOut()">Copy all</button>
               </div>
             </div>
-            <div class="out-body" id="out-txt">${_outBodyContent}</div>
+            <div class="out-body" id="out-txt">${isLast ? `${supportsConciseStage3 ? stage3ViewToggleHtml() : ''}${conciseUnavailable}${_outBodyContent}` : _outBodyContent}</div>
           </div>
           ${isLast?`
           <!-- ── PRIORITY STEPPER ── -->
@@ -5715,6 +5747,7 @@ ${body}
 
   function reset(){
     pF=[];cF=[];hist=[];curS=0;busy=false;stageOutputs={};stageHists={};researchBrief='';researchCountry='';priorityQuestions=[];focusQuestionsResult=null;pqPanelEnabled=true;
+    stageConciseReadout=null;stage3View='summary';stage3DetailedHtml='';
     activeLenses=[];resolvedLensVersions={};lensSuggestions=[];lensDiagnostic={};lensContextSources=[];climateResearch={};climateGrounding={};climateIntegration=null;climateVerifiedAssessment=null;climateVerifiedReader=null;lensSelectionTouched=false;lensSelectionLocked=false;renderLensSelector();
     { const _pc=document.getElementById('pq-confirm'); if(_pc){_pc.innerHTML='';_pc.style.display='none';} }
     ['stage2_timestamp','stage3_timestamp','stage3_consistency_dismissed'].forEach(k=>localStorage.removeItem(k));
@@ -5876,6 +5909,9 @@ ${body}
 
   // ── Stage 3 (Recommendations) state ───────────────────────────────────────
   let stageThreePriorities = [];
+  let stageConciseReadout = null;
+  let stage3View = 'summary';
+  let stage3DetailedHtml = '';
   let climatePriorityUnlinked = 0, climatePriorityTotal = 0;
   let currentPriority = 0;  // 0-indexed
   let currentDeeperTab = {};  // {priorityIndex: 'alternatives'|'trail'|'playbook'}
@@ -6087,7 +6123,7 @@ ${body}
     currentPriority = 0;
     renderPrioritiesIntro();
     renderPriorityStepper();
-    showPriority(0);
+    setStage3View(stage3View, false);
     updateSidebar();
     // Render Horizon Considerations panel if available
     if(horizonConsiderations && horizonConsiderations.trim()){
@@ -6209,7 +6245,7 @@ ${body}
     const riskLabel = (r) => r === 'High' ? 'High priority' : r === 'Medium' ? 'Medium priority' : r === 'Low' ? 'Lower priority' : '';
     const riskCls = (r) => r === 'High' ? 'pi-risk-h' : r === 'Medium' ? 'pi-risk-m' : 'pi-risk-l';
     const listItems = stageThreePriorities.map((pr, i) => {
-      const title = pr.title.replace(/^Priority\s+\d+\s*[·•]\s*/i, '');
+      const title = (stage3View === 'summary' ? getConcisePriority(pr).title : pr.title).replace(/^Priority\s+\d+\s*[·•]\s*/i, '');
       const risk = riskLabel(pr.risk_level);
       return `<div class="pi-item">
         <span class="pi-num">${i+1}</span>
@@ -6248,7 +6284,70 @@ ${body}
     }).join('');
   }
 
+  function stage3ViewToggleHtml(){
+    // The default concise view renders the Summary tab with aria-selected="true".
+    const summaryAvailable=!!stageConciseReadout;
+    return `<div class="stage3-viewbar">
+      <div class="stage3-view-tabs" role="tablist" aria-label="Recommendations detail level">
+        <button id="stage3-summary-tab" class="stage3-view-tab ${stage3View==='summary'?'active':''}" role="tab" aria-selected="${stage3View==='summary'}" ${summaryAvailable?'':'disabled'} onclick="setStage3View('summary')">Summary</button>
+        <button id="stage3-detailed-tab" class="stage3-view-tab ${stage3View==='detailed'?'active':''}" role="tab" aria-selected="${stage3View==='detailed'}" onclick="setStage3View('detailed')">Detailed analysis</button>
+      </div>
+      <div class="stage3-download-note">Downloads include the comprehensive analysis.</div>
+    </div>`;
+  }
+
+  function renderConciseOverview(){
+    if(!stageConciseReadout) return '';
+    const strengths=(stageConciseReadout.strengths||[]).map(s=>`<div class="concise-strength"><strong>${esc(s.title)}</strong>${esc(s.text)}</div>`).join('');
+    return `<div class="concise-readout"><div class="concise-read-time">Five-minute readout</div><div class="concise-section-label">Overall assessment</div><h2 class="concise-headline">${esc(stageConciseReadout.headline)}</h2><p class="concise-overview">${esc(stageConciseReadout.overview)}</p><div class="concise-section-label">What is already working</div><div class="concise-strengths">${strengths}</div>${stageConciseReadout.priority_intro?`<p class="concise-priority-intro">${esc(stageConciseReadout.priority_intro)}</p>`:''}<div id="priorities-intro"></div></div>`;
+  }
+
+  function cleanPriorityTitle(title){ return (title||'').replace(/^Priority\s+\d+\s*[-·•:]\s*/i,''); }
+
+  function getConcisePriority(pr){
+    if(pr.concise) return pr.concise;
+    const firstAction=(pr.actions||[])[0]||{};
+    return {title:cleanPriorityTitle(pr.title),why:pr.why_it_matters||pr.the_gap||'',how:(pr.actions||[]).slice(0,4).map(a=>a.guidance).filter(Boolean),suggested_wording:{document_element:firstAction.document_element||'',text:firstAction.suggested_language||''},project_cycle:{primary_label:'When to address',primary_text:pr.implementation_note||'',secondary_label:'',secondary_text:''}};
+  }
+
+  function showConcisePriority(idx){
+    const pr=stageThreePriorities[idx]; if(!pr) return;
+    const concise=getConcisePriority(pr), wording=concise.suggested_wording||{}, cycle=concise.project_cycle||{};
+    const how=(concise.how||[]).map(item=>`<li>${esc(item)}</li>`).join('');
+    const cardArea=document.getElementById('priority-card-area'); if(!cardArea) return;
+    cardArea.innerHTML=`<article class="concise-priority-card ani"><header class="concise-priority-head"><span class="concise-priority-num">${idx+1}</span><div><div class="concise-priority-kicker">Priority ${idx+1} of ${stageThreePriorities.length}</div><h3>${esc(concise.title)}</h3></div>${pr.risk_level?`<span class="concise-risk">${esc(pr.risk_level)}</span>`:''}</header><section><h4>Why this is suggested</h4><p>${esc(concise.why)}</p></section><section class="concise-how"><h4>How it can be addressed</h4><ul>${how}</ul></section>${wording.text?`<section class="concise-wording"><h4>Suggested wording for the current document</h4><p>${esc(wording.text)}</p><div class="concise-wording-target">For: ${esc(wording.document_element)}</div></section>`:''}<aside class="concise-cycle"><h4>Where this fits in the project cycle</h4><div><strong>${esc(cycle.primary_label||'When to address')}</strong><p>${esc(cycle.primary_text||'')}</p></div>${cycle.secondary_label||cycle.secondary_text?`<div><strong>${esc(cycle.secondary_label||'Next step')}</strong><p>${esc(cycle.secondary_text||'')}</p></div>`:''}</aside><details class="concise-specialist"><summary>Specialist reasoning, evidence and operational references</summary><p>${esc(pr.the_gap||'')}</p><p>${esc(pr.country_category_relevance||'')}</p></details></article>`;
+  }
+
+  function setStage3View(view, preservePriority=true){
+    if(view==='summary'&&!stageConciseReadout)view='detailed';
+    stage3View=view;
+    const summaryTab=document.getElementById('stage3-summary-tab'), detailedTab=document.getElementById('stage3-detailed-tab');
+    [summaryTab,detailedTab].forEach(tab=>{if(tab)tab.classList.remove('active')});
+    if(summaryTab){summaryTab.classList.toggle('active',view==='summary');summaryTab.setAttribute('aria-selected',String(view==='summary'));}
+    if(detailedTab){detailedTab.classList.toggle('active',view==='detailed');detailedTab.setAttribute('aria-selected',String(view==='detailed'));}
+    const overview=document.getElementById('stage3-overview-wrap'); if(overview)overview.style.display=view==='summary'?'none':'block';
+    const out=document.getElementById('out-txt');
+    if(out){out.innerHTML=stage3ViewToggleHtml()+(view==='summary'?renderConciseOverview():stage3DetailedHtml);}
+    renderPrioritiesIntro();renderPriorityStepper();showPriority(preservePriority?currentPriority:0);
+  }
+
   function showPriority(idx){
+    if(!stageThreePriorities[idx]) return;
+    currentPriority=idx;
+    if(stage3View==='summary'&&stageConciseReadout){
+      renderPriorityStepper();
+      const navEl=document.getElementById('pc-nav'), counterEl=document.getElementById('pc-nav-counter');
+      const prevBtn=document.getElementById('pc-prev-btn'), nextBtn=document.getElementById('pc-next-btn');
+      if(navEl)navEl.style.display='flex';
+      if(counterEl)counterEl.textContent=`Priority ${idx+1} of ${stageThreePriorities.length}`;
+      if(prevBtn)prevBtn.disabled=idx===0;
+      if(nextBtn)nextBtn.disabled=idx===stageThreePriorities.length-1;
+      showConcisePriority(idx);updateSidebar();
+      const cardArea=document.getElementById('priority-card-area');if(cardArea)cardArea.scrollIntoView({behavior:'smooth',block:'nearest'});
+    }else showDetailedPriority(idx);
+  }
+
+  function showDetailedPriority(idx){
     const pr = stageThreePriorities[idx];
     if(!pr) return;
     currentPriority = idx;
