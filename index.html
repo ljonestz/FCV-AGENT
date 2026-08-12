@@ -6297,8 +6297,8 @@ ${body}
     const summaryAvailable=!!stageConciseReadout;
     return `<div class="stage3-viewbar">
       <div class="stage3-view-tabs" role="tablist" aria-label="Recommendations detail level" onkeydown="handleStage3ViewKeydown(event)">
-        <button id="stage3-summary-tab" class="stage3-view-tab ${stage3View==='summary'?'active':''}" role="tab" aria-controls="stage3-view-panel" aria-selected="${stage3View==='summary'}" tabindex="${stage3View==='summary'?'0':'-1'}" ${summaryAvailable?'':'disabled'} onclick="setStage3View('summary')">Summary</button>
-        <button id="stage3-detailed-tab" class="stage3-view-tab ${stage3View==='detailed'?'active':''}" role="tab" aria-controls="stage3-view-panel" aria-selected="${stage3View==='detailed'}" tabindex="${stage3View==='detailed'?'0':'-1'}" onclick="setStage3View('detailed')">Detailed analysis</button>
+        <button id="stage3-summary-tab" class="stage3-view-tab ${stage3View==='summary'?'active':''}" role="tab" aria-controls="out-txt" aria-selected="${stage3View==='summary'}" tabindex="${stage3View==='summary'?'0':'-1'}" ${summaryAvailable?'':'disabled'} onclick="setStage3View('summary')">Summary</button>
+        <button id="stage3-detailed-tab" class="stage3-view-tab ${stage3View==='detailed'?'active':''}" role="tab" aria-controls="out-txt" aria-selected="${stage3View==='detailed'}" tabindex="${stage3View==='detailed'?'0':'-1'}" onclick="setStage3View('detailed')">Detailed analysis</button>
       </div>
       <div class="stage3-download-note">Downloads include the comprehensive analysis.</div>
     </div>`;
@@ -6334,7 +6334,7 @@ ${body}
     const next=event.key==='Home'?0:event.key==='End'?tabs.length-1:(current+(event.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length;
     const view=tabs[next].id==='stage3-summary-tab'?'summary':'detailed';
     setStage3View(view);
-    tabs[next].focus();
+    document.getElementById(tabs[next].id).focus();
   }
 
   function setStage3View(view, preservePriority=true){

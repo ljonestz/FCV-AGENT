@@ -367,10 +367,17 @@ def test_stage3_tabs_have_panel_and_keyboard_roving_semantics():
     source = (ROOT / "index.html").read_text(encoding="utf-8")
     toggle = source[source.index("function stage3ViewToggleHtml()"):source.index("function renderConciseOverview()")]
     keyboard = source[source.index("function handleStage3ViewKeydown("):source.index("function setStage3View(")]
-    assert 'aria-controls="stage3-view-panel"' in toggle
+    assert 'aria-controls="out-txt"' in toggle
     assert 'tabindex="${stage3View===\'summary\'?\'0\':\'-1\'}"' in toggle
     assert 'onkeydown="handleStage3ViewKeydown(event)"' in toggle
     assert 'role="tabpanel"' in source
     for key in ("ArrowLeft", "ArrowRight", "Home", "End"):
         assert key in keyboard
-    assert "tabs[next].focus()" in keyboard
+    assert "document.getElementById(tabs[next].id).focus()" in keyboard
+
+
+def test_stage3_keyboard_activation_targets_the_live_re_rendered_tab():
+    source = (ROOT / "index.html").read_text(encoding="utf-8")
+    assert 'aria-controls="out-txt"' in source
+    keyboard = source[source.index("function handleStage3ViewKeydown("):source.index("function setStage3View(")]
+    assert "document.getElementById(tabs[next].id).focus()" in keyboard
