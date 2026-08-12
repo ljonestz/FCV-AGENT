@@ -3846,7 +3846,7 @@
               if(p.fcv_responsiveness_rating)fcvResponsivenessRating=p.fcv_responsiveness_rating;
               if(p.priorities)stageThreePriorities=p.priorities;
               stageConciseReadout=p.concise_readout||null;
-              stage3View=!isClimateLensActive() && stageConciseReadout ? 'summary' : 'detailed';
+              stage3View=supportsConciseStage3View() && stageConciseReadout ? 'summary' : 'detailed';
               if(p.climate_unlinked!==undefined)climatePriorityUnlinked=p.climate_unlinked;
               if(p.climate_total!==undefined)climatePriorityTotal=p.climate_total;
               if(p.wider_fcv_context!==undefined)stageWiderFcvContext=p.wider_fcv_context||null;
@@ -4120,7 +4120,7 @@
                 if(p.lens_diagnostic)lensDiagnostic=p.lens_diagnostic;
                 if(p.climate_integration!==undefined)climateIntegration=p.climate_integration;
               }
-              if(stage===3){stageGapTable=p.gap_table||null;stageRiskExposure=p.risk_exposure||null;stageSensitivitySummary=p.sensitivity_summary||'';stageResponsivenessSummary=p.responsiveness_summary||'';midCycleWatch=p.mid_cycle_watch||[];dpfWatch=p.dpf_watch||[];p4rWatch=p.p4r_watch||[];regionalWatch=p.regional_watch||[];if(p.fcv_rating)fcvRating=p.fcv_rating;if(p.fcv_responsiveness_rating)fcvResponsivenessRating=p.fcv_responsiveness_rating;if(p.applied_snippets)stageAppliedSnippets=p.applied_snippets;stageConciseReadout=p.concise_readout||null;stage3View=!isClimateLensActive() && stageConciseReadout ? 'summary' : 'detailed';}
+              if(stage===3){stageGapTable=p.gap_table||null;stageRiskExposure=p.risk_exposure||null;stageSensitivitySummary=p.sensitivity_summary||'';stageResponsivenessSummary=p.responsiveness_summary||'';midCycleWatch=p.mid_cycle_watch||[];dpfWatch=p.dpf_watch||[];p4rWatch=p.p4r_watch||[];regionalWatch=p.regional_watch||[];if(p.fcv_rating)fcvRating=p.fcv_rating;if(p.fcv_responsiveness_rating)fcvResponsivenessRating=p.fcv_responsiveness_rating;if(p.applied_snippets)stageAppliedSnippets=p.applied_snippets;stageConciseReadout=p.concise_readout||null;stage3View=supportsConciseStage3View() && stageConciseReadout ? 'summary' : 'detailed';}
               // Write timestamps BEFORE renderOut so the consistency check inside renderOut reads the current run's value
               // Stage 2 completion also clears any previously dismissed banner on Stage 3
               if(stage===2){ fcvSafeLocalStorageSet('stage2_timestamp', Date.now()); localStorage.removeItem('stage3_consistency_dismissed'); }
@@ -4787,7 +4787,7 @@
     const isLast=stage===3;
     const c=CALLS[stage];
     const _verifiedV2=!!(isLast&&climateVerifiedAssessment&&climateVerifiedAssessment.schema_version==='climate-verified-v2.1'&&climateVerifiedReader);
-    const supportsConciseStage3 = isLast && !isClimateLensActive() && !_verifiedV2;
+    const supportsConciseStage3 = isLast && supportsConciseStage3View();
     const conciseUnavailable = supportsConciseStage3 ? conciseUnavailableHtml() : '';
     let _outBodyContent;
     if(_verifiedV2){
@@ -5927,7 +5927,7 @@ ${body}
   let climateVerifiedReader=null; // server-validated canonical reader/export model
   let stageWiderFcvContext=null; // wider_fcv_context string from Stage 3 JSON (climate path)
   function supportsConciseStage3View(){
-    return !isClimateLensActive() && !(climateVerifiedAssessment&&climateVerifiedAssessment.schema_version==='climate-verified-v2.1'&&climateVerifiedReader);
+    return reviewMode==='design' && activeLenses.length===0 && !(climateVerifiedAssessment&&climateVerifiedAssessment.schema_version==='climate-verified-v2.1'&&climateVerifiedReader);
   }
   function conciseUnavailableHtml(){
     return !stageConciseReadout

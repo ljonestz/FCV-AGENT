@@ -302,6 +302,38 @@ def test_both_stage3_sse_paths_return_concise_readout(monkeypatch):
     assert "concise_readout" not in lens_express_done
 
 
+def test_implementation_follow_on_omits_concise_readout(monkeypatch):
+    def fake_stream(_messages, _max_tokens, stage, **_kwargs):
+        fake_stream._last_result = _STAGE3_OUTPUT
+        fake_stream._last_stop_reason = "end_turn"
+        yield 'data: {"chunk": "stage3"}\n\n'
+
+    monkeypatch.setattr(
+        app, "build_lens_stage_context", lambda *_args, **_kwargs: _lens_context([])
+    )
+    monkeypatch.setattr(app, "_stream_stage", fake_stream)
+
+    response = app.app.test_client().post("/api/run-stage", json={
+        "stage": 3,
+        "user_message": "Please refine the first implementation priority.",
+        "history": [{"role": "assistant", "content": "Stage 3 output."}],
+        "document_type": "ISR", "doc_type": "ISR", "instrument_type": "IPF",
+        "review_mode": "implementation",
+        "temporal_context": {"processing_track": "implementation"},
+        "regime_context": {},
+    })
+
+    events = [
+        json.loads(line[6:])
+        for line in response.get_data(as_text=True).splitlines()
+        if line.startswith("data: ")
+    ]
+    assert response.status_code == 200
+    assert not [event for event in events if "error" in event], events
+    done = next(event for event in events if event.get("done"))
+    assert "concise_readout" not in done
+
+
 def test_frontend_has_accessible_stage3_view_switch():
     source = (ROOT / "index.html").read_text(encoding="utf-8")
     assert 'role="tablist"' in source
@@ -321,13 +353,16 @@ def test_frontend_has_concise_renderers_and_fallback():
 
 def test_frontend_defaults_new_stage3_result_to_summary():
     source = (ROOT / "index.html").read_text(encoding="utf-8")
-    assert "!isClimateLensActive() && stageConciseReadout ? 'summary' : 'detailed'" in source
+    assert (
+        "supportsConciseStage3View() && stageConciseReadout "
+        "? 'summary' : 'detailed'"
+    ) in source
     assert "setStage3View(stage3View, false)" in source
 
 
 def test_frontend_scopes_concise_ui_to_normal_core_route():
     source = (ROOT / "index.html").read_text(encoding="utf-8")
-    assert "const supportsConciseStage3 = isLast && !isClimateLensActive() && !_verifiedV2" in source
+    assert "const supportsConciseStage3 = isLast && supportsConciseStage3View()" in source
     assert "supportsConciseStage3 ? stage3ViewToggleHtml() : ''" in source
 
 
@@ -369,6 +404,26 @@ def test_frontend_initialization_uses_the_core_route_capability_gate():
     assert "function supportsConciseStage3View()" in source
     init = source[source.index("function initStage3UI()"):source.index("async function maybeRunPriorityQuestions")]
     assert "supportsConciseStage3View()" in init
+
+
+def test_frontend_concise_capability_gate_excludes_implementation_and_all_lenses():
+    source = (ROOT / "index.html").read_text(encoding="utf-8")
+    helper = source[
+        source.index("function supportsConciseStage3View()"):
+        source.index("function conciseUnavailableHtml()")
+    ]
+    assert "reviewMode==='design'" in helper
+    assert "activeLenses.length===0" in helper
+
+    assert source.count(
+        "stage3View=supportsConciseStage3View() && stageConciseReadout "
+        "? 'summary' : 'detailed'"
+    ) == 2
+    render = source[
+        source.index("function renderOut("):
+        source.index("// Annotate glossary terms", source.index("function renderOut("))
+    ]
+    assert "const supportsConciseStage3 = isLast && supportsConciseStage3View();" in render
 
 
 def test_frontend_preserves_legacy_notice_and_watch_list_when_switching_views():
