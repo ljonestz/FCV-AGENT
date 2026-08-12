@@ -252,6 +252,19 @@ def test_both_stage3_sse_paths_return_concise_readout(monkeypatch):
     assert step_done["concise_readout"] == expected
     assert express_done["concise_readout"] == expected
 
+    follow_on_response = app.app.test_client().post("/api/run-stage", json={
+        "stage": 3, "user_message": "Please refine the first priority.",
+        "history": [{"role": "assistant", "content": "Stage 2 output."}],
+        "document_type": "PAD", "doc_type": "PAD", "instrument_type": "IPF",
+        "review_mode": "design", "temporal_context": {"processing_track": "standard"},
+        "regime_context": {},
+    })
+    follow_on_events = [json.loads(line[6:]) for line in follow_on_response.get_data(as_text=True).splitlines()
+                        if line.startswith("data: ")]
+    assert not [event for event in follow_on_events if "error" in event], follow_on_events
+    follow_on_done = next(event for event in follow_on_events if event.get("done"))
+    assert follow_on_done["concise_readout"] == expected
+
     monkeypatch.setattr(
         app, "build_lens_stage_context", lambda *_args, **_kwargs: _lens_context([{"id": "test-lens"}])
     )

@@ -8318,6 +8318,15 @@ def run_stage():
         _native_climate_stage3 = (
             not is_impl and stage == 3 and climate_active(analysis_state)
         )
+        instrument_type = (
+            data.get('instrument_type') or analysis_state.instrument or 'Unknown'
+        )
+        supports_concise_stage3 = (
+            stage == 3
+            and not is_impl
+            and not _native_climate_stage3
+            and not analysis_state.active_lenses
+        )
         server_climate_research = normalize_climate_research_bundle(
             data.get('climate_research')
         )
@@ -8498,6 +8507,19 @@ def run_stage():
             # messages will be fully built inside generate() for stage 1
 
         elif user_message and not (_native_climate_stage2 or _native_climate_stage3):
+            lens_context = build_lens_stage_context(
+                analysis_state,
+                stage,
+                lens_diagnostic=data.get('lens_diagnostic'),
+                lens_context_sources=data.get('lens_context_sources'),
+                climate_research=server_climate_research,
+                climate_grounding=server_climate_grounding,
+            )
+            supports_concise_stage3 = (
+                stage == 3
+                and not is_impl
+                and not lens_context['active_lenses']
+            )
             messages.append({"role": "user", "content": user_message})
         else:
             # Select stage prompt based on review mode. Climate design Stage 2
