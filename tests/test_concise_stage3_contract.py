@@ -344,6 +344,17 @@ def test_normal_detailed_stage3_uses_the_restored_vertical_sidebar():
     assert "normalStage3SidebarHtml()" in source
 
 
+def test_normal_sidebar_is_a_sibling_of_the_stage3_content_main_wrapper():
+    source = (ROOT / "index.html").read_text(encoding="utf-8")
+    start = source.index('id="stage3-content-layout"')
+    end = source.index("// Annotate glossary terms", start)
+    layout = source[start:end]
+    assert re.search(
+        r"</div>\s*\$\{normalStage3SidebarHtml\(\)\}</div>`:'</div>'}",
+        layout,
+    ), "the content-main wrapper must close before the sidebar is inserted"
+
+
 def test_normal_stage3_sidebar_is_sticky_on_desktop_and_stacks_on_narrow_screens():
     source = (ROOT / "index.html").read_text(encoding="utf-8")
     assert ".stage3-content-layout{display:grid;grid-template-columns:minmax(0,1fr) 210px;" in source
