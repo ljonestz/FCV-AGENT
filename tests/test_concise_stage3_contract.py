@@ -1,4 +1,3 @@
-import inspect
 import json
 
 import app
@@ -253,12 +252,32 @@ def test_both_stage3_sse_paths_return_concise_readout(monkeypatch):
     assert step_done["concise_readout"] == expected
     assert express_done["concise_readout"] == expected
 
+    monkeypatch.setattr(
+        app, "build_lens_stage_context", lambda *_args, **_kwargs: _lens_context([{"id": "test-lens"}])
+    )
+    lens_step_response = app.app.test_client().post("/api/run-stage", json={
+        "stage": 3, "active_lenses": ["test-lens"],
+        "history": [{"role": "assistant", "content": "Stage 2 output."}],
+        "document_type": "PAD", "doc_type": "PAD", "instrument_type": "IPF",
+        "review_mode": "design", "temporal_context": {"processing_track": "standard"},
+        "regime_context": {},
+    })
+    lens_step_events = [json.loads(line[6:]) for line in lens_step_response.get_data(as_text=True).splitlines()
+                        if line.startswith("data: ")]
+    lens_step_done = next(event for event in lens_step_events if event.get("done"))
 
-def test_step_by_step_stage1_and_stage2_done_payloads_omit_concise_readout():
-    source = inspect.getsource(app.run_stage)
-    done_payload_source = source.split("done_data = {", 1)[1]
-    common_done_payload = done_payload_source.split("if stage == 2:", 1)[0]
-    stage3_done_branch = done_payload_source.split("elif stage == 3:", 1)[1]
+    def lens_express_context(_state, stage, **_kwargs):
+        return _lens_context([{"id": "test-lens"}] if stage == 3 else [])
 
-    assert "'concise_readout'" not in common_done_payload
-    assert "done_data['concise_readout']" in stage3_done_branch
+    monkeypatch.setattr(app, "build_lens_stage_context", lens_express_context)
+    lens_express_response = app.app.test_client().post("/api/run-express", json={
+        "active_lenses": ["test-lens"],
+        "documents": [{"name": "PAD.txt", "type": "text", "docRole": "primary", "content": "Project delivery."}],
+        "document_type": "PAD", "instrument_type": "IPF", "review_mode": "design",
+    })
+    lens_express_events = [json.loads(line[6:]) for line in lens_express_response.get_data(as_text=True).splitlines()
+                           if line.startswith("data: ")]
+    lens_express_done = next(event for event in lens_express_events if event.get("stage_done") == 3)
+
+    assert "concise_readout" not in lens_step_done
+    assert "concise_readout" not in lens_express_done
