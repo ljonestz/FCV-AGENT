@@ -1,11 +1,17 @@
 # Concise Stage 3 Readout — Implementation Handover
 
-**Date paused:** 2026-08-12  
-**Repository:** `C:\Users\wb559324\OneDrive - WBG\Documents\GitHub\FCV-AGENT`  
-**Implementation worktree:** `C:\Users\wb559324\OneDrive - WBG\Documents\GitHub\FCV-AGENT\.worktrees\concise-stage3-readout`  
-**Implementation branch:** `codex/concise-stage3-readout`  
-**Required baseline branch:** `codex/climate-country-bank-deploy`  
-**Baseline commit used:** `3b5886e`  
+**Date paused:** 2026-08-12
+
+**Repository:** `C:\Users\wb559324\OneDrive - WBG\Documents\GitHub\FCV-AGENT`
+
+**Implementation worktree:** `C:\Users\wb559324\OneDrive - WBG\Documents\GitHub\FCV-AGENT\.worktrees\concise-stage3-readout`
+
+**Implementation branch:** `codex/concise-stage3-readout`
+
+**Required baseline branch:** `codex/climate-country-bank-deploy`
+
+**Baseline commit used:** `3b5886e`
+
 **Current implementation HEAD:** `eb484d17a553712d7d791ea0e6bdbbb6f92a70c9`
 
 ## Objective and agreed design
