@@ -1,24 +1,35 @@
-from pathlib import Path
-
 import app
 
 
-ROOT = Path(__file__).resolve().parents[1]
+def test_step_by_step_core_prompt_gets_concise_contract_but_lens_prompt_does_not():
+    base = app.DEFAULT_PROMPTS["3"]
+    core_prompt = app.append_core_concise_stage3_contract(
+        base, "PCN", {"processing_track": "standard"}, []
+    )
+    lens_prompt = app.append_core_concise_stage3_contract(
+        base, "PCN", {"processing_track": "standard"}, [{"id": "climate"}]
+    )
+
+    assert '"concise_readout"' not in base
+    assert '"concise_readout"' in core_prompt
+    assert '"concise"' in core_prompt
+    assert "same findings, ratings, priority order, and actions" in core_prompt
+    assert "700-1,000 words" in core_prompt
+    assert '"concise_readout"' not in lens_prompt
 
 
-def test_stage3_prompt_requires_concise_readout_in_same_json():
-    prompt = app.DEFAULT_PROMPTS["3"]
-    assert '"concise_readout"' in prompt
-    assert '"concise"' in prompt
-    assert "same findings, ratings, priority order, and actions" in prompt
-    assert "700-1,000 words" in prompt
+def test_express_core_prompt_gets_concise_contract_but_lens_prompt_does_not():
+    base = app.DEFAULT_PROMPTS["3"]
+    core_prompt = app.append_core_concise_stage3_contract(
+        base, "PAD", {"processing_track": "standard"}, []
+    )
+    lens_prompt = app.append_core_concise_stage3_contract(
+        base, "PAD", {"processing_track": "standard"}, [{"id": "agriculture"}]
+    )
 
-
-def test_concise_stage3_is_scoped_to_core_route():
-    source = (ROOT / "app.py").read_text(encoding="utf-8")
-    assert "supports_concise_stage3" in source
-    assert "not lens_context['active_lenses']" in source
-    assert "not lens_context_s3['active_lenses']" in source
+    assert '"concise_readout"' in core_prompt
+    assert "Resolve before the review gate" in core_prompt
+    assert '"concise_readout"' not in lens_prompt
 
 
 def test_concise_lifecycle_context_for_standard_pcn():
@@ -40,6 +51,14 @@ def test_concise_lifecycle_context_for_consolidated_pcn():
 def test_concise_lifecycle_context_for_pad_does_not_defer():
     text = app.build_concise_lifecycle_context(
         "PAD", {"processing_track": "standard"}
+    )
+    assert "Resolve before the review gate" in text
+    assert "Do not defer" in text
+
+
+def test_concise_lifecycle_context_for_pid_does_not_defer():
+    text = app.build_concise_lifecycle_context(
+        "PID", {"processing_track": "standard"}
     )
     assert "Resolve before the review gate" in text
     assert "Do not defer" in text

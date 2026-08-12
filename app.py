@@ -2984,6 +2984,52 @@ def get_seash_gender_card_guidance(instrument_type: str) -> str:
     return SEASH_GENDER_CARD_IPF
 
 
+CONCISE_STAGE3_OUTPUT_CONTRACT = '''## CONCISE ON-SCREEN READOUT
+
+In the SAME analysis and SAME JSON block, produce a plain-language presentation layer. It must preserve the same findings, ratings, priority order, and actions as the detailed analysis. Do not add, remove, or reprioritize findings.
+
+The complete Summary view should support a 5-minute read and total approximately 700-1,000 words across the overview and 4-5 priorities. Avoid unexplained acronyms and specialist FCV terminology.
+
+For concise_readout provide: a one-sentence headline; a 100-150 word overview; exactly 3 short strengths; and one short priority introduction.
+
+For each priority.concise provide: a plain-language title; 70-110 words explaining why the suggestion is made; 2-4 specific how-to actions; one short ready-to-paste passage for the most relevant current document element; and project-cycle labels/text that follow the injected lifecycle framing. The project-cycle block is secondary to why/how and must not overstate what belongs in an early PCN.
+
+Add these optional fields to the existing JSON block without removing or changing any detailed fields:
+
+"concise_readout": {
+  "headline": "One plain-language sentence stating the overall finding",
+  "overview": "A 100-150 word plain-language synthesis that matches the detailed analysis",
+  "strengths": [
+    {"title": "Short strength label", "text": "One sentence grounded in the project"},
+    {"title": "Short strength label", "text": "One sentence grounded in the project"},
+    {"title": "Short strength label", "text": "One sentence grounded in the project"}
+  ],
+  "priority_intro": "One short transition into the ranked actions"
+}
+
+For every item in `priorities`, add:
+
+"concise": {
+  "title": "Plain-language action title",
+  "why": "A 70-110 word project-specific explanation of the gap, delivery consequence, and FCV mechanism",
+  "how": [
+    "First specific action appropriate to the current document stage",
+    "Second specific action appropriate to the current document stage"
+  ],
+  "suggested_wording": {
+    "document_element": "The most relevant current document section",
+    "text": "A short ready-to-paste passage in WBG project-document register"
+  },
+  "project_cycle": {
+    "primary_label": "Label from the injected lifecycle framing",
+    "primary_text": "What must be addressed at the current gate",
+    "secondary_label": "Second label from the injected lifecycle framing",
+    "secondary_text": "What may appropriately follow"
+  }
+}
+'''
+
+
 def build_concise_lifecycle_context(doc_type: str, temporal_context: dict) -> str:
     """Return conservative project-cycle labels for the concise core readout."""
     track = (temporal_context or {}).get('processing_track', 'Unknown')
@@ -3009,6 +3055,24 @@ def build_concise_lifecycle_context(doc_type: str, temporal_context: dict) -> st
     return (
         'Concise project-cycle labels: "When to address" and "Next step". '
         'Use stage-only wording and do not assert an unverified procedural gate.'
+    )
+
+
+def append_core_concise_stage3_contract(
+    stage_prompt: str,
+    doc_type: str,
+    temporal_context: dict,
+    active_lenses: list[dict[str, Any]],
+) -> str:
+    """Append concise instructions only to a resolved core Stage 3 prompt."""
+    if active_lenses:
+        return stage_prompt
+    return (
+        stage_prompt
+        + "\n\n--- Concise readout lifecycle framing ---\n"
+        + build_concise_lifecycle_context(doc_type, temporal_context)
+        + "\n\n"
+        + CONCISE_STAGE3_OUTPUT_CONTRACT
     )
 
 
@@ -4892,21 +4956,11 @@ The SEA/SH card and the GRM card may both appear in the output — they address 
 - For any [R] or [S+R] priority, `why_it_matters` includes the shift justification sentence
 - No [From: ...] citation tags appear anywhere in the narrative or JSON fields
 - JSON block is present at the end, wrapped in %%%JSON_START%%% / %%%JSON_END%%%
-- All 11 top-level JSON fields are populated (fcv_rating, fcv_responsiveness_rating, sensitivity_summary, responsiveness_summary, risk_exposure, mid_cycle_watch, dpf_watch, p4r_watch, regional_watch, concise_readout, priorities)
+- All 10 top-level JSON fields are populated (fcv_rating, fcv_responsiveness_rating, sensitivity_summary, responsiveness_summary, risk_exposure, mid_cycle_watch, dpf_watch, p4r_watch, regional_watch, priorities)
 - Each priority's pad_sections, actions (including per-action suggested_language), and implementation_note are specific to this project — not generic placeholders
-- Each priority JSON object has all 23 fields: title, fcv_dimension, tag, refresh_shift, risk_level, concise, the_gap, why_it_matters, actions, who_acts, when, action_timing, resources, pad_sections, country_category_relevance, implementation_note, cpf_alignment, rra_driver_alignment, change_type, restructuring_level, priority_scope, governance_level, authority_basis
+- Each priority JSON object has all 22 fields: title, fcv_dimension, tag, refresh_shift, risk_level, the_gap, why_it_matters, actions, who_acts, when, action_timing, resources, pad_sections, country_category_relevance, implementation_note, cpf_alignment, rra_driver_alignment, change_type, restructuring_level, priority_scope, governance_level, authority_basis
 - No generic or templated language anywhere
 - All `when` values are appropriate for the {doc_type} stage
-
-## CONCISE ON-SCREEN READOUT
-
-In the SAME analysis and SAME JSON block, produce a plain-language presentation layer. It must preserve the same findings, ratings, priority order, and actions as the detailed analysis. Do not add, remove, or reprioritize findings.
-
-The complete Summary view should support a 5-minute read and total approximately 700-1,000 words across the overview and 4-5 priorities. Avoid unexplained acronyms and specialist FCV terminology.
-
-For concise_readout provide: a one-sentence headline; a 100-150 word overview; exactly 3 short strengths; and one short priority introduction.
-
-For each priority.concise provide: a plain-language title; 70-110 words explaining why the suggestion is made; 2-4 specific how-to actions; one short ready-to-paste passage for the most relevant current document element; and project-cycle labels/text that follow the injected lifecycle framing. The project-cycle block is secondary to why/how and must not overstate what belongs in an early PCN.
 
 # CRITICAL — JSON OUTPUT BLOCK
 
@@ -4928,16 +4982,6 @@ The FCV ratings, summaries, and risk exposure paragraphs you have written in the
   "dpf_watch": ["Use only for DPF/DPO; otherwise return an empty array"],
   "p4r_watch": ["Use only for PforR/P4R; otherwise return an empty array"],
   "regional_watch": ["Use only for multi-country / regional operations; otherwise return an empty array"],
-  "concise_readout": {{{{
-    "headline": "One plain-language sentence stating the overall finding",
-    "overview": "A 100-150 word plain-language synthesis that matches the detailed analysis",
-    "strengths": [
-      {{"title": "Short strength label", "text": "One sentence grounded in the project"}},
-      {{"title": "Short strength label", "text": "One sentence grounded in the project"}},
-      {{"title": "Short strength label", "text": "One sentence grounded in the project"}}
-    ],
-    "priority_intro": "One short transition into the ranked actions"
-  }}}},
   "priorities": [
     {{{{
       "title": "Priority 1 · Short descriptive phrase",
@@ -4945,24 +4989,6 @@ The FCV ratings, summaries, and risk exposure paragraphs you have written in the
       "tag": "[S+R]",
       "refresh_shift": "Shift B: Differentiate",
       "risk_level": "High",
-      "concise": {{{{
-        "title": "Plain-language action title",
-        "why": "A 70-110 word project-specific explanation of the gap, delivery consequence, and FCV mechanism",
-        "how": [
-          "First specific action appropriate to the current document stage",
-          "Second specific action appropriate to the current document stage"
-        ],
-        "suggested_wording": {{{{
-          "document_element": "The most relevant current document section",
-          "text": "A short ready-to-paste passage in WBG project-document register"
-        }}}},
-        "project_cycle": {{{{
-          "primary_label": "Label from the injected lifecycle framing",
-          "primary_text": "What must be addressed at the current gate",
-          "secondary_label": "Second label from the injected lifecycle framing",
-          "secondary_text": "What may appropriately follow"
-        }}}}
-      }}}},
       "change_type": "Results framework change",
       "restructuring_level": "Level 2",
       "priority_scope": "mid-cycle",
@@ -8840,12 +8866,11 @@ def run_stage():
                 and not lens_context['active_lenses']
             )
             if supports_concise_stage3:
-                concise_lifecycle_context = build_concise_lifecycle_context(
-                    document_type, data.get('temporal_context', {})
-                )
-                stage_prompt += (
-                    "\n\n--- Concise readout lifecycle framing ---\n"
-                    + concise_lifecycle_context
+                stage_prompt = append_core_concise_stage3_contract(
+                    stage_prompt,
+                    document_type,
+                    data.get('temporal_context', {}),
+                    lens_context['active_lenses'],
                 )
             if _native_climate_stage2:
                 _native_instrument = (
@@ -10787,12 +10812,11 @@ def run_express():
                         stage3_prompt = stage3_prompt + snippets_text_s3e
 
                     if supports_concise_stage3:
-                        concise_lifecycle_context = build_concise_lifecycle_context(
-                            doc_type, temporal_context
-                        )
-                        stage3_prompt += (
-                            "\n\n--- Concise readout lifecycle framing ---\n"
-                            + concise_lifecycle_context
+                        stage3_prompt = append_core_concise_stage3_contract(
+                            stage3_prompt,
+                            doc_type,
+                            temporal_context,
+                            lens_context_s3['active_lenses'],
                         )
 
                 if not _native_climate_s3:
