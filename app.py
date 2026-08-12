@@ -9427,7 +9427,6 @@ def run_stage():
                     'result': display_full_text,
                     'history': updated_messages,
                     'stage': stage,
-                    'concise_readout': None,
                     'parse_error': parse_error,
                     'parse_error_message': parse_error_message,
                     'research_brief': research_brief_text if stage == 1 else None,

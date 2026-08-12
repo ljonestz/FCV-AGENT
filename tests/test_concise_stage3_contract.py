@@ -1,3 +1,4 @@
+import inspect
 import json
 
 import app
@@ -251,3 +252,13 @@ def test_both_stage3_sse_paths_return_concise_readout(monkeypatch):
                 "priority_intro": "Priority introduction."}
     assert step_done["concise_readout"] == expected
     assert express_done["concise_readout"] == expected
+
+
+def test_step_by_step_stage1_and_stage2_done_payloads_omit_concise_readout():
+    source = inspect.getsource(app.run_stage)
+    done_payload_source = source.split("done_data = {", 1)[1]
+    common_done_payload = done_payload_source.split("if stage == 2:", 1)[0]
+    stage3_done_branch = done_payload_source.split("elif stage == 3:", 1)[1]
+
+    assert "'concise_readout'" not in common_done_payload
+    assert "done_data['concise_readout']" in stage3_done_branch
