@@ -6369,7 +6369,13 @@ ${body}
     const paragraphs=executive.split(/\n\s*\n+/).map(p=>p.trim()).filter(Boolean);
     const overviewSource=(paragraphs.slice(0,2).join(' ')||executive);
     const overviewWords=overviewSource.split(/\s+/);
-    const overview=overviewWords.length>240?overviewWords.slice(0,240).join(' ').replace(/[,:;]$/,'')+'…':overviewSource;
+    let overview=overviewSource;
+    if(overviewWords.length>240){
+      const sentenceEnds=Array.from(overviewSource.matchAll(/[.!?](?:["')\]]+)?(?=\s|$)/g))
+        .map(match=>match.index+match[0].length)
+        .filter(end=>overviewSource.slice(0,end).trim().split(/\s+/).length<=240);
+      if(sentenceEnds.length)overview=overviewSource.slice(0,sentenceEnds[sentenceEnds.length-1]).trim()+'…';
+    }
     const sensitivity=r.climate_sensitivity_rating&&typeof r.climate_sensitivity_rating==='object'?r.climate_sensitivity_rating:{};
     const signal=sensitivity.label?`<p class="concise-priority-intro"><strong>Climate-FCV sensitivity:</strong> ${esc(sensitivity.label)}</p>`:'';
     const strengths=climateSummaryStrengths(r);

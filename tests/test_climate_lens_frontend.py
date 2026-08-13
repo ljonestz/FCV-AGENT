@@ -156,6 +156,58 @@ def test_climate_summary_initial_render_hydrates_priority_navigation():
     assert "if(supportsClimateVerifiedStage3View()&&stageThreePriorities&&stageThreePriorities.length)initStage3UI();" in source
 
 
+def test_climate_summary_caps_ranked_priorities_at_three():
+    source = INDEX.read_text(encoding="utf-8")
+    helper = _extract_js_function(source, "climateSummaryPriorityItems")
+    script = f"""
+{helper}
+const priorities = climateSummaryPriorityItems({{
+  priorities: [
+    {{rank:4, title:'Fourth'}},
+    {{rank:2, title:'Second'}},
+    {{rank:1, title:'First'}},
+    {{rank:3, title:'Third'}}
+  ]
+}});
+if (priorities.length !== 3) throw new Error('expected three priorities, got '+priorities.length);
+if (priorities.map(item => item.title).join('|') !== 'First|Second|Third') {{
+  throw new Error('priorities are not ranked correctly: '+priorities.map(item => item.title).join('|'));
+}}
+"""
+    result = subprocess.run(
+        ["node", "-e", script], capture_output=True, text=True, check=False
+    )
+    assert result.returncode == 0, result.stderr
+
+
+def test_climate_summary_truncates_overview_at_a_complete_sentence():
+    source = INDEX.read_text(encoding="utf-8")
+    helpers = "\n".join(
+        _extract_js_function(source, name)
+        for name in (
+            "climateSummaryStrengths",
+            "climateSummaryPriorityItems",
+            "renderClimateVerifiedSummary",
+        )
+    )
+    script = f"""
+const esc = value => String(value ?? '')
+  .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+  .replace(/\"/g,'&quot;').replace(/'/g,'&#039;');
+{helpers}
+const first = 'Context '.repeat(119) + 'first sentence ends here.';
+const second = 'Design '.repeat(109) + 'second sentence ends here.';
+const third = 'Unfinished-tail-marker '.repeat(40) + 'third sentence ends here.';
+const html = renderClimateVerifiedSummary({{executive_readout:first+' '+second+' '+third}});
+if (!html.includes('second sentence ends here.…')) throw new Error('overview did not end at the last complete sentence');
+if (html.includes('Unfinished-tail-marker')) throw new Error('overview included words beyond the sentence boundary');
+"""
+    result = subprocess.run(
+        ["node", "-e", script], capture_output=True, text=True, check=False
+    )
+    assert result.returncode == 0, result.stderr
+
+
 def test_climate_detailed_reader_keeps_rating_above_core_questions_and_plain_method_fold():
     source = INDEX.read_text(encoding="utf-8")
     renderer = _extract_js_function(source, "renderClimateVerifiedAssessment")
