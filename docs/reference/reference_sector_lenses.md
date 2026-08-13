@@ -74,6 +74,9 @@ treated as approved content until country-level substantive review and promotion
 Source URL uniqueness is validated within the selected country package. The same
 public source may legitimately appear under country-scoped source IDs in multiple
 packages; duplicate normalized URLs within one country remain invalid.
+When candidate evidence is used, live HTML, shared HTML, and DOCX readers show
+the concise safeguard `Candidate country evidence: preview; not approved.`
+without restoring removed technical diagnostics or raw evidence-status panels.
 
 ## Compatibility contract
 
@@ -93,7 +96,7 @@ The Flask and private FastAPI builds must keep these fields and delimiters align
 
 Raw literature and source notes are never injected at runtime.
 
-*Last updated: 2026-08-13 - multi-country candidate materialization and country-scoped source validation.*
+*Last updated: 2026-08-13 - multi-country materialization and visible candidate safeguards.*
 
 ## Climate verified-v2.1 compatibility surface (v9.25)
 

@@ -1209,7 +1209,8 @@ for (const expected of [
   'identifies 4 main operational priorities',
   'Method, limitations, and sources',
   'The uploaded concept note does not yet include final implementation protocols.',
-  'Sources &amp; further reading'
+  'Sources &amp; further reading',
+  'Candidate country evidence: preview; not approved.'
 ]) {{
   if (!html.includes(expected)) throw new Error('missing preserved reader detail: ' + expected + ' | ' + html);
 }}

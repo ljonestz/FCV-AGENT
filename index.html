@@ -4856,6 +4856,7 @@
     const relevantGuidanceHtml=renderClimateRelevantGuidance(r);
     const runtimeMode=String(r.runtime_mode||'quality').toLowerCase();
     const smokeHtml=runtimeMode==='smoke'?`<div class="finalized-pad-notice"><div class="fpn-body"><strong>Smoke test: validates workflow completion only; not a quality benchmark.</strong></div></div>`:'';
+    const previewHtml=String(r.evidence_status||'').toLowerCase()==='preview; not approved'?`<div class="finalized-pad-notice"><div class="fpn-body"><strong>Candidate country evidence: preview; not approved.</strong></div></div>`:'';
     const executive=esc(r.executive_readout||'The verified assessment did not return an executive readout.');
     const boldFirstSentence=p=>{const m=p.match(/^(.*?[.!?])(\s+)([\s\S]*)$/);return m?`<strong>${esc(m[1])}</strong>${esc(m[2]+m[3])}`:`<strong>${esc(p)}</strong>`;};
     const execHtml=(String(r.executive_readout||'').split(/\n\s*\n+/).map(p=>p.trim()).filter(Boolean).map(p=>`<p>${boldFirstSentence(p)}</p>`).join(''))||`<p>${executive}</p>`;
@@ -4972,7 +4973,7 @@
       (relevantGuidanceHtml?climateReportSection('Relevant WBG guidance for this project','climate-guidance',relevantGuidanceHtml):'')+
       (provenanceHtml?climateReportSection('How this analysis was produced','climate-methodology-section',provenanceHtml):'');
     const advisoryHtml=r.advisory_notice?`<p class="climate-advisory">${esc(r.advisory_notice)}</p>`:'';
-    return `<article class="climate-verified-assessment">${smokeHtml}${numberedSections}${advisoryHtml}</article>`;
+    return `<article class="climate-verified-assessment">${smokeHtml}${previewHtml}${numberedSections}${advisoryHtml}</article>`;
   }
 
   function renderOut(stage,result,isFollowOn){

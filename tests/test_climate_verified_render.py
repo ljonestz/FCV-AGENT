@@ -872,9 +872,9 @@ def test_html_uses_balanced_hierarchy_without_reader_clutter():
     assert "For this project, BFMUs can strengthen shared governance." in html
     assert "The analysis depends on the uploaded document&#x27;s detail." in html
     assert "Sources &amp; further reading" in html
+    assert "Candidate country evidence: preview; not approved." in html
     for removed in (
-        "Evidence status", "preview; not approved", "Technical annex",
-        "Evidence key", "Run diagnostics",
+        "Evidence status", "Technical annex", "Evidence key", "Run diagnostics",
     ):
         assert removed not in html
 
@@ -918,9 +918,9 @@ def test_docx_matches_balanced_reader_content_and_keeps_all_priorities():
     assert "https://www.worldbank.org/peace-dividends" in text
     assert "The analysis depends on the uploaded document's detail." in text
     assert "Sources & further reading" in text
+    assert "Candidate country evidence: preview; not approved." in text
     for removed in (
-        "Evidence status", "preview; not approved", "Technical annex",
-        "Evidence key", "Run diagnostics",
+        "Evidence status", "Technical annex", "Evidence key", "Run diagnostics",
     ):
         assert removed not in text
 
@@ -994,8 +994,10 @@ def test_docx_writer_accepts_an_in_memory_stream():
     assert returned is stream
     stream.seek(0)
     texts = [p.text for p in Document(stream).paragraphs]
-    # The overview block now leads; the Executive readout heading follows below it.
-    assert texts[0].startswith(SENSITIVITY_RATING_QUESTION)
+    # The candidate safeguard leads; the overview block and Executive readout
+    # follow below it.
+    assert texts[0] == "Candidate country evidence: preview; not approved."
+    assert texts[1].startswith(SENSITIVITY_RATING_QUESTION)
     assert HEADINGS[0] in texts
 
 

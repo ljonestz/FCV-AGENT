@@ -133,6 +133,9 @@ SMOKE_RUNTIME_WARNING = (
     "Smoke test: validates workflow completion only; "
     "not a quality benchmark."
 )
+CANDIDATE_PREVIEW_WARNING = (
+    "Candidate country evidence: preview; not approved."
+)
 ADVISORY_NOTICE = (
     "This automated screening supports task-team judgment and does not "
     "constitute an institutional adequacy or compliance decision."
@@ -918,6 +921,12 @@ def render_reader_html(model: dict[str, object]) -> str:
             + html.escape(SMOKE_RUNTIME_WARNING)
             + "</p>"
         )
+    if _text(model.get("evidence_status")) == "preview; not approved":
+        parts.append(
+            '<p class="climate-preview-warning">'
+            + html.escape(CANDIDATE_PREVIEW_WARNING)
+            + "</p>"
+        )
     # Overview at the very top: the headline sensitivity rating card carries the
     # 3-4 sentence plain-language overall summary, so the reader gets the whole
     # takeaway up front. The fuller Executive readout follows as detail below.
@@ -1204,6 +1213,10 @@ def write_reader_docx(model: dict[str, object], path: str | Path) -> Path:
     document = Document()
     if _text(model.get("runtime_mode")) == "smoke":
         paragraph = document.add_paragraph(SMOKE_RUNTIME_WARNING)
+        if paragraph.runs:
+            paragraph.runs[0].bold = True
+    if _text(model.get("evidence_status")) == "preview; not approved":
+        paragraph = document.add_paragraph(CANDIDATE_PREVIEW_WARNING)
         if paragraph.runs:
             paragraph.runs[0].bold = True
     # Overview at the very top: the summary + rating come first, then the fuller
