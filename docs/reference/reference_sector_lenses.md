@@ -52,8 +52,10 @@ The Render build uses a bounded evidence-packet adapter between Sonnet web searc
 
 ## Climate-FCV country evidence bank
 
-`sector_lenses.climate_bank` loads schema `1.0.0` from the pinned public submodule
-or `CLIMATE_COUNTRY_BANK_PATH`. Materialization is approved-only, checksum-valid,
+`sector_lenses.climate_bank` loads the approved schema `1.0.0` release from the
+pinned public submodule or `CLIMATE_COUNTRY_BANK_PATH`. An explicit
+`CLIMATE_COUNTRY_BANK_PREVIEW=reviewed-candidate` override may instead load the
+schema `1.1.0` candidate release. Materialization is checksum-valid,
 review-window bounded, and non-throwing. Selection targets 8 and caps 12 items,
 admits at most two physical-baseline records, favors source diversity, and
 emphasizes qualitative vulnerability/capacity, affected groups, institutions,
@@ -65,7 +67,10 @@ research-only | thematic-only`. Conflicts remain visible provenance. Only
 server-rematerialized IDs matching `AAA-SRC-999` enter diagnostic source
 normalization. South Sudan is approved in production content version
 `2026.07.south-sudan-pilot`; the runtime projection selects at most 12 records
-from its 19 approved evidence records and seven approved pathways.
+from its 19 approved evidence records and seven approved pathways. The candidate
+preview release `2026.08.multi-country-preview` contains 24 reviewed country
+packages, 291 sources, 565 evidence records, and 178 pathways. It must not be
+treated as approved content until country-level substantive review and promotion.
 
 ## Compatibility contract
 
@@ -85,7 +90,7 @@ The Flask and private FastAPI builds must keep these fields and delimiters align
 
 Raw literature and source notes are never injected at runtime.
 
-*Last updated: 2026-07-31 - approved South Sudan runtime release, reader-facing climate polish, and narrow evidence-gate retry.*
+*Last updated: 2026-08-13 - 24-country reviewed candidate preview release and explicit preview safeguards.*
 
 ## Climate verified-v2.1 compatibility surface (v9.25)
 

@@ -39,6 +39,18 @@ promoted automatically. Missing, stale, incompatible, unapproved, unsupported
 multi-country, or oversized content degrades safely to live research or thematic
 sources; it does not terminate the Climate assessment.
 
+The companion bank also contains a reviewed, non-production candidate release at
+`data/climate-fcv-country-bank/releases/candidates/2026.08/runtime.json`. It
+contains 24 country packages, including the six previously available candidates
+and the 18-country expansion, but it is not loaded by default. To run an explicit
+candidate preview, set both variables below; the output remains labelled
+`preview; not approved`:
+
+```text
+CLIMATE_COUNTRY_BANK_PATH=data/climate-fcv-country-bank/releases/candidates/2026.08/runtime.json
+CLIMATE_COUNTRY_BANK_PREVIEW=reviewed-candidate
+```
+
 For local testing or a deployment artifact outside the submodule, set
 `CLIMATE_COUNTRY_BANK_PATH` to either the companion repository root or a specific
 `runtime.json`. The default remains the pinned public submodule. Render must
@@ -49,9 +61,10 @@ Selection is deterministic and project-specific. It targets 8 and caps 12 bank
 items, with a 6,000-character bank boundary and 12,000-character combined
 bank-plus-live boundary. The provenance states are `bank+research`, `bank-only`,
 `research-only`, and `thematic-only`; live enrichment is non-fatal. The pinned
-South Sudan pilot is an approved production release with a review due date of
-2027-07-31. The bank stores structured summaries and citations only: it does not
-redistribute raw PDFs or cite its own generated text.
+South Sudan pilot remains the approved production release with a review due date
+of 2027-07-31; the 24-country release is a reviewable preview only. The bank
+stores structured summaries and citations only: it does not redistribute raw
+PDFs or cite its own generated text.
 
 ## Prerequisites
 
