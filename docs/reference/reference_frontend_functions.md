@@ -30,6 +30,14 @@
 - `renderStage1(text, hasPackage)` — display Part A and Part B with styled section badges
 
 ### Stage 3 priorities + Go Deeper
+
+Verified Climate-FCV design reviews use a separate reader-backed Summary gate:
+`supportsClimateVerifiedStage3View()` enables the existing accessible tabs for
+server-validated v2.1 reader state. `climateSummaryStrengths()` and
+`renderClimateVerifiedSummary()` project up to six evidence-backed existing
+responses, with clearly positive judgment fallbacks, into variable Summary
+strength cards and use a compact text signal rather than the Detailed reader's
+segmented rating bar. `renderClimateVerifiedAssessment()` remains Detailed.
 - `initStage3UI()` — parse priorities from JSON, build stepper, show Priority 1
 - `supportsConciseStage3View()` — enables the Summary/Detailed view control only for general core Stage 3; active lens and verified Climate-FCV reader paths retain their specialist readers.
 - `stage3ViewToggleHtml()` / `setStage3View(view, preservePriority=true)` / `handleStage3ViewKeydown(event)` — render and operate the accessible Summary and Detailed analysis tabs. A valid core `concise_readout` opens Summary by default; without it, Summary is disabled and Detailed analysis is shown with an availability notice.
@@ -217,9 +225,20 @@ For eligible core Stage 3 design reviews, both modes open the additive concise S
 
 ---
 
-*Last updated: 2026-07-31 - Climate-FCV reader polish and priority-stepper navigation state.*
+*Last updated: 2026-08-13 - Climate-FCV concise Stage 3 Summary/Detailed tabs and dynamic strengths.*
 
 ## Verified Climate-FCV reader (v9.24)
+
+Verified v2.1 design reviews now use the same accessible Summary/Detailed tabs as
+the core Stage 3 presentation. `supportsClimateVerifiedStage3View()` gates the
+tabs to server-validated reader state. `renderClimateVerifiedSummary()` projects
+a short executive excerpt, a compact text sensitivity signal, a variable set of
+strength cards from safe `existing_responses` data with clearly positive judgment
+fallbacks, and the ranked reader priorities. It does not render the segmented
+rating bar or make a follow-up request. `renderClimateVerifiedAssessment()` remains
+the Detailed view and continues to render the full executive readout, four
+judgments, climate sensitivity scale, core questions, ranked priorities,
+review-readiness flags, technical annex, and advisory notice.
 
 `runExpress()` stores additive `climate_assessment` and canonical
 `climate_reader` SSE payloads in `climateVerifiedAssessment` and

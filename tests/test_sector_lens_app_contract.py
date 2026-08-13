@@ -2496,6 +2496,62 @@ def test_verified_climate_reader_drives_ui_followon_and_persistence():
     assert "climateVerifiedReader: climateVerifiedReader" in html
 
 
+def test_verified_climate_summary_uses_dynamic_evidence_backed_strengths():
+    html = (Path(app_module.__file__).parent / "index.html").read_text(
+        encoding="utf-8"
+    )
+    strengths_start = html.index("function climateSummaryStrengths(reader)")
+    strengths_end = html.index("\n  function ", strengths_start + 20)
+    strengths = html[strengths_start:strengths_end]
+    summary_start = html.index("function renderClimateVerifiedSummary(reader)")
+    summary_end = html.index("\n  function ", summary_start + 20)
+    summary = html[summary_start:summary_end]
+
+    assert "r.existing_responses" in strengths
+    assert "r.judgments" in strengths
+    assert "judgment.value" in strengths
+    assert ".map(" in strengths + summary
+    assert "climate-strength-card" in summary
+    assert "strengths.length>=6" in strengths
+
+
+def test_verified_climate_summary_omits_rating_bar_but_detailed_preserves_it():
+    html = (Path(app_module.__file__).parent / "index.html").read_text(
+        encoding="utf-8"
+    )
+    summary_start = html.index("function renderClimateVerifiedSummary(reader)")
+    summary = html[summary_start:html.index("\n  function ", summary_start + 20)]
+    detailed_start = html.index("function renderClimateVerifiedAssessment(reader)")
+    detailed = html[detailed_start:html.index("\n  function ", detailed_start + 20)]
+
+    assert "climate-sens-rating" not in summary
+    assert "display:flex;gap:3px" not in summary
+    assert "climate-sens-rating" in detailed
+    assert "display:flex;gap:3px" in detailed
+
+
+def test_verified_climate_route_defaults_to_summary_and_detailed_keeps_canonical_reader():
+    html = (Path(app_module.__file__).parent / "index.html").read_text(
+        encoding="utf-8"
+    )
+    assert html.count("supportsClimateVerifiedStage3View()") >= 3
+    assert "if(supportsClimateVerifiedStage3View())stage3View='summary';" in html
+    assert "stage3DetailedHtml = _outBodyContent" in html
+    assert "renderClimateVerifiedAssessment(climateVerifiedReader)" in html
+    assert "stage3ViewToggleHtml()" in html
+
+
+def test_verified_climate_summary_does_not_issue_an_extra_model_request():
+    html = (Path(app_module.__file__).parent / "index.html").read_text(
+        encoding="utf-8"
+    )
+    start = html.index("function renderClimateVerifiedSummary(reader)")
+    summary = html[start:html.index("\n  function ", start + 20)]
+
+    for forbidden in ("fetch(", "EventSource", "/api/", "_stream_stage", "run_verified"):
+        assert forbidden not in summary
+
+
 def test_verified_climate_express_timeout_covers_full_automatic_review():
     html = (Path(app_module.__file__).parent / "index.html").read_text(encoding="utf-8")
     assert "2:15*60*1000" in html

@@ -159,6 +159,36 @@ def test_judgment_evidence_ids_render_from_tuple_and_list():
     assert by_dimension["sensitivity"]["evidence_ids"] == ["PF-002"]
 
 
+def test_reader_exposes_bounded_existing_responses_with_safe_display_fields():
+    assessment = _assessment()
+    assessment["analysis"] = {
+        "existing_responses": [
+            {
+                "response_id": f"ER-{index:03d}",
+                "project_fact_ids": ["PF-001"],
+                "pathway_ids": ["PW-001"],
+                "description": f"Documented response {index}.",
+                "limitation": f"Remaining limitation {index}.",
+                "internal_review_note": "Must not reach the reader.",
+            }
+            for index in range(1, 14)
+        ]
+    }
+
+    model = build_reader_model(assessment)
+
+    assert model["existing_responses"] == [
+        {
+            "response_id": f"ER-{index:03d}",
+            "project_fact_ids": ["PF-001"],
+            "pathway_ids": ["PW-001"],
+            "description": f"Documented response {index}.",
+            "limitation": f"Remaining limitation {index}.",
+        }
+        for index in range(1, 13)
+    ]
+
+
 def test_priority_narrative_renders_in_reader_html_and_docx():
     assessment = _assessment()
     assessment["priorities"][0]["narrative"] = (

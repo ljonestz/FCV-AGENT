@@ -363,7 +363,8 @@ def test_frontend_defaults_new_stage3_result_to_summary():
 def test_frontend_scopes_concise_ui_to_normal_core_route():
     source = (ROOT / "index.html").read_text(encoding="utf-8")
     assert "const supportsConciseStage3 = isLast && supportsConciseStage3View()" in source
-    assert "supportsConciseStage3 ? stage3ViewToggleHtml() : ''" in source
+    assert "const supportsStage3Tabs = supportsConciseStage3 || supportsClimateStage3" in source
+    assert "supportsStage3Tabs ? stage3ViewToggleHtml() : ''" in source
 
 
 def test_stage3_renderer_defines_climate_state_for_its_full_template():
@@ -420,6 +421,27 @@ def test_normal_stage3_sidebar_is_sticky_on_desktop_and_stacks_on_narrow_screens
     assert "@media (max-width:700px){.stage3-content-layout{grid-template-columns:1fr" in source
 
 
+def test_concise_lifecycle_uses_an_explicit_value_column_wrapper():
+    source = (ROOT / "index.html").read_text(encoding="utf-8")
+    priority = source[
+        source.index("function showConcisePriority(idx)"):
+        source.index("function handleStage3ViewKeydown(")
+    ]
+
+    assert '<aside class="concise-cycle">' in priority
+    assert '<div class="concise-cycle-items">' in priority
+    assert priority.index('<h4>Where this fits in the project cycle</h4>') < priority.index(
+        '<div class="concise-cycle-items">'
+    )
+    assert ".concise-cycle-items{grid-column:2;" in source
+
+
+def test_concise_lifecycle_value_column_collapses_on_narrow_screens():
+    source = (ROOT / "index.html").read_text(encoding="utf-8")
+
+    assert "@media(max-width:760px){.stage3-viewbar{align-items:flex-start;flex-direction:column}.concise-strengths,.concise-cycle{grid-template-columns:1fr}.concise-cycle-items{grid-column:1}" in source
+
+
 def test_frontend_initialization_uses_the_core_route_capability_gate():
     source = (ROOT / "index.html").read_text(encoding="utf-8")
     assert "function supportsConciseStage3View()" in source
@@ -445,6 +467,51 @@ def test_frontend_concise_capability_gate_excludes_implementation_and_all_lenses
         source.index("// Annotate glossary terms", source.index("function renderOut("))
     ]
     assert "const supportsConciseStage3 = isLast && supportsConciseStage3View();" in render
+
+
+def test_frontend_has_separate_verified_climate_stage3_gate_and_preserves_core_gate():
+    source = (ROOT / "index.html").read_text(encoding="utf-8")
+
+    assert "function supportsConciseStage3View()" in source
+    core_gate = source[
+        source.index("function supportsConciseStage3View()"):
+        source.index("function conciseUnavailableHtml()")
+    ]
+    assert "reviewMode==='design'" in core_gate
+    assert "activeLenses.length===0" in core_gate
+
+    assert "function supportsClimateVerifiedStage3View()" in source
+    climate_gate = source[
+        source.index("function supportsClimateVerifiedStage3View()"):
+        source.index("function conciseUnavailableHtml()")
+    ]
+    assert "climateVerifiedAssessment.schema_version==='climate-verified-v2.1'" in climate_gate
+    assert "climateVerifiedReader" in climate_gate
+
+
+def test_frontend_climate_verified_summary_has_dedicated_renderer_and_view_path():
+    source = (ROOT / "index.html").read_text(encoding="utf-8")
+
+    assert "function renderClimateVerifiedSummary(reader)" in source
+    summary_renderer = source[
+        source.index("function renderClimateVerifiedSummary(reader)"):
+        source.index("\n  function ", source.index("function renderClimateVerifiedSummary(reader)") + 20)
+    ]
+    assert "climateVerifiedReader" in summary_renderer or "reader" in summary_renderer
+
+    switcher = source[
+        source.index("function setStage3View("):
+        source.index("function showPriority(")
+    ]
+    assert "supportsClimateVerifiedStage3View()" in switcher
+    assert "renderClimateVerifiedSummary(climateVerifiedReader)" in switcher
+
+    render = source[
+        source.index("function renderOut("):
+        source.index("// Annotate glossary terms", source.index("function renderOut("))
+    ]
+    assert "renderClimateVerifiedAssessment(climateVerifiedReader)" in render
+    assert "renderClimateVerifiedSummary(climateVerifiedReader)" in render
 
 
 def test_frontend_preserves_legacy_notice_and_watch_list_when_switching_views():
