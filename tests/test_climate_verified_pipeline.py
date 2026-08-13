@@ -248,6 +248,55 @@ def test_four_calls_run_when_semantic_review_is_not_required():
     assert result["executive_readout"].startswith("Verified project facts")
 
 
+def test_guidance_backed_section_variants_do_not_suppress_all_candidates():
+    responses = _responses()
+    template = responses[3]["recommendation_candidates"][0]
+    variants = (
+        (
+            "Project Description and Components",
+            "GUIDE-PCN-DESIGN",
+        ),
+        (
+            "Project Design Narrative",
+            "GUIDE-PCN-DESIGN",
+        ),
+        (
+            "Implementation and Institutional Arrangements",
+            "GUIDE-FCV-CONTINUITY",
+        ),
+        (
+            "Environmental and Social Risk Management",
+            "GUIDE-ES-INSTRUMENT-ROUTING",
+        ),
+    )
+    candidates = []
+    for index, (section, guidance_id) in enumerate(variants, start=1):
+        candidate = deepcopy(template)
+        candidate["recommendation_id"] = f"REC-{index:03d}"
+        candidate["title"] = f"Bounded recommendation {index}"
+        candidate["current_document_drafting"]["target_section"] = section
+        candidate["current_document_drafting"]["guidance_ids"] = [guidance_id]
+        candidates.append(candidate)
+    responses[3]["recommendation_candidates"] = candidates
+
+    result = run_verified_climate_pipeline(
+        **_arguments(),
+        clients=PipelineClients(
+            FakeClient(responses, []),
+            _pass_review_client(),
+        ),
+    )
+
+    diagnostics = result["recommendation_diagnostics"]
+    assert diagnostics["raw_candidate_count"] == 4
+    assert diagnostics["valid_candidate_count"] == 4
+    assert diagnostics["final_priority_count"] == 4
+    assert diagnostics["reason_codes"] == []
+    assert "DRAFTING_CURRENT_SECTION_CANONICALIZED" in (
+        result["manifest"]["repair_actions"]
+    )
+
+
 def test_unresolved_routing_triggers_one_source_first_review():
     assessment = FakeClient(_responses(), [])
     reviewer = FakeClient(

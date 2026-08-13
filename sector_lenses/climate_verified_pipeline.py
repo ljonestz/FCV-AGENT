@@ -1109,6 +1109,10 @@ def run_verified_climate_pipeline(
                 ) for item in facts
             },
             project_fact_types={item.claim_id: item.claim_type for item in facts},
+            guidance_targets={
+                item.guidance_id: item.permitted_targets
+                for item in guidance
+            },
         )
         candidate, actor_repairs = normalize_unverified_completion_actor(
             candidate,

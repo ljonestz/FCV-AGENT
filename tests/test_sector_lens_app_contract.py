@@ -2537,7 +2537,7 @@ def test_verified_climate_docx_route_uses_canonical_reader():
     document = Document(io.BytesIO(response.data))
     text = "\n".join(item.text for item in document.paragraphs)
     assert "Core climate-FCV questions" in text
-    assert "preview; not approved" not in text
+    assert "Candidate country evidence: preview; not approved." in text
     assert "Smoke test: validates workflow completion only" in text
 
 

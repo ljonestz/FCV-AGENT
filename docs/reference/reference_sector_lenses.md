@@ -120,6 +120,12 @@ model self-attestation; suffixes of structured references such as PF-055 and RG-
 and numbered-list markers such as (1) are not treated as numeric claims.
 Unsourced dates, thresholds, and quantities
 remain blocking.
+Current-document drafting destinations remain bounded by the selected
+operational-guidance registry. Before validation, a section-label variant may be
+canonicalized only when its cited guidance entry supplies a unique permitted
+target for the current document and the labels share a meaningful token. The
+repair is recorded as `DRAFTING_CURRENT_SECTION_CANONICALIZED`; unknown guidance,
+unrelated section names, and ambiguous matches continue to fail closed.
 Deterministic admission failures distinguish total score, materiality, missing or
 failed named gates, and the three-priority cap. No candidate or project prose is
 included. The canonical reader copies the safe summary into its technical annex.

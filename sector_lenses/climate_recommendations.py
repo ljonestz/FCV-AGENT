@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 
 from sector_lenses.climate_verified_contracts import ValidationIssue
 
@@ -77,6 +77,9 @@ class DraftingValidationContext:
     standard_targets: frozenset[tuple[str, str]]
     project_fact_text: dict[str, str]
     project_fact_types: dict[str, str]
+    guidance_targets: dict[
+        str, tuple[tuple[str, str], ...]
+    ] = field(default_factory=dict)
 
 
 def _normalized_target(block: DraftingBlock) -> tuple[str, str]:
@@ -88,6 +91,54 @@ def _normalized_target(block: DraftingBlock) -> tuple[str, str]:
 
 def _draft_tokens(block: DraftingBlock) -> set[str]:
     return set(re.findall(r"\b[a-z]{3,}\b", block.text.casefold()))
+
+
+def _guidance_backed_current_target(
+    block: DraftingBlock,
+    context: DraftingValidationContext,
+) -> tuple[str, str] | None:
+    """Resolve a safe registered target for a section-label variant."""
+
+    current_document = " ".join(context.current_document.casefold().split())
+    current_target = _normalized_target(block)
+    if current_target in context.standard_targets:
+        return None
+
+    cited_guidance = [
+        guidance_id
+        for guidance_id in block.guidance_ids
+        if guidance_id in context.guidance_targets
+    ]
+    permitted: list[tuple[str, str]] = []
+    for guidance_id in cited_guidance:
+        for target in context.guidance_targets[guidance_id]:
+            normalized = (
+                " ".join(target[0].casefold().split()),
+                " ".join(target[1].casefold().split()),
+            )
+            if (
+                normalized[0] == current_document
+                and normalized in context.standard_targets
+                and normalized not in permitted
+            ):
+                permitted.append(normalized)
+    if not permitted:
+        return None
+
+    requested_tokens = set(re.findall(r"\b[a-z]{3,}\b", current_target[1]))
+    scored = [
+        (
+            len(requested_tokens & set(re.findall(r"\b[a-z]{3,}\b", section))),
+            target,
+        )
+        for target in permitted
+        for section in (target[1],)
+    ]
+    best_score = max(score for score, _target in scored)
+    best_targets = [target for score, target in scored if score == best_score]
+    if best_score >= 1 and len(best_targets) == 1:
+        return best_targets[0]
+    return None
 
 
 def normalize_drafting_blocks(
@@ -107,6 +158,19 @@ def normalize_drafting_blocks(
             current = replace(current, target_document=current_document)
             candidate = replace(candidate, current_document_drafting=current)
             repairs.append("DRAFTING_CURRENT_TARGET_CANONICALIZED")
+    if current is not None and drafting_context:
+        canonical_target = _guidance_backed_current_target(
+            current,
+            drafting_context,
+        )
+        if canonical_target is not None:
+            current = replace(
+                current,
+                target_document=current_document or current.target_document,
+                target_section=canonical_target[1],
+            )
+            candidate = replace(candidate, current_document_drafting=current)
+            repairs.append("DRAFTING_CURRENT_SECTION_CANONICALIZED")
     if current is None or optional is None:
         return candidate, tuple(repairs)
     current_tokens = _draft_tokens(current)

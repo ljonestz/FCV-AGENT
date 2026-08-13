@@ -138,6 +138,103 @@ def test_drafting_normalization_canonicalizes_current_target_and_drops_unverifie
     assert normalized.operational_instrument_drafting is None
     assert set(repairs) == {"DRAFTING_CURRENT_TARGET_CANONICALIZED", "DRAFTING_OPTIONAL_UNVERIFIED_DROPPED"}
 
+
+def test_drafting_normalization_canonicalizes_guidance_backed_section() -> None:
+    context = replace(
+        _context(),
+        guidance_targets={
+            "GUIDE-PCN-DESIGN": (
+                ("pcn", "project description"),
+                ("pcn", "implementation arrangements"),
+            ),
+        },
+    )
+    candidate = replace(
+        _candidate(),
+        current_document_drafting=_draft(
+            section="Project Description and Components",
+        ),
+    )
+
+    normalized, repairs = normalize_drafting_blocks(
+        candidate,
+        current_document="PCN",
+        drafting_context=context,
+    )
+
+    assert normalized.current_document_drafting.target_section == (
+        "project description"
+    )
+    assert "DRAFTING_CURRENT_SECTION_CANONICALIZED" in repairs
+    assert validate_recommendation(
+        normalized,
+        KNOWN_IDS,
+        drafting_context=context,
+    ) == ()
+
+
+def test_unknown_guidance_does_not_authorize_section_repair() -> None:
+    context = replace(
+        _context(),
+        guidance_targets={
+            "GUIDE-PCN-DESIGN": (("pcn", "project description"),),
+        },
+    )
+    candidate = replace(
+        _candidate(),
+        current_document_drafting=_draft(
+            section="Project Description and Components",
+            guidance_id="GUIDE-INVENTED",
+        ),
+    )
+
+    normalized, repairs = normalize_drafting_blocks(
+        candidate,
+        current_document="PCN",
+        drafting_context=context,
+    )
+
+    assert normalized.current_document_drafting.target_section == (
+        "Project Description and Components"
+    )
+    assert "DRAFTING_CURRENT_SECTION_CANONICALIZED" not in repairs
+    codes = {
+        issue.code
+        for issue in validate_recommendation(
+            normalized,
+            KNOWN_IDS,
+            drafting_context=context,
+        )
+    }
+    assert {"DRAFTING_CURRENT_TARGET_INVALID", "DRAFTING_GUIDANCE_INVALID"} <= codes
+
+
+def test_unrelated_section_is_not_repaired_by_known_guidance() -> None:
+    context = replace(
+        _context(),
+        guidance_targets={
+            "GUIDE-PCN-DESIGN": (
+                ("pcn", "project description"),
+                ("pcn", "implementation arrangements"),
+            ),
+        },
+    )
+    candidate = replace(
+        _candidate(),
+        current_document_drafting=_draft(section="Procurement Strategy"),
+    )
+
+    normalized, repairs = normalize_drafting_blocks(
+        candidate,
+        current_document="PCN",
+        drafting_context=context,
+    )
+
+    assert normalized.current_document_drafting.target_section == (
+        "Procurement Strategy"
+    )
+    assert "DRAFTING_CURRENT_SECTION_CANONICALIZED" not in repairs
+
 def test_unknown_guidance_reference_blocks_drafting() -> None:
     candidate = replace(
         _candidate(),
