@@ -108,6 +108,60 @@ for (const [state,copy] of Object.entries(expectedEvidence)) {{
     assert result.returncode == 0, result.stderr
 
 
+def test_climate_summary_caps_dynamic_strengths_and_uses_longer_overview():
+    source = INDEX.read_text(encoding="utf-8")
+    helpers = "\n".join(
+        _extract_js_function(source, name)
+        for name in (
+            "climateSummaryStrengths",
+            "renderClimateVerifiedSummary",
+        )
+    )
+    script = f"""
+const esc = value => String(value ?? '')
+  .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+  .replace(/\"/g,'&quot;').replace(/'/g,'&#039;');
+{helpers}
+const reader = {{
+  executive_readout: 'First overview paragraph with the project context and the main climate-FCV interaction.\\n\\nSecond overview paragraph with the design choices and remaining implementation implications.',
+  existing_responses: [
+    {{description:'Climate resilience is embedded in infrastructure standards.'}},
+    {{description:'Resource governance is sequenced before investment.'}},
+    {{description:'Inclusion safeguards are concrete and operational.'}},
+    {{description:'A fourth positive design feature should not appear in the compact summary.'}}
+  ],
+  climate_sensitivity_rating: {{label:'Strong'}}
+}};
+const strengths = climateSummaryStrengths(reader);
+if (strengths.length !== 3) throw new Error('expected three strengths, got '+strengths.length);
+const html = renderClimateVerifiedSummary(reader);
+if (html.includes('Climate-FCV design readout')) throw new Error('summary contains redundant climate title');
+if (!html.includes('Second overview paragraph')) throw new Error('summary omitted the longer overview');
+if (html.includes('A fourth positive design feature')) throw new Error('summary exceeded the three-tile cap');
+"""
+    result = subprocess.run(
+        ["node", "-e", script], capture_output=True, text=True, check=False
+    )
+    assert result.returncode == 0, result.stderr
+
+
+def test_climate_summary_initial_render_hydrates_priority_navigation():
+    source = INDEX.read_text(encoding="utf-8")
+
+    assert "if(showSummary){renderPrioritiesIntro();renderPriorityStepper();showPriority(preservePriority?currentPriority:0);}" in source
+    assert "if(supportsClimateVerifiedStage3View())stageThreePriorities=climateSummaryPriorityItems(climateVerifiedReader);" in source
+    assert "if(supportsClimateVerifiedStage3View()&&stageThreePriorities&&stageThreePriorities.length)initStage3UI();" in source
+
+
+def test_climate_detailed_reader_keeps_rating_above_core_questions_and_plain_method_fold():
+    source = INDEX.read_text(encoding="utf-8")
+    renderer = _extract_js_function(source, "renderClimateVerifiedAssessment")
+
+    assert renderer.index("${ratingHtml}") < renderer.index("climateReportSection('Core climate-FCV questions'")
+    assert "Method, limitations, and sources" in renderer
+    assert "technical_annex" not in renderer
+
+
 def test_climate_stage3_overview_explains_why_strengthening_is_needed():
     source = INDEX.read_text(encoding="utf-8")
     helpers = "\n".join(

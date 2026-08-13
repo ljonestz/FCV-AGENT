@@ -253,6 +253,39 @@ def test_build_reader_model_keeps_up_to_five_priorities():
     ]
 
 
+def test_build_reader_model_exposes_safe_existing_responses_for_summary_tiles():
+    assessment = {
+        "executive_readout": "Overview.",
+        "judgments": {},
+        "analysis": {
+            "existing_responses": [
+                {
+                    "response_id": f"RESP-{index:02d}",
+                    "project_fact_ids": [f"PF-{index:02d}"],
+                    "pathway_ids": [f"PATH-{index:02d}"],
+                    "description": f"Existing response {index}.",
+                    "limitation": "A bounded limitation.",
+                    "internal_only": "must not be exposed",
+                }
+                for index in range(1, 15)
+            ]
+        },
+        "priorities": [],
+    }
+
+    model = build_reader_model(assessment)
+
+    assert len(model["existing_responses"]) == 12
+    assert model["existing_responses"][0] == {
+        "response_id": "RESP-01",
+        "project_fact_ids": ["PF-01"],
+        "pathway_ids": ["PATH-01"],
+        "description": "Existing response 1.",
+        "limitation": "A bounded limitation.",
+    }
+    assert all("internal_only" not in item for item in model["existing_responses"])
+
+
 def test_rating_scale_renders_in_overview_before_core_questions():
     assessment = {
         "executive_readout": "Alpha sentence. " * 60,
