@@ -3846,6 +3846,7 @@
               if(p.fcv_rating)fcvRating=p.fcv_rating;
               if(p.fcv_responsiveness_rating)fcvResponsivenessRating=p.fcv_responsiveness_rating;
               if(p.priorities)stageThreePriorities=p.priorities;
+              if(supportsClimateVerifiedStage3View())stageThreePriorities=climateSummaryPriorityItems(climateVerifiedReader);
               stageConciseReadout=p.concise_readout||null;
               stage3View=supportsConciseStage3View() && stageConciseReadout ? 'summary' : 'detailed';
               if(supportsClimateVerifiedStage3View())stage3View='summary';
@@ -6040,6 +6041,7 @@ ${body}
 
   function updateSidebar(){
     const n = stageThreePriorities.length;
+    const climateSummary=supportsClimateVerifiedStage3View()&&stage3View==='summary';
 
     if(isClimateLensActive()){
       // Single Climate-FCV integration gauge — prefer the 6-tier rating (redesign),
@@ -6129,7 +6131,7 @@ ${body}
     currentPriority = 0;
     renderPrioritiesIntro();
     renderPriorityStepper();
-    if(supportsConciseStage3View()) setStage3View(stage3View, false);
+    if(supportsConciseStage3View()||supportsClimateVerifiedStage3View()) setStage3View(stage3View, false);
     else { stage3View='detailed'; showPriority(0); }
     updateSidebar();
     // Render Horizon Considerations panel if available
@@ -6265,8 +6267,11 @@ ${body}
     const _linkNotice = (isClimateLensActive() && climatePriorityUnlinked > 0)
       ? `<div class="climate-partial-notice">Climate provenance could not be validated for ${climatePriorityUnlinked} of ${climatePriorityTotal} priorities. Those recommendations are shown but not tagged to a specific climate-FCV pathway.</div>`
       : '';
+    const lead=climateSummary
+      ?`Based on the verified Climate-FCV assessment, <strong>${n} priority ${n === 1 ? 'action has' : 'actions have'} been identified</strong> for the project team to address at the appropriate preparation stage:`
+      :`Based on a three-stage assessment of the project documents, <strong>${n} priority ${n === 1 ? 'action has' : 'actions have'} been identified</strong> to strengthen FCV sensitivity and responsiveness in the design and delivery of this project:`;
     el.innerHTML = _linkNotice + `<div class="priorities-section-hdr">Priority Actions for the Task Team</div><div class="priorities-intro ani">
-      <p class="pi-lead">Based on a three-stage assessment of the project documents, <strong>${n} priority ${n === 1 ? 'action has' : 'actions have'} been identified</strong> to strengthen FCV sensitivity and responsiveness in the design and delivery of this project:</p>
+      <p class="pi-lead">${lead}</p>
       <div class="pi-list">${listItems}</div>
     </div>
     <div class="priority-navigation-callout" role="note">
@@ -6339,6 +6344,15 @@ ${body}
     return strengths;
   }
 
+  function climateSummaryPriorityItems(reader){
+    const r=reader&&typeof reader==='object'?reader:{};
+    return (Array.isArray(r.priorities)?r.priorities:[]).slice().sort((a,b)=>(Number(a.rank)||999)-(Number(b.rank)||999)).slice(0,3).map((priority,index)=>{
+      const draft=priority.current_document_drafting&&typeof priority.current_document_drafting==='object'?priority.current_document_drafting:{};
+      const target=[draft.target_document,draft.target_section].filter(Boolean).join(' - ');
+      return {...priority,rank:Number(priority.rank)||index+1,title:String(priority.title||'Untitled action'),risk_level:'',the_gap:String(priority.limitation||''),concise:{title:String(priority.title||'Untitled action'),why:String(priority.narrative||priority.decision||priority.minimum_action||''),how:[priority.minimum_action,priority.enhanced_action,priority.completion_evidence].filter(Boolean).slice(0,4),suggested_wording:{document_element:target,text:String(draft.text||'')},project_cycle:{primary_label:'At design stage',primary_text:String(priority.completion_evidence||priority.minimum_action||''),secondary_label:'Before appraisal',secondary_text:String(priority.limitation||'')}}};
+    });
+  }
+
   function renderClimateVerifiedSummary(reader){
     const r=reader&&typeof reader==='object'?reader:{};
     const executive=String(r.executive_readout||'The verified assessment did not return an executive readout.').trim();
@@ -6351,9 +6365,9 @@ ${body}
     const strengthsHtml=strengths.length
       ?strengths.map(strength=>`<div class="concise-strength climate-strength-card"><strong>${esc(strength.title)}</strong>${esc(strength.text)}</div>`).join('')
       :'<p class="concise-priority-intro">No distinct strengths were evidenced in the verified reader for this run.</p>';
-    const priorities=(Array.isArray(r.priorities)?r.priorities:[]).slice().sort((a,b)=>(Number(a.rank)||999)-(Number(b.rank)||999)).slice(0,3);
+    const priorities=climateSummaryPriorityItems(r);
     const prioritiesHtml=priorities.length
-      ?priorities.map(priority=>`<section class="climate-priority-card"><div class="pc-top"><span class="pc-rank">${esc(priority.rank||'')}</span><h3 class="pc-title">${esc(priority.title||'Untitled action')}</h3></div>${priority.decision?`<p>${esc(priority.decision)}</p>`:priority.minimum_action?`<p>${esc(priority.minimum_action)}</p>`:''}</section>`).join('')
+      ?'<div id="priorities-intro"></div>'
       :'<p class="concise-priority-intro">No ranked operational priorities were returned for this run.</p>';
     return `<div class="concise-readout climate-verified-summary"><div class="concise-read-time">Five-minute readout</div><div class="concise-section-label">Overall assessment</div><h2 class="concise-headline">Climate-FCV design readout</h2><p class="concise-overview">${esc(excerpt)}</p>${signal}<div class="concise-section-label">What is already working</div><div class="concise-strengths">${strengthsHtml}</div><div class="concise-section-label">Priority actions for the task team</div>${prioritiesHtml}</div>`;
   }
@@ -6399,12 +6413,18 @@ ${body}
     const out=document.getElementById('out-txt');
     if(out){out.setAttribute('aria-labelledby',view==='summary'?'stage3-summary-tab':'stage3-detailed-tab');out.innerHTML=stage3ViewToggleHtml()+(view==='summary'?(climateSummary?renderClimateVerifiedSummary(climateVerifiedReader):renderConciseOverview()):(climateSummary?stage3DetailedHtml:conciseUnavailableHtml()+stage3DetailedHtml));}
     if(coreSummary){renderPrioritiesIntro();renderPriorityStepper();showPriority(preservePriority?currentPriority:0);}
+    else if(climateSummary){
+      const showSummary=view==='summary';
+      ['priority-stepper','priority-card-area','pc-nav'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=showSummary?'':'none';});
+      if(showSummary){renderPrioritiesIntro();renderPriorityStepper();showPriority(preservePriority?currentPriority:0);}
+      else {const card=document.getElementById('priority-card-area');if(card)card.innerHTML='';}
+    }
   }
 
   function showPriority(idx){
     const pr = stageThreePriorities[idx];
     if(!pr) return;
-    if(stage3View==='summary'&&stageConciseReadout){
+    if(stage3View==='summary'&&(stageConciseReadout||supportsClimateVerifiedStage3View())){
       currentPriority=idx;
       renderPriorityStepper();
       const navEl=document.getElementById('pc-nav'), counterEl=document.getElementById('pc-nav-counter');

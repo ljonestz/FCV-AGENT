@@ -449,6 +449,15 @@ def test_frontend_initialization_uses_the_core_route_capability_gate():
     assert "supportsConciseStage3View()" in init
 
 
+def test_frontend_initialization_preserves_verified_climate_summary_and_priority_navigation():
+    source = (ROOT / "index.html").read_text(encoding="utf-8")
+    init = source[source.index("function initStage3UI()"):source.index("async function maybeRunPriorityQuestions")]
+    assert "supportsConciseStage3View()||supportsClimateVerifiedStage3View()" in init
+    assert "climateSummaryPriorityItems(climateVerifiedReader)" in source
+    assert "stage3View==='summary'&&(stageConciseReadout||supportsClimateVerifiedStage3View())" in source
+    assert "['priority-stepper','priority-card-area','pc-nav']" in source
+
+
 def test_frontend_concise_capability_gate_excludes_implementation_and_all_lenses():
     source = (ROOT / "index.html").read_text(encoding="utf-8")
     helper = source[
@@ -534,7 +543,7 @@ def test_frontend_uses_concise_titles_only_in_summary_navigation():
 def test_concise_priority_navigation_restores_next_after_done():
     source = (ROOT / "index.html").read_text(encoding="utf-8")
     helper = source[source.index("function showPriority("):source.index("function nextPriority()")]
-    concise_branch = helper[helper.index("if(stage3View==='summary'&&stageConciseReadout)"):helper.index("currentPriority = idx;")]
+    concise_branch = helper[helper.index("if(stage3View==='summary'&&(stageConciseReadout||supportsClimateVerifiedStage3View()))"):helper.index("currentPriority = idx;")]
     assert "nextBtn.textContent='Done'" in concise_branch
     assert "nextBtn.onclick=()=>{}" in concise_branch
     assert "nextBtn.onclick=nextPriority" in concise_branch

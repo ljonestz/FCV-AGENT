@@ -2515,6 +2515,19 @@ def test_verified_climate_summary_uses_dynamic_evidence_backed_strengths():
     assert "strengths.length>=6" in strengths
 
 
+def test_verified_climate_summary_uses_shared_priority_navigation_layout():
+    html = (Path(app_module.__file__).parent / "index.html").read_text(
+        encoding="utf-8"
+    )
+    summary_start = html.index("function renderClimateVerifiedSummary(reader)")
+    summary = html[summary_start:html.index("\n  function ", summary_start + 20)]
+
+    assert "climateSummaryPriorityItems(reader)" in html
+    assert 'id="priorities-intro"' in summary
+    assert "renderPriorityStepper()" in html
+    assert "showConcisePriority(idx)" in html
+
+
 def test_verified_climate_summary_omits_rating_bar_but_detailed_preserves_it():
     html = (Path(app_module.__file__).parent / "index.html").read_text(
         encoding="utf-8"
