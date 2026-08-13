@@ -84,7 +84,7 @@ Run:
 ```powershell
 $env:CLIMATE_COUNTRY_BANK_PATH = 'data/climate-fcv-country-bank/releases/candidates/2026.08/runtime.json'
 $env:CLIMATE_COUNTRY_BANK_PREVIEW = 'reviewed-candidate'
-& 'C:\WBG\Python313\python.exe' -c "from sector_lenses.climate_bank import load_climate_bank; b=load_climate_bank(); assert b.status=='ok', b.warning_code; assert b.candidate_preview is True; assert len(b.release['countries'])==24; missing=[c.get('name',k) for k,c in b.release['countries'].items() if b.resolve_country(c.get('name','')) is None or b.resolve_country(c.get('iso3','')) is None]; assert not missing, missing; print('PASS app loader: 24 candidate countries resolve by name and ISO3')"
+& 'C:\WBG\Python313\python.exe' -c "from sector_lenses.climate_bank import load_climate_bank; b=load_climate_bank(); assert b.status=='ok', b.warning_code; assert b.candidate_preview is True; assert len(b.release['countries'])==24; missing=[c.get('name','') for c in b.release['countries'].values() if b.resolve_country(c.get('name','')) is None or b.resolve_country(c.get('iso3','')) is None]; assert not missing, missing; print('PASS app loader: 24 candidate countries resolve by name and ISO3')"
 Remove-Item Env:CLIMATE_COUNTRY_BANK_PATH
 Remove-Item Env:CLIMATE_COUNTRY_BANK_PREVIEW
 ```
