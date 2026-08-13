@@ -20,6 +20,15 @@ from sector_lenses.climate_bank_selector import (
 FIXTURE = (
     Path(__file__).parent / "fixtures" / "climate_bank" / "runtime_v1.json"
 )
+CANDIDATE_RELEASE = (
+    Path(__file__).parents[1]
+    / "data"
+    / "climate-fcv-country-bank"
+    / "releases"
+    / "candidates"
+    / "2026.08"
+    / "runtime.json"
+)
 
 
 def _select(signals: str) -> dict[str, object]:
@@ -202,3 +211,30 @@ def test_reviewed_candidate_flag_survives_selection_and_compaction(
     assert selector_module.compact_bank_packet(packet)[
         "candidate_preview"
     ] is True
+
+
+def test_multi_country_candidate_release_materializes_each_country(
+    monkeypatch,
+) -> None:
+    monkeypatch.setenv("CLIMATE_COUNTRY_BANK_PATH", str(CANDIDATE_RELEASE))
+    monkeypatch.setenv(
+        "CLIMATE_COUNTRY_BANK_PREVIEW", "reviewed-candidate"
+    )
+    bank = load_climate_bank()
+
+    assert bank.status == "ok"
+    assert len(bank.release["countries"]) == 24
+    for country in bank.release["countries"].values():
+        manifest = select_bank_manifest(
+            bank,
+            country=country["name"],
+            country_scope="single",
+            resolved_country_count=1,
+            sector="Climate resilience",
+            project_signals=country["name"],
+        )
+        assert manifest["bank_status"] == "ok", country["iso3"]
+        packet = materialize_bank_manifest(bank, manifest)
+        assert packet["bank_status"] == "ok", country["iso3"]
+        assert packet["country_iso3"] == country["iso3"]
+        assert packet["candidate_preview"] is True

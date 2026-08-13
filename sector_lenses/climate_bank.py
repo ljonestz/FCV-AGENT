@@ -616,7 +616,9 @@ def materialize_bank_manifest(
         return _packet_unavailable("bank_manifest_invalid")
 
     normalized_urls: set[str] = set()
-    for source in source_index.values():
+    for source_id, source in source_index.items():
+        if not source_id.startswith(f"{iso3}-SRC-"):
+            continue
         normalized_url = _normalized_source_url(source.get("url"))
         if normalized_url is None or normalized_url in normalized_urls:
             return _packet_unavailable("bank_manifest_invalid")

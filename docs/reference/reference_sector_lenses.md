@@ -71,6 +71,9 @@ from its 19 approved evidence records and seven approved pathways. The candidate
 preview release `2026.08.multi-country-preview` contains 24 reviewed country
 packages, 291 sources, 565 evidence records, and 178 pathways. It must not be
 treated as approved content until country-level substantive review and promotion.
+Source URL uniqueness is validated within the selected country package. The same
+public source may legitimately appear under country-scoped source IDs in multiple
+packages; duplicate normalized URLs within one country remain invalid.
 
 ## Compatibility contract
 
@@ -90,7 +93,7 @@ The Flask and private FastAPI builds must keep these fields and delimiters align
 
 Raw literature and source notes are never injected at runtime.
 
-*Last updated: 2026-08-13 - 24-country reviewed candidate preview release and explicit preview safeguards.*
+*Last updated: 2026-08-13 - multi-country candidate materialization and country-scoped source validation.*
 
 ## Climate verified-v2.1 compatibility surface (v9.25)
 
