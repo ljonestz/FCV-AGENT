@@ -1059,6 +1059,28 @@
     .horizon-panel .horizon-disclaimer{font-size:11px;font-style:italic;color:#888;margin-bottom:8px;}
 
     .priorities-intro{margin-bottom:14px;}
+    .stage3-viewbar{display:flex;justify-content:space-between;align-items:center;gap:14px;margin:0 0 16px;padding:10px 12px;background:#fafbfd;border:1px solid var(--border);border-radius:8px}
+    .stage3-view-tabs{display:flex;gap:3px;padding:3px;background:#e8edf1;border-radius:7px}
+    .stage3-view-tab{border:0;background:transparent;padding:7px 14px;border-radius:5px;color:var(--muted);font-weight:600;cursor:pointer}
+    .stage3-view-tab.active{background:#fff;color:var(--wbg-navy);box-shadow:0 1px 4px rgba(0,34,68,.15)}
+    .stage3-view-tab:focus-visible{outline:3px solid #f2a900;outline-offset:2px}
+    .stage3-download-note{font-size:11px;color:var(--muted)}
+    .concise-readout{font-size:14px;line-height:1.65}
+    .concise-read-time,.concise-section-label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;font-weight:700;color:var(--wbg-blue)}
+    .concise-strengths{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:10px 0 22px}
+    .concise-strength{padding:12px;background:#edf8f2;border:1px solid #cae4d5;border-radius:7px}
+    .concise-strength strong{display:block;color:#176a42;margin-bottom:3px}
+    .concise-priority-card{background:#fff;border:1px solid var(--border);border-radius:9px;overflow:hidden;margin-bottom:14px}
+    .concise-priority-head{display:grid;grid-template-columns:34px 1fr auto;gap:12px;padding:16px 18px;border-bottom:1px solid var(--border)}
+    .concise-priority-num{width:29px;height:29px;border-radius:50%;display:grid;place-items:center;background:var(--wbg-navy);color:#fff;font-weight:700}
+    .concise-priority-card section,.concise-cycle{padding:15px 18px;border-bottom:1px solid var(--border)}
+    .concise-priority-card h4{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--wbg-navy);margin:0 0 6px}
+    .concise-how{background:#f6f9fb;border-left:4px solid var(--wbg-blue)}
+    .concise-wording{background:#fff8e9}
+    .concise-cycle{background:#fafbfd;display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .concise-cycle-items{grid-column:2;display:flex;flex-direction:column;gap:14px}
+    .concise-specialist summary{padding:12px 18px;color:var(--wbg-blue);font-weight:600;cursor:pointer}
+    @media(max-width:760px){.stage3-viewbar{align-items:flex-start;flex-direction:column}.concise-strengths,.concise-cycle{grid-template-columns:1fr}.concise-cycle-items{grid-column:1}}
     .priorities-section-hdr{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--s4);margin:20px 0 10px;padding-bottom:6px;border-bottom:2px solid var(--s4);}
     .pi-lead{font-size:15px;color:var(--text);line-height:1.6;margin:0 0 10px;}
     .pi-list{display:flex;flex-direction:column;gap:5px;margin-bottom:10px;}
@@ -3151,6 +3173,7 @@
       climateGrounding=savedLensState.climateGrounding||{};
       climateVerifiedAssessment=savedLensState.climateVerifiedAssessment||null;
       climateVerifiedReader=savedLensState.climateVerifiedReader||null;
+      if(supportsClimateVerifiedStage3View()){stageThreePriorities=climateSummaryPriorityItems(climateVerifiedReader);stage3View='summary';}
       // If Stage 3 is present the run completed — clean up and do nothing
       if(outputs[3]&&climateVerifiedAssessment&&climateVerifiedReader){
         stageOutputs=outputs;
@@ -3160,7 +3183,7 @@
         document.getElementById('analysis-panel').style.display='block';
         document.getElementById('landing-hero').style.display='none';
         document.getElementById('stepper-wrap').style.display='';
-        setStepper(4,'done');renderOut(3,outputs[3],false);enableClickableStepper();
+        setStepper(4,'done');renderOut(3,outputs[3],false);if(stageThreePriorities.length)initStage3UI();enableClickableStepper();
         return;
       }
       if(outputs[3]){localStorage.removeItem('fcv_express_stageOutputs');localStorage.removeItem('fcv_express_stageHists');localStorage.removeItem('fcv_express_lensState');return;}
@@ -3292,6 +3315,7 @@
         climateGrounding = state.version >= 3 && state.climateGrounding ? state.climateGrounding : {};
         climateVerifiedAssessment = state.climateVerifiedAssessment || null;
         climateVerifiedReader = state.climateVerifiedReader || null;
+        if(supportsClimateVerifiedStage3View()){stageThreePriorities=climateSummaryPriorityItems(climateVerifiedReader);stage3View='summary';}
         const currentVersions=Object.fromEntries(lensCatalogue.map(l=>[l.id,l.version]));
         const staleLens=state.version>=3&&state.currentStage<3&&activeLenses.some(id=>!state.lensVersions||!state.lensVersions[id]||currentVersions[id]!==state.lensVersions[id]);
         if(staleLens){hist=[];curS=0;stageOutputs={};stageHists={};activeLenses=[];resolvedLensVersions={};lensDiagnostic={};lensContextSources=[];climateResearch={};climateGrounding={};lensSelectionLocked=false;renderLensSelector();document.getElementById('upload-panel').style.display='block';document.getElementById('analysis-panel').style.display='none';alert('A selected sector lens is unavailable or has been updated. Re-upload the project document and rerun from Stage 1 to avoid mixing module versions.');return;}
@@ -3888,6 +3912,8 @@
               if(p.fcv_rating)fcvRating=p.fcv_rating;
               if(p.fcv_responsiveness_rating)fcvResponsivenessRating=p.fcv_responsiveness_rating;
               if(p.priorities)stageThreePriorities=p.priorities;
+              if(supportsClimateVerifiedStage3View())stageThreePriorities=climateSummaryPriorityItems(climateVerifiedReader);
+              stage3View=supportsClimateVerifiedStage3View()?'summary':'detailed';
               if(p.climate_unlinked!==undefined)climatePriorityUnlinked=p.climate_unlinked;
               if(p.climate_total!==undefined)climatePriorityTotal=p.climate_total;
               if(p.wider_fcv_context!==undefined)stageWiderFcvContext=p.wider_fcv_context||null;
@@ -3916,7 +3942,8 @@
             document.getElementById('main').style.display='';
             curS=3;setStepper(3,'done');
             renderOut(3,stageOutputs[3],false);
-            if(!climateVerifiedAssessment&&stageThreePriorities&&stageThreePriorities.length)initStage3UI();
+            if(supportsClimateVerifiedStage3View()&&stageThreePriorities&&stageThreePriorities.length)initStage3UI();
+            else if(!climateVerifiedAssessment&&stageThreePriorities&&stageThreePriorities.length)initStage3UI();
             renderAppliedSnippetsAttribution();
             // stage2_under_hood already written by the stage_done handler for stage 2 — no redundant write needed here
             enableClickableStepper();
@@ -4952,6 +4979,8 @@
     const isLast=stage===3;
     const c=CALLS[stage];
     const _verifiedV2=!!(isLast&&climateVerifiedAssessment&&climateVerifiedAssessment.schema_version==='climate-verified-v2.1'&&climateVerifiedReader);
+    const _supportsClimateStage3=isLast&&supportsClimateVerifiedStage3View();
+    const _supportsStage3Tabs=_supportsClimateStage3;
     let _outBodyContent;
     if(_verifiedV2){
       _outBodyContent=renderClimateVerifiedAssessment(climateVerifiedReader);
@@ -5020,6 +5049,10 @@
         _outBodyContent = wrapSRTerms(catBadge + srDefPrefix + md(cleanResult));
       }
     }
+    if(isLast&&_supportsClimateStage3){
+      stage3DetailedHtml=_outBodyContent;
+      if(stage3View==='summary')_outBodyContent=renderClimateVerifiedSummary(climateVerifiedReader);
+    }
     document.getElementById('stage-disp').innerHTML=`
       <div class="stage-hdr ani">
         <div class="stage-badge ${COL[stage]}">${stage}</div>
@@ -5054,7 +5087,7 @@
                 <button class="copy-btn" id="copy-btn" onclick="copyOut()">Copy all</button>
               </div>
             </div>
-            <div class="out-body" id="out-txt">${_outBodyContent}</div>
+            <div class="out-body" id="out-txt">${isLast&&_supportsStage3Tabs?stage3ViewToggleHtml():''}${_outBodyContent}</div>
           </div>
           ${isLast?`
           <!-- ── PRIORITY STEPPER ── -->
@@ -5390,7 +5423,7 @@
     if(stageHists[stage])hist=stageHists[stage].slice();
     curS=stage;
     for(let i=stage+1;i<=3;i++){delete stageOutputs[i];delete stageHists[i];}
-    stageThreePriorities=[];fcvRating='';fcvResponsivenessRating='';stageWiderFcvContext=null;climatePriorityUnlinked=0;climatePriorityTotal=0;climateVerifiedAssessment=null;climateVerifiedReader=null;
+    stageThreePriorities=[];fcvRating='';fcvResponsivenessRating='';stageWiderFcvContext=null;climatePriorityUnlinked=0;climatePriorityTotal=0;climateVerifiedAssessment=null;climateVerifiedReader=null;stage3View='detailed';stage3DetailedHtml='';
     clearUI();renderOut(stage,stageOutputs[stage],false);
     if(stage===2&&stage2UnderHood){buildUnderHoodPanels(stage2UnderHood);updateSidebar();}
     if(stage===2)renderLensDiagnostic();
@@ -6081,6 +6114,8 @@ ${body}
   let climateIntegration=null; // {level, summary} from SSE
   let climateVerifiedAssessment=null; // climate-verified-v2.1 structured assessment
   let climateVerifiedReader=null; // server-validated canonical reader/export model
+  let stage3View='detailed';
+  let stage3DetailedHtml='';
   let stageWiderFcvContext=null; // wider_fcv_context string from Stage 3 JSON (climate path)
   function integrationGaugeFraction(level){
     return ({well_integrated:1,partly_integrated:0.66,weakly_integrated:0.33,insufficient_evidence:0})[String(level||'').toLowerCase()]||0;
@@ -6276,6 +6311,108 @@ ${body}
     'Shift D: Enhanced toolkit': 'FCV Strategy 2026-2030 Shift D: Operational flexibilities and HDP nexus partnerships',
   };
 
+  function supportsClimateVerifiedStage3View(){
+    return reviewMode==='design' && !!(climateVerifiedAssessment && climateVerifiedAssessment.schema_version==='climate-verified-v2.1' && climateVerifiedReader);
+  }
+
+  function climateSummaryStrengths(reader){
+    const r=reader&&typeof reader==='object'?reader:{};
+    const strengths=[];
+    const seen=new Set();
+    const add=(title,text)=>{
+      const body=String(text||'').trim();
+      const key=body.toLowerCase().replace(/\s+/g,' ');
+      if(!body||seen.has(key)||strengths.length>=3)return;
+      seen.add(key);
+      strengths.push({title:String(title||'What is already working').trim(),text:body});
+    };
+    (Array.isArray(r.existing_responses)?r.existing_responses:[]).forEach(response=>{
+      const description=String(response&&response.description||'').trim();
+      if(!description)return;
+      const rawTitle=String(response&&response.title||'').trim()||description.split(/[.!?](?:\s|$)/)[0].trim()||'Existing project response';
+      const titleWords=rawTitle.split(/\s+/);
+      const title=titleWords.length>11?titleWords.slice(0,11).join(' ')+'…':rawTitle;
+      add(title,description);
+    });
+    (Array.isArray(r.judgments)?r.judgments:[]).forEach(judgment=>{
+      const value=String(judgment&&judgment.value||'').toLowerCase();
+      const dimension=String(judgment&&judgment.dimension||'').toLowerCase();
+      const positive=(dimension==='relevance'&&value==='high')||(dimension==='responsiveness'&&value==='strong')||(dimension==='operationalization'&&value==='embedded');
+      if(positive)add(judgment.title||judgment.dimension||'Assessment strength',judgment.rationale||judgment.description||'');
+    });
+    return strengths;
+  }
+
+  function climateSummaryPriorityItems(reader){
+    const r=reader&&typeof reader==='object'?reader:{};
+    return (Array.isArray(r.priorities)?r.priorities:[]).slice().sort((a,b)=>(Number(a.rank)||999)-(Number(b.rank)||999)).slice(0,3).map((priority,index)=>{
+      const draft=priority.current_document_drafting&&typeof priority.current_document_drafting==='object'?priority.current_document_drafting:{};
+      const target=[draft.target_document,draft.target_section].filter(Boolean).join(' - ');
+      return {...priority,rank:Number(priority.rank)||index+1,title:String(priority.title||'Untitled action'),risk_level:'',the_gap:String(priority.limitation||''),concise:{title:String(priority.title||'Untitled action'),why:String(priority.narrative||priority.decision||priority.minimum_action||''),how:[priority.minimum_action,priority.enhanced_action,priority.completion_evidence].filter(Boolean).slice(0,4),suggested_wording:{document_element:target,text:String(draft.text||'')},project_cycle:{primary_label:'At design stage',primary_text:String(priority.completion_evidence||priority.minimum_action||''),secondary_label:'Before appraisal',secondary_text:String(priority.limitation||'')}}};
+    });
+  }
+
+  function stage3ViewToggleHtml(){
+    return `<div class="stage3-viewbar"><div class="stage3-view-tabs" role="tablist" aria-label="Recommendations detail level" onkeydown="handleStage3ViewKeydown(event)"><button id="stage3-summary-tab" class="stage3-view-tab ${stage3View==='summary'?'active':''}" role="tab" aria-controls="out-txt" aria-selected="${stage3View==='summary'}" tabindex="${stage3View==='summary'?'0':'-1'}" onclick="setStage3View('summary')">Summary</button><button id="stage3-detailed-tab" class="stage3-view-tab ${stage3View==='detailed'?'active':''}" role="tab" aria-controls="out-txt" aria-selected="${stage3View==='detailed'}" tabindex="${stage3View==='detailed'?'0':'-1'}" onclick="setStage3View('detailed')">Detailed analysis</button></div><div class="stage3-download-note">Downloads include the comprehensive analysis.</div></div>`;
+  }
+
+  function getConcisePriority(priority){
+    if(priority&&priority.concise)return priority.concise;
+    const firstAction=(priority&&priority.actions||[])[0]||{};
+    const rawTitle=String(priority&&priority.title||'Untitled action');
+    return {title:rawTitle.replace(/^Priority\s+\d+\s*(?:[-:\u2022]\s*)?/i,'')||rawTitle,why:priority&&priority.why_it_matters||priority&&priority.the_gap||'',how:(priority&&priority.actions||[]).slice(0,4).map(action=>action.guidance).filter(Boolean),suggested_wording:{document_element:firstAction.document_element||'',text:firstAction.suggested_language||''},project_cycle:{primary_label:'When to address',primary_text:priority&&priority.implementation_note||'',secondary_label:'',secondary_text:''}};
+  }
+
+  function renderClimateVerifiedSummary(reader){
+    const r=reader&&typeof reader==='object'?reader:{};
+    const executive=String(r.executive_readout||'The verified assessment did not return an executive readout.').trim();
+    const paragraphs=executive.split(/\n\s*\n+/).map(p=>p.trim()).filter(Boolean);
+    const overviewSource=(paragraphs.slice(0,2).join(' ')||executive);
+    const overviewWords=overviewSource.split(/\s+/);
+    const overview=overviewWords.length>240?overviewWords.slice(0,240).join(' ').replace(/[,:;]$/,'')+'…':overviewSource;
+    const sensitivity=r.climate_sensitivity_rating&&typeof r.climate_sensitivity_rating==='object'?r.climate_sensitivity_rating:{};
+    const signal=sensitivity.label?`<p class="concise-priority-intro"><strong>Climate-FCV sensitivity:</strong> ${esc(sensitivity.label)}</p>`:'';
+    const strengths=climateSummaryStrengths(r);
+    const strengthsHtml=strengths.length?strengths.map(strength=>`<div class="concise-strength climate-strength-card"><strong>${esc(strength.title)}</strong>${esc(strength.text)}</div>`).join(''):'<p class="concise-priority-intro">No distinct strengths were evidenced in the verified reader for this run.</p>';
+    const priorities=climateSummaryPriorityItems(r);
+    const prioritiesHtml=priorities.length?'<div id="priorities-intro"></div>':'<p class="concise-priority-intro">No ranked operational priorities were returned for this run.</p>';
+    return `<div class="concise-readout climate-verified-summary"><div class="concise-read-time">Five-minute readout</div><div class="concise-section-label">Overall assessment</div><p class="concise-overview">${esc(overview)}</p>${signal}<div class="concise-section-label">What is already working</div><div class="concise-strengths">${strengthsHtml}</div><div class="concise-section-label">Priority actions for the task team</div>${prioritiesHtml}</div>`;
+  }
+
+  function handleStage3ViewKeydown(event){
+    const tabs=Array.from(document.querySelectorAll('.stage3-view-tab:not([disabled])'));
+    const current=tabs.indexOf(document.activeElement);
+    if(current<0||!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;
+    event.preventDefault();
+    const next=event.key==='Home'?0:event.key==='End'?tabs.length-1:(current+(event.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length;
+    setStage3View(tabs[next].id==='stage3-summary-tab'?'summary':'detailed');
+    tabs[next].focus();
+  }
+
+  function setStage3View(view,preservePriority=true){
+    if(!supportsClimateVerifiedStage3View())return;
+    if(view!=='summary'&&view!=='detailed')view='summary';
+    stage3View=view;
+    const summaryTab=document.getElementById('stage3-summary-tab'), detailedTab=document.getElementById('stage3-detailed-tab');
+    [summaryTab,detailedTab].forEach(tab=>{if(tab)tab.classList.remove('active')});
+    if(summaryTab){summaryTab.classList.toggle('active',view==='summary');summaryTab.setAttribute('aria-selected',String(view==='summary'));summaryTab.tabIndex=view==='summary'?0:-1;}
+    if(detailedTab){detailedTab.classList.toggle('active',view==='detailed');detailedTab.setAttribute('aria-selected',String(view==='detailed'));detailedTab.tabIndex=view==='detailed'?0:-1;}
+    const showSummary=view==='summary';
+    const out=document.getElementById('out-txt');
+    if(out){out.setAttribute('aria-labelledby',view==='summary'?'stage3-summary-tab':'stage3-detailed-tab');out.innerHTML=stage3ViewToggleHtml()+(view==='summary'?renderClimateVerifiedSummary(climateVerifiedReader):stage3DetailedHtml);}
+    ['priority-stepper','priority-card-area','pc-nav'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=showSummary?'':'none';});
+    if(showSummary){renderPrioritiesIntro();renderPriorityStepper();showPriority(preservePriority?currentPriority:0);}
+    else {const card=document.getElementById('priority-card-area');if(card)card.innerHTML='';}
+  }
+
+  function showConcisePriority(idx){
+    const priority=stageThreePriorities[idx];if(!priority)return;
+    const concise=getConcisePriority(priority), wording=concise.suggested_wording||{}, cycle=concise.project_cycle||{};
+    const how=(concise.how||[]).map(item=>`<li>${esc(item)}</li>`).join('');
+    const cardArea=document.getElementById('priority-card-area');if(!cardArea)return;
+    cardArea.innerHTML=`<article class="concise-priority-card ani"><header class="concise-priority-head"><span class="concise-priority-num">${idx+1}</span><div><div class="concise-priority-kicker">Priority ${idx+1} of ${stageThreePriorities.length}</div><h3>${esc(concise.title)}</h3></div></header><section><h4>Why this is suggested</h4><p>${esc(concise.why)}</p></section><section class="concise-how"><h4>How it can be addressed</h4><ul>${how}</ul></section>${wording.text?`<section class="concise-wording"><h4>Suggested wording for the current document</h4><p>${esc(wording.text)}</p><div class="concise-wording-target">For: ${esc(wording.document_element)}</div></section>`:''}<aside class="concise-cycle"><h4>Where this fits in the project cycle</h4><div class="concise-cycle-items"><div><strong>${esc(cycle.primary_label||'When to address')}</strong><p>${esc(cycle.primary_text||'')}</p></div>${cycle.secondary_label||cycle.secondary_text?`<div><strong>${esc(cycle.secondary_label||'Next step')}</strong><p>${esc(cycle.secondary_text||'')}</p></div>`:''}</div></aside><details class="concise-specialist"><summary>Specialist reasoning, evidence and operational references</summary><p>${esc(priority.the_gap||'')}</p></details></article>`;
+  }
+
   function initStage3UI(){
     maybeRunPriorityQuestions();
     if(!stageThreePriorities.length) return;
@@ -6401,6 +6538,7 @@ ${body}
     const el = document.getElementById('priorities-intro');
     if(!el || !stageThreePriorities.length) return;
     const n = stageThreePriorities.length;
+    const climateSummary=supportsClimateVerifiedStage3View()&&stage3View==='summary';
     const riskLabel = (r) => r === 'High' ? 'High priority' : r === 'Medium' ? 'Medium priority' : r === 'Low' ? 'Lower priority' : '';
     const riskCls = (r) => r === 'High' ? 'pi-risk-h' : r === 'Medium' ? 'pi-risk-m' : 'pi-risk-l';
     const listItems = stageThreePriorities.map((pr, i) => {
@@ -6416,8 +6554,11 @@ ${body}
     const _linkNotice = (isClimateLensActive() && climatePriorityUnlinked > 0)
       ? `<div class="climate-partial-notice">Climate provenance could not be validated for ${climatePriorityUnlinked} of ${climatePriorityTotal} priorities. Those recommendations are shown but not tagged to a specific climate-FCV pathway.</div>`
       : '';
+    const lead=climateSummary
+      ?`Based on the verified Climate-FCV assessment, <strong>${n} priority ${n === 1 ? 'action has' : 'actions have'} been identified</strong> for the project team to address at the appropriate preparation stage:`
+      :`Based on a three-stage assessment of the project documents, <strong>${n} priority ${n === 1 ? 'action has' : 'actions have'} been identified</strong> to strengthen FCV sensitivity and responsiveness in the design and delivery of this project:`;
     el.innerHTML = _linkNotice + `<div class="priorities-section-hdr">Priority Actions for the Task Team</div><div class="priorities-intro ani">
-      <p class="pi-lead">Based on a three-stage assessment of the project documents, <strong>${n} priority ${n === 1 ? 'action has' : 'actions have'} been identified</strong> to strengthen FCV sensitivity and responsiveness in the design and delivery of this project:</p>
+      <p class="pi-lead">${lead}</p>
       <div class="pi-list">${listItems}</div>
     </div>
     <div class="priority-navigation-callout" role="note">
@@ -6446,6 +6587,22 @@ ${body}
   function showPriority(idx){
     const pr = stageThreePriorities[idx];
     if(!pr) return;
+    if(supportsClimateVerifiedStage3View()&&stage3View==='summary'){
+      currentPriority=idx;
+      renderPriorityStepper();
+      const navEl=document.getElementById('pc-nav'), counterEl=document.getElementById('pc-nav-counter');
+      const prevBtn=document.getElementById('pc-prev-btn'), nextBtn=document.getElementById('pc-next-btn');
+      if(navEl)navEl.style.display='flex';
+      if(counterEl)counterEl.textContent=`Priority ${idx+1} of ${stageThreePriorities.length}`;
+      if(prevBtn)prevBtn.disabled=idx===0;
+      if(nextBtn){
+        if(idx===stageThreePriorities.length-1){nextBtn.textContent='Done';nextBtn.onclick=()=>{};nextBtn.disabled=true;}
+        else{nextBtn.innerHTML='Next <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>';nextBtn.onclick=nextPriority;nextBtn.disabled=false;}
+      }
+      showConcisePriority(idx);
+      updateSidebar();
+      return;
+    }
     currentPriority = idx;
     const n = stageThreePriorities.length;
 

@@ -410,6 +410,25 @@ def _priority_summary(priorities: list[dict[str, Any]]) -> dict[str, object]:
 def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
     """Project a verified assessment into the only reader-facing structure."""
 
+    analysis = _mapping(assessment.get("analysis"))
+    existing_responses = [
+        {
+            "response_id": _text(response.get("response_id")),
+            "project_fact_ids": [
+                _text(item)
+                for item in response.get("project_fact_ids", [])
+                if _text(item)
+            ] if isinstance(response.get("project_fact_ids"), (list, tuple)) else [],
+            "pathway_ids": [
+                _text(item)
+                for item in response.get("pathway_ids", [])
+                if _text(item)
+            ] if isinstance(response.get("pathway_ids"), (list, tuple)) else [],
+            "description": _text(response.get("description")),
+            "limitation": _text(response.get("limitation")),
+        }
+        for response in _records(analysis.get("existing_responses"))[:12]
+    ]
     raw_judgments = _mapping(assessment.get("judgments"))
     judgments = []
     for key, title, description in DIMENSIONS:
@@ -493,6 +512,7 @@ def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
         "judgments": judgments,
         "climate_sensitivity_rating": climate_sensitivity_rating,
         "core_questions": core_questions,
+        "existing_responses": existing_responses,
         "priorities": [dict(item) for item in priorities],
         "review_readiness_flags": [dict(item) for item in flags],
         "minor_climate_points": minor_climate_points,

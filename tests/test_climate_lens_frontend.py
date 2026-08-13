@@ -114,6 +114,7 @@ def test_climate_summary_caps_dynamic_strengths_and_uses_longer_overview():
         _extract_js_function(source, name)
         for name in (
             "climateSummaryStrengths",
+            "climateSummaryPriorityItems",
             "renderClimateVerifiedSummary",
         )
     )
@@ -130,6 +131,7 @@ const reader = {{
     {{description:'Inclusion safeguards are concrete and operational.'}},
     {{description:'A fourth positive design feature should not appear in the compact summary.'}}
   ],
+  priorities: [{{rank:1, title:'Priority 1', narrative:'A concrete operational action.', minimum_action:'Add the action to the design.'}}],
   climate_sensitivity_rating: {{label:'Strong'}}
 }};
 const strengths = climateSummaryStrengths(reader);
@@ -138,6 +140,7 @@ const html = renderClimateVerifiedSummary(reader);
 if (html.includes('Climate-FCV design readout')) throw new Error('summary contains redundant climate title');
 if (!html.includes('Second overview paragraph')) throw new Error('summary omitted the longer overview');
 if (html.includes('A fourth positive design feature')) throw new Error('summary exceeded the three-tile cap');
+if (!html.includes('id="priorities-intro"')) throw new Error('summary omitted the priority action container');
 """
     result = subprocess.run(
         ["node", "-e", script], capture_output=True, text=True, check=False
