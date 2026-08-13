@@ -11,22 +11,30 @@ import regime_router as rr
 
 # --- Task 1.1: preparation-regime classifier ---------------------------------
 
-def test_preparation_boundary_is_18_april_2026():
-    assert rr.PREPARATION_BOUNDARY == dt.date(2026, 4, 18)
+def test_preparation_boundaries_are_instrument_specific():
+    assert rr.IPF_PFORR_PREPARATION_BOUNDARY == dt.date(2026, 4, 17)
+    assert rr.DPF_PREPARATION_BOUNDARY == dt.date(2026, 4, 18)
 
 
-def test_ois_on_or_after_boundary_is_new_model():
-    assert rr.classify_preparation_regime(dt.date(2026, 4, 18)) == "new_model"
-    assert rr.classify_preparation_regime(dt.date(2026, 6, 1)) == "new_model"
+def test_ois_on_or_after_instrument_boundary_is_new_model():
+    assert rr.classify_preparation_regime(dt.date(2026, 4, 17), "IPF") == "new_model"
+    assert rr.classify_preparation_regime(dt.date(2026, 4, 17), "PforR") == "new_model"
+    assert rr.classify_preparation_regime(dt.date(2026, 4, 18), "DPF") == "new_model"
+    assert rr.classify_preparation_regime(dt.date(2026, 6, 1), "IPF") == "new_model"
 
 
-def test_ois_before_boundary_is_legacy_transitional():
-    assert rr.classify_preparation_regime(dt.date(2026, 4, 17)) == "legacy_transitional"
-    assert rr.classify_preparation_regime(dt.date(2024, 1, 1)) == "legacy_transitional"
+def test_ois_before_instrument_boundary_is_legacy_transitional():
+    assert rr.classify_preparation_regime(dt.date(2026, 4, 16), "IPF") == "legacy_transitional"
+    assert rr.classify_preparation_regime(dt.date(2026, 4, 17), "DPF") == "legacy_transitional"
+    assert rr.classify_preparation_regime(dt.date(2024, 1, 1), "PforR") == "legacy_transitional"
 
 
 def test_missing_ois_date_is_unresolved():
     assert rr.classify_preparation_regime(None) == "unresolved_policy_source"
+
+
+def test_mpa_without_resolved_base_instrument_has_unresolved_es_regime():
+    assert rr.classify_es_regime(instrument="MPA") == "UNRESOLVED"
 
 
 # --- Task 1.2: one/two-step processing-model classifier ----------------------

@@ -23,7 +23,7 @@ BLOCK = (
 
 def test_extract_regime_context_classifies_both_axes():
     ctx = app_module.extract_regime_context(BLOCK)
-    assert ctx["preparation_regime"] == "new_model"          # OIS 2026-05-02 >= 18 Apr 2026
+    assert ctx["preparation_regime"] == "new_model"          # OIS 2026-05-02 is after either instrument boundary
     assert ctx["es_regime"] == "ESF_ESS1_TO_ESS10"           # Concept 2022 >= 1 Oct 2018
     assert ctx["op_7_50_screen"] is True
     assert ctx["op_7_60_screen"] is False

@@ -792,6 +792,7 @@ def run_verified_climate_pipeline(
     cancel_event: object | None = None,
     doc_type: str = "Unknown",
     instrument_type: str = "Unknown",
+    operation_context: dict[str, object] | None = None,
     wall_clock_seconds: int = 14 * 60,
 ) -> dict[str, object]:
     """Run the automatic pipeline and return only validated reader objects."""
@@ -810,10 +811,23 @@ def run_verified_climate_pipeline(
         "recommendations": 0,
         "readiness_flags": 0,
     }
+    resolved_context = dict(operation_context or {})
+    resolved_context.setdefault("document_type", doc_type)
+    resolved_context.setdefault("instrument_type", instrument_type)
+    resolved_context.setdefault("country_scope", "single")
+    resolved_context.setdefault("is_mpa", False)
+    resolved_context.setdefault("has_ipf_component", False)
+    resolved_context.setdefault("preparation_regime", "unresolved_policy_source")
+    resolved_context.setdefault("processing_model", "unknown")
+    resolved_context.setdefault("es_regime", "UNRESOLVED")
+    resolved_context.setdefault("warning_codes", [])
     guidance = select_operational_guidance(
         doc_type=doc_type,
         instrument_type=instrument_type,
+        is_mpa=bool(resolved_context.get("is_mpa")),
     )
+    if not guidance:
+        reasons.append("OPERATIONAL_GUIDANCE_WITHHELD")
     document_records = [_as_record(item) for item in source_documents]
     block_records = [_as_record(item) for item in source_blocks]
     context_records = [_as_record(item) for item in context_evidence]
@@ -822,7 +836,11 @@ def run_verified_climate_pipeline(
     fact_payload = _call(
         clients.assessment,
         "fact_extraction",
-        {"documents": document_records, "source_blocks": block_records},
+        {
+            "documents": document_records,
+            "source_blocks": block_records,
+            "operation_context": resolved_context,
+        },
         latency_ms,
         cancel_event=cancel_event,
         deadline=deadline,
@@ -872,6 +890,7 @@ def run_verified_climate_pipeline(
             "facts": [asdict(item) for item in facts],
             "derived_assertions": [asdict(item) for item in assertions],
             "context_evidence": context_records,
+            "operation_context": resolved_context,
         },
         latency_ms,
         cancel_event=cancel_event,
@@ -940,6 +959,7 @@ def run_verified_climate_pipeline(
             "facts": [asdict(item) for item in facts],
             "analysis": analysis_record,
             "core_questions_to_answer": posed_core_questions,
+            "operation_context": resolved_context,
         },
         latency_ms,
         cancel_event=cancel_event,
@@ -986,6 +1006,7 @@ def run_verified_climate_pipeline(
             "facts": [asdict(item) for item in facts],
             "analysis": analysis_record,
             "judgments": asdict(judgments),
+            "operation_context": resolved_context,
             "guidance_registry_version": GUIDANCE_REGISTRY_VERSION,
             "operational_guidance": [item.as_record() for item in guidance],
         },
@@ -1021,6 +1042,7 @@ def run_verified_climate_pipeline(
                 "recommendation_candidates": candidates_missing_drafting,
                 "current_document": doc_type,
                 "instrument_type": instrument_type,
+                "operation_context": resolved_context,
                 "guidance_registry_version": GUIDANCE_REGISTRY_VERSION,
                 "operational_guidance": [
                     item.as_record() for item in guidance
@@ -1113,6 +1135,7 @@ def run_verified_climate_pipeline(
                 item.guidance_id: item.permitted_targets
                 for item in guidance
             },
+            instrument_type=instrument_type,
         )
         candidate, actor_repairs = normalize_unverified_completion_actor(
             candidate,
@@ -1244,6 +1267,7 @@ def run_verified_climate_pipeline(
                 "analysis": analysis_record,
                 "judgments": asdict(judgments),
                 "recommendations": [asdict(item) for item in priorities],
+                "operation_context": resolved_context,
             },
             latency_ms,
             cancel_event=cancel_event,
@@ -1337,6 +1361,7 @@ def run_verified_climate_pipeline(
         "run_id": run_id,
         "bank_release_id": bank_release_id,
         "evidence_status": "preview; not approved" if preview else "approved",
+        "operation_context": resolved_context,
         "facts": [asdict(item) for item in facts],
         "derived_assertions": [asdict(item) for item in assertions],
         "analysis": analysis_record,

@@ -241,11 +241,44 @@ def test_four_calls_run_when_semantic_review_is_not_required():
     assert result["validation"]["status"] == "passed"
     assert len(result["priorities"]) == 1
     compiler_payload = assessment.calls[-1]["payload"]
-    assert compiler_payload["guidance_registry_version"] == "climate-guidance-v1"
+    assert compiler_payload["guidance_registry_version"] == "climate-guidance-v2"
     assert "GUIDE-PCN-DESIGN" in {
         item["guidance_id"] for item in compiler_payload["operational_guidance"]
     }
     assert result["executive_readout"].startswith("Verified project facts")
+
+
+def test_operation_context_is_passed_to_analysis_and_recommendation_prompts():
+    assessment = FakeClient(_responses(), [])
+    context = {
+        "document_type": "Program Paper",
+        "instrument_type": "PforR",
+        "country_scope": "single",
+        "is_mpa": False,
+        "has_ipf_component": False,
+        "preparation_regime": "new_model",
+        "processing_model": "two_step",
+        "es_regime": "INSTRUMENT_SPECIFIC",
+        "warning_codes": [],
+    }
+
+    arguments = _arguments()
+    arguments.update(doc_type="Program Paper", instrument_type="PforR")
+    result = run_verified_climate_pipeline(
+        **arguments,
+        clients=PipelineClients(assessment, _pass_review_client()),
+        operation_context=context,
+    )
+
+    prompt_contexts = [
+        call["payload"].get("operation_context")
+        for call in assessment.calls
+        if call["stage"] in {
+            "bounded_analysis", "judgment_review", "recommendation_compiler"
+        }
+    ]
+    assert prompt_contexts == [context, context, context]
+    assert result["operation_context"] == context
 
 
 def test_guidance_backed_section_variants_do_not_suppress_all_candidates():

@@ -332,7 +332,7 @@ conflicting_evidence: [... | none]
 
 Detection keys on OIS/Concept **dates + template markers**, never the document label alone
 ("PID" is not decisive; a guidance catalogue number is not proof of new-regime). Two independent
-axes: `preparation_regime` (OIS date vs 18 Apr 2026) and `es_regime` (Concept Decision date vs
+axes: `preparation_regime` (OIS date vs 17 Apr 2026 for IPF/PforR or 18 Apr 2026 for DPF) and `es_regime` (Concept Decision date vs
 1 Oct 2018). `extract_regime_context()` parses the block and classifies both via `regime_router`.
 
 **Stage 2/3 prompt injection (both routes):** `build_regime_header(preparation_regime,

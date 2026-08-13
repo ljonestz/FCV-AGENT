@@ -124,6 +124,10 @@ const esc = value => String(value ?? '')
   .replace(/\"/g,'&quot;').replace(/'/g,'&#039;');
 {helpers}
 const reader = {{
+  operation_context: {{
+    document_type:'Program Paper', instrument_type:'PforR',
+    preparation_regime:'new_model', es_regime:'INSTRUMENT_SPECIFIC', is_mpa:false
+  }},
   executive_readout: 'First overview paragraph with the project context and the main climate-FCV interaction.\\n\\nSecond overview paragraph with the design choices and remaining implementation implications.',
   existing_responses: [
     {{description:'Climate resilience is embedded in infrastructure standards.'}},
@@ -142,6 +146,8 @@ if (!html.includes('Second overview paragraph')) throw new Error('summary omitte
 if (html.includes('A fourth positive design feature')) throw new Error('summary exceeded the three-tile cap');
 if (!html.includes('class="concise-strength-text"')) throw new Error('strength explanation lacks readable body element');
 if (!html.includes('id="priorities-intro"')) throw new Error('summary omitted the priority action container');
+if (!html.includes('How this operation was routed') || !html.includes('Program Paper') || !html.includes('PforR')) throw new Error('summary omitted operation routing');
+if (!html.includes('E&amp;S route') || !html.includes('INSTRUMENT SPECIFIC')) throw new Error('summary omitted E&S routing');
 """
     result = subprocess.run(
         ["node", "-e", script], capture_output=True, text=True, check=False
@@ -1106,6 +1112,12 @@ def test_verified_reader_visual_refresh_preserves_depth_and_orders_sections():
     renderer = _extract_js_function(source, "renderClimateVerifiedAssessment")
     url_helper = _extract_js_function(source, "isPublicWorldBankHttpsUrl")
     reader = {
+        "operation_context": {
+            "document_type": "Program Paper", "instrument_type": "PforR",
+            "country_scope": "single", "is_mpa": False,
+            "preparation_regime": "new_model", "processing_model": "two_step",
+            "es_regime": "INSTRUMENT_SPECIFIC", "warning_codes": [],
+        },
         "evidence_status": "preview; not approved",
         "executive_readout": (
             "The project needs climate-aware delivery rules. They should be agreed before appraisal.\n\n"
@@ -1202,6 +1214,9 @@ const renderClimateRelevantGuidance = () => '';
 {url_helper}
 {renderer}
 const html = renderClimateVerifiedAssessment({json.dumps(reader)});
+if (!html.includes('How this operation was routed') || !html.includes('Program Paper') || !html.includes('PforR')) {{
+  throw new Error('operational routing context missing | ' + html);
+}}
 const orderedSections = [
   'Overview', 'Core climate-FCV questions', 'Ranked operational priorities',
   'Points to check before the decision meeting', 'What to keep an eye on'

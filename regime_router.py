@@ -2,7 +2,7 @@
 
 Two INDEPENDENT axes (do not conflate — separate governing fields):
   * preparation regime  -> governed by the operation's OIS creation date vs
-    18 Apr 2026 [OPS5.03-PROC.281/282, eff 18 Apr 2026].
+    the instrument-specific April 2026 boundary.
   * E&S regime          -> governed by the Concept Decision date vs 1 Oct 2018
     [OPS5.03-DIR.123, eff 15 Jan 2026, §III.A ¶1; ESF Policy ¶7/fn12/¶63/fn1].
 
@@ -17,9 +17,11 @@ from __future__ import annotations
 import datetime as dt
 from typing import Optional
 
-# Procedures say "on or after April 17, 2026" = after the 17th = 18 Apr; encode
-# 18 Apr with a source caveat (see spec §4.1 / §9).
-PREPARATION_BOUNDARY = dt.date(2026, 4, 18)
+# IPF/PforR and DPF use distinct preparation-model effective dates.
+IPF_PFORR_PREPARATION_BOUNDARY = dt.date(2026, 4, 17)
+DPF_PREPARATION_BOUNDARY = dt.date(2026, 4, 18)
+# Compatibility alias for callers that do not yet pass the instrument family.
+PREPARATION_BOUNDARY = IPF_PFORR_PREPARATION_BOUNDARY
 # ESF applicability trigger: Concept Decision on/after 1 Oct 2018 -> ESF.
 ES_REGIME_BOUNDARY = dt.date(2018, 10, 1)
 
@@ -43,11 +45,19 @@ def _norm(value: Optional[str]) -> str:
 
 # --- Preparation regime ------------------------------------------------------
 
-def classify_preparation_regime(ois_creation_date: Optional[dt.date]) -> str:
+def classify_preparation_regime(
+    ois_creation_date: Optional[dt.date],
+    instrument: str = "IPF",
+) -> str:
     """Classify the preparation regime from the operation's OWN OIS creation date."""
     if ois_creation_date is None:
         return "unresolved_policy_source"
-    return "new_model" if ois_creation_date >= PREPARATION_BOUNDARY else "legacy_transitional"
+    boundary = (
+        DPF_PREPARATION_BOUNDARY
+        if _norm(instrument) in {"dpf", "dpo"}
+        else IPF_PFORR_PREPARATION_BOUNDARY
+    )
+    return "new_model" if ois_creation_date >= boundary else "legacy_transitional"
 
 
 # --- Processing model (one/two-step) -----------------------------------------
@@ -120,8 +130,10 @@ def classify_es_regime(
     OIS date. ESS1-10 apply to IPF only.
     """
     inst = _norm(instrument)
+    if inst == "mpa":
+        return "UNRESOLVED"
     # (A) non-IPF -> route to the instrument's own E&S provisions.
-    if inst not in {"ipf", "ipf-ddo", "ta", "mpa", ""}:
+    if inst not in {"ipf", "ipf-ddo", "ta", ""}:
         return "INSTRUMENT_SPECIFIC"
     # (B) Performance Standards.
     if op_bp_4_03_applies:

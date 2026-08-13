@@ -411,6 +411,13 @@
     .climate-verified-assessment .climate-section-intro{color:#4b5563;margin:0 0 16px}
     .climate-verified-assessment .climate-sens-rating{--climate-rating-color:#9aa4b2;margin:0 0 22px}
     .climate-verified-assessment .climate-overview-panel{background:#fff;border:1px solid #d7e1e7;border-left:5px solid var(--climate-rating-color,#147a3d);border-radius:10px;padding:20px;margin:0 0 24px}
+    .climate-operation-context{background:#f5f8fa;border:1px solid #d7e1e7;border-radius:9px;padding:14px 16px;margin:0 0 24px}
+    .climate-operation-context h2,.climate-operation-context h3{font-family:'Open Sans',sans-serif;font-size:14px!important;font-weight:700!important;color:var(--wbg-navy);margin:0 0 9px!important;border:0!important;padding:0!important}
+    .climate-operation-context dl{display:flex;flex-wrap:wrap;gap:8px 20px;margin:0}
+    .climate-operation-context dl>div{min-width:120px}
+    .climate-operation-context dt{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#64748b}
+    .climate-operation-context dd{font-weight:600;color:#243244;margin:1px 0 0}
+    .climate-operation-context p{font-size:12px;color:#8a4b00;margin:9px 0 0}
     .climate-verified-assessment .climate-rating-question{font-size:13px;font-weight:600;color:#4b5563;margin:0 0 3px}
     .climate-verified-assessment .climate-rating-label{font-family:'Open Sans',sans-serif;font-size:22px;font-weight:700;color:var(--climate-rating-color);margin:0}
     .climate-verified-assessment .climate-rating-scale{display:flex;gap:4px;max-width:420px;margin:10px 0 13px}
@@ -3610,8 +3617,9 @@
     // (Project Paper / Program Paper / Program Document) so the chip does not imply a legacy PAD.
     if(regimeContext && regimeContext.preparation_regime === 'new_model'){
       const rlabel = newModelDocLabel(instrumentType);
+      const regimeBoundary=/^(DPF|DPO)$/i.test(String(instrumentType||''))?'18 Apr 2026':'17 Apr 2026';
       badge.textContent = (typeMap[docType] || docType) + ' · ' + rlabel;
-      badge.title = 'New-model preparation (OIS on/after 18 Apr 2026) — appraisal document is the ' + rlabel;
+      badge.title = 'New-model preparation (OIS on/after ' + regimeBoundary + ') — appraisal document is the ' + rlabel;
     } else {
       badge.title = '';
     }
@@ -4858,6 +4866,17 @@
     const runtimeMode=String(r.runtime_mode||'quality').toLowerCase();
     const smokeHtml=runtimeMode==='smoke'?`<div class="finalized-pad-notice"><div class="fpn-body"><strong>Smoke test: validates workflow completion only; not a quality benchmark.</strong></div></div>`:'';
     const previewHtml=String(r.evidence_status||'').toLowerCase()==='preview; not approved'?`<div class="finalized-pad-notice"><div class="fpn-body"><strong>Candidate country evidence: preview; not approved.</strong></div></div>`:'';
+    const operationContextHtml=(()=>{
+      const context=r.operation_context&&typeof r.operation_context==='object'?r.operation_context:null;
+      if(!context)return '';
+      const instrument=String(context.instrument_type||'Unknown');
+      const documentType=String(context.document_type||'Unknown');
+      const preparation=String(context.preparation_regime||'unresolved_policy_source').replaceAll('_',' ');
+      const esRoute=String(context.es_regime||'UNRESOLVED').replaceAll('_',' ');
+      const mpa=context.is_mpa?'MPA program':'Not identified as MPA';
+      const unresolved=instrument.toLowerCase()==='unknown'||documentType.toLowerCase()==='unknown';
+      return `<section class="climate-operation-context"><h2>How this operation was routed</h2><dl><div><dt>Instrument</dt><dd>${esc(instrument)}</dd></div><div><dt>Document</dt><dd>${esc(documentType)}</dd></div><div><dt>Preparation</dt><dd>${esc(preparation)}</dd></div><div><dt>E&amp;S route</dt><dd>${esc(esRoute)}</dd></div><div><dt>Program layer</dt><dd>${esc(mpa)}</dd></div></dl>${unresolved?'<p>Operational context could not be resolved safely, so document-targeted guidance was withheld.</p>':''}</section>`;
+    })();
     const executive=esc(r.executive_readout||'The verified assessment did not return an executive readout.');
     const boldFirstSentence=p=>{const m=p.match(/^(.*?[.!?])(\s+)([\s\S]*)$/);return m?`<strong>${esc(m[1])}</strong>${esc(m[2]+m[3])}`:`<strong>${esc(p)}</strong>`;};
     const execHtml=(String(r.executive_readout||'').split(/\n\s*\n+/).map(p=>p.trim()).filter(Boolean).map(p=>`<p>${boldFirstSentence(p)}</p>`).join(''))||`<p>${executive}</p>`;
@@ -4974,7 +4993,7 @@
       (relevantGuidanceHtml?climateReportSection('Relevant WBG guidance for this project','climate-guidance',relevantGuidanceHtml):'')+
       (provenanceHtml?climateReportSection('How this analysis was produced','climate-methodology-section',provenanceHtml):'');
     const advisoryHtml=r.advisory_notice?`<p class="climate-advisory">${esc(r.advisory_notice)}</p>`:'';
-    return `<article class="climate-verified-assessment">${smokeHtml}${previewHtml}${numberedSections}${advisoryHtml}</article>`;
+    return `<article class="climate-verified-assessment">${smokeHtml}${previewHtml}${operationContextHtml}${numberedSections}${advisoryHtml}</article>`;
   }
 
   function renderOut(stage,result,isFollowOn){
@@ -6368,6 +6387,16 @@ ${body}
 
   function renderClimateVerifiedSummary(reader){
     const r=reader&&typeof reader==='object'?reader:{};
+    const operationContextHtml=(()=>{
+      const context=r.operation_context&&typeof r.operation_context==='object'?r.operation_context:null;
+      if(!context)return '';
+      const instrument=String(context.instrument_type||'Unknown');
+      const documentType=String(context.document_type||'Unknown');
+      const mpa=context.is_mpa?' + MPA program layer':'';
+      const esRoute=String(context.es_regime||'UNRESOLVED').replaceAll('_',' ');
+      const unresolved=instrument.toLowerCase()==='unknown'||documentType.toLowerCase()==='unknown';
+      return `<section class="climate-operation-context"><h3>How this operation was routed</h3><dl><div><dt>Instrument</dt><dd>${esc(instrument)}</dd></div><div><dt>Document</dt><dd>${esc(documentType)}</dd></div><div><dt>Preparation</dt><dd>${esc(String(context.preparation_regime||'unresolved').replaceAll('_',' '))}${esc(mpa)}</dd></div><div><dt>E&amp;S route</dt><dd>${esc(esRoute)}</dd></div></dl>${unresolved?'<p>Operational context could not be resolved safely, so document-targeted guidance was withheld.</p>':''}</section>`;
+    })();
     const executive=String(r.executive_readout||'The verified assessment did not return an executive readout.').trim();
     const paragraphs=executive.split(/\n\s*\n+/).map(p=>p.trim()).filter(Boolean);
     const overviewSource=(paragraphs.slice(0,2).join(' ')||executive);
@@ -6385,7 +6414,7 @@ ${body}
     const strengthsHtml=strengths.length?strengths.map(strength=>`<div class="concise-strength climate-strength-card"><strong>${esc(strength.title)}</strong><span class="concise-strength-text">${esc(strength.text)}</span></div>`).join(''):'<p class="concise-priority-intro">No distinct strengths were evidenced in the verified reader for this run.</p>';
     const priorities=climateSummaryPriorityItems(r);
     const prioritiesHtml=priorities.length?'<div id="priorities-intro"></div>':'<p class="concise-priority-intro">No ranked operational priorities were returned for this run.</p>';
-    return `<div class="concise-readout climate-verified-summary"><div class="concise-read-time">Five-minute readout</div><div class="concise-section-label">Overall assessment</div><p class="concise-overview">${esc(overview)}</p>${signal}<div class="concise-section-label">What is already working</div><div class="concise-strengths">${strengthsHtml}</div><div class="concise-section-label">Priority actions for the task team</div>${prioritiesHtml}</div>`;
+    return `<div class="concise-readout climate-verified-summary"><div class="concise-read-time">Five-minute readout</div>${operationContextHtml}<div class="concise-section-label">Overall assessment</div><p class="concise-overview">${esc(overview)}</p>${signal}<div class="concise-section-label">What is already working</div><div class="concise-strengths">${strengthsHtml}</div><div class="concise-section-label">Priority actions for the task team</div>${prioritiesHtml}</div>`;
   }
 
   function handleStage3ViewKeydown(event){

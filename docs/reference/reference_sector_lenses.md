@@ -105,6 +105,7 @@ The active Climate-only Express design path now uses `climate-verified-v2.1`; th
 routes. Shared v2 fields are `schema_version`, `run_id`, `bank_release_id`,
 `evidence_status`, atomic `facts`, `analysis`, four `judgments`,
 `executive_readout`, ranked `priorities`, `review_readiness_flags`, `validation`,
+additive `operation_context`,
 and a privacy-safe `manifest`. Recommendations are capped at three and may be
 zero. Candidate evidence remains labelled `preview; not approved`. ITS/FastAPI
 must not translate the old single rating into the four judgments; it should mirror
@@ -139,6 +140,19 @@ bounded guidance ID and uses `standard_document_advisory` when the normal PCN or
 PAD destination is advisory rather than a confirmed project commitment. The
 compiler alone receives the versioned operational-guidance packet; the packet is
 not project evidence and does not claim to reproduce OPCS or ESF policy text.
+
+Operational-guidance registry v2 is fail-closed. A known document with an unknown
+instrument selects no packet. New-model IPF uses Project Paper targets; PforR uses
+Program Paper/PAD, ESSA, Program Action Plan, DLI and verification targets; DPF
+uses Program Document, prior-action/policy-matrix, poverty/social-impact, and
+environment/forest/natural-resource targets. An MPA adds a program-layer entry
+only after the base instrument resolves to IPF or PforR. PforR and DPF never
+inherit IPF ESCP/SEP/ESS drafting destinations.
+Candidate validation also blocks instrument-incompatible terminology in the
+recommendation and drafting prose: PforR cannot emit IPF ESF/ESS/ESCP/SEP routes,
+and DPF cannot emit either IPF or PforR instrument routes. For MPA packets, the
+program-layer entry is ranked ahead of the packet cap so it cannot be sliced off
+by the base-instrument guidance entries.
 
 Readiness flags carry `residual_gap_ids` and are suppressed when they duplicate
 the residual gaps behind final priorities. Judgment values, including unclear or

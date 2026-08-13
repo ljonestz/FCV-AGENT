@@ -122,6 +122,24 @@ def test_common_prompt_carries_calibration_guardrails():
     assert "unverified context" in prompt
 
 
+def test_common_prompt_enforces_instrument_specific_operation_routing():
+    payload = {
+        "operation_context": {
+            "document_type": "Program Paper",
+            "instrument_type": "PforR",
+            "is_mpa": False,
+            "es_regime": "INSTRUMENT_SPECIFIC",
+        }
+    }
+    prompt = build_verified_stage_prompt("recommendation_compiler", payload).lower()
+
+    assert "operation_context is the controlling routing input" in prompt
+    assert "pforr" in prompt and "essa" in prompt and "program action plan" in prompt
+    assert "dpf" in prompt and "prior actions" in prompt
+    assert "never route pforr or dpf" in prompt
+    assert "unknown" in prompt and "withhold document-targeted drafting" in prompt
+
+
 @dataclass
 class _Text:
     text: str

@@ -435,6 +435,20 @@ after timeout or disconnect. A synchronous provider request already in flight ca
 be killed safely and may continue until its bounded per-call timeout. Mixed-lens, implementation, step-by-step, and
 legacy-session behavior is unchanged.
 
+Before research planning, the verified route derives an additive
+`operation_context` from strong primary-document filename and heading markers.
+It carries `document_type`, base `instrument_type`, `country_scope`, `is_mpa`,
+`has_ipf_component`, `preparation_regime`, `processing_model`, `es_regime`, and
+bounded warning/evidence notes. This happens before bank selection so an explicit
+regional or multi-country operation reaches the existing `bank_scope_unsupported`
+guard instead of receiving a single-country package. The context is returned on
+the Stage 1 completion event and passed into every verified model stage. Unknown
+or ambiguous routes remain `Unknown`; they do not inherit IPF guidance.
+When an explicit OIS creation date is present, the date-based classifier takes
+precedence over document-nomenclature markers and a marker/date conflict is
+recorded. This prevents a legacy DPF Program Document from being labelled new
+model merely because DPF retains the same document name across regimes.
+
 `POST /api/download-report` accepts `climate_assessment` when its schema is
 `climate-verified-v2`, rebuilds and validates the canonical reader model, and
 returns the verified DOCX. Reader-integrity failures return 422 with bounded reason
@@ -445,3 +459,7 @@ Completed verified runs emit one bounded `Climate recommendation diagnostics`
 application-log line with counts, semantic-review state, up to 12 reason codes,
 and up to 12 unsupported numeric tokens. It never logs candidate text, source
 excerpts, or model reasoning.
+
+The operation-context resolver uses document nomenclature as a strong regime
+signal when an OIS date is unavailable. Date-based routing uses the IPF/PforR
+boundary of 17 April 2026 and the DPF boundary of 18 April 2026.

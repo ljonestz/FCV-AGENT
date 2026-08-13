@@ -253,6 +253,47 @@ def test_build_reader_model_keeps_up_to_five_priorities():
     ]
 
 
+def test_reader_carries_visible_operational_routing_context():
+    assessment = _assessment()
+    assessment["operation_context"] = {
+        "document_type": "Program Paper",
+        "instrument_type": "PforR",
+        "country_scope": "single",
+        "is_mpa": True,
+        "preparation_regime": "new_model",
+        "processing_model": "two_step",
+        "es_regime": "INSTRUMENT_SPECIFIC",
+        "warning_codes": [],
+    }
+
+    model = build_reader_model(assessment)
+    rendered = render_reader_html(model)
+
+    assert model["operation_context"]["instrument_type"] == "PforR"
+    assert "How this operation was routed" in rendered
+    assert "Program Paper" in rendered
+    assert "PforR" in rendered
+    assert "MPA program" in rendered
+
+
+def test_reader_explains_when_operational_guidance_is_withheld():
+    assessment = _assessment()
+    assessment["operation_context"] = {
+        "document_type": "Unknown",
+        "instrument_type": "Unknown",
+        "country_scope": "single",
+        "is_mpa": False,
+        "preparation_regime": "unresolved_policy_source",
+        "processing_model": "unknown",
+        "es_regime": "UNRESOLVED",
+        "warning_codes": ["INSTRUMENT_ROUTE_UNRESOLVED"],
+    }
+
+    rendered = render_reader_html(build_reader_model(assessment))
+
+    assert "document-targeted guidance was withheld" in rendered
+
+
 def test_build_reader_model_exposes_safe_existing_responses_for_summary_tiles():
     assessment = {
         "executive_readout": "Overview.",

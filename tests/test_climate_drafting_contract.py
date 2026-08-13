@@ -453,6 +453,42 @@ def test_standard_nomenclature_is_advisory_not_blocking() -> None:
     assert [issue for issue in issues if issue.blocking] == []
 
 
+def test_pforr_blocks_ipf_esf_terminology_even_with_valid_program_target() -> None:
+    context = replace(_context(), instrument_type="PforR")
+    candidate = replace(
+        _candidate(),
+        minimum_action="Update the ESS and ESRS for the supported pathway.",
+    )
+
+    issues = validate_recommendation(
+        candidate,
+        KNOWN_IDS,
+        drafting_context=context,
+    )
+
+    assert "INSTRUMENT_TERMINOLOGY_MISMATCH" in {
+        issue.code for issue in issues if issue.blocking
+    }
+
+
+def test_dpf_blocks_ipf_and_pforr_instrument_terminology() -> None:
+    context = replace(_context(), instrument_type="DPF")
+    candidate = replace(
+        _candidate(),
+        decision="Route the action through the ESSA and an ESS standard.",
+    )
+
+    issues = validate_recommendation(
+        candidate,
+        KNOWN_IDS,
+        drafting_context=context,
+    )
+
+    assert "INSTRUMENT_TERMINOLOGY_MISMATCH" in {
+        issue.code for issue in issues if issue.blocking
+    }
+
+
 def test_unverified_drafting_actor_is_generalized_before_validation() -> None:
     candidate = replace(
         _candidate(),

@@ -1,7 +1,7 @@
 # Climate Verified Operational Routing Design
 
-**Date:** 2026-08-13  
-**Status:** Approved by user direction to proceed  
+**Date:** 2026-08-13
+**Status:** Approved by user direction to proceed
 **Policy basis:** GitHub Copilot/CoWork review of the authoritative OPCS corpus supplied in the handover attachment. Codex did not access that restricted corpus.
 
 ## Problem

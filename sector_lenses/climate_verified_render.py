@@ -509,8 +509,24 @@ def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
     executive = _text(assessment.get("executive_readout")) or _text(
         assessment.get("judgment_summary")
     )
+    raw_operation_context = _mapping(assessment.get("operation_context"))
+    operation_context = {
+        key: raw_operation_context.get(key)
+        for key in (
+            "document_type",
+            "instrument_type",
+            "country_scope",
+            "is_mpa",
+            "has_ipf_component",
+            "preparation_regime",
+            "processing_model",
+            "es_regime",
+            "warning_codes",
+        )
+    } if raw_operation_context else {}
     return _scrub_placeholders({
         "executive_readout": executive,
+        "operation_context": operation_context,
         "overview_summary": overview_summary,
         "judgments": judgments,
         "climate_sensitivity_rating": climate_sensitivity_rating,
@@ -927,6 +943,34 @@ def render_reader_html(model: dict[str, object]) -> str:
             + html.escape(CANDIDATE_PREVIEW_WARNING)
             + "</p>"
         )
+    operation_context = _mapping(model.get("operation_context"))
+    if operation_context:
+        instrument = _text(operation_context.get("instrument_type")) or "Unknown"
+        document_type = _text(operation_context.get("document_type")) or "Unknown"
+        preparation = (
+            _text(operation_context.get("preparation_regime"))
+            or "unresolved_policy_source"
+        ).replace("_", " ")
+        es_regime = (
+            _text(operation_context.get("es_regime")) or "UNRESOLVED"
+        ).replace("_", " ")
+        mpa_label = "MPA program" if operation_context.get("is_mpa") else "Not identified as MPA"
+        parts.append(
+            '<section class="climate-operation-context"><h2>'
+            "How this operation was routed</h2><dl>"
+            f"<div><dt>Instrument</dt><dd>{html.escape(instrument)}</dd></div>"
+            f"<div><dt>Document</dt><dd>{html.escape(document_type)}</dd></div>"
+            f"<div><dt>Preparation</dt><dd>{html.escape(preparation)}</dd></div>"
+            f"<div><dt>E&amp;S route</dt><dd>{html.escape(es_regime)}</dd></div>"
+            f"<div><dt>Program layer</dt><dd>{html.escape(mpa_label)}</dd></div>"
+            "</dl>"
+        )
+        if instrument.casefold() == "unknown" or document_type.casefold() == "unknown":
+            parts.append(
+                "<p>Operational context could not be resolved safely, so "
+                "document-targeted guidance was withheld.</p>"
+            )
+        parts.append("</section>")
     # Overview at the very top: the headline sensitivity rating card carries the
     # 3-4 sentence plain-language overall summary, so the reader gets the whole
     # takeaway up front. The fuller Executive readout follows as detail below.
@@ -1219,6 +1263,34 @@ def write_reader_docx(model: dict[str, object], path: str | Path) -> Path:
         paragraph = document.add_paragraph(CANDIDATE_PREVIEW_WARNING)
         if paragraph.runs:
             paragraph.runs[0].bold = True
+    operation_context = _mapping(model.get("operation_context"))
+    if operation_context:
+        document.add_heading("How this operation was routed", level=1)
+        _docx_field(document, "Instrument", operation_context.get("instrument_type"))
+        _docx_field(document, "Document", operation_context.get("document_type"))
+        _docx_field(
+            document,
+            "Preparation",
+            _text(operation_context.get("preparation_regime")).replace("_", " "),
+        )
+        _docx_field(
+            document,
+            "E&S route",
+            _text(operation_context.get("es_regime")).replace("_", " "),
+        )
+        _docx_field(
+            document,
+            "Program layer",
+            "MPA program" if operation_context.get("is_mpa") else "Not identified as MPA",
+        )
+        if (
+            _text(operation_context.get("instrument_type")).casefold() == "unknown"
+            or _text(operation_context.get("document_type")).casefold() == "unknown"
+        ):
+            document.add_paragraph(
+                "Operational context could not be resolved safely, so "
+                "document-targeted guidance was withheld."
+            )
     # Overview at the very top: the summary + rating come first, then the fuller
     # Executive readout as detail below (parity with the HTML surface).
     rating = _mapping(model.get("climate_sensitivity_rating"))

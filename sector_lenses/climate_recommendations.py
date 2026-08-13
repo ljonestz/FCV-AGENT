@@ -80,6 +80,7 @@ class DraftingValidationContext:
     guidance_targets: dict[
         str, tuple[tuple[str, str], ...]
     ] = field(default_factory=dict)
+    instrument_type: str = "Unknown"
 
 
 def _normalized_target(block: DraftingBlock) -> tuple[str, str]:
@@ -722,6 +723,8 @@ def validate_recommendation(
             value
             for value in (
                 candidate.decision,
+                candidate.title,
+                candidate.narrative,
                 candidate.minimum_action,
                 candidate.enhanced_action,
                 candidate.enhanced_activation,
@@ -733,6 +736,30 @@ def validate_recommendation(
             )
             if value
         ).casefold()
+        context_instrument = drafting_context.instrument_type.casefold()
+        forbidden_pattern = None
+        if context_instrument in {"pforr", "p4r"}:
+            forbidden_pattern = re.compile(
+                r"\b(?:esf|esrs|escp|sep|environmental and social commitment plan|"
+                r"stakeholder engagement plan|environmental and social standard(?:s)?|"
+                r"ess(?:[1-9]|10)?)\b"
+            )
+        elif context_instrument in {"dpf", "dpo"}:
+            forbidden_pattern = re.compile(
+                r"\b(?:esf|esrs|escp|sep|essa|environmental and social commitment plan|"
+                r"stakeholder engagement plan|environmental and social systems assessment|"
+                r"environmental and social standard(?:s)?|ess(?:[1-9]|10)?|"
+                r"program action plan|disbursement[- ]linked indicators?|dlis?)\b"
+            )
+        if forbidden_pattern and forbidden_pattern.search(operational_text):
+            issues.append(
+                _issue(
+                    "INSTRUMENT_TERMINOLOGY_MISMATCH",
+                    f"{candidate.recommendation_id} uses terminology outside "
+                    f"the resolved {context_instrument or 'operation'} route.",
+                    candidate,
+                )
+            )
         named_instruments = (
             "project operations manual",
             "security risk management plan",

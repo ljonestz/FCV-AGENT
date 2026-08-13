@@ -10,7 +10,7 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass
 
 
-GUIDANCE_REGISTRY_VERSION = "climate-guidance-v1"
+GUIDANCE_REGISTRY_VERSION = "climate-guidance-v2"
 MAX_GUIDANCE_PACKET_SIZE = 6
 
 
@@ -24,6 +24,7 @@ class GuidanceEntry:
     application_rule: str
     authority_class: str
     prohibited_overstatements: tuple[str, ...]
+    mpa_only: bool = False
 
     def as_record(self) -> dict[str, object]:
         return asdict(self)
@@ -31,6 +32,9 @@ class GuidanceEntry:
 
 _PCN_PAD = ("pcn", "pad")
 _IPF = ("ipf",)
+_NEW_IPF = ("project paper",)
+_PFORR_DOCS = ("program paper", "pad")
+_DPF_DOCS = ("program document",)
 
 
 OPERATIONAL_GUIDANCE = (
@@ -153,6 +157,113 @@ OPERATIONAL_GUIDANCE = (
             "Do not invent actors, plans, systems, or security arrangements.",
         ),
     ),
+    GuidanceEntry(
+        guidance_id="GUIDE-IPF-PROJECT-PAPER-DESIGN",
+        title="New-model IPF design",
+        document_types=_NEW_IPF,
+        instrument_types=_IPF,
+        permitted_targets=(
+            ("project paper", "project description and design"),
+            ("project paper", "implementation arrangements"),
+            ("project paper", "results framework"),
+            ("project paper", "risk section"),
+            ("project paper", "environmental and social overview"),
+        ),
+        application_rule=(
+            "Place supported IPF design improvements in the relevant Project "
+            "Paper section and route detailed environmental or social drafting "
+            "only to an instrument named in the uploaded evidence."
+        ),
+        authority_class="operational_guidance",
+        prohibited_overstatements=(
+            "Do not infer an environmental or social instrument or commitment.",
+        ),
+    ),
+    GuidanceEntry(
+        guidance_id="GUIDE-PFORR-PROGRAM-DESIGN",
+        title="PforR program design and systems",
+        document_types=_PFORR_DOCS,
+        instrument_types=("pforr", "p4r"),
+        permitted_targets=(
+            ("program paper", "program scope and design"),
+            ("program paper", "implementation arrangements"),
+            ("program paper", "environmental and social systems assessment (ESSA)"),
+            ("program paper", "program action plan"),
+            ("pad", "program scope and design"),
+            ("pad", "environmental and social systems assessment (ESSA)"),
+        ),
+        application_rule=(
+            "Frame climate-FCV improvements through borrower systems, the ESSA "
+            "and Program Action Plan where those instruments are evidenced."
+        ),
+        authority_class="operational_guidance",
+        prohibited_overstatements=(
+            "Do not route PforR actions to ESCP, SEP, or ESS instruments.",
+        ),
+    ),
+    GuidanceEntry(
+        guidance_id="GUIDE-PFORR-DLI-VERIFICATION",
+        title="PforR results, DLIs and verification",
+        document_types=_PFORR_DOCS,
+        instrument_types=("pforr", "p4r"),
+        permitted_targets=(
+            ("program paper", "results framework"),
+            ("program paper", "DLI matrix"),
+            ("program paper", "verification protocol"),
+            ("pad", "DLI matrix"),
+            ("pad", "verification protocol"),
+        ),
+        application_rule=(
+            "Connect supported improvements to program results, DLIs or "
+            "verification arrangements without inventing values or protocols."
+        ),
+        authority_class="reviewer_judgment",
+        prohibited_overstatements=(
+            "Do not invent DLI values, dates, disbursement amounts, or verification methods.",
+        ),
+    ),
+    GuidanceEntry(
+        guidance_id="GUIDE-DPF-POLICY-PROGRAM",
+        title="DPF policy program and impact analysis",
+        document_types=_DPF_DOCS,
+        instrument_types=("dpf", "dpo"),
+        permitted_targets=(
+            ("program document", "program description and policy matrix"),
+            ("program document", "prior actions"),
+            ("program document", "poverty and social impact analysis"),
+            ("program document", "environment, forests, and natural resources analysis"),
+            ("program document", "results framework"),
+        ),
+        application_rule=(
+            "Frame climate-FCV improvements through the policy program, prior "
+            "actions, distributional analysis, environmental analysis, and results."
+        ),
+        authority_class="operational_guidance",
+        prohibited_overstatements=(
+            "Do not route DPF actions to ESCP, SEP, ESSA, or ESS instruments.",
+            "Do not invent prior actions or formal conditions.",
+        ),
+    ),
+    GuidanceEntry(
+        guidance_id="GUIDE-MPA-PROGRAM-LAYER",
+        title="MPA program framework and phase coherence",
+        document_types=("project paper", "program paper", "pad"),
+        instrument_types=("ipf", "pforr", "p4r"),
+        permitted_targets=(
+            ("project paper", "MPA program framework and phase sequencing"),
+            ("program paper", "MPA program framework and phase sequencing"),
+            ("pad", "MPA program framework and phase sequencing"),
+        ),
+        application_rule=(
+            "Add the program-level implication alongside the base-instrument "
+            "route, including phase sequencing, continuity, and learning where supported."
+        ),
+        authority_class="reviewer_judgment",
+        prohibited_overstatements=(
+            "Do not imply that later phases or financing are assured.",
+        ),
+        mpa_only=True,
+    ),
 )
 
 
@@ -160,18 +271,19 @@ def select_operational_guidance(
     *,
     doc_type: str,
     instrument_type: str,
+    is_mpa: bool = False,
 ) -> tuple[GuidanceEntry, ...]:
     """Return a deterministic, bounded packet for the project stage."""
 
     document = str(doc_type or "").strip().casefold()
     instrument = str(instrument_type or "").strip().casefold()
-    selected = tuple(
+    selected = [
         entry
         for entry in OPERATIONAL_GUIDANCE
         if document in entry.document_types
-        and (
-            instrument in entry.instrument_types
-            or instrument in {"", "unknown"}
-        )
-    )
-    return selected[:MAX_GUIDANCE_PACKET_SIZE]
+        and instrument in entry.instrument_types
+        and (not entry.mpa_only or is_mpa)
+    ]
+    if is_mpa:
+        selected.sort(key=lambda entry: not entry.mpa_only)
+    return tuple(selected[:MAX_GUIDANCE_PACKET_SIZE])

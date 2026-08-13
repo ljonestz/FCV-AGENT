@@ -8,7 +8,10 @@ from __future__ import annotations
 
 import hashlib
 import re
+from datetime import datetime
 from dataclasses import dataclass
+
+import regime_router
 
 from sector_lenses.climate_analysis import ContextEvidenceRef
 from sector_lenses.climate_context_adapter import adapt_grounding_evidence
@@ -65,18 +68,37 @@ class PreparedClimateSources:
     warning_codes: tuple[str, ...]
 
 
-def resolve_verified_document_context(
-    prepared: PreparedClimateSources,
-    *,
-    doc_type: str,
-    instrument_type: str,
-) -> tuple[str, str]:
-    """Resolve missing routing context from explicit primary-source markers."""
+@dataclass(frozen=True)
+class VerifiedOperationContext:
+    document_type: str = "Unknown"
+    instrument_type: str = "Unknown"
+    country_scope: str = "single"
+    is_mpa: bool = False
+    has_ipf_component: bool = False
+    preparation_regime: str = "unresolved_policy_source"
+    processing_model: str = "unknown"
+    es_regime: str = "UNRESOLVED"
+    warning_codes: tuple[str, ...] = ()
+    evidence_notes: tuple[str, ...] = ()
 
-    resolved_document = str(doc_type or "Unknown").strip() or "Unknown"
-    resolved_instrument = (
-        str(instrument_type or "Unknown").strip() or "Unknown"
-    )
+    def as_record(self) -> dict[str, object]:
+        return {
+            "document_type": self.document_type,
+            "instrument_type": self.instrument_type,
+            "country_scope": self.country_scope,
+            "is_mpa": self.is_mpa,
+            "has_ipf_component": self.has_ipf_component,
+            "preparation_regime": self.preparation_regime,
+            "processing_model": self.processing_model,
+            "es_regime": self.es_regime,
+            "warning_codes": list(self.warning_codes),
+            "evidence_notes": list(self.evidence_notes),
+        }
+
+
+def _primary_context_text(
+    prepared: PreparedClimateSources,
+) -> tuple[str, str]:
     primary_ids = {
         item.document_id
         for item in prepared.documents
@@ -92,34 +114,226 @@ def resolve_verified_document_context(
         for item in prepared.blocks
         if item.document_id in primary_ids
     ).casefold()
+    return filenames, source_text
 
-    if resolved_document.casefold() == "unknown":
-        document_markers = (
-            (r"\bproject concept note\b|\bpcn\b", "PCN"),
-            (r"\bproject appraisal document\b|\bpad\b", "PAD"),
-            (r"\bproject information document\b|\bpid\b", "PID"),
+
+def _context_matches(pattern: str, filenames: str, source_head: str) -> bool:
+    return bool(re.search(pattern, filenames) or re.search(pattern, source_head))
+
+
+def _extract_ois_creation_date(source_head: str):
+    match = re.search(
+        r"\bois\b.{0,80}?\b(20\d{2}[-/]\d{1,2}[-/]\d{1,2})\b",
+        source_head,
+    )
+    if not match:
+        return None
+    value = match.group(1).replace("/", "-")
+    try:
+        return datetime.strptime(value, "%Y-%m-%d").date()
+    except ValueError:
+        return None
+
+
+def resolve_verified_operation_context(
+    prepared: PreparedClimateSources,
+    *,
+    doc_type: str = "Unknown",
+    instrument_type: str = "Unknown",
+) -> VerifiedOperationContext:
+    """Resolve conservative routing from explicit primary-document markers."""
+
+    filenames, source_text = _primary_context_text(prepared)
+    source_head = source_text[:8_000]
+    warnings: list[str] = []
+    notes: list[str] = []
+    document = str(doc_type or "Unknown").strip() or "Unknown"
+    instrument = str(instrument_type or "Unknown").strip() or "Unknown"
+
+    document_markers = (
+        (r"\bprogram document\b", "Program Document"),
+        (r"\bprogram paper\b", "Program Paper"),
+        (r"\bproject paper\b", "Project Paper"),
+        (
+            r"\bproject appraisal document\b|(?:^|[\W_])pad(?:[\W_]|$)",
+            "PAD",
+        ),
+        (r"\bproject concept note\b|(?:^|[\W_])pcn(?:[\W_]|$)", "PCN"),
+        (
+            r"\bproject information document\b|(?:^|[\W_])pid(?:[\W_]|$)",
+            "PID",
+        ),
+    )
+    filename_document_matches = [
+        value for pattern, value in document_markers
+        if re.search(pattern, filenames)
+    ]
+    source_document_matches = [
+        value for pattern, value in document_markers
+        if re.search(pattern, source_head)
+    ]
+    detected_document = "Unknown"
+    if len(dict.fromkeys(filename_document_matches)) == 1:
+        detected_document = filename_document_matches[0]
+    elif not filename_document_matches and len(
+        dict.fromkeys(source_document_matches)
+    ) == 1:
+        detected_document = source_document_matches[0]
+    elif filename_document_matches or source_document_matches:
+        document = "Unknown"
+        warnings.append("DOCUMENT_ROUTE_AMBIGUOUS")
+    if detected_document != "Unknown":
+        if (
+            document.casefold() != "unknown"
+            and document.casefold() != detected_document.casefold()
+        ):
+            warnings.append("DOCUMENT_HINT_OVERRIDDEN")
+        document = detected_document
+        notes.append(f"document_marker:{document}")
+
+    pforr = _context_matches(
+        r"\bprogram(?:-| )for(?:-| )results(?: financing)?\b|\bpforr\b|\bp4r\b",
+        filenames,
+        source_head,
+    )
+    dpf = _context_matches(
+        r"\bdevelopment policy (?:financing|operation)\b|\bdpf\b|\bdpo\b",
+        filenames,
+        source_head,
+    )
+    ipf = _context_matches(
+        r"\binvestment project financing\b|\bipf\b",
+        filenames,
+        source_head,
+    )
+    hybrid_ipf = bool(
+        pforr
+        and re.search(
+            r"\b(?:includes?|with|hybrid)\b.{0,80}\bipf component\b|"
+            r"\bipf component\b",
+            source_head,
         )
-        for pattern, value in document_markers:
-            full_name_pattern = pattern.split("|")[0]
-            if re.search(pattern, filenames) or re.search(
-                full_name_pattern,
-                source_text,
-            ):
-                resolved_document = value
-                break
+    )
+    detected_instrument = "Unknown"
+    if pforr and not dpf and (not ipf or hybrid_ipf):
+        detected_instrument = "PforR"
+    elif dpf and not pforr and not ipf:
+        detected_instrument = "DPF"
+    elif ipf and not pforr and not dpf:
+        detected_instrument = "IPF"
+    if detected_instrument != "Unknown":
+        if (
+            instrument.casefold() != "unknown"
+            and instrument.casefold() != detected_instrument.casefold()
+        ):
+            warnings.append("INSTRUMENT_HINT_OVERRIDDEN")
+        instrument = detected_instrument
+        notes.append(f"instrument_marker:{instrument}")
+    elif sum((pforr, dpf, ipf)) > 1:
+        instrument = "Unknown"
+        warnings.append("INSTRUMENT_ROUTE_AMBIGUOUS")
 
-    if resolved_instrument.casefold() == "unknown":
-        instrument_markers = (
-            (r"\binvestment project financing\b|\bipf\b", "IPF"),
-            (r"\bprogram(?:-| )for(?:-| )results\b|\bpforr\b|\bp4r\b", "PforR"),
-            (r"\bdevelopment policy (?:financing|operation)\b|\bdpo\b", "DPO"),
+    is_mpa = _context_matches(
+        r"\bmultiphase programmatic approach\b|\bmpa\b",
+        filenames,
+        source_head,
+    )
+    country_scope = (
+        "multi"
+        if _context_matches(
+            r"\bmulti(?:-| )country\b|\bregional (?:project|program|programme|operation)\b|"
+            r"\bparticipating countries\b",
+            filenames,
+            source_head,
         )
-        for pattern, value in instrument_markers:
-            if re.search(pattern, source_text):
-                resolved_instrument = value
-                break
+        else "single"
+    )
+    if country_scope == "multi":
+        warnings.append("MULTI_COUNTRY_BANK_WITHHELD")
 
-    return resolved_document, resolved_instrument
+    normalized_document = document.casefold()
+    marker_preparation_regime = (
+        "new_model"
+        if normalized_document in {"project paper", "program paper", "program document"}
+        else "legacy_transitional"
+        if normalized_document in {"pcn", "pid", "pad"}
+        else "unresolved_policy_source"
+    )
+    preparation_regime = marker_preparation_regime
+    ois_creation_date = _extract_ois_creation_date(source_head)
+    if ois_creation_date is not None:
+        preparation_regime = regime_router.classify_preparation_regime(
+            ois_creation_date,
+            instrument,
+        )
+        notes.append(f"ois_creation_date:{ois_creation_date.isoformat()}")
+        if (
+            marker_preparation_regime != "unresolved_policy_source"
+            and marker_preparation_regime != preparation_regime
+        ):
+            warnings.append("PREPARATION_MARKER_DATE_CONFLICT")
+    processing_model = "unknown"
+    if re.search(r"\btechnical design\b", source_head) and re.search(
+        r"\bimplementation readiness\b", source_head
+    ):
+        processing_model = "two_step"
+    elif re.search(r"\bone review\b", source_head):
+        processing_model = "one_review"
+
+    normalized_instrument = instrument.casefold()
+    if normalized_instrument in {"pforr", "p4r", "dpf", "dpo"}:
+        es_regime = "INSTRUMENT_SPECIFIC"
+    elif normalized_instrument == "ipf":
+        if re.search(
+            r"\b(?:esf|esrs|escp|environmental and social framework)\b",
+            source_head,
+        ):
+            es_regime = "ESF_ESS1_TO_ESS10"
+        elif re.search(
+            r"\b(?:safeguard policies|op 4\.01|bp 4\.01)\b",
+            source_head,
+        ):
+            es_regime = "LEGACY_SAFEGUARDS"
+        else:
+            es_regime = "UNRESOLVED"
+    else:
+        es_regime = "UNRESOLVED"
+
+    if normalized_document == "unknown":
+        warnings.append("DOCUMENT_ROUTE_UNRESOLVED")
+    if normalized_instrument == "unknown":
+        warnings.append("INSTRUMENT_ROUTE_UNRESOLVED")
+    if is_mpa and normalized_instrument == "unknown":
+        warnings.append("MPA_BASE_INSTRUMENT_UNRESOLVED")
+
+    return VerifiedOperationContext(
+        document_type=document,
+        instrument_type="DPF" if normalized_instrument == "dpo" else instrument,
+        country_scope=country_scope,
+        is_mpa=is_mpa,
+        has_ipf_component=hybrid_ipf,
+        preparation_regime=preparation_regime,
+        processing_model=processing_model,
+        es_regime=es_regime,
+        warning_codes=tuple(dict.fromkeys(warnings)),
+        evidence_notes=tuple(dict.fromkeys(notes)),
+    )
+
+
+def resolve_verified_document_context(
+    prepared: PreparedClimateSources,
+    *,
+    doc_type: str,
+    instrument_type: str,
+) -> tuple[str, str]:
+    """Resolve missing routing context from explicit primary-source markers."""
+
+    context = resolve_verified_operation_context(
+        prepared,
+        doc_type=doc_type,
+        instrument_type=instrument_type,
+    )
+    return context.document_type, context.instrument_type
 
 
 def _sha256(value: str) -> str:
@@ -327,16 +541,20 @@ def run_verified_from_doc_parts(
     cancel_event: object | None = None,
     doc_type: str = "Unknown",
     instrument_type: str = "Unknown",
+    operation_context: VerifiedOperationContext | None = None,
     wall_clock_seconds: int = 14 * 60,
 ) -> dict[str, object]:
     """Run verified-v2 from the final extraction and grounding contracts."""
 
     prepared = prepare_verified_sources(doc_parts)
-    doc_type, instrument_type = resolve_verified_document_context(
+    operation_context = operation_context or resolve_verified_operation_context(
         prepared,
         doc_type=doc_type,
         instrument_type=instrument_type,
     )
+    doc_type = operation_context.document_type
+    instrument_type = operation_context.instrument_type
+    operation_record = operation_context.as_record()
     context = list(adapt_grounding_evidence(climate_grounding))
     context.extend(_uploaded_context_evidence(doc_parts))
     grounding = climate_grounding if isinstance(climate_grounding, dict) else {}
@@ -351,7 +569,9 @@ def run_verified_from_doc_parts(
         wall_clock_seconds=wall_clock_seconds,
         doc_type=doc_type,
         instrument_type=instrument_type,
+        operation_context=operation_record,
     )
+    assessment.setdefault("operation_context", operation_record)
     normalized = normalize_climate_assessment(assessment)
     reader = build_reader_model(normalized)
     reader_issues = validate_reader_model(reader)
@@ -373,5 +593,7 @@ def run_verified_from_doc_parts(
     return {
         "assessment": normalized,
         "reader": reader,
-        "source_warnings": list(prepared.warning_codes),
+        "source_warnings": list(dict.fromkeys(
+            prepared.warning_codes + operation_context.warning_codes
+        )),
     }

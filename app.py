@@ -24,6 +24,8 @@ from sector_lenses.climate_runtime_config import load_verified_climate_runtime
 from sector_lenses.climate_verified_client import AnthropicVerifiedJsonClient
 from sector_lenses.climate_verified_pipeline import PipelineClients
 from sector_lenses.climate_verified_runtime import (
+    prepare_verified_sources,
+    resolve_verified_operation_context,
     run_verified_from_doc_parts,
 )
 from sector_lenses.climate_verified_render import (
@@ -205,17 +207,16 @@ POLICY_REGISTRY: dict[str, PolicyRegistryEntry] = {
     ),
     "ipf_one_step_processing": PolicyRegistryEntry(
         key="ipf_one_step_processing",
-        title="One-step / two-step IPF preparation procedures (April 18, 2026 processing transition)",
+        title="One-step / two-step preparation procedures (April 2026 processing transition)",
         catalogue_id="FCV-OPS-MANUAL-2025",
         source="July 2026 OPCS P&PF snapshot (Copilot/WBG-LLM summary, 2026-07-26); FCV Operational Manual (June 2025), Processing Flexibilities; WBG project-preparation streamlining reform",
-        last_updated="2026-07-26",
+        last_updated="2026-08-13",
         ati_designation="Official Use Only",
         summary=(
             "OPCS's July 2026 architecture provides DISTINCT one-step and two-step IPF preparation "
-            "procedures, applicable to operations INITIATED ON OR AFTER April 18, 2026; operations "
-            "initiated BEFORE that date remain under the applicable transitional preparation procedure. "
-            "The same on/after-vs-before April 18, 2026 processing split applies to PforR (one-step / "
-            "two-step procedures) and to DPF (new processing instructions vs the pre-April-18 procedure). "
+            "procedures, applicable to IPF and PforR operations INITIATED ON OR AFTER April 17, 2026; "
+            "operations initiated before that date remain under the applicable transitional procedure. "
+            "DPF uses April 18, 2026 as its new-processing boundary. "
             "The one-step model consolidates identification + preparation + appraisal with a Decision "
             "Review before appraisal and accelerated turnaround (comments 3 vs 5 business days; Board "
             "submission 10 vs 18 business days). General IPF preparation is now governed by the current "
@@ -989,6 +990,7 @@ def _iter_verified_climate_assessment(
     keepalive_interval=STREAM_KEEPALIVE_SECONDS,
     doc_type="Unknown",
     instrument_type="Unknown",
+    operation_context=None,
     maximum_wait_seconds=14 * 60,
 ):
     """Run verified-v2 with keepalives and a bounded paid-call lifetime."""
@@ -1007,6 +1009,7 @@ def _iter_verified_climate_assessment(
                 wall_clock_seconds=maximum_wait_seconds,
                 doc_type=doc_type,
                 instrument_type=instrument_type,
+                operation_context=operation_context,
             )))
         except Exception as exc:
             result_queue.put(("error", exc))
@@ -3316,7 +3319,8 @@ def extract_regime_context(stage1_output: str, instrument: str = "IPF") -> dict:
     regime_router. Text-only detection; the router turns dates/flags into
     classifications. Missing block or fields default safely to
     unresolved/UNRESOLVED so a missing signal never mis-asserts a regime.
-    Preparation regime is governed by the OIS creation date (vs 18 Apr 2026);
+    Preparation regime is governed by the OIS creation date (IPF/PforR vs
+    17 Apr 2026; DPF vs 18 Apr 2026);
     the E&S regime by the Concept Decision date (vs 1 Oct 2018) — independent axes.
     """
     default = {
@@ -3357,7 +3361,10 @@ def extract_regime_context(stage1_output: str, instrument: str = "IPF") -> dict:
                 fields[key] = val
     ois = _parse_regime_date(fields.get("ois_creation_date"))
     concept = _parse_regime_date(fields.get("concept_decision_or_equivalent_date"))
-    fields["preparation_regime"] = regime_router.classify_preparation_regime(ois)
+    fields["preparation_regime"] = regime_router.classify_preparation_regime(
+        ois,
+        instrument,
+    )
     fields["es_regime"] = regime_router.classify_es_regime(
         instrument=instrument or "IPF",
         concept_decision_date=concept,
@@ -3936,7 +3943,7 @@ conflicting_evidence: [any contradictory signals, else none]
 %%%REGIME_CONTEXT_END%%%
 
 REGIME DETECTION RULES (do NOT decide the regime from the document LABEL alone):
-- The PREPARATION regime is governed by the operation's OWN OIS creation date vs 18 April 2026 (2026-04-18) [OPS5.03-PROC.281/282]. New-model markers: "Project Paper"/"Program Paper", "Technical Design Review", "Implementation Readiness Review", "One Review", "Project Assessment Summary". Legacy markers: PCN, "Concept Review", "Track 1/2", "Project Appraisal Document"/PAD, "Appraisal Stage/Package", "Decision Review". "PID" ALONE is NOT decisive (both regimes use it); a guidance catalogue number is NOT proof. Key on the OIS acronym + date, not on how the source spells out "OIS".
+- The PREPARATION regime is governed by the operation's OWN OIS creation date: IPF/PforR use 17 April 2026 (2026-04-17), while DPF uses 18 April 2026 (2026-04-18). New-model markers: "Project Paper"/"Program Paper", "Technical Design Review", "Implementation Readiness Review", "One Review", "Project Assessment Summary". Legacy markers: PCN, "Concept Review", "Track 1/2", "Project Appraisal Document"/PAD, "Appraisal Stage/Package", "Decision Review". "PID" ALONE is NOT decisive (both regimes use it); a guidance catalogue number is NOT proof. Key on the OIS acronym + date, not on how the source spells out "OIS".
 - The E&S regime is a SEPARATE axis governed by the Concept Decision date vs 1 October 2018 (2018-10-01) [OPS5.03-DIR.123 Section III.A paragraph 1] — NOT by the OIS date. ESS1-10 apply to IPF only; DPF/PforR have their own E&S provisions. ESF markers: ESRC/ESRS/ESCP/SEP/ESS1-10; legacy markers: Environmental Category A/B/C/FI, ISDS, "Safeguard Policies triggered", OP/BP 4.xx.
 - SOURCE DISCIPLINE: cite the marker you used; do NOT equate "Public" (an Access-to-Information designation) with "Published" (a publication status). When signals conflict or a governing date is missing, leave the date Unknown and note it in conflicting_evidence.
 
@@ -9636,6 +9643,7 @@ def run_express():
             lens_context_sources = []
             conversation_history = []
             lens_diagnostic = {}
+            verified_operation_context = None
 
             try:
                 # ════════════════════════════════════════════════════════════
@@ -9725,6 +9733,37 @@ def run_express():
                 )
                 for w in extraction_warnings_express:
                     yield f"data: {json.dumps({'extraction_warning': w})}\n\n"
+
+                # The verified Climate path bypasses generic Stage 1 metadata
+                # extraction, so resolve its operational route here, before
+                # research planning and country-bank selection.
+                if _is_verified_climate_express(analysis_state, is_impl):
+                    prepared_context_sources = prepare_verified_sources(doc_parts)
+                    verified_operation_context = resolve_verified_operation_context(
+                        prepared_context_sources,
+                        # Client intake values are not authoritative for the
+                        # verified route; derive from the primary document.
+                        doc_type="Unknown",
+                        instrument_type="Unknown",
+                    )
+                    doc_type = verified_operation_context.document_type
+                    instrument_type = verified_operation_context.instrument_type
+                    analysis_state.doc_type = doc_type
+                    analysis_state.instrument = instrument_type
+                    analysis_state.country_scope = (
+                        verified_operation_context.country_scope
+                    )
+                    analysis_state.is_mpa = verified_operation_context.is_mpa
+                    analysis_state.has_ipf_component = (
+                        verified_operation_context.has_ipf_component
+                    )
+                    analysis_state.preparation_regime = (
+                        verified_operation_context.preparation_regime
+                    )
+                    analysis_state.processing_model = (
+                        verified_operation_context.processing_model
+                    )
+                    analysis_state.es_regime = verified_operation_context.es_regime
 
                 lens_context_s1 = build_lens_stage_context(analysis_state, 1)
                 analysis_state.active_lenses = [
@@ -9821,6 +9860,10 @@ def run_express():
                         'climate_grounding': climate_grounding_envelope(climate_grounding),
                         'doc_type': doc_type,
                         'instrument_type': instrument_type,
+                        'operation_context': (
+                            verified_operation_context.as_record()
+                            if verified_operation_context else {}
+                        ),
                         'review_mode': review_mode,
                         'active_lenses': lens_context_s1['active_lenses'],
                         'lens_warnings': lens_context_s1['warnings'],
@@ -9837,6 +9880,7 @@ def run_express():
                         run_id=assessment_id,
                         doc_type=doc_type,
                         instrument_type=instrument_type,
+                        operation_context=verified_operation_context,
                     ):
                         if 'result' not in verified_event:
                             yield f"data: {json.dumps(verified_event)}\n\n"

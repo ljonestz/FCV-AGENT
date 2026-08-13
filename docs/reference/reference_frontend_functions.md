@@ -211,7 +211,7 @@ Both modes use identical prompts, code paths, and output quality. Express is a f
 
 ---
 
-*Last updated: 2026-08-10 - Verified Climate-FCV reader hierarchy and guidance refinement.*
+*Last updated: 2026-08-13 - Verified Climate-FCV operational routing transparency.*
 
 ## Verified Climate-FCV reader (v9.35)
 
@@ -235,6 +235,10 @@ clear them. Follow-on requests carry the structured reader in their history.
 - The Overview contains the one restrained visual panel for the sensitivity rating;
   executive and core-question prose remain in the normal reading flow. A narrative
   transition introduces the full priorities section instead of repeating its titles.
+- Detailed and five-minute readers show a compact "How this operation was routed"
+  block before the assessment. It names the resolved instrument, document,
+  preparation model, E&S route, and MPA program layer. Unknown document or
+  instrument context explicitly says that document-targeted guidance was withheld.
 - Priority 1 is open by default in live and standalone HTML; later priorities are
   closed native `<details>` elements. All narrative, suggested drafting, and
   structured recommendation detail remains in the DOM. The server-side DOCX renderer

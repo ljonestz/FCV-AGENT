@@ -5,6 +5,7 @@ import pytest
 from sector_lenses.climate_verified_runtime import (
     prepare_verified_sources,
     resolve_verified_document_context,
+    resolve_verified_operation_context,
     run_verified_from_doc_parts,
 )
 
@@ -187,6 +188,8 @@ def test_runtime_preserves_candidate_preview_and_uses_grounding_adapter(monkeypa
     assert captured["context_evidence"][0].preview_status == "preview; not approved"
     assert captured["doc_type"] == "PCN"
     assert captured["instrument_type"] == "IPF"
+    assert captured["operation_context"]["document_type"] == "PCN"
+    assert captured["operation_context"]["instrument_type"] == "IPF"
     uploaded = [
         item for item in captured["context_evidence"]
         if item.source_kind == "uploaded_context"
@@ -196,6 +199,7 @@ def test_runtime_preserves_candidate_preview_and_uses_grounding_adapter(monkeypa
     assert uploaded[0].source_ref.startswith("upload-context:")
     assert result["assessment"]["evidence_status"] == "preview; not approved"
     assert result["reader"]["evidence_status"] == "preview; not approved"
+    assert result["reader"]["operation_context"]["document_type"] == "PCN"
 
 
 def test_runtime_blocks_reader_integrity_failure(monkeypatch):
@@ -262,3 +266,123 @@ def test_pcn_marker_does_not_invent_missing_instrument_type():
         doc_type="Unknown",
         instrument_type="Unknown",
     ) == ("PCN", "Unknown")
+
+
+def _resolved_context(name: str, text: str):
+    prepared = prepare_verified_sources([{
+        "label": "PROJECT DOCUMENT",
+        "name": name,
+        "raw_text": text,
+    }])
+    return resolve_verified_operation_context(prepared)
+
+
+def test_program_paper_routes_to_pforr_without_ipf_esf_inheritance():
+    context = _resolved_context(
+        "Mozambique Resilient Services Program Paper.docx",
+        (
+            "PROGRAM-FOR-RESULTS FINANCING\n"
+            "Program Paper\nEnvironmental and Social Systems Assessment\n"
+            "Disbursement-Linked Indicators and verification protocol."
+        ),
+    )
+
+    assert context.document_type == "Program Paper"
+    assert context.instrument_type == "PforR"
+    assert context.es_regime == "INSTRUMENT_SPECIFIC"
+    assert context.has_ipf_component is False
+
+
+def test_dpf_abbreviation_and_program_document_are_detected():
+    context = _resolved_context(
+        "Mozambique DPF Program Document.pdf",
+        "Development Policy Financing (DPF)\nProgram Document\nPrior actions and policy matrix.",
+    )
+
+    assert context.document_type == "Program Document"
+    assert context.instrument_type == "DPF"
+    assert context.es_regime == "INSTRUMENT_SPECIFIC"
+
+
+def test_mpa_retains_wrapper_and_routes_through_unique_base_instrument():
+    context = _resolved_context(
+        "First Phase MPA Project Paper.docx",
+        (
+            "Multiphase Programmatic Approach (MPA)\nProject Paper\n"
+            "Investment Project Financing is the financing instrument."
+        ),
+    )
+
+    assert context.is_mpa is True
+    assert context.instrument_type == "IPF"
+    assert context.document_type == "Project Paper"
+
+
+def test_pforr_with_ipf_component_keeps_pforr_as_base_instrument():
+    context = _resolved_context(
+        "Hybrid PforR Program Paper.docx",
+        (
+            "Program-for-Results Financing\nProgram Paper\n"
+            "The operation includes an IPF component for technical assistance."
+        ),
+    )
+
+    assert context.instrument_type == "PforR"
+    assert context.has_ipf_component is True
+
+
+def test_explicit_regional_operation_is_multi_country_and_withholds_single_country_bank():
+    context = _resolved_context(
+        "Regional IPF Project Paper.docx",
+        (
+            "Regional project involving participating countries\nProject Paper\n"
+            "Investment Project Financing."
+        ),
+    )
+
+    assert context.country_scope == "multi"
+    assert "MULTI_COUNTRY_BANK_WITHHELD" in context.warning_codes
+
+
+def test_new_model_document_marker_sets_preparation_model_without_inventing_processing_model():
+    context = _resolved_context(
+        "IPF Project Paper.docx",
+        "Project Paper\nInvestment Project Financing.",
+    )
+
+    assert context.preparation_regime == "new_model"
+    assert context.processing_model == "unknown"
+
+
+def test_primary_source_markers_override_conflicting_client_hints():
+    prepared = prepare_verified_sources([{
+        "label": "PROJECT DOCUMENT",
+        "name": "Mozambique PforR Program Paper.docx",
+        "raw_text": "Program-for-Results Financing\nProgram Paper\nESSA and DLIs.",
+    }])
+
+    context = resolve_verified_operation_context(
+        prepared,
+        doc_type="PCN",
+        instrument_type="IPF",
+    )
+
+    assert context.document_type == "Program Paper"
+    assert context.instrument_type == "PforR"
+    assert "DOCUMENT_HINT_OVERRIDDEN" in context.warning_codes
+    assert "INSTRUMENT_HINT_OVERRIDDEN" in context.warning_codes
+
+
+def test_explicit_ois_date_overrides_dpf_program_document_regime_marker():
+    context = _resolved_context(
+        "Mozambique DPF Program Document.pdf",
+        (
+            "Development Policy Financing\nProgram Document\n"
+            "OIS creation date: 2025-01-10\nPrior actions and policy matrix."
+        ),
+    )
+
+    assert context.instrument_type == "DPF"
+    assert context.document_type == "Program Document"
+    assert context.preparation_regime == "legacy_transitional"
+    assert "PREPARATION_MARKER_DATE_CONFLICT" in context.warning_codes
