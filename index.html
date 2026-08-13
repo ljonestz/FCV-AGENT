@@ -1069,7 +1069,8 @@
     .concise-read-time,.concise-section-label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;font-weight:700;color:var(--wbg-blue)}
     .concise-strengths{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:10px 0 22px}
     .concise-strength{padding:12px;background:#edf8f2;border:1px solid #cae4d5;border-radius:7px}
-    .concise-strength strong{display:block;color:#176a42;margin-bottom:3px}
+    .concise-strength strong{display:block;color:#176a42;margin-bottom:6px;white-space:normal;overflow:visible}
+    .concise-strength-text{display:block;line-height:1.55}
     .concise-priority-card{background:#fff;border:1px solid var(--border);border-radius:9px;overflow:hidden;margin-bottom:14px}
     .concise-priority-head{display:grid;grid-template-columns:34px 1fr auto;gap:12px;padding:16px 18px;border-bottom:1px solid var(--border)}
     .concise-priority-num{width:29px;height:29px;border-radius:50%;display:grid;place-items:center;background:var(--wbg-navy);color:#fff;font-weight:700}
@@ -6320,9 +6321,9 @@ ${body}
     const r=reader&&typeof reader==='object'?reader:{};
     const strengths=[];
     const seen=new Set();
-    const add=(title,text)=>{
+    const add=(title,text,keyText)=>{
       const body=String(text||'').trim();
-      const key=body.toLowerCase().replace(/\s+/g,' ');
+      const key=String(keyText||body).trim().toLowerCase().replace(/\s+/g,' ');
       if(!body||seen.has(key)||strengths.length>=3)return;
       seen.add(key);
       strengths.push({title:String(title||'What is already working').trim(),text:body});
@@ -6330,10 +6331,11 @@ ${body}
     (Array.isArray(r.existing_responses)?r.existing_responses:[]).forEach(response=>{
       const description=String(response&&response.description||'').trim();
       if(!description)return;
-      const rawTitle=String(response&&response.title||'').trim()||description.split(/[.!?](?:\s|$)/)[0].trim()||'Existing project response';
-      const titleWords=rawTitle.split(/\s+/);
-      const title=titleWords.length>11?titleWords.slice(0,11).join(' ')+'…':rawTitle;
-      add(title,description);
+      const suppliedTitle=String(response&&response.title||'').trim();
+      const sentenceMatch=!suppliedTitle&&description.match(/^(.+?[.!?](?:["')\]]+)?)(?:\s+)([\s\S]+)$/);
+      const title=suppliedTitle||(sentenceMatch?sentenceMatch[1].trim():description)||'Existing project response';
+      const body=sentenceMatch?sentenceMatch[2].trim():description;
+      add(title,body,description);
     });
     (Array.isArray(r.judgments)?r.judgments:[]).forEach(judgment=>{
       const value=String(judgment&&judgment.value||'').toLowerCase();
@@ -6380,7 +6382,7 @@ ${body}
     const sensitivity=r.climate_sensitivity_rating&&typeof r.climate_sensitivity_rating==='object'?r.climate_sensitivity_rating:{};
     const signal=sensitivity.label?`<p class="concise-priority-intro"><strong>Climate-FCV sensitivity:</strong> ${esc(sensitivity.label)}</p>`:'';
     const strengths=climateSummaryStrengths(r);
-    const strengthsHtml=strengths.length?strengths.map(strength=>`<div class="concise-strength climate-strength-card"><strong>${esc(strength.title)}</strong>${esc(strength.text)}</div>`).join(''):'<p class="concise-priority-intro">No distinct strengths were evidenced in the verified reader for this run.</p>';
+    const strengthsHtml=strengths.length?strengths.map(strength=>`<div class="concise-strength climate-strength-card"><strong>${esc(strength.title)}</strong><span class="concise-strength-text">${esc(strength.text)}</span></div>`).join(''):'<p class="concise-priority-intro">No distinct strengths were evidenced in the verified reader for this run.</p>';
     const priorities=climateSummaryPriorityItems(r);
     const prioritiesHtml=priorities.length?'<div id="priorities-intro"></div>':'<p class="concise-priority-intro">No ranked operational priorities were returned for this run.</p>';
     return `<div class="concise-readout climate-verified-summary"><div class="concise-read-time">Five-minute readout</div><div class="concise-section-label">Overall assessment</div><p class="concise-overview">${esc(overview)}</p>${signal}<div class="concise-section-label">What is already working</div><div class="concise-strengths">${strengthsHtml}</div><div class="concise-section-label">Priority actions for the task team</div>${prioritiesHtml}</div>`;

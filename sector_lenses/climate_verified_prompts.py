@@ -102,6 +102,11 @@ Return no more than 12 existing responses, six pathways total, eight residual
 gaps, four opportunity/unintended-consequence items, and four evidence
 limitations. Use exactly three short chain elements per pathway. Keep each
 free-text value to 45 words or fewer.
+Write every existing_responses description as two or three plain-language
+sentences. Use a short, self-contained first sentence that states the response
+clearly for a non-specialist reader. In the remaining sentence or sentences,
+name a concrete project anchor and explain why the response matters for
+climate-FCV risk, resilience, inclusion, or delivery.
 
 Return: {"existing_responses":[{"response_id":"ER-001","project_fact_ids":[],"pathway_ids":[],"description":"...","limitation":"..."}],"pathways":[{"pathway_id":"PW-001","direction":"climate_to_fcv|fcv_to_climate","chain":["pressure","mediator","consequence"],"project_anchor_ids":[],"evidence_ids":[],"confidence":"high|medium|low"}],"residual_gaps":[{"gap_id":"RG-001","gap_type":"confirmed_omission|partial_response|not_yet_specified|contradictory|evidence_gap","statement":"...","pathway_ids":[],"project_anchor_ids":[],"existing_response_ids":[],"evidence_ids":[],"confidence":"high|medium|low"}],"opportunities_and_unintended_consequences":[],"evidence_limitations":[]}.""",
         payload,

@@ -21,3 +21,13 @@ def test_judgment_prompt_guards_against_false_formal_rating():
     lowered = prompt.lower()
     assert "formally rated" in lowered
     assert "not a" in lowered and "rating category" in lowered
+
+
+def test_analysis_prompt_requires_lay_ready_existing_response_descriptions():
+    prompt = build_verified_stage_prompt("bounded_analysis", {})
+    lowered = " ".join(prompt.lower().split())
+
+    assert "two or three plain-language sentences" in lowered
+    assert "short, self-contained first sentence" in lowered
+    assert "concrete project anchor" in lowered
+    assert "why the response matters" in lowered

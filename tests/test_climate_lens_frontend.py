@@ -140,7 +140,29 @@ const html = renderClimateVerifiedSummary(reader);
 if (html.includes('Climate-FCV design readout')) throw new Error('summary contains redundant climate title');
 if (!html.includes('Second overview paragraph')) throw new Error('summary omitted the longer overview');
 if (html.includes('A fourth positive design feature')) throw new Error('summary exceeded the three-tile cap');
+if (!html.includes('class="concise-strength-text"')) throw new Error('strength explanation lacks readable body element');
 if (!html.includes('id="priorities-intro"')) throw new Error('summary omitted the priority action container');
+"""
+    result = subprocess.run(
+        ["node", "-e", script], capture_output=True, text=True, check=False
+    )
+    assert result.returncode == 0, result.stderr
+
+
+def test_climate_summary_strength_cards_split_full_heading_from_explanation():
+    source = INDEX.read_text(encoding="utf-8")
+    helper = _extract_js_function(source, "climateSummaryStrengths")
+    script = f"""
+{helper}
+const fullHeading = 'Climate-resilient infrastructure standards protect fisheries investments and local livelihoods from severe seasonal flooding.';
+const explanation = 'Sub-component 1.2 requires all-weather facilities, helping services continue when seasonal water levels rise.';
+const cards = climateSummaryStrengths({{existing_responses:[
+  {{description:fullHeading+' '+explanation}},
+  {{description:'Co-management agreements are sequenced before infrastructure becomes operational.'}}
+]}});
+if (cards[0].title !== fullHeading) throw new Error('heading was truncated: '+cards[0].title);
+if (cards[0].text !== explanation) throw new Error('explanation was not separated: '+cards[0].text);
+if (cards[1].title !== cards[1].text) throw new Error('one-sentence fallback was not preserved');
 """
     result = subprocess.run(
         ["node", "-e", script], capture_output=True, text=True, check=False

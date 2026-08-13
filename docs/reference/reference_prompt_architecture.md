@@ -368,6 +368,8 @@ language is relabelled.
 
 **Readout order (live HTML, shared HTML, DOCX in parity):** plain opening narrative + 6-tier gauge -> `renderClimateStrengthsWeaknesses` -> `renderClimateCoreQuestions` (lay intro naming the source literature + both interaction directions in one or two component-anchored paragraphs + per-theme answers with framework references). The opening uses `executive_summary` for two-to-three scene-setting sentences and `materiality_summary` for the project-specific "Why it matters" transition. Reader-facing copy uses climate relevance/importance rather than materiality. Core-question `status_cue` remains in the canonical payload for compatibility but is not rendered. Standalone dividends + wider-FCV sections remain dropped in module mode. DOCX helpers: `add_climate_strengths_weaknesses`, `add_climate_core_questions`.
 
+**Verified summary strength cards:** the bounded-analysis prompt keeps `existing_responses.description` within 45 words but requires two or three plain-language sentences. The short first sentence states the documented response; the remainder names a concrete project anchor and explains its Climate-FCV significance. The live summary derives the full heading from that first sentence and renders the remainder as the card explanation. It does not truncate headings; older one-sentence records use the complete description as both heading and fallback body. This is a presentation/prompt-quality contract only and does not add a schema field.
+
 ## Climate-FCV country-bank grounding (v9.23)
 
 The native Climate Stage 2 prompt accepts one bounded `EXTERNAL CLIMATE-FCV
