@@ -10,7 +10,7 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass
 
 
-GUIDANCE_REGISTRY_VERSION = "climate-guidance-v2"
+GUIDANCE_REGISTRY_VERSION = "climate-guidance-v3"
 MAX_GUIDANCE_PACKET_SIZE = 6
 
 

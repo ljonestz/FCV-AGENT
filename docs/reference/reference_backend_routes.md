@@ -460,6 +460,21 @@ application-log line with counts, semantic-review state, up to 12 reason codes,
 and up to 12 unsupported numeric tokens. It never logs candidate text, source
 excerpts, or model reasoning.
 
+The operational guidance registry is `climate-guidance-v3`. Its supported
+current-document matrix is IPF PCN/PID/PAD/Project Paper/AF/Restructuring;
+PforR PCN/PID/PAD/Program Paper; DPF PCN/PID/PAD/Program Document; with an MPA
+program-layer overlay for any supported base instrument. Unknown documents,
+TA, ISR, and unresolved instruments fail closed and receive no drafting packet.
+
+`recommendation_diagnostics.reason_codes` includes
+`RECOMMENDATIONS_ALL_SUPPRESSED` when at least one recommendation candidate was
+parsed but none survives the deterministic gates. In that state,
+`recommendation_diagnostics.review_status` is `attention`; the canonical reader
+sets `recommendation_status` to `incomplete` and displays a bounded warning on
+live HTML, standalone HTML, and DOCX. This state must not be rendered as a
+successful no-priority result. When the compiler returns no candidates at all,
+the ordinary neutral zero-priority message remains valid.
+
 The operation-context resolver uses document nomenclature as a strong regime
 signal when an OIS date is unavailable. Date-based routing uses the IPF/PforR
 boundary of 17 April 2026 and the DPF boundary of 18 April 2026.

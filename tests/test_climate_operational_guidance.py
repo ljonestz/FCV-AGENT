@@ -28,7 +28,7 @@ SUPPORTED_ROUTES = (
 
 
 def test_registry_has_stable_unique_ids_and_bounded_authority() -> None:
-    assert GUIDANCE_REGISTRY_VERSION == "climate-guidance-v2"
+    assert GUIDANCE_REGISTRY_VERSION == "climate-guidance-v3"
     ids = [entry.guidance_id for entry in OPERATIONAL_GUIDANCE]
     assert len(ids) == len(set(ids))
     assert all(identifier.startswith("GUIDE-") for identifier in ids)
