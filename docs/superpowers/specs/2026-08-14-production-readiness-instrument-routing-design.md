@@ -1,6 +1,6 @@
 # Production-readiness design: Climate recommendation routing
 
-**Date:** 2026-08-14  
+**Date:** 2026-08-14
 **Status:** Approved direction, implementation pending
 
 ## Problem
