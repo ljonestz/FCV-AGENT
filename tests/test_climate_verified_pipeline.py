@@ -401,7 +401,10 @@ def test_unresolved_routing_triggers_one_source_first_review():
         "final_priority_count": 0,
         "reviewer_invoked": True,
         "reviewer_verdict": "revise",
-        "reason_codes": ["ROUTING_SCOPE_UNVERIFIED"],
+        "reason_codes": [
+            "ROUTING_SCOPE_UNVERIFIED",
+            "RECOMMENDATIONS_ALL_SUPPRESSED",
+        ],
         "unsupported_numeric_tokens": [],
         "semantic_review_object_ids": ["REC-001"],
         "candidate_suppressions": [
@@ -472,7 +475,8 @@ def test_semantic_review_reason_codes_are_bounded():
     )
 
     assert result["recommendation_diagnostics"]["reason_codes"] == [
-        "SEMANTIC_REVIEW_REASON_INVALID"
+        "SEMANTIC_REVIEW_REASON_INVALID",
+        "RECOMMENDATIONS_ALL_SUPPRESSED",
     ]
 
 
@@ -522,10 +526,11 @@ def test_admission_suppression_exposes_bounded_reason_codes():
         "final_priority_count": 0,
         "reviewer_invoked": False,
         "reviewer_verdict": "not_invoked",
-        "reason_codes": [
-            "ADMISSION_MATERIALITY_BELOW_MIN",
-            "ADMISSION_GATE_FAILED_TIMING",
-        ],
+            "reason_codes": [
+                "ADMISSION_MATERIALITY_BELOW_MIN",
+                "ADMISSION_GATE_FAILED_TIMING",
+                "RECOMMENDATIONS_ALL_SUPPRESSED",
+            ],
         "unsupported_numeric_tokens": [],
         "semantic_review_object_ids": [],
         "candidate_suppressions": [
@@ -540,6 +545,52 @@ def test_admission_suppression_exposes_bounded_reason_codes():
             }
         ],
     }
+
+
+def test_all_parsed_candidates_suppressed_is_a_bounded_incomplete_state():
+    responses = _responses()
+    recommendation = responses[3]["recommendation_candidates"][0]
+    recommendation["current_document_drafting"]["target_section"] = (
+        "Procurement Strategy"
+    )
+
+    result = run_verified_climate_pipeline(
+        **_arguments(),
+        clients=PipelineClients(
+            FakeClient(responses, []),
+            FakeClient([], []),
+        ),
+    )
+
+    assert result["priorities"] == []
+    assert result["validation"]["status"] == "attention"
+    assert "RECOMMENDATIONS_ALL_SUPPRESSED" in (
+        result["validation"]["reason_codes"]
+    )
+    assert "RECOMMENDATIONS_ALL_SUPPRESSED" in (
+        result["recommendation_diagnostics"]["reason_codes"]
+    )
+
+
+def test_no_generated_candidates_does_not_claim_all_were_suppressed():
+    responses = _responses()
+    responses[3]["recommendation_candidates"] = []
+
+    result = run_verified_climate_pipeline(
+        **_arguments(),
+        clients=PipelineClients(
+            FakeClient(responses, []),
+            FakeClient([], []),
+        ),
+    )
+
+    assert result["recommendation_diagnostics"]["raw_candidate_count"] == 0
+    assert "RECOMMENDATIONS_ALL_SUPPRESSED" not in (
+        result["validation"]["reason_codes"]
+    )
+    assert "RECOMMENDATIONS_ALL_SUPPRESSED" not in (
+        result["recommendation_diagnostics"]["reason_codes"]
+    )
 
 
 def test_source_linked_numeric_label_is_supported_without_model_echo():
@@ -641,7 +692,10 @@ def test_precision_suppression_exposes_only_field_path_and_reason_code():
 
     assert result["priorities"] == []
     diagnostics = result["recommendation_diagnostics"]
-    assert diagnostics["reason_codes"] == ["DRAFTING_SYSTEM_UNVERIFIED"]
+    assert diagnostics["reason_codes"] == [
+        "DRAFTING_SYSTEM_UNVERIFIED",
+        "RECOMMENDATIONS_ALL_SUPPRESSED",
+    ]
     assert diagnostics["candidate_suppressions"] == [
         {
             "recommendation_id": "REC-001",

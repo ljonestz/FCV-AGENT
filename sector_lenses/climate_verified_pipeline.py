@@ -1317,6 +1317,11 @@ def run_verified_climate_pipeline(
             )
             review_status = "attention"
 
+    if parsed_candidate_count > 0 and not priorities:
+        reasons.append("RECOMMENDATIONS_ALL_SUPPRESSED")
+        recommendation_reasons.append("RECOMMENDATIONS_ALL_SUPPRESSED")
+        review_status = "attention"
+
     unique_reasons = tuple(dict.fromkeys(reasons))
     if unique_reasons and review_status == "passed":
         review_status = "attention"
