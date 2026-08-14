@@ -330,6 +330,45 @@ def test_guidance_backed_section_variants_do_not_suppress_all_candidates():
     )
 
 
+def test_dpf_pid_candidates_use_current_concept_document_targets():
+    responses = _responses()
+    template = responses[3]["recommendation_candidates"][0]
+    target_sections = (
+        "Concept Description",
+        "Poverty and Social Impacts and Environmental Aspects",
+        "Proposed Development Objectives",
+        "Concept Description",
+    )
+    candidates = []
+    for index, section in enumerate(target_sections, start=1):
+        candidate = deepcopy(template)
+        candidate["recommendation_id"] = f"REC-{index:03d}"
+        candidate["title"] = f"Strengthen a bounded DPF concept decision {index}"
+        candidate["current_document_drafting"]["target_document"] = "PID"
+        candidate["current_document_drafting"]["target_section"] = section
+        candidate["current_document_drafting"]["guidance_ids"] = [
+            "GUIDE-DPF-POLICY-PROGRAM"
+        ]
+        candidates.append(candidate)
+    responses[3]["recommendation_candidates"] = candidates
+    arguments = _arguments()
+    arguments.update(doc_type="PID", instrument_type="DPF")
+
+    result = run_verified_climate_pipeline(
+        **arguments,
+        clients=PipelineClients(
+            FakeClient(responses, []),
+            _pass_review_client(),
+        ),
+    )
+
+    diagnostics = result["recommendation_diagnostics"]
+    assert diagnostics["raw_candidate_count"] == 4
+    assert diagnostics["valid_candidate_count"] == 4
+    assert diagnostics["final_priority_count"] == 4
+    assert "DRAFTING_CURRENT_TARGET_INVALID" not in diagnostics["reason_codes"]
+
+
 def test_unresolved_routing_triggers_one_source_first_review():
     assessment = FakeClient(_responses(), [])
     reviewer = FakeClient(
