@@ -30,22 +30,25 @@ class GuidanceEntry:
         return asdict(self)
 
 
-_PCN_PAD = ("pcn", "pad")
+_PCN_PID_PAD = ("pcn", "pid", "pad")
 _IPF = ("ipf",)
 _NEW_IPF = ("project paper",)
-_PFORR_DOCS = ("program paper", "pad")
-_DPF_DOCS = ("program document",)
+_IPF_MID_CYCLE = ("af", "restructuring")
+_PFORR_DOCS = ("pcn", "pid", "program paper", "pad")
+_DPF_DOCS = ("pcn", "pid", "pad", "program document")
 
 
 OPERATIONAL_GUIDANCE = (
     GuidanceEntry(
         guidance_id="GUIDE-PCN-DESIGN",
         title="Stage-appropriate project design",
-        document_types=_PCN_PAD,
+        document_types=_PCN_PID_PAD,
         instrument_types=_IPF,
         permitted_targets=(
             ("pcn", "project description"),
             ("pcn", "implementation arrangements"),
+            ("pid", "concept description"),
+            ("pid", "implementation arrangements"),
             ("pad", "project description"),
             ("pad", "implementation arrangements"),
         ),
@@ -63,10 +66,11 @@ OPERATIONAL_GUIDANCE = (
     GuidanceEntry(
         guidance_id="GUIDE-RESULTS-MEASUREMENT",
         title="Results and measurement",
-        document_types=_PCN_PAD,
+        document_types=_PCN_PID_PAD,
         instrument_types=_IPF,
         permitted_targets=(
             ("pcn", "results framework"),
+            ("pid", "results framework"),
             ("pad", "results framework"),
             ("pad", "monitoring and evaluation"),
         ),
@@ -83,10 +87,11 @@ OPERATIONAL_GUIDANCE = (
     GuidanceEntry(
         guidance_id="GUIDE-RISK-TREATMENT",
         title="Concept-stage risk treatment",
-        document_types=_PCN_PAD,
+        document_types=_PCN_PID_PAD,
         instrument_types=_IPF,
         permitted_targets=(
             ("pcn", "concept note risk section"),
+            ("pid", "risk section"),
             ("pad", "risk section"),
         ),
         application_rule=(
@@ -102,10 +107,12 @@ OPERATIONAL_GUIDANCE = (
     GuidanceEntry(
         guidance_id="GUIDE-ADAPTIVE-MANAGEMENT",
         title="Adaptive management and decision triggers",
-        document_types=_PCN_PAD,
+        document_types=_PCN_PID_PAD,
         instrument_types=_IPF,
         permitted_targets=(
             ("pcn", "implementation arrangements"),
+            ("pid", "implementation arrangements"),
+            ("pid", "monitoring and evaluation"),
             ("pad", "implementation arrangements"),
             ("pad", "monitoring and evaluation"),
         ),
@@ -121,10 +128,11 @@ OPERATIONAL_GUIDANCE = (
     GuidanceEntry(
         guidance_id="GUIDE-ES-INSTRUMENT-ROUTING",
         title="Environmental and social instrument routing",
-        document_types=_PCN_PAD,
+        document_types=_PCN_PID_PAD,
         instrument_types=_IPF,
         permitted_targets=(
             ("pcn", "environmental and social overview"),
+            ("pid", "environmental and social overview"),
             ("pad", "environmental and social section"),
         ),
         application_rule=(
@@ -140,10 +148,12 @@ OPERATIONAL_GUIDANCE = (
     GuidanceEntry(
         guidance_id="GUIDE-FCV-CONTINUITY",
         title="FCV operational continuity and access",
-        document_types=_PCN_PAD,
+        document_types=_PCN_PID_PAD,
         instrument_types=_IPF,
         permitted_targets=(
             ("pcn", "implementation arrangements"),
+            ("pid", "implementation arrangements"),
+            ("pid", "risk section"),
             ("pad", "implementation arrangements"),
             ("pad", "risk section"),
         ),
@@ -180,11 +190,45 @@ OPERATIONAL_GUIDANCE = (
         ),
     ),
     GuidanceEntry(
+        guidance_id="GUIDE-IPF-MID-CYCLE-DESIGN",
+        title="IPF additional financing and restructuring design",
+        document_types=_IPF_MID_CYCLE,
+        instrument_types=_IPF,
+        permitted_targets=(
+            ("af", "description of additional financing"),
+            ("af", "proposed changes"),
+            ("af", "results framework"),
+            ("af", "risk section"),
+            ("af", "environmental and social overview"),
+            ("restructuring", "proposed changes"),
+            ("restructuring", "revised project description"),
+            ("restructuring", "results framework"),
+            ("restructuring", "risk section"),
+            ("restructuring", "environmental and social overview"),
+        ),
+        application_rule=(
+            "Place a supported improvement in the current additional-financing "
+            "or restructuring document and limit the recommendation to the "
+            "activities, results, risks, or arrangements being changed."
+        ),
+        authority_class="operational_guidance",
+        prohibited_overstatements=(
+            "Do not reopen unchanged project design without evidence of a material link.",
+            "Do not infer a new environmental or social instrument or commitment.",
+        ),
+    ),
+    GuidanceEntry(
         guidance_id="GUIDE-PFORR-PROGRAM-DESIGN",
         title="PforR program design and systems",
         document_types=_PFORR_DOCS,
         instrument_types=("pforr", "p4r"),
         permitted_targets=(
+            ("pcn", "concept description"),
+            ("pcn", "proposed program development objectives"),
+            ("pcn", "environmental and social effects"),
+            ("pid", "proposed program development objectives"),
+            ("pid", "disbursement linked indicators and verification protocols"),
+            ("pid", "environmental and social effects"),
             ("program paper", "program scope and design"),
             ("program paper", "implementation arrangements"),
             ("program paper", "environmental and social systems assessment (ESSA)"),
@@ -207,6 +251,10 @@ OPERATIONAL_GUIDANCE = (
         document_types=_PFORR_DOCS,
         instrument_types=("pforr", "p4r"),
         permitted_targets=(
+            ("pcn", "disbursement linked indicators and verification protocols"),
+            ("pcn", "results framework"),
+            ("pid", "disbursement linked indicators and verification protocols"),
+            ("pid", "results framework"),
             ("program paper", "results framework"),
             ("program paper", "DLI matrix"),
             ("program paper", "verification protocol"),
@@ -228,6 +276,17 @@ OPERATIONAL_GUIDANCE = (
         document_types=_DPF_DOCS,
         instrument_types=("dpf", "dpo"),
         permitted_targets=(
+            ("pcn", "concept description"),
+            ("pcn", "proposed development objectives"),
+            ("pcn", "poverty and social impacts and environmental aspects"),
+            ("pid", "concept description"),
+            ("pid", "proposed development objectives"),
+            ("pid", "poverty and social impacts and environmental aspects"),
+            ("pad", "program description and policy matrix"),
+            ("pad", "prior actions"),
+            ("pad", "poverty and social impact analysis"),
+            ("pad", "environment, forests, and natural resources analysis"),
+            ("pad", "results framework"),
             ("program document", "program description and policy matrix"),
             ("program document", "prior actions"),
             ("program document", "poverty and social impact analysis"),
@@ -247,12 +306,20 @@ OPERATIONAL_GUIDANCE = (
     GuidanceEntry(
         guidance_id="GUIDE-MPA-PROGRAM-LAYER",
         title="MPA program framework and phase coherence",
-        document_types=("project paper", "program paper", "pad"),
-        instrument_types=("ipf", "pforr", "p4r"),
+        document_types=(
+            "pcn", "pid", "pad", "project paper", "program paper",
+            "program document", "af", "restructuring",
+        ),
+        instrument_types=("ipf", "pforr", "p4r", "dpf", "dpo"),
         permitted_targets=(
+            ("pcn", "MPA program framework and phase sequencing"),
+            ("pid", "MPA program framework and phase sequencing"),
             ("project paper", "MPA program framework and phase sequencing"),
             ("program paper", "MPA program framework and phase sequencing"),
+            ("program document", "MPA program framework and phase sequencing"),
             ("pad", "MPA program framework and phase sequencing"),
+            ("af", "MPA program framework and phase sequencing"),
+            ("restructuring", "MPA program framework and phase sequencing"),
         ),
         application_rule=(
             "Add the program-level implication alongside the base-instrument "

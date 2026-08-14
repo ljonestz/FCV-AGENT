@@ -1,9 +1,29 @@
 import re
 
+import pytest
+
 from sector_lenses.climate_operational_guidance import (
     GUIDANCE_REGISTRY_VERSION,
     OPERATIONAL_GUIDANCE,
     select_operational_guidance,
+)
+
+
+SUPPORTED_ROUTES = (
+    ("IPF", "PCN"),
+    ("IPF", "PID"),
+    ("IPF", "PAD"),
+    ("IPF", "Project Paper"),
+    ("IPF", "AF"),
+    ("IPF", "Restructuring"),
+    ("DPF", "PCN"),
+    ("DPF", "PID"),
+    ("DPF", "PAD"),
+    ("DPF", "Program Document"),
+    ("PforR", "PCN"),
+    ("PforR", "PID"),
+    ("PforR", "PAD"),
+    ("PforR", "Program Paper"),
 )
 
 
@@ -52,6 +72,61 @@ def test_known_pcn_with_unknown_instrument_fails_closed() -> None:
     )
 
     assert packet == ()
+
+
+@pytest.mark.parametrize(("instrument", "document"), SUPPORTED_ROUTES)
+def test_every_supported_route_has_current_document_guidance(
+    instrument: str,
+    document: str,
+) -> None:
+    packet = select_operational_guidance(
+        doc_type=document,
+        instrument_type=instrument,
+    )
+
+    assert packet
+    assert any(
+        target_document.casefold() == document.casefold()
+        for entry in packet
+        for target_document, _target_section in entry.permitted_targets
+    )
+
+
+@pytest.mark.parametrize(
+    ("instrument", "document"),
+    (("Unknown", "PID"), ("TA", "PID"), ("IPF", "ISR")),
+)
+def test_unsupported_or_inactive_routes_remain_fail_closed(
+    instrument: str,
+    document: str,
+) -> None:
+    assert select_operational_guidance(
+        doc_type=document,
+        instrument_type=instrument,
+    ) == ()
+
+
+@pytest.mark.parametrize(
+    ("instrument", "document"),
+    (
+        ("IPF", "PID"),
+        ("DPF", "PID"),
+        ("PforR", "PID"),
+    ),
+)
+def test_mpa_route_retains_base_and_program_guidance(
+    instrument: str,
+    document: str,
+) -> None:
+    packet = select_operational_guidance(
+        doc_type=document,
+        instrument_type=instrument,
+        is_mpa=True,
+    )
+    ids = {entry.guidance_id for entry in packet}
+
+    assert "GUIDE-MPA-PROGRAM-LAYER" in ids
+    assert any(not entry.mpa_only for entry in packet)
 
 
 def test_pforr_packet_uses_essa_pap_and_dli_targets_not_esf_instruments() -> None:
