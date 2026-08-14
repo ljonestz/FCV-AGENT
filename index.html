@@ -4920,7 +4920,10 @@
       return `<section class="climate-drafting-block"><h4>${esc(label)}</h4>${destinationHtml}${text}</section>`;
     };
     const primaryFields=[['Recommendation','decision'],['Minimum action','minimum_action'],['Enhanced action (optional)','enhanced_action'],['When to escalate','enhanced_activation'],['Who acts','responsible_function'],['What "done" looks like','completion_evidence'],['Confidence','confidence'],['Limitation','limitation'],['Caution','caution']];
-    const noPriorityMessage='No operational priorities were identified in this assessment. Review the core questions and points to check below.';
+    const recommendationsIncomplete=r.recommendation_status==='incomplete';
+    const noPriorityMessage=recommendationsIncomplete
+      ?(r.recommendation_message||'The recommendation stage could not be completed. Do not treat this Recommendations Note as complete; rerun the analysis or contact support.')
+      :'No operational priorities were identified in this assessment. Review the core questions and points to check below.';
     const priorities=Array.isArray(r.priorities)?r.priorities.slice().sort((a,b)=>(Number(a.rank)||999)-(Number(b.rank)||999)).slice(0,5):[];
     const priorityNoun=priorities.length===1?'priority':'priorities';
     const prioritySummaryHtml=priorities.length?`<p class="climate-priority-summary">Drawing on the overview and core climate-FCV questions, the analysis identifies ${priorities.length} main operational ${priorityNoun} for strengthening climate resilience, conflict sensitivity and implementation readiness in this project. These are followed by secondary points to check before the decision meeting and issues to keep under review as preparation advances.</p>`:'';
@@ -5002,6 +5005,17 @@
     const _verifiedV2=!!(isLast&&climateVerifiedAssessment&&climateVerifiedAssessment.schema_version==='climate-verified-v2.1'&&climateVerifiedReader);
     const _supportsClimateStage3=isLast&&supportsClimateVerifiedStage3View();
     const _supportsStage3Tabs=_supportsClimateStage3;
+    const _recommendationsIncomplete=!!(
+      _verifiedV2&&climateVerifiedReader&&
+      climateVerifiedReader.recommendation_status==='incomplete'
+    );
+    const _stageSubtitle=_recommendationsIncomplete
+      ?'Recommendations stage incomplete'
+      :(isFollowOn?'Updated based on your input':isLast?'Recommendations Note generated':SUBS[stage]);
+    const _calloutTone=_recommendationsIncomplete?'warn':(isLast?'ok':'info');
+    const _calloutContent=_recommendationsIncomplete
+      ?`<strong>Recommendations stage incomplete</strong><p>${esc(climateVerifiedReader.recommendation_message||'The recommendation stage could not be completed. Rerun the analysis or contact support.')}</p>`
+      :`<strong>${c.t}</strong>${c.b}`;
     let _outBodyContent;
     if(_verifiedV2){
       _outBodyContent=renderClimateVerifiedAssessment(climateVerifiedReader);
@@ -5081,15 +5095,15 @@
           <div style="display:flex;align-items:center;gap:10px">
             <div class="stage-title">${NAMES[stage]}</div>
           </div>
-          <div class="stage-sub">${isFollowOn?'Updated based on your input':isLast?'Recommendations Note generated':SUBS[stage]}</div>
+          <div class="stage-sub">${_stageSubtitle}</div>
         </div>
       </div>
-      <div class="callout ${isLast?'ok':'info'} ani">
-        <div class="callout-icon">${isLast
+      <div class="callout ${_calloutTone} ani">
+        <div class="callout-icon">${isLast&&!_recommendationsIncomplete
           ?'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>'
           :'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>'
         }</div>
-        <div class="callout-body"><strong>${c.t}</strong>${c.b}</div>
+        <div class="callout-body">${_calloutContent}</div>
       </div>
       ${isLast&&!_verifiedV2?stage3OverviewHtml():''}
       <div>
@@ -6413,7 +6427,11 @@ ${body}
     const strengths=climateSummaryStrengths(r);
     const strengthsHtml=strengths.length?strengths.map(strength=>`<div class="concise-strength climate-strength-card"><strong>${esc(strength.title)}</strong><span class="concise-strength-text">${esc(strength.text)}</span></div>`).join(''):'<p class="concise-priority-intro">No distinct strengths were evidenced in the verified reader for this run.</p>';
     const priorities=climateSummaryPriorityItems(r);
-    const prioritiesHtml=priorities.length?'<div id="priorities-intro"></div>':'<p class="concise-priority-intro">No ranked operational priorities were returned for this run.</p>';
+    const recommendationsIncomplete=r.recommendation_status==='incomplete';
+    const emptyPriorityMessage=recommendationsIncomplete
+      ?(r.recommendation_message||'The recommendation stage could not be completed. Do not treat this Recommendations Note as complete; rerun the analysis or contact support.')
+      :'No ranked operational priorities were returned for this run.';
+    const prioritiesHtml=priorities.length?'<div id="priorities-intro"></div>':`<p class="concise-priority-intro">${esc(emptyPriorityMessage)}</p>`;
     return `<div class="concise-readout climate-verified-summary"><div class="concise-read-time">Five-minute readout</div>${operationContextHtml}<div class="concise-section-label">Overall assessment</div><p class="concise-overview">${esc(overview)}</p>${signal}<div class="concise-section-label">What is already working</div><div class="concise-strengths">${strengthsHtml}</div><div class="concise-section-label">Priority actions for the task team</div>${prioritiesHtml}</div>`;
   }
 

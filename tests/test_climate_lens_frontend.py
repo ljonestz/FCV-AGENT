@@ -155,6 +155,58 @@ if (!html.includes('E&amp;S route') || !html.includes('INSTRUMENT SPECIFIC')) th
     assert result.returncode == 0, result.stderr
 
 
+def test_incomplete_recommendations_are_fail_loud_in_both_climate_views():
+    source = INDEX.read_text(encoding="utf-8")
+    helpers = "\n".join(
+        _extract_js_function(source, name)
+        for name in (
+            "climateSummaryStrengths",
+            "climateSummaryPriorityItems",
+            "renderClimateVerifiedSummary",
+            "isPublicWorldBankHttpsUrl",
+            "renderClimateVerifiedAssessment",
+        )
+    )
+    reader = {
+        "recommendation_status": "incomplete",
+        "recommendation_message": (
+            "The recommendation stage could not be completed. "
+            "Do not treat this Recommendations Note as complete."
+        ),
+        "executive_readout": "A bounded executive readout.",
+        "priorities": [],
+        "core_questions": [],
+        "existing_responses": [],
+        "review_readiness_flags": [],
+        "minor_climate_points": [],
+    }
+    script = f"""
+{_js_escape_helper()}
+const renderClimateRelevantGuidance = () => '';
+{helpers}
+const reader = {json.dumps(reader)};
+for (const [name,html] of [
+  ['summary',renderClimateVerifiedSummary(reader)],
+  ['detailed',renderClimateVerifiedAssessment(reader)]
+]) {{
+  if (!html.toLowerCase().includes('could not be completed')) {{
+    throw new Error(name+' view hides incomplete recommendation state | '+html);
+  }}
+  if (html.includes('No operational priorities were identified')) {{
+    throw new Error(name+' view uses neutral zero-priority copy | '+html);
+  }}
+}}
+"""
+    result = subprocess.run(
+        ["node", "-e", script], capture_output=True, text=True, check=False
+    )
+
+    assert result.returncode == 0, result.stderr
+    render_out = _extract_js_function(source, "renderOut")
+    assert "recommendation_status==='incomplete'" in render_out
+    assert "Recommendations stage incomplete" in render_out
+
+
 def test_climate_summary_strength_cards_split_full_heading_from_explanation():
     source = INDEX.read_text(encoding="utf-8")
     helper = _extract_js_function(source, "climateSummaryStrengths")

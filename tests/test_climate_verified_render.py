@@ -986,6 +986,69 @@ def test_zero_priority_message_is_shared_by_html_and_docx():
     assert "No final operational priority was admitted" not in document_text
 
 
+def test_all_suppressed_priorities_render_as_incomplete_in_html_and_docx():
+    assessment = _assessment()
+    assessment["priorities"] = []
+    assessment["validation"] = {
+        "status": "attention",
+        "reason_codes": ["RECOMMENDATIONS_ALL_SUPPRESSED"],
+    }
+    assessment["recommendation_diagnostics"] = {
+        "raw_candidate_count": 4,
+        "parsed_candidate_count": 4,
+        "valid_candidate_count": 0,
+        "admitted_count": 0,
+        "final_priority_count": 0,
+        "reviewer_invoked": False,
+        "reviewer_verdict": "not_invoked",
+        "reason_codes": [
+            "DRAFTING_CURRENT_TARGET_INVALID",
+            "RECOMMENDATIONS_ALL_SUPPRESSED",
+        ],
+        "unsupported_numeric_tokens": [],
+        "semantic_review_object_ids": [],
+        "candidate_suppressions": [],
+    }
+
+    model = build_reader_model(assessment)
+    rendered = render_reader_html(model)
+    stream = BytesIO()
+    write_reader_docx(model, stream)
+    stream.seek(0)
+    document_text = "\n".join(
+        paragraph.text for paragraph in Document(stream).paragraphs
+    )
+
+    assert model["recommendation_status"] == "incomplete"
+    assert "could not be completed" in model["recommendation_message"].casefold()
+    for output in (rendered, document_text):
+        assert "could not be completed" in output.casefold()
+        assert "No operational priorities were identified" not in output
+        assert "DRAFTING_CURRENT_TARGET_INVALID" not in output
+
+
+def test_no_candidate_result_keeps_neutral_complete_status():
+    assessment = _assessment()
+    assessment["priorities"] = []
+    assessment["recommendation_diagnostics"] = {
+        "raw_candidate_count": 0,
+        "parsed_candidate_count": 0,
+        "valid_candidate_count": 0,
+        "admitted_count": 0,
+        "final_priority_count": 0,
+        "reviewer_invoked": False,
+        "reviewer_verdict": "not_invoked",
+        "reason_codes": [],
+    }
+
+    model = build_reader_model(assessment)
+
+    assert model["recommendation_status"] == "complete"
+    assert model["recommendation_message"].startswith(
+        "No operational priorities were identified"
+    )
+
+
 def test_zero_priority_output_hides_admission_and_review_diagnostics():
     assessment = _assessment()
     assessment["priorities"] = []

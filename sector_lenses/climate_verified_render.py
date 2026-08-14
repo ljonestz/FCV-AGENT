@@ -45,6 +45,11 @@ NO_RECOMMENDATION_MESSAGE = (
     "No operational priorities were identified in this assessment. Review the "
     "core questions and points to check below."
 )
+INCOMPLETE_RECOMMENDATION_MESSAGE = (
+    "The recommendation stage could not be completed because every generated "
+    "recommendation failed the automated checks. Do not treat this "
+    "Recommendations Note as complete; rerun the analysis or contact support."
+)
 # Headline rating shown above the core-question cards: how sensitive the project
 # is to climate and FCV considerations, on a Limited -> Moderate -> Strong scale
 # derived from the (retained) internal `sensitivity` judgment. Higher is better
@@ -384,10 +389,10 @@ def _rank(value: object) -> int:
         return 999
 
 
-def _no_priority_message(_model: dict[str, object]) -> str:
-    """Return one neutral reader explanation without internal run diagnostics."""
+def _no_priority_message(model: dict[str, object]) -> str:
+    """Return a bounded reader explanation without internal run diagnostics."""
 
-    return NO_RECOMMENDATION_MESSAGE
+    return _text(model.get("recommendation_message")) or NO_RECOMMENDATION_MESSAGE
 
 
 def _priority_summary(priorities: list[dict[str, Any]]) -> dict[str, object]:
@@ -506,6 +511,19 @@ def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
     ][:3]
     validation = _mapping(assessment.get("validation"))
     diagnostics = _mapping(assessment.get("recommendation_diagnostics"))
+    diagnostic_reasons = diagnostics.get("reason_codes", [])
+    all_suppressed = (
+        diagnostics.get("parsed_candidate_count", 0) > 0
+        and diagnostics.get("final_priority_count", 0) == 0
+        and isinstance(diagnostic_reasons, (list, tuple))
+        and "RECOMMENDATIONS_ALL_SUPPRESSED" in diagnostic_reasons
+    )
+    recommendation_status = "incomplete" if all_suppressed else "complete"
+    recommendation_message = (
+        INCOMPLETE_RECOMMENDATION_MESSAGE
+        if all_suppressed
+        else NO_RECOMMENDATION_MESSAGE if not priorities else ""
+    )
     executive = _text(assessment.get("executive_readout")) or _text(
         assessment.get("judgment_summary")
     )
@@ -533,6 +551,8 @@ def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
         "core_questions": core_questions,
         "existing_responses": existing_responses,
         "priorities": [dict(item) for item in priorities],
+        "recommendation_status": recommendation_status,
+        "recommendation_message": recommendation_message,
         "review_readiness_flags": [dict(item) for item in flags],
         "minor_climate_points": minor_climate_points,
         "priority_summary": _priority_summary(priorities),
