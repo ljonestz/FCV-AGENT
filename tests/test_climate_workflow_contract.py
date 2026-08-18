@@ -372,6 +372,9 @@ def test_climate_research_failure_continues_with_bank(
 
     assert any(event.get("status") == "preparing_analysis" for event in events)
     assert model_calls == [1]
+    if endpoint == "/api/run-stage":
+        assert not any(event.get("error") for event in events)
+        assert any(event.get("done") and event.get("stage") == 1 for event in events)
     assert not any(
         event.get("error_code", "").startswith("climate_research")
         for event in events

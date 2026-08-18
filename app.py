@@ -8325,6 +8325,11 @@ def run_stage():
             pq_block = build_priority_questions_block(priority_questions, 1)
             if pq_block:
                 stage_prompt = stage_prompt + pq_block
+            lens_context = build_lens_stage_context(analysis_state, 1)
+            if lens_context['prompt']:
+                stage_prompt += (
+                    "\n\n--- ACTIVE SECTOR LENSES ---\n" + lens_context['prompt']
+                )
             # messages will be fully built inside generate() for stage 1
 
         elif user_message and not (_native_climate_stage2 or _native_climate_stage3):
