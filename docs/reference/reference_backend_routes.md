@@ -114,6 +114,13 @@ POST /api/download-report
 
 Sector-lens catalogue records expose `activation` and `readout_sections`. Both `/api/run-stage` and `/api/run-express` carry `lens_context_sources` in request/SSE state. Stage 2 lens diagnostics include `materiality_summary`, `analysis_emphasis`, `readout_sections`, and `other_pathways` in addition to mapped findings. If an active-lens diagnostic is missing or incomplete, both routes use the same single dedicated Haiku recovery request (120-second default/read timeout, 10-second connection timeout, zero SDK retries). The response is strictly parsed, normalized, and validated against the active-lens contract before it is used. Failure remains non-fatal to the core FCV assessment, is logged, and is surfaced through the Stage 2 parse-error payload. v9.18 adds no further SSE schema change: the already-existing additive `lens_diagnostic_recovered` boolean reports successful repair, while existing fields and the diagnostic schema remain compatible.
 
+For Stage 1 on `/api/run-stage`, `lens_context` is initialized in request scope
+before the background stream closure starts. Climate-active requests append its
+prompt to the Stage 1 prompt at that point. This ordering is required: assigning
+the variable only in later-stage branches can leave the closure reading an
+unbound free variable. The Stage 1 workflow regression requires an error-free
+terminal `{done: true, stage: 1}` event.
+
 # Follow-on post-analysis route (Stage 3 bottom card)
 POST /api/run-followon
   Input: {messages[], priority_responses (optional)} — full conversationHistory + user message;

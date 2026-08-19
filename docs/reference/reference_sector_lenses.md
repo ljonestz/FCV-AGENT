@@ -1,6 +1,6 @@
 # Sector-Lens Platform Reference
 
-The sector-lens platform overlays optional specialist analysis on the common FCV assessment. It does not add a score, change the rating denominator, or create a second recommendation list. The production catalogue includes the approved manual-only Climate-FCV Lens.
+The sector-lens platform overlays optional specialist analysis on the common FCV assessment. It does not add a score, change the rating denominator, or create a second recommendation list. The catalogue includes the manual-only Climate-FCV Lens, which remains an experimental/pilot module and requires expert review of its outputs.
 
 ## Module package
 
@@ -71,6 +71,10 @@ from its 19 approved evidence records and seven approved pathways. The candidate
 preview release `2026.08.multi-country-preview` contains 24 reviewed country
 packages, 291 sources, 565 evidence records, and 178 pathways. It must not be
 treated as approved content until country-level substantive review and promotion.
+Those 24 packages are the current preview bank for FCV/FCS country contexts. A
+country outside the bank is not blocked: the module degrades to `research-only`
+or `thematic-only` grounding, with less country-specific prior knowledge.
+
 Source URL uniqueness is validated within the selected country package. The same
 public source may legitimately appear under country-scoped source IDs in multiple
 packages; duplicate normalized URLs within one country remain invalid.
@@ -96,7 +100,7 @@ The Flask and private FastAPI builds must keep these fields and delimiters align
 
 Raw literature and source notes are never injected at runtime.
 
-*Last updated: 2026-08-13 - multi-country materialization and visible candidate safeguards.*
+*Last updated: 2026-08-19 - pilot status, country-bank boundary, and fallback clarified.*
 
 ## Climate verified-v2.1 compatibility surface (v9.25)
 

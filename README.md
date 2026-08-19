@@ -17,7 +17,7 @@ Both modes produce identical output across three stages:
 
 ## Optional sector lenses
 
-Users may select up to two specialist lenses before analysis. The production Climate-FCV Lens is manual-only and is never auto-suggested. Once selected, it automatically screens both climate-intent operations and wider development projects, prioritizes adaptation and resilience, and uses deep mitigation analysis only where a clear material pathway exists.
+Users may select up to two specialist lenses before analysis. The Climate-FCV Lens is an experimental/pilot module: it is manual-only and is never auto-suggested. Once selected, it automatically screens both climate-intent operations and wider development projects, prioritizes adaptation and resilience, and uses deep mitigation analysis only where a clear material pathway exists. Its outputs remain advisory and require expert review.
 
 Core-only runs retain the standard 4-5 substantive priorities and the lightweight conditional Climate-FCV check. Active-lens runs supersede that lightweight check, use one integrated list of no more than five substantive priorities, and apply a flexible evidence-led mix of core, Climate-linked, and blended actions. Optional CCDR material is validated contextual support and must not dominate recommendations.
 
@@ -50,6 +50,12 @@ candidate preview, set both variables below; the output remains labelled
 CLIMATE_COUNTRY_BANK_PATH=data/climate-fcv-country-bank/releases/candidates/2026.08/runtime.json
 CLIMATE_COUNTRY_BANK_PREVIEW=reviewed-candidate
 ```
+
+The current preview bank is limited to the 24 FCV/FCS country contexts in that
+candidate release. The Climate module can still run for other countries, but it
+then relies on accepted live research and/or thematic guidance and has less
+country-specific prior knowledge. This is a coverage limitation, not a hard
+country block.
 
 For local testing or a deployment artifact outside the submodule, set
 `CLIMATE_COUNTRY_BANK_PATH` to either the companion repository root or a specific
@@ -101,7 +107,7 @@ python app.py
 3. Set the Render **Build Command** to `python render_build.py`; this initializes
    the pinned public Climate-FCV bank submodule and installs requirements
 4. Render reads the `Procfile` start command automatically
-5. The app runs on gunicorn + gevent with a 1,200s timeout for long-running SSE streams
+5. The app runs on gunicorn + gevent with a 1,200s timeout for long-running SSE streams. Keep `packaging` as an explicit runtime dependency in `requirements.txt`; Gunicorn's gevent worker imports it during startup.
 6. Confirm the startup and Climate-grounding logs show the expected application
    build, bank content version, and country ISO3 before acceptance testing
 
@@ -147,11 +153,13 @@ The app isolates state per browser tab via a per-assessment ID. Express Analysis
 | `background_docs.py` | WBG FCV framework reference constants (knowledge base) |
 | `requirements.txt` | Python dependencies |
 | `Procfile` | Render deployment config |
-| `docs/20260714_ITS_handover_p4r_timeout_patch.md` | Current IPS/ITS handover on PforR timeout and Render-main state |
+| `20260819_its-climate-preview-handover.md` | Current ITS handover for the experimental Climate preview |
+| `docs/20260714_ITS_handover_p4r_timeout_patch.md` | Historical IPS/ITS handover on PforR timeout and Render-main state |
 
 ## Documentation
 
-- `CLAUDE.md` — full developer guide: architecture, prompt design, stage pipeline, design decisions
+- `claude.md` — full developer guide: architecture, prompt design, stage pipeline, design decisions
 - `docs/reference/` — detailed reference docs for prompts, routes, and frontend functions
 - `docs/reference/reference_sector_lenses.md` — sector-lens module and cross-build contract
+- `20260819_its-climate-preview-handover.md` - current Climate preview status, verification, and ITS notes
 - `docs/fcv-agent-knowledge-architecture.html` — visual overview of how knowledge sources flow through the pipeline
