@@ -1,7 +1,7 @@
 # Climate Preview ITS Documentation Refresh Design
 
-**Date:** 2026-08-19  
-**Base:** `origin/codex/climate-summary-quality-fixes` at deployed commit `08b3cb99`  
+**Date:** 2026-08-19
+**Base:** `origin/codex/climate-summary-quality-fixes` at deployed commit `08b3cb99`
 **Scope:** Documentation only
 
 ## Objective
