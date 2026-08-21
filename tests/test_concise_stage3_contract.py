@@ -3,6 +3,7 @@
 import copy
 import json
 import os
+import subprocess
 import sys
 
 import pytest
@@ -412,3 +413,62 @@ def test_express_completion_payload_transports_concise_bundle(monkeypatch, valid
         assert done["priorities"][0]["the_gap"]
         assert done["fcv_rating"] == payload["fcv_rating"]
         assert done["fcv_responsiveness_rating"] == payload["fcv_responsiveness_rating"]
+
+
+def _extract_js_function(source: str, name: str) -> str:
+    marker = f"function {name}("
+    start = source.find(marker)
+    assert start >= 0, f"Missing JS helper {name}()"
+    brace = source.find("{", start)
+    depth = 0
+    for index in range(brace, len(source)):
+        if source[index] == "{":
+            depth += 1
+        elif source[index] == "}":
+            depth -= 1
+            if depth == 0:
+                return source[start:index + 1]
+    raise AssertionError(f"Unterminated JS helper {name}()")
+
+
+def test_frontend_declares_shared_summary_state_capability_and_fallback():
+    source = open(os.path.join(os.path.dirname(app.__file__), "index.html"), encoding="utf-8").read()
+
+    for expected in (
+        "let stageConciseReadout",
+        "function supportsConciseStage3View(",
+        "function supportsAnyStage3Summary(",
+        "function renderNormalFcvSummary(",
+        "function renderFcvRatingIndicators(",
+        "function renderStage3Summary(",
+        "concise_readout_unavailable",
+        "The summary was unavailable for this run; the full analysis is shown.",
+    ):
+        assert expected in source
+    assert "stage3View=supportsAnyStage3Summary()?'summary':'detailed'" in source
+
+
+def test_frontend_normal_summary_renderer_includes_required_sections():
+    source = open(os.path.join(os.path.dirname(app.__file__), "index.html"), encoding="utf-8").read()
+    helpers = "\n".join(
+        _extract_js_function(source, name)
+        for name in ("renderFcvRatingIndicators", "renderNormalFcvSummary")
+    )
+    script = f"""
+const esc=value=>String(value??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+let stageConciseReadout={json.dumps(CONCISE_READOUT)};
+let stageThreePriorities={json.dumps(_payload()["priorities"])};
+let fcvRating='Adequate';
+let fcvResponsivenessRating='Emerging';
+const renderStage3AdvisoryTransition=()=>'<p>advisory</p>';
+{helpers}
+const html=renderNormalFcvSummary();
+for(const expected of ['Five-minute readout','Overall assessment','What is already working','FCV sensitivity','FCV responsiveness','Priority actions for the task team']){{
+  if(!html.includes(expected))throw new Error('missing '+expected+' | '+html);
+}}
+console.log(html);
+"""
+    result = subprocess.run(
+        ["node", "-e", script], capture_output=True, text=True, check=False
+    )
+    assert result.returncode == 0, result.stderr

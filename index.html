@@ -1074,6 +1074,13 @@
     .stage3-download-note{font-size:11px;color:var(--muted)}
     .concise-readout{font-size:14px;line-height:1.65}
     .concise-read-time,.concise-section-label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;font-weight:700;color:var(--wbg-blue)}
+    .concise-headline{font-size:22px;line-height:1.3;color:var(--wbg-navy);margin:7px 0 9px}
+    .concise-overview{font-size:15px;line-height:1.7;color:var(--text);margin:0 0 15px}
+    .concise-rating-indicators{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0 0 22px}
+    .concise-rating-indicator{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:11px 13px;background:#f6f9fb;border:1px solid var(--border);border-radius:7px}
+    .concise-rating-indicator span{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+    .concise-rating-indicator strong{color:var(--wbg-navy)}
+    .stage3-advisory-transition{margin:4px 0 18px;padding:12px 14px;background:#f6f9fb;border-left:3px solid var(--wbg-blue);color:var(--text);line-height:1.6}
     .concise-strengths{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:10px 0 22px}
     .concise-strength{padding:12px;background:#edf8f2;border:1px solid #cae4d5;border-radius:7px}
     .concise-strength strong{display:block;color:#176a42;margin-bottom:6px;white-space:normal;overflow:visible}
@@ -1088,7 +1095,7 @@
     .concise-cycle{background:#fafbfd;display:grid;grid-template-columns:1fr 1fr;gap:14px}
     .concise-cycle-items{grid-column:2;display:flex;flex-direction:column;gap:14px}
     .concise-specialist summary{padding:12px 18px;color:var(--wbg-blue);font-weight:600;cursor:pointer}
-    @media(max-width:760px){.stage3-viewbar{align-items:flex-start;flex-direction:column}.concise-strengths,.concise-cycle{grid-template-columns:1fr}.concise-cycle-items{grid-column:1}}
+    @media(max-width:760px){.stage3-viewbar{align-items:flex-start;flex-direction:column}.concise-strengths,.concise-cycle,.concise-rating-indicators{grid-template-columns:1fr}.concise-cycle-items{grid-column:1}}
     .priorities-section-hdr{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--s4);margin:20px 0 10px;padding-bottom:6px;border-bottom:2px solid var(--s4);}
     .pi-lead{font-size:15px;color:var(--text);line-height:1.6;margin:0 0 10px;}
     .pi-list{display:flex;flex-direction:column;gap:5px;margin-bottom:10px;}
@@ -3918,11 +3925,13 @@
               stageRiskExposure=p.risk_exposure||null;
               stageSensitivitySummary=p.sensitivity_summary||'';
               stageResponsivenessSummary=p.responsiveness_summary||'';
+              stageConciseReadout=p.concise_readout||null;
+              openSummaryPriority=0;
               if(p.fcv_rating)fcvRating=p.fcv_rating;
               if(p.fcv_responsiveness_rating)fcvResponsivenessRating=p.fcv_responsiveness_rating;
               if(p.priorities)stageThreePriorities=p.priorities;
               if(supportsClimateVerifiedStage3View())stageThreePriorities=climateSummaryPriorityItems(climateVerifiedReader);
-              stage3View=supportsClimateVerifiedStage3View()?'summary':'detailed';
+              stage3View=supportsAnyStage3Summary()?'summary':'detailed';
               if(p.climate_unlinked!==undefined)climatePriorityUnlinked=p.climate_unlinked;
               if(p.climate_total!==undefined)climatePriorityTotal=p.climate_total;
               if(p.wider_fcv_context!==undefined)stageWiderFcvContext=p.wider_fcv_context||null;
@@ -4197,7 +4206,21 @@
                 if(p.lens_diagnostic)lensDiagnostic=p.lens_diagnostic;
                 if(p.climate_integration!==undefined)climateIntegration=p.climate_integration;
               }
-              if(stage===3){stageGapTable=p.gap_table||null;stageRiskExposure=p.risk_exposure||null;stageSensitivitySummary=p.sensitivity_summary||'';stageResponsivenessSummary=p.responsiveness_summary||'';midCycleWatch=p.mid_cycle_watch||[];dpfWatch=p.dpf_watch||[];p4rWatch=p.p4r_watch||[];regionalWatch=p.regional_watch||[];if(p.fcv_rating)fcvRating=p.fcv_rating;if(p.fcv_responsiveness_rating)fcvResponsivenessRating=p.fcv_responsiveness_rating;if(p.applied_snippets)stageAppliedSnippets=p.applied_snippets;}
+              if(stage===3){
+                stageGapTable=p.gap_table||null;
+                stageRiskExposure=p.risk_exposure||null;
+                stageSensitivitySummary=p.sensitivity_summary||'';
+                stageResponsivenessSummary=p.responsiveness_summary||'';
+                stageConciseReadout=p.concise_readout||null;
+                openSummaryPriority=0;
+                midCycleWatch=p.mid_cycle_watch||[];dpfWatch=p.dpf_watch||[];p4rWatch=p.p4r_watch||[];regionalWatch=p.regional_watch||[];
+                if(p.fcv_rating)fcvRating=p.fcv_rating;
+                if(p.fcv_responsiveness_rating)fcvResponsivenessRating=p.fcv_responsiveness_rating;
+                if(p.priorities)stageThreePriorities=p.priorities;
+                if(supportsClimateVerifiedStage3View())stageThreePriorities=climateSummaryPriorityItems(climateVerifiedReader);
+                stage3View=supportsAnyStage3Summary()?'summary':'detailed';
+                if(p.applied_snippets)stageAppliedSnippets=p.applied_snippets;
+              }
               // Write timestamps BEFORE renderOut so the consistency check inside renderOut reads the current run's value
               // Stage 2 completion also clears any previously dismissed banner on Stage 3
               if(stage===2){ fcvSafeLocalStorageSet('stage2_timestamp', Date.now()); localStorage.removeItem('stage3_consistency_dismissed'); }
@@ -5004,7 +5027,7 @@
     const c=CALLS[stage];
     const _verifiedV2=!!(isLast&&climateVerifiedAssessment&&climateVerifiedAssessment.schema_version==='climate-verified-v2.1'&&climateVerifiedReader);
     const _supportsClimateStage3=isLast&&supportsClimateVerifiedStage3View();
-    const _supportsStage3Tabs=_supportsClimateStage3;
+    const _supportsStage3Tabs=isLast&&supportsAnyStage3Summary();
     const _recommendationsIncomplete=!!(
       _verifiedV2&&climateVerifiedReader&&
       climateVerifiedReader.recommendation_status==='incomplete'
@@ -5084,9 +5107,10 @@
         _outBodyContent = wrapSRTerms(catBadge + srDefPrefix + md(cleanResult));
       }
     }
-    if(isLast&&_supportsClimateStage3){
+    if(isLast){
       stage3DetailedHtml=_outBodyContent;
-      if(stage3View==='summary')_outBodyContent=renderClimateVerifiedSummary(climateVerifiedReader);
+      if(_supportsStage3Tabs&&stage3View==='summary')_outBodyContent=renderStage3Summary();
+      else if(!_supportsStage3Tabs)_outBodyContent=conciseUnavailableHtml()+_outBodyContent;
     }
     document.getElementById('stage-disp').innerHTML=`
       <div class="stage-hdr ani">
@@ -5458,7 +5482,7 @@
     if(stageHists[stage])hist=stageHists[stage].slice();
     curS=stage;
     for(let i=stage+1;i<=3;i++){delete stageOutputs[i];delete stageHists[i];}
-    stageThreePriorities=[];fcvRating='';fcvResponsivenessRating='';stageWiderFcvContext=null;climatePriorityUnlinked=0;climatePriorityTotal=0;climateVerifiedAssessment=null;climateVerifiedReader=null;stage3View='detailed';stage3DetailedHtml='';
+    stageThreePriorities=[];stageConciseReadout=null;openSummaryPriority=0;fcvRating='';fcvResponsivenessRating='';stageWiderFcvContext=null;climatePriorityUnlinked=0;climatePriorityTotal=0;climateVerifiedAssessment=null;climateVerifiedReader=null;stage3View='detailed';stage3DetailedHtml='';
     clearUI();renderOut(stage,stageOutputs[stage],false);
     if(stage===2&&stage2UnderHood){buildUnderHoodPanels(stage2UnderHood);updateSidebar();}
     if(stage===2)renderLensDiagnostic();
@@ -6139,6 +6163,8 @@ ${body}
 
   // ── Stage 3 (Recommendations) state ───────────────────────────────────────
   let stageThreePriorities = [];
+  let stageConciseReadout = null;
+  let openSummaryPriority = 0;
   let climatePriorityUnlinked = 0, climatePriorityTotal = 0;
   let currentPriority = 0;  // 0-indexed
   let currentDeeperTab = {};  // {priorityIndex: 'alternatives'|'trail'|'playbook'}
@@ -6346,6 +6372,43 @@ ${body}
     'Shift D: Enhanced toolkit': 'FCV Strategy 2026-2030 Shift D: Operational flexibilities and HDP nexus partnerships',
   };
 
+  function supportsConciseStage3View(){
+    return activeLenses.length===0 && !!stageConciseReadout && stageThreePriorities.length>0 &&
+      stageThreePriorities.every(priority=>priority&&priority.concise);
+  }
+
+  function supportsAnyStage3Summary(){
+    return supportsConciseStage3View()||supportsClimateVerifiedStage3View();
+  }
+
+  function conciseUnavailableHtml(){
+    return activeLenses.length===0&&!stageConciseReadout
+      ?'<div class="callout info" data-diagnostic="concise_readout_unavailable">The summary was unavailable for this run; the full analysis is shown.</div>'
+      :'';
+  }
+
+  function renderStage3AdvisoryTransition(route){
+    const context=route==='climate'?'climate and FCV context':'FCV context';
+    const focus=reviewMode==='implementation'?'implementation arrangements':'design';
+    return `<p class="stage3-advisory-transition">The following priorities are suggestions to strengthen the project\'s ${focus} in its ${context}; they are not mandatory requirements. The task team may wish to focus on those most relevant and discuss them with the FCV Country Coordinator or relevant Global Practice experts as needed.</p>`;
+  }
+
+  function renderFcvRatingIndicators(){
+    return `<div class="concise-rating-indicators" aria-label="FCV assessment indicators"><div class="concise-rating-indicator"><span>FCV sensitivity</span><strong>${esc(fcvRating||'Not available')}</strong></div><div class="concise-rating-indicator"><span>FCV responsiveness</span><strong>${esc(fcvResponsivenessRating||'Not available')}</strong></div></div>`;
+  }
+
+  function renderNormalFcvSummary(){
+    const readout=stageConciseReadout&&typeof stageConciseReadout==='object'?stageConciseReadout:{};
+    const strengths=(Array.isArray(readout.strengths)?readout.strengths:[]).map(strength=>`<div class="concise-strength"><strong>${esc(strength.title||'Project strength')}</strong><span class="concise-strength-text">${esc(strength.text||'')}</span></div>`).join('');
+    return `<div class="concise-readout normal-fcv-summary"><div class="concise-read-time">Five-minute readout</div><div class="concise-section-label">Overall assessment</div><h2 class="concise-headline">${esc(readout.headline||'FCV assessment summary')}</h2><p class="concise-overview">${esc(readout.overview||'')}</p>${renderFcvRatingIndicators()}<div class="concise-section-label">What is already working</div><div class="concise-strengths">${strengths}</div>${renderStage3AdvisoryTransition('normal')}<div class="concise-section-label">Priority actions for the task team</div><div id="priorities-intro"></div><div id="summary-priority-accordion"></div></div>`;
+  }
+
+  function renderStage3Summary(){
+    if(supportsClimateVerifiedStage3View())return renderClimateVerifiedSummary(climateVerifiedReader);
+    if(supportsConciseStage3View())return renderNormalFcvSummary();
+    return '';
+  }
+
   function supportsClimateVerifiedStage3View(){
     return reviewMode==='design' && !!(climateVerifiedAssessment && climateVerifiedAssessment.schema_version==='climate-verified-v2.1' && climateVerifiedReader);
   }
@@ -6446,7 +6509,7 @@ ${body}
   }
 
   function setStage3View(view,preservePriority=true){
-    if(!supportsClimateVerifiedStage3View())return;
+    if(!supportsAnyStage3Summary())return;
     if(view!=='summary'&&view!=='detailed')view='summary';
     stage3View=view;
     const summaryTab=document.getElementById('stage3-summary-tab'), detailedTab=document.getElementById('stage3-detailed-tab');
@@ -6455,7 +6518,7 @@ ${body}
     if(detailedTab){detailedTab.classList.toggle('active',view==='detailed');detailedTab.setAttribute('aria-selected',String(view==='detailed'));detailedTab.tabIndex=view==='detailed'?0:-1;}
     const showSummary=view==='summary';
     const out=document.getElementById('out-txt');
-    if(out){out.setAttribute('aria-labelledby',view==='summary'?'stage3-summary-tab':'stage3-detailed-tab');out.innerHTML=stage3ViewToggleHtml()+(view==='summary'?renderClimateVerifiedSummary(climateVerifiedReader):stage3DetailedHtml);}
+    if(out){out.setAttribute('aria-labelledby',view==='summary'?'stage3-summary-tab':'stage3-detailed-tab');out.innerHTML=stage3ViewToggleHtml()+(view==='summary'?renderStage3Summary():stage3DetailedHtml);}
     ['priority-stepper','priority-card-area','pc-nav'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=showSummary?'':'none';});
     if(showSummary){renderPrioritiesIntro();renderPriorityStepper();showPriority(preservePriority?currentPriority:0);}
     else {const card=document.getElementById('priority-card-area');if(card)card.innerHTML='';}
@@ -6643,7 +6706,7 @@ ${body}
   function showPriority(idx){
     const pr = stageThreePriorities[idx];
     if(!pr) return;
-    if(supportsClimateVerifiedStage3View()&&stage3View==='summary'){
+    if(supportsAnyStage3Summary()&&stage3View==='summary'){
       currentPriority=idx;
       renderPriorityStepper();
       const navEl=document.getElementById('pc-nav'), counterEl=document.getElementById('pc-nav-counter');
