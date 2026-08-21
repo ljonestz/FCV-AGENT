@@ -39,3 +39,18 @@ def test_httpx_is_an_explicit_runtime_dependency() -> None:
     ), (
         "requirements.txt must declare httpx because app.py imports it directly"
     )
+
+
+def test_anthropic_sdk_excludes_incompatible_one_major() -> None:
+    requirements = (
+        REPO_ROOT / "requirements.txt"
+    ).read_text(encoding="utf-8").splitlines()
+    declared = {
+        line.partition("#")[0].strip().lower()
+        for line in requirements
+        if line.partition("#")[0].strip()
+    }
+
+    assert "anthropic>=0.40.0,<1.0.0" in declared, (
+        "requirements.txt must retain the Render-verified Anthropic 0.x client"
+    )
