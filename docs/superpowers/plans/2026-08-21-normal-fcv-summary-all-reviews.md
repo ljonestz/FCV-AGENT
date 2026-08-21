@@ -54,7 +54,7 @@ CONCISE_PRIORITY = {
 }
 ```
 
-Assert a complete bundle is returned. Then remove one priority's `concise` field and assert detailed parsing still succeeds, `concise_readout is None`, and all partial `concise` fields are removed. Add cases for an overview below 100 words, fewer than three strengths, fewer than two `how` actions, and missing primary lifecycle text.
+Assert a complete bundle is returned. Then remove one priority's `concise` field and assert detailed parsing still succeeds, `concise_readout is None`, and all partial `concise` fields are removed. Add cases for an overview outside the approved 150-200 word range, fewer than three strengths, fewer than two `how` actions, and missing primary lifecycle text.
 
 - [ ] **Step 2: Verify failure**
 
@@ -78,7 +78,7 @@ def _normalize_concise_readout(value: Any) -> dict[str, Any] | None:
     overview = _clean_concise_string(value.get("overview"))
     strengths = [{"title": _clean_concise_string(i.get("title")), "text": _clean_concise_string(i.get("text"))}
                  for i in value["strengths"] if isinstance(i, dict)]
-    if not headline or not 100 <= len(overview.split()) <= 250 or len(strengths) != 3:
+    if not headline or not 150 <= len(overview.split()) <= 200 or len(strengths) != 3:
         return None
     if any(not i["title"] or not i["text"] for i in strengths):
         return None

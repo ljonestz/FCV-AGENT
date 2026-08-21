@@ -6090,7 +6090,7 @@ def _normalize_concise_readout(value: Any) -> dict[str, Any] | None:
     strengths_raw = value.get("strengths")
     if (
         not headline
-        or not 100 <= len(overview_words) <= 250
+        or not 150 <= len(overview_words) <= 200
         or not isinstance(strengths_raw, list)
         or len(strengths_raw) != 3
     ):

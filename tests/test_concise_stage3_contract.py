@@ -115,7 +115,13 @@ def test_missing_one_priority_concise_disables_the_entire_bundle_without_detail_
     [
         pytest.param(
             lambda payload: payload["concise_readout"].update({"overview": "Too short."}),
-            id="overview-below-100-words",
+            id="overview-below-150-words",
+        ),
+        pytest.param(
+            lambda payload: payload["concise_readout"].update(
+                {"overview": " ".join(["word"] * 201)}
+            ),
+            id="overview-above-200-words",
         ),
         pytest.param(
             lambda payload: payload["concise_readout"].update(
@@ -495,6 +501,7 @@ def test_summary_priority_accordion_is_single_open_and_accessible():
 const esc=value=>String(value??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 let stageThreePriorities={json.dumps(priorities)};
 let openSummaryPriority=0;
+let currentPriority=0;
 let focused='';
 const host={{innerHTML:''}};
 const document={{getElementById:id=>id==='summary-priority-accordion'?host:{{focus:()=>{{focused=id;}}}}}};
@@ -505,6 +512,7 @@ if((initial.match(/aria-expanded="true"/g)||[]).length!==1)throw new Error('wron
 if(!initial.includes('id="summary-priority-panel-0"')||/id="summary-priority-panel-0"[^>]* hidden/.test(initial))throw new Error('first not open');
 if(!initial.includes('aria-controls="summary-priority-panel-3"'))throw new Error('missing aria controls');
 toggleSummaryPriority(2);
+if(currentPriority!==2)throw new Error('detailed priority selection not synchronized');
 if(!host.innerHTML.includes('id="summary-priority-toggle-2"')||!host.innerHTML.includes('aria-expanded="true"'))throw new Error('third not open');
 if(!/id="summary-priority-panel-0"[^>]* hidden/.test(host.innerHTML))throw new Error('first not collapsed');
 if(focused!=='summary-priority-toggle-2')throw new Error('focus not restored');
@@ -536,6 +544,13 @@ for(const expected of ['not mandatory requirements','FCV Country Coordinator','G
     assert "renderStage3AdvisoryTransition('climate')" in climate
     assert "aria-expanded" in source
     assert "aria-controls" in source
+
+
+def test_stage3_view_uses_the_active_tab_as_its_panel_label():
+    source = open(os.path.join(os.path.dirname(app.__file__), "index.html"), encoding="utf-8").read()
+
+    assert 'role="tabpanel"' in source
+    assert "view==='summary'?'stage3-summary-tab':'stage3-detailed-tab'" in source
 
 
 def test_concise_summary_persists_with_priorities_and_restores_before_view_selection():

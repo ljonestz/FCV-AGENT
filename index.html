@@ -5139,6 +5139,9 @@
       if(_supportsStage3Tabs&&stage3View==='summary')_outBodyContent=renderStage3Summary();
       else if(!_supportsStage3Tabs)_outBodyContent=conciseUnavailableHtml()+_outBodyContent;
     }
+    const _outPanelAttrs=isLast&&_supportsStage3Tabs
+      ?` role="tabpanel" aria-labelledby="${stage3View==='summary'?'stage3-summary-tab':'stage3-detailed-tab'}"`
+      :'';
     document.getElementById('stage-disp').innerHTML=`
       <div class="stage-hdr ani">
         <div class="stage-badge ${COL[stage]}">${stage}</div>
@@ -5173,7 +5176,7 @@
                 <button class="copy-btn" id="copy-btn" onclick="copyOut()">Copy all</button>
               </div>
             </div>
-            <div class="out-body" id="out-txt">${isLast&&_supportsStage3Tabs?stage3ViewToggleHtml():''}${_outBodyContent}</div>
+            <div class="out-body" id="out-txt"${_outPanelAttrs}>${isLast&&_supportsStage3Tabs?stage3ViewToggleHtml():''}${_outBodyContent}</div>
           </div>
           ${isLast?`
           <!-- ── PRIORITY STEPPER ── -->
@@ -6506,6 +6509,7 @@ ${body}
   function toggleSummaryPriority(idx){
     if(!Number.isInteger(idx)||idx<0||idx>=stageThreePriorities.length)return;
     openSummaryPriority=idx;
+    currentPriority=idx;
     const host=document.getElementById('summary-priority-accordion');
     if(host)host.innerHTML=renderSummaryPriorityAccordion();
     const button=document.getElementById(`summary-priority-toggle-${idx}`);
