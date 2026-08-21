@@ -6097,6 +6097,7 @@ def extract_priorities(
     if not isinstance(priorities_raw, list) or len(priorities_raw) < 1:
         return _error_result
 
+    raw_priorities_are_objects = all(isinstance(pr, dict) for pr in priorities_raw)
     priorities = []
     climate_unlinked = 0
     climate_total = 0
@@ -6285,11 +6286,13 @@ def extract_priorities(
     readout = _normalize_concise_readout(data.get("concise_readout"))
     items = [_normalize_concise_priority(p.get("concise")) for p in priorities]
     ratings_ok = bool(
-        str(data.get("fcv_rating", "")).strip()
-        and str(data.get("fcv_responsiveness_rating", "")).strip()
+        _clean_concise_string(data.get("fcv_rating"))
+        and _clean_concise_string(data.get("fcv_responsiveness_rating"))
     )
     concise_ok = (
-        readout is not None
+        raw_priorities_are_objects
+        and bool(priorities)
+        and readout is not None
         and ratings_ok
         and all(item is not None for item in items)
     )

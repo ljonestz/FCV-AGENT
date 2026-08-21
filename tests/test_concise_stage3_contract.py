@@ -176,3 +176,41 @@ def test_optional_wording_and_secondary_lifecycle_fields_normalize_to_empty_stri
         }
         assert concise["project_cycle"]["secondary_label"] == ""
         assert concise["project_cycle"]["secondary_text"] == ""
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        pytest.param("fcv_rating", None, id="null-sensitivity-rating"),
+        pytest.param(
+            "fcv_responsiveness_rating",
+            ["Emerging"],
+            id="list-responsiveness-rating",
+        ),
+    ],
+)
+def test_non_string_or_null_fcv_ratings_disable_concise_bundle(field, value):
+    payload = _payload()
+    payload[field] = value
+
+    result = extract_priorities(_wrapped(payload))
+
+    assert result["error"] is False
+    assert len(result["priorities"]) == 2
+    assert result[field] == str(value).strip()
+    assert result["concise_readout"] is None
+    assert all("concise" not in priority for priority in result["priorities"])
+
+
+@pytest.mark.parametrize("include_valid", [False, True], ids=["only-invalid", "valid-plus-invalid"])
+def test_non_object_raw_priority_disables_concise_bundle(include_valid):
+    payload = _payload()
+    valid_priority = payload["priorities"][0]
+    payload["priorities"] = [valid_priority, None] if include_valid else [None]
+
+    result = extract_priorities(_wrapped(payload))
+
+    assert result["error"] is False
+    assert len(result["priorities"]) == (1 if include_valid else 0)
+    assert result["concise_readout"] is None
+    assert all("concise" not in priority for priority in result["priorities"])
