@@ -140,6 +140,11 @@ class TestExtractPrioritiesJsonPath:
         assert result['sensitivity_summary']
         assert result['responsiveness_summary']
 
+    def test_legacy_detailed_bundle_has_no_partial_concise_fields(self):
+        result = extract_priorities(VALID_JSON_FIXTURE)
+        assert result['concise_readout'] is None
+        assert all('concise' not in priority for priority in result['priorities'])
+
     def test_risk_exposure_mapped_correctly(self):
         result = extract_priorities(VALID_JSON_FIXTURE)
         assert result['risk_exposure']['risks_to']

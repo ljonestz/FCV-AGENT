@@ -1,0 +1,178 @@
+"""Contract tests for the optional Stage 3 concise FCV readout bundle."""
+
+import copy
+import json
+import os
+import sys
+
+import pytest
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from app import extract_priorities
+
+
+CONCISE_READOUT = {
+    "headline": "FCV risks are recognized, but key delivery choices remain unresolved.",
+    "overview": " ".join(
+        ["The operation faces material access, exclusion, and legitimacy risks."] * 18
+    ),
+    "strengths": [
+        {"title": "Context awareness", "text": "The document identifies the main FCV pressures."},
+        {"title": "Community feedback", "text": "The design includes beneficiary feedback channels."},
+        {"title": "Adaptive delivery", "text": "Implementation arrangements allow bounded adjustment."},
+    ],
+}
+
+CONCISE_PRIORITY = {
+    "title": "Define access triggers",
+    "why": "The unresolved choice affects access, inclusion, and delivery.",
+    "how": ["Define the trigger and owner.", "Record the response in the current instrument."],
+    "suggested_wording": {
+        "document_element": "Implementation arrangements",
+        "text": "Review access conditions quarterly.",
+    },
+    "project_cycle": {
+        "primary_label": "Address during implementation",
+        "primary_text": "Agree the trigger, response, and owner now.",
+        "secondary_label": "Track through the ISR",
+        "secondary_text": "Report activation through routine implementation reporting.",
+    },
+}
+
+
+def _detailed_priority(number: int) -> dict:
+    return {
+        "number": number,
+        "title": f"Priority {number} - access in Bentiu",
+        "dimension": "Inclusion",
+        "tag": "[S+R]",
+        "risk_level": "High",
+        "the_gap": "Access arrangements do not yet account for changing conditions in Bentiu.",
+        "why_it_matters": "Unclear access decisions can exclude affected groups and weaken trust.",
+        "recommendation": "Define an access trigger and document the response in the implementation arrangements.",
+        "who_acts": "TTL",
+        "when": "During implementation",
+        "resources": "Minimal",
+        "concise": copy.deepcopy(CONCISE_PRIORITY),
+    }
+
+
+def _payload() -> dict:
+    return {
+        "fcv_rating": "Adequate",
+        "fcv_responsiveness_rating": "Emerging",
+        "sensitivity_summary": "The operation recognizes material FCV delivery risks.",
+        "responsiveness_summary": "The operation has several adaptive entry points.",
+        "risk_exposure": {
+            "risks_to": "Conflict conditions may disrupt delivery.",
+            "risks_from": "Unequal access may reinforce exclusion.",
+        },
+        "concise_readout": copy.deepcopy(CONCISE_READOUT),
+        "priorities": [_detailed_priority(1), _detailed_priority(2)],
+    }
+
+
+def _wrapped(payload: dict) -> str:
+    return (
+        "Narrative.\n%%%JSON_START%%%\n"
+        + json.dumps(payload)
+        + "\n%%%JSON_END%%%"
+    )
+
+
+def _assert_concise_disabled_but_detailed_preserved(result: dict) -> None:
+    assert result["error"] is False
+    assert len(result["priorities"]) == 2
+    assert result["priorities"][0]["the_gap"]
+    assert result["priorities"][1]["recommendation"]
+    assert result["concise_readout"] is None
+    assert all("concise" not in priority for priority in result["priorities"])
+
+
+def test_complete_bundle_returns_normalized_readout_and_priority_cards():
+    result = extract_priorities(_wrapped(_payload()))
+
+    assert result["error"] is False
+    assert result["concise_readout"] == CONCISE_READOUT
+    assert result["priorities"][0]["concise"] == CONCISE_PRIORITY
+    assert result["priorities"][1]["concise"] == CONCISE_PRIORITY
+
+
+def test_missing_one_priority_concise_disables_the_entire_bundle_without_detail_loss():
+    payload = _payload()
+    payload["priorities"][1].pop("concise")
+
+    result = extract_priorities(_wrapped(payload))
+
+    _assert_concise_disabled_but_detailed_preserved(result)
+
+
+@pytest.mark.parametrize(
+    "mutate",
+    [
+        pytest.param(
+            lambda payload: payload["concise_readout"].update({"overview": "Too short."}),
+            id="overview-below-100-words",
+        ),
+        pytest.param(
+            lambda payload: payload["concise_readout"].update(
+                {"strengths": copy.deepcopy(CONCISE_READOUT["strengths"][:2])}
+            ),
+            id="fewer-than-three-strengths",
+        ),
+        pytest.param(
+            lambda payload: payload["priorities"][0]["concise"].update(
+                {"how": ["Define the trigger and owner."]}
+            ),
+            id="fewer-than-two-how-actions",
+        ),
+        pytest.param(
+            lambda payload: payload["priorities"][0]["concise"]["project_cycle"].update(
+                {"primary_text": ""}
+            ),
+            id="missing-primary-lifecycle-text",
+        ),
+        pytest.param(
+            lambda payload: payload.update({"concise_readout": ["not", "an", "object"]}),
+            id="readout-not-an-object",
+        ),
+    ],
+)
+def test_invalid_concise_bundle_is_disabled_atomically(mutate):
+    payload = _payload()
+    mutate(payload)
+
+    result = extract_priorities(_wrapped(payload))
+
+    _assert_concise_disabled_but_detailed_preserved(result)
+
+
+@pytest.mark.parametrize("missing_rating", ["fcv_rating", "fcv_responsiveness_rating"])
+def test_both_fcv_ratings_are_required_for_concise_bundle(missing_rating):
+    payload = _payload()
+    payload.pop(missing_rating)
+
+    result = extract_priorities(_wrapped(payload))
+
+    _assert_concise_disabled_but_detailed_preserved(result)
+
+
+def test_optional_wording_and_secondary_lifecycle_fields_normalize_to_empty_strings():
+    payload = _payload()
+    for priority in payload["priorities"]:
+        priority["concise"].pop("suggested_wording")
+        priority["concise"]["project_cycle"].pop("secondary_label")
+        priority["concise"]["project_cycle"].pop("secondary_text")
+
+    result = extract_priorities(_wrapped(payload))
+
+    assert result["concise_readout"] == CONCISE_READOUT
+    for priority in result["priorities"]:
+        concise = priority["concise"]
+        assert concise["suggested_wording"] == {
+            "document_element": "",
+            "text": "",
+        }
+        assert concise["project_cycle"]["secondary_label"] == ""
+        assert concise["project_cycle"]["secondary_text"] == ""

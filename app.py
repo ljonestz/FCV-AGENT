@@ -5959,6 +5959,94 @@ def _safe_run(para):
     return para.runs[0] if para.runs else para.add_run()
 
 
+def _clean_concise_string(value: Any) -> str:
+    """Return a trimmed concise string, or an empty string for other values."""
+    return value.strip() if isinstance(value, str) else ""
+
+
+def _normalize_concise_readout(value: Any) -> dict[str, Any] | None:
+    """Validate and normalize the top-level concise FCV readout."""
+    if not isinstance(value, dict):
+        return None
+
+    headline = _clean_concise_string(value.get("headline"))
+    overview = _clean_concise_string(value.get("overview"))
+    overview_words = overview.split()
+    strengths_raw = value.get("strengths")
+    if (
+        not headline
+        or not 100 <= len(overview_words) <= 250
+        or not isinstance(strengths_raw, list)
+        or len(strengths_raw) != 3
+    ):
+        return None
+
+    strengths = []
+    for strength in strengths_raw:
+        if not isinstance(strength, dict):
+            return None
+        title = _clean_concise_string(strength.get("title"))
+        text = _clean_concise_string(strength.get("text"))
+        if not title or not text:
+            return None
+        strengths.append({"title": title, "text": text})
+
+    return {
+        "headline": headline,
+        "overview": overview,
+        "strengths": strengths,
+    }
+
+
+def _normalize_concise_priority(value: Any) -> dict[str, Any] | None:
+    """Validate and normalize one priority's concise card."""
+    if not isinstance(value, dict):
+        return None
+
+    title = _clean_concise_string(value.get("title"))
+    why = _clean_concise_string(value.get("why"))
+    how_raw = value.get("how")
+    if not isinstance(how_raw, list) or not 2 <= len(how_raw) <= 4:
+        return None
+    how = [_clean_concise_string(action) for action in how_raw]
+    if not title or not why or any(not action for action in how):
+        return None
+
+    project_cycle_raw = value.get("project_cycle")
+    if not isinstance(project_cycle_raw, dict):
+        return None
+    primary_label = _clean_concise_string(project_cycle_raw.get("primary_label"))
+    primary_text = _clean_concise_string(project_cycle_raw.get("primary_text"))
+    if not primary_label or not primary_text:
+        return None
+
+    suggested_wording_raw = value.get("suggested_wording")
+    if not isinstance(suggested_wording_raw, dict):
+        suggested_wording_raw = {}
+
+    return {
+        "title": title,
+        "why": why,
+        "how": how,
+        "suggested_wording": {
+            "document_element": _clean_concise_string(
+                suggested_wording_raw.get("document_element")
+            ),
+            "text": _clean_concise_string(suggested_wording_raw.get("text")),
+        },
+        "project_cycle": {
+            "primary_label": primary_label,
+            "primary_text": primary_text,
+            "secondary_label": _clean_concise_string(
+                project_cycle_raw.get("secondary_label")
+            ),
+            "secondary_text": _clean_concise_string(
+                project_cycle_raw.get("secondary_text")
+            ),
+        },
+    }
+
+
 def extract_priorities(
     text: str,
     uploaded_doc_names: list = None,
@@ -5981,6 +6069,7 @@ def extract_priorities(
         'priorities': [],
         'fcv_rating': '',
         'fcv_responsiveness_rating': '',
+        'concise_readout': None,
         'sensitivity_summary': '',
         'responsiveness_summary': '',
         'risk_exposure': {'risks_to': '', 'risks_from': ''},
@@ -6193,6 +6282,26 @@ def extract_priorities(
 
         priorities.append(pr)
 
+    readout = _normalize_concise_readout(data.get("concise_readout"))
+    items = [_normalize_concise_priority(p.get("concise")) for p in priorities]
+    ratings_ok = bool(
+        str(data.get("fcv_rating", "")).strip()
+        and str(data.get("fcv_responsiveness_rating", "")).strip()
+    )
+    concise_ok = (
+        readout is not None
+        and ratings_ok
+        and all(item is not None for item in items)
+    )
+    if concise_ok:
+        for priority, item in zip(priorities, items):
+            priority["concise"] = item
+        concise_readout = readout
+    else:
+        concise_readout = None
+        for priority in priorities:
+            priority.pop("concise", None)
+
     # Active-lens notes cap substantive priorities while retaining the existing
     # mandatory Gender-FCV and SEA/SH standalone-card exceptions.
     if active_lens_ids:
@@ -6232,6 +6341,7 @@ def extract_priorities(
         'priorities': priorities,
         'fcv_rating': str(data.get('fcv_rating', '')).strip(),
         'fcv_responsiveness_rating': str(data.get('fcv_responsiveness_rating', '')).strip(),
+        'concise_readout': concise_readout,
         'sensitivity_summary': str(data.get('sensitivity_summary', '')).strip(),
         'responsiveness_summary': str(data.get('responsiveness_summary', '')).strip(),
         'risk_exposure': {
