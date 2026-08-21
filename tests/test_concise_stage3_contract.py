@@ -253,6 +253,17 @@ def test_core_stage3_prompt_gets_concise_contract_for_every_review(review_mode):
     assert '"concise"' in prompt
 
 
+def test_active_lens_default_stage3_prompt_does_not_gain_concise_schema():
+    prompt = app.append_core_concise_stage3_contract(
+        app.DEFAULT_PROMPTS["3"],
+        "PID",
+        {"processing_track": "standard"},
+        "design",
+        [{"id": "agriculture"}],
+    )
+    assert '"concise_readout"' not in prompt
+
+
 def test_active_lens_stage3_prompt_is_unchanged():
     prompt = app.append_core_concise_stage3_contract(
         "BASE", "PCN", {"processing_track": "standard"}, "design", [{"id": "climate"}]
@@ -289,9 +300,66 @@ def test_concise_contract_preserves_detail_and_covers_overall_assessment():
     assert "Never attach `concise` only to the final priority" in contract
 
 
+@pytest.mark.parametrize(
+    "prompt_key,review_mode,doc_type",
+    [("3", "design", "PID"), ("impl_3", "implementation", "ISR")],
+)
+def test_rendered_core_stage3_schema_contains_concise_fields(
+    prompt_key, review_mode, doc_type
+):
+    rendered = app.DEFAULT_PROMPTS[prompt_key].format(
+        doc_type=doc_type,
+        instrument_guidance="Instrument guidance",
+        minimum_reference_set="Minimum references",
+        playbook_guidance="Playbook guidance",
+        process_guidance="Process guidance",
+        regime_header="Regime header",
+        seash_gender_card_guidance="SEA/SH guidance",
+        temporal_guardrail="Temporal guardrail",
+        timing_emphasis="Timing",
+    )
+    prompt = app.append_core_concise_stage3_contract(
+        rendered,
+        doc_type,
+        {"processing_track": "standard"},
+        review_mode,
+        [],
+    )
+
+    assert '  "concise_readout": {' in prompt
+    assert '      "concise": {' in prompt
+    assert "must come AFTER all narrative text" not in prompt
+    assert "present at the end" not in prompt
+def test_default_stage3_json_schema_embeds_concise_fields():
+    prompt = app.append_core_concise_stage3_contract(
+        app.DEFAULT_PROMPTS["3"],
+        "PID",
+        {"processing_track": "standard"},
+        "design",
+        [],
+    )
+    schema = next(
+        segment.split("%%%JSON_END%%%", 1)[0]
+        for segment in prompt.split("%%%JSON_START%%%")[1:]
+        if '"priorities"' in segment
+    )
+
+    assert '"concise_readout"' in schema
+    assert '"concise":' in schema
+    assert schema.index('"concise_readout"') < schema.index('"priorities"')
+    assert "must come AFTER all narrative text" not in prompt
+    assert "present at the end" not in prompt
+    assert (
+        '"secondary_text": "Optional follow-on step"\n        }\n'
+        '      }\n    }}}}'
+    ) in schema
+
+
 def test_stage3_prompt_contract_is_wired_to_both_workflows():
     source = open(app.__file__, encoding="utf-8").read()
     assert source.count("append_core_concise_stage3_contract(") == 3
+
+
 
 
 def _decode_sse(response):

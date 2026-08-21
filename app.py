@@ -3030,8 +3030,11 @@ For every item in `priorities`, add:
 
 STRUCTURAL COUNT CHECK: The number of `concise` objects must equal the number of priority objects.
 Nest one complete `concise` object inside every priority, adjacent to that priority's detailed
-fields. Never attach `concise` only to the final priority. Before closing the JSON block,
-count both arrays/objects and correct any mismatch.
+fields. Never attach `concise` only to the final priority. Before emitting %%%JSON_END%%%,
+inspect every item in `priorities`. Each item must contain a non-null `concise` object with
+`title`, `why`, `how` (2-4 actions), and `project_cycle.primary_label` plus `primary_text`.
+If any item is missing one, generate it before closing the JSON block. Count the priority and
+concise objects, correct any mismatch, and do not emit a partial bundle.
 
 OUTPUT ORDER OVERRIDE: Start the response with %%%JSON_START%%% and emit the complete,
 valid machine-readable block before any preamble or narrative. Include all existing
@@ -3041,6 +3044,80 @@ overrides any earlier instruction that places the JSON block after the narrative
 
 Do not generate advisory or disclaimer language about whether priorities are mandatory. The frontend supplies that controlled text.
 '''
+
+_CONCISE_READOUT_SCHEMA = '''  "concise_readout": {
+    "headline": "One plain-language sentence stating the overall finding",
+    "overview": "A 150-200 word synthesis covering the review stage, principal FCV exposure, two-way risk, sensitivity versus responsiveness, strongest feature, most consequential gap, and bottom-line implication",
+    "strengths": [
+      {"title": "Short strength label", "text": "One project-grounded sentence"},
+      {"title": "Short strength label", "text": "One project-grounded sentence"},
+      {"title": "Short strength label", "text": "One project-grounded sentence"}
+    ]
+  },
+'''
+
+_CONCISE_PRIORITY_SCHEMA = '''      "concise": {
+        "title": "Plain-language action title",
+        "why": "Project-specific gap, delivery consequence, and FCV mechanism",
+        "how": [
+          "First specific action appropriate to the current review stage",
+          "Second specific action appropriate to the current review stage"
+        ],
+        "suggested_wording": {
+          "document_element": "Most relevant current document section, or an empty string",
+          "text": "Short ready-to-paste wording, or an empty string"
+        },
+        "project_cycle": {
+          "primary_label": "Required lifecycle label",
+          "primary_text": "What should be addressed at the current gate or implementation point",
+          "secondary_label": "Optional follow-on label",
+          "secondary_text": "Optional follow-on step"
+        }
+      }'''
+
+
+def _embed_core_concise_stage3_schema(stage_prompt: str) -> str:
+    """Embed concise fields in the primary schema for core-only Stage 3."""
+    priorities_marker = '  "priorities": ['
+    priorities_index = stage_prompt.find(priorities_marker)
+    if priorities_index < 0:
+        return stage_prompt
+
+    prompt = (
+        stage_prompt[:priorities_index]
+        + _CONCISE_READOUT_SCHEMA
+        + stage_prompt[priorities_index:]
+    )
+    priorities_index = prompt.find(priorities_marker, priorities_index)
+    close_match = re.search(r'\n    \}{1,4}\n  \]', prompt[priorities_index:])
+    if close_match:
+        close_index = priorities_index + close_match.start()
+        prefix = prompt[:close_index]
+        if not prefix.rstrip().endswith(','):
+            prefix += ','
+        prompt = prefix + '\n' + _CONCISE_PRIORITY_SCHEMA + prompt[close_index:]
+
+    prompt = prompt.replace(
+        'After completing the full narrative output above, append a machine-readable JSON block',
+        'Before writing the narrative output, emit a machine-readable JSON block',
+        1,
+    )
+    prompt = prompt.replace(
+        'IMPORTANT: The JSON block must come AFTER all narrative text.',
+        'IMPORTANT: The JSON block must come BEFORE all narrative text.',
+        1,
+    )
+    prompt = prompt.replace(
+        '- JSON block is present at the end,',
+        '- JSON block is present at the start,',
+        1,
+    )
+    prompt = prompt.replace(
+        'Append after the narrative. Same structure as Design Review Stage 3.',
+        'Emit before the narrative. Same structure as Design Review Stage 3.',
+        1,
+    )
+    return prompt
 
 
 def build_concise_lifecycle_context(
@@ -3105,7 +3182,7 @@ def append_core_concise_stage3_contract(
     if active_lenses:
         return stage_prompt
     return (
-        stage_prompt
+        _embed_core_concise_stage3_schema(stage_prompt)
         + "\n\n--- Concise readout lifecycle framing ---\n"
         + build_concise_lifecycle_context(doc_type, temporal_context, review_mode)
         + "\n\n"
