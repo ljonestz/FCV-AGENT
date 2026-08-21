@@ -1,8 +1,8 @@
 # Normal FCV Summary Across All Reviews
 
-**Date:** 2026-08-21  
-**Status:** Approved for implementation planning  
-**Target branch:** `codex/climate-summary-quality-fixes`  
+**Date:** 2026-08-21
+**Status:** Approved for implementation planning
+**Target branch:** `codex/climate-summary-quality-fixes`
 **Baseline:** `08b3cb9`
 
 ## Purpose
