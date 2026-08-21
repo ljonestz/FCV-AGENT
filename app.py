@@ -3028,6 +3028,11 @@ For every item in `priorities`, add:
   }
 }
 
+STRUCTURAL COUNT CHECK: The number of `concise` objects must equal the number of priority objects.
+Nest one complete `concise` object inside every priority, adjacent to that priority's detailed
+fields. Never attach `concise` only to the final priority. Before closing the JSON block,
+count both arrays/objects and correct any mismatch.
+
 OUTPUT ORDER OVERRIDE: Start the response with %%%JSON_START%%% and emit the complete,
 valid machine-readable block before any preamble or narrative. Include all existing
 detailed fields plus the concise fields above, then close it with %%%JSON_END%%%.
