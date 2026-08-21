@@ -278,3 +278,137 @@ def test_concise_contract_preserves_detail_and_covers_overall_assessment():
 def test_stage3_prompt_contract_is_wired_to_both_workflows():
     source = open(app.__file__, encoding="utf-8").read()
     assert source.count("append_core_concise_stage3_contract(") == 3
+
+
+def _decode_sse(response):
+    return [
+        json.loads(chunk[6:])
+        for chunk in response.get_data(as_text=True).split("\n\n")
+        if chunk.startswith("data: ")
+    ]
+
+
+def test_step_by_step_completion_payload_transports_concise_bundle(monkeypatch):
+    raw = _wrapped(_payload())
+
+    def fake_stream(_messages, _max_tokens, _stage, **_kwargs):
+        fake_stream._last_result = raw
+        fake_stream._last_stop_reason = "end_turn"
+        yield 'data: {"chunk": "stage3"}\n\n'
+
+    monkeypatch.setattr(app, "_stream_stage", fake_stream)
+    response = app.app.test_client().post("/api/run-stage", json={
+        "stage": 3,
+        "active_lenses": [],
+        "review_mode": "design",
+        "history": [{"role": "assistant", "content": "Stage 2 analysis."}],
+        "document_type": "PAD",
+        "doc_type": "PAD",
+        "instrument_type": "IPF",
+        "temporal_context": {},
+        "regime_context": {},
+    })
+
+    done = next(event for event in _decode_sse(response) if event.get("done"))
+    assert done["concise_readout"] == CONCISE_READOUT
+    assert done["priorities"][0]["concise"] == CONCISE_PRIORITY
+
+
+def test_step_by_step_completion_payload_preserves_detail_on_invalid_bundle(monkeypatch):
+    payload = _payload()
+    payload["concise_readout"]["overview"] = "Too short."
+    raw = _wrapped(payload)
+
+    def fake_stream(_messages, _max_tokens, _stage, **_kwargs):
+        fake_stream._last_result = raw
+        fake_stream._last_stop_reason = "end_turn"
+        yield 'data: {"chunk": "stage3"}\n\n'
+
+    monkeypatch.setattr(app, "_stream_stage", fake_stream)
+    response = app.app.test_client().post("/api/run-stage", json={
+        "stage": 3,
+        "active_lenses": [],
+        "review_mode": "design",
+        "history": [{"role": "assistant", "content": "Stage 2 analysis."}],
+        "document_type": "PAD",
+        "doc_type": "PAD",
+        "instrument_type": "IPF",
+        "temporal_context": {},
+        "regime_context": {},
+    })
+
+    done = next(event for event in _decode_sse(response) if event.get("done"))
+    assert done["concise_readout"] is None
+    assert done["priorities"][0]["the_gap"]
+    assert done["fcv_rating"] == payload["fcv_rating"]
+    assert done["fcv_responsiveness_rating"] == payload["fcv_responsiveness_rating"]
+
+
+@pytest.mark.parametrize("valid_bundle", [True, False], ids=["valid", "invalid"])
+def test_express_completion_payload_transports_concise_bundle(monkeypatch, valid_bundle):
+    payload = _payload()
+    if not valid_bundle:
+        payload["concise_readout"]["overview"] = "Too short."
+    raw = _wrapped(payload)
+
+    def fake_stream(_messages, _max_tokens, stage, **_kwargs):
+        fake_stream._last_result = (
+            "Stage 1 project extraction."
+            if stage == 1
+            else "Stage 2 assessment."
+            if stage == 2
+            else raw
+        )
+        fake_stream._last_stop_reason = "end_turn"
+        yield 'data: {"chunk": "stage"}\n\n'
+
+    def fake_research(*_args, **_kwargs):
+        yield {"result": {
+            "core_brief": "Compact FCV research.",
+            "climate_research": {},
+            "lens_context_sources": [],
+            "climate_grounding": {},
+        }}
+
+    monkeypatch.setattr(app, "_stream_stage", fake_stream)
+    monkeypatch.setattr(app, "_iter_stage1_research", fake_research)
+    monkeypatch.setattr(app, "extract_country_name", lambda *_args: "Exampleland")
+    monkeypatch.setattr(app, "extract_sector_name", lambda *_args: "Transport")
+    monkeypatch.setattr(app, "get_fast_client", lambda: object())
+    monkeypatch.setattr(app, "extract_instrument_type", lambda _text: "IPF")
+    monkeypatch.setattr(app, "extract_temporal_context", lambda _text: {})
+    monkeypatch.setattr(app, "extract_regime_context", lambda _text, _instrument: {})
+    monkeypatch.setattr(app, "extract_country_classification", lambda _text: {"category": "General"})
+    monkeypatch.setattr(app, "extract_context_flags", lambda _text: {})
+    monkeypatch.setattr(app, "extract_sector_context", lambda _text: {"primary_sector": "Transport"})
+    monkeypatch.setattr(app, "extract_change_types", lambda _text: [])
+    monkeypatch.setattr(app, "extract_prior_actions", lambda _text: [])
+    monkeypatch.setattr(app, "extract_dlis", lambda _text: [])
+    monkeypatch.setattr(app, "extract_country_set", lambda _text: {"is_multi_country": False})
+    monkeypatch.setattr(app, "extract_mpa_context", lambda _text: {"is_mpa": False})
+    monkeypatch.setattr(app, "extract_lens_evidence", lambda *_args: {})
+
+    response = app.app.test_client().post("/api/run-express", json={
+        "active_lenses": [],
+        "review_mode": "design",
+        "document_type": "PAD",
+        "instrument_type": "IPF",
+        "documents": [{
+            "name": "PAD.txt",
+            "type": "text",
+            "docRole": "primary",
+            "content": "Named transport project activities. " * 10,
+        }],
+    })
+
+    done = next(
+        event for event in _decode_sse(response) if event.get("stage_done") == 3
+    )
+    if valid_bundle:
+        assert done["concise_readout"] == CONCISE_READOUT
+        assert done["priorities"][0]["concise"] == CONCISE_PRIORITY
+    else:
+        assert done["concise_readout"] is None
+        assert done["priorities"][0]["the_gap"]
+        assert done["fcv_rating"] == payload["fcv_rating"]
+        assert done["fcv_responsiveness_rating"] == payload["fcv_responsiveness_rating"]
