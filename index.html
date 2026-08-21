@@ -1081,6 +1081,19 @@
     .concise-rating-indicator span{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
     .concise-rating-indicator strong{color:var(--wbg-navy)}
     .stage3-advisory-transition{margin:4px 0 18px;padding:12px 14px;background:#f6f9fb;border-left:3px solid var(--wbg-blue);color:var(--text);line-height:1.6}
+    #summary-priority-accordion{display:flex;flex-direction:column;gap:10px;margin-top:10px}
+    .summary-priority-item{background:#fff;border:1px solid var(--border);border-radius:9px;overflow:hidden}
+    .summary-priority-item h3{margin:0;font-size:inherit}
+    .summary-priority-toggle{width:100%;display:grid;grid-template-columns:30px 1fr auto;align-items:center;gap:11px;padding:14px 16px;border:0;background:#fff;color:var(--wbg-navy);font:inherit;font-weight:700;text-align:left;cursor:pointer}
+    .summary-priority-toggle:hover{background:#f7f9fb}
+    .summary-priority-toggle:focus-visible{outline:3px solid #f2a900;outline-offset:-3px}
+    .summary-priority-rank{width:27px;height:27px;border-radius:50%;display:grid;place-items:center;background:var(--wbg-navy);color:#fff;font-size:12px}
+    .summary-priority-chevron{font-size:18px;transition:transform .2s}
+    .summary-priority-toggle[aria-expanded="true"] .summary-priority-chevron{transform:rotate(180deg)}
+    .summary-priority-panel[hidden]{display:none}
+    .summary-priority-panel{border-top:1px solid var(--border)}
+    .summary-priority-panel>section,.summary-priority-panel>.concise-cycle{padding:14px 16px;border-bottom:1px solid var(--border)}
+    .summary-priority-panel h4{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--wbg-navy);margin:0 0 6px}
     .concise-strengths{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:10px 0 22px}
     .concise-strength{padding:12px;background:#edf8f2;border:1px solid #cae4d5;border-radius:7px}
     .concise-strength strong{display:block;color:#176a42;margin-bottom:6px;white-space:normal;overflow:visible}
@@ -6388,9 +6401,9 @@ ${body}
   }
 
   function renderStage3AdvisoryTransition(route){
-    const context=route==='climate'?'climate and FCV context':'FCV context';
-    const focus=reviewMode==='implementation'?'implementation arrangements':'design';
-    return `<p class="stage3-advisory-transition">The following priorities are suggestions to strengthen the project\'s ${focus} in its ${context}; they are not mandatory requirements. The task team may wish to focus on those most relevant and discuss them with the FCV Country Coordinator or relevant Global Practice experts as needed.</p>`;
+    const subject=reviewMode==='implementation'?"project's design and implementation arrangements":"project's design";
+    const context=route==='climate'?'climate and FCV':'FCV';
+    return `<p class="summary-priority-advisory stage3-advisory-transition">The following priorities are suggestions to strengthen the ${subject} in its ${context} context; they are not mandatory requirements. The task team may wish to focus on those most relevant and discuss them with the FCV Country Coordinator or relevant Global Practice experts as needed.</p>`;
   }
 
   function renderFcvRatingIndicators(){
@@ -6400,7 +6413,7 @@ ${body}
   function renderNormalFcvSummary(){
     const readout=stageConciseReadout&&typeof stageConciseReadout==='object'?stageConciseReadout:{};
     const strengths=(Array.isArray(readout.strengths)?readout.strengths:[]).map(strength=>`<div class="concise-strength"><strong>${esc(strength.title||'Project strength')}</strong><span class="concise-strength-text">${esc(strength.text||'')}</span></div>`).join('');
-    return `<div class="concise-readout normal-fcv-summary"><div class="concise-read-time">Five-minute readout</div><div class="concise-section-label">Overall assessment</div><h2 class="concise-headline">${esc(readout.headline||'FCV assessment summary')}</h2><p class="concise-overview">${esc(readout.overview||'')}</p>${renderFcvRatingIndicators()}<div class="concise-section-label">What is already working</div><div class="concise-strengths">${strengths}</div>${renderStage3AdvisoryTransition('normal')}<div class="concise-section-label">Priority actions for the task team</div><div id="priorities-intro"></div><div id="summary-priority-accordion"></div></div>`;
+    return `<div class="concise-readout normal-fcv-summary"><div class="concise-read-time">Five-minute readout</div><div class="concise-section-label">Overall assessment</div><h2 class="concise-headline">${esc(readout.headline||'FCV assessment summary')}</h2><p class="concise-overview">${esc(readout.overview||'')}</p>${renderFcvRatingIndicators()}<div class="concise-section-label">What is already working</div><div class="concise-strengths">${strengths}</div>${renderStage3AdvisoryTransition('normal')}<div class="concise-section-label">Priority actions for the task team</div><div id="summary-priority-accordion">${renderSummaryPriorityAccordion()}</div></div>`;
   }
 
   function renderStage3Summary(){
@@ -6462,6 +6475,27 @@ ${body}
     return {title:rawTitle.replace(/^Priority\s+\d+\s*(?:[-:\u2022]\s*)?/i,'')||rawTitle,why:priority&&priority.why_it_matters||priority&&priority.the_gap||'',how:(priority&&priority.actions||[]).slice(0,4).map(action=>action.guidance).filter(Boolean),suggested_wording:{document_element:firstAction.document_element||'',text:firstAction.suggested_language||''},project_cycle:{primary_label:'When to address',primary_text:priority&&priority.implementation_note||'',secondary_label:'',secondary_text:''}};
   }
 
+
+  function renderSummaryPriorityAccordion(priorities=stageThreePriorities){
+    return priorities.map((priority,idx)=>{
+      const concise=getConcisePriority(priority);
+      const wording=concise.suggested_wording||{};
+      const cycle=concise.project_cycle||{};
+      const expanded=idx===openSummaryPriority;
+      const how=(Array.isArray(concise.how)?concise.how:[]).map(item=>`<li>${esc(item)}</li>`).join('');
+      const specialist=String(priority.the_gap||priority.why_it_matters||'').trim();
+      return `<article class="summary-priority-item"><h3><button type="button" id="summary-priority-toggle-${idx}" class="summary-priority-toggle" aria-expanded="${expanded}" aria-controls="summary-priority-panel-${idx}" onclick="toggleSummaryPriority(${idx})"><span class="summary-priority-rank">${idx+1}</span><span>${esc(concise.title||priority.title||'Priority action')}</span><span class="summary-priority-chevron" aria-hidden="true">⌄</span></button></h3><div id="summary-priority-panel-${idx}" class="summary-priority-panel" role="region" aria-labelledby="summary-priority-toggle-${idx}"${expanded?'':' hidden'}><section><h4>Why this is suggested</h4><p>${esc(concise.why||'')}</p></section><section class="concise-how"><h4>How it can be addressed</h4><ul>${how}</ul></section>${wording.text?`<section class="concise-wording"><h4>Suggested wording for the current document</h4><p>${esc(wording.text)}</p>${wording.document_element?`<div class="concise-wording-target">For: ${esc(wording.document_element)}</div>`:''}</section>`:''}<aside class="concise-cycle"><h4>Where this fits in the project cycle</h4><div class="concise-cycle-items"><div><strong>${esc(cycle.primary_label||'When to address')}</strong><p>${esc(cycle.primary_text||'')}</p></div>${cycle.secondary_label||cycle.secondary_text?`<div><strong>${esc(cycle.secondary_label||'Next step')}</strong><p>${esc(cycle.secondary_text||'')}</p></div>`:''}</div></aside>${specialist?`<details class="concise-specialist"><summary>Specialist reasoning, evidence and operational references</summary><p>${esc(specialist)}</p></details>`:''}</div></article>`;
+    }).join('');
+  }
+
+  function toggleSummaryPriority(idx){
+    if(!Number.isInteger(idx)||idx<0||idx>=stageThreePriorities.length)return;
+    openSummaryPriority=idx;
+    const host=document.getElementById('summary-priority-accordion');
+    if(host)host.innerHTML=renderSummaryPriorityAccordion();
+    const button=document.getElementById(`summary-priority-toggle-${idx}`);
+    if(button)button.focus();
+  }
   function renderClimateVerifiedSummary(reader){
     const r=reader&&typeof reader==='object'?reader:{};
     const operationContextHtml=(()=>{
@@ -6494,8 +6528,8 @@ ${body}
     const emptyPriorityMessage=recommendationsIncomplete
       ?(r.recommendation_message||'The recommendation stage could not be completed. Do not treat this Recommendations Note as complete; rerun the analysis or contact support.')
       :'No ranked operational priorities were returned for this run.';
-    const prioritiesHtml=priorities.length?'<div id="priorities-intro"></div>':`<p class="concise-priority-intro">${esc(emptyPriorityMessage)}</p>`;
-    return `<div class="concise-readout climate-verified-summary"><div class="concise-read-time">Five-minute readout</div>${operationContextHtml}<div class="concise-section-label">Overall assessment</div><p class="concise-overview">${esc(overview)}</p>${signal}<div class="concise-section-label">What is already working</div><div class="concise-strengths">${strengthsHtml}</div><div class="concise-section-label">Priority actions for the task team</div>${prioritiesHtml}</div>`;
+    const prioritiesHtml=priorities.length?`<div id="summary-priority-accordion">${renderSummaryPriorityAccordion(priorities)}</div>`:`<p class="concise-priority-intro">${esc(emptyPriorityMessage)}</p>`;
+    return `<div class="concise-readout climate-verified-summary"><div class="concise-read-time">Five-minute readout</div>${operationContextHtml}<div class="concise-section-label">Overall assessment</div><p class="concise-overview">${esc(overview)}</p>${signal}<div class="concise-section-label">What is already working</div><div class="concise-strengths">${strengthsHtml}</div>${renderStage3AdvisoryTransition('climate')}<div class="concise-section-label">Priority actions for the task team</div>${prioritiesHtml}</div>`;
   }
 
   function handleStage3ViewKeydown(event){
@@ -6519,9 +6553,13 @@ ${body}
     const showSummary=view==='summary';
     const out=document.getElementById('out-txt');
     if(out){out.setAttribute('aria-labelledby',view==='summary'?'stage3-summary-tab':'stage3-detailed-tab');out.innerHTML=stage3ViewToggleHtml()+(view==='summary'?renderStage3Summary():stage3DetailedHtml);}
-    ['priority-stepper','priority-card-area','pc-nav'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=showSummary?'':'none';});
-    if(showSummary){renderPrioritiesIntro();renderPriorityStepper();showPriority(preservePriority?currentPriority:0);}
-    else {const card=document.getElementById('priority-card-area');if(card)card.innerHTML='';}
+    ['priority-stepper','priority-card-area','pc-nav'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=showSummary?'none':'';});
+    if(showSummary){
+      if(!preservePriority)openSummaryPriority=0;
+      const host=document.getElementById('summary-priority-accordion');if(host)host.innerHTML=renderSummaryPriorityAccordion();
+    }else{
+      renderPrioritiesIntro();renderPriorityStepper();showPriority(preservePriority?currentPriority:0);
+    }
   }
 
   function showConcisePriority(idx){
@@ -6535,10 +6573,18 @@ ${body}
   function initStage3UI(){
     maybeRunPriorityQuestions();
     if(!stageThreePriorities.length) return;
-    currentPriority = 0;
-    renderPrioritiesIntro();
-    renderPriorityStepper();
-    showPriority(0);
+    const summaryActive=supportsAnyStage3Summary()&&stage3View==='summary';
+    ['priority-stepper','priority-card-area','pc-nav'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=summaryActive?'none':'';});
+    if(summaryActive){
+      openSummaryPriority=0;
+      const host=document.getElementById('summary-priority-accordion');
+      if(host)host.innerHTML=renderSummaryPriorityAccordion();
+    }else{
+      currentPriority=0;
+      renderPrioritiesIntro();
+      renderPriorityStepper();
+      showPriority(0);
+    }
     updateSidebar();
     // Render Horizon Considerations panel if available
     if(horizonConsiderations && horizonConsiderations.trim()){
@@ -6707,19 +6753,7 @@ ${body}
     const pr = stageThreePriorities[idx];
     if(!pr) return;
     if(supportsAnyStage3Summary()&&stage3View==='summary'){
-      currentPriority=idx;
-      renderPriorityStepper();
-      const navEl=document.getElementById('pc-nav'), counterEl=document.getElementById('pc-nav-counter');
-      const prevBtn=document.getElementById('pc-prev-btn'), nextBtn=document.getElementById('pc-next-btn');
-      if(navEl)navEl.style.display='flex';
-      if(counterEl)counterEl.textContent=`Priority ${idx+1} of ${stageThreePriorities.length}`;
-      if(prevBtn)prevBtn.disabled=idx===0;
-      if(nextBtn){
-        if(idx===stageThreePriorities.length-1){nextBtn.textContent='Done';nextBtn.onclick=()=>{};nextBtn.disabled=true;}
-        else{nextBtn.innerHTML='Next <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>';nextBtn.onclick=nextPriority;nextBtn.disabled=false;}
-      }
-      showConcisePriority(idx);
-      updateSidebar();
+      toggleSummaryPriority(idx);
       return;
     }
     currentPriority = idx;

@@ -115,6 +115,9 @@ def test_climate_summary_caps_dynamic_strengths_and_uses_longer_overview():
         for name in (
             "climateSummaryStrengths",
             "climateSummaryPriorityItems",
+            "renderStage3AdvisoryTransition",
+            "getConcisePriority",
+            "renderSummaryPriorityAccordion",
             "renderClimateVerifiedSummary",
         )
     )
@@ -122,6 +125,8 @@ def test_climate_summary_caps_dynamic_strengths_and_uses_longer_overview():
 const esc = value => String(value ?? '')
   .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
   .replace(/\"/g,'&quot;').replace(/'/g,'&#039;');
+const reviewMode='design';
+let openSummaryPriority=0;
 {helpers}
 const reader = {{
   operation_context: {{
@@ -145,7 +150,7 @@ if (html.includes('Climate-FCV design readout')) throw new Error('summary contai
 if (!html.includes('Second overview paragraph')) throw new Error('summary omitted the longer overview');
 if (html.includes('A fourth positive design feature')) throw new Error('summary exceeded the three-tile cap');
 if (!html.includes('class="concise-strength-text"')) throw new Error('strength explanation lacks readable body element');
-if (!html.includes('id="priorities-intro"')) throw new Error('summary omitted the priority action container');
+if (!html.includes('id="summary-priority-accordion"')) throw new Error('summary omitted the priority accordion');
 if (!html.includes('How this operation was routed') || !html.includes('Program Paper') || !html.includes('PforR')) throw new Error('summary omitted operation routing');
 if (!html.includes('E&amp;S route') || !html.includes('INSTRUMENT SPECIFIC')) throw new Error('summary omitted E&S routing');
 """
@@ -162,6 +167,9 @@ def test_incomplete_recommendations_are_fail_loud_in_both_climate_views():
         for name in (
             "climateSummaryStrengths",
             "climateSummaryPriorityItems",
+            "renderStage3AdvisoryTransition",
+            "getConcisePriority",
+            "renderSummaryPriorityAccordion",
             "renderClimateVerifiedSummary",
             "isPublicWorldBankHttpsUrl",
             "renderClimateVerifiedAssessment",
@@ -183,6 +191,8 @@ def test_incomplete_recommendations_are_fail_loud_in_both_climate_views():
     script = f"""
 {_js_escape_helper()}
 const renderClimateRelevantGuidance = () => '';
+const reviewMode='design';
+let openSummaryPriority=0;
 {helpers}
 const reader = {json.dumps(reader)};
 for (const [name,html] of [
@@ -231,7 +241,8 @@ if (cards[1].title !== cards[1].text) throw new Error('one-sentence fallback was
 def test_climate_summary_initial_render_hydrates_priority_navigation():
     source = INDEX.read_text(encoding="utf-8")
 
-    assert "if(showSummary){renderPrioritiesIntro();renderPriorityStepper();showPriority(preservePriority?currentPriority:0);}" in source
+    assert "if(host)host.innerHTML=renderSummaryPriorityAccordion();" in source
+    assert "el.style.display=showSummary?'none':''" in source
     assert "if(supportsClimateVerifiedStage3View())stageThreePriorities=climateSummaryPriorityItems(climateVerifiedReader);" in source
     assert "if(supportsClimateVerifiedStage3View()&&stageThreePriorities&&stageThreePriorities.length)initStage3UI();" in source
 
@@ -267,6 +278,9 @@ def test_climate_summary_truncates_overview_at_a_complete_sentence():
         for name in (
             "climateSummaryStrengths",
             "climateSummaryPriorityItems",
+            "renderStage3AdvisoryTransition",
+            "getConcisePriority",
+            "renderSummaryPriorityAccordion",
             "renderClimateVerifiedSummary",
         )
     )
@@ -274,6 +288,8 @@ def test_climate_summary_truncates_overview_at_a_complete_sentence():
 const esc = value => String(value ?? '')
   .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
   .replace(/\"/g,'&quot;').replace(/'/g,'&#039;');
+const reviewMode='design';
+let openSummaryPriority=0;
 {helpers}
 const first = 'Context '.repeat(119) + 'first sentence ends here.';
 const second = 'Design '.repeat(109) + 'second sentence ends here.';

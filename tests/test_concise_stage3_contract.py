@@ -452,11 +452,17 @@ def test_frontend_normal_summary_renderer_includes_required_sections():
     source = open(os.path.join(os.path.dirname(app.__file__), "index.html"), encoding="utf-8").read()
     helpers = "\n".join(
         _extract_js_function(source, name)
-        for name in ("renderFcvRatingIndicators", "renderNormalFcvSummary")
+        for name in (
+            "renderFcvRatingIndicators",
+            "getConcisePriority",
+            "renderSummaryPriorityAccordion",
+            "renderNormalFcvSummary",
+        )
     )
     script = f"""
 const esc=value=>String(value??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 let stageConciseReadout={json.dumps(CONCISE_READOUT)};
+let openSummaryPriority=0;
 let stageThreePriorities={json.dumps(_payload()["priorities"])};
 let fcvRating='Adequate';
 let fcvResponsivenessRating='Emerging';
@@ -472,3 +478,61 @@ console.log(html);
         ["node", "-e", script], capture_output=True, text=True, check=False
     )
     assert result.returncode == 0, result.stderr
+
+
+def test_summary_priority_accordion_is_single_open_and_accessible():
+    source = open(os.path.join(os.path.dirname(app.__file__), "index.html"), encoding="utf-8").read()
+    helpers = "\n".join(
+        _extract_js_function(source, name)
+        for name in (
+            "getConcisePriority",
+            "renderSummaryPriorityAccordion",
+            "toggleSummaryPriority",
+        )
+    )
+    priorities = [_detailed_priority(index) for index in range(1, 5)]
+    script = f"""
+const esc=value=>String(value??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+let stageThreePriorities={json.dumps(priorities)};
+let openSummaryPriority=0;
+let focused='';
+const host={{innerHTML:''}};
+const document={{getElementById:id=>id==='summary-priority-accordion'?host:{{focus:()=>{{focused=id;}}}}}};
+{helpers}
+const initial=renderSummaryPriorityAccordion();
+if((initial.match(/class="summary-priority-toggle/g)||[]).length!==4)throw new Error('wrong header count');
+if((initial.match(/aria-expanded="true"/g)||[]).length!==1)throw new Error('wrong expanded count');
+if(!initial.includes('id="summary-priority-panel-0"')||/id="summary-priority-panel-0"[^>]* hidden/.test(initial))throw new Error('first not open');
+if(!initial.includes('aria-controls="summary-priority-panel-3"'))throw new Error('missing aria controls');
+toggleSummaryPriority(2);
+if(!host.innerHTML.includes('id="summary-priority-toggle-2"')||!host.innerHTML.includes('aria-expanded="true"'))throw new Error('third not open');
+if(!/id="summary-priority-panel-0"[^>]* hidden/.test(host.innerHTML))throw new Error('first not collapsed');
+if(focused!=='summary-priority-toggle-2')throw new Error('focus not restored');
+"""
+    result = subprocess.run(
+        ["node", "-e", script], capture_output=True, text=True, check=False
+    )
+    assert result.returncode == 0, result.stderr
+
+
+def test_shared_advisory_is_controlled_and_used_by_both_routes():
+    source = open(os.path.join(os.path.dirname(app.__file__), "index.html"), encoding="utf-8").read()
+    advisory = _extract_js_function(source, "renderStage3AdvisoryTransition")
+    climate = _extract_js_function(source, "renderClimateVerifiedSummary")
+    normal = _extract_js_function(source, "renderNormalFcvSummary")
+    script = f"""
+let reviewMode='design';
+{advisory}
+const html=renderStage3AdvisoryTransition('normal')+renderStage3AdvisoryTransition('climate');
+for(const expected of ['not mandatory requirements','FCV Country Coordinator','Global Practice experts']){{
+  if(!html.includes(expected))throw new Error('missing '+expected);
+}}
+"""
+    result = subprocess.run(
+        ["node", "-e", script], capture_output=True, text=True, check=False
+    )
+    assert result.returncode == 0, result.stderr
+    assert "renderStage3AdvisoryTransition('normal')" in normal
+    assert "renderStage3AdvisoryTransition('climate')" in climate
+    assert "aria-expanded" in source
+    assert "aria-controls" in source
