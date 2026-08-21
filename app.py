@@ -2987,6 +2987,121 @@ def get_seash_gender_card_guidance(instrument_type: str) -> str:
     return SEASH_GENDER_CARD_IPF
 
 
+CONCISE_STAGE3_OUTPUT_CONTRACT = '''## CONCISE ON-SCREEN READOUT
+
+In the same analysis and same JSON block, add a plain-language presentation layer. Preserve all detailed findings, both FCV ratings, and the priority count, order, and actions. Do not add, remove, merge, or reprioritize findings, and do not alter any existing detailed JSON field.
+
+The Summary should support a five-minute read. In `concise_readout`, provide a one-sentence `headline`, a 150-200 word `overview`, and exactly 3 short, project-grounded strengths. The overview must cover: the headline judgment; review-stage context; principal FCV exposure; two-way risk (risks to the project and risks from the project); sensitivity versus responsiveness; the strongest feature; the most consequential gap; and the bottom-line implication for the task team. It must remain consistent with the detailed analysis and both FCV ratings.
+
+For every item in `priorities`, add a complete `concise` object with: a plain-language title; a project-specific explanation of why the suggestion matters; 2-4 specific actions; optional ready-to-paste wording for the most relevant current document element; and project-cycle labels and text that follow the lifecycle framing above. The project-cycle block must not overstate what belongs at the current review stage.
+
+Add these optional fields without removing or changing detailed fields:
+
+"concise_readout": {
+  "headline": "One plain-language sentence stating the overall finding",
+  "overview": "A 150-200 word synthesis covering all required assessment elements",
+  "strengths": [
+    {"title": "Short strength label", "text": "One project-grounded sentence"},
+    {"title": "Short strength label", "text": "One project-grounded sentence"},
+    {"title": "Short strength label", "text": "One project-grounded sentence"}
+  ]
+}
+
+For every item in `priorities`, add:
+
+"concise": {
+  "title": "Plain-language action title",
+  "why": "A project-specific explanation of the gap, delivery consequence, and FCV mechanism",
+  "how": [
+    "First specific action appropriate to the current review stage",
+    "Second specific action appropriate to the current review stage"
+  ],
+  "suggested_wording": {
+    "document_element": "The most relevant current document section, or an empty string",
+    "text": "Short ready-to-paste WBG project-document wording, or an empty string"
+  },
+  "project_cycle": {
+    "primary_label": "Label from the lifecycle framing",
+    "primary_text": "What should be addressed at the current gate or implementation point",
+    "secondary_label": "Optional follow-on label",
+    "secondary_text": "Optional follow-on step"
+  }
+}
+
+Do not generate advisory or disclaimer language about whether priorities are mandatory. The frontend supplies that controlled text.
+'''
+
+
+def build_concise_lifecycle_context(
+    doc_type: str,
+    temporal_context: dict,
+    review_mode: str,
+) -> str:
+    """Return conservative project-cycle labels for the concise core readout."""
+    track = (temporal_context or {}).get('processing_track', 'Unknown')
+    normalized_doc_type = re.sub(
+        r'[^A-Z0-9]+', ' ', (doc_type or 'Unknown').upper()
+    ).strip()
+    normalized_review_mode = (review_mode or 'design').strip().lower()
+
+    if normalized_review_mode == 'implementation':
+        if normalized_doc_type in {
+            'ADDITIONAL FINANCING', 'AF', 'RESTRUCTURING', 'RESTRUCTURING PAPER'
+        }:
+            return (
+                'Concise project-cycle labels: "Include in the current package" and '
+                '"Track through implementation". Focus on changes within the financing '
+                'or restructuring package and distinguish them from later supervision.'
+            )
+        return (
+            'Concise project-cycle labels: "Address during implementation" and '
+            '"Track through the next review". Focus on feasible course correction '
+            'through current implementation, supervision, and agreed actions.'
+        )
+
+    if track == 'consolidated_condensed':
+        return (
+            'Concise project-cycle labels: "Resolve by Decision Review" and '
+            '"Complete in parallel". Explain that design and supporting detail '
+            'progress together on the compressed timetable.'
+        )
+    if normalized_doc_type == 'PCN' and track == 'standard':
+        return (
+            'Concise project-cycle labels: "Commit in the PCN" and '
+            '"Develop during preparation". Require the strategic commitment now '
+            'but keep detailed instruments and procedures proportionate to concept stage.'
+        )
+    if normalized_doc_type in {'PID', 'PAD'}:
+        return (
+            'Concise project-cycle labels: "Resolve before the review gate" and '
+            '"Do not defer". Treat unresolved design choices as readiness issues; '
+            'only fine operating detail may remain for later instruments.'
+        )
+    return (
+        'Concise project-cycle labels: "When to address" and "Next step". '
+        'Use stage-only wording and do not assert an unverified procedural gate.'
+    )
+
+
+def append_core_concise_stage3_contract(
+    stage_prompt: str,
+    doc_type: str,
+    temporal_context: dict,
+    review_mode: str,
+    active_lenses: list[dict[str, Any]],
+) -> str:
+    """Append concise instructions only to a resolved core Stage 3 prompt."""
+    if active_lenses:
+        return stage_prompt
+    return (
+        stage_prompt
+        + "\n\n--- Concise readout lifecycle framing ---\n"
+        + build_concise_lifecycle_context(doc_type, temporal_context, review_mode)
+        + "\n\n"
+        + CONCISE_STAGE3_OUTPUT_CONTRACT
+    )
+
+
 INSTRUMENT_VOCABULARY_RULES: dict[str, dict[str, Any]] = {
     "PFORR": {
         "label": "PforR",
@@ -8864,6 +8979,14 @@ def run_stage():
                 )
             elif lens_context['prompt']:
                 stage_prompt += "\n\n--- ACTIVE SECTOR LENSES ---\n" + lens_context['prompt']
+            if stage == 3 and not _native_climate_stage3:
+                stage_prompt = append_core_concise_stage3_contract(
+                    stage_prompt,
+                    data.get('doc_type', document_type or 'Unknown'),
+                    data.get('temporal_context', {}),
+                    review_mode,
+                    lens_context['active_lenses'],
+                )
             if _native_climate_stage3:
                 messages = [{"role": "user", "content": stage_prompt}]
             else:
@@ -10786,6 +10909,13 @@ def run_express():
                         stage3_prompt = stage3_prompt + pq_block
                     if lens_context_s3['prompt']:
                         stage3_prompt += "\n\n--- ACTIVE SECTOR LENSES ---\n" + lens_context_s3['prompt']
+                    stage3_prompt = append_core_concise_stage3_contract(
+                        stage3_prompt,
+                        doc_type,
+                        temporal_context,
+                        review_mode,
+                        lens_context_s3['active_lenses'],
+                    )
                 stage3_messages = (
                     [{"role": "user", "content": stage3_prompt}]
                     if _native_climate_s3 else

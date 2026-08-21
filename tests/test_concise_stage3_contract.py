@@ -9,6 +9,7 @@ import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+import app
 from app import extract_priorities
 
 
@@ -214,3 +215,66 @@ def test_non_object_raw_priority_disables_concise_bundle(include_valid):
     assert len(result["priorities"]) == (1 if include_valid else 0)
     assert result["concise_readout"] is None
     assert all("concise" not in priority for priority in result["priorities"])
+
+@pytest.mark.parametrize(
+    ("doc_type", "temporal_context", "review_mode", "expected_label"),
+    [
+        ("PCN", {"processing_track": "standard"}, "design", "Commit in the PCN"),
+        ("PCN", {"processing_track": "consolidated_condensed"}, "design", "Resolve by Decision Review"),
+        ("PAD", {}, "design", "Resolve before the review gate"),
+        ("PID", {}, "design", "Resolve before the review gate"),
+        ("ISR", {}, "implementation", "Address during implementation"),
+        ("Additional Financing", {}, "implementation", "Include in the current package"),
+        ("Restructuring Paper", {}, "implementation", "Include in the current package"),
+        ("Unknown", {}, "design", "When to address"),
+    ],
+)
+def test_concise_lifecycle_context_matches_review_stage(
+    doc_type, temporal_context, review_mode, expected_label
+):
+    text = app.build_concise_lifecycle_context(doc_type, temporal_context, review_mode)
+    assert expected_label in text
+
+
+@pytest.mark.parametrize("review_mode", ["design", "implementation"])
+def test_core_stage3_prompt_gets_concise_contract_for_every_review(review_mode):
+    prompt = app.append_core_concise_stage3_contract(
+        "BASE", "PCN", {"processing_track": "standard"}, review_mode, []
+    )
+    assert prompt.startswith("BASE")
+    assert '"concise_readout"' in prompt
+    assert '"concise"' in prompt
+
+
+def test_active_lens_stage3_prompt_is_unchanged():
+    prompt = app.append_core_concise_stage3_contract(
+        "BASE", "PCN", {"processing_track": "standard"}, "design", [{"id": "climate"}]
+    )
+    assert prompt == "BASE"
+
+
+def test_concise_contract_preserves_detail_and_covers_overall_assessment():
+    contract = app.CONCISE_STAGE3_OUTPUT_CONTRACT
+    assert "same analysis and same json block" in contract.lower()
+    assert "detailed findings" in contract.lower()
+    assert "both FCV ratings" in contract
+    assert "priority count, order, and actions" in contract
+    assert "150-200 word" in contract
+    for required in (
+        "headline judgment",
+        "review-stage context",
+        "principal FCV exposure",
+        "two-way risk",
+        "sensitivity versus responsiveness",
+        "strongest feature",
+        "most consequential gap",
+        "bottom-line implication",
+        "exactly 3",
+    ):
+        assert required in contract
+    assert "Do not generate advisory" in contract
+
+
+def test_stage3_prompt_contract_is_wired_to_both_workflows():
+    source = open(app.__file__, encoding="utf-8").read()
+    assert source.count("append_core_concise_stage3_contract(") == 3
