@@ -536,3 +536,61 @@ for(const expected of ['not mandatory requirements','FCV Country Coordinator','G
     assert "renderStage3AdvisoryTransition('climate')" in climate
     assert "aria-expanded" in source
     assert "aria-controls" in source
+
+
+def test_concise_summary_persists_with_priorities_and_restores_before_view_selection():
+    source = open(os.path.join(os.path.dirname(app.__file__), "index.html"), encoding="utf-8").read()
+    express_store = _extract_js_function(source, "epSafeStore")
+    save_session = _extract_js_function(source, "saveSession")
+    load_session = _extract_js_function(source, "loadSession")
+
+    for block in (express_store, save_session):
+        assert "stageConciseReadout" in block
+        assert "stageThreePriorities" in block
+        assert "fcvRating" in block
+        assert "fcvResponsivenessRating" in block
+
+    express_restore = source[source.index("const savedLensState="):source.index("// Partial state:")]
+    assert "stageConciseReadout=savedLensState.stageConciseReadout||null" in express_restore
+    assert "stageThreePriorities=Array.isArray(savedLensState.stageThreePriorities)" in express_restore
+    assert "fcvRating=savedLensState.fcvRating||''" in express_restore
+    assert "fcvResponsivenessRating=savedLensState.fcvResponsivenessRating||''" in express_restore
+    assert "if(outputs[3]&&supportsAnyStage3Summary())" in express_restore
+    assert "if(outputs[3]&&climateVerifiedAssessment&&climateVerifiedReader)" not in express_restore
+    assert express_restore.index("stageConciseReadout=savedLensState") < express_restore.index(
+        "stage3View=supportsAnyStage3Summary()?'summary':'detailed'"
+    )
+
+    assert "stageConciseReadout = state.stageConciseReadout || null" in load_session
+    assert "stageThreePriorities = Array.isArray(state.stageThreePriorities)" in load_session
+    assert "fcvRating = state.fcvRating || ''" in load_session
+    assert "fcvResponsivenessRating = state.fcvResponsivenessRating || ''" in load_session
+    assert load_session.index("stageConciseReadout = state.stageConciseReadout") < load_session.index(
+        "stage3View=supportsAnyStage3Summary()?'summary':'detailed'"
+    )
+
+    reset = _extract_js_function(source, "reset")
+    for expected in (
+        "stageThreePriorities=[]",
+        "stageConciseReadout=null",
+        "openSummaryPriority=0",
+        "fcvRating=''",
+        "fcvResponsivenessRating=''",
+    ):
+        assert expected in reset
+
+
+def test_downloads_remain_detailed_only():
+    source = open(os.path.join(os.path.dirname(app.__file__), "index.html"), encoding="utf-8").read()
+    exports = "\n".join(
+        _extract_js_function(source, name)
+        for name in ("downloadReport", "downloadHTML")
+    )
+    for forbidden in (
+        "renderNormalFcvSummary",
+        "renderClimateVerifiedSummary",
+        "renderStage3AdvisoryTransition",
+        "renderSummaryPriorityAccordion",
+        "stageConciseReadout",
+    ):
+        assert forbidden not in exports
