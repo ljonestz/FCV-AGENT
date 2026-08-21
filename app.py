@@ -3028,6 +3028,12 @@ For every item in `priorities`, add:
   }
 }
 
+OUTPUT ORDER OVERRIDE: Start the response with %%%JSON_START%%% and emit the complete,
+valid machine-readable block before any preamble or narrative. Include all existing
+detailed fields plus the concise fields above, then close it with %%%JSON_END%%%.
+After %%%JSON_END%%%, write the full detailed Recommendations Note. This instruction
+overrides any earlier instruction that places the JSON block after the narrative.
+
 Do not generate advisory or disclaimer language about whether priorities are mandatory. The frontend supplies that controlled text.
 '''
 

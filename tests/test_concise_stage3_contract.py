@@ -280,6 +280,11 @@ def test_concise_contract_preserves_detail_and_covers_overall_assessment():
     ):
         assert required in contract
     assert "Do not generate advisory" in contract
+    assert "OUTPUT ORDER OVERRIDE" in contract
+    assert "Start the response with %%%JSON_START%%%" in contract
+    assert "before any preamble or narrative" in contract
+    assert "After %%%JSON_END%%%, write the full detailed Recommendations Note" in contract
+    assert "overrides any earlier instruction" in contract
 
 
 def test_stage3_prompt_contract_is_wired_to_both_workflows():
