@@ -24,6 +24,16 @@ CONCISE_READOUT = {
         {"title": "Community feedback", "text": "The design includes beneficiary feedback channels."},
         {"title": "Adaptive delivery", "text": "Implementation arrangements allow bounded adjustment."},
     ],
+    "strengths_transition": "These strengths provide a foundation for the actions below.",
+    "priorities_transition": "The priorities move from immediate concept decisions to preparation actions.",
+    "closing": "Taken together, these changes would turn contextual awareness into practical design choices. The first decisions belong in the PCN; later detail can follow during preparation.",
+}
+
+PROJECT_CYCLE = {
+    "primary_label": "At concept stage",
+    "primary_text": "Commit the design choice in the PCN.",
+    "secondary_label": "During preparation",
+    "secondary_text": "Translate the commitment into implementation arrangements.",
 }
 
 CONCISE_PRIORITY = {
@@ -34,12 +44,7 @@ CONCISE_PRIORITY = {
         "document_element": "Implementation arrangements",
         "text": "Review access conditions quarterly.",
     },
-    "project_cycle": {
-        "primary_label": "Address during implementation",
-        "primary_text": "Agree the trigger, response, and owner now.",
-        "secondary_label": "Track through the ISR",
-        "secondary_text": "Report activation through routine implementation reporting.",
-    },
+    "project_cycle": copy.deepcopy(PROJECT_CYCLE),
 }
 
 
@@ -56,6 +61,7 @@ def _detailed_priority(number: int) -> dict:
         "who_acts": "TTL",
         "when": "During implementation",
         "resources": "Minimal",
+        "project_cycle": copy.deepcopy(PROJECT_CYCLE),
         "concise": copy.deepcopy(CONCISE_PRIORITY),
     }
 
@@ -99,16 +105,67 @@ def test_complete_bundle_returns_normalized_readout_and_priority_cards():
     assert result["concise_readout"] == CONCISE_READOUT
     assert result["priorities"][0]["concise"] == CONCISE_PRIORITY
     assert result["priorities"][1]["concise"] == CONCISE_PRIORITY
+    assert result["priorities"][0]["project_cycle"] == PROJECT_CYCLE
 
 
-def test_missing_one_priority_concise_disables_the_entire_bundle_without_detail_loss():
+def test_missing_one_priority_concise_uses_deterministic_detail_fallback():
     payload = _payload()
     payload["priorities"][1].pop("concise")
+    payload["priorities"][1]["actions"] = [
+        {
+            "document_element": "PCN",
+            "guidance": "Name the access trigger in the PCN.",
+            "suggested_language": "The PCN will define the access trigger.",
+        },
+        {
+            "document_element": "Implementation arrangements",
+            "guidance": "Assign the response owner for Bentiu.",
+            "suggested_language": "The TTL will record the response owner.",
+        },
+    ]
 
     result = extract_priorities(_wrapped(payload))
 
-    _assert_concise_disabled_but_detailed_preserved(result)
+    assert result["error"] is False
+    assert result["concise_readout"] == CONCISE_READOUT
+    fallback = result["priorities"][1]["concise"]
+    assert fallback["title"] == payload["priorities"][1]["title"]
+    assert fallback["why"] == payload["priorities"][1]["why_it_matters"]
+    assert fallback["how"] == [
+        "Name the access trigger in the PCN.",
+        "Assign the response owner for Bentiu.",
+    ]
+    assert fallback["suggested_wording"] == {
+        "document_element": "PCN",
+        "text": "The PCN will define the access trigger.",
+    }
+    assert fallback["project_cycle"] == PROJECT_CYCLE
 
+
+def test_concise_bundle_requires_grounded_narrative_bridges():
+    for field in ("strengths_transition", "priorities_transition", "closing"):
+        payload = _payload()
+        payload["concise_readout"].pop(field)
+
+        result = extract_priorities(_wrapped(payload))
+
+        assert result["concise_readout"] is None
+        assert all("concise" not in priority for priority in result["priorities"])
+
+
+def _add_detailed_actions(priority: dict) -> None:
+    priority["actions"] = [
+        {
+            "document_element": "PCN",
+            "guidance": "Name the access trigger in the PCN.",
+            "suggested_language": "The PCN will define the access trigger.",
+        },
+        {
+            "document_element": "Implementation arrangements",
+            "guidance": "Assign the response owner for Bentiu.",
+            "suggested_language": "The TTL will record the response owner.",
+        },
+    ]
 
 @pytest.mark.parametrize(
     "mutate",
@@ -128,18 +185,6 @@ def test_missing_one_priority_concise_disables_the_entire_bundle_without_detail_
                 {"strengths": copy.deepcopy(CONCISE_READOUT["strengths"][:2])}
             ),
             id="fewer-than-three-strengths",
-        ),
-        pytest.param(
-            lambda payload: payload["priorities"][0]["concise"].update(
-                {"how": ["Define the trigger and owner."]}
-            ),
-            id="fewer-than-two-how-actions",
-        ),
-        pytest.param(
-            lambda payload: payload["priorities"][0]["concise"]["project_cycle"].update(
-                {"primary_text": ""}
-            ),
-            id="missing-primary-lifecycle-text",
         ),
         pytest.param(
             lambda payload: payload.update({"concise_readout": ["not", "an", "object"]}),
@@ -169,6 +214,8 @@ def test_both_fcv_ratings_are_required_for_concise_bundle(missing_rating):
 def test_optional_wording_and_secondary_lifecycle_fields_normalize_to_empty_strings():
     payload = _payload()
     for priority in payload["priorities"]:
+        priority["project_cycle"].pop("secondary_label")
+        priority["project_cycle"].pop("secondary_text")
         priority["concise"].pop("suggested_wording")
         priority["concise"]["project_cycle"].pop("secondary_label")
         priority["concise"]["project_cycle"].pop("secondary_text")
@@ -328,6 +375,8 @@ def test_rendered_core_stage3_schema_contains_concise_fields(
 
     assert '  "concise_readout": {' in prompt
     assert '      "concise": {' in prompt
+    assert '"project_cycle": {' in prompt
+    assert '"strengths_transition"' in prompt
     assert "must come AFTER all narrative text" not in prompt
     assert "present at the end" not in prompt
 def test_default_stage3_json_schema_embeds_concise_fields():
@@ -346,6 +395,8 @@ def test_default_stage3_json_schema_embeds_concise_fields():
 
     assert '"concise_readout"' in schema
     assert '"concise":' in schema
+    assert '"project_cycle":' in schema
+    assert '"priority_scope": "Not identified"' in schema
     assert schema.index('"concise_readout"') < schema.index('"priorities"')
     assert "must come AFTER all narrative text" not in prompt
     assert "present at the end" not in prompt
@@ -684,3 +735,36 @@ def test_downloads_remain_detailed_only():
         "stageConciseReadout",
     ):
         assert forbidden not in exports
+
+
+def test_concise_cycle_mismatch_uses_canonical_priority_fallback():
+    payload = _payload()
+    priority = payload["priorities"][1]
+    _add_detailed_actions(priority)
+    priority["concise"]["project_cycle"]["primary_text"] = "Different timing."
+    result = extract_priorities(_wrapped(payload))
+
+    assert result["concise_readout"] == CONCISE_READOUT
+    assert result["priorities"][1]["concise"]["project_cycle"] == PROJECT_CYCLE
+
+
+def test_malformed_one_priority_concise_uses_deterministic_detail_fallback():
+    payload = _payload()
+    priority = payload["priorities"][1]
+    _add_detailed_actions(priority)
+    priority["concise"]["how"] = ["Only one action"]
+    result = extract_priorities(_wrapped(payload))
+
+    assert result["concise_readout"] == CONCISE_READOUT
+    assert result["priorities"][1]["concise"]["how"] == [
+        "Name the access trigger in the PCN.", "Assign the response owner for Bentiu."
+    ]
+
+
+def test_invalid_canonical_project_cycle_keeps_detailed_but_disables_summary():
+    payload = _payload()
+    payload["priorities"][0]["project_cycle"]["primary_text"] = ""
+    result = extract_priorities(_wrapped(payload))
+
+    _assert_concise_disabled_but_detailed_preserved(result)
+    assert result["priorities"][0]["project_cycle"] is None

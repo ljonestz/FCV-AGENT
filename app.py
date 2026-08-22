@@ -2265,7 +2265,7 @@ _REQUIRED_PRIORITY_FIELDS = [
     'who_acts', 'when', 'action_timing', 'resources',
     'pad_sections', 'implementation_note', 'cpf_alignment',
     'rra_driver_alignment', 'country_category_relevance',
-    'change_type', 'restructuring_level', 'priority_scope',
+    'change_type', 'restructuring_level', 'priority_scope', 'project_cycle',
     'governance_level',
 ]
 
@@ -2993,7 +2993,15 @@ In the same analysis and same JSON block, add a plain-language presentation laye
 
 The Summary should support a five-minute read. In `concise_readout`, provide a one-sentence `headline`, a 150-200 word `overview`, and exactly 3 short, project-grounded strengths. The overview must cover: the headline judgment; review-stage context; principal FCV exposure; two-way risk (risks to the project and risks from the project); sensitivity versus responsiveness; the strongest feature; the most consequential gap; and the bottom-line implication for the task team. It must remain consistent with the detailed analysis and both FCV ratings.
 
+Also include three grounded narrative strings: `strengths_transition` before the
+strengths, `priorities_transition` before the priority actions, and `closing` after
+the priorities. Each must synthesize only findings already present in this JSON block.
 For every item in `priorities`, add a complete `concise` object with: a plain-language title; a project-specific explanation of why the suggestion matters; 2-4 specific actions; optional ready-to-paste wording for the most relevant current document element; and project-cycle labels and text that follow the lifecycle framing above. The project-cycle block must not overstate what belongs at the current review stage.
+The detailed `priority.project_cycle` is the canonical lifecycle record for that
+priority. Copy the same four values into `concise.project_cycle`; do not independently
+reinterpret timing. The Summary narrative bridges and closing may connect existing
+findings but must not introduce a new fact, action, milestone, date, institution, or
+causal claim.
 
 Add these optional fields without removing or changing detailed fields:
 
@@ -3004,7 +3012,10 @@ Add these optional fields without removing or changing detailed fields:
     {"title": "Short strength label", "text": "One project-grounded sentence"},
     {"title": "Short strength label", "text": "One project-grounded sentence"},
     {"title": "Short strength label", "text": "One project-grounded sentence"}
-  ]
+  ],
+  "strengths_transition": "One sentence linking the strengths to the priorities",
+  "priorities_transition": "One sentence introducing the priority actions",
+  "closing": "One or two sentences synthesizing the implications without adding new claims"
 }
 
 For every item in `priorities`, add:
@@ -3052,7 +3063,10 @@ _CONCISE_READOUT_SCHEMA = '''  "concise_readout": {
       {"title": "Short strength label", "text": "One project-grounded sentence"},
       {"title": "Short strength label", "text": "One project-grounded sentence"},
       {"title": "Short strength label", "text": "One project-grounded sentence"}
-    ]
+    ],
+    "strengths_transition": "One sentence linking the strengths to the priorities",
+    "priorities_transition": "One sentence introducing the priority actions",
+    "closing": "One or two sentences synthesizing the implications without adding new claims"
   },
 '''
 
@@ -5067,7 +5081,7 @@ The SEA/SH card and the GRM card may both appear in the output — they address 
 - JSON block is present at the end, wrapped in %%%JSON_START%%% / %%%JSON_END%%%
 - All 10 top-level JSON fields are populated (fcv_rating, fcv_responsiveness_rating, sensitivity_summary, responsiveness_summary, risk_exposure, mid_cycle_watch, dpf_watch, p4r_watch, regional_watch, priorities)
 - Each priority's pad_sections, actions (including per-action suggested_language), and implementation_note are specific to this project — not generic placeholders
-- Each priority JSON object has all 22 fields: title, fcv_dimension, tag, refresh_shift, risk_level, the_gap, why_it_matters, actions, who_acts, when, action_timing, resources, pad_sections, country_category_relevance, implementation_note, cpf_alignment, rra_driver_alignment, change_type, restructuring_level, priority_scope, governance_level, authority_basis
+- Each priority JSON object has all 23 fields: title, fcv_dimension, tag, refresh_shift, risk_level, the_gap, why_it_matters, actions, who_acts, when, action_timing, resources, pad_sections, country_category_relevance, implementation_note, cpf_alignment, rra_driver_alignment, change_type, restructuring_level, priority_scope, project_cycle, governance_level, authority_basis
 - No generic or templated language anywhere
 - All `when` values are appropriate for the {doc_type} stage
 
@@ -5100,7 +5114,13 @@ The FCV ratings, summaries, and risk exposure paragraphs you have written in the
       "risk_level": "High",
       "change_type": "Results framework change",
       "restructuring_level": "Level 2",
-      "priority_scope": "mid-cycle",
+      "priority_scope": "Not identified",
+      "project_cycle": {{{{
+        "primary_label": "At concept stage",
+        "primary_text": "Commit the design choice in the PCN.",
+        "secondary_label": "During preparation",
+        "secondary_text": "Translate the commitment into implementation arrangements."
+      }}}},
       "governance_level": "Country Phase",
       "the_gap": "Specific gap with named location/group/institution",
       "why_it_matters": "Why this gap matters for this project, including shift justification for [R] or [S+R] tags",
@@ -6176,8 +6196,14 @@ def _normalize_concise_readout(value: Any) -> dict[str, Any] | None:
     overview = _clean_concise_string(value.get("overview"))
     overview_words = overview.split()
     strengths_raw = value.get("strengths")
+    strengths_transition = _clean_concise_string(value.get("strengths_transition"))
+    priorities_transition = _clean_concise_string(value.get("priorities_transition"))
+    closing = _clean_concise_string(value.get("closing"))
     if (
         not headline
+        or not strengths_transition
+        or not priorities_transition
+        or not closing
         or not 150 <= len(overview_words) <= 200
         or not isinstance(strengths_raw, list)
         or len(strengths_raw) != 3
@@ -6195,9 +6221,35 @@ def _normalize_concise_readout(value: Any) -> dict[str, Any] | None:
         strengths.append({"title": title, "text": text})
 
     return {
+        "strengths_transition": strengths_transition,
+        "priorities_transition": priorities_transition,
+        "closing": closing,
         "headline": headline,
         "overview": overview,
         "strengths": strengths,
+    }
+
+
+def _normalize_project_cycle(value: Any) -> dict[str, str] | None:
+    """Normalize the canonical lifecycle record attached to a detailed priority."""
+    if not isinstance(value, dict):
+        return None
+
+    primary_label = _clean_concise_string(value.get("primary_label"))
+    primary_text = _clean_concise_string(value.get("primary_text"))
+    if not primary_label or not primary_text:
+        return None
+
+    secondary_label = _clean_concise_string(value.get("secondary_label"))
+    secondary_text = _clean_concise_string(value.get("secondary_text"))
+    if bool(secondary_label) != bool(secondary_text):
+        secondary_label = secondary_text = ""
+
+    return {
+        "primary_label": primary_label,
+        "primary_text": primary_text,
+        "secondary_label": secondary_label,
+        "secondary_text": secondary_text,
     }
 
 
@@ -6215,12 +6267,8 @@ def _normalize_concise_priority(value: Any) -> dict[str, Any] | None:
     if not title or not why or any(not action for action in how):
         return None
 
-    project_cycle_raw = value.get("project_cycle")
-    if not isinstance(project_cycle_raw, dict):
-        return None
-    primary_label = _clean_concise_string(project_cycle_raw.get("primary_label"))
-    primary_text = _clean_concise_string(project_cycle_raw.get("primary_text"))
-    if not primary_label or not primary_text:
+    project_cycle = _normalize_project_cycle(value.get("project_cycle"))
+    if project_cycle is None:
         return None
 
     suggested_wording_raw = value.get("suggested_wording")
@@ -6237,16 +6285,50 @@ def _normalize_concise_priority(value: Any) -> dict[str, Any] | None:
             ),
             "text": _clean_concise_string(suggested_wording_raw.get("text")),
         },
-        "project_cycle": {
-            "primary_label": primary_label,
-            "primary_text": primary_text,
-            "secondary_label": _clean_concise_string(
-                project_cycle_raw.get("secondary_label")
+        "project_cycle": project_cycle,
+    }
+
+
+def _fallback_concise_priority(priority: dict[str, Any]) -> dict[str, Any] | None:
+    """Derive a concise card from canonical detailed priority fields."""
+    if not isinstance(priority, dict):
+        return None
+
+    project_cycle = priority.get("project_cycle")
+    if not isinstance(project_cycle, dict):
+        return None
+
+    title = _clean_concise_string(priority.get("title"))
+    why = _clean_concise_string(priority.get("why_it_matters")) or _clean_concise_string(
+        priority.get("the_gap")
+    )
+    actions_raw = priority.get("actions")
+    if not isinstance(actions_raw, list):
+        return None
+
+    action_rows = [action for action in actions_raw if isinstance(action, dict)]
+    how = []
+    for action in action_rows:
+        guidance = _clean_concise_string(action.get("guidance"))
+        if guidance:
+            how.append(guidance)
+        if len(how) == 4:
+            break
+    if not title or not why or len(how) < 2 or not action_rows:
+        return None
+
+    first_action = action_rows[0]
+    return {
+        "title": title,
+        "why": why,
+        "how": how,
+        "suggested_wording": {
+            "document_element": _clean_concise_string(
+                first_action.get("document_element")
             ),
-            "secondary_text": _clean_concise_string(
-                project_cycle_raw.get("secondary_text")
-            ),
+            "text": _clean_concise_string(first_action.get("suggested_language")),
         },
+        "project_cycle": project_cycle.copy(),
     }
 
 
@@ -6257,6 +6339,7 @@ def extract_priorities(
     lens_diagnostic: dict[str, Any] | None = None,
     preparation_regime: str = "unresolved_policy_source",
     instrument: str = "",
+    document_type: str = "Unknown",
 ) -> dict:
     """Parse %%%JSON_START%%% / %%%JSON_END%%% block from Stage 3/4 output.
 
@@ -6302,6 +6385,12 @@ def extract_priorities(
 
     raw_priorities_are_objects = all(isinstance(pr, dict) for pr in priorities_raw)
     priorities = []
+    _normalized_document_type = re.sub(
+        r"[^A-Z0-9]+", " ", str(document_type or "Unknown").upper()
+    ).strip()
+    _allow_mid_cycle_scope = _normalized_document_type in {
+        "AF", "ADDITIONAL FINANCING", "RESTRUCTURING", "RESTRUCTURING PAPER"
+    }
     climate_unlinked = 0
     climate_total = 0
     for pr in priorities_raw:
@@ -6311,6 +6400,7 @@ def extract_priorities(
         for field in _REQUIRED_PRIORITY_FIELDS:
             if field not in pr:
                 pr[field] = ''
+        pr['project_cycle'] = _normalize_project_cycle(pr.get('project_cycle'))
 
         # ── Regime terminology: pad_sections <-> appraisal_document_sections ──
         # Accept either key from the model; keep both populated so legacy renderers
@@ -6396,6 +6486,11 @@ def extract_priorities(
                     pr[_meta_field] = None
             elif _val is not None:
                 pr[_meta_field] = None
+        if (
+            pr.get('priority_scope') == 'mid-cycle'
+            and not _allow_mid_cycle_scope
+        ):
+            pr['priority_scope'] = None
 
         raw_lens_ids = pr.get('lens_ids', [])
         if not isinstance(raw_lens_ids, list):
@@ -6487,18 +6582,35 @@ def extract_priorities(
         priorities.append(pr)
 
     readout = _normalize_concise_readout(data.get("concise_readout"))
-    items = [_normalize_concise_priority(p.get("concise")) for p in priorities]
     ratings_ok = bool(
         _clean_concise_string(data.get("fcv_rating"))
         and _clean_concise_string(data.get("fcv_responsiveness_rating"))
     )
-    concise_ok = (
+    canonical_priorities_ok = (
         raw_priorities_are_objects
         and bool(priorities)
+        and len(priorities) == len(priorities_raw)
+        and all(
+            isinstance(priority.get("project_cycle"), dict)
+            for priority in priorities
+        )
+    )
+    concise_ok = (
+        canonical_priorities_ok
         and readout is not None
         and ratings_ok
-        and all(item is not None for item in items)
     )
+    if concise_ok:
+        items = []
+        for priority in priorities:
+            item = _normalize_concise_priority(priority.get("concise"))
+            if (
+                item is None
+                or item.get("project_cycle") != priority.get("project_cycle")
+            ):
+                item = _fallback_concise_priority(priority)
+            items.append(item)
+        concise_ok = all(item is not None for item in items)
     if concise_ok:
         for priority, item in zip(priorities, items):
             priority["concise"] = item
@@ -9442,6 +9554,7 @@ def run_stage():
                         else lens_context.get('lens_diagnostic', {}),
                         preparation_regime=_s3_regime.get('preparation_regime', 'unresolved_policy_source'),
                         instrument=data.get('instrument_type', '') or '',
+                        document_type=document_type,
                     )
                     if _native_climate_stage3:
                         parsed = enforce_climate_priority_provenance(
@@ -11035,6 +11148,7 @@ def run_express():
                     else lens_context_s3.get('lens_diagnostic', {}),
                     preparation_regime=(regime_context or {}).get('preparation_regime', 'unresolved_policy_source'),
                     instrument=instrument_type or '',
+                    document_type=doc_type,
                 )
                 if _native_climate_s3:
                     parsed = enforce_climate_priority_provenance(

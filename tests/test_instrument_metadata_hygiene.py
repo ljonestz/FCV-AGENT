@@ -77,7 +77,7 @@ def test_meaningful_af_metadata_preserved():
     from app import extract_priorities
 
     result = extract_priorities(_make_json_block(
-        "AF scale-up / top-up", "Unknown", "mid-cycle"))
+        "AF scale-up / top-up", "Unknown", "mid-cycle"), document_type="AF")
     pr = result["priorities"][0]
     assert pr["change_type"] == "AF scale-up / top-up"
     assert pr["restructuring_level"] == "Unknown"
@@ -92,3 +92,23 @@ def test_multicountry_scope_preserved():
     pr = result["priorities"][0]
     assert pr["change_type"] is None
     assert pr["priority_scope"] == "regional"
+
+
+def test_pcn_rejects_mid_cycle_scope():
+    from app import extract_priorities
+
+    result = extract_priorities(
+        _make_json_block("Not identified", "Not identified", "mid-cycle"),
+        document_type="PCN",
+    )
+    assert result["priorities"][0]["priority_scope"] is None
+
+
+def test_restructuring_preserves_mid_cycle_scope():
+    from app import extract_priorities
+
+    result = extract_priorities(
+        _make_json_block("Level 2", "Level 2", "mid-cycle"),
+        document_type="Restructuring",
+    )
+    assert result["priorities"][0]["priority_scope"] == "mid-cycle"
