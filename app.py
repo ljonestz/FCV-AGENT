@@ -6188,7 +6188,7 @@ def _clean_concise_string(value: Any) -> str:
 
 
 _CONCISE_PRIORITY_TITLE_PREFIX = re.compile(
-    r"^\s*priority\s+\d+\s*[-:.\u00b7\u2013\u2014]\s*",
+    r"^\s*priority\s+\d+\s*[-:.\u00b7\u2013\u2014\u2022]\s*",
     re.IGNORECASE,
 )
 

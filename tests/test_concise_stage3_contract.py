@@ -1216,29 +1216,49 @@ def test_production_lifecycle_primary_labels_align_with_contract(
     assert all(priority["project_cycle"] == cycle for priority in result["priorities"])
     assert result["concise_readout"] == CONCISE_READOUT
 
+CONCISE_RANK_SEPARATORS = [
+    pytest.param("-", id="hyphen"),
+    pytest.param(":", id="colon"),
+    pytest.param(".", id="period"),
+    pytest.param("\u00b7", id="middle-dot"),
+    pytest.param("\u2013", id="en-dash"),
+    pytest.param("\u2014", id="em-dash"),
+    pytest.param("\u2022", id="bullet"),
+]
 
-def test_model_concise_title_strips_rank_prefix_without_touching_detailed_title():
+
+@pytest.mark.parametrize("separator", CONCISE_RANK_SEPARATORS)
+def test_model_concise_title_strips_rank_prefix_without_touching_detailed_title(
+    separator,
+):
     payload = _payload()
     detailed_title = payload["priorities"][0]["title"]
-    payload["priorities"][0]["concise"]["title"] = "Priority 3 – Define access triggers"
+    payload["priorities"][0]["concise"]["title"] = (
+        f"Priority 3 {separator} Define access triggers"
+    )
 
     result = extract_priorities(_wrapped(payload))
 
     assert result["concise_readout"] == CONCISE_READOUT
     assert result["priorities"][0]["concise"]["title"] == "Define access triggers"
     assert result["priorities"][0]["title"] == detailed_title
-    assert app._normalize_concise_title("Priority 3 —") == "Priority 3 —"
+    assert app._normalize_concise_title(f"Priority 3 {separator}") == (
+        f"Priority 3 {separator}"
+    )
 
 
-def test_fallback_concise_title_strips_unicode_rank_prefix_without_touching_detailed_title():
+@pytest.mark.parametrize("separator", CONCISE_RANK_SEPARATORS)
+def test_fallback_concise_title_strips_rank_prefix_without_touching_detailed_title(
+    separator,
+):
     payload = _payload()
     priority = payload["priorities"][1]
     _add_detailed_actions(priority)
     priority.pop("concise")
-    priority["title"] = "Priority 3 — Access in Bentiu"
+    priority["title"] = f"Priority 3 {separator} Access in Bentiu"
 
     result = extract_priorities(_wrapped(payload))
 
     assert result["concise_readout"] == CONCISE_READOUT
     assert result["priorities"][1]["concise"]["title"] == "Access in Bentiu"
-    assert result["priorities"][1]["title"] == "Priority 3 — Access in Bentiu"
+    assert result["priorities"][1]["title"] == priority["title"]
