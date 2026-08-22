@@ -134,7 +134,7 @@ def test_mid_cycle_priority_fields_and_watch_section_are_preserved():
     }
     text = f"%%%JSON_START%%%\n{json.dumps(payload)}\n%%%JSON_END%%%"
 
-    parsed = extract_priorities(text)
+    parsed = extract_priorities(text, document_type="Restructuring")
 
     assert parsed["error"] is False
     assert parsed["mid_cycle_watch"] == payload["mid_cycle_watch"]
