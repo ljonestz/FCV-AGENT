@@ -1071,3 +1071,21 @@ def test_pcn_accepts_concept_stage_project_approval_wording():
 
     assert all(priority["project_cycle"] == cycle for priority in result["priorities"])
     assert result["concise_readout"] == CONCISE_READOUT
+
+
+def test_pcn_rejects_unclassified_post_design_primary_phase():
+    payload = _payload()
+    cycle = {
+        "primary_label": "At completion",
+        "primary_text": "Confirm the final results after completion.",
+        "secondary_label": "After launch",
+        "secondary_text": "Review the operation after launch.",
+    }
+    for priority in payload["priorities"]:
+        priority["project_cycle"] = copy.deepcopy(cycle)
+        priority["concise"]["project_cycle"] = copy.deepcopy(cycle)
+
+    result = extract_priorities(_wrapped(payload), document_type="PCN")
+
+    assert all(priority["project_cycle"] is None for priority in result["priorities"])
+    assert result["concise_readout"] is None

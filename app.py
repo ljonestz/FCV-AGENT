@@ -12958,6 +12958,19 @@ _DESIGN_PRIMARY_REJECT_MARKERS = re.compile(
     r")\b",
     re.IGNORECASE,
 )
+_DESIGN_PRIMARY_ALLOW_MARKERS = re.compile(
+    r"\b(?:"
+    r"(?:at|before|prior[\s-]+to)\s+(?:the\s+)?(?:concept|preparation|appraisal|"
+    r"decision|approval|board|project\s+approval|finali[sz]ation)|"
+    r"during\s+preparation|"
+    r"(?:concept|preparation|appraisal|decision|approval|board|finali[sz]ation)"
+    r"\s+(?:stage|phase|gate)|"
+    r"current\s+(?:document|design|instrument)|"
+    r"(?:in|for)\s+the\s+(?:pcn|pid|pad)|"
+    r"(?:pcn|pid|pad)\s+(?:stage|phase|document)"
+    r")\b",
+    re.IGNORECASE,
+)
 _PRIMARY_REVIEW_LABEL = re.compile(
     r"^\s*(?:next\s+)?review(?:\s+gate)?\s*$|"
     r"^\s*supervision(?:\s+review)?\s*$",
@@ -13016,7 +13029,7 @@ def _allows_mid_cycle_document_type(document_type: Any) -> bool:
 
 
 def _project_cycle_has_mid_cycle_semantics(value: Any) -> bool:
-    """Reject post-approval lifecycle framing only when it is the primary phase."""
+    """Return true when a non-mid-cycle primary phase is not design-stage framed."""
     if not isinstance(value, dict):
         return False
     primary_label = _clean_concise_string(value.get("primary_label"))
@@ -13024,7 +13037,9 @@ def _project_cycle_has_mid_cycle_semantics(value: Any) -> bool:
     if _PRIMARY_REVIEW_LABEL.fullmatch(primary_label):
         return True
     primary_text_blob = " ".join(part for part in (primary_label, primary_text) if part)
-    return bool(_DESIGN_PRIMARY_REJECT_MARKERS.search(primary_text_blob))
+    if _DESIGN_PRIMARY_REJECT_MARKERS.search(primary_text_blob):
+        return True
+    return not _DESIGN_PRIMARY_ALLOW_MARKERS.search(primary_text_blob)
 
 
 def _normalize_project_cycle_for_document(
