@@ -6177,6 +6177,7 @@ ${body}
 
   const LEVELS = ['Extremely Low','Very Low','Low','Adequate','Well Embedded','Very Well Embedded'];
   const LEVEL_COLORS = {1:'#C0392B',2:'#E07B00',3:'#D97706',4:'#0072BB',5:'#1A7A4A',6:'#0d5c36'};
+  const RESP_LEVEL_COLORS = {1:'#C0392B',2:'#E07B00',3:'#D97706',4:'#E07B00',5:'#1A7A4A',6:'#0d5c36'};
   const NEED_LABELS = {
     'Extremely Low':'Critical redesign needed',
     'Very Low':'Significant changes needed',
@@ -6254,7 +6255,8 @@ ${body}
         const normalizedLevel = String(level).toLowerCase();
         const labels = {well_integrated:'Well integrated',partly_integrated:'Partly integrated',weakly_integrated:'Weakly integrated',insufficient_evidence:'Insufficient evidence'};
         const meanings = {well_integrated:'Well integrated',partly_integrated:'Partly integrated',weakly_integrated:'Early integration',insufficient_evidence:'Evidence limited'};
-        updateRatingCards('climate-integration', labels[normalizedLevel] || '', meanings[normalizedLevel] || 'Evidence limited', integrationGaugeFraction(level), '#0f766e');
+        const intColors={well_integrated:'#1A7A4A',partly_integrated:'#009FDA',weakly_integrated:'#E07B00',insufficient_evidence:'#94a3b8'};
+        updateRatingCards('climate-integration', labels[normalizedLevel] || '', meanings[normalizedLevel] || 'Evidence limited', integrationGaugeFraction(level), intColors[normalizedLevel] || '#94a3b8');
       }
       return;
     }
@@ -6262,7 +6264,7 @@ ${body}
     const sensitivityLevel = LEVELS.findIndex(level => level.toLowerCase() === (fcvRating || '').toLowerCase()) + 1;
     updateRatingCards('sensitivity', fcvRating ? `${fcvRating} Sensitivity` : '', NEED_LABELS[fcvRating] || 'The rating describes contextual awareness and conflict-informed design.', sensitivityLevel / LEVELS.length, LEVEL_COLORS[sensitivityLevel] || '#0050a0');
     const responsivenessLevel = LEVELS.findIndex(level => level.toLowerCase() === (fcvResponsivenessRating || '').toLowerCase()) + 1;
-    updateRatingCards('responsiveness', fcvResponsivenessRating ? `${fcvResponsivenessRating} Responsiveness` : '', NEED_LABELS[fcvResponsivenessRating] || 'The rating describes active work to change the FCV situation.', responsivenessLevel / LEVELS.length, LEVEL_COLORS[responsivenessLevel] || '#1a7a4a');
+    updateRatingCards('responsiveness', fcvResponsivenessRating ? `${fcvResponsivenessRating} Responsiveness` : '', NEED_LABELS[fcvResponsivenessRating] || 'The rating describes active work to change the FCV situation.', responsivenessLevel / LEVELS.length, RESP_LEVEL_COLORS[responsivenessLevel] || '#e8edf2');
   }
 
   // Priority stepper & card rendering ────────────────────────────────────
@@ -6359,7 +6361,7 @@ ${body}
   }
 
   function stage3ViewToggleHtml(){
-    return `<div class="stage3-viewbar"><div class="stage3-view-tabs" role="tablist" aria-label="Recommendations detail level" onkeydown="handleStage3ViewKeydown(event)"><button id="stage3-summary-tab" class="stage3-view-tab ${stage3View==='summary'?'active':''}" role="tab" aria-controls="out-txt" aria-selected="${stage3View==='summary'}" tabindex="${stage3View==='summary'?'0':'-1'}" onclick="setStage3View('summary')">Summary</button><button id="stage3-detailed-tab" class="stage3-view-tab ${stage3View==='detailed'?'active':''}" role="tab" aria-controls="out-txt" aria-selected="${stage3View==='detailed'}" tabindex="${stage3View==='detailed'?'0':'-1'}" onclick="setStage3View('detailed')">Detailed analysis</button></div><div class="stage3-download-note">Downloads include the comprehensive analysis.</div></div>`;
+    return `<div class="stage3-viewbar"><div class="stage3-view-tabs" role="tablist" aria-label="Recommendations detail level" onkeydown="handleStage3ViewKeydown(event)"><button id="stage3-summary-tab" class="stage3-view-tab ${stage3View==='summary'?'active':''}" role="tab" aria-controls="out-txt" aria-selected="${stage3View==='summary'}" tabindex="${stage3View==='summary'?'0':'-1'}" onclick="setStage3View('summary',true,'stage3-summary-tab')">Summary</button><button id="stage3-detailed-tab" class="stage3-view-tab ${stage3View==='detailed'?'active':''}" role="tab" aria-controls="out-txt" aria-selected="${stage3View==='detailed'}" tabindex="${stage3View==='detailed'?'0':'-1'}" onclick="setStage3View('detailed',true,'stage3-detailed-tab')">Detailed analysis</button></div><div class="stage3-download-note">Downloads include the comprehensive analysis.</div></div>`;
   }
 
   function getConcisePriority(priority){
@@ -6434,12 +6436,10 @@ ${body}
     event.preventDefault();
     const next=event.key==='Home'?0:event.key==='End'?tabs.length-1:(current+(event.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length;
     const nextId=tabs[next].id;
-    setStage3View(nextId==='stage3-summary-tab'?'summary':'detailed');
-    const nextTab=document.getElementById(nextId);
-    if(nextTab)nextTab.focus();
+    setStage3View(nextId==='stage3-summary-tab'?'summary':'detailed',true,nextId);
   }
 
-  function setStage3View(view,preservePriority=true){
+  function setStage3View(view,preservePriority=true,focusTabId=''){
     if(!supportsAnyStage3Summary())return;
     if(view!=='summary'&&view!=='detailed')view='summary';
     stage3View=view;
@@ -6469,6 +6469,10 @@ ${body}
       const host=document.getElementById('summary-priority-accordion');if(host)host.innerHTML=renderSummaryPriorityAccordion();
     }else{
       renderPrioritiesIntro();renderPriorityStepper();showPriority(preservePriority?currentPriority:0);
+    }
+    if(focusTabId){
+      const focusTab=document.getElementById(focusTabId);
+      if(focusTab)focusTab.focus();
     }
   }
 

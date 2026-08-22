@@ -33,11 +33,14 @@
 - `supportsConciseStage3View()` - exposes the normal-FCV Summary only when the normalized readout exists and every ranked priority has a complete concise object
 - `supportsAnyStage3Summary()` - shared capability gate for normal FCV and verified Climate + FCV readers
 - `renderStage3Summary()` - selects the route-specific Summary adapter while keeping the existing detailed Stage 3 HTML available under the adjacent tab
+- `stage3ViewToggleHtml()` - renders the Summary and Detailed analysis tabs; direct activation explicitly requests focus on the newly rendered active tab
+- `handleStage3ViewKeydown(event)` - cycles the tabs with Arrow keys, Home, and End, preserving focus after the view rerenders
+- `setStage3View(view, preservePriority=true, focusTabId='')` - updates the view state and rail visibility; only an explicit `focusTabId` requests focus after rerender, so programmatic changes do not steal focus
 - `renderNormalFcvSummary()` - renders the headline, 150-200 word overall assessment, sensitivity/responsiveness indicators, exactly three strengths, controlled advisory, and shared priority accordion
 - `renderStage3AdvisoryTransition(route)` - deterministic design/implementation-stage wording; not included in downloaded reports
 - `renderSummaryPriorityAccordion()` / `toggleSummaryPriority(idx)` - render every ranked priority, keep exactly one open, default to the first, update ARIA state, and preserve the selected priority when switching to Detailed analysis
 - `initStage3UI()` — parse priorities from JSON, build stepper, show Priority 1
-- `showPriority(idx)` — render full priority card with zone-act layout from JSON (refresh_shift badge, actions[] loop with per-action guidance + suggested text, implementation note); re-enable Next when navigating back from the last priority; no auto-load of Go Deeper
+- `showPriority(idx)` — render full priority card with zone-act layout from JSON (refresh_shift badge, actions[] loop with per-action guidance + suggested text, implementation note); no auto-load of Go Deeper
 - `handleDeeperToggle(detailsEl, idx)` — ontoggle handler for `<details class="go-deeper">`; initialises 2 tab buttons on first open
 - `loadDeeperTab(idx, tab)` — dispatches to correct loader based on `tab`:
   - `tab: "trail"` → calls `loadAnalyticalTrail(idx)` (no API call — filters localStorage)
@@ -45,8 +48,8 @@
 - `loadAnalyticalTrail(idx)` — no API call; reads in-memory `stage2UnderHood` first, falls back to `localStorage.stage2_under_hood`; filters by `priority.fcv_dimension`; renders matching OST recs/questions instantly
 - `cancelGoDeeper()` — aborts in-flight SSE request via `goDeeperAbortController`
 - `renderGoFurtherHtml(parsed)` — renders `parsed.goFurtherItems` as `.beyond-item` cards (legacy alternatives tab)
-- `renderPriorityStepper()` — build horizontal step indicator; compact S/R badge + refresh_shift below risk badge on each tab
-- `renderPrioritiesIntro()` — renders intro list; compact S/R badge + refresh_shift after risk label in each `pi-item`
+- `renderPriorityStepper()` — builds the horizontal numbered `.ps-step` controls; each native button exposes `aria-pressed`, an accessible label, and visible keyboard focus, without a secondary navigator
+- `renderPrioritiesIntro()` — renders the short contextual lead and optional climate provenance notice; priority titles remain in the numbered controls only
 
 ### S/R tag badges
 - `renderSRTagBadge(tag, compact)` — renders inline pill badge
@@ -57,10 +60,10 @@
   - Inserted between the Gaps paragraph and the `<div id="priorities-intro">` div
   - CSS: `.sensitivity-responsiveness-grid`, `.sr-card`, `.sr-card.sensitivity` (border `#0050A0`), `.sr-card.responsiveness` (border `#16A34A`), `.sr-card-label`
 
-### Sidebar (`updateSidebar()`)
-- Animates both gauges: sensitivity arc + responsiveness arc
-- Priority overview (`pov-row`) includes compact S/R badge after risk label
-- Gauge element IDs: `fcv-resp-arc-fill`, `fcv-resp-leaf-path`, `fcv-resp-rating-label`, `fcv-resp-need-label`
+### Stage 3 rating rail (`updateSidebar()`)
+- Updates the compact sticky `.stage3-rating-rail` in Detailed analysis and the matching `.stage3-mobile-ratings` disclosure below the mobile breakpoint.
+- Normal FCV output shows textual Sensitivity and Responsiveness cards with slim percentage bars; Climate lens output shows one textual Climate-FCV integration card.
+- Updates rating text state, meaning, percentage progress, and the restored dimension-specific colors, including the legacy four-level climate integration mapping.
 
 ### Utilities
 - `md(text)` — markdown-to-HTML renderer

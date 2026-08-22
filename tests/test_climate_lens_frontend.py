@@ -54,6 +54,13 @@ def test_stage3_detailed_reading_shell_uses_compact_sticky_rating_rail():
         normalized,
     )
     assert '.stage3-reading-shell[data-stage3-view="summary"]{grid-template-columns:1fr}' in normalized
+    assert re.search(
+        r"@media\(max-width:860px\)\{.*?\.stage3-reading-shell\{grid-template-columns:1fr;gap:12px\}.*?\.stage3-rating-rail\{display:none\}.*?\.stage3-mobile-ratings\{display:block\}",
+        normalized,
+    )
+    assert "min-height:44px" in normalized
+    assert ".stage3-mobile-ratingssummary:focus-visible" in normalized
+    assert ".stage3-mobile-ratings summary:focus-visible" in html
     assert ".stage3-mobile-ratings" in html
     assert "stage3-rating-rail" in html
     assert ".sw-grid{display:grid;grid-template-columns:1fr;" in html
@@ -93,11 +100,73 @@ const document = {{
   querySelectorAll: () => generation ? newTabs : oldTabs,
   getElementById: id => (generation ? newTabs : oldTabs).find(tab => tab.id === id) || null
 }};
-const setStage3View = view => {{ generation = 1; activeId = view === 'summary' ? 'stage3-summary-tab' : 'stage3-detailed-tab'; }};
+const setStage3View = (view,preservePriority,focusTabId) => {{
+  generation = 1;
+  activeId = view === 'summary' ? 'stage3-summary-tab' : 'stage3-detailed-tab';
+  if (focusTabId) document.getElementById(focusTabId).focus();
+}};
 {handler}
 handleStage3ViewKeydown({{key:'ArrowRight', preventDefault:()=>{{}}}});
 if (focusedOld) throw new Error('keyboard navigation focused detached tab');
 if (!focusedNew) throw new Error('keyboard navigation did not focus rerendered tab');
+"""
+    result = subprocess.run(
+        ["node", "-e", script], capture_output=True, text=True, check=False
+    )
+    assert result.returncode == 0, result.stderr
+
+
+def test_stage3_direct_tab_activation_refocuses_only_when_requested():
+    source = INDEX.read_text(encoding="utf-8")
+    toggle = _extract_js_function(source, "stage3ViewToggleHtml")
+    setter = _extract_js_function(source, "setStage3View")
+    script = f"""
+let stage3View = 'detailed';
+let stage3DetailedHtml = '<p>Detailed</p>';
+let openSummaryPriority = 0;
+let currentPriority = 0;
+let generation = 0;
+let focusedOld = false;
+let focusedNew = false;
+const makeTab = (id, fresh) => ({{
+  id,
+  classList: {{remove(){{}}, toggle(){{}}}},
+  setAttribute(){{}},
+  focus(){{ if (fresh) focusedNew = true; else focusedOld = true; }}
+}});
+const oldTabs = {{summary:makeTab('stage3-summary-tab',false), detailed:makeTab('stage3-detailed-tab',false)}};
+const newTabs = {{summary:makeTab('stage3-summary-tab',true), detailed:makeTab('stage3-detailed-tab',true)}};
+const shell = {{dataset:{{}}, setAttribute(){{}}, classList:{{toggle(){{}}}}}};
+const stageDisplay = {{dataset:{{}}, setAttribute(){{}}, classList:{{toggle(){{}}}}}};
+const out = {{dataset:{{}}, setAttribute(){{}}, set innerHTML(value){{ this.html = value; generation = 1; }}}};
+const document = {{
+  getElementById(id) {{
+    if (id === 'stage3-summary-tab') return generation ? newTabs.summary : oldTabs.summary;
+    if (id === 'stage3-detailed-tab') return generation ? newTabs.detailed : oldTabs.detailed;
+    if (id === 'stage-disp') return stageDisplay;
+    if (id === 'out-txt') return out;
+    return null;
+  }},
+  querySelector(selector) {{ return selector === '.stage3-reading-shell' ? shell : null; }}
+}};
+const supportsAnyStage3Summary = () => true;
+const renderStage3Summary = () => '<p>Summary</p>';
+const renderSummaryPriorityAccordion = () => '';
+const renderPrioritiesIntro = () => {{}};
+const renderPriorityStepper = () => {{}};
+const showPriority = () => {{}};
+{toggle}
+{setter}
+const toggleHtml = stage3ViewToggleHtml();
+if (!toggleHtml.includes("setStage3View('summary',true,'stage3-summary-tab')")) throw new Error('direct Summary activation does not request focus');
+setStage3View('summary');
+if (focusedOld || focusedNew) throw new Error('programmatic view change stole focus');
+generation = 0;
+focusedOld = false;
+focusedNew = false;
+setStage3View('summary', true, 'stage3-summary-tab');
+if (focusedOld) throw new Error('direct activation focused detached tab');
+if (!focusedNew) throw new Error('direct activation did not focus rerendered tab');
 """
     result = subprocess.run(
         ["node", "-e", script], capture_output=True, text=True, check=False
@@ -1239,6 +1308,28 @@ def test_priority_navigation_is_explicit_and_keyboard_operable():
     assert ".ps-step:focus-visible" in source
 
 
+def test_reference_describes_current_compact_stage3_controls():
+    reference = (INDEX.parent / "docs" / "reference" / "reference_frontend_functions.md").read_text(encoding="utf-8")
+    for stale in (
+        "re-enable Next",
+        "pi-item",
+        "pov-row",
+        "fcv-resp-arc-fill",
+        "fcv-resp-leaf-path",
+        "fcv-resp-rating-label",
+        "fcv-resp-need-label",
+    ):
+        assert stale not in reference
+    for current in (
+        "stage3-rating-rail",
+        "stage3-mobile-ratings",
+        "sticky",
+        "numbered `.ps-step` controls",
+        "aria-pressed",
+    ):
+        assert current in reference
+
+
 def test_stage3_overview_has_textual_slim_bar_ratings_for_normal_and_climate_modes():
     source = INDEX.read_text(encoding="utf-8")
     helper = _extract_js_function(source, "stage3OverviewHtml")
@@ -1247,6 +1338,11 @@ let climateMode = false;
 const isClimateLensActive = () => climateMode;
 {helper}
 const normal = stage3OverviewHtml();
+const assertUniqueIds = (html,label) => {{
+  const ids = [...html.matchAll(/\\sid="([^"]+)"/g)].map(match => match[1]);
+  if (new Set(ids).size !== ids.length) throw new Error(label+' contains duplicate IDs: '+ids.join(','));
+}};
+assertUniqueIds(normal,'normal rating rail');
 if (!normal.includes('<aside class="stage3-rating-rail"')) throw new Error('missing desktop rail');
 if (!normal.includes('<details class="stage3-mobile-ratings"')) throw new Error('missing mobile disclosure');
 if ((normal.match(/data-rating-key="sensitivity"/g)||[]).length !== 2) throw new Error('sensitivity should render in both modes');
@@ -1259,10 +1355,73 @@ if (normal.includes('<svg')) throw new Error('normal ratings still render a gaug
 
 climateMode = true;
 const climate = stage3OverviewHtml();
+assertUniqueIds(climate,'climate rating rail');
 if ((climate.match(/data-rating-key="climate-integration"/g)||[]).length !== 2) throw new Error('climate integration should render in both modes');
 if ((climate.match(/aria-valuemax="100"/g)||[]).length !== 2) throw new Error('climate bars must use percentage max');
 if (climate.includes('data-rating-key="sensitivity"') || climate.includes('data-rating-key="responsiveness"')) throw new Error('climate lens should use one integration rating');
 if (climate.includes('<svg')) throw new Error('climate rating still renders a gauge SVG');
+"""
+    result = subprocess.run(
+        ["node", "-e", script], capture_output=True, text=True, check=False
+    )
+    assert result.returncode == 0, result.stderr
+
+
+def test_rating_rail_updates_state_and_preserves_legacy_color_mappings():
+    source = INDEX.read_text(encoding="utf-8")
+    updater = _extract_js_function(source, "updateSidebar")
+    script = f"""
+let climateMode = false;
+let fcvRating = 'Adequate';
+let fcvResponsivenessRating = 'Adequate';
+let climateIntegration = null;
+const LEVELS = ['Extremely Low','Very Low','Low','Adequate','Well Embedded','Very Well Embedded'];
+const LEVEL_COLORS = {{1:'#C0392B',2:'#E07B00',3:'#D97706',4:'#0072BB',5:'#1A7A4A',6:'#0d5c36'}};
+const RESP_LEVEL_COLORS = {{1:'#C0392B',2:'#E07B00',3:'#D97706',4:'#E07B00',5:'#1A7A4A',6:'#0d5c36'}};
+const NEED_LABELS = {{Adequate:'Targeted enhancements possible'}};
+const CLIMATE_RATING_ORDER = ['Extremely Low','Very Low','Low','Adequate','Well Embedded','Very Well Embedded'];
+const isClimateLensActive = () => climateMode;
+const climateIntegrationShortLabel = () => 'Legacy climate integration meaning';
+const climateIntegrationRatingFraction = () => 0;
+const integrationGaugeFraction = level => level === 'partly_integrated' ? 0.66 : 0;
+const makeCard = () => {{
+  const value = {{dataset:{{}}, textContent:''}};
+  const meaning = {{textContent:''}};
+  const fill = {{style:{{}}}};
+  const bar = {{attrs:{{}}, setAttribute(name,val){{ this.attrs[name] = String(val); }}}};
+  return {{value,meaning,fill,bar,querySelector(selector){{
+    if (selector === '[data-rating-value]') return value;
+    if (selector === '[data-rating-meaning]') return meaning;
+    if (selector === '[data-rating-fill]') return fill;
+    if (selector === '.stage3-rating-bar') return bar;
+    return null;
+  }}}};
+}};
+const cards = {{
+  sensitivity:[makeCard()], responsiveness:[makeCard()], 'climate-integration':[makeCard()]
+}};
+const document = {{
+  querySelectorAll(selector) {{
+    if (selector.includes('sensitivity')) return cards.sensitivity;
+    if (selector.includes('responsiveness')) return cards.responsiveness;
+    if (selector.includes('climate-integration')) return cards['climate-integration'];
+    return [];
+  }}
+}};
+{updater}
+updateSidebar();
+const responsiveness = cards.responsiveness[0];
+if (responsiveness.value.dataset.ratingState !== 'ready') throw new Error('normal rating state not marked ready');
+if (responsiveness.fill.style.backgroundColor !== '#E07B00') throw new Error('Adequate responsiveness lost orange color');
+if (responsiveness.bar.attrs['aria-valuenow'] !== '67') throw new Error('normal rating progress not updated');
+if (parseFloat(responsiveness.fill.style.width) < 66) throw new Error('normal rating bar width not updated');
+climateMode = true;
+climateIntegration = {{level:'partly_integrated'}};
+updateSidebar();
+const legacy = cards['climate-integration'][0];
+if (legacy.value.dataset.ratingState !== 'ready') throw new Error('legacy climate state not marked ready');
+if (legacy.fill.style.backgroundColor !== '#009FDA') throw new Error('partly integrated legacy color lost');
+if (legacy.bar.attrs['aria-valuenow'] !== '66') throw new Error('legacy climate progress not updated');
 """
     result = subprocess.run(
         ["node", "-e", script], capture_output=True, text=True, check=False
