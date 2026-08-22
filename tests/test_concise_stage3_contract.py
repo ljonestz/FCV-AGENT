@@ -625,7 +625,7 @@ def test_frontend_normal_summary_renderer_includes_required_sections():
     )
     script = f"""
 const esc=value=>String(value??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-let stageConciseReadout={json.dumps(CONCISE_READOUT)};
+let stageConciseReadout={json.dumps({**CONCISE_READOUT, "strengths_transition": "Strengths bridge <strong>", "priorities_transition": "Priorities bridge & tradeoffs", "closing": "Closing note <em>"})};
 let openSummaryPriority=0;
 let stageThreePriorities={json.dumps(_payload()["priorities"])};
 let fcvRating='Adequate';
@@ -635,6 +635,15 @@ const renderStage3AdvisoryTransition=()=>'<p>advisory</p>';
 const html=renderNormalFcvSummary();
 for(const expected of ['Five-minute readout','Overall assessment','What is already working','FCV sensitivity','FCV responsiveness','Priority actions for the task team']){{
   if(!html.includes(expected))throw new Error('missing '+expected+' | '+html);
+}}
+for(const expected of ['Strengths bridge &lt;strong&gt;','Priorities bridge &amp; tradeoffs','Closing note &lt;em&gt;']){{
+  if(!html.includes(expected))throw new Error('missing escaped readout field '+expected+' | '+html);
+}}
+const order=['Overall assessment','Strengths bridge &lt;strong&gt;','What is already working','Priorities bridge &amp; tradeoffs','advisory','Priority actions for the task team','summary-priority-accordion','Closing note &lt;em&gt;'];
+for(let i=1;i<order.length;i++){{
+  const previous=html.indexOf(order[i-1]);
+  const current=html.indexOf(order[i]);
+  if(previous<0||current<0||previous>=current)throw new Error('wrong summary narrative order: '+order[i-1]+' -> '+order[i]+' | '+html);
 }}
 console.log(html);
 """

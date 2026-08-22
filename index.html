@@ -1081,6 +1081,8 @@
     .concise-rating-indicator span{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
     .concise-rating-indicator strong{color:var(--wbg-navy)}
     .stage3-advisory-transition{margin:4px 0 18px;padding:12px 14px;background:#f6f9fb;border-left:3px solid var(--wbg-blue);color:var(--text);line-height:1.6}
+    .concise-transition{margin:0 0 12px;color:var(--muted);line-height:1.6}
+    .concise-closing{margin:18px 0 0;padding-top:12px;border-top:1px solid var(--border);color:var(--muted);font-size:13px;line-height:1.6}
     #summary-priority-accordion{display:flex;flex-direction:column;gap:10px;margin-top:10px}
     .summary-priority-item{background:#fff;border:1px solid var(--border);border-radius:9px;overflow:hidden}
     .summary-priority-item h3{margin:0;font-size:inherit}
@@ -6431,7 +6433,10 @@ ${body}
   function renderNormalFcvSummary(){
     const readout=stageConciseReadout&&typeof stageConciseReadout==='object'?stageConciseReadout:{};
     const strengths=(Array.isArray(readout.strengths)?readout.strengths:[]).map(strength=>`<div class="concise-strength"><strong>${esc(strength.title||'Project strength')}</strong><span class="concise-strength-text">${esc(strength.text||'')}</span></div>`).join('');
-    return `<div class="concise-readout normal-fcv-summary"><div class="concise-read-time">Five-minute readout</div><div class="concise-section-label">Overall assessment</div><h2 class="concise-headline">${esc(readout.headline||'FCV assessment summary')}</h2><p class="concise-overview">${esc(readout.overview||'')}</p>${renderFcvRatingIndicators()}<div class="concise-section-label">What is already working</div><div class="concise-strengths">${strengths}</div>${renderStage3AdvisoryTransition('normal')}<div class="concise-section-label">Priority actions for the task team</div><div id="summary-priority-accordion">${renderSummaryPriorityAccordion()}</div></div>`;
+    const strengthsTransition=`<p class="concise-transition">${esc(readout.strengths_transition||'')}</p>`;
+    const prioritiesTransition=`<p class="concise-transition">${esc(readout.priorities_transition||'')}</p>`;
+    const closing=`<p class="concise-closing">${esc(readout.closing||'')}</p>`;
+    return `<div class="concise-readout normal-fcv-summary"><div class="concise-read-time">Five-minute readout</div><div class="concise-section-label">Overall assessment</div><h2 class="concise-headline">${esc(readout.headline||'FCV assessment summary')}</h2><p class="concise-overview">${esc(readout.overview||'')}</p>${renderFcvRatingIndicators()}${strengthsTransition}<div class="concise-section-label">What is already working</div><div class="concise-strengths">${strengths}</div>${prioritiesTransition}${renderStage3AdvisoryTransition('normal')}<div class="concise-section-label">Priority actions for the task team</div><div id="summary-priority-accordion">${renderSummaryPriorityAccordion()}</div>${closing}</div>`;
   }
 
   function renderStage3Summary(){
