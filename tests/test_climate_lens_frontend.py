@@ -40,14 +40,35 @@ const esc = value => String(value ?? '')
 """
 
 
-def test_stage3_readout_uses_wide_single_column_layout():
+def test_stage3_detailed_reading_shell_uses_compact_sticky_rating_rail():
     html = INDEX.read_text(encoding="utf-8")
 
     assert ".main{max-width:1180px" in html
-    assert ".stage3-overview{" in html
+    normalized = re.sub(r"\s+", "", html)
+    assert re.search(
+        r"\.stage3-reading-shell\{[^}]*display:grid;[^}]*grid-template-columns:minmax\(180px,220px\)",
+        normalized,
+    )
+    assert re.search(
+        r"\.stage3-rating-rail\{[^}]*position:sticky;[^}]*top:",
+        normalized,
+    )
+    assert ".stage3-mobile-ratings" in html
+    assert "stage3-rating-rail" in html
     assert ".sw-grid{display:grid;grid-template-columns:1fr;" in html
     assert '<aside class="fcv-sidebar"' not in html
     assert "stage3OverviewHtml()" in html
+
+
+def test_stage3_reading_shell_switches_rail_visibility_with_the_active_view():
+    source = INDEX.read_text(encoding="utf-8")
+
+    setter = _extract_js_function(source, "setStage3View")
+    assert "stage3-reading-shell" in setter
+    assert "data-stage3-view" in setter
+    assert "is-summary" in setter
+    assert "is-detailed" in setter
+    assert "stage3View=view" in setter
 
 
 def test_climate_opening_uses_relevance_language_and_quiet_provenance():
@@ -326,10 +347,13 @@ if (climateIntegrationShortLabel('Adequate') !== 'Opportunities to further stren
   throw new Error('rating helper does not explain the improvement opportunity');
 }}
 const html=stage3OverviewHtml();
-for (const expected of ['stage3-overview','Climate-FCV integration','Priority overview','fcv-int-summary','pov-sb']) {{
+for (const expected of ['stage3-rating-rail','Climate-FCV integration','fcv-int-summary','stage3-mobile-ratings','stage3-rating-meaning']) {{
   if (!html.includes(expected)) throw new Error('missing '+expected+' | '+html);
 }}
-for (const forbidden of ['Indicative Climate-FCV Integration Readout','This AI-assisted readout supports expert review']) {{
+if ((html.match(/class="stage3-rating-card"/g)||[]).length !== 2) throw new Error('climate lens should have one desktop and one mobile card | '+html);
+if (html.includes('<svg')) throw new Error('climate rating still renders a gauge SVG | '+html);
+if (!html.includes('Opportunities to further strengthen climate and FCV elements')) throw new Error('climate meaning text is missing | '+html);
+for (const forbidden of ['Indicative Climate-FCV Integration Readout','This AI-assisted readout supports expert review','Priority overview','pov-sb']) {{
   if (html.includes(forbidden)) throw new Error('verbose gauge copy remains | '+html);
 }}
 """
@@ -668,15 +692,16 @@ def test_live_and_shared_priority_cards_switch_climate_panel_only_when_active():
     assert "isClimateLensActive()" in live_helper
 
 
-def test_priority_next_button_is_reenabled_after_leaving_last_priority():
+def test_priority_controls_have_no_secondary_next_previous_navigator():
     source = INDEX.read_text(encoding="utf-8")
     helper = _extract_js_function(source, "showPriority")
-    nav_start = helper.index("if(nextBtn)")
-    nav_end = helper.index("// Determine risk chip class", nav_start)
-    nav_logic = helper[nav_start:nav_end]
 
-    assert "nextBtn.disabled = true" in nav_logic
-    assert "nextBtn.disabled = false" in nav_logic
+    assert "pc-nav" not in source
+    assert "nextPriority" not in source
+    assert "prevPriority" not in source
+    assert "if(nextBtn)" not in helper
+    assert '<button type="button" class="ps-step' in source
+    assert 'aria-pressed="${i===currentPriority?' in source
 
 
 def test_express_mode_surfaces_stage2_structured_diagnostic_failures():
@@ -1025,16 +1050,14 @@ def test_priority_compliance_renderer():
     assert "Possible ESCP conflict." in o.stdout
 
 
-def test_integration_gauge_arc_has_colour_map():
-    """I1: updateSidebar climate branch sets arc stroke colour from intColors enum map."""
+def test_integration_rating_uses_textual_slim_bar_updates():
+    """The climate integration card is updated with text, width, and accessible progress."""
     html = INDEX.read_text(encoding="utf-8")
-    assert "intColors" in html, "intColors colour map missing from updateSidebar"
-    assert "well_integrated:'#1A7A4A'" in html, (
-        "well_integrated colour missing or wrong in intColors"
-    )
-    assert "arc.setAttribute('stroke'" in html, (
-        "arc stroke attribute not set in updateSidebar climate branch"
-    )
+    assert "data-rating-key=\"climate-integration\"" in html
+    assert "updateRatingCards('climate-integration'" in html
+    assert "fill.style.width" in html
+    assert "bar.setAttribute('aria-valuenow'" in html
+    assert "climateIntegrationShortLabel(rating)" in html
 
 
 def test_reflections_render_sensitivity_responsiveness_evidence():
@@ -1168,11 +1191,47 @@ def test_priorities_intro_shows_soft_notice_when_links_unvalidated():
 def test_priority_navigation_is_explicit_and_keyboard_operable():
     source = INDEX.read_text(encoding="utf-8")
 
-    assert "priority-navigation-callout" in source
-    assert "Select each numbered priority" in source
+    assert "priority-navigation-callout" not in source
+    assert "Select each numbered priority" not in source
+    assert "Priority overview" not in source
+    assert "pov-sb" not in source
+    intro = _extract_js_function(source, "renderPrioritiesIntro")
+    assert "pi-lead" in intro
+    assert "pi-list" not in intro
+    assert "priority-navigation-callout" not in intro
     assert '<button type="button" class="ps-step' in source
     assert 'aria-pressed="${i===currentPriority?' in source
     assert "setAttribute('aria-pressed'" in source
+    assert ".ps-step:focus-visible" in source
+
+
+def test_stage3_overview_has_textual_slim_bar_ratings_for_normal_and_climate_modes():
+    source = INDEX.read_text(encoding="utf-8")
+    helper = _extract_js_function(source, "stage3OverviewHtml")
+    script = f"""
+let climateMode = false;
+const isClimateLensActive = () => climateMode;
+{helper}
+const normal = stage3OverviewHtml();
+if (!normal.includes('<aside class="stage3-rating-rail"')) throw new Error('missing desktop rail');
+if (!normal.includes('<details class="stage3-mobile-ratings"')) throw new Error('missing mobile disclosure');
+if ((normal.match(/data-rating-key="sensitivity"/g)||[]).length !== 2) throw new Error('sensitivity should render in both modes');
+if ((normal.match(/data-rating-key="responsiveness"/g)||[]).length !== 2) throw new Error('responsiveness should render in both modes');
+if ((normal.match(/class="stage3-rating-bar"/g)||[]).length !== 4) throw new Error('missing slim bars');
+if (!normal.includes('Is the project aware of and designed for the FCV context?')) throw new Error('sensitivity meaning is not textual');
+if (!normal.includes('Does the project actively work to change the FCV situation?')) throw new Error('responsiveness meaning is not textual');
+if (normal.includes('<svg')) throw new Error('normal ratings still render a gauge SVG');
+
+climateMode = true;
+const climate = stage3OverviewHtml();
+if ((climate.match(/data-rating-key="climate-integration"/g)||[]).length !== 2) throw new Error('climate integration should render in both modes');
+if (climate.includes('data-rating-key="sensitivity"') || climate.includes('data-rating-key="responsiveness"')) throw new Error('climate lens should use one integration rating');
+if (climate.includes('<svg')) throw new Error('climate rating still renders a gauge SVG');
+"""
+    result = subprocess.run(
+        ["node", "-e", script], capture_output=True, text=True, check=False
+    )
+    assert result.returncode == 0, result.stderr
 
 
 def test_verified_reader_visual_refresh_preserves_depth_and_orders_sections():

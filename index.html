@@ -881,32 +881,36 @@
        STAGE 4 — PRIORITY CARD SYSTEM
     ══════════════════════════════════════════ */
 
-    /* Full-width Stage 3 overview */
-    .stage3-overview{display:grid;grid-template-columns:1fr;gap:12px;margin:0 0 16px}
-    .stage3-overview-rating{display:flex;align-items:center;gap:22px;padding:14px 18px}
-    .stage3-overview-rating-copy{min-width:190px;flex:1}
-    .stage3-overview-rating-copy .fcv-need-label{text-align:left;font-size:12px;font-style:normal;margin-top:3px}
-    .stage3-overview-rating-copy .fcv-rating-label{text-align:left;margin:0}
-    .stage3-overview-gauge{display:flex;align-items:center;justify-content:center;min-width:138px}
-    .stage3-rating-pair{display:grid;grid-template-columns:1fr 1fr;gap:16px;width:100%}
-    .stage3-rating-unit{display:flex;align-items:center;gap:14px;min-width:0}
-    .stage3-overview-priorities .pov-widget{padding:14px 18px}
-    .sidebar-widget{
-      background:#fff;border:1px solid var(--border);border-radius:var(--radius);
-      box-shadow:var(--shadow-sm);overflow:hidden;
+    /* Stage 3 detailed reading shell and compact rating rail */
+    .stage3-reading-shell{display:grid;grid-template-columns:minmax(180px,220px) minmax(0,1fr);gap:24px;align-items:start;margin:0 0 16px}
+    .stage3-reading-main{min-width:0}
+    .stage3-rating-rail{display:flex;flex-direction:column;gap:10px;position:sticky;top:112px;align-self:start}
+    .stage3-rating-card{background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px 13px;box-shadow:var(--shadow-sm)}
+    .stage3-rating-card-header{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px}
+    .stage3-rating-dimension{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);line-height:1.35}
+    .stage3-rating-value{font-size:12px;font-weight:700;color:var(--wbg-navy);text-align:right;line-height:1.35}
+    .stage3-rating-value[data-rating-state="pending"]{color:var(--muted);font-weight:600}
+    .stage3-rating-bar{height:6px;background:#e8edf2;border-radius:999px;overflow:hidden;margin-bottom:8px}
+    .stage3-rating-fill{display:block;height:100%;width:0;background:var(--wbg-blue);border-radius:inherit;transition:width .25s ease,background-color .25s ease}
+    .stage3-rating-card[data-rating-key="responsiveness"] .stage3-rating-fill{background:#1a7a4a}
+    .stage3-rating-card[data-rating-key="climate-integration"] .stage3-rating-fill{background:#0f766e}
+    .stage3-rating-meaning{margin:0;color:var(--text);font-size:11px;font-weight:600;line-height:1.45}
+    .stage3-rating-description{margin:4px 0 0;color:var(--muted);font-size:10.5px;line-height:1.45}
+    .stage3-mobile-ratings{display:none;background:#fff;border:1px solid var(--border);border-radius:8px;margin:0 0 12px;padding:0;box-shadow:var(--shadow-sm)}
+    .stage3-mobile-ratings summary{display:flex;align-items:center;justify-content:space-between;min-height:44px;padding:10px 13px;cursor:pointer;color:var(--wbg-navy);font-size:12px;font-weight:700;list-style:none}
+    .stage3-mobile-ratings summary::-webkit-details-marker{display:none}
+    .stage3-mobile-ratings summary:focus-visible{outline:3px solid #f2a900;outline-offset:-3px;border-radius:8px}
+    .stage3-mobile-ratings summary::after{content:'+';font-size:18px;font-weight:400;line-height:1}
+    .stage3-mobile-ratings[open] summary::after{content:'−'}
+    .stage3-mobile-ratings .stage3-rating-card{border:0;border-top:1px solid var(--border);border-radius:0;box-shadow:none}
+    .stage3-reading-shell[data-stage3-view="summary"] .stage3-rating-rail,.stage3-reading-shell[data-stage3-view="summary"] .stage3-mobile-ratings{display:none}
+    .ps-step:focus-visible{outline:3px solid #f2a900;outline-offset:-3px;position:relative;z-index:1}
+    @media(max-width:860px){
+      .stage3-reading-shell{grid-template-columns:1fr;gap:12px}
+      .stage3-rating-rail{display:none}
+      .stage3-mobile-ratings{display:block}
+      .priority-stepper{overflow-x:auto}
     }
-    .sidebar-widget-fcv{padding:14px 16px 16px;}
-    .sidebar-widget-label{
-      font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;
-      color:var(--muted);margin-bottom:8px;
-    }
-    .fcv-rating-label{
-      font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;
-      transition:color .3s;margin-bottom:3px;text-align:center;
-    }
-    .fcv-need-label{font-size:10.5px;color:var(--muted);font-style:italic;line-height:1.4;text-align:center;}
-    .fcv-gauge-caveat{font-size:9px;color:#94a3b8;line-height:1.4;margin-top:6px}
-    .fcv-eyebrow{font-size:9px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#64748b;margin:2px 0 6px}
 
     /* Sidebar risk matrix */
     .risk-matrix-widget{padding:12px 14px;}
@@ -1113,34 +1117,8 @@
     @media(max-width:760px){.stage3-viewbar{align-items:flex-start;flex-direction:column}.concise-strengths,.concise-cycle,.concise-rating-indicators{grid-template-columns:1fr}.concise-cycle-items{grid-column:1}}
     .priorities-section-hdr{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--s4);margin:20px 0 10px;padding-bottom:6px;border-bottom:2px solid var(--s4);}
     .pi-lead{font-size:15px;color:var(--text);line-height:1.6;margin:0 0 10px;}
-    .pi-list{display:flex;flex-direction:column;gap:5px;margin-bottom:10px;}
-    .pi-item{display:flex;align-items:center;gap:8px;font-size:14px;}
-    .pi-num{width:18px;height:18px;border-radius:50%;background:var(--wbg-navy);color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0;}
-    .pi-title{flex:1;color:var(--text);}
-    .pi-risk{font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;white-space:nowrap;}
-    .pi-risk-h{background:#fee2e2;color:#b91c1c;}
-    .pi-risk-m{background:#dbeafe;color:#1d4ed8;}
-    .pi-risk-l{background:#d1fae5;color:#065f46;}
-    .pi-footer{font-size:13px;color:var(--muted);margin:0;line-height:1.5;}
-    .priority-navigation-callout{display:flex;align-items:center;gap:12px;margin:2px 0 10px;padding:11px 14px;background:#eef7fc;border:1px solid #bae6fd;border-left:4px solid var(--wbg-blue);border-radius:7px;color:#334155;font-size:13px;line-height:1.5;}
-    .priority-navigation-callout strong{color:#075985;}
-    .priority-navigation-sequence{display:inline-flex;align-items:center;justify-content:center;min-width:58px;padding:4px 8px;border-radius:999px;background:#fff;border:1px solid #7dd3fc;color:#0369a1;font-size:11px;font-weight:800;letter-spacing:.08em;white-space:nowrap;}
     .sr-legend{display:flex;flex-direction:column;gap:5px;margin:0 0 12px;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:6px;}
     .sr-legend-item{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--text);line-height:1.5;}
-
-    /* Priority overview widget (replaces Risk Overview) */
-    .pov-widget{padding:12px 14px;}
-    .pov-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer;}
-    .pov-row:last-child{border-bottom:none;}
-    .pov-row:hover{background:var(--off-white);margin:-0px -2px;padding-left:2px;padding-right:2px;}
-    .pov-num{width:24px;height:24px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--muted);flex-shrink:0;}
-    .pov-num.active{background:var(--wbg-navy);color:#fff;}
-    .pov-num.done{background:var(--s4);color:#fff;}
-    .pov-label{font-size:12.5px;color:var(--text);flex:1;line-height:1.45;}
-    .pov-risk{font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;flex-shrink:0;}
-    .pov-risk-h{background:#fee2e2;color:#991b1b;}
-    .pov-risk-m{background:#fef3c7;color:#92400e;}
-    .pov-risk-l{background:#d1fae5;color:#065f46;}
 
     /* Explorer group layout */
     .exp-groups{display:flex;flex-direction:column;gap:14px;margin-top:10px;}
@@ -1527,10 +1505,6 @@
       margin-bottom: 0;
     }
 
-    /* Priority nav prev/next */
-    .pc-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;}
-    .pc-nav-counter{font-size:12px;color:var(--muted);}
-
     /* Section divider */
     .section-divider{display:flex;align-items:center;gap:12px;margin:24px 0 20px;}
     .section-divider-line{flex:1;height:1px;background:var(--border);}
@@ -1542,16 +1516,6 @@
     .p-icon svg{display:block;fill:none;stroke:#d1dbe8;transition:stroke .25s,fill .25s;}
     .p-icon.active svg{fill:#1a7a4a;stroke:#1a7a4a;}
 
-    @media(max-width:860px){
-      .stage3-overview-rating,.stage3-rating-unit{align-items:flex-start}
-      .stage3-rating-pair{grid-template-columns:1fr}
-      .priority-stepper{overflow-x:auto;}
-    }
-    @media(max-width:560px){
-      .stage3-overview-rating{flex-direction:column;gap:8px}
-      .stage3-overview-gauge{align-self:center}
-      .pov-row{align-items:flex-start}
-    }
 
     /* ══════════════════════════════════════════
        MODERN UI OVERRIDES
@@ -5141,8 +5105,9 @@
       if(_supportsStage3Tabs&&stage3View==='summary')_outBodyContent=renderStage3Summary();
       else if(!_supportsStage3Tabs)_outBodyContent=conciseUnavailableHtml()+_outBodyContent;
     }
+    const _showDetailedRail=isLast&&!_verifiedV2;
     const _outPanelAttrs=isLast&&_supportsStage3Tabs
-      ?` role="tabpanel" aria-labelledby="${stage3View==='summary'?'stage3-summary-tab':'stage3-detailed-tab'}"`
+      ?` role="tabpanel" aria-labelledby="${stage3View==='summary'?'stage3-summary-tab':'stage3-detailed-tab'}" data-stage3-view="${stage3View}"`
       :'';
     document.getElementById('stage-disp').innerHTML=`
       <div class="stage-hdr ani">
@@ -5161,8 +5126,7 @@
         }</div>
         <div class="callout-body">${_calloutContent}</div>
       </div>
-      ${isLast&&!_verifiedV2?stage3OverviewHtml():''}
-      <div>
+      ${_showDetailedRail?`<div class="stage3-reading-shell ${stage3View==='summary'?'is-summary':'is-detailed'}" data-stage3-view="${stage3View}">${stage3OverviewHtml()}<div class="stage3-reading-main">`:'<div>'}
           <div class="out-card ani">
             <div class="out-hdr">
               <div class="out-hdr-l"><span class="dot done"></span>${NAMES[stage]}</div>
@@ -5185,20 +5149,8 @@
           <div class="priority-stepper" id="priority-stepper"></div>
           <!-- ── PRIORITY CARD ── -->
           <div id="priority-card-area"></div>
-          <!-- ── PRIORITY NAV ── -->
-          <div class="pc-nav" id="pc-nav" style="display:none">
-            <button class="btn btn-ghost btn-sm" id="pc-prev-btn" onclick="prevPriority()">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
-              Previous
-            </button>
-            <span class="pc-nav-counter" id="pc-nav-counter"></span>
-            <button class="btn btn-blue btn-sm" id="pc-next-btn" onclick="nextPriority()">
-              Next
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-            </button>
-          </div>
           `:''}
-      </div>
+      </div>${_showDetailedRail?'</div>':''}
       `;
 
     // Annotate glossary terms with hover tooltips
@@ -6224,8 +6176,6 @@ ${body}
 
   const LEVELS = ['Extremely Low','Very Low','Low','Adequate','Well Embedded','Very Well Embedded'];
   const LEVEL_COLORS = {1:'#C0392B',2:'#E07B00',3:'#D97706',4:'#0072BB',5:'#1A7A4A',6:'#0d5c36'};
-  const RESP_LEVEL_COLORS = {1:'#C0392B',2:'#E07B00',3:'#D97706',4:'#E07B00',5:'#1A7A4A',6:'#0d5c36'};
-  const ARC_LEN = 141.37;
   const NEED_LABELS = {
     'Extremely Low':'Critical redesign needed',
     'Very Low':'Significant changes needed',
@@ -6252,151 +6202,69 @@ ${body}
   }
 
   function stage3OverviewHtml(){
-    if(isClimateLensActive()){
-      return `
-      <div class="stage3-overview">
-      <div class="sidebar-widget stage3-overview-rating">
-        <div class="stage3-overview-rating-copy">
-          <div class="sidebar-widget-label sr-term">Climate-FCV integration</div>
-          <div id="fcv-int-label" class="fcv-rating-label" style="color:var(--muted)">Analysing…</div>
-          <div id="fcv-int-summary" class="fcv-need-label"></div>
-        </div>
-        <div class="stage3-overview-gauge"><svg viewBox="0 0 120 80" width="120" height="80" aria-hidden="true">
-          <path d="M15 70 A45 45 0 0 1 105 70" fill="none" stroke="#e8edf2" stroke-width="11" stroke-linecap="round"/>
-          <path id="fcv-int-arc" d="M15 70 A45 45 0 0 1 105 70" fill="none" stroke="#e8edf2" stroke-width="11" stroke-linecap="round" stroke-dasharray="0 141.37"/>
-        </svg></div>
-      </div>
-      <div class="sidebar-widget stage3-overview-priorities">
-        <div class="pov-widget">
-          <div class="sidebar-widget-label">Priority overview</div>
-          <div id="pov-sb"><div style="font-size:11px;color:var(--muted)">Loading priorities…</div></div>
-        </div>
-      </div>
-      </div>
-      `;
-    }
-    return `
-      <div class="stage3-overview">
-      <div class="stage3-rating-pair">
-      <!-- Sensitivity Gauge -->
-      <div class="sidebar-widget">
-        <div class="sidebar-widget-fcv">
-          <div class="sidebar-widget-label sr-term" title="FCV Sensitivity: is the project aware of and designed for the FCV context? Contextual awareness, conflict-informed design, Do No Harm, FCV-adapted operations.">FCV Sensitivity</div>
-          <svg viewBox="0 0 120 80" width="120" height="80" style="display:block;margin:0 auto -4px">
-            <path d="M15 70 A45 45 0 0 1 105 70" fill="none" stroke="#e8edf2" stroke-width="11" stroke-linecap="round"/>
-            <path id="fcv-arc-fill" d="M15 70 A45 45 0 0 1 105 70" fill="none" stroke="#e8edf2" stroke-width="11" stroke-linecap="round" stroke-dasharray="0 141.37"/>
-            <g transform="translate(60,47)">
-              <path id="fcv-shield-path" d="M0-14L-9-10v9c0 7 5 12.5 9 14.5 4-2 9-7.5 9-14.5v-9L0-14z" fill="#c8d8c8"/>
-            </g>
-          </svg>
-          <div class="fcv-rating-label" id="fcv-rating-label" style="color:var(--muted)">Analysing…</div>
-          <div class="fcv-need-label" id="fcv-need-label"></div>
-        </div>
-      </div>
-      <!-- Responsiveness Gauge -->
-      <div class="sidebar-widget">
-        <div class="sidebar-widget-fcv">
-          <div class="sidebar-widget-label sr-term" title="FCV Responsiveness: does the project actively work to change the FCV situation? Addresses root causes, builds resilience, leverages FCV tools for transformative impact.">FCV Responsiveness</div>
-          <svg viewBox="0 0 120 80" width="120" height="80" style="display:block;margin:0 auto -4px">
-            <path d="M15 70 A45 45 0 0 1 105 70" fill="none" stroke="#e8edf2" stroke-width="11" stroke-linecap="round"/>
-            <path id="fcv-resp-arc-fill" d="M15 70 A45 45 0 0 1 105 70" fill="none" stroke="#e8edf2" stroke-width="11" stroke-linecap="round" stroke-dasharray="0 141.37"/>
-            <g transform="translate(60,47)">
-              <path id="fcv-resp-leaf-path" d="M0-13 C6-13 12-8 12-1 C12 6 6 13 0 16 C-6 13 -12 6 -12-1 C-12-8 -6-13 0-13z" fill="#c8d8c8"/>
-            </g>
-          </svg>
-          <div class="fcv-rating-label" id="fcv-resp-rating-label" style="color:var(--muted)">Analysing…</div>
-          <div class="fcv-need-label" id="fcv-resp-need-label"></div>
-        </div>
-      </div>
-      </div>
-      <!-- Priority overview -->
-      <div class="sidebar-widget stage3-overview-priorities">
-        <div class="pov-widget">
-          <div class="sidebar-widget-label">Priority overview</div>
-          <div id="pov-sb"><div style="font-size:11px;color:var(--muted)">Loading priorities…</div></div>
-        </div>
-      </div>
-      </div>
-      `;
+    const normalSensitivityCard = `<article class="stage3-rating-card" data-rating-key="sensitivity">
+      <div class="stage3-rating-card-header"><span class="stage3-rating-dimension">FCV Sensitivity</span><span class="stage3-rating-value" id="fcv-rating-label" data-rating-value data-rating-state="pending">Analysing…</span></div>
+      <div class="stage3-rating-bar" role="progressbar" aria-label="FCV Sensitivity rating" aria-valuemin="0" aria-valuemax="6" aria-valuenow="0"><span class="stage3-rating-fill" data-rating-fill></span></div>
+      <p class="stage3-rating-meaning" id="fcv-need-label" data-rating-meaning>Meaning will be shown when the sensitivity rating is available.</p>
+      <p class="stage3-rating-description">Is the project aware of and designed for the FCV context?</p>
+    </article>`;
+    const normalResponsivenessCard = `<article class="stage3-rating-card" data-rating-key="responsiveness">
+      <div class="stage3-rating-card-header"><span class="stage3-rating-dimension">FCV Responsiveness</span><span class="stage3-rating-value" id="fcv-resp-rating-label" data-rating-value data-rating-state="pending">Analysing…</span></div>
+      <div class="stage3-rating-bar" role="progressbar" aria-label="FCV Responsiveness rating" aria-valuemin="0" aria-valuemax="6" aria-valuenow="0"><span class="stage3-rating-fill" data-rating-fill></span></div>
+      <p class="stage3-rating-meaning" id="fcv-resp-need-label" data-rating-meaning>Meaning will be shown when the responsiveness rating is available.</p>
+      <p class="stage3-rating-description">Does the project actively work to change the FCV situation?</p>
+    </article>`;
+    const climateCard = `<article class="stage3-rating-card" data-rating-key="climate-integration">
+      <div class="stage3-rating-card-header"><span class="stage3-rating-dimension">Climate-FCV integration</span><span class="stage3-rating-value" id="fcv-int-label" data-rating-value data-rating-state="pending">Analysing…</span></div>
+      <div class="stage3-rating-bar" role="progressbar" aria-label="Climate-FCV integration rating" aria-valuemin="0" aria-valuemax="6" aria-valuenow="0"><span class="stage3-rating-fill" data-rating-fill></span></div>
+      <p class="stage3-rating-meaning" id="fcv-int-summary" data-rating-meaning>Opportunities to further strengthen climate and FCV elements.</p>
+      <p class="stage3-rating-description">How well the project connects climate resilience and FCV-aware delivery.</p>
+    </article>`;
+    const cards = isClimateLensActive() ? climateCard : normalSensitivityCard + normalResponsivenessCard;
+    const mobileCards = cards.replace(/ id="fcv-/g, ' id="fcv-mobile-');
+    return `<aside class="stage3-rating-rail" aria-label="Assessment ratings">${cards}</aside><details class="stage3-mobile-ratings"><summary>Assessment ratings</summary><div class="stage3-mobile-rating-list">${mobileCards}</div></details>`;
   }
 
   function updateSidebar(){
-    const n = stageThreePriorities.length;
+    const updateRatingCards = (key, rating, meaning, fraction, color) => {
+      const cards = Array.from(document.querySelectorAll(`[data-rating-key="${key}"]`));
+      const hasRating = !!String(rating || '').trim();
+      const value = hasRating ? String(rating) : 'Analysing…';
+      cards.forEach(card => {
+        const valueEl = card.querySelector('[data-rating-value]');
+        const meaningEl = card.querySelector('[data-rating-meaning]');
+        const bar = card.querySelector('.stage3-rating-bar');
+        const fill = card.querySelector('[data-rating-fill]');
+        if(valueEl){ valueEl.textContent = value; valueEl.dataset.ratingState = hasRating ? 'ready' : 'pending'; }
+        if(meaningEl) meaningEl.textContent = meaning || 'Meaning will be shown when the rating is available.';
+        const pct = Math.max(0, Math.min(1, Number(fraction) || 0)) * 100;
+        if(fill){ fill.style.width = `${pct}%`; if(color) fill.style.backgroundColor = color; }
+        if(bar) bar.setAttribute('aria-valuenow', String(Math.round(pct)));
+      });
+    };
 
     if(isClimateLensActive()){
-      // Single Climate-FCV integration gauge — prefer the 6-tier rating (redesign),
-      // fall back to the legacy 4-tier level when a rating is absent.
-      const arc=document.getElementById('fcv-int-arc');
-      const rating=climateIntegration&&climateIntegration.rating||'';
-      const lvl=climateIntegration&&climateIntegration.level||'';
-      const label=document.getElementById('fcv-int-label');
-      const summary=document.getElementById('fcv-int-summary');
+      const rating = climateIntegration && climateIntegration.rating || '';
+      const level = climateIntegration && climateIntegration.level || '';
       if(rating){
-        const tier=CLIMATE_RATING_ORDER.indexOf(rating)+1;
-        const frac=climateIntegrationRatingFraction(rating);
-        if(arc)arc.setAttribute('stroke-dasharray',`${(frac*ARC_LEN).toFixed(2)} ${ARC_LEN}`);
-        if(arc)arc.setAttribute('stroke',LEVEL_COLORS[tier]||'#94a3b8');
-        if(label)label.textContent=rating;
-        if(summary)summary.textContent=climateIntegrationShortLabel(rating);
-      } else {
-        const frac=integrationGaugeFraction(lvl);
-        if(arc)arc.setAttribute('stroke-dasharray',`${(frac*ARC_LEN).toFixed(2)} ${ARC_LEN}`);
-        const intColors={well_integrated:'#1A7A4A',partly_integrated:'#009FDA',weakly_integrated:'#E07B00',insufficient_evidence:'#94a3b8'};
-        if(arc)arc.setAttribute('stroke',intColors[String(lvl).toLowerCase()]||'#94a3b8');
-        const intLabels={well_integrated:'Well integrated',partly_integrated:'Partly integrated',weakly_integrated:'Weakly integrated',insufficient_evidence:'Insufficient evidence'};
-        if(label)label.textContent=intLabels[String(lvl).toLowerCase()]||(climateIntegration?'Analysing…':'Insufficient evidence');
-        const shortLabels={well_integrated:'Well integrated',partly_integrated:'Partly integrated',weakly_integrated:'Early integration',insufficient_evidence:'Evidence limited'};
-        if(summary)summary.textContent=shortLabels[String(lvl).toLowerCase()]||'Evidence limited';
+        const tier = CLIMATE_RATING_ORDER.indexOf(rating) + 1;
+        updateRatingCards('climate-integration', rating, climateIntegrationShortLabel(rating), climateIntegrationRatingFraction(rating), LEVEL_COLORS[tier] || '#0f766e');
+      }else{
+        const normalizedLevel = String(level).toLowerCase();
+        const labels = {well_integrated:'Well integrated',partly_integrated:'Partly integrated',weakly_integrated:'Weakly integrated',insufficient_evidence:'Insufficient evidence'};
+        const meanings = {well_integrated:'Well integrated',partly_integrated:'Partly integrated',weakly_integrated:'Early integration',insufficient_evidence:'Evidence limited'};
+        updateRatingCards('climate-integration', labels[normalizedLevel] || '', meanings[normalizedLevel] || 'Evidence limited', integrationGaugeFraction(level), '#0f766e');
       }
-    } else {
-      const level = LEVELS.findIndex(l => l.toLowerCase() === (fcvRating||'').toLowerCase()) + 1;
-      const color = LEVEL_COLORS[level] || '#e8edf2';
-
-      // Sensitivity Gauge
-      const arcFill = document.getElementById('fcv-arc-fill');
-      const shieldPath = document.getElementById('fcv-shield-path');
-      const labelEl = document.getElementById('fcv-rating-label');
-      const needEl = document.getElementById('fcv-need-label');
-      if(arcFill){ const filled = level > 0 ? (level/6)*ARC_LEN : 0; arcFill.setAttribute('stroke-dasharray',`${filled} ${ARC_LEN}`); arcFill.setAttribute('stroke',color); }
-      if(shieldPath) shieldPath.setAttribute('fill', level > 0 ? color : '#c8d8c8');
-      if(labelEl){ labelEl.textContent = fcvRating ? `${fcvRating} Sensitivity` : '—'; labelEl.style.color = level > 0 ? color : 'var(--muted)'; }
-      if(needEl) needEl.textContent = NEED_LABELS[fcvRating] || '';
-
-      // Responsiveness Gauge
-      const respLevel = LEVELS.findIndex(l => l.toLowerCase() === (fcvResponsivenessRating||'').toLowerCase()) + 1;
-      const respColor = RESP_LEVEL_COLORS[respLevel] || '#e8edf2';
-      const respArc = document.getElementById('fcv-resp-arc-fill');
-      const respLeaf = document.getElementById('fcv-resp-leaf-path');
-      const respLabel = document.getElementById('fcv-resp-rating-label');
-      const respNeed = document.getElementById('fcv-resp-need-label');
-      if(respArc){ const filled = respLevel > 0 ? (respLevel/6)*ARC_LEN : 0; respArc.setAttribute('stroke-dasharray',`${filled} ${ARC_LEN}`); respArc.setAttribute('stroke',respColor); }
-      if(respLeaf) respLeaf.setAttribute('fill', respLevel > 0 ? respColor : '#c8d8c8');
-      if(respLabel){ respLabel.textContent = fcvResponsivenessRating ? `${fcvResponsivenessRating} Responsiveness` : '—'; respLabel.style.color = respLevel > 0 ? respColor : 'var(--muted)'; }
-      if(respNeed) respNeed.textContent = NEED_LABELS[fcvResponsivenessRating] || '';
+      return;
     }
 
-    // Priority overview widget (runs in both climate and non-climate modes)
-    const povEl = document.getElementById('pov-sb');
-    if(povEl && n){
-      povEl.innerHTML = stageThreePriorities.map((pr, i) => {
-        const label = pr.title.replace(/^Priority\s+\d+\s*[·•]\s*/i,'');
-        const isDone = i < currentPriority;
-        const isActive = i === currentPriority;
-        const riskCls = pr.risk_level==='High'?'pov-risk-h':pr.risk_level==='Medium'?'pov-risk-m':'pov-risk-l';
-        return `<div class="pov-row" onclick="showPriority(${i})">
-          <div class="pov-num ${isDone?'done':isActive?'active':''}">${isDone?'✓':i+1}</div>
-          <div class="pov-label">${esc(label)}</div>
-          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">
-            ${pr.risk_level?`<span class="pov-risk ${riskCls}">Priority: ${esc(pr.risk_level)}</span>`:''}
-            ${pr.tag?renderSRTagBadge(pr.tag,true):''}
-          </div>
-        </div>`;
-      }).join('');
-    }
-
+    const sensitivityLevel = LEVELS.findIndex(level => level.toLowerCase() === (fcvRating || '').toLowerCase()) + 1;
+    updateRatingCards('sensitivity', fcvRating ? `${fcvRating} Sensitivity` : '', NEED_LABELS[fcvRating] || 'The rating describes contextual awareness and conflict-informed design.', sensitivityLevel / LEVELS.length, LEVEL_COLORS[sensitivityLevel] || '#0050a0');
+    const responsivenessLevel = LEVELS.findIndex(level => level.toLowerCase() === (fcvResponsivenessRating || '').toLowerCase()) + 1;
+    updateRatingCards('responsiveness', fcvResponsivenessRating ? `${fcvResponsivenessRating} Responsiveness` : '', NEED_LABELS[fcvResponsivenessRating] || 'The rating describes active work to change the FCV situation.', responsivenessLevel / LEVELS.length, LEVEL_COLORS[responsivenessLevel] || '#1a7a4a');
   }
 
-  // ── Priority stepper & card rendering ────────────────────────────────────
+  // Priority stepper & card rendering ────────────────────────────────────
 
   const shiftTooltips = {
     'Shift A: Anticipate': 'FCV Strategy 2026-2030 Shift A: Forward-looking risk monitoring and early engagement',
@@ -6577,9 +6445,22 @@ ${body}
     if(summaryTab){summaryTab.classList.toggle('active',view==='summary');summaryTab.setAttribute('aria-selected',String(view==='summary'));summaryTab.tabIndex=view==='summary'?0:-1;}
     if(detailedTab){detailedTab.classList.toggle('active',view==='detailed');detailedTab.setAttribute('aria-selected',String(view==='detailed'));detailedTab.tabIndex=view==='detailed'?0:-1;}
     const showSummary=view==='summary';
+    const readingShell=document.querySelector('.stage3-reading-shell');
+    if(readingShell){
+      readingShell.dataset.stage3View=view;
+      readingShell.setAttribute('data-stage3-view',view);
+      readingShell.classList.toggle('is-summary',showSummary);
+      readingShell.classList.toggle('is-detailed',!showSummary);
+    }
+    const stageDisplay=document.getElementById('stage-disp');
+    if(stageDisplay){
+      stageDisplay.dataset.stage3View=view;
+      stageDisplay.setAttribute('data-stage3-view',view);
+      stageDisplay.classList.toggle('stage3-summary-active',showSummary);
+    }
     const out=document.getElementById('out-txt');
-    if(out){out.setAttribute('aria-labelledby',view==='summary'?'stage3-summary-tab':'stage3-detailed-tab');out.innerHTML=stage3ViewToggleHtml()+(view==='summary'?renderStage3Summary():stage3DetailedHtml);}
-    ['priority-stepper','priority-card-area','pc-nav'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=showSummary?'none':'';});
+    if(out){out.setAttribute('aria-labelledby',view==='summary'?'stage3-summary-tab':'stage3-detailed-tab');out.dataset.stage3View=view;out.setAttribute('data-stage3-view',view);out.innerHTML=stage3ViewToggleHtml()+(view==='summary'?renderStage3Summary():stage3DetailedHtml);}
+    ['priority-stepper','priority-card-area'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=showSummary?'none':'';});
     if(showSummary){
       if(!preservePriority)openSummaryPriority=0;
       const host=document.getElementById('summary-priority-accordion');if(host)host.innerHTML=renderSummaryPriorityAccordion();
@@ -6600,7 +6481,7 @@ ${body}
     maybeRunPriorityQuestions();
     if(!stageThreePriorities.length) return;
     const summaryActive=supportsAnyStage3Summary()&&stage3View==='summary';
-    ['priority-stepper','priority-card-area','pc-nav'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=summaryActive?'none':'';});
+    ['priority-stepper','priority-card-area'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=summaryActive?'none':'';});
     if(summaryActive){
       openSummaryPriority=0;
       const host=document.getElementById('summary-priority-accordion');
@@ -6730,32 +6611,13 @@ ${body}
     if(!el || !stageThreePriorities.length) return;
     const n = stageThreePriorities.length;
     const climateSummary=supportsClimateVerifiedStage3View()&&stage3View==='summary';
-    const riskLabel = (r) => r === 'High' ? 'High priority' : r === 'Medium' ? 'Medium priority' : r === 'Low' ? 'Lower priority' : '';
-    const riskCls = (r) => r === 'High' ? 'pi-risk-h' : r === 'Medium' ? 'pi-risk-m' : 'pi-risk-l';
-    const listItems = stageThreePriorities.map((pr, i) => {
-      const title = pr.title.replace(/^Priority\s+\d+\s*[·•]\s*/i, '');
-      const risk = riskLabel(pr.risk_level);
-      return `<div class="pi-item">
-        <span class="pi-num">${i+1}</span>
-        <span class="pi-title">${esc(title)}</span>
-        ${risk ? `<span class="pi-risk ${riskCls(pr.risk_level)}">${esc(risk)}</span>` : ''}
-        ${pr.tag ? renderSRTagBadge(pr.tag,true) : ''}
-      </div>`;
-    }).join('');
     const _linkNotice = (isClimateLensActive() && climatePriorityUnlinked > 0)
       ? `<div class="climate-partial-notice">Climate provenance could not be validated for ${climatePriorityUnlinked} of ${climatePriorityTotal} priorities. Those recommendations are shown but not tagged to a specific climate-FCV pathway.</div>`
       : '';
     const lead=climateSummary
-      ?`Based on the verified Climate-FCV assessment, <strong>${n} priority ${n === 1 ? 'action has' : 'actions have'} been identified</strong> for the project team to address at the appropriate preparation stage:`
-      :`Based on a three-stage assessment of the project documents, <strong>${n} priority ${n === 1 ? 'action has' : 'actions have'} been identified</strong> to strengthen FCV sensitivity and responsiveness in the design and delivery of this project:`;
-    el.innerHTML = _linkNotice + `<div class="priorities-section-hdr">Priority Actions for the Task Team</div><div class="priorities-intro ani">
-      <p class="pi-lead">${lead}</p>
-      <div class="pi-list">${listItems}</div>
-    </div>
-    <div class="priority-navigation-callout" role="note">
-      <span class="priority-navigation-sequence" aria-hidden="true">${Array.from({length:n},(_,i)=>i+1).join(' · ')}</span>
-      <span><strong>Explore all ${n} priorities.</strong> Select each numbered priority below to see its evidence, rationale, and implementation options.</span>
-    </div>`;
+      ?`Based on the verified Climate-FCV assessment, <strong>${n} priority ${n === 1 ? 'action has' : 'actions have'} been identified</strong> for the project team to address at the appropriate preparation stage.`
+      :`Based on a three-stage assessment of the project documents, <strong>${n} priority ${n === 1 ? 'action has' : 'actions have'} been identified</strong> to strengthen FCV sensitivity and responsiveness in the design and delivery of this project.`;
+    el.innerHTML = _linkNotice + `<div class="priorities-section-hdr">Priority Actions for the Task Team</div><div class="priorities-intro ani"><p class="pi-lead">${lead}</p></div>`;
   }
 
   function renderPriorityStepper(){
@@ -6793,19 +6655,6 @@ ${body}
       const numEl = el ? el.querySelector('.ps-num') : null;
       if(numEl){ if(i < idx){ numEl.textContent = '✓'; } else { numEl.textContent = String(i+1); } }
     });
-
-    // Update nav
-    const navEl = document.getElementById('pc-nav');
-    const counterEl = document.getElementById('pc-nav-counter');
-    const prevBtn = document.getElementById('pc-prev-btn');
-    const nextBtn = document.getElementById('pc-next-btn');
-    if(navEl) navEl.style.display = 'flex';
-    if(counterEl) counterEl.textContent = `Priority ${idx+1} of ${n}`;
-    if(prevBtn) prevBtn.disabled = idx === 0;
-    if(nextBtn){
-      if(idx === n-1){ nextBtn.textContent = 'Done'; nextBtn.onclick = () => {}; nextBtn.disabled = true; }
-      else { nextBtn.innerHTML = 'Next <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>'; nextBtn.onclick = nextPriority; nextBtn.disabled = false; }
-    }
 
     // Determine risk chip class
     const riskClass = pr.risk_level === 'High' ? 'pc-chip-risk-h' : pr.risk_level === 'Medium' ? 'pc-chip-risk-m' : 'pc-chip-risk-l';
@@ -6961,8 +6810,6 @@ ${body}
     cardArea.scrollIntoView({behavior:'smooth', block:'nearest'});
   }
 
-  function nextPriority(){ if(currentPriority < stageThreePriorities.length-1) showPriority(currentPriority+1); }
-  function prevPriority(){ if(currentPriority > 0) showPriority(currentPriority-1); }
 
   // ── Go Deeper 3-tab section ──────────────────────────────────────────────
 
