@@ -703,6 +703,7 @@ let stageThreePriorities={json.dumps(priorities)};
 let openSummaryPriority=0;
 let currentPriority=0;
 let focused='';
+const supportsClimateVerifiedStage3View=()=>false;
 const host={{innerHTML:''}};
 const document={{getElementById:id=>id==='summary-priority-accordion'?host:{{focus:()=>{{focused=id;}}}}}};
 {helpers}
