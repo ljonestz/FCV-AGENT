@@ -627,6 +627,8 @@ for(const field of ['strengths_transition','priorities_transition','closing']){{
   delete missing[field];
   stageConciseReadout=missing;
   if(supportsConciseStage3View())throw new Error('accepted saved readout missing '+field);
+  const incompleteFallback=conciseUnavailableHtml();
+  if(!incompleteFallback.includes('The summary was unavailable for this run; the full analysis is shown.'))throw new Error('missing incomplete saved summary diagnostic');
   stageConciseReadout={{...missing,[field]:'   '}};
   if(supportsConciseStage3View())throw new Error('accepted saved readout blank '+field);
   stageConciseReadout={json.dumps(CONCISE_READOUT)};

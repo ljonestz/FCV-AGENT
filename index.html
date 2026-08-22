@@ -6417,7 +6417,7 @@ ${body}
   }
 
   function conciseUnavailableHtml(){
-    return activeLenses.length===0&&!stageConciseReadout
+    return activeLenses.length===0&&!supportsConciseStage3View()
       ?'<div class="callout info" data-diagnostic="concise_readout_unavailable">The summary was unavailable for this run; the full analysis is shown.</div>'
       :'';
   }
