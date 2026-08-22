@@ -770,7 +770,7 @@ def test_concise_summary_persists_with_priorities_and_restores_before_view_selec
     assert "stageThreePriorities=Array.isArray(savedLensState.stageThreePriorities)" in express_restore
     assert "fcvRating=savedLensState.fcvRating||''" in express_restore
     assert "fcvResponsivenessRating=savedLensState.fcvResponsivenessRating||''" in express_restore
-    assert "if(outputs[3]&&supportsAnyStage3Summary())" in express_restore
+    assert "if(hasSavedStage3Output&&isRestorableExpressStage3Output(outputs[3]))" in express_restore
     assert "if(outputs[3]&&climateVerifiedAssessment&&climateVerifiedReader)" not in express_restore
     assert express_restore.index("stageConciseReadout=savedLensState") < express_restore.index(
         "stage3View=supportsAnyStage3Summary()?'summary':'detailed'"
@@ -873,3 +873,122 @@ def test_invalid_canonical_project_cycle_keeps_detailed_but_disables_summary():
 
     _assert_concise_disabled_but_detailed_preserved(result)
     assert result["priorities"][0]["project_cycle"] is None
+
+
+def test_semantically_ungrounded_concise_card_uses_deterministic_detail_fallback():
+    payload = _payload()
+    priority = payload["priorities"][1]
+    _add_detailed_actions(priority)
+    priority["concise"] = {
+        "title": "Create a procurement safeguard in Juba",
+        "why": "The unrelated procurement arrangement needs a new control.",
+        "how": [
+            "Create a procurement committee.",
+            "Approve the unrelated safeguard before implementation.",
+        ],
+        "suggested_wording": {
+            "document_element": "Procurement section",
+            "text": "The procurement committee will approve all purchases.",
+        },
+        "project_cycle": copy.deepcopy(PROJECT_CYCLE),
+    }
+
+    result = extract_priorities(_wrapped(payload))
+
+    assert result["concise_readout"] == CONCISE_READOUT
+    fallback = result["priorities"][1]["concise"]
+    assert fallback["title"] == priority["title"]
+    assert fallback["how"] == [
+        "Name the access trigger in the PCN.",
+        "Assign the response owner for Bentiu.",
+    ]
+
+
+def test_semantically_contradictory_concise_card_uses_deterministic_detail_fallback():
+    payload = _payload()
+    priority = payload["priorities"][1]
+    _add_detailed_actions(priority)
+    priority["concise"] = {
+        "title": "Access is already covered",
+        "why": "Access in Bentiu is already fully addressed and needs no further action.",
+        "how": [
+            "Proceed without changing the access arrangements.",
+            "Close the issue as resolved.",
+        ],
+        "suggested_wording": {"document_element": "", "text": ""},
+        "project_cycle": copy.deepcopy(PROJECT_CYCLE),
+    }
+
+    result = extract_priorities(_wrapped(payload))
+
+    assert result["concise_readout"] == CONCISE_READOUT
+    assert result["priorities"][1]["concise"]["title"] == priority["title"]
+
+
+def test_legitimate_concise_paraphrase_is_preserved():
+    payload = _payload()
+    priority = payload["priorities"][1]
+    _add_detailed_actions(priority)
+    priority["concise"] = {
+        "title": "Protect access in Bentiu",
+        "why": "Clear access decisions help keep delivery inclusive in Bentiu.",
+        "how": [
+            "Set an access trigger for Bentiu.",
+            "Record the response owner in the implementation arrangements.",
+        ],
+        "suggested_wording": {
+            "document_element": "Implementation arrangements",
+            "text": "The project will record an access trigger for Bentiu.",
+        },
+        "project_cycle": copy.deepcopy(PROJECT_CYCLE),
+    }
+
+    result = extract_priorities(_wrapped(payload))
+
+    assert result["concise_readout"] == CONCISE_READOUT
+    assert result["priorities"][1]["concise"]["title"] == "Protect access in Bentiu"
+
+
+def test_one_action_concise_fallback_preserves_summary_when_detail_is_valid():
+    payload = _payload()
+    priority = payload["priorities"][1]
+    priority.pop("concise")
+    priority["actions"] = [{
+        "document_element": "PCN",
+        "guidance": "Name the access trigger in the PCN.",
+        "suggested_language": "The PCN will define the access trigger.",
+    }]
+
+    result = extract_priorities(_wrapped(payload))
+
+    assert result["concise_readout"] == CONCISE_READOUT
+    assert result["priorities"][1]["concise"]["how"] == [
+        "Name the access trigger in the PCN."
+    ]
+
+
+def test_pcn_cannot_carry_mid_cycle_project_cycle_semantics():
+    payload = _payload()
+    cycle = {
+        "primary_label": "Mid-cycle review",
+        "primary_text": "Revise the approved financing package.",
+        "secondary_label": "Restructuring paper",
+        "secondary_text": "Track the approved change through implementation.",
+    }
+    for priority in payload["priorities"]:
+        priority["project_cycle"] = copy.deepcopy(cycle)
+        priority["concise"]["project_cycle"] = copy.deepcopy(cycle)
+
+    result = extract_priorities(_wrapped(payload), document_type="PCN")
+
+    assert all(priority["project_cycle"] is None for priority in result["priorities"])
+    assert result["concise_readout"] is None
+
+
+def test_mid_cycle_watch_is_cleared_for_non_mid_cycle_document_type():
+    payload = _payload()
+    payload["mid_cycle_watch"] = ["Review the change package during implementation."]
+
+    result = extract_priorities(_wrapped(payload), document_type="PAD")
+
+    assert result["mid_cycle_watch"] == []

@@ -96,6 +96,7 @@ def test_docx_renders_canonical_project_cycle_after_actions():
             "secondary_label": "During implementation",
             "secondary_text": "Track whether the agreed sequence is being followed.",
         },
+        "cpf_alignment": "Align with the CPF outcome on resilient delivery.",
         "concise": {
             "project_cycle": {
                 "primary_label": "Legacy concise label",
@@ -110,7 +111,9 @@ def test_docx_renders_canonical_project_cycle_after_actions():
     assert "Confirm the decision sequence in the current document." in text
     assert "During implementation" in text
     assert "Track whether the agreed sequence is being followed." in text
+    assert "CPF Alignment:" in text
     assert text.index("Where this fits in the project cycle") > text.index("Set out the decision sequence.")
+    assert text.index("Where this fits in the project cycle") < text.index("CPF Alignment:")
 
     cycle_index = paragraphs.index("Where this fits in the project cycle")
     assert document.paragraphs[cycle_index + 1].runs[0].bold is True

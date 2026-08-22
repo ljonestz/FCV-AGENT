@@ -6316,7 +6316,17 @@ def _fallback_concise_priority(priority: dict[str, Any]) -> dict[str, Any] | Non
             how.append(guidance)
         if len(how) == 4:
             break
-    if not title or not why or len(guidance_actions) < 2:
+    if not guidance_actions:
+        recommendation = _clean_concise_string(priority.get("recommendation"))
+        if recommendation:
+            guidance_actions = [{
+                "document_element": "Recommendation",
+                "suggested_language": _clean_concise_string(
+                    priority.get("suggested_language")
+                ),
+            }]
+            how = [recommendation]
+    if not title or not why or not guidance_actions:
         return None
 
     first_action = guidance_actions[0]
@@ -6387,12 +6397,8 @@ def extract_priorities(
 
     raw_priorities_are_objects = all(isinstance(pr, dict) for pr in priorities_raw)
     priorities = []
-    _normalized_document_type = re.sub(
-        r"[^A-Z0-9]+", " ", str(document_type or "Unknown").upper()
-    ).strip()
-    _allow_mid_cycle_scope = _normalized_document_type in {
-        "AF", "ADDITIONAL FINANCING", "RESTRUCTURING", "RESTRUCTURING PAPER"
-    }
+    effective_document_type = _effective_document_type(document_type)
+    _allow_mid_cycle_scope = _allows_mid_cycle_document_type(effective_document_type)
     climate_unlinked = 0
     climate_total = 0
     for pr in priorities_raw:
@@ -6402,7 +6408,9 @@ def extract_priorities(
         for field in _REQUIRED_PRIORITY_FIELDS:
             if field not in pr:
                 pr[field] = ''
-        pr['project_cycle'] = _normalize_project_cycle(pr.get('project_cycle'))
+        pr['project_cycle'] = _normalize_project_cycle_for_document(
+            pr.get('project_cycle'), effective_document_type
+        )
 
         # ── Regime terminology: pad_sections <-> appraisal_document_sections ──
         # Accept either key from the model; keep both populated so legacy renderers
@@ -6609,6 +6617,7 @@ def extract_priorities(
             if (
                 item is None
                 or item.get("project_cycle") != priority.get("project_cycle")
+                or not _concise_priority_is_aligned(priority, item)
             ):
                 item = _fallback_concise_priority(priority)
             items.append(item)
@@ -6668,7 +6677,9 @@ def extract_priorities(
             'risks_to': risks_to,
             'risks_from': risks_from,
         },
-        'mid_cycle_watch': data.get('mid_cycle_watch', []),
+        'mid_cycle_watch': _normalize_mid_cycle_watch(
+            data.get('mid_cycle_watch', []), effective_document_type
+        ),
         'dpf_watch': data.get('dpf_watch', []),
         'p4r_watch': data.get('p4r_watch', []),
         'regional_watch': data.get('regional_watch', []),
@@ -8569,8 +8580,12 @@ def run_stage():
         conversation_history = data.get('history', [])
         user_message = data.get('user_message', '').strip()
         prompt_override = data.get('prompt_override', '').strip()  # session-only override from frontend
-        document_type = (data.get('document_type') or analysis_state.doc_type or 'Unknown').strip()
-        stage3_document_type = data.get('doc_type', document_type or 'Unknown')
+        document_type = _effective_document_type(
+            data.get('document_type'), analysis_state.doc_type
+        )
+        stage3_document_type = _effective_document_type(
+            data.get('doc_type'), document_type
+        )
         review_mode = data.get('review_mode', 'design').strip()  # 'design' or 'implementation'
         is_impl = (review_mode == 'implementation')
         _native_climate_stage2 = (
@@ -10066,7 +10081,9 @@ def run_express():
             # ── Variables that persist across stages ──
             stage1_output = ''
             stage2_output = ''
-            doc_type = analysis_state.doc_type
+            doc_type = _effective_document_type(
+                data.get('doc_type'), data.get('document_type'), analysis_state.doc_type
+            )
             process_type = 'Unknown'
             instrument_type = analysis_state.instrument
             temporal_context = {}
@@ -12694,16 +12711,6 @@ def download_report():
 
                 add_field('The Gap', pr.get('the_gap'))
                 add_field('Why It Matters', pr.get('why_it_matters'))
-                add_field('CPF Alignment', pr.get('cpf_alignment'))
-                add_field('RRA Driver Alignment', pr.get('rra_driver_alignment'))
-                if climate_valid:
-                    add_priority_climate_contribution(pr)
-                    add_priority_compliance(pr)
-                else:
-                    add_field(
-                        'Differentiated approach note',
-                        pr.get('country_category_relevance'),
-                    )
 
                 actions = pr.get('actions', [])
                 if actions:
@@ -12729,6 +12736,16 @@ def download_report():
                     add_field('Implementation consideration', pr['implementation_note'])
 
                 add_priority_project_cycle(pr)
+                add_field('CPF Alignment', pr.get('cpf_alignment'))
+                add_field('RRA Driver Alignment', pr.get('rra_driver_alignment'))
+                if climate_valid:
+                    add_priority_climate_contribution(pr)
+                    add_priority_compliance(pr)
+                else:
+                    add_field(
+                        'Differentiated approach note',
+                        pr.get('country_category_relevance'),
+                    )
 
                 # Who/When/Resources footer — single run
                 footer_parts = []
@@ -12913,6 +12930,182 @@ def download_report():
         mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         as_attachment=True,
         download_name=filename
+    )
+
+
+_ALLOWED_MID_CYCLE_DOCUMENT_TYPES = frozenset({
+    "AF",
+    "ADDITIONAL FINANCING",
+    "RESTRUCTURING",
+    "RESTRUCTURING PAPER",
+})
+_MID_CYCLE_PROJECT_CYCLE_MARKERS = re.compile(
+    r"\bmid[\s-]*cycle\b"
+    r"|\badditional[\s-]+financing\b"
+    r"|\b(?:restructur(?:ing|e|ed)|restructuring\s+paper)\b"
+    r"|\bchange[\s-]+package\b"
+    r"|\bapproved\s+(?:financing|operation|project)\b",
+    re.IGNORECASE,
+)
+_CONCISE_GROUNDING_STOPWORDS = frozenset({
+    "a", "about", "after", "all", "an", "and", "any", "are", "as", "at",
+    "be", "because", "before", "being", "both", "by", "can", "could",
+    "current", "design", "document", "during", "ensure", "for", "from",
+    "in", "into", "is", "it", "its", "may", "more", "need", "needs",
+    "of", "on", "or", "project", "provide", "review", "should", "stage",
+    "that", "the", "their", "this", "to", "use", "will", "with", "would",
+    "action", "actions", "address", "addressed", "arrangement",
+    "arrangements", "implementation", "priority", "strengthen",
+})
+_CONCISE_UNRESOLVED_MARKERS = re.compile(
+    r"\b(?:gap|gaps|unresolved|unclear|uncertain|missing|lacks?|limited|"
+    r"weak|insufficient|inadequate|risk|risks|not\s+yet|does\s+not|do\s+not)\b",
+    re.IGNORECASE,
+)
+_CONCISE_RESOLVED_MARKERS = re.compile(
+    r"\b(?:already\s+(?:fully\s+)?(?:covered|addressed|resolved|included)|"
+    r"fully\s+(?:covered|addressed|resolved)|"
+    r"no\s+(?:further\s+)?(?:action|change|risk|gap)|"
+    r"no\s+need\s+to|not\s+(?:needed|required)|"
+    r"proceed\s+without\s+changing|close\s+the\s+issue|"
+    r"resolved|complete(?:ly)?)\b",
+    re.IGNORECASE,
+)
+
+
+def _normalized_document_type(value: Any) -> str:
+    """Return a stable document-type key for lifecycle compatibility checks."""
+    normalized = re.sub(
+        r"[^A-Z0-9]+", " ", str(value or "Unknown").upper()
+    ).strip()
+    return normalized or "UNKNOWN"
+
+
+def _effective_document_type(*values: Any) -> str:
+    """Choose the first known document type from route/state payload candidates."""
+    for value in values:
+        text = str(value or "").strip()
+        key = _normalized_document_type(text)
+        if key not in {"UNKNOWN", "UNRESOLVED", "N A", "NA"}:
+            return text
+    return "Unknown"
+
+
+def _allows_mid_cycle_document_type(document_type: Any) -> bool:
+    return _normalized_document_type(document_type) in _ALLOWED_MID_CYCLE_DOCUMENT_TYPES
+
+
+def _project_cycle_has_mid_cycle_semantics(value: Any) -> bool:
+    if not isinstance(value, dict):
+        return False
+    cycle_text = " ".join(
+        _clean_concise_string(value.get(field))
+        for field in (
+            "primary_label",
+            "primary_text",
+            "secondary_label",
+            "secondary_text",
+        )
+    )
+    return bool(_MID_CYCLE_PROJECT_CYCLE_MARKERS.search(cycle_text))
+
+
+def _normalize_project_cycle_for_document(
+    value: Any,
+    document_type: Any,
+) -> dict[str, str] | None:
+    """Normalize lifecycle data and reject explicit mid-cycle semantics on design docs."""
+    cycle = _normalize_project_cycle(value)
+    if (
+        cycle is not None
+        and not _allows_mid_cycle_document_type(document_type)
+        and _project_cycle_has_mid_cycle_semantics(cycle)
+    ):
+        return None
+    return cycle
+
+
+def _normalize_mid_cycle_watch(value: Any, document_type: Any) -> list[str]:
+    """Keep the mid-cycle watch only on AF/Additional Financing/Restructuring routes."""
+    if not _allows_mid_cycle_document_type(document_type) or not isinstance(value, list):
+        return []
+    return [
+        item.strip()
+        for item in value
+        if isinstance(item, str) and item.strip()
+    ]
+
+
+def _grounding_tokens(value: Any) -> set[str]:
+    """Extract conservative content anchors for Summary-to-Detailed matching."""
+    if not isinstance(value, str):
+        return set()
+    tokens = re.findall(r"[a-z0-9]+", value.lower())
+    normalized = set()
+    for token in tokens:
+        if token in _CONCISE_GROUNDING_STOPWORDS or len(token) < 3:
+            continue
+        if token.endswith("ies") and len(token) > 4:
+            token = token[:-3] + "y"
+        elif token.endswith("ing") and len(token) > 5:
+            token = token[:-3]
+        elif token.endswith("ed") and len(token) > 5:
+            token = token[:-2]
+        elif token.endswith("s") and len(token) > 4:
+            token = token[:-1]
+        if token and token not in _CONCISE_GROUNDING_STOPWORDS:
+            normalized.add(token)
+    return normalized
+
+
+def _canonical_priority_grounding_text(priority: dict[str, Any]) -> str:
+    parts = [
+        priority.get("title"),
+        priority.get("the_gap"),
+        priority.get("why_it_matters"),
+        priority.get("recommendation"),
+        priority.get("who_acts"),
+        priority.get("when"),
+        priority.get("resources"),
+    ]
+    actions = priority.get("actions")
+    if isinstance(actions, list):
+        for action in actions:
+            if isinstance(action, dict):
+                parts.extend((
+                    action.get("document_element"),
+                    action.get("guidance"),
+                    action.get("suggested_language"),
+                ))
+    return " ".join(str(part or "") for part in parts)
+
+
+def _concise_priority_text(concise: dict[str, Any]) -> str:
+    parts = [concise.get("title"), concise.get("why")]
+    parts.extend(concise.get("how") or [])
+    wording = concise.get("suggested_wording")
+    if isinstance(wording, dict):
+        parts.extend((wording.get("document_element"), wording.get("text")))
+    return " ".join(str(part or "") for part in parts)
+
+
+def _concise_priority_is_aligned(
+    priority: dict[str, Any],
+    concise: dict[str, Any],
+) -> bool:
+    """Reject only cards with no substantive canonical anchor or clear contradiction."""
+    canonical_text = _canonical_priority_grounding_text(priority)
+    canonical_tokens = _grounding_tokens(canonical_text)
+    if not canonical_tokens:
+        # There is no evidence-bearing Detailed text against which to test the card.
+        # Preserve legacy behavior; the canonical parser still controls the lifecycle.
+        return True
+    concise_tokens = _grounding_tokens(_concise_priority_text(concise))
+    if not canonical_tokens.intersection(concise_tokens):
+        return False
+    return not (
+        _CONCISE_UNRESOLVED_MARKERS.search(canonical_text)
+        and _CONCISE_RESOLVED_MARKERS.search(_concise_priority_text(concise))
     )
 
 
