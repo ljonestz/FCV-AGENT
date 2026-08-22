@@ -839,3 +839,26 @@ def test_missing_transport_drafting_uses_bounded_drafting_compiler():
     assert drafting_payload["recommendation_candidates"][0][
         "recommendation_id"
     ] == "REC-001"
+
+
+def test_unresolved_instrument_route_preserves_actions_and_withholds_drafting():
+    arguments = _arguments()
+    arguments["instrument_type"] = "Unknown"
+
+    result = run_verified_climate_pipeline(
+        **arguments,
+        clients=PipelineClients(
+            FakeClient(_responses(), []),
+            _pass_review_client(),
+        ),
+    )
+
+    diagnostics = result["recommendation_diagnostics"]
+    assert diagnostics["parsed_candidate_count"] == 1
+    assert diagnostics["valid_candidate_count"] == 1
+    assert diagnostics["final_priority_count"] == 1
+    assert "DRAFTING_CURRENT_TARGET_INVALID" not in diagnostics["reason_codes"]
+    assert result["priorities"][0]["current_document_drafting"] is None
+    assert "DRAFTING_CURRENT_UNRESOLVED_ROUTE_DROPPED" in (
+        result["manifest"]["repair_actions"]
+    )

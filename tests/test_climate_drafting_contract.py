@@ -116,7 +116,6 @@ def test_repetitive_second_block_is_dropped_without_suppressing_candidate() -> N
     assert repairs == ("DRAFTING_SECOND_BLOCK_REDUNDANT",)
 
 
-
 def test_drafting_normalization_canonicalizes_current_target_and_drops_unverified_optional():
     optional = _draft(
         document="Project Operations Manual",
@@ -576,3 +575,59 @@ def test_unsupported_drafting_number_is_removed_without_suppressing_candidate():
             drafting_context=_context(),
         )
     }
+
+
+def test_unresolved_route_drops_unsafe_current_drafting_without_blocking():
+    context = replace(
+        _context(),
+        instrument_type="Unknown",
+        standard_targets=frozenset(),
+        guidance_targets={},
+    )
+
+    normalized, repairs = normalize_drafting_blocks(
+        _candidate(),
+        current_document="PCN",
+        drafting_context=context,
+    )
+
+    assert normalized.current_document_drafting is None
+    assert "DRAFTING_CURRENT_UNRESOLVED_ROUTE_DROPPED" in repairs
+    issues = validate_recommendation(
+        normalized,
+        KNOWN_IDS,
+        drafting_context=context,
+    )
+    missing = [
+        issue for issue in issues
+        if issue.code == "DRAFTING_CURRENT_MISSING"
+    ]
+    assert len(missing) == 1
+    assert missing[0].blocking is False
+
+
+def test_known_instrument_without_a_valid_target_still_blocks_current_drafting():
+    context = replace(
+        _context(),
+        instrument_type="IPF",
+        standard_targets=frozenset(),
+        guidance_targets={},
+    )
+
+    normalized, repairs = normalize_drafting_blocks(
+        _candidate(),
+        current_document="PCN",
+        drafting_context=context,
+    )
+
+    assert normalized.current_document_drafting is not None
+    assert "DRAFTING_CURRENT_UNRESOLVED_ROUTE_DROPPED" not in repairs
+    issues = validate_recommendation(
+        normalized,
+        KNOWN_IDS,
+        drafting_context=context,
+    )
+    assert any(
+        issue.code == "DRAFTING_CURRENT_TARGET_INVALID" and issue.blocking
+        for issue in issues
+    )

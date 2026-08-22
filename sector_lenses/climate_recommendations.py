@@ -94,6 +94,13 @@ def _draft_tokens(block: DraftingBlock) -> set[str]:
     return set(re.findall(r"\b[a-z]{3,}\b", block.text.casefold()))
 
 
+def _unresolved_drafting_route(context: DraftingValidationContext) -> bool:
+    """Return true only when no safe target exists for an unknown route."""
+
+    instrument = " ".join(str(context.instrument_type or "").casefold().split())
+    return not context.standard_targets and instrument in {"", "unknown"}
+
+
 def _guidance_backed_current_target(
     block: DraftingBlock,
     context: DraftingValidationContext,
@@ -159,6 +166,14 @@ def normalize_drafting_blocks(
             current = replace(current, target_document=current_document)
             candidate = replace(candidate, current_document_drafting=current)
             repairs.append("DRAFTING_CURRENT_TARGET_CANONICALIZED")
+    if (
+        current is not None
+        and drafting_context
+        and _unresolved_drafting_route(drafting_context)
+    ):
+        current = None
+        candidate = replace(candidate, current_document_drafting=None)
+        repairs.append("DRAFTING_CURRENT_UNRESOLVED_ROUTE_DROPPED")
     if current is not None and drafting_context:
         canonical_target = _guidance_backed_current_target(
             current,
@@ -662,6 +677,10 @@ def validate_recommendation(
                 "DRAFTING_CURRENT_MISSING",
                 f"{candidate.recommendation_id} has no current-document drafting.",
                 candidate,
+                blocking=not (
+                    drafting_context
+                    and _unresolved_drafting_route(drafting_context)
+                ),
             )
         )
     if drafting_context and candidate.current_document_drafting:
