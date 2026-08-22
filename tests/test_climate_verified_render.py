@@ -1331,3 +1331,41 @@ def test_guidance_html_is_one_closed_disclosure_and_docx_stays_expanded():
     assert "Where the team can go for more detailed follow-up" in text
     assert "Use this source to identify positive peace outcomes." in text
     assert "For this project, BFMUs can strengthen shared governance." in text
+
+
+
+def test_reader_allows_withheld_drafting_only_for_recorded_unresolved_route():
+    assessment = _assessment()
+    assessment["operation_context"] = {
+        "document_type": "PCN",
+        "instrument_type": "Unknown",
+        "warning_codes": ["INSTRUMENT_ROUTE_UNRESOLVED"],
+    }
+    assessment["manifest"] = {
+        "repair_actions": ["DRAFTING_CURRENT_UNRESOLVED_ROUTE_DROPPED"]
+    }
+    for priority in assessment["priorities"]:
+        priority["current_document_drafting"] = None
+
+    reader = build_reader_model(assessment)
+
+    assert reader["drafting_route_status"] == "withheld_unresolved_instrument"
+    assert "CURRENT_DRAFTING_INCOMPLETE" not in validate_reader_model(reader)
+
+
+def test_reader_still_blocks_missing_drafting_for_known_instrument():
+    assessment = _assessment()
+    assessment["operation_context"] = {
+        "document_type": "PCN",
+        "instrument_type": "IPF",
+        "warning_codes": [],
+    }
+    assessment["manifest"] = {
+        "repair_actions": ["DRAFTING_CURRENT_UNRESOLVED_ROUTE_DROPPED"]
+    }
+    assessment["priorities"][0]["current_document_drafting"] = None
+
+    reader = build_reader_model(assessment)
+
+    assert reader["drafting_route_status"] == "available"
+    assert "CURRENT_DRAFTING_INCOMPLETE" in validate_reader_model(reader)

@@ -600,6 +600,15 @@ def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
             "warning_codes",
         )
     } if raw_operation_context else {}
+    repair_actions = _mapping(assessment.get("manifest")).get(
+        "repair_actions", []
+    )
+    drafting_withheld = (
+        _text(operation_context.get("instrument_type")).casefold()
+        in {"", "unknown"}
+        and isinstance(repair_actions, (list, tuple))
+        and "DRAFTING_CURRENT_UNRESOLVED_ROUTE_DROPPED" in repair_actions
+    )
     reader_priorities = []
     for priority in priorities:
         reader_priority = dict(priority)
@@ -611,6 +620,9 @@ def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
     return _scrub_placeholders({
         "executive_readout": executive,
         "operation_context": operation_context,
+        "drafting_route_status": (
+            "withheld_unresolved_instrument" if drafting_withheld else "available"
+        ),
         "overview_summary": overview_summary,
         "judgments": judgments,
         "climate_sensitivity_rating": climate_sensitivity_rating,
@@ -881,6 +893,13 @@ def validate_reader_model(model: dict[str, object]) -> tuple[str, ...]:
         "minimum_action",
         "confidence",
     )
+    operation_context = _mapping(model.get("operation_context"))
+    drafting_withheld = (
+        _text(model.get("drafting_route_status"))
+        == "withheld_unresolved_instrument"
+        and _text(operation_context.get("instrument_type")).casefold()
+        in {"", "unknown"}
+    )
     drafting_required = (
         "target_document",
         "target_section",
@@ -892,7 +911,9 @@ def validate_reader_model(model: dict[str, object]) -> tuple[str, ...]:
     )
     for priority in priorities:
         current = _mapping(priority.get("current_document_drafting"))
-        if not current or any(key not in current for key in drafting_required):
+        if (
+            not current or any(key not in current for key in drafting_required)
+        ) and not drafting_withheld:
             issues.append("CURRENT_DRAFTING_INCOMPLETE")
         optional_value = priority.get("operational_instrument_drafting")
         if optional_value is not None and not isinstance(optional_value, dict):
