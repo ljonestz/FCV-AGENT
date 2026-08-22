@@ -612,6 +612,37 @@ def test_frontend_declares_shared_summary_state_capability_and_fallback():
     assert "stage3View=supportsAnyStage3Summary()?'summary':'detailed'" in source
 
 
+def test_frontend_rejects_incomplete_saved_readout_and_keeps_fallback_diagnostic():
+    source = open(os.path.join(os.path.dirname(app.__file__), "index.html"), encoding="utf-8").read()
+    supports = _extract_js_function(source, "supportsConciseStage3View")
+    unavailable = _extract_js_function(source, "conciseUnavailableHtml")
+    script = f"""
+let activeLenses=[];
+let stageThreePriorities={json.dumps(_payload()["priorities"])};
+let stageConciseReadout={json.dumps(CONCISE_READOUT)};
+{supports}
+{unavailable}
+for(const field of ['strengths_transition','priorities_transition','closing']){{
+  const missing={{...stageConciseReadout}};
+  delete missing[field];
+  stageConciseReadout=missing;
+  if(supportsConciseStage3View())throw new Error('accepted saved readout missing '+field);
+  stageConciseReadout={{...missing,[field]:'   '}};
+  if(supportsConciseStage3View())throw new Error('accepted saved readout blank '+field);
+  stageConciseReadout={json.dumps(CONCISE_READOUT)};
+}}
+stageConciseReadout=null;
+const fallback=conciseUnavailableHtml();
+for(const expected of ['data-diagnostic="concise_readout_unavailable"','The summary was unavailable for this run; the full analysis is shown.']){{
+  if(!fallback.includes(expected))throw new Error('missing fallback diagnostic '+expected);
+}}
+"""
+    result = subprocess.run(
+        ["node", "-e", script], capture_output=True, text=True, check=False
+    )
+    assert result.returncode == 0, result.stderr
+
+
 def test_frontend_normal_summary_renderer_includes_required_sections():
     source = open(os.path.join(os.path.dirname(app.__file__), "index.html"), encoding="utf-8").read()
     helpers = "\n".join(

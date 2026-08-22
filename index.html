@@ -6406,7 +6406,9 @@ ${body}
   };
 
   function supportsConciseStage3View(){
-    return activeLenses.length===0 && !!stageConciseReadout && stageThreePriorities.length>0 &&
+    const readout=stageConciseReadout&&typeof stageConciseReadout==='object'?stageConciseReadout:null;
+    const hasNarrative=!!(readout&&['strengths_transition','priorities_transition','closing'].every(field=>typeof readout[field]==='string'&&readout[field].trim().length>0));
+    return activeLenses.length===0 && hasNarrative && stageThreePriorities.length>0 &&
       stageThreePriorities.every(priority=>priority&&priority.concise);
   }
 
