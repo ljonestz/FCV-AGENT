@@ -150,6 +150,10 @@ const document = {{
   querySelector(selector) {{ return selector === '.stage3-reading-shell' ? shell : null; }}
 }};
 const supportsAnyStage3Summary = () => true;
+const supportsClimateVerifiedStage3View = () => false;
+const climateSummaryPriorityItems = () => [];
+const climateVerifiedReader = null;
+const stageThreePriorities = [];
 const renderStage3Summary = () => '<p>Summary</p>';
 const renderSummaryPriorityAccordion = () => '';
 const renderPrioritiesIntro = () => {{}};
@@ -275,14 +279,105 @@ if (!html.includes('Second overview paragraph')) throw new Error('summary omitte
 if (html.includes('A fourth positive design feature')) throw new Error('summary exceeded the three-tile cap');
 if (!html.includes('class="concise-strength-text"')) throw new Error('strength explanation lacks readable body element');
 if (!html.includes('id="summary-priority-accordion"')) throw new Error('summary omitted the priority accordion');
-if (!html.includes('How this operation was routed') || !html.includes('Program Paper') || !html.includes('PforR')) throw new Error('summary omitted operation routing');
-if (!html.includes('E&amp;S route') || !html.includes('INSTRUMENT SPECIFIC')) throw new Error('summary omitted E&S routing');
+if (!html.includes('Review context') || !html.includes('Document: Program Paper | Instrument: PforR')) throw new Error('summary omitted labelled compact review context');
+if (!html.includes('<summary>Technical routing details</summary>') || !html.includes('E&amp;S route') || !html.includes('INSTRUMENT SPECIFIC')) throw new Error('summary omitted collapsed technical routing');
+if (html.includes('How this operation was routed')) throw new Error('summary retained the large routing panel');
+if (html.includes('<details class="climate-summary-routing" open')) throw new Error('technical routing should be closed by default');
 """
     result = subprocess.run(
         ["node", "-e", script], capture_output=True, text=True, check=False
     )
     assert result.returncode == 0, result.stderr
 
+
+
+def test_climate_summary_weaves_bridge_count_and_closing_in_order():
+    source = INDEX.read_text(encoding="utf-8")
+    helpers = "\n".join(
+        _extract_js_function(source, name)
+        for name in (
+            "climateSummaryStrengths",
+            "climateSummaryPriorityItems",
+            "renderStage3AdvisoryTransition",
+            "getConcisePriority",
+            "renderSummaryPriorityAccordion",
+            "renderClimateVerifiedSummary",
+        )
+    )
+    script = f"""
+{_js_escape_helper()}
+const reviewMode='design';
+let openSummaryPriority=0;
+{helpers}
+const priorities = Array.from({{length:5}}, (_,index) => ({{
+  rank:index+1,
+  title:index===0?'Priority 1 - Strengthen adaptive delivery':'Action '+(index+1),
+  narrative:'Bounded rationale '+(index+1)+'.',
+  minimum_action:'Complete action '+(index+1)+'.',
+  completion_evidence:'Record evidence '+(index+1)+'.',
+  project_cycle:{{
+    primary_label:'At concept stage', primary_text:'Complete action '+(index+1)+'.',
+    secondary_label:'During preparation', secondary_text:'Record evidence '+(index+1)+'.'
+  }}
+}}));
+const bridge='The overview and strengths lead to five focused operational priorities.';
+const html=renderClimateVerifiedSummary({{
+  executive_readout:'A complete overview.', existing_responses:[], priorities,
+  priority_summary:{{count:5,titles:priorities.map(item=>item.title),statement:bridge}},
+  operation_context:{{document_type:'PCN',instrument_type:'IPF',preparation_regime:'legacy',es_regime:'ESF',is_mpa:false}}
+}});
+const count='Showing the 3 highest-ranked of 5 priorities. See Detailed analysis for all 5.';
+const closing='For supporting evidence, drafting and completion signals behind each priority, continue to Detailed analysis.';
+for (const expected of [bridge,count,closing]) {{
+  if (!html.includes(expected)) throw new Error('missing '+expected+' | '+html);
+}}
+if (!(html.indexOf(bridge) < html.indexOf(count) && html.indexOf(count) < html.indexOf('id="summary-priority-accordion"') && html.indexOf('id="summary-priority-accordion"') < html.indexOf(closing))) {{
+  throw new Error('summary narrative order is incoherent | '+html);
+}}
+if (html.includes('Priority 1 - Strengthen adaptive delivery')) throw new Error('duplicate priority prefix remains');
+if (!html.includes('>Strengthen adaptive delivery<')) throw new Error('normalized priority title missing');
+"""
+    result = subprocess.run(
+        ["node", "-e", script], capture_output=True, text=True, check=False
+    )
+    assert result.returncode == 0, result.stderr
+
+
+def test_climate_summary_keeps_unresolved_warning_visible_and_incomplete_closing_fail_loud():
+    source = INDEX.read_text(encoding="utf-8")
+    helpers = "\n".join(
+        _extract_js_function(source, name)
+        for name in (
+            "climateSummaryStrengths",
+            "climateSummaryPriorityItems",
+            "renderStage3AdvisoryTransition",
+            "getConcisePriority",
+            "renderSummaryPriorityAccordion",
+            "renderClimateVerifiedSummary",
+        )
+    )
+    script = f"""
+{_js_escape_helper()}
+const reviewMode='design';
+let openSummaryPriority=0;
+{helpers}
+const html=renderClimateVerifiedSummary({{
+  executive_readout:'A bounded overview.', priorities:[], existing_responses:[],
+  recommendation_status:'incomplete',
+  recommendation_message:'The recommendation stage could not be completed.',
+  operation_context:{{document_type:'Unknown',instrument_type:'Unknown',preparation_regime:'unresolved',es_regime:'UNRESOLVED',is_mpa:false}}
+}});
+const warning='Operational context could not be resolved safely, so document-targeted guidance was withheld.';
+const closing='Recommendations are incomplete. Review the Detailed analysis and rerun the assessment or contact support before relying on this note.';
+if (!html.includes(warning) || !html.includes(closing)) throw new Error('missing visible fail-loud language | '+html);
+const detailsEnd=html.indexOf('</details>');
+if (!(detailsEnd >= 0 && html.indexOf(warning) > detailsEnd)) throw new Error('unresolved warning is hidden in technical details | '+html);
+if (!html.includes('could not be completed')) throw new Error('recommendation failure was hidden');
+"""
+    result = subprocess.run(
+        ["node", "-e", script], capture_output=True, text=True, check=False
+    )
+    assert result.returncode == 0, result.stderr
 
 def test_incomplete_recommendations_are_fail_loud_in_both_climate_views():
     source = INDEX.read_text(encoding="utf-8")
@@ -365,9 +460,9 @@ if (cards[1].title !== cards[1].text) throw new Error('one-sentence fallback was
 def test_climate_summary_initial_render_hydrates_priority_navigation():
     source = INDEX.read_text(encoding="utf-8")
 
-    assert "if(host)host.innerHTML=renderSummaryPriorityAccordion();" in source
+    assert "if(host)host.innerHTML=renderSummaryPriorityAccordion(summaryPriorities);" in source
     assert "el.style.display=showSummary?'none':''" in source
-    assert "if(supportsClimateVerifiedStage3View())stageThreePriorities=climateSummaryPriorityItems(climateVerifiedReader);" in source
+    assert "if(supportsClimateVerifiedStage3View())stageThreePriorities=Array.isArray(climateVerifiedReader&&climateVerifiedReader.priorities)?climateVerifiedReader.priorities:[];" in source
     assert "if(supportsClimateVerifiedStage3View()&&stageThreePriorities&&stageThreePriorities.length)initStage3UI();" in source
 
 
@@ -394,6 +489,72 @@ if (priorities.map(item => item.title).join('|') !== 'First|Second|Third') {{
     )
     assert result.returncode == 0, result.stderr
 
+
+
+def test_climate_summary_priority_items_copy_canonical_lifecycle_exactly():
+    source = INDEX.read_text(encoding="utf-8")
+    helper = _extract_js_function(source, "climateSummaryPriorityItems")
+    script = f"""
+{helper}
+const cycle={{primary_label:'In the restructuring package',primary_text:'Update the package.',secondary_label:'During implementation',secondary_text:'Track the trigger.'}};
+const item=climateSummaryPriorityItems({{priorities:[{{rank:1,title:'Action',project_cycle:cycle}}]}})[0];
+if (JSON.stringify(item.concise.project_cycle) !== JSON.stringify(cycle)) {{
+  throw new Error('summary lifecycle diverged from canonical reader data: '+JSON.stringify(item.concise.project_cycle));
+}}
+"""
+    result = subprocess.run(
+        ["node", "-e", script], capture_output=True, text=True, check=False
+    )
+    assert result.returncode == 0, result.stderr
+
+
+
+def test_climate_summary_reprojects_during_hydration_and_view_switch():
+    source = INDEX.read_text(encoding="utf-8")
+    for function_name in ("setStage3View", "initStage3UI"):
+        function_source = _extract_js_function(source, function_name)
+        assert (
+            "const summaryPriorities=supportsClimateVerifiedStage3View()?climateSummaryPriorityItems(climateVerifiedReader):stageThreePriorities;"
+            in function_source
+        )
+        assert (
+            "renderSummaryPriorityAccordion(summaryPriorities)" in function_source
+        )
+
+def test_climate_summary_projection_does_not_replace_detailed_priority_state():
+    source = INDEX.read_text(encoding="utf-8")
+    assert (
+        "stageThreePriorities=climateSummaryPriorityItems(climateVerifiedReader);"
+        not in source
+    )
+    assert source.count(
+        "stageThreePriorities=Array.isArray(climateVerifiedReader&&climateVerifiedReader.priorities)?climateVerifiedReader.priorities:[];"
+    ) >= 4
+
+    helpers = "\n".join(
+        _extract_js_function(source, name)
+        for name in ("climateSummaryPriorityItems", "toggleSummaryPriority")
+    )
+    script = f"""
+const raw=Array.from({{length:5}},(_,index)=>({{rank:index+1,title:'Action '+(index+1),project_cycle:{{primary_label:'At concept stage',primary_text:'Act.'}}}}));
+const climateVerifiedReader={{priorities:raw}};
+const stageThreePriorities=raw;
+const supportsClimateVerifiedStage3View=()=>true;
+let openSummaryPriority=0;
+let currentPriority=0;
+let renderedLength=0;
+const renderSummaryPriorityAccordion=items=>{{renderedLength=items.length;return 'rendered';}};
+const host={{innerHTML:''}};
+const document={{getElementById:id=>id==='summary-priority-accordion'?host:null}};
+{helpers}
+toggleSummaryPriority(2);
+if (stageThreePriorities.length !== 5) throw new Error('canonical detailed priorities were truncated');
+if (renderedLength !== 3) throw new Error('summary accordion did not use the three-item projection: '+renderedLength);
+"""
+    result = subprocess.run(
+        ["node", "-e", script], capture_output=True, text=True, check=False
+    )
+    assert result.returncode == 0, result.stderr
 
 def test_climate_summary_truncates_overview_at_a_complete_sentence():
     source = INDEX.read_text(encoding="utf-8")
