@@ -2313,3 +2313,96 @@ if (renderPriorityProjectCycle({{ project_cycle: {{ primary_label:'Only label', 
         ["node", "-e", script], capture_output=True, text=True, check=False
     )
     assert result.returncode == 0, result.stderr
+
+def test_detailed_project_cycle_integrated_renderers_align_order_and_scope():
+    source = INDEX.read_text(encoding="utf-8")
+    helpers = "\n".join(
+        _extract_js_function(source, name)
+        for name in (
+            "md",
+            "renderPriorityProjectCycle",
+            "_buildExportPriorityCard",
+            "showPriority",
+        )
+    )
+    priority = {
+        "title": "Strengthen delivery sequencing",
+        "dimension": "Contextual",
+        "fcv_dimension": "Contextual",
+        "risk_level": "High",
+        "actions": [{
+            "document_element": "Implementation arrangements",
+            "guidance": "Action body",
+            "suggested_language": "Draft action text",
+        }],
+        "implementation_note": "Implementation body",
+        "project_cycle": {
+            "primary_label": "Before appraisal",
+            "primary_text": "Confirm the decision sequence.",
+            "secondary_label": "During implementation",
+            "secondary_text": "Track the agreed sequence.",
+        },
+        "concise": {
+            "project_cycle": {
+                "primary_label": "Legacy concise milestone",
+                "primary_text": "Legacy concise text must not leak.",
+            }
+        },
+    }
+    script = f"""
+const esc = value => String(value ?? '')
+  .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+  .replace(/\"/g,'&quot;').replace(/'/g,'&#039;');
+const renderSRTagBadge = () => '';
+const renderPriorityClimateContribution = () => '';
+const renderPriorityCompliance = () => '<div class="pc-compliance"><span>Compliance text</span></div>';
+const isClimateLensActive = () => false;
+const lensDisplayName = value => value;
+const shiftTooltips = {{}};
+let stageThreePriorities = [{json.dumps(priority)}];
+let stage3View = 'detailed';
+let currentPriority = 0;
+const supportsAnyStage3Summary = () => false;
+const toggleSummaryPriority = () => {{}};
+const updateSidebar = () => {{}};
+const localStorage = {{getItem: () => null, setItem: () => {{}}}};
+const cardArea = {{innerHTML:'', scrollIntoView:() => {{}}}};
+const document = {{getElementById: id => id === 'priority-card-area' ? cardArea : null}};
+{helpers}
+function parentClasses(html, className) {{
+  const stack=[];
+  const parents=[];
+  const tags=/<\\/?([A-Za-z0-9]+)([^>]*)>/g;
+  let match;
+  while ((match=tags.exec(html))) {{
+    const raw=match[0], name=match[1], attrs=match[2]||'';
+    if (raw.startsWith('</')) {{
+      for (let i=stack.length-1;i>=0;i--) {{
+        if (stack[i].name===name) {{ stack.splice(i,1); break; }}
+      }}
+      continue;
+    }}
+    if (attrs.includes('class="'+className+'"')) parents.push(stack.map(item=>item.attrs));
+    if (/\\/\\s*>$/.test(raw) || ['meta','img','br','input','path','circle','line','polyline','polygon'].includes(name)) continue;
+    stack.push({{name,attrs}});
+  }}
+  return parents;
+}}
+function checkOutput(name, html) {{
+  if ((html.match(/class="priority-project-cycle"/g)||[]).length !== 1) throw new Error(name+' lifecycle count');
+  const order=['Action body','Where this fits in the project cycle','Compliance text'];
+  const positions=order.map(value=>html.indexOf(value));
+  if (positions.some(value=>value<0) || positions.some((value,index)=>index>0&&value<=positions[index-1])) throw new Error(name+' lifecycle order '+positions);
+  if (html.includes('Legacy concise')) throw new Error(name+' leaked legacy concise cycle');
+  const parents=parentClasses(html,'priority-project-cycle');
+  if (parents.length!==1 || parents[0].some(attrs=>attrs.includes('pc-zone zone-act'))) throw new Error(name+' lifecycle nested in action zone');
+}}
+const exported = _buildExportPriorityCard(stageThreePriorities[0],0,1);
+checkOutput('export',exported);
+showPriority(0);
+checkOutput('live',cardArea.innerHTML);
+"""
+    result = subprocess.run(
+        ["node", "-e", script], capture_output=True, text=True, check=False
+    )
+    assert result.returncode == 0, result.stderr

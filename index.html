@@ -1028,6 +1028,12 @@
     .zone-act-draft{background:#fffef3;border:1px solid #e8dfa0;border-radius:6px;padding:12px 14px;}
     .zone-act-draft-text{font-style:italic;font-size:13.5px;color:#4a4a4a;line-height:1.7;border-left:3px solid #c8b840;padding-left:10px;margin-top:6px;}
     .zone-act-impl{background:#fafafa;border:1px solid var(--border);border-radius:6px;padding:12px 14px;}
+    /* Project cycle placement */
+    .priority-project-cycle{margin:14px 0 0;padding:14px 22px 0;border-top:1px solid var(--border);color:var(--text);}
+    .priority-project-cycle h4{margin:0 0 7px;color:var(--wbg-navy);font-size:11px;line-height:1.4;font-weight:700;letter-spacing:.06em;text-transform:uppercase;}
+    .priority-project-cycle>div+div{margin-top:12px;}
+    .priority-project-cycle strong{display:block;color:var(--wbg-navy);font-size:13px;}
+    .priority-project-cycle p{margin:3px 0 0;font-size:14px;line-height:1.7;}
     /* Above and beyond <details> */
     .zone-act-beyond{border-top:1px solid var(--border);margin-top:14px;}
     .zone-act-beyond summary{padding:12px 0 4px;cursor:pointer;font-size:13px;font-weight:600;color:#6b21a8;display:flex;align-items:center;gap:7px;list-style:none;user-select:none;}
@@ -6778,14 +6784,15 @@ ${body}
               <div class="zone-act-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> Implementation consideration</div>
               <div class="pc-zone-body">${esc(pr.implementation_note)}</div>
             </div>` : ''}
-            <!-- Climate contribution, or the normal core-only differentiated note -->
-            ${isClimateLensActive() ? renderPriorityClimateContribution(pr) : (pr.country_category_relevance ? `<div class="zone-act-section zone-act-cat-relevance">
-              <div class="zone-act-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> Differentiated approach note</div>
-              <div class="pc-zone-body">${esc(pr.country_category_relevance)}</div>
-            </div>` : '')}
-            ${renderPriorityCompliance(pr)}
-          ${renderPriorityProjectCycle(pr)}
           </div>
+        </div>
+        ${renderPriorityProjectCycle(pr)}
+        <!-- Climate contribution, or the normal core-only differentiated note -->
+        ${isClimateLensActive() ? renderPriorityClimateContribution(pr) : (pr.country_category_relevance ? `<div class="zone-act-section zone-act-cat-relevance">
+          <div class="zone-act-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> Differentiated approach note</div>
+          <div class="pc-zone-body">${esc(pr.country_category_relevance)}</div>
+        </div>` : '')}
+        ${renderPriorityCompliance(pr)}
           <!-- Go Deeper 3-tab section (lazy-loaded on expand) -->
           <details class="go-deeper" id="deeper-details-${idx}" ontoggle="handleDeeperToggle(this,${idx})">
             <summary>
