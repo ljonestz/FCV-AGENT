@@ -883,6 +883,7 @@
 
     /* Stage 3 detailed reading shell and compact rating rail */
     .stage3-reading-shell{display:grid;grid-template-columns:minmax(180px,220px) minmax(0,1fr);gap:24px;align-items:start;margin:0 0 16px}
+.stage3-reading-shell[data-stage3-view="summary"]{grid-template-columns:1fr}
     .stage3-reading-main{min-width:0}
     .stage3-rating-rail{display:flex;flex-direction:column;gap:10px;position:sticky;top:112px;align-self:start}
     .stage3-rating-card{background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px 13px;box-shadow:var(--shadow-sm)}
@@ -6204,19 +6205,19 @@ ${body}
   function stage3OverviewHtml(){
     const normalSensitivityCard = `<article class="stage3-rating-card" data-rating-key="sensitivity">
       <div class="stage3-rating-card-header"><span class="stage3-rating-dimension">FCV Sensitivity</span><span class="stage3-rating-value" id="fcv-rating-label" data-rating-value data-rating-state="pending">Analysing…</span></div>
-      <div class="stage3-rating-bar" role="progressbar" aria-label="FCV Sensitivity rating" aria-valuemin="0" aria-valuemax="6" aria-valuenow="0"><span class="stage3-rating-fill" data-rating-fill></span></div>
+      <div class="stage3-rating-bar" role="progressbar" aria-label="FCV Sensitivity rating" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span class="stage3-rating-fill" data-rating-fill></span></div>
       <p class="stage3-rating-meaning" id="fcv-need-label" data-rating-meaning>Meaning will be shown when the sensitivity rating is available.</p>
       <p class="stage3-rating-description">Is the project aware of and designed for the FCV context?</p>
     </article>`;
     const normalResponsivenessCard = `<article class="stage3-rating-card" data-rating-key="responsiveness">
       <div class="stage3-rating-card-header"><span class="stage3-rating-dimension">FCV Responsiveness</span><span class="stage3-rating-value" id="fcv-resp-rating-label" data-rating-value data-rating-state="pending">Analysing…</span></div>
-      <div class="stage3-rating-bar" role="progressbar" aria-label="FCV Responsiveness rating" aria-valuemin="0" aria-valuemax="6" aria-valuenow="0"><span class="stage3-rating-fill" data-rating-fill></span></div>
+      <div class="stage3-rating-bar" role="progressbar" aria-label="FCV Responsiveness rating" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span class="stage3-rating-fill" data-rating-fill></span></div>
       <p class="stage3-rating-meaning" id="fcv-resp-need-label" data-rating-meaning>Meaning will be shown when the responsiveness rating is available.</p>
       <p class="stage3-rating-description">Does the project actively work to change the FCV situation?</p>
     </article>`;
     const climateCard = `<article class="stage3-rating-card" data-rating-key="climate-integration">
       <div class="stage3-rating-card-header"><span class="stage3-rating-dimension">Climate-FCV integration</span><span class="stage3-rating-value" id="fcv-int-label" data-rating-value data-rating-state="pending">Analysing…</span></div>
-      <div class="stage3-rating-bar" role="progressbar" aria-label="Climate-FCV integration rating" aria-valuemin="0" aria-valuemax="6" aria-valuenow="0"><span class="stage3-rating-fill" data-rating-fill></span></div>
+      <div class="stage3-rating-bar" role="progressbar" aria-label="Climate-FCV integration rating" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span class="stage3-rating-fill" data-rating-fill></span></div>
       <p class="stage3-rating-meaning" id="fcv-int-summary" data-rating-meaning>Opportunities to further strengthen climate and FCV elements.</p>
       <p class="stage3-rating-description">How well the project connects climate resilience and FCV-aware delivery.</p>
     </article>`;
@@ -6432,8 +6433,10 @@ ${body}
     if(current<0||!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;
     event.preventDefault();
     const next=event.key==='Home'?0:event.key==='End'?tabs.length-1:(current+(event.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length;
-    setStage3View(tabs[next].id==='stage3-summary-tab'?'summary':'detailed');
-    tabs[next].focus();
+    const nextId=tabs[next].id;
+    setStage3View(nextId==='stage3-summary-tab'?'summary':'detailed');
+    const nextTab=document.getElementById(nextId);
+    if(nextTab)nextTab.focus();
   }
 
   function setStage3View(view,preservePriority=true){

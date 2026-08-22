@@ -53,6 +53,7 @@ def test_stage3_detailed_reading_shell_uses_compact_sticky_rating_rail():
         r"\.stage3-rating-rail\{[^}]*position:sticky;[^}]*top:",
         normalized,
     )
+    assert '.stage3-reading-shell[data-stage3-view="summary"]{grid-template-columns:1fr}' in normalized
     assert ".stage3-mobile-ratings" in html
     assert "stage3-rating-rail" in html
     assert ".sw-grid{display:grid;grid-template-columns:1fr;" in html
@@ -69,6 +70,39 @@ def test_stage3_reading_shell_switches_rail_visibility_with_the_active_view():
     assert "is-summary" in setter
     assert "is-detailed" in setter
     assert "stage3View=view" in setter
+
+
+def test_stage3_view_keyboard_navigation_refocuses_the_rerendered_tab():
+    source = INDEX.read_text(encoding="utf-8")
+    handler = _extract_js_function(source, "handleStage3ViewKeydown")
+    script = f"""
+let generation = 0;
+let activeId = 'stage3-summary-tab';
+let focusedOld = false;
+let focusedNew = false;
+const oldTabs = [
+  {{id:'stage3-summary-tab', focus:()=>{{focusedOld=true;}}}},
+  {{id:'stage3-detailed-tab', focus:()=>{{focusedOld=true;}}}}
+];
+const newTabs = [
+  {{id:'stage3-summary-tab', focus:()=>{{focusedNew=true;}}}},
+  {{id:'stage3-detailed-tab', focus:()=>{{focusedNew=true;}}}}
+];
+const document = {{
+  get activeElement() {{ return activeId === 'stage3-summary-tab' ? (generation ? newTabs[0] : oldTabs[0]) : (generation ? newTabs[1] : oldTabs[1]); }},
+  querySelectorAll: () => generation ? newTabs : oldTabs,
+  getElementById: id => (generation ? newTabs : oldTabs).find(tab => tab.id === id) || null
+}};
+const setStage3View = view => {{ generation = 1; activeId = view === 'summary' ? 'stage3-summary-tab' : 'stage3-detailed-tab'; }};
+{handler}
+handleStage3ViewKeydown({{key:'ArrowRight', preventDefault:()=>{{}}}});
+if (focusedOld) throw new Error('keyboard navigation focused detached tab');
+if (!focusedNew) throw new Error('keyboard navigation did not focus rerendered tab');
+"""
+    result = subprocess.run(
+        ["node", "-e", script], capture_output=True, text=True, check=False
+    )
+    assert result.returncode == 0, result.stderr
 
 
 def test_climate_opening_uses_relevance_language_and_quiet_provenance():
@@ -1218,6 +1252,7 @@ if (!normal.includes('<details class="stage3-mobile-ratings"')) throw new Error(
 if ((normal.match(/data-rating-key="sensitivity"/g)||[]).length !== 2) throw new Error('sensitivity should render in both modes');
 if ((normal.match(/data-rating-key="responsiveness"/g)||[]).length !== 2) throw new Error('responsiveness should render in both modes');
 if ((normal.match(/class="stage3-rating-bar"/g)||[]).length !== 4) throw new Error('missing slim bars');
+if ((normal.match(/aria-valuemax="100"/g)||[]).length !== 4) throw new Error('normal bars must use percentage max');
 if (!normal.includes('Is the project aware of and designed for the FCV context?')) throw new Error('sensitivity meaning is not textual');
 if (!normal.includes('Does the project actively work to change the FCV situation?')) throw new Error('responsiveness meaning is not textual');
 if (normal.includes('<svg')) throw new Error('normal ratings still render a gauge SVG');
@@ -1225,6 +1260,7 @@ if (normal.includes('<svg')) throw new Error('normal ratings still render a gaug
 climateMode = true;
 const climate = stage3OverviewHtml();
 if ((climate.match(/data-rating-key="climate-integration"/g)||[]).length !== 2) throw new Error('climate integration should render in both modes');
+if ((climate.match(/aria-valuemax="100"/g)||[]).length !== 2) throw new Error('climate bars must use percentage max');
 if (climate.includes('data-rating-key="sensitivity"') || climate.includes('data-rating-key="responsiveness"')) throw new Error('climate lens should use one integration rating');
 if (climate.includes('<svg')) throw new Error('climate rating still renders a gauge SVG');
 """
