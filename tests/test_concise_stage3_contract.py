@@ -992,3 +992,82 @@ def test_mid_cycle_watch_is_cleared_for_non_mid_cycle_document_type():
     result = extract_priorities(_wrapped(payload), document_type="PAD")
 
     assert result["mid_cycle_watch"] == []
+
+
+def test_generic_delivery_overlap_does_not_align_concise_card():
+    payload = _payload()
+    priority = payload["priorities"][1]
+    _add_detailed_actions(priority)
+    priority["the_gap"] = "Delivery remains inconsistent for affected groups."
+    priority["concise"] = {
+        "title": "Improve delivery",
+        "why": "Delivery needs attention.",
+        "how": ["Improve delivery.", "Monitor delivery."],
+        "suggested_wording": {
+            "document_element": "Delivery section",
+            "text": "Delivery will improve.",
+        },
+        "project_cycle": copy.deepcopy(PROJECT_CYCLE),
+    }
+
+    result = extract_priorities(_wrapped(payload))
+
+    assert result["concise_readout"] == CONCISE_READOUT
+    assert result["priorities"][1]["concise"]["title"] == priority["title"]
+
+
+def test_empty_detailed_evidence_cannot_align_concise_card():
+    payload = _payload()
+    priority = payload["priorities"][1]
+    for field in (
+        "title",
+        "the_gap",
+        "why_it_matters",
+        "recommendation",
+        "who_acts",
+        "when",
+        "resources",
+    ):
+        priority[field] = ""
+    priority["actions"] = []
+
+    result = extract_priorities(_wrapped(payload))
+
+    assert result["concise_readout"] is None
+    assert all("concise" not in item for item in result["priorities"])
+
+
+def test_pcn_rejects_primary_implementation_and_next_review_lifecycle():
+    payload = _payload()
+    cycle = {
+        "primary_label": "During implementation",
+        "primary_text": "Monitor delivery during implementation.",
+        "secondary_label": "Next review",
+        "secondary_text": "Reassess the operation at the next review.",
+    }
+    for priority in payload["priorities"]:
+        priority["project_cycle"] = copy.deepcopy(cycle)
+        priority["concise"]["project_cycle"] = copy.deepcopy(cycle)
+
+    result = extract_priorities(_wrapped(payload), document_type="PCN")
+
+    assert all(priority["project_cycle"] is None for priority in result["priorities"])
+    assert result["concise_readout"] is None
+
+
+def test_pcn_accepts_concept_stage_project_approval_wording():
+    payload = _payload()
+    cycle = {
+        "primary_label": "Before appraisal",
+        "primary_text": "Confirm the approved project approach before project approval in the PCN.",
+        "secondary_label": "During preparation",
+        "secondary_text": "Translate the choice into current design arrangements.",
+    }
+    for priority in payload["priorities"]:
+        priority["project_cycle"] = copy.deepcopy(cycle)
+        priority["concise"]["project_cycle"] = copy.deepcopy(cycle)
+
+    result = extract_priorities(_wrapped(payload), document_type="PCN")
+
+    assert all(priority["project_cycle"] == cycle for priority in result["priorities"])
+    assert result["concise_readout"] == CONCISE_READOUT

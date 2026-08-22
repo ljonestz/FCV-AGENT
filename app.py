@@ -12939,12 +12939,28 @@ _ALLOWED_MID_CYCLE_DOCUMENT_TYPES = frozenset({
     "RESTRUCTURING",
     "RESTRUCTURING PAPER",
 })
-_MID_CYCLE_PROJECT_CYCLE_MARKERS = re.compile(
-    r"\bmid[\s-]*cycle\b"
-    r"|\badditional[\s-]+financing\b"
-    r"|\b(?:restructur(?:ing|e|ed)|restructuring\s+paper)\b"
-    r"|\bchange[\s-]+package\b"
-    r"|\bapproved\s+(?:financing|operation|project)\b",
+_DESIGN_PRIMARY_REJECT_MARKERS = re.compile(
+    r"\b(?:"
+    r"during[\s-]+implementation|"
+    r"implementation[\s-]+(?:phase|stage)|"
+    r"during[\s-]+review|"
+    r"next[\s-]+review|"
+    r"next[\s-]+supervision|"
+    r"supervision(?:[\s-]+review)?|"
+    r"mid[\s-]*cycle|"
+    r"change[\s-]+(?:package|request)|"
+    r"additional[\s-]+financing|"
+    r"restructur(?:e|ing|ed)|"
+    r"post[\s-]*approval|"
+    r"after[\s-]+approval|"
+    r"following[\s-]+approval|"
+    r"approved[\s-]+(?:financing|operation)"
+    r")\b",
+    re.IGNORECASE,
+)
+_PRIMARY_REVIEW_LABEL = re.compile(
+    r"^\s*(?:next\s+)?review(?:\s+gate)?\s*$|"
+    r"^\s*supervision(?:\s+review)?\s*$",
     re.IGNORECASE,
 )
 _CONCISE_GROUNDING_STOPWORDS = frozenset({
@@ -12955,7 +12971,11 @@ _CONCISE_GROUNDING_STOPWORDS = frozenset({
     "of", "on", "or", "project", "provide", "review", "should", "stage",
     "that", "the", "their", "this", "to", "use", "will", "with", "would",
     "action", "actions", "address", "addressed", "arrangement",
-    "arrangements", "implementation", "priority", "strengthen",
+    "arrangements", "attention", "change", "changes", "choice", "choices",
+    "define", "deliver", "delivery", "improve", "improving", "implementation",
+    "monitor", "monitoring", "priority", "record", "review", "reviews",
+    "set", "support", "supports", "strengthen", "track", "translate",
+    "work", "working",
 })
 _CONCISE_UNRESOLVED_MARKERS = re.compile(
     r"\b(?:gap|gaps|unresolved|unclear|uncertain|missing|lacks?|limited|"
@@ -12996,18 +13016,15 @@ def _allows_mid_cycle_document_type(document_type: Any) -> bool:
 
 
 def _project_cycle_has_mid_cycle_semantics(value: Any) -> bool:
+    """Reject post-approval lifecycle framing only when it is the primary phase."""
     if not isinstance(value, dict):
         return False
-    cycle_text = " ".join(
-        _clean_concise_string(value.get(field))
-        for field in (
-            "primary_label",
-            "primary_text",
-            "secondary_label",
-            "secondary_text",
-        )
-    )
-    return bool(_MID_CYCLE_PROJECT_CYCLE_MARKERS.search(cycle_text))
+    primary_label = _clean_concise_string(value.get("primary_label"))
+    primary_text = _clean_concise_string(value.get("primary_text"))
+    if _PRIMARY_REVIEW_LABEL.fullmatch(primary_label):
+        return True
+    primary_text_blob = " ".join(part for part in (primary_label, primary_text) if part)
+    return bool(_DESIGN_PRIMARY_REJECT_MARKERS.search(primary_text_blob))
 
 
 def _normalize_project_cycle_for_document(
@@ -13064,9 +13081,6 @@ def _canonical_priority_grounding_text(priority: dict[str, Any]) -> str:
         priority.get("the_gap"),
         priority.get("why_it_matters"),
         priority.get("recommendation"),
-        priority.get("who_acts"),
-        priority.get("when"),
-        priority.get("resources"),
     ]
     actions = priority.get("actions")
     if isinstance(actions, list):
@@ -13078,6 +13092,61 @@ def _canonical_priority_grounding_text(priority: dict[str, Any]) -> str:
                     action.get("suggested_language"),
                 ))
     return " ".join(str(part or "") for part in parts)
+
+
+def _canonical_priority_grounding_groups(
+    priority: dict[str, Any],
+) -> dict[str, list[set[str]]]:
+    groups = {"title": [], "context": [], "action": []}
+    title_tokens = _grounding_tokens(priority.get("title"))
+    if title_tokens:
+        groups["title"].append(title_tokens)
+    for field in ("the_gap", "why_it_matters"):
+        context_tokens = _grounding_tokens(priority.get(field))
+        if context_tokens:
+            groups["context"].append(context_tokens)
+    recommendation_tokens = _grounding_tokens(priority.get("recommendation"))
+    if recommendation_tokens:
+        groups["action"].append(recommendation_tokens)
+    actions = priority.get("actions")
+    if isinstance(actions, list):
+        for action in actions:
+            if not isinstance(action, dict):
+                continue
+            action_text = " ".join(
+                str(action.get(field) or "")
+                for field in ("document_element", "guidance", "suggested_language")
+            )
+            action_tokens = _grounding_tokens(action_text)
+            if action_tokens:
+                groups["action"].append(action_tokens)
+    return groups
+
+
+def _concise_priority_grounding_groups(
+    concise: dict[str, Any],
+) -> dict[str, list[set[str]]]:
+    groups = {"title": [], "context": [], "action": []}
+    title_tokens = _grounding_tokens(concise.get("title"))
+    if title_tokens:
+        groups["title"].append(title_tokens)
+    why_tokens = _grounding_tokens(concise.get("why"))
+    if why_tokens:
+        groups["context"].append(why_tokens)
+    for action in concise.get("how") or []:
+        action_tokens = _grounding_tokens(action)
+        if action_tokens:
+            groups["action"].append(action_tokens)
+    wording = concise.get("suggested_wording")
+    if isinstance(wording, dict):
+        wording_text = " ".join(
+            str(wording.get(field) or "")
+            for field in ("document_element", "text")
+        )
+        wording_tokens = _grounding_tokens(wording_text)
+        if wording_tokens:
+            groups["action"].append(wording_tokens)
+    return groups
 
 
 def _concise_priority_text(concise: dict[str, Any]) -> str:
@@ -13093,19 +13162,22 @@ def _concise_priority_is_aligned(
     priority: dict[str, Any],
     concise: dict[str, Any],
 ) -> bool:
-    """Reject only cards with no substantive canonical anchor or clear contradiction."""
-    canonical_text = _canonical_priority_grounding_text(priority)
-    canonical_tokens = _grounding_tokens(canonical_text)
-    if not canonical_tokens:
-        # There is no evidence-bearing Detailed text against which to test the card.
-        # Preserve legacy behavior; the canonical parser still controls the lifecycle.
-        return True
-    concise_tokens = _grounding_tokens(_concise_priority_text(concise))
-    if not canonical_tokens.intersection(concise_tokens):
+    """Require two substantive anchors within a corresponding Detailed field group."""
+    canonical_groups = _canonical_priority_grounding_groups(priority)
+    concise_groups = _concise_priority_grounding_groups(concise)
+    aligned = any(
+        len(concise_group.intersection(canonical_group)) >= 2
+        for role in ("title", "context", "action")
+        for concise_group in concise_groups[role]
+        for canonical_group in canonical_groups[role]
+    )
+    if not aligned:
         return False
+    canonical_text = _canonical_priority_grounding_text(priority)
+    concise_text = _concise_priority_text(concise)
     return not (
         _CONCISE_UNRESOLVED_MARKERS.search(canonical_text)
-        and _CONCISE_RESOLVED_MARKERS.search(_concise_priority_text(concise))
+        and _CONCISE_RESOLVED_MARKERS.search(concise_text)
     )
 
 
