@@ -28,7 +28,6 @@ docs/superpowers/
 app_feedback/
 .superpowers/
 .claude/
-AGENTS.md
 
 # Internal session documents
 docs/*SESSION_HANDOFF*

@@ -1,7 +1,7 @@
 # Normal FCV Summary Across All Reviews
 
 **Date:** 2026-08-21
-**Status:** Approved for implementation planning
+**Status:** Implemented and live-validated on the target branch
 **Target branch:** `codex/climate-summary-quality-fixes`
 **Baseline:** `08b3cb9`
 
@@ -263,3 +263,31 @@ The feature is complete when:
 5. Detailed analysis and detailed-only downloads remain unchanged.
 6. Missing or invalid summary data safely falls back to Detailed without another model call.
 7. Express, Step-by-Step, review-stage, accessibility, persistence, export, and climate regression tests pass.
+
+## Implementation Record
+
+Implemented on `codex/climate-summary-quality-fixes` through commit `012eaa2`
+on 2026-08-22. The delivered implementation follows this design with two
+reliability refinements established during live testing:
+
+- the core Stage 3 prompt emits the structured JSON before the detailed narrative,
+  reducing omission of the concise bundle on long outputs; and
+- concise data is accepted atomically only when the top-level readout and every
+  ranked priority contain a complete concise object.
+
+Both Render smoke and quality services were live-validated with the official
+Somalia STAIRP Phase 1 concept-stage PID (P513127), an IPF/MPA operation prepared
+in February 2026. Both runs opened Summary by default and rendered three strengths
+and five priorities with only the first expanded. The quality run also verified
+single-open accordion behavior, tab state preservation, the controlled advisory,
+and detailed-only HTML and DOCX exports. Render logs recorded successful responses
+for all three stages and no error-level entries.
+
+Final repository verification after initializing the pinned Climate-FCV bank
+submodule: `1012 passed`. The focused concise/parser set reported `98 passed` when
+run with the two submodule-dependent regression cases.
+
+One generated-content caveat was identified during the quality review: a dated
+Puntland-FGS assertion derived from live research was not substantiated by the
+uploaded PID and should be verified before external use. This is a content-review
+finding, not a Summary contract or rendering failure.

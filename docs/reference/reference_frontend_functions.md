@@ -30,6 +30,12 @@
 - `renderStage1(text, hasPackage)` — display Part A and Part B with styled section badges
 
 ### Stage 3 priorities + Go Deeper
+- `supportsConciseStage3View()` - exposes the normal-FCV Summary only when the normalized readout exists and every ranked priority has a complete concise object
+- `supportsAnyStage3Summary()` - shared capability gate for normal FCV and verified Climate + FCV readers
+- `renderStage3Summary()` - selects the route-specific Summary adapter while keeping the existing detailed Stage 3 HTML available under the adjacent tab
+- `renderNormalFcvSummary()` - renders the headline, 150-200 word overall assessment, sensitivity/responsiveness indicators, exactly three strengths, controlled advisory, and shared priority accordion
+- `renderStage3AdvisoryTransition(route)` - deterministic design/implementation-stage wording; not included in downloaded reports
+- `renderSummaryPriorityAccordion()` / `toggleSummaryPriority(idx)` - render every ranked priority, keep exactly one open, default to the first, update ARIA state, and preserve the selected priority when switching to Detailed analysis
 - `initStage3UI()` — parse priorities from JSON, build stepper, show Priority 1
 - `showPriority(idx)` — render full priority card with zone-act layout from JSON (refresh_shift badge, actions[] loop with per-action guidance + suggested text, implementation note); re-enable Next when navigating back from the last priority; no auto-load of Go Deeper
 - `handleDeeperToggle(detailsEl, idx)` — ontoggle handler for `<details class="go-deeper">`; initialises 2 tab buttons on first open
@@ -209,9 +215,25 @@ Both modes use identical prompts, code paths, and output quality. Express is a f
 - Express recovery never claims to resume a later stage because browser `File` objects cannot survive reload. It preserves valid lens choices, asks for document re-upload, and requires a clean Stage 1 restart.
 - `restartExpressFromStage1()` clears partial outputs and diagnostics while retaining valid in-memory lens choices; `discardExpressRecovery()` also clears the choices
 
+## Shared Stage 3 Summary shell
+
+Normal FCV Stage 3 defaults to Summary only when `supportsConciseStage3View()`
+passes. A malformed or partial concise bundle opens Detailed analysis with a short
+availability notice and does not trigger another model call. Completed Express
+checkpoints persist the concise readout, structured priorities, and both ratings;
+restoration evaluates the same capability gate before selecting a tab. New runs,
+reruns, and reset clear this state atomically.
+
+Summary priority cards use a single-open accordion: Priority 1 opens initially,
+all later cards are collapsed, and opening another card closes the previous one.
+Both route adapters insert the controlled non-mandatory advisory immediately before
+priorities. `downloadReport()` and `downloadHTML()` continue to consume the detailed
+Stage 3 output and detailed priority structures only; Summary prose, advisory copy,
+and accordion markup are excluded.
+
 ---
 
-*Last updated: 2026-08-13 - Verified Climate-FCV operational routing transparency.*
+*Last updated: 2026-08-22 - shared normal-FCV and Climate + FCV Stage 3 Summary behavior.*
 
 ## Verified Climate-FCV reader (v9.35)
 

@@ -20,7 +20,8 @@ POST /api/run-stage
               under_hood: {recs_table, dnh_checklist, questions_map, evidence_trail},
               rating_reasoning, lens_diagnostic, active_lenses[], lens_warnings[],
               parse_error, parse_error_message}
-    Stage 3: {done, output, priorities[], fcv_rating, fcv_responsiveness_rating,
+    Stage 3: {done, output, priorities[], concise_readout,
+              fcv_rating, fcv_responsiveness_rating,
               sensitivity_summary, responsiveness_summary,
               risk_exposure: {risks_to, risks_from},
               parse_error, parse_error_message}
@@ -239,6 +240,23 @@ Each stage re-injects its own fresh background docs into the API call. The histo
 - Step-by-step: `compact_messages = messages[:-1] + [{"role": "user", "content": compact_label}]` before building `updated_messages`
 
 ---
+
+## Normal FCV concise bundle
+
+Core normal-FCV Stage 3 adds optional `concise_readout` and `priority.concise`
+fields. The prompt places the delimited JSON before the detailed narrative;
+`extract_priorities()` remains delimiter-based and does not depend on block position.
+Active sector-lens prompts are not given the core concise schema.
+
+`concise_readout` contains a headline, 150-200 word `overview`, and exactly three
+`{title, text}` strengths. Every ranked priority must carry a complete concise
+object with title, rationale, two to four actions, optional supported drafting, and
+project-cycle guidance. Normalization is atomic: if the readout or any priority
+concise object is incomplete, the parser returns no concise bundle and removes all
+partial priority concise objects while preserving the detailed result.
+
+Both `/api/run-stage` and `/api/run-express` return the normalized optional bundle.
+No repair model call is made when it is unavailable.
 
 ## Priority Parsing — Stage 3 (`extract_priorities()`)
 

@@ -193,6 +193,7 @@ The authoritative OPCS policies, directives, and guidance notes this app's promp
   - Operational-routing follow-up: the verified Climate-only Express path now resolves a typed operation context from the primary document before research planning and country-bank selection. It distinguishes IPF, PforR, and DPF; recognizes Project Paper, Program Paper, Program Document, PCN, PID, and PAD; retains an MPA wrapper only with a separately resolved base instrument; identifies explicit regional/multi-country scope; and records preparation, processing, and E&S routing only where supported. Unknown instrument or document routes fail closed and receive no IPF drafting packet. Guidance registry v3 adds instrument-correct targets for new-model IPF, PforR (ESSA/PAP/DLIs), DPF (prior actions/policy and impact analysis), and the MPA program layer. The resolved context is passed to every verified model stage and shown in detailed, summary, standalone HTML, and DOCX readers. Regional operations continue to withhold the single-country bank. Preparation boundaries are now instrument-specific: IPF/PforR on or after 17 April 2026; DPF on or after 18 April 2026.
   - Operational-routing review fixes: an explicit OIS date overrides document-name regime markers; PforR and DPF recommendation/drafting prose is deterministically blocked when it uses incompatible IPF/PforR instrument terminology; the MPA program layer is prioritized inside the bounded guidance packet; and the five-minute reader now shows the E&S route as well as instrument, document, preparation model, and MPA status.
   Frontend timeout budgets remain Express 15/15/10 minutes and step-by-step 15/10/10 minutes.
+- **v9.39** - Normal-FCV five-minute Summary across all reviews (branch `codex/climate-summary-quality-fixes`, 2026-08-22; design `docs/superpowers/specs/2026-08-21-normal-fcv-summary-all-reviews-design.md`). Core Stage 3 emits optional `concise_readout` plus `concise` on every ranked priority, with JSON-first ordering to reduce trailing structured-block omission. The parser admits the concise bundle atomically and otherwise preserves Detailed with no repair call. Valid normal reviews open Summary by default with a detailed overall assessment, both FCV ratings, exactly three strengths, and all priorities in a single-open accordion. Normal and verified Climate summaries share the controlled non-mandatory advisory. Completed Express recovery persists the complete Summary state; HTML/DOCX remain detailed-only. Live smoke and quality acceptance used Somalia STAIRP Phase 1 (P513127); final repository verification was `1012 passed`. See `docs/20260822_ITS_handover_normal_fcv_summary.md` and `test_documents/live_acceptance/README.md`.
 - **v9.38** - Verified Climate recommendation routing completeness and fail-loud handling (branch `codex/climate-summary-quality-fixes`, 2026-08-14). A Somalia DPF PID exposed a routing hole: the recommendation compiler produced four candidates, but all four were suppressed as invalid current-document targets because the guidance registry covered DPF Program Documents but not DPF PIDs. `climate-guidance-v3` now covers every supported active route: IPF PCN/PID/PAD/Project Paper/AF/Restructuring; PforR PCN/PID/PAD/Program Paper; DPF PCN/PID/PAD/Program Document; and the MPA overlay for each supported base instrument. Unknown document, TA, ISR, and unresolved-instrument routes continue to fail closed. A route-matrix contract test and a Somalia-shaped DPF PID pipeline regression protect against recurrence. If a model emits one or more parsed candidates but every candidate is suppressed, diagnostics now add `RECOMMENDATIONS_ALL_SUPPRESSED`, set `review_status=attention`, and every reader surface displays an explicit incomplete-recommendations warning instead of a neutral or successful zero-priority result. A genuine zero-candidate model response retains the normal zero-priority state.
 - **v9.31** — Em-dash provenance polish (same branch, 2026-08-07): the verified reader's `attach_provenance()` runs AFTER `build_reader_model()`'s `_scrub_placeholders` pass, so model-generated evidence-trail text and the static source descriptions bypassed the dash/placeholder scrub - a live scrape found ~5 residual em/en-dashes there (the earlier mojibake `�` defect was already fixed in v9.28). `attach_provenance()` now runs `_scrub_placeholders` over both `evidence_trail` and `sources` (`sector_lenses/climate_verified_render.py`), normalising em/en dashes to ASCII hyphens on every reader surface (live HTML, shared HTML, DOCX) at once. Additive and non-gating (runs after `validate_reader_model`). `tests/test_climate_evidence_trail.py` (1 new regression test); whole suite 854 passed.
 - **v9.30** — Remaining-updates batch (same branch, 2026-08-06): (A3) recommendation narrative vs suggested-drafting repetition tightened in `climate_verified_prompts.py` - narrative (reasoning), structured fields (breakdown), and drafting (ready-to-use text) are kept as three distinct registers. (C) the `CCDR guidance note` literature entry now links to the canonical FCV-in-CCDRs Approach Note (documents.worldbank.org/.../099021025050037410); the `Conflict-Sensitive Climate Action Compendium` stays `url=None` (no confirmed public title - never fabricate). (A4) **document-integrity scan ported to the general (non-climate) screener** (`app.py`/`index.html`): Stage 1 emits a light `%%%DOC_CHECKS_START/END%%%` block (`{finding, why_it_matters, where}`, max 5, empty if none, document-text-only, the same four defect classes as the climate reader), stripped by `clean_stage1_output()`, parsed by `extract_doc_checks()`, attached on both run routes; the frontend stores `docChecks` and renders a light 'Points to check in the document' collapsible at Stage 3 (general + climate-module paths; the verified reader keeps its own points-to-check). `tests/test_doc_checks.py`; whole suite 853 passed.
@@ -679,6 +680,62 @@ Never run either pass against the ITS/stable service. If a quality run exposes a
 - After the first CodeQL run is stable on `main`, consider adding the CodeQL check as a required status check in branch protection.
 
 ---
+
+### Current branch live-acceptance workflow
+
+Use the standard public fixture at
+`test_documents/live_acceptance/somalia-stairp-p513127-concept-pid-20260207.pdf`.
+Use the dated current handoff for Smoke and Preview service URLs because branch-test
+services can be repointed. Run Smoke first, then Preview quality, and never use the
+ITS/stable service for feature acceptance. Verify branch and deployed SHA each time.
+
+Before upload, verify the service is connected to the intended branch and that the
+live deploy SHA matches the local/remote branch head. Wake the service and wait for
+stable upload controls after cold start. During long manual gaps, keep a separate
+service page or browser context active and refresh it periodically; the August 2026
+preview services were observed heading toward dormancy after roughly eight idle
+minutes even though the assessment itself may take fifteen minutes or more.
+
+Use one complete document for both runs. Capture the `assessment_id`, Summary
+screenshot, Detailed browser HTML, standalone detailed HTML, DOCX, and raw stage
+responses. Filter Render logs by assessment ID and verify each stage's HTTP result
+and timestamps. A cold-start navigation race, frontend abort, backend `TimeoutError`,
+413 upload rejection, gateway 502/503, and worker OOM/restart are different failure
+classes and must not be treated as one generic timeout.
+
+### Timeout and build invariants
+
+- Frontend abort budgets must remain strictly greater than backend stage caps; both
+  must remain below the gunicorn/hosting request limit.
+- Do not introduce blocking non-streaming work after a stream goes quiet. Long
+  preprocessing and inter-stage work must emit progress or keepalives.
+- Preserve compact conversation-history labels so Stage 3 does not carry prior full
+  injected prompts.
+- Core Stage 3 structured JSON is emitted before the narrative. Long trailing JSON
+  was omitted stochastically even when visible prose completed.
+- Render builds on this branch must run `python render_build.py` so the pinned
+  Climate-FCV bank submodule is initialized before dependencies are installed.
+- Before local full-suite verification, run `git submodule sync --recursive` and
+  `git submodule update --init --recursive`. Missing bank files produce legitimate
+  `bank_missing` results and should be diagnosed as checkout setup first.
+
+### Summary implementation invariants
+
+- Apply the core concise schema only when no specialist lens is active.
+- Escape literal JSON braces only in templates that still await Python `.format(...)`.
+  Keep normal single braces in schema constants injected afterwards by
+  `_embed_core_concise_stage3_schema()`. Test the final rendered prompt, not only
+  the template source.
+- Admit Summary atomically: readout plus every ranked priority's concise object.
+- Restore readout, priorities, sensitivity rating, and responsiveness rating before
+  applying the Summary capability gate.
+- Keep `downloadReport()` and `downloadHTML()` independent of Summary renderers,
+  advisory copy, and accordion state.
+- Inspect every priority in raw Stage 3 output during live acceptance. A valid top
+  readout with partial concise priorities is a failed Summary bundle.
+- Treat pipeline completeness and analytical grounding as separate quality gates.
+  Dated live-research assertions not supported by the uploaded document must be
+  verified before sharing.
 
 ## 9. Safety & Output Handling
 

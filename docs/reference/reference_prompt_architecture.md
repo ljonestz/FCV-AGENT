@@ -164,7 +164,7 @@ FCV Responsiveness Summary (80–100 words) ← extracted via delimiter, shown a
 Stage badge (e.g., "Recommendations tailored for PCN stage")
 ```
 
-**JSON block format (appended after narrative):**
+**Core normal-FCV JSON block format (emitted before narrative):**
 ```
 %%%JSON_START%%%
 {
@@ -202,6 +202,18 @@ Stage badge (e.g., "Recommendations tailored for PCN stage")
 }
 %%%JSON_END%%%
 ```
+
+The core schema also carries optional `concise_readout` plus a `concise` object on
+every ranked priority. The readout contains a one-sentence headline, a 150-200 word
+overview, and exactly three strengths. Each priority concise object contains a
+plain-language title, project-specific `why`, two to four `how` actions, optional
+supported drafting, and project-cycle guidance.
+
+The concise schema is appended only when no sector lens is active. JSON-first
+ordering reduces trailing-block omission on long Stage 3 generations; the detailed
+Recommendations Note follows and remains authoritative. Concise normalization is
+atomic across the top-level readout and every priority. Invalid concise data is
+removed without invalidating the detailed output or requesting repair generation.
 
 **Field value sets:**
 - `tag`: `[S]` | `[R]` | `[S+R]`

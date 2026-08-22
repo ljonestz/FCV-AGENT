@@ -15,6 +15,16 @@ Both modes produce identical output across three stages:
 2. **Stage 2 — FCV Assessment** — Thematic analysis across FCV dimensions, Do No Harm traffic-light, and detailed Under the Hood panels
 3. **Stage 3 — Recommendations Note** — Structured memo with strategic priorities, actionable guidance, and ready-to-paste project-document language
 
+For normal FCV reviews, every complete concise bundle defaults to **Summary**.
+The first priority is expanded and the remaining priorities are collapsed; opening
+one closes the previously open card. If any required concise field is missing or
+invalid, the app safely opens **Detailed analysis** without making another model
+call. Climate + FCV reviews use the same tab and accordion interaction pattern.
+The on-screen advisory before priorities makes clear that the actions are
+suggestions rather than mandatory requirements and points teams to FCV Country
+Coordinators or relevant Global Practice experts. HTML and DOCX downloads remain
+detailed-only.
+
 ## Optional sector lenses
 
 Users may select up to two specialist lenses before analysis. The production Climate-FCV Lens is manual-only and is never auto-suggested. Once selected, it automatically screens both climate-intent operations and wider development projects, prioritizes adaptation and resilience, and uses deep mitigation analysis only where a clear material pathway exists.
@@ -147,11 +157,14 @@ The app isolates state per browser tab via a per-assessment ID. Express Analysis
 | `background_docs.py` | WBG FCV framework reference constants (knowledge base) |
 | `requirements.txt` | Python dependencies |
 | `Procfile` | Render deployment config |
-| `docs/20260714_ITS_handover_p4r_timeout_patch.md` | Current IPS/ITS handover on PforR timeout and Render-main state |
+| `test_documents/live_acceptance/` | Versioned public documents and provenance notes for repeatable manual Render acceptance checks |
+| `docs/20260822_ITS_handover_normal_fcv_summary.md` | Current ITS handover for the normal-FCV Summary contract, UI, exports, and live acceptance evidence |
+| `docs/20260714_ITS_handover_p4r_timeout_patch.md` | Historical IPS/ITS handover on PforR timeout and Render-main state |
 
 ## Documentation
 
-- `CLAUDE.md` — full developer guide: architecture, prompt design, stage pipeline, design decisions
+- `claude.md` — full developer guide: architecture, prompt design, stage pipeline, design decisions
 - `docs/reference/` — detailed reference docs for prompts, routes, and frontend functions
 - `docs/reference/reference_sector_lenses.md` — sector-lens module and cross-build contract
+- `docs/20260822_ITS_handover_normal_fcv_summary.md` - current handoff for mirroring the Summary feature into the ITS build
 - `docs/fcv-agent-knowledge-architecture.html` — visual overview of how knowledge sources flow through the pipeline

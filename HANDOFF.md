@@ -1,3 +1,12 @@
+# Current handoff
+
+The current branch-level handoff is
+[`docs/20260822_ITS_handover_normal_fcv_summary.md`](docs/20260822_ITS_handover_normal_fcv_summary.md).
+It records the completed normal-FCV Summary implementation, shared climate advisory,
+detailed-only export boundary, live Render acceptance runs, and ITS parity surface.
+
+The remainder of this file is retained as a historical handoff for the earlier Climate-FCV output-redesign work.
+
 # Climate-FCV Module Rework — Session Handoff
 
 **Date:** 2026-07-24
