@@ -395,6 +395,64 @@ def _no_priority_message(model: dict[str, object]) -> str:
     return _text(model.get("recommendation_message")) or NO_RECOMMENDATION_MESSAGE
 
 
+
+_PRIORITY_TITLE_PREFIX = re.compile(
+    r"^\s*Priority\s+\d+\s*(?:[-:.\u00b7\u2013\u2014\u2022]\s*)?",
+    re.IGNORECASE,
+)
+
+
+def _normalize_priority_title(value: object) -> str:
+    original = _text(value)
+    normalized = _PRIORITY_TITLE_PREFIX.sub("", original).strip()
+    return normalized or original
+
+
+def _first_reader_text(*values: object) -> str:
+    for value in values:
+        text = _scrub_placeholder_text(_text(value))
+        if text:
+            return text
+    return ""
+
+
+def _project_cycle_for_operation(
+    operation_context: dict[str, object], priority: dict[str, Any]
+) -> dict[str, str]:
+    document_type = _text(operation_context.get("document_type")).casefold()
+    if document_type in {"pcn", "pid", "concept note", "project concept note"}:
+        primary_label, secondary_label = "At concept stage", "During preparation"
+    elif document_type in {"additional financing", "af"}:
+        primary_label = "In the Additional Financing package"
+        secondary_label = "Before approval"
+    elif document_type == "restructuring":
+        primary_label = "In the restructuring package"
+        secondary_label = "During implementation"
+    elif document_type in {
+        "pad",
+        "project appraisal document",
+        "project paper",
+        "program paper",
+        "program document",
+    }:
+        primary_label = "In the current project document"
+        secondary_label = "Before approval"
+    else:
+        primary_label = "At the current review stage"
+        secondary_label = "Before the next decision point"
+    return {
+        "primary_label": primary_label,
+        "primary_text": _first_reader_text(
+            priority.get("minimum_action"), priority.get("decision")
+        ),
+        "secondary_label": secondary_label,
+        "secondary_text": _first_reader_text(
+            priority.get("completion_evidence"),
+            priority.get("enhanced_action"),
+            priority.get("limitation"),
+        ),
+    }
+
 def _priority_summary(priorities: list[dict[str, Any]]) -> dict[str, object]:
     titles = [_text(item.get("title")) for item in priorities]
     count = len(titles)
@@ -542,6 +600,14 @@ def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
             "warning_codes",
         )
     } if raw_operation_context else {}
+    reader_priorities = []
+    for priority in priorities:
+        reader_priority = dict(priority)
+        reader_priority["title"] = _normalize_priority_title(priority.get("title"))
+        reader_priority["project_cycle"] = _project_cycle_for_operation(
+            operation_context, reader_priority
+        )
+        reader_priorities.append(reader_priority)
     return _scrub_placeholders({
         "executive_readout": executive,
         "operation_context": operation_context,
@@ -550,12 +616,12 @@ def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
         "climate_sensitivity_rating": climate_sensitivity_rating,
         "core_questions": core_questions,
         "existing_responses": existing_responses,
-        "priorities": [dict(item) for item in priorities],
+        "priorities": reader_priorities,
         "recommendation_status": recommendation_status,
         "recommendation_message": recommendation_message,
         "review_readiness_flags": [dict(item) for item in flags],
         "minor_climate_points": minor_climate_points,
-        "priority_summary": _priority_summary(priorities),
+        "priority_summary": _priority_summary(reader_priorities),
         "evidence_status": _text(assessment.get("evidence_status")) or "approved",
         "technical_annex": {
             "run_id": _text(assessment.get("run_id")),
@@ -895,6 +961,30 @@ def _drafting_html(label: str, value: object) -> str:
     return "".join(parts)
 
 
+
+def _project_cycle_html(value: object) -> str:
+    cycle = _mapping(value)
+    primary_label = _text(cycle.get("primary_label"))
+    primary_text = _text(cycle.get("primary_text"))
+    if not primary_label or not primary_text:
+        return ""
+    parts = ['<section class="climate-project-cycle">']
+    parts.append(_heading(4, "Where this fits in the project cycle"))
+    parts.append(
+        f"<p><strong>{html.escape(primary_label)}:</strong> "
+        f"{html.escape(primary_text)}</p>"
+    )
+    secondary_label = _text(cycle.get("secondary_label"))
+    secondary_text = _text(cycle.get("secondary_text"))
+    if secondary_label and secondary_text:
+        parts.append(
+            f"<p><strong>{html.escape(secondary_label)}:</strong> "
+            f"{html.escape(secondary_text)}</p>"
+        )
+    parts.append("</section>")
+    return "".join(parts)
+
+
 _RATING_TONE_COLORS = {
     "good": "#1A9850", "mid": "#E8A33D", "low": "#D73027", "unclear": "#9aa4b2",
 }
@@ -1077,6 +1167,7 @@ def render_reader_html(model: dict[str, object]) -> str:
                     "Operational instrument drafting",
                     priority.get("operational_instrument_drafting"),
                 ))
+        parts.append(_project_cycle_html(priority.get("project_cycle")))
         parts.append("</div></details>")
 
     # Secondary points remain visible, prose-led and locally numbered.
@@ -1270,6 +1361,20 @@ def _docx_drafting(document: Document, label: str, value: object) -> None:
     document.add_paragraph(_text(block.get("text")))
 
 
+def _docx_project_cycle(document: Document, value: object) -> None:
+    cycle = _mapping(value)
+    primary_label = _text(cycle.get("primary_label"))
+    primary_text = _text(cycle.get("primary_text"))
+    if not primary_label or not primary_text:
+        return
+    document.add_heading("Where this fits in the project cycle", level=3)
+    _docx_field(document, primary_label, primary_text)
+    secondary_label = _text(cycle.get("secondary_label"))
+    secondary_text = _text(cycle.get("secondary_text"))
+    if secondary_label and secondary_text:
+        _docx_field(document, secondary_label, secondary_text)
+
+
 def write_reader_docx(model: dict[str, object], path: str | Path) -> Path:
     """Write the same reader dictionary to a compact Word document."""
 
@@ -1391,6 +1496,7 @@ def write_reader_docx(model: dict[str, object], path: str | Path) -> Path:
                     document, "Operational instrument drafting",
                     priority.get("operational_instrument_drafting"),
                 )
+        _docx_project_cycle(document, priority.get("project_cycle"))
 
     minor_points = _records(model.get("minor_climate_points"))
     doc_flags = _records(model.get("review_readiness_flags"))

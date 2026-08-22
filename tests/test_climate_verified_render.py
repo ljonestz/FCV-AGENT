@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from io import BytesIO
 
+import pytest
 from docx import Document
 
 from climate_question_bank import CLIMATE_LITERATURE_REFERENCES
@@ -636,6 +637,89 @@ def _assessment() -> dict[str, object]:
     }
 
 
+
+@pytest.mark.parametrize(
+    ("document_type", "primary_label", "secondary_label"),
+    [
+        ("PCN", "At concept stage", "During preparation"),
+        ("PAD", "In the current project document", "Before approval"),
+        ("Project Paper", "In the current project document", "Before approval"),
+        ("Program Paper", "In the current project document", "Before approval"),
+        ("Program Document", "In the current project document", "Before approval"),
+        ("Additional Financing", "In the Additional Financing package", "Before approval"),
+        ("AF", "In the Additional Financing package", "Before approval"),
+        ("Restructuring", "In the restructuring package", "During implementation"),
+        ("Unknown", "At the current review stage", "Before the next decision point"),
+    ],
+)
+def test_reader_priorities_receive_context_aware_canonical_project_cycle(
+    document_type: str,
+    primary_label: str,
+    secondary_label: str,
+):
+    assessment = _assessment()
+    assessment["operation_context"] = {"document_type": document_type}
+
+    model = build_reader_model(assessment)
+
+    for priority in model["priorities"]:
+        assert priority["project_cycle"] == {
+            "primary_label": primary_label,
+            "primary_text": "Complete the proportionate minimum action.",
+            "secondary_label": secondary_label,
+            "secondary_text": "Updated project section",
+        }
+
+
+def test_reader_project_cycle_uses_bounded_existing_field_fallbacks():
+    assessment = _assessment()
+    assessment["operation_context"] = {"document_type": "PCN"}
+    priority = assessment["priorities"][0]
+    priority["minimum_action"] = ""
+    priority["completion_evidence"] = ""
+    priority["enhanced_action"] = "Add the enhanced safeguard."
+
+    cycle = build_reader_model(assessment)["priorities"][0]["project_cycle"]
+
+    assert cycle["primary_text"] == "Make a documented design decision."
+    assert cycle["secondary_text"] == "Add the enhanced safeguard."
+
+
+
+def test_reader_project_cycle_skips_placeholder_only_fallback_candidates():
+    assessment = _assessment()
+    assessment["operation_context"] = {"document_type": "PCN"}
+    priority = assessment["priorities"][0]
+    priority["completion_evidence"] = "[TBD]"
+    priority["enhanced_action"] = "Add the verified enhanced safeguard."
+
+    cycle = build_reader_model(assessment)["priorities"][0]["project_cycle"]
+
+    assert cycle["secondary_text"] == "Add the verified enhanced safeguard."
+
+
+@pytest.mark.parametrize("separator", ["-", ":", ".", "\u00b7", "\u2013", "\u2014", "\u2022"])
+def test_reader_normalizes_priority_title_prefixes_and_summary_titles(separator: str):
+    assessment = _assessment()
+    assessment["priorities"][0]["title"] = (
+        f"Priority 2 {separator} Strengthen adaptive delivery"
+    )
+
+    model = build_reader_model(assessment)
+
+    assert model["priorities"][0]["title"] == "Strengthen adaptive delivery"
+    assert model["priority_summary"]["titles"][0] == "Strengthen adaptive delivery"
+
+
+def test_reader_preserves_rank_only_priority_title():
+    assessment = _assessment()
+    assessment["priorities"][0]["title"] = "Priority 2"
+
+    model = build_reader_model(assessment)
+
+    assert model["priorities"][0]["title"] == "Priority 2"
+    assert model["priority_summary"]["titles"][0] == "Priority 2"
+
 def test_reader_has_four_dimensions_priority_cap_and_safe_annex():
     model = build_reader_model(_assessment())
 
@@ -825,6 +909,29 @@ def test_html_and_docx_share_headings_and_priority_order():
         "Operational instrument drafting"
     )
 
+
+
+
+def test_html_and_docx_render_canonical_project_cycle_after_actions():
+    assessment = _assessment()
+    assessment["operation_context"] = {"document_type": "PCN"}
+    model = build_reader_model(assessment)
+
+    html = render_reader_html(model)
+    output = BytesIO()
+    write_reader_docx(model, output)
+    output.seek(0)
+    document_text = "\n".join(
+        paragraph.text for paragraph in Document(output).paragraphs
+    )
+
+    for rendered in (html, document_text):
+        assert "Where this fits in the project cycle" in rendered
+        assert "At concept stage" in rendered
+        assert "During preparation" in rendered
+        assert rendered.index("Minimum action") < rendered.index(
+            "Where this fits in the project cycle"
+        )
 
 def _reader_with_balanced_hierarchy_content() -> dict[str, object]:
     assessment = _assessment()
