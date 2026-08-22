@@ -12940,35 +12940,39 @@ _ALLOWED_MID_CYCLE_DOCUMENT_TYPES = frozenset({
     "RESTRUCTURING PAPER",
 })
 _DESIGN_PRIMARY_REJECT_MARKERS = re.compile(
-    r"\b(?:"
-    r"during[\s-]+implementation|"
-    r"implementation[\s-]+(?:phase|stage)|"
-    r"during[\s-]+review|"
-    r"next[\s-]+review|"
-    r"next[\s-]+supervision|"
-    r"supervision(?:[\s-]+review)?|"
-    r"mid[\s-]*cycle|"
-    r"change[\s-]+(?:package|request)|"
-    r"additional[\s-]+financing|"
-    r"restructur(?:e|ing|ed)|"
+    r"^\s*(?:"
+    r"(?:during|after)\s+implementation(?:\s+(?:stage|phase))?|"
+    r"implementation\s+(?:stage|phase)|"
+    r"next\s+review(?:\s+gate)?|"
+    r"(?:during|next|at)?\s*supervision(?:\s+review)?|"
+    r"(?:during|at)?\s*mid[\s-]*cycle(?:\s+review)?|"
+    r"restructur(?:e|ing|ed)(?:\s+paper)?|"
+    r"additional\s+financing|"
+    r"change\s+package|"
+    r"(?:at|after)?\s*completion|"
+    r"after\s+launch|"
     r"post[\s-]*approval|"
-    r"after[\s-]+approval|"
-    r"following[\s-]+approval|"
-    r"approved[\s-]+(?:financing|operation)"
-    r")\b",
+    r"after(?:\s+board)?\s+approval|"
+    r"approved\s+(?:financing|operation)"
+    r")\s*$",
     re.IGNORECASE,
 )
 _DESIGN_PRIMARY_ALLOW_MARKERS = re.compile(
-    r"\b(?:"
-    r"(?:at|before|prior[\s-]+to)\s+(?:the\s+)?(?:concept|preparation|appraisal|"
-    r"decision|approval|board|project\s+approval|finali[sz]ation)|"
-    r"during\s+preparation|"
-    r"(?:concept|preparation|appraisal|decision|approval|board|finali[sz]ation)"
-    r"\s+(?:stage|phase|gate)|"
-    r"current\s+(?:document|design|instrument)|"
+    r"^\s*(?:"
+    r"(?:at|during|before)?\s*(?:the\s+)?concept\s+(?:stage|phase|gate)|"
+    r"(?:at|during)?\s*design\s+(?:stage|phase)|"
+    r"(?:at|during|before)?\s*(?:project\s+)?preparation(?:\s+(?:stage|phase))?|"
+    r"(?:before|at)\s+appraisal(?:\s+(?:stage|phase|gate))?|"
+    r"appraisal\s+(?:stage|phase|gate)|"
+    r"(?:before|at)?\s*review\s+gate|"
+    r"(?:at|before)?\s*(?:decision|board)(?:\s+(?:stage|phase|gate))?|"
+    r"(?:at|before)?\s*(?:project\s+)?approval(?:\s+(?:stage|phase|gate))?|"
+    r"(?:at|before)\s+finali[sz]ation|"
+    r"finali[sz]ation(?:\s+(?:stage|phase|gate))?|"
+    r"current\s+(?:design|document)|"
     r"(?:in|for)\s+the\s+(?:pcn|pid|pad)|"
-    r"(?:pcn|pid|pad)\s+(?:stage|phase|document)"
-    r")\b",
+    r"(?:pcn|pid|pad)\s+(?:stage|document)"
+    r")\s*$",
     re.IGNORECASE,
 )
 _PRIMARY_REVIEW_LABEL = re.compile(
@@ -13029,17 +13033,15 @@ def _allows_mid_cycle_document_type(document_type: Any) -> bool:
 
 
 def _project_cycle_has_mid_cycle_semantics(value: Any) -> bool:
-    """Return true when a non-mid-cycle primary phase is not design-stage framed."""
+    """Classify only the primary lifecycle label; unknown labels fail closed."""
     if not isinstance(value, dict):
         return False
     primary_label = _clean_concise_string(value.get("primary_label"))
-    primary_text = _clean_concise_string(value.get("primary_text"))
     if _PRIMARY_REVIEW_LABEL.fullmatch(primary_label):
         return True
-    primary_text_blob = " ".join(part for part in (primary_label, primary_text) if part)
-    if _DESIGN_PRIMARY_REJECT_MARKERS.search(primary_text_blob):
+    if _DESIGN_PRIMARY_REJECT_MARKERS.fullmatch(primary_label):
         return True
-    return not _DESIGN_PRIMARY_ALLOW_MARKERS.search(primary_text_blob)
+    return not _DESIGN_PRIMARY_ALLOW_MARKERS.fullmatch(primary_label)
 
 
 def _normalize_project_cycle_for_document(

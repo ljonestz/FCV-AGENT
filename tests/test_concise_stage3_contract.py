@@ -1089,3 +1089,68 @@ def test_pcn_rejects_unclassified_post_design_primary_phase():
 
     assert all(priority["project_cycle"] is None for priority in result["priorities"])
     assert result["concise_readout"] is None
+
+
+@pytest.mark.parametrize(
+    ("primary_label", "primary_text", "secondary_label", "expected_valid"),
+    [
+        (
+            "At concept stage",
+            "Later supervision and the next review are mentioned only as follow-on context.",
+            "",
+            True,
+        ),
+        (
+            "At completion",
+            "Use the current document framing for the design decision.",
+            "",
+            False,
+        ),
+        (
+            "After board approval",
+            "The concept-stage record is still the current design.",
+            "",
+            False,
+        ),
+        (
+            "At concept stage",
+            "Keep the primary concept decision in view.",
+            "After launch",
+            True,
+        ),
+        (
+            "Project preparation",
+            "The project preparation phase records the design choice.",
+            "",
+            True,
+        ),
+        (
+            "Unclassified phase",
+            "At concept stage, confirm the design choice.",
+            "",
+            False,
+        ),
+    ],
+)
+def test_primary_lifecycle_classification_uses_label_only(
+    primary_label, primary_text, secondary_label, expected_valid
+):
+    payload = _payload()
+    cycle = {
+        "primary_label": primary_label,
+        "primary_text": primary_text,
+        "secondary_label": secondary_label,
+        "secondary_text": "Follow-on implementation detail." if secondary_label else "",
+    }
+    for priority in payload["priorities"]:
+        priority["project_cycle"] = copy.deepcopy(cycle)
+        priority["concise"]["project_cycle"] = copy.deepcopy(cycle)
+
+    result = extract_priorities(_wrapped(payload), document_type="PCN")
+
+    if expected_valid:
+        assert all(priority["project_cycle"] == cycle for priority in result["priorities"])
+        assert result["concise_readout"] == CONCISE_READOUT
+    else:
+        assert all(priority["project_cycle"] is None for priority in result["priorities"])
+        assert result["concise_readout"] is None
