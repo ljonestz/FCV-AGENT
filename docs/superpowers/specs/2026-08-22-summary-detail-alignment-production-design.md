@@ -1,7 +1,7 @@
 # Summary–Detailed Alignment and Production UX Design
 
-**Date:** 2026-08-22  
-**Branch:** `codex/climate-summary-quality-fixes`  
+**Date:** 2026-08-22
+**Branch:** `codex/climate-summary-quality-fixes`
 **Status:** Approved design; implementation not yet started
 
 ## Purpose
@@ -188,4 +188,3 @@ The design is complete when:
 - Replacing the complete Recommendations Note visual language.
 - Introducing new external evidence sources or retrieval infrastructure.
 - Changing the number of strengths or the approved one-at-a-time Summary interaction unless testing reveals a blocking accessibility issue.
-

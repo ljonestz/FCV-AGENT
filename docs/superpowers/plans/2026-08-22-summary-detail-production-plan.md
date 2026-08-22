@@ -229,5 +229,3 @@ git status --short
 - [ ] Use `Share .html` to download the comprehensive Detailed export. Copy it to the active visualization folder under the descriptive filename, open it offline, and verify canonical lifecycle blocks, no local filesystem paths, no credentials, and no required external assets.
 
 - [ ] Open every screenshot and the offline HTML. Compare at least two priority titles, actions, and milestones across Summary, browser Detailed, and standalone HTML. Report analytical caveats separately from structural pass/fail results.
-
-
