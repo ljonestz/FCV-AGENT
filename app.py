@@ -6187,6 +6187,21 @@ def _clean_concise_string(value: Any) -> str:
     return value.strip() if isinstance(value, str) else ""
 
 
+_CONCISE_PRIORITY_TITLE_PREFIX = re.compile(
+    r"^\s*priority\s+\d+\s*[-:.\u00b7\u2013\u2014]\s*",
+    re.IGNORECASE,
+)
+
+
+def _normalize_concise_title(value: Any) -> str:
+    """Strip a leading display rank without allowing the title to become empty."""
+    title = _clean_concise_string(value)
+    if not title:
+        return ""
+    stripped = _CONCISE_PRIORITY_TITLE_PREFIX.sub("", title, count=1).strip()
+    return stripped or title
+
+
 def _normalize_concise_readout(value: Any) -> dict[str, Any] | None:
     """Validate and normalize the top-level concise FCV readout."""
     if not isinstance(value, dict):
@@ -6258,7 +6273,7 @@ def _normalize_concise_priority(value: Any) -> dict[str, Any] | None:
     if not isinstance(value, dict):
         return None
 
-    title = _clean_concise_string(value.get("title"))
+    title = _normalize_concise_title(value.get("title"))
     why = _clean_concise_string(value.get("why"))
     how_raw = value.get("how")
     if not isinstance(how_raw, list) or not 2 <= len(how_raw) <= 4:
@@ -6298,7 +6313,7 @@ def _fallback_concise_priority(priority: dict[str, Any]) -> dict[str, Any] | Non
     if not isinstance(project_cycle, dict):
         return None
 
-    title = _clean_concise_string(priority.get("title"))
+    title = _normalize_concise_title(priority.get("title"))
     why = _clean_concise_string(priority.get("why_it_matters")) or _clean_concise_string(
         priority.get("the_gap")
     )

@@ -129,7 +129,7 @@ def test_missing_one_priority_concise_uses_deterministic_detail_fallback():
     assert result["error"] is False
     assert result["concise_readout"] == CONCISE_READOUT
     fallback = result["priorities"][1]["concise"]
-    assert fallback["title"] == payload["priorities"][1]["title"]
+    assert fallback["title"] == app._normalize_concise_title(payload["priorities"][1]["title"])
     assert fallback["why"] == payload["priorities"][1]["why_it_matters"]
     assert fallback["how"] == [
         "Name the access trigger in the PCN.",
@@ -897,7 +897,7 @@ def test_semantically_ungrounded_concise_card_uses_deterministic_detail_fallback
 
     assert result["concise_readout"] == CONCISE_READOUT
     fallback = result["priorities"][1]["concise"]
-    assert fallback["title"] == priority["title"]
+    assert fallback["title"] == app._normalize_concise_title(priority["title"])
     assert fallback["how"] == [
         "Name the access trigger in the PCN.",
         "Assign the response owner for Bentiu.",
@@ -922,7 +922,7 @@ def test_semantically_contradictory_concise_card_uses_deterministic_detail_fallb
     result = extract_priorities(_wrapped(payload))
 
     assert result["concise_readout"] == CONCISE_READOUT
-    assert result["priorities"][1]["concise"]["title"] == priority["title"]
+    assert result["priorities"][1]["concise"]["title"] == app._normalize_concise_title(priority["title"])
 
 
 def test_legitimate_concise_paraphrase_is_preserved():
@@ -1013,7 +1013,7 @@ def test_generic_delivery_overlap_does_not_align_concise_card():
     result = extract_priorities(_wrapped(payload))
 
     assert result["concise_readout"] == CONCISE_READOUT
-    assert result["priorities"][1]["concise"]["title"] == priority["title"]
+    assert result["priorities"][1]["concise"]["title"] == app._normalize_concise_title(priority["title"])
 
 
 def test_empty_detailed_evidence_cannot_align_concise_card():
@@ -1215,3 +1215,30 @@ def test_production_lifecycle_primary_labels_align_with_contract(
 
     assert all(priority["project_cycle"] == cycle for priority in result["priorities"])
     assert result["concise_readout"] == CONCISE_READOUT
+
+
+def test_model_concise_title_strips_rank_prefix_without_touching_detailed_title():
+    payload = _payload()
+    detailed_title = payload["priorities"][0]["title"]
+    payload["priorities"][0]["concise"]["title"] = "Priority 3 – Define access triggers"
+
+    result = extract_priorities(_wrapped(payload))
+
+    assert result["concise_readout"] == CONCISE_READOUT
+    assert result["priorities"][0]["concise"]["title"] == "Define access triggers"
+    assert result["priorities"][0]["title"] == detailed_title
+    assert app._normalize_concise_title("Priority 3 —") == "Priority 3 —"
+
+
+def test_fallback_concise_title_strips_unicode_rank_prefix_without_touching_detailed_title():
+    payload = _payload()
+    priority = payload["priorities"][1]
+    _add_detailed_actions(priority)
+    priority.pop("concise")
+    priority["title"] = "Priority 3 — Access in Bentiu"
+
+    result = extract_priorities(_wrapped(payload))
+
+    assert result["concise_readout"] == CONCISE_READOUT
+    assert result["priorities"][1]["concise"]["title"] == "Access in Bentiu"
+    assert result["priorities"][1]["title"] == "Priority 3 — Access in Bentiu"
