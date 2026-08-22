@@ -3157,6 +3157,10 @@
   // Always reset to design review — implementation review is not yet live
   localStorage.removeItem('fcv_review_mode');
 
+  function isRestorableExpressStage3Output(value){
+    return typeof value==='string' && value.trim().length>0;
+  }
+
   // Express recovery: checkpoints cannot restore browser File objects after a reload.
   // Preserve valid lens choices, but require document re-upload and a clean Stage 1 restart.
   (async function(){
@@ -3165,6 +3169,7 @@
       const saved=localStorage.getItem('fcv_express_stageOutputs');
       if(!saved)return;
       const outputs=JSON.parse(saved);
+      const hasSavedStage3Output=!!(outputs&&typeof outputs==='object'&&Object.prototype.hasOwnProperty.call(outputs,'3'));
       const savedLensState=JSON.parse(localStorage.getItem('fcv_express_lensState')||'{}');
       activeLenses=Array.isArray(savedLensState.activeLenses)?savedLensState.activeLenses.slice(0,2):[];
       resolvedLensVersions=savedLensState.lensVersions?{...savedLensState.lensVersions}:{};
@@ -3180,8 +3185,8 @@
       fcvResponsivenessRating=savedLensState.fcvResponsivenessRating||'';
       if(supportsClimateVerifiedStage3View())stageThreePriorities=climateSummaryPriorityItems(climateVerifiedReader);
       stage3View=supportsAnyStage3Summary()?'summary':'detailed';
-      // Restore completed runs only when a supported summary can be reconstructed safely.
-      if(outputs[3]&&supportsAnyStage3Summary()){
+      // Restore any usable Detailed result; Summary is an optional enhancement.
+      if(hasSavedStage3Output&&isRestorableExpressStage3Output(outputs[3])){
         stageOutputs=outputs;
         stageHists=JSON.parse(localStorage.getItem('fcv_express_stageHists')||'{}');
         hist=stageHists[3]||[];curS=3;lensSelectionLocked=true;
@@ -3192,7 +3197,7 @@
         setStepper(4,'done');renderOut(3,outputs[3],false);if(stageThreePriorities.length)initStage3UI();enableClickableStepper();
         return;
       }
-      if(outputs[3]){localStorage.removeItem('fcv_express_stageOutputs');localStorage.removeItem('fcv_express_stageHists');localStorage.removeItem('fcv_express_lensState');return;}
+      if(hasSavedStage3Output){localStorage.removeItem('fcv_express_stageOutputs');localStorage.removeItem('fcv_express_stageHists');localStorage.removeItem('fcv_express_lensState');return;}
       // Partial state: at least Stage 1 exists but Stage 3 does not
       const lastStage=outputs[2]?2:outputs[1]?1:null;
       if(!lastStage)return;

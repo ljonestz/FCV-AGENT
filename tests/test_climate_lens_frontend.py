@@ -2406,3 +2406,22 @@ checkOutput('live',cardArea.innerHTML);
         ["node", "-e", script], capture_output=True, text=True, check=False
     )
     assert result.returncode == 0, result.stderr
+
+
+def test_express_recovery_keeps_valid_detailed_output_when_summary_is_unavailable():
+    source = INDEX.read_text(encoding="utf-8")
+    recovery = source[source.index("const outputs="):source.index("// Partial state:")]
+    assert "function isRestorableExpressStage3Output(" in source
+    assert "const hasSavedStage3Output=" in recovery
+    assert "if(hasSavedStage3Output&&isRestorableExpressStage3Output(outputs[3]))" in recovery
+    assert recovery.index("if(hasSavedStage3Output&&isRestorableExpressStage3Output(outputs[3]))") < recovery.index("if(hasSavedStage3Output){localStorage.removeItem")
+    restorable = _extract_js_function(source, "isRestorableExpressStage3Output")
+    script = f"""
+{restorable}
+if (!isRestorableExpressStage3Output('Completed detailed output')) throw new Error('valid output rejected');
+for (const invalid of ['', '   ', null, 42, {{result:'detailed'}}]) {{
+  if (isRestorableExpressStage3Output(invalid)) throw new Error('invalid output accepted');
+}}
+"""
+    result = subprocess.run(["node", "-e", script], capture_output=True, text=True, check=False)
+    assert result.returncode == 0, result.stderr
