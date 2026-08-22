@@ -14,6 +14,8 @@ import json
 import os
 import sys
 
+import pytest
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
@@ -102,6 +104,42 @@ def test_pcn_rejects_mid_cycle_scope():
         document_type="PCN",
     )
     assert result["priorities"][0]["priority_scope"] is None
+
+
+@pytest.mark.parametrize("document_type", ["PCN", "Unknown"])
+@pytest.mark.parametrize(
+    "raw_scope",
+    ["mid-cycle", "Mid-Cycle", " MID-CYCLE ", "mid cycle", "mid_cycle", "mid - cycle"],
+)
+def test_mid_cycle_scope_variants_rejected_outside_allowed_document_types(
+    document_type, raw_scope
+):
+    from app import extract_priorities
+
+    result = extract_priorities(
+        _make_json_block("Not identified", "Not identified", raw_scope),
+        document_type=document_type,
+    )
+    assert result["priorities"][0]["priority_scope"] is None
+
+
+@pytest.mark.parametrize("document_type", ["AF", "Restructuring"])
+@pytest.mark.parametrize(
+    "raw_scope",
+    ["mid-cycle", "Mid-Cycle", " MID-CYCLE ", "mid cycle", "mid_cycle", "mid - cycle"],
+)
+def test_mid_cycle_scope_variants_canonicalized_for_allowed_document_types(
+    document_type, raw_scope
+):
+    from app import extract_priorities
+
+    result = extract_priorities(
+        _make_json_block("Not identified", "Not identified", raw_scope),
+        document_type=document_type,
+    )
+    assert result["priorities"][0]["priority_scope"] == "mid-cycle"
+
+
 
 
 def test_restructuring_preserves_mid_cycle_scope():

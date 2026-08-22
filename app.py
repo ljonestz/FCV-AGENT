@@ -3003,7 +3003,7 @@ reinterpret timing. The Summary narrative bridges and closing may connect existi
 findings but must not introduce a new fact, action, milestone, date, institution, or
 causal claim.
 
-Add these optional fields without removing or changing detailed fields:
+If you emit `concise_readout`, all fields shown below are required for a valid concise readout; do not omit them or treat them as optional:
 
 "concise_readout": {
   "headline": "One plain-language sentence stating the overall finding",
@@ -6308,16 +6308,18 @@ def _fallback_concise_priority(priority: dict[str, Any]) -> dict[str, Any] | Non
 
     action_rows = [action for action in actions_raw if isinstance(action, dict)]
     how = []
+    guidance_actions = []
     for action in action_rows:
         guidance = _clean_concise_string(action.get("guidance"))
         if guidance:
+            guidance_actions.append(action)
             how.append(guidance)
         if len(how) == 4:
             break
-    if not title or not why or len(how) < 2 or not action_rows:
+    if not title or not why or len(guidance_actions) < 2:
         return None
 
-    first_action = action_rows[0]
+    first_action = guidance_actions[0]
     return {
         "title": title,
         "why": why,
@@ -6486,11 +6488,11 @@ def extract_priorities(
                     pr[_meta_field] = None
             elif _val is not None:
                 pr[_meta_field] = None
-        if (
-            pr.get('priority_scope') == 'mid-cycle'
-            and not _allow_mid_cycle_scope
-        ):
-            pr['priority_scope'] = None
+        _scope_raw = pr.get('priority_scope')
+        if isinstance(_scope_raw, str):
+            _scope_key = re.sub(r'[\s_-]+', '-', _scope_raw.strip().lower())
+            if _scope_key == 'mid-cycle':
+                pr['priority_scope'] = 'mid-cycle' if _allow_mid_cycle_scope else None
 
         raw_lens_ids = pr.get('lens_ids', [])
         if not isinstance(raw_lens_ids, list):
@@ -8568,6 +8570,7 @@ def run_stage():
         user_message = data.get('user_message', '').strip()
         prompt_override = data.get('prompt_override', '').strip()  # session-only override from frontend
         document_type = (data.get('document_type') or analysis_state.doc_type or 'Unknown').strip()
+        stage3_document_type = data.get('doc_type', document_type or 'Unknown')
         review_mode = data.get('review_mode', 'design').strip()  # 'design' or 'implementation'
         is_impl = (review_mode == 'implementation')
         _native_climate_stage2 = (
@@ -8934,7 +8937,7 @@ def run_stage():
 
             # ── DESIGN REVIEW: Stage 3 injection ─────────────────────────────
             elif not is_impl and stage == 3 and not _native_climate_stage3:
-                doc_type = data.get('doc_type', document_type or 'Unknown')
+                doc_type = stage3_document_type
                 stage_config = STAGE_GUIDANCE_MAP.get(doc_type, STAGE_GUIDANCE_MAP.get('Unknown', {}))
                 playbook_phase = stage_config.get('playbook_phase', 'Preparation')
                 if playbook_phase == 'Implementation':
@@ -9168,7 +9171,7 @@ def run_stage():
                 stage_prompt = build_design_stage3_prompt(
                     state=analysis_state,
                     instrument_type=_native_instrument,
-                    document_type=data.get('doc_type', document_type or 'Unknown'),
+                    document_type=stage3_document_type,
                     diagnostic=_native_climate_stage3_diagnostic,
                     regime_header=build_regime_header(
                         _native_regime.get('preparation_regime', 'unresolved_policy_source'),
@@ -9182,7 +9185,7 @@ def run_stage():
             if stage == 3 and not _native_climate_stage3:
                 stage_prompt = append_core_concise_stage3_contract(
                     stage_prompt,
-                    data.get('doc_type', document_type or 'Unknown'),
+                    stage3_document_type,
                     data.get('temporal_context', {}),
                     review_mode,
                     lens_context['active_lenses'],
@@ -9554,7 +9557,7 @@ def run_stage():
                         else lens_context.get('lens_diagnostic', {}),
                         preparation_regime=_s3_regime.get('preparation_regime', 'unresolved_policy_source'),
                         instrument=data.get('instrument_type', '') or '',
-                        document_type=document_type,
+                        document_type=stage3_document_type,
                     )
                     if _native_climate_stage3:
                         parsed = enforce_climate_priority_provenance(

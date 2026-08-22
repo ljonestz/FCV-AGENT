@@ -345,6 +345,12 @@ def test_concise_contract_preserves_detail_and_covers_overall_assessment():
     assert "overrides any earlier instruction" in contract
     assert "number of `concise` objects must equal the number of priority objects" in contract
     assert "Never attach `concise` only to the final priority" in contract
+    assert (
+        "If you emit `concise_readout`, all fields shown below are required"
+        in contract
+    )
+    assert "Add these optional fields" not in contract
+
 
 
 @pytest.mark.parametrize(
@@ -445,6 +451,32 @@ def test_step_by_step_completion_payload_transports_concise_bundle(monkeypatch):
     done = next(event for event in _decode_sse(response) if event.get("done"))
     assert done["concise_readout"] == CONCISE_READOUT
     assert done["priorities"][0]["concise"] == CONCISE_PRIORITY
+
+
+def test_step_by_step_uses_effective_doc_type_for_priority_scope(monkeypatch):
+    payload = _payload()
+    payload["priorities"][0]["priority_scope"] = "mid-cycle"
+    raw = _wrapped(payload)
+
+    def fake_stream(_messages, _max_tokens, _stage, **_kwargs):
+        fake_stream._last_result = raw
+        fake_stream._last_stop_reason = "end_turn"
+        yield 'data: {"chunk": "stage3"}\n\n'
+
+    monkeypatch.setattr(app, "_stream_stage", fake_stream)
+    response = app.app.test_client().post("/api/run-stage", json={
+        "stage": 3,
+        "active_lenses": [],
+        "review_mode": "design",
+        "history": [{"role": "assistant", "content": "Stage 2 analysis."}],
+        "doc_type": "AF",
+        "instrument_type": "IPF",
+        "temporal_context": {},
+        "regime_context": {},
+    })
+
+    done = next(event for event in _decode_sse(response) if event.get("done"))
+    assert done["priorities"][0]["priority_scope"] == "mid-cycle"
 
 
 def test_step_by_step_completion_payload_preserves_detail_on_invalid_bundle(monkeypatch):
@@ -759,6 +791,37 @@ def test_malformed_one_priority_concise_uses_deterministic_detail_fallback():
     assert result["priorities"][1]["concise"]["how"] == [
         "Name the access trigger in the PCN.", "Assign the response owner for Bentiu."
     ]
+
+
+def test_fallback_uses_first_guidance_bearing_action_for_suggested_wording():
+    payload = _payload()
+    priority = payload["priorities"][1]
+    priority["actions"] = [
+        {"document_element": "", "guidance": "", "suggested_language": ""},
+        {
+            "document_element": "PCN",
+            "guidance": "Name the access trigger in the PCN.",
+            "suggested_language": "The PCN will define the access trigger.",
+        },
+        {
+            "document_element": "Implementation arrangements",
+            "guidance": "Assign the response owner for Bentiu.",
+            "suggested_language": "The TTL will record the response owner.",
+        },
+    ]
+    priority["concise"]["how"] = ["Only one action"]
+
+    result = extract_priorities(_wrapped(payload))
+
+    fallback = result["priorities"][1]["concise"]
+    assert fallback["how"] == [
+        "Name the access trigger in the PCN.",
+        "Assign the response owner for Bentiu.",
+    ]
+    assert fallback["suggested_wording"] == {
+        "document_element": "PCN",
+        "text": "The PCN will define the access trigger.",
+    }
 
 
 def test_invalid_canonical_project_cycle_keeps_detailed_but_disables_summary():
