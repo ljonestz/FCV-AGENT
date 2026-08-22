@@ -2432,7 +2432,8 @@ def test_verified_climate_ui_contract_is_ranked_and_multidimensional():
     # references are dropped from the user view entirely.
     assert "Recommendation details" in body
     assert "pc-narr" in body
-    assert "priority_summary" not in body
+    assert "priority_summary" in body
+    assert "prioritySummary.statement" in body
     assert "Evidence key" not in body
     assert "Run diagnostics" not in body
     assert "Evidence status:" not in body
