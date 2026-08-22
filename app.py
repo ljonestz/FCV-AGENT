@@ -12960,6 +12960,9 @@ _DESIGN_PRIMARY_REJECT_MARKERS = re.compile(
 _DESIGN_PRIMARY_ALLOW_MARKERS = re.compile(
     r"^\s*(?:"
     r"(?:at|during|before)?\s*(?:the\s+)?concept\s+(?:stage|phase|gate)|"
+    r"commit\s+in\s+the\s+(?:pcn|pid|pad)|"
+    r"resolve\s+by\s+decision\s+review|"
+    r"(?:resolve\s+)?(?:before|at)\s+(?:the\s+)?review\s+gate|"
     r"(?:at|during)?\s*design\s+(?:stage|phase)|"
     r"(?:at|during|before)?\s*(?:project\s+)?preparation(?:\s+(?:stage|phase))?|"
     r"(?:before|at)\s+appraisal(?:\s+(?:stage|phase|gate))?|"

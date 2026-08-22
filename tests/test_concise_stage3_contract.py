@@ -1154,3 +1154,64 @@ def test_primary_lifecycle_classification_uses_label_only(
     else:
         assert all(priority["project_cycle"] is None for priority in result["priorities"])
         assert result["concise_readout"] is None
+
+
+@pytest.mark.parametrize(
+    ("doc_type", "processing_track", "primary_label", "prompt_label"),
+    [
+        ("PCN", "standard", "Commit in the PCN", "Commit in the PCN"),
+        (
+            "PCN",
+            "consolidated_condensed",
+            "Resolve by Decision Review",
+            "Resolve by Decision Review",
+        ),
+        (
+            "PID",
+            "standard",
+            "Resolve before the review gate",
+            "Resolve before the review gate",
+        ),
+        (
+            "PAD",
+            "standard",
+            "Resolve before the review gate",
+            "Resolve before the review gate",
+        ),
+        (
+            "PID",
+            "standard",
+            "Before the review gate",
+            "Resolve before the review gate",
+        ),
+        (
+            "PAD",
+            "standard",
+            "Before the review gate",
+            "Resolve before the review gate",
+        ),
+    ],
+)
+def test_production_lifecycle_primary_labels_align_with_contract(
+    doc_type, processing_track, primary_label, prompt_label
+):
+    prompt = app.build_concise_lifecycle_context(
+        doc_type, {"processing_track": processing_track}, "design"
+    )
+    assert prompt_label in prompt
+
+    payload = _payload()
+    cycle = {
+        "primary_label": primary_label,
+        "primary_text": "Record the design commitment in the current document.",
+        "secondary_label": "",
+        "secondary_text": "",
+    }
+    for priority in payload["priorities"]:
+        priority["project_cycle"] = copy.deepcopy(cycle)
+        priority["concise"]["project_cycle"] = copy.deepcopy(cycle)
+
+    result = extract_priorities(_wrapped(payload), document_type=doc_type)
+
+    assert all(priority["project_cycle"] == cycle for priority in result["priorities"])
+    assert result["concise_readout"] == CONCISE_READOUT
