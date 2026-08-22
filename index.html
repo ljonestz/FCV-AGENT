@@ -4965,7 +4965,8 @@
       :'No operational priorities were identified in this assessment. Review the core questions and points to check below.';
     const priorities=Array.isArray(r.priorities)?r.priorities.slice().sort((a,b)=>(Number(a.rank)||999)-(Number(b.rank)||999)).slice(0,5):[];
     const priorityNoun=priorities.length===1?'priority':'priorities';
-    const prioritySummaryHtml=priorities.length?`<p class="climate-priority-summary">Drawing on the overview and core climate-FCV questions, the analysis identifies ${priorities.length} main operational ${priorityNoun} for strengthening climate resilience, conflict sensitivity and implementation readiness in this project. These are followed by secondary points to check before the decision meeting and issues to keep under review as preparation advances.</p>`:'';
+    const prioritySummary=r.priority_summary&&typeof r.priority_summary==='object'?r.priority_summary:{};
+    const prioritySummaryHtml=priorities.length?`<p class="climate-priority-summary">${esc(prioritySummary.statement||`Drawing on the overview and core climate-FCV questions, the analysis identifies ${priorities.length} main operational ${priorityNoun} for strengthening climate resilience, conflict sensitivity and implementation readiness in this project. These are followed by secondary points to check before the decision meeting and issues to keep under review as preparation advances.`)}</p>`:'';
     const priorityHtml=priorities.length?priorities.map((priority,index)=>{
       const field=(label,key)=>{
         const raw=priority[key];
@@ -4979,7 +4980,7 @@
       const breakdown=narrativeHtml?primaryFields.map(([label,key])=>field(label,key)).join(''):'';
       const detailHtml=breakdown?`<details class="climate-priority-detail"><summary>Recommendation details</summary><p class="climate-priority-detail-intro">The same recommendation set out field by field - the decision to take, the minimum action, who leads it, and what "done" looks like.</p>${breakdown}</details>`:'';
       const open=index===0?' open':'';
-      return `<details class="climate-priority-card"${open}><summary><h3 class="pc-title"><span class="pc-rank">${esc(priority.rank||index+1)}</span><span class="pc-title-text">${esc(priority.title||'Untitled action')}</span></h3></summary><div class="climate-priority-body">${bodyHtml}${detailHtml}</div></details>`;
+      return `<details class="climate-priority-card"${open}><summary><h3 class="pc-title"><span class="pc-rank">${esc(priority.rank||index+1)}</span><span class="pc-title-text">${esc(priority.title||'Untitled action')}</span></h3></summary><div class="climate-priority-body">${bodyHtml}${detailHtml}${renderPriorityProjectCycle(priority)}</div></details>`;
     }).join(''):`<p>${esc(noPriorityMessage)}</p>`;
     const flags=Array.isArray(r.review_readiness_flags)?r.review_readiness_flags.slice(0,4):[];
     const minorPoints=Array.isArray(r.minor_climate_points)?r.minor_climate_points.slice(0,3):[];

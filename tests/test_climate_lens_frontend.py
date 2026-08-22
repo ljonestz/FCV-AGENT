@@ -591,7 +591,10 @@ if (html.includes('Unfinished-tail-marker')) throw new Error('overview included 
 
 def test_climate_detailed_reader_keeps_rating_above_core_questions_and_plain_method_fold():
     source = INDEX.read_text(encoding="utf-8")
-    renderer = _extract_js_function(source, "renderClimateVerifiedAssessment")
+    renderer = "\n".join((
+        _extract_js_function(source, "renderPriorityProjectCycle"),
+        _extract_js_function(source, "renderClimateVerifiedAssessment"),
+    ))
 
     assert renderer.index("${ratingHtml}") < renderer.index("climateReportSection('Core climate-FCV questions'")
     assert "Method, limitations, and sources" in renderer
@@ -1592,7 +1595,10 @@ if (legacy.bar.attrs['aria-valuenow'] !== '66') throw new Error('legacy climate 
 
 def test_verified_reader_visual_refresh_preserves_depth_and_orders_sections():
     source = INDEX.read_text(encoding="utf-8")
-    renderer = _extract_js_function(source, "renderClimateVerifiedAssessment")
+    renderer = "\n".join((
+        _extract_js_function(source, "renderPriorityProjectCycle"),
+        _extract_js_function(source, "renderClimateVerifiedAssessment"),
+    ))
     url_helper = _extract_js_function(source, "isPublicWorldBankHttpsUrl")
     reader = {
         "operation_context": {
@@ -1774,7 +1780,10 @@ if (JSON.stringify(headings) !== JSON.stringify(expectedHeadings)) {{
 
 def test_verified_reader_fallback_numbers_methodology_last_without_unsafe_values():
     source = INDEX.read_text(encoding="utf-8")
-    renderer = _extract_js_function(source, "renderClimateVerifiedAssessment")
+    renderer = "\n".join((
+        _extract_js_function(source, "renderPriorityProjectCycle"),
+        _extract_js_function(source, "renderClimateVerifiedAssessment"),
+    ))
     reader = {
         "executive_readout": "The project needs a bounded climate-FCV review.",
         "evidence_trail": {
@@ -1984,7 +1993,10 @@ def test_verified_reader_balanced_styles_cover_mobile_print_and_accessibility():
 
 def test_print_expands_every_closed_reader_disclosure_with_its_content():
     source = INDEX.read_text(encoding="utf-8")
-    renderer = _extract_js_function(source, "renderClimateVerifiedAssessment")
+    renderer = "\n".join((
+        _extract_js_function(source, "renderPriorityProjectCycle"),
+        _extract_js_function(source, "renderClimateVerifiedAssessment"),
+    ))
     script = f"""
 {_js_escape_helper()}
 const renderClimateRelevantGuidance = () => '';
@@ -2023,7 +2035,10 @@ for (const expected of [
 
 def test_priority_summary_contains_one_valid_heading_with_rank_inside():
     source = INDEX.read_text(encoding="utf-8")
-    renderer = _extract_js_function(source, "renderClimateVerifiedAssessment")
+    renderer = "\n".join((
+        _extract_js_function(source, "renderPriorityProjectCycle"),
+        _extract_js_function(source, "renderClimateVerifiedAssessment"),
+    ))
     script = f"""
 {_js_escape_helper()}
 const renderClimateRelevantGuidance = () => '';
@@ -2214,7 +2229,10 @@ for (const expected of ['First practical value.','First project use.','One usefu
 
 def test_zero_priority_reader_is_neutral_and_hides_diagnostic_verdicts():
     source = INDEX.read_text(encoding="utf-8")
-    renderer = _extract_js_function(source, "renderClimateVerifiedAssessment")
+    renderer = "\n".join((
+        _extract_js_function(source, "renderPriorityProjectCycle"),
+        _extract_js_function(source, "renderClimateVerifiedAssessment"),
+    ))
     script = f"""
 {_js_escape_helper()}
 const renderClimateRelevantGuidance = () => '';
@@ -2241,7 +2259,10 @@ def test_chromium_print_opens_exported_disclosures_and_restores_screen_state():
     from playwright.sync_api import sync_playwright
 
     source = INDEX.read_text(encoding="utf-8")
-    renderer = _extract_js_function(source, "renderClimateVerifiedAssessment")
+    renderer = "\n".join((
+        _extract_js_function(source, "renderPriorityProjectCycle"),
+        _extract_js_function(source, "renderClimateVerifiedAssessment"),
+    ))
     url_helper = _extract_js_function(source, "isPublicWorldBankHttpsUrl")
     body_script = f"""
 {_js_escape_helper()}
@@ -2586,3 +2607,57 @@ for (const invalid of ['', '   ', null, 42, {{result:'detailed'}}]) {{
 """
     result = subprocess.run(["node", "-e", script], capture_output=True, text=True, check=False)
     assert result.returncode == 0, result.stderr
+
+
+def test_climate_verified_detailed_renderer_uses_canonical_summary_and_project_cycle():
+    source = INDEX.read_text(encoding="utf-8")
+    renderer = "\n".join((
+        _extract_js_function(source, "renderPriorityProjectCycle"),
+        _extract_js_function(source, "renderClimateVerifiedAssessment"),
+    ))
+
+    script = f"""
+{_js_escape_helper()}
+const renderClimateRelevantGuidance = () => '';
+const isPublicWorldBankHttpsUrl = () => true;
+{renderer}
+const html = renderClimateVerifiedAssessment({{
+  executive_readout:'Detailed overview.',
+  priority_summary:{{statement:'Canonical priority bridge.'}},
+  priorities:[{{
+    rank:1,
+    title:'Sequence delivery decisions',
+    narrative:'Action body.',
+    project_cycle:{{
+      primary_label:'At concept stage',
+      primary_text:'Confirm the delivery sequence.',
+      secondary_label:'During preparation',
+      secondary_text:'Record completion evidence.'
+    }}
+  }}]
+}});
+for (const expected of [
+  'Canonical priority bridge.',
+  'Where this fits in the project cycle',
+  'At concept stage',
+  'Confirm the delivery sequence.',
+  'During preparation',
+  'Record completion evidence.'
+]) {{
+  if (!html.includes(expected)) throw new Error('missing '+expected+' | '+html);
+}}
+if ((html.match(/class="priority-project-cycle"/g)||[]).length !== 1) {{
+  throw new Error('canonical project cycle must render exactly once | '+html);
+}}
+"""
+    result = subprocess.run(
+        ["node", "-e", script], capture_output=True, text=True, check=False
+    )
+    assert result.returncode == 0, result.stderr
+
+
+def test_climate_shareable_html_uses_the_full_verified_detailed_renderer():
+    source = INDEX.read_text(encoding="utf-8")
+    exporter = _extract_js_function(source, "downloadHTML")
+
+    assert "const body=renderClimateVerifiedAssessment(climateVerifiedReader);" in exporter
