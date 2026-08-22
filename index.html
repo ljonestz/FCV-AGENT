@@ -5980,6 +5980,7 @@ ${body}
       <div class="pc-zone zone-why"><div class="pc-zone-title">Why it matters</div><div class="pc-zone-body">${esc(pr.why_it_matters||'')}</div></div>
       ${pr.cpf_alignment?`<div class="pc-zone"><div class="pc-zone-title">CPF Alignment</div><div class="pc-zone-body">${esc(pr.cpf_alignment)}</div></div>`:''}
       ${actionsHtml?`<div class="pc-zone zone-act"><div class="pc-zone-title">How to act</div><div class="zone-act-primary"><div class="zone-act-section"><div class="zone-act-label">Essential action${(pr.actions||[]).length>1?'s':''}</div>${actionsHtml}</div>${pr.implementation_note?`<div class="zone-act-section zone-act-impl"><div class="zone-act-label">Implementation consideration</div><div class="pc-zone-body">${esc(pr.implementation_note)}</div></div>`:''}</div></div>`:''}
+      ${renderPriorityProjectCycle(pr)}
       ${isClimateLensActive()?renderPriorityClimateContribution(pr):(pr.country_category_relevance?`<div class="pc-zone"><div class="pc-zone-title">Differentiated approach note</div><div class="pc-zone-body">${esc(pr.country_category_relevance)}</div></div>`:'')}
       ${renderPriorityCompliance(pr)}
     </div>`;
@@ -6783,6 +6784,7 @@ ${body}
               <div class="pc-zone-body">${esc(pr.country_category_relevance)}</div>
             </div>` : '')}
             ${renderPriorityCompliance(pr)}
+          ${renderPriorityProjectCycle(pr)}
           </div>
           <!-- Go Deeper 3-tab section (lazy-loaded on expand) -->
           <details class="go-deeper" id="deeper-details-${idx}" ontoggle="handleDeeperToggle(this,${idx})">
@@ -7543,6 +7545,16 @@ ${body}
     if (modal.style.display !== 'none') setTimeout(runHiwAnimations, 200);
   }
 })();
+  function renderPriorityProjectCycle(priority){
+    const cycle=priority&&priority.project_cycle&&typeof priority.project_cycle==='object'?priority.project_cycle:{};
+    const primaryLabel=typeof cycle.primary_label==='string'?cycle.primary_label.trim():'';
+    const primaryText=typeof cycle.primary_text==='string'?cycle.primary_text.trim():'';
+    if(!primaryLabel||!primaryText)return '';
+    const secondaryLabel=typeof cycle.secondary_label==='string'?cycle.secondary_label.trim():'';
+    const secondaryText=typeof cycle.secondary_text==='string'?cycle.secondary_text.trim():'';
+    const secondary=secondaryLabel&&secondaryText?`<div><strong>${esc(secondaryLabel)}</strong><p>${esc(secondaryText)}</p></div>`:'';
+    return `<section class="priority-project-cycle"><h4>Where this fits in the project cycle</h4><div><strong>${esc(primaryLabel)}</strong><p>${esc(primaryText)}</p></div>${secondary}</section>`;
+  }
 </script>
 </body>
 </html>

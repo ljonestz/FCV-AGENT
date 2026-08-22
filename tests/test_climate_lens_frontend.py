@@ -2261,4 +2261,55 @@ if (JSON.stringify(items).includes('long assessment paragraph')) {{
 def test_print_handler_includes_guidance_disclosure_state():
     source = INDEX.read_text(encoding="utf-8")
     handler = _extract_js_function(source, "installClimatePrintDisclosureHandler")
+
     assert "details.climate-guidance-disclosure" in handler
+
+def test_detailed_priority_project_cycle_uses_one_escaped_canonical_renderer():
+    source = INDEX.read_text(encoding="utf-8")
+    renderer = _extract_js_function(source, "renderPriorityProjectCycle")
+    live_helper = _extract_js_function(source, "showPriority")
+    export_helper = _extract_js_function(source, "_buildExportPriorityCard")
+
+    assert "renderPriorityProjectCycle(pr)" in live_helper
+    assert "renderPriorityProjectCycle(pr)" in export_helper
+    assert "priority.concise" not in live_helper
+    assert "priority.concise" not in export_helper
+
+    script = f"""
+const esc = value => String(value ?? '')
+  .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+  .replace(/\"/g,'&quot;').replace(/'/g,'&#039;');
+{renderer}
+const html = renderPriorityProjectCycle({{
+  project_cycle: {{
+    primary_label: 'Before <appraisal>',
+    primary_text: 'Confirm & sequence the design.',
+    secondary_label: 'At "implementation"',
+    secondary_text: "Track the team\'s response."
+  }},
+  concise: {{ project_cycle: {{ primary_label: 'Legacy', primary_text: 'Do not use.' }} }}
+}});
+for (const expected of [
+  'Where this fits in the project cycle',
+  'Before &lt;appraisal&gt;',
+  'Confirm &amp; sequence the design.',
+  'At &quot;implementation&quot;',
+  'Track the team&#039;s response.'
+]) {{
+  if (!html.includes(expected)) throw new Error('missing '+expected+' | '+html);
+}}
+const primaryOnly = renderPriorityProjectCycle({{
+  project_cycle: {{ primary_label:'Before appraisal', primary_text:'Use the current note.' }}
+}});
+if (primaryOnly.includes('Next step') || primaryOnly.includes('Legacy')) throw new Error('secondary fallback leaked');
+if (renderPriorityProjectCycle({{ concise: {{ project_cycle: {{ primary_label:'Legacy', primary_text:'Do not use.' }} }} }}) !== '') {{
+  throw new Error('legacy concise cycle was rendered');
+}}
+if (renderPriorityProjectCycle({{ project_cycle: {{ primary_label:'Only label', primary_text:'' }} }}) !== '') {{
+  throw new Error('invalid canonical cycle was rendered');
+}}
+"""
+    result = subprocess.run(
+        ["node", "-e", script], capture_output=True, text=True, check=False
+    )
+    assert result.returncode == 0, result.stderr

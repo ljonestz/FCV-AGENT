@@ -12517,6 +12517,27 @@ def download_report():
             p.add_run(label).bold = True
             p.add_run(f"{ref['route']} — {ref['reason']}")
 
+    def add_priority_project_cycle(priority):
+        cycle = priority.get('project_cycle')
+        if not isinstance(cycle, dict):
+            return
+        primary_label = cycle.get('primary_label')
+        primary_text = cycle.get('primary_text')
+        primary_label = primary_label.strip() if isinstance(primary_label, str) else ''
+        primary_text = primary_text.strip() if isinstance(primary_text, str) else ''
+        if not primary_label or not primary_text:
+            return
+        _add_section_heading('Where this fits in the project cycle', level=4)
+        _add_single_para(primary_label, bold=True, color=WB_NAVY, space_after=1)
+        _add_single_para(primary_text, space_before=0, space_after=4)
+        secondary_label = cycle.get('secondary_label')
+        secondary_text = cycle.get('secondary_text')
+        secondary_label = secondary_label.strip() if isinstance(secondary_label, str) else ''
+        secondary_text = secondary_text.strip() if isinstance(secondary_text, str) else ''
+        if secondary_label and secondary_text:
+            _add_single_para(secondary_label, bold=True, color=WB_NAVY, space_after=1)
+            _add_single_para(secondary_text, space_before=0, space_after=4)
+
     def add_priority_climate_contribution(priority):
         links = priority.get('climate_links') or {}
         if links.get('status') == 'linked':
@@ -12706,6 +12727,8 @@ def download_report():
 
                 if pr.get('implementation_note'):
                     add_field('Implementation consideration', pr['implementation_note'])
+
+                add_priority_project_cycle(pr)
 
                 # Who/When/Resources footer — single run
                 footer_parts = []
