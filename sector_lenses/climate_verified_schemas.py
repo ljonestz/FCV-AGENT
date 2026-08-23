@@ -8,6 +8,239 @@ authoritative analytical controls.
 from __future__ import annotations
 
 from copy import deepcopy
+import re
+
+
+_SUMMARY_DIMENSION_SIGNALS = {
+    "relevance": ("relevance",),
+    "sensitivity": ("sensitivity",),
+    "responsiveness": ("responsiveness",),
+    "operationalization": ("operationalization", "operationalisation"),
+}
+_SUMMARY_GENERIC_ENTITIES = {"task team", "project team", "implementation team"}
+_SUMMARY_CONNECTIVE_TOKENS = {
+    "however", "therefore", "while", "although", "together", "already",
+    "partly", "largely", "clearly", "still", "broadly", "similarly",
+    "additionally", "but", "yet", "also", "instead", "generally",
+    "often", "typically", "notably", "meanwhile", "despite",
+}
+_SUMMARY_ALLOWED_SINGLE_WORDS = {
+    "the", "this", "overall", "project", "climate", "fcv", "relevance",
+    "sensitivity", "responsiveness", "operationalization", "operationalisation",
+    "assessment", "finding", "practical", "remaining", "four", "first",
+    "second", "third", "verdict", "foundation", "takeaway", "credible",
+    "recognizes", "recognises", "shows", "demonstrates",
+}
+_SUMMARY_ACTION_STEM_RE = re.compile(
+    r"\b(?P<stem>approv|requir|monitor|implement|adopt|ensur|establish|"
+    r"creat|launch|form|appoint|mandat|commit|fund|build|develop|strengthen|"
+    r"revis|updat|integrat|incorporat|designat|allocat|caus|reduc|prevent|lead)"
+    r"[a-z-]*\b",
+    re.IGNORECASE,
+)
+_SUMMARY_ALLOWED_TOKENS = {
+    "climate", "fcv", "project", "design", "risk", "risks", "overall",
+    "takeaway", "credible", "recognizes", "recognises", "interaction",
+    "verdict", "foundation", "assessment", "practical", "implication",
+    "confirm", "confirmed", "check", "checks", "clarify", "clarifies",
+    "review", "reviews", "assess", "assesses", "consider", "considers",
+    "note", "notes", "next", "priorities", "priority", "bridge",
+    "material", "residual", "gap", "gaps", "relevance", "sensitivity",
+    "responsiveness", "operationalization", "operationalisation", "do",
+    "harm", "resilience", "inclusion", "roles", "indicators", "follows",
+    "supports", "sets", "four-dimensional", "climate-fcv", "new", "ranked",
+    "criteria",
+}
+_SUMMARY_STOPWORDS = {
+    "a", "an", "and", "are", "as", "at", "be", "by", "for", "from",
+    "has", "in", "is", "it", "its", "of", "on", "or", "that", "the",
+    "their", "them", "this", "to", "was", "what", "will", "with", "where",
+}
+_SUMMARY_MONTHS = (
+    "january", "february", "march", "april", "may", "june", "july",
+    "august", "september", "october", "november", "december",
+)
+_SUMMARY_WORD_RE = re.compile(r"[A-Za-z][A-Za-z0-9'/-]*")
+_SUMMARY_CAPITALIZED_RE = re.compile(r"\b[A-Z][a-z]{2,}\b")
+_SUMMARY_ACRONYM_RE = re.compile(r"\b[A-Z][A-Z0-9]{1,}\b")
+_SUMMARY_ENTITY_RE = re.compile(
+    r"\b(?:[A-Z][a-z]+(?:[-'][A-Za-z]+)?(?:\s+[A-Z][a-z]+(?:[-'][A-Za-z]+)?)+)\b"
+)
+_SUMMARY_MARKUP_RE = re.compile(
+    r"<[^>]+>|`|\*\*|__|~~|\[[^\]]+\]\([^)]+\)|(?:^|\n)[#>*-]\s+[^\n]*|(?:^|\n)\d+\.\s|(?:^|\s)_[^_]+_|(?:^|\s)\*[^*]+\*"
+)
+
+
+def _summary_strings(value: object):
+    if isinstance(value, str):
+        yield value
+    elif isinstance(value, dict):
+        for item in value.values():
+            yield from _summary_strings(item)
+    elif isinstance(value, (list, tuple, set)):
+        for item in value:
+            yield from _summary_strings(item)
+
+
+def _summary_normalize(value: str) -> str:
+    return re.sub(r"\s+", " ", value.strip())
+
+
+def _summary_sentences(value: str) -> list[str]:
+    return [
+        sentence.strip()
+        for sentence in re.split(r"(?<=[.!?])\s+", _summary_normalize(value))
+        if sentence.strip() and sentence.strip()[-1:] in ".?!"
+    ]
+
+
+def _summary_words(value: str) -> set[str]:
+    return {
+        word.casefold()
+        for word in _SUMMARY_WORD_RE.findall(value)
+        if word.casefold() not in _SUMMARY_STOPWORDS and len(word) >= 3
+    }
+
+
+_SUMMARY_MORPH_SUFFIXES = (
+    ("ation", ""), ("tion", ""), ("sion", ""), ("ment", ""),
+    ("ness", ""), ("ence", ""), ("ing", ""), ("ied", "y"),
+    ("ies", "y"), ("ed", ""), ("es", ""), ("ly", ""),
+    ("ent", ""), ("ive", ""), ("al", ""), ("er", ""), ("s", ""),
+ )
+
+
+def _summary_morphology_supported(word: str, canonical_words: set[str]) -> bool:
+    def forms(value: str) -> set[str]:
+        variants = {value}
+        for suffix, replacement in _SUMMARY_MORPH_SUFFIXES:
+            if value.endswith(suffix) and len(value) - len(suffix) >= 5:
+                variants.add(value[:-len(suffix)] + replacement)
+        return variants
+    return any(
+        forms(word) & forms(candidate)
+        for candidate in canonical_words
+    )
+
+
+def validate_summary_overview(
+    value: object,
+    *,
+    executive_readout: object = "",
+    canonical_text: object = (),
+) -> list[str]:
+    """Admit only a grounded, plain-text two/three-paragraph synthesis."""
+    raw = value.get("paragraphs") if isinstance(value, dict) else None
+    if not isinstance(raw, list) or len(raw) not in {2, 3}:
+        return []
+    if any(not isinstance(item, str) or not item.strip() for item in raw):
+        return []
+    if any(_SUMMARY_MARKUP_RE.search(item) for item in raw):
+        return []
+    paragraphs = [_summary_normalize(item) for item in raw]
+    if not 160 <= sum(len(item.split()) for item in paragraphs) <= 230:
+        return []
+    if any(_SUMMARY_MARKUP_RE.search(item) for item in paragraphs):
+        return []
+    combined = " ".join(paragraphs).casefold()
+    if not all(
+        any(signal in combined for signal in signals)
+        for signals in _SUMMARY_DIMENSION_SIGNALS.values()
+    ):
+        return []
+    if not any(
+        signal in paragraphs[0].casefold()
+        for signal in ("verdict", "foundation", "overall", "credible", "takeaway", "recognizes", "recognises", "shows", "demonstrates", "assessment", "finding")
+    ):
+        return []
+    if not any(
+        signal in combined
+        for signal in ("practical implication", "ranked priorities", "confirm", "next", "priority", "priorities", "attention", "follow-up", "follow up", "decision", "remaining")
+    ):
+        return []
+    executive = " ".join(_summary_strings(executive_readout))
+    executive_normalized = _summary_normalize(executive).casefold()
+    if executive_normalized:
+        for paragraph in paragraphs:
+            normalized = paragraph.casefold()
+            if normalized in executive_normalized or executive_normalized in normalized:
+                return []
+    for paragraph in paragraphs:
+        if not validate_summary_fragment(
+            paragraph,
+            canonical_text=canonical_text,
+        ):
+            return []
+    return paragraphs
+
+
+def validate_summary_fragment(
+    text: object,
+    *,
+    canonical_text: object = (),
+) -> bool:
+    """Validate grounding controls for one plain-text summary fragment."""
+    if not isinstance(text, str) or not text.strip():
+        return False
+    if _SUMMARY_MARKUP_RE.search(text):
+        return False
+    fragment = _summary_normalize(text)
+    if not _summary_sentences(fragment):
+        return False
+    canonical = " ".join(_summary_strings(canonical_text))
+    canonical_casefold = canonical.casefold()
+    canonical_words = _summary_words(canonical)
+    canonical_numbers = set(
+        re.findall(r"\b\d+(?:[.,]\d+)?%?\b", canonical)
+    )
+    for number in re.findall(r"\b\d+(?:[.,]\d+)?%?\b", fragment):
+        if number not in canonical_numbers:
+            return False
+    for month in _SUMMARY_MONTHS:
+        date_pattern = (
+            rf"\b{month}\s+\d{{4}}\b|"
+            rf"\b\d{{1,2}}\s+{month}\b"
+        )
+        for date in re.findall(date_pattern, fragment.casefold()):
+            if date not in canonical_casefold:
+                return False
+    if canonical_casefold:
+        for match in _SUMMARY_ENTITY_RE.finditer(fragment):
+            entity = match.group(0).casefold()
+            if entity.startswith("the "):
+                entity = entity[4:]
+            if entity not in canonical_casefold and entity not in _SUMMARY_GENERIC_ENTITIES:
+                return False
+        for match in _SUMMARY_CAPITALIZED_RE.finditer(fragment):
+            token = match.group(0).casefold()
+            if token in _SUMMARY_ALLOWED_SINGLE_WORDS | _SUMMARY_CONNECTIVE_TOKENS:
+                continue
+            if token not in canonical_words:
+                return False
+        for match in _SUMMARY_ACRONYM_RE.finditer(fragment):
+            token = match.group(0).casefold()
+            if token in _SUMMARY_ALLOWED_SINGLE_WORDS:
+                continue
+            if token not in canonical_words:
+                return False
+    for match in _SUMMARY_ACTION_STEM_RE.finditer(fragment.casefold()):
+        if match.group("stem") not in canonical_casefold:
+            return False
+    if canonical_words:
+        for sentence in _summary_sentences(fragment):
+            words = _summary_words(sentence)
+            unsupported_words = (
+                words
+                - canonical_words
+                - _SUMMARY_ALLOWED_TOKENS
+                - _SUMMARY_CONNECTIVE_TOKENS
+            )
+            if any(
+                not _summary_morphology_supported(word, canonical_words)
+                for word in unsupported_words
+            ):
+                return False
+    return True
 
 
 def _object(properties: dict[str, object]) -> dict[str, object]:
@@ -363,6 +596,23 @@ STAGE_OUTPUT_SCHEMAS: dict[str, dict[str, object]] = {
                 "top-of-report overview, distinct from and shorter than the "
                 "executive_readout."
             ),
+            "summary_overview": {
+                "type": "object",
+                "properties": {
+                    "paragraphs": {
+                        "type": "array",
+                        "items": {"type": "string", "minLength": 1},
+                        "minItems": 2,
+                        "maxItems": 3,
+                        "description": (
+                            "Exactly two or three non-empty plain-text paragraphs, "
+                            "totalling 160 to 230 words."
+                        ),
+                    }
+                },
+                "required": ["paragraphs"],
+                "additionalProperties": False,
+            },
             "relevance": _judgment(("high", "medium", "low", "unclear")),
             "sensitivity": _judgment(
                 ("very_strong", "strong", "moderate", "limited",

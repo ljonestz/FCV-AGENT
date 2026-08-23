@@ -443,3 +443,32 @@ def test_client_retry_uses_one_total_timeout_budget(monkeypatch):
 
     assert sdk.options[0]["timeout"] == 150
     assert sdk.options[1]["timeout"] == 140
+
+def test_judgment_contract_requires_dedicated_summary_overview_bundle():
+    schema = stage_output_schema("judgment_review")
+    summary = schema["properties"]["summary_overview"]
+    paragraphs = summary["properties"]["paragraphs"]
+
+    assert summary["type"] == "object"
+    assert summary["required"] == ["paragraphs"]
+    assert paragraphs["type"] == "array"
+    assert paragraphs["minItems"] == 2
+    assert paragraphs["maxItems"] == 3
+    assert paragraphs["items"]["type"] == "string"
+    assert paragraphs["items"]["minLength"] == 1
+
+
+def test_judgment_prompt_requires_grounded_standalone_summary_jobs():
+    prompt = build_verified_stage_prompt(
+        "judgment_review",
+        {"source_blocks": [], "facts": [], "analysis": {}, "judgments": {}},
+    ).lower()
+
+    for expected in (
+        "160 to 230 words", "two or three paragraphs",
+        "verdict and foundation", "four-dimensional assessment",
+        "practical implication", "relevance", "sensitivity",
+        "responsiveness", "operationalization", "no new facts or actions",
+        "do not copy", "executive_readout",
+    ):
+        assert expected in prompt

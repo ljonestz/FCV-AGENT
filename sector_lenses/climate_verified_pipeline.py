@@ -75,6 +75,7 @@ from sector_lenses.climate_verified_contracts import (
 )
 from sector_lenses.climate_verified_schemas import (
     SEMANTIC_REVIEW_REASON_CODES,
+    validate_summary_overview,
 )
 
 
@@ -85,7 +86,7 @@ _INTEGRITY_CATEGORIES = READINESS_CATEGORIES - {"missing_operational_home"}
 PROMPT_VERSIONS = {
     "fact_extraction": "climate-facts-v2.2",
     "bounded_analysis": "climate-analysis-v2.2",
-    "judgment_review": "climate-judgments-v2.3",
+    "judgment_review": "climate-judgments-v2.4",
     "recommendation_compiler": "climate-recommendations-v2.4",
     "conditional_review": "climate-review-v2.5",
     "drafting_compiler": "climate-drafting-v1.0",
@@ -279,6 +280,8 @@ def _judgments(payload: dict[str, object]) -> ClimateJudgments:
             source.get("operationalization"), "unclear"
         ),
     )
+
+_summary_overview_paragraphs = validate_summary_overview
 
 
 _CORE_QUESTION_CAP = 7
@@ -968,6 +971,7 @@ def run_verified_climate_pipeline(
     judgments = _judgments(judgment_payload)
     executive_readout = _text(judgment_payload.get("executive_readout"))
     overview_summary = _text(judgment_payload.get("overview_summary"))
+
     known_ids = (
         fact_ids
         | {item.assertion_id for item in assertions}
@@ -998,6 +1002,28 @@ def run_verified_climate_pipeline(
                 },
             )
             repairs.append(f"normalize_{dimension}_to_unclear")
+
+    raw_summary_overview = judgment_payload.get("summary_overview")
+    canonical_summary_text = [
+        asdict(item)
+        for item in (*facts, *assertions, *responses, *pathways, *gaps)
+    ]
+    canonical_summary_text.extend(
+        (overview_summary, asdict(judgments), core_questions, context_records)
+    )
+    summary_overview_paragraphs = _summary_overview_paragraphs(
+        raw_summary_overview,
+        executive_readout=executive_readout,
+        canonical_text=canonical_summary_text,
+    )
+    if raw_summary_overview is None:
+        summary_overview_status = "fallback"
+        reasons.append("SUMMARY_OVERVIEW_FALLBACK_REQUIRED")
+    elif not summary_overview_paragraphs:
+        summary_overview_status = "fallback"
+        reasons.append("SUMMARY_OVERVIEW_INVALID")
+    else:
+        summary_overview_status = "generated"
 
     recommendation_payload = _call(
         clients.assessment,
@@ -1370,8 +1396,11 @@ def run_verified_climate_pipeline(
         "facts": [asdict(item) for item in facts],
         "derived_assertions": [asdict(item) for item in assertions],
         "analysis": analysis_record,
+        "context_evidence": context_records,
         "judgments": asdict(judgments),
         "judgment_summary": deterministic_summary(judgments),
+        "summary_overview": {"paragraphs": summary_overview_paragraphs},
+        "summary_overview_status": summary_overview_status,
         "executive_readout": (
             executive_readout or deterministic_summary(judgments)
         ),

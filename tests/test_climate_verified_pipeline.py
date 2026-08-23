@@ -238,7 +238,8 @@ def test_four_calls_run_when_semantic_review_is_not_required():
     assert all(call["max_transient_retries"] == 1 for call in assessment.calls)
     assert [call["stage"] for call in reviewer.calls] == ["conditional_review"]
     assert result["schema_version"] == "climate-verified-v2.1"
-    assert result["validation"]["status"] == "passed"
+    assert result["validation"]["status"] == "attention"
+    assert "SUMMARY_OVERVIEW_FALLBACK_REQUIRED" in result["validation"]["reason_codes"]
     assert len(result["priorities"]) == 1
     compiler_payload = assessment.calls[-1]["payload"]
     assert compiler_payload["guidance_registry_version"] == "climate-guidance-v3"
@@ -738,7 +739,7 @@ def test_manifest_is_privacy_safe_and_scoped_to_the_run():
     )
     assert (
         first["manifest"]["prompt_versions"]["judgment_review"]
-        == "climate-judgments-v2.3"
+        == "climate-judgments-v2.4"
     )
     assert (
         first["manifest"]["prompt_versions"]["recommendation_compiler"]
@@ -862,3 +863,451 @@ def test_unresolved_instrument_route_preserves_actions_and_withholds_drafting():
     assert "DRAFTING_CURRENT_UNRESOLVED_ROUTE_DROPPED" in (
         result["manifest"]["repair_actions"]
     )
+
+def _summary_payload():
+    return {
+        "paragraphs": [
+            (
+                "Verdict and foundation: The project recognizes the climate-FCV "
+                "interaction and the overall takeaway is credible. "
+                + "The Project Operations Manual will define site selection. " * 12
+            ).strip(),
+            (
+                "Four-dimensional assessment: Relevance is material, sensitivity "
+                "follows do no harm, responsiveness supports resilience, and "
+                "operationalization sets roles and indicators. Practical "
+                "implication: confirm site criteria and bridge them to ranked "
+                "priorities. "
+                + "The residual gap remains material. " * 12
+            ).strip(),
+        ]
+    }
+
+
+def test_summary_overview_normalization_admits_two_or_three_and_rejects_other_shapes():
+    from sector_lenses import climate_verified_pipeline as climate_pipeline
+
+    helper = getattr(climate_pipeline, "_summary_overview_paragraphs")
+    valid = _summary_payload()
+
+    assert helper(valid) == valid["paragraphs"]
+    assert helper({"paragraphs": ["Relevance only."]}) == []
+    assert helper({"paragraphs": ["Relevance.", "Sensitivity.", "Responsiveness.", "Operationalization."]}) == []
+    assert helper({"paragraphs": ["Relevance.", "   "]}) == []
+
+
+def test_pipeline_admits_summary_overview_without_a_second_model_call():
+    assessment = FakeClient(_responses(), [])
+    assessment.responses[2]["summary_overview"] = _summary_payload()
+    result = run_verified_climate_pipeline(
+        **_arguments(),
+        clients=PipelineClients(assessment, _pass_review_client()),
+    )
+
+    assert result["summary_overview"] == _summary_payload()
+    assert result["summary_overview_status"] == "generated"
+    assert [call["stage"] for call in assessment.calls] == [
+        "fact_extraction", "bounded_analysis", "judgment_review",
+        "recommendation_compiler",
+    ]
+
+
+def test_invalid_summary_overview_is_empty_and_has_no_repair_call():
+    assessment = FakeClient(_responses(), [])
+    assessment.responses[2]["summary_overview"] = {"paragraphs": ["Only one paragraph."]}
+    result = run_verified_climate_pipeline(
+        **_arguments(),
+        clients=PipelineClients(assessment, _pass_review_client()),
+    )
+
+    assert result["summary_overview"] == {"paragraphs": []}
+    assert "SUMMARY_OVERVIEW_INVALID" in result["validation"]["reason_codes"]
+    assert [call["stage"] for call in assessment.calls] == [
+        "fact_extraction", "bounded_analysis", "judgment_review",
+        "recommendation_compiler",
+    ]
+
+def test_summary_validator_rejects_raw_shape_markup_and_length_failures():
+    from sector_lenses import climate_verified_pipeline as climate_pipeline
+
+    helper = getattr(climate_pipeline, "_summary_overview_paragraphs")
+    valid = _summary_payload()
+
+    assert helper({"paragraphs": tuple(valid["paragraphs"])}) == []
+    assert helper({"paragraphs": [valid["paragraphs"][0], ""]}) == []
+    assert helper({"paragraphs": [valid["paragraphs"][0], 42]}) == []
+    assert helper({"paragraphs": ["# heading", valid["paragraphs"][1]]}) == []
+    assert helper({"paragraphs": [valid["paragraphs"][0] + "\n- bullet item", valid["paragraphs"][1]]}) == []
+    assert helper({"paragraphs": ["<b>markup</b>", valid["paragraphs"][1]]}) == []
+    assert helper({"paragraphs": ["Short.", "Still short."]}) == []
+
+
+def test_summary_validator_rejects_exact_prefix_and_slice_copies_both_directions():
+    from sector_lenses import climate_verified_pipeline as climate_pipeline
+
+    helper = getattr(climate_pipeline, "_summary_overview_paragraphs")
+    valid = _summary_payload()
+    executive = " ".join(valid["paragraphs"]) + " Additional executive context."
+
+    assert helper(valid, executive_readout=executive) == []
+    assert helper(
+        {"paragraphs": [executive, valid["paragraphs"][1]]},
+        executive_readout=valid["paragraphs"][0],
+    ) == []
+
+
+def test_summary_validator_rejects_unsupported_numbers_and_named_entities():
+    from sector_lenses import climate_verified_pipeline as climate_pipeline
+
+    helper = getattr(climate_pipeline, "_summary_overview_paragraphs")
+    valid = _summary_payload()
+    canonical = "The Project Operations Manual will define site selection. The residual gap remains material."
+
+    with_number = {"paragraphs": [
+        valid["paragraphs"][0],
+        valid["paragraphs"][1] + " The 2026 allocation is confirmed.",
+    ]}
+    with_entity = {"paragraphs": [
+        valid["paragraphs"][0],
+        valid["paragraphs"][1] + " Lake Victoria Authority is confirmed.",
+    ]}
+    assert helper(with_number, canonical_text=canonical) == []
+    assert helper(with_entity, canonical_text=canonical) == []
+
+
+def test_invalid_or_absent_summary_sets_stable_status_diagnostics():
+    absent = FakeClient(_responses(), [])
+    absent_result = run_verified_climate_pipeline(
+        **_arguments(),
+        clients=PipelineClients(absent, _pass_review_client()),
+    )
+    assert absent_result["summary_overview_status"] == "fallback"
+    assert "SUMMARY_OVERVIEW_FALLBACK_REQUIRED" in absent_result["validation"]["reason_codes"]
+
+    invalid = FakeClient(_responses(), [])
+    invalid.responses[2]["summary_overview"] = {"paragraphs": ["Only one paragraph."]}
+    invalid_result = run_verified_climate_pipeline(
+        **_arguments(),
+        clients=PipelineClients(invalid, _pass_review_client()),
+    )
+    assert invalid_result["summary_overview_status"] == "fallback"
+    assert "SUMMARY_OVERVIEW_INVALID" in invalid_result["validation"]["reason_codes"]
+
+
+def test_summary_admission_uses_judgments_after_validation_normalization():
+    assessment = FakeClient(_responses(), [])
+    assessment.responses[2]["relevance"]["value"] = "not-a-rating"
+    assessment.responses[2]["relevance"]["rationale"] = (
+        "Normalization marker is supported."
+    )
+    summary = _summary_payload()
+    summary["paragraphs"][0] = summary["paragraphs"][0].replace(
+        "The Project Operations Manual will define site selection.",
+        "Normalization marker is supported.",
+        1,
+    )
+    assessment.responses[2]["summary_overview"] = summary
+    result = run_verified_climate_pipeline(
+        **_arguments(),
+        clients=PipelineClients(assessment, _pass_review_client()),
+    )
+
+    assert result["judgments"]["relevance"]["value"] == "unclear"
+    assert result["summary_overview_status"] == "fallback"
+    assert "SUMMARY_OVERVIEW_INVALID" in result["validation"]["reason_codes"]
+def _grounding_canonical(include_core=False, include_context=False, extras=""):
+    text = (
+        "The Project Operations Manual will define site selection. "
+        "The residual gap remains material. "
+        "The project recognizes the climate-FCV interaction and the overall "
+        "takeaway is credible. Relevance sensitivity responsiveness "
+        "operationalization practical implication confirm priorities. "
+        "context relevant route."
+    )
+    if include_core:
+        text += " Distinctive geographic footprint finding."
+    if include_context:
+        text += " Flooding can disrupt access."
+    return text + extras
+
+
+def test_summary_validator_rejects_unsupported_proper_names_and_acronyms():
+    from sector_lenses import climate_verified_pipeline as climate_pipeline
+
+    helper = getattr(climate_pipeline, "_summary_overview_paragraphs")
+    valid = _summary_payload()
+    name_summary = {
+        "paragraphs": [
+            valid["paragraphs"][0] + " Somalia context is relevant.",
+            valid["paragraphs"][1],
+        ]
+    }
+    acronym_summary = {
+        "paragraphs": [
+            valid["paragraphs"][0],
+            valid["paragraphs"][1] + " The UNDP route is relevant.",
+        ]
+    }
+    canonical = _grounding_canonical()
+    assert helper(name_summary, canonical_text=canonical) == []
+    assert helper(acronym_summary, canonical_text=canonical) == []
+    assert helper(
+        name_summary,
+        canonical_text=_grounding_canonical(extras=" Somalia context."),
+    ) == name_summary["paragraphs"]
+    assert helper(
+        acronym_summary,
+        canonical_text=_grounding_canonical(extras=" UNDP route."),
+    ) == acronym_summary["paragraphs"]
+
+
+def test_summary_validator_rejects_unsupported_action_but_admits_supported_action():
+    from sector_lenses import climate_verified_pipeline as climate_pipeline
+
+    helper = getattr(climate_pipeline, "_summary_overview_paragraphs")
+    valid = _summary_payload()
+    action_summary = {
+        "paragraphs": [
+            valid["paragraphs"][0],
+            valid["paragraphs"][1].replace(
+                "The residual gap remains material.",
+                "The project should establish a new committee.",
+                1,
+            ),
+        ]
+    }
+    assert helper(
+        action_summary,
+        canonical_text=_grounding_canonical(extras=" project committee."),
+    ) == []
+    assert helper(
+        action_summary,
+        canonical_text=_grounding_canonical(
+            extras=" project should establish a new committee."
+        ),
+    ) == action_summary["paragraphs"]
+
+
+def test_summary_validator_accepts_paraphrased_narrative_jobs():
+    from sector_lenses import climate_verified_pipeline as climate_pipeline
+
+    helper = getattr(climate_pipeline, "_summary_overview_paragraphs")
+    valid = _summary_payload()
+    paraphrased = {
+        "paragraphs": [
+            valid["paragraphs"][0].replace(
+                "Verdict and foundation: The project recognizes the climate-FCV "
+                "interaction and the overall takeaway is credible.",
+                "The project demonstrates a clear finding about the climate-FCV interaction.",
+            ),
+            valid["paragraphs"][1].replace(
+                "Practical implication: confirm site criteria and bridge them to ranked "
+                "priorities.",
+                "Remaining attention should focus on follow-up and decision points.",
+            ),
+        ]
+    }
+    assert helper(paraphrased) == paraphrased["paragraphs"]
+
+
+def test_pipeline_grounds_summary_in_core_questions_and_context_evidence():
+    assessment = FakeClient(_responses(), [])
+    summary = _summary_payload()
+    summary["paragraphs"][0] = summary["paragraphs"][0].replace(
+        "The Project Operations Manual will define site selection.",
+        "Distinctive geographic footprint finding.",
+        1,
+    )
+    assessment.responses[2]["summary_overview"] = summary
+    assessment.responses[2]["core_questions"] = [{
+        "question_id": "dq-geo-overlap",
+        "theme": "driver_geo_overlap",
+        "question": "Where does the project land?",
+        "source": "FCV-Sensitive Climate Action Framework",
+        "summary": "Distinctive geographic footprint finding.",
+        "evidence_ids": ["PF-001"],
+        "watch": "Check the footprint.",
+    }]
+    result = run_verified_climate_pipeline(
+        **_arguments(),
+        clients=PipelineClients(assessment, _pass_review_client()),
+    )
+    assert result["summary_overview_status"] == "generated"
+
+    context_assessment = FakeClient(_responses(), [])
+    context_summary = _summary_payload()
+    context_summary["paragraphs"][0] = context_summary["paragraphs"][0].replace(
+        "The Project Operations Manual will define site selection.",
+        "Flooding can disrupt access.",
+        1,
+    )
+    context_assessment.responses[2]["summary_overview"] = context_summary
+    context_args = _arguments()
+    context_args["context_evidence"] = []
+    context_result = run_verified_climate_pipeline(
+        **context_args,
+        clients=PipelineClients(context_assessment, _pass_review_client()),
+    )
+    assert context_result["summary_overview_status"] == "fallback"
+
+
+def test_legacy_fallback_requires_known_non_judgment_evidence_ids():
+    from sector_lenses.climate_verified_render import build_reader_model
+
+    assessment = {
+        "overview_summary": "Overview foundation. Overview implication.",
+        "facts": [{
+            "claim_id": "PF-001",
+            "statement": "Known rationale. Known response. Known operation.",
+        }],
+        "judgments": {
+            "relevance": {"value": "high", "rationale": "Fake rationale.", "evidence_ids": ["FAKE"]},
+            "sensitivity": {"value": "strong", "rationale": "Known rationale.", "evidence_ids": ["PF-001"]},
+            "responsiveness": {"value": "emerging", "rationale": "Known response.", "evidence_ids": ["PF-001"]},
+            "operationalization": {"value": "early", "rationale": "Known operation.", "evidence_ids": ["PF-001"]},
+        },
+        "priorities": [],
+    }
+    paragraphs = build_reader_model(assessment)["summary_overview"]
+    assert "Fake rationale." not in " ".join(paragraphs)
+    assert "Known rationale." in " ".join(paragraphs)
+
+
+def test_summary_validator_rejects_unanchored_route_acronyms_but_accepts_canonical_ones():
+    from sector_lenses import climate_verified_pipeline as climate_pipeline
+
+    helper = getattr(climate_pipeline, "_summary_overview_paragraphs")
+    valid = _summary_payload()
+    canonical = _grounding_canonical()
+    for acronym in ("MPA", "IPF", "WBG"):
+        summary = {
+            "paragraphs": [
+                valid["paragraphs"][0].replace(
+                    "The Project Operations Manual will define site selection.",
+                    f"The {acronym} route is relevant.",
+                    1,
+                ),
+                valid["paragraphs"][1],
+            ]
+        }
+        assert helper(summary, canonical_text=canonical) == []
+        assert helper(
+            summary,
+            canonical_text=canonical + f" {acronym} route.",
+        ) == summary["paragraphs"]
+
+
+def test_summary_validator_rejects_inflected_unsupported_actions_but_admits_grounded_forms():
+    from sector_lenses import climate_verified_pipeline as climate_pipeline
+
+    helper = getattr(climate_pipeline, "_summary_overview_paragraphs")
+    valid = _summary_payload()
+    cases = (
+        ("establishes", "committee"),
+        ("approves", "allocation"),
+        ("ensures", "inclusion"),
+    )
+    for verb, noun in cases:
+        summary = {
+            "paragraphs": [
+                valid["paragraphs"][0],
+                valid["paragraphs"][1].replace(
+                    "The residual gap remains material.",
+                    f"The project {verb} {noun}.",
+                    1,
+                ),
+            ]
+        }
+        assert helper(
+            summary,
+            canonical_text=_grounding_canonical(extras=f" project {noun}."),
+        ) == []
+        assert helper(
+            summary,
+            canonical_text=_grounding_canonical(
+                extras=f" project {verb} {noun}."
+            ),
+        ) == summary["paragraphs"]
+
+
+def test_pipeline_persists_context_evidence_for_reader_summary_grounding():
+    from sector_lenses.climate_verified_render import build_reader_model
+
+    assessment = FakeClient(_responses(), [])
+    summary = _summary_payload()
+    summary["paragraphs"][0] = summary["paragraphs"][0].replace(
+        "The Project Operations Manual will define site selection.",
+        "Flooding can disrupt access.",
+        1,
+    )
+    assessment.responses[2]["summary_overview"] = summary
+    result = run_verified_climate_pipeline(
+        **_arguments(),
+        clients=PipelineClients(assessment, _pass_review_client()),
+    )
+
+    assert result["summary_overview_status"] == "generated"
+    assert result["context_evidence"][0]["evidence_id"] == "CE-001"
+    assert result["context_evidence"][0]["statement"] == (
+        "Flooding can disrupt access."
+    )
+    reader = build_reader_model(result)
+    assert reader["summary_overview_status"] == "generated"
+    assert "Flooding can disrupt access." in " ".join(
+        reader["summary_overview"]
+    )
+
+
+def test_summary_validator_allows_connectives_and_canonical_morphology():
+    from sector_lenses import climate_verified_pipeline as climate_pipeline
+
+    helper = getattr(climate_pipeline, "_summary_overview_paragraphs")
+    summary = _summary_payload()
+    summary["paragraphs"][0] = summary["paragraphs"][0].replace(
+        "Verdict and foundation: The project recognizes the climate-FCV "
+        "interaction and the overall takeaway is credible.",
+        "Verdict and foundation: However, the project remains resilient in the "
+        "climate-FCV interaction and the overall takeaway is credible.",
+        1,
+    )
+    canonical = _grounding_canonical(
+        extras=" resilience resilience-building."
+    )
+    assert helper(summary, canonical_text=canonical) == summary["paragraphs"]
+
+
+def test_summary_validator_rejects_projectile_but_admits_curated_implementation_variant():
+    from sector_lenses import climate_verified_pipeline as climate_pipeline
+
+    helper = getattr(climate_pipeline, "_summary_overview_paragraphs")
+    valid = _summary_payload()
+    projectile = {
+        "paragraphs": [
+            valid["paragraphs"][0].replace(
+                "The Project Operations Manual will define site selection.",
+                "The projectile route is relevant.",
+                1,
+            ),
+            valid["paragraphs"][1],
+        ]
+    }
+    assert helper(
+        projectile,
+        canonical_text=_grounding_canonical(extras=" project route relevant."),
+    ) == []
+    implemented = {
+        "paragraphs": [
+            valid["paragraphs"][0],
+            valid["paragraphs"][1].replace(
+                "The residual gap remains material.",
+                "The project implemented requirements.",
+                1,
+            ),
+        ]
+    }
+    assert helper(
+        implemented,
+        canonical_text=_grounding_canonical(
+            extras=" project implementation requirements."
+        ),
+    ) == implemented["paragraphs"]

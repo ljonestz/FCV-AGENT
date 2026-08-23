@@ -202,7 +202,22 @@ short point, why it is worth a look, and how to check, in plain language grounde
 in that residual gap. Add no new claims and no digits. Return an empty array if
 there are no such smaller points.
 
-Return: {"executive_readout":"...","overview_summary":"...","relevance":{"value":"high|medium|low|unclear","evidence_ids":[],"rationale":"..."},"sensitivity":{"value":"very_strong|strong|moderate|limited|very_limited|unclear","evidence_ids":[],"rationale":"..."},"responsiveness":{"value":"strong|emerging|limited|not_expected|unclear","evidence_ids":[],"rationale":"..."},"operationalization":{"value":"embedded|partial|early|not_evidenced|unclear","evidence_ids":[],"rationale":"..."},"core_questions":[{"question_id":"cq2-infra-horizon","theme":"cq2_maladaptation","question":"...","source":"...","summary":"...","evidence_ids":["RG-001"],"watch":"..."}],"minor_climate_points":[{"point":"...","why":"...","how_to_check":"...","residual_gap_ids":["RG-002"]}]}.""",
+DEDICATED SUMMARY OVERVIEW
+Also write a standalone summary_overview object with a paragraphs array. It must
+contain exactly two or three non-empty plain-text paragraphs totalling 160 to
+230 words. Use these approved narrative jobs in order: verdict and foundation;
+a four-dimensional assessment covering relevance, sensitivity, responsiveness,
+and operationalization; and a practical implication bridging to ranked
+priorities. A two-paragraph synthesis may combine the second and third jobs
+only when the complete arc remains clear.
+Use only supplied verified facts, actions, ratings, rationales, responses, gaps,
+and evidence. Add no new facts or actions, named entities, numbers, dates,
+institutions, or findings. Do not copy, prefix, or slice executive_readout.
+Keep every paragraph plain text without Markdown or HTML. The summary contract
+is two or three paragraphs and 160 to 230 words. This is part of the existing
+judgment call; do not request a repair or second call.
+
+Return: {"executive_readout":"...","overview_summary":"...","summary_overview":{"paragraphs":["...","..."]},"relevance":{"value":"high|medium|low|unclear","evidence_ids":[],"rationale":"..."},"sensitivity":{"value":"very_strong|strong|moderate|limited|very_limited|unclear","evidence_ids":[],"rationale":"..."},"responsiveness":{"value":"strong|emerging|limited|not_expected|unclear","evidence_ids":[],"rationale":"..."},"operationalization":{"value":"embedded|partial|early|not_evidenced|unclear","evidence_ids":[],"rationale":"..."},"core_questions":[{"question_id":"cq2-infra-horizon","theme":"cq2_maladaptation","question":"...","source":"...","summary":"...","evidence_ids":["RG-001"],"watch":"..."}],"minor_climate_points":[{"point":"...","why":"...","how_to_check":"...","residual_gap_ids":["RG-002"]}]}.""",
         payload,
     )
 

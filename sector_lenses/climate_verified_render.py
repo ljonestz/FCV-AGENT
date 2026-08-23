@@ -13,6 +13,10 @@ from docx import Document
 
 from climate_question_bank import CLIMATE_LITERATURE_REFERENCES
 from sector_lenses.climate_judgments import ALLOWED
+from sector_lenses.climate_verified_schemas import (
+    validate_summary_fragment,
+    validate_summary_overview,
+)
 
 
 DIMENSIONS = (
@@ -533,6 +537,42 @@ def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
         sensitivity_value, _SENSITIVITY_RATING["unclear"]
     )
     overview_summary = _text(assessment.get("overview_summary"))
+    canonical_summary_text = {
+        key: assessment.get(key)
+        for key in (
+            "facts", "derived_assertions", "analysis",
+            "overview_summary", "core_questions", "context_evidence", "sources",
+        )
+    }
+    # Use the normalized four-dimension reader records as canonical judgment
+    # support, rather than trusting an unprojected saved-result mapping.
+    canonical_summary_text["judgments"] = judgments
+    fallback_canonical_text = {
+        key: assessment.get(key)
+        for key in (
+            "facts", "derived_assertions", "analysis", "overview_summary",
+            "core_questions", "context_evidence", "sources",
+        )
+    }
+    summary_overview = _summary_overview_paragraphs(
+        _mapping(assessment.get("summary_overview")),
+        executive_readout=assessment.get("executive_readout"),
+        canonical_text=canonical_summary_text,
+    )
+    summary_overview_generated = bool(summary_overview)
+    if not summary_overview:
+        summary_overview = _legacy_summary_overview(
+            overview_summary,
+            judgments,
+            _mapping(assessment.get("validation")).get("reason_codes", ()),
+            canonical_text=fallback_canonical_text,
+            known_evidence_ids=_summary_known_evidence_ids(assessment),
+        )
+    summary_overview_status = _text(assessment.get("summary_overview_status"))
+    if not summary_overview_generated:
+        summary_overview_status = "fallback"
+    elif summary_overview_status not in {"generated", "fallback"}:
+        summary_overview_status = "generated" if summary_overview else "fallback"
     climate_sensitivity_rating = {
         "value": sensitivity_value,
         "label": rating["label"],
@@ -625,6 +665,8 @@ def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
         ),
         "overview_summary": overview_summary,
         "judgments": judgments,
+        "summary_overview": summary_overview,
+        "summary_overview_status": summary_overview_status,
         "climate_sensitivity_rating": climate_sensitivity_rating,
         "core_questions": core_questions,
         "existing_responses": existing_responses,
@@ -640,6 +682,7 @@ def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
             "schema_version": _text(assessment.get("schema_version")),
             "bank_release_id": _text(assessment.get("bank_release_id")),
             "validation_status": _text(validation.get("status")),
+            "summary_overview_status": summary_overview_status,
             "recommendation_candidate_count": diagnostics.get(
                 "raw_candidate_count", 0
             ),
@@ -1584,7 +1627,6 @@ def write_reader_docx(model: dict[str, object], path: str | Path) -> Path:
             if project_use:
                 document.add_paragraph(project_use)
             document.add_paragraph(_text(item.get("url")))
-
     trail = _mapping(model.get("evidence_trail"))
     sources = model.get("sources") or []
     if trail or sources:
@@ -1633,6 +1675,97 @@ def write_reader_docx(model: dict[str, object], path: str | Path) -> Path:
                     )
                 document.add_paragraph(line)
 
+
     document.add_paragraph(_text(model.get("advisory_notice")))
     document.save(output)
     return output
+
+_summary_overview_paragraphs = validate_summary_overview
+
+
+def _summary_known_evidence_ids(assessment: dict[str, object]) -> set[str]:
+    """Collect only authoritative assessment-register IDs for fallback."""
+    known: set[str] = set()
+
+    def add_records(records: object, identifier_key: str) -> None:
+        for record in _records(records):
+            identifier = _text(record.get(identifier_key))
+            if identifier:
+                known.add(identifier)
+
+    add_records(assessment.get("facts"), "claim_id")
+    add_records(assessment.get("derived_assertions"), "assertion_id")
+    analysis = _mapping(assessment.get("analysis"))
+    register_names = (
+        ("existing_responses", "response_id"),
+        ("pathways", "pathway_id"),
+        ("residual_gaps", "gap_id"),
+    )
+    for register_name, identifier_key in register_names:
+        add_records(analysis.get(register_name), identifier_key)
+        add_records(assessment.get(register_name), identifier_key)
+    add_records(assessment.get("responses"), "response_id")
+    add_records(assessment.get("gaps"), "gap_id")
+    add_records(assessment.get("context_evidence"), "evidence_id")
+    return known
+
+
+def _summary_sentences(value: object) -> list[str]:
+    text = _scrub_placeholder_text(_text(value))
+    if not text:
+        return []
+    return [
+        sentence.strip()
+        for sentence in re.split(r"(?<=[.!?])\s+", re.sub(r"\s+", " ", text))
+        if sentence.strip() and sentence.strip()[-1:] in ".?!"
+    ]
+
+
+def _legacy_summary_overview(
+    overview_summary: object,
+    judgments: list[dict[str, Any]],
+    validation_reason_codes: object = (),
+    canonical_text: object = (),
+    known_evidence_ids: set[str] | None = None,
+) -> list[str]:
+    """Build a bounded legacy display from overview plus valid rating rationales."""
+    sentences = _summary_sentences(overview_summary)
+    valid_dimensions = {key for key, _, _ in DIMENSIONS}
+    known_evidence_ids = set(known_evidence_ids or ())
+    reason_codes = {
+        _text(item) for item in validation_reason_codes
+        if _text(item)
+    } if isinstance(validation_reason_codes, (list, tuple, set)) else set()
+    for judgment in judgments:
+        dimension = _text(judgment.get("dimension"))
+        value = _text(judgment.get("value"))
+        rationale = _text(judgment.get("rationale"))
+        evidence_ids = judgment.get("evidence_ids")
+        dimension_issue = any(
+            code.startswith(f"{dimension.upper()}_")
+            or code.startswith("JUDGMENT_")
+            for code in reason_codes
+        )
+        if (
+            dimension in valid_dimensions
+            and value in ALLOWED.get(dimension, set())
+            and rationale
+            and rationale[-1:] in ".?!"
+            and validate_summary_fragment(rationale, canonical_text=canonical_text)
+            and isinstance(evidence_ids, (list, tuple))
+            and any(_text(item) in known_evidence_ids for item in evidence_ids)
+            and not dimension_issue
+        ):
+            sentences.extend(_summary_sentences(rationale))
+    bounded: list[str] = []
+    word_count = 0
+    for sentence in sentences:
+        sentence_words = len(sentence.split())
+        if not sentence_words or word_count + sentence_words > 220:
+            break
+        bounded.append(sentence)
+        word_count += sentence_words
+    if len(bounded) < 2:
+        return bounded
+    split_at = max(1, min(len(bounded) - 1, len(bounded) // 2))
+    return [" ".join(bounded[:split_at]), " ".join(bounded[split_at:])]

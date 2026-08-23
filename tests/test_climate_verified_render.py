@@ -744,6 +744,7 @@ def test_reader_has_four_dimensions_priority_cap_and_safe_annex():
         "schema_version": "climate-verified-v2.1",
         "bank_release_id": "ssd-2026.08",
         "validation_status": "passed",
+        "summary_overview_status": "fallback",
         "recommendation_candidate_count": 3,
         "recommendation_admitted_count": 3,
         "recommendation_final_count": 3,
@@ -1369,3 +1370,178 @@ def test_reader_still_blocks_missing_drafting_for_known_instrument():
 
     assert reader["drafting_route_status"] == "available"
     assert "CURRENT_DRAFTING_INCOMPLETE" in validate_reader_model(reader)
+
+def test_build_reader_model_carries_normalized_summary_overview_array():
+    assessment = {
+        "executive_readout": "Executive marker must not be used. " * 60,
+        "summary_overview": {
+            "paragraphs": [
+                (
+                    "Verdict and foundation: The project recognizes the climate-FCV "
+                    "interaction and the overall takeaway is credible. "
+                    + "Distinctive reader core evidence phrase. " * 12
+                ).strip(),
+                (
+                    "Four-dimensional assessment: Relevance is material, sensitivity "
+                    "follows do no harm, responsiveness supports resilience, and "
+                    "operationalization sets roles and indicators. Practical "
+                    "implication: confirm site criteria and bridge them to ranked "
+                    "priorities. "
+                    + "The residual gap remains material. " * 12
+                ).strip(),
+            ]
+        },
+        "overview_summary": "The Project Operations Manual will define site selection. The residual gap remains material.",
+        "core_questions": [{
+            "question_id": "CQ-READER",
+            "summary": "Distinctive reader core evidence phrase.",
+            "evidence_ids": ["CE-READER"],
+        }],
+        "context_evidence": [{
+            "evidence_id": "CE-READER",
+            "statement": "Distinctive reader core evidence phrase.",
+        }],
+        "sources": [{
+            "source_id": "SRC-READER",
+            "title": "Reader source",
+        }],
+        "judgments": {
+            "relevance": {"value": "high", "rationale": "Relevant.", "evidence_ids": ["PW-001"]},
+            "sensitivity": {"value": "strong", "rationale": "Sensitive.", "evidence_ids": ["RG-001"]},
+            "responsiveness": {"value": "emerging", "rationale": "Responsive.", "evidence_ids": ["PF-001"]},
+            "operationalization": {"value": "early", "rationale": "Operationalization is early.", "evidence_ids": ["PF-001"]},
+        },
+        "priorities": [],
+    }
+    model = build_reader_model(assessment)
+    assert model["summary_overview"] == assessment["summary_overview"]["paragraphs"]
+
+
+def test_legacy_summary_fallback_uses_overview_and_validated_rationales_not_executive():
+    assessment = {
+        "executive_readout": "UNIQUE_EXECUTIVE_MARKER must never leak into fallback. " * 60,
+        "overview_summary": "Overview foundation. Overview implication.",
+        "facts": [{
+            "claim_id": "PW-001",
+            "statement": (
+                "Relevance rationale. Sensitivity rationale. "
+                "Responsiveness rationale. Operationalization rationale."
+            ),
+        }, {"claim_id": "RG-001"}, {"claim_id": "PF-001"}],
+        "judgments": {
+            "relevance": {"value": "high", "rationale": "Relevance rationale.", "evidence_ids": ["PW-001"]},
+            "sensitivity": {"value": "strong", "rationale": "Sensitivity rationale.", "evidence_ids": ["RG-001"]},
+            "responsiveness": {"value": "emerging", "rationale": "Responsiveness rationale.", "evidence_ids": ["PF-001"]},
+            "operationalization": {"value": "early", "rationale": "Operationalization rationale.", "evidence_ids": ["PF-001"]},
+        },
+        "priorities": [],
+    }
+    paragraphs = build_reader_model(assessment)["summary_overview"]
+    assert len(paragraphs) == 2
+    assert all(paragraph.endswith(".") for paragraph in paragraphs)
+    assert "Overview foundation." in paragraphs[0]
+    assert "Operationalization rationale." in " ".join(paragraphs)
+    assert "UNIQUE_EXECUTIVE_MARKER" not in " ".join(paragraphs)
+def test_legacy_fallback_excludes_rationales_without_evidence_ids():
+    assessment = {
+        "executive_readout": "UNIQUE_EXECUTIVE_MARKER must never leak into fallback. " * 60,
+        "overview_summary": "Overview foundation. Overview implication.",
+        "judgments": {
+            "relevance": {"value": "high", "rationale": "Supported rationale.", "evidence_ids": ["PW-001"]},
+            "sensitivity": {"value": "strong", "rationale": "Unsupported rationale.", "evidence_ids": []},
+            "responsiveness": {"value": "emerging", "rationale": "Supported response rationale.", "evidence_ids": ["PF-001"]},
+            "operationalization": {"value": "early", "rationale": "Supported operationalization rationale.", "evidence_ids": ["PF-001"]},
+        },
+        "priorities": [],
+    }
+    paragraphs = build_reader_model(assessment)["summary_overview"]
+    assert "Unsupported rationale." not in " ".join(paragraphs)
+
+
+def test_legacy_fallback_ignores_source_block_ids_and_uses_authoritative_register_ids():
+    assessment = {
+        "overview_summary": "Overview foundation. Overview implication.",
+        "facts": [{
+            "claim_id": "PF-REAL",
+            "source_block_ids": ["FAKE-SOURCE-BLOCK"],
+            "statement": "Known fact rationale.",
+        }],
+        "analysis": {
+            "existing_responses": [{"response_id": "ER-REAL"}],
+            "pathways": [{"pathway_id": "PW-REAL"}],
+            "residual_gaps": [{
+                "gap_id": "RG-REAL",
+                "statement": "Known gap rationale.",
+            }],
+        },
+        "context_evidence": [{
+            "evidence_id": "CE-REAL",
+            "statement": "Known context rationale.",
+        }],
+        "judgments": {
+            "relevance": {
+                "value": "high",
+                "rationale": "Source-block fake.",
+                "evidence_ids": ["FAKE-SOURCE-BLOCK"],
+            },
+            "sensitivity": {
+                "value": "strong",
+                "rationale": "Known fact rationale.",
+                "evidence_ids": ["PF-REAL"],
+            },
+            "responsiveness": {
+                "value": "emerging",
+                "rationale": "Known gap rationale.",
+                "evidence_ids": ["RG-REAL"],
+            },
+            "operationalization": {
+                "value": "early",
+                "rationale": "Known context rationale.",
+                "evidence_ids": ["CE-REAL"],
+            },
+        },
+        "priorities": [],
+    }
+    paragraphs = build_reader_model(assessment)["summary_overview"]
+    joined = " ".join(paragraphs)
+    assert "Source-block fake." not in joined
+    assert "Known fact rationale." in joined
+    assert "Known gap rationale." in joined
+    assert "Known context rationale." in joined
+
+
+def test_legacy_fallback_validates_rationale_against_non_judgment_prose():
+    assessment = {
+        "overview_summary": "Overview foundation. Overview implication.",
+        "facts": [{
+            "claim_id": "PF-REAL",
+            "statement": "The project implementation is documented.",
+        }],
+        "judgments": {
+            "relevance": {
+                "value": "high",
+                "rationale": "UNDP establishes a new committee.",
+                "evidence_ids": ["PF-REAL"],
+            },
+            "sensitivity": {
+                "value": "strong",
+                "rationale": "The project implementation is documented.",
+                "evidence_ids": ["PF-REAL"],
+            },
+            "responsiveness": {
+                "value": "emerging",
+                "rationale": "The project implementation is documented.",
+                "evidence_ids": ["PF-REAL"],
+            },
+            "operationalization": {
+                "value": "early",
+                "rationale": "The project implementation is documented.",
+                "evidence_ids": ["PF-REAL"],
+            },
+        },
+        "priorities": [],
+    }
+    paragraphs = build_reader_model(assessment)["summary_overview"]
+    joined = " ".join(paragraphs)
+    assert "UNDP establishes a new committee." not in joined
+    assert "The project implementation is documented." in joined
