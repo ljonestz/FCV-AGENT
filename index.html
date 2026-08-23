@@ -485,6 +485,19 @@
     .climate-verified-assessment .climate-check-item p,.climate-verified-assessment .climate-watch-item p{margin:0 0 4px}
     .climate-verified-assessment .climate-check-action{color:#4b5563}
     .climate-verified-assessment .climate-watch-intro{color:#4b5563;margin:0 0 8px}
+    .climate-purpose-band{display:flex;align-items:flex-start;gap:10px;border-radius:8px;padding:11px 13px;margin:0 0 13px}
+    .climate-purpose-band strong{display:block;font-family:'Open Sans',sans-serif;font-size:12px;letter-spacing:.03em;color:var(--wbg-navy)}
+    .climate-purpose-band p{margin:3px 0 0;font-size:12px;line-height:1.5;color:#4b5563}
+    .climate-purpose-icon{display:inline-grid;place-items:center;width:22px;height:22px;flex:0 0 22px;border-radius:50%;font-weight:800;font-size:13px;border:1px solid currentColor}
+    .climate-decision-preparation{background:#fff8e8;border:1px solid #f1d28b;color:#9a6500}
+    .climate-further-guidance{background:#eaf8f7;border:1px solid #94d6d1;color:#08756f}
+    .climate-verified-summary .climate-summary-watch-disclosure,.climate-verified-summary .climate-summary-guidance-disclosure{border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin-top:14px}
+    .climate-verified-summary .climate-summary-watch-disclosure>summary,.climate-verified-summary .climate-summary-guidance-disclosure>summary{cursor:pointer;list-style:none;padding:13px 0;font-family:'Open Sans',sans-serif;font-size:14px;font-weight:700;color:var(--wbg-navy)}
+    .climate-verified-summary .climate-summary-watch-disclosure>summary::-webkit-details-marker,.climate-verified-summary .climate-summary-guidance-disclosure>summary::-webkit-details-marker{display:none}
+    .climate-verified-summary .climate-summary-watch-disclosure>summary::before,.climate-verified-summary .climate-summary-guidance-disclosure>summary::before{content:"\25B8";display:inline-block;margin-right:8px;color:var(--wbg-blue);transition:transform .15s}
+    .climate-verified-summary .climate-summary-watch-disclosure[open]>summary::before,.climate-verified-summary .climate-summary-guidance-disclosure[open]>summary::before{transform:rotate(90deg)}
+    .climate-verified-summary .climate-summary-watch-disclosure>summary:focus-visible,.climate-verified-summary .climate-summary-guidance-disclosure>summary:focus-visible{outline:3px solid #f2a900;outline-offset:2px}
+    .climate-verified-summary .climate-summary-watch-body,.climate-verified-summary .climate-guidance-body{padding:0 0 6px}
     .climate-verified-assessment .climate-guidance{background:transparent;padding:0}
     .climate-verified-assessment .climate-guidance-disclosure{border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
     .climate-verified-assessment .climate-guidance-disclosure>summary{cursor:pointer;list-style:none;padding:13px 0;font-family:'Open Sans',sans-serif;font-size:15px;font-weight:700;color:var(--wbg-navy)}
@@ -522,6 +535,8 @@
       .climate-verified-assessment .climate-priority-detail:not([open])>:not(summary){display:block!important}
       .climate-verified-assessment .climate-fold:not([open])>:not(summary){display:block!important}
       .climate-verified-assessment .climate-guidance-disclosure:not([open])>:not(summary){display:block!important}
+      .climate-summary-watch-disclosure:not([open])>:not(summary){display:block!important}
+      .climate-summary-guidance-disclosure:not([open])>:not(summary){display:block!important}
       .climate-verified-assessment .climate-priority-card>summary::after{display:none}
       .climate-verified-assessment a{color:#000;text-decoration:underline}
     }
@@ -4790,6 +4805,33 @@
       .trim();
   }
 
+  function climateAccessibleRouteValue(value){
+    const text=String(value??'').trim().replaceAll('_',' ');
+    const normalized=text.toLowerCase();
+    if(normalized==='legacy transitional') return 'Earlier policy framework';
+    if(!text||['unknown','unresolved','unresolved policy source','unresolved route','could not be confirmed'].includes(normalized)) return 'Could not be confirmed';
+    return text;
+  }
+
+  function climateDraftingRouteGate(reader){
+    const r=reader&&typeof reader==='object'?reader:{};
+    const context=r.operation_context&&typeof r.operation_context==='object'?r.operation_context:{};
+    const normalize=value=>String(value??'').replaceAll('_',' ').replace(/\s+/g,' ').trim().toLowerCase();
+    const confirmed=value=>{
+      const text=normalize(value);
+      return !!text&&!['unknown','unresolved','unresolved policy source','unresolved route','could not be confirmed'].includes(text);
+    };
+    const confirmedRoute=confirmed(context.document_type)&&confirmed(context.instrument_type);
+    const hasCanonical=Array.isArray(r.priorities)&&r.priorities.some(priority=>priority&&typeof priority==='object'&&priority.current_document_drafting&&typeof priority.current_document_drafting==='object');
+    return {confirmed:confirmedRoute,canRender:confirmedRoute&&hasCanonical,status:confirmedRoute?'available':'withheld_unresolved_route'};
+  }
+
+  function boldEscapedFirstSentence(value){
+    const text=String(value??'').trim();
+    const match=text.match(/^(.+?[.!?](?:["')\]]+)?)(\s+)([\s\S]*)$/);
+    return match?`<strong>${esc(match[1])}</strong>${esc(match[2]+match[3])}`:`<strong>${esc(text)}</strong>`;
+  }
+
   function buildClimateGuidanceItems(reader){
     const r=reader&&typeof reader==='object'?reader:{};
     const coreQuestions=Array.isArray(r.core_questions)?r.core_questions:[];
@@ -4826,16 +4868,12 @@
       seenSources.add(titleKey);
       const matches=questionsBySource.get(titleKey)||[];
       if(!matches.length)return;
-      const watch=matches.find(match=>match.watch)?.watch||'';
-      const questionText=matches.find(match=>match.question)?.question||'';
-      const projectUse=watch
-        ?`For this project, use the source to address this follow-up: ${watch}`
-        :(questionText?`For this project, use the source to examine this question: ${questionText}`:'');
+      const projectUse=String(source.practical_value||'').trim();
       if(!projectUse)return;
       candidates.push({
         title,
         url,
-        practical_value:String(source.practical_value||source.description||'').trim(),
+        practical_value:projectUse,
         project_use:projectUse,
         match_count:matches.length,
         source_order:sourceOrder
@@ -4847,10 +4885,9 @@
       .map(({match_count,source_order,...item})=>item);
   }
 
-  function renderClimateRelevantGuidance(reader){
+  function renderClimateRelevantGuidance(reader,summaryLabel='Where the team can go for more detailed follow-up',disclosureClass='climate-guidance-disclosure'){
     const r=reader&&typeof reader==='object'?reader:{};
-    const hasCanonical=Object.prototype.hasOwnProperty.call(r,'guidance_items')&&Array.isArray(r.guidance_items);
-    const rawItems=hasCanonical?r.guidance_items:buildClimateGuidanceItems(r);
+    const rawItems=Array.isArray(r.guidance_items)?r.guidance_items:[];
     const items=[];
     const seenItemKeys=new Set();
     rawItems.forEach(item=>{
@@ -4866,17 +4903,16 @@
     if(!items.length)return '';
     const itemHtml=items.map(item=>{
       const practical=item.practical_value?`<p class="climate-guidance-value">${esc(item.practical_value)}</p>`:'';
-      const projectUse=item.project_use?`<p class="climate-guidance-use">${esc(item.project_use)}</p>`:'';
-      return `<article class="climate-guidance-item"><h3><a href="${esc(item.url)}" target="_blank" rel="noopener">${esc(item.title||'World Bank guidance')}</a></h3>${practical}${projectUse}</article>`;
+      return `<article class="climate-guidance-item"><h3><a href="${esc(item.url)}" target="_blank" rel="noopener">${esc(item.title||'World Bank guidance')}</a></h3>${practical}</article>`;
     }).join('');
-    return `<details class="climate-guidance-disclosure"><summary>Where the team can go for more detailed follow-up</summary><div class="climate-guidance-body" data-section-label="Relevant WBG guidance for this project"><p class="climate-guidance-intro">These sources are selected because they speak directly to the current findings. This is not a standard reading list.</p>${itemHtml}</div></details>`;
+    return `<details class="${esc(disclosureClass)}"><summary>${esc(summaryLabel)}</summary><div class="climate-guidance-body" data-section-label="Relevant WBG guidance for this project"><p class="climate-guidance-intro">These sources are selected because they speak directly to the current findings. This is not a standard reading list.</p>${itemHtml}</div></details>`;
   }
 
   function installClimatePrintDisclosureHandler(root){
     const scope=root&&typeof root.querySelectorAll==='function'?root:null;
     const eventTarget=scope&&scope.defaultView?scope.defaultView:(typeof window!=='undefined'?window:null);
     if(!scope||!eventTarget||typeof eventTarget.addEventListener!=='function')return null;
-    const selector='details.climate-priority-card, details.climate-priority-detail, details.climate-fold, details.climate-guidance-disclosure';
+    const selector='details.climate-priority-card, details.climate-priority-detail, details.climate-fold, details.climate-guidance-disclosure, details.climate-summary-watch-disclosure, details.climate-summary-guidance-disclosure';
     let priorStates=null;
     const beforePrint=()=>{
       if(priorStates!==null)return;
@@ -4901,6 +4937,7 @@
 
   function renderClimateVerifiedAssessment(reader){
     const r=reader&&typeof reader==='object'?reader:{};
+    const draftingRoute=climateDraftingRouteGate(r);
     const relevantGuidanceHtml=renderClimateRelevantGuidance(r);
     const runtimeMode=String(r.runtime_mode||'quality').toLowerCase();
     const smokeHtml=runtimeMode==='smoke'?`<div class="finalized-pad-notice"><div class="fpn-body"><strong>Smoke test: validates workflow completion only; not a quality benchmark.</strong></div></div>`:'';
@@ -4908,13 +4945,14 @@
     const operationContextHtml=(()=>{
       const context=r.operation_context&&typeof r.operation_context==='object'?r.operation_context:null;
       if(!context)return '';
-      const instrument=String(context.instrument_type||'Unknown');
-      const documentType=String(context.document_type||'Unknown');
-      const preparation=String(context.preparation_regime||'unresolved_policy_source').replaceAll('_',' ');
-      const esRoute=String(context.es_regime||'UNRESOLVED').replaceAll('_',' ');
+      const instrument=climateAccessibleRouteValue(context.instrument_type||'Unknown');
+      const documentType=climateAccessibleRouteValue(context.document_type||'Unknown');
+      const preparation=climateAccessibleRouteValue(context.preparation_regime);
+      const esRoute=climateAccessibleRouteValue(context.es_regime);
       const mpa=context.is_mpa?'MPA program':'Not identified as MPA';
-      const unresolved=instrument.toLowerCase()==='unknown'||documentType.toLowerCase()==='unknown';
-      return `<section class="climate-operation-context"><h2>How this operation was routed</h2><dl><div><dt>Instrument</dt><dd>${esc(instrument)}</dd></div><div><dt>Document</dt><dd>${esc(documentType)}</dd></div><div><dt>Preparation</dt><dd>${esc(preparation)}</dd></div><div><dt>E&amp;S route</dt><dd>${esc(esRoute)}</dd></div><div><dt>Program layer</dt><dd>${esc(mpa)}</dd></div></dl>${unresolved?'<p>Operational context could not be resolved safely, so document-targeted guidance was withheld.</p>':''}</section>`;
+      const unresolved=!draftingRoute.confirmed;
+      const warning=unresolved?'Suggested document wording is not shown because the document type or financing route could not be confirmed reliably.':'';
+      return `<section class="climate-operation-context"><h2>How this operation was routed</h2><dl><div><dt>Instrument</dt><dd>${esc(instrument)}</dd></div><div><dt>Document</dt><dd>${esc(documentType)}</dd></div><div><dt>Preparation</dt><dd>${esc(preparation)}</dd></div><div><dt>E&amp;S route</dt><dd>${esc(esRoute)}</dd></div><div><dt>Program layer</dt><dd>${esc(mpa)}</dd></div></dl>${warning?`<p>${esc(warning)}</p>`:''}</section>`;
     })();
     const executive=esc(r.executive_readout||'The verified assessment did not return an executive readout.');
     const boldFirstSentence=p=>{const m=p.match(/^(.*?[.!?])(\s+)([\s\S]*)$/);return m?`<strong>${esc(m[1])}</strong>${esc(m[2]+m[3])}`:`<strong>${esc(p)}</strong>`;};
@@ -4973,7 +5011,9 @@
         const value=Array.isArray(raw)?raw.join(', '):raw;
         return value?`<p><strong>${esc(label)}:</strong> ${esc(value)}</p>`:'';
       };
-      const draftHtml=draftingBlock('Suggested drafting for the current document',priority.current_document_drafting)+draftingBlock('Suggested drafting for an operational instrument',priority.operational_instrument_drafting);
+      const currentDraft=draftingRoute.confirmed&&priority.current_document_drafting&&typeof priority.current_document_drafting==='object'?priority.current_document_drafting:null;
+      const operationalDraft=draftingRoute.confirmed&&priority.operational_instrument_drafting&&typeof priority.operational_instrument_drafting==='object'?priority.operational_instrument_drafting:null;
+      const draftHtml=draftingBlock('Suggested drafting for the current document',currentDraft)+draftingBlock('Suggested drafting for an operational instrument',operationalDraft);
       const narrative=String(priority.narrative||'').trim();
       const narrativeHtml=narrative?narrative.split(/\n\s*\n+/).map(p=>p.trim()).filter(Boolean).map(p=>`<p class="pc-narr">${esc(p)}</p>`).join(''):'';
       const bodyHtml=narrativeHtml?narrativeHtml+draftHtml:primaryFields.map(([label,key])=>field(label,key)+(key==='minimum_action'?draftHtml:'')).join('');
@@ -4988,8 +5028,8 @@
     const numberedCheckItem=(title,body,check,index)=>`<section class="climate-check-item climate-numbered-item"><span class="climate-item-number">${String(index+1).padStart(2,'0')}</span><div class="climate-numbered-content"><h4>${esc(title)}</h4><p>${esc(body)}</p><p class="climate-check-action"><strong>How to address:</strong> ${esc(check)}</p></div></section>`;
     const minorPointsHtml=minorPoints.length?`<section class="climate-check-group"><h3>Smaller climate and fragility points to consider</h3><p class="climate-check-intro">These are smaller, climate- and fragility-specific points that were not large enough to become a recommendation above, but are still worth a look.</p>${minorPoints.map((point,index)=>numberedCheckItem(point.point||'',point.why||'',point.how_to_check||'',index)).join('')}</section>`:'';
     const docFlagsHtml=flags.length?`<section class="climate-check-group"><h3>Document points to confirm</h3>${flags.map((flag,index)=>numberedCheckItem(flag.flag||'Point to verify',flag.why_it_matters||'',flag.suggested_verification||'',index)).join('')}</section>`:'';
-    const pointsToCheckBodyHtml=(flags.length||minorPoints.length)?flagsIntro+minorPointsHtml+docFlagsHtml:'';
-    const watchList=coreQuestions.map(question=>({question:question.question||'',watch:question.watch||''})).filter(item=>item.watch);
+    const pointsToCheckBodyHtml=(flags.length||minorPoints.length)?`<div class="climate-purpose-band climate-decision-preparation"><span class="climate-purpose-icon" aria-hidden="true">!</span><div><strong>Climate decision preparation</strong><p>Points to check before the next decision meeting.</p></div></div>${flagsIntro}${minorPointsHtml}${docFlagsHtml}`:'';
+    const watchList=climateSummaryWatchItems(r);
     const watchBodyHtml=watchList.length?`<p class="climate-watch-intro">These are things to monitor as the project develops. They are not actions to take now - just points to keep in view.</p>${watchList.map((item,index)=>`<section class="climate-numbered-item climate-watch-item"><span class="climate-item-number">${String(index+1).padStart(2,'0')}</span><div class="climate-numbered-content"><p>${item.question?`<strong>${esc(item.question)}</strong> `:''}${esc(item.watch)}</p></div></section>`).join('')}`:'';
     let provenanceHtml='';
     const trail=r.evidence_trail&&typeof r.evidence_trail==='object'?r.evidence_trail:null;
@@ -5033,7 +5073,7 @@
       climateReportSection('Ranked operational priorities','climate-priorities',prioritiesBodyHtml)+
       (pointsToCheckBodyHtml?climateReportSection('Points to check before the decision meeting','climate-points-to-check',pointsToCheckBodyHtml):'')+
       (watchBodyHtml?climateReportSection('What to keep an eye on','climate-watch',watchBodyHtml):'')+
-      (relevantGuidanceHtml?climateReportSection('Relevant WBG guidance for this project','climate-guidance',relevantGuidanceHtml):'')+
+      (relevantGuidanceHtml?climateReportSection('Relevant WBG guidance for this project','climate-guidance',`<div class="climate-purpose-band climate-further-guidance"><span class="climate-purpose-icon" aria-hidden="true">i</span><div><strong>Climate further guidance</strong><p>Optional WBG sources for deeper follow-up on the findings.</p></div></div>${relevantGuidanceHtml}`):'')+
       (provenanceHtml?climateReportSection('How this analysis was produced','climate-methodology-section',provenanceHtml):'');
     const advisoryHtml=r.advisory_notice?`<p class="climate-advisory">${esc(r.advisory_notice)}</p>`:'';
     return `<article class="climate-verified-assessment">${smokeHtml}${previewHtml}${operationContextHtml}${numberedSections}${advisoryHtml}</article>`;
@@ -6377,8 +6417,9 @@ ${body}
 
   function climateSummaryPriorityItems(reader){
     const r=reader&&typeof reader==='object'?reader:{};
+    const draftingRoute=climateDraftingRouteGate(r);
     return (Array.isArray(r.priorities)?r.priorities:[]).slice().sort((a,b)=>(Number(a.rank)||999)-(Number(b.rank)||999)).slice(0,3).map((priority,index)=>{
-      const draft=priority.current_document_drafting&&typeof priority.current_document_drafting==='object'?priority.current_document_drafting:{};
+      const draft=draftingRoute.canRender&&priority.current_document_drafting&&typeof priority.current_document_drafting==='object'?priority.current_document_drafting:{};
       const target=[draft.target_document,draft.target_section].filter(Boolean).join(' - ');
       const rawTitle=String(priority.title||'Untitled action').trim();
       const normalizedTitle=rawTitle.replace(/^\s*Priority\s+\d+\s*(?:[-:.\u00b7\u2013\u2014\u2022]\s*)?/i,'').trim()||rawTitle;
@@ -6421,31 +6462,44 @@ ${body}
     const button=document.getElementById(`summary-priority-toggle-${idx}`);
     if(button)button.focus();
   }
+  function climateSummaryWatchItems(reader){
+    const r=reader&&typeof reader==='object'?reader:{};
+    const seen=new Set();
+    const items=[];
+    const normalize=value=>String(value??'').replace(/\s+/g,' ').trim().replace(/[.!?]+$/,'').toLowerCase();
+    (Array.isArray(r.core_questions)?r.core_questions:[]).forEach(question=>{
+      const watch=String(question&&question.watch||'').trim().replace(/\s+/g,' ');
+      const key=normalize(watch);
+      if(!watch||seen.has(key))return;
+      seen.add(key);
+      items.push({question:String(question&&question.question||'').trim().replace(/\s+/g,' '),watch});
+    });
+    return items;
+  }
+
+  function renderClimateWatchDisclosure(reader){
+    const items=climateSummaryWatchItems(reader);
+    if(!items.length)return '';
+    return `<details class="climate-summary-watch-disclosure"><summary>What to keep an eye on</summary><div class="climate-summary-watch-body"><p>These are things to monitor as the project develops. They are not actions to take now - just points to keep in view.</p><ul>${items.map(item=>`<li>${esc(item.watch)}</li>`).join('')}</ul></div></details>`;
+  }
+
   function renderClimateVerifiedSummary(reader){
     const r=reader&&typeof reader==='object'?reader:{};
     const operationContextHtml=(()=>{
       const context=r.operation_context&&typeof r.operation_context==='object'?r.operation_context:null;
       if(!context)return '';
-      const instrument=String(context.instrument_type||'Unknown');
-      const documentType=String(context.document_type||'Unknown');
-      const preparation=String(context.preparation_regime||'unresolved').replaceAll('_',' ');
-      const esRoute=String(context.es_regime||'UNRESOLVED').replaceAll('_',' ');
+      const instrument=climateAccessibleRouteValue(context.instrument_type||'Unknown');
+      const documentType=climateAccessibleRouteValue(context.document_type||'Unknown');
+      const preparation=climateAccessibleRouteValue(context.preparation_regime);
+      const esRoute=climateAccessibleRouteValue(context.es_regime);
       const programLayer=context.is_mpa?'MPA program':'Not identified as MPA';
-      const unresolved=instrument.toLowerCase()==='unknown'||documentType.toLowerCase()==='unknown';
-      const warning=unresolved?'<p class="climate-summary-route-warning">Operational context could not be resolved safely, so document-targeted guidance was withheld.</p>':'';
+      const unresolved=!climateDraftingRouteGate(r).confirmed;
+      const warning=unresolved?'<p class="climate-summary-route-warning">Suggested document wording is not shown because the document type or financing route could not be confirmed reliably.</p>':'';
       return `<section class="climate-summary-context"><div class="climate-summary-context-line"><span>Review context</span><strong>Document: ${esc(documentType)} | Instrument: ${esc(instrument)}</strong></div><details class="climate-summary-routing"><summary>Technical routing details</summary><dl><div><dt>Preparation</dt><dd>${esc(preparation)}</dd></div><div><dt>E&amp;S route</dt><dd>${esc(esRoute)}</dd></div><div><dt>Program layer</dt><dd>${esc(programLayer)}</dd></div></dl></details>${warning}</section>`;
     })();
-    const executive=String(r.executive_readout||'The verified assessment did not return an executive readout.').trim();
-    const paragraphs=executive.split(/\n\s*\n+/).map(p=>p.trim()).filter(Boolean);
-    const overviewSource=(paragraphs.slice(0,2).join(' ')||executive);
-    const overviewWords=overviewSource.split(/\s+/);
-    let overview=overviewSource;
-    if(overviewWords.length>240){
-      const sentenceEnds=Array.from(overviewSource.matchAll(/[.!?](?:["')\]]+)?(?=\s|$)/g))
-        .map(match=>match.index+match[0].length)
-        .filter(end=>overviewSource.slice(0,end).trim().split(/\s+/).length<=240);
-      if(sentenceEnds.length)overview=overviewSource.slice(0,sentenceEnds[sentenceEnds.length-1]).trim()+'…';
-    }
+    const summaryRecord=r.summary_overview&&typeof r.summary_overview==='object'?r.summary_overview:{};
+    const overviewParagraphs=(Array.isArray(r.summary_overview)?r.summary_overview:Array.isArray(summaryRecord.paragraphs)?summaryRecord.paragraphs:[]).map(item=>String(item||'').trim()).filter(Boolean);
+    const overviewHtml=overviewParagraphs.length?overviewParagraphs.map(item=>`<p class="climate-summary-overview-paragraph">${boldEscapedFirstSentence(item)}</p>`).join(''):'<p class="climate-summary-overview-paragraph"><strong>No standalone summary was returned for this run.</strong></p>';
     const sensitivity=r.climate_sensitivity_rating&&typeof r.climate_sensitivity_rating==='object'?r.climate_sensitivity_rating:{};
     const signal=sensitivity.label?`<p class="concise-priority-intro"><strong>Climate-FCV sensitivity:</strong> ${esc(sensitivity.label)}</p>`:'';
     const strengths=climateSummaryStrengths(r);
@@ -6461,10 +6515,12 @@ ${body}
     const totalPriorities=Array.isArray(r.priorities)?r.priorities.length:0;
     const shownPriorities=priorities.length;
     const countHtml=totalPriorities>shownPriorities?`<p class="climate-summary-priority-count">Showing the ${shownPriorities} highest-ranked of ${totalPriorities} priorities. See Detailed analysis for all ${totalPriorities}.</p>`:'';
+    const watchHtml=renderClimateWatchDisclosure(r);
+    const guidanceHtml=renderClimateRelevantGuidance(r,'Relevant WBG guidance for this project','climate-summary-guidance-disclosure');
     const closingText=recommendationsIncomplete
       ?'Recommendations are incomplete. Review the Detailed analysis and rerun the assessment or contact support before relying on this note.'
       :(priorities.length?'For supporting evidence, drafting and completion signals behind each priority, continue to Detailed analysis.':'Continue to Detailed analysis for the supporting evidence and points to check from this assessment.');
-    return `<div class="concise-readout climate-verified-summary"><div class="concise-read-time">Five-minute readout</div>${operationContextHtml}<div class="concise-section-label">Overall assessment</div><p class="concise-overview">${esc(overview)}</p>${signal}<div class="concise-section-label">What is already working</div><div class="concise-strengths">${strengthsHtml}</div>${bridge}${renderStage3AdvisoryTransition('climate')}<div class="concise-section-label">Priority actions for the task team</div>${countHtml}${prioritiesHtml}<p class="concise-closing">${esc(closingText)}</p></div>`;
+    return `<div class="concise-readout climate-verified-summary"><div class="concise-read-time">Five-minute readout</div>${operationContextHtml}<div class="concise-section-label">Overall assessment</div><div class="climate-summary-overview">${overviewHtml}</div>${signal}<div class="concise-section-label">What is already working</div><div class="concise-strengths">${strengthsHtml}</div>${bridge}${renderStage3AdvisoryTransition('climate')}<div class="concise-section-label">Priority actions for the task team</div>${countHtml}${prioritiesHtml}${watchHtml}${guidanceHtml}<p class="concise-closing">${esc(closingText)}</p></div>`;
   }
 
   function handleStage3ViewKeydown(event){

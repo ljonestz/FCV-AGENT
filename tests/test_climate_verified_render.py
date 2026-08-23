@@ -21,7 +21,7 @@ from sector_lenses.climate_verified_render import (
 def test_build_climate_guidance_items_builds_a_matched_item():
     guidance = build_climate_guidance_items(
         [{"source": "Eligible", "question": "What should the team examine?"}],
-        [{"title": "Eligible", "url": "https://www.worldbank.org/guide", "description": "Guidance."}],
+        [{"title": "Eligible", "url": "https://www.worldbank.org/guide", "practical_value": "Use this source to assess the issue."}],
     )
     assert guidance[0]["title"] == "Eligible"
 
@@ -40,14 +40,8 @@ def test_build_climate_guidance_items_uses_matched_south_sudan_findings_only():
     guidance = build_climate_guidance_items(core_questions, sources)
 
     assert [item["title"] for item in guidance] == ["Maximizing the Peace & Social Dividends of Climate Action", "FCV-Sensitive Climate Action Framework"]
-    assert guidance[0]["project_use"] == (
-        "For this project, use the source to address this follow-up: "
-        "Check whether benefit allocation remains inclusive after shocks."
-    )
-    assert guidance[1]["project_use"] == (
-        "For this project, use the source to address this follow-up: "
-        "Track flood-season access constraints for BFMU teams."
-    )
+    assert guidance[0]["project_use"] == "Identify peace dividends."
+    assert guidance[1]["project_use"] == "Stress-test climate action."
     assert "Flood response should keep displaced households connected" not in str(guidance)
     assert "Flooding around Pariang" not in str(guidance)
     assert "Question title must never appear" not in str(guidance)
@@ -62,7 +56,7 @@ def test_build_climate_guidance_items_rejects_nonpublic_urls_and_does_not_pad():
         assert build_climate_guidance_items(core_questions, [{"title": "Eligible", "url": url}]) == []
     guidance = build_climate_guidance_items(
         [{"source": "Defueling Conflict", "question": "Can water governance lower tensions?"}],
-        [{"title": "Defueling Conflict", "url": "https://www.worldbank.org/defueling", "description": "Natural resource governance guidance."}, {"title": "CCDR guidance note", "url": "https://www.worldbank.org/ccdr", "description": "Unmatched."}],
+        [{"title": "Defueling Conflict", "url": "https://www.worldbank.org/defueling", "practical_value": "Natural resource governance guidance."}, {"title": "CCDR guidance note", "url": "https://www.worldbank.org/ccdr", "description": "Unmatched."}],
     )
     assert [item["title"] for item in guidance] == ["Defueling Conflict"]
     assert guidance[0]["practical_value"] == "Natural resource governance guidance."
@@ -82,7 +76,7 @@ def test_build_climate_guidance_items_ranks_caps_and_preserves_catalog_order():
     guidance = build_climate_guidance_items(core_questions, sources)
 
     assert [item["title"] for item in guidance] == ["One", "Two", "Three", "Four"]
-    assert guidance[0]["project_use"].endswith("Check One first.")
+    assert guidance[0]["project_use"] == "Value 1."
     assert "Internal question title" not in str(guidance)
     assert all("match_count" not in item and "catalog_order" not in item for item in guidance)
 
@@ -132,33 +126,32 @@ def test_build_climate_guidance_items_rejects_malformed_authorities_fail_closed(
         ) == []
     allowed = build_climate_guidance_items(
         core_questions,
-        [{"title": "Eligible", "url": "https://WWW.WORLDBANK.ORG/path"}],
+        [{"title": "Eligible", "url": "https://WWW.WORLDBANK.ORG/path", "practical_value": "Use this source to assess the issue."}],
     )
     assert [item["url"] for item in allowed] == ["https://WWW.WORLDBANK.ORG/path"]
 
 
 def test_build_climate_guidance_items_skips_empty_findings_and_completes_sentences():
-    source = {"title": "Eligible", "url": "https://www.worldbank.org/guide"}
+    source = {"title": "Eligible", "url": "https://www.worldbank.org/guide", "practical_value": "Use this source to assess the issue."}
 
     assert build_climate_guidance_items(
-        [{"source": "Eligible", "summary": "", "watch": ""}], [source]
+        [{"source": "Eligible", "summary": "", "watch": ""}],
+        [{"title": "Eligible", "url": source["url"]}],
     ) == []
     guidance = build_climate_guidance_items([
         {"question": "Question title must never appear.", "source": "Eligible", "summary": "U.N. agencies coordinate flood access.", "watch": "Watch flood triggers"},
         {"source": "eligible", "summary": "e.g. community consultation should guide siting.", "watch": "watch flood triggers"},
     ], [source])
 
-    assert guidance[0]["project_use"] == (
-        "For this project, use the source to address this follow-up: Watch flood triggers."
-    )
+    assert guidance[0]["project_use"] == "Use this source to assess the issue."
     assert "Question title must never appear" not in str(guidance)
 
 
 def test_build_climate_guidance_items_deduplicates_questions_and_catalog_sources():
     sources = [
-        {"title": "Defueling Conflict", "url": "https://www.worldbank.org/defueling"},
-        {"title": "FCV-Sensitive Climate Action Framework", "url": "https://www.worldbank.org/framework"},
-        {"title": "fcv sensitive climate action framework", "url": "https://www.worldbank.org/duplicate"},
+        {"title": "Defueling Conflict", "url": "https://www.worldbank.org/defueling", "practical_value": "Use this source to assess governance."},
+        {"title": "FCV-Sensitive Climate Action Framework", "url": "https://www.worldbank.org/framework", "practical_value": "Use this source to stress-test delivery."},
+        {"title": "fcv sensitive climate action framework", "url": "https://www.worldbank.org/duplicate", "practical_value": "Duplicate purpose."},
     ]
     duplicated_question = {"source": "FCV-Sensitive Climate Action Framework", "summary": "Flood risk needs adaptive delivery.", "watch": "Monitor access."}
     core_questions = [
@@ -173,7 +166,7 @@ def test_build_climate_guidance_items_deduplicates_questions_and_catalog_sources
         "Defueling Conflict", "FCV-Sensitive Climate Action Framework"
     ]
 def test_build_climate_guidance_items_ignores_summary_paragraphs():
-    source = {"title": "Eligible", "url": "https://www.worldbank.org/guide"}
+    source = {"title": "Eligible", "url": "https://www.worldbank.org/guide", "practical_value": "Use this source to assess the issue."}
     summary = (
         "U.S. agencies coordinate flood access, etc. during the rainy season. "
         "Dr. Amina confirms the contingency.\n\n"
@@ -184,9 +177,7 @@ def test_build_climate_guidance_items_ignores_summary_paragraphs():
         [{"source": "Eligible", "summary": summary, "watch": "Confirm flood access."}], [source]
     )
 
-    assert guidance[0]["project_use"] == (
-        "For this project, use the source to address this follow-up: Confirm flood access."
-    )
+    assert guidance[0]["project_use"] == "Use this source to assess the issue."
     assert "U.S. agencies" not in str(guidance)
 
 
@@ -201,8 +192,8 @@ def test_build_climate_guidance_items_rejects_overlong_dns_authority():
 
 def test_build_climate_guidance_items_deduplicates_by_question_id():
     sources = [
-        {"title": "Defueling Conflict", "url": "https://www.worldbank.org/defueling"},
-        {"title": "FCV-Sensitive Climate Action Framework", "url": "https://www.worldbank.org/framework"},
+        {"title": "Defueling Conflict", "url": "https://www.worldbank.org/defueling", "practical_value": "Use this source to assess governance."},
+        {"title": "FCV-Sensitive Climate Action Framework", "url": "https://www.worldbank.org/framework", "practical_value": "Use this source to stress-test delivery."},
     ]
     core_questions = [
         {"question_id": "cq-1", "source": "FCV-Sensitive Climate Action Framework", "watch": "Check adaptive delivery."},
@@ -216,7 +207,7 @@ def test_build_climate_guidance_items_deduplicates_by_question_id():
         "Defueling Conflict", "FCV-Sensitive Climate Action Framework"
     ]
 def test_build_climate_guidance_items_preserves_exact_complete_follow_up_cues():
-    source = {"title": "Eligible", "url": "https://www.worldbank.org/guide"}
+    source = {"title": "Eligible", "url": "https://www.worldbank.org/guide", "practical_value": "Use this source to assess the issue."}
     cases = [
         "Coordination is led by the U.N.",
         "The note covers access, etc.",
@@ -232,11 +223,7 @@ def test_build_climate_guidance_items_preserves_exact_complete_follow_up_cues():
             [{"source": "Eligible", "watch": paragraph}],
             [source],
         )
-        normalized = " ".join(paragraph.split())
-        assert guidance[0]["project_use"] == (
-            "For this project, use the source to address this follow-up: "
-            + normalized
-        )
+        assert guidance[0]["project_use"] == "Use this source to assess the issue."
 def test_build_reader_model_keeps_up_to_five_priorities():
     assessment = {
         "executive_readout": "One. Two. Three.",
@@ -292,7 +279,97 @@ def test_reader_explains_when_operational_guidance_is_withheld():
 
     rendered = render_reader_html(build_reader_model(assessment))
 
-    assert "document-targeted guidance was withheld" in rendered
+    assert "Suggested document wording is not shown because the document type or financing route could not be confirmed reliably." in rendered
+
+
+
+def test_drafting_route_gate_requires_document_and_instrument_but_ignores_es_route():
+    warning = (
+        "Suggested document wording is not shown because the document type or "
+        "financing route could not be confirmed reliably."
+    )
+    base = _assessment()
+    base["operation_context"] = {
+        "document_type": "PCN",
+        "instrument_type": "IPF",
+        "preparation_regime": "legacy_transitional",
+        "es_regime": "UNRESOLVED",
+    }
+    available = build_reader_model(base)
+    assert available["drafting_route_status"] == "available"
+    assert available["priorities"][0]["current_document_drafting"]["text"].startswith(
+        "Suggested targeted text"
+    )
+    html = render_reader_html(available)
+    assert "Earlier policy framework" in html
+    assert "legacy transitional" not in html.lower()
+    assert warning not in html
+    stream = BytesIO()
+    write_reader_docx(available, stream)
+    stream.seek(0)
+    docx_text = "\n".join(paragraph.text for paragraph in Document(stream).paragraphs)
+    assert "Suggested targeted text" in docx_text
+    assert warning not in docx_text
+
+    for context in (
+        {"document_type": "Unknown", "instrument_type": "IPF"},
+        {"document_type": "PCN", "instrument_type": "Unknown"},
+    ):
+        assessment = _assessment()
+        assessment["operation_context"] = {**context, "es_regime": "ESF"}
+        withheld = build_reader_model(assessment)
+        assert withheld["drafting_route_status"] == "withheld_unresolved_route"
+        assert "current_document_drafting" not in withheld["priorities"][0]
+        rendered = render_reader_html(withheld)
+        assert warning in rendered
+        assert "Suggested targeted text" not in rendered
+        stream = BytesIO()
+        write_reader_docx(withheld, stream)
+        stream.seek(0)
+        text = "\n".join(paragraph.text for paragraph in Document(stream).paragraphs)
+        assert warning in text
+        assert "Suggested targeted text" not in text
+
+def test_unconfirmed_route_withholds_current_and_operational_drafting_everywhere():
+    warning = (
+        "Suggested document wording is not shown because the document type or "
+        "financing route could not be confirmed reliably."
+    )
+    operational = {
+        "target_document": "Security Risk Management Plan",
+        "target_section": "Continuity arrangements",
+        "drafting_status": "existing_commitment",
+        "text": "Operational drafting must not appear on an unresolved route.",
+        "project_basis_ids": ["PF-001"],
+        "gap_basis_ids": ["RG-001"],
+        "guidance_ids": ["GUIDE-FCV-CONTINUITY"],
+    }
+    for context in (
+        {"document_type": "Unknown", "instrument_type": "IPF"},
+        {"document_type": "PCN", "instrument_type": "Unknown"},
+        None,
+    ):
+        assessment = _assessment()
+        assessment["priorities"][0]["operational_instrument_drafting"] = operational
+        if context is not None:
+            assessment["operation_context"] = context
+        model = build_reader_model(assessment)
+        priority = model["priorities"][0]
+        assert "current_document_drafting" not in priority
+        assert "operational_instrument_drafting" not in priority
+
+        rendered = render_reader_html(model)
+        assert "Current document drafting" not in rendered
+        assert "Operational instrument drafting" not in rendered
+        stream = BytesIO()
+        write_reader_docx(model, stream)
+        stream.seek(0)
+        document_text = "\n".join(paragraph.text for paragraph in Document(stream).paragraphs)
+        assert "Current document drafting" not in document_text
+        assert "Operational instrument drafting" not in document_text
+        if context is not None:
+            assert rendered.count(warning) == 1
+            assert document_text.count(warning) == 1
 
 
 def test_build_reader_model_exposes_safe_existing_responses_for_summary_tiles():
@@ -860,7 +937,9 @@ def test_reader_uses_tolerant_integrity_bounds_for_executive_length():
 
 
 def test_html_and_docx_share_headings_and_priority_order():
-    model = build_reader_model(_assessment())
+    assessment = _assessment()
+    assessment["operation_context"] = {"document_type": "PCN", "instrument_type": "IPF"}
+    model = build_reader_model(assessment)
     assert validate_reader_model(model) == ()
 
     html = render_reader_html(model)
@@ -936,6 +1015,7 @@ def test_html_and_docx_render_canonical_project_cycle_after_actions():
 
 def _reader_with_balanced_hierarchy_content() -> dict[str, object]:
     assessment = _assessment()
+    assessment["operation_context"] = {"document_type": "PCN", "instrument_type": "IPF"}
     assessment["minor_climate_points"] = [{
         "point": "Confirm heat safeguards for field teams.",
         "why": "Hotter working conditions may affect delivery.",
@@ -970,7 +1050,7 @@ def _reader_with_balanced_hierarchy_content() -> dict[str, object]:
         "title": "Maximizing the Peace and Social Dividends of Climate Action",
         "url": "https://www.worldbank.org/peace-dividends",
         "practical_value": "Use this source to identify positive peace outcomes.",
-        "project_use": "For this project, BFMUs can strengthen shared governance.",
+        "project_use": "Use this source to identify positive peace outcomes.",
     }]
     model["sources"] = [{
         "title": "Maximizing the Peace and Social Dividends of Climate Action",
@@ -1018,7 +1098,7 @@ def test_html_uses_balanced_hierarchy_without_reader_clutter():
         "Method, limitations, and sources"
     )
     assert "Use this source to identify positive peace outcomes." in html
-    assert "For this project, BFMUs can strengthen shared governance." in html
+    assert "Use this source to identify positive peace outcomes." in html
     assert "The analysis depends on the uploaded document&#x27;s detail." in html
     assert "Sources &amp; further reading" in html
     assert "Candidate country evidence: preview; not approved." in html
@@ -1063,7 +1143,7 @@ def test_docx_matches_balanced_reader_content_and_keeps_all_priorities():
         "Method, limitations, and sources"
     )
     assert "Use this source to identify positive peace outcomes." in text
-    assert "For this project, BFMUs can strengthen shared governance." in text
+    assert "Use this source to identify positive peace outcomes." in text
     assert "https://www.worldbank.org/peace-dividends" in text
     assert "The analysis depends on the uploaded document's detail." in text
     assert "Sources & further reading" in text
@@ -1271,10 +1351,7 @@ def test_guidance_follow_up_uses_one_verified_watch_not_summary_paragraphs():
         "title": "FCV-Sensitive Climate Action Framework",
         "url": "https://www.worldbank.org/framework",
         "practical_value": "Use this source to stress-test delivery in fragile settings.",
-        "project_use": (
-            "For this project, use the source to address this follow-up: "
-            "Confirm U.N. access at Pariang, e.g. during flood closures."
-        ),
+        "project_use": "Use this source to stress-test delivery in fragile settings.",
     }]
     assert "long assessment paragraph" not in str(guidance)
     assert "second matched summary" not in str(guidance)
@@ -1298,13 +1375,12 @@ def test_guidance_follow_up_falls_back_to_question_and_omits_empty_cue():
         sources,
     )
     assert fallback[0]["project_use"] == (
-        "For this project, use the source to examine this question: "
-        "Could BFMU access rules exclude IDPs & host communities?"
+        "Use this source to examine natural-resource governance."
     )
 
     assert build_climate_guidance_items(
         [{"source": "Defueling Conflict", "summary": "Summary alone is insufficient."}],
-        sources,
+        [{"title": "Defueling Conflict", "url": sources[0]["url"]}],
     ) == []
 
 
@@ -1331,7 +1407,46 @@ def test_guidance_html_is_one_closed_disclosure_and_docx_stays_expanded():
     assert "Relevant WBG guidance for this project" in text
     assert "Where the team can go for more detailed follow-up" in text
     assert "Use this source to identify positive peace outcomes." in text
-    assert "For this project, BFMUs can strengthen shared governance." in text
+    assert "Use this source to identify positive peace outcomes." in text
+
+def test_guidance_items_keep_only_the_curated_standard_purpose_sentence():
+    purpose = (
+        "Use this source to assess how environmental and natural-resource "
+        "governance can reduce conflict risk."
+    )
+    guidance = build_climate_guidance_items(
+        [{
+            "source": "Defueling Conflict",
+            "question": "Can resource governance lower tensions?",
+            "watch": "Confirm inclusive representation.",
+        }],
+        [{
+            "title": "Defueling Conflict",
+            "url": "https://www.worldbank.org/defueling",
+            "practical_value": purpose,
+        }],
+    )
+
+    assert guidance[0]["project_use"] == purpose
+    assert "For this project" not in guidance[0]["project_use"]
+    assert "Confirm inclusive representation" not in guidance[0]["project_use"]
+
+
+def test_guidance_without_a_curated_purpose_is_not_generated_from_watch_text():
+    guidance = build_climate_guidance_items(
+        [{
+            "source": "Defueling Conflict",
+            "question": "Can resource governance lower tensions?",
+            "watch": "Confirm inclusive representation.",
+        }],
+        [{
+            "title": "Defueling Conflict",
+            "url": "https://www.worldbank.org/defueling",
+            "description": "Natural-resource governance guidance.",
+        }],
+    )
+
+    assert guidance == []
 
 
 
@@ -1350,7 +1465,7 @@ def test_reader_allows_withheld_drafting_only_for_recorded_unresolved_route():
 
     reader = build_reader_model(assessment)
 
-    assert reader["drafting_route_status"] == "withheld_unresolved_instrument"
+    assert reader["drafting_route_status"] == "withheld_unresolved_route"
     assert "CURRENT_DRAFTING_INCOMPLETE" not in validate_reader_model(reader)
 
 

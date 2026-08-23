@@ -7,9 +7,11 @@ import subprocess
 from pathlib import Path
 
 import pytest
+from docx import Document
 
 import app as app_module
 import climate_question_bank
+from sector_lenses.climate_verified_render import (build_climate_guidance_items, render_reader_html, write_reader_docx)
 from sector_lenses import (
     CLIMATE_NATIVE_SCHEMA_VERSION,
     build_climate_stage2_prompt,
@@ -37,6 +39,38 @@ _CANONICAL_BASELINE = {
 }
 
 
+
+def test_verified_guidance_purpose_is_shared_by_reader_and_exports():
+    purpose = (
+        "Use this source to assess how environmental and natural-resource "
+        "governance can reduce conflict risk."
+    )
+    guidance = build_climate_guidance_items(
+        [{"source": "Defueling Conflict", "watch": "Check representation."}],
+        [{
+            "title": "Defueling Conflict",
+            "url": "https://www.worldbank.org/defueling",
+            "practical_value": purpose,
+        }],
+    )
+    assert guidance[0]["project_use"] == purpose
+    assert "For this project" not in guidance[0]["project_use"]
+
+    reader = {
+        "guidance_items": guidance,
+        "priorities": [],
+        "core_questions": [],
+        "executive_readout": "A verified assessment.",
+        "advisory_notice": "Advisory.",
+    }
+    rendered = render_reader_html(reader)
+    stream = io.BytesIO()
+    write_reader_docx(reader, stream)
+    stream.seek(0)
+    document_text = "\n".join(paragraph.text for paragraph in Document(stream).paragraphs)
+    for output in (rendered, document_text):
+        assert purpose in output
+        assert "For this project" not in output
 def _add_specific_climate_paths(payload):
     """Add the canonical envelope and compact paths to positive fixtures."""
 

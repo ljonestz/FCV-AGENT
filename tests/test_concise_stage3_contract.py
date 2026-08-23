@@ -3,6 +3,8 @@
 import copy
 import json
 import os
+import re
+from pathlib import Path
 import subprocess
 import sys
 
@@ -724,6 +726,32 @@ if(focused!=='summary-priority-toggle-2')throw new Error('focus not restored');
     assert result.returncode == 0, result.stderr
 
 
+
+def test_climate_summary_is_canonical_and_does_not_reconstruct_guidance():
+    source = (Path(__file__).resolve().parents[1] / "index.html").read_text(
+        encoding="utf-8"
+    )
+    match = re.search(r"function\s+renderClimateVerifiedSummary\s*\(", source)
+    assert match
+    start = match.start()
+    brace = source.find("{", match.end())
+    depth = 0
+    end = None
+    for index in range(brace, len(source)):
+        if source[index] == "{":
+            depth += 1
+        elif source[index] == "}":
+            depth -= 1
+            if depth == 0:
+                end = index + 1
+                break
+    assert end is not None
+    summary = source[start:end]
+    assert "summary_overview" in summary
+    assert "executive_readout" not in summary
+    assert "buildClimateGuidanceItems" not in summary
+    assert "climate-decision-preparation" in source
+    assert "climate-further-guidance" in source
 def test_shared_advisory_is_controlled_and_used_by_both_routes():
     source = open(os.path.join(os.path.dirname(app.__file__), "index.html"), encoding="utf-8").read()
     advisory = _extract_js_function(source, "renderStage3AdvisoryTransition")

@@ -261,6 +261,61 @@ def _is_public_world_bank_url(value: object) -> bool:
 _SENTENCE_CLOSING_MARKS = "\"')]}\u201d\u2019"
 
 
+def _reader_route_value(value: object) -> str:
+    """Map internal routing sentinels to plain reader-facing language."""
+
+    text = _text(value).replace("_", " ").strip()
+    normalized = text.casefold()
+    if normalized == "legacy transitional":
+        return "Earlier policy framework"
+    if normalized in {
+        "",
+        "unknown",
+        "unresolved",
+        "unresolved policy source",
+        "unresolved route",
+        "could not be confirmed",
+    }:
+        return "Could not be confirmed"
+    return text
+
+
+def _route_value_confirmed(value: object) -> bool:
+    """Return whether a document/instrument route value is confirmed."""
+
+    normalized = re.sub(r"\s+", " ", _text(value).replace("_", " ")).strip().casefold()
+    return bool(normalized) and normalized not in {
+        "unknown",
+        "unresolved",
+        "unresolved policy source",
+        "unresolved route",
+        "could not be confirmed",
+    }
+
+
+def _drafting_route_gate(
+    operation_context: dict[str, object],
+    priority: dict[str, Any] | None = None,
+) -> dict[str, object]:
+    """Share the route and canonical-drafting gate across reader outputs."""
+
+    route_confirmed = (
+        _route_value_confirmed(operation_context.get("document_type"))
+        and _route_value_confirmed(operation_context.get("instrument_type"))
+    )
+    has_canonical_drafting = (
+        priority is None
+        or bool(_mapping(priority.get("current_document_drafting")))
+    )
+    return {
+        "confirmed": route_confirmed,
+        "can_render": route_confirmed and has_canonical_drafting,
+        "status": (
+            "available" if route_confirmed else "withheld_unresolved_route"
+        ),
+    }
+
+
 def _complete_sentence(value: object) -> str:
     """Normalize a verified prose fragment into one complete sentence."""
 
@@ -312,28 +367,19 @@ def _deduplicated_questions(matches: list[dict[str, Any]]) -> list[dict[str, Any
     return selected
 
 
-def _guidance_project_use(matches: list[dict[str, Any]]) -> str:
-    """Return one short project-specific follow-up from verified reader fields."""
+def _deduplicated_watch_items(core_questions: object) -> list[tuple[str, str]]:
+    """Return reader watch cues in source order without duplicate prose."""
 
-    watches = _distinct_texts(
-        [question.get("watch") for question in matches],
-        limit=1,
-    )
-    if watches:
-        return (
-            "For this project, use the source to address this follow-up: "
-            + _complete_sentence(watches[0])
-        )
-    questions = _distinct_texts(
-        [question.get("question") for question in matches],
-        limit=1,
-    )
-    if questions:
-        return (
-            "For this project, use the source to examine this question: "
-            + _complete_sentence(questions[0])
-        )
-    return ""
+    seen: set[str] = set()
+    items: list[tuple[str, str]] = []
+    for question in _records(core_questions):
+        watch = re.sub(r"\s+", " ", _text(question.get("watch")).strip())
+        key = re.sub(r"[.!?]+$", "", watch).casefold()
+        if not watch or key in seen:
+            continue
+        seen.add(key)
+        items.append((_text(question.get("question")), watch))
+    return items
 
 
 def build_climate_guidance_items(
@@ -362,10 +408,15 @@ def build_climate_guidance_items(
             or not _is_public_world_bank_url(url)
         ):
             continue
-        project_use = _guidance_project_use(matches)
+        # Purpose text is a curated source field. Never synthesize a
+        # project-specific second sentence from model-authored watches.
+        project_use = _text(source.get("practical_value"))
         if not project_use:
             continue
-        practical_value = _text(source.get("practical_value")) or _text(source.get("description"))
+        practical_value = (
+            _text(source.get("practical_value"))
+            or _text(source.get("description"))
+        )
         ranked.append((
             -len(matches),
             catalog_order,
@@ -640,19 +691,14 @@ def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
             "warning_codes",
         )
     } if raw_operation_context else {}
-    repair_actions = _mapping(assessment.get("manifest")).get(
-        "repair_actions", []
-    )
-    drafting_withheld = (
-        _text(operation_context.get("instrument_type")).casefold()
-        in {"", "unknown"}
-        and isinstance(repair_actions, (list, tuple))
-        and "DRAFTING_CURRENT_UNRESOLVED_ROUTE_DROPPED" in repair_actions
-    )
+    drafting_route = _drafting_route_gate(operation_context)
     reader_priorities = []
     for priority in priorities:
         reader_priority = dict(priority)
         reader_priority["title"] = _normalize_priority_title(priority.get("title"))
+        if not drafting_route["confirmed"]:
+            reader_priority.pop("current_document_drafting", None)
+            reader_priority.pop("operational_instrument_drafting", None)
         reader_priority["project_cycle"] = _project_cycle_for_operation(
             operation_context, reader_priority
         )
@@ -660,9 +706,7 @@ def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
     return _scrub_placeholders({
         "executive_readout": executive,
         "operation_context": operation_context,
-        "drafting_route_status": (
-            "withheld_unresolved_instrument" if drafting_withheld else "available"
-        ),
+        "drafting_route_status": drafting_route["status"],
         "overview_summary": overview_summary,
         "judgments": judgments,
         "summary_overview": summary_overview,
@@ -939,9 +983,7 @@ def validate_reader_model(model: dict[str, object]) -> tuple[str, ...]:
     operation_context = _mapping(model.get("operation_context"))
     drafting_withheld = (
         _text(model.get("drafting_route_status"))
-        == "withheld_unresolved_instrument"
-        and _text(operation_context.get("instrument_type")).casefold()
-        in {"", "unknown"}
+        == "withheld_unresolved_route"
     )
     drafting_required = (
         "target_document",
@@ -1101,6 +1143,17 @@ def _sensitivity_rating_html(rating: dict[str, object]) -> str:
     )
 
 
+def _purpose_band_html(class_name: str, label: str, text: str, icon: str) -> str:
+    """Render a labelled purpose band whose meaning does not depend on colour."""
+
+    return (
+        f'<div class="climate-purpose-band {html.escape(class_name)}">'
+        f'<span class="climate-purpose-icon" aria-hidden="true">'
+        f'{html.escape(icon)}</span><div><strong>{html.escape(label)}</strong>'
+        f'<p>{html.escape(text)}</p></div></div>'
+    )
+
+
 def render_reader_html(model: dict[str, object]) -> str:
     """Render escaped HTML from the canonical reader dictionary."""
 
@@ -1118,16 +1171,18 @@ def render_reader_html(model: dict[str, object]) -> str:
             + "</p>"
         )
     operation_context = _mapping(model.get("operation_context"))
+    drafting_route = _drafting_route_gate(operation_context)
     if operation_context:
-        instrument = _text(operation_context.get("instrument_type")) or "Unknown"
-        document_type = _text(operation_context.get("document_type")) or "Unknown"
-        preparation = (
-            _text(operation_context.get("preparation_regime"))
-            or "unresolved_policy_source"
-        ).replace("_", " ")
-        es_regime = (
-            _text(operation_context.get("es_regime")) or "UNRESOLVED"
-        ).replace("_", " ")
+        instrument = _reader_route_value(
+            operation_context.get("instrument_type")
+        )
+        document_type = _reader_route_value(
+            operation_context.get("document_type")
+        )
+        preparation = _reader_route_value(
+            operation_context.get("preparation_regime")
+        )
+        es_regime = _reader_route_value(operation_context.get("es_regime"))
         mpa_label = "MPA program" if operation_context.get("is_mpa") else "Not identified as MPA"
         parts.append(
             '<section class="climate-operation-context"><h2>'
@@ -1139,10 +1194,10 @@ def render_reader_html(model: dict[str, object]) -> str:
             f"<div><dt>Program layer</dt><dd>{html.escape(mpa_label)}</dd></div>"
             "</dl>"
         )
-        if instrument.casefold() == "unknown" or document_type.casefold() == "unknown":
+        if not drafting_route["confirmed"]:
             parts.append(
-                "<p>Operational context could not be resolved safely, so "
-                "document-targeted guidance was withheld.</p>"
+                "<p>Suggested document wording is not shown because the "
+                "document type or financing route could not be confirmed reliably.</p>"
             )
         parts.append("</section>")
     # Overview at the very top: the headline sensitivity rating card carries the
@@ -1223,13 +1278,23 @@ def render_reader_html(model: dict[str, object]) -> str:
                     f"{html.escape(value)}</p>"
                 )
             if key == "minimum_action":
+                current_drafting = (
+                    priority.get("current_document_drafting")
+                    if _drafting_route_gate(operation_context, priority)["can_render"]
+                    else None
+                )
                 parts.append(_drafting_html(
                     "Current document drafting",
-                    priority.get("current_document_drafting"),
+                    current_drafting,
                 ))
+                operational_drafting = (
+                    priority.get("operational_instrument_drafting")
+                    if drafting_route["confirmed"]
+                    else None
+                )
                 parts.append(_drafting_html(
                     "Operational instrument drafting",
-                    priority.get("operational_instrument_drafting"),
+                    operational_drafting,
                 ))
         parts.append(_project_cycle_html(priority.get("project_cycle")))
         parts.append("</div></details>")
@@ -1239,6 +1304,12 @@ def render_reader_html(model: dict[str, object]) -> str:
     doc_flags = _records(model.get("review_readiness_flags"))
     if minor_points or doc_flags:
         parts.append(_heading(2, HEADINGS[3]))
+        parts.append(_purpose_band_html(
+            "climate-decision-preparation",
+            "Climate decision preparation",
+            "Points to check before the next decision meeting.",
+            "!",
+        ))
         parts.append(f"<p>{html.escape(POINTS_TO_CHECK_INTRO)}</p>")
         if minor_points:
             parts.append("<h3>Smaller climate &amp; fragility points to consider</h3>")
@@ -1278,11 +1349,7 @@ def render_reader_html(model: dict[str, object]) -> str:
                 + "</p></div></section>"
             )
 
-    watch_items = [
-        (_text(q.get("question")), _text(q.get("watch")))
-        for q in _records(model.get("core_questions"))
-        if _text(q.get("watch"))
-    ]
+    watch_items = _deduplicated_watch_items(model.get("core_questions"))
     if watch_items:
         parts.append(_heading(2, HEADINGS[4]))
         parts.append(
@@ -1308,6 +1375,12 @@ def render_reader_html(model: dict[str, object]) -> str:
     ]
     if guidance_items:
         parts.append(_heading(2, "Relevant WBG guidance for this project"))
+        parts.append(_purpose_band_html(
+            "climate-further-guidance",
+            "Climate further guidance",
+            "Optional WBG sources for deeper follow-up on the findings.",
+            "i",
+        ))
         parts.append(
             '<details class="climate-guidance-disclosure"><summary>'
             "Where the team can go for more detailed follow-up</summary>"
@@ -1328,13 +1401,6 @@ def render_reader_html(model: dict[str, object]) -> str:
                 parts.append(
                     '<p class="climate-guidance-value">'
                     + html.escape(practical_value)
-                    + "</p>"
-                )
-            project_use = _text(item.get("project_use"))
-            if project_use:
-                parts.append(
-                    '<p class="climate-guidance-use">'
-                    + html.escape(project_use)
                     + "</p>"
                 )
             parts.append("</article>")
@@ -1453,32 +1519,38 @@ def write_reader_docx(model: dict[str, object], path: str | Path) -> Path:
         if paragraph.runs:
             paragraph.runs[0].bold = True
     operation_context = _mapping(model.get("operation_context"))
+    drafting_route = _drafting_route_gate(operation_context)
     if operation_context:
         document.add_heading("How this operation was routed", level=1)
-        _docx_field(document, "Instrument", operation_context.get("instrument_type"))
-        _docx_field(document, "Document", operation_context.get("document_type"))
+        _docx_field(
+            document,
+            "Instrument",
+            _reader_route_value(operation_context.get("instrument_type")),
+        )
+        _docx_field(
+            document,
+            "Document",
+            _reader_route_value(operation_context.get("document_type")),
+        )
         _docx_field(
             document,
             "Preparation",
-            _text(operation_context.get("preparation_regime")).replace("_", " "),
+            _reader_route_value(operation_context.get("preparation_regime")),
         )
         _docx_field(
             document,
             "E&S route",
-            _text(operation_context.get("es_regime")).replace("_", " "),
+            _reader_route_value(operation_context.get("es_regime")),
         )
         _docx_field(
             document,
             "Program layer",
             "MPA program" if operation_context.get("is_mpa") else "Not identified as MPA",
         )
-        if (
-            _text(operation_context.get("instrument_type")).casefold() == "unknown"
-            or _text(operation_context.get("document_type")).casefold() == "unknown"
-        ):
+        if not drafting_route["confirmed"]:
             document.add_paragraph(
-                "Operational context could not be resolved safely, so "
-                "document-targeted guidance was withheld."
+                "Suggested document wording is not shown because the document "
+                "type or financing route could not be confirmed reliably."
             )
     # Overview at the very top: the summary + rating come first, then the fuller
     # Executive readout as detail below (parity with the HTML surface).
@@ -1552,13 +1624,23 @@ def write_reader_docx(model: dict[str, object], path: str | Path) -> Path:
         for label, key in PRIORITY_FIELDS:
             _docx_field(document, label, priority.get(key))
             if key == "minimum_action":
+                current_drafting = (
+                    priority.get("current_document_drafting")
+                    if _drafting_route_gate(operation_context, priority)["can_render"]
+                    else None
+                )
                 _docx_drafting(
                     document, "Current document drafting",
-                    priority.get("current_document_drafting"),
+                    current_drafting,
+                )
+                operational_drafting = (
+                    priority.get("operational_instrument_drafting")
+                    if drafting_route["confirmed"]
+                    else None
                 )
                 _docx_drafting(
                     document, "Operational instrument drafting",
-                    priority.get("operational_instrument_drafting"),
+                    operational_drafting,
                 )
         _docx_project_cycle(document, priority.get("project_cycle"))
 
@@ -1566,6 +1648,8 @@ def write_reader_docx(model: dict[str, object], path: str | Path) -> Path:
     doc_flags = _records(model.get("review_readiness_flags"))
     if minor_points or doc_flags:
         document.add_heading(HEADINGS[3], level=1)
+        document.add_heading("Climate decision preparation", level=2)
+        document.add_paragraph("Points to check before the next decision meeting.")
         document.add_paragraph(POINTS_TO_CHECK_INTRO)
         if minor_points:
             document.add_heading(
@@ -1596,11 +1680,7 @@ def write_reader_docx(model: dict[str, object], path: str | Path) -> Path:
                 flag.get("suggested_verification"),
             )
 
-    watch_items = [
-        (_text(q.get("question")), _text(q.get("watch")))
-        for q in _records(model.get("core_questions"))
-        if _text(q.get("watch"))
-    ]
+    watch_items = _deduplicated_watch_items(model.get("core_questions"))
     if watch_items:
         document.add_heading(HEADINGS[4], level=1)
         document.add_paragraph(
@@ -1617,15 +1697,14 @@ def write_reader_docx(model: dict[str, object], path: str | Path) -> Path:
     ]
     if guidance_items:
         document.add_heading("Relevant WBG guidance for this project", level=1)
+        document.add_heading("Climate further guidance", level=2)
+        document.add_paragraph("Optional WBG sources for deeper follow-up on the findings.")
         document.add_heading("Where the team can go for more detailed follow-up", level=2)
         for item in guidance_items:
             document.add_heading(_text(item.get("title")), level=3)
             practical_value = _text(item.get("practical_value"))
             if practical_value:
                 document.add_paragraph(practical_value)
-            project_use = _text(item.get("project_use"))
-            if project_use:
-                document.add_paragraph(project_use)
             document.add_paragraph(_text(item.get("url")))
     trail = _mapping(model.get("evidence_trail"))
     sources = model.get("sources") or []
