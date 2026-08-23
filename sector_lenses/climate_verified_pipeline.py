@@ -1331,7 +1331,7 @@ def run_verified_climate_pipeline(
         schema_version=CLIMATE_VERIFIED_SCHEMA_VERSION,
         prompt_versions=PROMPT_VERSIONS,
         reviewer_version="climate-review-v2.1",
-        extraction_version="source-blocks-v2.1",
+        extraction_version="source-blocks-v3",
         normalization_version="climate-normalization-v2.1",
         renderer_version="climate-reader-v2.2",
         model_aliases={"assessment": "configured", "reviewer": "configured"},

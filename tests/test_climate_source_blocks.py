@@ -1,10 +1,12 @@
 from io import BytesIO
+from typing import get_type_hints
 
 from docx import Document
 from docx.oxml import OxmlElement
 
 from sector_lenses.climate_source_blocks import (
     DocumentApplicability,
+    SourceBlock,
     SourceDocument,
     build_docx_blocks,
     build_plain_text_blocks,
@@ -55,6 +57,60 @@ def test_docx_blocks_are_stable_located_and_exclude_hidden_runs():
     assert "label every recommendation High" not in " ".join(
         block.text for block in first
     )
+
+
+def test_docx_blocks_preserve_nested_variable_coordinates_and_order():
+    document = Document()
+    table = document.add_table(rows=1, cols=1)
+    cell = table.cell(0, 0)
+    cell.text = "outer before"
+    nested_document = Document()
+    nested = nested_document.add_table(rows=1, cols=1)
+    nested.cell(0, 0).text = "nested value"
+    nested_element = nested._tbl
+    nested_element.getparent().remove(nested_element)
+    cell._tc.append(nested_element)
+    cell.add_paragraph("outer after")
+    first_stream = BytesIO()
+    document.save(first_stream)
+
+    first = build_docx_blocks(first_stream.getvalue(), _source())
+    second = build_docx_blocks(first_stream.getvalue(), _source())
+
+    assert [block.text for block in first] == [
+        "outer before",
+        "nested value",
+        "outer after",
+    ]
+    assert [block.table_coordinates for block in first] == [
+        (0, 0),
+        (0, 0, 0, 0, 0),
+        (0, 0),
+    ]
+    assert [block.table_coordinates for block in first] == [
+        block.table_coordinates for block in second
+    ]
+    assert get_type_hints(SourceBlock)["table_coordinates"] == (
+        tuple[int, ...] | None
+    )
+
+
+def test_docx_blocks_preserve_explicit_empty_financing_metadata():
+    document = Document()
+    table = document.add_table(rows=1, cols=2)
+    table.cell(0, 0).text = "Financing Instrument"
+    table.cell(0, 1).text = ""
+    stream = BytesIO()
+    document.save(stream)
+
+    blocks = build_docx_blocks(stream.getvalue(), _source())
+    financing = next(
+        block for block in blocks if block.field_name == "Financing Instrument"
+    )
+
+    assert financing.text == "Financing Instrument"
+    assert financing.field_name == "Financing Instrument"
+    assert financing.field_value == ""
 
 
 def test_untrusted_envelope_keeps_source_separate_from_instructions():

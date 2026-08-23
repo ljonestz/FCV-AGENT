@@ -2505,6 +2505,14 @@ def test_express_route_dispatches_verified_assessment_contract():
     assert "'recommendation_diagnostics'" in source
 
 
+def test_both_upload_routes_preserve_docx_structured_sidecar():
+    source = Path(app_module.__file__).read_text(encoding="utf-8")
+
+    assert "def extract_docx_content(" in source
+    assert source.count("structured_fields") >= 8
+    assert source.count("_extract_uploaded_content(") >= 6
+
+
 def test_verified_climate_docx_route_uses_canonical_reader():
     sentence = (
         "Verified project evidence supports a material pathway and a bounded response. "

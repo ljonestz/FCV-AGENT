@@ -7204,46 +7204,61 @@ def extract_pdf_text(b64_data, name):
         return f'[Could not extract text from {name}: {str(e)}]', 0
 
 
-def extract_docx_text(b64_data, name):
-    """Extract text from a .docx file sent as base64."""
+def extract_docx_content(b64_data, name):
+    """Extract legacy reader text plus a bounded internal metadata sidecar."""
     if DocxDocument is None:
-        return f'[python-docx not installed — cannot extract {name}]', 0
+        return f'[python-docx not installed — cannot extract {name}]', 0, []
     try:
-        from docx.oxml.ns import qn
-        from docx.table import Table as DocxTable
-        from docx.text.paragraph import Paragraph as DocxParagraph
+        from docx_structure import extract_docx_units, reader_parts_from_units
+
         doc_bytes = base64.standard_b64decode(b64_data)
         doc = DocxDocument(io.BytesIO(doc_bytes))
-        parts = []
-        # Iterate body children in document order to preserve paragraph/table interleaving
-        for child in doc.element.body:
-            if child.tag == qn('w:p'):
-                para = DocxParagraph(child, doc)
-                if para.text.strip():
-                    parts.append(para.text)
-            elif child.tag == qn('w:tbl'):
-                table = DocxTable(child, doc)
-                for row in table.rows:
-                    # Deduplicate on _tc identity to avoid merged-cell repetition
-                    seen = set()
-                    cells = []
-                    for cell in row.cells:
-                        if id(cell._tc) not in seen:
-                            seen.add(id(cell._tc))
-                            t = cell.text.strip()
-                            if t:
-                                cells.append(t)
-                    if cells:
-                        parts.append(' | '.join(cells))
+        units = extract_docx_units(doc)
+        parts = reader_parts_from_units(units)
+        structured_fields = []
+        for unit in units:
+            if not unit.field_name:
+                continue
+            table_coordinates = (
+                list(unit.table_coordinates)
+                if unit.table_coordinates is not None
+                else None
+            )
+            structured_fields.append({
+                "field_name": str(unit.field_name)[:256],
+                "field_value": str(unit.field_value or "")[:4000],
+                "location": str(unit.location or "")[:256],
+                "paragraph_index": unit.paragraph_index,
+                "table_coordinates": table_coordinates,
+            })
+            if len(structured_fields) >= 256:
+                break
         full_text = '\n\n'.join(parts)
         if len(full_text) > MAX_DOC_CHARS:
             full_text = full_text[:MAX_DOC_CHARS] + (
                 f'\n\n[DOCX read limit reached at {MAX_DOC_CHARS // 1000}k chars.]'
             )
-        return full_text, len(parts)
+        return full_text, len(parts), structured_fields
     except Exception as e:
-        return f'[Could not extract text from {name}: {str(e)}]', 0
+        return f'[Could not extract text from {name}: {str(e)}]', 0, []
 
+
+def extract_docx_text(b64_data, name):
+    """Extract text from a .docx file sent as base64."""
+    text, part_count, _ = extract_docx_content(b64_data, name)
+    return text, part_count
+
+def _extract_uploaded_content(raw, name, file_type):
+    """Extract one upload while retaining internal DOCX metadata when present."""
+    if file_type == 'pdf':
+        text, page_count = extract_pdf_text(raw, name)
+        return text, page_count, []
+    if file_type == 'docx':
+        return extract_docx_content(raw, name)
+    if file_type == 'pptx':
+        text, page_count = extract_pptx_text(raw, name)
+        return text, page_count, []
+    return raw[:MAX_DOC_CHARS], 0, []
 
 def extract_pptx_text(b64_data, name):
     """Extract text from a .pptx file sent as base64."""
@@ -8690,17 +8705,10 @@ def run_stage():
                 name = doc.get('name', 'document')
                 file_type = doc.get('type', 'text')
                 raw = doc.get('content', '')
-                if file_type == 'pdf':
-                    text, page_count = extract_pdf_text(raw, name)
-                elif file_type == 'docx':
-                    text, page_count = extract_docx_text(raw, name)
-                elif file_type == 'pptx':
-                    text, page_count = extract_pptx_text(raw, name)
-                else:
-                    text = raw[:MAX_DOC_CHARS]
-                    page_count = 0
+                text, page_count, structured_fields = _extract_uploaded_content(raw, name, file_type)
                 doc_parts.append({'label': 'PROJECT DOCUMENT', 'name': name,
                                   'raw_text': text[:MAX_DOC_CHARS], 'page_count': page_count,
+                                  'structured_fields': structured_fields,
                                   'char_limit': STAGE1_MAX_DOC_CHARS})
                 warning = _check_extraction(text, name)
                 if warning:
@@ -8709,17 +8717,10 @@ def run_stage():
                 name = doc.get('name', 'document')
                 file_type = doc.get('type', 'text')
                 raw = doc.get('content', '')
-                if file_type == 'pdf':
-                    text, page_count = extract_pdf_text(raw, name)
-                elif file_type == 'docx':
-                    text, page_count = extract_docx_text(raw, name)
-                elif file_type == 'pptx':
-                    text, page_count = extract_pptx_text(raw, name)
-                else:
-                    text = raw[:MAX_DOC_CHARS]
-                    page_count = 0
+                text, page_count, structured_fields = _extract_uploaded_content(raw, name, file_type)
                 doc_parts.append({'label': 'CONTEXT DOCUMENT', 'name': name,
                                   'raw_text': text[:MAX_DOC_CHARS], 'page_count': page_count,
+                                  'structured_fields': structured_fields,
                                   'char_limit': STAGE1_CONTEXT_DOC_CHARS})
                 warning = _check_extraction(text, name)
                 if warning:
@@ -8728,17 +8729,10 @@ def run_stage():
                 name = doc.get('name', 'document')
                 file_type = doc.get('type', 'text')
                 raw = doc.get('content', '')
-                if file_type == 'pdf':
-                    text, page_count = extract_pdf_text(raw, name)
-                elif file_type == 'docx':
-                    text, page_count = extract_docx_text(raw, name)
-                elif file_type == 'pptx':
-                    text, page_count = extract_pptx_text(raw, name)
-                else:
-                    text = raw[:MAX_DOC_CHARS]
-                    page_count = 0
+                text, page_count, structured_fields = _extract_uploaded_content(raw, name, file_type)
                 doc_parts.append({'label': 'PACKAGE INSTRUMENT', 'name': name,
                                   'raw_text': text[:MAX_DOC_CHARS], 'page_count': page_count,
+                                  'structured_fields': structured_fields,
                                   'char_limit': STAGE1_PACKAGE_DOC_CHARS})
                 warning = _check_extraction(text, name)
                 if warning:
@@ -10149,17 +10143,10 @@ def run_express():
                     name = doc.get('name', 'document')
                     file_type = doc.get('type', 'text')
                     raw = doc.get('content', '')
-                    if file_type == 'pdf':
-                        text, page_count = extract_pdf_text(raw, name)
-                    elif file_type == 'docx':
-                        text, page_count = extract_docx_text(raw, name)
-                    elif file_type == 'pptx':
-                        text, page_count = extract_pptx_text(raw, name)
-                    else:
-                        text = raw[:MAX_DOC_CHARS]
-                        page_count = 0
+                    text, page_count, structured_fields = _extract_uploaded_content(raw, name, file_type)
                     doc_parts.append({'label': 'PROJECT DOCUMENT', 'name': name,
                                       'raw_text': text[:MAX_DOC_CHARS], 'page_count': page_count,
+                                      'structured_fields': structured_fields,
                                       'char_limit': STAGE1_MAX_DOC_CHARS})
                     warning = _check_extraction(text, name)
                     if warning:
@@ -10168,17 +10155,10 @@ def run_express():
                     name = doc.get('name', 'document')
                     file_type = doc.get('type', 'text')
                     raw = doc.get('content', '')
-                    if file_type == 'pdf':
-                        text, page_count = extract_pdf_text(raw, name)
-                    elif file_type == 'docx':
-                        text, page_count = extract_docx_text(raw, name)
-                    elif file_type == 'pptx':
-                        text, page_count = extract_pptx_text(raw, name)
-                    else:
-                        text = raw[:MAX_DOC_CHARS]
-                        page_count = 0
+                    text, page_count, structured_fields = _extract_uploaded_content(raw, name, file_type)
                     doc_parts.append({'label': 'CONTEXT DOCUMENT', 'name': name,
                                       'raw_text': text[:MAX_DOC_CHARS], 'page_count': page_count,
+                                      'structured_fields': structured_fields,
                                       'char_limit': STAGE1_CONTEXT_DOC_CHARS})
                     warning = _check_extraction(text, name)
                     if warning:
@@ -10187,17 +10167,10 @@ def run_express():
                     name = doc.get('name', 'document')
                     file_type = doc.get('type', 'text')
                     raw = doc.get('content', '')
-                    if file_type == 'pdf':
-                        text, page_count = extract_pdf_text(raw, name)
-                    elif file_type == 'docx':
-                        text, page_count = extract_docx_text(raw, name)
-                    elif file_type == 'pptx':
-                        text, page_count = extract_pptx_text(raw, name)
-                    else:
-                        text = raw[:MAX_DOC_CHARS]
-                        page_count = 0
+                    text, page_count, structured_fields = _extract_uploaded_content(raw, name, file_type)
                     doc_parts.append({'label': 'PACKAGE INSTRUMENT', 'name': name,
                                       'raw_text': text[:MAX_DOC_CHARS], 'page_count': page_count,
+                                      'structured_fields': structured_fields,
                                       'char_limit': STAGE1_PACKAGE_DOC_CHARS})
                     warning = _check_extraction(text, name)
                     if warning:

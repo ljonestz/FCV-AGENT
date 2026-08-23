@@ -66,6 +66,7 @@ class PreparedClimateSources:
     documents: tuple[SourceDocument, ...]
     blocks: tuple[SourceBlock, ...]
     warning_codes: tuple[str, ...]
+    structured_fields: tuple[SourceBlock, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -117,7 +118,97 @@ def _primary_context_text(
     return filenames, source_text
 
 
+def _instrument_markers(value: str) -> tuple[str, ...]:
+    patterns = (
+        (
+            "PforR",
+            r"program(?:-| )for(?:-| )results|pforr|p4r",
+        ),
+        ("DPF", r"development policy|dpf|dpo"),
+        ("IPF", r"investment project financing|\bipf\b"),
+    )
+    return tuple(
+        marker
+        for marker, pattern in patterns
+        if re.search(pattern, value.casefold())
+    )
+
+
+def _is_compatible_pforr_ipf_hybrid(value: str) -> bool:
+    """Allow only an explicit PforR-with-IPF-component formulation."""
+    lowered = value.casefold()
+    if re.search(
+        r"\b(?:without|does\s+not|doesn't|no|not)\s+"
+        r"(?:include|includes?|contain|contains?|have|has)\s+"
+        r"(?:an?\s+)?(?:investment project financing\s*\(\s*ipf\s*\)|ipf)\s+component\b",
+        lowered,
+    ):
+        return False
+    positive = re.search(
+        r"\b(?:with|include|includes|including)\s+(?:an?\s+)?"
+        r"(?:investment project financing\s*\(\s*ipf\s*\)|ipf)\s+component\b",
+        lowered,
+    )
+    return bool(positive) and _instrument_markers(value) == (
+        "PforR",
+        "IPF",
+    )
+
+
+def _structured_financing_instruments(
+    prepared: PreparedClimateSources,
+) -> tuple[str, ...]:
+    """Return supported markers from authoritative financing metadata."""
+
+    primary_ids = {
+        item.document_id
+        for item in prepared.documents
+        if item.relationship == "primary"
+    }
+    structured_blocks = [
+        block
+        for block in prepared.structured_fields
+        if block.document_id in primary_ids
+        and str(block.field_name or "").casefold() == "financing instrument"
+    ]
+    metadata_blocks = structured_blocks or [
+        block
+        for block in prepared.blocks
+        if block.document_id in primary_ids
+        and str(block.field_name or "").casefold() == "financing instrument"
+    ]
+    if metadata_blocks:
+        if any(not str(block.field_value or "").strip() for block in metadata_blocks):
+            return ("Unknown",)
+        candidate_values = [str(block.field_value or "").strip() for block in metadata_blocks]
+    else:
+        candidate_values = []
+        for block in prepared.blocks:
+            if block.document_id not in primary_ids:
+                continue
+            match = re.fullmatch(
+                r"\s*financing instrument\s*:\s*(.+?)\s*",
+                block.text,
+                re.IGNORECASE,
+            )
+            if match:
+                candidate_values.append(match.group(1))
+
+    selected: list[str] = []
+    for raw_value in candidate_values:
+        markers = (
+            ("PforR",)
+            if _is_compatible_pforr_ipf_hybrid(raw_value)
+            else _instrument_markers(raw_value)
+        )
+        for marker in markers or ("Unknown",):
+            if marker not in selected:
+                selected.append(marker)
+    return tuple(selected)
+
+
 def _context_matches(pattern: str, filenames: str, source_head: str) -> bool:
+
     return bool(re.search(pattern, filenames) or re.search(pattern, source_head))
 
 
@@ -206,21 +297,28 @@ def resolve_verified_operation_context(
         filenames,
         source_head,
     )
-    hybrid_ipf = bool(
-        pforr
-        and re.search(
-            r"\b(?:includes?|with|hybrid)\b.{0,80}\bipf component\b|"
-            r"\bipf component\b",
-            source_head,
-        )
+    hybrid_ipf = _is_compatible_pforr_ipf_hybrid(source_head)
+    structured_instruments = _structured_financing_instruments(prepared)
+    detected_instrument = (
+        structured_instruments[0]
+        if len(structured_instruments) == 1
+        and structured_instruments[0] != "Unknown"
+        else "Unknown"
     )
-    detected_instrument = "Unknown"
-    if pforr and not dpf and (not ipf or hybrid_ipf):
-        detected_instrument = "PforR"
-    elif dpf and not pforr and not ipf:
-        detected_instrument = "DPF"
-    elif ipf and not pforr and not dpf:
-        detected_instrument = "IPF"
+    if len(structured_instruments) > 1:
+        instrument = "Unknown"
+        warnings.append("INSTRUMENT_STRUCTURED_CONFLICT")
+    elif structured_instruments:
+        instrument = "Unknown"
+        if structured_instruments[0] == "Unknown":
+            warnings.append("INSTRUMENT_STRUCTURED_UNRESOLVED")
+    elif detected_instrument == "Unknown":
+        if pforr and not dpf and (not ipf or hybrid_ipf):
+            detected_instrument = "PforR"
+        elif dpf and not pforr and not ipf:
+            detected_instrument = "DPF"
+        elif ipf and not pforr and not dpf:
+            detected_instrument = "IPF"
     if detected_instrument != "Unknown":
         if (
             instrument.casefold() != "unknown"
@@ -228,8 +326,12 @@ def resolve_verified_operation_context(
         ):
             warnings.append("INSTRUMENT_HINT_OVERRIDDEN")
         instrument = detected_instrument
-        notes.append(f"instrument_marker:{instrument}")
-    elif sum((pforr, dpf, ipf)) > 1:
+        notes.append(
+            f"instrument_structured:{instrument}"
+            if structured_instruments
+            else f"instrument_marker:{instrument}"
+        )
+    elif not structured_instruments and sum((pforr, dpf, ipf)) > 1:
         instrument = "Unknown"
         warnings.append("INSTRUMENT_ROUTE_AMBIGUOUS")
 
@@ -392,6 +494,41 @@ def _bounded_blocks(
     return ordered, True
 
 
+def _structured_field_records(part: dict) -> list[dict[str, object]]:
+    """Normalize the bounded app DOCX sidecar without trusting arbitrary shapes."""
+    values = part.get("structured_fields")
+    if not isinstance(values, list):
+        return []
+    records: list[dict[str, object]] = []
+    for item in values[:256]:
+        if not isinstance(item, dict):
+            continue
+        field_name = str(item.get("field_name") or "").strip()
+        if not field_name:
+            continue
+        raw_value = item.get("field_value")
+        field_value = "" if raw_value is None else str(raw_value)
+        location = str(item.get("location") or "").strip()
+        paragraph_index = item.get("paragraph_index")
+        if not isinstance(paragraph_index, int) or isinstance(paragraph_index, bool):
+            paragraph_index = None
+        coordinates = item.get("table_coordinates")
+        if isinstance(coordinates, (list, tuple)) and all(
+            isinstance(value, int) and not isinstance(value, bool)
+            for value in coordinates
+        ):
+            table_coordinates = tuple(coordinates)
+        else:
+            table_coordinates = None
+        records.append({
+            "field_name": field_name[:256],
+            "field_value": field_value[:4000],
+            "location": location[:256],
+            "paragraph_index": paragraph_index,
+            "table_coordinates": table_coordinates,
+        })
+    return records
+
 def prepare_verified_sources(
     doc_parts: object,
     *,
@@ -403,6 +540,7 @@ def prepare_verified_sources(
         raise ValueError("maximum_chars must be positive")
     documents: list[SourceDocument] = []
     blocks: list[SourceBlock] = []
+    structured_fields: list[SourceBlock] = []
     parts = doc_parts if isinstance(doc_parts, list) else []
     block_size = min(_BLOCK_CHARS, maximum_chars)
     primary_count = sum(
@@ -470,7 +608,35 @@ def prepare_verified_sources(
                 heading_path=(),
                 paragraph_index=paragraph_index,
             ))
-
+        records = _structured_field_records(part)
+        seen_structured_blocks: set[str] = set()
+        for field_index, field in enumerate(records):
+            field_name = str(field["field_name"])
+            field_value = str(field["field_value"])
+            field_text = (
+                f"{field_name}: {field_value}"
+                if field_value
+                else field_name
+            )
+            location = str(field["location"] or f"structured:{field_index}")
+            normalized_hash = _sha256(
+                f"{document_id}|{location}|{field_name}|{field_value}"
+            )
+            block_id = f"{document_id}-B-{normalized_hash[:12]}"
+            if block_id in seen_structured_blocks:
+                continue
+            seen_structured_blocks.add(block_id)
+            structured_fields.append(SourceBlock(
+                block_id=block_id,
+                document_id=document_id,
+                text=field_text,
+                normalized_hash=normalized_hash,
+                heading_path=(),
+                paragraph_index=field["paragraph_index"],
+                table_coordinates=field["table_coordinates"],
+                field_name=field_name,
+                field_value=field_value,
+            ))
     bounded, was_bounded = _bounded_blocks(blocks, maximum_chars)
     if was_bounded:
         warnings.append("SOURCE_BLOCKS_BOUNDED")
@@ -478,6 +644,7 @@ def prepare_verified_sources(
         documents=tuple(documents),
         blocks=bounded,
         warning_codes=tuple(dict.fromkeys(warnings)),
+        structured_fields=tuple(structured_fields),
     )
 
 

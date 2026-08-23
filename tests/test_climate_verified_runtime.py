@@ -1,14 +1,21 @@
 from __future__ import annotations
 
-import pytest
+import base64
+from io import BytesIO
 
+import pytest
+from docx import Document
+
+from app import extract_docx_content
 from sector_lenses.climate_verified_runtime import (
+    PreparedClimateSources,
     prepare_verified_sources,
     resolve_verified_document_context,
     resolve_verified_operation_context,
     run_verified_from_doc_parts,
 )
 
+from sector_lenses.climate_source_blocks import SourceBlock, SourceDocument
 
 def _doc_parts():
     return [
@@ -68,6 +75,91 @@ def test_source_preparation_keeps_risk_control_row_cohesive():
     assert result.blocks[0].text == risk_row
     assert result.blocks[1].text.endswith("during preparation.")
     assert result.blocks[2].text.endswith("Year 1 of implementation.")
+
+
+def test_source_preparation_preserves_raw_order_and_repeated_structured_text():
+    repeated = "Financing Instrument: Investment Project Financing (IPF)"
+    result = prepare_verified_sources([{
+        "label": "PROJECT DOCUMENT",
+        "name": "ordered-pcn.docx",
+        "raw_text": "\n\n".join((
+            "Before the financing table.",
+            repeated,
+            "A repeated structured-looking paragraph.",
+            repeated,
+            "After the financing table.",
+        )),
+        "structured_fields": [{
+            "field_name": "Financing Instrument",
+            "field_value": "Investment Project Financing (IPF)",
+            "location": "t:0:0:0:field",
+            "paragraph_index": 1,
+            "table_coordinates": [0, 0],
+        }],
+    }], maximum_chars=5000)
+
+    assert [item.text for item in result.blocks] == [
+        "Before the financing table.",
+        repeated,
+        "A repeated structured-looking paragraph.",
+        repeated,
+        "After the financing table.",
+    ]
+    assert len(result.structured_fields) == 1
+    assert result.structured_fields[0].field_name == "Financing Instrument"
+    assert result.structured_fields[0].field_value == (
+        "Investment Project Financing (IPF)"
+    )
+
+
+def test_structured_financing_index_is_authoritative_over_metadata_blocks():
+    source = SourceDocument(
+        document_id="DOC-META-PRECEDENCE",
+        filename="project.docx",
+        sha256="abc",
+        applicability="partial",
+        relationship="primary",
+        version_status="latest",
+        operation_match="verified",
+    )
+    incidental_block = SourceBlock(
+        block_id="DOC-META-PRECEDENCE-B-1",
+        document_id=source.document_id,
+        text="Financing Instrument: Program-for-Results Financing (PforR)",
+        normalized_hash="hash-1",
+        heading_path=(),
+        field_name="Financing Instrument",
+        field_value="Program-for-Results Financing (PforR)",
+    )
+    authoritative_block = SourceBlock(
+        block_id="DOC-META-PRECEDENCE-S-1",
+        document_id=source.document_id,
+        text="Financing Instrument: Investment Project Financing (IPF)",
+        normalized_hash="hash-2",
+        heading_path=(),
+        field_name="Financing Instrument",
+        field_value="Investment Project Financing (IPF)",
+    )
+
+    context = resolve_verified_operation_context(PreparedClimateSources(
+        documents=(source,),
+        blocks=(incidental_block,),
+        structured_fields=(authoritative_block,),
+        warning_codes=(),
+    ))
+
+    assert context.instrument_type == "IPF"
+    assert "INSTRUMENT_STRUCTURED_CONFLICT" not in context.warning_codes
+
+
+def test_prepared_sources_constructor_remains_backward_compatible():
+    prepared = PreparedClimateSources(
+        documents=(),
+        blocks=(),
+        warning_codes=(),
+    )
+
+    assert prepared.structured_fields == ()
 
 
 def test_source_preparation_prioritizes_operational_blocks_under_cap():
@@ -386,3 +478,231 @@ def test_explicit_ois_date_overrides_dpf_program_document_regime_marker():
     assert context.document_type == "Program Document"
     assert context.preparation_regime == "legacy_transitional"
     assert "PREPARATION_MARKER_DATE_CONFLICT" in context.warning_codes
+
+
+def test_structured_financing_field_outranks_incidental_instrument_mentions():
+    context = _resolved_context(
+        "Project Concept Note (PCN)_Draft.docx",
+        (
+            "Financing Instrument: Investment Project Financing (IPF)\n\n"
+            "The options discussion compares Program-for-Results delivery with "
+            "the selected approach.\n\n"
+            "Environmental and Social Risk Classification: Substantial"
+        ),
+    )
+
+    assert context.instrument_type == "IPF"
+    assert context.es_regime == "UNRESOLVED"
+    assert "instrument_structured:IPF" in context.evidence_notes
+    assert "INSTRUMENT_ROUTE_AMBIGUOUS" not in context.warning_codes
+
+
+def test_conflicting_structured_financing_fields_fail_closed():
+    context = _resolved_context(
+        "Project Concept Note (PCN)_Draft.docx",
+        (
+            "Financing Instrument: Investment Project Financing (IPF)\n\n"
+            "Financing Instrument: Program-for-Results Financing (PforR)"
+        ),
+    )
+
+    assert context.instrument_type == "Unknown"
+    assert "INSTRUMENT_STRUCTURED_CONFLICT" in context.warning_codes
+    assert all(
+        not note.startswith("instrument_structured:")
+        for note in context.evidence_notes
+    )
+
+
+def test_labelled_pforr_with_ipf_component_is_compatible_hybrid():
+    context = _resolved_context(
+        "Project Concept Note (PCN)_Draft.docx",
+        (
+            "Financing Instrument: Program-for-Results Financing (PforR) with "
+            "an Investment Project Financing (IPF) component"
+        ),
+    )
+
+    assert context.instrument_type == "PforR"
+    assert context.has_ipf_component is True
+    assert "INSTRUMENT_STRUCTURED_CONFLICT" not in context.warning_codes
+
+
+def test_labelled_pforr_ipf_hybrid_with_dpf_marker_fails_closed():
+    context = _resolved_context(
+        "Project Concept Note (PCN)_Draft.docx",
+        (
+            "Financing Instrument: Program-for-Results Financing (PforR) with "
+            "an Investment Project Financing (IPF) component and Development "
+            "Policy Financing (DPF)"
+        ),
+    )
+
+    assert context.instrument_type == "Unknown"
+    assert "INSTRUMENT_STRUCTURED_CONFLICT" in context.warning_codes
+
+
+def test_es_risk_classification_does_not_determine_es_framework_route():
+    context = _resolved_context(
+        "Project Concept Note (PCN)_Draft.docx",
+        (
+            "Financing Instrument: Investment Project Financing (IPF)\n\n"
+            "Environmental and Social Risk Classification: Substantial"
+        ),
+    )
+
+    assert context.instrument_type == "IPF"
+    assert context.es_regime == "UNRESOLVED"
+    assert "ESF_ESS1_TO_ESS10" not in context.evidence_notes
+
+
+def test_composite_markers_in_one_structured_financing_value_fail_closed():
+    source = SourceDocument(
+        document_id="DOC-META",
+        filename="project.docx",
+        sha256="abc",
+        applicability="partial",
+        relationship="primary",
+        version_status="latest",
+        operation_match="verified",
+    )
+    block = SourceBlock(
+        block_id="DOC-META-B-1",
+        document_id="DOC-META",
+        text=(
+            "Financing Instrument: Investment Project Financing (IPF) and "
+            "Program-for-Results Financing (PforR)"
+        ),
+        normalized_hash="hash",
+        heading_path=(),
+        field_name="Financing Instrument",
+        field_value=(
+            "Investment Project Financing (IPF) and "
+            "Program-for-Results Financing (PforR)"
+        ),
+    )
+    prepared = PreparedClimateSources(
+        documents=(source,),
+        blocks=(block,),
+        warning_codes=(),
+    )
+
+    context = resolve_verified_operation_context(prepared)
+
+    assert context.instrument_type == "Unknown"
+    assert "INSTRUMENT_STRUCTURED_CONFLICT" in context.warning_codes
+
+
+def test_pforr_without_ipf_component_does_not_set_hybrid_flag():
+    context = _resolved_context(
+        "Hybrid PforR Program Paper.docx",
+        (
+            "Program-for-Results Financing\nProgram Paper\n"
+            "The operation does not include an IPF component."
+        ),
+    )
+
+    assert context.has_ipf_component is False
+
+
+def test_labelled_pforr_includes_ipf_component_uses_same_positive_matcher():
+    context = _resolved_context(
+        "Project Concept Note (PCN)_Draft.docx",
+        (
+            "Financing Instrument: Program-for-Results Financing (PforR) "
+            "includes an IPF component"
+        ),
+    )
+
+    assert context.instrument_type == "PforR"
+    assert context.has_ipf_component is True
+
+
+def test_empty_structured_financing_field_blocks_narrative_and_filename_inference():
+    source = SourceDocument(
+        document_id="DOC-EMPTY",
+        filename="PforR Project Paper.docx",
+        sha256="abc",
+        applicability="verified",
+        relationship="primary",
+        version_status="latest",
+        operation_match="verified",
+    )
+    block = SourceBlock(
+        block_id="DOC-EMPTY-B-1",
+        document_id="DOC-EMPTY",
+        text="Financing Instrument",
+        normalized_hash="hash",
+        heading_path=(),
+        field_name="Financing Instrument",
+        field_value="",
+    )
+
+    context = resolve_verified_operation_context(
+        PreparedClimateSources(
+            documents=(source,),
+            blocks=(block,),
+            warning_codes=(),
+        )
+    )
+
+    assert context.instrument_type == "Unknown"
+    assert context.has_ipf_component is False
+    assert "INSTRUMENT_STRUCTURED_UNRESOLVED" in context.warning_codes
+    assert "INSTRUMENT_HINT_OVERRIDDEN" not in context.warning_codes
+
+
+def _production_doc_parts(document: Document, name: str):
+    stream = BytesIO()
+    document.save(stream)
+    encoded = base64.b64encode(stream.getvalue()).decode("ascii")
+    text, part_count, structured_fields = extract_docx_content(encoded, name)
+    return [{
+        "label": "PROJECT DOCUMENT",
+        "name": name,
+        "raw_text": text,
+        "page_count": part_count,
+        "structured_fields": structured_fields,
+    }]
+
+
+def test_production_doc_parts_empty_financing_metadata_blocks_inference():
+    document = Document()
+    document.add_paragraph(
+        "The narrative discusses Program-for-Results delivery options."
+    )
+    table = document.add_table(rows=1, cols=2)
+    table.cell(0, 0).text = "Financing Instrument"
+    table.cell(0, 1).text = ""
+
+    prepared = prepare_verified_sources(_production_doc_parts(
+        document, "PforR Project Concept Note.docx"
+    ))
+    context = resolve_verified_operation_context(prepared)
+
+    assert context.instrument_type == "Unknown"
+    assert "INSTRUMENT_STRUCTURED_UNRESOLVED" in context.warning_codes
+
+
+def test_production_doc_parts_structured_ipf_outranks_incidental_pforr_label():
+    document = Document()
+    document.add_paragraph(
+        "Financing Instrument: Program-for-Results Financing (PforR) is an "
+        "alternative discussed in the options analysis."
+    )
+    table = document.add_table(rows=1, cols=2)
+    table.cell(0, 0).text = "Financing Instrument"
+    table.cell(0, 1).text = "Investment Project Financing (IPF)"
+
+    prepared = prepare_verified_sources(_production_doc_parts(
+        document, "IPF Project Concept Note.docx"
+    ))
+    context = resolve_verified_operation_context(prepared)
+
+    assert context.instrument_type == "IPF"
+    assert "INSTRUMENT_STRUCTURED_CONFLICT" not in context.warning_codes
+    assert any(
+        block.field_name == "Financing Instrument"
+        for block in prepared.structured_fields
+    )
+    assert all(block.field_name is None for block in prepared.blocks)
