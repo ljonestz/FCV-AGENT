@@ -603,7 +603,7 @@ STAGE_OUTPUT_SCHEMAS: dict[str, dict[str, object]] = {
                         "type": "array",
                         "items": {"type": "string", "minLength": 1},
                         "minItems": 1,
-                        "maxItems": 3,
+                        # The application validator enforces the upper bound.
                         "description": (
                             "Exactly two or three non-empty plain-text paragraphs, "
                             "totalling 160 to 230 words."

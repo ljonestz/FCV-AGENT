@@ -440,8 +440,9 @@ directions, relevant groups/places/systems, jobs or livelihoods where supported,
 and the practical implication without copying `executive_readout`. It may not use
 Markdown, headings, bullets, invented acronyms/entities, or unsupported actions.
 This is an additive field in the existing call, not a new model request.
-The provider-facing array schema uses the supported `minItems: 1`; deterministic
-application validation still requires exactly two or three paragraphs before the
+The provider-facing array schema uses the supported `minItems: 1` and omits the
+unsupported `maxItems` keyword; deterministic application validation still
+requires exactly two or three paragraphs before the
 field is admitted.
 
 Legacy readers may derive only the overview and evidence/fragment-grounded

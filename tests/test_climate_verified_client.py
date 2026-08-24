@@ -453,7 +453,7 @@ def test_judgment_contract_uses_provider_supported_summary_array_minimum():
     assert summary["required"] == ["paragraphs"]
     assert paragraphs["type"] == "array"
     assert paragraphs["minItems"] == 1
-    assert paragraphs["maxItems"] == 3
+    assert "maxItems" not in paragraphs
     assert paragraphs["items"]["type"] == "string"
     assert paragraphs["items"]["minLength"] == 1
 
