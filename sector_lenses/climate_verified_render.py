@@ -1096,7 +1096,10 @@ _RATING_TONE_COLORS = {
 }
 
 
-def _sensitivity_rating_html(rating: dict[str, object]) -> str:
+def _sensitivity_rating_html(
+    rating: dict[str, object],
+    summary_overview: object = None,
+) -> str:
     """Render the headline climate & FCV sensitivity rating as a scale."""
     level = _rank(rating.get("level"))
     tone = _text(rating.get("tone")) or "unclear"
@@ -1117,12 +1120,17 @@ def _sensitivity_rating_html(rating: dict[str, object]) -> str:
         '<div style="display:flex;gap:3px;margin:7px 0 9px;border-radius:6px;'
         'overflow:hidden;max-width:360px">' + "".join(segments) + "</div>"
     )
-    summary = _text(rating.get("overview_summary"))
-    summary_html = (
-        f'<p style="margin:0 0 10px;font-size:14px;line-height:1.5">'
-        f"{html.escape(summary)}</p>"
-        if summary
-        else ""
+    summaries = (
+        [_text(value) for value in summary_overview if _text(value)]
+        if isinstance(summary_overview, list)
+        else []
+    )
+    if not summaries:
+        legacy_summary = _text(rating.get("overview_summary"))
+        summaries = [legacy_summary] if legacy_summary else []
+    summary_html = "".join(
+        '<p style="margin:0 0 10px;font-size:14px;line-height:1.5">'
+        f"{html.escape(summary)}</p>" for summary in summaries
     )
     return (
         '<section class="climate-overview-panel climate-sens-rating" '
@@ -1205,7 +1213,7 @@ def render_reader_html(model: dict[str, object]) -> str:
     # takeaway up front. The fuller Executive readout follows as detail below.
     rating = _mapping(model.get("climate_sensitivity_rating"))
     if rating:
-        parts.append(_sensitivity_rating_html(rating))
+        parts.append(_sensitivity_rating_html(rating, model.get("summary_overview")))
 
     parts.append(_heading(2, HEADINGS[0]))
     for _exec_para in re.split(r"\n\s*\n+", _text(model.get("executive_readout")).strip()):
@@ -1566,8 +1574,15 @@ def write_reader_docx(model: dict[str, object], path: str | Path) -> Path:
         )
         document.add_paragraph(_text(rating.get("description")))
         # Then the overall summary text below the graphic.
-        summary = _text(rating.get("overview_summary"))
-        if summary:
+        summaries = (
+            [_text(value) for value in model.get("summary_overview", []) if _text(value)]
+            if isinstance(model.get("summary_overview"), list)
+            else []
+        )
+        if not summaries:
+            legacy_summary = _text(rating.get("overview_summary"))
+            summaries = [legacy_summary] if legacy_summary else []
+        for summary in summaries:
             document.add_paragraph(summary)
         caveat = document.add_paragraph(_text(rating.get("caveat")))
         if caveat.runs:

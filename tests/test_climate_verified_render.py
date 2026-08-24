@@ -1660,3 +1660,25 @@ def test_legacy_fallback_validates_rationale_against_non_judgment_prose():
     joined = " ".join(paragraphs)
     assert "UNDP establishes a new committee." not in joined
     assert "The project implementation is documented." in joined
+
+
+def test_static_html_and_docx_prefer_canonical_summary_overview():
+    model = build_reader_model(_assessment())
+    model["summary_overview"] = [
+        "CANONICAL_SUMMARY_MARKER. The project-specific overview belongs here.",
+        "A second canonical paragraph carries the practical implication.",
+    ]
+    model["climate_sensitivity_rating"]["overview_summary"] = (
+        "LEGACY_RATING_SUMMARY_MARKER must not replace the canonical overview."
+    )
+
+    rendered = render_reader_html(model)
+    assert "CANONICAL_SUMMARY_MARKER" in rendered
+    assert "LEGACY_RATING_SUMMARY_MARKER" not in rendered
+
+    output = BytesIO()
+    write_reader_docx(model, output)
+    output.seek(0)
+    docx_text = "\n".join(paragraph.text for paragraph in Document(output).paragraphs)
+    assert "CANONICAL_SUMMARY_MARKER" in docx_text
+    assert "LEGACY_RATING_SUMMARY_MARKER" not in docx_text

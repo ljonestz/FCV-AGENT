@@ -339,7 +339,7 @@ clear them. Follow-on requests carry the structured reader in their history.
 - Detailed follow-up content uses the shared amber/teal bands and safe route labels.
   Watch/guidance disclosures are deduplicated across live, standalone, and DOCX
   renderers and are included in print expansion/restoration.
-- Normal FCV Summary uses `buildNormalFcvWatchGroups()` and
+- Normal FCV Summary uses `normalFcvWatchGroups()` and
   `renderNormalFcvWatchDisclosure()` to place one closed, escaped, stable-order
   disclosure after priorities and before closing. Applicable sources are
   `midCycleWatch`, `dpfWatch`, `p4rWatch`, `regionalWatch`, and
