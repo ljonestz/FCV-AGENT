@@ -602,7 +602,7 @@ STAGE_OUTPUT_SCHEMAS: dict[str, dict[str, object]] = {
                     "paragraphs": {
                         "type": "array",
                         "items": {"type": "string", "minLength": 1},
-                        "minItems": 2,
+                        "minItems": 1,
                         "maxItems": 3,
                         "description": (
                             "Exactly two or three non-empty plain-text paragraphs, "

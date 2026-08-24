@@ -444,7 +444,7 @@ def test_client_retry_uses_one_total_timeout_budget(monkeypatch):
     assert sdk.options[0]["timeout"] == 150
     assert sdk.options[1]["timeout"] == 140
 
-def test_judgment_contract_requires_dedicated_summary_overview_bundle():
+def test_judgment_contract_uses_provider_supported_summary_array_minimum():
     schema = stage_output_schema("judgment_review")
     summary = schema["properties"]["summary_overview"]
     paragraphs = summary["properties"]["paragraphs"]
@@ -452,7 +452,7 @@ def test_judgment_contract_requires_dedicated_summary_overview_bundle():
     assert summary["type"] == "object"
     assert summary["required"] == ["paragraphs"]
     assert paragraphs["type"] == "array"
-    assert paragraphs["minItems"] == 2
+    assert paragraphs["minItems"] == 1
     assert paragraphs["maxItems"] == 3
     assert paragraphs["items"]["type"] == "string"
     assert paragraphs["items"]["minLength"] == 1
