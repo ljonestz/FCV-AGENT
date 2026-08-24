@@ -493,6 +493,31 @@ live HTML, standalone HTML, and DOCX. This state must not be rendered as a
 successful no-priority result. When the compiler returns no candidates at all,
 the ordinary neutral zero-priority message remains valid.
 
+## Structured DOCX extraction and verified routing (v9.38)
+
+`docx_structure.py` is the single OOXML traversal path for DOCX text and metadata.
+It recursively walks visible paragraphs, tables, nested tables, and structured
+document tags in document order; normalizes checked/unchecked controls; and emits
+stable coordinates for header/value structured fields, including explicit empty
+values. `app.extract_docx_text()` deliberately keeps its public `(text,
+part_count)` return shape. Internal upload handling uses
+`extract_docx_content()` and passes `structured_fields` as a separate sidecar in
+both `/api/run-stage` and `/api/run-express`; those fields are not inserted into
+the evidence-block sequence.
+
+Verified Climate sources identify this projection as `source-blocks-v3`.
+Structured financing fields take precedence over prose markers. Conflicting or
+explicitly empty values produce typed unresolved/conflict warnings and fail
+closed; generic E&S values such as `Substantial` cannot establish the ESF route
+without separate explicit framework evidence. The resolved operation context is
+returned on Stage 1 and remains the authority for Summary and Detailed drafting
+gates.
+
+Normal FCV Stage 3 retains its existing model output contract. Applicable
+mid-cycle, DPF, PforR, regional, and horizon watch arrays are normalized and
+deduplicated for a single render-time Summary disclosure; no additional backend
+prompt, schema, rating, or model call is introduced.
+
 The operation-context resolver uses document nomenclature as a strong regime
 signal when an OIS date is unavailable. Date-based routing uses the IPF/PforR
 boundary of 17 April 2026 and the DPF boundary of 18 April 2026.

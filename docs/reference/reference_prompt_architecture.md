@@ -430,6 +430,22 @@ drafting block. A second block is optional and may target an operational
 instrument only when that named instrument and its relationship to the project
 are evidenced.
 
+### Climate Summary overview contract (v9.38)
+
+The existing judgment call, versioned `climate-judgments-v2.4`, also returns
+`summary_overview.paragraphs`. Validation requires two or three plain-text
+paragraphs totalling 160-230 words, grounded in admitted facts and contextual
+evidence. The overview must synthesize project purpose, the two Climate-FCV
+directions, relevant groups/places/systems, jobs or livelihoods where supported,
+and the practical implication without copying `executive_readout`. It may not use
+Markdown, headings, bullets, invented acronyms/entities, or unsupported actions.
+This is an additive field in the existing call, not a new model request.
+
+Legacy readers may derive only the overview and evidence/fragment-grounded
+rationales from validated stored content. They must not relabel the executive
+readout as the Summary overview. Failure is recorded explicitly so the reader can
+render bounded fallback content without weakening the detailed assessment.
+
 Deterministic checks reject unsupported actors, instruments, technical systems,
 effectiveness/appraisal timing, mandatory wording, evidence references, and
 duplicative optional drafting. Bounded telemetry records only field paths and

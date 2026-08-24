@@ -42,6 +42,7 @@ The authoritative OPCS policies, directives, and guidance notes this app's promp
 **Only GitHub Copilot (this CLI / Copilot Chat / Copilot coding agent) is permitted to read the source files in the PPF folder, the `OPCS docs.xlsx` index, the `LLM input on relevant project docs.docx` triage doc, and the ESF Manual PDF.** Claude Code, OpenAI Codex, or any other coding agent working in this repository **must not** open, read, or ingest these source documents directly - even if asked to do OPCS-policy-consistency work. Other agents should work from **already-written, GitHub-Copilot-authored summaries** (e.g. design specs and plans under `docs/superpowers/`, or corrections already landed in `background_docs.py`/`app.py`) rather than the raw policy corpus itself. If a non-Copilot agent's task appears to require reading these source files directly, it should stop and ask the maintainer rather than accessing the folder.
 
 **Version history:**
+- **v9.38** - Production Climate Summary and DOCX metadata extraction: one shared recursive OOXML walker (`docx_structure.py`) now preserves visible paragraph/table/SDT order, nested tables, checked controls, and structured header/value fields while `extract_docx_text()` retains its public two-value API and internal routes carry a separate structured-field sidecar. Climate-only verified runs use source manifest `source-blocks-v3`, structured financing metadata takes precedence over prose with typed conflict/unresolved warnings, and the judgment call emits the validated `summary_overview.paragraphs` contract (`climate-judgments-v2.4`) without another model call. Climate Summary renders that overview, closed watch/guidance disclosures, and the same gated drafting content as Detailed; normal FCV keeps its established narrative/schema/prompt contract and adds only an applicable closed watch-items disclosure.
 - **v7.0** — Redesigned from 4 stages to 3; full 12 OST recs + 25 key questions; FCV Playbook integration; Under the Hood panels; refresh_shift field
 - **v7.2** — Stage 2 dynamic thematic narrative; actions[] array replaces recommendation string; Go Deeper 2-tab panel; Stage 3 clean memo (no inline citations)
 - **v7.4** — Express Analysis mode (single SSE endpoint for all 3 stages)
@@ -308,6 +309,7 @@ These folders exist on the development machine but are gitignored — do not com
 ```
 app.py              # Flask backend, all prompts (DEFAULT_PROMPTS), routes, document processing
 index.html          # Single-page frontend UI (Stage 1–3, Go Deeper, Express mode, prompt modal)
+docx_structure.py   # Shared recursive OOXML walker + structured-field extraction
 background_docs.py  # 10 constants: FCV_GUIDE, FCV_OPERATIONAL_MANUAL, FCV_REFRESH_FRAMEWORK,
                     #   PLAYBOOK_DIAGNOSTICS, PLAYBOOK_PREPARATION, PLAYBOOK_IMPLEMENTATION,
                     #   PLAYBOOK_CLOSING, STAGE_GUIDANCE_MAP, FCS_LIST, CPF_INTEGRATION_GUIDE
@@ -847,7 +849,7 @@ docs/superpowers/  # Dev plans and specs
 
 ---
 
-**Last updated:** 2026-08-13
-**Current version:** FCV Project Screener v9.37
+**Last updated:** 2026-08-24
+**Current version:** FCV Project Screener v9.38
 **Claude model:** `claude-sonnet-4-6`
 **Stack:** Flask 3.0.3 + vanilla JS + Anthropic SDK + gunicorn/gevent on Render

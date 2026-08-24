@@ -161,3 +161,20 @@ not-evidenced states, require resolvable evidence IDs. The canonical reader deri
 research from distinct `CE-LIVE-*` evidence IDs, and keeps drafting labels,
 destinations, status, guidance basis, provenance count, and the
 `preview; not approved` label in parity across browser, HTML, and DOCX outputs.
+
+## Climate Summary and extraction compatibility (v9.38)
+
+The compatible reader adds `summary_overview.paragraphs` to the existing
+four-dimensional judgment response and uses prompt version
+`climate-judgments-v2.4`; it does not add a model call or alter delimiter names,
+priority JSON, rating semantics, or the three-priority cap. Verified source
+manifests use `source-blocks-v3` so structured DOCX metadata can travel beside,
+but never replace or reorder, evidence blocks. Structured financing fields outrank
+prose markers and conflicts fail closed. Operational guidance remains
+`climate-guidance-v3`.
+
+Summary may expose one closed watch-items disclosure and one closed curated WBG
+guidance disclosure. Suggested drafting appears in both Summary and Detailed only
+after the shared document-plus-instrument gate passes. These are reader-contract
+changes; normal FCV retains its narrative/schema/prompt/rating contracts and only
+adds conditional render-time watch items from already-returned arrays.

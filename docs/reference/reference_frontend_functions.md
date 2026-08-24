@@ -324,6 +324,28 @@ clear them. Follow-on requests carry the structured reader in their history.
 - The executable frontend contract test covers the eleven-file boundary and verifies
   that a full ten-document package cannot accept another file.
 
+## Summary disclosures and drafting parity (v9.38)
+
+- Climate Summary renders `summary_overview.paragraphs`; the first sentence is
+  visually restrained and escaped, while the remaining paragraphs stay in the
+  normal reading flow.
+- `renderClimateVerifiedAssessment()` places one closed watch-items disclosure and
+  one closed project-specific guidance disclosure in Summary. Guidance shows only
+  curated publication purpose/value and never fabricates a generated
+  project-specific instruction.
+- Current-document and optional operational-instrument drafting use the same gate
+  in Summary and Detailed: both document and instrument must be confirmed. An
+  unresolved E&S route alone does not suppress otherwise valid drafting.
+- Detailed follow-up content uses the shared amber/teal bands and safe route labels.
+  Watch/guidance disclosures are deduplicated across live, standalone, and DOCX
+  renderers and are included in print expansion/restoration.
+- Normal FCV Summary uses `buildNormalFcvWatchGroups()` and
+  `renderNormalFcvWatchDisclosure()` to place one closed, escaped, stable-order
+  disclosure after priorities and before closing. Applicable sources are
+  `midCycleWatch`, `dpfWatch`, `p4rWatch`, `regionalWatch`, and
+  `horizonConsiderations`; the established normal-FCV prose, schema, ratings, and
+  prompts are unchanged.
+
 This release changes deterministic reader assembly and presentation only. It does
 not change Climate-FCV prompts, schemas, model calls, ratings, or
 recommendation/evidence admission. The Stage 2 Express timeout remains 15 minutes.
