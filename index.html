@@ -498,6 +498,17 @@
     .climate-verified-summary .climate-summary-watch-disclosure[open]>summary::before,.climate-verified-summary .climate-summary-guidance-disclosure[open]>summary::before{transform:rotate(90deg)}
     .climate-verified-summary .climate-summary-watch-disclosure>summary:focus-visible,.climate-verified-summary .climate-summary-guidance-disclosure>summary:focus-visible{outline:3px solid #f2a900;outline-offset:2px}
     .climate-verified-summary .climate-summary-watch-body,.climate-verified-summary .climate-guidance-body{padding:0 0 6px}
+    .normal-fcv-summary .normal-fcv-watch-disclosure{border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin-top:14px}
+    .normal-fcv-summary .normal-fcv-watch-disclosure>summary{cursor:pointer;list-style:none;padding:13px 0;font-family:'Open Sans',sans-serif;font-size:14px;font-weight:700;color:var(--wbg-navy)}
+    .normal-fcv-summary .normal-fcv-watch-disclosure>summary::-webkit-details-marker{display:none}
+    .normal-fcv-summary .normal-fcv-watch-disclosure>summary::before{content:"\25B8";display:inline-block;margin-right:8px;color:var(--wbg-blue);transition:transform .15s}
+    .normal-fcv-summary .normal-fcv-watch-disclosure[open]>summary::before{transform:rotate(90deg)}
+    .normal-fcv-summary .normal-fcv-watch-disclosure>summary:focus-visible{outline:3px solid #f2a900;outline-offset:2px}
+    .normal-fcv-summary .normal-fcv-watch-body{padding:0 0 6px}
+    .normal-fcv-summary .normal-fcv-watch-group{margin:0 0 12px}
+    .normal-fcv-summary .normal-fcv-watch-group:last-child{margin-bottom:0}
+    .normal-fcv-summary .normal-fcv-watch-group h3{margin:0 0 5px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--wbg-navy)}
+    .normal-fcv-summary .normal-fcv-watch-group ul{margin:0;padding-left:20px;color:var(--text);line-height:1.6}
     .climate-verified-assessment .climate-guidance{background:transparent;padding:0}
     .climate-verified-assessment .climate-guidance-disclosure{border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
     .climate-verified-assessment .climate-guidance-disclosure>summary{cursor:pointer;list-style:none;padding:13px 0;font-family:'Open Sans',sans-serif;font-size:15px;font-weight:700;color:var(--wbg-navy)}
@@ -536,6 +547,7 @@
       .climate-verified-assessment .climate-fold:not([open])>:not(summary){display:block!important}
       .climate-verified-assessment .climate-guidance-disclosure:not([open])>:not(summary){display:block!important}
       .climate-summary-watch-disclosure:not([open])>:not(summary){display:block!important}
+      .normal-fcv-watch-disclosure:not([open])>:not(summary){display:block!important}
       .climate-summary-guidance-disclosure:not([open])>:not(summary){display:block!important}
       .climate-verified-assessment .climate-priority-card>summary::after{display:none}
       .climate-verified-assessment a{color:#000;text-decoration:underline}
@@ -3209,6 +3221,14 @@
       stageThreePriorities=Array.isArray(savedLensState.stageThreePriorities)?savedLensState.stageThreePriorities:[];
       fcvRating=savedLensState.fcvRating||'';
       fcvResponsivenessRating=savedLensState.fcvResponsivenessRating||'';
+      midCycleWatch=Array.isArray(savedLensState.midCycleWatch)?savedLensState.midCycleWatch:(Array.isArray(savedLensState.mid_cycle_watch)?savedLensState.mid_cycle_watch:[]);
+      dpfWatch=Array.isArray(savedLensState.dpfWatch)?savedLensState.dpfWatch:(Array.isArray(savedLensState.dpf_watch)?savedLensState.dpf_watch:[]);
+      p4rWatch=Array.isArray(savedLensState.p4rWatch)?savedLensState.p4rWatch:(Array.isArray(savedLensState.p4r_watch)?savedLensState.p4r_watch:[]);
+      regionalWatch=Array.isArray(savedLensState.regionalWatch)?savedLensState.regionalWatch:(Array.isArray(savedLensState.regional_watch)?savedLensState.regional_watch:[]);
+      horizonConsiderations=typeof savedLensState.horizonConsiderations==='string'?savedLensState.horizonConsiderations:(typeof savedLensState.horizon_considerations==='string'?savedLensState.horizon_considerations:'');
+      docType=savedLensState.docType||docType;
+      instrumentType=savedLensState.instrumentType||instrumentType;
+      countryScope=savedLensState.countryScope||countryScope;
       if(supportsClimateVerifiedStage3View())stageThreePriorities=Array.isArray(climateVerifiedReader&&climateVerifiedReader.priorities)?climateVerifiedReader.priorities:[];
       stage3View=supportsAnyStage3Summary()?'summary':'detailed';
       // Restore any usable Detailed result; Summary is an optional enhancement.
@@ -3280,6 +3300,8 @@
       fileNames: { project: pF.map(f=>f.name), context: cF.map(f=>f.name) },
       docType: docType,
       analysisMode: analysisMode,
+      instrumentType: instrumentType,
+      countryScope: countryScope,
       stageOutputs: stageOutputs,
       stageHists: stageHists,
       priorityQuestions: priorityQuestions,
@@ -3295,7 +3317,12 @@
       stageConciseReadout: stageConciseReadout,
       stageThreePriorities: stageThreePriorities,
       fcvRating: fcvRating,
-      fcvResponsivenessRating: fcvResponsivenessRating
+      fcvResponsivenessRating: fcvResponsivenessRating,
+      midCycleWatch: midCycleWatch,
+      dpfWatch: dpfWatch,
+      p4rWatch: p4rWatch,
+      regionalWatch: regionalWatch,
+      horizonConsiderations: horizonConsiderations
     };
     const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
     const url = URL.createObjectURL(blob);
@@ -3341,6 +3368,8 @@
         }
         hist = state.history;
         curS = state.currentStage || 0;
+        if(state.instrumentType) instrumentType = state.instrumentType;
+        if(state.countryScope) countryScope = state.countryScope;
         if(state.docType) { docType = state.docType; updateDocTypeBadge(); }
         // v2 fields — backwards-compat: treat missing analysisMode as 'stepbystep'
         selectMode(state.analysisMode || 'stepbystep');
@@ -3360,6 +3389,11 @@
         stageThreePriorities = Array.isArray(state.stageThreePriorities) ? state.stageThreePriorities : [];
         fcvRating = state.fcvRating || '';
         fcvResponsivenessRating = state.fcvResponsivenessRating || '';
+        midCycleWatch = Array.isArray(state.midCycleWatch) ? state.midCycleWatch : (Array.isArray(state.mid_cycle_watch) ? state.mid_cycle_watch : []);
+        dpfWatch = Array.isArray(state.dpfWatch) ? state.dpfWatch : (Array.isArray(state.dpf_watch) ? state.dpf_watch : []);
+        p4rWatch = Array.isArray(state.p4rWatch) ? state.p4rWatch : (Array.isArray(state.p4r_watch) ? state.p4r_watch : []);
+        regionalWatch = Array.isArray(state.regionalWatch) ? state.regionalWatch : (Array.isArray(state.regional_watch) ? state.regional_watch : []);
+        horizonConsiderations = typeof state.horizonConsiderations === 'string' ? state.horizonConsiderations : (typeof state.horizon_considerations === 'string' ? state.horizon_considerations : '');
         if(supportsClimateVerifiedStage3View())stageThreePriorities=Array.isArray(climateVerifiedReader&&climateVerifiedReader.priorities)?climateVerifiedReader.priorities:[];
         stage3View=supportsAnyStage3Summary()?'summary':'detailed';
         const currentVersions=Object.fromEntries(lensCatalogue.map(l=>[l.id,l.version]));
@@ -3966,8 +4000,11 @@
               if(p.climate_unlinked!==undefined)climatePriorityUnlinked=p.climate_unlinked;
               if(p.climate_total!==undefined)climatePriorityTotal=p.climate_total;
               if(p.wider_fcv_context!==undefined)stageWiderFcvContext=p.wider_fcv_context||null;
-              if(p.mid_cycle_watch)midCycleWatch=p.mid_cycle_watch;if(p.dpf_watch)dpfWatch=p.dpf_watch;if(p.p4r_watch)p4rWatch=p.p4r_watch;if(p.regional_watch)regionalWatch=p.regional_watch;
-              if(p.horizon_considerations)horizonConsiderations=p.horizon_considerations;
+              midCycleWatch=Array.isArray(p.mid_cycle_watch)?p.mid_cycle_watch:[];
+              dpfWatch=Array.isArray(p.dpf_watch)?p.dpf_watch:[];
+              p4rWatch=Array.isArray(p.p4r_watch)?p.p4r_watch:[];
+              regionalWatch=Array.isArray(p.regional_watch)?p.regional_watch:[];
+              horizonConsiderations=typeof p.horizon_considerations==='string'?p.horizon_considerations:'';
               if(p.applied_snippets)stageAppliedSnippets=p.applied_snippets;
               fcvSafeLocalStorageSet('stage3_timestamp',Date.now());
               updateExpressStage(3,'done','Complete');
@@ -4244,7 +4281,8 @@
                 stageResponsivenessSummary=p.responsiveness_summary||'';
                 stageConciseReadout=p.concise_readout||null;
                 openSummaryPriority=0;
-                midCycleWatch=p.mid_cycle_watch||[];dpfWatch=p.dpf_watch||[];p4rWatch=p.p4r_watch||[];regionalWatch=p.regional_watch||[];
+                midCycleWatch=Array.isArray(p.mid_cycle_watch)?p.mid_cycle_watch:[];dpfWatch=Array.isArray(p.dpf_watch)?p.dpf_watch:[];p4rWatch=Array.isArray(p.p4r_watch)?p.p4r_watch:[];regionalWatch=Array.isArray(p.regional_watch)?p.regional_watch:[];
+                horizonConsiderations=typeof p.horizon_considerations==='string'?p.horizon_considerations:'';
                 if(p.fcv_rating)fcvRating=p.fcv_rating;
                 if(p.fcv_responsiveness_rating)fcvResponsivenessRating=p.fcv_responsiveness_rating;
                 if(p.priorities)stageThreePriorities=p.priorities;
@@ -4304,8 +4342,6 @@
                 if(p.climate_unlinked!==undefined)climatePriorityUnlinked=p.climate_unlinked;
                 if(p.climate_total!==undefined)climatePriorityTotal=p.climate_total;
                 if(p.wider_fcv_context!==undefined)stageWiderFcvContext=p.wider_fcv_context||null;
-                if(p.horizon_considerations)horizonConsiderations=p.horizon_considerations;
-                if(p.mid_cycle_watch)midCycleWatch=p.mid_cycle_watch;if(p.dpf_watch)dpfWatch=p.dpf_watch;if(p.p4r_watch)p4rWatch=p.p4r_watch;if(p.regional_watch)regionalWatch=p.regional_watch;
                 // Clear Go Deeper caches so stale results don't reappear for new Stage 3 run
                 currentDeeperTab = {};
                 for(var i=0;i<10;i++){
@@ -5531,6 +5567,7 @@
     curS=stage;
     for(let i=stage+1;i<=3;i++){delete stageOutputs[i];delete stageHists[i];}
     stageThreePriorities=[];stageConciseReadout=null;openSummaryPriority=0;fcvRating='';fcvResponsivenessRating='';stageWiderFcvContext=null;climatePriorityUnlinked=0;climatePriorityTotal=0;climateVerifiedAssessment=null;climateVerifiedReader=null;stage3View='detailed';stage3DetailedHtml='';
+    midCycleWatch=[];dpfWatch=[];p4rWatch=[];regionalWatch=[];horizonConsiderations='';
     clearUI();renderOut(stage,stageOutputs[stage],false);
     if(stage===2&&stage2UnderHood){buildUnderHoodPanels(stage2UnderHood);updateSidebar();}
     if(stage===2)renderLensDiagnostic();
@@ -5573,7 +5610,7 @@
     try{localStorage.setItem('fcv_express_stageOutputs',JSON.stringify(outputs));}catch(e){}
     try{localStorage.setItem('fcv_express_stageHists',JSON.stringify(hists));}catch(e){}
     try{localStorage.setItem('fcv_express_curS',curStage);}catch(e){}
-    try{localStorage.setItem('fcv_express_lensState',JSON.stringify({activeLenses,lensVersions:lensVersions(),lensDiagnostic,lensContextSources,climateResearch,climateGrounding,climateVerifiedAssessment: climateVerifiedAssessment,climateVerifiedReader: climateVerifiedReader,stageConciseReadout,stageThreePriorities,fcvRating,fcvResponsivenessRating}));}catch(e){}
+    try{localStorage.setItem('fcv_express_lensState',JSON.stringify({activeLenses,lensVersions:lensVersions(),lensDiagnostic,lensContextSources,climateResearch,climateGrounding,climateVerifiedAssessment: climateVerifiedAssessment,climateVerifiedReader: climateVerifiedReader,stageConciseReadout,stageThreePriorities,fcvRating,fcvResponsivenessRating,midCycleWatch,dpfWatch,p4rWatch,regionalWatch,horizonConsiderations,docType,instrumentType,countryScope}));}catch(e){}
   }
 
   function showExpressProgress(){
@@ -5937,7 +5974,7 @@
     }
 
     // ── Watch List ──
-    if(horizonConsiderations && horizonConsiderations.trim()){
+    if(typeof horizonConsiderations==='string' && horizonConsiderations.trim()){
       body += `<h2 class="exp-section-hdr">Watch List for Supervision</h2>
         <div class="horizon-body">${wrapSRTerms(md(horizonConsiderations))}</div>`;
     }
@@ -6052,9 +6089,14 @@ ${body}
   function reset(){
     pF=[];cF=[];hist=[];curS=0;busy=false;stageOutputs={};stageHists={};researchBrief='';researchCountry='';priorityQuestions=[];focusQuestionsResult=null;pqPanelEnabled=true;
     activeLenses=[];resolvedLensVersions={};lensSuggestions=[];lensDiagnostic={};lensContextSources=[];climateResearch={};climateGrounding={};climateIntegration=null;climateVerifiedAssessment=null;climateVerifiedReader=null;lensSelectionTouched=false;lensSelectionLocked=false;renderLensSelector();
+    midCycleWatch=[];dpfWatch=[];p4rWatch=[];regionalWatch=[];horizonConsiderations='';
     stageThreePriorities=[];stageConciseReadout=null;openSummaryPriority=0;fcvRating='';fcvResponsivenessRating='';stage3View='detailed';stage3DetailedHtml='';
     { const _pc=document.getElementById('pq-confirm'); if(_pc){_pc.innerHTML='';_pc.style.display='none';} }
     ['stage2_timestamp','stage3_timestamp','stage3_consistency_dismissed'].forEach(k=>localStorage.removeItem(k));
+    localStorage.removeItem('fcv_express_stageOutputs');
+    localStorage.removeItem('fcv_express_stageHists');
+    localStorage.removeItem('fcv_express_curS');
+    localStorage.removeItem('fcv_express_lensState');
     document.getElementById('upload-panel').style.display='block';
     document.getElementById('analysis-panel').style.display='none';
     document.getElementById('landing-hero').style.display='block';
@@ -6367,13 +6409,58 @@ ${body}
     return `<div class="concise-rating-indicators" aria-label="FCV assessment indicators"><div class="concise-rating-indicator"><span>FCV sensitivity</span><strong>${esc(fcvRating||'Not available')}</strong></div><div class="concise-rating-indicator"><span>FCV responsiveness</span><strong>${esc(fcvResponsivenessRating||'Not available')}</strong></div></div>`;
   }
 
+  function normalFcvWatchGroups(context){
+    const hasContext=!!(context&&typeof context==='object');
+    const source=hasContext?context:{};
+    const defaultDocType=typeof docType==='undefined'?'':docType;
+    const defaultInstrument=typeof instrumentType==='undefined'?'':instrumentType;
+    const defaultScope=typeof countryScope==='undefined'?'single':countryScope;
+    const defaultMid=typeof midCycleWatch==='undefined'?[]:midCycleWatch;
+    const defaultDpf=typeof dpfWatch==='undefined'?[]:dpfWatch;
+    const defaultP4r=typeof p4rWatch==='undefined'?[]:p4rWatch;
+    const defaultRegional=typeof regionalWatch==='undefined'?[]:regionalWatch;
+    const defaultHorizon=typeof horizonConsiderations==='undefined'?'':horizonConsiderations;
+    const read=(camel,snake,fallback)=>hasContext?(Object.prototype.hasOwnProperty.call(source,camel)?source[camel]:Object.prototype.hasOwnProperty.call(source,snake)?source[snake]:fallback):fallback;
+    const doc=String(read('docType','doc_type',defaultDocType)||'').trim();
+    const instrument=String(read('instrumentType','instrument_type',defaultInstrument)||'').trim();
+    const scope=String(read('countryScope','country_scope',defaultScope)||'').trim().toLowerCase().replace(/[_-]+/g,' ');
+    const isMidCycle=/^(af|additional financing|additional financing paper|restructuring|restructuring paper)$/i.test(doc);
+    const isDpf=/^(dpf|dpo|development policy financing|development policy operation|development policy operations)$/i.test(instrument)||/^(dpf|dpo)$/i.test(doc);
+    const isP4r=/^(pforr|p4r|program for results|program-for-results)$/i.test(instrument)||/^(pforr|p4r)$/i.test(doc);
+    const isRegional=scope==='multi'||scope==='regional'||scope==='multi country'||scope==='regional operation'||scope==='regional operations'||/regional/i.test(doc)||(hasContext&&(source.is_multi_country===true||source.regional_pdo===true));
+    const groups=[];const seen=new Set();
+    const addGroup=(label,raw)=>{
+      const values=Array.isArray(raw)?raw:[raw];const items=[];
+      values.forEach(value=>{
+        if(typeof value!=='string'&&typeof value!=='number')return;
+        const text=String(value).replace(/\s+/g,' ').trim();if(!text)return;
+        const key=text.toLowerCase().replace(/[.!?]+$/,'');if(seen.has(key))return;
+        seen.add(key);items.push(text);
+      });
+      if(items.length)groups.push({label,items});
+    };
+    if(isMidCycle)addGroup('Mid-cycle changes',read('midCycleWatch','mid_cycle_watch',defaultMid));
+    if(isDpf)addGroup('DPF policy actions',read('dpfWatch','dpf_watch',defaultDpf));
+    if(isP4r)addGroup('PforR delivery',read('p4rWatch','p4r_watch',defaultP4r));
+    if(isRegional)addGroup('Regional or multi-country delivery',read('regionalWatch','regional_watch',defaultRegional));
+    addGroup('Longer-term considerations',read('horizonConsiderations','horizon_considerations',defaultHorizon));
+    return groups;
+  }
+
+  function renderNormalFcvWatchDisclosure(context){
+    const groups=normalFcvWatchGroups(context);if(!groups.length)return '';
+    const body=groups.map(group=>'<section class="normal-fcv-watch-group"><h3>'+esc(group.label)+'</h3><ul>'+group.items.map(item=>'<li>'+esc(item)+'</li>').join('')+'</ul></section>').join('');
+    return '<details class="normal-fcv-watch-disclosure"><summary>What to keep an eye on</summary><div class="normal-fcv-watch-body">'+body+'</div></details>';
+  }
+
   function renderNormalFcvSummary(){
     const readout=stageConciseReadout&&typeof stageConciseReadout==='object'?stageConciseReadout:{};
     const strengths=(Array.isArray(readout.strengths)?readout.strengths:[]).map(strength=>`<div class="concise-strength"><strong>${esc(strength.title||'Project strength')}</strong><span class="concise-strength-text">${esc(strength.text||'')}</span></div>`).join('');
     const strengthsTransition=`<p class="concise-transition">${esc(readout.strengths_transition||'')}</p>`;
     const prioritiesTransition=`<p class="concise-transition">${esc(readout.priorities_transition||'')}</p>`;
     const closing=`<p class="concise-closing">${esc(readout.closing||'')}</p>`;
-    return `<div class="concise-readout normal-fcv-summary"><div class="concise-read-time">Five-minute readout</div><div class="concise-section-label">Overall assessment</div><h2 class="concise-headline">${esc(readout.headline||'FCV assessment summary')}</h2><p class="concise-overview">${esc(readout.overview||'')}</p>${renderFcvRatingIndicators()}${strengthsTransition}<div class="concise-section-label">What is already working</div><div class="concise-strengths">${strengths}</div>${prioritiesTransition}${renderStage3AdvisoryTransition('normal')}<div class="concise-section-label">Priority actions for the task team</div><div id="summary-priority-accordion">${renderSummaryPriorityAccordion()}</div>${closing}</div>`;
+    const watchDisclosure=renderNormalFcvWatchDisclosure();
+    return `<div class="concise-readout normal-fcv-summary"><div class="concise-read-time">Five-minute readout</div><div class="concise-section-label">Overall assessment</div><h2 class="concise-headline">${esc(readout.headline||'FCV assessment summary')}</h2><p class="concise-overview">${esc(readout.overview||'')}</p>${renderFcvRatingIndicators()}${strengthsTransition}<div class="concise-section-label">What is already working</div><div class="concise-strengths">${strengths}</div>${prioritiesTransition}${renderStage3AdvisoryTransition('normal')}<div class="concise-section-label">Priority actions for the task team</div><div id="summary-priority-accordion">${renderSummaryPriorityAccordion()}</div>${watchDisclosure}${closing}</div>`;
   }
 
   function renderStage3Summary(){
@@ -6564,6 +6651,9 @@ ${body}
       const host=document.getElementById('summary-priority-accordion');if(host)host.innerHTML=renderSummaryPriorityAccordion(summaryPriorities);
     }else{
       renderPrioritiesIntro();renderPriorityStepper();showPriority(preservePriority?currentPriority:0);
+      if(typeof horizonConsiderations==='string'&&horizonConsiderations.trim()){
+        renderHorizonPanel(horizonConsiderations);
+      }
     }
     if(focusTabId){
       const focusTab=document.getElementById(focusTabId);
@@ -6594,12 +6684,11 @@ ${body}
       renderPrioritiesIntro();
       renderPriorityStepper();
       showPriority(0);
+      if(typeof horizonConsiderations==='string'&&horizonConsiderations.trim()){
+        renderHorizonPanel(horizonConsiderations);
+      }
     }
     updateSidebar();
-    // Render Horizon Considerations panel if available
-    if(horizonConsiderations && horizonConsiderations.trim()){
-      renderHorizonPanel(horizonConsiderations);
-    }
   }
 
   async function maybeRunPriorityQuestions(force){
@@ -6700,7 +6789,7 @@ ${body}
     const panel=document.createElement('details');
     panel.id='horizon-panel';
     panel.className='horizon-panel ani';
-    const rendered=typeof md!=='undefined'?md.render(text):text.replace(/\n/g,'<br>');
+    const rendered=typeof md==='function'?md(text):text.replace(/\n/g,'<br>');
     panel.innerHTML='<summary>Watch List for Supervision — Risks to Monitor During Implementation</summary>'
       +'<div class="horizon-body">'
       +'<p class="horizon-disclaimer">These are FCV risks or dynamics the team cannot act on now but should monitor during implementation. They do not affect the FCV ratings above.</p>'

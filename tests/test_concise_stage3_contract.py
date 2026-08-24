@@ -655,6 +655,8 @@ def test_frontend_normal_summary_renderer_includes_required_sections():
             "renderFcvRatingIndicators",
             "getConcisePriority",
             "renderSummaryPriorityAccordion",
+            "normalFcvWatchGroups",
+            "renderNormalFcvWatchDisclosure",
             "renderNormalFcvSummary",
         )
     )
@@ -1291,3 +1293,177 @@ def test_fallback_concise_title_strips_rank_prefix_without_touching_detailed_tit
     assert result["concise_readout"] == CONCISE_READOUT
     assert result["priorities"][1]["concise"]["title"] == "Access in Bentiu"
     assert result["priorities"][1]["title"] == priority["title"]
+
+
+def test_normal_fcv_watch_groups_are_applicable_stable_deduplicated_and_escaped():
+    source = open(os.path.join(os.path.dirname(app.__file__), "index.html"), encoding="utf-8").read()
+    helpers = "\n".join(_extract_js_function(source, name) for name in ("normalFcvWatchGroups", "renderNormalFcvWatchDisclosure"))
+    script = f"""
+const esc=value=>String(value??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+{helpers}
+const groups=normalFcvWatchGroups({{
+  doc_type:'AF', instrument_type:'IPF', country_scope:'multi',
+  mid_cycle_watch:['  Access <script>alert(1)</script>.  ', 'access <script>alert(1)</script>'],
+  regional_watch:['Regional coordination matters', 'Regional coordination matters!'],
+  dpf_watch:['Must not appear'], p4r_watch:['Must not appear'],
+  horizon_considerations:'Longer-term resilience should stay in view.'
+}});
+if(groups.length!==3)throw new Error('expected three applicable groups: '+JSON.stringify(groups));
+if(groups[0].label!=='Mid-cycle changes')throw new Error('wrong AF label');
+if(groups[1].label!=='Regional or multi-country delivery')throw new Error('wrong regional label');
+if(groups[2].label!=='Longer-term considerations')throw new Error('wrong horizon label');
+if(groups[0].items.length!==1||groups[1].items.length!==1)throw new Error('stable dedup failed: '+JSON.stringify(groups));
+const html=renderNormalFcvWatchDisclosure({{doc_type:'AF',country_scope:'multi',mid_cycle_watch:['Access <b>risk</b>'],regional_watch:['Regional coordination']}});
+if(!html.includes('What to keep an eye on'))throw new Error('missing disclosure label');
+if(html.includes('<b>risk</b>')||!html.includes('Access &lt;b&gt;risk&lt;/b&gt;'))throw new Error('watch HTML was not escaped: '+html);
+if(html.includes(' open')||html.includes('<details open'))throw new Error('disclosure should be closed initially');
+"""
+    result = subprocess.run(["node", "-e", script], capture_output=True, text=True, check=False)
+    assert result.returncode == 0, result.stderr
+
+
+@pytest.mark.parametrize(
+    ("context", "expected_label", "forbidden_label"),
+    [
+        ({"doc_type": "PAD", "instrument_type": "IPF", "mid_cycle_watch": ["AF only"]}, "", "Mid-cycle changes"),
+        ({"doc_type": "PAD", "instrument_type": "DPO", "dpf_watch": ["Policy action"]}, "DPF policy actions", "PforR delivery"),
+        ({"doc_type": "PAD", "instrument_type": "P4R", "p4r_watch": ["DLI delivery"]}, "PforR delivery", "DPF policy actions"),
+        ({"doc_type": "PAD", "instrument_type": "IPF", "country_scope": "regional", "regional_watch": ["Spillover"]}, "Regional or multi-country delivery", "Mid-cycle changes"),
+    ],
+)
+def test_normal_fcv_watch_groups_apply_only_to_the_matching_route(context, expected_label, forbidden_label):
+    source = open(os.path.join(os.path.dirname(app.__file__), "index.html"), encoding="utf-8").read()
+    helper = _extract_js_function(source, "normalFcvWatchGroups")
+    script = f"""
+{helper}
+const groups=normalFcvWatchGroups({json.dumps(context)});
+const labels=groups.map(group=>group.label);
+if({json.dumps(expected_label)} && !labels.includes({json.dumps(expected_label)}))throw new Error('missing '+{json.dumps(expected_label)}+': '+labels);
+if(labels.includes({json.dumps(forbidden_label)}))throw new Error('inapplicable '+{json.dumps(forbidden_label)}+': '+labels);
+"""
+    result = subprocess.run(["node", "-e", script], capture_output=True, text=True, check=False)
+    assert result.returncode == 0, result.stderr
+
+
+def test_normal_fcv_watch_disclosure_is_between_priorities_and_closing_without_guidance_or_deeper_refs():
+    source = open(os.path.join(os.path.dirname(app.__file__), "index.html"), encoding="utf-8").read()
+    helpers = "\n".join(_extract_js_function(source, name) for name in ("renderFcvRatingIndicators", "getConcisePriority", "renderSummaryPriorityAccordion", "normalFcvWatchGroups", "renderNormalFcvWatchDisclosure", "renderNormalFcvSummary"))
+    script = f"""
+const esc=value=>String(value??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+let stageConciseReadout={json.dumps({**CONCISE_READOUT, "closing": "Closing note <em>"})}; let openSummaryPriority=0; let stageThreePriorities={json.dumps(_payload()["priorities"])};
+let fcvRating='Adequate'; let fcvResponsivenessRating='Emerging'; let reviewMode='design'; let docType='AF',instrumentType='IPF',countryScope='single';
+let midCycleWatch=['Check access <i>triggers</i>.']; let dpfWatch=[]; let p4rWatch=[]; let regionalWatch=[]; let horizonConsiderations='';
+const renderStage3AdvisoryTransition=()=>'<p>advisory</p>';
+{helpers}
+const html=renderNormalFcvSummary(); const order=['summary-priority-accordion','What to keep an eye on','Closing note'];
+if(html.indexOf(order[0])<0||html.indexOf(order[1])<0||html.indexOf(order[2])<0)throw new Error('missing order marker: '+html);
+if(!(html.indexOf(order[0])<html.indexOf(order[1])&&html.indexOf(order[1])<html.indexOf(order[2])))throw new Error('watch disclosure order changed: '+html);
+if(html.includes('Relevant WBG guidance')||html.includes('Go Deeper')||html.includes('go deeper'))throw new Error('watch disclosure aggregated forbidden content');
+"""
+    result = subprocess.run(["node", "-e", script], capture_output=True, text=True, check=False)
+    assert result.returncode == 0, result.stderr
+
+
+def test_normal_fcv_watch_state_persists_restores_and_resets():
+    source = open(os.path.join(os.path.dirname(app.__file__), "index.html"), encoding="utf-8").read()
+    express_store = _extract_js_function(source, "epSafeStore"); save_session = _extract_js_function(source, "saveSession"); load_session = _extract_js_function(source, "loadSession"); reset = _extract_js_function(source, "reset")
+    for block in (express_store, save_session):
+        for expected in ("midCycleWatch", "dpfWatch", "p4rWatch", "regionalWatch", "horizonConsiderations"):
+            assert expected in block
+    for expected in ("savedLensState.midCycleWatch", "savedLensState.dpfWatch", "savedLensState.p4rWatch", "savedLensState.regionalWatch", "savedLensState.horizonConsiderations"):
+        assert expected in source
+    for expected in ("state.midCycleWatch", "state.dpfWatch", "state.p4rWatch", "state.regionalWatch", "state.horizonConsiderations"):
+        assert expected in load_session
+    for expected in ("midCycleWatch=[]", "dpfWatch=[]", "p4rWatch=[]", "regionalWatch=[]", "horizonConsiderations=''"):
+        assert expected in reset
+
+
+def test_summary_init_keeps_horizon_inside_disclosure_and_detailed_keeps_legacy_panel():
+    source = open(os.path.join(os.path.dirname(app.__file__), "index.html"), encoding="utf-8").read()
+    init_ui = _extract_js_function(source, "initStage3UI")
+    summary_start = init_ui.index("if(summaryActive){")
+    detailed_start = init_ui.index("}else{", summary_start)
+    update_sidebar = init_ui.index("    updateSidebar();", detailed_start)
+    assert "renderHorizonPanel" not in init_ui[summary_start:detailed_start]
+    assert "renderHorizonPanel(horizonConsiderations)" in init_ui[detailed_start:update_sidebar]
+
+
+def test_reset_removes_all_express_checkpoint_keys():
+    source = open(os.path.join(os.path.dirname(app.__file__), "index.html"), encoding="utf-8").read()
+    reset = _extract_js_function(source, "reset")
+    for key in ("fcv_express_stageOutputs", "fcv_express_stageHists", "fcv_express_curS", "fcv_express_lensState"):
+        assert f"localStorage.removeItem('{key}')" in reset
+
+
+def test_horizon_restore_and_api_fallbacks_are_type_safe_and_api_watch_fields_are_single_assignments():
+    source = open(os.path.join(os.path.dirname(app.__file__), "index.html"), encoding="utf-8").read()
+    assert "horizonConsiderations=typeof savedLensState.horizonConsiderations==='string'?savedLensState.horizonConsiderations:(typeof savedLensState.horizon_considerations==='string'?savedLensState.horizon_considerations:'')" in source
+    load_session = _extract_js_function(source, "loadSession")
+    assert "horizonConsiderations = typeof state.horizonConsiderations === 'string' ? state.horizonConsiderations : (typeof state.horizon_considerations === 'string' ? state.horizon_considerations : '')" in load_session
+    api_start = source.index("if(p.wider_fcv_context!==undefined)")
+    api_end = source.index("if(p.applied_snippets)", api_start)
+    api_stage3 = source[api_start:api_end]
+    assert api_stage3.count("midCycleWatch=") == 1
+    assert api_stage3.count("dpfWatch=") == 1
+    assert api_stage3.count("p4rWatch=") == 1
+    assert api_stage3.count("regionalWatch=") == 1
+    assert "if(p.horizon_considerations)" not in api_stage3
+    assert "horizonConsiderations=typeof p.horizon_considerations==='string'?p.horizon_considerations:''" in api_stage3
+
+
+def test_malformed_horizon_context_is_ignored_without_trim_or_stringification_errors():
+    source = open(os.path.join(os.path.dirname(app.__file__), "index.html"), encoding="utf-8").read()
+    helper = _extract_js_function(source, "normalFcvWatchGroups")
+    script = f"""
+{helper}
+const groups=normalFcvWatchGroups({{doc_type:'AF',horizon_considerations:{{trim:()=>{{throw new Error('trim called')}}}}}});
+if(groups.length)throw new Error('malformed horizon should be omitted');
+console.log('ok');
+"""
+    result = subprocess.run(["node", "-e", script], capture_output=True, text=True, check=False)
+    assert result.returncode == 0, result.stderr
+
+
+def test_set_stage3_view_detailed_restores_horizon_panel_after_summary_transition():
+    source = open(os.path.join(os.path.dirname(app.__file__), "index.html"), encoding="utf-8").read()
+    set_view = _extract_js_function(source, "setStage3View")
+    detailed_start = set_view.index("}else{")
+    assert "renderHorizonPanel(horizonConsiderations)" in set_view[detailed_start:]
+    assert "typeof horizonConsiderations==='string'&&horizonConsiderations.trim()" in set_view[detailed_start:]
+    assert "md.render" not in _extract_js_function(source, "renderHorizonPanel")
+    assert "md(text)" in _extract_js_function(source, "renderHorizonPanel")
+
+
+def test_render_horizon_panel_uses_local_md_and_replaces_existing_panel_without_duplication():
+    source = open(os.path.join(os.path.dirname(app.__file__), "index.html"), encoding="utf-8").read()
+    md = _extract_js_function(source, "md")
+    renderer = _extract_js_function(source, "renderHorizonPanel")
+    script = f"""
+{md}
+let panel=null; const container={{children:[],appendChild(node){{this.children.push(node);panel=node;}}}};
+const document={{
+  getElementById(id){{return id==='out-txt'?container:(id==='horizon-panel'?panel:null);}},
+  createElement(){{return {{id:'',className:'',innerHTML:'',remove(){{const index=container.children.indexOf(this);if(index>=0)container.children.splice(index,1);if(panel===this)panel=null;}}}};}}
+}};
+{renderer}
+renderHorizonPanel('Watch <script>alert(1)</script>.');
+renderHorizonPanel('Watch <script>alert(2)</script>.');
+if(container.children.length!==1)throw new Error('duplicate horizon panels: '+container.children.length);
+if(container.children[0].innerHTML.includes('<script>'))throw new Error('horizon HTML was not escaped');
+if(!container.children[0].innerHTML.includes('&lt;script&gt;'))throw new Error('escaped horizon text missing');
+console.log('ok');
+"""
+    result = subprocess.run(["node", "-e", script], capture_output=True, text=True, check=False)
+    assert result.returncode == 0, result.stderr
+
+
+def test_step_stage3_path_has_one_normalized_watch_assignment_block():
+    source = open(os.path.join(os.path.dirname(app.__file__), "index.html"), encoding="utf-8").read()
+    handler_start = source.index("if(stage===3){", source.index("async function runStage"))
+    handler_end = source.index("// Clear Go Deeper caches", handler_start)
+    stage3_path = source[handler_start:handler_end]
+    assert stage3_path.count("midCycleWatch=Array.isArray(p.mid_cycle_watch)?p.mid_cycle_watch:[]") == 1
+    assert stage3_path.count("dpfWatch=Array.isArray(p.dpf_watch)?p.dpf_watch:[]") == 1
+    assert stage3_path.count("p4rWatch=Array.isArray(p.p4r_watch)?p.p4r_watch:[]") == 1
+    assert stage3_path.count("regionalWatch=Array.isArray(p.regional_watch)?p.regional_watch:[]") == 1
+    assert stage3_path.count("horizonConsiderations=typeof p.horizon_considerations==='string'?p.horizon_considerations:''") == 1
