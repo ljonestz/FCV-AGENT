@@ -2929,3 +2929,40 @@ def test_climate_shareable_html_uses_the_full_verified_detailed_renderer():
     exporter = _extract_js_function(source, "downloadHTML")
 
     assert "const body=renderClimateVerifiedAssessment(climateVerifiedReader);" in exporter
+
+
+def test_result_stage_tabs_do_not_overflow_phone_viewport():
+    from playwright.sync_api import sync_playwright
+
+    source = INDEX.read_text(encoding="utf-8")
+    css = "\n".join(re.findall(r"<style[^>]*>([\s\S]*?)</style>", source))
+    result_tabs = """
+<div class="stepper-wrap" style="display:block">
+  <nav class="stepper" aria-label="Analysis stages">
+    <div class="step done"><span class="step-num">0</span><span class="step-label">Upload</span></div>
+    <div class="step done"><span class="step-num">1</span><span class="step-label">Context</span></div>
+    <div class="step done"><span class="step-num">2</span><span class="step-label">Assessment</span></div>
+    <div class="step active"><span class="step-num">3</span><span class="step-label">Recommendations</span></div>
+  </nav>
+</div>
+"""
+    html = (
+        '<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1">'
+        f"<style>{css}</style>{result_tabs}"
+    )
+
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch(headless=True)
+        page = browser.new_page(viewport={"width": 390, "height": 844})
+        page.set_content(html)
+        viewport = page.evaluate(
+            "({clientWidth:document.documentElement.clientWidth,"
+            "scrollWidth:document.documentElement.scrollWidth})"
+        )
+        label_widths = page.locator(".step-label").evaluate_all(
+            "labels => labels.map(label => [label.clientWidth, label.scrollWidth])"
+        )
+        browser.close()
+
+    assert viewport["scrollWidth"] == viewport["clientWidth"]
+    assert all(scroll <= client for client, scroll in label_widths)
