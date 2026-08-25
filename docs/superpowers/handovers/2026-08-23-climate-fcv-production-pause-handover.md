@@ -1,5 +1,12 @@
 # Climate and FCV Production Alignment - Pause Handover
 
+> **Superseded on 2026-08-25.** The paused implementation was resumed and completed on
+> `codex/climate-summary-quality-fixes`. See
+> `docs/superpowers/handovers/2026-08-25-climate-fcv-production-validation.md`
+> for the final branch, deployment, test, and quality-run record. This file is retained
+> as the durable history of the interrupted state and should not be used as the current
+> release status.
+
 **Paused:** 2026-08-23  
 **Reason:** User requested a clean handover for a later Codex session.  
 **Implementation status:** Incomplete and intentionally uncommitted. Do not describe the branch as production-ready.
