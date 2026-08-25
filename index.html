@@ -733,6 +733,8 @@
       .stepper{padding:0}
       .step{flex:1 1 auto;min-width:0;padding:0 3px;font-size:10.5px;justify-content:center}
       .step-label{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+      .out-hdr{flex-wrap:wrap;gap:8px}
+      .out-hdr-actions{flex-wrap:wrap;min-width:0}
       .hero h1{font-size:24px}
       .stepper-wrap{padding:0 16px}
       .main{padding:20px 16px 80px}
@@ -5233,7 +5235,7 @@
           <div class="out-card ani">
             <div class="out-hdr">
               <div class="out-hdr-l"><span class="dot done"></span>${NAMES[stage]}</div>
-              <div style="display:flex;gap:8px;align-items:center">
+              <div class="out-hdr-actions" style="display:flex;gap:8px;align-items:center">
                 ${isLast?`<button class="btn btn-ghost btn-sm" onclick="downloadReport(this)" title="Download full report as a Word document (.docx)">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                   Download .docx

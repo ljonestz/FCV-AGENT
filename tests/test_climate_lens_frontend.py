@@ -2966,3 +2966,50 @@ def test_result_stage_tabs_do_not_overflow_phone_viewport():
 
     assert viewport["scrollWidth"] == viewport["clientWidth"]
     assert all(scroll <= client for client, scroll in label_widths)
+
+
+def test_result_download_header_wraps_inside_phone_card():
+    from playwright.sync_api import sync_playwright
+
+    source = INDEX.read_text(encoding="utf-8")
+    css = "\n".join(re.findall(r"<style[^>]*>([\s\S]*?)</style>", source))
+    result_header = """
+<main class="main">
+  <div class="out-card">
+    <div class="out-hdr">
+      <div class="out-hdr-l"><span class="dot done"></span>RECOMMENDATIONS NOTE</div>
+      <div class="out-hdr-actions" style="display:flex;gap:8px;align-items:center">
+        <button class="btn btn-ghost btn-sm">Download .docx</button>
+        <button class="btn btn-ghost btn-sm">Share .html</button>
+        <button class="copy-btn">Copy all</button>
+      </div>
+    </div>
+  </div>
+</main>
+"""
+    html = (
+        '<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1">'
+        f"<style>{css}</style>{result_header}"
+    )
+
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch(headless=True)
+        page = browser.new_page(viewport={"width": 390, "height": 844})
+        page.set_content(html)
+        measurements = {}
+        for width in (320, 390):
+            page.set_viewport_size({"width": width, "height": 844})
+            measurements[width] = {
+                "header": page.locator(".out-hdr").evaluate(
+                    "element => ({clientWidth:element.clientWidth,scrollWidth:element.scrollWidth})"
+                ),
+                "document": page.evaluate(
+                    "({clientWidth:document.documentElement.clientWidth,"
+                    "scrollWidth:document.documentElement.scrollWidth})"
+                ),
+            }
+        browser.close()
+
+    for result in measurements.values():
+        assert result["document"]["scrollWidth"] == result["document"]["clientWidth"]
+        assert result["header"]["scrollWidth"] <= result["header"]["clientWidth"]
