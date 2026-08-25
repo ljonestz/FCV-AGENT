@@ -3013,3 +3013,47 @@ def test_result_download_header_wraps_inside_phone_card():
     for result in measurements.values():
         assert result["document"]["scrollWidth"] == result["document"]["clientWidth"]
         assert result["header"]["scrollWidth"] <= result["header"]["clientWidth"]
+
+
+def test_result_session_bar_wraps_inside_phone_viewport():
+    from playwright.sync_api import sync_playwright
+
+    source = INDEX.read_text(encoding="utf-8")
+    css = "\n".join(re.findall(r"<style[^>]*>([\s\S]*?)</style>", source))
+    session_bar = """
+<div class="session-bar" id="session-bar">
+  <svg width="13" height="13"></svg>
+  <div id="util-doc-type-area" style="display:flex;align-items:center;gap:6px;margin-left:8px">
+    <span class="util-doc-type-badge">PCN</span>
+  </div>
+  <div class="session-bar-btns">
+    <button class="btn btn-ghost btn-sm">View / Edit Prompts</button>
+    <button class="btn btn-ghost btn-sm">Save session</button>
+    <button class="btn btn-ghost btn-sm">Load session</button>
+  </div>
+</div>
+"""
+    html = (
+        '<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1">'
+        f"<style>{css}</style>{session_bar}"
+    )
+
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch(headless=True)
+        page = browser.new_page(viewport={"width": 390, "height": 844})
+        page.set_content(html)
+        document = page.evaluate(
+            "({clientWidth:document.documentElement.clientWidth,"
+            "scrollWidth:document.documentElement.scrollWidth})"
+        )
+        bar = page.locator("#session-bar").evaluate(
+            "element => ({clientWidth:element.clientWidth,scrollWidth:element.scrollWidth})"
+        )
+        button_right_edges = page.locator(".session-bar-btns button").evaluate_all(
+            "buttons => buttons.map(button => Math.round(button.getBoundingClientRect().right))"
+        )
+        browser.close()
+
+    assert document["scrollWidth"] == document["clientWidth"]
+    assert bar["scrollWidth"] <= bar["clientWidth"]
+    assert all(right <= document["clientWidth"] for right in button_right_edges)
