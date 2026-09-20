@@ -3247,8 +3247,35 @@ distinct, and do not extrapolate national criminal presence to a corridor.
 '''
 
 
+_STANDARD_SORT_STAGE2_SECTION = """### SORT Adequacy Check
+**CONDITIONAL: Only assess this dimension if the project document includes a SORT risk rating table or references specific SORT ratings.**
+
+If the condition is met, assess whether each stated SORT rating is supported by the project-specific risks, mitigation, implementation capacity and delivery arrangements documented in the project record and Stage 1 facts. Do not infer a rating from an FCV category alone. Use comparative percentages, category floors or portfolio baselines only when the project record or a verified source explicitly provides them, and preserve the source date and definition. Do not infer or force an increase in any rating. If a rating or its supporting evidence is unavailable, say that it is unknown or not stated and frame the point as a question for the team to verify.
+
+For IPF, preserve the distinction between inherent E&S risk and residual SORT categories when the source provides it. This distinction does not prescribe a target rating. Frame any concern as an evidence-based question about whether the current rating reflects the documented project risk.
+
+"""
+
+_STANDARD_STAGE2_EVIDENCE_GUARD = """--- STANDARD EVIDENCE AND TIMING GUARDRAILS ---
+Do not infer SEA/SH or GBV ratings from an overall E&S or SORT rating. Require explicit project-specific evidence and the applicable instrument or commitment before treating a GBV or SEA/SH finding as established.
+
+A design-stage GBV/SEA/SH plan described as planned or under preparation is not by itself evidence of noncompliance. Assess timing or operational detail only when the project record or a verified applicable source identifies the requirement; otherwise frame missing detail as a question for the team to verify.
+
+Preserve the dates and lifecycle status of evidence. Later context is not evidence that was available at historical preparation, so do not back-project a later source into an earlier review date. Identify the later source and state what was or was not available at the historical preparation point.
+"""
+
 def _prepare_standard_stage2_prompt(stage_prompt: str) -> str:
-    """Remove fixed priority/action quotas from the standard Stage 2 prompt."""
+    """Remove fixed quotas and unsupported calibration seeds on the core route."""
+    sort_start = stage_prompt.find("### SORT Adequacy Check")
+    if sort_start >= 0:
+        sort_end = stage_prompt.find("### Gender and GBV in FCV Context", sort_start)
+        if sort_end > sort_start:
+            stage_prompt = (
+                stage_prompt[:sort_start]
+                + _STANDARD_SORT_STAGE2_SECTION
+                + stage_prompt[sort_end:]
+            )
+
     replacements = {
         "At least 3 of the 4-5 Stage 3 priorities must be directly addressable "
         "in the current document.":
@@ -3262,6 +3289,8 @@ def _prepare_standard_stage2_prompt(stage_prompt: str) -> str:
     }
     for old, new in replacements.items():
         stage_prompt = stage_prompt.replace(old, new)
+    if _STANDARD_STAGE2_EVIDENCE_GUARD not in stage_prompt:
+        stage_prompt += "\n\n" + _STANDARD_STAGE2_EVIDENCE_GUARD
     return stage_prompt
 
 

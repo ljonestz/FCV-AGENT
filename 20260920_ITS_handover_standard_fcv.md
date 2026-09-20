@@ -2,13 +2,13 @@
 
 Date: 20 September 2026
 
-**Status: review candidate. A live standard-FCV PAD run passed the complete user workflow on commit `58c68d9`; analytical review identified further source-retention issues. Final Word/prompt refinements still require live verification on the Quality preview.**
+**Status: presentation and workflow verified on Render; analytical review candidate. The live Quality PAD run on `b5bd21c` passed the full user workflow and all four concise cards were admitted unchanged. A subsequent standard-prompt correction removes an observed legacy benchmark conflict; that correction has regression coverage but has not had a fresh model run.**
 
 ## Baseline and scope
 
 ITS reported that QA includes application commit `f8e8142` on `codex/climate-summary-quality-fixes`. This change branch, `codex/nairobi-project-screener`, starts from that exact commit. It is intended as a bounded port onto the QA baseline, not a replacement of the ITS infrastructure or retrieval implementation. The GitHub `main` branch remains an older baseline and is not the target for this patch.
 
-Scope is the standard FCV project screener. Diagnostic-bank expansion, new sector resources, and analytical changes to the Climate module are deferred. The user explicitly included the Climate route in the routing-disclosure removal. This presentation change applies to Summary, Detailed and matching HTML/Word exports; analytical and internal routing behavior remains unchanged.
+Analytical scope is the standard FCV project screener. Diagnostic-bank expansion, new sector resources, and analytical changes to the Climate module are deferred. The user explicitly included the Climate route in the routing-disclosure removal and subsequently requested shared Word readability improvements. This presentation change applies to Summary, Detailed and matching HTML/Word exports; analytical and internal routing behavior remains unchanged.
 
 ## Product changes
 
@@ -77,7 +77,7 @@ The bank-selector suite exposed a calendar-dependent archived-snapshot test. It 
 
 Visual checks used synthetic data only. All one/two/five priorities remained visible, the fourth priority opened the correct Detailed card, formal ratings stayed in Detailed, and the watch disclosure rendered escaped headings/paragraphs. Mobile width was checked at 390 pixels. A five-priority management brief printed on one A4 page in both Word and Chromium HTML; longer legacy content is allowed to overflow to additional pages. The local browser completed its assertions but stalled during shutdown and was terminated after the diagnostic timeout; the captured output and screenshots establish the UI checks, not a successful browser-process exit.
 
-Live acceptance is required before finalization, explicitly requested by the user: run the existing Honduras Sustainable Connectivity PAD (P181166) through the updated Render standard route, check all priorities against the source package, compare summary/full downloads, and confirm the ITS watch formatting and routing removal. Prompt guards reduce risk but do not prove factual accuracy without this source-based review. Render Smoke and quality preview deployed candidate `f17abebe868f2ebb5d214fc5d6bb41973c651231` on 20 September 2026. ITS QA has not received this update. Live acceptance is still in progress.
+The user-requested live acceptance protocol was: run the existing Honduras Sustainable Connectivity PAD (P181166) through the updated Render standard route, check all priorities against the source package, compare summary/full downloads, and confirm the ITS watch formatting and routing removal. Prompt guards reduce risk but do not prove factual accuracy without this source-based review. Render Smoke and quality preview deployed candidate `f17abebe868f2ebb5d214fc5d6bb41973c651231` on 20 September 2026. ITS QA has not received this update. Live acceptance is still in progress.
 
 ## Live PAD trial source checks
 
@@ -92,9 +92,9 @@ The follow-up raises the standard primary-document allowance to 300,000 characte
 
 The first Smoke attempt stopped at Stage 2 without a retained error message; a second run passed that stage. Its cause is not established and it must not be represented as a diagnosed or resolved provider failure.
 
-The diagnostic completed with four priorities and exercised Summary, all four links to Detailed, rating visibility, safe watch Markdown, and all four HTML/Word downloads. It failed the final session-save check because Save session remained hidden after Express completion. The follow-up calls the existing session-bar updater at completion. Mobile checks were not reached in that diagnostic and remain pending on the corrected deployment. The management brief was also too verbose when the canonical fallback was used; generation now receives shorter per-field targets, while legacy admission and factual grounding remain unchanged.
+The diagnostic completed with four priorities and exercised Summary, all four links to Detailed, rating visibility, safe watch Markdown, and all four HTML/Word downloads. It failed the final session-save check because Save session remained hidden after Express completion. The follow-up calls the existing session-bar updater at completion. Mobile checks were not reached in that diagnostic; they subsequently passed in both complete-PAD trials. The management brief was also too verbose when the canonical fallback was used; generation now receives shorter per-field targets, while legacy admission and factual grounding remain unchanged.
 
-Follow-up regression checks: 158 backend, route, concise and workflow tests passed; eight frontend contract tests passed. Python compilation and diff checks passed. Fresh live acceptance of the coverage correction remains pending.
+Follow-up regression checks: 158 backend, route, concise and workflow tests passed; eight frontend contract tests passed. Python compilation and diff checks passed. This checkpoint preceded the complete-PAD Smoke and Quality trials recorded below.
 
 ## Word readability and source-retention follow-up
 
@@ -109,3 +109,24 @@ Word layout was rendered with native Microsoft Word and inspected across a two-p
 Assessment `61bd97a4-b29f-4624-a972-56b4a7cccdc8` completed all three stages with four priorities. Upload, Summary, all priority links, Detailed ratings/actions, watch Markdown, four downloads, session saving and 390-pixel mobile layout passed. Canonical content comparisons passed for all four exports. The local browser cleanup timed out after successful assertions; this is recorded separately from the live workflow result.
 
 Analytical review remains open: Stage 1 retained more late-PAD evidence but did not reliably carry all component budgets and conditional safeguard commitments forward. A displacement statistic also used the wrong period/category. The explicit facts table addresses source retention; generated external statistics still require verification. Do not treat this structural pass as analytical acceptance or advertise the diagnostic report as a validated assessment.
+
+### Legacy prompt conflict identified by live Quality testing
+
+The live Quality Stage 2 repeated a portfolio percentage and suggested risk-rating escalation. Inspection traced this to an explicit legacy SORT subsection in the source prompt, not solely free-form model invention. The standard-route prompt composer now replaces that subsection with project-specific evidence-based calibration; copy this replacement as well as the appended Nairobi instructions. The follow-up also guards against inferring a specific SEA/SH classification from aggregate E&S/SORT ratings, treating a planned instrument as noncompliance without the applicable sourced obligation/deadline, and claiming later evidence was available during historical preparation. Specialist prompts are unchanged. This correction requires a subsequent fresh analytical run; the preceding live output cannot validate a prompt it did not use.
+
+## Final Quality trial and remaining acceptance limits
+
+- Deployed application: `b5bd21c2238c72b5ec2b5ff1b3a7765e815b043a`; Quality deploy `dep-dao4ggu8bjmc73b293d0`; assessment `6588a843-0706-4f08-894d-e62904beec09`.
+- Complete 65-page PAD upload, all three stages, Summary, all four priority links, Detailed ratings/actions, safe watch Markdown, all four exports, saved session and 390-pixel mobile layout passed. Canonical titles/action content and ordering matched the downloaded Word/HTML files. Local browser cleanup timed out after successful assertions; no application JavaScript errors were recorded.
+- All four raw concise cards survived admission unchanged: 25-34 words per rationale and 23-35 words per leading action, with a 75-word overview. The previous long-card fallback was traced to rewritten lifecycle fields; exact copying resolved it in this run.
+- Source retention improved: all component totals, planned GBV status, draft IPPF status and land-acquisition exposure were retained. Detailed output remained complete. Native Word inspection covered every page of the full report.
+- Analytical acceptance remains open. The generated output still overstates safeguard compliance conclusions, confuses the RAP disbursement condition with the RPF in one strength, and describes approved HEIS support as activated. Some corridor-security statements need properly dated external support. The historical PAD assessment is deliberately anchored to preparation; a current implementation assessment requires newer project evidence.
+- The final standard-prompt follow-up removes the explicit unsupported SORT benchmark seed and adds specific classification, commitment-status and historical-timing guards. It passed the composed-prompt/isolation checks within 146 focused tests. Its effect on generated analysis still requires a fresh run; do not represent the earlier output as proof of that correction.
+
+The absence of a fact from the final top-priority list is not itself an error: the conditional IPPF provision need not become a priority unless material to the selected advice. However, no recommendation should contradict that condition. Do not port the recorded diagnostic assessment text as reference content.
+
+## Port sequence
+
+Mirror the behavior from the ITS-reported `f8e8142` baseline in this order: `605804f` (validated brief exporters), `f17abeb` (Nairobi UI and prioritization), `58c68d9` (primary-document coverage and Express session save), `b5bd21c` (shared Word presentation, sourced facts and concise lifecycle copy), then the final standard-prompt correction and compact Word spacing. `078f703` only stabilizes a historical bank test at its publication date. Adapt route wiring to FastAPI and preserve ITS retrieval. The shared Word helper and brief exporter have no Flask dependency. Main/production and the ITS QA deployment were not changed by this work.
+
+Final Word spacing verification: the actual live four-priority brief fits on one A4 page after reducing paragraph/heading spacing. All paragraph text is identical to the live download and the 10.5-point body size is unchanged. The full report remains thirteen pages. Fourteen focused Word/export tests passed after this final presentation adjustment. Longer assessments may still span pages; no text is truncated.

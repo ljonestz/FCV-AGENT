@@ -454,3 +454,32 @@ def test_express_stage_failure_logs_assessment_and_failed_stage(monkeypatch, cap
     assert "Express workflow failed" in caplog.text
     assert f"assessment_id={assessment_id}" in caplog.text
     assert "failed_stage=2" in caplog.text
+
+
+def test_standard_stage2_replaces_legacy_sort_seed_with_evidence_guards():
+    source_prompt = app.DEFAULT_PROMPTS["2"]
+    assert "48%" in source_prompt
+
+    standard = app.append_standard_fcv_stage_context(source_prompt, 2, [])
+    lowered = standard.lower()
+    for obsolete in (
+        "48%",
+        "fcs portfolio data shows",
+        "typical for this context type",
+        "p&g = substantial to high baseline",
+        "overall = substantial expected",
+    ):
+        assert obsolete not in lowered
+    for guard in (
+        "do not infer or force an increase",
+        "do not infer sea/sh or gbv",
+        "planned or under preparation is not by itself evidence of noncompliance",
+        "later context",
+        "historical preparation",
+    ):
+        assert guard in lowered
+
+    specialist = app.append_standard_fcv_stage_context(
+        source_prompt, 2, [{"id": "climate"}]
+    )
+    assert specialist == source_prompt

@@ -863,3 +863,5 @@ docs/superpowers/  # Dev plans and specs
 ### Word presentation and evidence retention follow-up (2026-09-20)
 
 `fcv_word_style.py` provides dependency-free shared presentation for brief, comprehensive standard and verified Climate Word exports: Calibri, navy running headers and headings, readable action accents, repeating table headings and native page numbers. It preserves content and existing page geometry. Standard Stage 1 explicitly retains component budgets, beneficiaries, instrument status and conditional safeguards in a compact sourced facts table, including conflicting source statements. Standard Stage 3 concise lifecycle metadata must be copied exactly from its canonical priority; admission rules are unchanged.
+
+Standard Stage 2 replaces the legacy SORT benchmark subsection with evidence-based project-specific calibration before adding the standard context contract. The unsupported FCS percentage/category floors are removed from the composed standard prompt; specialist prompts remain unchanged. Specific SEA/SH risk ratings cannot be inferred from overall E&S/SORT ratings, and later evidence must not be attributed to historical preparation.

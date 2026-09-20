@@ -222,6 +222,10 @@ def style_fcv_word_document(document, *, variant: str = "brief"):
         if name not in document.styles:
             continue
         style = document.styles[name]
+        if variant == "brief":
+            style.paragraph_format.space_after = Pt(2)
+            if name.startswith("Heading "):
+                style.paragraph_format.space_before = Pt(5)
         if name == "Normal":
             _set_style_font(style, size=10.5, color=BLACK)
             style.paragraph_format.widow_control = True
