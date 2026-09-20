@@ -40,7 +40,7 @@ Current upload tiering: exactly one primary project document anchors the assessm
 - FCV classification context from FCV Strategy 2026-2030 injected (is this an FCS country? what trajectory?)
 
 **Large document handling:**
-- Primary documents are extracted up to `MAX_DOC_CHARS`, then truncated to `STAGE1_MAX_DOC_CHARS = 60_000` before Stage 1.
+- Primary documents are extracted up to `MAX_DOC_CHARS`. Standard FCV reads up to 300,000 primary characters; specialist routes retain `STAGE1_MAX_DOC_CHARS = 60_000`. Both paths retain bounded inputs; the standard route emits a visible warning when its primary allowance is exceeded.
 - Secondary package/context documents are extracted up to `MAX_DOC_CHARS`, then distilled into capped cards before Stage 1. The old 25k/30k secondary full-read caps are no longer the effective Stage 1 payload size.
 - Truncation warnings shown to users when triggered.
 
@@ -463,3 +463,5 @@ admission stage will retain.
 ## Standard FCV materiality and advisory guidance (2026-09-20)
 
 The standard route retains stated component budgets/shares, activities, beneficiaries, PDO links and delivery dependencies through Stages 1 and 2. Unknown facts stay unknown. Stage 3 ranks one to five priorities by PDO relevance, scale, harm severity and delivery dependencies; spending is not a mechanical score, and a critical low-budget dependency can rank first. There is no category, dimension or document-revision quota. Preserve instrument/lifecycle routing and distinguish verified policy obligations from advisory suggestions. Limited responsiveness alone does not imply poor design. Unverified portfolio comparisons and invented numeric thresholds must not be presented as established requirements. No extra model call is introduced; active-lens analytical guidance is unchanged.
+
+The live Honduras trial identified late-PAD safeguards omitted by the previous 60,000-character primary cutoff. Standard Stage 1 now receives up to 300,000 primary characters without an additional model call. Stage 1 evidence must retain explicit exclusions, conditional geographic scope, planned instruments and unknown completion status. Subsequent stages must distinguish a recognized risk with incomplete operational detail from an absent measure; a generic safeguard relevance flag does not establish a policy breach or an unconditional FPIC requirement. External numerical claims must retain their source period and definition, and national evidence must not become a confirmed corridor-level fact. These are model instructions, not a guarantee of factual accuracy.

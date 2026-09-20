@@ -116,6 +116,9 @@ except ImportError:
 MAX_DOC_CHARS = 500_000       # Max chars extracted from any single document
 STAGE1_MAX_DOC_CHARS = 60_000       # Docs are truncated to this before Stage 1 — no LLM extraction,
                                      # no blocking pre-stage calls, no proxy timeout risk
+# The core route needs to retain late PAD sections for evidence review. Specialist
+# routes keep the original 60k limit so their established context budget is unchanged.
+STANDARD_FCV_PRIMARY_DOC_CHARS = 300_000
 STAGE1_PACKAGE_DOC_CHARS = 25_000   # Pre-distillation fallback cap for Zone 2 docs
 STAGE1_CONTEXT_DOC_CHARS = 30_000   # Pre-distillation fallback cap for Zone 3 docs
 STREAM_KEEPALIVE_SECONDS = 20
@@ -162,6 +165,27 @@ def _stage1_payload_summary(documents: list[dict]) -> dict[str, int]:
         if isinstance(content, str):
             summary["content_chars"] += len(content)
     return summary
+
+
+def _stage1_primary_char_limit(active_lenses: list[Any] | None) -> int:
+    """Return the primary-document cap for the core or specialist route."""
+    return STAGE1_MAX_DOC_CHARS if active_lenses else STANDARD_FCV_PRIMARY_DOC_CHARS
+
+
+def _stage1_primary_truncation_warning(
+    text: str,
+    name: str,
+    limit: int,
+    active_lenses: list[Any] | None,
+) -> str:
+    """Describe omitted primary text without implying it is absent from the source."""
+    if active_lenses or len(text) <= limit:
+        return ""
+    return (
+        f"{name}: Stage 1 used the first {limit:,} characters of the project document; "
+        "later sections were omitted from this run and should not be treated as absent."
+    )
+
 
 @dataclass(frozen=True)
 class PolicyRegistryEntry:
@@ -3087,7 +3111,16 @@ to". Target the applicable project document, operations arrangements or
 commitments when a change is genuinely useful, and do not recommend document
 revisions merely to fill a quota. Preserve the instrument routing and lifecycle
 guardrails. Keep confirmed policy obligations distinct from reviewer judgment
-and good-practice suggestions.
+and good-practice suggestions. Preserve source-grounded exclusions, conditional
+scope, planned or under-preparation status, and named instruments from the
+project record. Do not promote a Stage 2 inference into a project fact or
+present a generic relevance flag as verified applicability, compliance or FPIC.
+If the available excerpt does not establish a point, say so and identify what
+the team should verify. Retain dates and definitions for external numeric
+context. Keep concise generation targets practical: a title of no more than
+12 words; one 20-35 word sentence for each why; one 20-35 word sentence for
+each how bullet; and one 20-30 word sentence for each strength text. These
+are generation targets, not parser requirements.
 
 In "concise_readout", provide a one-sentence headline, a 40-80 word overview,
 and zero to three genuinely evidenced strengths. State the overall finding,
@@ -3153,6 +3186,23 @@ that could affect delivery. Record component budgets or shares when they are
 stated in the project documents. If an amount, share, activity, beneficiary
 group or dependency is absent, state that it is unknown or not stated; never
 infer a numerical weight. This is an evidence inventory, not a priority quota.
+Preserve the source's epistemic status for each material point: distinguish
+an explicitly documented risk or exclusion, mitigation or an instrument
+planned or under preparation, operational detail not verified, and a point
+not stated in the available excerpt. Preserve explicit conditional
+geographic scope, named components, and planned versus completed status.
+A generic safeguard or standards relevance flag alone does not establish
+project-specific applicability, a compliance breach, FPIC, or another
+before-works obligation; record those only when the project record identifies
+the affected population or geography and the applicable commitment. Retain
+explicit project-record statements about illicit or security risks and named
+or draft instruments, even when wider context is also available. If a primary
+document is marked truncated, do not treat omitted pages as evidence that a
+point is absent from the full document.
+For external numeric context, retain the source date and definition. Keep
+internal displacement, refugees, and forced migration distinct, and do not
+extrapolate national criminal presence to a project corridor without
+project-specific evidence.
 '''
 
 STANDARD_FCV_STAGE2_CONTEXT_CONTRACT = '''
@@ -3166,6 +3216,19 @@ more material than a larger component. Preserve explicit unknowns and do not
 infer numerical weights where the project record is silent. Low responsiveness
 may accurately reflect a project whose PDO and scope do not address conflict
 drivers; do not treat it as poor design or an obligation to transform them.
+Treat explicit project-record facts retained in Stage 1 as the primary
+evidence, and do not let a prior model assertion override an explicit
+document statement. Carry forward the distinction between a recognized
+risk, mitigation or an instrument planned or under preparation, operational
+detail not verified, and a point not stated in the available excerpt.
+Preserve explicit exclusions, conditional geographic scope, named existing
+instruments, and planned versus completed status. A generic relevance flag
+does not establish project-specific applicability, a compliance breach, FPIC,
+or another before-works obligation without verified project-specific scope
+and commitment. If that evidence is not present, say what should be verified
+rather than presenting a breach or obligation. Preserve the date and
+definition of external numeric context, keep displacement categories
+distinct, and do not extrapolate national criminal presence to a corridor.
 '''
 
 
@@ -8955,6 +9018,7 @@ def run_stage():
             # No separate LLM extraction step — Stage 1 Sonnet handles FCV
             # extraction directly in Part A of its output.
             doc_parts = []  # list of dicts: {label, name, raw_text, page_count, char_limit}
+            primary_char_limit = _stage1_primary_char_limit(analysis_state.active_lenses)
             for doc in project_docs:
                 name = doc.get('name', 'document')
                 file_type = doc.get('type', 'text')
@@ -8963,10 +9027,15 @@ def run_stage():
                 doc_parts.append({'label': 'PROJECT DOCUMENT', 'name': name,
                                   'raw_text': text[:MAX_DOC_CHARS], 'page_count': page_count,
                                   'structured_fields': structured_fields,
-                                  'char_limit': STAGE1_MAX_DOC_CHARS})
+                                  'char_limit': primary_char_limit})
                 warning = _check_extraction(text, name)
                 if warning:
                     extraction_warnings.append(warning)
+                truncation_warning = _stage1_primary_truncation_warning(
+                    text, name, primary_char_limit, analysis_state.active_lenses
+                )
+                if truncation_warning:
+                    extraction_warnings.append(truncation_warning)
             for doc in context_docs:
                 name = doc.get('name', 'document')
                 file_type = doc.get('type', 'text')
@@ -9592,8 +9661,8 @@ def run_stage():
                     # ── End Research Phase ────────────────────────────────────
 
                     # Assemble document content.
-                    # Documents are truncated to STAGE1_MAX_DOC_CHARS — no LLM extraction,
-                    # no additional blocking API calls before the keepalive stream starts.
+                    # Documents are extracted up to MAX_DOC_CHARS; per-role Stage 1 limits
+                    # are applied below without an additional blocking extraction call.
                     _secondary_dps = [
                         d for d in doc_parts
                         if d['label'] in ('PACKAGE INSTRUMENT', 'CONTEXT DOCUMENT')
@@ -10397,6 +10466,7 @@ def run_express():
                 # Pre-extract raw text for all docs
                 doc_parts = []
                 extraction_warnings_express = []
+                primary_char_limit = _stage1_primary_char_limit(analysis_state.active_lenses)
                 for doc in project_docs:
                     name = doc.get('name', 'document')
                     file_type = doc.get('type', 'text')
@@ -10405,10 +10475,15 @@ def run_express():
                     doc_parts.append({'label': 'PROJECT DOCUMENT', 'name': name,
                                       'raw_text': text[:MAX_DOC_CHARS], 'page_count': page_count,
                                       'structured_fields': structured_fields,
-                                      'char_limit': STAGE1_MAX_DOC_CHARS})
+                                      'char_limit': primary_char_limit})
                     warning = _check_extraction(text, name)
                     if warning:
                         extraction_warnings_express.append(warning)
+                    truncation_warning = _stage1_primary_truncation_warning(
+                        text, name, primary_char_limit, analysis_state.active_lenses
+                    )
+                    if truncation_warning:
+                        extraction_warnings_express.append(truncation_warning)
                 for doc in context_docs:
                     name = doc.get('name', 'document')
                     file_type = doc.get('type', 'text')
@@ -11508,6 +11583,11 @@ def run_express():
                     failed_stage = 2
                 elif stage2_output:
                     failed_stage = 3
+                app.logger.exception(
+                    "Express workflow failed: assessment_id=%s failed_stage=%s",
+                    assessment_id,
+                    failed_stage,
+                )
                 yield f"data: {json.dumps({'error': str(e), 'failed_stage': failed_stage})}\n\n"
 
         def generate():

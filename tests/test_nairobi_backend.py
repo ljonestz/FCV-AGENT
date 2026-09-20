@@ -276,3 +276,178 @@ def test_standard_stage2_removes_priority_quota_and_lens_prompt_is_unchanged():
     assert "At least 3 of the 4-5" not in standard
     assert "implementation dependencies" in standard
     assert app.append_standard_fcv_stage_context(prompt, 2, [{"id": "climate"}]) == prompt
+
+
+def test_standard_evidence_fidelity_contract_is_rendered_only_on_core_route():
+    stage1 = app.append_standard_fcv_stage_context(app.DEFAULT_PROMPTS["1"], 1, [])
+    stage2 = app.append_standard_fcv_stage_context(app.DEFAULT_PROMPTS["2"], 2, [])
+    rendered_stage3 = app.DEFAULT_PROMPTS["3"].format(
+        doc_type="PAD",
+        instrument_guidance="Instrument guidance",
+        minimum_reference_set="Minimum references",
+        playbook_guidance="Playbook guidance",
+        process_guidance="Process guidance",
+        regime_header="Regime header",
+        seash_gender_card_guidance="SEA/SH guidance",
+        temporal_guardrail="Temporal guardrail",
+        timing_emphasis="Timing",
+    )
+    stage3 = app.append_core_concise_stage3_contract(
+        rendered_stage3, "PAD", {}, "design", []
+    )
+
+    assert "available excerpt" in stage1.lower()
+    assert "planned or under preparation" in stage1.lower()
+    assert "relevance flag alone" in stage1.lower()
+    assert "available excerpt" in stage2.lower()
+    assert "prior model assertion" in stage2.lower()
+    assert "generic relevance flag" in stage2.lower()
+    assert "source-grounded exclusions" in stage3.lower()
+    assert "title of no more than" in stage3.lower()
+
+    climate_lenses = [{"id": "climate"}]
+    assert app.append_standard_fcv_stage_context(
+        app.DEFAULT_PROMPTS["1"], 1, climate_lenses
+    ) == app.DEFAULT_PROMPTS["1"]
+    assert app.append_standard_fcv_stage_context(
+        app.DEFAULT_PROMPTS["2"], 2, climate_lenses
+    ) == app.DEFAULT_PROMPTS["2"]
+
+
+def test_standard_stage1_retains_late_primary_evidence_and_warns_at_cap(monkeypatch):
+    calls = []
+    late_marker = "EXPLICIT LATE PROJECT RECORD FACT"
+    content = "P" * 60_001 + "\n" + late_marker + "\n" + "T" * 240_000
+
+    def fake_stream(messages, max_tokens, stage, **kwargs):
+        calls.append({"messages": messages, "max_tokens": max_tokens, "stage": stage})
+        fake_stream._last_result = "Stage 1 project extraction."
+        fake_stream._last_stop_reason = "end_turn"
+        yield 'data: {"chunk": "stage1"}\n\n'
+
+    def fake_research(*_args, **_kwargs):
+        yield {
+            "result": {
+                "core_brief": "",
+                "climate_research": {},
+                "lens_context_sources": [],
+                "climate_grounding": {},
+            }
+        }
+
+    monkeypatch.setattr(app, "_stream_stage", fake_stream)
+    monkeypatch.setattr(app, "get_fast_client", lambda: object())
+    monkeypatch.setattr(app, "extract_country_name", lambda *_args: "Honduras")
+    monkeypatch.setattr(app, "extract_sector_name", lambda *_args: "Transport")
+    monkeypatch.setattr(app, "_iter_stage1_research", fake_research)
+
+    response = app.app.test_client().post(
+        "/api/run-stage",
+        json={
+            "stage": 1,
+            "active_lenses": [],
+            "document_type": "PAD",
+            "instrument_type": "IPF",
+            "review_mode": "design",
+            "documents": [{
+                "name": "Project Appraisal Document.txt",
+                "type": "text",
+                "docRole": "primary",
+                "content": content,
+            }],
+        },
+    )
+    events = [
+        json.loads(chunk[6:])
+        for chunk in response.get_data(as_text=True).split("\n\n")
+        if chunk.startswith("data: ")
+    ]
+
+    assert response.status_code == 200
+    assert any(event.get("done") is True for event in events)
+    warning = next(
+        event["extraction_warning"]
+        for event in events
+        if "extraction_warning" in event
+    )
+    assert "300,000" in warning
+    assert "later sections" in warning
+    assembled = "\n".join(
+        part.get("text", "")
+        for message in calls[0]["messages"]
+        for part in message.get("content", [])
+        if isinstance(part, dict)
+    )
+    assert late_marker in assembled
+    assert "[Document truncated to 300,000 characters for analysis]" in assembled
+    assert app._stage1_primary_char_limit([]) == 300_000
+    assert app._stage1_primary_char_limit([{"id": "climate"}]) == 60_000
+
+
+def test_express_stage_failure_logs_assessment_and_failed_stage(monkeypatch, caplog):
+    assessment_id = "nairobi-stage2-diagnostic"
+    calls = []
+    late_marker = "EXPLICIT EXPRESS LATE PROJECT RECORD FACT"
+
+    def fake_stream(messages, max_tokens, stage, **kwargs):
+        calls.append({"messages": messages, "stage": stage})
+        fake_stream._last_stop_reason = "end_turn"
+        if stage == 1:
+            fake_stream._last_result = "Stage 1 project extraction."
+            yield 'data: {"chunk": "stage1"}\n\n'
+            return
+        raise RuntimeError("mock provider failure at Stage 2")
+        yield
+
+    def fake_research(*_args, **_kwargs):
+        yield {
+            "result": {
+                "core_brief": "",
+                "climate_research": {},
+                "lens_context_sources": [],
+                "climate_grounding": {},
+            }
+        }
+
+    monkeypatch.setattr(app, "_stream_stage", fake_stream)
+    monkeypatch.setattr(app, "get_fast_client", lambda: object())
+    monkeypatch.setattr(app, "extract_country_name", lambda *_args: "Honduras")
+    monkeypatch.setattr(app, "extract_sector_name", lambda *_args: "Transport")
+    monkeypatch.setattr(app, "_iter_stage1_research", fake_research)
+
+    with caplog.at_level("ERROR", logger=app.app.logger.name):
+        response = app.app.test_client().post(
+            "/api/run-express",
+            json={
+                "assessment_id": assessment_id,
+                "active_lenses": [],
+                "document_type": "PAD",
+                "instrument_type": "IPF",
+                "review_mode": "design",
+                "documents": [{
+                    "name": "Project Appraisal Document.txt",
+                    "type": "text",
+                    "docRole": "primary",
+                    "content": "P" * 60_001 + "\n" + late_marker,
+                }],
+            },
+        )
+
+    events = [
+        json.loads(chunk[6:])
+        for chunk in response.get_data(as_text=True).split("\n\n")
+        if chunk.startswith("data: ")
+    ]
+    failure = next(event for event in events if "error" in event)
+    assert failure["failed_stage"] == 2
+    assert "mock provider failure at Stage 2" in failure["error"]
+    assembled = "\n".join(
+        part.get("text", "")
+        for message in calls[0]["messages"]
+        for part in message.get("content", [])
+        if isinstance(part, dict)
+    )
+    assert late_marker in assembled
+    assert "Express workflow failed" in caplog.text
+    assert f"assessment_id={assessment_id}" in caplog.text
+    assert "failed_stage=2" in caplog.text

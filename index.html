@@ -3922,7 +3922,7 @@
             const sd=document.getElementById('stage-disp');
             const warnDiv=document.createElement('div');
             warnDiv.className='callout warn ani';
-            warnDiv.innerHTML=`<div class="callout-icon">⚠️</div><div class="callout-body"><strong>Document warning:</strong> ${esc(p.extraction_warning)}. Consider uploading a text-based version for better results.</div>`;
+            warnDiv.innerHTML=`<div class="callout-icon">⚠️</div><div class="callout-body"><strong>Document warning:</strong> ${esc(p.extraction_warning)}</div>`;
             const loadCard=sd?sd.querySelector('.load-card'):null;
             if(sd){if(loadCard)sd.insertBefore(warnDiv,loadCard);else sd.prepend(warnDiv);}
           }
@@ -4054,6 +4054,7 @@
             document.getElementById('stepper-wrap').style.display='';
             document.getElementById('main').style.display='';
             curS=3;setStepper(3,'done');
+            updateSessionBar();
             renderOut(3,stageOutputs[3],false);
             if(supportsClimateVerifiedStage3View()&&stageThreePriorities&&stageThreePriorities.length)initStage3UI();
             else if(!climateVerifiedAssessment&&stageThreePriorities&&stageThreePriorities.length)initStage3UI();
@@ -4238,7 +4239,7 @@
               const sd=document.getElementById('stage-disp');
               const warnDiv=document.createElement('div');
               warnDiv.className='callout warn ani';
-              warnDiv.innerHTML=`<div class="callout-icon">⚠️</div><div class="callout-body"><strong>Document warning:</strong> ${esc(p.extraction_warning)}. Consider uploading a text-based version for better results.</div>`;
+              warnDiv.innerHTML=`<div class="callout-icon">⚠️</div><div class="callout-body"><strong>Document warning:</strong> ${esc(p.extraction_warning)}</div>`;
               const loadCard=sd?sd.querySelector('.load-card'):null;
               if(sd){if(loadCard)sd.insertBefore(warnDiv,loadCard);else sd.prepend(warnDiv);}
             }
