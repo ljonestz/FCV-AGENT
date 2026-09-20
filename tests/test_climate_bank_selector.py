@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import json
+from datetime import date
 from pathlib import Path
 
+import sector_lenses.climate_bank as bank_module
 import sector_lenses.climate_bank_selector as selector_module
 from sector_lenses.climate_bank import (
     load_climate_bank,
@@ -224,6 +226,15 @@ def test_multi_country_candidate_release_materializes_each_country(
 
     assert bank.status == "ok"
     assert len(bank.release["countries"]) == 24
+
+    # This frozen release tests country coverage at publication. Live expiry is
+    # covered separately; the snapshot should not fail as wall-clock time moves.
+    class PublicationDate(date):
+        @classmethod
+        def today(cls):
+            return cls.fromisoformat(bank.release["generated_at"][:10])
+
+    monkeypatch.setattr(bank_module, "date", PublicationDate)
     for country in bank.release["countries"].values():
         manifest = select_bank_manifest(
             bank,
