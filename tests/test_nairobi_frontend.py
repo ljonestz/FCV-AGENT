@@ -378,3 +378,55 @@ if(!host.innerHTML.includes('Brief HTML'))throw new Error('brief downloads not r
 """
     result = subprocess.run(["node", "-e", script], capture_output=True, text=True, check=False)
     assert result.returncode == 0, result.stderr
+
+
+def test_manual_session_load_restores_completed_stage3_without_rerun_and_keeps_partial_resume():
+    source = INDEX.read_text(encoding="utf-8")
+    helpers = "\n".join(
+        _extract_js_function(source, name)
+        for name in ("isRestorableExpressStage3Output", "loadSession")
+    )
+    script = f"""
+let hist=[],curS=0,instrumentType='',countryScope='',docType='',analysisMode='stepbystep',stage3View='detailed';
+let stageOutputs={{}},stageHists={{}},priorityQuestions=[],focusQuestionsResult=null;
+let activeLenses=[],resolvedLensVersions={{}},lensDiagnostic={{}},lensContextSources=[];
+let climateResearch={{}},climateGrounding={{}},climateVerifiedAssessment=null,climateVerifiedReader=null;
+let stageConciseReadout=null,stageThreePriorities=[],fcvRating='',fcvResponsivenessRating='';
+let midCycleWatch=[],dpfWatch=[],p4rWatch=[],regionalWatch=[],horizonConsiderations='';
+let lensSelectionLocked=false,sessionName='';
+let calls=[];
+const lensCatalogueReady=Promise.resolve();
+const lensCatalogue=[];
+const supportsClimateVerifiedStage3View=()=>false;
+const supportsAnyStage3Summary=()=>false;
+const selectMode=()=>{{}};
+const updateDocTypeBadge=()=>{{}};
+const renderLensSelector=()=>{{}};
+const setStepper=()=>{{}};
+const enableClickableStepper=()=>{{calls.push('enableClickableStepper')}};
+const navigateToStage=stage=>{{calls.push('navigateToStage:'+stage)}};
+const alert=message=>{{calls.push('alert:'+String(message))}};
+const elements={{}};
+const document={{getElementById(id){{
+  if(!elements[id])elements[id]={{style:{{}},textContent:'',innerHTML:'',classList:{{add(){{}},remove(){{}}}}}};
+  return elements[id];
+}}}};
+class FileReader{{readAsText(file){{this.onload({{target:{{result:file.contents}}}})}}}}
+{helpers}
+const completed={{version:3,savedAt:'2026-09-20T00:00:00Z',currentStage:3,history:[],stageOutputs:{{3:'completed recommendations'}},stageHists:{{}},fileNames:{{project:[],context:[]}}}};
+const partial={{version:3,savedAt:'2026-09-20T00:00:00Z',currentStage:2,history:[],stageOutputs:{{2:'assessment'}},stageHists:{{}},fileNames:{{project:[],context:[]}}}};
+const input={{files:[{{name:'completed.json',contents:JSON.stringify(completed)}}],value:'selected'}};
+loadSession(input);
+await Promise.resolve();
+await Promise.resolve();
+if(calls.join('|')!=='enableClickableStepper|navigateToStage:3')throw new Error('completed session did not enter saved Stage 3: '+calls);
+if(input.value!=='')throw new Error('completed session did not clear the file input');
+input.files=[{{name:'partial.json',contents:JSON.stringify(partial)}}];
+loadSession(input);
+await Promise.resolve();
+await Promise.resolve();
+if(calls.length!==2)throw new Error('partial session enabled completed navigation');
+if(!elements['act-area'].innerHTML.includes('Continue from Stage 3'))throw new Error('partial session lost resume action');
+"""
+    result = subprocess.run(["node", "--input-type=module", "-e", script], capture_output=True, text=True, check=False)
+    assert result.returncode == 0, result.stderr

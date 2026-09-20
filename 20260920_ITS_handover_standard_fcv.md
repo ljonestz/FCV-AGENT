@@ -145,3 +145,9 @@ Standard generation now uses plain management language, bold main-point first se
 A saved-result native Word layout preview fits two pages. It uses earlier diagnostic analysis and is only layout evidence. Fresh live analytical, export and mobile verification is pending at this checkpoint.
 
 Pre-deployment verification: 1,277 distinct regression cases passed across partitions and targeted reruns. The four previously identified Windows Chromium cases remain unverified. Updated expectations cover the approved optional gap and removed display elements. Local one/two/five-priority browser assertions, safe watch rendering, exact navigation and 390-pixel layout passed; browser cleanup timed out afterward. A realistic 774-word five-priority brief rendered as two A4 pages at Arial 11 without clipping. Python compilation, full inline JavaScript syntax and diff checks passed.
+
+## Fresh readability trial and session recovery
+
+Quality preview deployed candidate `2b1a76de51f55e7950e577395d4813c1dfcba69d` as `dep-dao5s7ss728c73bctu1g` at 22:29:36 UTC on 20 September 2026. Fresh complete-PAD assessment `118207c5-13e5-4589-a69b-fdfd999c75b0` uses that candidate. Final workflow, export, source review and pagination results are recorded below once complete.
+
+A separate clean-browser test found that loading a completed session restored its data but left the stage navigator inactive. The frontend follow-up reuses existing navigation/rendering helpers to open saved Stage 3 and enable stage navigation. Partial sessions retain their Continue action, and reopening a completed result makes no new model call. This UI-only correction will be deployed after the live assessment completes.

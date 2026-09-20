@@ -3435,6 +3435,12 @@
         const _ss2 = document.getElementById('session-status');
         _ss2.textContent = 'Resumed: ' + file.name + ' (saved ' + savedAt + ') — Stage ' + curS + ' complete';
         _ss2.style.display = 'inline';
+        if(isRestorableExpressStage3Output(stageOutputs[3])){
+          enableClickableStepper();
+          navigateToStage(3);
+          input.value='';
+          return;
+        }
         setStepper(curS+1, 'active');
         // Show resume prompt in stage-disp
         const nextStage = curS < 3 ? curS + 1 : 3;
