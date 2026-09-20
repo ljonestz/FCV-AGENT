@@ -3487,7 +3487,7 @@
        b: ' <strong>What you are reading:</strong> The output has two parts. <strong>Part A</strong> extracts FCV risks directly from the <em>project document</em> (PAD, PCN, or PID) only — it is a close reading of what that document says and implies. <strong>Part B</strong> draws on any <em>contextual documents</em> you uploaded (such as the RRA or country risk assessment) and supplements these with the AI\'s training knowledge of sources such as UN, ICG, and World Bank reports. Check both parts carefully — use the query box below to correct anything or add local knowledge before proceeding.'},
     2:{t:'Stage 2 of 3 · FCV Assessment',
        b:'<strong>What you are reading:</strong> This is the LLM structured assessment of the project FCV sensitivity and responsiveness across key dimensions. It shows how the AI is weighing the evidence and forming its judgements. Review the ratings and reasoning carefully — if a dimension seems underweighted, overweighted, or is missing important context, use the query box below to adjust before moving on.'},
-    3:{t:'Stage 3 of 3 · Recommendations Note — ready to copy',
+    3:{t:'Stage 3 of 3 · Recommendations Note: ready to copy',
        b:''}
   };
 
@@ -4580,8 +4580,8 @@
     if (!sensitivityText && !responsivenessText) return '';
     return `
       <div class="sr-legend">
-        <div class="sr-legend-item"><span class="sr-tag sensitivity" style="font-size:9px;padding:1px 6px;flex-shrink:0">S</span><span><strong>FCV Sensitivity</strong> — is the project <em>aware of and designed for</em> the FCV context?</span></div>
-        <div class="sr-legend-item"><span class="sr-tag responsiveness" style="font-size:9px;padding:1px 6px;flex-shrink:0">R</span><span><strong>FCV Responsiveness</strong> — does the project <em>actively work to change</em> the FCV situation?</span></div>
+        <div class="sr-legend-item"><span class="sr-tag sensitivity" style="font-size:9px;padding:1px 6px;flex-shrink:0">S</span><span><strong>FCV Sensitivity</strong>: is the project <em>aware of and designed for</em> the FCV context?</span></div>
+        <div class="sr-legend-item"><span class="sr-tag responsiveness" style="font-size:9px;padding:1px 6px;flex-shrink:0">R</span><span><strong>FCV Responsiveness</strong>: does the project <em>actively work to change</em> the FCV situation?</span></div>
       </div>
       <div class="sensitivity-responsiveness-grid">
         <div class="sr-card sensitivity">

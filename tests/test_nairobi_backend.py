@@ -526,6 +526,23 @@ def test_standard_concise_gap_is_preserved_only_when_grounded_and_well_formed():
     assert result["priorities"][0]["concise"]["gap"] == gap
 
 
+def test_standard_concise_gap_accepts_grounded_generation_target_over_50_words():
+    payload = _payload()
+    gap = (
+        "Nairobi wards need a clear access trigger and responsible owner before the "
+        "project can rely on its planned service pathway during preparation and early "
+        "implementation. The gap matters because unclear access arrangements can delay "
+        "delivery, exclude households, and leave implementation monitoring without a "
+        "defined response when conditions change across neighborhoods, service points, "
+        "or beneficiary groups during the project cycle."
+    )
+    assert 50 < len(gap.split()) <= 100
+    payload["priorities"][0]["concise"]["gap"] = gap
+    result = extract_priorities(_wrapped(payload), active_lens_ids=[])
+    assert result["error"] is False
+    assert result["priorities"][0]["concise"]["gap"] == gap
+
+
 def test_standard_concise_gap_falls_back_to_admitted_why_when_invalid_or_ungrounded():
     payload = _payload()
     payload["priorities"][0]["concise"]["gap"] = (

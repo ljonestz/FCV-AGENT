@@ -6630,12 +6630,11 @@ def _normalize_project_cycle(value: Any) -> dict[str, str] | None:
 
 
 def _standard_concise_gap_is_valid(value: Any) -> bool:
-    """Accept only the optional standard gap shape generated from canonical fields."""
+    """Accept a nonempty optional standard gap within the parser safety bound."""
     if not isinstance(value, str):
         return False
     words = value.split()
-    sentences = re.findall(r"[^.!?]+[.!?](?:\s|$)", value.strip())
-    return 35 <= len(words) <= 50 and len(sentences) == 2
+    return bool(value.strip()) and len(words) <= 100
 
 
 def _normalize_concise_priority(
