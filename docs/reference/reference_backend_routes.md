@@ -547,3 +547,5 @@ Word and brief HTML use the user's technical-report presentation: Arial, a bold
 opening sentence followed by explanatory prose, and presentation normalization
 of em dashes to spaced hyphens. New management content targets about 1.5-2 A4
 pages. Never shorten canonical evidence or invent text to satisfy page length.
+
+Gap admission accepts nonempty grounded text up to 100 words. The drafting target is not a strict admission limit. Brief Word gap paragraphs stay together without truncating text.

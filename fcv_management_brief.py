@@ -177,12 +177,13 @@ def render_management_brief_docx(readout: dict, priorities: list) -> bytes:
             _paragraph(document, text, label=title + ":", style="List Bullet")
     document.add_heading("Potential gaps", level=1)
     for number, card in enumerate(brief["priorities"], 1):
-        _paragraph(
+        gap_paragraph = _paragraph(
             document,
             card["gap"],
             label=f"Gap {number}: ",
             style="List Bullet",
         )
+        gap_paragraph.paragraph_format.keep_together = True
     document.add_heading("Suggested priorities", level=1)
     for number, card in enumerate(brief["priorities"], 1):
         document.add_heading(f'{number}. {card["title"]}', level=2)

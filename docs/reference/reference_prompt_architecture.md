@@ -483,3 +483,5 @@ The management projection targets roughly 650-850 words and 1.5-2 A4 pages,
 without adding findings solely to fill space. Earlier one-page targets are
 superseded. Differentiated-approach reader notes are no longer generated on the
 standard route or displayed in the report.
+
+The optional standard gap has a 100-word admission ceiling plus canonical grounding. Its 35-50-word, two-sentence generation target is advisory. Live testing showed strict target enforcement unnecessarily discarded grounded explanations.

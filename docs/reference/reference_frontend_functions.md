@@ -374,3 +374,5 @@ unresolved-analysis warnings remain active. Removal applies on desktop and
 mobile and to shared specialist display surfaces.
 
 A compact retrospective-review warning is retained for historical PADs, without the removed instrument/date metadata strip. It clarifies that the review assesses preparation-stage design rather than current implementation status. Closed-project and unresolved-route warnings also remain.
+
+Completed `loadSession()` recovery enables the stage navigator and calls `navigateToStage(3)` using the stored result. The file input is cleared before return. Partial sessions retain their existing Continue action. No new analysis request is made.

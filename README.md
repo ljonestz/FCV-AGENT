@@ -177,3 +177,7 @@ The app isolates state per browser tab via a per-assessment ID. Express Analysis
 - `docs/reference/reference_sector_lenses.md` — sector-lens module and cross-build contract
 - `docs/20260822_ITS_handover_normal_fcv_summary.md` - current handoff for mirroring the Summary feature into the ITS build
 - `docs/fcv-agent-knowledge-architecture.html` — visual overview of how knowledge sources flow through the pipeline
+
+### Final Nairobi readability verification (20 September 2026)
+
+A fresh complete Honduras PAD assessment completed all three stages. After small display/admission fixes, its exact recorded output passed the full live UI/export repeat. The actual management brief is two A4 pages and the comprehensive note is twelve. Saved-session recovery is fixed. Regression coverage is 1,279 cases across partitions and targeted reruns, with four legacy Windows Chromium cases still unverified. Remaining factual/status issues are documented separately; the diagnostic output is not analytically approved. See `20260920_ITS_handover_standard_fcv.md` for contracts, provenance and acceptance limits.
