@@ -3132,7 +3132,10 @@ strengths_transition, priorities_transition and closing fields using only claims
 already in the JSON block. For every priority, provide a complete "concise"
 object with title, why and one or two how action bullets. A leading action is sufficient; do not add
 bullets to satisfy a count. Preserve suggested_wording and canonical
-project_cycle when present.
+project_cycle when present. The detailed priority.project_cycle is the canonical
+lifecycle record: copy its same four values exactly into concise.project_cycle;
+do not paraphrase or independently reinterpret timing. A concise card must not
+introduce a new fact, action, milestone, date, institution or causal claim.
 
 If a concise bundle is emitted, include a complete concise card for every
 priority. The frontend supplies the controlled advisory about professional
@@ -3186,6 +3189,16 @@ that could affect delivery. Record component budgets or shares when they are
 stated in the project documents. If an amount, share, activity, beneficiary
 group or dependency is absent, state that it is unknown or not stated; never
 infer a numerical weight. This is an evidence inventory, not a priority quota.
+Before Part B, include a compact "Project facts and commitments" table in Part A.
+Its rows must retain each named component and stated budget, principal beneficiary
+scope, and material implementation or safeguard commitment, including the named
+instrument, its planned/completed/unknown status, and any explicit applicability
+exclusion or condition. Cite the source paragraph or section when available.
+This table is the evidence carried to later stages; do not omit a relevant draft
+instrument or an explicit exclusion because it is not itself a gap. If source
+sections conflict, retain both statements and flag the discrepancy rather than
+silently selecting one. Keep this table concise by shortening the surrounding
+narrative, not by dropping the facts or conditions.
 Preserve the source's epistemic status for each material point: distinguish
 an explicitly documented risk or exclusion, mitigation or an instrument
 planned or under preparation, operational detail not verified, and a point
@@ -3200,8 +3213,10 @@ or draft instruments, even when wider context is also available. If a primary
 document is marked truncated, do not treat omitted pages as evidence that a
 point is absent from the full document.
 For external numeric context, retain the source date and definition. Keep
-internal displacement, refugees, and forced migration distinct, and do not
-extrapolate national criminal presence to a project corridor without
+internal displacement, refugees, and forced migration distinct. Do not claim
+that displacement is absent when the source documents involuntary resettlement,
+physical/economic displacement or climate displacement; specify which category
+or analysis is not documented. Do not extrapolate national criminal presence to a project corridor without
 project-specific evidence.
 '''
 
@@ -13018,7 +13033,7 @@ def download_report():
             section.right_margin = Inches(1.2)
 
         # ── Project title (from LLM output # heading) ──
-        title_para = doc.add_heading(project_title, level=1)
+        title_para = doc.add_paragraph(project_title, style='Title')
         if title_para.runs:
             title_para.runs[0].font.color.rgb = WB_NAVY
 
@@ -13346,7 +13361,9 @@ def download_report():
                     if sources:
                         _add_single_para(f'Source IDs: {sources}', size=8.5, color=WB_LGRAY, italic=True, space_after=5)
 
-        # ── Write to buffer ──
+        # Apply the shared editable Word presentation after all content is present.
+        from fcv_word_style import style_fcv_word_document
+        style_fcv_word_document(doc, variant="detail")
         buf = io.BytesIO()
         doc.save(buf)
         buf.seek(0)

@@ -2,7 +2,7 @@
 
 Date: 20 September 2026
 
-**Status: review candidate. Live testing of the updated Render build with a real PAD is required before final acceptance.**
+**Status: review candidate. A live standard-FCV PAD run passed the complete user workflow on commit `58c68d9`; analytical review identified further source-retention issues. Final Word/prompt refinements still require live verification on the Quality preview.**
 
 ## Baseline and scope
 
@@ -65,7 +65,7 @@ The public patch is based on the reported QA commit. Adapt shared behavior to th
 - A four-section horizon narrative displays headings and paragraphs without literal Markdown markers; ordinary watch arrays remain bullets, and embedded HTML is escaped.
 - Brief Word and HTML contain the same leading actions. Comprehensive exports still contain all actions and suggested wording.
 - Unsupported comparison claims and numerical trigger values are not invented or presented as policy obligations.
-- Existing Climate analytical contracts remain unchanged; only the specifically requested routing disclosure removal may affect its shared display.
+- Existing Climate analytical contracts remain unchanged; only the requested routing-disclosure removal and Word presentation affect its display.
 
 ## Validation status
 
@@ -95,3 +95,17 @@ The first Smoke attempt stopped at Stage 2 without a retained error message; a s
 The diagnostic completed with four priorities and exercised Summary, all four links to Detailed, rating visibility, safe watch Markdown, and all four HTML/Word downloads. It failed the final session-save check because Save session remained hidden after Express completion. The follow-up calls the existing session-bar updater at completion. Mobile checks were not reached in that diagnostic and remain pending on the corrected deployment. The management brief was also too verbose when the canonical fallback was used; generation now receives shorter per-field targets, while legacy admission and factual grounding remain unchanged.
 
 Follow-up regression checks: 158 backend, route, concise and workflow tests passed; eight frontend contract tests passed. Python compilation and diff checks passed. Fresh live acceptance of the coverage correction remains pending.
+
+## Word readability and source-retention follow-up
+
+The user additionally requested Word presentation resembling the CPF screener. `fcv_word_style.py` is a portable python-docx helper shared by management briefs, standard comprehensive reports and verified Climate Word reports. Copy this helper alongside the brief exporter; call it after assembling the native document. It applies Calibri, navy running headers/headings, subtle priority/action accents, repeated table headings and editable page numbers without altering analysis or page geometry. Existing semantic warning colors remain. HTML styling is unchanged by this follow-up.
+
+Standard Stage 1 now explicitly emits a compact sourced project facts and commitments table, retaining component budgets, beneficiary scope, material safeguards commitments, status and conditional geography, including source inconsistencies. Standard Stage 3 explicitly copies the four canonical lifecycle fields into concise priorities; validators and schemas remain unchanged. These instructions address observed information loss and projection risk; they do not certify factual correctness.
+
+Word layout was rendered with native Microsoft Word and inspected across a two-page brief and thirteen-page full report. Those previews reuse diagnostic content solely to test layout; they are not analytically accepted assessment outputs. Focused checks passed: 129 Word/brief/Climate evidence and rendering cases, followed by 45 Word/brief/Nairobi cases after the source-retention refinements.
+
+### Complete-PAD Smoke trial (`58c68d9`)
+
+Assessment `61bd97a4-b29f-4624-a972-56b4a7cccdc8` completed all three stages with four priorities. Upload, Summary, all priority links, Detailed ratings/actions, watch Markdown, four downloads, session saving and 390-pixel mobile layout passed. Canonical content comparisons passed for all four exports. The local browser cleanup timed out after successful assertions; this is recorded separately from the live workflow result.
+
+Analytical review remains open: Stage 1 retained more late-PAD evidence but did not reliably carry all component budgets and conditional safeguard commitments forward. A displacement statistic also used the wrong period/category. The explicit facts table addresses source retention; generated external statistics still require verification. Do not treat this structural pass as analytical acceptance or advertise the diagnostic report as a validated assessment.

@@ -297,6 +297,8 @@ def test_standard_evidence_fidelity_contract_is_rendered_only_on_core_route():
     )
 
     assert "available excerpt" in stage1.lower()
+    assert "Project facts and commitments" in stage1
+    assert "retain both statements" in stage1
     assert "planned or under preparation" in stage1.lower()
     assert "relevance flag alone" in stage1.lower()
     assert "available excerpt" in stage2.lower()
@@ -304,6 +306,7 @@ def test_standard_evidence_fidelity_contract_is_rendered_only_on_core_route():
     assert "generic relevance flag" in stage2.lower()
     assert "source-grounded exclusions" in stage3.lower()
     assert "title of no more than" in stage3.lower()
+    assert "copy its same four values exactly into concise.project_cycle" in stage3
 
     climate_lenses = [{"id": "climate"}]
     assert app.append_standard_fcv_stage_context(

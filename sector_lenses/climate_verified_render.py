@@ -1744,6 +1744,8 @@ def write_reader_docx(model: dict[str, object], path: str | Path) -> Path:
 
 
     document.add_paragraph(_text(model.get("advisory_notice")))
+    from fcv_word_style import style_fcv_word_document
+    style_fcv_word_document(document, variant="detail")
     document.save(output)
     return output
 

@@ -41,3 +41,7 @@ Broader expert-calibrated diagnostic bank and sector resources follow this first
 ## Live PAD acceptance added at user request
 
 Use the existing Honduras Sustainable Connectivity Project PAD (P181166) on the standard route. Verify upload/extraction, all three stages, compact Summary, exact-priority links, Detailed ratings and complete actions, watch formatting, absence of routing disclosures, and both brief/full downloads. Compare output against the source: the US$158m main corridor is 84.5% of the US$187m project, with smaller feeder-road, livelihood and implementation components. Recognize existing land, SEA/SH and participation commitments; distinguish pending measures from completed implementation. Keep raw documents and assessment output in ignored QA storage. Do not finalize the ITS handover until this live trial is recorded.
+
+## Approved Word readability follow-up
+
+The user requested the CPF screener Word visual treatment for FCV downloads. Apply a small shared python-docx styling helper to brief/full standard and verified Climate exports. Retain all content and existing document geometry; use native editable Word headings, a navy running header, subtle action accents, repeated table headings and page numbers. Verify both brief and full output through native Microsoft Word PDF rendering. The live PAD review also requires an explicit sourced project facts/commitments table and exact copying of canonical lifecycle metadata into concise priorities.

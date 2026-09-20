@@ -859,3 +859,7 @@ docs/superpowers/  # Dev plans and specs
 **Current version:** FCV Project Screener v9.38
 **Claude model:** `claude-sonnet-4-6`
 **Stack:** Flask 3.0.3 + vanilla JS + Anthropic SDK + gunicorn/gevent on Render
+
+### Word presentation and evidence retention follow-up (2026-09-20)
+
+`fcv_word_style.py` provides dependency-free shared presentation for brief, comprehensive standard and verified Climate Word exports: Calibri, navy running headers and headings, readable action accents, repeating table headings and native page numbers. It preserves content and existing page geometry. Standard Stage 1 explicitly retains component budgets, beneficiaries, instrument status and conditional safeguards in a compact sourced facts table, including conflicting source statements. Standard Stage 3 concise lifecycle metadata must be copied exactly from its canonical priority; admission rules are unchanged.

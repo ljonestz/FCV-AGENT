@@ -1,0 +1,106 @@
+"""Focused presentation checks for editable FCV Word exports."""
+
+from io import BytesIO
+
+from docx import Document
+from docx.oxml.ns import qn
+from docx.shared import RGBColor
+import pytest
+
+from fcv_management_brief import render_management_brief_docx
+
+
+def _brief():
+    readout = {
+        "headline": "Clearer access decisions would improve delivery.",
+        "overview": "The project identifies access constraints and proposes practical follow-up.",
+        "strengths": [{"title": "Context", "text": "The design recognizes local constraints."}],
+    }
+    priorities = [
+        {
+            "number": 1,
+            "title": "Clarify access",
+            "concise": {
+                "title": "Clarify access ownership",
+                "why": "Unclear ownership may delay delivery.",
+                "how": ["Assign a named decision owner."],
+            },
+        }
+    ]
+    return readout, priorities
+
+
+def _fill(element, tag):
+    child = element.find(qn(tag))
+    if child is None:
+        return None
+    return child.get(qn("w:fill"))
+
+
+def test_management_brief_uses_editable_navy_word_treatment():
+    readout, priorities = _brief()
+    document = Document(BytesIO(render_management_brief_docx(readout, priorities)))
+
+    assert document.styles["Normal"].font.name == "Calibri"
+    assert document.styles["Title"].font.color.rgb == RGBColor(0, 0, 0)
+    assert document.styles["Heading 1"].font.color.rgb == RGBColor(0x15, 0x39, 0x56)
+    assert document.styles["Heading 1"].paragraph_format.keep_with_next is True
+    assert all(
+        paragraph.alignment is None
+        or paragraph.alignment.value == 0
+        for paragraph in document.paragraphs
+    )
+
+    header = document.sections[0].header.paragraphs[0]
+    assert "FCV MANAGEMENT BRIEF" in header.text
+    assert _fill(header._p.pPr, "w:shd") == "153956"
+
+    footer = document.sections[0].footer.paragraphs[0]
+    assert "Page" in footer.text
+    assert any(
+        instruction.text.strip() == "PAGE"
+        for instruction in footer._p.xpath(".//w:instrText")
+    )
+
+    action = next(
+        paragraph
+        for paragraph in document.paragraphs
+        if paragraph.text.startswith("Suggested action:")
+    )
+    assert _fill(action._p.pPr, "w:shd") == "E7F3F1"
+    assert action.paragraph_format.keep_together is not True
+
+
+def test_brief_keeps_a4_geometry_and_native_priority_flow():
+    readout, priorities = _brief()
+    document = Document(BytesIO(render_management_brief_docx(readout, priorities)))
+    section = document.sections[0]
+
+    assert section.page_width.mm == pytest.approx(210, abs=0.1)
+    assert section.page_height.mm == pytest.approx(297, abs=0.1)
+    assert section.left_margin.mm == pytest.approx(17, abs=0.1)
+    assert section.right_margin.mm == pytest.approx(17, abs=0.1)
+    assert "Clarify access ownership" in "\n".join(
+        paragraph.text for paragraph in document.paragraphs
+    )
+
+
+def test_style_helper_adds_repeating_contrasting_table_header():
+    from fcv_word_style import style_fcv_word_document
+
+    document = Document()
+    table = document.add_table(rows=2, cols=2)
+    table.cell(0, 0).text = "Evidence"
+    table.cell(0, 1).text = "Action"
+    table.cell(1, 0).text = "Source"
+    table.cell(1, 1).text = "Follow up"
+
+    style_fcv_word_document(document, variant="detail")
+
+    header_row = table.rows[0]
+    assert _fill(header_row.cells[0]._tc.tcPr, "w:shd") == "153956"
+    assert header_row._tr.trPr.find(qn("w:tblHeader")) is not None
+    assert header_row.cells[0].paragraphs[0].runs[0].font.color.rgb == RGBColor(
+        0xFF, 0xFF, 0xFF
+    )
+    assert "FCV ASSESSMENT" in document.sections[0].header.paragraphs[0].text

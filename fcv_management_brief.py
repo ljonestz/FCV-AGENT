@@ -12,6 +12,8 @@ from typing import Any
 from docx import Document
 from docx.shared import Mm, Pt, RGBColor
 
+from fcv_word_style import style_fcv_word_document
+
 
 ADVISORY = (
     "AI-assisted suggestions for professional review, not requirements. "
@@ -170,6 +172,7 @@ def render_management_brief_docx(readout: dict, priorities: list) -> bytes:
         paragraph = document.add_paragraph(text)
         for run in paragraph.runs:
             run.font.size = Pt(8.5)
+    style_fcv_word_document(document, variant="brief")
     buffer = BytesIO()
     document.save(buffer)
     return buffer.getvalue()

@@ -69,7 +69,7 @@ def test_html_and_word_preserve_all_priorities_and_leading_actions(count):
         assert "not requirements" in output.lower()
     assert document.sections[0].page_width.mm == pytest.approx(210, abs=0.1)
     assert document.sections[0].page_height.mm == pytest.approx(297, abs=0.1)
-    assert document.styles["Normal"].font.name == "Arial"
+    assert document.styles["Normal"].font.name == "Calibri"
 
 
 def test_html_escapes_model_text_and_needs_no_external_assets():
