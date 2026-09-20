@@ -10,11 +10,11 @@
 
 ## Approved design
 
-- Management brief: headline, 40-80-word overall assessment, zero to three genuinely evidenced strengths, and one to five ranked priorities. Each priority states the issue, why it matters, and the leading suggested action; detailed actions and drafting remain one click away. Formal ratings stay in Detailed. Explain sensitivity and responsiveness in plain language without implying all projects must address conflict drivers.
+- Management brief: headline, 80-110-word overall assessment, zero to three genuinely evidenced strengths, and one to five ranked priorities. Each priority states the issue, why it matters, and the leading suggested action; detailed actions and drafting remain one click away. Formal ratings stay in Detailed. Explain sensitivity and responsiveness in plain language without implying all projects must address conflict drivers.
 - Prioritization: account for PDO relevance, scale of activities/beneficiaries, severity of harm, and delivery dependencies. Spending is informative rather than a mechanical score. Critical implementation arrangements and serious harms may outrank large expenditure components. Do not invent a priority to fill a quota.
 - Practical advice: preserve instrument/lifecycle routing. Prefer applicable project-document, operational and commitment targets; do not generate a quota of document revisions. Use advisory display language while preserving shared timing enum values. Keep confirmed policy obligations distinct from model suggestions.
 - Detailed: retain evidence, formal ratings and suggested wording; group repetitive strategic alignment/context under a disclosure. Keep minor observations in the existing closed watch-items section. Preserve Markdown structure in multiline watch prose and remove the confusing routing disclosure from both views, retaining relevant warnings.
-- Exports: add separate management-brief Word and print-ready HTML downloads using validated canonical data. Keep existing comprehensive downloads comprehensive. A4 one-page is a target for newly generated concise content, not permission to truncate findings or shrink text illegibly. HTML supports browser Print / Save as PDF.
+- Exports: add separate management-brief Word and print-ready HTML downloads using validated canonical data. Keep existing comprehensive downloads comprehensive. Approximately 1.5-2 A4 pages is the target for newly generated management content, not permission to truncate findings or shrink text illegibly. HTML supports browser Print / Save as PDF.
 - Compatibility: accept valid older concise bundles (150-200 words, three strengths); new generation is shorter. Keep the existing schema names and grounding/lifecycle admission. Incomplete or invalid data must not create a misleading brief. Do not change Climate analytical behavior or enable new sectors. The user subsequently requested removal of the shared routing disclosure from both views, including where the shared Climate helper renders it.
 
 ## Tasks and ownership
@@ -49,3 +49,11 @@ The user requested the CPF screener Word visual treatment for FCV downloads. App
 ## Execution checkpoint
 
 The feature branch is implemented and pushed; live Smoke and Quality PAD trials passed the complete user workflow, exports and mobile checks. Word layout has native Word visual verification. The handover is prepared as a review candidate, with remaining analytical issues and the untried final prompt correction explicitly separated from verified presentation/workflow behavior.
+
+## Approved follow-up: management gaps and report style
+
+User request: remove differentiated-approach notes, instrument/approval/closing/safeguards panels, and applied-Playbook attribution from reader outputs. Keep internal routing and substantive unresolved-analysis warnings. Standard Summary/brief order: overall assessment, green strengths, light-orange potential gaps, action-focused priorities. Use optional per-priority concise.gap grounded in canonical the_gap/why_it_matters; legacy cards can use their admitted why. Preserve all priorities and compatibility. Avoid repeating the same rationale under the actions.
+
+Apply the user's global report rules: Arial, clear bold first sentences, explanatory follow-on sentences, no em dashes, avoid semicolons, management-friendly language. Target newly generated management briefs at roughly1.5-2A4pages, with all substantive content preserved. Keep HTML and Word aligned. Climate analysis remains out of scope; shared display removals and Word typography apply consistently.
+
+Implementation ownership: backend app.py/prompt/normalizer tests; browser index.html/frontend tests; pure brief/export presentation helpers and tests. Root handles integration, documentation, shared-contract log, deployment and full livePADrerun. Verify a fresh complete standard Honduras PAD after deployment, save all outputs/screenshots, inspect Word pagination and browser/mobile output, then update all relevant docs with actual results and limitations.

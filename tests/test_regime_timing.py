@@ -117,9 +117,9 @@ def test_docx_renders_canonical_project_cycle_after_actions():
 
     cycle_index = paragraphs.index("Where this fits in the project cycle")
     assert document.paragraphs[cycle_index + 1].runs[0].bold is True
-    assert document.paragraphs[cycle_index + 2].runs[0].bold is not True
+    assert document.paragraphs[cycle_index + 2].runs[0].bold is True
     assert document.paragraphs[cycle_index + 3].runs[0].bold is True
-    assert document.paragraphs[cycle_index + 4].runs[0].bold is not True
+    assert document.paragraphs[cycle_index + 4].runs[0].bold is True
 
 
 def test_docx_omits_project_cycle_when_only_legacy_concise_data_exists():

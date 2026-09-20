@@ -15,21 +15,30 @@ Both modes produce identical output across three stages:
 2. **Stage 2 — FCV Assessment** — Thematic analysis across FCV dimensions, Do No Harm traffic-light, and detailed Under the Hood panels
 3. **Stage 3 — Recommendations Note** — Structured memo with strategic priorities, actionable guidance, and ready-to-paste project-document language
 
-For normal FCV reviews, every complete concise bundle defaults to **Summary**.
-The first priority is expanded and the remaining priorities are collapsed; opening
-one closes the previously open card. If any required concise field is missing or
-invalid, the app safely opens **Detailed analysis** without making another model
-call. Climate + FCV reviews use the same tab and accordion interaction pattern.
-The on-screen advisory before priorities makes clear that the actions are
-suggestions rather than mandatory requirements and points teams to FCV Country
-Coordinators or relevant Global Practice experts. HTML and DOCX downloads remain
-detailed-only.
+For standard FCV reviews, a complete concise bundle defaults to **Summary**.
+It presents the overall assessment, evidenced strengths, potential gaps, and one
+to five suggested priorities. Each priority links to its full evidence and actions
+in **Detailed analysis**, which retains the formal ratings. Missing or invalid
+concise data falls back to Detailed without another model call.
+
+Separate **Brief HTML** and **Brief Word** downloads provide a management readout,
+targeting approximately 1.5-2 A4 pages for newly generated content. Full HTML and
+Word downloads retain the comprehensive recommendations note. Word uses Arial,
+bold opening sentences and editable headings. Strengths use green accents and
+potential gaps use light orange. The narrative avoids em dashes and unnecessary
+technical language. Recommendations remain suggestions for professional review.
+
+Reader outputs omit technical routing metadata, differentiated-approach notes
+and applied-Playbook attribution. Internal routing and source retrieval continue
+to operate, and substantive warnings about incomplete analysis remain visible.
+See [the ITS handover](20260920_ITS_handover_standard_fcv.md) for the QA baseline,
+porting instructions, verification evidence and remaining limitations.
 
 ## Optional sector lenses
 
 Users may select up to two specialist lenses before analysis. The production Climate-FCV Lens is manual-only and is never auto-suggested. Once selected, it automatically screens both climate-intent operations and wider development projects, prioritizes adaptation and resilience, and uses deep mitigation analysis only where a clear material pathway exists.
 
-Core-only runs retain the standard 4-5 substantive priorities and the lightweight conditional Climate-FCV check. Active-lens runs supersede that lightweight check, use one integrated list of no more than five substantive priorities, and apply a flexible evidence-led mix of core, Climate-linked, and blended actions. Optional CCDR material is validated contextual support and must not dominate recommendations.
+Core-only runs select one to five material priorities and the lightweight conditional Climate-FCV check. Active-lens runs supersede that lightweight check, use one integrated list of no more than five substantive priorities, and apply a flexible evidence-led mix of core, Climate-linked, and blended actions. Optional CCDR material is validated contextual support and must not dominate recommendations.
 
 ### Climate-FCV country evidence bank
 

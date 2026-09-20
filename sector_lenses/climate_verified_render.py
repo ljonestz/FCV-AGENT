@@ -1180,23 +1180,11 @@ def render_reader_html(model: dict[str, object]) -> str:
         )
     operation_context = _mapping(model.get("operation_context"))
     drafting_route = _drafting_route_gate(operation_context)
-    if operation_context:
-        instrument = _reader_route_value(
-            operation_context.get("instrument_type")
-        )
-        document_type = _reader_route_value(
-            operation_context.get("document_type")
-        )
+    if operation_context and not drafting_route["confirmed"]:
         parts.append(
-            '<p class="climate-operation-context"><strong>Document:</strong> '
-            f"{html.escape(document_type)} | "
-            f"<strong>Instrument:</strong> {html.escape(instrument)}</p>"
+            "<p>Suggested document wording is not shown because the "
+            "document type or financing route could not be confirmed reliably.</p>"
         )
-        if not drafting_route["confirmed"]:
-            parts.append(
-                "<p>Suggested document wording is not shown because the "
-                "document type or financing route could not be confirmed reliably.</p>"
-            )
     # Overview at the very top: the headline sensitivity rating card carries the
     # 3-4 sentence plain-language overall summary, so the reader gets the whole
     # takeaway up front. The fuller Executive readout follows as detail below.
@@ -1517,22 +1505,11 @@ def write_reader_docx(model: dict[str, object], path: str | Path) -> Path:
             paragraph.runs[0].bold = True
     operation_context = _mapping(model.get("operation_context"))
     drafting_route = _drafting_route_gate(operation_context)
-    if operation_context:
-        _docx_field(
-            document,
-            "Document",
-            _reader_route_value(operation_context.get("document_type")),
+    if operation_context and not drafting_route["confirmed"]:
+        document.add_paragraph(
+            "Suggested document wording is not shown because the document "
+            "type or financing route could not be confirmed reliably."
         )
-        _docx_field(
-            document,
-            "Instrument",
-            _reader_route_value(operation_context.get("instrument_type")),
-        )
-        if not drafting_route["confirmed"]:
-            document.add_paragraph(
-                "Suggested document wording is not shown because the document "
-                "type or financing route could not be confirmed reliably."
-            )
     # Overview at the very top: the summary + rating come first, then the fuller
     # Executive readout as detail below (parity with the HTML surface).
     rating = _mapping(model.get("climate_sensitivity_rating"))

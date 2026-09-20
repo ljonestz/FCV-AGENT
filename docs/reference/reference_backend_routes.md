@@ -248,7 +248,7 @@ fields. The prompt places the delimited JSON before the detailed narrative;
 `extract_priorities()` remains delimiter-based and does not depend on block position.
 Active sector-lens prompts are not given the core concise schema.
 
-`concise_readout` contains a headline, a newly generated 40-80 word `overview`, and zero to three
+`concise_readout` contains a headline, a newly generated 80-110 word `overview`, and zero to three
 `{title, text}` strengths. Admission accepts 40-200 words for saved-bundle compatibility.
 Every ranked priority must carry a complete concise
 object with title, rationale, one to four actions (new generation: one or two), optional supported drafting, and
@@ -527,8 +527,23 @@ boundary of 17 April 2026 and the DPF boundary of 18 April 2026.
 
 `POST /api/download-management-brief` accepts a JSON object containing `format` (`html` or `docx`), `concise_readout`, canonical `priorities` including concise cards, `fcv_rating`, `fcv_responsiveness_rating`, resolved `doc_type`, and `active_lenses`. Active lenses are rejected. The route revalidates through `extract_priorities()` with document-type lifecycle context; an unavailable or invalid concise bundle returns 422. Invalid request shape or format returns 400. Successful responses are attachments (`text/html` or the Word Open XML media type).
 
-The pure `fcv_management_brief.py` renderers receive normalized data and project the headline, overview, all evidenced strengths and every ranked priority with its rationale and leading action. No model call or truncation is performed. Longer legacy content may span pages. HTML escapes content and supports browser printing; DOCX is editable A4. The existing `/api/download-report` and full HTML export retain comprehensive output.
+The pure `fcv_management_brief.py` renderers receive normalized data and project the headline, overview, all evidenced strengths and every ranked priority with its gap (or legacy why fallback) followed by its leading action. No model call or truncation is performed. Longer legacy content may span pages. HTML escapes content and supports browser printing; DOCX is editable A4. The existing `/api/download-report` and full HTML export retain comprehensive output.
 
 Live PAD follow-up (2026-09-20): the standard route allows up to 300,000 primary-document characters in both Stage 1 entry points; larger inputs emit the existing `extraction_warning` event and retain an explicit cutoff marker. Specialist and secondary-document budgets are unchanged. Express handled exceptions now log the assessment ID, failed stage and traceback while preserving the existing error SSE contract.
 
-Word exports use `fcv_word_style.style_fcv_word_document()` after content generation: brief via `fcv_management_brief.py`, standard comprehensive via `download_report()`, verified Climate via `write_reader_docx()`. This portable python-docx helper applies navy running headers/headings, Calibri, action accents, repeating table headings and native page numbers. It changes presentation only and adds no runtime dependency. ITS can reuse it after its existing document generation.
+Word exports use `fcv_word_style.style_fcv_word_document()` after content generation: brief via `fcv_management_brief.py`, standard comprehensive via `download_report()`, verified Climate via `write_reader_docx()`. The shared `fcv_presentation.py` helper handles first-sentence boundaries and safe em-dash normalization. The portable python-docx helper applies navy running headers/headings, Arial, action accents, repeating table headings and native page numbers. It changes presentation only and adds no runtime dependency. ITS can reuse it after its existing document generation.
+
+## Management-readability follow-up
+
+Standard concise priority cards may carry a grounded `gap` paragraph in addition
+to `why` and `how`. Browser and management exports show `gap` when admitted and
+otherwise use the admitted `why`, preserving older sessions. The gaps precede
+action-focused priorities in the brief; canonical Detailed content is retained.
+This is an optional additive projection field in the existing Stage 3 call, not
+an extra request or a new formal rating. Existing lifecycle and grounding gates
+remain authoritative.
+
+Word and brief HTML use the user's technical-report presentation: Arial, a bold
+opening sentence followed by explanatory prose, and presentation normalization
+of em dashes to spaced hyphens. New management content targets about 1.5-2 A4
+pages. Never shorten canonical evidence or invent text to satisfy page length.

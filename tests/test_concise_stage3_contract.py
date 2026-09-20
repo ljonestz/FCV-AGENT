@@ -49,6 +49,11 @@ CONCISE_PRIORITY = {
     "project_cycle": copy.deepcopy(PROJECT_CYCLE),
 }
 
+STANDARD_TRANSPORTED_CONCISE_PRIORITY = {
+    **CONCISE_PRIORITY,
+    "gap": CONCISE_PRIORITY["why"],
+}
+
 
 def _detailed_priority(number: int) -> dict:
     return {
@@ -452,7 +457,7 @@ def test_step_by_step_completion_payload_transports_concise_bundle(monkeypatch):
 
     done = next(event for event in _decode_sse(response) if event.get("done"))
     assert done["concise_readout"] == CONCISE_READOUT
-    assert done["priorities"][0]["concise"] == CONCISE_PRIORITY
+    assert done["priorities"][0]["concise"] == STANDARD_TRANSPORTED_CONCISE_PRIORITY
 
 
 def test_step_by_step_uses_effective_doc_type_for_priority_scope(monkeypatch):
@@ -573,7 +578,7 @@ def test_express_completion_payload_transports_concise_bundle(monkeypatch, valid
     )
     if valid_bundle:
         assert done["concise_readout"] == CONCISE_READOUT
-        assert done["priorities"][0]["concise"] == CONCISE_PRIORITY
+        assert done["priorities"][0]["concise"] == STANDARD_TRANSPORTED_CONCISE_PRIORITY
     else:
         assert done["concise_readout"] is None
         assert done["priorities"][0]["the_gap"]
@@ -652,6 +657,10 @@ def test_frontend_normal_summary_renderer_includes_required_sections():
     helpers = "\n".join(
         _extract_js_function(source, name)
         for name in (
+            "normalizeVisibleText",
+            "findVisibleSentenceEnd",
+            "boldVisibleFirstSentence",
+            "renderNormalSummaryGaps",
             "renderFcvRatingIndicators",
             "getConcisePriority",
             "renderNormalSummaryPriorities",
@@ -670,13 +679,13 @@ let fcvResponsivenessRating='Emerging';
 const renderStage3AdvisoryTransition=()=>'<p>advisory</p>';
 {helpers}
 const html=renderNormalFcvSummary();
-for(const expected of ['Five-minute readout','Overall assessment','What is already working','Priority actions for the task team','How to read the FCV assessment']){{
+for(const expected of ['Five-minute readout','Overall assessment','What the project does well','Priority actions for the task team','How to read the FCV assessment']){{
   if(!html.includes(expected))throw new Error('missing '+expected+' | '+html);
 }}
 for(const forbidden of ['FCV sensitivity','FCV responsiveness','Strengths bridge','Closing note','summary-priority-accordion']){{
   if(html.includes(forbidden))throw new Error('compact summary exposed '+forbidden);
 }}
-const order=['Overall assessment','What is already working','advisory','Priority actions for the task team','summary-priority-list'];
+const order=['Overall assessment','What the project does well','advisory','Priority actions for the task team','summary-priority-list'];
 for(let i=1;i<order.length;i++){{
   const previous=html.indexOf(order[i-1]);
   const current=html.indexOf(order[i]);
@@ -1347,7 +1356,7 @@ if(labels.includes({json.dumps(forbidden_label)}))throw new Error('inapplicable 
 
 def test_normal_fcv_watch_disclosure_follows_priorities_without_guidance_or_deeper_refs():
     source = open(os.path.join(os.path.dirname(app.__file__), "index.html"), encoding="utf-8").read()
-    helpers = "\n".join(_extract_js_function(source, name) for name in ("renderFcvRatingIndicators", "getConcisePriority", "renderNormalSummaryPriorities", "normalFcvWatchGroups", "renderNormalFcvWatchDisclosure", "renderNormalFcvSummary"))
+    helpers = "\n".join(_extract_js_function(source, name) for name in ("normalizeVisibleText", "findVisibleSentenceEnd", "boldVisibleFirstSentence", "renderNormalSummaryGaps", "renderFcvRatingIndicators", "getConcisePriority", "renderNormalSummaryPriorities", "normalFcvWatchGroups", "renderNormalFcvWatchDisclosure", "renderNormalFcvSummary"))
     script = f"""
 const esc=value=>String(value??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 let stageConciseReadout={json.dumps({**CONCISE_READOUT, "closing": "Closing note <em>"})}; let openSummaryPriority=0; let stageThreePriorities={json.dumps(_payload()["priorities"])};

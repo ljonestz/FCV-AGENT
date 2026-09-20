@@ -568,7 +568,7 @@ def test_downloaded_report_has_climate_readout_and_context_sources():
     assert text.count("Country Climate and Development Report") <= 2
 
 
-def test_downloaded_core_only_report_retains_differentiated_approach_note():
+def test_downloaded_core_only_report_omits_differentiated_approach_note():
     from docx import Document
 
     response = app_module.app.test_client().post("/api/download-report", json={
@@ -586,8 +586,8 @@ def test_downloaded_core_only_report_retains_differentiated_approach_note():
     assert response.status_code == 200
     document = Document(io.BytesIO(response.data))
     text = "\n".join(paragraph.text for paragraph in document.paragraphs)
-    assert "Differentiated approach note" in text
-    assert "Use a differentiated approach in high-risk areas." in text
+    assert "Differentiated approach note" not in text
+    assert "Use a differentiated approach in high-risk areas." not in text
     assert "Climate, peace and social dividend contribution" not in text
 
 

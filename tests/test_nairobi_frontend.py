@@ -82,7 +82,11 @@ def test_standard_summary_is_compact_and_shows_all_ranked_priorities_without_rat
         _extract_js_function(source, name)
         for name in (
             "supportsConciseStage3View",
+            "normalizeVisibleText",
+            "findVisibleSentenceEnd",
+            "boldVisibleFirstSentence",
             "getConcisePriority",
+            "renderNormalSummaryGaps",
             "renderNormalSummaryPriorities",
             "renderNormalFcvSummary",
         )
@@ -100,7 +104,7 @@ const renderStage3AdvisoryTransition=()=>'<p>Suggestions for the team.</p>';
 const renderNormalFcvWatchDisclosure=()=>'';
 {helpers}
 const html=renderNormalFcvSummary();
-for(const expected of ['Overall assessment','What is already working','Priority actions for the task team','Protect access in Bentiu 1','Protect access in Bentiu 2','Protect access in Bentiu 3','Clear access decisions help keep delivery inclusive in Bentiu.','Set an access trigger for Bentiu.']){{
+for(const expected of ['Overall assessment','What the project does well','Potential gaps','Priority actions for the task team','Protect access in Bentiu 1','Protect access in Bentiu 2','Protect access in Bentiu 3','Clear access decisions help keep delivery inclusive in Bentiu.','Set an access trigger for Bentiu.']){{
   if(!html.includes(expected))throw new Error('missing '+expected+' | '+html);
 }}
 for(const forbidden of ['FCV sensitivity','FCV responsiveness','summary-priority-toggle','Where this fits in the project cycle','Suggested wording for the current document']){{
@@ -115,6 +119,8 @@ if((html.match(/class="normal-summary-priority"/g)||[]).length!==3)throw new Err
 def test_standard_summary_accepts_short_readout_with_zero_strengths_and_valid_priority_bundle():
     source = INDEX.read_text(encoding="utf-8")
     supports = _extract_js_function(source, "supportsConciseStage3View")
+    normalize = _extract_js_function(source, "normalizeVisibleText")
+    bold = "\n".join(_extract_js_function(source, name) for name in ("findVisibleSentenceEnd", "boldVisibleFirstSentence"))
     render = _extract_js_function(source, "renderNormalFcvSummary")
     priorities = [_priority(index) for index in range(1, 6)]
     script = f"""
@@ -126,7 +132,10 @@ let stageConciseReadout={json.dumps(_readout(strengths=[]))};
 if(!supportsConciseStage3View())throw new Error('short valid readout was rejected');
 const renderStage3AdvisoryTransition=()=>'';
 const renderNormalFcvWatchDisclosure=()=>'';
+{normalize}
+{bold}
 const getConcisePriority=priority=>priority.concise;
+const renderNormalSummaryGaps=()=>'';
 const renderNormalSummaryPriorities=()=>'';
 {render}
 const html=renderNormalFcvSummary();
@@ -138,7 +147,7 @@ if(html.includes('Project strength'))throw new Error('empty strengths created a 
 
 def test_summary_priority_link_sets_exact_detailed_identity_and_persists_tab_selection():
     source = INDEX.read_text(encoding="utf-8")
-    renderer = _extract_js_function(source, "renderNormalSummaryPriorities")
+    renderer = "\n".join(_extract_js_function(source, name) for name in ("normalizeVisibleText", "findVisibleSentenceEnd", "boldVisibleFirstSentence", "renderNormalSummaryPriorities"))
     opener = _extract_js_function(source, "openDetailedPriority")
     priorities = [_priority(index) for index in range(1, 3)]
     script = f"""
@@ -164,42 +173,101 @@ if(called.length!==1||called[0][0]!=='detailed'||called[0][1]!==true)throw new E
     assert result.returncode == 0, result.stderr
 
 
-def test_standard_detailed_timing_is_advisory_and_context_is_closed():
+def test_standard_detailed_timing_is_advisory_and_differentiated_context_is_removed():
     source = INDEX.read_text(encoding="utf-8")
     timing = _extract_js_function(source, "renderPriorityTiming")
     context = _extract_js_function(source, "renderStandardPriorityContext")
-    specialist = _extract_js_function(source, "renderSpecialistPriorityContext")
-    route = _extract_js_function(source, "renderPriorityContext")
     script = f"""
 {_esc_js()}
 let activeLenses=[];
 const isClimateLensActive=()=>false;
 {timing}
-{context}
-{specialist}
-{route}
-const renderPriorityClimateContribution=()=>'<div class="climate-context"></div>';
 const standard=renderPriorityTiming('required-before-appraisal');
 if(!standard.includes('Consider before appraisal'))throw new Error('standard timing is mandatory');
 if(standard.includes('Required before'))throw new Error('standard timing retained mandatory label');
-const disclosure=renderStandardPriorityContext({{
-  cpf_alignment:'CPF & <Outcome>',
-  rra_driver_alignment:'RRA driver',
-  country_category_relevance:'Conflict context',
-  refresh_shift:'Shift B: Differentiate'
-}});
-if(!disclosure.startsWith('<details'))throw new Error('context is not a disclosure');
-if(disclosure.includes(' open'))throw new Error('context disclosure is open by default');
-for(const expected of ['CPF alignment','RRA driver alignment','Differentiated approach','Strategy alignment','CPF &amp; &lt;Outcome&gt;']){{
-  if(!disclosure.includes(expected))throw new Error('missing '+expected+' | '+disclosure);
-}}
-activeLenses=['gender'];
-const specialistHtml=renderPriorityContext({{country_category_relevance:'Keep the existing specialist context note.'}});
-if(!specialistHtml.includes('Differentiated approach note'))throw new Error('specialist context was removed');
-if(specialistHtml.includes('priority-context-disclosure'))throw new Error('standard disclosure leaked into specialist view');
+{context}
+const disclosure=renderStandardPriorityContext({{cpf_alignment:'CPF & <Outcome>',rra_driver_alignment:'RRA driver',refresh_shift:'Strategy contribution'}});
+for(const expected of ['<details','CPF &amp; &lt;Outcome&gt;','RRA driver','Strategy contribution']){{if(!disclosure.includes(expected))throw new Error('missing alignment '+expected);}}
+if(disclosure.includes(' open'))throw new Error('alignment should be closed by default');
+
 """
     result = subprocess.run(["node", "-e", script], capture_output=True, text=True, check=False)
     assert result.returncode == 0, result.stderr
+    for forbidden in ("renderSpecialistPriorityContext", "Differentiated approach note", "country_category_relevance"):
+        assert forbidden not in source
+
+
+def test_summary_gaps_and_action_cards_bold_safe_first_sentences_and_preserve_order():
+    source = INDEX.read_text(encoding="utf-8")
+    helpers = "\n".join(
+        _extract_js_function(source, name)
+        for name in (
+            "normalizeVisibleText",
+            "findVisibleSentenceEnd",
+            "boldVisibleFirstSentence",
+            "getConcisePriority",
+            "renderNormalSummaryGaps",
+            "renderNormalSummaryPriorities",
+            "renderNormalFcvSummary",
+        )
+    )
+    priorities = [_priority(index) for index in range(1, 4)]
+    priorities[0]["concise"]["gap"] = (
+        "US$158.5 million is exposed. Dr. Ada reviews https://example.org/a.b?x=1.2. "
+        "FCV. Next step is to confirm ownership. <script>alert(1)</script>"
+    )
+    priorities[1]["concise"]["gap"] = "Second gap " + chr(0x2014) + " needs a decision. Follow-up evidence is available."
+    priorities[2]["concise"]["gap"] = "Third gap. Confirm the delivery trigger."
+    readout = _readout(
+        strengths=[
+            {
+                "title": "Local reach",
+                "text": "The design reaches local partners. <script>alert(2)</script> Next sentence.",
+            }
+        ]
+    )
+    readout["overview"] = "US$158.5 million is in scope. Dr. Ada leads. See https://example.org/a.b. Next sentence."
+    script = f"""
+{_esc_js()}
+let activeLenses=[];
+let stageThreePriorities={json.dumps(priorities)};
+let stageConciseReadout={json.dumps(readout)};
+let stage3View='summary';
+let openSummaryPriority=0;
+let reviewMode='design';
+const renderStage3AdvisoryTransition=()=>'<p>Suggestions for the team.</p>';
+const renderNormalFcvWatchDisclosure=()=>'';
+{helpers}
+const html=renderNormalFcvSummary();
+const gaps=html.indexOf('normal-summary-gaps');
+const prioritiesStart=html.indexOf('summary-priority-list');
+if(gaps<0||prioritiesStart<0||gaps>=prioritiesStart)throw new Error('gaps are not before priorities');
+if((html.match(/class="normal-summary-gap"/g)||[]).length!==3)throw new Error('wrong gap count');
+if(!html.includes('<strong>US$158.5 million is exposed.</strong>'))throw new Error('robust gap boundary failed');
+if(!html.includes('<strong>Second gap - needs a decision.</strong>'))throw new Error('emdash normalization or gap bolding failed');
+if(!html.includes('<strong>Set an access trigger for Bentiu.</strong>'))throw new Error('leading action is not bold');
+if(html.includes('normal-summary-priority-label">Why it matters'))throw new Error('summary priority repeats why');
+if(html.includes('<script>')||!html.includes('&lt;script&gt;alert(1)&lt;/script&gt;'))throw new Error('plain text was not safely escaped');
+if(html.includes(String.fromCharCode(0x2014)))throw new Error('visible em dash remains');
+"""
+    result = subprocess.run(["node", "-e", script], capture_output=True, text=True, check=False)
+    assert result.returncode == 0, result.stderr
+
+
+def test_reader_cleanup_removes_visible_metadata_panels_and_attribution_but_keeps_route_warnings():
+    source = INDEX.read_text(encoding="utf-8")
+    for forbidden in (
+        "temporal-context-panel",
+        "injectTemporalContextPanel",
+        "applied-snippets-attr",
+        "renderAppliedSnippetsAttribution",
+        "Differentiated approach note",
+        "country_category_relevance",
+    ):
+        assert forbidden not in source, f"removed reader/export content remains: {forbidden}"
+    assert "temporalContext" in source
+    assert "climate-summary-route-warning" in source
+    assert "climate-route-warning" in source
 
 
 def test_management_brief_controls_post_validated_payload_and_surface_422():

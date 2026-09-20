@@ -809,10 +809,6 @@
     .research-brief-panel.open .research-brief-body{display:block}
     .research-brief-notice{display:flex;align-items:flex-start;gap:7px;font-size:12px;color:var(--muted);font-style:italic;margin:12px 0 14px;padding:9px 12px;background:rgba(0,159,218,.06);border-radius:6px;line-height:1.5;border-left:3px solid var(--wbg-cyan)}
     .research-brief-content{font-size:13.5px;line-height:1.65}
-    .temporal-context-panel{background:#f0f7ff;border:1px solid #b3d4fc;border-radius:8px;padding:12px 16px;margin:12px 0;font-size:13px;color:#1a3a5c;display:flex;flex-wrap:wrap;gap:16px;align-items:center}
-    .temporal-context-panel .tc-item{display:flex;align-items:center;gap:4px}
-    .temporal-context-panel .tc-label{font-weight:600;font-size:11px;text-transform:uppercase;color:#5a7a9a;margin-right:2px}
-    .temporal-context-panel .tc-value{font-weight:500}
     .classification-widget{border:1px solid #E5E7EB;border-radius:8px;margin:16px 0;background:#F9FAFB;overflow:hidden;}
     .cw-header{display:flex;align-items:center;gap:8px;padding:10px 16px;background:#EEF0F3;font-size:13px;font-weight:600;color:#374151;}
     .cw-body{padding:12px 16px;}
@@ -825,9 +821,6 @@
     .category-lens-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;background:#EEF0F3;border-radius:4px;font-size:11px;color:#4B5563;margin-bottom:12px;}
     .clb-help{color:#9CA3AF;cursor:help;font-size:12px;}
     .classification-framing-para p{background:#F0F7FF;border-left:3px solid #4A90E2;padding:10px 14px;border-radius:0 4px 4px 0;font-size:13px;color:#1D4ED8;margin-bottom:16px;}
-    .zone-act-cat-relevance{border-top:1px solid #F3F4F6;padding-top:8px;margin-top:8px;}
-    .applied-snippets-attr{margin:16px 0;padding:10px 14px;background:#F9FAFB;border:1px solid #E5E7EB;border-radius:6px;font-size:12px;color:#4B5563;}
-    .asa-source{font-size:11px;color:#9CA3AF;}
     .trunc-warn-area{background:#fff7ed;border:1.5px solid #fed7aa;border-radius:var(--radius);padding:14px 18px;margin-bottom:14px}
     .trunc-warn-hdr{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:#c2410c;margin-bottom:8px}
     .trunc-warn-item{font-size:12.5px;color:#7c2d12;margin-bottom:4px;line-height:1.55;padding-left:4px}
@@ -1163,6 +1156,11 @@
     .concise-cycle-items{grid-column:2;display:flex;flex-direction:column;gap:14px}
     .concise-specialist summary{padding:12px 18px;color:var(--wbg-blue);font-weight:600;cursor:pointer}
     .normal-summary-priorities{display:flex;flex-direction:column;gap:10px;margin-top:10px}
+    .normal-summary-gaps{margin:18px 0;padding:14px 16px;background:#fff4e5;border:1px solid #f0d5ad;border-left:4px solid #d98c34;border-radius:8px}
+    .normal-summary-gaps .concise-section-label{margin-top:0;color:#885315}
+    .normal-summary-gap{margin:10px 0;line-height:1.6}
+    .normal-summary-gap:last-child{margin-bottom:0}
+    .concise-strength-text strong{display:inline;color:inherit;margin:0}
     .normal-summary-priority{padding:14px 16px;background:#fff;border:1px solid var(--border);border-radius:9px}
     .normal-summary-priority-head{display:flex;align-items:flex-start;gap:10px;margin-bottom:9px}
     .normal-summary-priority-rank{width:27px;height:27px;border-radius:50%;display:grid;place-items:center;background:var(--wbg-navy);color:#fff;font-size:12px;font-weight:700;flex-shrink:0}
@@ -4058,10 +4056,8 @@
             renderOut(3,stageOutputs[3],false);
             if(supportsClimateVerifiedStage3View()&&stageThreePriorities&&stageThreePriorities.length)initStage3UI();
             else if(!climateVerifiedAssessment&&stageThreePriorities&&stageThreePriorities.length)initStage3UI();
-            renderAppliedSnippetsAttribution();
             // stage2_under_hood already written by the stage_done handler for stage 2 — no redundant write needed here
             enableClickableStepper();
-            if(instrumentType!=='Unknown'||temporalContext.approval_date||processType!=='Unknown')injectTemporalContextPanel();
             localStorage.removeItem('fcv_express_stageOutputs');
             localStorage.removeItem('fcv_express_stageHists');
             localStorage.removeItem('fcv_express_curS');
@@ -4342,7 +4338,6 @@
               enableClickableStepper();
               // Research brief panel (step-by-step only — express skips rendering)
               if(stage===1&&researchBrief) injectResearchBriefPanel(researchBrief,researchCountry);
-              if(stage===1&&(instrumentType!=='Unknown'||temporalContext.approval_date||processType!=='Unknown')) injectTemporalContextPanel();
               if(stage===1&&countryClassification&&countryClassification.category&&analysisMode!=='express'){
                 renderClassificationWidget(countryClassification);
               }
@@ -4381,7 +4376,6 @@
                 }
                 updateSidebar();
                 populateExplorerDropdown(p.priorities);
-                renderAppliedSnippetsAttribution();
               }
               if(stage===3 && p.parse_error){
                 const outEl = document.getElementById('s-out');
@@ -4454,36 +4448,6 @@
     }
   }
 
-  function injectTemporalContextPanel(){
-    const disp=document.getElementById('stage-disp');
-    if(!disp)return;
-    const existing=document.getElementById('temporal-context-panel');
-    if(existing)existing.remove();
-    const tc=temporalContext||{};
-    const items=[];
-    if(reviewMode==='implementation'&&processType&&processType!=='Unknown'){
-      items.push('<span class="tc-item"><span class="tc-label">Review type:</span> <span class="tc-value">'+esc(processType)+'</span></span>');
-    }
-    if(instrumentType&&instrumentType!=='Unknown')items.push('<span class="tc-item"><span class="tc-label">Instrument:</span> <span class="tc-value">'+esc(instrumentType)+'</span></span>');
-    if(tc.approval_date&&tc.approval_date!=='Unknown')items.push('<span class="tc-item"><span class="tc-label">Approved:</span> <span class="tc-value">'+esc(tc.approval_date)+'</span></span>');
-    if(tc.closing_date&&tc.closing_date!=='Unknown')items.push('<span class="tc-item"><span class="tc-label">Closing:</span> <span class="tc-value">'+esc(tc.closing_date)+'</span></span>');
-    if(tc.safeguards_framework&&tc.safeguards_framework!=='Unknown')items.push('<span class="tc-item"><span class="tc-label">Safeguards:</span> <span class="tc-value">'+esc(tc.safeguards_framework)+'</span></span>');
-    if(!items.length)return;
-    items.push('<span class="tc-item" style="font-style:italic;color:#5a7a9a;font-size:12px">'+(reviewMode==='implementation'?'Assessment anchored to implementation period':'Assessment anchored to preparation period')+'</span>');
-    const panel=document.createElement('div');
-    panel.id='temporal-context-panel';
-    panel.className='temporal-context-panel ani';
-    panel.innerHTML=items.join('');
-    // Insert after the research brief panel if present, otherwise after the callout, otherwise append
-    const resPanel=document.getElementById('research-brief-panel');
-    if(resPanel&&resPanel.parentNode===disp){disp.insertBefore(panel,resPanel.nextSibling);}
-    else{
-      const callout=disp.querySelector('.callout');
-      if(callout){callout.insertAdjacentElement('afterend',panel);}
-      else{disp.appendChild(panel);}
-    }
-  }
-
   function renderClassificationWidget(classification){
     const cat=classification.category||'General';
     const confidence=classification.confidence||'moderate';
@@ -4525,20 +4489,6 @@
       countryClassification={...countryClassification, category:this.value, confirmed:true};
       localStorage.setItem('country_classification',JSON.stringify(countryClassification));
     });
-  }
-
-  function renderAppliedSnippetsAttribution(){
-    const existing=document.getElementById('applied-snippets-attr');
-    if(existing)existing.remove();
-    if(!stageAppliedSnippets||!stageAppliedSnippets.length)return;
-    const el=document.createElement('div');
-    el.id='applied-snippets-attr';
-    el.className='applied-snippets-attr ani';
-    el.innerHTML=`<strong>Additional FCV Playbook context applied in this analysis:</strong><ul style="margin:6px 0 0;padding-left:18px">${
-      stageAppliedSnippets.map(s=>`<li>${esc(s.title||s.id||'')} <span class="asa-source">(${esc(s.source||'')})</span></li>`).join('')
-    }</ul>`;
-    const stageDisp=document.getElementById('stage-disp');
-    if(stageDisp)stageDisp.appendChild(el);
   }
 
   function buildSRDefinitionBox(compact) {
@@ -4890,12 +4840,54 @@
     return {confirmed:confirmedRoute,canRender:confirmedRoute&&hasCanonical,status:confirmedRoute?'available':'withheld_unresolved_route'};
   }
 
-  function boldEscapedFirstSentence(value){
-    const text=String(value??'').trim();
-    const match=text.match(/^(.+?[.!?](?:["')\]]+)?)(\s+)([\s\S]*)$/);
-    return match?`<strong>${esc(match[1])}</strong>${esc(match[2]+match[3])}`:`<strong>${esc(text)}</strong>`;
+  function normalizeVisibleText(value){
+    const text=String(value??'').replace(/\r\n?/g,'\n');
+    const protectedParts=[];
+    const protectedText=text.replace(/https?:\/\/[^\s<>"'\x60]+|\x60[^\x60]*\x60/gi,token=>{
+      const marker='\u0000'+protectedParts.length+'\u0000';
+      protectedParts.push(token);
+      return marker;
+    });
+    return protectedText.replace(/[ \t]*\u2014[ \t]*/g,' - ').replace(/\u0000(\d+)\u0000/g,(_,index)=>protectedParts[Number(index)]||'');
   }
 
+  function findVisibleSentenceEnd(value){
+    const text=String(value??'');
+    const abbreviations=new Set(['dr','mr','mrs','ms','prof','sr','jr','etc','e.g','i.e','vs','no','fig','approx','fcv','wbg','op','u.s','u.k']);
+    for(let index=0;index<text.length;index++){
+      const mark=text[index];
+      if(!'.!?'.includes(mark))continue;
+      let end=index+1;
+      while(end<text.length&&/[\"')\]]/.test(text[end]))end++;
+      const after=text.slice(end);
+      if(after&&!/^\s+/.test(after))continue;
+      if(mark==='.'&&index>0&&index+1<text.length&&/\d/.test(text[index-1])&&/\d/.test(text[index+1]))continue;
+      const before=text.slice(0,index);
+      if(mark==='.'&&/https?:\/\/\S*$/i.test(before))continue;
+      const token=(before.match(/([A-Za-z](?:[A-Za-z.]*)?)$/)||[])[1]||'';
+      const normalizedToken=token.toLowerCase().replace(/\.$/,'');
+      if(mark==='.'&&(abbreviations.has(normalizedToken)||/^(?:[a-z]\.)+[a-z]?$/i.test(token)||/^[A-Z]$/.test(token)))continue;
+      return end;
+    }
+    return text.length;
+  }
+
+  function boldVisibleFirstSentence(value){
+    const text=normalizeVisibleText(value).trim();
+    if(!text)return '';
+    const end=findVisibleSentenceEnd(text);
+    return `<strong>${esc(text.slice(0,end))}</strong>${esc(text.slice(end))}`;
+  }
+
+  function boldEscapedFirstSentence(value){
+    const text=(typeof normalizeVisibleText==='function'?normalizeVisibleText(value):String(value??'')).trim();
+    if(!text)return '';
+    const end=typeof findVisibleSentenceEnd==='function'?findVisibleSentenceEnd(text):(()=>{
+      const match=text.match(/[.!?](?:\s|$)/);
+      return match?match.index+1:text.length;
+    })();
+    return `<strong>${esc(text.slice(0,end))}</strong>${esc(text.slice(end))}`;
+  }
   function buildClimateGuidanceItems(reader){
     const r=reader&&typeof reader==='object'?reader:{};
     const coreQuestions=Array.isArray(r.core_questions)?r.core_questions:[];
@@ -5009,11 +5001,8 @@
     const operationContextHtml=(()=>{
       const context=r.operation_context&&typeof r.operation_context==='object'?r.operation_context:null;
       if(!context)return '';
-      const instrument=climateAccessibleRouteValue(context.instrument_type||'Unknown');
-      const documentType=climateAccessibleRouteValue(context.document_type||'Unknown');
-      const unresolved=!draftingRoute.confirmed;
-      const warning=unresolved?'<p class="climate-route-warning">Suggested document wording is not shown because the document type or financing route could not be confirmed reliably.</p>':'';
-      return '<section class="climate-operation-context"><div class="climate-summary-context-line"><span>Review context</span><strong>Document: '+esc(documentType)+' | Instrument: '+esc(instrument)+'</strong></div>'+warning+'</section>';
+      const warning=!climateDraftingRouteGate(r).confirmed?'<p class="climate-route-warning">Suggested document wording is not shown because the document type or financing route could not be confirmed reliably.</p>':'';
+      return warning?'<section class="climate-operation-context">'+warning+'</section>':'';
     })();
     const executive=esc(r.executive_readout||'The verified assessment did not return an executive readout.');
     const boldFirstSentence=p=>{const m=p.match(/^(.*?[.!?])(\s+)([\s\S]*)$/);return m?`<strong>${esc(m[1])}</strong>${esc(m[2]+m[3])}`:`<strong>${esc(p)}</strong>`;};
@@ -5171,10 +5160,7 @@
         ? `the <strong>${esc(newModelDocLabel(instrumentType))}</strong> (new-model preparation)`
         : `<strong>${esc(docType)}</strong> stage`;
       const _stageBadge = docType && docType !== 'Unknown' ? `<div class="stage-awareness-badge">Recommendations tailored for ${_stageInner}</div>` : '';
-      const _padNotice = isFinalizedPAD() ? `<div class="finalized-pad-notice">
-        <div class="fpn-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
-        <div class="fpn-body"><strong>Retrospective screening — finalized PAD</strong>This document was Board-approved in ${esc(temporalContext.approval_date)}. The recommendations below represent the guidance this tool would have provided had the document been reviewed prior to appraisal. They are framed as if the project is still in the design stage and can be used for retrospective peer review, benchmarking, or to inform future similar projects.</div>
-      </div>` : '';
+      const _padNotice = isFinalizedPAD() ? `<div class="finalized-pad-notice"><div class="fpn-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div><div class="fpn-body"><strong>Retrospective review.</strong> These recommendations assess the supplied PAD at preparation, not current implementation status.</div></div>` : '';
       const _closedProjectNotice = isClosedOrCompletedProject() ? `<div class="finalized-pad-notice">
         <div class="fpn-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
         <div class="fpn-body"><strong>This document appears to describe a closed or completed project</strong>${esc(closedProjectStatusReason())}. The recommendations below are framed as design-stage guidance and may not be actionable for a closed project. Use them for retrospective review, lessons-learned, or as input to a follow-on operation rather than as live implementation guidance.</div>
@@ -5563,7 +5549,6 @@
     renderOut(stage,renderResult,false);
     if(stage===2&&stage2UnderHood){buildUnderHoodPanels(stage2UnderHood);updateSidebar();}
     if(stage===3&&stageThreePriorities&&stageThreePriorities.length)initStage3UI();
-    if(stage===3)renderAppliedSnippetsAttribution();
     if(stage<3&&analysisMode==='express')injectRerunBanner(stage);
     injectStageNavArrows(stage);
     updateSessionBar();
@@ -5942,8 +5927,9 @@
     </div>`;
 
     // ── Finalized PAD notice ──
-    if(isFinalizedPAD() && temporalContext.approval_date){
-      body += `<div class="finalized-pad-notice"><div class="fpn-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div><div class="fpn-body"><strong>Retrospective screening — finalized PAD.</strong> This document was Board-approved in ${esc(temporalContext.approval_date)}. Recommendations are framed as if the project is still in the design stage.</div></div>`;
+
+    if(isFinalizedPAD()){
+      body += `<div class="finalized-pad-notice"><div class="fpn-body"><strong>Retrospective review.</strong> These recommendations assess the supplied PAD at preparation, not current implementation status.</div></div>`;
     }
 
     // ── Narrative (exec summary, operational context, strengths, gaps) ──
@@ -6097,14 +6083,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>${esc(projectTitle)} — FCV Analysis</title>
+<title>${esc(projectTitle)} | FCV Analysis</title>
 <style>${exportCSS}\n${css}</style>
 </head>
 <body>
 <div class="exp-page">
 ${body}
 <div style="margin-top:40px;padding-top:12px;border-top:1px solid #e2e8f0;font-size:11px;color:#aaa;font-style:italic">
-  FCV Project Screener — WBG FCV Analytics Unit · Generated ${esc(dateStr)} · AI-assisted output for expert review only
+  FCV Project Screener | WBG FCV Analytics Unit · Generated ${esc(dateStr)} · AI-assisted output for expert review only
 </div>
 </div>
 </body>
@@ -6161,7 +6147,7 @@ ${body}
       ${pr.cpf_alignment?`<div class="pc-zone"><div class="pc-zone-title">CPF Alignment</div><div class="pc-zone-body">${esc(pr.cpf_alignment)}</div></div>`:''}
       ${actionsHtml?`<div class="pc-zone zone-act"><div class="pc-zone-title">How to act</div><div class="zone-act-primary"><div class="zone-act-section"><div class="zone-act-label">Essential action${(pr.actions||[]).length>1?'s':''}</div>${actionsHtml}</div>${pr.implementation_note?`<div class="zone-act-section zone-act-impl"><div class="zone-act-label">Implementation consideration</div><div class="pc-zone-body">${esc(pr.implementation_note)}</div></div>`:''}</div></div>`:''}
       ${renderPriorityProjectCycle(pr)}
-      ${isClimateLensActive()?renderPriorityClimateContribution(pr):(pr.country_category_relevance?`<div class="pc-zone"><div class="pc-zone-title">Differentiated approach note</div><div class="pc-zone-body">${esc(pr.country_category_relevance)}</div></div>`:'')}
+            ${isClimateLensActive()?renderPriorityClimateContribution(pr):renderStandardPriorityContext(pr)}
       ${renderPriorityCompliance(pr)}
     </div>`;
   }
@@ -6193,6 +6179,7 @@ ${body}
   // Markdown renderer
   function md(t){
     if(!t)return'';
+    t=typeof normalizeVisibleText==='function'?normalizeVisibleText(t):t;
     let h=t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     // Tables
     h=h.replace(/(\|.+\|\n)(\|[-| :]+\|\n)((?:\|.+\|\n?)*)/g,m=>{
@@ -6487,7 +6474,7 @@ ${body}
   function renderStage3AdvisoryTransition(route){
     const subject=reviewMode==='implementation'?"project's design and implementation arrangements":"project's design";
     const context=route==='climate'?'climate and FCV':'FCV';
-    return `<p class="summary-priority-advisory stage3-advisory-transition">The following priorities are suggestions to strengthen the ${subject} in its ${context} context; they are not mandatory requirements. The task team may wish to focus on those most relevant and discuss them with the FCV Country Coordinator or relevant Global Practice experts as needed.</p>`;
+    return `<p class="summary-priority-advisory stage3-advisory-transition">The following priorities are suggestions to strengthen the ${subject} in its ${context} context. They are not mandatory requirements. The task team may wish to focus on those most relevant and discuss them with the FCV Country Coordinator or relevant Global Practice experts as needed.</p>`;
   }
 
   function renderFcvRatingIndicators(){
@@ -6549,12 +6536,21 @@ ${body}
     return '<details class="normal-fcv-watch-disclosure"><summary>What to keep an eye on</summary><div class="normal-fcv-watch-body">'+body+'</div></details>';
   }
 
+  function renderNormalSummaryGaps(priorities=stageThreePriorities){
+    const items=(Array.isArray(priorities)?priorities:[]).slice(0,5).map((priority,idx)=>{
+      const concise=getConcisePriority(priority);
+      const gap=String(concise.gap||concise.why||'').trim();
+      return `<p class="normal-summary-gap" data-priority-index="${idx}">${boldVisibleFirstSentence(gap)}</p>`;
+    }).join('');
+    return items?`<section class="normal-summary-gaps"><div class="concise-section-label">Potential gaps</div>${items}</section>`:'';
+  }
+
   function renderNormalFcvSummary(){
     const readout=stageConciseReadout&&typeof stageConciseReadout==='object'?stageConciseReadout:{};
-    const strengths=(Array.isArray(readout.strengths)?readout.strengths:[]).map(strength=>`<div class="concise-strength"><strong>${esc(strength.title||'Project strength')}</strong><span class="concise-strength-text">${esc(strength.text||'')}</span></div>`).join('');
+    const strengths=(Array.isArray(readout.strengths)?readout.strengths:[]).map(strength=>`<div class="concise-strength"><strong>${esc(normalizeVisibleText(strength.title||'Project strength'))}</strong><span class="concise-strength-text">${boldVisibleFirstSentence(strength.text||'')}</span></div>`).join('');
     const interpretation='<p class="concise-interpretation"><strong>How to read the FCV assessment:</strong> sensitivity describes whether the design fits its FCV context. Responsiveness describes whether the project contributes directly to FCV drivers, and is not expected for every project.</p>';
     const watchDisclosure=renderNormalFcvWatchDisclosure();
-    return `<div class="concise-readout normal-fcv-summary"><div class="concise-read-time">Five-minute readout</div><div class="concise-section-label">Overall assessment</div><h2 class="concise-headline">${esc(readout.headline||'FCV assessment summary')}</h2><p class="concise-overview">${esc(readout.overview||'')}</p>${interpretation}${strengths.length?'<div class="concise-section-label">What is already working</div><div class="concise-strengths">'+strengths+'</div>':''}${renderStage3AdvisoryTransition('normal')}<div class="concise-section-label">Priority actions for the task team</div><div id="summary-priority-list" class="normal-summary-priorities">${renderNormalSummaryPriorities()}</div>${watchDisclosure}</div>`;
+    return `<div class="concise-readout normal-fcv-summary"><div class="concise-read-time">Five-minute readout</div><div class="concise-section-label">Overall assessment</div><h2 class="concise-headline">${esc(normalizeVisibleText(readout.headline||'FCV assessment summary'))}</h2><p class="concise-overview">${boldVisibleFirstSentence(readout.overview||'')}</p>${interpretation}${strengths.length?'<div class="concise-section-label">What the project does well</div><div class="concise-strengths">'+strengths+'</div>':''}${renderNormalSummaryGaps()}${renderStage3AdvisoryTransition('normal')}<div class="concise-section-label">Priority actions for the task team</div><div id="summary-priority-list" class="normal-summary-priorities">${renderNormalSummaryPriorities()}</div>${watchDisclosure}</div>`;
   }
 
   function renderStage3Summary(){
@@ -6627,9 +6623,8 @@ ${body}
       const concise=getConcisePriority(priority);
       const leadingAction=Array.isArray(concise.how)?concise.how[0]:'';
       return `<article class="normal-summary-priority" data-priority-index="${idx}">
-        <div class="normal-summary-priority-head"><span class="normal-summary-priority-rank" aria-hidden="true">${idx+1}</span><h3>${esc(concise.title||priority.title||'Priority action')}</h3></div>
-        <p><span class="normal-summary-priority-label">Why it matters</span>${esc(concise.why||'')}</p>
-        <p class="normal-summary-priority-action"><span class="normal-summary-priority-label">Leading action</span>${esc(leadingAction)}</p>
+        <div class="normal-summary-priority-head"><span class="normal-summary-priority-rank" aria-hidden="true">${idx+1}</span><h3>${esc(normalizeVisibleText(concise.title||priority.title||'Priority action'))}</h3></div>
+        <p class="normal-summary-priority-action"><span class="normal-summary-priority-label">Leading action</span>${boldVisibleFirstSentence(leadingAction)}</p>
         <a class="normal-summary-priority-link" href="#priority-card-area" onclick="openDetailedPriority(${idx});return false;">View full priority ${idx+1} in Detailed analysis</a>
       </article>`;
     }).join('');
@@ -6683,11 +6678,8 @@ ${body}
     const operationContextHtml=(()=>{
       const context=r.operation_context&&typeof r.operation_context==='object'?r.operation_context:null;
       if(!context)return '';
-      const instrument=climateAccessibleRouteValue(context.instrument_type||'Unknown');
-      const documentType=climateAccessibleRouteValue(context.document_type||'Unknown');
-      const unresolved=!climateDraftingRouteGate(r).confirmed;
-      const warning=unresolved?'<p class="climate-summary-route-warning">Suggested document wording is not shown because the document type or financing route could not be confirmed reliably.</p>':'';
-      return `<section class="climate-summary-context"><div class="climate-summary-context-line"><span>Review context</span><strong>Document: ${esc(documentType)} | Instrument: ${esc(instrument)}</strong></div>${warning}</section>`;
+      const warning=!climateDraftingRouteGate(r).confirmed?'<p class="climate-summary-route-warning">Suggested document wording is not shown because the document type or financing route could not be confirmed reliably.</p>':'';
+      return warning?'<section class="climate-summary-context">'+warning+'</section>':'';
     })();
     const summaryRecord=r.summary_overview&&typeof r.summary_overview==='object'?r.summary_overview:{};
     const overviewParagraphs=(Array.isArray(r.summary_overview)?r.summary_overview:Array.isArray(summaryRecord.paragraphs)?summaryRecord.paragraphs:[]).map(item=>String(item||'').trim()).filter(Boolean);
@@ -6914,7 +6906,7 @@ ${body}
     panel.id='horizon-panel';
     panel.className='horizon-panel ani';
     const rendered=typeof md==='function'?md(text):text.replace(/\n/g,'<br>');
-    panel.innerHTML='<summary>Watch List for Supervision — Risks to Monitor During Implementation</summary>'
+    panel.innerHTML='<summary>Watch List for Supervision: Risks to Monitor During Implementation</summary>'
       +'<div class="horizon-body">'
       +'<p class="horizon-disclaimer">These are FCV risks or dynamics the team cannot act on now but should monitor during implementation. They do not affect the FCV ratings above.</p>'
       +rendered
@@ -6985,23 +6977,11 @@ ${body}
     const fields=[
       ['CPF alignment',priority&&priority.cpf_alignment],
       ['RRA driver alignment',priority&&priority.rra_driver_alignment],
-      ['Differentiated approach',priority&&priority.country_category_relevance],
       ['Strategy alignment',priority&&priority.refresh_shift]
     ].filter(([,value])=>typeof value==='string'&&value.trim());
     if(!fields.length)return '';
     const body=fields.map(([label,value])=>'<p class="priority-context-item"><strong>'+esc(label)+'</strong>'+esc(value)+'</p>').join('');
     return `<details class="priority-context-disclosure"><summary>Context and strategic alignment</summary><div class="priority-context-body">${body}</div></details>`;
-  }
-
-  function renderSpecialistPriorityContext(priority){
-    if(!priority||!priority.country_category_relevance)return '';
-    return '<div class="zone-act-section zone-act-cat-relevance"><div class="zone-act-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0"/><circle cx="12" cy="10" r="3"/></svg> Differentiated approach note</div><div class="pc-zone-body">'+esc(priority.country_category_relevance)+'</div></div>';
-  }
-
-  function renderPriorityContext(priority){
-    if(isClimateLensActive())return renderPriorityClimateContribution(priority);
-    if(activeLenses.length===0)return renderStandardPriorityContext(priority);
-    return renderSpecialistPriorityContext(priority);
   }
 
   function showPriority(idx){
@@ -7035,14 +7015,14 @@ ${body}
     let warningBadges = '';
     if(pr.specificity_warning && !specDismissed){
       warningBadges += `<div class="warn-badge" id="warn-spec-${idx}">
-        ⚠ May lack geographic specificity — review before sharing.
+        ⚠ May lack geographic specificity. Review before sharing.
         <button class="warn-dismiss" onclick="localStorage.setItem('${specKey}','true');document.getElementById('warn-spec-${idx}').remove()" title="Dismiss">✕</button>
       </div>`;
     }
     if(pr.unverified_citations && pr.unverified_citations.length && !citeDismissed){
       const citeList = pr.unverified_citations.map(c => esc(c)).join(', ');
       warningBadges += `<div class="warn-badge" id="warn-cite-${idx}" title="Unverified: ${citeList}">
-        ⚠ Contains unverified citation(s) — confirm source exists before sharing.
+        ⚠ Contains unverified citation(s). Confirm the source exists before sharing.
         <button class="warn-dismiss" onclick="localStorage.setItem('${citeKey}','true');document.getElementById('warn-cite-${idx}').remove()" title="Dismiss">✕</button>
       </div>`;
     }
@@ -7140,8 +7120,8 @@ ${body}
           </div>
         </div>
         ${renderPriorityProjectCycle(pr)}
-        <!-- Climate contribution, or the normal core-only differentiated note -->
-        ${renderPriorityContext(pr)}
+        <!-- Climate contribution context remains available when the climate lens is active -->
+        ${isClimateLensActive()?renderPriorityClimateContribution(pr):renderStandardPriorityContext(pr)}
         ${renderPriorityCompliance(pr)}
           <!-- Go Deeper 3-tab section (lazy-loaded on expand) -->
           <details class="go-deeper" id="deeper-details-${idx}" ontoggle="handleDeeperToggle(this,${idx})">
@@ -7388,7 +7368,7 @@ ${body}
         </div>
         <div class="beyond-item-body">${md(item.body||'')}</div>
       </div>`).join('');
-    return `<p class="beyond-intro">The core recommendation above addresses the most critical gap. These alternative approaches are optional enhancements — not prerequisites.</p>${itemsHtml}`;
+    return `<p class="beyond-intro">The core recommendation above addresses the most critical gap. These alternative approaches are optional enhancements, not prerequisites.</p>${itemsHtml}`;
   }
 
   // ── Legacy parser (old Option A/B/C format — fallback for cached results) ───
@@ -7707,12 +7687,12 @@ ${body}
       goFurtherHtml = `
         <button class="fcv-gf-toggle" onclick="this.classList.toggle('open');document.getElementById('${gfId}').classList.toggle('open');this.querySelector('.fcv-gf-arrow').textContent=document.getElementById('${gfId}').classList.contains('open')?'▴':'▾';">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-          <span class="fcv-gf-label">Go Deeper — click for additional recommendations</span>
+          <span class="fcv-gf-label">Go Deeper: click for additional recommendations</span>
           <span class="fcv-gf-badge">Optional</span>
           <span class="fcv-gf-arrow">▾</span>
         </button>
         <div class="fcv-gf-body" id="${gfId}">
-          <p class="fcv-gf-intro">The actions above address the most significant gaps. If the team has additional appetite, resources, and political capital, the ideas below go further — but they are not prerequisites.</p>
+          <p class="fcv-gf-intro">The actions above address the most significant gaps. If the team has additional appetite, resources, and political capital, the ideas below go further, but they are not prerequisites.</p>
           ${itemsHtml}
         </div>`;
     }
@@ -7753,7 +7733,8 @@ ${body}
 
   function esc(s){
     if(!s)return'';
-    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    const value=typeof normalizeVisibleText==='function'?normalizeVisibleText(s):String(s);
+    return value.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
 </script>

@@ -354,6 +354,23 @@ recommendation/evidence admission. The Stage 2 Express timeout remains 15 minute
 
 Standard Summary displays every priority without an accordion and provides separate Word/HTML management-brief downloads. These controls POST the validated readout, canonical priorities, ratings, document type and active lenses; existing comprehensive exports stay separate. Detailed retains all actions, supporting analysis, formal ratings and drafting; repetitive alignment/context is collapsed. Standard timing labels are advisory while stored enum values remain unchanged.
 
-`normalFcvWatchGroups()` retains multiline narrative text. `renderNormalFcvWatchDisclosure()` sends prose through the existing escaped Markdown renderer; actual watch-item arrays remain lists. This prevents literal Markdown headings and numbered paragraphs appearing inside one bullet. The disclosure stays closed initially. The shared routing disclosure is removed from Summary and Detailed, preserving actionable unresolved-route warnings and compact instrument/document context.
+`normalFcvWatchGroups()` retains multiline narrative text. `renderNormalFcvWatchDisclosure()` sends prose through the existing escaped Markdown renderer; actual watch-item arrays remain lists. This prevents literal Markdown headings and numbered paragraphs appearing inside one bullet. The disclosure stays closed initially. The shared routing disclosure is removed from Summary and Detailed, preserving actionable unresolved-route warnings. The later management-readability follow-up also removes the compact instrument/approval/closing/safeguards context panel.
 
 Live PAD acceptance follow-up (2026-09-20): Express completion now calls `updateSessionBar()` after setting `curS=3`, making Save session available on fresh Express runs as well as restored and step-by-step sessions.
+
+## Management gaps and reader cleanup
+
+The standard Summary places green strengths and light-orange potential gaps
+before suggested actions. Each gap is projected from the matching admitted
+concise priority in the same order, using `gap` or the legacy `why` fallback.
+Each action still links to its canonical Detailed priority. Opening sentences
+are bold, with explanatory sentences following in ordinary text. Text remains
+escaped and watch prose retains its safe Markdown rendering.
+
+The instrument/approved/closing/safeguards strip, differentiated-approach note
+and applied-Playbook attribution are removed from reader views and exports.
+Internal operation context, category analysis, retrieval and substantive
+unresolved-analysis warnings remain active. Removal applies on desktop and
+mobile and to shared specialist display surfaces.
+
+A compact retrospective-review warning is retained for historical PADs, without the removed instrument/date metadata strip. It clarifies that the review assesses preparation-stage design rather than current implementation status. Closed-project and unresolved-route warnings also remain.

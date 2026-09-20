@@ -483,3 +483,72 @@ def test_standard_stage2_replaces_legacy_sort_seed_with_evidence_guards():
         source_prompt, 2, [{"id": "climate"}]
     )
     assert specialist == source_prompt
+
+
+def test_standard_stage3_prompt_removes_differentiated_output_note_and_sets_style_targets():
+    rendered = app.DEFAULT_PROMPTS["3"].format(
+        doc_type="PAD",
+        instrument_guidance="Instrument guidance",
+        minimum_reference_set="Minimum references",
+        playbook_guidance="Playbook guidance",
+        process_guidance="Process guidance",
+        regime_header="Regime header",
+        seash_gender_card_guidance="SEA/SH guidance",
+        temporal_guardrail="Temporal guardrail",
+        timing_emphasis="Timing",
+    )
+    prompt = app.append_core_concise_stage3_contract(
+        rendered, "PAD", {}, "design", []
+    )
+    lowered = prompt.lower()
+    assert "country_category_relevance" not in lowered
+    assert "differentiated approach note" not in lowered
+    for phrase in ("80-110", "35-50", "40-60", "650-850", "two a4"):
+        assert phrase in lowered
+    assert "bold first sentence" in lowered
+    assert "no em dash" in lowered or "no em-dash" in lowered
+    assert '"gap"' in prompt
+    assert "named instruments" in lowered
+    assert "planned or under preparation" in lowered
+
+
+def test_standard_concise_gap_is_preserved_only_when_grounded_and_well_formed():
+    payload = _payload()
+    gap = (
+        "Access arrangements for Nairobi wards 1 remain underdeveloped. "
+        "The technical explanation links the missing access trigger and responsible owner "
+        "to project delivery, excluded households, and implementation monitoring, so the team "
+        "can verify coverage without adding a new factual claim at the current gate."
+    )
+    payload["priorities"][0]["concise"]["gap"] = gap
+    result = extract_priorities(_wrapped(payload), active_lens_ids=[])
+    assert result["error"] is False
+    assert result["priorities"][0]["concise"]["gap"] == gap
+
+
+def test_standard_concise_gap_falls_back_to_admitted_why_when_invalid_or_ungrounded():
+    payload = _payload()
+    payload["priorities"][0]["concise"]["gap"] = (
+        "This unrelated sentence has enough words to appear plausible in a brief. "
+        "It describes a different topic, institution, geography, and delivery problem "
+        "without any project evidence or canonical priority anchor for this record today."
+    )
+    result = extract_priorities(_wrapped(payload), active_lens_ids=[])
+    assert result["error"] is False
+    concise = result["priorities"][0]["concise"]
+    assert concise["gap"] == concise["why"]
+
+
+def test_legacy_concise_card_does_not_gain_standard_gap_field():
+    result = extract_priorities(
+        _wrapped(_payload(1, legacy=True)), active_lens_ids=["climate"]
+    )
+    assert result["error"] is False
+    assert "gap" not in result["priorities"][0]["concise"]
+
+
+def test_standard_category_knowledge_keeps_internal_guidance_without_visible_classification_demand():
+    standard = app._STANDARD_DIFFERENTIATED_KNOWLEDGE
+    assert "Category 1" in standard
+    assert "this analysis places [country]" not in standard.lower()
+    assert app.DIFFERENTIATED_APPROACHES != standard

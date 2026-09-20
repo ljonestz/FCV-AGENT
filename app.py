@@ -3084,76 +3084,85 @@ Do not generate advisory or disclaimer language about whether priorities are man
 # contract remains available so saved bundles and specialist paths stay compatible.
 STANDARD_FCV_STAGE3_OUTPUT_CONTRACT = '''## STANDARD FCV MANAGEMENT READOUT
 
-This is a concise presentation layer in the same analysis and same JSON block.
-Preserve every detailed finding, existing field, enum, transition, evidence and
-lifecycle record. The detailed priorities remain authoritative. Generate only
-the material priorities supported by the project record: 1 to 5, with
-no fixed quota and no category, FCV-dimension, document-element or action
+This is a concise presentation layer in the same analysis and the same JSON block.
+Preserve every detailed finding, existing canonical field, enum, transition, evidence
+record and lifecycle record. Preserve the exact named instrument and distinguish
+approval or request, planned or under preparation, and operational or completed
+status. Do not replace a named instrument with a generic label or turn approval into
+completion. Preserve all material priorities supported by the project record: 1 to 5, with no fixed quota and no category, FCV-dimension, document-element or action
 quota. Do not invent a priority to reach a count.
 
-Rank priorities by PDO relevance; consider the scale and scope of the
-investment, principal activities and intended beneficiaries; the severity of
-potential harm; and dependencies that could prevent delivery. Use component
-budgets or shares when the project states them, but budget is contextual
-evidence and never the sole ranking rule. A small-budget PIU or governance
-dependency, or a serious harm risk, may outrank a larger investment component.
-If an amount, share, activity, beneficiary group or dependency is not stated,
-say that it is unknown or not stated. Do not infer numerical weights.
+Rank priorities by PDO relevance; consider the scale and scope of the investment,
+principal activities and intended beneficiaries; the severity of potential harm; and
+dependencies that could prevent delivery. Use component budgets or shares when the
+project states them, but budget is contextual evidence and never the sole ranking
+rule. A small-budget PIU or governance dependency, or a serious harm risk, may
+outrank a larger investment component. If an amount, share, activity, beneficiary
+group or dependency is not stated, say that it is unknown or not stated. Do not
+infer numerical weights.
 
-Keep the FCV distinction clear. Low responsiveness can be an accurate finding
-for a project whose PDO and scope do not directly address conflict drivers; it
-does not by itself mean the project is poorly designed. It is not an obligation
-to transform conflict drivers that the PDO and scope do not address. Apply [S], [R] and [S+R] only when the evidence
-supports the distinction.
+Keep the FCV distinction clear. Low responsiveness can be an accurate finding for
+a project whose PDO and scope do not directly address conflict drivers; it does not
+by itself mean that the project is poorly designed. It is not an obligation to
+transform conflict drivers that the PDO and scope do not address. Apply [S], [R]
+and [S+R] only when the evidence supports the distinction.
 
-Use advisory language such as "the team could consider" and "it may be useful
-to". Target the applicable project document, operations arrangements or
-commitments when a change is genuinely useful, and do not recommend document
-revisions merely to fill a quota. Preserve the instrument routing and lifecycle
-guardrails. Keep confirmed policy obligations distinct from reviewer judgment
-and good-practice suggestions. Preserve source-grounded exclusions, conditional
-scope, planned or under-preparation status, and named instruments from the
-project record. Do not promote a Stage 2 inference into a project fact or
-present a generic relevance flag as verified applicability, compliance or FPIC.
-If the available excerpt does not establish a point, say so and identify what
-the team should verify. Retain dates and definitions for external numeric
-context. Keep concise generation targets practical: a title of no more than
-12 words; one 20-35 word sentence for each why; one 20-35 word sentence for
-each how bullet; and one 20-30 word sentence for each strength text. These
-are generation targets, not parser requirements.
+Use advisory language such as "the team could consider" and "it may be useful to".
+Target the applicable project document, operations arrangements or commitments when
+a change is genuinely useful, and do not recommend document revisions merely to
+fill a quota. Preserve instrument routing and lifecycle guardrails. Keep confirmed
+policy obligations distinct from reviewer judgment and good-practice suggestions.
+Preserve source-grounded exclusions, conditional scope, planned or under-preparation
+status and named instruments from the project record. Do not promote a Stage 2
+inference into a project fact or present a generic relevance flag as verified
+applicability, compliance or FPIC. If the available excerpt does not establish a
+point, say so and identify what the team should verify. Retain dates and definitions
+for external numeric context. Keep concise generation targets practical: a title of no more than 12 words; a clear first sentence followed by explanation; a 35-50
+word optional gap in exactly two sentences when canonical evidence supports it; a
+20-35 word why for every priority card; and 40-60 words for each how action.
+These are generation targets, not parser requirements.
 
-In "concise_readout", provide a one-sentence headline, a 40-80 word overview,
-and zero to three genuinely evidenced strengths. State the overall finding,
-main exposure and most consequential gap or action in the review context.
-Explain sensitivity versus responsiveness when needed to interpret the result.
-Mention strengths only when evidenced; do not force every detailed topic into
-the overview. Include the existing
+Write the narrative in a clear technical report style for management. Each narrative
+paragraph starts with a bold first sentence that states the main point, followed by
+its explanation. Use plain management language, define acronyms on first use, use no em-dash
+punctuation and use semicolons sparingly. Use canonical Markdown for the narrative.
+JSON field values are plain text without Markdown. In the overview, each strength text and each how action, start with a short plain main-point sentence and add a concise explanatory second sentence where the substance supports it; do not add sentences only to satisfy a format. The brief should be approximately 650-850 words and fit within two A4 pages. Keep the action-focused Summary from
+repeating the why text of each priority.
+
+In "concise_readout", provide a one-sentence headline, an 80-110 word overview,
+and zero to three evidenced strengths. Use concrete project evidence rather than stock praise. Strength text should be 35-50
+words when a strength is included. State the overall finding, main exposure and most
+consequential gap or action in the review context. Explain sensitivity versus
+responsiveness when needed to interpret the result. Mention strengths only when
+evidenced; do not force every detailed topic into the overview. Include the existing
 strengths_transition, priorities_transition and closing fields using only claims
-already in the JSON block. For every priority, provide a complete "concise"
-object with title, why and one or two how action bullets. A leading action is sufficient; do not add
-bullets to satisfy a count. Preserve suggested_wording and canonical
-project_cycle when present. The detailed priority.project_cycle is the canonical
-lifecycle record: copy its same four values exactly into concise.project_cycle;
-do not paraphrase or independently reinterpret timing. A concise card must not
-introduce a new fact, action, milestone, date, institution or causal claim.
+already in the JSON block. For every priority, provide a complete "concise" object
+with title, why and one or two how action bullets. When supported by the canonical
+detailed fields, include the optional "gap" field as a 35-50 word, exactly two
+sentence account of the canonical gap and why it matters. The first gap sentence
+must state the plain main point and the second must give the technical explanation.
+If gap is omitted or cannot be grounded, the parser will use the admitted concise why.
+A leading action is sufficient; do not add bullets to satisfy a count. Preserve
+suggested_wording and canonical project_cycle when present. The detailed
+priority.project_cycle is the canonical lifecycle record: copy its same four values exactly into concise.project_cycle; do not paraphrase or independently reinterpret
+timing. A concise card must not introduce a new fact, action, milestone, date,
+institution or causal claim.
 
-If a concise bundle is emitted, include a complete concise card for every
-priority. The frontend supplies the controlled advisory about professional
-review. Do not add mandatory, compliance or disclaimer language to the
-management readout.
+If a concise bundle is emitted, include a complete concise card for every priority.
+The frontend supplies the controlled advisory about professional review. Do not add
+mandatory, compliance or disclaimer language to the management readout.
 
 OUTPUT ORDER OVERRIDE: Start the response with %%%JSON_START%%% and emit the
 complete detailed-plus-concise JSON block before the narrative. Close it with
-%%%JSON_END%%% and then write the full detailed Recommendations Note. This
-overrides any earlier instruction that places the JSON block after the
-narrative.
+%%%JSON_END%%% and then write the full detailed Recommendations Note. This overrides
+any earlier instruction that places the JSON block after the narrative.
 '''
 
 _STANDARD_CONCISE_READOUT_SCHEMA = '''  "concise_readout": {
     "headline": "One plain-language sentence stating the overall finding",
-    "overview": "A 40-80 word project-specific synthesis of the overall finding, principal exposure, main gap and practical implication",
+    "overview": "An 80-110 word project-specific synthesis of the overall finding, principal exposure, main gap and practical implication; start with a short plain main-point sentence and add a concise explanatory second sentence where the substance supports it",
     "strengths": [
-      {"title": "Short strength label", "text": "One project-grounded sentence"}
+      {"title": "Short strength label", "text": "A 35-50 word project-grounded explanation; start with a short plain main-point sentence and add a concise explanatory second sentence where the substance supports it"}
     ],
     "strengths_transition": "One sentence linking the strengths to the priorities",
     "priorities_transition": "One sentence introducing the priority actions",
@@ -3163,9 +3172,10 @@ _STANDARD_CONCISE_READOUT_SCHEMA = '''  "concise_readout": {
 
 _STANDARD_CONCISE_PRIORITY_SCHEMA = '''      "concise": {
         "title": "Plain-language action title",
-        "why": "Project-specific gap, delivery consequence and FCV mechanism",
+        "gap": "Optional 35-50 word, exactly two-sentence, grounded account of the canonical gap and why it matters",
+        "why": "Required 20-35 word project-specific gap, delivery consequence and FCV mechanism",
         "how": [
-          "Leading specific action appropriate to the current review stage"
+          "A 40-60 word leading specific action appropriate to the current review stage; start with a short plain main-point sentence and add a concise explanatory second sentence where the substance supports it"
         ],
         "suggested_wording": {
           "document_element": "Most relevant current project document section, or an empty string",
@@ -3245,6 +3255,15 @@ rather than presenting a breach or obligation. Preserve the date and
 definition of external numeric context, keep displacement categories
 distinct, and do not extrapolate national criminal presence to a corridor.
 '''
+
+
+_STANDARD_DIFFERENTIATED_KNOWLEDGE = re.sub(
+    r"\n\*\*IMPORTANT .*?\n\n---\n",
+    "\n",
+    DIFFERENTIATED_APPROACHES,
+    count=1,
+    flags=re.DOTALL,
+)
 
 
 _STANDARD_SORT_STAGE2_SECTION = """### SORT Adequacy Check
@@ -3478,8 +3497,8 @@ def _prepare_standard_stage3_prompt(stage_prompt: str) -> str:
     }
     for old, new in replacements.items():
         stage_prompt = stage_prompt.replace(old, new)
-    # Keep the instrument-specific safeguard content; remove only the forced
-    # number/type of cards and document actions around it.
+    # Keep instrument-specific safeguarding content and remove only forced
+    # card and document-action counts around it.
     stage_prompt = re.sub(
         r"ACTIONS: Provide 2-4 specific actions to address this gap\..*?"
         r"Each action = one thing to change in the document\.",
@@ -3505,6 +3524,13 @@ without source-grounded evidence. Do not invent numerical thresholds, deadlines
 or timelines as established requirements. Where a value is absent, ask the
 team to define or calibrate it, or clearly label an illustrative proposal for
 review. Distinguish confirmed policy obligations from advisory suggestions.
+Write the management narrative in clear technical report style: start each
+paragraph with a bold first sentence that states its main point, then explain it.
+Use plain management language, define acronyms on first use, use no em-dash
+punctuation and use semicolons sparingly. JSON values are plain text without Markdown. Preserve
+exact instrument names and distinguish approval or request, planned or under
+preparation, and operational or completed status. Do not turn a named approval
+or request into an operational commitment.
 """
     return stage_prompt
 
@@ -5341,8 +5367,6 @@ IMPLEMENTATION_NOTE: 1-2 sentences flagging a practical sequencing point, cost i
 
 GEOGRAPHIC VALIDATION: Before finalising each priority, check: does the `the_gap` field name at least one specific location, group, or institution drawn from the uploaded documents or web research? If not, revise it. If no specific geography is available in your sources, name the administrative level at which the project operates (e.g., county, district, commune) and note that sub-national detail is missing.
 
-COUNTRY CATEGORY RELEVANCE (MANDATORY): For each priority, populate `country_category_relevance` with a 1-2 sentence note explaining why this priority is particularly relevant given the country's FCV category (Conflict-Affected / At Risk / In Transition / General). What does the specific category imply for how this priority should be approached differently than in a stable-country context? For example, in a Conflict-Affected context, a GRM recommendation matters because access is contested and trust in state institutions is low; in an At Risk context, the same recommendation matters because early-warning signals require proactive engagement before grievances escalate. Do NOT leave this field empty.
-
 CPF ALIGNMENT: If a Country Partnership Framework (CPF) was uploaded by the user among the contextual documents in Stage 1, it will appear in the Stage 1 output under contextual sources. For each priority recommendation, identify whether implementing that recommendation would strengthen a specific CPF outcome. Populate the `cpf_alignment` JSON field with a 1-2 sentence statement naming the specific CPF outcome (by number or title as stated in the CPF) and explaining how this recommendation supports it. If no CPF was uploaded, or if no clear linkage exists for a given priority, set `cpf_alignment` to `null` - do not fabricate connections. Refer to the CPF Integration Guide (injected below) for tone and citation guidance.
 
 RRA DRIVER ALIGNMENT: If a Risk and Resilience Assessment (RRA) or equivalent conflict analysis was uploaded among the contextual documents, its main conflict drivers will appear in the Stage 1 output under contextual sources, often in a distilled card labelled "CONFLICT DRIVERS". For each priority recommendation, identify whether it addresses one or more of those named drivers. Populate `rra_driver_alignment` with a 1-2 sentence statement naming the specific driver(s) and how the recommendation responds. If no RRA was uploaded, or no clear linkage exists for a given priority, set `rra_driver_alignment` to null and do not fabricate a connection.
@@ -5406,7 +5430,7 @@ The SEA/SH card and the GRM card may both appear in the output — they address 
 - JSON block is present at the end, wrapped in %%%JSON_START%%% / %%%JSON_END%%%
 - All 10 top-level JSON fields are populated (fcv_rating, fcv_responsiveness_rating, sensitivity_summary, responsiveness_summary, risk_exposure, mid_cycle_watch, dpf_watch, p4r_watch, regional_watch, priorities)
 - Each priority's pad_sections, actions (including per-action suggested_language), and implementation_note are specific to this project — not generic placeholders
-- Each priority JSON object has all 23 fields: title, fcv_dimension, tag, refresh_shift, risk_level, the_gap, why_it_matters, actions, who_acts, when, action_timing, resources, pad_sections, country_category_relevance, implementation_note, cpf_alignment, rra_driver_alignment, change_type, restructuring_level, priority_scope, project_cycle, governance_level, authority_basis
+- Each priority JSON object preserves the canonical detailed fields and authority basis.
 - No generic or templated language anywhere
 - All `when` values are appropriate for the {doc_type} stage
 
@@ -5466,7 +5490,6 @@ The FCV ratings, summaries, and risk exposure paragraphs you have written in the
       "resources": "Moderate (dedicated allocation)",
       "pad_sections": "Annex 5: Stakeholder Engagement Plan; ESCP Commitment #4",
       "action_timing": "required-before-appraisal",
-      "country_category_relevance": "In a Conflict-Affected context, this priority matters because...",
       "implementation_note": "1-2 sentences on timing, cost, sequencing, or key dependency",
       "cpf_alignment": "This recommendation strengthens CPF Outcome 1 (Healthier, Better Educated and Skilled Population) by ensuring FCV-sensitive targeting reaches conflict-affected communities.",
       "rra_driver_alignment": "This recommendation directly addresses RRA Driver 2 (competition over land and water) by embedding conflict-sensitive site selection and a local grievance mechanism.",
@@ -6606,6 +6629,15 @@ def _normalize_project_cycle(value: Any) -> dict[str, str] | None:
     }
 
 
+def _standard_concise_gap_is_valid(value: Any) -> bool:
+    """Accept only the optional standard gap shape generated from canonical fields."""
+    if not isinstance(value, str):
+        return False
+    words = value.split()
+    sentences = re.findall(r"[^.!?]+[.!?](?:\s|$)", value.strip())
+    return 35 <= len(words) <= 50 and len(sentences) == 2
+
+
 def _normalize_concise_priority(
     value: Any,
     *,
@@ -6637,7 +6669,9 @@ def _normalize_concise_priority(
     if not isinstance(suggested_wording_raw, dict):
         suggested_wording_raw = {}
 
-    return {
+    gap = _clean_concise_string(value.get("gap")) if allow_standard else ""
+
+    result = {
         "title": title,
         "why": why,
         "how": how,
@@ -6649,6 +6683,9 @@ def _normalize_concise_priority(
         },
         "project_cycle": project_cycle,
     }
+    if allow_standard:
+        result["gap"] = gap
+    return result
 
 
 def _fallback_concise_priority(priority: dict[str, Any]) -> dict[str, Any] | None:
@@ -6996,6 +7033,13 @@ def extract_priorities(
                 or not _concise_priority_is_aligned(priority, item)
             ):
                 item = _fallback_concise_priority(priority)
+            if item is not None and standard_route:
+                gap = item.get("gap", "")
+                if not (
+                    _standard_concise_gap_is_valid(gap)
+                    and _concise_gap_is_aligned(priority, gap)
+                ):
+                    item["gap"] = item.get("why", "")
             items.append(item)
         concise_ok = all(item is not None for item in items)
     if concise_ok:
@@ -9273,7 +9317,14 @@ def run_stage():
                     f"Apply the screening lens, rating calibration, and recommendation framing for the "
                     f"'{confirmed_category}' category as specified below.\n\n"
                 )
-                stage_prompt = stage_prompt + category_lens_intro + DIFFERENTIATED_APPROACHES
+                standard_category_lens_intro = (
+                    f"\n\n--- FCV Strategy category context (internal calibration: {confirmed_category}) ---\n"
+                    f"Use the category knowledge for analysis and routing.\n\n"
+                )
+                if analysis_state.active_lenses:
+                    stage_prompt = stage_prompt + category_lens_intro + DIFFERENTIATED_APPROACHES
+                else:
+                    stage_prompt = stage_prompt + standard_category_lens_intro + _STANDARD_DIFFERENTIATED_KNOWLEDGE
 
                 # Inject selected secondary snippets
                 if secondary_snippets_s2:
@@ -9434,7 +9485,13 @@ def run_stage():
                     f"this analysis places the country within the '{confirmed_category_s3}' category of the "
                     f"FCV Strategy's differentiated approach — as analytical judgment, not an official designation.\n\n"
                 )
-                stage_prompt = stage_prompt + category_framing_s3 + DIFFERENTIATED_APPROACHES
+                if analysis_state.active_lenses:
+                    stage_prompt = stage_prompt + category_framing_s3 + DIFFERENTIATED_APPROACHES
+                else:
+                    stage_prompt = stage_prompt + (
+                        f"\n\n--- FCV Strategy category context (internal calibration: {confirmed_category_s3}) ---\n"
+                        "Use the selected category knowledge for analysis and routing. Do not add a visible category framing paragraph to the standard management brief.\n\n"
+                    ) + _STANDARD_DIFFERENTIATED_KNOWLEDGE
 
                 if secondary_snippets_s3:
                     snippets_text_s3 = "\n\n--- ADDITIONAL FCV PLAYBOOK CONTEXT (auto-selected for Stage 3) ---\n"
@@ -11143,7 +11200,14 @@ def run_express():
                         f"Apply the screening lens, rating calibration, and recommendation framing for the "
                         f"'{confirmed_category_e2}' category as specified below.\n\n"
                     )
-                    stage2_prompt = stage2_prompt + category_lens_intro_e2 + DIFFERENTIATED_APPROACHES
+                    standard_category_lens_intro_e2 = (
+                        f"\n\n--- FCV Strategy category context (internal calibration: {confirmed_category_e2}) ---\n"
+                        f"Use the category knowledge for analysis and routing.\n\n"
+                    )
+                    if lens_context_s2['active_lenses']:
+                        stage2_prompt = stage2_prompt + category_lens_intro_e2 + DIFFERENTIATED_APPROACHES
+                    else:
+                        stage2_prompt = stage2_prompt + standard_category_lens_intro_e2 + _STANDARD_DIFFERENTIATED_KNOWLEDGE
                     if secondary_snippets_e2:
                         snippets_text_e2 = "\n\n--- ADDITIONAL FCV PLAYBOOK CONTEXT (auto-selected) ---\n"
                         snippets_text_e2 += (
@@ -11485,7 +11549,13 @@ def run_express():
                         f"country within the '{confirmed_category_s3e}' category of the FCV Strategy's differentiated "
                         f"approach — as analytical judgment, not an official designation.\n\n"
                     )
-                    stage3_prompt = stage3_prompt + category_framing_s3e + DIFFERENTIATED_APPROACHES
+                    if lens_context_s3['active_lenses']:
+                        stage3_prompt = stage3_prompt + category_framing_s3e + DIFFERENTIATED_APPROACHES
+                    else:
+                        stage3_prompt = stage3_prompt + (
+                            f"\n\n--- FCV Strategy category context (internal calibration: {confirmed_category_s3e}) ---\n"
+                            "Use the selected category knowledge for analysis and routing. Do not add a visible category framing paragraph to the standard management brief.\n\n"
+                        ) + _STANDARD_DIFFERENTIATED_KNOWLEDGE
                     if secondary_snippets_s3e:
                         snippets_text_s3e = "\n\n--- ADDITIONAL FCV PLAYBOOK CONTEXT (auto-selected for Stage 3) ---\n"
                         snippets_text_s3e += (
@@ -13216,11 +13286,6 @@ def download_report():
                 if climate_valid:
                     add_priority_climate_contribution(pr)
                     add_priority_compliance(pr)
-                else:
-                    add_field(
-                        'Differentiated approach note',
-                        pr.get('country_category_relevance'),
-                    )
 
                 # Who/When/Resources footer — single run
                 footer_parts = []
@@ -13646,8 +13711,19 @@ def _concise_priority_grounding_groups(
     return groups
 
 
+def _concise_gap_is_aligned(priority: dict[str, Any], gap: Any) -> bool:
+    """Require an optional standard gap to share two anchors with canonical context."""
+    gap_tokens = _grounding_tokens(gap)
+    if not gap_tokens:
+        return False
+    return any(
+        len(gap_tokens.intersection(canonical_group)) >= 2
+        for canonical_group in _canonical_priority_grounding_groups(priority)["context"]
+    )
+
+
 def _concise_priority_text(concise: dict[str, Any]) -> str:
-    parts = [concise.get("title"), concise.get("why")]
+    parts = [concise.get("title"), concise.get("why"), concise.get("gap")]
     parts.extend(concise.get("how") or [])
     wording = concise.get("suggested_wording")
     if isinstance(wording, dict):

@@ -204,7 +204,7 @@ Stage badge (e.g., "Recommendations tailored for PCN stage")
 ```
 
 The core schema also carries optional `concise_readout` plus a `concise` object on
-every ranked priority. Standard generation targets a one-sentence headline, a 40-80 word
+every ranked priority. Standard generation targets a one-sentence headline, a 80-110 word
 overview, and zero to three evidenced strengths. Admission also accepts legacy
 overviews through 200 words and up to four actions. Each new priority concise object contains a
 plain-language title, project-specific `why`, one or two `how` actions, optional
@@ -469,3 +469,17 @@ The live Honduras trial identified late-PAD safeguards omitted by the previous 6
 Standard Stage 1 now requires a compact "Project facts and commitments" table before Part B, retaining each named component and stated budget, beneficiary scope, material commitment/instrument status, geographic exclusions/conditions and source paragraph. Conflicting source statements are retained as conflicts; physical/economic resettlement, climate displacement and conflict-related IDPs remain distinct. Standard Stage 3 explicitly copies all four canonical `project_cycle` values into the concise projection, without reinterpretation. Existing deterministic admission is unchanged.
 
 Live Quality testing exposed a conflicting legacy SORT subsection that seeded an unsupported portfolio percentage despite the appended evidence rules. `_prepare_standard_stage2_prompt()` now replaces that subsection only on the standard route with project-specific calibration. Do not infer specific SEA/SH classifications from aggregate E&S/SORT ratings, or label a planned instrument a compliance breach without a sourced applicable obligation and deadline. Distinguish later contextual evidence from information available at the historical preparation date. No policy corpus was accessed for this change.
+
+## Management-oriented report style
+
+Standard generation uses a plain main-point sentence at the start of each
+paragraph, followed by supporting explanation. Narrative paragraphs mark that
+first sentence in bold; JSON fields remain plain text for safe rendering.
+Avoid em dashes, semicolons, unexplained acronyms and unsupported authority.
+The management overview targets 80-110 words. Optional concise `gap` paragraphs
+explain canonical shortfalls and their consequences before the suggested actions.
+Keep planned measures, approval status and completed implementation distinct.
+The management projection targets roughly 650-850 words and 1.5-2 A4 pages,
+without adding findings solely to fill space. Earlier one-page targets are
+superseded. Differentiated-approach reader notes are no longer generated on the
+standard route or displayed in the report.

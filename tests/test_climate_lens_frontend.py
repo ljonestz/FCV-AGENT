@@ -291,7 +291,7 @@ if (!html.includes('Second overview paragraph')) throw new Error('summary omitte
 if (html.includes('A fourth positive design feature')) throw new Error('summary exceeded the three-tile cap');
 if (!html.includes('class="concise-strength-text"')) throw new Error('strength explanation lacks readable body element');
 if (!html.includes('id="summary-priority-accordion"')) throw new Error('summary omitted the priority accordion');
-if (!html.includes('Review context') || !html.includes('Document: Program Paper | Instrument: PforR')) throw new Error('summary omitted labelled compact review context');
+if (html.includes('Review context') || html.includes('Document: Program Paper | Instrument: PforR')) throw new Error('summary retained removed routing metadata');
 for (const removed of [
   '<summary>Technical routing details</summary>',
   'How this operation was routed',
@@ -1212,16 +1212,13 @@ def test_live_and_shared_priority_cards_switch_climate_panel_only_when_active():
     export_helper = _extract_js_function(source, "_buildExportPriorityCard")
     live_helper = _extract_js_function(source, "showPriority")
 
-    assert "renderPriorityClimateContribution(pr)" in export_helper
-    assert "Differentiated approach note" in export_helper
-    assert "isClimateLensActive()" in export_helper
-    context_helper = _extract_js_function(source, "renderPriorityContext")
-    assert "renderPriorityContext(pr)" in live_helper
-    assert "renderPriorityClimateContribution(priority)" in context_helper
-    assert "renderStandardPriorityContext(priority)" in context_helper
-    assert "renderSpecialistPriorityContext(priority)" in context_helper
-    assert "Differentiated approach note" in source
-    assert "isClimateLensActive()" in live_helper
+    for helper in (export_helper, live_helper):
+        assert "renderPriorityClimateContribution(pr)" in helper
+        assert "renderStandardPriorityContext(pr)" in helper
+        assert "isClimateLensActive()" in helper
+    assert "Differentiated approach note" not in source
+    assert "country_category_relevance" not in source
+
 
 
 def test_priority_controls_have_no_secondary_next_previous_navigator():
@@ -1971,9 +1968,9 @@ const renderClimateRelevantGuidance = () => '';
 {url_helper}
 {renderer}
 const html = renderClimateVerifiedAssessment({json.dumps(reader)});
-if (!html.includes('Review context') ||
-    !html.includes('Document: Program Paper | Instrument: PforR')) {{
-  throw new Error('compact review context missing | ' + html);
+if (html.includes('Review context') ||
+    html.includes('Document: Program Paper | Instrument: PforR')) {{
+  throw new Error('removed review metadata remains | ' + html);
 }}
 for (const removed of [
   'How this operation was routed',
@@ -2801,7 +2798,6 @@ def test_detailed_project_cycle_integrated_renderers_align_order_and_scope():
             "renderPriorityProjectCycle",
             "renderPriorityTiming",
             "renderStandardPriorityContext",
-            "renderPriorityContext",
             "_buildExportPriorityCard",
             "showPriority",
         )

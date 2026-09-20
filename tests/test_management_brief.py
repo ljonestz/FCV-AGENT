@@ -69,7 +69,7 @@ def test_html_and_word_preserve_all_priorities_and_leading_actions(count):
         assert "not requirements" in output.lower()
     assert document.sections[0].page_width.mm == pytest.approx(210, abs=0.1)
     assert document.sections[0].page_height.mm == pytest.approx(297, abs=0.1)
-    assert document.styles["Normal"].font.name == "Calibri"
+    assert document.styles["Normal"].font.name == "Arial"
 
 
 def test_html_escapes_model_text_and_needs_no_external_assets():
@@ -121,3 +121,46 @@ def test_exports_do_not_mutate_canonical_data():
     before = deepcopy((readout, priorities))
     render_management_brief_html(readout, priorities)
     assert (readout, priorities) == before
+
+
+def test_brief_orders_gaps_before_action_only_priorities():
+    from fcv_management_brief import (
+        render_management_brief_docx,
+        render_management_brief_html,
+    )
+
+    readout, priorities = brief_fixture(2)
+    priorities[0]["concise"]["gap"] = (
+        "Ownership is unclear. This can delay decisions."
+    )
+    priorities[1]["concise"]["why"] = "The second reason remains relevant to delivery."
+    html = render_management_brief_html(readout, priorities)
+    text = "\n".join(
+        paragraph.text
+        for paragraph in Document(BytesIO(render_management_brief_docx(readout, priorities))).paragraphs
+    )
+
+    for output in (html, text):
+        assert output.index("What the project does well") < output.index("Potential gaps")
+        assert output.index("Potential gaps") < output.index("Suggested priorities")
+        for sentence in ("Ownership is unclear.", "This can delay decisions."):
+            assert sentence in output
+        assert priorities[0]["concise"]["why"] not in output
+        assert "Why it matters:" not in output[output.index("Suggested priorities"):]
+        assert priorities[0]["concise"]["how"][0] in output
+
+
+def test_brief_bolds_robust_first_sentence_and_normalizes_prose_punctuation():
+    from fcv_management_brief import render_management_brief_html
+
+    readout, priorities = brief_fixture(1)
+    readout["overview"] = (
+        "The U.S. route costs 1.5m \u2014 before works. "
+        "See https://example.org/a.b for context; later."
+    )
+    html = render_management_brief_html(readout, priorities)
+
+    assert (
+        "<strong>The U.S. route costs 1.5m - before works.</strong> "
+        "See https://example.org/a.b for context; later."
+    ) in html

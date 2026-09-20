@@ -2,7 +2,7 @@
 
 Date: 20 September 2026
 
-**Status: presentation and workflow verified on Render; analytical review candidate. The live Quality PAD run on `b5bd21c` passed the full user workflow and all four concise cards were admitted unchanged. A subsequent standard-prompt correction removes an observed legacy benchmark conflict; that correction has regression coverage but has not had a fresh model run.**
+**Status: revised management readability package under final verification. Earlier live trials passed the workflow but identified analytical issues. A fresh full PAD run will validate the latest prompts, gaps section and exports before this handover is finalized.**
 
 ## Baseline and scope
 
@@ -12,7 +12,7 @@ Analytical scope is the standard FCV project screener. Diagnostic-bank expansion
 
 ## Product changes
 
-1. A compact management brief uses the existing Stage 3 result. It shows plain-language findings, genuinely evidenced strengths, and the leading suggested action for each of one to five priorities. The complete assessment retains formal ratings, all actions, drafting, and evidence.
+1. A compact management brief uses the existing Stage 3 result. It shows plain-language findings, evidenced strengths, potential gaps, and the leading suggested action for each of one to five priorities. The complete assessment retains formal ratings, all actions, drafting, and evidence.
 2. Core prompts consider PDO relevance, activity and beneficiary scale, severity of potential harm, and delivery dependencies. Spending is an input to judgement, not a mechanical score. Critical low-budget implementation arrangements and serious harms remain eligible for highest priority.
 3. Core generation no longer fills a four-to-five-priority quota. Advice should use applicable project, operational, and commitment instruments without prescribing unnecessary revisions to supporting assessments.
 4. Responsiveness is interpreted in relation to the operation's purpose. A limited direct contribution to FCV drivers is not automatically evidence of poor design.
@@ -35,9 +35,9 @@ Private run observations and screenshots are kept outside Git. Their analytical 
 
 - Preserve delimiter names, formal rating semantics and timing enum values.
 - Retain `concise_readout` and per-priority `concise`; new output is shorter, while valid older concise bundles remain readable.
-- Core brief generation targets a 40-80-word overview and zero to three evidenced strengths. Do not generate positive findings solely to fill three cards.
+- Core brief generation targets an 80-110-word overview, zero to three evidenced strengths, 35-50-word gaps and 40-60-word leading actions. Aim for a 1.5-2-page A4 brief, with a maximum of two pages for new output. Do not generate positive findings solely to fill three cards.
 - Keep canonical Detailed priorities as the source for concise alignment, lifecycle admission and deterministic fallback. The brief must not introduce a new fact, action or milestone.
-- Browser and exports use each admitted concise priority's title, rationale and first action; they explicitly refer readers to Detailed for the complete actions and evidence.
+- Browser and exports show each admitted concise priority's gap (or legacy why fallback) before a separate list of titles and first actions; they explicitly refer readers to Detailed for the complete actions and evidence.
 - `POST /api/download-management-brief` accepts `concise_readout`, canonical `priorities`, `fcv_rating`, `fcv_responsiveness_rating`, resolved `doc_type`, `active_lenses` and `format` (`html` or `docx`). Revalidate on the server, reject specialist routes and unavailable concise bundles, and return the generated attachment. The existing comprehensive download route retains its behavior.
 - Reuse the standalone Python exporter in `fcv_management_brief.py` from FastAPI after validation. It has no Flask dependency and no model calls.
 - Keep internal OPCS retrieval and ITS infrastructure unchanged. No raw policy corpus, credentials or assessment output belongs in the patch.
@@ -48,7 +48,7 @@ Private run observations and screenshots are kept outside Git. Their analytical 
 |---|---|
 | Core prompts and admission | `app.py`: standard Stage 1/2 context, `append_core_concise_stage3_contract()`, `_prepare_standard_stage3_prompt()`, concise normalizers and `extract_priorities()` |
 | Brief endpoint | `app.py`: `download_management_brief()`; adapt the Flask response handling to FastAPI while preserving canonical validation |
-| Portable exporters | `fcv_management_brief.py`: `render_management_brief_html()` and `render_management_brief_docx()` |
+| Portable exporters | `fcv_management_brief.py`, `fcv_word_style.py`, `fcv_presentation.py`: shared HTML/Word projection, Arial style and safe first-sentence emphasis |
 | Browser | `index.html`: concise capability gate, compact priority list, exact-priority links, watch Markdown, brief controls, advisory timing/context, routing disclosure removal |
 | Climate export consistency | `sector_lenses/climate_verified_render.py`: HTML/Word presentation only; retain internal route state and drafting gates |
 | Regression coverage | `tests/test_nairobi_backend.py`, `tests/test_nairobi_frontend.py`, `tests/test_management_brief.py`, and updated concise/Climate renderer tests |
@@ -67,7 +67,7 @@ The public patch is based on the reported QA commit. Adapt shared behavior to th
 - Unsupported comparison claims and numerical trigger values are not invented or presented as policy obligations.
 - Existing Climate analytical contracts remain unchanged; only the requested routing-disclosure removal and Word presentation affect its display.
 
-## Validation status
+## Earlier validation checkpoints (superseded by the final run below)
 
 - **1,260 tests passed across partitioned runs:** 1,167 broad-suite cases, 11 bank-selector cases, and 82 Climate frontend contracts. This includes standard prompt/parser, concise compatibility, brief endpoint/export, and Climate rendering coverage.
 - Python compilation, complete inline JavaScript syntax, and diff whitespace checks passed.
@@ -75,9 +75,9 @@ The public patch is based on the reported QA commit. Adapt shared behavior to th
 
 The bank-selector suite exposed a calendar-dependent archived-snapshot test. It now evaluates the August release at its publication date; all 32 bank/selector tests passed, including expiry rejection. Runtime bank code, expiry safeguards and the pinned country-bank commit are unchanged. Six entries in that candidate bank currently return `bank_content_expired` and require content review before a future Climate bank update.
 
-Visual checks used synthetic data only. All one/two/five priorities remained visible, the fourth priority opened the correct Detailed card, formal ratings stayed in Detailed, and the watch disclosure rendered escaped headings/paragraphs. Mobile width was checked at 390 pixels. A five-priority management brief printed on one A4 page in both Word and Chromium HTML; longer legacy content is allowed to overflow to additional pages. The local browser completed its assertions but stalled during shutdown and was terminated after the diagnostic timeout; the captured output and screenshots establish the UI checks, not a successful browser-process exit.
+At this initial checkpoint, visual checks used synthetic data only. All one/two/five priorities remained visible, the fourth priority opened the correct Detailed card, formal ratings stayed in Detailed, and the watch disclosure rendered escaped headings/paragraphs. Mobile width was checked at 390 pixels. A five-priority management brief printed on one A4 page in both Word and Chromium HTML; longer legacy content is allowed to overflow to additional pages. The local browser completed its assertions but stalled during shutdown and was terminated after the diagnostic timeout; the captured output and screenshots establish the UI checks, not a successful browser-process exit.
 
-The user-requested live acceptance protocol was: run the existing Honduras Sustainable Connectivity PAD (P181166) through the updated Render standard route, check all priorities against the source package, compare summary/full downloads, and confirm the ITS watch formatting and routing removal. Prompt guards reduce risk but do not prove factual accuracy without this source-based review. Render Smoke and quality preview deployed candidate `f17abebe868f2ebb5d214fc5d6bb41973c651231` on 20 September 2026. ITS QA has not received this update. Live acceptance is still in progress.
+The user-requested live acceptance protocol was: run the existing Honduras Sustainable Connectivity PAD (P181166) through the updated Render standard route, check all priorities against the source package, compare summary/full downloads, and confirm the ITS watch formatting and routing removal. Prompt guards reduce risk but do not prove factual accuracy without this source-based review. Render Smoke and quality preview deployed candidate `f17abebe868f2ebb5d214fc5d6bb41973c651231` on 20 September 2026. ITS QA has not received this update. Live acceptance was still in progress at this checkpoint.
 
 ## Live PAD trial source checks
 
@@ -98,7 +98,7 @@ Follow-up regression checks: 158 backend, route, concise and workflow tests pass
 
 ## Word readability and source-retention follow-up
 
-The user additionally requested Word presentation resembling the CPF screener. `fcv_word_style.py` is a portable python-docx helper shared by management briefs, standard comprehensive reports and verified Climate Word reports. Copy this helper alongside the brief exporter; call it after assembling the native document. It applies Calibri, navy running headers/headings, subtle priority/action accents, repeated table headings and editable page numbers without altering analysis or page geometry. Existing semantic warning colors remain. HTML styling is unchanged by this follow-up.
+The user additionally requested Word presentation resembling the CPF screener. `fcv_word_style.py` is a portable python-docx helper shared by management briefs, standard comprehensive reports and verified Climate Word reports. Copy this helper alongside the brief exporter; call it after assembling the native document. The initial version applied Calibri, navy running headers/headings, subtle priority/action accents, repeated table headings and editable page numbers without altering analysis or page geometry. The readability follow-up below replaces Calibri with Arial and adds bold paragraph leads. Existing semantic warning colors remain.
 
 Standard Stage 1 now explicitly emits a compact sourced project facts and commitments table, retaining component budgets, beneficiary scope, material safeguards commitments, status and conditional geography, including source inconsistencies. Standard Stage 3 explicitly copies the four canonical lifecycle fields into concise priorities; validators and schemas remain unchanged. These instructions address observed information loss and projection risk; they do not certify factual correctness.
 
@@ -132,3 +132,16 @@ Mirror the behavior from the ITS-reported `f8e8142` baseline in this order: `605
 Final Word spacing verification: the actual live four-priority brief fits on one A4 page after reducing paragraph/heading spacing. All paragraph text is identical to the live download and the 10.5-point body size is unchanged. The full report remains thirteen pages. Fourteen focused Word/export tests passed after this final presentation adjustment. Longer assessments may still span pages; no text is truncated.
 
 Final deployed application: `36b119fb7586551f69d7609a6c12ac1d9244f80f`, Quality deploy `dep-dao4sjfavr4c73auk1p0`, live at 21:22 UTC on 20 September 2026. The deployed brief endpoint was checked using the completed assessment: text, document/style/header/footer XML exactly match the native-Word-verified one-page file. This endpoint check makes no model call and does not change the analytical acceptance limit above.
+
+
+## Management readability follow-up
+
+The latest user-approved update removes the differentiated approach note, the instrument/approval/closing/safeguards strip and the additional Playbook attribution from reader views and exports. Internal category knowledge, routing and substantive unresolved-route warnings remain. A short retrospective PAD warning identifies the historical review context without repeating metadata. CPF/RRA and strategy alignment remain available in Detailed.
+
+The standard Summary and both brief downloads place a light-orange Potential gaps section between green strengths and suggested priorities. Every admitted priority remains represented in the same order. An optional standard-only `concise.gap` is admitted when it has 35-50 words, two sentences and canonical context anchors. Invalid or missing gaps use the admitted `why`; this does not invalidate an otherwise usable legacy card. Existing fields, delimiters, enums, lifecycle and rating semantics remain. This check establishes format and lexical grounding, not factual truth.
+
+Standard generation now uses plain management language, bold main-point first sentences, explanations after the lead, no em dashes and sparse semicolons. JSON remains plain text. Shared presentation helpers apply Arial and first-sentence emphasis to Word body paragraphs and normalize visible em dashes without changing canonical assessment content, URLs, code spans or numeric ranges. The brief has an 80-110-word overview and longer strengths, gap and action explanations, targeting approximately 650-850 words and no more than two A4 pages. No text is silently truncated to meet pagination.
+
+A saved-result native Word layout preview fits two pages. It uses earlier diagnostic analysis and is only layout evidence. Fresh live analytical, export and mobile verification is pending at this checkpoint.
+
+Pre-deployment verification: 1,277 distinct regression cases passed across partitions and targeted reruns. The four previously identified Windows Chromium cases remain unverified. Updated expectations cover the approved optional gap and removed display elements. Local one/two/five-priority browser assertions, safe watch rendering, exact navigation and 390-pixel layout passed; browser cleanup timed out afterward. A realistic 774-word five-priority brief rendered as two A4 pages at Arial 11 without clipping. Python compilation, full inline JavaScript syntax and diff checks passed.

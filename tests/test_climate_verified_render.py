@@ -241,7 +241,7 @@ def test_build_reader_model_keeps_up_to_five_priorities():
     ]
 
 
-def test_reader_carries_visible_operational_routing_context():
+def test_reader_retains_internal_routing_without_reader_metadata():
     assessment = _assessment()
     assessment["operation_context"] = {
         "document_type": "Program Paper",
@@ -259,8 +259,8 @@ def test_reader_carries_visible_operational_routing_context():
 
     assert model["operation_context"]["instrument_type"] == "PforR"
     assert "How this operation was routed" not in rendered
-    assert "<strong>Document:</strong> Program Paper" in rendered
-    assert "<strong>Instrument:</strong> PforR" in rendered
+    assert "<strong>Document:</strong> Program Paper" not in rendered
+    assert "<strong>Instrument:</strong> PforR" not in rendered
     for technical_label in ("Preparation", "E"+chr(38)+"amp;S route", "Program layer", "MPA program"):
         assert technical_label not in rendered
 
@@ -269,8 +269,8 @@ def test_reader_carries_visible_operational_routing_context():
     stream.seek(0)
     docx_text = "\n".join(paragraph.text for paragraph in Document(stream).paragraphs)
     assert "How this operation was routed" not in docx_text
-    assert "Document: Program Paper" in docx_text
-    assert "Instrument: PforR" in docx_text
+    assert "Document: Program Paper" not in docx_text
+    assert "Instrument: PforR" not in docx_text
     for technical_label in ("Preparation", "E"+chr(38)+"S route", "Program layer", "MPA program"):
         assert technical_label not in docx_text
 
