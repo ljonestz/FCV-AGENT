@@ -90,7 +90,7 @@ Current upload tiering: exactly one primary project document anchors the assessm
 
 The Climate-FCV Lens may map evidence to these existing principles but does not independently rescore them.
 
-**Climate-FCV sector-lens contract:** Climate is manual-only and never auto-suggested. Core-only Stage 2 retains the lightweight conditional Climate-FCV Nexus check. Active Climate supersedes that check and emits `materiality_summary`, `analysis_emphasis`, declared `readout_sections`, and `other_pathways` in the hidden diagnostic. Analysis is adaptation-first; deep mitigation requires a clear material pathway. Optional CCDR context is non-dominant and validated separately. Core-only Stage 3 retains 4-5 substantive priorities; active-lens Stage 3 permits no more than five, with a flexible non-quota mix of core, Climate-linked, and blended priorities.
+**Climate-FCV sector-lens contract:** Climate is manual-only and never auto-suggested. Core-only Stage 2 retains the lightweight conditional Climate-FCV Nexus check. Active Climate supersedes that check and emits `materiality_summary`, `analysis_emphasis`, declared `readout_sections`, and `other_pathways` in the hidden diagnostic. Analysis is adaptation-first; deep mitigation requires a clear material pathway. Optional CCDR context is non-dominant and validated separately. Core-only Stage 3 generates 1-5 material priorities without category or document-revision quotas; active-lens Stage 3 permits no more than five, with a flexible non-quota mix of core, Climate-linked, and blended priorities.
 
 **Strict [S+R] definition:**
 [S+R] only valid for: (1) inclusion/targeting of conflict-affected populations; (2) FCV logic in ToC/PDO; (3) adaptive M&E for harm + resilience; (4) GRM for state-citizen accountability.
@@ -204,9 +204,10 @@ Stage badge (e.g., "Recommendations tailored for PCN stage")
 ```
 
 The core schema also carries optional `concise_readout` plus a `concise` object on
-every ranked priority. The readout contains a one-sentence headline, a 150-200 word
-overview, and exactly three strengths. Each priority concise object contains a
-plain-language title, project-specific `why`, two to four `how` actions, optional
+every ranked priority. Standard generation targets a one-sentence headline, a 40-80 word
+overview, and zero to three evidenced strengths. Admission also accepts legacy
+overviews through 200 words and up to four actions. Each new priority concise object contains a
+plain-language title, project-specific `why`, one or two `how` actions, optional
 supported drafting, and project-cycle guidance.
 
 The concise schema is appended only when no sector lens is active. JSON-first
@@ -458,3 +459,7 @@ existing mitigation, residual gaps, destination, scope, actor, timing, authority
 and unsupported technical precision. The judgment call must assess the four
 dimensions from evidence and must not predict how many recommendations a later
 admission stage will retain.
+
+## Standard FCV materiality and advisory guidance (2026-09-20)
+
+The standard route retains stated component budgets/shares, activities, beneficiaries, PDO links and delivery dependencies through Stages 1 and 2. Unknown facts stay unknown. Stage 3 ranks one to five priorities by PDO relevance, scale, harm severity and delivery dependencies; spending is not a mechanical score, and a critical low-budget dependency can rank first. There is no category, dimension or document-revision quota. Preserve instrument/lifecycle routing and distinguish verified policy obligations from advisory suggestions. Limited responsiveness alone does not imply poor design. Unverified portfolio comparisons and invented numeric thresholds must not be presented as established requirements. No extra model call is introduced; active-lens analytical guidance is unchanged.

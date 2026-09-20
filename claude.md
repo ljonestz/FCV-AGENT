@@ -42,6 +42,7 @@ The authoritative OPCS policies, directives, and guidance notes this app's promp
 **Only GitHub Copilot (this CLI / Copilot Chat / Copilot coding agent) is permitted to read the source files in the PPF folder, the `OPCS docs.xlsx` index, the `LLM input on relevant project docs.docx` triage doc, and the ESF Manual PDF.** Claude Code, OpenAI Codex, or any other coding agent working in this repository **must not** open, read, or ingest these source documents directly - even if asked to do OPCS-policy-consistency work. Other agents should work from **already-written, GitHub-Copilot-authored summaries** (e.g. design specs and plans under `docs/superpowers/`, or corrections already landed in `background_docs.py`/`app.py`) rather than the raw policy corpus itself. If a non-Copilot agent's task appears to require reading these source files directly, it should stop and ask the maintainer rather than accessing the folder.
 
 **Version history:**
+- **Nairobi standard-FCV update (2026-09-20)** - Standard-route generation targets a 40-80-word management overview, zero to three evidenced strengths and one to five material priorities. Summary presents every leading action and links to canonical Detailed priorities; formal ratings stay in Detailed. A separate HTML/Word management-brief download revalidates the concise bundle without a model call. Watch prose retains safe Markdown structure; routing disclosures are removed from both views while relevant warnings remain. Existing detailed exports, enums and Climate analytical contracts are preserved. See `20260920_ITS_handover_standard_fcv.md` for the baseline, porting contract and validation status.
 - **v9.38** - Production Climate Summary and DOCX metadata extraction: one shared recursive OOXML walker (`docx_structure.py`) now preserves visible paragraph/table/SDT order, nested tables, checked controls, and structured header/value fields while `extract_docx_text()` retains its public two-value API and internal routes carry a separate structured-field sidecar. Climate-only verified runs use source manifest `source-blocks-v3`, structured financing metadata takes precedence over prose with typed conflict/unresolved warnings, and the judgment call emits the validated `summary_overview.paragraphs` contract (`climate-judgments-v2.4`) without another model call. Climate Summary renders that overview, closed watch/guidance disclosures, and the same gated drafting content as Detailed; normal FCV keeps its established narrative/schema/prompt contract and adds only an applicable closed watch-items disclosure.
 - **v7.0** — Redesigned from 4 stages to 3; full 12 OST recs + 25 key questions; FCV Playbook integration; Under the Hood panels; refresh_shift field
 - **v7.2** — Stage 2 dynamic thematic narrative; actions[] array replaces recommendation string; Go Deeper 2-tab panel; Stage 3 clean memo (no inline citations)
@@ -325,7 +326,7 @@ Procfile            # Render deployment config
 
 **Two workflow modes:** Express Analysis (default — all 3 stages run automatically via `/api/run-express`) and Step-by-Step (interactive, one stage at a time via `/api/run-stage`). Same prompts, same output quality.
 
-**Optional sector lenses:** users may select up to two ordered lenses. Both workflows resolve authoritative module versions and inject the same bounded stage slices. Lens findings must map to existing OST/DNH/Strategy criteria; they do not add a score or separate recommendation list. The production Climate-FCV Lens is manual-only and never auto-suggested. After selection it screens climate-intent and wider development operations automatically, prioritizes adaptation, and activates deep mitigation only for a clear pathway. Core-only retains 4-5 substantive priorities and the lightweight Climate-FCV check; active Climate supersedes that check and uses no more than five substantive priorities with a flexible evidence-led mix. `lens_context_sources` persists optional validated Climate research and World Bank CCDR sources without making CCDR material a routine recommendation.
+**Optional sector lenses:** users may select up to two ordered lenses. Both workflows resolve authoritative module versions and inject the same bounded stage slices. Lens findings must map to existing OST/DNH/Strategy criteria; they do not add a score or separate recommendation list. The production Climate-FCV Lens is manual-only and never auto-suggested. After selection it screens climate-intent and wider development operations automatically, prioritizes adaptation, and activates deep mitigation only for a clear pathway. Core-only uses 1-5 evidence-led material priorities and retains the lightweight Climate-FCV check; active Climate supersedes that check and uses no more than five substantive priorities with a flexible evidence-led mix. `lens_context_sources` persists optional validated Climate research and World Bank CCDR sources without making CCDR material a routine recommendation.
 
 **Climate-active dual-use contract (implemented on `codex/climate-fcv-output-redesign`):** Stage 1 runs reduced core research and one dedicated bounded trusted-source Climate pass concurrently, with one narrower retry. Stage 2 requires both directional interaction pathways with stable IDs, project/place/group/system anchors, causal steps, confidence, evidence gaps or research claim IDs, and current/project/asset-system horizons. Stage 3 retains both causal directions inside the 900-token lens ceiling and validates `climate_links` on every priority as either `linked` to recognized interaction/dividend/finding IDs or `no-material-pathway` with a concrete reason. Live HTML, shared HTML, and DOCX use the same narrative interactions, causal strips, qualitative dividend synthesis, and priority contribution panels. See `docs/20260723_climate_fcv_output_redesign_handoff.md`.
 
@@ -478,6 +479,8 @@ DEFAULT_PROMPTS = {
 
 ### 3.2 Per-Stage Prompt Summary
 
+Standard core-only runs append project-fact/materiality context in Stages 1 and 2. Stage 3 removes fixed priority and document-reference quotas while retaining conditional instrument/safeguarding checks, then embeds the shorter management readout schema. Specialist prompts bypass these changes. The concise layer is generated in the existing call and does not change rating semantics.
+
 | Stage | Input | Key outputs | Prompt constants |
 |---|---|---|---|
 | 1 | Project doc + optional context | Part A (extract) + Part B (contextualised) + DOC_TYPE line | FCV_GUIDE, PLAYBOOK_DIAGNOSTICS, FCV_REFRESH_FRAMEWORK |
@@ -571,6 +574,8 @@ PROMPTS_FILE = 'prompts.json'
 ```
 
 ### 5.3 Priority Parsing (`extract_priorities()`)
+
+Standard concise admission accepts 40-200-word overviews, zero to three strengths and one to four concise actions for backward compatibility; new generation targets 40-80 words and one to two actions. Admission remains atomic across the readout and all priorities, with grounding and lifecycle checks retained. Standard results require 1-5 priorities and reject excess priorities rather than silently truncating them. `/api/download-management-brief` reuses canonical admission before calling `fcv_management_brief.py`; active lenses are not supported by this endpoint.
 
 Optional sector provenance is normalized as `lens_ids: string[]` and `lens_relevance: string`. These fields decorate affected priorities only and never define an additional score or recommendation list.
 
@@ -731,6 +736,7 @@ classes and must not be treated as one generic timeout.
 - Admit Summary atomically: readout plus every ranked priority's concise object.
 - Restore readout, priorities, sensitivity rating, and responsiveness rating before
   applying the Summary capability gate.
+- Management brief downloads are separate and use the normalized concise projection.
 - Keep `downloadReport()` and `downloadHTML()` independent of Summary renderers,
   advisory copy, and accordion state.
 - Inspect every priority in raw Stage 3 output during live acceptance. A valid top

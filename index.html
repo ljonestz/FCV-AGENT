@@ -422,11 +422,6 @@
     .climate-summary-context-line{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
     .climate-summary-context-line span{font-size:10px;text-transform:uppercase;letter-spacing:.07em;font-weight:700;color:var(--muted)}
     .climate-summary-context-line strong{color:var(--wbg-navy)}
-    .climate-summary-routing{margin-top:7px;color:var(--muted);font-size:12px}
-    .climate-summary-routing summary{cursor:pointer;font-weight:600;color:var(--wbg-blue)}
-    .climate-summary-routing dl{display:flex;flex-wrap:wrap;gap:8px 20px;margin:9px 0 0}
-    .climate-summary-routing dt{font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
-    .climate-summary-routing dd{margin:1px 0 0;color:var(--text);font-weight:600}
     .climate-summary-route-warning{font-size:12px;color:#8a4b00;margin:9px 0 0}
     .climate-summary-priority-count{font-size:12px;color:var(--muted);margin:5px 0 10px}
     .climate-verified-assessment .climate-rating-question{font-size:13px;font-weight:600;color:#4b5563;margin:0 0 3px}
@@ -1132,6 +1127,7 @@
     .concise-read-time,.concise-section-label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;font-weight:700;color:var(--wbg-blue)}
     .concise-headline{font-size:22px;line-height:1.3;color:var(--wbg-navy);margin:7px 0 9px}
     .concise-overview{font-size:15px;line-height:1.7;color:var(--text);margin:0 0 15px}
+    .concise-interpretation{margin:0 0 18px;padding:10px 13px;background:#f6f9fb;border-left:3px solid var(--wbg-blue);color:var(--muted);font-size:13px;line-height:1.6}
     .concise-rating-indicators{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0 0 22px}
     .concise-rating-indicator{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:11px 13px;background:#f6f9fb;border:1px solid var(--border);border-radius:7px}
     .concise-rating-indicator span{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
@@ -1166,6 +1162,30 @@
     .concise-cycle{background:#fafbfd;display:grid;grid-template-columns:1fr 1fr;gap:14px}
     .concise-cycle-items{grid-column:2;display:flex;flex-direction:column;gap:14px}
     .concise-specialist summary{padding:12px 18px;color:var(--wbg-blue);font-weight:600;cursor:pointer}
+    .normal-summary-priorities{display:flex;flex-direction:column;gap:10px;margin-top:10px}
+    .normal-summary-priority{padding:14px 16px;background:#fff;border:1px solid var(--border);border-radius:9px}
+    .normal-summary-priority-head{display:flex;align-items:flex-start;gap:10px;margin-bottom:9px}
+    .normal-summary-priority-rank{width:27px;height:27px;border-radius:50%;display:grid;place-items:center;background:var(--wbg-navy);color:#fff;font-size:12px;font-weight:700;flex-shrink:0}
+    .normal-summary-priority h3{margin:2px 0 0;color:var(--wbg-navy);font-size:15px;line-height:1.35}
+    .normal-summary-priority p{margin:7px 0 0;line-height:1.6}
+    .normal-summary-priority-label{display:block;margin-bottom:2px;color:var(--wbg-navy);font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+    .normal-summary-priority-action{padding-top:9px;border-top:1px solid var(--border)}
+    .normal-summary-priority-link{display:inline-flex;align-items:center;min-height:40px;margin-top:11px;color:var(--wbg-blue);font-weight:700;text-decoration:underline;text-underline-offset:2px}
+    .brief-download-actions{display:inline-flex;align-items:center;gap:6px;margin-right:2px}
+    .brief-download-actions .btn{white-space:nowrap}
+    .priority-context-disclosure{border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin-top:0}
+    .priority-context-disclosure>summary{cursor:pointer;list-style:none;padding:12px 22px;color:var(--wbg-blue);font-size:12px;font-weight:700}
+    .priority-context-disclosure>summary::-webkit-details-marker{display:none}
+    .priority-context-disclosure>summary::before{content:"\25B8";display:inline-block;margin-right:7px;transition:transform .15s}
+    .priority-context-disclosure[open]>summary::before{transform:rotate(90deg)}
+    .priority-context-body{padding:0 22px 12px}
+    .priority-context-item{margin:0 0 10px;line-height:1.6}
+    .priority-context-item:last-child{margin-bottom:0}
+    .priority-context-item strong{display:block;color:var(--wbg-navy);font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+    .normal-fcv-watch-narrative{line-height:1.65}
+    .normal-fcv-watch-narrative h1,.normal-fcv-watch-narrative h2,.normal-fcv-watch-narrative h3{margin:8px 0 5px;font-size:12px;color:var(--wbg-navy)}
+    .normal-fcv-watch-narrative p{margin:0 0 8px}
+    .normal-fcv-watch-narrative p:last-child{margin-bottom:0}
     @media(max-width:760px){.stage3-viewbar{align-items:flex-start;flex-direction:column}.concise-strengths,.concise-cycle,.concise-rating-indicators{grid-template-columns:1fr}.concise-cycle-items{grid-column:1}}
     .priorities-section-hdr{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--s4);margin:20px 0 10px;padding-bottom:6px;border-bottom:2px solid var(--s4);}
     .pi-lead{font-size:15px;color:var(--text);line-height:1.6;margin:0 0 10px;}
@@ -4990,12 +5010,9 @@
       if(!context)return '';
       const instrument=climateAccessibleRouteValue(context.instrument_type||'Unknown');
       const documentType=climateAccessibleRouteValue(context.document_type||'Unknown');
-      const preparation=climateAccessibleRouteValue(context.preparation_regime);
-      const esRoute=climateAccessibleRouteValue(context.es_regime);
-      const mpa=context.is_mpa?'MPA program':'Not identified as MPA';
       const unresolved=!draftingRoute.confirmed;
-      const warning=unresolved?'Suggested document wording is not shown because the document type or financing route could not be confirmed reliably.':'';
-      return `<section class="climate-operation-context"><h2>How this operation was routed</h2><dl><div><dt>Instrument</dt><dd>${esc(instrument)}</dd></div><div><dt>Document</dt><dd>${esc(documentType)}</dd></div><div><dt>Preparation</dt><dd>${esc(preparation)}</dd></div><div><dt>E&amp;S route</dt><dd>${esc(esRoute)}</dd></div><div><dt>Program layer</dt><dd>${esc(mpa)}</dd></div></dl>${warning?`<p>${esc(warning)}</p>`:''}</section>`;
+      const warning=unresolved?'<p class="climate-route-warning">Suggested document wording is not shown because the document type or financing route could not be confirmed reliably.</p>':'';
+      return '<section class="climate-operation-context"><div class="climate-summary-context-line"><span>Review context</span><strong>Document: '+esc(documentType)+' | Instrument: '+esc(instrument)+'</strong></div>'+warning+'</section>';
     })();
     const executive=esc(r.executive_readout||'The verified assessment did not return an executive readout.');
     const boldFirstSentence=p=>{const m=p.match(/^(.*?[.!?])(\s+)([\s\S]*)$/);return m?`<strong>${esc(m[1])}</strong>${esc(m[2]+m[3])}`:`<strong>${esc(p)}</strong>`;};
@@ -5238,7 +5255,7 @@
             <div class="out-hdr">
               <div class="out-hdr-l"><span class="dot done"></span>${NAMES[stage]}</div>
               <div class="out-hdr-actions" style="display:flex;gap:8px;align-items:center">
-                ${isLast?`<button class="btn btn-ghost btn-sm" onclick="downloadReport(this)" title="Download full report as a Word document (.docx)">
+                ${isLast?`<span id="management-brief-controls">${renderManagementBriefControls()}</span>`:''}${isLast?`<button class="btn btn-ghost btn-sm" onclick="downloadReport(this)" title="Download full report as a Word document (.docx)">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                   Download .docx
                 </button>
@@ -5746,6 +5763,61 @@
     sum.style.color='';
     if(epTimerInterval){clearInterval(epTimerInterval);epTimerInterval=null;}
     if(epMessageInterval){clearInterval(epMessageInterval);epMessageInterval=null;}
+  }
+
+
+  function renderManagementBriefControls(){
+    if(stage3View!=='summary'||!supportsConciseStage3View())return '';
+    return `<span class="brief-download-actions" aria-label="Management brief downloads">
+      <button type="button" class="btn btn-ghost btn-sm" onclick="downloadManagementBrief('html',this)" title="Download the concise management brief as print-ready HTML">Brief HTML</button>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="downloadManagementBrief('docx',this)" title="Download the concise management brief as a Word document">Brief Word</button>
+    </span>`;
+  }
+
+  async function downloadManagementBrief(format,btn){
+    if(!['html','docx'].includes(format)||stage3View!=='summary'||!supportsConciseStage3View()){
+      alert('The management brief is available only when a complete standard FCV Summary is shown.');
+      return;
+    }
+    const original=btn?btn.innerHTML:'';
+    if(btn){btn.disabled=true;btn.innerHTML='Preparing...';}
+    const payload={
+      concise_readout:stageConciseReadout,
+      priorities:stageThreePriorities,
+      fcv_rating:fcvRating||'',
+      fcv_responsiveness_rating:fcvResponsivenessRating||'',
+      doc_type:docType||'Unknown',
+      active_lenses:activeLenses,
+      format
+    };
+    try{
+      const response=await fetch('/api/download-management-brief',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(payload)
+      });
+      if(!response.ok){
+        let detail='Download failed';
+        try{
+          const data=await response.json();
+          detail=data.detail||data.error||detail;
+        }catch(_){}
+        throw new Error(detail+' (HTTP '+response.status+')');
+      }
+      const blob=await response.blob();
+      const url=URL.createObjectURL(blob);
+      const link=document.createElement('a');
+      link.href=url;
+      link.download='FCV-Management-Brief-'+new Date().toISOString().slice(0,10)+'.'+format;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    }catch(error){
+      alert('Could not generate the management brief. Please try again.\n\n'+(error&&error.message?error.message:'Network error'));
+    }finally{
+      if(btn){btn.disabled=false;btn.innerHTML=original;}
+    }
   }
 
   function downloadReport(btn){
@@ -6391,9 +6463,14 @@ ${body}
 
   function supportsConciseStage3View(){
     const readout=stageConciseReadout&&typeof stageConciseReadout==='object'?stageConciseReadout:null;
-    const hasNarrative=!!(readout&&['strengths_transition','priorities_transition','closing'].every(field=>typeof readout[field]==='string'&&readout[field].trim().length>0));
-    return activeLenses.length===0 && hasNarrative && stageThreePriorities.length>0 &&
-      stageThreePriorities.every(priority=>priority&&priority.concise);
+    const text=value=>typeof value==='string'&&value.trim().length>0;
+    const strengths=readout&&Array.isArray(readout.strengths)?readout.strengths:null;
+    const validStrengths=!!strengths&&strengths.length<=3&&strengths.every(item=>item&&text(item.title)&&text(item.text));
+    const validPriorities=Array.isArray(stageThreePriorities)&&stageThreePriorities.length>0&&stageThreePriorities.length<=5&&stageThreePriorities.every(priority=>{
+      const concise=priority&&priority.concise;
+      return concise&&text(concise.title)&&text(concise.why)&&Array.isArray(concise.how)&&concise.how.length>=1&&concise.how.length<=4&&concise.how.every(text);
+    });
+    return activeLenses.length===0&&!!readout&&text(readout.headline)&&text(readout.overview)&&text(readout.strengths_transition)&&text(readout.priorities_transition)&&text(readout.closing)&&validStrengths&&validPriorities;
   }
 
   function supportsAnyStage3Summary(){
@@ -6437,6 +6514,12 @@ ${body}
     const isRegional=scope==='multi'||scope==='regional'||scope==='multi country'||scope==='regional operation'||scope==='regional operations'||/regional/i.test(doc)||(hasContext&&(source.is_multi_country===true||source.regional_pdo===true));
     const groups=[];const seen=new Set();
     const addGroup=(label,raw)=>{
+      if(label==='Longer-term considerations'&&typeof raw==='string'&&(/[\r\n]/.test(raw)||/^\s*#{1,6}\s/m.test(raw))){
+        const narrative=raw.replace(/\r\n?/g,'\n').trim();
+        const key=narrative.toLowerCase().replace(/\s+/g,' ').replace(/[.!?]+$/,'');
+        if(narrative&&!seen.has(key)){seen.add(key);groups.push({label,narrative});}
+        return;
+      }
       const values=Array.isArray(raw)?raw:[raw];const items=[];
       values.forEach(value=>{
         if(typeof value!=='string'&&typeof value!=='number')return;
@@ -6456,18 +6539,21 @@ ${body}
 
   function renderNormalFcvWatchDisclosure(context){
     const groups=normalFcvWatchGroups(context);if(!groups.length)return '';
-    const body=groups.map(group=>'<section class="normal-fcv-watch-group"><h3>'+esc(group.label)+'</h3><ul>'+group.items.map(item=>'<li>'+esc(item)+'</li>').join('')+'</ul></section>').join('');
+    const body=groups.map(group=>{
+      const content=group.narrative
+        ?'<div class="normal-fcv-watch-narrative">'+md(group.narrative)+'</div>'
+        :'<ul>'+group.items.map(item=>'<li>'+esc(item)+'</li>').join('')+'</ul>';
+      return '<section class="normal-fcv-watch-group"><h3>'+esc(group.label)+'</h3>'+content+'</section>';
+    }).join('');
     return '<details class="normal-fcv-watch-disclosure"><summary>What to keep an eye on</summary><div class="normal-fcv-watch-body">'+body+'</div></details>';
   }
 
   function renderNormalFcvSummary(){
     const readout=stageConciseReadout&&typeof stageConciseReadout==='object'?stageConciseReadout:{};
     const strengths=(Array.isArray(readout.strengths)?readout.strengths:[]).map(strength=>`<div class="concise-strength"><strong>${esc(strength.title||'Project strength')}</strong><span class="concise-strength-text">${esc(strength.text||'')}</span></div>`).join('');
-    const strengthsTransition=`<p class="concise-transition">${esc(readout.strengths_transition||'')}</p>`;
-    const prioritiesTransition=`<p class="concise-transition">${esc(readout.priorities_transition||'')}</p>`;
-    const closing=`<p class="concise-closing">${esc(readout.closing||'')}</p>`;
+    const interpretation='<p class="concise-interpretation"><strong>How to read the FCV assessment:</strong> sensitivity describes whether the design fits its FCV context. Responsiveness describes whether the project contributes directly to FCV drivers, and is not expected for every project.</p>';
     const watchDisclosure=renderNormalFcvWatchDisclosure();
-    return `<div class="concise-readout normal-fcv-summary"><div class="concise-read-time">Five-minute readout</div><div class="concise-section-label">Overall assessment</div><h2 class="concise-headline">${esc(readout.headline||'FCV assessment summary')}</h2><p class="concise-overview">${esc(readout.overview||'')}</p>${renderFcvRatingIndicators()}${strengthsTransition}<div class="concise-section-label">What is already working</div><div class="concise-strengths">${strengths}</div>${prioritiesTransition}${renderStage3AdvisoryTransition('normal')}<div class="concise-section-label">Priority actions for the task team</div><div id="summary-priority-accordion">${renderSummaryPriorityAccordion()}</div>${watchDisclosure}${closing}</div>`;
+    return `<div class="concise-readout normal-fcv-summary"><div class="concise-read-time">Five-minute readout</div><div class="concise-section-label">Overall assessment</div><h2 class="concise-headline">${esc(readout.headline||'FCV assessment summary')}</h2><p class="concise-overview">${esc(readout.overview||'')}</p>${interpretation}${strengths.length?'<div class="concise-section-label">What is already working</div><div class="concise-strengths">'+strengths+'</div>':''}${renderStage3AdvisoryTransition('normal')}<div class="concise-section-label">Priority actions for the task team</div><div id="summary-priority-list" class="normal-summary-priorities">${renderNormalSummaryPriorities()}</div>${watchDisclosure}</div>`;
   }
 
   function renderStage3Summary(){
@@ -6523,7 +6609,7 @@ ${body}
   }
 
   function stage3ViewToggleHtml(){
-    return `<div class="stage3-viewbar"><div class="stage3-view-tabs" role="tablist" aria-label="Recommendations detail level" onkeydown="handleStage3ViewKeydown(event)"><button id="stage3-summary-tab" class="stage3-view-tab ${stage3View==='summary'?'active':''}" role="tab" aria-controls="out-txt" aria-selected="${stage3View==='summary'}" tabindex="${stage3View==='summary'?'0':'-1'}" onclick="setStage3View('summary',true,'stage3-summary-tab')">Summary</button><button id="stage3-detailed-tab" class="stage3-view-tab ${stage3View==='detailed'?'active':''}" role="tab" aria-controls="out-txt" aria-selected="${stage3View==='detailed'}" tabindex="${stage3View==='detailed'?'0':'-1'}" onclick="setStage3View('detailed',true,'stage3-detailed-tab')">Detailed analysis</button></div><div class="stage3-download-note">Downloads include the comprehensive analysis.</div></div>`;
+    return `<div class="stage3-viewbar"><div class="stage3-view-tabs" role="tablist" aria-label="Recommendations detail level" onkeydown="handleStage3ViewKeydown(event)"><button id="stage3-summary-tab" class="stage3-view-tab ${stage3View==='summary'?'active':''}" role="tab" aria-controls="out-txt" aria-selected="${stage3View==='summary'}" tabindex="${stage3View==='summary'?'0':'-1'}" onclick="setStage3View('summary',true,'stage3-summary-tab')">Summary</button><button id="stage3-detailed-tab" class="stage3-view-tab ${stage3View==='detailed'?'active':''}" role="tab" aria-controls="out-txt" aria-selected="${stage3View==='detailed'}" tabindex="${stage3View==='detailed'?'0':'-1'}" onclick="setStage3View('detailed',true,'stage3-detailed-tab')">Detailed analysis</button></div><div class="stage3-download-note">${stage3View==='summary'&&supportsConciseStage3View()?'Brief downloads summarize priorities; full report downloads include the complete analysis.':'Downloads include the comprehensive analysis.'}</div></div>`;
   }
 
   function getConcisePriority(priority){
@@ -6533,6 +6619,20 @@ ${body}
     return {title:rawTitle.replace(/^Priority\s+\d+\s*(?:[-:\u2022]\s*)?/i,'')||rawTitle,why:priority&&priority.why_it_matters||priority&&priority.the_gap||'',how:(priority&&priority.actions||[]).slice(0,4).map(action=>action.guidance).filter(Boolean),suggested_wording:{document_element:firstAction.document_element||'',text:firstAction.suggested_language||''},project_cycle:{primary_label:'When to address',primary_text:priority&&priority.implementation_note||'',secondary_label:'',secondary_text:''}};
   }
 
+
+
+  function renderNormalSummaryPriorities(priorities=stageThreePriorities){
+    return (Array.isArray(priorities)?priorities:[]).slice(0,5).map((priority,idx)=>{
+      const concise=getConcisePriority(priority);
+      const leadingAction=Array.isArray(concise.how)?concise.how[0]:'';
+      return `<article class="normal-summary-priority" data-priority-index="${idx}">
+        <div class="normal-summary-priority-head"><span class="normal-summary-priority-rank" aria-hidden="true">${idx+1}</span><h3>${esc(concise.title||priority.title||'Priority action')}</h3></div>
+        <p><span class="normal-summary-priority-label">Why it matters</span>${esc(concise.why||'')}</p>
+        <p class="normal-summary-priority-action"><span class="normal-summary-priority-label">Leading action</span>${esc(leadingAction)}</p>
+        <a class="normal-summary-priority-link" href="#priority-card-area" onclick="openDetailedPriority(${idx});return false;">View full priority ${idx+1} in Detailed analysis</a>
+      </article>`;
+    }).join('');
+  }
 
   function renderSummaryPriorityAccordion(priorities=stageThreePriorities){
     return priorities.map((priority,idx)=>{
@@ -6584,12 +6684,9 @@ ${body}
       if(!context)return '';
       const instrument=climateAccessibleRouteValue(context.instrument_type||'Unknown');
       const documentType=climateAccessibleRouteValue(context.document_type||'Unknown');
-      const preparation=climateAccessibleRouteValue(context.preparation_regime);
-      const esRoute=climateAccessibleRouteValue(context.es_regime);
-      const programLayer=context.is_mpa?'MPA program':'Not identified as MPA';
       const unresolved=!climateDraftingRouteGate(r).confirmed;
       const warning=unresolved?'<p class="climate-summary-route-warning">Suggested document wording is not shown because the document type or financing route could not be confirmed reliably.</p>':'';
-      return `<section class="climate-summary-context"><div class="climate-summary-context-line"><span>Review context</span><strong>Document: ${esc(documentType)} | Instrument: ${esc(instrument)}</strong></div><details class="climate-summary-routing"><summary>Technical routing details</summary><dl><div><dt>Preparation</dt><dd>${esc(preparation)}</dd></div><div><dt>E&amp;S route</dt><dd>${esc(esRoute)}</dd></div><div><dt>Program layer</dt><dd>${esc(programLayer)}</dd></div></dl></details>${warning}</section>`;
+      return `<section class="climate-summary-context"><div class="climate-summary-context-line"><span>Review context</span><strong>Document: ${esc(documentType)} | Instrument: ${esc(instrument)}</strong></div>${warning}</section>`;
     })();
     const summaryRecord=r.summary_overview&&typeof r.summary_overview==='object'?r.summary_overview:{};
     const overviewParagraphs=(Array.isArray(r.summary_overview)?r.summary_overview:Array.isArray(summaryRecord.paragraphs)?summaryRecord.paragraphs:[]).map(item=>String(item||'').trim()).filter(Boolean);
@@ -6631,6 +6728,8 @@ ${body}
     if(!supportsAnyStage3Summary())return;
     if(view!=='summary'&&view!=='detailed')view='summary';
     stage3View=view;
+    const briefControls=document.getElementById('management-brief-controls');
+    if(briefControls)briefControls.innerHTML=renderManagementBriefControls();
     const summaryTab=document.getElementById('stage3-summary-tab'), detailedTab=document.getElementById('stage3-detailed-tab');
     [summaryTab,detailedTab].forEach(tab=>{if(tab)tab.classList.remove('active')});
     if(summaryTab){summaryTab.classList.toggle('active',view==='summary');summaryTab.setAttribute('aria-selected',String(view==='summary'));summaryTab.tabIndex=view==='summary'?0:-1;}
@@ -6654,8 +6753,12 @@ ${body}
     ['priority-stepper','priority-card-area'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=showSummary?'none':'';});
     if(showSummary){
       if(!preservePriority)openSummaryPriority=0;
-      const summaryPriorities=supportsClimateVerifiedStage3View()?climateSummaryPriorityItems(climateVerifiedReader):stageThreePriorities;
-      const host=document.getElementById('summary-priority-accordion');if(host)host.innerHTML=renderSummaryPriorityAccordion(summaryPriorities);
+      if(supportsClimateVerifiedStage3View()){
+        const summaryPriorities=climateSummaryPriorityItems(climateVerifiedReader);
+        const host=document.getElementById('summary-priority-accordion');if(host)host.innerHTML=renderSummaryPriorityAccordion(summaryPriorities);
+      }else{
+        const host=document.getElementById('summary-priority-list');if(host)host.innerHTML=renderNormalSummaryPriorities();
+      }
     }else{
       renderPrioritiesIntro();renderPriorityStepper();showPriority(preservePriority?currentPriority:0);
       if(typeof horizonConsiderations==='string'&&horizonConsiderations.trim()){
@@ -6666,6 +6769,14 @@ ${body}
       const focusTab=document.getElementById(focusTabId);
       if(focusTab)focusTab.focus();
     }
+  }
+
+  function openDetailedPriority(idx){
+    if(!Number.isInteger(idx)||idx<0||idx>=stageThreePriorities.length)return;
+    currentPriority=idx;
+    setStage3View('detailed',true,'stage3-detailed-tab');
+    const cardArea=typeof document!=='undefined'?document.getElementById('priority-card-area'):null;
+    if(cardArea&&typeof cardArea.scrollIntoView==='function')cardArea.scrollIntoView({behavior:'smooth',block:'start'});
   }
 
   function showConcisePriority(idx){
@@ -6683,9 +6794,14 @@ ${body}
     ['priority-stepper','priority-card-area'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=summaryActive?'none':'';});
     if(summaryActive){
       openSummaryPriority=0;
-      const summaryPriorities=supportsClimateVerifiedStage3View()?climateSummaryPriorityItems(climateVerifiedReader):stageThreePriorities;
-      const host=document.getElementById('summary-priority-accordion');
-      if(host)host.innerHTML=renderSummaryPriorityAccordion(summaryPriorities);
+      if(supportsClimateVerifiedStage3View()){
+        const summaryPriorities=climateSummaryPriorityItems(climateVerifiedReader);
+        const host=document.getElementById('summary-priority-accordion');
+        if(host)host.innerHTML=renderSummaryPriorityAccordion(summaryPriorities);
+      }else{
+        const host=document.getElementById('summary-priority-list');
+        if(host)host.innerHTML=renderNormalSummaryPriorities();
+      }
     }else{
       currentPriority=0;
       renderPrioritiesIntro();
@@ -6836,6 +6952,57 @@ ${body}
     }).join('');
   }
 
+
+  function renderPriorityTiming(value){
+    const timing={
+      'flag-for-preparation':{standard:'Consider in preparation',climate:'Flag for preparation',cls:'timing-flag-for-preparation'},
+      'required-before-appraisal':{standard:'Consider before appraisal',climate:'Required before Decision Review (DM/ROC)',cls:'timing-required-before-appraisal'},
+      'required-before-board':{standard:'Consider before Board',climate:'Required before Board',cls:'timing-required-before-board'},
+      'next-series':{standard:'Consider for next series',climate:'Next in series',cls:'timing-next-series'},
+      'supervision':{standard:'Consider during supervision',climate:'Supervision / monitoring',cls:'timing-supervision'},
+      'pre-appraisal':{standard:'Consider before appraisal',climate:'Required before Decision Review (DM/ROC)',cls:'timing-required-before-appraisal'},
+      'shortly-after-OIS':{standard:'Consider after OIS decision',climate:'Shortly after OIS decision',cls:'timing-flag-for-preparation'},
+      'before-TD-review':{standard:'Consider before Technical Design review',climate:'Before Technical Design review',cls:'timing-required-before-appraisal'},
+      'at-TD-review':{standard:'Consider at Technical Design review',climate:'At Technical Design review',cls:'timing-required-before-appraisal'},
+      'between-TD-and-IR':{standard:'Consider between TD and IR review',climate:'Between TD and IR review',cls:'timing-required-before-appraisal'},
+      'before-IR':{standard:'Consider before Implementation Readiness review',climate:'Before Implementation Readiness review',cls:'timing-required-before-board'},
+      'at-IR':{standard:'Consider at Implementation Readiness review',climate:'At Implementation Readiness review',cls:'timing-required-before-board'},
+      'before-One-Review':{standard:'Consider before One Review',climate:'Before One Review',cls:'timing-required-before-appraisal'},
+      'at-One-Review':{standard:'Consider at One Review',climate:'At One Review',cls:'timing-required-before-appraisal'},
+      'before-negotiations':{standard:'Consider before negotiations',climate:'Before negotiations',cls:'timing-required-before-board'},
+      'before-Board':{standard:'Consider before Board',climate:'Before Board',cls:'timing-required-before-board'},
+      'during-implementation-support':{standard:'Consider during implementation support',climate:'During implementation support',cls:'timing-supervision'}
+    };
+    const item=timing[value];
+    if(!item)return '';
+    const mode=isClimateLensActive()?'climate':activeLenses.length===0?'standard':'climate';
+    return `<span class="timing-pill ${item.cls}">${item[mode]}</span>`;
+  }
+
+  function renderStandardPriorityContext(priority){
+    if(isClimateLensActive()||activeLenses.length!==0)return '';
+    const fields=[
+      ['CPF alignment',priority&&priority.cpf_alignment],
+      ['RRA driver alignment',priority&&priority.rra_driver_alignment],
+      ['Differentiated approach',priority&&priority.country_category_relevance],
+      ['Strategy alignment',priority&&priority.refresh_shift]
+    ].filter(([,value])=>typeof value==='string'&&value.trim());
+    if(!fields.length)return '';
+    const body=fields.map(([label,value])=>'<p class="priority-context-item"><strong>'+esc(label)+'</strong>'+esc(value)+'</p>').join('');
+    return `<details class="priority-context-disclosure"><summary>Context and strategic alignment</summary><div class="priority-context-body">${body}</div></details>`;
+  }
+
+  function renderSpecialistPriorityContext(priority){
+    if(!priority||!priority.country_category_relevance)return '';
+    return '<div class="zone-act-section zone-act-cat-relevance"><div class="zone-act-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0"/><circle cx="12" cy="10" r="3"/></svg> Differentiated approach note</div><div class="pc-zone-body">'+esc(priority.country_category_relevance)+'</div></div>';
+  }
+
+  function renderPriorityContext(priority){
+    if(isClimateLensActive())return renderPriorityClimateContribution(priority);
+    if(activeLenses.length===0)return renderStandardPriorityContext(priority);
+    return renderSpecialistPriorityContext(priority);
+  }
+
   function showPriority(idx){
     const pr = stageThreePriorities[idx];
     if(!pr) return;
@@ -6893,8 +7060,8 @@ ${body}
             <div class="pc-hdr-chips">
               <span class="pc-chip ${riskClass}">Priority: ${esc(pr.risk_level||'—')}</span>
               ${pr.dimension ? `<span class="pc-chip">${esc(pr.dimension)}</span>` : ''}
-              ${pr.refresh_shift ? `<span class="shift-badge" title="${esc(shiftTooltips[pr.refresh_shift] || pr.refresh_shift)}">${esc('FCV Strategy 2026-2030 ' + pr.refresh_shift)}</span>` : ''}
-              ${(()=>{const tl={'flag-for-preparation':{label:'Flag for preparation',cls:'timing-flag-for-preparation'},'required-before-appraisal':{label:'Required before Decision Review (DM/ROC)',cls:'timing-required-before-appraisal'},'required-before-board':{label:'Required before Board',cls:'timing-required-before-board'},'next-series':{label:'Next in series',cls:'timing-next-series'},'supervision':{label:'Supervision / monitoring',cls:'timing-supervision'},'pre-appraisal':{label:'Required before Decision Review (DM/ROC)',cls:'timing-required-before-appraisal'},'shortly-after-OIS':{label:'Shortly after OIS decision',cls:'timing-flag-for-preparation'},'before-TD-review':{label:'Before Technical Design review',cls:'timing-required-before-appraisal'},'at-TD-review':{label:'At Technical Design review',cls:'timing-required-before-appraisal'},'between-TD-and-IR':{label:'Between TD and IR review',cls:'timing-required-before-appraisal'},'before-IR':{label:'Before Implementation Readiness review',cls:'timing-required-before-board'},'at-IR':{label:'At Implementation Readiness review',cls:'timing-required-before-board'},'before-One-Review':{label:'Before One Review',cls:'timing-required-before-appraisal'},'at-One-Review':{label:'At One Review',cls:'timing-required-before-appraisal'},'before-negotiations':{label:'Before negotiations',cls:'timing-required-before-board'},'before-Board':{label:'Before Board',cls:'timing-required-before-board'},'during-implementation-support':{label:'During implementation support',cls:'timing-supervision'}};const t=tl[pr.action_timing];return t?`<span class="timing-pill ${t.cls}">${t.label}</span>`:'';})()}
+              ${(isClimateLensActive() || activeLenses.length>0) && pr.refresh_shift ? `<span class="shift-badge" title="${esc(shiftTooltips[pr.refresh_shift] || pr.refresh_shift)}">${esc('FCV Strategy 2026-2030 ' + pr.refresh_shift)}</span>` : ''}
+              ${renderPriorityTiming(pr.action_timing)}
               ${pr.change_type ? `<span class="pc-chip">Change: ${esc(pr.change_type)}</span>` : ''}
               ${pr.restructuring_level ? `<span class="pc-chip">${esc(pr.restructuring_level)}</span>` : ''}
               ${pr.priority_scope ? `<span class="pc-chip">Scope: ${esc(pr.priority_scope)}</span>` : ''}
@@ -6927,7 +7094,7 @@ ${body}
           <div class="pc-zone-body">${esc((pr.why_it_matters||'') + (pr.why_fcv_matters ? ' ' + pr.why_fcv_matters : ''))}</div>
         </div>
         <!-- Zone: CPF Alignment (conditional — only shown when cpf_alignment is non-null) -->
-        ${pr.cpf_alignment ? `<div class="pc-zone zone-cpf">
+        ${pr.cpf_alignment && (isClimateLensActive() || activeLenses.length>0) ? `<div class="pc-zone zone-cpf">
           <div class="pc-zone-title">
             <div class="pc-zone-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>
             CPF Alignment
@@ -6973,10 +7140,7 @@ ${body}
         </div>
         ${renderPriorityProjectCycle(pr)}
         <!-- Climate contribution, or the normal core-only differentiated note -->
-        ${isClimateLensActive() ? renderPriorityClimateContribution(pr) : (pr.country_category_relevance ? `<div class="zone-act-section zone-act-cat-relevance">
-          <div class="zone-act-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> Differentiated approach note</div>
-          <div class="pc-zone-body">${esc(pr.country_category_relevance)}</div>
-        </div>` : '')}
+        ${renderPriorityContext(pr)}
         ${renderPriorityCompliance(pr)}
           <!-- Go Deeper 3-tab section (lazy-loaded on expand) -->
           <details class="go-deeper" id="deeper-details-${idx}" ontoggle="handleDeeperToggle(this,${idx})">

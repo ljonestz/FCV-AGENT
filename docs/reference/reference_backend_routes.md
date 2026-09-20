@@ -248,9 +248,10 @@ fields. The prompt places the delimited JSON before the detailed narrative;
 `extract_priorities()` remains delimiter-based and does not depend on block position.
 Active sector-lens prompts are not given the core concise schema.
 
-`concise_readout` contains a headline, 150-200 word `overview`, and exactly three
-`{title, text}` strengths. Every ranked priority must carry a complete concise
-object with title, rationale, two to four actions, optional supported drafting, and
+`concise_readout` contains a headline, a newly generated 40-80 word `overview`, and zero to three
+`{title, text}` strengths. Admission accepts 40-200 words for saved-bundle compatibility.
+Every ranked priority must carry a complete concise
+object with title, rationale, one to four actions (new generation: one or two), optional supported drafting, and
 project-cycle guidance. Normalization is atomic: if the readout or any priority
 concise object is incomplete, the parser returns no concise bundle and removes all
 partial priority concise objects while preserving the detailed result.
@@ -521,3 +522,9 @@ prompt, schema, rating, or model call is introduced.
 The operation-context resolver uses document nomenclature as a strong regime
 signal when an OIS date is unavailable. Date-based routing uses the IPF/PforR
 boundary of 17 April 2026 and the DPF boundary of 18 April 2026.
+
+## Standard management brief download (2026-09-20)
+
+`POST /api/download-management-brief` accepts a JSON object containing `format` (`html` or `docx`), `concise_readout`, canonical `priorities` including concise cards, `fcv_rating`, `fcv_responsiveness_rating`, resolved `doc_type`, and `active_lenses`. Active lenses are rejected. The route revalidates through `extract_priorities()` with document-type lifecycle context; an unavailable or invalid concise bundle returns 422. Invalid request shape or format returns 400. Successful responses are attachments (`text/html` or the Word Open XML media type).
+
+The pure `fcv_management_brief.py` renderers receive normalized data and project the headline, overview, all evidenced strengths and every ranked priority with its rationale and leading action. No model call or truncation is performed. Longer legacy content may span pages. HTML escapes content and supports browser printing; DOCX is editable A4. The existing `/api/download-report` and full HTML export retain comprehensive output.

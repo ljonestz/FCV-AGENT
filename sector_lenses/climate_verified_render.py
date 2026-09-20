@@ -1187,27 +1187,16 @@ def render_reader_html(model: dict[str, object]) -> str:
         document_type = _reader_route_value(
             operation_context.get("document_type")
         )
-        preparation = _reader_route_value(
-            operation_context.get("preparation_regime")
-        )
-        es_regime = _reader_route_value(operation_context.get("es_regime"))
-        mpa_label = "MPA program" if operation_context.get("is_mpa") else "Not identified as MPA"
         parts.append(
-            '<section class="climate-operation-context"><h2>'
-            "How this operation was routed</h2><dl>"
-            f"<div><dt>Instrument</dt><dd>{html.escape(instrument)}</dd></div>"
-            f"<div><dt>Document</dt><dd>{html.escape(document_type)}</dd></div>"
-            f"<div><dt>Preparation</dt><dd>{html.escape(preparation)}</dd></div>"
-            f"<div><dt>E&amp;S route</dt><dd>{html.escape(es_regime)}</dd></div>"
-            f"<div><dt>Program layer</dt><dd>{html.escape(mpa_label)}</dd></div>"
-            "</dl>"
+            '<p class="climate-operation-context"><strong>Document:</strong> '
+            f"{html.escape(document_type)} | "
+            f"<strong>Instrument:</strong> {html.escape(instrument)}</p>"
         )
         if not drafting_route["confirmed"]:
             parts.append(
                 "<p>Suggested document wording is not shown because the "
                 "document type or financing route could not be confirmed reliably.</p>"
             )
-        parts.append("</section>")
     # Overview at the very top: the headline sensitivity rating card carries the
     # 3-4 sentence plain-language overall summary, so the reader gets the whole
     # takeaway up front. The fuller Executive readout follows as detail below.
@@ -1529,12 +1518,6 @@ def write_reader_docx(model: dict[str, object], path: str | Path) -> Path:
     operation_context = _mapping(model.get("operation_context"))
     drafting_route = _drafting_route_gate(operation_context)
     if operation_context:
-        document.add_heading("How this operation was routed", level=1)
-        _docx_field(
-            document,
-            "Instrument",
-            _reader_route_value(operation_context.get("instrument_type")),
-        )
         _docx_field(
             document,
             "Document",
@@ -1542,18 +1525,8 @@ def write_reader_docx(model: dict[str, object], path: str | Path) -> Path:
         )
         _docx_field(
             document,
-            "Preparation",
-            _reader_route_value(operation_context.get("preparation_regime")),
-        )
-        _docx_field(
-            document,
-            "E&S route",
-            _reader_route_value(operation_context.get("es_regime")),
-        )
-        _docx_field(
-            document,
-            "Program layer",
-            "MPA program" if operation_context.get("is_mpa") else "Not identified as MPA",
+            "Instrument",
+            _reader_route_value(operation_context.get("instrument_type")),
         )
         if not drafting_route["confirmed"]:
             document.add_paragraph(

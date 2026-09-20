@@ -258,10 +258,21 @@ def test_reader_carries_visible_operational_routing_context():
     rendered = render_reader_html(model)
 
     assert model["operation_context"]["instrument_type"] == "PforR"
-    assert "How this operation was routed" in rendered
-    assert "Program Paper" in rendered
-    assert "PforR" in rendered
-    assert "MPA program" in rendered
+    assert "How this operation was routed" not in rendered
+    assert "<strong>Document:</strong> Program Paper" in rendered
+    assert "<strong>Instrument:</strong> PforR" in rendered
+    for technical_label in ("Preparation", "E"+chr(38)+"amp;S route", "Program layer", "MPA program"):
+        assert technical_label not in rendered
+
+    stream = BytesIO()
+    write_reader_docx(model, stream)
+    stream.seek(0)
+    docx_text = "\n".join(paragraph.text for paragraph in Document(stream).paragraphs)
+    assert "How this operation was routed" not in docx_text
+    assert "Document: Program Paper" in docx_text
+    assert "Instrument: PforR" in docx_text
+    for technical_label in ("Preparation", "E"+chr(38)+"S route", "Program layer", "MPA program"):
+        assert technical_label not in docx_text
 
 
 def test_reader_explains_when_operational_guidance_is_withheld():
@@ -301,7 +312,7 @@ def test_drafting_route_gate_requires_document_and_instrument_but_ignores_es_rou
         "Suggested targeted text"
     )
     html = render_reader_html(available)
-    assert "Earlier policy framework" in html
+    assert "Earlier policy framework" not in html
     assert "legacy transitional" not in html.lower()
     assert warning not in html
     stream = BytesIO()

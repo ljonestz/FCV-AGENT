@@ -654,7 +654,7 @@ def test_frontend_normal_summary_renderer_includes_required_sections():
         for name in (
             "renderFcvRatingIndicators",
             "getConcisePriority",
-            "renderSummaryPriorityAccordion",
+            "renderNormalSummaryPriorities",
             "normalFcvWatchGroups",
             "renderNormalFcvWatchDisclosure",
             "renderNormalFcvSummary",
@@ -670,13 +670,13 @@ let fcvResponsivenessRating='Emerging';
 const renderStage3AdvisoryTransition=()=>'<p>advisory</p>';
 {helpers}
 const html=renderNormalFcvSummary();
-for(const expected of ['Five-minute readout','Overall assessment','What is already working','FCV sensitivity','FCV responsiveness','Priority actions for the task team']){{
+for(const expected of ['Five-minute readout','Overall assessment','What is already working','Priority actions for the task team','How to read the FCV assessment']){{
   if(!html.includes(expected))throw new Error('missing '+expected+' | '+html);
 }}
-for(const expected of ['Strengths bridge &lt;strong&gt;','Priorities bridge &amp; tradeoffs','Closing note &lt;em&gt;']){{
-  if(!html.includes(expected))throw new Error('missing escaped readout field '+expected+' | '+html);
+for(const forbidden of ['FCV sensitivity','FCV responsiveness','Strengths bridge','Closing note','summary-priority-accordion']){{
+  if(html.includes(forbidden))throw new Error('compact summary exposed '+forbidden);
 }}
-const order=['Overall assessment','Strengths bridge &lt;strong&gt;','What is already working','Priorities bridge &amp; tradeoffs','advisory','Priority actions for the task team','summary-priority-accordion','Closing note &lt;em&gt;'];
+const order=['Overall assessment','What is already working','advisory','Priority actions for the task team','summary-priority-list'];
 for(let i=1;i<order.length;i++){{
   const previous=html.indexOf(order[i-1]);
   const current=html.indexOf(order[i]);
@@ -1345,9 +1345,9 @@ if(labels.includes({json.dumps(forbidden_label)}))throw new Error('inapplicable 
     assert result.returncode == 0, result.stderr
 
 
-def test_normal_fcv_watch_disclosure_is_between_priorities_and_closing_without_guidance_or_deeper_refs():
+def test_normal_fcv_watch_disclosure_follows_priorities_without_guidance_or_deeper_refs():
     source = open(os.path.join(os.path.dirname(app.__file__), "index.html"), encoding="utf-8").read()
-    helpers = "\n".join(_extract_js_function(source, name) for name in ("renderFcvRatingIndicators", "getConcisePriority", "renderSummaryPriorityAccordion", "normalFcvWatchGroups", "renderNormalFcvWatchDisclosure", "renderNormalFcvSummary"))
+    helpers = "\n".join(_extract_js_function(source, name) for name in ("renderFcvRatingIndicators", "getConcisePriority", "renderNormalSummaryPriorities", "normalFcvWatchGroups", "renderNormalFcvWatchDisclosure", "renderNormalFcvSummary"))
     script = f"""
 const esc=value=>String(value??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 let stageConciseReadout={json.dumps({**CONCISE_READOUT, "closing": "Closing note <em>"})}; let openSummaryPriority=0; let stageThreePriorities={json.dumps(_payload()["priorities"])};
@@ -1355,9 +1355,9 @@ let fcvRating='Adequate'; let fcvResponsivenessRating='Emerging'; let reviewMode
 let midCycleWatch=['Check access <i>triggers</i>.']; let dpfWatch=[]; let p4rWatch=[]; let regionalWatch=[]; let horizonConsiderations='';
 const renderStage3AdvisoryTransition=()=>'<p>advisory</p>';
 {helpers}
-const html=renderNormalFcvSummary(); const order=['summary-priority-accordion','What to keep an eye on','Closing note'];
-if(html.indexOf(order[0])<0||html.indexOf(order[1])<0||html.indexOf(order[2])<0)throw new Error('missing order marker: '+html);
-if(!(html.indexOf(order[0])<html.indexOf(order[1])&&html.indexOf(order[1])<html.indexOf(order[2])))throw new Error('watch disclosure order changed: '+html);
+const html=renderNormalFcvSummary(); const order=['summary-priority-list','What to keep an eye on'];
+if(html.indexOf(order[0])<0||html.indexOf(order[1])<0)throw new Error('missing order marker: '+html);
+if(!(html.indexOf(order[0])<html.indexOf(order[1])))throw new Error('watch disclosure order changed: '+html);
 if(html.includes('Relevant WBG guidance')||html.includes('Go Deeper')||html.includes('go deeper'))throw new Error('watch disclosure aggregated forbidden content');
 """
     result = subprocess.run(["node", "-e", script], capture_output=True, text=True, check=False)

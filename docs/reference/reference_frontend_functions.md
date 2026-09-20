@@ -36,9 +36,9 @@
 - `stage3ViewToggleHtml()` - renders the Summary and Detailed analysis tabs; direct activation explicitly requests focus on the newly rendered active tab
 - `handleStage3ViewKeydown(event)` - cycles the tabs with Arrow keys, Home, and End, preserving focus after the view rerenders
 - `setStage3View(view, preservePriority=true, focusTabId='')` - updates the view state and rail visibility; only an explicit `focusTabId` requests focus after rerender, so programmatic changes do not steal focus
-- `renderNormalFcvSummary()` - renders the headline, 150-200 word overall assessment, sensitivity/responsiveness indicators, exactly three strengths, controlled advisory, and shared priority accordion
+- `renderNormalFcvSummary()` - renders the compact headline/overview, zero to three evidenced strengths, controlled advisory and all ranked leading actions. Formal rating widgets remain in Detailed; plain language explains sensitivity versus responsiveness. Each priority links directly to its canonical Detailed card.
 - `renderStage3AdvisoryTransition(route)` - deterministic design/implementation-stage wording; not included in downloaded reports
-- `renderSummaryPriorityAccordion()` / `toggleSummaryPriority(idx)` - render every ranked priority, keep exactly one open, default to the first, update ARIA state, and preserve the selected priority when switching to Detailed analysis
+- `renderSummaryPriorityAccordion()` / `toggleSummaryPriority(idx)` - retain the Climate Summary accordion over its ranked projection, keep exactly one open, update ARIA state, and preserve the selected priority when switching to Detailed analysis. Standard Summary uses `renderNormalSummaryPriorities()` and `openDetailedPriority(idx)`.
 - `initStage3UI()` — parse priorities from JSON, build stepper, show Priority 1
 - `showPriority(idx)` — render full priority card with zone-act layout from JSON (refresh_shift badge, actions[] loop with per-action guidance + suggested text, implementation note); no auto-load of Go Deeper
 - `handleDeeperToggle(detailsEl, idx)` — ontoggle handler for `<details class="go-deeper">`; initialises 2 tab buttons on first open
@@ -349,3 +349,9 @@ clear them. Follow-on requests carry the structured reader in their history.
 This release changes deterministic reader assembly and presentation only. It does
 not change Climate-FCV prompts, schemas, model calls, ratings, or
 recommendation/evidence admission. The Stage 2 Express timeout remains 15 minutes.
+
+## Standard management brief and watch rendering (2026-09-20)
+
+Standard Summary displays every priority without an accordion and provides separate Word/HTML management-brief downloads. These controls POST the validated readout, canonical priorities, ratings, document type and active lenses; existing comprehensive exports stay separate. Detailed retains all actions, supporting analysis, formal ratings and drafting; repetitive alignment/context is collapsed. Standard timing labels are advisory while stored enum values remain unchanged.
+
+`normalFcvWatchGroups()` retains multiline narrative text. `renderNormalFcvWatchDisclosure()` sends prose through the existing escaped Markdown renderer; actual watch-item arrays remain lists. This prevents literal Markdown headings and numbered paragraphs appearing inside one bullet. The disclosure stays closed initially. The shared routing disclosure is removed from Summary and Detailed, preserving actionable unresolved-route warnings and compact instrument/document context.

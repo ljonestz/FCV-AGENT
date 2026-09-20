@@ -150,6 +150,7 @@ const document = {{
   querySelector(selector) {{ return selector === '.stage3-reading-shell' ? shell : null; }}
 }};
 const supportsAnyStage3Summary = () => true;
+const supportsConciseStage3View = () => true;
 const supportsClimateVerifiedStage3View = () => false;
 const climateSummaryPriorityItems = () => [];
 const climateVerifiedReader = null;
@@ -159,6 +160,9 @@ const renderSummaryPriorityAccordion = () => '';
 const renderPrioritiesIntro = () => {{}};
 const renderPriorityStepper = () => {{}};
 const showPriority = () => {{}};
+{_extract_js_function(source, "renderManagementBriefControls")}
+{_extract_js_function(source, "getConcisePriority")}
+{_extract_js_function(source, "renderNormalSummaryPriorities")}
 {toggle}
 {setter}
 const toggleHtml = stage3ViewToggleHtml();
@@ -288,9 +292,15 @@ if (html.includes('A fourth positive design feature')) throw new Error('summary 
 if (!html.includes('class="concise-strength-text"')) throw new Error('strength explanation lacks readable body element');
 if (!html.includes('id="summary-priority-accordion"')) throw new Error('summary omitted the priority accordion');
 if (!html.includes('Review context') || !html.includes('Document: Program Paper | Instrument: PforR')) throw new Error('summary omitted labelled compact review context');
-if (!html.includes('<summary>Technical routing details</summary>') || !html.includes('E&amp;S route') || !html.includes('INSTRUMENT SPECIFIC')) throw new Error('summary omitted collapsed technical routing');
-if (html.includes('How this operation was routed')) throw new Error('summary retained the large routing panel');
-if (html.includes('<details class="climate-summary-routing" open')) throw new Error('technical routing should be closed by default');
+for (const removed of [
+  '<summary>Technical routing details</summary>',
+  'How this operation was routed',
+  'climate-summary-routing',
+  'E&amp;S route',
+  'INSTRUMENT SPECIFIC'
+]) {{
+  if (html.includes(removed)) throw new Error('technical routing disclosure remains: ' + removed);
+}}
 """
     result = subprocess.run(
         ["node", "-e", script], capture_output=True, text=True, check=False
@@ -593,8 +603,15 @@ const html=renderClimateVerifiedSummary({{
 const warning='Suggested document wording is not shown because the document type or financing route could not be confirmed reliably.';
 const closing='Recommendations are incomplete. Review the Detailed analysis and rerun the assessment or contact support before relying on this note.';
 if (!html.includes(warning) || !html.includes(closing)) throw new Error('missing visible fail-loud language | '+html);
-const detailsEnd=html.indexOf('</details>');
-if (!(detailsEnd >= 0 && html.indexOf(warning) > detailsEnd)) throw new Error('unresolved warning is hidden in technical details | '+html);
+const contextStart=html.indexOf('<section class="climate-summary-context">');
+const warningIndex=html.indexOf(warning);
+const contextBeforeWarning=contextStart>=0&&warningIndex>=0?html.slice(contextStart,warningIndex):'';
+if (!(contextStart>=0 && warningIndex>contextStart) || contextBeforeWarning.includes('<details')) {{
+  throw new Error('unresolved warning is not visible in the compact context | '+html);
+}}
+if (html.includes('<details class="climate-summary-routing">')) {{
+  throw new Error('retired technical routing disclosure remains | '+html);
+}}
 if (!html.includes('could not be completed')) throw new Error('recommendation failure was hidden');
 """
     result = subprocess.run(
@@ -748,10 +765,8 @@ def test_climate_summary_reprojects_during_hydration_and_view_switch():
     source = INDEX.read_text(encoding="utf-8")
     for function_name in ("setStage3View", "initStage3UI"):
         function_source = _extract_js_function(source, function_name)
-        assert (
-            "const summaryPriorities=supportsClimateVerifiedStage3View()?climateSummaryPriorityItems(climateVerifiedReader):stageThreePriorities;"
-            in function_source
-        )
+        assert "supportsClimateVerifiedStage3View()" in function_source
+        assert "climateSummaryPriorityItems(climateVerifiedReader)" in function_source
         assert (
             "renderSummaryPriorityAccordion(summaryPriorities)" in function_source
         )
@@ -1200,8 +1215,12 @@ def test_live_and_shared_priority_cards_switch_climate_panel_only_when_active():
     assert "renderPriorityClimateContribution(pr)" in export_helper
     assert "Differentiated approach note" in export_helper
     assert "isClimateLensActive()" in export_helper
-    assert "renderPriorityClimateContribution(pr)" in live_helper
-    assert "Differentiated approach note" in live_helper
+    context_helper = _extract_js_function(source, "renderPriorityContext")
+    assert "renderPriorityContext(pr)" in live_helper
+    assert "renderPriorityClimateContribution(priority)" in context_helper
+    assert "renderStandardPriorityContext(priority)" in context_helper
+    assert "renderSpecialistPriorityContext(priority)" in context_helper
+    assert "Differentiated approach note" in source
     assert "isClimateLensActive()" in live_helper
 
 
@@ -1952,8 +1971,20 @@ const renderClimateRelevantGuidance = () => '';
 {url_helper}
 {renderer}
 const html = renderClimateVerifiedAssessment({json.dumps(reader)});
-if (!html.includes('How this operation was routed') || !html.includes('Program Paper') || !html.includes('PforR')) {{
-  throw new Error('operational routing context missing | ' + html);
+if (!html.includes('Review context') ||
+    !html.includes('Document: Program Paper | Instrument: PforR')) {{
+  throw new Error('compact review context missing | ' + html);
+}}
+for (const removed of [
+  'How this operation was routed',
+  'Technical routing details',
+  'climate-operation-routing',
+  'E&amp;S route',
+  'INSTRUMENT SPECIFIC'
+]) {{
+  if (html.includes(removed)) {{
+    throw new Error('technical routing disclosure remains: ' + removed);
+  }}
 }}
 const orderedSections = [
   'Overview', 'Core climate-FCV questions', 'Ranked operational priorities',
@@ -2768,6 +2799,9 @@ def test_detailed_project_cycle_integrated_renderers_align_order_and_scope():
         for name in (
             "md",
             "renderPriorityProjectCycle",
+            "renderPriorityTiming",
+            "renderStandardPriorityContext",
+            "renderPriorityContext",
             "_buildExportPriorityCard",
             "showPriority",
         )
@@ -2804,6 +2838,7 @@ const renderSRTagBadge = () => '';
 const renderPriorityClimateContribution = () => '';
 const renderPriorityCompliance = () => '<div class="pc-compliance"><span>Compliance text</span></div>';
 const isClimateLensActive = () => false;
+const activeLenses = [];
 const lensDisplayName = value => value;
 const shiftTooltips = {{}};
 let stageThreePriorities = [{json.dumps(priority)}];

@@ -3056,6 +3056,155 @@ overrides any earlier instruction that places the JSON block after the narrative
 Do not generate advisory or disclaimer language about whether priorities are mandatory. The frontend supplies that controlled text.
 '''
 
+# Standard core-FCV generation is shorter and materiality-based. The legacy
+# contract remains available so saved bundles and specialist paths stay compatible.
+STANDARD_FCV_STAGE3_OUTPUT_CONTRACT = '''## STANDARD FCV MANAGEMENT READOUT
+
+This is a concise presentation layer in the same analysis and same JSON block.
+Preserve every detailed finding, existing field, enum, transition, evidence and
+lifecycle record. The detailed priorities remain authoritative. Generate only
+the material priorities supported by the project record: 1 to 5, with
+no fixed quota and no category, FCV-dimension, document-element or action
+quota. Do not invent a priority to reach a count.
+
+Rank priorities by PDO relevance; consider the scale and scope of the
+investment, principal activities and intended beneficiaries; the severity of
+potential harm; and dependencies that could prevent delivery. Use component
+budgets or shares when the project states them, but budget is contextual
+evidence and never the sole ranking rule. A small-budget PIU or governance
+dependency, or a serious harm risk, may outrank a larger investment component.
+If an amount, share, activity, beneficiary group or dependency is not stated,
+say that it is unknown or not stated. Do not infer numerical weights.
+
+Keep the FCV distinction clear. Low responsiveness can be an accurate finding
+for a project whose PDO and scope do not directly address conflict drivers; it
+does not by itself mean the project is poorly designed. It is not an obligation
+to transform conflict drivers that the PDO and scope do not address. Apply [S], [R] and [S+R] only when the evidence
+supports the distinction.
+
+Use advisory language such as "the team could consider" and "it may be useful
+to". Target the applicable project document, operations arrangements or
+commitments when a change is genuinely useful, and do not recommend document
+revisions merely to fill a quota. Preserve the instrument routing and lifecycle
+guardrails. Keep confirmed policy obligations distinct from reviewer judgment
+and good-practice suggestions.
+
+In "concise_readout", provide a one-sentence headline, a 40-80 word overview,
+and zero to three genuinely evidenced strengths. State the overall finding,
+main exposure and most consequential gap or action in the review context.
+Explain sensitivity versus responsiveness when needed to interpret the result.
+Mention strengths only when evidenced; do not force every detailed topic into
+the overview. Include the existing
+strengths_transition, priorities_transition and closing fields using only claims
+already in the JSON block. For every priority, provide a complete "concise"
+object with title, why and one or two how action bullets. A leading action is sufficient; do not add
+bullets to satisfy a count. Preserve suggested_wording and canonical
+project_cycle when present.
+
+If a concise bundle is emitted, include a complete concise card for every
+priority. The frontend supplies the controlled advisory about professional
+review. Do not add mandatory, compliance or disclaimer language to the
+management readout.
+
+OUTPUT ORDER OVERRIDE: Start the response with %%%JSON_START%%% and emit the
+complete detailed-plus-concise JSON block before the narrative. Close it with
+%%%JSON_END%%% and then write the full detailed Recommendations Note. This
+overrides any earlier instruction that places the JSON block after the
+narrative.
+'''
+
+_STANDARD_CONCISE_READOUT_SCHEMA = '''  "concise_readout": {
+    "headline": "One plain-language sentence stating the overall finding",
+    "overview": "A 40-80 word project-specific synthesis of the overall finding, principal exposure, main gap and practical implication",
+    "strengths": [
+      {"title": "Short strength label", "text": "One project-grounded sentence"}
+    ],
+    "strengths_transition": "One sentence linking the strengths to the priorities",
+    "priorities_transition": "One sentence introducing the priority actions",
+    "closing": "One or two sentences synthesizing the implications without adding new claims"
+  },
+'''
+
+_STANDARD_CONCISE_PRIORITY_SCHEMA = '''      "concise": {
+        "title": "Plain-language action title",
+        "why": "Project-specific gap, delivery consequence and FCV mechanism",
+        "how": [
+          "Leading specific action appropriate to the current review stage"
+        ],
+        "suggested_wording": {
+          "document_element": "Most relevant current project document section, or an empty string",
+          "text": "Short ready-to-paste wording, or an empty string"
+        },
+        "project_cycle": {
+          "primary_label": "Required lifecycle label",
+          "primary_text": "What should be addressed at the current gate or implementation point",
+          "secondary_label": "Optional follow-on label",
+          "secondary_text": "Optional follow-on step"
+        }
+      }'''
+
+STANDARD_FCV_STAGE1_CONTEXT_CONTRACT = '''
+--- STANDARD FCV PROJECT FACTS FOR MATERIALITY ---
+For the standard FCV route, retain the project facts needed for later
+materiality judgment. Record the PDO linkage, principal activities and
+components, intended beneficiary groups and geographies, implementing
+institutions and PIU/governance arrangements, and cross-cutting dependencies
+that could affect delivery. Record component budgets or shares when they are
+stated in the project documents. If an amount, share, activity, beneficiary
+group or dependency is absent, state that it is unknown or not stated; never
+infer a numerical weight. This is an evidence inventory, not a priority quota.
+'''
+
+STANDARD_FCV_STAGE2_CONTEXT_CONTRACT = '''
+--- STANDARD FCV MATERIALITY CONTEXT ---
+Use the Stage 1 project facts to assess which FCV issues are material to the
+PDO and delivery. Consider investment and activity scale, beneficiary scope,
+severity of possible harm, and implementation dependencies together. Budget or
+component share is informative only and cannot determine rank on its own. A
+small-budget PIU or governance dependency, or a serious harm pathway, may be
+more material than a larger component. Preserve explicit unknowns and do not
+infer numerical weights where the project record is silent. Low responsiveness
+may accurately reflect a project whose PDO and scope do not address conflict
+drivers; do not treat it as poor design or an obligation to transform them.
+'''
+
+
+def _prepare_standard_stage2_prompt(stage_prompt: str) -> str:
+    """Remove fixed priority/action quotas from the standard Stage 2 prompt."""
+    replacements = {
+        "At least 3 of the 4-5 Stage 3 priorities must be directly addressable "
+        "in the current document.":
+            "Priorities should be directly addressable in the current document "
+            "when the project record supports action; do not require a minimum "
+            "number of document actions.",
+        "- 4-5 priorities total":
+            "- 1-5 material priorities total, without a fixed quota",
+        "ACTIONS: Provide 2-4 specific actions to address this gap.":
+            "ACTIONS: Provide only the actions needed to address this gap.",
+    }
+    for old, new in replacements.items():
+        stage_prompt = stage_prompt.replace(old, new)
+    return stage_prompt
+
+
+def append_standard_fcv_stage_context(
+    stage_prompt: str,
+    stage: int,
+    active_lenses: list[dict[str, Any]],
+) -> str:
+    """Add project-fact materiality guidance only on the core FCV route."""
+    if active_lenses:
+        return stage_prompt
+    if stage == 1:
+        return stage_prompt + STANDARD_FCV_STAGE1_CONTEXT_CONTRACT
+    if stage == 2:
+        return (
+            _prepare_standard_stage2_prompt(stage_prompt)
+            + STANDARD_FCV_STAGE2_CONTEXT_CONTRACT
+        )
+    return stage_prompt
+
+
 _CONCISE_READOUT_SCHEMA = '''  "concise_readout": {
     "headline": "One plain-language sentence stating the overall finding",
     "overview": "A 150-200 word synthesis covering the review stage, principal FCV exposure, two-way risk, sensitivity versus responsiveness, strongest feature, most consequential gap, and bottom-line implication",
@@ -3090,16 +3239,22 @@ _CONCISE_PRIORITY_SCHEMA = '''      "concise": {
       }'''
 
 
-def _embed_core_concise_stage3_schema(stage_prompt: str) -> str:
+def _embed_core_concise_stage3_schema(
+    stage_prompt: str,
+    *,
+    standard: bool = False,
+) -> str:
     """Embed concise fields in the primary schema for core-only Stage 3."""
     priorities_marker = '  "priorities": ['
     priorities_index = stage_prompt.find(priorities_marker)
     if priorities_index < 0:
         return stage_prompt
 
+    readout_schema = _STANDARD_CONCISE_READOUT_SCHEMA if standard else _CONCISE_READOUT_SCHEMA
+    priority_schema = _STANDARD_CONCISE_PRIORITY_SCHEMA if standard else _CONCISE_PRIORITY_SCHEMA
     prompt = (
         stage_prompt[:priorities_index]
-        + _CONCISE_READOUT_SCHEMA
+        + readout_schema
         + stage_prompt[priorities_index:]
     )
     priorities_index = prompt.find(priorities_marker, priorities_index)
@@ -3109,7 +3264,7 @@ def _embed_core_concise_stage3_schema(stage_prompt: str) -> str:
         prefix = prompt[:close_index]
         if not prefix.rstrip().endswith(','):
             prefix += ','
-        prompt = prefix + '\n' + _CONCISE_PRIORITY_SCHEMA + prompt[close_index:]
+        prompt = prefix + '\n' + priority_schema + prompt[close_index:]
 
     prompt = prompt.replace(
         'After completing the full narrative output above, append a machine-readable JSON block',
@@ -3185,6 +3340,68 @@ def build_concise_lifecycle_context(
     )
 
 
+def _prepare_standard_stage3_prompt(stage_prompt: str) -> str:
+    """Remove core generation quotas while preserving conditional risk guidance."""
+    replacements = {
+        "Generate between 4 and 5 strategic priorities.":
+            "Generate 1 to 5 material priorities supported by the project record, without filling a fixed quota.",
+        "- 4-5 priorities total": "- 1-5 material priorities, without a fixed quota",
+        "3-4 concrete strengths actually present in the project document.":
+            "Zero to three concrete strengths actually present in the project document; do not invent strengths.",
+        "For the top 3-4 most significant project strengths identified in this section":
+            "For any significant project strengths identified in this section",
+        "# MANDATORY PRIORITY CARDS": "# CONDITIONAL SAFEGUARDING PRIORITIES",
+        "a Gender-FCV priority card is mandatory and must appear in the output, in addition to the standard 4-5 priorities":
+            "evaluate a Gender-FCV priority within the overall one-to-five priorities, according to the evidenced risk",
+        "a Gender-FCV priority card is mandatory, in addition to the standard 4-5 priorities":
+            "evaluate a Gender-FCV priority within the overall one-to-five priorities, according to the evidenced risk",
+        "generate a dedicated SEA/SH priority card":
+            "assess whether the evidenced risk warrants a dedicated SEA/SH priority within the overall priority limit",
+        "Document locations must name the relevant":
+            "Applicable document targets may include the relevant",
+        "the following instruments must each be referenced at least once across the full set of priority cards":
+            "use the following instruments only when applicable to a material finding, without a reference or revision quota",
+        "at least one priority must reference the SEP or GRM":
+            "reference the SEP or GRM where relevant to the identified gap",
+        "This list is a floor, not a ceiling. Additional instruments may be referenced as appropriate.":
+            "This is an applicability checklist, not a reference or revision quota.",
+        "MINIMUM INSTRUMENT REFERENCE REQUIREMENT": "CONDITIONAL INSTRUMENT REFERENCE GUIDANCE",
+        "- `actions` array contains 2-4 objects":
+            "- `actions` array contains only the actions needed for the priority",
+    }
+    for old, new in replacements.items():
+        stage_prompt = stage_prompt.replace(old, new)
+    # Keep the instrument-specific safeguard content; remove only the forced
+    # number/type of cards and document actions around it.
+    stage_prompt = re.sub(
+        r"ACTIONS: Provide 2-4 specific actions to address this gap\..*?"
+        r"Each action = one thing to change in the document\.",
+        "ACTIONS: Provide the evidence-supported actions needed to address this gap. "
+        "Target the applicable project document, operational arrangements or commitments. "
+        "Keep practical suggestions proportionate to the review stage; do not create "
+        "a quota of document revisions or unnecessary new instruments.",
+        stage_prompt, count=1, flags=re.DOTALL,
+    )
+    stage_prompt += """
+
+--- STANDARD FCV EVIDENCE AND ADVISORY GUARDRAILS ---
+Rank all candidate priorities, including flagged gender, SEA/SH and GRM issues,
+within the same one-to-five limit using PDO relevance, beneficiary scope,
+severity of harm and delivery dependencies. Do not hide a serious harm or
+confirmed policy obligation to meet a quota. Retain the instrument-specific
+safeguarding checks and distinguish separate risks where appropriate.
+Budget is informative, not a mechanical score. Prefer applicable project,
+operational and commitment instruments; revise supporting assessments only
+where the substantive gap warrants it.
+Do not assert portfolio-wide comparisons, policy compliance or superlatives
+without source-grounded evidence. Do not invent numerical thresholds, deadlines
+or timelines as established requirements. Where a value is absent, ask the
+team to define or calibrate it, or clearly label an illustrative proposal for
+review. Distinguish confirmed policy obligations from advisory suggestions.
+"""
+    return stage_prompt
+
+
 def append_core_concise_stage3_contract(
     stage_prompt: str,
     doc_type: str,
@@ -3192,15 +3409,16 @@ def append_core_concise_stage3_contract(
     review_mode: str,
     active_lenses: list[dict[str, Any]],
 ) -> str:
-    """Append concise instructions only to a resolved core Stage 3 prompt."""
+    """Append the standard concise contract only on the core Stage 3 route."""
     if active_lenses:
         return stage_prompt
+    stage_prompt = _prepare_standard_stage3_prompt(stage_prompt)
     return (
-        _embed_core_concise_stage3_schema(stage_prompt)
+        _embed_core_concise_stage3_schema(stage_prompt, standard=True)
         + "\n\n--- Concise readout lifecycle framing ---\n"
         + build_concise_lifecycle_context(doc_type, temporal_context, review_mode)
         + "\n\n"
-        + CONCISE_STAGE3_OUTPUT_CONTRACT
+        + STANDARD_FCV_STAGE3_OUTPUT_CONTRACT
     )
 
 
@@ -6202,7 +6420,11 @@ def _normalize_concise_title(value: Any) -> str:
     return stripped or title
 
 
-def _normalize_concise_readout(value: Any) -> dict[str, Any] | None:
+def _normalize_concise_readout(
+    value: Any,
+    *,
+    allow_standard: bool = False,
+) -> dict[str, Any] | None:
     """Validate and normalize the top-level concise FCV readout."""
     if not isinstance(value, dict):
         return None
@@ -6214,14 +6436,23 @@ def _normalize_concise_readout(value: Any) -> dict[str, Any] | None:
     strengths_transition = _clean_concise_string(value.get("strengths_transition"))
     priorities_transition = _clean_concise_string(value.get("priorities_transition"))
     closing = _clean_concise_string(value.get("closing"))
+    overview_valid = (
+        40 <= len(overview_words) <= 200
+        if allow_standard
+        else 150 <= len(overview_words) <= 200
+    )
+    strengths_valid = (
+        0 <= len(strengths_raw) <= 3
+        if isinstance(strengths_raw, list) and allow_standard
+        else isinstance(strengths_raw, list) and len(strengths_raw) == 3
+    )
     if (
         not headline
         or not strengths_transition
         or not priorities_transition
         or not closing
-        or not 150 <= len(overview_words) <= 200
-        or not isinstance(strengths_raw, list)
-        or len(strengths_raw) != 3
+        or not overview_valid
+        or not strengths_valid
     ):
         return None
 
@@ -6268,7 +6499,11 @@ def _normalize_project_cycle(value: Any) -> dict[str, str] | None:
     }
 
 
-def _normalize_concise_priority(value: Any) -> dict[str, Any] | None:
+def _normalize_concise_priority(
+    value: Any,
+    *,
+    allow_standard: bool = False,
+) -> dict[str, Any] | None:
     """Validate and normalize one priority's concise card."""
     if not isinstance(value, dict):
         return None
@@ -6276,7 +6511,12 @@ def _normalize_concise_priority(value: Any) -> dict[str, Any] | None:
     title = _normalize_concise_title(value.get("title"))
     why = _clean_concise_string(value.get("why"))
     how_raw = value.get("how")
-    if not isinstance(how_raw, list) or not 2 <= len(how_raw) <= 4:
+    how_valid = (
+        1 <= len(how_raw) <= 4
+        if isinstance(how_raw, list) and allow_standard
+        else isinstance(how_raw, list) and 2 <= len(how_raw) <= 4
+    )
+    if not how_valid:
         return None
     how = [_clean_concise_string(action) for action in how_raw]
     if not title or not why or any(not action for action in how):
@@ -6408,6 +6648,14 @@ def extract_priorities(
 
     priorities_raw = data.get('priorities', [])
     if not isinstance(priorities_raw, list) or len(priorities_raw) < 1:
+        return _error_result
+
+    standard_route = active_lens_ids == []
+    if standard_route and len(priorities_raw) > 5:
+        _error_result['message'] = (
+            'Standard FCV output may contain at most five priorities; '
+            'the result was rejected without truncation.'
+        )
         return _error_result
 
     raw_priorities_are_objects = all(isinstance(pr, dict) for pr in priorities_raw)
@@ -6606,7 +6854,10 @@ def extract_priorities(
 
         priorities.append(pr)
 
-    readout = _normalize_concise_readout(data.get("concise_readout"))
+    readout = _normalize_concise_readout(
+        data.get("concise_readout"),
+        allow_standard=standard_route,
+    )
     ratings_ok = bool(
         _clean_concise_string(data.get("fcv_rating"))
         and _clean_concise_string(data.get("fcv_responsiveness_rating"))
@@ -6628,7 +6879,10 @@ def extract_priorities(
     if concise_ok:
         items = []
         for priority in priorities:
-            item = _normalize_concise_priority(priority.get("concise"))
+            item = _normalize_concise_priority(
+                priority.get("concise"),
+                allow_standard=standard_route,
+            )
             if (
                 item is None
                 or item.get("project_cycle") != priority.get("project_cycle")
@@ -9146,6 +9400,10 @@ def run_stage():
                     'restart_required': True,
                     'lens_warnings': lens_context['warnings'],
                 }), 409
+            if stage in (1, 2):
+                stage_prompt = append_standard_fcv_stage_context(
+                    stage_prompt, stage, lens_context['active_lenses']
+                )
             _native_climate_stage3_diagnostic = (
                 lens_context.get('lens_diagnostic', {})
                 if _native_climate_stage3 else {}
@@ -10555,6 +10813,9 @@ def run_express():
                     stage1_prompt = stage1_prompt + pq_block
                 if lens_context_s1['prompt']:
                     stage1_prompt += "\n\n--- ACTIVE SECTOR LENSES ---\n" + lens_context_s1['prompt']
+                stage1_prompt = append_standard_fcv_stage_context(
+                    stage1_prompt, 1, lens_context_s1['active_lenses']
+                )
                 content_parts.append({"type": "text", "text": stage1_prompt})
 
                 stage1_messages = [{"role": "user", "content": content_parts}]
@@ -10787,6 +11048,9 @@ def run_express():
                         stage2_prompt = stage2_prompt + pq_block
                     if lens_context_s2['prompt']:
                         stage2_prompt += "\n\n--- ACTIVE SECTOR LENSES ---\n" + lens_context_s2['prompt']
+                    stage2_prompt = append_standard_fcv_stage_context(
+                        stage2_prompt, 2, lens_context_s2['active_lenses']
+                    )
                 # Build messages: prior context + Stage 2 prompt
                 stage2_messages = [
                     {"role": "user", "content": f"Prior FCV analysis context:\n\nStage 1 output:\n{conversation_history[1]['content']}\n\nUse this as the basis for the next stage."},
@@ -11876,6 +12140,105 @@ def climate_dividend_groups(
             })
             remaining -= len(visible)
     return groups
+
+
+@app.route('/api/download-management-brief', methods=['POST'])
+def download_management_brief():
+    """Return a validated standard-FCV management brief as HTML or DOCX."""
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return jsonify({'error': 'A JSON object is required.'}), 400
+
+    active_lenses = data.get('active_lenses', [])
+    if active_lenses is not None and (
+        not isinstance(active_lenses, list) or active_lenses
+    ):
+        return jsonify({
+            'error': 'Management briefs are available only on the standard FCV route.'
+        }), 400
+
+    output_format = data.get('format')
+    if not isinstance(output_format, str) or output_format not in {'html', 'docx'}:
+        return jsonify({'error': 'format must be html or docx.'}), 400
+
+    raw_doc_type = data.get('doc_type') or data.get('document_type') or 'Unknown'
+    if not isinstance(raw_doc_type, str):
+        return jsonify({'error': 'doc_type must be a string.'}), 400
+    resolved_doc_type = _effective_document_type(raw_doc_type, 'Unknown')
+
+    validation_payload = dict(data)
+    validation_payload['doc_type'] = resolved_doc_type
+    validation_payload['active_lenses'] = []
+    validation_payload.pop('format', None)
+    wrapped = (
+        '%%%JSON_START%%%\n'
+        + json.dumps(validation_payload)
+        + '\n%%%JSON_END%%%'
+    )
+    regime_context = data.get('regime_context')
+    preparation_regime = (
+        regime_context.get('preparation_regime', 'unresolved_policy_source')
+        if isinstance(regime_context, dict)
+        else 'unresolved_policy_source'
+    )
+    parsed = extract_priorities(
+        wrapped,
+        uploaded_doc_names=(
+            data.get('uploaded_doc_names', [])
+            if isinstance(data.get('uploaded_doc_names', []), list)
+            else []
+        ),
+        active_lens_ids=[],
+        preparation_regime=preparation_regime,
+        instrument=(
+            data.get('instrument_type', '')
+            if isinstance(data.get('instrument_type', ''), str)
+            else ''
+        ),
+        document_type=resolved_doc_type,
+    )
+    readout = parsed.get('concise_readout')
+    priorities = parsed.get('priorities') or []
+    if (
+        parsed.get('error')
+        or not isinstance(readout, dict)
+        or not 1 <= len(priorities) <= 5
+    ):
+        return jsonify({
+            'error': 'The standard concise management brief is unavailable for this run.',
+        }), 422
+
+    try:
+        from fcv_management_brief import (
+            render_management_brief_docx,
+            render_management_brief_html,
+        )
+        if output_format == 'html':
+            html = render_management_brief_html(readout, priorities)
+            return Response(
+                html,
+                mimetype='text/html',
+                headers={
+                    'Content-Disposition': (
+                        'attachment; filename="FCV-management-brief.html"'
+                    )
+                },
+            )
+        content = render_management_brief_docx(readout, priorities)
+    except (ImportError, ValueError) as exc:
+        app.logger.warning('Management brief export rejected: %s', exc)
+        return jsonify({
+            'error': 'The standard concise management brief is incomplete.',
+        }), 422
+
+    return Response(
+        content,
+        mimetype=(
+            'application/vnd.openxmlformats-officedocument.'
+            'wordprocessingml.document'
+        ),
+        headers={'Content-Disposition': 'attachment; filename="FCV-management-brief.docx"'},
+    )
 
 
 @app.route('/api/download-report', methods=['POST'])
