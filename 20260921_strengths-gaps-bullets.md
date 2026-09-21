@@ -23,5 +23,6 @@ brief Word gaps already use Word's List Bullet style.
 - Broad-suite assertion for the detailed HTML export updated for the new formatting helper.
 - One fresh public Somalia concept-PID assessment completed all three stages with four priorities. Candidate browser formatting and local candidate exporters passed all links, four downloads, save/reload, mobile and no-browser-error checks. Assessment ID: `596975c6-c115-4268-a1d8-0b9bfca575df`.
 - The live model call used unchanged production analysis at `8599ffbae3f8`; candidate HTML was loaded in the test browser and export requests were handled by the local candidate. No second model run was made. This is formatting/pipeline acceptance, not a new factual audit of the generated analysis.
-- Full regression result: pending durable log after a tool-session reset.
+- Full regression coverage: 1,289 passed; three failures at Playwright `Browser.close` after hung Windows test drivers were stopped. All original assertions in the affected print test and three mobile tests passed in isolated runs with forced driver cleanup. No repository test or product behavior was changed for that workaround. Durable evidence: `regression-0.xml` through `regression-3.xml`, `print-assertions.log`, and `mobile-assertions.log` in the private evidence folder.
+- GitHub CodeQL checks passed for the implementation commit.
 - Private evidence: `app_feedback/20260921_bullets/` (gitignored).
