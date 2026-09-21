@@ -905,3 +905,5 @@ anchors, with the first how tied to the first detailed action. Matching title or
 rationale alone is insufficient. Mismatches use the existing deterministic Detailed
 fallback. This lexical check is a guard, not semantic or factual verification;
 strength alignment remains a generation instruction and a content-review check.
+
+Fresh restoration verification: one complete standard PAD run produced four priorities and ten full actions. Recorded-output local replay passed all links, four exports, technical-section save/reload and mobile checks. The initial live assertion was corrected for CSS-capitalized headings. Remaining factual/status issues are recorded separately; this is structural/content-alignment acceptance, not analytical sign-off. See `20260921_detailed-analysis-restoration.md`.
