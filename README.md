@@ -34,6 +34,18 @@ to operate, and substantive warnings about incomplete analysis remain visible.
 See [the ITS handover](20260920_ITS_handover_standard_fcv.md) for the QA baseline,
 porting instructions, verification evidence and remaining limitations.
 
+## September 21 release
+
+Production at https://fcv-agent.onrender.com tracks `main`. The September 21
+release promotes the current tested screener and supersedes the July rollback.
+Detailed Analysis retains its original technical sections, both FCV risk directions,
+sensitivity/responsiveness discussion and full action guidance/suggested text.
+Summary actions, strengths and gaps derive from those same detailed findings.
+Saved sessions retain the technical sections, and priority links identify the full
+details and suggested project-package text. Current browser/HTML/Word styling is
+preserved. See [restoration verification](20260921_detailed-analysis-restoration.md)
+for the single fresh run, export checks and remaining analytical limitations.
+
 ## Optional sector lenses
 
 Users may select up to two specialist lenses before analysis. The production Climate-FCV Lens is manual-only and is never auto-suggested. Once selected, it automatically screens both climate-intent operations and wider development projects, prioritizes adaptation and resilience, and uses deep mitigation analysis only where a clear material pathway exists.

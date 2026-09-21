@@ -69,3 +69,13 @@ Prioritize source-backed fact/status retention and uncertainty handling before c
 3. Run fresh standard assessments with representative PADs, including a project dominated by one component. Check analytical claims against the source documents, not only layout.
 4. Verify one/two/five priorities, older saved results, invalid concise fallback, every priority link, safe watch Markdown, complete exports, mobile layout and save/reopen behavior. Verify the brief is at most two pages for acceptance cases without cutting findings.
 5. Recheck the reported ITS watch-formatting issue on QA after ITS ports the change. No ITS deployment or message to the team has been performed here.
+
+## September 21 production release
+
+The user authorized promotion to main and https://fcv-agent.onrender.com.
+This supersedes earlier preview-only status statements. The tested development
+snapshot supersedes main's July rollback; no later independent main work exists.
+Production remains on main with automatic deployment and uses `python render_build.py`
+to install dependencies and initialize the pinned public bank. ITS deployment is
+not included. Fresh restoration verification and factual limitations remain as
+recorded in `20260921_detailed-analysis-restoration.md`.

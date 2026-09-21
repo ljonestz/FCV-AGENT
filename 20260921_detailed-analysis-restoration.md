@@ -59,3 +59,13 @@ it does not guarantee model factual accuracy. Raw documents and test artifacts
 remain gitignored. Production is unchanged.
 
 Native Word visual QA: the brief renders to two pages and the comprehensive note to fourteen pages. Browser screenshots, both brief pages and a complete detailed-page contact sheet were reviewed; existing templates and full action/drafting content are retained.
+
+## September 21 production release
+
+The user authorized promotion to main and https://fcv-agent.onrender.com.
+This supersedes earlier preview-only status statements. The tested development
+snapshot supersedes main's July rollback; no later independent main work exists.
+Production remains on main with automatic deployment and uses `python render_build.py`
+to install dependencies and initialize the pinned public bank. ITS deployment is
+not included. Fresh restoration verification and factual limitations remain as
+recorded in `20260921_detailed-analysis-restoration.md`.

@@ -907,3 +907,13 @@ fallback. This lexical check is a guard, not semantic or factual verification;
 strength alignment remains a generation instruction and a content-review check.
 
 Fresh restoration verification: one complete standard PAD run produced four priorities and ten full actions. Recorded-output local replay passed all links, four exports, technical-section save/reload and mobile checks. The initial live assertion was corrected for CSS-capitalized headings. Remaining factual/status issues are recorded separately; this is structural/content-alignment acceptance, not analytical sign-off. See `20260921_detailed-analysis-restoration.md`.
+
+## September 21 production release
+
+The user authorized promotion to main and https://fcv-agent.onrender.com.
+This supersedes earlier preview-only status statements. The tested development
+snapshot supersedes main's July rollback; no later independent main work exists.
+Production remains on main with automatic deployment and uses `python render_build.py`
+to install dependencies and initialize the pinned public bank. ITS deployment is
+not included. Fresh restoration verification and factual limitations remain as
+recorded in `20260921_detailed-analysis-restoration.md`.

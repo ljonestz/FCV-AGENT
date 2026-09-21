@@ -1,9 +1,14 @@
 # Current handoff
 
-The current branch-level handoff is
-[`docs/20260822_ITS_handover_normal_fcv_summary.md`](docs/20260822_ITS_handover_normal_fcv_summary.md).
-It records the completed normal-FCV Summary implementation, shared climate advisory,
-detailed-only export boundary, live Render acceptance runs, and ITS parity surface.
+The current release combines [the September 20 standard-FCV handover](20260920_ITS_handover_standard_fcv.md)
+and [the September 21 detailed restoration](20260921_detailed-analysis-restoration.md).
+Production at https://fcv-agent.onrender.com follows `main`; this release supersedes
+the July rollback and preserves the tested Summary and Detailed templates.
+The original technical sections, full actions/drafting and saved-session recovery
+are restored. The user authorized main integration and production deployment on
+September 21. ITS deployment is separate and has not been performed here.
+Analytical limitations remain documented; release approval is not factual approval
+of the diagnostic project assessment.
 
 The remainder of this file is retained as a historical handoff for the earlier Climate-FCV output-redesign work.
 
