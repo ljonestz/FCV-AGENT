@@ -917,3 +917,17 @@ Production remains on main with automatic deployment and uses `python render_bui
 to install dependencies and initialize the pinned public bank. ITS deployment is
 not included. Fresh restoration verification and factual limitations remain as
 recorded in `20260921_detailed-analysis-restoration.md`.
+
+## Strengths and gaps readability (2026-09-21)
+
+Summary Potential gaps now uses one bullet per existing priority gap. Summary
+strength cards are unchanged. Detailed Strengths and Gaps headings render each
+existing prose paragraph as a bullet, retaining the complete explanation and
+inline emphasis. Existing lists and other narrative sections remain unchanged.
+The change is presentation-only: saved sessions receive the same formatting,
+without rewriting stored text or changing prompts, ratings, schemas or model calls.
+
+`bulletFindingSections()` in `index.html` and `bullet_finding_sections()` in
+`fcv_presentation.py` apply the same paragraph boundaries to the browser,
+detailed HTML and detailed Word export. Brief HTML gaps also use list items;
+brief Word gaps already use Word's List Bullet style.

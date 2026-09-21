@@ -1,5 +1,7 @@
 # Current handoff
 
+September 21 readability follow-up: see [strengths/gaps bullet formatting](20260921_strengths-gaps-bullets.md).
+
 The current release combines [the September 20 standard-FCV handover](20260920_ITS_handover_standard_fcv.md)
 and [the September 21 detailed restoration](20260921_detailed-analysis-restoration.md).
 Production at https://fcv-agent.onrender.com follows `main`; this release supersedes

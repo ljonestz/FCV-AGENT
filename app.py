@@ -13,6 +13,7 @@ from typing import Any
 from flask import Flask, request, jsonify, send_from_directory, Response, stream_with_context
 from werkzeug.exceptions import RequestEntityTooLarge
 import anthropic
+from fcv_presentation import bullet_finding_sections
 from fcv_distillation import distill_doc_parts_stream
 import regime_router
 from sector_lenses.climate_native import (
@@ -13166,7 +13167,7 @@ def download_report():
         # _md_to_docx_para handles headings, skips ---, handles bold/italic.
         # The LLM narrative opens with "This analysis places [country]..." — no duplicate box needed.
         if summary:
-            _md_to_docx_para(doc, summary)
+            _md_to_docx_para(doc, bullet_finding_sections(summary))
 
         # ── AI caveat (appended after the LLM's classification paragraph) ──
         _add_single_para(

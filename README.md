@@ -97,6 +97,8 @@ of 2027-07-31; the 24-country release is a reviewable preview only. The bank
 stores structured summaries and citations only: it does not redistribute raw
 PDFs or cite its own generated text.
 
+Summary gaps and detailed strengths/gaps use bullets for each existing finding, including in HTML and Word downloads. Wording and summary strength cards are preserved.
+
 ## Prerequisites
 
 - Python 3.10+
