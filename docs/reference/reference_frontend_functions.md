@@ -376,3 +376,17 @@ mobile and to shared specialist display surfaces.
 A compact retrospective-review warning is retained for historical PADs, without the removed instrument/date metadata strip. It clarifies that the review assesses preparation-stage design rather than current implementation status. Closed-project and unresolved-route warnings also remain.
 
 Completed `loadSession()` recovery enables the stage navigator and calls `navigateToStage(3)` using the stored result. The file input is cleared before return. Partial sessions retain their existing Continue action. No new analysis request is made.
+
+
+## 2026-09-21 Detailed sections and Summary links
+
+Persist and restore the standard Stage 3 two-way risk exposure and sensitivity/
+responsiveness discussion with the rest of the completed assessment. Missing
+legacy saved fields may be recovered only from that assessment's recorded Stage 3
+JSON; never reuse another assessment's state. Reset clears the same fields.
+Keep the existing renderRiskExposure/renderSRCards presentation and include these
+sections in full HTML and Word downloads after reopening a session.
+
+Each standard Summary priority link reads "See full Priority N details and
+suggested text for the project package in Detailed Analysis" and continues to
+open the matching canonical priority. No layout, CSS or export styling changes.

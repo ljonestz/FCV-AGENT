@@ -881,3 +881,21 @@ The handover records the required fresh live PAD rerun and output artifacts.
 ### Final Nairobi readability verification (20 September 2026)
 
 A fresh complete Honduras PAD assessment completed all three stages. After small display/admission fixes, its exact recorded output passed the full live UI/export repeat. The actual management brief is two A4 pages and the comprehensive note is twelve. Saved-session recovery is fixed. Regression coverage is 1,279 cases across partitions and targeted reruns, with four legacy Windows Chromium cases still unverified. Remaining factual/status issues are documented separately; the diagnostic output is not analytically approved. See `20260920_ITS_handover_standard_fcv.md` for contracts, provenance and acceptance limits.
+
+
+## 2026-09-21 Detailed technical content restoration
+
+Standard Stage 3 retains the pre-September 20 document-focused action instructions:
+2-4 substantive actions where supported, 2-4-sentence guidance and 2-3-sentence
+suggested drafting. Detailed strengths retain the paired-risk discussion. Summary
+word/action targets apply only to concise fields. Summary actions, strengths and
+gaps must derive from the same canonical detailed findings; its leading action
+condenses the first canonical action. Keep the original two-way FCV risk exposure,
+sensitivity/responsiveness discussion and detailed section structure. WBG editorial
+style and current browser/Word/HTML templates remain. Evidence-status, full-source
+coverage, SORT corrections, grounded prioritization and lifecycle safeguards remain.
+
+Saved sessions must retain and restore risk_exposure, sensitivity_summary and
+responsiveness_summary as well as ratings and priorities, so these detailed sections
+remain available after reloading and in comprehensive downloads. No new model call,
+delimiter, rating enum or priority schema is introduced.

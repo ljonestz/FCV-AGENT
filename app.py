@@ -3085,12 +3085,31 @@ Do not generate advisory or disclaimer language about whether priorities are man
 STANDARD_FCV_STAGE3_OUTPUT_CONTRACT = '''## STANDARD FCV MANAGEMENT READOUT
 
 This is a concise presentation layer in the same analysis and the same JSON block.
+The management length and action-count targets below apply only to concise_readout and priority.concise.
+Do not shorten the detailed narrative or canonical priority fields to meet these targets.
+Keep the original detailed subheadings, Operational Context, two-way FCV Risk
+Exposure (risks to the project and how the project could affect FCV), Strengths,
+Gaps, FCV Sensitivity Summary, FCV Responsiveness Summary, and full priority cards.
+Retain the existing technical depth, evidence, paired risks, document-specific
+actions, suggested drafting, project-cycle guidance and strategic alignment.
+
+ONE ANALYSIS, TWO PRESENTATIONS: Establish the detailed findings and actions first.
+Derive the Summary from those same findings, not a separate assessment. Every
+Summary strength must also appear in the detailed Strengths discussion with the
+same qualification. Every Summary gap must reflect its canonical detailed gap.
+Each concise how action must condense an action in that same priority.actions
+array, retaining its document target, scope, timing and uncertainty. Do not add,
+substitute or strengthen an action in the Summary. Its leading action summarizes
+the first canonical action; the one-or-two-action limit concerns concise.how,
+not the detailed actions array. The Detailed report retains all supporting actions.
+The two views may differ in length and presentation, never in their judgment or
+the substance of their recommendations. Check this alignment before emitting JSON.
 Preserve every detailed finding, existing canonical field, enum, transition, evidence
 record and lifecycle record. Preserve the exact named instrument and distinguish
 approval or request, planned or under preparation, and operational or completed
 status. Do not replace a named instrument with a generic label or turn approval into
-completion. Preserve all material priorities supported by the project record: 1 to 5, with no fixed quota and no category, FCV-dimension, document-element or action
-quota. Do not invent a priority to reach a count.
+completion. Preserve all material priorities supported by the project record: 1 to 5, with no fixed quota and no category or FCV-dimension quota.
+Do not invent a priority to reach a count. Preserve the detailed action structure.
 
 Rank priorities by PDO relevance; consider the scale and scope of the investment,
 principal activities and intended beneficiaries; the severity of potential harm; and
@@ -3303,8 +3322,6 @@ def _prepare_standard_stage2_prompt(stage_prompt: str) -> str:
             "number of document actions.",
         "- 4-5 priorities total":
             "- 1-5 material priorities total, without a fixed quota",
-        "ACTIONS: Provide 2-4 specific actions to address this gap.":
-            "ACTIONS: Provide only the actions needed to address this gap.",
     }
     for old, new in replacements.items():
         stage_prompt = stage_prompt.replace(old, new)
@@ -3467,15 +3484,11 @@ def build_concise_lifecycle_context(
 
 
 def _prepare_standard_stage3_prompt(stage_prompt: str) -> str:
-    """Remove core generation quotas while preserving conditional risk guidance."""
+    """Preserve detailed technical depth alongside grounded priority selection."""
     replacements = {
         "Generate between 4 and 5 strategic priorities.":
             "Generate 1 to 5 material priorities supported by the project record, without filling a fixed quota.",
         "- 4-5 priorities total": "- 1-5 material priorities, without a fixed quota",
-        "3-4 concrete strengths actually present in the project document.":
-            "Zero to three concrete strengths actually present in the project document; do not invent strengths.",
-        "For the top 3-4 most significant project strengths identified in this section":
-            "For any significant project strengths identified in this section",
         "# MANDATORY PRIORITY CARDS": "# CONDITIONAL SAFEGUARDING PRIORITIES",
         "a Gender-FCV priority card is mandatory and must appear in the output, in addition to the standard 4-5 priorities":
             "evaluate a Gender-FCV priority within the overall one-to-five priorities, according to the evidenced risk",
@@ -3492,22 +3505,11 @@ def _prepare_standard_stage3_prompt(stage_prompt: str) -> str:
         "This list is a floor, not a ceiling. Additional instruments may be referenced as appropriate.":
             "This is an applicability checklist, not a reference or revision quota.",
         "MINIMUM INSTRUMENT REFERENCE REQUIREMENT": "CONDITIONAL INSTRUMENT REFERENCE GUIDANCE",
-        "- `actions` array contains 2-4 objects":
-            "- `actions` array contains only the actions needed for the priority",
     }
     for old, new in replacements.items():
         stage_prompt = stage_prompt.replace(old, new)
-    # Keep instrument-specific safeguarding content and remove only forced
-    # card and document-action counts around it.
-    stage_prompt = re.sub(
-        r"ACTIONS: Provide 2-4 specific actions to address this gap\..*?"
-        r"Each action = one thing to change in the document\.",
-        "ACTIONS: Provide the evidence-supported actions needed to address this gap. "
-        "Target the applicable project document, operational arrangements or commitments. "
-        "Keep practical suggestions proportionate to the review stage; do not create "
-        "a quota of document revisions or unnecessary new instruments.",
-        stage_prompt, count=1, flags=re.DOTALL,
-    )
+    # Preserve the original document-focused actions and drafting depth.
+    # Summary brevity must not replace the technical recommendations.
     stage_prompt += """
 
 --- STANDARD FCV EVIDENCE AND ADVISORY GUARDRAILS ---
@@ -3519,6 +3521,9 @@ safeguarding checks and distinguish separate risks where appropriate.
 Budget is informative, not a mechanical score. Prefer applicable project,
 operational and commitment instruments; revise supporting assessments only
 where the substantive gap warrants it.
+Keep the original detailed strengths and action-depth targets where supported.
+If the evidence supports fewer strengths or distinct actions, say so rather than
+inventing content or repeating an action to fill the target.
 Do not assert portfolio-wide comparisons, policy compliance or superlatives
 without source-grounded evidence. Do not invent numerical thresholds, deadlines
 or timelines as established requirements. Where a value is absent, ask the

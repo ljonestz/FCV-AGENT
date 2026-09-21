@@ -174,7 +174,8 @@ def test_standard_rendered_prompt_uses_materiality_contract_without_old_quota(pr
     assert "1 to 5" in lowered
     assert "generate between 4 and 5 strategic priorities" not in lowered
     assert "4-5 priorities total" not in lowered
-    assert "actions: provide 2-4 specific actions" not in lowered
+    if prompt_key == "3":
+        assert "actions: provide 2-4 specific actions" in lowered
     assert "budget is informative" in lowered
     assert "low responsiveness" in lowered
     assert "not an obligation" in lowered
@@ -261,7 +262,7 @@ def test_final_standard_prompt_removes_quotas_but_keeps_instrument_safeguards(in
         temporal_guardrail="Temporal", timing_emphasis="Timing",
     )
     prompt = app.append_core_concise_stage3_contract(rendered, "PAD", {}, "design", [])
-    for obsolete in ("4-5 priorities", "between 4 and 5", "card is mandatory", "must each be referenced at least once", "at least one priority must reference", "array contains 2-4 objects"):
+    for obsolete in ("4-5 priorities", "between 4 and 5", "card is mandatory", "must each be referenced at least once", "at least one priority must reference"):
         assert obsolete not in prompt, obsolete
     assert "SEA/SH" in prompt
     assert "gender_fcv_flag" in prompt
