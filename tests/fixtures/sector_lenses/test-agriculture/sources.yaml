@@ -1,0 +1,8 @@
+sources:
+  - id: agri-guidance
+    title: Agriculture Test Guidance
+    citation: Test source, section 2
+    url: https://example.test/agriculture
+  - id: mobility-note
+    title: Mobility Constraints Note
+    citation: Test source, annex A

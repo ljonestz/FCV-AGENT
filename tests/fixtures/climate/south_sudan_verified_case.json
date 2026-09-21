@@ -1,0 +1,53 @@
+{
+  "case_id": "south-sudan-pcn-pattern",
+  "notice": "Synthetic paraphrase of the verified failure pattern; not the source project document.",
+  "source_blocks": [
+    {
+      "block_id": "DOC-1-B-STUDY",
+      "document_id": "DOC-1",
+      "text": "A school-feeding feasibility study will assess fish demand, infrastructure and processing capacity in implementation Year 1.",
+      "normalized_hash": "fixture-study"
+    },
+    {
+      "block_id": "DOC-1-B-SECURITY",
+      "document_id": "DOC-1",
+      "text": "Security risk mapping will be completed for each site before investment.",
+      "normalized_hash": "fixture-security"
+    },
+    {
+      "block_id": "DOC-1-B-BOUNDARY",
+      "document_id": "DOC-1",
+      "text": "Participatory boundary delineation is required before site activities begin.",
+      "normalized_hash": "fixture-boundary"
+    },
+    {
+      "block_id": "DOC-1-B-TENURE",
+      "document_id": "DOC-1",
+      "text": "Tenure verification will precede investment decisions.",
+      "normalized_hash": "fixture-tenure"
+    },
+    {
+      "block_id": "DOC-1-B-OVERSIGHT",
+      "document_id": "DOC-1",
+      "text": "A natural-resource working group will provide implementation oversight.",
+      "normalized_hash": "fixture-oversight"
+    },
+    {
+      "block_id": "DOC-1-B-POM",
+      "document_id": "DOC-1",
+      "text": "The Project Operations Manual will define implementation arrangements.",
+      "normalized_hash": "fixture-pom"
+    }
+  ],
+  "country_context": {
+    "content_version": "2026.08",
+    "candidate_preview": true,
+    "evidence_record": {
+      "evidence_id": "SSD-E-027",
+      "evidence_class": "exposure",
+      "geography": "national",
+      "claim": "Severe-year flooding can disrupt access across a large area.",
+      "source_ids": ["SSD-SRC-016"]
+    }
+  }
+}

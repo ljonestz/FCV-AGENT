@@ -1,0 +1,1695 @@
+from __future__ import annotations
+
+from io import BytesIO
+
+import pytest
+from docx import Document
+
+from climate_question_bank import CLIMATE_LITERATURE_REFERENCES
+from sector_lenses.climate_verified_render import (
+    HEADINGS,
+    SENSITIVITY_RATING_QUESTION,
+    attach_provenance,
+    build_climate_guidance_items,
+    build_reader_model,
+    render_reader_html,
+    validate_reader_model,
+    write_reader_docx,
+)
+
+
+def test_build_climate_guidance_items_builds_a_matched_item():
+    guidance = build_climate_guidance_items(
+        [{"source": "Eligible", "question": "What should the team examine?"}],
+        [{"title": "Eligible", "url": "https://www.worldbank.org/guide", "practical_value": "Use this source to assess the issue."}],
+    )
+    assert guidance[0]["title"] == "Eligible"
+
+def test_build_climate_guidance_items_uses_matched_south_sudan_findings_only():
+    sources = [
+        {"title": "FCV-Sensitive Climate Action Framework", "url": "https://www.worldbank.org/framework", "practical_value": "Stress-test climate action."},
+        {"title": "Maximizing the Peace & Social Dividends of Climate Action", "url": "https://documents.worldbank.org/dividends", "practical_value": "Identify peace dividends."},
+        {"title": "Defueling Conflict", "url": "https://www.worldbank.org/defueling", "practical_value": "Must not be padded."},
+    ]
+    core_questions = [
+            {"question": "Question title must never appear.", "source": "fcv sensitive climate action framework", "summary": "Flooding around Pariang can interrupt BFMU access during the rainy season. Delivery partners should update flood access plans before deployment.\n\nA second paragraph is excluded.", "watch": "Track flood-season access constraints for BFMU teams."},
+        {"question": "Another title that must never appear.", "source": "Maximizing the Peace and Social Dividends of Climate Action", "summary": "Shared water points for host and displaced households can reduce tensions in Pariang.", "watch": "Check whether benefit allocation remains inclusive after shocks."},
+        {"source": "maximizing the peace and social dividends of climate action", "summary": "Flood response should keep displaced households connected to services.", "watch": "Check whether benefit allocation remains inclusive after shocks."},
+    ]
+
+    guidance = build_climate_guidance_items(core_questions, sources)
+
+    assert [item["title"] for item in guidance] == ["Maximizing the Peace & Social Dividends of Climate Action", "FCV-Sensitive Climate Action Framework"]
+    assert guidance[0]["project_use"] == "Identify peace dividends."
+    assert guidance[1]["project_use"] == "Stress-test climate action."
+    assert "Flood response should keep displaced households connected" not in str(guidance)
+    assert "Flooding around Pariang" not in str(guidance)
+    assert "Question title must never appear" not in str(guidance)
+    assert all(set(item) == {"title", "url", "practical_value", "project_use"} for item in guidance)
+
+
+def test_build_climate_guidance_items_rejects_nonpublic_urls_and_does_not_pad():
+    core_questions = [{"source": "Eligible", "question": "What should be checked?"}]
+    bad_urls = ["http://www.worldbank.org/no", "https://example.org/no", "https://localhost/no", "https://127.0.0.1/no", "https://user:password@www.worldbank.org/no", "https://www.worldbank.org:443/no", "https://www.worldbank.org:8443/no", "https://www.worldbank.org:bad/no", "https:///missing-host"]
+
+    for url in bad_urls:
+        assert build_climate_guidance_items(core_questions, [{"title": "Eligible", "url": url}]) == []
+    guidance = build_climate_guidance_items(
+        [{"source": "Defueling Conflict", "question": "Can water governance lower tensions?"}],
+        [{"title": "Defueling Conflict", "url": "https://www.worldbank.org/defueling", "practical_value": "Natural resource governance guidance."}, {"title": "CCDR guidance note", "url": "https://www.worldbank.org/ccdr", "description": "Unmatched."}],
+    )
+    assert [item["title"] for item in guidance] == ["Defueling Conflict"]
+    assert guidance[0]["practical_value"] == "Natural resource governance guidance."
+
+
+def test_build_climate_guidance_items_ranks_caps_and_preserves_catalog_order():
+    sources = [{"title": title, "url": f"https://www.worldbank.org/{index}", "practical_value": f"Value {index}."} for index, title in enumerate(("One", "Two", "Three", "Four", "Five"), start=1)]
+    core_questions = [
+        {"question": "Internal question title", "source": "One", "watch": "Check One first."},
+        {"question": "Second One question", "source": "one", "watch": "Check One second."},
+        {"source": "Two", "question": "Check Two?"},
+        {"source": "Three", "question": "Check Three?"},
+        {"source": "Four", "question": "Check Four?"},
+        {"source": "Five", "question": "Check Five?"},
+    ]
+
+    guidance = build_climate_guidance_items(core_questions, sources)
+
+    assert [item["title"] for item in guidance] == ["One", "Two", "Three", "Four"]
+    assert guidance[0]["project_use"] == "Value 1."
+    assert "Internal question title" not in str(guidance)
+    assert all("match_count" not in item and "catalog_order" not in item for item in guidance)
+
+
+def test_climate_literature_references_include_exact_practical_values():
+    values = {entry["title"]: entry.get("practical_value") for entry in CLIMATE_LITERATURE_REFERENCES}
+
+    assert values == {
+        "Maximizing the Peace and Social Dividends of Climate Action": "Use this source to identify how climate action can strengthen peace and social outcomes, and where project design can maximize those dividends.",
+        "FCV-Sensitive Climate Action Framework": "Use this source to stress-test whether climate action is conflict-sensitive, avoids harm and remains deliverable in fragile settings.",
+        "Defueling Conflict": "Use this source to assess how environmental and natural-resource governance can reduce conflict risks and create incentives for cooperation.",
+        "Conflict-Sensitive Climate Action Compendium": "Use this source for practical examples of adapting climate programming to conflict dynamics, exclusion risks and changing implementation conditions.",
+        "CCDR guidance note": "Use this source to connect country-level climate and FCV diagnostics to operational priorities, sequencing and investment choices.",
+    }
+
+
+def test_attach_provenance_adds_guidance_items_after_reader_validation():
+    assessment = _assessment()
+    assessment["core_questions"] = [{"source": "Defueling Conflict", "question": "Can water governance lower tensions?"}]
+    reader = build_reader_model(assessment)
+    assert validate_reader_model(reader) == ()
+
+    attach_provenance(reader, assessment)
+
+    assert [item["title"] for item in reader["guidance_items"]] == ["Defueling Conflict"]
+def test_build_climate_guidance_items_rejects_malformed_authorities_fail_closed():
+    core_questions = [{"source": "Eligible", "question": "What should be checked?"}]
+    malformed_urls = [
+        "https://.worldbank.org/path",
+        "https://foo..worldbank.org/path",
+        "https://-foo.worldbank.org/path",
+        "https://foo-.worldbank.org/path",
+        "https://foo_bar.worldbank.org/path",
+        "https://" + ("a" * 64) + ".worldbank.org/path",
+        "https://www.worldbank.org%2e/path",
+        "https://worldbank.org:/path",
+        "https://[::1]/path",
+        "https://[::1/path",
+        "https://user%3Apassword@www.worldbank.org/path",
+        "https://www.w\u00f8rldbank.org/path",
+        "https://www.worldbank.org./path",
+    ]
+
+    for url in malformed_urls:
+        assert build_climate_guidance_items(
+            core_questions, [{"title": "Eligible", "url": url}]
+        ) == []
+    allowed = build_climate_guidance_items(
+        core_questions,
+        [{"title": "Eligible", "url": "https://WWW.WORLDBANK.ORG/path", "practical_value": "Use this source to assess the issue."}],
+    )
+    assert [item["url"] for item in allowed] == ["https://WWW.WORLDBANK.ORG/path"]
+
+
+def test_build_climate_guidance_items_skips_empty_findings_and_completes_sentences():
+    source = {"title": "Eligible", "url": "https://www.worldbank.org/guide", "practical_value": "Use this source to assess the issue."}
+
+    assert build_climate_guidance_items(
+        [{"source": "Eligible", "summary": "", "watch": ""}],
+        [{"title": "Eligible", "url": source["url"]}],
+    ) == []
+    guidance = build_climate_guidance_items([
+        {"question": "Question title must never appear.", "source": "Eligible", "summary": "U.N. agencies coordinate flood access.", "watch": "Watch flood triggers"},
+        {"source": "eligible", "summary": "e.g. community consultation should guide siting.", "watch": "watch flood triggers"},
+    ], [source])
+
+    assert guidance[0]["project_use"] == "Use this source to assess the issue."
+    assert "Question title must never appear" not in str(guidance)
+
+
+def test_build_climate_guidance_items_deduplicates_questions_and_catalog_sources():
+    sources = [
+        {"title": "Defueling Conflict", "url": "https://www.worldbank.org/defueling", "practical_value": "Use this source to assess governance."},
+        {"title": "FCV-Sensitive Climate Action Framework", "url": "https://www.worldbank.org/framework", "practical_value": "Use this source to stress-test delivery."},
+        {"title": "fcv sensitive climate action framework", "url": "https://www.worldbank.org/duplicate", "practical_value": "Duplicate purpose."},
+    ]
+    duplicated_question = {"source": "FCV-Sensitive Climate Action Framework", "summary": "Flood risk needs adaptive delivery.", "watch": "Monitor access."}
+    core_questions = [
+        duplicated_question,
+        dict(duplicated_question),
+        {"source": "Defueling Conflict", "question": "Can water governance reduce tensions?"},
+    ]
+
+    guidance = build_climate_guidance_items(core_questions, sources)
+
+    assert [item["title"] for item in guidance] == [
+        "Defueling Conflict", "FCV-Sensitive Climate Action Framework"
+    ]
+def test_build_climate_guidance_items_ignores_summary_paragraphs():
+    source = {"title": "Eligible", "url": "https://www.worldbank.org/guide", "practical_value": "Use this source to assess the issue."}
+    summary = (
+        "U.S. agencies coordinate flood access, etc. during the rainy season. "
+        "Dr. Amina confirms the contingency.\n\n"
+        "This subsequent paragraph must not appear."
+    )
+
+    guidance = build_climate_guidance_items(
+        [{"source": "Eligible", "summary": summary, "watch": "Confirm flood access."}], [source]
+    )
+
+    assert guidance[0]["project_use"] == "Use this source to assess the issue."
+    assert "U.S. agencies" not in str(guidance)
+
+
+def test_build_climate_guidance_items_rejects_overlong_dns_authority():
+    hostname = ".".join(["a" * 63] * 4 + ["worldbank", "org"])
+
+    assert build_climate_guidance_items(
+        [{"source": "Eligible", "summary": "Verified finding."}],
+        [{"title": "Eligible", "url": f"https://{hostname}/guide"}],
+    ) == []
+
+
+def test_build_climate_guidance_items_deduplicates_by_question_id():
+    sources = [
+        {"title": "Defueling Conflict", "url": "https://www.worldbank.org/defueling", "practical_value": "Use this source to assess governance."},
+        {"title": "FCV-Sensitive Climate Action Framework", "url": "https://www.worldbank.org/framework", "practical_value": "Use this source to stress-test delivery."},
+    ]
+    core_questions = [
+        {"question_id": "cq-1", "source": "FCV-Sensitive Climate Action Framework", "watch": "Check adaptive delivery."},
+        {"question_id": "cq-1", "source": "FCV-Sensitive Climate Action Framework", "watch": "Changed text must not increase the match count."},
+        {"question_id": "cq-2", "source": "Defueling Conflict", "question": "Can water governance reduce tensions?"},
+    ]
+
+    guidance = build_climate_guidance_items(core_questions, sources)
+
+    assert [item["title"] for item in guidance] == [
+        "Defueling Conflict", "FCV-Sensitive Climate Action Framework"
+    ]
+def test_build_climate_guidance_items_preserves_exact_complete_follow_up_cues():
+    source = {"title": "Eligible", "url": "https://www.worldbank.org/guide", "practical_value": "Use this source to assess the issue."}
+    cases = [
+        "Coordination is led by the U.N.",
+        "The note covers access, etc.",
+        "Dr. Amina coordinates\nflood access planning.",
+        "Flood access may fail... teams need contingencies.",
+        "The project is \"high risk.\"",
+        "The project is \u201chigh risk.\u201d",
+        "The project is [high risk.]",
+    ]
+
+    for paragraph in cases:
+        guidance = build_climate_guidance_items(
+            [{"source": "Eligible", "watch": paragraph}],
+            [source],
+        )
+        assert guidance[0]["project_use"] == "Use this source to assess the issue."
+def test_build_reader_model_keeps_up_to_five_priorities():
+    assessment = {
+        "executive_readout": "One. Two. Three.",
+        "judgments": {},
+        "priorities": [
+            {"rank": i, "title": f"Priority {i}", "recommendation_id": f"REC-00{i}"}
+            for i in range(1, 7)  # six candidates
+        ],
+    }
+    model = build_reader_model(assessment)
+    # Cap is five, not three; a sixth is dropped.
+    assert len(model["priorities"]) == 5
+    assert [p["title"] for p in model["priorities"]] == [
+        f"Priority {i}" for i in range(1, 6)
+    ]
+
+
+def test_reader_retains_internal_routing_without_reader_metadata():
+    assessment = _assessment()
+    assessment["operation_context"] = {
+        "document_type": "Program Paper",
+        "instrument_type": "PforR",
+        "country_scope": "single",
+        "is_mpa": True,
+        "preparation_regime": "new_model",
+        "processing_model": "two_step",
+        "es_regime": "INSTRUMENT_SPECIFIC",
+        "warning_codes": [],
+    }
+
+    model = build_reader_model(assessment)
+    rendered = render_reader_html(model)
+
+    assert model["operation_context"]["instrument_type"] == "PforR"
+    assert "How this operation was routed" not in rendered
+    assert "<strong>Document:</strong> Program Paper" not in rendered
+    assert "<strong>Instrument:</strong> PforR" not in rendered
+    for technical_label in ("Preparation", "E"+chr(38)+"amp;S route", "Program layer", "MPA program"):
+        assert technical_label not in rendered
+
+    stream = BytesIO()
+    write_reader_docx(model, stream)
+    stream.seek(0)
+    docx_text = "\n".join(paragraph.text for paragraph in Document(stream).paragraphs)
+    assert "How this operation was routed" not in docx_text
+    assert "Document: Program Paper" not in docx_text
+    assert "Instrument: PforR" not in docx_text
+    for technical_label in ("Preparation", "E"+chr(38)+"S route", "Program layer", "MPA program"):
+        assert technical_label not in docx_text
+
+
+def test_reader_explains_when_operational_guidance_is_withheld():
+    assessment = _assessment()
+    assessment["operation_context"] = {
+        "document_type": "Unknown",
+        "instrument_type": "Unknown",
+        "country_scope": "single",
+        "is_mpa": False,
+        "preparation_regime": "unresolved_policy_source",
+        "processing_model": "unknown",
+        "es_regime": "UNRESOLVED",
+        "warning_codes": ["INSTRUMENT_ROUTE_UNRESOLVED"],
+    }
+
+    rendered = render_reader_html(build_reader_model(assessment))
+
+    assert "Suggested document wording is not shown because the document type or financing route could not be confirmed reliably." in rendered
+
+
+
+def test_drafting_route_gate_requires_document_and_instrument_but_ignores_es_route():
+    warning = (
+        "Suggested document wording is not shown because the document type or "
+        "financing route could not be confirmed reliably."
+    )
+    base = _assessment()
+    base["operation_context"] = {
+        "document_type": "PCN",
+        "instrument_type": "IPF",
+        "preparation_regime": "legacy_transitional",
+        "es_regime": "UNRESOLVED",
+    }
+    available = build_reader_model(base)
+    assert available["drafting_route_status"] == "available"
+    assert available["priorities"][0]["current_document_drafting"]["text"].startswith(
+        "Suggested targeted text"
+    )
+    html = render_reader_html(available)
+    assert "Earlier policy framework" not in html
+    assert "legacy transitional" not in html.lower()
+    assert warning not in html
+    stream = BytesIO()
+    write_reader_docx(available, stream)
+    stream.seek(0)
+    docx_text = "\n".join(paragraph.text for paragraph in Document(stream).paragraphs)
+    assert "Suggested targeted text" in docx_text
+    assert warning not in docx_text
+
+    for context in (
+        {"document_type": "Unknown", "instrument_type": "IPF"},
+        {"document_type": "PCN", "instrument_type": "Unknown"},
+    ):
+        assessment = _assessment()
+        assessment["operation_context"] = {**context, "es_regime": "ESF"}
+        withheld = build_reader_model(assessment)
+        assert withheld["drafting_route_status"] == "withheld_unresolved_route"
+        assert "current_document_drafting" not in withheld["priorities"][0]
+        rendered = render_reader_html(withheld)
+        assert warning in rendered
+        assert "Suggested targeted text" not in rendered
+        stream = BytesIO()
+        write_reader_docx(withheld, stream)
+        stream.seek(0)
+        text = "\n".join(paragraph.text for paragraph in Document(stream).paragraphs)
+        assert warning in text
+        assert "Suggested targeted text" not in text
+
+def test_unconfirmed_route_withholds_current_and_operational_drafting_everywhere():
+    warning = (
+        "Suggested document wording is not shown because the document type or "
+        "financing route could not be confirmed reliably."
+    )
+    operational = {
+        "target_document": "Security Risk Management Plan",
+        "target_section": "Continuity arrangements",
+        "drafting_status": "existing_commitment",
+        "text": "Operational drafting must not appear on an unresolved route.",
+        "project_basis_ids": ["PF-001"],
+        "gap_basis_ids": ["RG-001"],
+        "guidance_ids": ["GUIDE-FCV-CONTINUITY"],
+    }
+    for context in (
+        {"document_type": "Unknown", "instrument_type": "IPF"},
+        {"document_type": "PCN", "instrument_type": "Unknown"},
+        None,
+    ):
+        assessment = _assessment()
+        assessment["priorities"][0]["operational_instrument_drafting"] = operational
+        if context is not None:
+            assessment["operation_context"] = context
+        model = build_reader_model(assessment)
+        priority = model["priorities"][0]
+        assert "current_document_drafting" not in priority
+        assert "operational_instrument_drafting" not in priority
+
+        rendered = render_reader_html(model)
+        assert "Current document drafting" not in rendered
+        assert "Operational instrument drafting" not in rendered
+        stream = BytesIO()
+        write_reader_docx(model, stream)
+        stream.seek(0)
+        document_text = "\n".join(paragraph.text for paragraph in Document(stream).paragraphs)
+        assert "Current document drafting" not in document_text
+        assert "Operational instrument drafting" not in document_text
+        if context is not None:
+            assert rendered.count(warning) == 1
+            assert document_text.count(warning) == 1
+
+
+def test_build_reader_model_exposes_safe_existing_responses_for_summary_tiles():
+    assessment = {
+        "executive_readout": "Overview.",
+        "judgments": {},
+        "analysis": {
+            "existing_responses": [
+                {
+                    "response_id": f"RESP-{index:02d}",
+                    "project_fact_ids": [f"PF-{index:02d}"],
+                    "pathway_ids": [f"PATH-{index:02d}"],
+                    "description": f"Existing response {index}.",
+                    "limitation": "A bounded limitation.",
+                    "internal_only": "must not be exposed",
+                }
+                for index in range(1, 15)
+            ]
+        },
+        "priorities": [],
+    }
+
+    model = build_reader_model(assessment)
+
+    assert len(model["existing_responses"]) == 12
+    assert model["existing_responses"][0] == {
+        "response_id": "RESP-01",
+        "project_fact_ids": ["PF-01"],
+        "pathway_ids": ["PATH-01"],
+        "description": "Existing response 1.",
+        "limitation": "A bounded limitation.",
+    }
+    assert all("internal_only" not in item for item in model["existing_responses"])
+
+
+def test_rating_scale_renders_in_overview_before_core_questions():
+    assessment = {
+        "executive_readout": "Alpha sentence. " * 60,
+        "judgments": {
+            "sensitivity": {
+                "value": "moderate", "rationale": "Because.", "evidence_ids": []
+            }
+        },
+        "priorities": [],
+    }
+    html = render_reader_html(build_reader_model(assessment))
+    rating_pos = html.find("climate-sens-rating")
+    core_pos = html.find("Core climate-FCV questions")
+    assert rating_pos != -1 and core_pos != -1
+    # The rating sits in the overview, above the core-questions section.
+    assert rating_pos < core_pos
+
+
+def test_build_reader_model_carries_overview_summary_into_rating_block():
+    assessment = {
+        "executive_readout": "Alpha. Beta. Gamma.",
+        "overview_summary": "OVERVIEW_MARKER first. Second overall sentence. Third.",
+        "judgments": {
+            "sensitivity": {"value": "strong", "rationale": "Because.", "evidence_ids": []}
+        },
+        "priorities": [],
+    }
+    model = build_reader_model(assessment)
+    assert model["overview_summary"].startswith("OVERVIEW_MARKER")
+    # The factored overview block (the rating unit) carries the summary too.
+    assert model["climate_sensitivity_rating"]["overview_summary"].startswith(
+        "OVERVIEW_MARKER"
+    )
+
+
+def test_overview_summary_renders_in_overview_box_at_the_very_top():
+    assessment = {
+        "executive_readout": "Alpha sentence. " * 60,
+        "overview_summary": "OVERVIEW_MARKER first. Second overall sentence. Third one.",
+        "judgments": {
+            "sensitivity": {"value": "strong", "rationale": "Because.", "evidence_ids": []}
+        },
+        "priorities": [],
+    }
+    html = render_reader_html(build_reader_model(assessment))
+    summary_pos = html.find("OVERVIEW_MARKER")
+    rating_pos = html.find("climate-sens-rating")
+    exec_heading_pos = html.find("Executive readout")
+    assert summary_pos != -1 and rating_pos != -1 and exec_heading_pos != -1
+    # The 3-4 sentence overall summary is embedded in the rating card, and the
+    # whole overview block sits ABOVE the fuller Executive readout section.
+    assert rating_pos < summary_pos
+    assert summary_pos < exec_heading_pos
+
+
+def test_rating_graphic_precedes_summary_text_within_the_box():
+    assessment = {
+        "executive_readout": "Alpha sentence. " * 60,
+        "overview_summary": "OVERVIEW_MARKER first. Second overall sentence. Third one.",
+        "judgments": {
+            "sensitivity": {"value": "strong", "rationale": "Because.", "evidence_ids": []}
+        },
+        "priorities": [],
+    }
+    html = render_reader_html(build_reader_model(assessment))
+    question_pos = html.find(SENSITIVITY_RATING_QUESTION)
+    summary_pos = html.find("OVERVIEW_MARKER")
+    assert question_pos != -1 and summary_pos != -1
+    # The "How sensitive" graphic (question + label + scale) sits at the very top
+    # of the card, above the overview summary text.
+    assert question_pos < summary_pos
+
+
+def test_overview_summary_renders_in_docx_before_executive_readout():
+    assessment = {
+        "executive_readout": "Alpha sentence one. Beta sentence two.",
+        "overview_summary": "OVERVIEW_MARKER first. Second overall sentence. Third one.",
+        "judgments": {
+            "sensitivity": {"value": "strong", "rationale": "Because.", "evidence_ids": []}
+        },
+        "priorities": [],
+    }
+    stream = BytesIO()
+    write_reader_docx(build_reader_model(assessment), stream)
+    stream.seek(0)
+    texts = [p.text for p in Document(stream).paragraphs]
+    question_idx = next(
+        i for i, t in enumerate(texts) if t.startswith(SENSITIVITY_RATING_QUESTION)
+    )
+    summary_idx = next(i for i, t in enumerate(texts) if "OVERVIEW_MARKER" in t)
+    exec_idx = next(i for i, t in enumerate(texts) if t == HEADINGS[0])
+    # Graphic (rating question line) first, then the summary text, then the
+    # fuller Executive readout heading below.
+    assert question_idx < summary_idx < exec_idx
+
+
+def test_overview_box_renders_without_summary_when_absent():
+    assessment = {
+        "executive_readout": "Alpha. Beta. Gamma.",
+        "judgments": {
+            "sensitivity": {"value": "strong", "rationale": "Because.", "evidence_ids": []}
+        },
+        "priorities": [],
+    }
+    model = build_reader_model(assessment)
+    assert model["overview_summary"] == ""
+    html = render_reader_html(model)
+    # Graceful degradation: the rating card still renders (with its level gloss),
+    # just with no embedded overall summary.
+    assert "climate-sens-rating" in html
+    assert "strongly designed to recognise" in html
+
+
+def test_visible_tiers_hide_routing_metadata_and_evidence_codes():
+    assessment = {
+        "executive_readout": "Alpha sentence. " * 60,
+        "judgments": {
+            "sensitivity": {
+                "value": "moderate", "rationale": "Because.", "evidence_ids": ["PF-001"]
+            }
+        },
+        "priorities": [{
+            "rank": 1, "title": "Do the thing", "recommendation_id": "REC-001",
+            "decision": "Do it.", "minimum_action": "Add a clause.", "confidence": "high",
+            "routing_status": "standard_document_advisory", "authority_basis": "none_verified",
+            "recommendation_basis": "project_evidence", "pathway_ids": ["PW-001"],
+            "project_anchor_ids": ["PF-001"],
+            "current_document_drafting": {
+                "target_document": "PCN", "target_section": "X",
+                "drafting_status": "advisory_proposal", "text": "Add text.",
+                "project_basis_ids": [], "gap_basis_ids": [], "guidance_ids": [],
+            },
+        }],
+    }
+    model = build_reader_model(assessment)
+    html = render_reader_html(model)
+    # Priority card must not show the internal routing metadata rows.
+    assert "Routing status" not in html
+    assert "Authority basis" not in html
+    assert "Recommendation basis" not in html
+    assert "Pathway references" not in html
+    # The priority body must not leak raw evidence codes.
+    priorities_section = html.split("Ranked operational priorities", 1)[1].split(
+        "Points to check", 1
+    )[0]
+    assert "PW-001" not in priorities_section
+    assert "PF-001" not in priorities_section
+    # Provenance remains attached internally but raw codes stay out of the reader.
+    model = attach_provenance(model, assessment)
+    html2 = render_reader_html(model)
+    assert "Evidence key" not in html2
+    assert "PF-001" not in html2
+
+
+def test_quick_fixes_are_visible_not_collapsed():
+    assessment = {
+        "executive_readout": "Alpha sentence. " * 60,
+        "judgments": {
+            "sensitivity": {
+                "value": "moderate", "rationale": "Because.", "evidence_ids": []
+            }
+        },
+        "priorities": [],
+        "minor_climate_points": [
+            {"point": "Reconcile the figure", "why": "Two values differ.",
+             "how_to_check": "Confirm the cost across cover and tables.",
+             "residual_gap_ids": []}
+        ],
+        "review_readiness_flags": [
+            {"flag": "Empty screening field", "why_it_matters": "Template field blank.",
+             "document_basis_ids": [], "suggested_verification": "Confirm before the meeting."}
+        ],
+    }
+    html = render_reader_html(build_reader_model(assessment))
+    quick = html.split("Ranked operational priorities", 1)[1]
+    assert "Reconcile the figure" in quick
+    assert "Empty screening field" in quick
+    assert "How to address" in quick
+    assert "Technical annex" not in quick
+    # The quick-fix block is a visible section, not a collapsed <details>.
+    assert "<summary>Points to check" not in quick
+
+
+def test_watch_lines_render_in_standalone_section_not_inline():
+    assessment = {
+        "executive_readout": "Alpha sentence. " * 60,
+        "judgments": {
+            "sensitivity": {
+                "value": "moderate", "rationale": "Because.", "evidence_ids": []
+            }
+        },
+        "priorities": [],
+        "core_questions": [
+            {"question_id": "cq1", "theme": "cq1_interaction", "question": "Does X hold?",
+             "source": "Guidance", "summary": "A finding.", "evidence_ids": [],
+             "watch": "Keep an eye on the flood season."}
+        ],
+    }
+    html = render_reader_html(build_reader_model(assessment))
+    # Watch content appears in the standalone section, not inline in the card.
+    assert "What to keep an eye on" in html
+    assert "Keep an eye on the flood season." in html
+    core_block = html.split("Core climate-FCV questions", 1)[1].split(
+        "Ranked operational priorities", 1
+    )[0]
+    assert "What to watch" not in core_block
+
+
+def _assessment() -> dict[str, object]:
+    sentence = (
+        "The project evidence supports a material Climate-FCV pathway, while "
+        "the documented response remains at an early operational stage. "
+    )
+    return {
+        "schema_version": "climate-verified-v2.1",
+        "run_id": "run-1",
+        "bank_release_id": "ssd-2026.08",
+        "evidence_status": "preview; not approved",
+        "executive_readout": sentence * 25,
+        "judgments": {
+            "relevance": {"value": "high", "rationale": "Material pathway."},
+            "sensitivity": {
+                "value": "moderate",
+                "rationale": "Some relevant risks are recognized.",
+            },
+            "responsiveness": {
+                "value": "emerging",
+                "rationale": "Potential benefits are developing.",
+            },
+            "operationalization": {
+                "value": "partial",
+                "rationale": "Delivery arrangements remain incomplete.",
+            },
+        },
+        "priorities": [
+            {
+                "recommendation_id": f"REC-00{index}",
+                "rank": index,
+                "title": f"Priority {index}",
+                "decision": "Make a documented design decision.",
+                "minimum_action": "Complete the proportionate minimum action.",
+                "enhanced_action": None,
+                "enhanced_activation": None,
+                "responsible_function": "Task team",
+                "routing_status": "standard_document_advisory",
+                "authority_basis": "none_verified",
+                "recommendation_basis": "project_evidence",
+                "project_anchor_ids": ["PF-001"],
+                "pathway_ids": ["PW-001"],
+                "existing_response_ids": ["ER-001"],
+                "residual_gap_ids": ["RG-001"],
+                "instrument_claim_ids": [],
+                "completion_evidence": "Updated project section",
+                "completion_evidence_status": "updated_section",
+                "confidence": "medium",
+                "limitation": "Detailed parameters remain to be confirmed.",
+                "caution": "Avoid unintended exclusion.",
+                "current_document_drafting": {
+                    "target_document": "PCN",
+                    "target_section": "Project Description",
+                    "drafting_status": "advisory_proposal",
+                    "text": (
+                        "Suggested targeted text for the current project document. "
+                        * 12
+                    ).strip(),
+                    "project_basis_ids": ["PF-001"],
+                    "gap_basis_ids": ["RG-001"],
+                    "guidance_ids": ["GUIDE-PCN-DESIGN"],
+                },
+                "operational_instrument_drafting": ({
+                    "target_document": "Security Risk Management Plan",
+                    "target_section": "Continuity arrangements",
+                    "drafting_status": "existing_commitment",
+                    "text": (
+                        "Distinct operational instrument text for continuity. " * 12
+                    ).strip(),
+                    "project_basis_ids": ["PF-001"],
+                    "gap_basis_ids": ["RG-001"],
+                    "guidance_ids": ["GUIDE-FCV-CONTINUITY"],
+                } if index == 1 else None),
+            }
+            for index in range(1, 5)
+        ],
+        "review_readiness_flags": [
+            {
+                "flag_id": "RF-001",
+                "category": "document_inconsistency",
+                "flag": "Two sections state different financing totals.",
+                "why_it_matters": "The controlling scope cannot be verified.",
+                "suggested_verification": "Confirm the controlling total.",
+            }
+        ],
+        "validation": {"status": "passed"},
+        "recommendation_diagnostics": {
+            "raw_candidate_count": 3,
+            "parsed_candidate_count": 3,
+            "valid_candidate_count": 3,
+            "admitted_count": 3,
+            "final_priority_count": 3,
+            "reviewer_invoked": False,
+            "reviewer_verdict": "not_invoked",
+            "reason_codes": [],
+            "unsupported_numeric_tokens": [],
+            "semantic_review_object_ids": [],
+            "candidate_suppressions": [],
+        },
+    }
+
+
+
+@pytest.mark.parametrize(
+    ("document_type", "primary_label", "secondary_label"),
+    [
+        ("PCN", "At concept stage", "During preparation"),
+        ("PAD", "In the current project document", "Before approval"),
+        ("Project Paper", "In the current project document", "Before approval"),
+        ("Program Paper", "In the current project document", "Before approval"),
+        ("Program Document", "In the current project document", "Before approval"),
+        ("Additional Financing", "In the Additional Financing package", "Before approval"),
+        ("AF", "In the Additional Financing package", "Before approval"),
+        ("Restructuring", "In the restructuring package", "During implementation"),
+        ("Unknown", "At the current review stage", "Before the next decision point"),
+    ],
+)
+def test_reader_priorities_receive_context_aware_canonical_project_cycle(
+    document_type: str,
+    primary_label: str,
+    secondary_label: str,
+):
+    assessment = _assessment()
+    assessment["operation_context"] = {"document_type": document_type}
+
+    model = build_reader_model(assessment)
+
+    for priority in model["priorities"]:
+        assert priority["project_cycle"] == {
+            "primary_label": primary_label,
+            "primary_text": "Complete the proportionate minimum action.",
+            "secondary_label": secondary_label,
+            "secondary_text": "Updated project section",
+        }
+
+
+def test_reader_project_cycle_uses_bounded_existing_field_fallbacks():
+    assessment = _assessment()
+    assessment["operation_context"] = {"document_type": "PCN"}
+    priority = assessment["priorities"][0]
+    priority["minimum_action"] = ""
+    priority["completion_evidence"] = ""
+    priority["enhanced_action"] = "Add the enhanced safeguard."
+
+    cycle = build_reader_model(assessment)["priorities"][0]["project_cycle"]
+
+    assert cycle["primary_text"] == "Make a documented design decision."
+    assert cycle["secondary_text"] == "Add the enhanced safeguard."
+
+
+
+def test_reader_project_cycle_skips_placeholder_only_fallback_candidates():
+    assessment = _assessment()
+    assessment["operation_context"] = {"document_type": "PCN"}
+    priority = assessment["priorities"][0]
+    priority["completion_evidence"] = "[TBD]"
+    priority["enhanced_action"] = "Add the verified enhanced safeguard."
+
+    cycle = build_reader_model(assessment)["priorities"][0]["project_cycle"]
+
+    assert cycle["secondary_text"] == "Add the verified enhanced safeguard."
+
+
+@pytest.mark.parametrize("separator", ["-", ":", ".", "\u00b7", "\u2013", "\u2014", "\u2022"])
+def test_reader_normalizes_priority_title_prefixes_and_summary_titles(separator: str):
+    assessment = _assessment()
+    assessment["priorities"][0]["title"] = (
+        f"Priority 2 {separator} Strengthen adaptive delivery"
+    )
+
+    model = build_reader_model(assessment)
+
+    assert model["priorities"][0]["title"] == "Strengthen adaptive delivery"
+    assert model["priority_summary"]["titles"][0] == "Strengthen adaptive delivery"
+
+
+def test_reader_preserves_rank_only_priority_title():
+    assessment = _assessment()
+    assessment["priorities"][0]["title"] = "Priority 2"
+
+    model = build_reader_model(assessment)
+
+    assert model["priorities"][0]["title"] == "Priority 2"
+    assert model["priority_summary"]["titles"][0] == "Priority 2"
+
+def test_reader_has_four_dimensions_priority_cap_and_safe_annex():
+    model = build_reader_model(_assessment())
+
+    assert len(model["judgments"]) == 4
+    # Fixture supplies four priorities; the cap is now five, so all four survive.
+    assert len(model["priorities"]) == 4
+    assert model["priority_summary"] == {
+        "count": 4,
+        "titles": ["Priority 1", "Priority 2", "Priority 3", "Priority 4"],
+        "statement": (
+            "Drawing on the overview and core climate-FCV questions, the analysis "
+            "identifies 4 main operational priorities for strengthening climate "
+            "resilience, conflict sensitivity and implementation readiness in this "
+            "project. These are followed by secondary points to check before the "
+            "decision meeting and issues to keep under review as preparation advances."
+        ),
+    }
+    assert "overall_rating" not in model
+    assert model["evidence_status"] == "preview; not approved"
+    assert model["technical_annex"] == {
+        "run_id": "run-1",
+        "schema_version": "climate-verified-v2.1",
+        "bank_release_id": "ssd-2026.08",
+        "validation_status": "passed",
+        "summary_overview_status": "fallback",
+        "recommendation_candidate_count": 3,
+        "recommendation_admitted_count": 3,
+        "recommendation_final_count": 3,
+        "semantic_reviewer_invoked": False,
+        "semantic_reviewer_verdict": "not_invoked",
+        "recommendation_reason_codes": [],
+        "unsupported_numeric_tokens": [],
+        "semantic_review_object_ids": [],
+        "candidate_suppressions": [],
+        "live_research_count": 0,
+    }
+
+
+def test_judgment_evidence_ids_render_from_tuple_and_list():
+    # The pipeline stores judgments via dataclasses.asdict(), which preserves
+    # Judgment.evidence_ids as a tuple. The reader must surface those IDs, not
+    # drop them because they are a tuple rather than a list.
+    assessment = _assessment()
+    assessment["judgments"]["relevance"]["evidence_ids"] = ("PF-001", "CE-001")
+    assessment["judgments"]["sensitivity"]["evidence_ids"] = ["PF-002"]
+
+    model = build_reader_model(assessment)
+    by_dimension = {item["dimension"]: item for item in model["judgments"]}
+
+    assert by_dimension["relevance"]["evidence_ids"] == ["PF-001", "CE-001"]
+    assert by_dimension["sensitivity"]["evidence_ids"] == ["PF-002"]
+
+
+def test_priority_narrative_renders_in_reader_html_and_docx():
+    assessment = _assessment()
+    assessment["priorities"][0]["narrative"] = (
+        "First paragraph tells the story of the gap and what to do.\n\n"
+        "Second paragraph covers who leads it and what done looks like."
+    )
+    model = build_reader_model(assessment)
+    assert model["priorities"][0]["narrative"].startswith("First paragraph")
+
+    html = render_reader_html(model)
+    assert "First paragraph tells the story of the gap" in html
+    assert "Second paragraph covers who leads it" in html
+
+    buffer = BytesIO()
+    write_reader_docx(model, buffer)
+    buffer.seek(0)
+    text = "\n".join(p.text for p in Document(buffer).paragraphs)
+    assert "First paragraph tells the story of the gap" in text
+    assert "Second paragraph covers who leads it" in text
+
+
+def test_priority_summary_count_must_match_final_priorities():
+    model = build_reader_model(_assessment())
+    model["priority_summary"]["count"] = 2
+
+    assert "PRIORITY_SUMMARY_MISMATCH" in validate_reader_model(model)
+
+
+def test_reader_annex_preserves_bounded_candidate_suppression_path():
+    assessment = _assessment()
+    detail = {
+        "recommendation_id": "REC-001",
+        "stage": "validation",
+        "reason_codes": ["RECOMMENDATION_NUMBER_UNSUPPORTED"],
+        "unsupported_numeric_fields": [
+            {"field": "minimum_action", "tokens": ["30"]}
+        ],
+    }
+    assessment["recommendation_diagnostics"]["candidate_suppressions"] = [
+        detail
+    ]
+    assessment["recommendation_diagnostics"]["semantic_review_object_ids"] = [
+        "REC-001"
+    ]
+
+    model = build_reader_model(assessment)
+
+    assert model["technical_annex"]["candidate_suppressions"] == [detail]
+    assert model["technical_annex"]["semantic_review_object_ids"] == [
+        "REC-001"
+    ]
+
+
+def test_reader_validation_rejects_placeholder_and_duplicate_titles():
+    model = build_reader_model(_assessment())
+    model["priorities"][1]["title"] = model["priorities"][0]["title"]
+    model["priorities"][0]["minimum_action"] = "[TBD]"
+
+    issues = validate_reader_model(model)
+
+    assert "DUPLICATE_PRIORITY_TITLE" in issues
+    assert "UNRESOLVED_PLACEHOLDER" in issues
+
+
+def test_reader_allows_readiness_flag_to_describe_project_placeholder():
+    model = build_reader_model(_assessment())
+    flag = model["review_readiness_flags"][0]
+    flag["category"] = "material_placeholder"
+    flag["flag"] = "The climate screening field remains a placeholder."
+
+    assert validate_reader_model(model) == ()
+
+
+def test_reader_uses_tolerant_integrity_bounds_for_executive_length():
+    model = build_reader_model(_assessment())
+    model["executive_readout"] = ("word " * 699) + "word."
+
+    assert "EXECUTIVE_LENGTH_INVALID" not in validate_reader_model(model)
+
+    model["executive_readout"] = ("word " * 249) + "word."
+    assert "EXECUTIVE_LENGTH_INVALID" in validate_reader_model(model)
+
+    model["executive_readout"] = ("word " * 949) + "word."
+    assert "EXECUTIVE_LENGTH_INVALID" in validate_reader_model(model)
+
+
+def test_html_and_docx_share_headings_and_priority_order():
+    assessment = _assessment()
+    assessment["operation_context"] = {"document_type": "PCN", "instrument_type": "IPF"}
+    model = build_reader_model(assessment)
+    assert validate_reader_model(model) == ()
+
+    html = render_reader_html(model)
+    output = BytesIO()
+    write_reader_docx(model, output)
+    output.seek(0)
+    document = Document(output)
+    document_text = "\n".join(
+        paragraph.text for paragraph in document.paragraphs
+    )
+
+    # HTML and DOCX render the same present headings in the same visual order
+    # (robust to conditionally-rendered sections such as the Watch section).
+    by_html = sorted((h for h in HEADINGS if h in html), key=html.index)
+    by_docx = sorted(
+        (h for h in HEADINGS if h in document_text), key=document_text.index
+    )
+    assert by_html == by_docx
+    for index in range(1, 5):
+        identifier = f"REC-00{index}"
+        assert identifier in html
+        assert identifier in document_text
+        assert f"Priority {index}" in html
+        assert f"Priority {index}" in document_text
+    # Drafting blocks stay; model-internal routing metadata and raw evidence
+    # codes are no longer rendered in the visible priority card.
+    for expected in (
+        "Current document drafting",
+        "Operational instrument drafting",
+        "Suggested targeted text for the current project document.",
+        "Distinct operational instrument text for continuity.",
+        "GUIDE-PCN-DESIGN",
+        "GUIDE-FCV-CONTINUITY",
+    ):
+        assert expected in html
+        assert expected in document_text
+    for removed in ("standard_document_advisory", "none_verified", "project_evidence"):
+        assert removed not in html
+        assert removed not in document_text
+    assert not any(
+        paragraph.text.rstrip().endswith(("[", "{", "..."))
+        for paragraph in document.paragraphs
+    )
+    assert html.count("Operational instrument drafting") == 1
+    assert document_text.count("Operational instrument drafting") == 1
+    assert html.index("Current document drafting") < html.index(
+        "Operational instrument drafting"
+    )
+
+
+
+
+def test_html_and_docx_render_canonical_project_cycle_after_actions():
+    assessment = _assessment()
+    assessment["operation_context"] = {"document_type": "PCN"}
+    model = build_reader_model(assessment)
+
+    html = render_reader_html(model)
+    output = BytesIO()
+    write_reader_docx(model, output)
+    output.seek(0)
+    document_text = "\n".join(
+        paragraph.text for paragraph in Document(output).paragraphs
+    )
+
+    for rendered in (html, document_text):
+        assert "Where this fits in the project cycle" in rendered
+        assert "At concept stage" in rendered
+        assert "During preparation" in rendered
+        assert rendered.index("Minimum action") < rendered.index(
+            "Where this fits in the project cycle"
+        )
+
+def _reader_with_balanced_hierarchy_content() -> dict[str, object]:
+    assessment = _assessment()
+    assessment["operation_context"] = {"document_type": "PCN", "instrument_type": "IPF"}
+    assessment["minor_climate_points"] = [{
+        "point": "Confirm heat safeguards for field teams.",
+        "why": "Hotter working conditions may affect delivery.",
+        "how_to_check": "Check the ESMP and contractor procedures.",
+        "residual_gap_ids": ["RG-002"],
+    }]
+    assessment["core_questions"] = [
+        {
+            "question_id": "cq1",
+            "theme": "cq1_interaction",
+            "question": "Can shared institutions reduce resource tensions?",
+            "source": "Maximizing the Peace and Social Dividends of Climate Action",
+            "summary": "BFMUs bring competing resource users into shared governance.",
+            "evidence_ids": [],
+            "watch": "Track whether benefit-sharing remains inclusive.",
+        },
+        {
+            "question_id": "cq2",
+            "theme": "cq2_conflict_sensitivity",
+            "question": "Will delivery remain workable during floods?",
+            "source": "FCV-Sensitive Climate Action Framework",
+            "summary": "Flood access arrangements need to cover remote sites.",
+            "evidence_ids": [],
+            "watch": "Review combined flood-conflict contingencies.",
+        },
+    ]
+    assessment["priorities"][3]["narrative"] = (
+        "Complete drafting paragraph for priority four."
+    )
+    model = build_reader_model(assessment)
+    model["guidance_items"] = [{
+        "title": "Maximizing the Peace and Social Dividends of Climate Action",
+        "url": "https://www.worldbank.org/peace-dividends",
+        "practical_value": "Use this source to identify positive peace outcomes.",
+        "project_use": "Use this source to identify positive peace outcomes.",
+    }]
+    model["sources"] = [{
+        "title": "Maximizing the Peace and Social Dividends of Climate Action",
+        "url": "https://www.worldbank.org/peace-dividends",
+        "description": "Guidance on peace and social dividends.",
+    }]
+    model["evidence_trail"] = {
+        "methodology_note": "The analysis used verified project evidence.",
+        "pathways": [{
+            "direction_label": "Climate -> FCV",
+            "chain_prose": "Flood disruption can increase resource tensions.",
+        }],
+        "limitations": "The analysis depends on the uploaded document's detail.",
+        "evidence_key": [{"id": "PF-001", "type_label": "Project fact", "text": "Hidden."}],
+        "diagnostics": {"candidate_count": 4, "final_count": 4},
+    }
+    return model
+
+
+def test_html_uses_balanced_hierarchy_without_reader_clutter():
+    model = _reader_with_balanced_hierarchy_content()
+    html = render_reader_html(model)
+
+    assert '<section class="climate-overview-panel climate-sens-rating"' in html
+    assert html.count("climate-overview-panel") == 1
+    assert '<section class="climate-overview-panel"><div' not in html
+    assert html.index("climate-overview-panel") < html.index("Executive readout")
+    assert html.count('<details class="climate-priority-disclosure" open>') == 1
+    assert html.count('<details class="climate-priority-disclosure">') == 3
+    assert '<summary><h3 class="climate-priority-title">1. Priority 1' in html
+    assert "Suggested targeted text for the current project document." in html
+    assert "Distinct operational instrument text for continuity." in html
+    assert "Complete drafting paragraph for priority four." in html
+    assert html.index("Smaller climate &amp; fragility points") < html.index(
+        "Document points to confirm"
+    )
+    assert "<h3>Smaller climate &amp; fragility points to consider</h3>" in html
+    assert "<h4>Confirm heat safeguards for field teams.</h4>" in html
+    assert "<h3>Document points to confirm</h3>" in html
+    assert "<h4>Two sections state different financing totals.</h4>" in html
+    assert html.count('class="climate-item-number"') == 4
+    assert html.count('<span class="climate-item-number">01</span>') == 3
+    assert '<span class="climate-item-number">02</span>' in html
+    assert html.index("Relevant WBG guidance for this project") < html.index(
+        "Method, limitations, and sources"
+    )
+    assert "Use this source to identify positive peace outcomes." in html
+    assert "Use this source to identify positive peace outcomes." in html
+    assert "The analysis depends on the uploaded document&#x27;s detail." in html
+    assert "Sources &amp; further reading" in html
+    assert "Candidate country evidence: preview; not approved." in html
+    for removed in (
+        "Evidence status", "Technical annex", "Evidence key", "Run diagnostics",
+    ):
+        assert removed not in html
+
+
+def test_html_heading_structure_is_ordered_and_priorities_navigable():
+    html = render_reader_html(_reader_with_balanced_hierarchy_content())
+
+    assert html.count('<summary><h3 class="climate-priority-title">') == 4
+    assert '<summary><h3 class="climate-priority-title">1. Priority 1' in html
+    assert "<h2>Points to check before the decision meeting</h2>" in html
+    assert "<h3>Smaller climate &amp; fragility points to consider</h3>" in html
+    assert "<h4>Confirm heat safeguards for field teams.</h4>" in html
+    assert "<h3>Document points to confirm</h3>" in html
+    assert "<h4>Two sections state different financing totals.</h4>" in html
+
+
+def test_docx_matches_balanced_reader_content_and_keeps_all_priorities():
+    model = _reader_with_balanced_hierarchy_content()
+    stream = BytesIO()
+    write_reader_docx(model, stream)
+    stream.seek(0)
+    text = "\n".join(paragraph.text for paragraph in Document(stream).paragraphs)
+
+    for index in range(1, 5):
+        assert f"Priority {index}" in text
+    assert "Suggested targeted text for the current project document." in text
+    assert "Distinct operational instrument text for continuity." in text
+    assert "Complete drafting paragraph for priority four." in text
+    assert text.index("Smaller climate & fragility points") < text.index(
+        "Document points to confirm"
+    )
+    assert "01 Confirm heat safeguards for field teams." in text
+    assert "01 Two sections state different financing totals." in text
+    assert "01 Can shared institutions reduce resource tensions?" in text
+    assert "02 Will delivery remain workable during floods?" in text
+    assert text.index("Relevant WBG guidance for this project") < text.index(
+        "Method, limitations, and sources"
+    )
+    assert "Use this source to identify positive peace outcomes." in text
+    assert "Use this source to identify positive peace outcomes." in text
+    assert "https://www.worldbank.org/peace-dividends" in text
+    assert "The analysis depends on the uploaded document's detail." in text
+    assert "Sources & further reading" in text
+    assert "Candidate country evidence: preview; not approved." in text
+    for removed in (
+        "Evidence status", "Technical annex", "Evidence key", "Run diagnostics",
+    ):
+        assert removed not in text
+
+
+def test_zero_priority_message_is_shared_by_html_and_docx():
+    assessment = _assessment()
+    assessment["priorities"] = []
+    model = build_reader_model(assessment)
+
+    rendered = render_reader_html(model)
+    stream = BytesIO()
+    write_reader_docx(model, stream)
+    stream.seek(0)
+    document_text = "\n".join(
+        paragraph.text for paragraph in Document(stream).paragraphs
+    )
+
+    message = "No operational priorities were identified in this assessment. Review the core questions and points to check below."
+    assert rendered.count(message) == 1
+    assert document_text.count(message) == 1
+    assert "No final operational priority was admitted" not in rendered
+    assert "No final operational priority was admitted" not in document_text
+
+
+def test_all_suppressed_priorities_render_as_incomplete_in_html_and_docx():
+    assessment = _assessment()
+    assessment["priorities"] = []
+    assessment["validation"] = {
+        "status": "attention",
+        "reason_codes": ["RECOMMENDATIONS_ALL_SUPPRESSED"],
+    }
+    assessment["recommendation_diagnostics"] = {
+        "raw_candidate_count": 4,
+        "parsed_candidate_count": 4,
+        "valid_candidate_count": 0,
+        "admitted_count": 0,
+        "final_priority_count": 0,
+        "reviewer_invoked": False,
+        "reviewer_verdict": "not_invoked",
+        "reason_codes": [
+            "DRAFTING_CURRENT_TARGET_INVALID",
+            "RECOMMENDATIONS_ALL_SUPPRESSED",
+        ],
+        "unsupported_numeric_tokens": [],
+        "semantic_review_object_ids": [],
+        "candidate_suppressions": [],
+    }
+
+    model = build_reader_model(assessment)
+    rendered = render_reader_html(model)
+    stream = BytesIO()
+    write_reader_docx(model, stream)
+    stream.seek(0)
+    document_text = "\n".join(
+        paragraph.text for paragraph in Document(stream).paragraphs
+    )
+
+    assert model["recommendation_status"] == "incomplete"
+    assert "could not be completed" in model["recommendation_message"].casefold()
+    for output in (rendered, document_text):
+        assert "could not be completed" in output.casefold()
+        assert "No operational priorities were identified" not in output
+        assert "DRAFTING_CURRENT_TARGET_INVALID" not in output
+
+
+def test_no_candidate_result_keeps_neutral_complete_status():
+    assessment = _assessment()
+    assessment["priorities"] = []
+    assessment["recommendation_diagnostics"] = {
+        "raw_candidate_count": 0,
+        "parsed_candidate_count": 0,
+        "valid_candidate_count": 0,
+        "admitted_count": 0,
+        "final_priority_count": 0,
+        "reviewer_invoked": False,
+        "reviewer_verdict": "not_invoked",
+        "reason_codes": [],
+    }
+
+    model = build_reader_model(assessment)
+
+    assert model["recommendation_status"] == "complete"
+    assert model["recommendation_message"].startswith(
+        "No operational priorities were identified"
+    )
+
+
+def test_zero_priority_output_hides_admission_and_review_diagnostics():
+    assessment = _assessment()
+    assessment["priorities"] = []
+    assessment["recommendation_diagnostics"] = {
+        "raw_candidate_count": 41,
+        "admitted_count": 37,
+        "final_priority_count": 0,
+        "reviewer_invoked": True,
+        "reviewer_verdict": "revise",
+        "reason_codes": ["PROJECT_FACT_PROVENANCE_UNSUPPORTED"],
+    }
+    model = build_reader_model(assessment)
+
+    rendered = render_reader_html(model)
+    stream = BytesIO()
+    write_reader_docx(model, stream)
+    stream.seek(0)
+    document_text = "\n".join(
+        paragraph.text for paragraph in Document(stream).paragraphs
+    )
+
+    message = "No operational priorities were identified in this assessment. Review the core questions and points to check below."
+    for output in (rendered, document_text):
+        assert output.count(message) == 1
+        assert "37 recommendation" not in output
+        assert "revise" not in output
+        assert "Review outcome" not in output
+
+
+def test_html_escapes_model_authored_content():
+    assessment = _assessment()
+    assessment["priorities"][0]["title"] = "<script>alert('x')</script>"
+    model = build_reader_model(assessment)
+
+    rendered = render_reader_html(model)
+
+    assert "<script>" not in rendered
+    assert "&lt;script&gt;" in rendered
+
+
+def test_docx_writer_accepts_an_in_memory_stream():
+    model = build_reader_model(_assessment())
+    stream = BytesIO()
+
+    returned = write_reader_docx(model, stream)
+
+    assert returned is stream
+    stream.seek(0)
+    texts = [p.text for p in Document(stream).paragraphs]
+    # The candidate safeguard leads; the overview block and Executive readout
+    # follow below it.
+    assert texts[0] == "Candidate country evidence: preview; not approved."
+    assert texts[1].startswith(SENSITIVITY_RATING_QUESTION)
+    assert HEADINGS[0] in texts
+
+
+def test_smoke_runtime_is_watermarked_in_html_and_docx():
+    model = build_reader_model(_assessment())
+    model["runtime_mode"] = "smoke"
+    model["technical_annex"]["runtime_mode"] = "smoke"
+
+    rendered = render_reader_html(model)
+    stream = BytesIO()
+    write_reader_docx(model, stream)
+    stream.seek(0)
+    document_text = "\n".join(
+        paragraph.text for paragraph in Document(stream).paragraphs
+    )
+
+    warning = (
+        "Smoke test: validates workflow completion only; "
+        "not a quality benchmark."
+    )
+    assert warning in rendered
+    assert warning in document_text
+
+
+def test_quality_runtime_does_not_show_smoke_watermark():
+    model = build_reader_model(_assessment())
+    model["runtime_mode"] = "quality"
+
+    assert "Smoke test:" not in render_reader_html(model)
+
+
+def test_guidance_follow_up_uses_one_verified_watch_not_summary_paragraphs():
+    guidance = build_climate_guidance_items(
+        [
+            {
+                "question": "Can delivery remain workable during floods?",
+                "source": "FCV-Sensitive Climate Action Framework",
+                "summary": (
+                    "A long assessment paragraph about six sites, procurement, "
+                    "infrastructure and delivery arrangements that must not be copied."
+                ),
+                "watch": "Confirm U.N. access at Pariang, e.g. during flood closures",
+            },
+            {
+                "question": "Is the infrastructure future-ready?",
+                "source": "FCV-Sensitive Climate Action Framework",
+                "summary": "A second matched summary must also stay out of guidance.",
+                "watch": "A later follow-up must not replace the first one.",
+            },
+        ],
+        [{
+            "title": "FCV-Sensitive Climate Action Framework",
+            "url": "https://www.worldbank.org/framework",
+            "practical_value": "Use this source to stress-test delivery in fragile settings.",
+        }],
+    )
+
+    assert guidance == [{
+        "title": "FCV-Sensitive Climate Action Framework",
+        "url": "https://www.worldbank.org/framework",
+        "practical_value": "Use this source to stress-test delivery in fragile settings.",
+        "project_use": "Use this source to stress-test delivery in fragile settings.",
+    }]
+    assert "long assessment paragraph" not in str(guidance)
+    assert "second matched summary" not in str(guidance)
+    assert "later follow-up" not in str(guidance)
+
+
+def test_guidance_follow_up_falls_back_to_question_and_omits_empty_cue():
+    sources = [{
+        "title": "Defueling Conflict",
+        "url": "https://www.worldbank.org/defueling",
+        "practical_value": "Use this source to examine natural-resource governance.",
+    }]
+
+    fallback = build_climate_guidance_items(
+        [{
+            "source": "Defueling Conflict",
+            "question": "Could BFMU access rules exclude IDPs & host communities?",
+            "summary": "This summary is intentionally longer than the fallback cue.",
+            "watch": "",
+        }],
+        sources,
+    )
+    assert fallback[0]["project_use"] == (
+        "Use this source to examine natural-resource governance."
+    )
+
+    assert build_climate_guidance_items(
+        [{"source": "Defueling Conflict", "summary": "Summary alone is insufficient."}],
+        [{"title": "Defueling Conflict", "url": sources[0]["url"]}],
+    ) == []
+
+
+def test_guidance_html_is_one_closed_disclosure_and_docx_stays_expanded():
+    model = _reader_with_balanced_hierarchy_content()
+
+    rendered = render_reader_html(model)
+    assert rendered.count('<details class="climate-guidance-disclosure">') == 1
+    assert '<details class="climate-guidance-disclosure" open>' not in rendered
+    assert (
+        '<summary>Where the team can go for more detailed follow-up</summary>'
+        in rendered
+    )
+    disclosure = rendered.split(
+        '<details class="climate-guidance-disclosure">', 1
+    )[1].split("</details>", 1)[0]
+    assert disclosure.count("<article") == 1
+    assert "<details" not in disclosure
+
+    stream = BytesIO()
+    write_reader_docx(model, stream)
+    stream.seek(0)
+    text = "\n".join(paragraph.text for paragraph in Document(stream).paragraphs)
+    assert "Relevant WBG guidance for this project" in text
+    assert "Where the team can go for more detailed follow-up" in text
+    assert "Use this source to identify positive peace outcomes." in text
+    assert "Use this source to identify positive peace outcomes." in text
+
+def test_guidance_items_keep_only_the_curated_standard_purpose_sentence():
+    purpose = (
+        "Use this source to assess how environmental and natural-resource "
+        "governance can reduce conflict risk."
+    )
+    guidance = build_climate_guidance_items(
+        [{
+            "source": "Defueling Conflict",
+            "question": "Can resource governance lower tensions?",
+            "watch": "Confirm inclusive representation.",
+        }],
+        [{
+            "title": "Defueling Conflict",
+            "url": "https://www.worldbank.org/defueling",
+            "practical_value": purpose,
+        }],
+    )
+
+    assert guidance[0]["project_use"] == purpose
+    assert "For this project" not in guidance[0]["project_use"]
+    assert "Confirm inclusive representation" not in guidance[0]["project_use"]
+
+
+def test_guidance_without_a_curated_purpose_is_not_generated_from_watch_text():
+    guidance = build_climate_guidance_items(
+        [{
+            "source": "Defueling Conflict",
+            "question": "Can resource governance lower tensions?",
+            "watch": "Confirm inclusive representation.",
+        }],
+        [{
+            "title": "Defueling Conflict",
+            "url": "https://www.worldbank.org/defueling",
+            "description": "Natural-resource governance guidance.",
+        }],
+    )
+
+    assert guidance == []
+
+
+
+def test_reader_allows_withheld_drafting_only_for_recorded_unresolved_route():
+    assessment = _assessment()
+    assessment["operation_context"] = {
+        "document_type": "PCN",
+        "instrument_type": "Unknown",
+        "warning_codes": ["INSTRUMENT_ROUTE_UNRESOLVED"],
+    }
+    assessment["manifest"] = {
+        "repair_actions": ["DRAFTING_CURRENT_UNRESOLVED_ROUTE_DROPPED"]
+    }
+    for priority in assessment["priorities"]:
+        priority["current_document_drafting"] = None
+
+    reader = build_reader_model(assessment)
+
+    assert reader["drafting_route_status"] == "withheld_unresolved_route"
+    assert "CURRENT_DRAFTING_INCOMPLETE" not in validate_reader_model(reader)
+
+
+def test_reader_still_blocks_missing_drafting_for_known_instrument():
+    assessment = _assessment()
+    assessment["operation_context"] = {
+        "document_type": "PCN",
+        "instrument_type": "IPF",
+        "warning_codes": [],
+    }
+    assessment["manifest"] = {
+        "repair_actions": ["DRAFTING_CURRENT_UNRESOLVED_ROUTE_DROPPED"]
+    }
+    assessment["priorities"][0]["current_document_drafting"] = None
+
+    reader = build_reader_model(assessment)
+
+    assert reader["drafting_route_status"] == "available"
+    assert "CURRENT_DRAFTING_INCOMPLETE" in validate_reader_model(reader)
+
+def test_build_reader_model_carries_normalized_summary_overview_array():
+    assessment = {
+        "executive_readout": "Executive marker must not be used. " * 60,
+        "summary_overview": {
+            "paragraphs": [
+                (
+                    "Verdict and foundation: The project recognizes the climate-FCV "
+                    "interaction and the overall takeaway is credible. "
+                    + "Distinctive reader core evidence phrase. " * 12
+                ).strip(),
+                (
+                    "Four-dimensional assessment: Relevance is material, sensitivity "
+                    "follows do no harm, responsiveness supports resilience, and "
+                    "operationalization sets roles and indicators. Practical "
+                    "implication: confirm site criteria and bridge them to ranked "
+                    "priorities. "
+                    + "The residual gap remains material. " * 12
+                ).strip(),
+            ]
+        },
+        "overview_summary": "The Project Operations Manual will define site selection. The residual gap remains material.",
+        "core_questions": [{
+            "question_id": "CQ-READER",
+            "summary": "Distinctive reader core evidence phrase.",
+            "evidence_ids": ["CE-READER"],
+        }],
+        "context_evidence": [{
+            "evidence_id": "CE-READER",
+            "statement": "Distinctive reader core evidence phrase.",
+        }],
+        "sources": [{
+            "source_id": "SRC-READER",
+            "title": "Reader source",
+        }],
+        "judgments": {
+            "relevance": {"value": "high", "rationale": "Relevant.", "evidence_ids": ["PW-001"]},
+            "sensitivity": {"value": "strong", "rationale": "Sensitive.", "evidence_ids": ["RG-001"]},
+            "responsiveness": {"value": "emerging", "rationale": "Responsive.", "evidence_ids": ["PF-001"]},
+            "operationalization": {"value": "early", "rationale": "Operationalization is early.", "evidence_ids": ["PF-001"]},
+        },
+        "priorities": [],
+    }
+    model = build_reader_model(assessment)
+    assert model["summary_overview"] == assessment["summary_overview"]["paragraphs"]
+
+
+def test_legacy_summary_fallback_uses_overview_and_validated_rationales_not_executive():
+    assessment = {
+        "executive_readout": "UNIQUE_EXECUTIVE_MARKER must never leak into fallback. " * 60,
+        "overview_summary": "Overview foundation. Overview implication.",
+        "facts": [{
+            "claim_id": "PW-001",
+            "statement": (
+                "Relevance rationale. Sensitivity rationale. "
+                "Responsiveness rationale. Operationalization rationale."
+            ),
+        }, {"claim_id": "RG-001"}, {"claim_id": "PF-001"}],
+        "judgments": {
+            "relevance": {"value": "high", "rationale": "Relevance rationale.", "evidence_ids": ["PW-001"]},
+            "sensitivity": {"value": "strong", "rationale": "Sensitivity rationale.", "evidence_ids": ["RG-001"]},
+            "responsiveness": {"value": "emerging", "rationale": "Responsiveness rationale.", "evidence_ids": ["PF-001"]},
+            "operationalization": {"value": "early", "rationale": "Operationalization rationale.", "evidence_ids": ["PF-001"]},
+        },
+        "priorities": [],
+    }
+    paragraphs = build_reader_model(assessment)["summary_overview"]
+    assert len(paragraphs) == 2
+    assert all(paragraph.endswith(".") for paragraph in paragraphs)
+    assert "Overview foundation." in paragraphs[0]
+    assert "Operationalization rationale." in " ".join(paragraphs)
+    assert "UNIQUE_EXECUTIVE_MARKER" not in " ".join(paragraphs)
+def test_legacy_fallback_excludes_rationales_without_evidence_ids():
+    assessment = {
+        "executive_readout": "UNIQUE_EXECUTIVE_MARKER must never leak into fallback. " * 60,
+        "overview_summary": "Overview foundation. Overview implication.",
+        "judgments": {
+            "relevance": {"value": "high", "rationale": "Supported rationale.", "evidence_ids": ["PW-001"]},
+            "sensitivity": {"value": "strong", "rationale": "Unsupported rationale.", "evidence_ids": []},
+            "responsiveness": {"value": "emerging", "rationale": "Supported response rationale.", "evidence_ids": ["PF-001"]},
+            "operationalization": {"value": "early", "rationale": "Supported operationalization rationale.", "evidence_ids": ["PF-001"]},
+        },
+        "priorities": [],
+    }
+    paragraphs = build_reader_model(assessment)["summary_overview"]
+    assert "Unsupported rationale." not in " ".join(paragraphs)
+
+
+def test_legacy_fallback_ignores_source_block_ids_and_uses_authoritative_register_ids():
+    assessment = {
+        "overview_summary": "Overview foundation. Overview implication.",
+        "facts": [{
+            "claim_id": "PF-REAL",
+            "source_block_ids": ["FAKE-SOURCE-BLOCK"],
+            "statement": "Known fact rationale.",
+        }],
+        "analysis": {
+            "existing_responses": [{"response_id": "ER-REAL"}],
+            "pathways": [{"pathway_id": "PW-REAL"}],
+            "residual_gaps": [{
+                "gap_id": "RG-REAL",
+                "statement": "Known gap rationale.",
+            }],
+        },
+        "context_evidence": [{
+            "evidence_id": "CE-REAL",
+            "statement": "Known context rationale.",
+        }],
+        "judgments": {
+            "relevance": {
+                "value": "high",
+                "rationale": "Source-block fake.",
+                "evidence_ids": ["FAKE-SOURCE-BLOCK"],
+            },
+            "sensitivity": {
+                "value": "strong",
+                "rationale": "Known fact rationale.",
+                "evidence_ids": ["PF-REAL"],
+            },
+            "responsiveness": {
+                "value": "emerging",
+                "rationale": "Known gap rationale.",
+                "evidence_ids": ["RG-REAL"],
+            },
+            "operationalization": {
+                "value": "early",
+                "rationale": "Known context rationale.",
+                "evidence_ids": ["CE-REAL"],
+            },
+        },
+        "priorities": [],
+    }
+    paragraphs = build_reader_model(assessment)["summary_overview"]
+    joined = " ".join(paragraphs)
+    assert "Source-block fake." not in joined
+    assert "Known fact rationale." in joined
+    assert "Known gap rationale." in joined
+    assert "Known context rationale." in joined
+
+
+def test_legacy_fallback_validates_rationale_against_non_judgment_prose():
+    assessment = {
+        "overview_summary": "Overview foundation. Overview implication.",
+        "facts": [{
+            "claim_id": "PF-REAL",
+            "statement": "The project implementation is documented.",
+        }],
+        "judgments": {
+            "relevance": {
+                "value": "high",
+                "rationale": "UNDP establishes a new committee.",
+                "evidence_ids": ["PF-REAL"],
+            },
+            "sensitivity": {
+                "value": "strong",
+                "rationale": "The project implementation is documented.",
+                "evidence_ids": ["PF-REAL"],
+            },
+            "responsiveness": {
+                "value": "emerging",
+                "rationale": "The project implementation is documented.",
+                "evidence_ids": ["PF-REAL"],
+            },
+            "operationalization": {
+                "value": "early",
+                "rationale": "The project implementation is documented.",
+                "evidence_ids": ["PF-REAL"],
+            },
+        },
+        "priorities": [],
+    }
+    paragraphs = build_reader_model(assessment)["summary_overview"]
+    joined = " ".join(paragraphs)
+    assert "UNDP establishes a new committee." not in joined
+    assert "The project implementation is documented." in joined
+
+
+def test_static_html_and_docx_prefer_canonical_summary_overview():
+    model = build_reader_model(_assessment())
+    model["summary_overview"] = [
+        "CANONICAL_SUMMARY_MARKER. The project-specific overview belongs here.",
+        "A second canonical paragraph carries the practical implication.",
+    ]
+    model["climate_sensitivity_rating"]["overview_summary"] = (
+        "LEGACY_RATING_SUMMARY_MARKER must not replace the canonical overview."
+    )
+
+    rendered = render_reader_html(model)
+    assert "CANONICAL_SUMMARY_MARKER" in rendered
+    assert "LEGACY_RATING_SUMMARY_MARKER" not in rendered
+
+    output = BytesIO()
+    write_reader_docx(model, output)
+    output.seek(0)
+    docx_text = "\n".join(paragraph.text for paragraph in Document(output).paragraphs)
+    assert "CANONICAL_SUMMARY_MARKER" in docx_text
+    assert "LEGACY_RATING_SUMMARY_MARKER" not in docx_text

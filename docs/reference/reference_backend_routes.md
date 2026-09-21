@@ -11,21 +11,25 @@
 # Core analysis route (all 3 stages)
 POST /api/run-stage
   Input: {stage, documents[], history[], user_message, prompt_override,
+          active_lenses[] (max 2), lens_versions{}, lens_diagnostic{},
           doc_type (Stage 3 only — for stage-aware prompt injection),
           uploaded_doc_names (Stage 3 only — for citation check)}
   Output: SSE stream with chunks, then:
-    Stage 1: {done, output}
+    Stage 1: {done, output, active_lenses[], lens_warnings[]}
     Stage 2: {done, output, sensitivity_rating, responsiveness_rating,
               under_hood: {recs_table, dnh_checklist, questions_map, evidence_trail},
-              rating_reasoning, parse_error, parse_error_message}
-    Stage 3: {done, output, priorities[], fcv_rating, fcv_responsiveness_rating,
+              rating_reasoning, lens_diagnostic, active_lenses[], lens_warnings[],
+              parse_error, parse_error_message}
+    Stage 3: {done, output, priorities[], concise_readout,
+              fcv_rating, fcv_responsiveness_rating,
               sensitivity_summary, responsiveness_summary,
               risk_exposure: {risks_to, risks_from},
               parse_error, parse_error_message}
 
 # Express mode route (single SSE endpoint for all 3 stages)
 POST /api/run-express
-  Input: {documents[], assessment_id, review_mode, user_context, priority_questions}
+  Input: {documents[], assessment_id, review_mode, user_context, priority_questions,
+          active_lenses[], lens_versions{}}
   Output: SSE stream with events:
     assessment_id: {assessment_id}
     stage_start: {stage_start: N}
@@ -74,6 +78,8 @@ GET /health                     # Health check
 GET /how-it-works               # Workflow explanation page
 GET /admin                      # Admin panel (prompts modal)
 GET /api/default-prompts        # Get default prompts for reference
+GET /api/sector-lenses          # Enabled lens catalogue plus non-fatal load warnings
+POST /api/detect-document-type  # Document metadata plus ranked lens_suggestions[]
 
 # DOCX download route (v9.1; extended v9.13)
 POST /api/download-report
@@ -81,6 +87,9 @@ POST /api/download-report
     "summary": "<markdown string — Stage 3 executive summary>",
     "priorities": [ ...stageThreePriorities array... ],
     "focus_questions": { ...focusQuestionsResult... },  # optional (v9.13); omit or null to skip section
+    "active_lenses": [{"id": "...", "version": "...", "position": "primary"}],
+    "lens_diagnostic": {"lenses": [...], "findings": [...]},
+    "lens_context_sources": [{"id": "context-ccdr", "lens_id": "climate", "source_type": "ccdr", "url": "https://...worldbank.org/..."}],
     "metadata": {
       "date_str": "18 April 2026",
       "classification_category": "Conflict-Affected",
@@ -101,7 +110,10 @@ POST /api/download-report
         optional "Responses to Your Priority Points" section (v9.13, rendered when focus_questions
         is supplied and non-error; one subsection per response with status label, answer,
         evidence basis, linked priorities, and gap note)
+    - Appends a sector-lens source/evidence appendix when lens data is present; validated dynamic context appears under "Country context used"
     - Frontend: downloadReport() POSTs JSON payload; receives blob; triggers browser save
+
+Sector-lens catalogue records expose `activation` and `readout_sections`. Both `/api/run-stage` and `/api/run-express` carry `lens_context_sources` in request/SSE state. Stage 2 lens diagnostics include `materiality_summary`, `analysis_emphasis`, `readout_sections`, and `other_pathways` in addition to mapped findings. If an active-lens diagnostic is missing or incomplete, both routes use the same single dedicated Haiku recovery request (120-second default/read timeout, 10-second connection timeout, zero SDK retries). The response is strictly parsed, normalized, and validated against the active-lens contract before it is used. Failure remains non-fatal to the core FCV assessment, is logged, and is surfaced through the Stage 2 parse-error payload. v9.18 adds no further SSE schema change: the already-existing additive `lens_diagnostic_recovered` boolean reports successful repair, while existing fields and the diagnostic schema remain compatible.
 
 # Follow-on post-analysis route (Stage 3 bottom card)
 POST /api/run-followon
@@ -229,6 +241,24 @@ Each stage re-injects its own fresh background docs into the API call. The histo
 
 ---
 
+## Normal FCV concise bundle
+
+Core normal-FCV Stage 3 adds optional `concise_readout` and `priority.concise`
+fields. The prompt places the delimited JSON before the detailed narrative;
+`extract_priorities()` remains delimiter-based and does not depend on block position.
+Active sector-lens prompts are not given the core concise schema.
+
+`concise_readout` contains a headline, a newly generated 80-110 word `overview`, and zero to three
+`{title, text}` strengths. Admission accepts 40-200 words for saved-bundle compatibility.
+Every ranked priority must carry a complete concise
+object with title, rationale, one to four actions (new generation: one or two), optional supported drafting, and
+project-cycle guidance. Normalization is atomic: if the readout or any priority
+concise object is incomplete, the parser returns no concise bundle and removes all
+partial priority concise objects while preserving the detailed result.
+
+Both `/api/run-stage` and `/api/run-express` return the normalized optional bundle.
+No repair model call is made when it is unavailable.
+
 ## Priority Parsing — Stage 3 (`extract_priorities()`)
 
 ```python
@@ -344,3 +374,178 @@ def clean_stage2_output(stage2_output):
 ---
 
 *Last updated: 2026-07-02 — added /api/run-priority-questions, extract_focus_questions, focus_questions param for /api/download-report, priority_responses param for /api/run-followon (v9.13)*
+
+
+---
+
+## Dual-regime parsers & helpers (v9.21)
+
+- `extract_regime_context(stage1_output: str, instrument: str = "IPF") -> dict` — parses
+  `%%%REGIME_CONTEXT_START/END%%%`, classifies `preparation_regime` / `es_regime` /
+  `processing_model` via `regime_router`, sets `verification_flag` when a governing signal is
+  missing/contradictory. Missing block → all-safe defaults (`unresolved_policy_source` /
+  `UNRESOLVED` / `unknown`). Stripped from display by `clean_stage1_output()`.
+- `appraisal_document_label(preparation_regime, instrument) -> str` — PAD ↔ Project Paper /
+  Program Paper / Program Document.
+- `appraisal_reference_set(preparation_regime, es_regime, instrument) -> tuple` — regime-gated
+  minimum reference set (ESS items only for ESF + IPF).
+- `build_regime_header(preparation_regime, processing_model, es_regime, instrument) -> str` —
+  compact new-model Stage 2/3 prompt header ("" for legacy/unresolved).
+- `build_minimum_reference_block(preparation_regime, es_regime, instrument) -> str` — verbatim
+  legacy block ↔ corrected new-model block for the Stage 3 `{minimum_reference_set}` placeholder.
+- `regime_router` (pure module): `classify_preparation_regime`, `classify_processing_model`,
+  `classify_es_regime`, `op_7_50_screen`, `op_7_60_screen`, `action_timing_vocab`,
+  `resolve_action_timing`.
+- `extract_priorities(...)` gains `preparation_regime` / `instrument` kwargs (new-model timing
+  remap) and mirrors `pad_sections` ↔ `appraisal_document_sections`; `authority_basis` field
+  validated (default `reviewer_judgment`). Done-event / Stage 3 requests carry `regime_context`.
+
+
+---
+
+## Climate-FCV readout redesign helpers (v9.22)
+
+- `climate_question_bank.select_triggered_questions(project_signals) -> {theme: [question,...]}` — pure trigger selector; cq1 always present.
+- `sector_lenses.pipeline.climate_integration_rating(value) -> str` — validate the 6-tier rating label ('' if absent/invalid).
+- `sector_lenses.pipeline._normalize_climate_sw(value)` — bound the `strengths_weaknesses` list.
+- `build_lens_stage_context(..., project_signals="")` — injects the triggered bank + §12 calibration into the Stage 2 climate suffix; drops `wider_fcv_context` and adds §12.5/§12.9 guardrails to the Stage 3 climate prefix.
+- `climate_integration_payload(diagnostic)` now returns `{level, rating, summary}`.
+- DOCX (`download_report`): `add_climate_strengths_weaknesses()` + `add_climate_core_questions()` replace the standalone reflections/dividend/wider-FCV sections in climate mode.
+
+## Climate-FCV country-bank route contract (v9.23)
+
+Stage 1 in both `/api/run-express` and `/api/run-stage` selects a compact bank
+manifest before live research. Completion events include `climate_grounding`
+alongside `climate_research`. Stage 2 accepts only
+`climate_grounding.bank_manifest`, rematerializes canonical records from the
+pinned server release, and ignores browser-supplied source/evidence prose.
+`/api/download-report` uses the same resolver before rendering provenance.
+
+The browser envelope contains `state`, `warning_code`, `content_version`,
+`country_iso3`, `research_status`, a sanitized `bank_manifest`, and bounded source
+metadata. It excludes `prompt_context`, evidence/pathway records, and live claims.
+Manifest fields are `bank_status`, `warning_code`, `schema_version`,
+`content_version`, `country_iso3`, `evidence_ids`, and `pathway_ids`.
+
+Typed warnings include `bank_missing`, `bank_incompatible`,
+`bank_version_mismatch`, `bank_country_unavailable`, `bank_country_unapproved`,
+`bank_content_expired`, `bank_manifest_invalid`, `bank_scope_unsupported`, and
+`bank_packet_too_large`. All degrade without terminating the Climate run.
+
+## Verified Climate-FCV Express route (v9.24)
+
+For a design review whose resolved active-lens set is exactly `climate`,
+`/api/run-express` preserves the existing extraction, country profile, bank
+selection, live research, and final grounding steps, then dispatches to
+`climate-verified-v2`. Exactly one file explicitly placed in the Project Document
+slot may supply bounded project-fact blocks. Its applicability/version are recorded as
+`partial`/`user_designated`, not independently verified/latest; stage, geography, and
+financed scope remain unresolved. Unresolved package uploads remain in the document inventory but
+their blocks are withheld from fact extraction; multiple candidate primaries withhold
+all fact authority until precedence is resolved. Runtime blocks are deterministic
+chunks of extracted text rather than original DOCX/PDF structural locators. Uploaded
+context, country-bank evidence, and live claims remain contextual.
+The route emits the usual three completion markers for browser compatibility,
+with additive `climate_assessment` and `climate_reader` fields on Stages 2 and 3.
+No legacy Stage 1/2/3 model stream is called on this path. Keepalives are emitted
+while verified calls execute. The worker has a 14-minute wall-clock ceiling, retries
+share the call's original timeout budget, and cancellation prevents later paid calls
+after timeout or disconnect. A synchronous provider request already in flight cannot
+be killed safely and may continue until its bounded per-call timeout. Mixed-lens, implementation, step-by-step, and
+legacy-session behavior is unchanged.
+
+Before research planning, the verified route derives an additive
+`operation_context` from strong primary-document filename and heading markers.
+It carries `document_type`, base `instrument_type`, `country_scope`, `is_mpa`,
+`has_ipf_component`, `preparation_regime`, `processing_model`, `es_regime`, and
+bounded warning/evidence notes. This happens before bank selection so an explicit
+regional or multi-country operation reaches the existing `bank_scope_unsupported`
+guard instead of receiving a single-country package. The context is returned on
+the Stage 1 completion event and passed into every verified model stage. Unknown
+or ambiguous routes remain `Unknown`; they do not inherit IPF guidance.
+When an explicit OIS creation date is present, the date-based classifier takes
+precedence over document-nomenclature markers and a marker/date conflict is
+recorded. This prevents a legacy DPF Program Document from being labelled new
+model merely because DPF retains the same document name across regimes.
+
+`POST /api/download-report` accepts `climate_assessment` when its schema is
+`climate-verified-v2`, rebuilds and validates the canonical reader model, and
+returns the verified DOCX. Reader-integrity failures return 422 with bounded reason
+codes instead of exporting a malformed report. Zero-priority verified exports
+retain the reader's explicit no-recommendation admission message in HTML and DOCX.
+
+Completed verified runs emit one bounded `Climate recommendation diagnostics`
+application-log line with counts, semantic-review state, up to 12 reason codes,
+and up to 12 unsupported numeric tokens. It never logs candidate text, source
+excerpts, or model reasoning.
+
+The operational guidance registry is `climate-guidance-v3`. Its supported
+current-document matrix is IPF PCN/PID/PAD/Project Paper/AF/Restructuring;
+PforR PCN/PID/PAD/Program Paper; DPF PCN/PID/PAD/Program Document; with an MPA
+program-layer overlay for any supported base instrument. Unknown documents,
+TA, ISR, and unresolved instruments fail closed and receive no drafting packet.
+
+`recommendation_diagnostics.reason_codes` includes
+`RECOMMENDATIONS_ALL_SUPPRESSED` when at least one recommendation candidate was
+parsed but none survives the deterministic gates. In that state,
+`recommendation_diagnostics.review_status` is `attention`; the canonical reader
+sets `recommendation_status` to `incomplete` and displays a bounded warning on
+live HTML, standalone HTML, and DOCX. This state must not be rendered as a
+successful no-priority result. When the compiler returns no candidates at all,
+the ordinary neutral zero-priority message remains valid.
+
+## Structured DOCX extraction and verified routing (v9.38)
+
+`docx_structure.py` is the single OOXML traversal path for DOCX text and metadata.
+It recursively walks visible paragraphs, tables, nested tables, and structured
+document tags in document order; normalizes checked/unchecked controls; and emits
+stable coordinates for header/value structured fields, including explicit empty
+values. `app.extract_docx_text()` deliberately keeps its public `(text,
+part_count)` return shape. Internal upload handling uses
+`extract_docx_content()` and passes `structured_fields` as a separate sidecar in
+both `/api/run-stage` and `/api/run-express`; those fields are not inserted into
+the evidence-block sequence.
+
+Verified Climate sources identify this projection as `source-blocks-v3`.
+Structured financing fields take precedence over prose markers. Conflicting or
+explicitly empty values produce typed unresolved/conflict warnings and fail
+closed; generic E&S values such as `Substantial` cannot establish the ESF route
+without separate explicit framework evidence. The resolved operation context is
+returned on Stage 1 and remains the authority for Summary and Detailed drafting
+gates.
+
+Normal FCV Stage 3 retains its existing model output contract. Applicable
+mid-cycle, DPF, PforR, regional, and horizon watch arrays are normalized and
+deduplicated for a single render-time Summary disclosure; no additional backend
+prompt, schema, rating, or model call is introduced.
+
+The operation-context resolver uses document nomenclature as a strong regime
+signal when an OIS date is unavailable. Date-based routing uses the IPF/PforR
+boundary of 17 April 2026 and the DPF boundary of 18 April 2026.
+
+## Standard management brief download (2026-09-20)
+
+`POST /api/download-management-brief` accepts a JSON object containing `format` (`html` or `docx`), `concise_readout`, canonical `priorities` including concise cards, `fcv_rating`, `fcv_responsiveness_rating`, resolved `doc_type`, and `active_lenses`. Active lenses are rejected. The route revalidates through `extract_priorities()` with document-type lifecycle context; an unavailable or invalid concise bundle returns 422. Invalid request shape or format returns 400. Successful responses are attachments (`text/html` or the Word Open XML media type).
+
+The pure `fcv_management_brief.py` renderers receive normalized data and project the headline, overview, all evidenced strengths and every ranked priority with its gap (or legacy why fallback) followed by its leading action. No model call or truncation is performed. Longer legacy content may span pages. HTML escapes content and supports browser printing; DOCX is editable A4. The existing `/api/download-report` and full HTML export retain comprehensive output.
+
+Live PAD follow-up (2026-09-20): the standard route allows up to 300,000 primary-document characters in both Stage 1 entry points; larger inputs emit the existing `extraction_warning` event and retain an explicit cutoff marker. Specialist and secondary-document budgets are unchanged. Express handled exceptions now log the assessment ID, failed stage and traceback while preserving the existing error SSE contract.
+
+Word exports use `fcv_word_style.style_fcv_word_document()` after content generation: brief via `fcv_management_brief.py`, standard comprehensive via `download_report()`, verified Climate via `write_reader_docx()`. The shared `fcv_presentation.py` helper handles first-sentence boundaries and safe em-dash normalization. The portable python-docx helper applies navy running headers/headings, Arial, action accents, repeating table headings and native page numbers. It changes presentation only and adds no runtime dependency. ITS can reuse it after its existing document generation.
+
+## Management-readability follow-up
+
+Standard concise priority cards may carry a grounded `gap` paragraph in addition
+to `why` and `how`. Browser and management exports show `gap` when admitted and
+otherwise use the admitted `why`, preserving older sessions. The gaps precede
+action-focused priorities in the brief; canonical Detailed content is retained.
+This is an optional additive projection field in the existing Stage 3 call, not
+an extra request or a new formal rating. Existing lifecycle and grounding gates
+remain authoritative.
+
+Word and brief HTML use the user's technical-report presentation: Arial, a bold
+opening sentence followed by explanatory prose, and presentation normalization
+of em dashes to spaced hyphens. New management content targets about 1.5-2 A4
+pages. Never shorten canonical evidence or invent text to satisfy page length.
+
+Gap admission accepts nonempty grounded text up to 100 words. The drafting target is not a strict admission limit. Brief Word gap paragraphs stay together without truncating text.

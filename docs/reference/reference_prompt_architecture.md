@@ -5,6 +5,10 @@
 
 ---
 
+## Optional Sector-Lens Overlay
+
+Both workflow paths call the same bounded composer. Stage 1 receives evidence/research intents and emits `%%%LENS_EVIDENCE_START/END%%%`. Stage 2 receives distilled guidance plus conditional questions and emits JSON in `%%%LENS_DIAGNOSTIC_START/END%%%`. Each finding contains lens/source provenance and an explicit `ost:*`, `dnh:*`, or `shift:*` mapping. Stage 3 merges overlapping findings and may add `lens_ids` and `lens_relevance` to affected priorities in the single existing recommendation set. Lenses never add a score or change the rating denominator. See `reference_sector_lenses.md` for the module schema and compatibility contract.
+
 ## Stage 1: "Context & Extraction"
 
 **Purpose:** Extract FCV-relevant content from the primary project document, enriched by distilled secondary document cards, automated web research, and Playbook Diagnostics framing.
@@ -36,7 +40,7 @@ Current upload tiering: exactly one primary project document anchors the assessm
 - FCV classification context from FCV Strategy 2026-2030 injected (is this an FCS country? what trajectory?)
 
 **Large document handling:**
-- Primary documents are extracted up to `MAX_DOC_CHARS`, then truncated to `STAGE1_MAX_DOC_CHARS = 60_000` before Stage 1.
+- Primary documents are extracted up to `MAX_DOC_CHARS`. Standard FCV reads up to 300,000 primary characters; specialist routes retain `STAGE1_MAX_DOC_CHARS = 60_000`. Both paths retain bounded inputs; the standard route emits a visible warning when its primary allowance is exceeded.
 - Secondary package/context documents are extracted up to `MAX_DOC_CHARS`, then distilled into capped cards before Stage 1. The old 25k/30k secondary full-read caps are no longer the effective Stage 1 payload size.
 - Truncation warnings shown to users when triggered.
 
@@ -82,6 +86,11 @@ Current upload tiering: exactly one primary project document anchors the assessm
 6. Protecting project staff and beneficiaries from security risks
 7. Monitoring for unintended negative consequences
 8. Establishing accessible and trusted grievance mechanisms
+9. Instrument-appropriate SEA/SH risk management in conflict contexts
+
+The Climate-FCV Lens may map evidence to these existing principles but does not independently rescore them.
+
+**Climate-FCV sector-lens contract:** Climate is manual-only and never auto-suggested. Core-only Stage 2 retains the lightweight conditional Climate-FCV Nexus check. Active Climate supersedes that check and emits `materiality_summary`, `analysis_emphasis`, declared `readout_sections`, and `other_pathways` in the hidden diagnostic. Analysis is adaptation-first; deep mitigation requires a clear material pathway. Optional CCDR context is non-dominant and validated separately. Core-only Stage 3 generates 1-5 material priorities without category or document-revision quotas; active-lens Stage 3 permits no more than five, with a flexible non-quota mix of core, Climate-linked, and blended priorities.
 
 **Strict [S+R] definition:**
 [S+R] only valid for: (1) inclusion/targeting of conflict-affected populations; (2) FCV logic in ToC/PDO; (3) adaptive M&E for harm + resilience; (4) GRM for state-citizen accountability.
@@ -155,7 +164,7 @@ FCV Responsiveness Summary (80–100 words) ← extracted via delimiter, shown a
 Stage badge (e.g., "Recommendations tailored for PCN stage")
 ```
 
-**JSON block format (appended after narrative):**
+**Core normal-FCV JSON block format (emitted before narrative):**
 ```
 %%%JSON_START%%%
 {
@@ -193,6 +202,19 @@ Stage badge (e.g., "Recommendations tailored for PCN stage")
 }
 %%%JSON_END%%%
 ```
+
+The core schema also carries optional `concise_readout` plus a `concise` object on
+every ranked priority. Standard generation targets a one-sentence headline, a 80-110 word
+overview, and zero to three evidenced strengths. Admission also accepts legacy
+overviews through 200 words and up to four actions. Each new priority concise object contains a
+plain-language title, project-specific `why`, one or two `how` actions, optional
+supported drafting, and project-cycle guidance.
+
+The concise schema is appended only when no sector lens is active. JSON-first
+ordering reduces trailing-block omission on long Stage 3 generations; the detailed
+Recommendations Note follows and remains authoritative. Concise normalization is
+atomic across the top-level readout and every priority. Invalid concise data is
+removed without invalidating the detailed output or requesting repair generation.
 
 **Field value sets:**
 - `tag`: `[S]` | `[R]` | `[S+R]`
@@ -297,3 +319,193 @@ Note: `evidence_basis` has been removed from this schema (v9.15). The `direct_an
 ---
 
 *Last updated: 2026-07-02 — added Priority Questions prompt, %%%FOCUS_QUESTIONS_START/END%%% schema, and soft-emphasis injection pattern (v9.13); added top-level `overview` field, plain-language `evidence_basis` constraint, `status` marked internal-only (v9.14); removed `evidence_basis` field, expanded `direct_answer` to one or two full paragraphs with blank-line separator, raised max_tokens to 10000 (v9.15)*
+
+
+---
+
+## Dual-regime process model (v9.21)
+
+Stage 1 emits a regime-detection block alongside `%%%DOC_TYPE%%%` / `%%%INSTRUMENT_TYPE%%%` /
+`%%%TEMPORAL_CONTEXT%%%`:
+
+```
+%%%REGIME_CONTEXT_START%%%
+ois_creation_date: [YYYY-MM-DD | Unknown]
+preparation_regime_source: [where the OIS date/markers came from]
+concept_decision_or_equivalent_date: [YYYY-MM-DD | Unknown]
+concept_date_source: [...]
+op_bp_4_03_applies: [true|false]
+additional_financing_exception_applies: [true|false]
+op_7_50_screen: [true|false]   # International Waterways
+op_7_60_screen: [true|false]   # Disputed Territories
+evidence_markers: [semicolon list of exact strings keyed on]
+conflicting_evidence: [... | none]
+%%%REGIME_CONTEXT_END%%%
+```
+
+Detection keys on OIS/Concept **dates + template markers**, never the document label alone
+("PID" is not decisive; a guidance catalogue number is not proof of new-regime). Two independent
+axes: `preparation_regime` (OIS date vs 17 Apr 2026 for IPF/PforR or 18 Apr 2026 for DPF) and `es_regime` (Concept Decision date vs
+1 Oct 2018). `extract_regime_context()` parses the block and classifies both via `regime_router`.
+
+**Stage 2/3 prompt injection (both routes):** `build_regime_header(preparation_regime,
+processing_model, es_regime, instrument)` returns "" for legacy/unresolved (byte-for-byte
+unchanged) or a compact new-model header (Project/Program Paper label, one/two-step gates
+TD/IR or One Review, new-model timing vocabulary). Stage 3 injects it as the `{regime_header}`
+`.format()` kwarg together with `{minimum_reference_set}` (from `build_minimum_reference_block`);
+Stage 2 appends the header. **Stage 3 uses `.format()` kwargs, never a post-format `.replace()`**
+(a `.replace()` would leave the other placeholders and blank the prompt on `KeyError`).
+
+**Regime-gated minimum reference set:** `appraisal_reference_set(preparation_regime, es_regime,
+instrument)` returns `LEGACY_PAD_MINIMUM_REFERENCE_SET` for legacy/unresolved, the corrected
+`NEW_MODEL_MINIMUM_REFERENCE_SET` when `es_regime == ESF` and `instrument == IPF`, else
+`NEW_MODEL_NON_ESF_REFERENCE_SET` (no ESF/ESS vocabulary). Gate-1 note: "appraisal" is not
+globally replaced (the E&S Directive still uses Concept/Appraisal); only preparation-gate
+language is relabelled.
+
+
+---
+
+## Climate-FCV readout redesign (v9.22)
+
+**Core-question bank** (`climate_question_bank.py`): six stable themes (cq1_interaction, cq2_maladaptation, cq3_dividends, cq4_inclusion, cq5_institutions, cq6_adaptive). Each entry `{id, theme, question, source, triggers[]}` (lowercase trigger tokens). `select_triggered_questions(project_signals)` returns per-theme fired questions (cq1 always guaranteed). Injected into the Stage 2 climate suffix; `project_signals` is assembled from instrument + doc_type + sector + Stage-1 narrative at both routes.
+
+**Climate diagnostic contract additions** (`sector_lenses/pipeline.py` climate lens entry):
+- `reflections[]` now `{question_key, title (<=160), status_cue, source (<=120), text (<=1800, two paragraphs)}`; cap 6.
+- `integration_rating` — 6-tier label (`Extremely Low` | `Very Low` | `Low` | `Adequate` | `Well Embedded` | `Very Well Embedded`), `''` when absent/invalid; `integration_level` (4-tier) kept for back-compat.
+- `strengths_weaknesses[]` — `{side: strength|gap, title (<=160), text (<=600)}`, up to 4 per side.
+
+**OPCS §12/§12.9 calibration** (Stage 2 suffix + Stage 3 prefix, climate-gated only): instrument-route every point; Paris Alignment / CDRS flag-not-determine; no universal numeric horizon ("asset-appropriate design horizon"); IPF-only ESS map; conditional compound-risk wording; analytical-source labelling; CERC only with a named eligible emergency + activation pathway; AF/Restructuring/MPA CDRS scoping; `authority_basis` tag. `wider_fcv_context` is no longer requested in climate mode (still parsed for back-compat).
+
+**Budgets:** `PLATFORM_STAGE_BUDGETS` = stage1 600 / stage2 3300 / stage3 1600; `_bounded_stage3_lenses` target 1500.
+
+**Readout order (live HTML, shared HTML, DOCX in parity):** plain opening narrative + 6-tier gauge -> `renderClimateStrengthsWeaknesses` -> `renderClimateCoreQuestions` (lay intro naming the source literature + both interaction directions in one or two component-anchored paragraphs + per-theme answers with framework references). The opening uses `executive_summary` for two-to-three scene-setting sentences and `materiality_summary` for the project-specific "Why it matters" transition. Reader-facing copy uses climate relevance/importance rather than materiality. Core-question `status_cue` remains in the canonical payload for compatibility but is not rendered. Standalone dividends + wider-FCV sections remain dropped in module mode. DOCX helpers: `add_climate_strengths_weaknesses`, `add_climate_core_questions`.
+
+**Verified summary strength cards:** the bounded-analysis prompt keeps `existing_responses.description` within 45 words but requires two or three plain-language sentences. The short first sentence states the documented response; the remainder names a concrete project anchor and explains its Climate-FCV significance. The live summary derives the full heading from that first sentence and renders the remainder as the card explanation. It does not truncate headings; older one-sentence records use the complete description as both heading and fallback body. This is a presentation/prompt-quality contract only and does not add a schema field.
+
+## Climate-FCV country-bank grounding (v9.23)
+
+The native Climate Stage 2 prompt accepts one bounded `EXTERNAL CLIMATE-FCV
+GROUNDING` data block. It identifies one of four states (`bank+research`,
+`bank-only`, `research-only`, `thematic-only`) and distinguishes reviewed
+structural bank evidence from accepted current/project-specific live research.
+The block is untrusted evidence, never instructions. Canonical IDs are citations;
+`observed`, `projected`, and `inferred` labels must be preserved; analytical
+inference remains conditional; and co-occurrence is not causality.
+
+The bank projection is capped at 6,000 characters and combined grounding at
+12,000. This does not recreate the generic 12-OST prompt: Climate Stage 2 remains
+native, while non-Climate runs follow the standard prompt path unchanged.
+
+Live research normally makes one bounded request. A second request is allowed only
+when the first response contains a structured `partial|complete` bundle with at
+least one source and one claim and fails specifically with
+`climate_research_insufficient`. Missing structured output, structuring truncation,
+timeouts, and terminal provider failures do not use this evidence-gate retry.
+
+## Verified Climate-FCV prompt architecture (v9.24)
+
+Climate-only Express design reviews use four required structured calls plus one
+conditional review: atomic fact extraction; bounded pathway/existing-response/
+residual-gap analysis; four-dimensional judgment plus a 350-600 word executive
+readout; and recommendation admission/compilation. Conditional semantic review is
+triggered only by high-risk routing, authority, evidence, or drafting conditions.
+Every response is one delimited JSON object. Uploaded/retrieved content is untrusted
+evidence, never instructions. Only one unambiguous designated primary project document establishes project facts;
+unresolved package documents are inventoried but cannot supply fact blocks. Country
+and uploaded-context evidence can support contextual pathways and questions
+but not project commitments, sites, beneficiaries, instruments, or confirmed gaps.
+The recommendation compiler may use numeric labels only when they occur in a
+candidate-linked verified project fact. The pipeline derives that support
+independently, so model-supplied numeric-token declarations cannot self-attest an
+unsourced date, threshold, or quantity.
+
+## Verified Climate-FCV drafting integrity (v9.25)
+
+Only the recommendation compiler receives the bounded, versioned operational-
+guidance packet selected for the detected document and instrument type. The
+packet identifies permitted drafting destinations and wording boundaries; it is
+advisory context, not project evidence or a substitute for OPCS/ESF source text.
+Every admitted priority must contain a structured 90-160 word current-document
+drafting block. A second block is optional and may target an operational
+instrument only when that named instrument and its relationship to the project
+are evidenced.
+
+### Climate Summary overview contract (v9.38)
+
+The existing judgment call, versioned `climate-judgments-v2.4`, also returns
+`summary_overview.paragraphs`. Validation requires two or three plain-text
+paragraphs totalling 160-230 words, grounded in admitted facts and contextual
+evidence. The overview must synthesize project purpose, the two Climate-FCV
+directions, relevant groups/places/systems, jobs or livelihoods where supported,
+and the practical implication without copying `executive_readout`. It may not use
+Markdown, headings, bullets, invented acronyms/entities, or unsupported actions.
+This is an additive field in the existing call, not a new model request.
+The provider-facing array schema uses the supported `minItems: 1` and omits the
+unsupported `maxItems` keyword; deterministic application validation still
+requires exactly two or three paragraphs before the
+field is admitted.
+
+Legacy readers may derive only the overview and evidence/fragment-grounded
+rationales from validated stored content. They must not relabel the executive
+readout as the Summary overview. Failure is recorded explicitly so the reader can
+render bounded fallback content without weakening the detailed assessment.
+
+Deterministic checks reject unsupported actors, instruments, technical systems,
+effectiveness/appraisal timing, mandatory wording, evidence references, and
+duplicative optional drafting. Bounded telemetry records only field paths and
+reason codes. Conditional semantic review evaluates both drafting blocks against
+existing mitigation, residual gaps, destination, scope, actor, timing, authority,
+and unsupported technical precision. The judgment call must assess the four
+dimensions from evidence and must not predict how many recommendations a later
+admission stage will retain.
+
+## Standard FCV materiality and advisory guidance (2026-09-20)
+
+The standard route retains stated component budgets/shares, activities, beneficiaries, PDO links and delivery dependencies through Stages 1 and 2. Unknown facts stay unknown. Stage 3 ranks one to five priorities by PDO relevance, scale, harm severity and delivery dependencies; spending is not a mechanical score, and a critical low-budget dependency can rank first. There is no category, dimension or document-revision quota. Preserve instrument/lifecycle routing and distinguish verified policy obligations from advisory suggestions. Limited responsiveness alone does not imply poor design. Unverified portfolio comparisons and invented numeric thresholds must not be presented as established requirements. No extra model call is introduced; active-lens analytical guidance is unchanged.
+
+The live Honduras trial identified late-PAD safeguards omitted by the previous 60,000-character primary cutoff. Standard Stage 1 now receives up to 300,000 primary characters without an additional model call. Stage 1 evidence must retain explicit exclusions, conditional geographic scope, planned instruments and unknown completion status. Subsequent stages must distinguish a recognized risk with incomplete operational detail from an absent measure; a generic safeguard relevance flag does not establish a policy breach or an unconditional FPIC requirement. External numerical claims must retain their source period and definition, and national evidence must not become a confirmed corridor-level fact. These are model instructions, not a guarantee of factual accuracy.
+
+Standard Stage 1 now requires a compact "Project facts and commitments" table before Part B, retaining each named component and stated budget, beneficiary scope, material commitment/instrument status, geographic exclusions/conditions and source paragraph. Conflicting source statements are retained as conflicts; physical/economic resettlement, climate displacement and conflict-related IDPs remain distinct. Standard Stage 3 explicitly copies all four canonical `project_cycle` values into the concise projection, without reinterpretation. Existing deterministic admission is unchanged.
+
+Live Quality testing exposed a conflicting legacy SORT subsection that seeded an unsupported portfolio percentage despite the appended evidence rules. `_prepare_standard_stage2_prompt()` now replaces that subsection only on the standard route with project-specific calibration. Do not infer specific SEA/SH classifications from aggregate E&S/SORT ratings, or label a planned instrument a compliance breach without a sourced applicable obligation and deadline. Distinguish later contextual evidence from information available at the historical preparation date. No policy corpus was accessed for this change.
+
+## Management-oriented report style
+
+Standard generation uses a plain main-point sentence at the start of each
+paragraph, followed by supporting explanation. Narrative paragraphs mark that
+first sentence in bold; JSON fields remain plain text for safe rendering.
+Avoid em dashes, semicolons, unexplained acronyms and unsupported authority.
+The management overview targets 80-110 words. Optional concise `gap` paragraphs
+explain canonical shortfalls and their consequences before the suggested actions.
+Keep planned measures, approval status and completed implementation distinct.
+The management projection targets roughly 650-850 words and 1.5-2 A4 pages,
+without adding findings solely to fill space. Earlier one-page targets are
+superseded. Differentiated-approach reader notes are no longer generated on the
+standard route or displayed in the report.
+
+The optional standard gap has a 100-word admission ceiling plus canonical grounding. Its 35-50-word, two-sentence generation target is advisory. Live testing showed strict target enforcement unnecessarily discarded grounded explanations.
+
+
+## 2026-09-21 Detailed technical content restoration
+
+Standard Stage 3 retains the pre-September 20 document-focused action instructions:
+2-4 substantive actions where supported, 2-4-sentence guidance and 2-3-sentence
+suggested drafting. Detailed strengths retain the paired-risk discussion. Summary
+word/action targets apply only to concise fields. Summary actions, strengths and
+gaps must derive from the same canonical detailed findings; its leading action
+condenses the first canonical action. Keep the original two-way FCV risk exposure,
+sensitivity/responsiveness discussion and detailed section structure. WBG editorial
+style and current browser/Word/HTML templates remain. Evidence-status, full-source
+coverage, SORT corrections, grounded prioritization and lifecycle safeguards remain.
+
+Saved sessions must retain and restore risk_exposure, sensitivity_summary and
+responsiveness_summary as well as ratings and priorities, so these detailed sections
+remain available after reloading and in comprehensive downloads. No new model call,
+delimiter, rating enum or priority schema is introduced.
+
+Standard concise admission now checks each how action against canonical action
+anchors, with the first how tied to the first detailed action. Matching title or
+rationale alone is insufficient. Mismatches use the existing deterministic Detailed
+fallback. This lexical check is a guard, not semantic or factual verification;
+strength alignment remains a generation instruction and a content-review check.

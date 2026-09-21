@@ -3997,3 +3997,70 @@ When reviewing a project in a CPF country, check whether the CPF was informed by
 """,
     },
 }
+
+
+# ============================================================================
+# Dual-regime (new-model) document sections + minimum reference sets
+# Sources: OPS5.03-GUID.180 (IPF Project Paper), OPS5.04-GUID.128 (PforR Program
+# Paper); spec 2026-07-26-dual-regime-process-model-design.md Sec 5.4. ESS checks
+# gate on es_regime == ESF_ESS1_TO_ESS10 AND instrument == IPF (see
+# app.appraisal_reference_set). Legacy set preserved verbatim for the regression guard.
+# ============================================================================
+
+IPF_PROJECT_PAPER_SECTIONS = (
+    "I Strategic Context (A Country, B Sectoral & Institutional)",
+    "II Project Description (PDO; ToC + PDO indicators; Beneficiaries; Components; Partners; Lessons)",
+    "III Implementation (Institutional/Implementation; Results M&E/Verification; Disbursement)",
+    "IV Project Assessment Summary (A Technical/Economic/Financial; B Fiduciary [FM, Procurement]; C Environmental/Social/Legal)",
+    "V Key Risks",
+    "Annex 1 Results Framework (only mandatory annex)",
+)
+
+PFORR_PROGRAM_PAPER_SECTIONS = IPF_PROJECT_PAPER_SECTIONS + (
+    "Program Scope",
+    "Disbursement-Linked Indicators",
+    "IPF-Component summary",
+    "Program Action Plan (IV.E)",
+)
+
+# New-model IPF minimum reference set (spec Sec 5.4 corrections). ESS-bearing items
+# are only surfaced when es_regime == ESF and instrument == IPF (filtered in app.py).
+NEW_MODEL_MINIMUM_REFERENCE_SET = (
+    "SORT",
+    "Stakeholder Engagement Plan (SEP)",
+    "ESCP (Environmental and Social Commitment Plan)",
+    "Results Framework (mandatory Annex 1)",
+    "applicable ESSs + ES risk assessment",
+    "Readiness ESRS",
+    "Economic Analysis",
+    "FM assessment",
+    "Procurement Plan (at readiness)",
+    "Legal Agreements / DFIL (separate)",
+    "PID",
+    "SEA/SH Action Plan (conditional)",
+)
+
+# New-model minimum reference set for non-ESF instruments (PforR/DPF) or non-IPF
+# E&S regimes: instrument-agnostic items only, with no ESF/ESS vocabulary.
+NEW_MODEL_NON_ESF_REFERENCE_SET = (
+    "SORT",
+    "Results Framework (mandatory Annex 1)",
+    "PID",
+    "Economic Analysis",
+    "Financial Management (FM) capacity",
+    "Procurement Plan",
+    "Legal Agreements / DFIL",
+)
+
+# The existing v9.x PAD minimum set, preserved verbatim as the legacy/unresolved
+# default so a missing regime signal never switches away from current behaviour.
+LEGACY_PAD_MINIMUM_REFERENCE_SET = (
+    "SORT",
+    "ESS1",
+    "SEA/SH Action Plan",
+    "SEP / ESS10",
+    "ESCP",
+    "Operations Manual",
+    "PPSD",
+    "Results Framework",
+)

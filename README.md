@@ -15,6 +15,88 @@ Both modes produce identical output across three stages:
 2. **Stage 2 — FCV Assessment** — Thematic analysis across FCV dimensions, Do No Harm traffic-light, and detailed Under the Hood panels
 3. **Stage 3 — Recommendations Note** — Structured memo with strategic priorities, actionable guidance, and ready-to-paste project-document language
 
+For standard FCV reviews, a complete concise bundle defaults to **Summary**.
+It presents the overall assessment, evidenced strengths, potential gaps, and one
+to five suggested priorities. Each priority links to its full evidence and actions
+in **Detailed analysis**, which retains the formal ratings. Missing or invalid
+concise data falls back to Detailed without another model call.
+
+Separate **Brief HTML** and **Brief Word** downloads provide a management readout,
+targeting approximately 1.5-2 A4 pages for newly generated content. Full HTML and
+Word downloads retain the comprehensive recommendations note. Word uses Arial,
+bold opening sentences and editable headings. Strengths use green accents and
+potential gaps use light orange. The narrative avoids em dashes and unnecessary
+technical language. Recommendations remain suggestions for professional review.
+
+Reader outputs omit technical routing metadata, differentiated-approach notes
+and applied-Playbook attribution. Internal routing and source retrieval continue
+to operate, and substantive warnings about incomplete analysis remain visible.
+See [the ITS handover](20260920_ITS_handover_standard_fcv.md) for the QA baseline,
+porting instructions, verification evidence and remaining limitations.
+
+## September 21 release
+
+Production at https://fcv-agent.onrender.com tracks `main`. The September 21
+release promotes the current tested screener and supersedes the July rollback.
+Detailed Analysis retains its original technical sections, both FCV risk directions,
+sensitivity/responsiveness discussion and full action guidance/suggested text.
+Summary actions, strengths and gaps derive from those same detailed findings.
+Saved sessions retain the technical sections, and priority links identify the full
+details and suggested project-package text. Current browser/HTML/Word styling is
+preserved. See [restoration verification](20260921_detailed-analysis-restoration.md)
+for the single fresh run, export checks and remaining analytical limitations.
+
+## Optional sector lenses
+
+Users may select up to two specialist lenses before analysis. The production Climate-FCV Lens is manual-only and is never auto-suggested. Once selected, it automatically screens both climate-intent operations and wider development projects, prioritizes adaptation and resilience, and uses deep mitigation analysis only where a clear material pathway exists.
+
+Core-only runs select one to five material priorities and the lightweight conditional Climate-FCV check. Active-lens runs supersede that lightweight check, use one integrated list of no more than five substantive priorities, and apply a flexible evidence-led mix of core, Climate-linked, and blended actions. Optional CCDR material is validated contextual support and must not dominate recommendations.
+
+### Climate-FCV country evidence bank
+
+The Climate-FCV lens can use a public, version-pinned companion repository at
+`data/climate-fcv-country-bank`. Clone this application with submodules, or
+initialize it after cloning:
+
+```bash
+git clone --recurse-submodules https://github.com/ljonestz/FCV-AGENT.git
+git submodule update --init --recursive  # existing clone
+```
+
+The runtime reads only `releases/current/runtime.json`. A country is usable only
+when that release passes schema/checksum checks and the country record is
+approved and within its review window. Draft and reviewed candidates are never
+promoted automatically. Missing, stale, incompatible, unapproved, unsupported
+multi-country, or oversized content degrades safely to live research or thematic
+sources; it does not terminate the Climate assessment.
+
+The companion bank also contains a reviewed, non-production candidate release at
+`data/climate-fcv-country-bank/releases/candidates/2026.08/runtime.json`. It
+contains 24 country packages, including the six previously available candidates
+and the 18-country expansion, but it is not loaded by default. To run an explicit
+candidate preview, set both variables below; the output remains labelled
+`preview; not approved`:
+
+```text
+CLIMATE_COUNTRY_BANK_PATH=data/climate-fcv-country-bank/releases/candidates/2026.08/runtime.json
+CLIMATE_COUNTRY_BANK_PREVIEW=reviewed-candidate
+```
+
+For local testing or a deployment artifact outside the submodule, set
+`CLIMATE_COUNTRY_BANK_PATH` to either the companion repository root or a specific
+`runtime.json`. The default remains the pinned public submodule. Render must
+initialize the root `.gitmodules` entry during checkout. The version-controlled
+`render_build.py` entry point does this before installing application dependencies.
+
+Selection is deterministic and project-specific. It targets 8 and caps 12 bank
+items, with a 6,000-character bank boundary and 12,000-character combined
+bank-plus-live boundary. The provenance states are `bank+research`, `bank-only`,
+`research-only`, and `thematic-only`; live enrichment is non-fatal. The pinned
+South Sudan pilot remains the approved production release with a review due date
+of 2027-07-31; the 24-country release is a reviewable preview only. The bank
+stores structured summaries and citations only: it does not redistribute raw
+PDFs or cite its own generated text.
+
 ## Prerequisites
 
 - Python 3.10+
@@ -25,6 +107,9 @@ Both modes produce identical output across three stages:
 | Variable | Required | Description |
 |---|---|---|
 | `ANTHROPIC_API_KEY` | **Yes** | Anthropic API key for Claude access |
+| `CLIMATE_VERIFIED_RUN_MODE` | No | `quality` (default, Sonnet) or `smoke` (Haiku). Server-only; never accepted from browser requests. |
+| `CLIMATE_VERIFIED_ASSESSMENT_MODEL` | No | Explicit server-side model override for the verified assessment call. |
+| `CLIMATE_VERIFIED_REVIEW_MODEL` | No | Explicit server-side model override for the verified reviewer call. |
 
 ## Local Setup
 
@@ -44,9 +129,28 @@ python app.py
 
 1. Connect this GitHub repo to a new Render **Web Service**
 2. Set `ANTHROPIC_API_KEY` as an environment variable in the Render dashboard
-3. Render reads `Procfile` automatically - no additional build config needed
-4. The app runs on gunicorn + gevent with a 600s timeout, required for long-running SSE streams
-5. The public Render instance currently deploys from `main`; PforR timeout/payload hardening is live on `main` as of PR #51 (`2877bf9`).
+3. Set the Render **Build Command** to `python render_build.py`; this initializes
+   the pinned public Climate-FCV bank submodule and installs requirements
+4. Render reads the `Procfile` start command automatically
+5. The app runs on gunicorn + gevent with a 1,200s timeout for long-running SSE streams
+6. Confirm the startup and Climate-grounding logs show the expected application
+   build, bank content version, and country ISO3 before acceptance testing
+
+### Low-cost Climate workflow checks
+
+Use one commit for both services. The production service leaves
+`CLIMATE_VERIFIED_RUN_MODE` unset (or sets it to `quality`). A separate smoke
+service sets it to `smoke`, which runs the same verified Climate-FCV pipeline
+with Haiku for both structured calls. Smoke output is visibly labelled in the
+browser, HTML export, DOCX export, and technical annex; it tests orchestration
+and completeness, not analytical quality.
+
+Do not expose model selection in a request or UI control. Keep the profile in
+Render environment settings so a browser user cannot downgrade a production
+assessment. A reviewed country-bank candidate still requires the separate,
+explicit `CLIMATE_COUNTRY_BANK_PATH` and
+`CLIMATE_COUNTRY_BANK_PREVIEW=reviewed-candidate` safeguards. The smoke profile
+does not relax approval, provenance, checksum, or preview-labelling rules.
 
 ### Long-Running PforR Notes
 
@@ -69,14 +173,23 @@ The app isolates state per browser tab via a per-assessment ID. Express Analysis
 | File | Purpose |
 |---|---|
 | `app.py` | Flask backend — all stage prompts, routes, document processing |
+| `sector_lenses/` | Validated optional sector-lens packages, budgets, detection, and diagnostic parsing |
 | `index.html` | Single-page frontend UI |
 | `background_docs.py` | WBG FCV framework reference constants (knowledge base) |
 | `requirements.txt` | Python dependencies |
 | `Procfile` | Render deployment config |
-| `docs/20260714_ITS_handover_p4r_timeout_patch.md` | Current IPS/ITS handover on PforR timeout and Render-main state |
+| `test_documents/live_acceptance/` | Versioned public documents and provenance notes for repeatable manual Render acceptance checks |
+| `docs/20260822_ITS_handover_normal_fcv_summary.md` | Current ITS handover for the normal-FCV Summary contract, UI, exports, and live acceptance evidence |
+| `docs/20260714_ITS_handover_p4r_timeout_patch.md` | Historical IPS/ITS handover on PforR timeout and Render-main state |
 
 ## Documentation
 
-- `CLAUDE.md` — full developer guide: architecture, prompt design, stage pipeline, design decisions
+- `claude.md` — full developer guide: architecture, prompt design, stage pipeline, design decisions
 - `docs/reference/` — detailed reference docs for prompts, routes, and frontend functions
+- `docs/reference/reference_sector_lenses.md` — sector-lens module and cross-build contract
+- `docs/20260822_ITS_handover_normal_fcv_summary.md` - current handoff for mirroring the Summary feature into the ITS build
 - `docs/fcv-agent-knowledge-architecture.html` — visual overview of how knowledge sources flow through the pipeline
+
+### Final Nairobi readability verification (20 September 2026)
+
+A fresh complete Honduras PAD assessment completed all three stages. After small display/admission fixes, its exact recorded output passed the full live UI/export repeat. The actual management brief is two A4 pages and the comprehensive note is twelve. Saved-session recovery is fixed. Regression coverage is 1,279 cases across partitions and targeted reruns, with four legacy Windows Chromium cases still unverified. Remaining factual/status issues are documented separately; the diagnostic output is not analytically approved. See `20260920_ITS_handover_standard_fcv.md` for contracts, provenance and acceptance limits.

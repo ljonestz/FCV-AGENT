@@ -7,6 +7,19 @@
 
 ## Key JavaScript Functions
 
+### Sector lenses
+- `renderLensReadoutSections(lens, catalogueLens)` safely renders materiality, catalogue-declared invest/deliver sections, evidence gaps, trade-offs, and collapsed other pathways; empty and not-applicable sections are suppressed.
+- `lensDisplayName(id)` resolves provenance badges to trusted catalogue names.
+- Climate selection is manual-only; suggestion rendering remains available for modules whose catalogue activation allows it.
+- Session version 3 and Express checkpoints persist `lensContextSources` with active versions and diagnostics. Requests and DOCX downloads send it as `lens_context_sources`; resets, lens changes, stale versions, and older-session loads clear it.
+- `loadLensCatalogue()` — fetches `/api/sector-lenses`; an empty catalogue keeps the selector hidden.
+- `renderLensSelector()` / `toggleLens(id)` — render ordered selection chips, enforce two lenses, show materially relevant suggestions, and lock changes once analysis starts.
+- `lensVersions()` — sends client-observed versions for mismatch detection; the backend remains authoritative.
+- `showLensWarnings()` — displays non-fatal unknown/disabled/version warnings while core analysis continues.
+- `renderLensDiagnostic()` — renders the parsed Stage 2 diagnostic with evidence, core mappings, and source IDs.
+- Session JSON is version 3 and persists `activeLenses`, `lensVersions`, and `lensDiagnostic`; older sessions load core-only.
+- Stage 3 priority cards render `lens_ids` badges with `lens_relevance` tooltips. DOCX payloads include active lenses and diagnostics for the appendix.
+
 ### Stage management
 - `runStage(stage, followOn=null)` — async; sends stage request to `/api/run-stage`; `followOn` used by Express mode
 - `updateSessionBar()` — refresh progress indicator
@@ -17,6 +30,15 @@
 - `renderStage1(text, hasPackage)` — display Part A and Part B with styled section badges
 
 ### Stage 3 priorities + Go Deeper
+- `supportsConciseStage3View()` - exposes the normal-FCV Summary only when the normalized readout exists and every ranked priority has a complete concise object
+- `supportsAnyStage3Summary()` - shared capability gate for normal FCV and verified Climate + FCV readers
+- `renderStage3Summary()` - selects the route-specific Summary adapter while keeping the existing detailed Stage 3 HTML available under the adjacent tab
+- `stage3ViewToggleHtml()` - renders the Summary and Detailed analysis tabs; direct activation explicitly requests focus on the newly rendered active tab
+- `handleStage3ViewKeydown(event)` - cycles the tabs with Arrow keys, Home, and End, preserving focus after the view rerenders
+- `setStage3View(view, preservePriority=true, focusTabId='')` - updates the view state and rail visibility; only an explicit `focusTabId` requests focus after rerender, so programmatic changes do not steal focus
+- `renderNormalFcvSummary()` - renders the compact headline/overview, zero to three evidenced strengths, controlled advisory and all ranked leading actions. Formal rating widgets remain in Detailed; plain language explains sensitivity versus responsiveness. Each priority links directly to its canonical Detailed card.
+- `renderStage3AdvisoryTransition(route)` - deterministic design/implementation-stage wording; not included in downloaded reports
+- `renderSummaryPriorityAccordion()` / `toggleSummaryPriority(idx)` - retain the Climate Summary accordion over its ranked projection, keep exactly one open, update ARIA state, and preserve the selected priority when switching to Detailed analysis. Standard Summary uses `renderNormalSummaryPriorities()` and `openDetailedPriority(idx)`.
 - `initStage3UI()` — parse priorities from JSON, build stepper, show Priority 1
 - `showPriority(idx)` — render full priority card with zone-act layout from JSON (refresh_shift badge, actions[] loop with per-action guidance + suggested text, implementation note); no auto-load of Go Deeper
 - `handleDeeperToggle(detailsEl, idx)` — ontoggle handler for `<details class="go-deeper">`; initialises 2 tab buttons on first open
@@ -26,8 +48,8 @@
 - `loadAnalyticalTrail(idx)` — no API call; reads in-memory `stage2UnderHood` first, falls back to `localStorage.stage2_under_hood`; filters by `priority.fcv_dimension`; renders matching OST recs/questions instantly
 - `cancelGoDeeper()` — aborts in-flight SSE request via `goDeeperAbortController`
 - `renderGoFurtherHtml(parsed)` — renders `parsed.goFurtherItems` as `.beyond-item` cards (legacy alternatives tab)
-- `renderPriorityStepper()` — build horizontal step indicator; compact S/R badge + refresh_shift below risk badge on each tab
-- `renderPrioritiesIntro()` — renders intro list; compact S/R badge + refresh_shift after risk label in each `pi-item`
+- `renderPriorityStepper()` — builds the horizontal numbered `.ps-step` controls; each native button exposes `aria-pressed`, an accessible label, and visible keyboard focus, without a secondary navigator
+- `renderPrioritiesIntro()` — renders the short contextual lead and optional climate provenance notice; priority titles remain in the numbered controls only
 
 ### S/R tag badges
 - `renderSRTagBadge(tag, compact)` — renders inline pill badge
@@ -38,10 +60,10 @@
   - Inserted between the Gaps paragraph and the `<div id="priorities-intro">` div
   - CSS: `.sensitivity-responsiveness-grid`, `.sr-card`, `.sr-card.sensitivity` (border `#0050A0`), `.sr-card.responsiveness` (border `#16A34A`), `.sr-card-label`
 
-### Sidebar (`updateSidebar()`)
-- Animates both gauges: sensitivity arc + responsiveness arc
-- Priority overview (`pov-row`) includes compact S/R badge after risk label
-- Gauge element IDs: `fcv-resp-arc-fill`, `fcv-resp-leaf-path`, `fcv-resp-rating-label`, `fcv-resp-need-label`
+### Stage 3 rating rail (`updateSidebar()`)
+- Updates the compact sticky `.stage3-rating-rail` in Detailed analysis and the matching `.stage3-mobile-ratings` disclosure below the mobile breakpoint.
+- Normal FCV output shows textual Sensitivity and Responsiveness cards with slim percentage bars; Climate lens output shows one textual Climate-FCV integration card.
+- Updates rating text state, meaning, percentage progress, and the restored dimension-specific colors, including the legacy four-level climate integration mapping.
 
 ### Utilities
 - `md(text)` — markdown-to-HTML renderer
@@ -148,19 +170,19 @@ Both modes use identical prompts, code paths, and output quality. Express is a f
 5. On failure: `showExpressError(stage, msg)` shows red card with "Retry" and "Switch to step-by-step" options
 
 **Abort timeout budget (Express):**
-- Stage 1: 9 minutes
-- Stage 2: 10 minutes
+- Stage 1: 15 minutes
+- Stage 2: 15 minutes
 - Stage 3: 10 minutes
 - `requestErrorMessage()` preserves custom `AbortController.abort(new Error(...))` timeout messages, while still using `Could not reach the server.` for true network/fetch failures.
 
 **Abort timeout budget (Step-by-step):**
-- Stage 1: 9 minutes (includes web research)
+- Stage 1: 15 minutes (includes web research)
 - Stage 2: 10 minutes
 - Stage 3: 10 minutes (longest output - 20k max tokens)
 
-**Upload payload preflight:**
-- `uploadPayloadLimitMessage(primaryFiles, packageFiles, contextFiles)` estimates raw file size after browser base64 encoding and blocks likely-over-limit uploads before reading or posting files.
-- This mirrors backend `413 RequestEntityTooLarge` handling for Render's JSON request cap. It is especially relevant for multi-document PforR runs with PAD + ESSA + fiduciary/package files.
+**Upload sizing helper (not currently wired):**
+- `uploadPayloadLimitMessage(primaryFiles, packageFiles, contextFiles)` can estimate raw file size after browser base64 encoding and return an over-limit message.
+- No current upload path calls this legacy helper, so it does not block a request. Active count limits are enforced separately by `addFiles()`, `selectFilesWithinUploadCap()`, and the polling/FormData fallback paths.
 
 **Progress screen elements** (inside `#express-progress`):
 - `#ep-accent` — 4px gradient accent bar
@@ -188,13 +210,183 @@ Both modes use identical prompts, code paths, and output quality. Express is a f
 
 **`switchToStepByStep(stage)`:** Bails from express, renders last completed stage in step-by-step mode.
 
-**Session persistence (v2 format):**
-- `saveSession()` includes `analysisMode`, `stageOutputs`, `stageHists`
+**Session persistence (v3 format):**
+- `saveSession()` includes `analysisMode`, `stageOutputs`, `stageHists`, ordered `activeLenses`, authoritative `lensVersions`, and `lensDiagnostic`
+- `loadSession()` treats v1/v2 files as core-only and requires a Stage 1 restart when an incomplete v3 file references a missing or changed lens version
 - `loadSession()` restores all three; missing `analysisMode` → `'stepbystep'` (v1 compat)
 - During express run, outputs/hists are best-effort writes to `localStorage.fcv_express_stageOutputs` / `fcv_express_stageHists`
-- Express resume IIFE on page load: if partial keys exist and Stage 3 missing, shows amber "Resume or restart?" banner
-- `resumeExpressRun()` / `discardExpressResume()` handle the two choices
+- Express recovery never claims to resume a later stage because browser `File` objects cannot survive reload. It preserves valid lens choices, asks for document re-upload, and requires a clean Stage 1 restart.
+- `restartExpressFromStage1()` clears partial outputs and diagnostics while retaining valid in-memory lens choices; `discardExpressRecovery()` also clears the choices
+
+## Shared Stage 3 Summary shell
+
+Normal FCV Stage 3 defaults to Summary only when `supportsConciseStage3View()`
+passes. A malformed or partial concise bundle opens Detailed analysis with a short
+availability notice and does not trigger another model call. Completed Express
+checkpoints persist the concise readout, structured priorities, and both ratings;
+restoration evaluates the same capability gate before selecting a tab. New runs,
+reruns, and reset clear this state atomically.
+
+Summary priority cards use a single-open accordion: Priority 1 opens initially,
+all later cards are collapsed, and opening another card closes the previous one.
+Both route adapters insert the controlled non-mandatory advisory immediately before
+priorities. `downloadReport()` and `downloadHTML()` continue to consume the detailed
+Stage 3 output and detailed priority structures only; Summary prose, advisory copy,
+and accordion markup are excluded.
 
 ---
 
-*Last updated: 2026-07-14 - PforR timeout/payload hardening: per-stage Express abort budgets, `requestErrorMessage()`, `uploadPayloadLimitMessage()`, and Render payload-limit handling.*
+*Last updated: 2026-08-22 - shared normal-FCV and Climate + FCV Stage 3 Summary behavior.*
+
+## Verified Climate-FCV reader (v9.35)
+
+`runExpress()` stores additive `climate_assessment` and canonical `climate_reader`
+SSE payloads in `climateVerifiedAssessment` and `climateVerifiedReader`.
+`renderOut()` passes the reader, rather than the raw assessment, to
+`renderClimateVerifiedAssessment()` and suppresses the legacy integration gauge,
+Stage 3 overview, and priority carousel. Saved sessions and completed Express
+checkpoints preserve both objects; new runs, lens changes, reruns, and full reset
+clear them. Follow-on requests carry the structured reader in their history.
+
+### Reader rendering and hierarchy
+
+- `renderClimateVerifiedAssessment(reader)` is the shared live/standalone HTML
+  renderer. It owns section numbering and renders: Overview; core questions; ranked
+  operational priorities; optional points to check; optional watch items; optional
+  project-specific WBG guidance; and the method/limitations/sources disclosure. It
+  escapes model-authored strings and uses the neutral empty-state copy: "No
+  operational priorities were identified in this assessment. Review the core
+  questions and points to check below."
+- The Overview contains the one restrained visual panel for the sensitivity rating;
+  executive and core-question prose remain in the normal reading flow. A narrative
+  transition introduces the full priorities section instead of repeating its titles.
+- Detailed and five-minute readers show a compact "How this operation was routed"
+  block before the assessment. It names the resolved instrument, document,
+  preparation model, E&S route, and MPA program layer. Unknown document or
+  instrument context explicitly says that document-targeted guidance was withheld.
+- Priority 1 is open by default in live and standalone HTML; later priorities are
+  closed native `<details>` elements. All narrative, suggested drafting, and
+  structured recommendation detail remains in the DOM. The server-side DOCX renderer
+  keeps every priority fully expanded.
+- Smaller Climate-FCV points, document checks, and watch items are numbered. Smaller
+  Climate-FCV points precede document checks. The reader no longer displays the
+  evidence-status label, technical annex, evidence key, recommendation/run
+  diagnostics, or internal reviewer verdicts. The smoke-mode warning and the method,
+  pathways, limitations, and Sources & further reading content remain.
+- `installClimatePrintDisclosureHandler(root)` records the open state of reader
+  priority/detail/method disclosures on `beforeprint`, opens them for print, and
+  restores the exact prior state on `afterprint`. It is installed for the live page.
+- `climatePrintDisclosureScript()` serializes that same lifecycle into a standalone
+  HTML export. `downloadHTML()` reuses `renderClimateVerifiedAssessment()` plus the
+  page's scoped styles and print lifecycle, so the shared HTML does not fork from the
+  live reader. `downloadReport()` sends the canonical reader to the server, which
+  deterministically rebuilds the fully expanded DOCX.
+
+### Project-specific WBG guidance
+
+- `isPublicWorldBankHttpsUrl(value)` accepts only well-formed HTTPS URLs on
+  `worldbank.org` or valid subdomains. It rejects credentials, ports, encoded or
+  malformed authorities, invalid DNS labels, IDN labels, trailing-dot hosts, and
+  non-World Bank hosts.
+- `normalizeClimateSourceTitle(value)` applies NFKD normalization, lowercase,
+  `&`-to-`and` conversion, non-alphanumeric collapsing, and trimming. Guidance
+  matching uses equality of this normalized key, not fuzzy or substring matching.
+- `buildClimateGuidanceItems(reader)` is the safe compatibility path for readers
+  saved before canonical `guidance_items` existed. It joins deduplicated current core
+  questions to deduplicated sources by normalized title, admits only public World
+  Bank HTTPS sources with usable project-specific content, ranks by matched-question
+  count then catalogue order, and returns at most four items. It never pads the list
+  with unmatched publications. Each fallback item uses one controlled source-value
+  sentence plus the first verified watch cue, or the matched question when no watch
+  cue exists; it does not copy full core-question summaries.
+- `renderClimateRelevantGuidance(reader)` prefers canonical
+  `reader.guidance_items`; it invokes `buildClimateGuidanceItems(reader)` when that
+  property is absent or is not an array. It validates and deduplicates the final
+  items, then renders one collapsed native disclosure containing every publication
+  title/link, `practical_value`, and `project_use`. It does not create one
+  disclosure per source. Printing temporarily opens the shared disclosure and
+  restores its exact prior state; DOCX renders the same shortened content expanded.
+  Empty or unsafe
+  sets omit the section entirely. Canonical generation normally selects two to four
+  relevant sources when enough valid matches exist, but fewer are retained rather
+  than padding with a fixed reading list.
+
+### Landing-page document capacity
+
+- `selectFilesWithinUploadCap(files, existingFiles, limit)` applies the same
+  duplicate-aware cap logic used by drag/drop and standard file selection. With
+  `MAX_PACK = 10`, the project-package zone accepts up to ten supporting documents
+  and rejects additional files without displacing accepted ones. Polling and
+  FormData fallback paths enforce the same limit.
+- `uploadPayloadLimitMessage(primaryFiles, packageFiles, contextFiles)` separately
+  estimates base64-expanded request size and returns a warning string, but no current
+  upload path calls it. It therefore does not enforce a payload-size limit.
+- The executable frontend contract test covers the eleven-file boundary and verifies
+  that a full ten-document package cannot accept another file.
+
+## Summary disclosures and drafting parity (v9.38)
+
+- Climate Summary renders `summary_overview.paragraphs`; the first sentence is
+  visually restrained and escaped, while the remaining paragraphs stay in the
+  normal reading flow.
+- `renderClimateVerifiedAssessment()` places one closed watch-items disclosure and
+  one closed project-specific guidance disclosure in Summary. Guidance shows only
+  curated publication purpose/value and never fabricates a generated
+  project-specific instruction.
+- Current-document and optional operational-instrument drafting use the same gate
+  in Summary and Detailed: both document and instrument must be confirmed. An
+  unresolved E&S route alone does not suppress otherwise valid drafting.
+- Detailed follow-up content uses the shared amber/teal bands and safe route labels.
+  Watch/guidance disclosures are deduplicated across live, standalone, and DOCX
+  renderers and are included in print expansion/restoration.
+- Normal FCV Summary uses `normalFcvWatchGroups()` and
+  `renderNormalFcvWatchDisclosure()` to place one closed, escaped, stable-order
+  disclosure after priorities and before closing. Applicable sources are
+  `midCycleWatch`, `dpfWatch`, `p4rWatch`, `regionalWatch`, and
+  `horizonConsiderations`; the established normal-FCV prose, schema, ratings, and
+  prompts are unchanged.
+
+This release changes deterministic reader assembly and presentation only. It does
+not change Climate-FCV prompts, schemas, model calls, ratings, or
+recommendation/evidence admission. The Stage 2 Express timeout remains 15 minutes.
+
+## Standard management brief and watch rendering (2026-09-20)
+
+Standard Summary displays every priority without an accordion and provides separate Word/HTML management-brief downloads. These controls POST the validated readout, canonical priorities, ratings, document type and active lenses; existing comprehensive exports stay separate. Detailed retains all actions, supporting analysis, formal ratings and drafting; repetitive alignment/context is collapsed. Standard timing labels are advisory while stored enum values remain unchanged.
+
+`normalFcvWatchGroups()` retains multiline narrative text. `renderNormalFcvWatchDisclosure()` sends prose through the existing escaped Markdown renderer; actual watch-item arrays remain lists. This prevents literal Markdown headings and numbered paragraphs appearing inside one bullet. The disclosure stays closed initially. The shared routing disclosure is removed from Summary and Detailed, preserving actionable unresolved-route warnings. The later management-readability follow-up also removes the compact instrument/approval/closing/safeguards context panel.
+
+Live PAD acceptance follow-up (2026-09-20): Express completion now calls `updateSessionBar()` after setting `curS=3`, making Save session available on fresh Express runs as well as restored and step-by-step sessions.
+
+## Management gaps and reader cleanup
+
+The standard Summary places green strengths and light-orange potential gaps
+before suggested actions. Each gap is projected from the matching admitted
+concise priority in the same order, using `gap` or the legacy `why` fallback.
+Each action still links to its canonical Detailed priority. Opening sentences
+are bold, with explanatory sentences following in ordinary text. Text remains
+escaped and watch prose retains its safe Markdown rendering.
+
+The instrument/approved/closing/safeguards strip, differentiated-approach note
+and applied-Playbook attribution are removed from reader views and exports.
+Internal operation context, category analysis, retrieval and substantive
+unresolved-analysis warnings remain active. Removal applies on desktop and
+mobile and to shared specialist display surfaces.
+
+A compact retrospective-review warning is retained for historical PADs, without the removed instrument/date metadata strip. It clarifies that the review assesses preparation-stage design rather than current implementation status. Closed-project and unresolved-route warnings also remain.
+
+Completed `loadSession()` recovery enables the stage navigator and calls `navigateToStage(3)` using the stored result. The file input is cleared before return. Partial sessions retain their existing Continue action. No new analysis request is made.
+
+
+## 2026-09-21 Detailed sections and Summary links
+
+Persist and restore the standard Stage 3 two-way risk exposure and sensitivity/
+responsiveness discussion with the rest of the completed assessment. Missing
+legacy saved fields may be recovered only from that assessment's recorded Stage 3
+JSON; never reuse another assessment's state. Reset clears the same fields.
+Keep the existing renderRiskExposure/renderSRCards presentation and include these
+sections in full HTML and Word downloads after reopening a session.
+
+Each standard Summary priority link reads "See full Priority N details and
+suggested text for the project package in Detailed Analysis" and continues to
+open the matching canonical priority. No layout, CSS or export styling changes.

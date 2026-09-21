@@ -1,0 +1,577 @@
+"""Contract tests for the standard FCV Nairobi management brief backend."""
+
+import copy
+import json
+
+import pytest
+
+import app
+from app import extract_priorities
+
+
+_CYCLE = {
+    "primary_label": "At concept stage",
+    "primary_text": "Commit the design choice in the PCN.",
+    "secondary_label": "During preparation",
+    "secondary_text": "Translate the commitment into implementation arrangements.",
+}
+
+
+def _priority(number: int) -> dict:
+    title = f"Protect access in Nairobi wards {number}"
+    return {
+        "title": title,
+        "fcv_dimension": "Inclusion",
+        "tag": "[S]",
+        "refresh_shift": "Shift B: Differentiate",
+        "risk_level": "High",
+        "the_gap": (
+            f"Access arrangements for Nairobi wards {number} do not yet identify "
+            "how the project will reach excluded households."
+        ),
+        "why_it_matters": (
+            "Unclear access arrangements can delay delivery and deepen exclusion "
+            "in communities that already distrust public services."
+        ),
+        "actions": [
+            {
+                "document_element": "Implementation Arrangements",
+                "guidance": "Define the access trigger and responsible owner for Nairobi wards.",
+                "suggested_language": "The project will define an access trigger for Nairobi wards.",
+            }
+        ],
+        "who_acts": "TTL; PIU",
+        "when": "Preparation",
+        "action_timing": "flag-for-preparation",
+        "resources": "Minimal (existing budget)",
+        "pad_sections": "Implementation Arrangements; SORT",
+        "implementation_note": "Confirm the arrangement during preparation.",
+        "cpf_alignment": None,
+        "rra_driver_alignment": None,
+        "country_category_relevance": "Nairobi access constraints make inclusion material.",
+        "change_type": "",
+        "restructuring_level": "",
+        "priority_scope": "",
+        "project_cycle": copy.deepcopy(_CYCLE),
+        "governance_level": None,
+        "authority_basis": "reviewer_judgment",
+        "concise": {
+            "title": title,
+            "why": "Nairobi access gaps can delay delivery and exclude households.",
+            "how": ["Define the access trigger and owner."],
+            "suggested_wording": {
+                "document_element": "Implementation Arrangements",
+                "text": "The project will define an access trigger for Nairobi wards.",
+            },
+            "project_cycle": copy.deepcopy(_CYCLE),
+        },
+    }
+
+
+def _readout(*, legacy: bool = False) -> dict:
+    if legacy:
+        overview = " ".join(["The operation recognizes access and legitimacy risks."] * 24)
+        strengths = [
+            {"title": "Context awareness", "text": "The design identifies Nairobi access pressures."},
+            {"title": "Feedback", "text": "The design includes feedback channels."},
+            {"title": "Adaptation", "text": "The design permits bounded adjustment."},
+        ]
+    else:
+        overview = " ".join(
+            [
+                "The operation links its Nairobi service investments to an FCV context, "
+                "but access and delivery dependencies remain partly unresolved."
+            ]
+            * 3
+        )
+        strengths = [
+            {"title": "Context awareness", "text": "The design identifies Nairobi access pressures."},
+            {"title": "Feedback", "text": "The design includes feedback channels."},
+        ]
+    return {
+        "headline": "The project recognizes FCV risks while key access choices remain open.",
+        "overview": overview,
+        "strengths": strengths,
+        "strengths_transition": "These strengths provide a basis for focused action.",
+        "priorities_transition": "The priorities address the most material delivery risks.",
+        "closing": "The team can refine these choices at the current project gate.",
+    }
+
+
+def _payload(count: int = 1, *, legacy: bool = False) -> dict:
+    priorities = [_priority(number) for number in range(1, count + 1)]
+    if legacy:
+        # Legacy concise cards remain valid on the standard parser.
+        for priority in priorities:
+            priority["actions"].append({
+                "document_element": "Implementation Arrangements",
+                "guidance": "Record the response in the implementation arrangements.",
+                "suggested_language": "The implementation arrangements will document the response.",
+            })
+            priority["concise"]["how"] = [
+                "Define the access trigger and owner.",
+                "Record the response in the implementation arrangements.",
+            ]
+    return {
+        "fcv_rating": "Adequate",
+        "fcv_responsiveness_rating": "Low",
+        "sensitivity_summary": "The operation recognizes material access risks.",
+        "responsiveness_summary": "Low responsiveness reflects limited direct FCV transformation scope.",
+        "risk_exposure": {"risks_to": "Insecurity may disrupt delivery.", "risks_from": "Unequal access may deepen exclusion."},
+        "concise_readout": _readout(legacy=legacy),
+        "priorities": priorities,
+    }
+
+
+def _wrapped(payload: dict) -> str:
+    return "%%%JSON_START%%%\n" + json.dumps(payload) + "\n%%%JSON_END%%%"
+
+
+@pytest.mark.parametrize("count", [1, 2, 5])
+def test_standard_route_admits_one_to_five_material_priorities(count):
+    result = extract_priorities(_wrapped(_payload(count)), active_lens_ids=[])
+
+    assert result["error"] is False
+    assert len(result["priorities"]) == count
+    assert result["concise_readout"]["strengths"]
+    assert all(1 <= len(priority["concise"]["how"]) <= 2 for priority in result["priorities"])
+
+
+def test_standard_route_rejects_more_than_five_without_truncating():
+    result = extract_priorities(_wrapped(_payload(6)), active_lens_ids=[])
+
+    assert result["error"] is True
+    assert result["priorities"] == []
+    assert "five" in result["message"].lower()
+
+
+def test_standard_route_accepts_legacy_concise_bounds():
+    result = extract_priorities(
+        _wrapped(_payload(2, legacy=True)), active_lens_ids=[]
+    )
+
+    assert result["error"] is False
+    assert 150 <= len(result["concise_readout"]["overview"].split()) <= 200
+    assert len(result["concise_readout"]["strengths"]) == 3
+    assert all(len(priority["concise"]["how"]) == 2 for priority in result["priorities"])
+
+
+@pytest.mark.parametrize("prompt_key", ["3", "impl_3"])
+def test_standard_rendered_prompt_uses_materiality_contract_without_old_quota(prompt_key):
+    rendered = app.DEFAULT_PROMPTS[prompt_key].format(
+        doc_type="PID",
+        instrument_guidance="Instrument guidance",
+        minimum_reference_set="Minimum references",
+        playbook_guidance="Playbook guidance",
+        process_guidance="Process guidance",
+        regime_header="Regime header",
+        seash_gender_card_guidance="SEA/SH guidance",
+        temporal_guardrail="Temporal guardrail",
+        timing_emphasis="Timing",
+    )
+    prompt = app.append_core_concise_stage3_contract(
+        rendered, "PID", {"processing_track": "standard"}, "design", []
+    )
+
+    lowered = prompt.lower()
+    for phrase in ("pdo relevance", "beneficiary scope", "severity of harm", "delivery dependenc"):
+        assert phrase in lowered
+    assert "1 to 5" in lowered
+    assert "generate between 4 and 5 strategic priorities" not in lowered
+    assert "4-5 priorities total" not in lowered
+    if prompt_key == "3":
+        assert "actions: provide 2-4 specific actions" in lowered
+    assert "budget is informative" in lowered
+    assert "low responsiveness" in lowered
+    assert "not an obligation" in lowered
+
+
+def test_specialist_stage3_prompt_keeps_existing_contract_untouched():
+    prompt = app.append_core_concise_stage3_contract(
+        app.DEFAULT_PROMPTS["3"],
+        "PID",
+        {"processing_track": "standard"},
+        "design",
+        [{"id": "climate"}],
+    )
+    assert prompt == app.DEFAULT_PROMPTS["3"]
+
+
+def _export_payload(**overrides):
+    payload = _payload(1)
+    payload.update({"doc_type": "PID", "active_lenses": [], "format": "html"})
+    payload.update(overrides)
+    return payload
+
+
+def test_management_brief_route_returns_html_and_docx_attachments():
+    client = app.app.test_client()
+    html_response = client.post(
+        "/api/download-management-brief", json=_export_payload(format="html")
+    )
+    docx_response = client.post(
+        "/api/download-management-brief", json=_export_payload(format="docx")
+    )
+
+    assert html_response.status_code == 200
+    assert "text/html" in html_response.content_type
+    assert "FCV management brief" in html_response.get_data(as_text=True)
+    assert docx_response.status_code == 200
+    assert "wordprocessingml.document" in docx_response.content_type
+    assert docx_response.data[:2] == b"PK"
+
+
+@pytest.mark.parametrize(
+    "payload, status",
+    [
+        (_export_payload(active_lenses=["climate"]), 400),
+        (_export_payload(format="pdf"), 400),
+        (_export_payload(format=[]), 400),
+        (_export_payload(format={}), 400),
+        (_export_payload(concise_readout=None), 422),
+        ({"format": "html"}, 422),
+    ],
+)
+def test_management_brief_route_rejects_invalid_export_requests(payload, status):
+    response = app.app.test_client().post("/api/download-management-brief", json=payload)
+    assert response.status_code == status
+
+
+def test_management_brief_route_rejects_non_object_json_payload():
+    response = app.app.test_client().post(
+        "/api/download-management-brief",
+        data=json.dumps([_export_payload()]),
+        content_type="application/json",
+    )
+    assert response.status_code == 400
+
+
+@pytest.mark.parametrize("words", [40, 80, 100, 150, 200])
+def test_standard_concise_admission_accepts_short_and_legacy_lengths(words):
+    payload = _payload()
+    payload["concise_readout"]["overview"] = " ".join(["Evidence"] * words)
+    payload["concise_readout"]["strengths"] = []
+    result = extract_priorities(_wrapped(payload), active_lens_ids=[])
+    assert result["concise_readout"] is not None
+    assert result["concise_readout"]["strengths"] == []
+
+
+@pytest.mark.parametrize("instrument", ["IPF", "PforR", "DPO"])
+@pytest.mark.parametrize("regime", ["legacy", "new_model"])
+def test_final_standard_prompt_removes_quotas_but_keeps_instrument_safeguards(instrument, regime):
+    rendered = app.DEFAULT_PROMPTS["3"].format(
+        doc_type="PAD", instrument_guidance="Instrument guidance",
+        minimum_reference_set=app.build_minimum_reference_block(regime, "ESF_ESS1_TO_ESS10", instrument),
+        playbook_guidance="Playbook", process_guidance="Process", regime_header="Regime",
+        seash_gender_card_guidance=app.get_seash_gender_card_guidance(instrument),
+        temporal_guardrail="Temporal", timing_emphasis="Timing",
+    )
+    prompt = app.append_core_concise_stage3_contract(rendered, "PAD", {}, "design", [])
+    for obsolete in ("4-5 priorities", "between 4 and 5", "card is mandatory", "must each be referenced at least once", "at least one priority must reference"):
+        assert obsolete not in prompt, obsolete
+    assert "SEA/SH" in prompt
+    assert "gender_fcv_flag" in prompt
+    expected = {"IPF": "ESS2", "PforR": "PAP", "DPO": "PSIA"}[instrument]
+    assert expected in prompt
+    assert "Distinguish confirmed policy obligations from advisory suggestions" in prompt
+
+
+def test_standard_stage2_removes_priority_quota_and_lens_prompt_is_unchanged():
+    prompt = app.DEFAULT_PROMPTS["2"]
+    standard = app.append_standard_fcv_stage_context(prompt, 2, [])
+    assert "At least 3 of the 4-5" not in standard
+    assert "implementation dependencies" in standard
+    assert app.append_standard_fcv_stage_context(prompt, 2, [{"id": "climate"}]) == prompt
+
+
+def test_standard_evidence_fidelity_contract_is_rendered_only_on_core_route():
+    stage1 = app.append_standard_fcv_stage_context(app.DEFAULT_PROMPTS["1"], 1, [])
+    stage2 = app.append_standard_fcv_stage_context(app.DEFAULT_PROMPTS["2"], 2, [])
+    rendered_stage3 = app.DEFAULT_PROMPTS["3"].format(
+        doc_type="PAD",
+        instrument_guidance="Instrument guidance",
+        minimum_reference_set="Minimum references",
+        playbook_guidance="Playbook guidance",
+        process_guidance="Process guidance",
+        regime_header="Regime header",
+        seash_gender_card_guidance="SEA/SH guidance",
+        temporal_guardrail="Temporal guardrail",
+        timing_emphasis="Timing",
+    )
+    stage3 = app.append_core_concise_stage3_contract(
+        rendered_stage3, "PAD", {}, "design", []
+    )
+
+    assert "available excerpt" in stage1.lower()
+    assert "Project facts and commitments" in stage1
+    assert "retain both statements" in stage1
+    assert "planned or under preparation" in stage1.lower()
+    assert "relevance flag alone" in stage1.lower()
+    assert "available excerpt" in stage2.lower()
+    assert "prior model assertion" in stage2.lower()
+    assert "generic relevance flag" in stage2.lower()
+    assert "source-grounded exclusions" in stage3.lower()
+    assert "title of no more than" in stage3.lower()
+    assert "copy its same four values exactly into concise.project_cycle" in stage3
+
+    climate_lenses = [{"id": "climate"}]
+    assert app.append_standard_fcv_stage_context(
+        app.DEFAULT_PROMPTS["1"], 1, climate_lenses
+    ) == app.DEFAULT_PROMPTS["1"]
+    assert app.append_standard_fcv_stage_context(
+        app.DEFAULT_PROMPTS["2"], 2, climate_lenses
+    ) == app.DEFAULT_PROMPTS["2"]
+
+
+def test_standard_stage1_retains_late_primary_evidence_and_warns_at_cap(monkeypatch):
+    calls = []
+    late_marker = "EXPLICIT LATE PROJECT RECORD FACT"
+    content = "P" * 60_001 + "\n" + late_marker + "\n" + "T" * 240_000
+
+    def fake_stream(messages, max_tokens, stage, **kwargs):
+        calls.append({"messages": messages, "max_tokens": max_tokens, "stage": stage})
+        fake_stream._last_result = "Stage 1 project extraction."
+        fake_stream._last_stop_reason = "end_turn"
+        yield 'data: {"chunk": "stage1"}\n\n'
+
+    def fake_research(*_args, **_kwargs):
+        yield {
+            "result": {
+                "core_brief": "",
+                "climate_research": {},
+                "lens_context_sources": [],
+                "climate_grounding": {},
+            }
+        }
+
+    monkeypatch.setattr(app, "_stream_stage", fake_stream)
+    monkeypatch.setattr(app, "get_fast_client", lambda: object())
+    monkeypatch.setattr(app, "extract_country_name", lambda *_args: "Honduras")
+    monkeypatch.setattr(app, "extract_sector_name", lambda *_args: "Transport")
+    monkeypatch.setattr(app, "_iter_stage1_research", fake_research)
+
+    response = app.app.test_client().post(
+        "/api/run-stage",
+        json={
+            "stage": 1,
+            "active_lenses": [],
+            "document_type": "PAD",
+            "instrument_type": "IPF",
+            "review_mode": "design",
+            "documents": [{
+                "name": "Project Appraisal Document.txt",
+                "type": "text",
+                "docRole": "primary",
+                "content": content,
+            }],
+        },
+    )
+    events = [
+        json.loads(chunk[6:])
+        for chunk in response.get_data(as_text=True).split("\n\n")
+        if chunk.startswith("data: ")
+    ]
+
+    assert response.status_code == 200
+    assert any(event.get("done") is True for event in events)
+    warning = next(
+        event["extraction_warning"]
+        for event in events
+        if "extraction_warning" in event
+    )
+    assert "300,000" in warning
+    assert "later sections" in warning
+    assembled = "\n".join(
+        part.get("text", "")
+        for message in calls[0]["messages"]
+        for part in message.get("content", [])
+        if isinstance(part, dict)
+    )
+    assert late_marker in assembled
+    assert "[Document truncated to 300,000 characters for analysis]" in assembled
+    assert app._stage1_primary_char_limit([]) == 300_000
+    assert app._stage1_primary_char_limit([{"id": "climate"}]) == 60_000
+
+
+def test_express_stage_failure_logs_assessment_and_failed_stage(monkeypatch, caplog):
+    assessment_id = "nairobi-stage2-diagnostic"
+    calls = []
+    late_marker = "EXPLICIT EXPRESS LATE PROJECT RECORD FACT"
+
+    def fake_stream(messages, max_tokens, stage, **kwargs):
+        calls.append({"messages": messages, "stage": stage})
+        fake_stream._last_stop_reason = "end_turn"
+        if stage == 1:
+            fake_stream._last_result = "Stage 1 project extraction."
+            yield 'data: {"chunk": "stage1"}\n\n'
+            return
+        raise RuntimeError("mock provider failure at Stage 2")
+        yield
+
+    def fake_research(*_args, **_kwargs):
+        yield {
+            "result": {
+                "core_brief": "",
+                "climate_research": {},
+                "lens_context_sources": [],
+                "climate_grounding": {},
+            }
+        }
+
+    monkeypatch.setattr(app, "_stream_stage", fake_stream)
+    monkeypatch.setattr(app, "get_fast_client", lambda: object())
+    monkeypatch.setattr(app, "extract_country_name", lambda *_args: "Honduras")
+    monkeypatch.setattr(app, "extract_sector_name", lambda *_args: "Transport")
+    monkeypatch.setattr(app, "_iter_stage1_research", fake_research)
+
+    with caplog.at_level("ERROR", logger=app.app.logger.name):
+        response = app.app.test_client().post(
+            "/api/run-express",
+            json={
+                "assessment_id": assessment_id,
+                "active_lenses": [],
+                "document_type": "PAD",
+                "instrument_type": "IPF",
+                "review_mode": "design",
+                "documents": [{
+                    "name": "Project Appraisal Document.txt",
+                    "type": "text",
+                    "docRole": "primary",
+                    "content": "P" * 60_001 + "\n" + late_marker,
+                }],
+            },
+        )
+
+    events = [
+        json.loads(chunk[6:])
+        for chunk in response.get_data(as_text=True).split("\n\n")
+        if chunk.startswith("data: ")
+    ]
+    failure = next(event for event in events if "error" in event)
+    assert failure["failed_stage"] == 2
+    assert "mock provider failure at Stage 2" in failure["error"]
+    assembled = "\n".join(
+        part.get("text", "")
+        for message in calls[0]["messages"]
+        for part in message.get("content", [])
+        if isinstance(part, dict)
+    )
+    assert late_marker in assembled
+    assert "Express workflow failed" in caplog.text
+    assert f"assessment_id={assessment_id}" in caplog.text
+    assert "failed_stage=2" in caplog.text
+
+
+def test_standard_stage2_replaces_legacy_sort_seed_with_evidence_guards():
+    source_prompt = app.DEFAULT_PROMPTS["2"]
+    assert "48%" in source_prompt
+
+    standard = app.append_standard_fcv_stage_context(source_prompt, 2, [])
+    lowered = standard.lower()
+    for obsolete in (
+        "48%",
+        "fcs portfolio data shows",
+        "typical for this context type",
+        "p&g = substantial to high baseline",
+        "overall = substantial expected",
+    ):
+        assert obsolete not in lowered
+    for guard in (
+        "do not infer or force an increase",
+        "do not infer sea/sh or gbv",
+        "planned or under preparation is not by itself evidence of noncompliance",
+        "later context",
+        "historical preparation",
+    ):
+        assert guard in lowered
+
+    specialist = app.append_standard_fcv_stage_context(
+        source_prompt, 2, [{"id": "climate"}]
+    )
+    assert specialist == source_prompt
+
+
+def test_standard_stage3_prompt_removes_differentiated_output_note_and_sets_style_targets():
+    rendered = app.DEFAULT_PROMPTS["3"].format(
+        doc_type="PAD",
+        instrument_guidance="Instrument guidance",
+        minimum_reference_set="Minimum references",
+        playbook_guidance="Playbook guidance",
+        process_guidance="Process guidance",
+        regime_header="Regime header",
+        seash_gender_card_guidance="SEA/SH guidance",
+        temporal_guardrail="Temporal guardrail",
+        timing_emphasis="Timing",
+    )
+    prompt = app.append_core_concise_stage3_contract(
+        rendered, "PAD", {}, "design", []
+    )
+    lowered = prompt.lower()
+    assert "country_category_relevance" not in lowered
+    assert "differentiated approach note" not in lowered
+    for phrase in ("80-110", "35-50", "40-60", "650-850", "two a4"):
+        assert phrase in lowered
+    assert "bold first sentence" in lowered
+    assert "no em dash" in lowered or "no em-dash" in lowered
+    assert '"gap"' in prompt
+    assert "named instruments" in lowered
+    assert "planned or under preparation" in lowered
+
+
+def test_standard_concise_gap_is_preserved_only_when_grounded_and_well_formed():
+    payload = _payload()
+    gap = (
+        "Access arrangements for Nairobi wards 1 remain underdeveloped. "
+        "The technical explanation links the missing access trigger and responsible owner "
+        "to project delivery, excluded households, and implementation monitoring, so the team "
+        "can verify coverage without adding a new factual claim at the current gate."
+    )
+    payload["priorities"][0]["concise"]["gap"] = gap
+    result = extract_priorities(_wrapped(payload), active_lens_ids=[])
+    assert result["error"] is False
+    assert result["priorities"][0]["concise"]["gap"] == gap
+
+
+def test_standard_concise_gap_accepts_grounded_generation_target_over_50_words():
+    payload = _payload()
+    gap = (
+        "Nairobi wards need a clear access trigger and responsible owner before the "
+        "project can rely on its planned service pathway during preparation and early "
+        "implementation. The gap matters because unclear access arrangements can delay "
+        "delivery, exclude households, and leave implementation monitoring without a "
+        "defined response when conditions change across neighborhoods, service points, "
+        "or beneficiary groups during the project cycle."
+    )
+    assert 50 < len(gap.split()) <= 100
+    payload["priorities"][0]["concise"]["gap"] = gap
+    result = extract_priorities(_wrapped(payload), active_lens_ids=[])
+    assert result["error"] is False
+    assert result["priorities"][0]["concise"]["gap"] == gap
+
+
+def test_standard_concise_gap_falls_back_to_admitted_why_when_invalid_or_ungrounded():
+    payload = _payload()
+    payload["priorities"][0]["concise"]["gap"] = (
+        "This unrelated sentence has enough words to appear plausible in a brief. "
+        "It describes a different topic, institution, geography, and delivery problem "
+        "without any project evidence or canonical priority anchor for this record today."
+    )
+    result = extract_priorities(_wrapped(payload), active_lens_ids=[])
+    assert result["error"] is False
+    concise = result["priorities"][0]["concise"]
+    assert concise["gap"] == concise["why"]
+
+
+def test_legacy_concise_card_does_not_gain_standard_gap_field():
+    result = extract_priorities(
+        _wrapped(_payload(1, legacy=True)), active_lens_ids=["climate"]
+    )
+    assert result["error"] is False
+    assert "gap" not in result["priorities"][0]["concise"]
+
+
+def test_standard_category_knowledge_keeps_internal_guidance_without_visible_classification_demand():
+    standard = app._STANDARD_DIFFERENTIATED_KNOWLEDGE
+    assert "Category 1" in standard
+    assert "this analysis places [country]" not in standard.lower()
+    assert app.DIFFERENTIATED_APPROACHES != standard
