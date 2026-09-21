@@ -52,3 +52,29 @@ def test_summary_uses_same_findings_and_canonical_actions():
         "two-way FCV Risk",
     ):
         assert expected in prompt
+
+
+def test_standard_summary_cannot_substitute_an_unrelated_or_reordered_action():
+    from tests.test_nairobi_backend import _payload, _wrapped
+
+    for how in (
+        ["Build a national tax collection platform."],
+        ["Name the monitoring owner for excluded households."],
+        ["Set access triggers for Nairobi wards 1.", "Build a national tax platform."],
+    ):
+        payload = _payload(1)
+        priority = payload["priorities"][0]
+        priority["actions"] = [
+            {"document_element": "PCN", "guidance": "Set access triggers for Nairobi wards 1.", "suggested_language": "The PCN will set access triggers."},
+            {"document_element": "Results Framework", "guidance": "Name the monitoring owner for excluded households.", "suggested_language": "Monitor excluded households."},
+        ]
+        priority["concise"]["how"] = how
+        result = app.extract_priorities(_wrapped(payload), active_lens_ids=[])
+        assert not result["error"]
+        assert result["priorities"][0]["concise"]["how"][0] == priority["actions"][0]["guidance"]
+        assert "tax" not in " ".join(result["priorities"][0]["concise"]["how"])
+
+
+def test_standard_stage2_does_not_require_a_card_that_stage3_makes_conditional():
+    prompt = app.append_standard_fcv_stage_context(app.DEFAULT_PROMPTS["2"], 2, [])
+    assert "Stage 3 will generate a mandatory standalone priority card" not in prompt

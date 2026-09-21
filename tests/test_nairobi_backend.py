@@ -103,6 +103,11 @@ def _payload(count: int = 1, *, legacy: bool = False) -> dict:
     if legacy:
         # Legacy concise cards remain valid on the standard parser.
         for priority in priorities:
+            priority["actions"].append({
+                "document_element": "Implementation Arrangements",
+                "guidance": "Record the response in the implementation arrangements.",
+                "suggested_language": "The implementation arrangements will document the response.",
+            })
             priority["concise"]["how"] = [
                 "Define the access trigger and owner.",
                 "Record the response in the implementation arrangements.",

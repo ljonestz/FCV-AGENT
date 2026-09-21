@@ -899,3 +899,9 @@ Saved sessions must retain and restore risk_exposure, sensitivity_summary and
 responsiveness_summary as well as ratings and priorities, so these detailed sections
 remain available after reloading and in comprehensive downloads. No new model call,
 delimiter, rating enum or priority schema is introduced.
+
+Standard concise admission now checks each how action against canonical action
+anchors, with the first how tied to the first detailed action. Matching title or
+rationale alone is insufficient. Mismatches use the existing deterministic Detailed
+fallback. This lexical check is a guard, not semantic or factual verification;
+strength alignment remains a generation instruction and a content-review check.

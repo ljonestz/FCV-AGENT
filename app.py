@@ -3315,6 +3315,9 @@ def _prepare_standard_stage2_prompt(stage_prompt: str) -> str:
             )
 
     replacements = {
+        "Stage 3 will generate a mandatory standalone priority card.":
+            "Stage 3 will assess whether this finding warrants a distinct priority "
+            "alongside the other material risks, retaining serious harm findings.",
         "At least 3 of the 4-5 Stage 3 priorities must be directly addressable "
         "in the current document.":
             "Priorities should be directly addressable in the current document "
@@ -7034,7 +7037,9 @@ def extract_priorities(
             if (
                 item is None
                 or item.get("project_cycle") != priority.get("project_cycle")
-                or not _concise_priority_is_aligned(priority, item)
+                or not _concise_priority_is_aligned(
+                    priority, item, require_action_alignment=standard_route
+                )
             ):
                 item = _fallback_concise_priority(priority)
             if item is not None and standard_route:
@@ -13738,10 +13743,23 @@ def _concise_priority_text(concise: dict[str, Any]) -> str:
 def _concise_priority_is_aligned(
     priority: dict[str, Any],
     concise: dict[str, Any],
+    *,
+    require_action_alignment: bool = False,
 ) -> bool:
     """Require two substantive anchors within a corresponding Detailed field group."""
     canonical_groups = _canonical_priority_grounding_groups(priority)
     concise_groups = _concise_priority_grounding_groups(concise)
+    if require_action_alignment:
+        # Title/context overlap cannot establish that an action is grounded.
+        # The leading Summary action must describe the first Detailed action.
+        actions = priority.get("actions") or []
+        action_groups = _canonical_priority_grounding_groups({"actions": actions})["action"]
+        if not action_groups:
+            action_groups = canonical_groups["action"]  # Legacy recommendation-only records.
+        for index, action in enumerate(concise.get("how") or []):
+            candidates = action_groups[:1] if index == 0 else action_groups
+            if not any(len(_grounding_tokens(action) & group) >= 2 for group in candidates):
+                return False
     aligned = any(
         len(concise_group.intersection(canonical_group)) >= 2
         for role in ("title", "context", "action")

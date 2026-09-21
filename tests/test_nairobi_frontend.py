@@ -165,6 +165,7 @@ const links=(()=>{{
 }})();
 if(!links.includes('href="#priority-card-area"'))throw new Error('missing detailed anchor');
 if(!links.includes('openDetailedPriority(1)'))throw new Error('second priority link is not identity-specific');
+if(!links.includes('See full Priority 2 details and suggested text for the project package in Detailed Analysis'))throw new Error('detailed link does not explain the destination');
 openDetailedPriority(1);
 if(currentPriority!==1)throw new Error('detailed priority identity was not preserved');
 if(called.length!==1||called[0][0]!=='detailed'||called[0][1]!==true)throw new Error('tab selection was not persisted');
@@ -384,7 +385,7 @@ def test_manual_session_load_restores_completed_stage3_without_rerun_and_keeps_p
     source = INDEX.read_text(encoding="utf-8")
     helpers = "\n".join(
         _extract_js_function(source, name)
-        for name in ("isRestorableExpressStage3Output", "loadSession")
+        for name in ("isRestorableExpressStage3Output", "restoreSavedStage3Sections", "loadSession")
     )
     script = f"""
 let hist=[],curS=0,instrumentType='',countryScope='',docType='',analysisMode='stepbystep',stage3View='detailed';
@@ -392,6 +393,7 @@ let stageOutputs={{}},stageHists={{}},priorityQuestions=[],focusQuestionsResult=
 let activeLenses=[],resolvedLensVersions={{}},lensDiagnostic={{}},lensContextSources=[];
 let climateResearch={{}},climateGrounding={{}},climateVerifiedAssessment=null,climateVerifiedReader=null;
 let stageConciseReadout=null,stageThreePriorities=[],fcvRating='',fcvResponsivenessRating='';
+let stageRiskExposure=null,stageSensitivitySummary='',stageResponsivenessSummary='';
 let midCycleWatch=[],dpfWatch=[],p4rWatch=[],regionalWatch=[],horizonConsiderations='';
 let lensSelectionLocked=false,sessionName='';
 let calls=[];

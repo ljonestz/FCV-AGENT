@@ -41,7 +41,7 @@ PROJECT_CYCLE = {
 CONCISE_PRIORITY = {
     "title": "Define access triggers",
     "why": "The unresolved choice affects access, inclusion, and delivery.",
-    "how": ["Define the trigger and owner.", "Record the response in the current instrument."],
+    "how": ["Define the access trigger.", "Document the access response in the implementation arrangements."],
     "suggested_wording": {
         "document_element": "Implementation arrangements",
         "text": "Review access conditions quarterly.",

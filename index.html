@@ -3244,6 +3244,9 @@
       climateVerifiedReader=savedLensState.climateVerifiedReader||null;
       stageConciseReadout=savedLensState.stageConciseReadout||null;
       stageThreePriorities=Array.isArray(savedLensState.stageThreePriorities)?savedLensState.stageThreePriorities:[];
+      stageRiskExposure=savedLensState.stageRiskExposure||null;
+      stageSensitivitySummary=typeof savedLensState.stageSensitivitySummary==='string'?savedLensState.stageSensitivitySummary:'';
+      stageResponsivenessSummary=typeof savedLensState.stageResponsivenessSummary==='string'?savedLensState.stageResponsivenessSummary:'';
       fcvRating=savedLensState.fcvRating||'';
       fcvResponsivenessRating=savedLensState.fcvResponsivenessRating||'';
       midCycleWatch=Array.isArray(savedLensState.midCycleWatch)?savedLensState.midCycleWatch:(Array.isArray(savedLensState.mid_cycle_watch)?savedLensState.mid_cycle_watch:[]);
@@ -3261,6 +3264,7 @@
         stageOutputs=outputs;
         stageHists=JSON.parse(localStorage.getItem('fcv_express_stageHists')||'{}');
         hist=stageHists[3]||[];curS=3;lensSelectionLocked=true;
+        restoreSavedStage3Sections({...savedLensState,stageHists});
         document.getElementById('upload-panel').style.display='none';
         document.getElementById('analysis-panel').style.display='block';
         document.getElementById('landing-hero').style.display='none';
@@ -3341,6 +3345,9 @@
       climateVerifiedReader: climateVerifiedReader,
       stageConciseReadout: stageConciseReadout,
       stageThreePriorities: stageThreePriorities,
+      stageRiskExposure: stageRiskExposure,
+      stageSensitivitySummary: stageSensitivitySummary,
+      stageResponsivenessSummary: stageResponsivenessSummary,
       fcvRating: fcvRating,
       fcvResponsivenessRating: fcvResponsivenessRating,
       midCycleWatch: midCycleWatch,
@@ -3367,6 +3374,46 @@
     banner.style.margin = '16px';
     banner.innerHTML = 'This session was created with an earlier version of the screener. To use the new assessment framework, please start a new session. Your old session data is preserved.';
     document.getElementById('main').prepend(banner);
+  }
+
+  // Restore the structured Stage 3 sections that sit alongside the narrative.
+  // Older session files did not save these fields, so recover them from the latest
+  // Stage 3 JSON block retained in the saved history when it is still available.
+  function restoreSavedStage3Sections(state){
+    const candidates=[];
+    const addCandidate=value=>{
+      if(value&&typeof value==='object'&&!Array.isArray(value)) candidates.push(value);
+    };
+    addCandidate(state);
+    const addHistoryPayload=history=>{
+      if(!Array.isArray(history))return;
+      for(let i=history.length-1;i>=0;i--){
+        if(!history[i]||history[i].role!=='assistant')continue;
+        const content=typeof history[i].content==='string'?history[i].content:'';
+        const match=content.match(/%%%JSON_START%%%\s*([\s\S]*?)\s*%%%JSON_END%%%/);
+        if(!match)continue;
+        try{addCandidate(JSON.parse(match[1]));}catch(e){}
+        break;
+      }
+    };
+    addHistoryPayload(state&&state.stageHists&&state.stageHists[3]);
+    addHistoryPayload(state&&state.history);
+    const pick=(...keys)=>{
+      for(const candidate of candidates){
+        for(const key of keys){
+          if(Object.prototype.hasOwnProperty.call(candidate,key)&&candidate[key]!==null&&candidate[key]!==undefined&&candidate[key]!=='')return candidate[key];
+        }
+      }
+      return null;
+    };
+    const risk=pick('stageRiskExposure','risk_exposure');
+    const risksTo=risk&&typeof risk==='object'&&!Array.isArray(risk)&&typeof risk.risks_to==='string'?risk.risks_to:'';
+    const risksFrom=risk&&typeof risk==='object'&&!Array.isArray(risk)&&typeof risk.risks_from==='string'?risk.risks_from:'';
+    stageRiskExposure=(risksTo||risksFrom)?{risks_to:risksTo,risks_from:risksFrom}:null;
+    const sensitivity=pick('stageSensitivitySummary','sensitivity_summary');
+    const responsiveness=pick('stageResponsivenessSummary','responsiveness_summary');
+    stageSensitivitySummary=typeof sensitivity==='string'?sensitivity:'';
+    stageResponsivenessSummary=typeof responsiveness==='string'?responsiveness:'';
   }
 
   function loadSession(input){
@@ -3414,6 +3461,7 @@
         stageThreePriorities = Array.isArray(state.stageThreePriorities) ? state.stageThreePriorities : [];
         fcvRating = state.fcvRating || '';
         fcvResponsivenessRating = state.fcvResponsivenessRating || '';
+        restoreSavedStage3Sections(state);
         midCycleWatch = Array.isArray(state.midCycleWatch) ? state.midCycleWatch : (Array.isArray(state.mid_cycle_watch) ? state.mid_cycle_watch : []);
         dpfWatch = Array.isArray(state.dpfWatch) ? state.dpfWatch : (Array.isArray(state.dpf_watch) ? state.dpf_watch : []);
         p4rWatch = Array.isArray(state.p4rWatch) ? state.p4rWatch : (Array.isArray(state.p4r_watch) ? state.p4r_watch : []);
@@ -5582,7 +5630,7 @@
     if(stageHists[stage])hist=stageHists[stage].slice();
     curS=stage;
     for(let i=stage+1;i<=3;i++){delete stageOutputs[i];delete stageHists[i];}
-    stageThreePriorities=[];stageConciseReadout=null;openSummaryPriority=0;fcvRating='';fcvResponsivenessRating='';stageWiderFcvContext=null;climatePriorityUnlinked=0;climatePriorityTotal=0;climateVerifiedAssessment=null;climateVerifiedReader=null;stage3View='detailed';stage3DetailedHtml='';
+    stageThreePriorities=[];stageConciseReadout=null;stageRiskExposure=null;stageSensitivitySummary='';stageResponsivenessSummary='';openSummaryPriority=0;fcvRating='';fcvResponsivenessRating='';stageWiderFcvContext=null;climatePriorityUnlinked=0;climatePriorityTotal=0;climateVerifiedAssessment=null;climateVerifiedReader=null;stage3View='detailed';stage3DetailedHtml='';
     midCycleWatch=[];dpfWatch=[];p4rWatch=[];regionalWatch=[];horizonConsiderations='';
     clearUI();renderOut(stage,stageOutputs[stage],false);
     if(stage===2&&stage2UnderHood){buildUnderHoodPanels(stage2UnderHood);updateSidebar();}
@@ -5626,7 +5674,7 @@
     try{localStorage.setItem('fcv_express_stageOutputs',JSON.stringify(outputs));}catch(e){}
     try{localStorage.setItem('fcv_express_stageHists',JSON.stringify(hists));}catch(e){}
     try{localStorage.setItem('fcv_express_curS',curStage);}catch(e){}
-    try{localStorage.setItem('fcv_express_lensState',JSON.stringify({activeLenses,lensVersions:lensVersions(),lensDiagnostic,lensContextSources,climateResearch,climateGrounding,climateVerifiedAssessment: climateVerifiedAssessment,climateVerifiedReader: climateVerifiedReader,stageConciseReadout,stageThreePriorities,fcvRating,fcvResponsivenessRating,midCycleWatch,dpfWatch,p4rWatch,regionalWatch,horizonConsiderations,docType,instrumentType,countryScope}));}catch(e){}
+    try{localStorage.setItem('fcv_express_lensState',JSON.stringify({activeLenses,lensVersions:lensVersions(),lensDiagnostic,lensContextSources,climateResearch,climateGrounding,climateVerifiedAssessment: climateVerifiedAssessment,climateVerifiedReader: climateVerifiedReader,stageConciseReadout,stageThreePriorities,stageRiskExposure,stageSensitivitySummary,stageResponsivenessSummary,fcvRating,fcvResponsivenessRating,midCycleWatch,dpfWatch,p4rWatch,regionalWatch,horizonConsiderations,docType,instrumentType,countryScope}));}catch(e){}
   }
 
   function showExpressProgress(){
@@ -6162,7 +6210,7 @@ ${body}
     pF=[];cF=[];hist=[];curS=0;busy=false;stageOutputs={};stageHists={};researchBrief='';researchCountry='';priorityQuestions=[];focusQuestionsResult=null;pqPanelEnabled=true;
     activeLenses=[];resolvedLensVersions={};lensSuggestions=[];lensDiagnostic={};lensContextSources=[];climateResearch={};climateGrounding={};climateIntegration=null;climateVerifiedAssessment=null;climateVerifiedReader=null;lensSelectionTouched=false;lensSelectionLocked=false;renderLensSelector();
     midCycleWatch=[];dpfWatch=[];p4rWatch=[];regionalWatch=[];horizonConsiderations='';
-    stageThreePriorities=[];stageConciseReadout=null;openSummaryPriority=0;fcvRating='';fcvResponsivenessRating='';stage3View='detailed';stage3DetailedHtml='';
+    stageThreePriorities=[];stageConciseReadout=null;stageRiskExposure=null;stageSensitivitySummary='';stageResponsivenessSummary='';openSummaryPriority=0;fcvRating='';fcvResponsivenessRating='';stage3View='detailed';stage3DetailedHtml='';
     { const _pc=document.getElementById('pq-confirm'); if(_pc){_pc.innerHTML='';_pc.style.display='none';} }
     ['stage2_timestamp','stage3_timestamp','stage3_consistency_dismissed'].forEach(k=>localStorage.removeItem(k));
     localStorage.removeItem('fcv_express_stageOutputs');
@@ -6631,7 +6679,7 @@ ${body}
       return `<article class="normal-summary-priority" data-priority-index="${idx}">
         <div class="normal-summary-priority-head"><span class="normal-summary-priority-rank" aria-hidden="true">${idx+1}</span><h3>${esc(normalizeVisibleText(concise.title||priority.title||'Priority action'))}</h3></div>
         <p class="normal-summary-priority-action"><span class="normal-summary-priority-label">Leading action</span>${boldVisibleFirstSentence(leadingAction)}</p>
-        <a class="normal-summary-priority-link" href="#priority-card-area" onclick="openDetailedPriority(${idx});return false;">View full priority ${idx+1} in Detailed analysis</a>
+        <a class="normal-summary-priority-link" href="#priority-card-area" onclick="openDetailedPriority(${idx});return false;">See full Priority ${idx+1} details and suggested text for the project package in Detailed Analysis</a>
       </article>`;
     }).join('');
   }
