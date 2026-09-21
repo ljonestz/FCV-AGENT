@@ -1190,7 +1190,7 @@ def test_download_html_uses_same_climate_sections_and_order():
     # Climate-valid path mirrors renderOut (redesign): notice -> strengths&weaknesses -> core questions.
     required = [
         "renderClimateModuleNotice",
-        "wrapSRTerms(md(summarybody))",
+        "wrapSRTerms(md(bulletFindingSections(summarybody)))",
         "renderClimateStrengthsWeaknesses",
         "renderClimateCoreQuestions",
     ]

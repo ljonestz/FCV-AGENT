@@ -112,12 +112,12 @@ def render_management_brief_html(readout: dict, priorities: list) -> str:
         for title, text in brief["strengths"]:
             parts.append(f'<p class="strength">{_html_body(text, label=title + ":")}</p>')
         parts.append("</section>")
-    parts.append('<section class="section gaps"><h2>Potential gaps</h2>')
+    parts.append('<section class="section gaps"><h2>Potential gaps</h2><ul>')
     for number, card in enumerate(brief["priorities"], 1):
         parts.append(
-            f'<p class="gap">{_html_body(card["gap"], label=f"{number}.")}</p>'
+            f'<li class="gap">{_html_body(card["gap"], label=f"{number}.")}</li>'
         )
-    parts.append("</section>")
+    parts.append("</ul></section>")
     parts.append('<section class="section priorities">')
     parts.append("<h2>Suggested priorities</h2>")
     for number, card in enumerate(brief["priorities"], 1):

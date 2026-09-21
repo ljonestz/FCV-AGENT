@@ -1158,6 +1158,7 @@
     .normal-summary-priorities{display:flex;flex-direction:column;gap:10px;margin-top:10px}
     .normal-summary-gaps{margin:18px 0;padding:14px 16px;background:#fff4e5;border:1px solid #f0d5ad;border-left:4px solid #d98c34;border-radius:8px}
     .normal-summary-gaps .concise-section-label{margin-top:0;color:#885315}
+    .normal-summary-gap-list{margin:0;padding-left:22px;list-style:disc}
     .normal-summary-gap{margin:10px 0;line-height:1.6}
     .normal-summary-gap:last-child{margin-bottom:0}
     .concise-strength-text strong{display:inline;color:inherit;margin:0}
@@ -5222,7 +5223,7 @@
       function styleClassificationFraming(html){
         return html.replace(/(<p>)((?:Based on|This analysis places)[^<]*<\/p>)/,'<div class="classification-framing-para">$1$2</div>');
       }
-      const _preHtml = styleClassificationFraming(md(_pre));
+      const _preHtml = styleClassificationFraming(md(bulletFindingSections(_pre)));
       const _climateActive=isClimateLensActive();
       const _climateEntry=climateLensEntry(lensDiagnostic);
       const _climateError=_climateActive&&(
@@ -5238,7 +5239,7 @@
         // answers). Dividends fold into cq3; wider-FCV is dropped in module mode.
         _outBodyContent=wrapSRTerms(
           _closedProjectNotice+_padNotice+_stageBadge+_climateNotice+
-          _preHtml+md(_rest)+
+          _preHtml+md(bulletFindingSections(_rest))+
           renderClimateStrengthsWeaknesses(_climateEntry)+
           renderClimateCoreQuestions(_climateEntry)+
           renderClimateGroundingSources(climateGrounding)
@@ -5246,7 +5247,7 @@
       }else{
         _outBodyContent=wrapSRTerms(
           _closedProjectNotice+_padNotice+_stageBadge+_climateNotice+
-          _preHtml+renderRiskExposure(stageRiskExposure)+md(_rest)+
+          _preHtml+renderRiskExposure(stageRiskExposure)+md(bulletFindingSections(_rest))+
           renderSRCards(stageSensitivitySummary,stageResponsivenessSummary)+
           (_climateActive?renderClimateGroundingSources(climateGrounding):'')
         )+'<div id="priorities-intro"></div>'+docChecksHtml;
@@ -5999,7 +6000,7 @@
     }
 
     if(summarybody){
-      body += `<div class="out-body exp-narrative">${wrapSRTerms(md(summarybody))}</div>`;
+      body += `<div class="out-body exp-narrative">${wrapSRTerms(md(bulletFindingSections(summarybody)))}</div>`;
       body += `<p style="font-size:11px;color:#666;font-style:italic;margin-top:0;margin-bottom:16px;padding:0 4px">This is a subjective judgement on the part of this AI tool and does not constitute an official WBG classification.</p>`;
     }
 
@@ -6231,6 +6232,23 @@ ${body}
   }
 
   // Markdown renderer
+  function bulletFindingSections(text){
+    // Keep each finding and its explanation together; never split sentences.
+    let selected=false;
+    return String(text||'').split(/(^#{1,3} .+$)/m).map(part=>{
+      if(/^#{1,3} /.test(part)){
+        const title=part.replace(/^#{1,3} /,'').trim().toLowerCase().replace(/:$/,'');
+        selected=['strengths','gaps','potential gaps','key gaps'].includes(title);
+        return part;
+      }
+      if(!selected)return part;
+      return part.split(/(\n\s*\n)/).map((block,index)=>{
+        if(index%2||!block.trim()||/^\s*(?:[-*+] |\d+[.)] |[#>|]|---)/m.test(block))return block;
+        return block.replace(block.trim(),()=>'- '+block.trim().split('\n').join(' '));
+      }).join('').replace(/(\S)\n\s*\n(?=- )/g,'$1\n');
+    }).join('');
+  }
+
   function md(t){
     if(!t)return'';
     t=typeof normalizeVisibleText==='function'?normalizeVisibleText(t):t;
@@ -6594,9 +6612,9 @@ ${body}
     const items=(Array.isArray(priorities)?priorities:[]).slice(0,5).map((priority,idx)=>{
       const concise=getConcisePriority(priority);
       const gap=String(concise.gap||concise.why||'').trim();
-      return `<p class="normal-summary-gap" data-priority-index="${idx}">${boldVisibleFirstSentence(gap)}</p>`;
+      return `<li class="normal-summary-gap" data-priority-index="${idx}">${boldVisibleFirstSentence(gap)}</li>`;
     }).join('');
-    return items?`<section class="normal-summary-gaps"><div class="concise-section-label">Potential gaps</div>${items}</section>`:'';
+    return items?`<section class="normal-summary-gaps"><div class="concise-section-label">Potential gaps</div><ul class="normal-summary-gap-list">${items}</ul></section>`:'';
   }
 
   function renderNormalFcvSummary(){

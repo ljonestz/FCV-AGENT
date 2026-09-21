@@ -94,3 +94,25 @@ def split_first_sentence(text: str) -> tuple[str, str]:
         end = following_index
         return value[:end].rstrip(), value[end:].lstrip()
     return value, ""
+
+
+def bullet_finding_sections(text: str) -> str:
+    """Bullet complete prose paragraphs only under strengths/gaps headings."""
+    parts = re.split(r"(^#{1,3} .+$)", text, flags=re.MULTILINE)
+    selected = False
+    for index, part in enumerate(parts):
+        if re.match(r"^#{1,3} ", part):
+            title = re.sub(r"^#{1,3} ", "", part).strip().lower().rstrip(":")
+            selected = title in {"strengths", "gaps", "potential gaps", "key gaps"}
+        elif selected:
+            blocks = re.split(r"(\n\s*\n)", part)
+            for block_index in range(0, len(blocks), 2):
+                block = blocks[block_index]
+                structured = re.search(
+                    r"^\s*(?:[-*+] |\d+[.)] |[#>|]|---)", block, re.MULTILINE
+                )
+                if block.strip() and not structured:
+                    finding = "- " + " ".join(block.strip().splitlines())
+                    blocks[block_index] = block.replace(block.strip(), finding, 1)
+            parts[index] = re.sub(r"(\S)\n\s*\n(?=- )", r"\1\n", "".join(blocks))
+    return "".join(parts)
