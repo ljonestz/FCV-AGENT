@@ -443,3 +443,31 @@ def test_congo_disambiguates_names_without_the():
     content = [{"type": "text", "text": "Background", "citations": [citation]}]
     assert normalize_core_research_response(content, "Republic of Congo")["sources"] == []
     assert normalize_core_research_response(content, "DRC")["sources"]
+
+
+def test_analysis_context_excludes_uncited_model_claims_and_ambiguous_geography():
+    from fcv_core_research import core_research_analysis_context
+    brief = """### Core public research: Somalia
+#### Provider-cited source-backed excerpts
+- [Somalia report](https://example.org/somalia) - 2026-05-29
+  > Somalia saw increased violence.
+#### Context only provider citations
+  > Ambiguous regional claim.
+#### Model interpretation and background
+South West suspended cooperation in March 2026.
+"""
+    context = core_research_analysis_context(brief)
+    assert "Somalia saw increased violence" in context
+    assert "https://example.org/somalia" in context
+    assert "2026-05-29" in context
+    assert "Ambiguous regional claim" not in context
+    assert "South West suspended" not in context
+    assert "after the document date" in context
+
+
+def test_analysis_context_does_not_promote_source_free_background():
+    from fcv_core_research import core_research_analysis_context
+    brief = "No current sourced evidence was retained.\n#### Model interpretation and background\nUnverified claim."
+    context = core_research_analysis_context(brief)
+    assert "No current sourced evidence" in context
+    assert "Unverified claim" not in context

@@ -513,3 +513,6 @@ strength alignment remains a generation instruction and a content-review check.
 ## Core research evidence contract (2026-09-22)
 
 `STANDARD_RESEARCH_EVIDENCE_CONTRACT` is appended to standard FCV stage contracts. A reference in the primary document to an RRA does not establish that an uploaded diagnostic was used; contextual use requires extracted evidence. External reporting retains attribution and date limitations, is separated from model background, and cannot independently establish a rating or firm requirement. Historical preparation and current supervision evidence are distinguished. `build_core_research_prompt` receives a bounded project profile and the actual existing search budget, with semantic relevance and no publisher allowlist. No delimiters, rating enums or priority JSON fields change.
+
+
+Live acceptance exposed uncited synthesis leaking into analysis. `core_research_analysis_context` now supplies only country-attributable provider passages to both Stage 1 workflows; the full qualified briefing stays visible and exportable. Timing guidance requires later developments to remain watch items, not historical gaps, and forbids inferring site-specific events from broad country excerpts.

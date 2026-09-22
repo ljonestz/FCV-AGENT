@@ -427,3 +427,24 @@ def normalize_core_research_response(
         "sources": sources,
         "status": status,
     }
+
+
+def core_research_analysis_context(brief: str) -> str:
+    """Keep uncited synthesis and ambiguous geography out of model evidence.
+
+    The full normalized briefing remains available to the reader and exports.
+    Its section headings are generated here, while source text is escaped.
+    """
+    evidence = brief
+    for heading in ("#### Context only provider citations", "#### Model interpretation and background"):
+        evidence = evidence.split(heading, 1)[0]
+    return evidence.rstrip() + (
+        "\n\nEvidence boundary: Only the cited passages above are supplied as "
+        "external evidence. Do not reconstruct omitted claims from model knowledge. "
+        "Retain each URL, publication date and reported period. Developments after "
+        "the document date belong in a separately labelled current-context watch "
+        "item, not a historical design gap or rating justification. A later report "
+        "can support earlier conditions only when its cited passage explicitly "
+        "dates those conditions to the preparation period; otherwise timing is "
+        "unverified. A clipped provider passage supports only what is visible."
+    )
