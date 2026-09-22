@@ -395,7 +395,7 @@ let climateResearch={{}},climateGrounding={{}},climateVerifiedAssessment=null,cl
 let stageConciseReadout=null,stageThreePriorities=[],fcvRating='',fcvResponsivenessRating='';
 let stageRiskExposure=null,stageSensitivitySummary='',stageResponsivenessSummary='';
 let midCycleWatch=[],dpfWatch=[],p4rWatch=[],regionalWatch=[],horizonConsiderations='';
-let lensSelectionLocked=false,sessionName='';
+let lensSelectionLocked=false,sessionName='',researchBrief='',researchCountry='';
 let calls=[];
 const lensCatalogueReady=Promise.resolve();
 const lensCatalogue=[];

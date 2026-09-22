@@ -3239,6 +3239,8 @@
       resolvedLensVersions=savedLensState.lensVersions?{...savedLensState.lensVersions}:{};
       lensDiagnostic=savedLensState.lensDiagnostic||{};
       lensContextSources=Array.isArray(savedLensState.lensContextSources)?savedLensState.lensContextSources:[];
+      researchBrief=typeof savedLensState.researchBrief==='string'?savedLensState.researchBrief:'';
+      researchCountry=typeof savedLensState.researchCountry==='string'?savedLensState.researchCountry:'';
       climateResearch=savedLensState.climateResearch||{};
       climateGrounding=savedLensState.climateGrounding||{};
       climateVerifiedAssessment=savedLensState.climateVerifiedAssessment||null;
@@ -3303,6 +3305,7 @@
   })();
 
   function restartExpressFromStage1(){
+    researchBrief='';researchCountry='';
     localStorage.removeItem('fcv_express_stageOutputs');
     localStorage.removeItem('fcv_express_stageHists');
     localStorage.removeItem('fcv_express_lensState');
@@ -3313,6 +3316,7 @@
   }
 
   function discardExpressRecovery(){
+    researchBrief='';researchCountry='';
     localStorage.removeItem('fcv_express_stageOutputs');
     localStorage.removeItem('fcv_express_stageHists');
     localStorage.removeItem('fcv_express_lensState');
@@ -3334,6 +3338,8 @@
       countryScope: countryScope,
       stageOutputs: stageOutputs,
       stageHists: stageHists,
+      researchBrief: researchBrief,
+      researchCountry: researchCountry,
       priorityQuestions: priorityQuestions,
       focusQuestionsResult: focusQuestionsResult,
       activeLenses: activeLenses,
@@ -3448,6 +3454,8 @@
         selectMode(state.analysisMode || 'stepbystep');
         if(state.stageOutputs) stageOutputs = state.stageOutputs;
         if(state.stageHists) stageHists = state.stageHists;
+        researchBrief = typeof state.researchBrief === 'string' ? state.researchBrief : '';
+        researchCountry = typeof state.researchCountry === 'string' ? state.researchCountry : '';
         priorityQuestions = state.priorityQuestions || [];
         focusQuestionsResult = state.focusQuestionsResult || null;
         activeLenses = state.version >= 3 && Array.isArray(state.activeLenses) ? state.activeLenses.slice(0,2) : [];
@@ -3864,6 +3872,7 @@
 
   async function runExpress(){
     if(busy)return;
+    researchBrief='';researchCountry='';
     busy=true;
     climateVerifiedAssessment=null;
     climateVerifiedReader=null;
@@ -4203,6 +4212,7 @@
 
   async function runStage(stage,followOn=null){
     if(busy)return;
+    if(stage===1&&!followOn){researchBrief='';researchCountry='';}
     busy=true;curS=stage;
     setStepper(stage,'active');clearUI();
 
@@ -4485,7 +4495,7 @@
       <button class="research-brief-toggle" onclick="const p=this.closest('.research-brief-panel');p.classList.toggle('open');this.setAttribute('aria-expanded',p.classList.contains('open'))" aria-expanded="false">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--wbg-blue);flex-shrink:0"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <span class="rb-label">Automated FCV risk briefing${countryLabel} — general country &amp; sector insights</span>
-        <span class="rb-badge">View sources</span>
+        <span class="rb-badge">View research briefing</span>
         <svg class="rb-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
       </button>
       <div class="research-brief-body">
@@ -5296,7 +5306,7 @@
           <div class="out-card ani">
             <div class="out-hdr">
               <div class="out-hdr-l"><span class="dot done"></span>${NAMES[stage]}</div>
-              <div class="out-hdr-actions" style="display:flex;gap:8px;align-items:center">
+              <div class="out-hdr-actions" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
                 ${isLast?`<span id="management-brief-controls">${renderManagementBriefControls()}</span>`:''}${isLast?`<button class="btn btn-ghost btn-sm" onclick="downloadReport(this)" title="Download full report as a Word document (.docx)">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                   Download .docx
@@ -5305,9 +5315,10 @@
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
                   Share .html
                 </button>`:''}
-                <button class="copy-btn" id="copy-btn" onclick="copyOut()">Copy all</button>
+                ${isLast?`<button class="copy-btn" onclick="copySummary()">Copy summary</button><button class="copy-btn" onclick="copyFullReport()">Copy full report</button>`:`<button class="copy-btn" id="copy-btn" onclick="copyOut()">Copy all</button>`}
               </div>
             </div>
+            ${isLast?`<p style="font-size:12px;color:var(--muted);padding:0 20px">Full report includes all priority actions and drafting. HTML also includes the research briefing and Stage 2 Annex; Word export omits these supplements. Optional Playbook exploration is separate.</p>`:''}
             <div class="out-body" id="out-txt"${_outPanelAttrs}>${isLast&&_supportsStage3Tabs?stage3ViewToggleHtml():''}${_outBodyContent}</div>
           </div>
           ${isLast?`
@@ -5463,6 +5474,67 @@
     updateSessionBar();
   }
   function clearUI(){['err-area','stage-disp','refine-area','act-area'].forEach(id=>{const e=document.getElementById(id);if(e)e.innerHTML=''});window._truncWarnings=null;}
+
+
+  function stripWatchHeading(value){
+    const lines=String(value||'').trim().split('\n');
+    let firstBody=0;
+    for(let index=0;index<lines.length;index++){
+      let heading=lines[index].trim();
+      if(!heading){firstBody=index+1;continue;}
+      let hashes=0;while(heading[hashes]==='#')hashes++;
+      if(hashes>=1&&hashes<=6&&/\s/.test(heading[hashes]||''))heading=heading.slice(hashes).trim();
+      if(heading.endsWith(':'))heading=heading.slice(0,-1).trimEnd();
+      for(const marker of ['**','__']){
+        if(heading.startsWith(marker)&&heading.endsWith(marker)){heading=heading.slice(marker.length,-marker.length).trim();break;}
+      }
+      if(heading.toLowerCase()!=='watch list for supervision')break;
+      firstBody=index+1;
+    }
+    return lines.slice(firstBody).join('\n').trim();
+  }
+
+  function reportPlainText(html){
+    const container=document.createElement('div');
+    container.innerHTML=html;
+    container.querySelectorAll('button,script,style').forEach(el=>el.remove());
+    container.querySelectorAll('details').forEach(el=>el.open=true);
+    container.querySelectorAll('a[href]').forEach(el=>{const url=el.getAttribute('href');if(/^https?:\/\//i.test(url))el.append(' ('+url+')');});
+    container.style.cssText='position:fixed;left:-10000px;width:800px';
+    document.body.appendChild(container);
+    const text=container.innerText;
+    container.remove();
+    return text;
+  }
+
+  function buildFullReportText(){
+    if(supportsClimateVerifiedStage3View())return reportPlainText(renderClimateVerifiedAssessment(climateVerifiedReader));
+    let html=md(stageOutputs[3]||'');
+    html+=renderRiskExposure(stageRiskExposure)+renderSRCards(stageSensitivitySummary,stageResponsivenessSummary);
+    html+='<h2>Ratings</h2><p>Sensitivity: '+esc(fcvRating||'Unavailable')+'</p><p>Responsiveness: '+esc(fcvResponsivenessRating||'Unavailable')+'</p>';
+    stageThreePriorities.forEach((priority,index)=>{html+=_buildExportPriorityCard(priority,index,stageThreePriorities.length);});
+    if(focusQuestionsResult){
+      html+='<h2>Responses to your priority points</h2>'+md(focusQuestionsResult.overview||'');
+      (focusQuestionsResult.responses||[]).forEach(r=>{html+='<h3>'+esc(r.question||'')+'</h3>'+md(r.direct_answer||'')+md(r.confidence_gap_note||'');});
+    }
+    [[midCycleWatch,'Mid-Cycle FCV Watch'],[dpfWatch,'DPF FCV Watch'],[p4rWatch,'P4R FCV Watch'],[regionalWatch,'Regional FCV Watch']].forEach(([items,title])=>{
+      if(items&&items.length)html+='<h2>'+title+'</h2><ul>'+items.map(item=>'<li>'+esc(item)+'</li>').join('')+'</ul>';
+    });
+    if(horizonConsiderations)html+='<h2>Watch List for Supervision</h2>'+md(stripWatchHeading(horizonConsiderations));
+    return reportPlainText(html);
+  }
+
+  async function copyReportText(text){
+    try{await navigator.clipboard.writeText(text);}
+    catch(error){
+      const input=document.createElement('textarea');input.value=text;
+      document.body.appendChild(input);input.select();document.execCommand('copy');input.remove();
+    }
+  }
+  function copyFullReport(){return copyReportText(buildFullReportText());}
+  function copySummary(){
+    return copyReportText(reportPlainText(supportsAnyStage3Summary()?renderStage3Summary():md(stageOutputs[3]||'')));
+  }
 
   function copyOut(){
     const el=document.getElementById('out-txt');if(!el)return;
@@ -5675,7 +5747,7 @@
     try{localStorage.setItem('fcv_express_stageOutputs',JSON.stringify(outputs));}catch(e){}
     try{localStorage.setItem('fcv_express_stageHists',JSON.stringify(hists));}catch(e){}
     try{localStorage.setItem('fcv_express_curS',curStage);}catch(e){}
-    try{localStorage.setItem('fcv_express_lensState',JSON.stringify({activeLenses,lensVersions:lensVersions(),lensDiagnostic,lensContextSources,climateResearch,climateGrounding,climateVerifiedAssessment: climateVerifiedAssessment,climateVerifiedReader: climateVerifiedReader,stageConciseReadout,stageThreePriorities,stageRiskExposure,stageSensitivitySummary,stageResponsivenessSummary,fcvRating,fcvResponsivenessRating,midCycleWatch,dpfWatch,p4rWatch,regionalWatch,horizonConsiderations,docType,instrumentType,countryScope}));}catch(e){}
+    try{localStorage.setItem('fcv_express_lensState',JSON.stringify({researchBrief,researchCountry,activeLenses,lensVersions:lensVersions(),lensDiagnostic,lensContextSources,climateResearch,climateGrounding,climateVerifiedAssessment: climateVerifiedAssessment,climateVerifiedReader: climateVerifiedReader,stageConciseReadout,stageThreePriorities,stageRiskExposure,stageSensitivitySummary,stageResponsivenessSummary,fcvRating,fcvResponsivenessRating,midCycleWatch,dpfWatch,p4rWatch,regionalWatch,horizonConsiderations,docType,instrumentType,countryScope}));}catch(e){}
   }
 
   function showExpressProgress(){
@@ -6097,8 +6169,10 @@
     // ── Watch List ──
     if(typeof horizonConsiderations==='string' && horizonConsiderations.trim()){
       body += `<h2 class="exp-section-hdr">Watch List for Supervision</h2>
-        <div class="horizon-body">${wrapSRTerms(md(horizonConsiderations))}</div>`;
+        <div class="horizon-body">${wrapSRTerms(md(stripWatchHeading(horizonConsiderations)))}</div>`;
     }
+
+    if(researchBrief)body += '<h2 class="exp-section-hdr">Research briefing</h2><div class="out-body">'+md(researchBrief)+'</div>';
 
     // ── Annex: Stage 2 tables ──
     // Reviewed structural sources are distinct from accepted live country context.
@@ -6399,6 +6473,7 @@ ${body}
   let climatePriorityUnlinked = 0, climatePriorityTotal = 0;
   let currentPriority = 0;  // 0-indexed
   let currentDeeperTab = {};  // {priorityIndex: 'alternatives'|'trail'|'playbook'}
+  let deeperRequestId = 0;
   let deeperAbortController = null;  // AbortController for cancelling in-flight Go Deeper fetch
   let fileMetadata = {};   // {filename: {word_count, doc_type, extraction_status}}
   let fcvRating = '';
@@ -6459,7 +6534,7 @@ ${body}
       <div class="stage3-rating-card-header"><span class="stage3-rating-dimension">FCV Responsiveness</span><span class="stage3-rating-value" id="fcv-resp-rating-label" data-rating-value data-rating-state="pending">Analysing…</span></div>
       <div class="stage3-rating-bar" role="progressbar" aria-label="FCV Responsiveness rating" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span class="stage3-rating-fill" data-rating-fill></span></div>
       <p class="stage3-rating-meaning" id="fcv-resp-need-label" data-rating-meaning>Meaning will be shown when the responsiveness rating is available.</p>
-      <p class="stage3-rating-description">Does the project actively work to change the FCV situation?</p>
+      <p class="stage3-rating-description">Does the project actively work to change the FCV situation? This is not a proxy for overall project quality; limited direct FCV action may fit the operation's scope.</p>
     </article>`;
     const climateCard = `<article class="stage3-rating-card" data-rating-key="climate-integration">
       <div class="stage3-rating-card-header"><span class="stage3-rating-dimension">Climate-FCV integration</span><span class="stage3-rating-value" id="fcv-int-label" data-rating-value data-rating-state="pending">Analysing…</span></div>
@@ -6467,7 +6542,8 @@ ${body}
       <p class="stage3-rating-meaning" id="fcv-int-summary" data-rating-meaning>Opportunities to further strengthen climate and FCV elements.</p>
       <p class="stage3-rating-description">How well the project connects climate resilience and FCV-aware delivery.</p>
     </article>`;
-    const cards = isClimateLensActive() ? climateCard : normalSensitivityCard + normalResponsivenessCard;
+    const scale='<p class="stage3-rating-description">Rating scale: '+LEVELS.map(esc).join(' → ')+'</p>';
+    const cards = (isClimateLensActive() ? climateCard : normalSensitivityCard + normalResponsivenessCard)+scale;
     const mobileCards = cards.replace(/ id="fcv-/g, ' id="fcv-mobile-');
     return `<aside class="stage3-rating-rail" aria-label="Assessment ratings">${cards}</aside><details class="stage3-mobile-ratings"><summary>Assessment ratings</summary><div class="stage3-mobile-rating-list">${mobileCards}</div></details>`;
   }
@@ -6509,7 +6585,7 @@ ${body}
     const sensitivityLevel = LEVELS.findIndex(level => level.toLowerCase() === (fcvRating || '').toLowerCase()) + 1;
     updateRatingCards('sensitivity', fcvRating ? `${fcvRating} Sensitivity` : '', NEED_LABELS[fcvRating] || 'The rating describes contextual awareness and conflict-informed design.', sensitivityLevel / LEVELS.length, LEVEL_COLORS[sensitivityLevel] || '#0050a0');
     const responsivenessLevel = LEVELS.findIndex(level => level.toLowerCase() === (fcvResponsivenessRating || '').toLowerCase()) + 1;
-    updateRatingCards('responsiveness', fcvResponsivenessRating ? `${fcvResponsivenessRating} Responsiveness` : '', NEED_LABELS[fcvResponsivenessRating] || 'The rating describes active work to change the FCV situation.', responsivenessLevel / LEVELS.length, RESP_LEVEL_COLORS[responsivenessLevel] || '#e8edf2');
+    updateRatingCards('responsiveness', fcvResponsivenessRating ? `${fcvResponsivenessRating} Responsiveness` : '', fcvResponsivenessRating ? 'Direct contribution to addressing FCV drivers, interpreted within the operation scope.' : 'The rating describes active work to change the FCV situation.', responsivenessLevel / LEVELS.length, RESP_LEVEL_COLORS[responsivenessLevel] || '#e8edf2');
   }
 
   // Priority stepper & card rendering ────────────────────────────────────
@@ -6977,7 +7053,8 @@ ${body}
     const panel=document.createElement('details');
     panel.id='horizon-panel';
     panel.className='horizon-panel ani';
-    const rendered=typeof md==='function'?md(text):text.replace(/\n/g,'<br>');
+    const watch=stripWatchHeading(text);
+    const rendered=typeof md==='function'?md(watch):esc(watch).replace(/\n/g,'<br>');
     panel.innerHTML='<summary>Watch List for Supervision: Risks to Monitor During Implementation</summary>'
       +'<div class="horizon-body">'
       +'<p class="horizon-disclaimer">These are FCV risks or dynamics the team cannot act on now but should monitor during implementation. They do not affect the FCV ratings above.</p>'
@@ -7240,6 +7317,9 @@ ${body}
   }
 
   function switchDeeperTab(idx, tab, btnEl) {
+    ++deeperRequestId;
+    if(deeperAbortController)deeperAbortController.abort();
+    const loading=document.getElementById('deeper-loading-'+idx);if(loading)loading.style.display='none';
     // Update active button state
     const tabs = btnEl.parentElement.querySelectorAll('.deeper-tab');
     tabs.forEach(function(t) { t.classList.remove('active'); });
@@ -7337,6 +7417,11 @@ ${body}
       deeperAbortController.abort();
     }
     deeperAbortController = new AbortController();
+    const controller=deeperAbortController;
+    const requestId=++deeperRequestId;
+    const isCurrent=()=>requestId===deeperRequestId&&resultEl.isConnected;
+    let timedOut=false;
+    const timeoutHandle=setTimeout(()=>{timedOut=true;controller.abort();},90 * 1000);
 
     const startTime = Date.now();
     const timerEl = document.getElementById('deeper-timer-' + idx);
@@ -7357,7 +7442,7 @@ ${body}
           history: hist,
           doc_type: docType || 'Unknown'
         }),
-        signal: deeperAbortController.signal
+        signal: controller.signal
       });
 
       if (!resp.ok) throw new Error('Server error ' + resp.status);
@@ -7368,6 +7453,7 @@ ${body}
 
       while (true) {
         const {done, value} = await reader.read();
+        if(!isCurrent())return;
         if (done) break;
         sseBuffer += decoder.decode(value, {stream: true});
         const events = sseBuffer.split('\n\n');
@@ -7392,8 +7478,10 @@ ${body}
         }
       }
 
+      if(!isCurrent())return;
       clearInterval(timerHandle);
       if (loadingEl) loadingEl.style.display = 'none';
+      if(!accumulated.trim()){resultEl.innerHTML='<p class="beyond-intro">No additional FCV Playbook guidance was returned.</p>'+retryDeeperButton(idx,tab);return;}
 
       const cacheKey = 'deeper_' + idx + '_' + tab;
       try { localStorage.setItem(cacheKey, accumulated); } catch(e) {}
@@ -7405,15 +7493,20 @@ ${body}
         resultEl.innerHTML = renderDeeperContent('playbook', accumulated);
       }
     } catch(e) {
-      clearInterval(timerHandle);
-      if (loadingEl) loadingEl.style.display = 'none';
-      if (e.name === 'AbortError') {
-        resultEl.innerHTML = '<p class="beyond-intro">Generation cancelled.</p>';
-      } else {
-        resultEl.innerHTML = '<p class="err-msg">Failed to load content: ' + esc(e.message) + '</p>';
-      }
+      if(!isCurrent())return;
+      const message=timedOut?'Loading timed out. Please retry.':e.name==='AbortError'?'Generation cancelled.':'Failed to load content: '+e.message;
+      resultEl.innerHTML='<p class="err-msg">'+esc(message)+'</p>'+retryDeeperButton(idx,tab);
+    } finally {
+      clearInterval(timerHandle);clearTimeout(timeoutHandle);
+      if(isCurrent()&&loadingEl)loadingEl.style.display='none';
     }
   }
+
+  function retryDeeperButton(idx,tab){
+    const safeTab=tab==='alternatives'?'alternatives':'playbook';
+    return `<button class="btn btn-ghost btn-sm" onclick="retryDeeper(${Number(idx)},'${safeTab}')">Retry</button>`;
+  }
+  function retryDeeper(idx,tab){return loadDeeperTab(idx,tab);}
 
   function renderDeeperContent(tab, content) {
     if (tab === 'alternatives') {

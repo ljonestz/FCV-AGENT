@@ -116,3 +116,26 @@ def bullet_finding_sections(text: str) -> str:
                     blocks[block_index] = block.replace(block.strip(), finding, 1)
             parts[index] = re.sub(r"(\S)\n\s*\n(?=- )", r"\1\n", "".join(blocks))
     return "".join(parts)
+
+
+def strip_watch_heading(value: Any) -> str:
+    """Remove leading section titles with linear parsing of untrusted text."""
+    lines = str(value or "").strip().splitlines(keepends=True)
+    first_body = 0
+    for index, line in enumerate(lines):
+        heading = line.strip()
+        if not heading:
+            first_body = index + 1
+            continue
+        hashes = len(heading) - len(heading.lstrip("#"))
+        if 1 <= hashes <= 6 and heading[hashes:hashes + 1].isspace():
+            heading = heading[hashes:].strip()
+        heading = heading.removesuffix(":").rstrip()
+        for marker in ("**", "__"):
+            if heading.startswith(marker) and heading.endswith(marker):
+                heading = heading[len(marker):-len(marker)].strip()
+                break
+        if heading.casefold() != "watch list for supervision":
+            break
+        first_body = index + 1
+    return "".join(lines[first_body:]).strip()
