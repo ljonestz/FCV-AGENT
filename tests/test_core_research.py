@@ -471,3 +471,20 @@ def test_analysis_context_does_not_promote_source_free_background():
     context = core_research_analysis_context(brief)
     assert "No current sourced evidence" in context
     assert "Unverified claim" not in context
+
+
+def test_possessive_country_title_supports_country_attribution():
+    titles = (
+        "Somalia's security outlook",
+        "Somalia\u2019s security outlook",
+        "Somalia\u2019s 2026 security impasse: The geography of an unwinnable war | Somali Guardian",
+    )
+    for title in titles:
+        result = normalize_core_research_response([{
+            "type": "text", "text": "Background", "citations": [{
+                "url": "https://news.example/outlook", "title": title,
+                "cited_text": "Supply routes face security pressures.",
+            }],
+        }], "Somalia")
+        assert len(result["sources"]) == 1
+        assert not result["sources"][0].get("context_only")

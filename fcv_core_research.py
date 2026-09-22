@@ -24,7 +24,7 @@ def _string(value: Any, limit: int = 0) -> str:
 
 
 def _fold(value: Any) -> str:
-    text = unicodedata.normalize("NFKD", _string(value)).encode(
+    text = unicodedata.normalize("NFKD", _string(value).replace("\u2019", "'")).encode(
         "ascii", "ignore"
     ).decode("ascii")
     return re.sub(r"\s+", " ", text.casefold()).strip()

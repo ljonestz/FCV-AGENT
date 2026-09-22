@@ -516,3 +516,5 @@ strength alignment remains a generation instruction and a content-review check.
 
 
 Live acceptance exposed uncited synthesis leaking into analysis. `core_research_analysis_context` now supplies only country-attributable provider passages to both Stage 1 workflows; the full qualified briefing stays visible and exportable. Timing guidance requires later developments to remain watch items, not historical gaps, and forbids inferring site-specific events from broad country excerpts.
+
+Country matching normalizes typographic possessives before ASCII folding, so a national-news title such as "Somalia’s ..." is not falsely downgraded to ambiguous regional context. The regression includes the exact title returned during live research and retains the namesake-country cases.
