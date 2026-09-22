@@ -549,3 +549,7 @@ of em dashes to spaced hyphens. New management content targets about 1.5-2 A4
 pages. Never shorten canonical evidence or invent text to satisfy page length.
 
 Gap admission accepts nonempty grounded text up to 100 words. The drafting target is not a strict admission limit. Brief Word gap paragraphs stay together without truncating text.
+
+## Core research normalization and cache (2026-09-22)
+
+`run_fcv_web_research` keeps the existing single Anthropic web-search request and delegates prompt construction and provider-block normalization to `fcv_core_research.py`. Results carry `brief`, `country`, `sources`, `status`, and the existing `ccdr_context`. Provider citations preserve URLs, excerpts and supplied dates; unavailable dates and uncertain country attribution remain explicit. No server-side article fetching is added. Stage 1 cache keys include the bounded project profile and lens budget; entries expire after six hours, are capped at 128, and source-free/unavailable results are not cached. Existing SSE research brief transport is unchanged. Word export strips only repeated leading Watch List headings.

@@ -116,3 +116,12 @@ def bullet_finding_sections(text: str) -> str:
                     blocks[block_index] = block.replace(block.strip(), finding, 1)
             parts[index] = re.sub(r"(\S)\n\s*\n(?=- )", r"\1\n", "".join(blocks))
     return "".join(parts)
+
+
+def strip_watch_heading(value: Any) -> str:
+    """Remove only repeated leading section titles; preserve watch subheadings."""
+    text = str(value or "").strip()
+    pattern = r"^(?:#{1,6}[ \t]+)?(?:\*\*|__)?Watch List for Supervision(?:\*\*|__)?[ \t]*:?[ \t]*(?:\r?\n|$)"
+    while re.match(pattern, text, flags=re.IGNORECASE):
+        text = re.sub(pattern, "", text, count=1, flags=re.IGNORECASE).lstrip()
+    return text

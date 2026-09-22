@@ -509,3 +509,7 @@ anchors, with the first how tied to the first detailed action. Matching title or
 rationale alone is insufficient. Mismatches use the existing deterministic Detailed
 fallback. This lexical check is a guard, not semantic or factual verification;
 strength alignment remains a generation instruction and a content-review check.
+
+## Core research evidence contract (2026-09-22)
+
+`STANDARD_RESEARCH_EVIDENCE_CONTRACT` is appended to standard FCV stage contracts. A reference in the primary document to an RRA does not establish that an uploaded diagnostic was used; contextual use requires extracted evidence. External reporting retains attribution and date limitations, is separated from model background, and cannot independently establish a rating or firm requirement. Historical preparation and current supervision evidence are distinguished. `build_core_research_prompt` receives a bounded project profile and the actual existing search budget, with semantic relevance and no publisher allowlist. No delimiters, rating enums or priority JSON fields change.
