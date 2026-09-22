@@ -179,3 +179,16 @@ def test_new_research_runs_clear_recovered_brief_but_stage_refinement_keeps_it()
         assert "researchBrief='';researchCountry='';" in helper
     run_stage = _extract_js_function(source, "runStage")
     assert "if(stage===1&&!followOn){researchBrief='';researchCountry='';}" in run_stage
+
+
+
+def test_watch_heading_handles_long_near_match_and_preserves_subheadings():
+    helper = _extract_js_function(_source(), "stripWatchHeading")
+    script = helper + r"""
+const text='Watch List for Supervision'+'\t'.repeat(100000)+'not a heading\nBody';
+if(stripWatchHeading(text)!==text)throw Error('changed a non-heading');
+const repeated='### Watch List for Supervision\n\n**Watch List for Supervision**:\n\n### Access\nMonitor';
+if(stripWatchHeading(repeated)!=='### Access\nMonitor')throw Error('heading normalization');
+"""
+    result = subprocess.run(["node", "-e", script], capture_output=True, text=True, timeout=30)
+    assert result.returncode == 0, result.stderr

@@ -553,3 +553,5 @@ Gap admission accepts nonempty grounded text up to 100 words. The drafting targe
 ## Core research normalization and cache (2026-09-22)
 
 `run_fcv_web_research` keeps the existing single Anthropic web-search request and delegates prompt construction and provider-block normalization to `fcv_core_research.py`. Results carry `brief`, `country`, `sources`, `status`, and the existing `ccdr_context`. Provider citations preserve URLs, excerpts and supplied dates; unavailable dates and uncertain country attribution remain explicit. No server-side article fetching is added. Stage 1 cache keys include the bounded project profile and lens budget; entries expire after six hours, are capped at 128, and source-free/unavailable results are not cached. Existing SSE research brief transport is unchanged. Word export strips only repeated leading Watch List headings.
+
+Watch List heading normalization uses linear line parsing in Python and JavaScript so adversarial whitespace cannot cause regex backtracking.

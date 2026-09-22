@@ -119,9 +119,23 @@ def bullet_finding_sections(text: str) -> str:
 
 
 def strip_watch_heading(value: Any) -> str:
-    """Remove only repeated leading section titles; preserve watch subheadings."""
-    text = str(value or "").strip()
-    pattern = r"^(?:#{1,6}[ \t]+)?(?:\*\*|__)?Watch List for Supervision(?:\*\*|__)?[ \t]*:?[ \t]*(?:\r?\n|$)"
-    while re.match(pattern, text, flags=re.IGNORECASE):
-        text = re.sub(pattern, "", text, count=1, flags=re.IGNORECASE).lstrip()
-    return text
+    """Remove leading section titles with linear parsing of untrusted text."""
+    lines = str(value or "").strip().splitlines(keepends=True)
+    first_body = 0
+    for index, line in enumerate(lines):
+        heading = line.strip()
+        if not heading:
+            first_body = index + 1
+            continue
+        hashes = len(heading) - len(heading.lstrip("#"))
+        if 1 <= hashes <= 6 and heading[hashes:hashes + 1].isspace():
+            heading = heading[hashes:].strip()
+        heading = heading.removesuffix(":").rstrip()
+        for marker in ("**", "__"):
+            if heading.startswith(marker) and heading.endswith(marker):
+                heading = heading[len(marker):-len(marker)].strip()
+                break
+        if heading.casefold() != "watch list for supervision":
+            break
+        first_body = index + 1
+    return "".join(lines[first_body:]).strip()

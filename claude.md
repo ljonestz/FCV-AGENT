@@ -935,3 +935,5 @@ brief Word gaps already use Word's List Bullet style.
 ## Render review follow-up (2026-09-22)
 
 Core research uses `fcv_core_research.py` to preserve provider citations and distinguish uncertain geography and model interpretation. The existing search budget is unchanged; profile-aware cache entries expire after six hours and source-free failures are not cached. Standard prompts distinguish primary-document RRA references from actual use of extracted contextual evidence. Report controls distinguish summary and full copying, retain the research briefing through session saves, normalize the Watch List heading, and recover from Playbook loading failures. See `20260922_render-output-research-handover.md` for scope and validation.
+
+Watch List heading normalization uses linear line parsing in Python and JavaScript so adversarial whitespace cannot cause regex backtracking.

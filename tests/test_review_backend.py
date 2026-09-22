@@ -100,3 +100,16 @@ def test_word_preserves_all_actions_and_drafting():
     text = "\n".join(node.text or "" for node in doc.element.iter() if node.tag.endswith("}t"))
     for expected in ("First complete action", "Second complete action", "First proposed wording", "Second proposed wording", "Supply interruption", "Exclusion risk", "Sensitivity explanation", "Responsiveness explanation"):
         assert expected in text
+
+
+
+def test_watch_heading_rejects_large_near_match_in_bounded_time():
+    """Untrusted report text must not trigger quadratic regex backtracking."""
+    import subprocess
+    import sys
+    code = (
+        "from fcv_presentation import strip_watch_heading; "
+        "text='Watch List for Supervision'+'\\t'*100000+'not a heading\\nBody'; "
+        "assert strip_watch_heading(text)==text"
+    )
+    subprocess.run([sys.executable, "-c", code], check=True, timeout=8)

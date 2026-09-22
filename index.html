@@ -5477,7 +5477,21 @@
 
 
   function stripWatchHeading(value){
-    return String(value||'').trim().replace(/^(?:(?:#{1,6}[ \t]+)?(?:\*\*|__)?Watch List for Supervision(?:\*\*|__)?[ \t]*:?[ \t]*(?:\r?\n|$)\s*)+/i,'');
+    const lines=String(value||'').trim().split('\n');
+    let firstBody=0;
+    for(let index=0;index<lines.length;index++){
+      let heading=lines[index].trim();
+      if(!heading){firstBody=index+1;continue;}
+      let hashes=0;while(heading[hashes]==='#')hashes++;
+      if(hashes>=1&&hashes<=6&&/\s/.test(heading[hashes]||''))heading=heading.slice(hashes).trim();
+      if(heading.endsWith(':'))heading=heading.slice(0,-1).trimEnd();
+      for(const marker of ['**','__']){
+        if(heading.startsWith(marker)&&heading.endsWith(marker)){heading=heading.slice(marker.length,-marker.length).trim();break;}
+      }
+      if(heading.toLowerCase()!=='watch list for supervision')break;
+      firstBody=index+1;
+    }
+    return lines.slice(firstBody).join('\n').trim();
   }
 
   function reportPlainText(html){
