@@ -1440,15 +1440,18 @@ def test_set_stage3_view_detailed_restores_horizon_panel_after_summary_transitio
     assert "renderHorizonPanel(horizonConsiderations)" in set_view[detailed_start:]
     assert "typeof horizonConsiderations==='string'&&horizonConsiderations.trim()" in set_view[detailed_start:]
     assert "md.render" not in _extract_js_function(source, "renderHorizonPanel")
-    assert "md(text)" in _extract_js_function(source, "renderHorizonPanel")
+    assert "stripWatchHeading(text)" in _extract_js_function(source, "renderHorizonPanel")
+    assert "md(watch)" in _extract_js_function(source, "renderHorizonPanel")
 
 
 def test_render_horizon_panel_uses_local_md_and_replaces_existing_panel_without_duplication():
     source = open(os.path.join(os.path.dirname(app.__file__), "index.html"), encoding="utf-8").read()
     md = _extract_js_function(source, "md")
+    strip_heading = _extract_js_function(source, "stripWatchHeading")
     renderer = _extract_js_function(source, "renderHorizonPanel")
     script = f"""
 {md}
+{strip_heading}
 let panel=null; const container={{children:[],appendChild(node){{this.children.push(node);panel=node;}}}};
 const document={{
   getElementById(id){{return id==='out-txt'?container:(id==='horizon-panel'?panel:null);}},

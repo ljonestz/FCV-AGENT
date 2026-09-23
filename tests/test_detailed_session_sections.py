@@ -94,6 +94,7 @@ const localStorage = {{
   setItem(key, value) {{ values.set(key, String(value)); }},
   getItem(key) {{ return values.get(key) || null; }}
 }};
+let researchBrief = null, researchCountry = '';
 let activeLenses = [], lensDiagnostic = {{}}, lensContextSources = [];
 let climateResearch = {{}}, climateGrounding = {{}};
 let climateVerifiedAssessment = null, climateVerifiedReader = null;

@@ -870,6 +870,8 @@ def test_climate_stage3_overview_explains_why_strengthening_is_needed():
     )
     script = f"""
 const isClimateLensActive = () => true;
+const LEVELS = ['Extremely Low','Very Low','Low','Adequate','Well Embedded','Very Well Embedded'];
+const esc = value => String(value);
 {helpers}
 if (climateIntegrationShortLabel('Adequate') !== 'Opportunities to further strengthen climate and FCV elements') {{
   throw new Error('rating helper does not explain the improvement opportunity');
@@ -1762,6 +1764,8 @@ def test_stage3_overview_has_textual_slim_bar_ratings_for_normal_and_climate_mod
     script = f"""
 let climateMode = false;
 const isClimateLensActive = () => climateMode;
+const LEVELS = ['Extremely Low','Very Low','Low','Adequate','Well Embedded','Very Well Embedded'];
+const esc = value => String(value);
 {helper}
 const normal = stage3OverviewHtml();
 const assertUniqueIds = (html,label) => {{
