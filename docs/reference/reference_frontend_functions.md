@@ -408,3 +408,7 @@ brief Word gaps already use Word's List Bullet style.
 ## Report and research usability (2026-09-22)
 
 Report controls distinguish summary copying from full-report copying. Full report content includes all canonical priority actions and drafting, ratings, risk, conclusions and watch items. The HTML analytical annex remains distinct from the Word report scope. The research briefing and country persist in saved sessions. Playbook loading has bounded recovery with retry and stale-response protection. Rating explanations retain the six existing tiers and distinguish responsiveness from overall project quality.
+
+## Download scope by Stage 3 view (2026-09-23)
+
+Standard Summary renders only the Word/HTML brief buttons; Detailed analysis renders only the Word/HTML full-report buttons. `renderFullReportControls()` also keeps full exports visible on Climate Summary, which has no brief exporter. `setStage3View()` refreshes both button groups when the tab changes. Visible labels name the content and format; the tab note explains that full HTML includes the research briefing and Stage 2 annex while full Word omits them.

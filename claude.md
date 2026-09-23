@@ -942,3 +942,7 @@ Watch List heading normalization uses linear line parsing in Python and JavaScri
 Live acceptance exposed uncited synthesis leaking into analysis. `core_research_analysis_context` now supplies only country-attributable provider passages to both Stage 1 workflows; the full qualified briefing stays visible and exportable. Timing guidance requires later developments to remain watch items, not historical gaps, and forbids inferring site-specific events from broad country excerpts.
 
 Country matching normalizes typographic possessives before ASCII folding, so a national-news title such as "Somalia’s ..." is not falsely downgraded to ambiguous regional context. The regression includes the exact title returned during live research and retains the namesake-country cases.
+
+## Download scope (2026-09-23)
+
+Standard Summary offers only clearly labelled brief Word/HTML downloads; Detailed analysis offers only clearly labelled full-report Word/HTML downloads. Climate Summary retains full-report downloads because it has no brief exporter. The tab note states the full HTML/Word supplement difference. No export payload, rating, prompt or shared ITS schema changes.
