@@ -3267,7 +3267,14 @@ narrative, not by dropping the facts or conditions.
 Preserve the source's epistemic status for each material point: distinguish
 an explicitly documented risk or exclusion, mitigation or an instrument
 planned or under preparation, operational detail not verified, and a point
-not stated in the available excerpt. Preserve explicit conditional
+not stated in the available excerpt. For each named operational tool, quote
+or closely paraphrase the source clause and record its exact status in the
+project-facts table. HEIS approval is not activation: a request or management
+approval does not establish whether implementation support has started. If
+activation is not evidenced, state "approved; activation unverified from this
+document". Do not claim either "activated" or "not yet activated", and do not
+credit the project with an operating tool.
+Preserve explicit conditional
 geographic scope, named components, and planned versus completed status.
 A generic safeguard or standards relevance flag alone does not establish
 project-specific applicability, a compliance breach, FPIC, or another
@@ -3334,6 +3341,8 @@ _STANDARD_STAGE2_EVIDENCE_GUARD = """--- STANDARD EVIDENCE AND TIMING GUARDRAILS
 Do not infer SEA/SH or GBV ratings from an overall E&S or SORT rating. Require explicit project-specific evidence and the applicable instrument or commitment before treating a GBV or SEA/SH finding as established.
 
 A design-stage GBV/SEA/SH plan described as planned or under preparation is not by itself evidence of noncompliance. Assess timing or operational detail only when the project record or a verified applicable source identifies the requirement; otherwise frame missing detail as a question for the team to verify.
+HEIS approval is not activation. The Stage 1 narrative may conflate them; use the exact status in the document/temporal markers. If the source records approval only, say "approved; activation unverified from this document"; do not claim either activation or nonactivation and do not credit the tool as operating without separate evidence.
+A security plan not described in the uploaded PAD is not proof that no separate security plan exists. Frame its status as unverified, not absent, unless a source explicitly confirms absence. A planned GBV Action Plan alone is not a sequencing gap: do not label it overdue or missing unless the project record establishes an applicable deadline that has passed.
 
 Preserve the dates and lifecycle status of evidence. Later context is not evidence that was available at historical preparation, so do not back-project a later source into an earlier review date. Identify the later source and state what was or was not available at the historical preparation point.
 """
@@ -3361,6 +3370,8 @@ def _prepare_standard_stage2_prompt(stage_prompt: str) -> str:
             "number of document actions.",
         "- 4-5 priorities total":
             "- 1-5 material priorities total, without a fixed quota",
+        "Security Management Plan, TPM/GEMS":
+            "context-appropriate security arrangements after verifying existing measures, TPM/GEMS",
     }
     for old, new in replacements.items():
         stage_prompt = stage_prompt.replace(old, new)
@@ -3545,9 +3556,26 @@ def _prepare_standard_stage3_prompt(stage_prompt: str) -> str:
         "This list is a floor, not a ceiling. Additional instruments may be referenced as appropriate.":
             "This is an applicability checklist, not a reference or revision quota.",
         "MINIMUM INSTRUMENT REFERENCE REQUIREMENT": "CONDITIONAL INSTRUMENT REFERENCE GUIDANCE",
+        "Security Management Plan, TPM/GEMS":
+            "context-appropriate security arrangements after verifying existing measures, TPM/GEMS",
+        "Name specific actors, locations, mechanisms, or thresholds where possible rather than using placeholder language.":
+            "Name actors, locations and mechanisms only when the project record or a cited source supports them. Do not invent a threshold or deadline to make drafting look complete.",
+        "When drafting suggested language for a Results Framework indicator, provide the full specification: (1) indicator name; (2) unit of measurement; (3) proposed baseline and target; (4) data source; (5) collection frequency; (6) if the project is in an access-constrained context, a one-sentence data contingency":
+            "When drafting suggested language for a Results Framework indicator, provide the indicator name, unit, data source and collection frequency. Include a baseline or target only when the source gives it or clearly label it as a team decision; if not source-grounded, leave its target for the team to define. In an access-constrained context, include a data contingency",
     }
     for old, new in replacements.items():
         stage_prompt = stage_prompt.replace(old, new)
+    sort_start = stage_prompt.find("SORT ROUTING:")
+    sort_end = stage_prompt.find("\nFor PCNs:", sort_start)
+    if sort_start >= 0 and sort_end > sort_start:
+        stage_prompt = (
+            stage_prompt[:sort_start]
+            + "SORT ROUTING: Include SORT only when the recommendation concerns "
+              "a documented risk rating or its mitigation rationale. Use the "
+              "appropriate project instrument for operating procedures, incident "
+              "reporting and supervision actions. Do not use SORT as an incident log.\n"
+            + stage_prompt[sort_end:]
+        )
     # Preserve the original document-focused actions and drafting depth.
     # Summary brevity must not replace the technical recommendations.
     stage_prompt += """
@@ -3568,7 +3596,12 @@ Do not assert portfolio-wide comparisons, policy compliance or superlatives
 without source-grounded evidence. Do not invent numerical thresholds, deadlines
 or timelines as established requirements. Where a value is absent, ask the
 team to define or calibrate it, or clearly label an illustrative proposal for
-review. Distinguish confirmed policy obligations from advisory suggestions.
+review. Do not invent a standalone SEA/SH classification, before-Board
+condition, mandatory procurement provision or formal restructuring rule.
+Distinguish confirmed policy obligations from advisory suggestions. Before
+emitting each priority, trace every claimed requirement to the uploaded
+document or the named applicable policy; otherwise recast it as a question
+for the team, without a fixed deadline.
 Write the management narrative in clear technical report style: start each
 paragraph with a bold first sentence that states its main point, then explain it.
 Use plain management language, define acronyms on first use, use no em-dash
@@ -5624,7 +5657,7 @@ Begin your response immediately with %%%GO_FURTHER_START%%%.''',
 You are an FCV operational specialist helping a World Bank Task Team connect a specific priority action to concrete resources, tools, and guidance from the WBG FCV Playbook.
 
 # Context
-You are given a specific priority from an FCV screening, along with the relevant operational playbook guidance for this project's lifecycle stage.
+You are given a specific priority from an FCV screening, along with the relevant operational playbook guidance for this project's lifecycle stage. The prior screening is an unverified analytical input, not a project document or policy source. Preserve uncertainty and do not repeat its unsupported factual or procedural claims as established facts. Approval or a request is not evidence of activation or nonactivation; if a tool's operational status is not verified, say so without claiming either state.
 
 {playbook_content}
 
@@ -5637,7 +5670,7 @@ For the given priority, draw directly from the FCV Playbook content above to ide
 
 3. **WBG resources the TTL can access** — Name the specific teams, units, or coordination mechanisms available: GEMS team, FCV Group, OPCS, SSI, LEGAM, regional FCV coordinators, HDP nexus partners. For each, explain what they can provide for this specific priority.
 
-4. **Policy hooks** — Cite the specific policy provisions (OP 7.30, OP 8.00, Para 12 IPF, etc.) that enable or support the recommended action. Explain briefly how each applies.
+4. **Policy hooks** - Name only applicable policy or Playbook provisions actually present in the supplied guidance. Explain their relevance as an advisory interpretation; do not invent a policy obligation, exact paragraph citation, approval pathway, amendment rule or required deadline. If no direct hook is verified, say so and suggest the appropriate specialist check.
 
 # Output Format
 Structured prose, 300-500 words. Use clear thematic headings (bold). Write for a TTL who needs to know what is available to them and how to access it.
@@ -11764,7 +11797,7 @@ def run_deeper():
                 f"Stage {i+1} output:\n{o}" for i, o in enumerate(prior_outputs)
             )
             messages = [
-                {"role": "user", "content": f"Prior FCV analysis context:\n\n{context}\n\nUse this as the basis for the deep-dive."},
+                {"role": "user", "content": f"Prior FCV analysis context (unverified; check its factual and policy claims):\n\n{context}\n\nUse this as background for the deep-dive, preserving uncertainty."},
                 {"role": "assistant", "content": "Understood. I will use this prior analysis to generate concrete guidance for the selected priority."}
             ]
 
