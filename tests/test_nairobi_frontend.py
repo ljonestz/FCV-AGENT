@@ -286,7 +286,7 @@ let stageThreePriorities=[{{title:'Priority'}}];
 const supportsConciseStage3View=()=>true;
 {controls}
 const controlsHtml=renderManagementBriefControls();
-for(const expected of ["downloadManagementBrief('html'", "downloadManagementBrief('docx'", 'Brief HTML', 'Brief Word']){{
+for(const expected of ["downloadManagementBrief('html'", "downloadManagementBrief('docx'", 'Download brief (HTML)', 'Download brief (Word)']){{
   if(!controlsHtml.includes(expected))throw new Error('missing '+expected+' | '+controlsHtml);
 }}
 let captured=null;
@@ -344,12 +344,12 @@ let stage3View='summary';
 let valid=true;
 const supportsConciseStage3View=()=>valid;
 {toggle}
-if(!stage3ViewToggleHtml().includes('Brief downloads summarize priorities'))throw new Error('valid standard Summary lost brief note');
+if(!stage3ViewToggleHtml().includes('Download the brief'))throw new Error('valid standard Summary lost brief note');
 stage3View='detailed';
-if(!stage3ViewToggleHtml().includes('Downloads include the comprehensive analysis.'))throw new Error('Detailed view lost full report note');
+if(!stage3ViewToggleHtml().includes('Download the full report'))throw new Error('Detailed view lost full report note');
 stage3View='summary';
 valid=false;
-if(!stage3ViewToggleHtml().includes('Downloads include the comprehensive analysis.'))throw new Error('legacy or climate note was changed');
+if(!stage3ViewToggleHtml().includes('Download the full report'))throw new Error('legacy or climate note was changed');
 """
     result = subprocess.run(["node", "-e", script], capture_output=True, text=True, check=False)
     assert result.returncode == 0, result.stderr
@@ -358,24 +358,24 @@ if(!stage3ViewToggleHtml().includes('Downloads include the comprehensive analysi
 def test_brief_download_controls_follow_summary_detailed_tab_switches():
     source = INDEX.read_text(encoding="utf-8")
     helpers = "\n".join(_extract_js_function(source, name) for name in (
-        "renderManagementBriefControls", "setStage3View",
+        "renderManagementBriefControls", "renderFullReportControls", "setStage3View",
     ))
     script = """
 let stage3View='detailed', currentPriority=0, openSummaryPriority=0;
 let horizonConsiderations='';
-const host={innerHTML:''};
-const document={getElementById:id=>id==='management-brief-controls'?host:null,querySelector:()=>null};
+const briefHost={innerHTML:''}, fullHost={innerHTML:''};
+const document={getElementById:id=>id==='management-brief-controls'?briefHost:id==='full-report-controls'?fullHost:null,querySelector:()=>null};
 const supportsAnyStage3Summary=()=>true;
 const supportsConciseStage3View=()=>true;
 const supportsClimateVerifiedStage3View=()=>false;
 const renderPrioritiesIntro=()=>{}, renderPriorityStepper=()=>{}, showPriority=()=>{};
 """ + helpers + """
 setStage3View('summary');
-if(!host.innerHTML.includes('Brief Word'))throw new Error('brief downloads not shown after opening Summary');
+if(!briefHost.innerHTML.includes('Download brief (Word)')||fullHost.innerHTML)throw new Error('Summary shows wrong download scope');
 setStage3View('detailed');
-if(host.innerHTML)throw new Error('unusable brief controls remain in Detailed');
+if(briefHost.innerHTML||!fullHost.innerHTML.includes('Download full report (Word)')||!fullHost.innerHTML.includes('Download full report (HTML)'))throw new Error('Detailed shows wrong download scope');
 setStage3View('summary');
-if(!host.innerHTML.includes('Brief HTML'))throw new Error('brief downloads not restored');
+if(!briefHost.innerHTML.includes('Download brief (HTML)')||fullHost.innerHTML)throw new Error('brief downloads not restored');
 """
     result = subprocess.run(["node", "-e", script], capture_output=True, text=True, check=False)
     assert result.returncode == 0, result.stderr
@@ -431,4 +431,18 @@ if(calls.length!==2)throw new Error('partial session enabled completed navigatio
 if(!elements['act-area'].innerHTML.includes('Continue from Stage 3'))throw new Error('partial session lost resume action');
 """
     result = subprocess.run(["node", "--input-type=module", "-e", script], capture_output=True, text=True, check=False)
+    assert result.returncode == 0, result.stderr
+
+
+def test_climate_summary_retains_explicit_full_report_downloads():
+    source = INDEX.read_text(encoding="utf-8")
+    controls = _extract_js_function(source, "renderFullReportControls")
+    script = """
+let stage3View='summary';
+const supportsConciseStage3View=()=>false;
+""" + controls + """
+const html=renderFullReportControls();
+if(!html.includes('Download full report (Word)')||!html.includes('Download full report (HTML)'))throw new Error('Climate Summary lost its only exports');
+"""
+    result = subprocess.run(["node", "-e", script], capture_output=True, text=True, check=False)
     assert result.returncode == 0, result.stderr

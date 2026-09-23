@@ -21,18 +21,12 @@ to five suggested priorities. Each priority links to its full evidence and actio
 in **Detailed analysis**, which retains the formal ratings. Missing or invalid
 concise data falls back to Detailed without another model call.
 
-Separate **Brief HTML** and **Brief Word** downloads provide a management readout,
-targeting approximately 1.5-2 A4 pages for newly generated content. Full HTML and
-Word downloads retain the comprehensive recommendations note. Word uses Arial,
-bold opening sentences and editable headings. Strengths use green accents and
-potential gaps use light orange. The narrative avoids em dashes and unnecessary
-technical language. Recommendations remain suggestions for professional review.
+In standard **Summary**, **Download brief (Word)** and **Download brief (HTML)** provide the management readout, targeting about 1.5-2 A4 pages for newly generated content. **Detailed analysis** offers **Download full report (Word)** and **Download full report (HTML)** with the complete recommendations. Climate Summary retains full-report exports because it has no brief exporter. Word uses Arial, bold opening sentences and editable headings. Strengths use green accents and potential gaps use light orange. Recommendations remain suggestions for professional review.
 
 Reader outputs omit technical routing metadata, differentiated-approach notes
 and applied-Playbook attribution. Internal routing and source retrieval continue
 to operate, and substantive warnings about incomplete analysis remain visible.
-See [the ITS handover](20260920_ITS_handover_standard_fcv.md) for the QA baseline,
-porting instructions, verification evidence and remaining limitations.
+See [the Nairobi ITS handover](20260920_ITS_handover_standard_fcv.md) and [the Render output and research record](20260922_render-output-research-handover.md) for porting and prior validation details.
 
 ## September 21 release
 

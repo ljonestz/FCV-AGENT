@@ -1170,7 +1170,7 @@
     .normal-summary-priority-label{display:block;margin-bottom:2px;color:var(--wbg-navy);font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
     .normal-summary-priority-action{padding-top:9px;border-top:1px solid var(--border)}
     .normal-summary-priority-link{display:inline-flex;align-items:center;min-height:40px;margin-top:11px;color:var(--wbg-blue);font-weight:700;text-decoration:underline;text-underline-offset:2px}
-    .brief-download-actions{display:inline-flex;align-items:center;gap:6px;margin-right:2px}
+    .brief-download-actions{display:inline-flex;flex-wrap:wrap;align-items:center;gap:6px;margin-right:2px;max-width:100%}
     .brief-download-actions .btn{white-space:nowrap}
     .priority-context-disclosure{border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin-top:0}
     .priority-context-disclosure>summary{cursor:pointer;list-style:none;padding:12px 22px;color:var(--wbg-blue);font-size:12px;font-weight:700}
@@ -5307,18 +5307,11 @@
             <div class="out-hdr">
               <div class="out-hdr-l"><span class="dot done"></span>${NAMES[stage]}</div>
               <div class="out-hdr-actions" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
-                ${isLast?`<span id="management-brief-controls">${renderManagementBriefControls()}</span>`:''}${isLast?`<button class="btn btn-ghost btn-sm" onclick="downloadReport(this)" title="Download full report as a Word document (.docx)">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                  Download .docx
-                </button>
-                <button class="btn btn-ghost btn-sm" onclick="downloadHTML()" title="Export full analysis as a self-contained HTML file — sharable without any other files">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-                  Share .html
-                </button>`:''}
+                ${isLast?`<span id="management-brief-controls">${renderManagementBriefControls()}</span><span id="full-report-controls">${renderFullReportControls()}</span>`:''}
                 ${isLast?`<button class="copy-btn" onclick="copySummary()">Copy summary</button><button class="copy-btn" onclick="copyFullReport()">Copy full report</button>`:`<button class="copy-btn" id="copy-btn" onclick="copyOut()">Copy all</button>`}
               </div>
             </div>
-            ${isLast?`<p style="font-size:12px;color:var(--muted);padding:0 20px">Full report includes all priority actions and drafting. HTML also includes the research briefing and Stage 2 Annex; Word export omits these supplements. Optional Playbook exploration is separate.</p>`:''}
+            ${isLast&&!_supportsStage3Tabs?`<p style="font-size:12px;color:var(--muted);padding:0 20px">Full report includes all priority actions and drafting. HTML also includes the research briefing and Stage 2 Annex; Word export omits these supplements. Optional Playbook exploration is separate.</p>`:''}
             <div class="out-body" id="out-txt"${_outPanelAttrs}>${isLast&&_supportsStage3Tabs?stage3ViewToggleHtml():''}${_outBodyContent}</div>
           </div>
           ${isLast?`
@@ -5882,8 +5875,16 @@
   function renderManagementBriefControls(){
     if(stage3View!=='summary'||!supportsConciseStage3View())return '';
     return `<span class="brief-download-actions" aria-label="Management brief downloads">
-      <button type="button" class="btn btn-ghost btn-sm" onclick="downloadManagementBrief('html',this)" title="Download the concise management brief as print-ready HTML">Brief HTML</button>
-      <button type="button" class="btn btn-ghost btn-sm" onclick="downloadManagementBrief('docx',this)" title="Download the concise management brief as a Word document">Brief Word</button>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="downloadManagementBrief('html',this)" title="Download the concise management brief as print-ready HTML">Download brief (HTML)</button>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="downloadManagementBrief('docx',this)" title="Download the concise management brief as a Word document">Download brief (Word)</button>
+    </span>`;
+  }
+
+  function renderFullReportControls(){
+    if(stage3View==='summary'&&supportsConciseStage3View())return '';
+    return `<span class="brief-download-actions" aria-label="Full report downloads">
+      <button type="button" class="btn btn-ghost btn-sm" onclick="downloadReport(this)" title="Download the complete recommendations as a Word document">Download full report (Word)</button>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="downloadHTML()" title="Download the complete report as a self-contained HTML file">Download full report (HTML)</button>
     </span>`;
   }
 
@@ -6754,7 +6755,7 @@ ${body}
   }
 
   function stage3ViewToggleHtml(){
-    return `<div class="stage3-viewbar"><div class="stage3-view-tabs" role="tablist" aria-label="Recommendations detail level" onkeydown="handleStage3ViewKeydown(event)"><button id="stage3-summary-tab" class="stage3-view-tab ${stage3View==='summary'?'active':''}" role="tab" aria-controls="out-txt" aria-selected="${stage3View==='summary'}" tabindex="${stage3View==='summary'?'0':'-1'}" onclick="setStage3View('summary',true,'stage3-summary-tab')">Summary</button><button id="stage3-detailed-tab" class="stage3-view-tab ${stage3View==='detailed'?'active':''}" role="tab" aria-controls="out-txt" aria-selected="${stage3View==='detailed'}" tabindex="${stage3View==='detailed'?'0':'-1'}" onclick="setStage3View('detailed',true,'stage3-detailed-tab')">Detailed analysis</button></div><div class="stage3-download-note">${stage3View==='summary'&&supportsConciseStage3View()?'Brief downloads summarize priorities; full report downloads include the complete analysis.':'Downloads include the comprehensive analysis.'}</div></div>`;
+    return `<div class="stage3-viewbar"><div class="stage3-view-tabs" role="tablist" aria-label="Recommendations detail level" onkeydown="handleStage3ViewKeydown(event)"><button id="stage3-summary-tab" class="stage3-view-tab ${stage3View==='summary'?'active':''}" role="tab" aria-controls="out-txt" aria-selected="${stage3View==='summary'}" tabindex="${stage3View==='summary'?'0':'-1'}" onclick="setStage3View('summary',true,'stage3-summary-tab')">Summary</button><button id="stage3-detailed-tab" class="stage3-view-tab ${stage3View==='detailed'?'active':''}" role="tab" aria-controls="out-txt" aria-selected="${stage3View==='detailed'}" tabindex="${stage3View==='detailed'?'0':'-1'}" onclick="setStage3View('detailed',true,'stage3-detailed-tab')">Detailed analysis</button></div><div class="stage3-download-note">${stage3View==='summary'&&supportsConciseStage3View()?'Download the brief here. Open Detailed analysis to download the full report.':'Download the full report here. Word includes priorities and drafting; HTML also includes the research briefing and Stage 2 Annex.'}</div></div>`;
   }
 
   function getConcisePriority(priority){
@@ -6871,6 +6872,8 @@ ${body}
     stage3View=view;
     const briefControls=document.getElementById('management-brief-controls');
     if(briefControls)briefControls.innerHTML=renderManagementBriefControls();
+    const fullControls=document.getElementById('full-report-controls');
+    if(fullControls)fullControls.innerHTML=renderFullReportControls();
     const summaryTab=document.getElementById('stage3-summary-tab'), detailedTab=document.getElementById('stage3-detailed-tab');
     [summaryTab,detailedTab].forEach(tab=>{if(tab)tab.classList.remove('active')});
     if(summaryTab){summaryTab.classList.toggle('active',view==='summary');summaryTab.setAttribute('aria-selected',String(view==='summary'));summaryTab.tabIndex=view==='summary'?0:-1;}
