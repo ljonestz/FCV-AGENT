@@ -547,3 +547,12 @@ def test_review_prompt_checks_stale_project_milestones():
     assert "2026-09-24" in prompt
     assert "past estimated" in prompt.lower()
     assert "upcoming deadline" in prompt.lower()
+
+
+def test_review_prompt_groups_multiple_corrections_per_segment():
+    prompt = build_review_prompt(
+        3, "One paragraph with two unsupported claims.",
+        [{"name": "pid.pdf", "raw_text": "Source text."}],
+    )
+    assert "one issue per segment_id" in prompt
+    assert "combine all corrections" in prompt

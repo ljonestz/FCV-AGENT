@@ -9100,6 +9100,8 @@ def _iter_standard_evidence_review(stage, generated, source_parts, assessment_id
                         + "). Recheck the original generated output and return fresh "
                           "JSON. Every non-supported issue needs a distinct nonempty "
                           "whole-segment replacement and a valid listed segment_id. "
+                          "Return at most one issue per segment_id; combine all "
+                          "corrections for that segment in one replacement. "
                           "Do not include delimiters in a replacement. Return at most "
                           "12 highest-impact issues as complete valid JSON."
                     )
