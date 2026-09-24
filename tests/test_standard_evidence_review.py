@@ -408,3 +408,14 @@ def test_review_retries_unusable_correction_before_releasing_output(monkeypatch)
             break
     assert corrected == "HEIS operation needs confirmation."
     assert len(issues) == 1
+
+
+def test_review_rewrites_repeated_full_sentence_claims():
+    sentence = "The project security management plan has been approved and is operating."
+    raw = sentence + "\nAnother section: " + sentence
+    review = {"issues": [{"outcome": "needs confirmation", "quote": sentence,
+                          "replacement": "The plan's approval and operation need confirmation.",
+                          "reason": "The PAD does not establish plan status."}]}
+    corrected, _ = apply_review(raw, json.dumps(review))
+    assert corrected.count("The plan's approval and operation need confirmation.") == 2
+    assert sentence not in corrected

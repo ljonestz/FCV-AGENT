@@ -151,10 +151,12 @@ def _rewrite_segment(value: str, corrections: list[tuple[int, str, str]],
     spans = []
     for index, quote, replacement in corrections:
         matches = list(re.finditer(re.escape(quote), value))
-        if len(matches) > 1:
-            raise EvidenceReviewError("Review correction quote is ambiguous in output.")
-        if matches:
-            match = matches[0]
+        if len(matches) > 1 and (len(quote) < 60 or len(quote.split()) < 8):
+            raise EvidenceReviewError(
+                "Review correction quote is ambiguous in output "
+                f"(characters={len(quote)}, words={len(quote.split())})."
+            )
+        for match in matches:
             spans.append((match.start(), match.end(), replacement))
             found[index] += 1
     spans.sort()
