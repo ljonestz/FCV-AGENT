@@ -78,9 +78,17 @@ def index_output(text: str) -> list[dict[str, Any]]:
 
     def add_prose(region: str, offset: int) -> None:
         nonlocal prose_number
+        in_machine_block = False
         for match in re.finditer(r"[^\r\n]+", region):
             value = match.group()
-            if not value.strip() or value.lstrip().startswith("%%%"):
+            stripped = value.strip()
+            if stripped.startswith("%%%"):
+                if re.match(r"%%%[A-Z0-9_]+_START%%%", stripped):
+                    in_machine_block = True
+                elif re.match(r"%%%[A-Z0-9_]+_END%%%", stripped):
+                    in_machine_block = False
+                continue
+            if not stripped or in_machine_block:
                 continue
             prose_number += 1
             segments.append({"id": f"p{prose_number}", "text": value,
@@ -169,7 +177,12 @@ def build_review_prompt(
         "project-specific ESCP action and its actual timetable as authoritative. "
         "Do not invent a deadline, recipient, rating, plan status or component "
         "location. Preserve geographic and reporting-period boundaries.\n\n"
-        "Return at most 12 highest-impact issues; omit routine supported claims. "
+        "First prioritize material site-specific place and actor claims, whether "
+        "a project measure is planned, approved, operating or absent, documented "
+        "ESCP commitments, and claimed mandatory deadlines or recipients. Use "
+        "remaining issue slots only for other facts that materially change advice; "
+        "skip peripheral macro statistics and metadata. Return at most 12 "
+        "highest-impact issues; omit routine supported claims. "
         "For each material claim needing correction, return the exact segment_id "
         "from GENERATED OUTPUT SEGMENTS and a replacement for that ENTIRE segment. "
         "Do not copy, invent or shorten an ID. Preserve the rest of the paragraph's "

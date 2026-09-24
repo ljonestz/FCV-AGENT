@@ -467,3 +467,22 @@ def test_review_prompt_uses_numbered_editable_segments():
     assert '"text": "HEIS is active."' in prompt
     assert "segment_id" in prompt
     assert '"quote":"exact text"' not in prompt
+
+
+def test_indexed_review_never_exposes_machine_metadata_as_editable_segment():
+    from fcv_evidence_review import index_output
+
+    raw = ("A project claim.\n%%%DOC_CHECKS_START%%%\n"
+           "ipf_component: false\n%%%DOC_CHECKS_END%%%\n"
+           "A second project claim.")
+    segments = index_output(raw)
+    assert [item["text"] for item in segments] == [
+        "A project claim.", "A second project claim."
+    ]
+
+
+def test_review_prompt_prioritizes_site_and_commitment_errors():
+    prompt = build_review_prompt(1, "Gangs operate at this project corridor.",
+                                 [{"name": "pad.pdf", "raw_text": "Illicit activities in the project area."}])
+    assert "First prioritize" in prompt
+    assert "site-specific" in prompt
