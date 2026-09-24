@@ -472,6 +472,10 @@ Standard Stage 1 now requires a compact "Project facts and commitments" table be
 
 Live Quality testing exposed a conflicting legacy SORT subsection that seeded an unsupported portfolio percentage despite the appended evidence rules. `_prepare_standard_stage2_prompt()` now replaces that subsection only on the standard route with project-specific calibration. Do not infer specific SEA/SH classifications from aggregate E&S/SORT ratings, or label a planned instrument a compliance breach without a sourced applicable obligation and deadline. Distinguish later contextual evidence from information available at the historical preparation date. No policy corpus was accessed for this change.
 
+## Review date and historical design documents (2026-09-24)
+
+The temporal guardrail supplies the current review date to design-stage Stages 2-3. It keeps PCN/PID/PAD analysis focused on the design recorded in the document while treating past estimated review, appraisal and approval dates as historical metadata. The standard source reviewer applies the same check to prose, priority JSON and concise fields. Neither a past estimate nor document type establishes current project status or an available preparation window; the team must confirm the current schedule from current sources. No delimiter, rating or priority schema changes.
+
 ## Management-oriented report style
 
 Standard generation uses a plain main-point sentence at the start of each

@@ -532,3 +532,18 @@ def test_indexed_review_preserves_rating_when_editing_matching_narrative():
     data = json.loads(corrected.split("%%%JSON_START%%%")[1].split("%%%JSON_END%%%")[0])
     assert data["fcv_rating"] == "Low"
     assert data["sensitivity_summary"] == "Rating rationale needs confirmation."
+
+
+def test_review_prompt_checks_stale_project_milestones():
+    from datetime import date
+
+    prompt = build_review_prompt(
+        3,
+        "The preparation window before the March 2026 appraisal is sufficient.",
+        [{"name": "concept.pdf", "raw_text": "Estimated Appraisal 16-Mar-2026."}],
+        as_of=date(2026, 9, 24),
+    )
+
+    assert "2026-09-24" in prompt
+    assert "past estimated" in prompt.lower()
+    assert "upcoming deadline" in prompt.lower()

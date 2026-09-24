@@ -572,4 +572,4 @@ and may carry research_brief. Express retains its extracted document parts and
 research brief. Successful final stage events add optional evidence_review,
 an array of objects with outcome, segment_id, quote, replacement and reason. Consumers can
 ignore this QA field; it does not change existing stage, delimiter, priority,
-rating or export fields. Each review has a 240-second total limit, one bounded correction retry, and emits keepalives.
+rating or export fields. Each review has a 240-second total limit, one bounded correction retry, and emits keepalives. The source-review prompt includes the current review date and checks that past estimated project milestones are not presented as upcoming deadlines or proof of current status.

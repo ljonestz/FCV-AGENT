@@ -1,6 +1,7 @@
 """Selective source review for standard FCV stage output."""
 
 import json
+from datetime import date
 from html import escape
 from difflib import SequenceMatcher
 import re
@@ -131,7 +132,7 @@ def index_output(text: str) -> list[dict[str, Any]]:
 
 def build_review_prompt(
     stage: int, text: str, source_parts: list[dict[str, Any]],
-    public_research: str = "",
+    public_research: str = "", as_of: date | None = None,
 ) -> str:
     """Ask for narrow, source-based corrections rather than a new assessment."""
     if not source_parts:
@@ -185,6 +186,13 @@ def build_review_prompt(
         "project-specific ESCP action and its actual timetable as authoritative. "
         "Do not invent a deadline, recipient, rating, plan status or component "
         "location. Preserve geographic and reporting-period boundaries.\n\n"
+        f"Review date: {(as_of or date.today()).isoformat()}. A past estimated "
+        "appraisal, review or approval date in a design document is historical "
+        "metadata, not an upcoming deadline or proof of current project status. "
+        "Flag claims that a preparation window remains open or that a past gate "
+        "is still ahead. Keep the design-stage assessment, but qualify the "
+        "current schedule and status as needing confirmation. Check both "
+        "narrative and concise/priority fields for this error.\n\n"
         "First prioritize material site-specific place and actor claims, whether "
         "a project measure is planned, approved, operating or absent, documented "
         "ESCP commitments, and claimed mandatory deadlines or recipients. Use "

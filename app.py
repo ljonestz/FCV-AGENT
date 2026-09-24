@@ -7608,7 +7608,9 @@ def _detect_cpf_present(uploaded_names: list, conversation_history: list) -> boo
     return False
 
 
-def _build_temporal_guardrail(temporal_ctx: dict, doc_type: str = 'Unknown') -> str:
+def _build_temporal_guardrail(
+    temporal_ctx: dict, doc_type: str = 'Unknown', as_of: date | None = None
+) -> str:
     """Build a temporal anchoring guardrail string from extracted temporal context.
 
     For design-stage documents (PCN/PID/PAD) the function always
@@ -7639,6 +7641,13 @@ def _build_temporal_guardrail(temporal_ctx: dict, doc_type: str = 'Unknown') -> 
         return "Temporal context could not be determined."
 
     base = "TEMPORAL CONTEXT (from document):\n" + "\n".join(parts)
+    review_date = (as_of or date.today()).isoformat()
+    base += (
+        f"\nREVIEW DATE: {review_date}. Compare dated project milestones with "
+        "this date. Past estimated appraisal or approval dates are historical "
+        "estimates, not evidence of an upcoming deadline or current project status. "
+        "Confirm the latest project stage and schedule from current sources."
+    )
 
     if doc_type in _MID_CYCLE_DOCS:
         base += (
@@ -7660,10 +7669,13 @@ def _build_temporal_guardrail(temporal_ctx: dict, doc_type: str = 'Unknown') -> 
     if doc_type in _DESIGN_STAGE_DOCS:
         base += (
             f"\n\nDOCUMENT TYPE PRIMACY: This is a {doc_type} (design-stage document). "
-            "Use PREPARATION phase framing throughout. "
+            "Use PREPARATION phase framing to assess design choices recorded in this document. "
             "Do NOT generate implementation-review framing, progress assessments, elapsed-time "
             "statistics, or any content that treats this document as if the project were already "
-            "under implementation. The approval/preparation date above is documentary metadata — "
+            "under implementation. Do not claim a past estimated review or appraisal "
+            "gate is still ahead, or that preparation time remains available. "
+            "Confirm current project status and updated milestones from current sources. "
+            "The approval/preparation date above is documentary metadata — "
             "it does not change the lifecycle phase or review scope."
         )
 
