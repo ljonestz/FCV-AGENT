@@ -33,3 +33,51 @@ def test_playbook_prompt_treats_prior_analysis_as_unverified():
     assert "The prior screening is an unverified analytical input" in prompt
     assert "Approval or a request is not evidence of activation or nonactivation" in prompt
     assert "do not invent a policy obligation" in prompt
+
+
+def test_ipf_seash_guidance_requires_project_specific_authority():
+    import background_docs as bd
+
+    stage2 = app.DEFAULT_PROMPTS["2"].replace(
+        "{dnh_seash_guidance}", app.get_dnh_seash_guidance("IPF")
+    )
+    stage3 = app.DEFAULT_PROMPTS["3"].replace(
+        "{seash_gender_card_guidance}",
+        app.get_seash_gender_card_guidance("IPF"),
+    )
+    assert "Do not infer a SEA/SH rating from overall E&S risk" in stage2
+    assert "An action plan incorporated into an ESIA or ESMP is not missing" in stage2
+    assert "Do not treat a missing standalone plan as a gap" in stage3
+    assert "the relevant ESCP commitment, if supplied" in stage3
+    assert "Set seash_standalone_flag: TRUE if risk is Substantial or High" not in bd.DNH_SEASH_IPF
+
+
+def test_esf_knowledge_distinguishes_requirements_from_design_options():
+    from pathlib import Path
+    from runpy import run_path
+
+    knowledge = run_path(
+        str(Path(__file__).resolve().parents[1] / "background_docs.py")
+    )["SECONDARY_KNOWLEDGE"]
+    core = knowledge["esf_framework_core"]["content"]
+    assert "ESS4 paragraphs 24-27 govern security personnel" in core
+    assert (
+        "ESS2 is relevant in FCV settings specifically for its security personnel provisions"
+        not in core
+    )
+    assert "Do not infer a missing security plan from a PAD alone" in core
+    assert "A separate or third-party channel is a design option" in core
+
+
+def test_security_knowledge_keeps_plan_conditional_on_project_instrument():
+    from pathlib import Path
+    from runpy import run_path
+
+    knowledge = run_path(
+        str(Path(__file__).resolve().parents[1] / "background_docs.py")
+    )["SECONDARY_KNOWLEDGE"]
+    card = knowledge["esf_security_personnel"]["content"]
+    assert "Bank and Borrower agree whether a stand-alone SMP is required" in card
+    assert "Check the project-specific ESCP before naming a required plan" in card
+    assert "A full SMP is required for high-risk projects" not in card
+    assert "SMP must be reviewed at each supervision mission" not in card
