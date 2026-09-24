@@ -125,6 +125,7 @@ def build_review_prompt(
         "project-specific ESCP action and its actual timetable as authoritative. "
         "Do not invent a deadline, recipient, rating, plan status or component "
         "location. Preserve geographic and reporting-period boundaries.\n\n"
+        "Return at most 12 highest-impact issues; omit routine supported claims. "
         "For each material claim needing correction, return its EXACT verbatim "
         "substring as quote and replacement wording that fits the same sentence or "
         "field. Correct the visible note AND Stage 3 priority/concise fields. Keep "
@@ -218,7 +219,7 @@ def apply_review(text: str, response: str) -> tuple[str, list[dict[str, str]]]:
 
     corrections = []
     accepted = []
-    for item in issues:
+    for issue_number, item in enumerate(issues, 1):
         if not isinstance(item, dict):
             raise EvidenceReviewError("Evidence review issue must be an object.")
         outcome = item.get("outcome")
@@ -230,14 +231,18 @@ def apply_review(text: str, response: str) -> tuple[str, list[dict[str, str]]]:
         if not isinstance(reason, str) or not reason.strip():
             raise EvidenceReviewError("Evidence review issue needs a reason.")
         if outcome != "supported":
-            if (
-                not isinstance(replacement, str)
-                or not replacement.strip()
-                or replacement == quote
-                or "%%%" in quote
-                or "%%%" in replacement
-            ):
-                raise EvidenceReviewError("Evidence review correction is invalid.")
+            if not isinstance(replacement, str) or not replacement.strip():
+                raise EvidenceReviewError(
+                    f"Evidence review issue {issue_number} needs a nonempty replacement."
+                )
+            if replacement == quote:
+                raise EvidenceReviewError(
+                    f"Evidence review issue {issue_number} repeated its quote unchanged."
+                )
+            if "%%%" in quote or "%%%" in replacement:
+                raise EvidenceReviewError(
+                    f"Evidence review issue {issue_number} included a delimiter."
+                )
             corrections.append((len(corrections), quote, replacement))
         accepted.append({
             "outcome": outcome,
