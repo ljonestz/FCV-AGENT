@@ -16,7 +16,8 @@ from werkzeug.exceptions import RequestEntityTooLarge
 import anthropic
 from fcv_presentation import bullet_finding_sections, strip_watch_heading
 from fcv_evidence_review import (
-    EvidenceReviewError, apply_review, build_review_prompt, validate_uploaded_names,
+    EvidenceReviewError, apply_indexed_review, build_review_prompt,
+    index_output, validate_uploaded_names,
 )
 from fcv_core_research import (
     build_core_research_prompt, core_research_analysis_context,
@@ -9065,6 +9066,7 @@ def _review_source_parts(documents):
 def _iter_standard_evidence_review(stage, generated, source_parts, assessment_id, public_research=''):
     """Keep a local model result and send SSE keepalives during source review."""
     prompt = build_review_prompt(stage, generated, source_parts, public_research)
+    segments = index_output(generated)
     yield f"data: {json.dumps({'status': 'reviewing_evidence', 'stage': stage})}\n\n"
     started = time.monotonic()
     result_queue = queue.Queue(maxsize=1)
@@ -9085,8 +9087,8 @@ def _iter_standard_evidence_review(stage, generated, source_parts, assessment_id
                         + retry_reason
                         + "). Recheck the original generated output and return fresh "
                           "JSON. Every non-supported issue needs a distinct nonempty "
-                          "replacement and an unambiguous exact quote. Do not include "
-                          "delimiters in a quote or replacement. Return at most "
+                          "whole-segment replacement and a valid listed segment_id. "
+                          "Do not include delimiters in a replacement. Return at most "
                           "12 highest-impact issues as complete valid JSON."
                     )
                     if previous_response:
@@ -9107,7 +9109,9 @@ def _iter_standard_evidence_review(stage, generated, source_parts, assessment_id
                         return
                     response = ''.join(stream.text_stream)
                 try:
-                    corrected, issues = apply_review(generated, response)
+                    corrected, issues = apply_indexed_review(
+                        generated, response, segments,
+                    )
                     validate_uploaded_names(
                         corrected, [part.get('name', '') for part in source_parts]
                     )

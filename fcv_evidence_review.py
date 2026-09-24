@@ -69,6 +69,50 @@ def _source_excerpt(raw: str, generated: str, limit: int) -> str:
     return "\n[...source excerpts omitted...]\n".join(chunks)
 
 
+def index_output(text: str) -> list[dict[str, Any]]:
+    """Give each editable prose line and JSON string a stable local identifier."""
+    segments: list[dict[str, Any]] = []
+    block = JSON_BLOCK.search(text)
+    prose_number = 0
+    json_number = 0
+
+    def add_prose(region: str, offset: int) -> None:
+        nonlocal prose_number
+        for match in re.finditer(r"[^\r\n]+", region):
+            value = match.group()
+            if not value.strip() or value.lstrip().startswith("%%%"):
+                continue
+            prose_number += 1
+            segments.append({"id": f"p{prose_number}", "text": value,
+                             "section": "note", "start": offset + match.start(),
+                             "end": offset + match.end()})
+
+    def add_json(value: Any, path: tuple[Any, ...]) -> None:
+        nonlocal json_number
+        if isinstance(value, str) and value.strip():
+            json_number += 1
+            segments.append({"id": f"j{json_number}", "text": value,
+                             "section": "priority JSON", "path": path})
+        elif isinstance(value, list):
+            for index, item in enumerate(value):
+                add_json(item, path + (index,))
+        elif isinstance(value, dict):
+            for key, item in value.items():
+                add_json(item, path + (key,))
+
+    if block is None:
+        add_prose(text, 0)
+    else:
+        add_prose(text[:block.start()], 0)
+        try:
+            data = json.loads(block.group(2))
+        except json.JSONDecodeError as exc:
+            raise EvidenceReviewError("Stage 3 JSON cannot be reviewed.") from exc
+        add_json(data, ())
+        add_prose(text[block.end():], block.end())
+    return segments
+
+
 def build_review_prompt(
     stage: int, text: str, source_parts: list[dict[str, Any]],
     public_research: str = "",
@@ -126,22 +170,27 @@ def build_review_prompt(
         "Do not invent a deadline, recipient, rating, plan status or component "
         "location. Preserve geographic and reporting-period boundaries.\n\n"
         "Return at most 12 highest-impact issues; omit routine supported claims. "
-        "For each material claim needing correction, return its EXACT verbatim "
-        "substring as quote and replacement wording that fits the same sentence or "
-        "field. Correct the visible note AND Stage 3 priority/concise fields. Keep "
+        "For each material claim needing correction, return the exact segment_id "
+        "from GENERATED OUTPUT SEGMENTS and a replacement for that ENTIRE segment. "
+        "Do not copy, invent or shorten an ID. Preserve the rest of the paragraph's "
+        "facts and advice. Correct the visible note AND Stage 3 priority/concise fields. Keep "
         "valid advice. Never change delimiters or JSON keys. A warning alone does "
         "not fix exported text. Supported examples may be returned without "
         "replacement; do not list every routine supported claim. Return ONLY JSON: "
         '{"issues":[{"outcome":"supported|qualified inference|needs confirmation|'
-        'contradicted or invalid source","quote":"exact text","replacement":'
-        '"corrected text for non-supported outcome","reason":"short source reason"}]}.\n\n'
+        'contradicted or invalid source","segment_id":"p1 or j1","replacement":'
+        '"entire corrected segment for non-supported outcome","reason":"short source reason"}]}.\n\n'
         f"Exact uploaded filenames (do not invent or alter): {json.dumps(names)}\n"
         "SOURCE TEXT (truncated excerpts are not evidence of absence):\n"
         + "\n".join(sections)
         + ("\n\n<public_research>\nPublic reporting may support country or regional context; it is not site-specific evidence. Use only passages with their cited source, date and geography.\n" + escape(public_research[:30_000]) + "\n</public_research>" if public_research else "")
-        + "\n\nGENERATED OUTPUT TO REVIEW:\n<generated_output>\n"
-        + escape(text)
-        + "\n</generated_output>"
+        + "\n\nGENERATED OUTPUT SEGMENTS TO REVIEW (IDs apply only to this output):\n"
+        + escape(json.dumps([
+            {"id": item["id"], "section": item["section"],
+             "path": list(item["path"]) if "path" in item else None,
+             "text": item["text"]}
+            for item in index_output(text)
+        ], ensure_ascii=False), quote=False)
     )
 
 
@@ -270,3 +319,75 @@ def apply_review(text: str, response: str) -> tuple[str, list[dict[str, str]]]:
     if any(count == 0 for count in found):
         raise EvidenceReviewError("Review correction quote not found in output.")
     return corrected, accepted
+
+
+def apply_indexed_review(
+    text: str, response: str, segments: list[dict[str, Any]],
+) -> tuple[str, list[dict[str, str]]]:
+    """Apply whole-segment edits by ID; no model-supplied quote lookup."""
+    stripped = response.strip()
+    fence = chr(96) * 3
+    if stripped.startswith(fence):
+        stripped = stripped[len(fence):].strip()
+        if stripped.startswith("json"):
+            stripped = stripped[4:].strip()
+        if stripped.endswith(fence):
+            stripped = stripped[:-len(fence)].strip()
+    try:
+        data = json.loads(stripped)
+    except json.JSONDecodeError as exc:
+        raise EvidenceReviewError("Evidence review did not return valid JSON.") from exc
+    issues = data.get("issues") if isinstance(data, dict) else None
+    if not isinstance(issues, list) or len(issues) > 40:
+        raise EvidenceReviewError("Evidence review returned an invalid issue list.")
+    by_id = {item["id"]: item for item in segments}
+    corrections: dict[str, str] = {}
+    accepted = []
+    for number, item in enumerate(issues, 1):
+        if not isinstance(item, dict):
+            raise EvidenceReviewError("Evidence review issue must be an object.")
+        outcome = item.get("outcome")
+        segment_id = item.get("segment_id")
+        reason = item.get("reason")
+        replacement = item.get("replacement", "")
+        if outcome not in OUTCOMES or segment_id not in by_id:
+            raise EvidenceReviewError(f"Evidence review issue {number} has an invalid segment ID or outcome.")
+        if not isinstance(reason, str) or not reason.strip():
+            raise EvidenceReviewError(f"Evidence review issue {number} needs a reason.")
+        original = by_id[segment_id]["text"]
+        if outcome != "supported":
+            if (not isinstance(replacement, str) or not replacement.strip()
+                    or replacement == original or "%%%" in replacement):
+                raise EvidenceReviewError(
+                    f"Evidence review issue {number} needs a distinct whole-segment replacement."
+                )
+            for candidate in segments:
+                if candidate["text"] == original:
+                    prior = corrections.get(candidate["id"])
+                    if prior is not None and prior != replacement:
+                        raise EvidenceReviewError("Review corrections conflict on one segment.")
+                    corrections[candidate["id"]] = replacement
+        accepted.append({"outcome": outcome, "segment_id": segment_id,
+                         "quote": original, "replacement": replacement if isinstance(replacement, str) else "",
+                         "reason": reason})
+
+    for item in sorted((item for item in segments if item["section"] == "note"
+                        and item["id"] in corrections),
+                       key=lambda item: item["start"], reverse=True):
+        text = (text[:item["start"]] + corrections[item["id"]]
+                + text[item["end"]:])
+    block = JSON_BLOCK.search(text)
+    if block is not None:
+        data = json.loads(block.group(2))
+        for item in segments:
+            if item["section"] != "priority JSON" or item["id"] not in corrections:
+                continue
+            path = item["path"]
+            container = data
+            for key in path[:-1]:
+                container = container[key]
+            container[path[-1]] = corrections[item["id"]]
+        text = (text[:block.start()] + block.group(1)
+                + json.dumps(data, ensure_ascii=False)
+                + block.group(3) + text[block.end():])
+    return text, accepted

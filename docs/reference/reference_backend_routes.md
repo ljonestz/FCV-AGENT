@@ -562,14 +562,14 @@ Watch List heading normalization uses linear line parsing in Python and JavaScri
 For design-review requests with no active sector lens, both /api/run-stage and
 /api/run-express review each generated stage against uploaded document excerpts
 and the cited public research brief. The review is a separate model call after
-generation and before structured parsing or final SSE output. It returns exact
-text replacements; Stage 3 replacements are applied to narrative and decoded
-priority JSON strings. A failed or invalid review stops the stage. No raw
+generation and before structured parsing or final SSE output. It returns whole-segment replacements keyed to numbered prose lines or decoded
+JSON string fields, removing model-supplied quote matching. Stage 3 updates cover
+narrative and priority JSON strings. A failed or invalid review stops the stage. No raw
 unreviewed stage completion payload is emitted.
 
 Step-by-step Stage 2/3 requests now carry documents again for source checking
 and may carry research_brief. Express retains its extracted document parts and
 research brief. Successful final stage events add optional evidence_review,
-an array of objects with outcome, quote, replacement and reason. Consumers can
+an array of objects with outcome, segment_id, quote, replacement and reason. Consumers can
 ignore this QA field; it does not change existing stage, delimiter, priority,
-rating or export fields. Each review has a 180-second limit and emits keepalives.
+rating or export fields. Each review has a 240-second total limit, one bounded correction retry, and emits keepalives.

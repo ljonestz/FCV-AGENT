@@ -139,7 +139,7 @@ def test_review_keeps_its_own_model_result(monkeypatch):
     import app
 
     response = json.dumps({"issues": [
-        {"outcome": "needs confirmation", "quote": "HEIS is active.",
+        {"outcome": "needs confirmation", "segment_id": "p1",
          "replacement": "HEIS activation needs confirmation.",
          "reason": "The PAD records approval only."}
     ]})
@@ -372,11 +372,11 @@ def test_review_retries_unusable_correction_before_releasing_output(monkeypatch)
 
     responses = iter([
         json.dumps({"issues": [{"outcome": "needs confirmation",
-                               "quote": "HEIS is active.",
+                               "segment_id": "p1",
                                "replacement": "HEIS is active.",
                                "reason": "Approval only."}]}),
         json.dumps({"issues": [{"outcome": "needs confirmation",
-                               "quote": "HEIS is active.",
+                               "segment_id": "p1",
                                "replacement": "HEIS operation needs confirmation.",
                                "reason": "Approval only."}]}),
     ])
@@ -419,3 +419,51 @@ def test_review_rewrites_repeated_full_sentence_claims():
     corrected, _ = apply_review(raw, json.dumps(review))
     assert corrected.count("The plan's approval and operation need confirmation.") == 2
     assert sentence not in corrected
+
+
+def test_indexed_review_targets_prose_and_stage3_fields_by_id():
+    from fcv_evidence_review import index_output, apply_indexed_review
+
+    original = (
+        "HEIS is active.\n"
+        "%%%JSON_START%%%"
+        + json.dumps({"priorities": [{"gap": "Extortion has occurred at the corridor.",
+                                      "concise": {"gap": "Extortion has occurred at the corridor."}}]})
+        + "%%%JSON_END%%%"
+    )
+    segments = index_output(original)
+    prose = next(item for item in segments if item["text"] == "HEIS is active.")
+    gap = next(item for item in segments if item["text"] == "Extortion has occurred at the corridor.")
+    response = json.dumps({"issues": [
+        {"outcome": "needs confirmation", "segment_id": prose["id"],
+         "replacement": "HEIS operation needs confirmation.", "reason": "PAD records approval only."},
+        {"outcome": "qualified inference", "segment_id": gap["id"],
+         "replacement": "Assess potential corridor extortion risk.",
+         "reason": "No site event is documented."},
+    ]})
+    corrected, issues = apply_indexed_review(original, response, segments)
+    assert "HEIS operation needs confirmation." in corrected
+    data = json.loads(corrected.split("%%%JSON_START%%%", 1)[1].split("%%%JSON_END%%%", 1)[0])
+    assert data["priorities"][0]["gap"] == "Assess potential corridor extortion risk."
+    assert data["priorities"][0]["concise"]["gap"] == "Assess potential corridor extortion risk."
+    assert len(issues) == 2
+
+
+def test_indexed_review_rejects_invalid_id_without_releasing_text():
+    from fcv_evidence_review import index_output, apply_indexed_review
+
+    raw = "HEIS is active."
+    response = json.dumps({"issues": [{"outcome": "needs confirmation",
+        "segment_id": "p999", "replacement": "Confirm HEIS status.",
+        "reason": "PAD approval only."}]})
+    with pytest.raises(EvidenceReviewError, match="segment"):
+        apply_indexed_review(raw, response, index_output(raw))
+
+
+def test_review_prompt_uses_numbered_editable_segments():
+    prompt = build_review_prompt(1, "HEIS is active.",
+                                 [{"name": "pad.pdf", "raw_text": "HEIS approved."}])
+    assert '"id": "p1"' in prompt
+    assert '"text": "HEIS is active."' in prompt
+    assert "segment_id" in prompt
+    assert '"quote":"exact text"' not in prompt

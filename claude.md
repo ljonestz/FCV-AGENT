@@ -956,14 +956,13 @@ step-by-step and Express workflows. It checks named sites and actors, instrument
 status, project commitments, mandatory rules, and numerical timing or targets
 against the uploaded documents and cited public research. Review outcomes are
 supported, qualified inference, needs confirmation, and contradicted or invalid
-source. Exact-span corrections are applied to stage text before it enters history,
+source. Whole-segment corrections keyed to numbered prose lines and JSON values are applied before stage text enters history,
 priority parsing, Summary, or exports. Stage 3 JSON strings are corrected together
-with prose. A near-match uploaded PDF filename that remains after review blocks
+with prose. A near-match uploaded source filename that remains after review blocks
 the stage. Invalid or timed-out review also blocks final stage output.
 
 The step-by-step client resends uploaded documents for standard Stages 2-3 and
-includes the research brief; Express reuses extracted text. The review call has a
-180-second cap and emits SSE keepalives. Final SSE events expose optional
+includes the research brief; Express reuses extracted text. The review has a 240-second total cap, one bounded retry for invalid edits, and emits SSE keepalives. Final SSE events expose optional
 evidence_review issues for QA. Climate and implementation routes bypass this
 review. Existing delimiters, priority JSON fields, enums, rating semantics and
 knowledge constant names are unchanged. This is a QA candidate, not analytical
