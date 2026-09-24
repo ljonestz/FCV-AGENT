@@ -486,3 +486,49 @@ def test_review_prompt_prioritizes_site_and_commitment_errors():
                                  [{"name": "pad.pdf", "raw_text": "Illicit activities in the project area."}])
     assert "First prioritize" in prompt
     assert "site-specific" in prompt
+
+
+def test_indexed_review_does_not_offer_contract_enums_for_rewriting():
+    from fcv_evidence_review import index_output
+
+    raw = ('%%%JSON_START%%%{"fcv_rating":"Low",'
+           '"fcv_responsiveness_rating":"Adequate",'
+           '"sensitivity_summary":"Source-based summary.",'
+           '"priorities":[{"risk_level":"High","fcv_dimension":"Security",'
+           '"tag":"[S]","change_type":"Design","when":"Preparation",'
+           '"action_timing":"required-before-appraisal",'
+           '"authority_basis":"reviewer_judgment",'
+           '"document_element":"ESCP action 4.4",'
+           '"the_gap":"Unverified corridor claim."}]}%%%JSON_END%%%')
+    segments = index_output(raw)
+    paths = {tuple(item["path"]) for item in segments if "path" in item}
+    assert ("sensitivity_summary",) in paths
+    assert ("priorities", 0, "the_gap") in paths
+    assert ("priorities", 0, "document_element") in paths
+    for protected in (
+        ("fcv_rating",), ("fcv_responsiveness_rating",),
+        ("priorities", 0, "risk_level"), ("priorities", 0, "fcv_dimension"),
+        ("priorities", 0, "tag"), ("priorities", 0, "change_type"),
+        ("priorities", 0, "when"), ("priorities", 0, "action_timing"),
+        ("priorities", 0, "authority_basis"),
+    ):
+        assert protected not in paths
+
+
+def test_indexed_review_preserves_rating_when_editing_matching_narrative():
+    from fcv_evidence_review import apply_indexed_review, index_output
+
+    raw = ('%%%JSON_START%%%{"fcv_rating":"Low",'
+           '"sensitivity_summary":"Low"}%%%JSON_END%%%')
+    segments = index_output(raw)
+    assert [(item["id"], item["path"]) for item in segments] == [
+        ("j1", ("sensitivity_summary",))
+    ]
+    review = json.dumps({"issues": [{"outcome": "needs confirmation",
+                                   "segment_id": "j1",
+                                   "replacement": "Rating rationale needs confirmation.",
+                                   "reason": "Document does not establish rationale."}]})
+    corrected, _ = apply_indexed_review(raw, review, segments)
+    data = json.loads(corrected.split("%%%JSON_START%%%")[1].split("%%%JSON_END%%%")[0])
+    assert data["fcv_rating"] == "Low"
+    assert data["sensitivity_summary"] == "Rating rationale needs confirmation."

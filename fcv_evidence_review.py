@@ -18,6 +18,12 @@ OUTCOMES = {
     "contradicted or invalid source",
 }
 JSON_BLOCK = re.compile(r"(%%%JSON_START%%%)(.*?)(%%%JSON_END%%%)", re.DOTALL)
+STRUCTURAL_JSON_FIELDS = {
+    "fcv_rating", "fcv_responsiveness_rating", "fcv_dimension", "tag",
+    "refresh_shift", "risk_level", "change_type", "restructuring_level",
+    "priority_scope", "governance_level", "when", "action_timing",
+    "authority_basis", "primary_label", "secondary_label",
+}
 
 
 def _source_excerpt(raw: str, generated: str, limit: int) -> str:
@@ -97,6 +103,8 @@ def index_output(text: str) -> list[dict[str, Any]]:
 
     def add_json(value: Any, path: tuple[Any, ...]) -> None:
         nonlocal json_number
+        if path and path[-1] in STRUCTURAL_JSON_FIELDS:
+            return
         if isinstance(value, str) and value.strip():
             json_number += 1
             segments.append({"id": f"j{json_number}", "text": value,
@@ -188,8 +196,10 @@ def build_review_prompt(
         "Do not copy, invent or shorten an ID. Preserve the rest of the paragraph's "
         "facts and advice. Correct the visible note AND Stage 3 priority/concise fields. Keep "
         "valid advice. Never change delimiters or JSON keys. A warning alone does "
-        "not fix exported text. Supported examples may be returned without "
-        "replacement; do not list every routine supported claim. Return ONLY JSON: "
+        "not fix exported text. Ratings and structural classification fields "
+        "are intentionally not editable; put any source caveat in adjacent narrative. "
+        "Supported examples may be returned without replacement; do not list every "
+        "routine supported claim. Return ONLY JSON: "
         '{"issues":[{"outcome":"supported|qualified inference|needs confirmation|'
         'contradicted or invalid source","segment_id":"p1 or j1","replacement":'
         '"entire corrected segment for non-supported outcome","reason":"short source reason"}]}.\n\n'
