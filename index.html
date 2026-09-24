@@ -3921,8 +3921,8 @@
     // context PDF + Climate research, so 12m raced the frontend. At 15m a
     // slow-but-completing run finishes and, if the model stalls, the backend's
     // ~12m Stage 1 error surfaces cleanly before this frontend backstop.
-    const EXPRESS_STAGE_TIMEOUTS={1:15*60*1000,2:15*60*1000,3:10*60*1000};
-    const EXPRESS_STAGE_LABELS={1:'15 minutes',2:'15 minutes',3:'10 minutes'};
+    const EXPRESS_STAGE_TIMEOUTS={1:18*60*1000,2:15*60*1000,3:13*60*1000};
+    const EXPRESS_STAGE_LABELS={1:'18 minutes',2:'15 minutes',3:'13 minutes'};
     let expressTimeout=null;
     function armExpressTimeout(stage){
       clearTimeout(expressTimeout);
@@ -4235,13 +4235,13 @@
     if(analysisMode!=='express')startSbsLoadingTimers(stage);
 
     try{
-      const payload={stage,history:hist,user_message:followOn||'',document_type:docType,instrument_type:instrumentType,temporal_context:temporalContext,change_types:changeTypes,country_scope:countryScope,is_mpa:isMpa,review_mode:reviewMode,process_type:processType,user_context:(document.getElementById('user-context')?.value||'').trim(),uploaded_doc_names:[...pF.map(f=>f.name),...pkF.map(f=>f.name),...cF.map(f=>f.name)],country_classification:countryClassification,context_flags:contextFlags,sector_context:sectorContext,priority_questions:(priorityQuestions=getPriorityQuestions()),active_lenses:activeLenses,lens_versions:lensVersions(),lens_diagnostic:lensDiagnostic,lens_context_sources:lensContextSources,climate_research:climateResearch,climate_grounding:climateGrounding};
+      const payload={stage,history:hist,user_message:followOn||'',document_type:docType,instrument_type:instrumentType,temporal_context:temporalContext,change_types:changeTypes,country_scope:countryScope,is_mpa:isMpa,review_mode:reviewMode,process_type:processType,user_context:(document.getElementById('user-context')?.value||'').trim(),research_brief:researchBrief,uploaded_doc_names:[...pF.map(f=>f.name),...pkF.map(f=>f.name),...cF.map(f=>f.name)],country_classification:countryClassification,context_flags:contextFlags,sector_context:sectorContext,priority_questions:(priorityQuestions=getPriorityQuestions()),active_lenses:activeLenses,lens_versions:lensVersions(),lens_diagnostic:lensDiagnostic,lens_context_sources:lensContextSources,climate_research:climateResearch,climate_grounding:climateGrounding};
       // Attach session prompt override if user has edited this stage's prompt
       if(sessionPrompts[stage]){
         payload.prompt_override = sessionPrompts[stage];
       }
 
-      if(stage===1){
+      if(stage===1 || reviewMode==='design'){
         const readF=(file,isCtx,role)=>new Promise((res,rej)=>{
           const ft=detectFileType(file.name);
           const r=new FileReader();
@@ -4262,8 +4262,8 @@
       // 12m: it must clear the backend Stage 1 ceiling of research budget
       // (150s) + model cap (8m) = 10.5m, not just the model cap alone.
       const _stageAbort=new AbortController();
-      const _stageTimeoutMs=stage===1?15*60*1000:10*60*1000;
-      const _stageTimeoutLabel=stage===1?'15':'10';
+      const _stageTimeoutMs=stage===1?18*60*1000:13*60*1000;
+      const _stageTimeoutLabel=stage===1?'18':'13';
       const _stageTimeoutId=setTimeout(()=>_stageAbort.abort(new Error('Stage '+stage+' timed out after '+_stageTimeoutLabel+' minutes. The AI service may be slow — please retry.')),_stageTimeoutMs);
 
       let res;

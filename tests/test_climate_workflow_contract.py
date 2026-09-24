@@ -734,6 +734,12 @@ def test_express_climate_stage2_uses_native_prompt_and_canonical_output(monkeypa
     assert {"stage": 2, "compose_prompt": False} in lens_context_calls
 
 
+def _pass_standard_review(_stage, generated, _sources, _assessment_id, _research=""):
+    if False:
+        yield
+    return generated, []
+
+
 def test_standard_non_climate_stage2_retains_generic_contract(monkeypatch):
     calls = []
 
@@ -744,6 +750,7 @@ def test_standard_non_climate_stage2_retains_generic_contract(monkeypatch):
         yield "data: {\"chunk\": \"generic\"}\n\n"
 
     monkeypatch.setattr(app_module, "_stream_stage", fake_stream)
+    monkeypatch.setattr(app_module, "_iter_standard_evidence_review", _pass_standard_review)
     monkeypatch.setattr(app_module, "extract_stage2_ratings", lambda text: {
         "sensitivity_rating": "Adequate",
         "responsiveness_rating": "Low",
@@ -806,6 +813,7 @@ def test_express_non_climate_stage2_retains_generic_contract(monkeypatch):
     monkeypatch.setattr(app_module, "get_fast_client", lambda: object())
     monkeypatch.setattr(app_module, "_iter_stage1_research", lambda *args, **kwargs: _research_result(_valid_research()))
     monkeypatch.setattr(app_module, "_stream_stage", fake_stream)
+    monkeypatch.setattr(app_module, "_iter_standard_evidence_review", _pass_standard_review)
     monkeypatch.setattr(app_module, "extract_instrument_type", lambda text: "IPF")
     monkeypatch.setattr(app_module, "extract_temporal_context", lambda text: {})
     monkeypatch.setattr(app_module, "extract_regime_context", lambda text, instrument: {})

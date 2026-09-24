@@ -434,6 +434,12 @@ def _decode_sse(response):
     ]
 
 
+def _pass_standard_review(_stage, generated, _sources, _assessment_id, _research=""):
+    if False:
+        yield
+    return generated, []
+
+
 def test_step_by_step_completion_payload_transports_concise_bundle(monkeypatch):
     raw = _wrapped(_payload())
 
@@ -443,6 +449,7 @@ def test_step_by_step_completion_payload_transports_concise_bundle(monkeypatch):
         yield 'data: {"chunk": "stage3"}\n\n'
 
     monkeypatch.setattr(app, "_stream_stage", fake_stream)
+    monkeypatch.setattr(app, "_iter_standard_evidence_review", _pass_standard_review)
     response = app.app.test_client().post("/api/run-stage", json={
         "stage": 3,
         "active_lenses": [],
@@ -471,6 +478,7 @@ def test_step_by_step_uses_effective_doc_type_for_priority_scope(monkeypatch):
         yield 'data: {"chunk": "stage3"}\n\n'
 
     monkeypatch.setattr(app, "_stream_stage", fake_stream)
+    monkeypatch.setattr(app, "_iter_standard_evidence_review", _pass_standard_review)
     response = app.app.test_client().post("/api/run-stage", json={
         "stage": 3,
         "active_lenses": [],
@@ -497,6 +505,7 @@ def test_step_by_step_completion_payload_preserves_detail_on_invalid_bundle(monk
         yield 'data: {"chunk": "stage3"}\n\n'
 
     monkeypatch.setattr(app, "_stream_stage", fake_stream)
+    monkeypatch.setattr(app, "_iter_standard_evidence_review", _pass_standard_review)
     response = app.app.test_client().post("/api/run-stage", json={
         "stage": 3,
         "active_lenses": [],
@@ -543,6 +552,7 @@ def test_express_completion_payload_transports_concise_bundle(monkeypatch, valid
         }}
 
     monkeypatch.setattr(app, "_stream_stage", fake_stream)
+    monkeypatch.setattr(app, "_iter_standard_evidence_review", _pass_standard_review)
     monkeypatch.setattr(app, "_iter_stage1_research", fake_research)
     monkeypatch.setattr(app, "extract_country_name", lambda *_args: "Exampleland")
     monkeypatch.setattr(app, "extract_sector_name", lambda *_args: "Transport")
