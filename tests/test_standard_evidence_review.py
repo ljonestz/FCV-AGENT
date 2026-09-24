@@ -365,3 +365,46 @@ def test_express_review_failure_tracks_active_stage():
     assert "_active_stage = 2" in express
     assert "_active_stage = 3" in express
     assert express.count("reveal_chunks=not _standard_review_s") == 3
+
+
+def test_review_retries_unusable_correction_before_releasing_output(monkeypatch):
+    import app
+
+    responses = iter([
+        json.dumps({"issues": [{"outcome": "needs confirmation",
+                               "quote": "HEIS is active.",
+                               "replacement": "HEIS is active.",
+                               "reason": "Approval only."}]}),
+        json.dumps({"issues": [{"outcome": "needs confirmation",
+                               "quote": "HEIS is active.",
+                               "replacement": "HEIS operation needs confirmation.",
+                               "reason": "Approval only."}]}),
+    ])
+
+    class FakeStream:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+        @property
+        def text_stream(self):
+            return iter([next(responses)])
+
+    class FakeClient:
+        messages = type("Messages", (), {"stream": lambda self, **_: FakeStream()})()
+
+    monkeypatch.setattr(app, "get_client", lambda: FakeClient())
+    stream = app._iter_standard_evidence_review(
+        1, "HEIS is active.", [{"name": "pad.pdf", "raw_text": "HEIS approved."}],
+        "assessment-retry",
+    )
+    while True:
+        try:
+            next(stream)
+        except StopIteration as done:
+            corrected, issues = done.value
+            break
+    assert corrected == "HEIS operation needs confirmation."
+    assert len(issues) == 1
