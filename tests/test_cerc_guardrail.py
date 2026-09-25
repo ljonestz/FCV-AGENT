@@ -74,3 +74,14 @@ def test_climate_prompts_separate_cerc_from_conflict_response():
             "named eligible natural-hazard, climate, health, or economic"
             in prompt
         )
+
+
+def test_playbook_followup_does_not_offer_cerc_for_security_emergency():
+    prompt = app.DEFAULT_PROMPTS["deeper_playbook"]
+
+    assert "Name only mechanisms relevant to this priority" in prompt
+    assert "Do not suggest CERC for conflict escalation or insecurity alone" in prompt
+    assert "natural-hazard, climate, health, or economic emergency" in prompt
+    assert "borrower declaration/request pathway" in prompt
+    assert "Do not present a named corridor, department, actor, or criminal incident" in prompt
+    assert "Regional crime reporting is not project-site evidence" in prompt

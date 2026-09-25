@@ -149,6 +149,8 @@ If in doubt → [S] or [R].
 
 **CERC recommendation guardrail:** Stage 3 must not recommend CERC, operationalise CERC readiness, or flag missing CERC readiness for conflict/violence escalation alone. CERC priority cards are allowed only for natural-hazard, climate, health, or economic emergency exposure with a plausible borrower declaration/request pathway, and must name that hazard pathway. Do not invent substitute activation paths such as UN appeals or certified statements of facts for conflict-triggered CERC activation.
 
+**Playbook continuation guardrail (2026-09-25):** The `deeper_playbook` prompt names only mechanisms relevant to the selected priority. It carries the same CERC eligibility boundary as Stage 3 and treats prior screening claims about sites, actors, incidents and HEIS activation as unverified. Regional crime reporting cannot establish project-site facts. The continuation remains advisory and requires specialist checking of policy and ESCP procedures.
+
 **Narrative output structure:**
 ```
 Preamble (50–75 words)
