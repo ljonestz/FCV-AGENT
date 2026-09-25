@@ -8,7 +8,7 @@ Date: 25 September 2026
 
 I used the paid [Render Preview](https://fcv-agent-climate-preview.onrender.com/) host because the free production host can sleep during a long run. Public Somalia concept-PID and Honduras PAD/ESCP examples tested distinct workflow paths; Honduras was an adversarial source-check case, not the target product domain. Live runs checked stage completion, structured output, reviewer edits, ratings, parse status, and suppression of unreviewed streaming text. Browser checks covered saved-session restoration, Summary/Detailed presentation, copy and downloads, and a narrow mobile-width check. I compared the Honduras findings against the source audit in the earlier QA record. No restricted OPCS/ESF corpus was uploaded.
 
-The final deployed code is `eff819bf4fe74626ac208b6cd21a1be782246678` on paid Preview (`dep-daqsq6avcj2c739q2r2g`). The last end-to-end core generation preceded that commit: subsequent changes were confined to the Playbook prompt and session/summary presentation, with separate live checks of each.
+The application code verified on paid Preview was `eff819bf4fe74626ac208b6cd21a1be782246678` (`dep-daqsq6avcj2c739q2r2g`); later documentation-only commits do not change that code. The last end-to-end core generation preceded that commit: subsequent changes were confined to the Playbook prompt and session/summary presentation, with separate live checks of each.
 
 ## Evidence
 
