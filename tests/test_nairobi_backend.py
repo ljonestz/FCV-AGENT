@@ -344,6 +344,12 @@ def test_standard_stage1_retains_late_primary_evidence_and_warns_at_cap(monkeypa
             }
         }
 
+    def fake_review(_stage, generated, _sources, _assessment_id, _research=""):
+        if False:
+            yield
+        return generated, []
+
+    monkeypatch.setattr(app, "_iter_standard_evidence_review", fake_review)
     monkeypatch.setattr(app, "_stream_stage", fake_stream)
     monkeypatch.setattr(app, "get_fast_client", lambda: object())
     monkeypatch.setattr(app, "extract_country_name", lambda *_args: "Honduras")
@@ -418,6 +424,12 @@ def test_express_stage_failure_logs_assessment_and_failed_stage(monkeypatch, cap
             }
         }
 
+    def fake_review(_stage, generated, _sources, _assessment_id, _research=""):
+        if False:
+            yield
+        return generated, []
+
+    monkeypatch.setattr(app, "_iter_standard_evidence_review", fake_review)
     monkeypatch.setattr(app, "_stream_stage", fake_stream)
     monkeypatch.setattr(app, "get_fast_client", lambda: object())
     monkeypatch.setattr(app, "extract_country_name", lambda *_args: "Honduras")

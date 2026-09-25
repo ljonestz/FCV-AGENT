@@ -149,6 +149,8 @@ If in doubt → [S] or [R].
 
 **CERC recommendation guardrail:** Stage 3 must not recommend CERC, operationalise CERC readiness, or flag missing CERC readiness for conflict/violence escalation alone. CERC priority cards are allowed only for natural-hazard, climate, health, or economic emergency exposure with a plausible borrower declaration/request pathway, and must name that hazard pathway. Do not invent substitute activation paths such as UN appeals or certified statements of facts for conflict-triggered CERC activation.
 
+**Playbook continuation guardrail (2026-09-25):** The `deeper_playbook` prompt names only mechanisms relevant to the selected priority. It carries the same CERC eligibility boundary as Stage 3 and treats prior screening claims about sites, actors, incidents and HEIS activation as unverified. Regional crime reporting cannot establish project-site facts. The continuation remains advisory and requires specialist checking of policy and ESCP procedures.
+
 **Narrative output structure:**
 ```
 Preamble (50–75 words)
@@ -462,6 +464,8 @@ admission stage will retain.
 
 ## Standard FCV materiality and advisory guidance (2026-09-20)
 
+**24 September 2026 source-authority correction:** For IPF, `DNH_SEASH_IPF` and `SEASH_GENDER_CARD_IPF` require a documented SEA/SH rating or specific project risk before treating an item as a gap; an Action Plan embedded in an ESIA or ESMP satisfies a plan reference when that is the documented instrument. The `esf_security_personnel` and `esf_framework_core` cards distinguish ESS4 paragraphs 24-27 from Good Practice Note design options. A separate Security Management Plan is a project-specific obligation only when the ESCP or equivalent instrument commits to it. A PAD-only review asks for the ESCP rather than declaring its plans absent; a PAD-plus-ESCP review cites the actual action and timetable. These text changes preserve all delimiters, JSON fields, enums and route contracts.
+
 The standard route retains stated component budgets/shares, activities, beneficiaries, PDO links and delivery dependencies through Stages 1 and 2. Unknown facts stay unknown. Stage 3 ranks one to five priorities by PDO relevance, scale, harm severity and delivery dependencies; spending is not a mechanical score, and a critical low-budget dependency can rank first. There is no category, dimension or document-revision quota. Preserve instrument/lifecycle routing and distinguish verified policy obligations from advisory suggestions. Limited responsiveness alone does not imply poor design. Unverified portfolio comparisons and invented numeric thresholds must not be presented as established requirements. No extra model call is introduced; active-lens analytical guidance is unchanged.
 
 The live Honduras trial identified late-PAD safeguards omitted by the previous 60,000-character primary cutoff. Standard Stage 1 now receives up to 300,000 primary characters without an additional model call. Stage 1 evidence must retain explicit exclusions, conditional geographic scope, planned instruments and unknown completion status. Subsequent stages must distinguish a recognized risk with incomplete operational detail from an absent measure; a generic safeguard relevance flag does not establish a policy breach or an unconditional FPIC requirement. External numerical claims must retain their source period and definition, and national evidence must not become a confirmed corridor-level fact. These are model instructions, not a guarantee of factual accuracy.
@@ -469,6 +473,14 @@ The live Honduras trial identified late-PAD safeguards omitted by the previous 6
 Standard Stage 1 now requires a compact "Project facts and commitments" table before Part B, retaining each named component and stated budget, beneficiary scope, material commitment/instrument status, geographic exclusions/conditions and source paragraph. Conflicting source statements are retained as conflicts; physical/economic resettlement, climate displacement and conflict-related IDPs remain distinct. Standard Stage 3 explicitly copies all four canonical `project_cycle` values into the concise projection, without reinterpretation. Existing deterministic admission is unchanged.
 
 Live Quality testing exposed a conflicting legacy SORT subsection that seeded an unsupported portfolio percentage despite the appended evidence rules. `_prepare_standard_stage2_prompt()` now replaces that subsection only on the standard route with project-specific calibration. Do not infer specific SEA/SH classifications from aggregate E&S/SORT ratings, or label a planned instrument a compliance breach without a sourced applicable obligation and deadline. Distinguish later contextual evidence from information available at the historical preparation date. No policy corpus was accessed for this change.
+
+## Review date and historical design documents (2026-09-24)
+
+The temporal guardrail supplies the current review date to design-stage Stages 2-3. It keeps PCN/PID/PAD analysis focused on the design recorded in the document while treating past estimated review, appraisal and approval dates as historical metadata. The standard source reviewer applies the same check to prose, priority JSON and concise fields. Neither a past estimate nor document type establishes current project status or an available preparation window; the team must confirm the current schedule from current sources. No delimiter, rating or priority schema changes.
+
+## Standard evidence-review reliability (2026-09-25)
+
+Before source review, standard design Stages 2-3 condition references to appraisal, Board approval and Decision Review on the milestone still being pending; the same qualification is reapplied after reviewer edits. The review prompt surfaces likely instrument-status and site-risk claims as cues to inspect against uploaded documents. Cues are generated output, not evidence. Corrections target numbered output segments: one edit to a duplicated string is mirrored to untouched copies, while distinct explicit edits to separate fields remain separate. Conflicting edits to the same segment ID still require a reviewer retry and fail closed if unresolved.
 
 ## Management-oriented report style
 

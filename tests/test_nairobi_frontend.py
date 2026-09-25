@@ -396,6 +396,7 @@ let stageConciseReadout=null,stageThreePriorities=[],fcvRating='',fcvResponsiven
 let stageRiskExposure=null,stageSensitivitySummary='',stageResponsivenessSummary='';
 let midCycleWatch=[],dpfWatch=[],p4rWatch=[],regionalWatch=[],horizonConsiderations='';
 let lensSelectionLocked=false,sessionName='',researchBrief='',researchCountry='';
+let temporalContext={{}};
 let calls=[];
 const lensCatalogueReady=Promise.resolve();
 const lensCatalogue=[];
@@ -415,7 +416,7 @@ const document={{getElementById(id){{
 }}}};
 class FileReader{{readAsText(file){{this.onload({{target:{{result:file.contents}}}})}}}}
 {helpers}
-const completed={{version:3,savedAt:'2026-09-20T00:00:00Z',currentStage:3,history:[],stageOutputs:{{3:'completed recommendations'}},stageHists:{{}},fileNames:{{project:[],context:[]}}}};
+const completed={{version:3,savedAt:'2026-09-20T00:00:00Z',currentStage:3,history:[],stageOutputs:{{3:'completed recommendations'}},stageHists:{{}},fileNames:{{project:[],context:[]}},temporalContext:{{approval_date:'2024-12'}}}};
 const partial={{version:3,savedAt:'2026-09-20T00:00:00Z',currentStage:2,history:[],stageOutputs:{{2:'assessment'}},stageHists:{{}},fileNames:{{project:[],context:[]}}}};
 const input={{files:[{{name:'completed.json',contents:JSON.stringify(completed)}}],value:'selected'}};
 loadSession(input);
@@ -423,6 +424,7 @@ await Promise.resolve();
 await Promise.resolve();
 if(calls.join('|')!=='enableClickableStepper|navigateToStage:3')throw new Error('completed session did not enter saved Stage 3: '+calls);
 if(input.value!=='')throw new Error('completed session did not clear the file input');
+if(temporalContext.approval_date!=='2024-12')throw new Error('completed session lost project date');
 input.files=[{{name:'partial.json',contents:JSON.stringify(partial)}}];
 loadSession(input);
 await Promise.resolve();

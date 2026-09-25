@@ -42,6 +42,8 @@ The authoritative OPCS policies, directives, and guidance notes this app's promp
 **Only GitHub Copilot (this CLI / Copilot Chat / Copilot coding agent) is permitted to read the source files in the PPF folder, the `OPCS docs.xlsx` index, the `LLM input on relevant project docs.docx` triage doc, and the ESF Manual PDF.** Claude Code, OpenAI Codex, or any other coding agent working in this repository **must not** open, read, or ingest these source documents directly - even if asked to do OPCS-policy-consistency work. Other agents should work from **already-written, GitHub-Copilot-authored summaries** (e.g. design specs and plans under `docs/superpowers/`, or corrections already landed in `background_docs.py`/`app.py`) rather than the raw policy corpus itself. If a non-Copilot agent's task appears to require reading these source files directly, it should stop and ask the maintainer rather than accessing the folder.
 
 **Version history:**
+- **2026-09-24 stale-milestone guardrail candidate** - Standard design-stage Stages 2-3 and the independent source reviewer now receive the review date. A historical PCN/PID/PAD stays a design-stage assessment, while past estimated appraisal or approval dates cannot be described as upcoming gates or proof of current status. Current stage and schedule require current sources. This is prompt guidance; live recheck remains pending.
+- **2026-09-24 source-authority review candidate** - Public Honduras PAD-only QA is now compared with the companion appraisal ESCP. IPF SEA/SH and ESF knowledge guidance no longer turns a non-standalone plan, PAD silence, or Good Practice Note examples into automatic defects or mandatory gates. ESS4 paragraphs 24-27 are the security-personnel standard; a Security Management Plan is mandatory for this project through its ESCP action 4.4, not for every high-risk IPF. The source-specific correction is awaiting a fresh live analytical run; no Render production or ITS change is claimed.
 - **Nairobi standard-FCV update (2026-09-20)** - Live PAD testing exposed a pre-existing 60,000-character primary-input cutoff; standard FCV now reads up to 300,000 primary characters with a visible warning for remaining truncation, while specialist limits remain unchanged. Evidence instructions preserve conditional scope and planned-versus-completed measures.  Standard-route generation targets an 80-110-word management overview, zero to three evidenced strengths and one to five material priorities. Summary presents every leading action and links to canonical Detailed priorities; formal ratings stay in Detailed. A separate HTML/Word management-brief download revalidates the concise bundle without a model call. Watch prose retains safe Markdown structure; routing disclosures are removed from both views while relevant warnings remain. Existing detailed exports, enums and Climate analytical contracts are preserved. See `20260920_ITS_handover_standard_fcv.md` for the baseline, porting contract and validation status.
 - **v9.38** - Production Climate Summary and DOCX metadata extraction: one shared recursive OOXML walker (`docx_structure.py`) now preserves visible paragraph/table/SDT order, nested tables, checked controls, and structured header/value fields while `extract_docx_text()` retains its public two-value API and internal routes carry a separate structured-field sidecar. Climate-only verified runs use source manifest `source-blocks-v3`, structured financing metadata takes precedence over prose with typed conflict/unresolved warnings, and the judgment call emits the validated `summary_overview.paragraphs` contract (`climate-judgments-v2.4`) without another model call. Climate Summary renders that overview, closed watch/guidance disclosures, and the same gated drafting content as Detailed; normal FCV keeps its established narrative/schema/prompt contract and adds only an applicable closed watch-items disclosure.
 - **v7.0** — Redesigned from 4 stages to 3; full 12 OST recs + 25 key questions; FCV Playbook integration; Under the Hood panels; refresh_shift field
@@ -946,3 +948,23 @@ Country matching normalizes typographic possessives before ASCII folding, so a n
 ## Download scope (2026-09-23)
 
 Standard Summary offers only clearly labelled brief Word/HTML downloads; Detailed analysis offers only clearly labelled full-report Word/HTML downloads. Climate Summary retains full-report downloads because it has no brief exporter. The tab note states the full HTML/Word supplement difference. No export payload, rating, prompt or shared ITS schema changes.
+
+
+## 2026-09-24 standard FCV evidence review candidate
+
+Standard design-review Stages 1-3 now run a separate, selective source check in both
+step-by-step and Express workflows. It checks named sites and actors, instrument
+status, project commitments, mandatory rules, and numerical timing or targets
+against the uploaded documents and cited public research. Review outcomes are
+supported, qualified inference, needs confirmation, and contradicted or invalid
+source. Whole-segment corrections keyed to numbered prose lines and JSON values are applied before stage text enters history,
+priority parsing, Summary, or exports. Stage 3 JSON strings are corrected together
+with prose. A near-match uploaded source filename that remains after review blocks
+the stage. Invalid or timed-out review also blocks final stage output.
+
+The step-by-step client resends uploaded documents for standard Stages 2-3 and
+includes the research brief; Express reuses extracted text. The review has a 240-second total cap, one bounded retry for invalid edits, and emits SSE keepalives. Final SSE events expose optional
+evidence_review issues for QA. Climate and implementation routes bypass this
+review. Existing delimiters, priority JSON fields, enums, rating semantics and
+knowledge constant names are unchanged. This is a QA candidate, not analytical
+or production acceptance; source-based live tests and FCV/ESF review remain open.

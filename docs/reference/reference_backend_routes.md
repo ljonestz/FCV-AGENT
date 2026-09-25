@@ -555,3 +555,21 @@ Gap admission accepts nonempty grounded text up to 100 words. The drafting targe
 `run_fcv_web_research` keeps the existing single Anthropic web-search request and delegates prompt construction and provider-block normalization to `fcv_core_research.py`. Results carry `brief`, `country`, `sources`, `status`, and the existing `ccdr_context`. Provider citations preserve URLs, excerpts and supplied dates; unavailable dates and uncertain country attribution remain explicit. No server-side article fetching is added. Stage 1 cache keys include the bounded project profile and lens budget; entries expire after six hours, are capped at 128, and source-free/unavailable results are not cached. Existing SSE research brief transport is unchanged. Word export strips only repeated leading Watch List headings.
 
 Watch List heading normalization uses linear line parsing in Python and JavaScript so adversarial whitespace cannot cause regex backtracking.
+
+
+## Standard FCV evidence review (2026-09-24 candidate)
+
+For design-review requests with no active sector lens, both /api/run-stage and
+/api/run-express review each generated stage against uploaded document excerpts
+and the cited public research brief. The review is a separate model call after
+generation and before structured parsing or final SSE output. It returns whole-segment replacements keyed to numbered prose lines or decoded
+JSON string fields, removing model-supplied quote matching. Stage 3 updates cover
+narrative and priority JSON strings. A failed or invalid review stops the stage. No raw
+unreviewed stage completion payload is emitted.
+
+Step-by-step Stage 2/3 requests now carry documents again for source checking
+and may carry research_brief. Express retains its extracted document parts and
+research brief. Successful final stage events add optional evidence_review,
+an array of objects with outcome, segment_id, quote, replacement and reason. Consumers can
+ignore this QA field; it does not change existing stage, delimiter, priority,
+rating or export fields. Each review has a 240-second total limit, one bounded correction retry, and emits keepalives. The source-review prompt includes the current review date and checks that past estimated project milestones are not presented as upcoming deadlines or proof of current status.

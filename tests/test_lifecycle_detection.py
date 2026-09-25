@@ -54,3 +54,26 @@ def test_extract_temporal_context_missing_block_defaults_lifecycle_status_unknow
     ctx = extract_temporal_context("no delimiter block here")
     assert ctx["lifecycle_status"] == "Unknown"
     assert ctx["error"] is True
+
+
+def test_design_guardrail_distinguishes_document_stage_from_current_schedule():
+    from datetime import date
+    from app import _build_temporal_guardrail
+
+    context = {
+        "approval_date": "2026-04",
+        "closing_date": "Unknown",
+        "safeguards_framework": "ESF",
+        "other_temporal_markers": (
+            "PID date 07-Feb-2026; Estimated Appraisal 16-Mar-2026; "
+            "Estimated Board Approval 28-Apr-2026"
+        ),
+    }
+    guardrail = _build_temporal_guardrail(
+        context, "PID", as_of=date(2026, 9, 24)
+    )
+
+    assert "2026-09-24" in guardrail
+    assert "PREPARATION phase" in guardrail
+    assert "past estimated" in guardrail.lower()
+    assert "current project status" in guardrail.lower()

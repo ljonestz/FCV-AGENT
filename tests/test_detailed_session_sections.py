@@ -106,6 +106,7 @@ let stageResponsivenessSummary = 'responsiveness';
 let midCycleWatch = [], dpfWatch = [], p4rWatch = [], regionalWatch = [];
 let horizonConsiderations = '';
 let docType = 'PAD', instrumentType = 'IPF', countryScope = 'single';
+let temporalContext = {{approval_date:'2024-12'}};
 const lensVersions = () => ({{}});
 {checkpoint}
 epSafeStore({{}}, {{}}, 3);
@@ -113,6 +114,7 @@ const saved = JSON.parse(localStorage.getItem('fcv_express_lensState'));
 if(saved.stageRiskExposure.risks_to !== 'risk to') throw new Error('checkpoint lost risk exposure');
 if(saved.stageSensitivitySummary !== 'sensitivity') throw new Error('checkpoint lost sensitivity');
 if(saved.stageResponsivenessSummary !== 'responsiveness') throw new Error('checkpoint lost responsiveness');
+if(saved.temporalContext.approval_date !== '2024-12') throw new Error('checkpoint lost project date');
 """
     _run_node(script)
 
@@ -132,3 +134,47 @@ def test_reset_clears_detailed_sections_and_summary_link_explains_detail_target(
         "See full Priority ${idx+1} details and suggested text for the project package in Detailed Analysis"
         in source
     )
+
+
+def test_temporal_context_survives_session_and_express_restore():
+    source = INDEX.read_text(encoding="utf-8")
+    save = source[source.index("function saveSession()"):source.index("function showLegacyBanner")]
+    load = source[source.index("function loadSession(input)"):source.index("function updateSessionBar")]
+    express_restore = source[source.index("const savedLensState=JSON.parse("):source.index("function restartExpressFromStage1()")]
+    checkpoint = _extract_js_function(source, "epSafeStore")
+    reset = _extract_js_function(source, "reset")
+
+    assert "temporalContext={}" in reset
+    assert "temporalContext: temporalContext" in save
+    assert "temporalContext=state.temporalContext||{}" in load
+    assert "temporalContext:temporalContext" in checkpoint
+    assert "temporalContext=savedLensState.temporalContext||{}" in express_restore
+
+
+def test_stage3_summary_displays_saved_project_status_warnings():
+    source = INDEX.read_text(encoding="utf-8")
+    helper = _extract_js_function(source, "renderStage3Summary")
+    script = helper + """
+let finalizedPad = true, closedProject = false;
+const supportsClimateVerifiedStage3View = () => false;
+const supportsConciseStage3View = () => true;
+const renderNormalFcvSummary = () => '<main>Five-minute readout</main>';
+const isFinalizedPAD = () => finalizedPad;
+const isClosedOrCompletedProject = () => closedProject;
+const closedProjectStatusReason = () => 'closed in 2025';
+const esc = value => value;
+let summary = renderStage3Summary();
+if (!summary.includes('Retrospective review.') || !summary.includes('Five-minute readout'))
+  throw new Error('historical PAD warning missing from summary');
+finalizedPad = false;
+closedProject = true;
+summary = renderStage3Summary();
+if (!summary.includes('closed or completed project') || !summary.includes('closed in 2025'))
+  throw new Error('closed project warning missing from summary');
+finalizedPad = false;
+closedProject = false;
+summary = renderStage3Summary();
+if (summary.includes('finalized-pad-notice'))
+  throw new Error('status warning shown for current project');
+"""
+    _run_node(script)
