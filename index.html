@@ -6706,9 +6706,13 @@ ${body}
   }
 
   function renderStage3Summary(){
-    if(supportsClimateVerifiedStage3View())return renderClimateVerifiedSummary(climateVerifiedReader);
-    if(supportsConciseStage3View())return renderNormalFcvSummary();
-    return '';
+    const summary=supportsClimateVerifiedStage3View()?renderClimateVerifiedSummary(climateVerifiedReader)
+      :(supportsConciseStage3View()?renderNormalFcvSummary():'');
+    if(!summary)return '';
+    const padNotice=isFinalizedPAD()?'<div class="finalized-pad-notice"><div class="fpn-body"><strong>Retrospective review.</strong> These recommendations assess the supplied PAD at preparation, not current implementation status.</div></div>':'';
+    const closedReason=closedProjectStatusReason();
+    const closedNotice=isClosedOrCompletedProject()?'<div class="finalized-pad-notice"><div class="fpn-body"><strong>This document appears to describe a closed or completed project</strong>'+(closedReason?': '+esc(closedReason):'')+'. The recommendations below are framed as design-stage guidance and may not be actionable for a closed project. Use them for retrospective review, lessons-learned, or as input to a follow-on operation rather than as live implementation guidance.</div></div>':'';
+    return closedNotice+padNotice+summary;
   }
 
   function supportsClimateVerifiedStage3View(){
