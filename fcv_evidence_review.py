@@ -26,6 +26,35 @@ STRUCTURAL_JSON_FIELDS = {
     "authority_basis", "primary_label", "secondary_label",
 }
 
+_DESIGN_GATE_RE = re.compile(
+    r"\b(?:before|by|prior to)\s+(?:the\s+)?"
+    r"(?:Decision Review\b(?:\s*\(DM/ROC\))?|appraisal\b|Board approval\b)"
+    r"(?!\s*\((?:if|subject)\b)",
+    re.IGNORECASE,
+)
+_STATUS_CUE_RE = re.compile(
+    r"\b(?:not yet|was not|currently|already)\s+"
+    r"(?:prepared|implemented|operational|active|activated|in place)\b"
+    r"|\b(?:activation|Security Management Plan|SEA/SH Action Plan)\b",
+    re.IGNORECASE,
+)
+_SITE_CUE_RE = re.compile(
+    r"\b(?:organised crime|organized crime|gangs?|extortion|"
+    r"drug trafficking|armed actors?|security conditions)\b",
+    re.IGNORECASE,
+)
+
+
+def qualify_unverified_design_gates(text: str) -> str:
+    """Make design-stage action deadlines conditional on current project status."""
+    return _DESIGN_GATE_RE.sub(
+        lambda match: (
+            match.group(0)
+            + " (if still pending; otherwise verify completion)"
+        ),
+        text,
+    )
+
 
 def _source_excerpt(raw: str, generated: str, limit: int) -> str:
     """Keep the opening plus late passages matching material generated terms."""
@@ -167,6 +196,24 @@ def build_review_prompt(
     if not sections:
         raise EvidenceReviewError("Uploaded documents contained no reviewable text.")
     names = [str(part.get("name", "")) for part in source_parts if part.get("name")]
+    output_segments = index_output(text)
+    priority_cues = []
+    seen_cues = set()
+    for pattern in (_STATUS_CUE_RE, _SITE_CUE_RE):
+        category_count = 0
+        for item in output_segments:
+            if (item["id"] in seen_cues or len(item["text"]) < 45
+                    or item["text"].lstrip().startswith("#")):
+                continue
+            match = pattern.search(item["text"])
+            if not match:
+                continue
+            excerpt = item["text"][max(0, match.start() - 120):match.end() + 180]
+            priority_cues.append({"segment_id": item["id"], "excerpt": excerpt})
+            seen_cues.add(item["id"])
+            category_count += 1
+            if category_count == 12:
+                break
     return (
         "You are an independent FCV evidence editor checking generated standard-FCV "
         f"Stage {stage} analysis before it reaches the user. Uploaded documents are "
@@ -192,7 +239,10 @@ def build_review_prompt(
         "Flag claims that a preparation window remains open or that a past gate "
         "is still ahead. Keep the design-stage assessment, but qualify the "
         "current schedule and status as needing confirmation. Check both "
-        "narrative and concise/priority fields for this error.\n\n"
+        "narrative and concise/priority fields for this error. Conditional "
+        "timing language that says to verify completion if a gate has passed "
+        "is acceptable design advice; prioritize unsupported source claims "
+        "instead of repeating the same timing caveat.\n\n"
         "First prioritize material site-specific place and actor claims, whether "
         "a project measure is planned, approved, operating or absent, documented "
         "ESCP commitments, and claimed mandatory deadlines or recipients. Use "
@@ -218,12 +268,16 @@ def build_review_prompt(
         "SOURCE TEXT (truncated excerpts are not evidence of absence):\n"
         + "\n".join(sections)
         + ("\n\n<public_research>\nPublic reporting may support country or regional context; it is not site-specific evidence. Use only passages with their cited source, date and geography.\n" + escape(public_research[:30_000]) + "\n</public_research>" if public_research else "")
+        + "\n\nPRIORITY CLAIM CUES (generated text, not evidence): Check these "
+          "instrument-status and site-risk claims against uploaded sources first. "
+          "Use the complete numbered segments below for any replacement.\n"
+        + escape(json.dumps(priority_cues, ensure_ascii=False), quote=False)
         + "\n\nGENERATED OUTPUT SEGMENTS TO REVIEW (IDs apply only to this output):\n"
         + escape(json.dumps([
             {"id": item["id"], "section": item["section"],
              "path": list(item["path"]) if "path" in item else None,
              "text": item["text"]}
-            for item in index_output(text)
+            for item in output_segments
         ], ensure_ascii=False), quote=False)
     )
 
@@ -395,15 +449,25 @@ def apply_indexed_review(
                 raise EvidenceReviewError(
                     f"Evidence review issue {number} needs a distinct whole-segment replacement."
                 )
-            for candidate in segments:
-                if candidate["text"] == original:
-                    prior = corrections.get(candidate["id"])
-                    if prior is not None and prior != replacement:
-                        raise EvidenceReviewError("Review corrections conflict on one segment.")
-                    corrections[candidate["id"]] = replacement
+            prior = corrections.get(segment_id)
+            if prior is not None and prior != replacement:
+                raise EvidenceReviewError(f"Review corrections conflict on segment ID {segment_id}.")
+            corrections[segment_id] = replacement
         accepted.append({"outcome": outcome, "segment_id": segment_id,
                          "quote": original, "replacement": replacement if isinstance(replacement, str) else "",
                          "reason": reason})
+
+    # Mirror a single correction across identical display fields. If the reviewer
+    # deliberately gives those fields different replacements, retain each ID's
+    # explicit edit instead of treating the duplicate text as a conflict.
+    replacements_by_text: dict[str, set[str]] = {}
+    for segment_id, replacement in corrections.items():
+        original = by_id[segment_id]["text"]
+        replacements_by_text.setdefault(original, set()).add(replacement)
+    for item in segments:
+        replacements = replacements_by_text.get(item["text"], set())
+        if item["id"] not in corrections and len(replacements) == 1:
+            corrections[item["id"]] = next(iter(replacements))
 
     for item in sorted((item for item in segments if item["section"] == "note"
                         and item["id"] in corrections),

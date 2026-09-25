@@ -556,3 +556,111 @@ def test_review_prompt_groups_multiple_corrections_per_segment():
     )
     assert "one issue per segment_id" in prompt
     assert "combine all corrections" in prompt
+
+
+def test_design_gate_qualification_preserves_json_and_timing_enum():
+    from fcv_evidence_review import qualify_unverified_design_gates
+
+    generated = (
+        'Review actions before appraisal and by the Decision Review.\n'
+        '{"action_timing":"required-before-appraisal",'
+        '"guidance":"Update the PAD before Board approval."}'
+    )
+    qualified = qualify_unverified_design_gates(generated)
+
+    assert qualified.count("otherwise verify completion") == 3
+    assert qualify_unverified_design_gates(qualified) == qualified
+    assert '"action_timing":"required-before-appraisal"' in qualified
+    assert json.loads(qualified.split("\n", 1)[1])["guidance"].startswith(
+        "Update the PAD before Board approval (if still pending;"
+    )
+
+
+def test_review_keeps_gate_qualified_after_model_replacement(monkeypatch):
+    import app
+
+    response = json.dumps({"issues": [{
+        "outcome": "needs confirmation", "segment_id": "p1",
+        "replacement": "Update the design before appraisal.",
+        "reason": "Current project stage is not in the source.",
+    }]})
+
+    class FakeStream:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+        @property
+        def text_stream(self):
+            return iter([response])
+
+    class FakeClient:
+        messages = type("Messages", (), {"stream": lambda self, **_: FakeStream()})()
+
+    monkeypatch.setattr(app, "get_client", lambda: FakeClient())
+    stream = app._iter_standard_evidence_review(
+        3, "Fix the design before appraisal.",
+        [{"name": "pid.pdf", "raw_text": "Concept-stage design."}],
+        "review-gate-test",
+    )
+    while True:
+        try:
+            next(stream)
+        except StopIteration as done:
+            corrected, _issues = done.value
+            break
+    assert "Update the design before appraisal (if still pending;" in corrected
+
+
+def test_review_prompt_surfaces_instrument_status_and_site_claims():
+    prompt = build_review_prompt(
+        2,
+        "The Security Management Plan was not yet prepared.\n\n"
+        "Organised crime operates in the named project corridor.",
+        [{"name": "escp.pdf", "raw_text": "The ESCP commits to a Security Management Plan."}],
+    )
+    assert "PRIORITY CLAIM CUES" in prompt
+    assert "Security Management Plan was not yet prepared" in prompt
+    assert "Organised crime operates in the named project corridor" in prompt
+    assert "not evidence" in prompt
+
+
+def test_indexed_review_allows_distinct_edits_to_duplicate_json_text():
+    from fcv_evidence_review import apply_indexed_review, index_output
+
+    raw = ("%%%JSON_START%%%" + json.dumps({"priorities": [{
+        "gap": "The site is insecure.",
+        "concise": {"gap": "The site is insecure."},
+    }]}) + "%%%JSON_END%%%")
+    segments = [item for item in index_output(raw)
+                if item["text"] == "The site is insecure."]
+    assert len(segments) == 2
+    review = {"issues": [
+        {"outcome": "needs confirmation", "segment_id": segments[0]["id"],
+         "replacement": "Assess whether site access is constrained.",
+         "reason": "Site conditions are not documented."},
+        {"outcome": "qualified inference", "segment_id": segments[1]["id"],
+         "replacement": "Verify site security before deployment.",
+         "reason": "This is a proposed precaution."},
+    ]}
+    corrected, issues = apply_indexed_review(raw, json.dumps(review), index_output(raw))
+    data = json.loads(corrected.split("%%%JSON_START%%%", 1)[1].split("%%%JSON_END%%%", 1)[0])
+    assert data["priorities"][0]["gap"] == "Assess whether site access is constrained."
+    assert data["priorities"][0]["concise"]["gap"] == "Verify site security before deployment."
+    assert len(issues) == 2
+
+
+def test_indexed_review_rejects_conflicting_edits_to_same_id():
+    from fcv_evidence_review import apply_indexed_review, index_output
+
+    raw = "The project plan is active."
+    response = {"issues": [
+        {"outcome": "needs confirmation", "segment_id": "p1",
+         "replacement": "Plan status needs confirmation.", "reason": "No status record."},
+        {"outcome": "qualified inference", "segment_id": "p1",
+         "replacement": "The plan is proposed.", "reason": "Only an ESCP commitment."},
+    ]}
+    with pytest.raises(EvidenceReviewError, match="segment ID p1"):
+        apply_indexed_review(raw, json.dumps(response), index_output(raw))

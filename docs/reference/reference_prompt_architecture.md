@@ -476,6 +476,10 @@ Live Quality testing exposed a conflicting legacy SORT subsection that seeded an
 
 The temporal guardrail supplies the current review date to design-stage Stages 2-3. It keeps PCN/PID/PAD analysis focused on the design recorded in the document while treating past estimated review, appraisal and approval dates as historical metadata. The standard source reviewer applies the same check to prose, priority JSON and concise fields. Neither a past estimate nor document type establishes current project status or an available preparation window; the team must confirm the current schedule from current sources. No delimiter, rating or priority schema changes.
 
+## Standard evidence-review reliability (2026-09-25)
+
+Before source review, standard design Stages 2-3 condition references to appraisal, Board approval and Decision Review on the milestone still being pending; the same qualification is reapplied after reviewer edits. The review prompt surfaces likely instrument-status and site-risk claims as cues to inspect against uploaded documents. Cues are generated output, not evidence. Corrections target numbered output segments: one edit to a duplicated string is mirrored to untouched copies, while distinct explicit edits to separate fields remain separate. Conflicting edits to the same segment ID still require a reviewer retry and fail closed if unresolved.
+
 ## Management-oriented report style
 
 Standard generation uses a plain main-point sentence at the start of each

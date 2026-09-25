@@ -17,7 +17,7 @@ import anthropic
 from fcv_presentation import bullet_finding_sections, strip_watch_heading
 from fcv_evidence_review import (
     EvidenceReviewError, apply_indexed_review, build_review_prompt,
-    index_output, validate_uploaded_names,
+    index_output, qualify_unverified_design_gates, validate_uploaded_names,
 )
 from fcv_core_research import (
     build_core_research_prompt, core_research_analysis_context,
@@ -9077,6 +9077,8 @@ def _review_source_parts(documents):
 
 def _iter_standard_evidence_review(stage, generated, source_parts, assessment_id, public_research=''):
     """Keep a local model result and send SSE keepalives during source review."""
+    if stage in (2, 3):
+        generated = qualify_unverified_design_gates(generated)
     prompt = build_review_prompt(stage, generated, source_parts, public_research)
     segments = index_output(generated)
     yield f"data: {json.dumps({'status': 'reviewing_evidence', 'stage': stage})}\n\n"
@@ -9126,6 +9128,8 @@ def _iter_standard_evidence_review(stage, generated, source_parts, assessment_id
                     corrected, issues = apply_indexed_review(
                         generated, response, segments,
                     )
+                    if stage in (2, 3):
+                        corrected = qualify_unverified_design_gates(corrected)
                     validate_uploaded_names(
                         corrected, [part.get('name', '') for part in source_parts]
                     )
