@@ -70,6 +70,17 @@ class AnthropicVerifiedJsonClient:
         self._is_transient = is_transient or _never_transient
         self._diagnostic_sink = diagnostic_sink
 
+    def _thinking_off(self) -> dict[str, str]:
+        """Return the 'turn thinking off' config for this model. Sonnet 5.5
+        rejects {"type": "disabled"} and requires {"type": "between_tools"};
+        Haiku 5.5 uses {"type": "disabled"}. This call has no tools, so both
+        suppress thinking output entirely (no pre-response thinking, no
+        inter-tool updates), freeing the full output budget for the JSON."""
+        model = (self._model or "").lower()
+        if "sonnet" in model or "opus" in model:
+            return {"type": "between_tools"}
+        return {"type": "disabled"}
+
     def _emit_failure_diagnostic(
         self,
         *,
@@ -136,10 +147,13 @@ class AnthropicVerifiedJsonClient:
                     max_tokens=max_output_tokens,
                     # Deterministic JSON extraction — no reasoning needed. The
                     # CALL_BUDGETS were sized for the 4.6 models (no thinking);
-                    # the 5.5 models engage adaptive thinking by default, which
-                    # consumes the output budget and truncates the JSON. Disable
-                    # it to restore the original calibration.
-                    thinking={"type": "disabled"},
+                    # the 5.5 models think by default, consuming the output
+                    # budget and truncating the JSON. Turn thinking off to
+                    # restore the original calibration. The "off" param differs
+                    # by model: Sonnet 5.5 requires {"type": "between_tools"}
+                    # (it rejects "disabled"); Haiku 5.5 uses "disabled". With no
+                    # tools in this call, both yield no thinking output.
+                    thinking=self._thinking_off(),
                     messages=[{"role": "user", "content": prompt}],
                     output_config={
                         "format": {
