@@ -127,6 +127,15 @@ STAGE1_MAX_DOC_CHARS = 60_000       # Docs are truncated to this before Stage 1 
 STANDARD_FCV_PRIMARY_DOC_CHARS = 300_000
 STAGE1_PACKAGE_DOC_CHARS = 25_000   # Pre-distillation fallback cap for Zone 2 docs
 STAGE1_CONTEXT_DOC_CHARS = 30_000   # Pre-distillation fallback cap for Zone 3 docs
+
+# Model tiers (Claude 5.5 generation, Oct 2026). The reasoning-heavy core Stage 2
+# (FCV assessment) and Stage 3 (recommendations) run on Opus; Stage 1 extraction
+# and every secondary call run on the fast, low-cost Sonnet; helper calls use
+# Haiku. The climate/sector-lens module keeps its own model constants in
+# sector_lenses/climate_runtime_config.py (bumped to the same generation).
+MODEL_REASONING = "claude-opus-5-5"    # core Stage 2 + Stage 3
+MODEL_STANDARD = "claude-sonnet-5-5"   # Stage 1, lens recovery, web research, Go Deeper, follow-on, priority points
+MODEL_LIGHT = "claude-haiku-5-5"       # country/sector extraction, condensation, distillation helpers
 STREAM_KEEPALIVE_SECONDS = 20
 # Backend per-stage wall-clock caps (seconds). Raised for Stage 2/3 in v9.16:
 # PforR (added in v9.8, after these caps were set in v9.4) produces the largest
@@ -140,6 +149,18 @@ STAGE_STREAM_TIMEOUTS = {
     2: 9 * 60,
     3: 9 * 60,
 }
+# Per-stage output-token budgets. Stage 2/3 run on Opus 5.5 (always-on adaptive
+# thinking consumes the response budget), so their caps were raised (16k→32k,
+# 20k→32k) to keep thinking from truncating the trailing %%% delimiter / JSON
+# blocks. Ceilings, not targets — the prompts still bound output length.
+STAGE_MAX_TOKENS = {
+    1: 8000,
+    2: 32000,
+    3: 32000,
+}
+# Native-climate Stage 3 formerly capped at 9000 (compact climate output); raised
+# for Opus 5.5 thinking headroom while staying below the standard Stage 3 budget.
+NATIVE_CLIMATE_STAGE3_MAX_TOKENS = 20000
 PROMPTS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'prompts.json')
 ASSESSMENT_WORKERS = max(2, int(os.environ.get("ASSESSMENT_WORKERS", "4")))
 ASSESSMENT_EXECUTOR = ThreadPoolExecutor(max_workers=ASSESSMENT_WORKERS)
@@ -1864,7 +1885,7 @@ def _iter_climate_diagnostic_recovery(
     def run():
         try:
             response = (client or get_lens_recovery_client()).messages.create(
-                model="claude-sonnet-4-6",
+                model=MODEL_STANDARD,
                 max_tokens=4500,
                 messages=[{"role": "user", "content": prompt}],
                 timeout=max_seconds,
@@ -2137,7 +2158,7 @@ def repair_lens_diagnostic(
         response = (client or get_lens_recovery_client()).messages.create(
             # Legacy generic-lens fallback retained unchanged for compatibility.
             # Native Climate Stage 2 uses the field-level iterator above instead.
-            model='claude-sonnet-4-6',
+            model=MODEL_STANDARD,
             max_tokens=8000,
             messages=[{'role': 'user', 'content': prompt}],
         )
@@ -7300,7 +7321,7 @@ def detect_document_type_from_text(text: str, api_client) -> str:
     snippet = text[:2000]
     try:
         resp = api_client.messages.create(
-            model="claude-haiku-4-5-20251001",
+            model=MODEL_LIGHT,
             max_tokens=20,
             messages=[{
                 "role": "user",
@@ -7767,7 +7788,7 @@ def extract_country_name(project_doc_text: str, api_client) -> str:
     snippet = project_doc_text[:4000]
     try:
         resp = api_client.messages.create(
-            model="claude-haiku-4-5-20251001",
+            model=MODEL_LIGHT,
             max_tokens=50,
             messages=[{
                 "role": "user",
@@ -7792,7 +7813,7 @@ def extract_sector_name(project_doc_text: str, api_client) -> str:
     snippet = project_doc_text[:4000]
     try:
         resp = api_client.messages.create(
-            model="claude-haiku-4-5-20251001",
+            model=MODEL_LIGHT,
             max_tokens=50,
             messages=[{
                 "role": "user",
@@ -7832,7 +7853,7 @@ def run_fcv_web_research(
     )
     try:
         resp = api_client.beta.messages.create(
-            model="claude-sonnet-4-6",
+            model=MODEL_STANDARD,
             max_tokens=max_tokens,
             tools=[{
                 "type": "web_search_20250305",
@@ -8027,7 +8048,7 @@ def run_climate_web_research(
         try:
             messages = [{"role": "user", "content": prompt}]
             request_options = {
-                "model": "claude-sonnet-4-6",
+                "model": MODEL_STANDARD,
                 "max_tokens": 1800,
                 "tools": [{
                     "type": "web_search_20250305",
@@ -8138,7 +8159,7 @@ def run_climate_web_research(
                         )
                     )
                     response = api_client.beta.messages.create(
-                        model="claude-haiku-4-5-20251001",
+                        model=MODEL_LIGHT,
                         max_tokens=2500,
                         messages=[{
                             "role": "user",
@@ -9855,10 +9876,10 @@ def run_stage():
                 # The prompt targets a compact payload, but evidence-rich country
                 # assessments can exceed 8,000 tokens before the closing delimiter.
                 _climate_active = climate_active(analysis_state)
-                _stage2_cap = 16000
+                _stage2_cap = _stage_output_budget(2)
                 _stage_max_tokens = (
-                    8000 if stage == 1 else
-                    (9000 if _native_climate_stage3 else 20000) if stage == 3 else
+                    _stage_output_budget(1) if stage == 1 else
+                    (NATIVE_CLIMATE_STAGE3_MAX_TOKENS if _native_climate_stage3 else _stage_output_budget(3)) if stage == 3 else
                     _stage2_cap
                 )
                 for event in _stream_stage(
@@ -10355,6 +10376,16 @@ def _stage_timeout_seconds(stage_num):
     return STAGE_STREAM_TIMEOUTS.get(stage_num, STAGE_STREAM_TIMEOUTS[3])
 
 
+def _stage_model(stage_num):
+    """Stage 1 does long-context extraction on the fast standard model; Stages 2
+    and 3 (FCV assessment + recommendations) use the reasoning model."""
+    return MODEL_REASONING if stage_num in (2, 3) else MODEL_STANDARD
+
+
+def _stage_output_budget(stage_num):
+    return STAGE_MAX_TOKENS.get(stage_num, STAGE_MAX_TOKENS[3])
+
+
 def _stage_timeout_message(stage_num, max_seconds):
     minutes = max_seconds / 60
     minute_label = str(int(minutes)) if minutes.is_integer() else f"{minutes:.1f}"
@@ -10424,7 +10455,7 @@ def _stream_stage(
             streamed_any = False
             try:
                 with get_client().messages.stream(
-                    model="claude-sonnet-4-6",
+                    model=_stage_model(stage_num),
                     max_tokens=max_tokens,
                     messages=messages
                 ) as s:
@@ -11007,7 +11038,7 @@ def run_express():
 
                 # ── Stream Stage 1 ──
                 yield f"data: {json.dumps({'status': 'preparing_analysis'})}\n\n"
-                for event in _stream_stage(stage1_messages, 8000, 1):
+                for event in _stream_stage(stage1_messages, _stage_output_budget(1), 1):
                     yield event
                 stage1_output = _stream_stage._last_result
 
@@ -11255,7 +11286,7 @@ def run_express():
                 # The prompt targets a compact payload, but evidence-rich country
                 # assessments can exceed 8,000 tokens before the closing delimiter.
                 _climate_active_s2 = climate_active(analysis_state)
-                _stage2_cap = 16000
+                _stage2_cap = _stage_output_budget(2)
                 for event in _stream_stage(stage2_messages, _stage2_cap, 2):
                     yield event
                 stage2_output = _stream_stage._last_result
@@ -11595,7 +11626,9 @@ def run_express():
                 )
 
                 for event in _stream_stage(
-                    stage3_messages, 9000 if _native_climate_s3 else 20000, 3
+                    stage3_messages,
+                    NATIVE_CLIMATE_STAGE3_MAX_TOKENS if _native_climate_s3 else _stage_output_budget(3),
+                    3,
                 ):
                     yield event
                 stage3_output = _stream_stage._last_result
@@ -11825,7 +11858,7 @@ def run_deeper():
             try:
                 yield f"data: {json.dumps({'ping': True})}\n\n"
                 with get_client().messages.stream(
-                    model="claude-sonnet-4-6",
+                    model=MODEL_STANDARD,
                     max_tokens=4000,
                     messages=messages
                 ) as stream:
@@ -11888,7 +11921,7 @@ def run_followon():
             try:
                 yield f"data: {json.dumps({'ping': True})}\n\n"
                 with get_client().messages.stream(
-                    model="claude-sonnet-4-6",
+                    model=MODEL_STANDARD,
                     max_tokens=4000,
                     system=prompt,
                     messages=trimmed_messages
@@ -11963,7 +11996,7 @@ def run_priority_questions():
                 yield f"data: {json.dumps({'ping': True})}\n\n"
                 collected = []
                 with get_client().messages.stream(
-                    model="claude-sonnet-4-6",
+                    model=MODEL_STANDARD,
                     max_tokens=10000,
                     system=prompt,
                     messages=[{"role": "user", "content": user_message}],

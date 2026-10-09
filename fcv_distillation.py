@@ -25,7 +25,7 @@ DISTILL_MAX_WORKERS = 4
 DISTILL_POLL_SECONDS = 2
 CONFIDENCE_FLOOR = 0.65
 
-HAIKU_MODEL = "claude-haiku-4-5-20251001"
+HAIKU_MODEL = "claude-haiku-5-5"
 
 TIER_2A_TYPES = {
     "policy_matrix",

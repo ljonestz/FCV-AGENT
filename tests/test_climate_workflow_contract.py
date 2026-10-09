@@ -613,7 +613,7 @@ def test_standard_climate_stage2_uses_native_prompt_and_canonical_output(
     assert done["lens_diagnostic_recovered"] is True
     assert len(calls) == 1
     assert calls[0]["stage"] == 2
-    assert calls[0]["max_tokens"] == 16000
+    assert calls[0]["max_tokens"] == 32000
     assembled = calls[0]["messages"][-1]["content"]
     assert "dedicated Climate-FCV Stage 2 assessment" in assembled
     assert assembled.count("%%%LENS_DIAGNOSTIC_START%%%") == 1
@@ -717,7 +717,7 @@ def test_express_climate_stage2_uses_native_prompt_and_canonical_output(monkeypa
     assert any(event.get("recovery_status") == "repairing" for event in events)
     assert any(event.get("keepalive") is True for event in events)
     assert done["lens_diagnostic_recovered"] is True
-    assert stage2_call["max_tokens"] == 16000
+    assert stage2_call["max_tokens"] == 32000
     assembled = stage2_call["messages"][-1]["content"]
     assert "dedicated Climate-FCV Stage 2 assessment" in assembled
     assert assembled.count("%%%LENS_DIAGNOSTIC_START%%%") == 1
@@ -1108,7 +1108,7 @@ def test_standard_climate_stage3_branches_before_generic_prompt_and_compacts_his
     done = next(e for e in _decode_sse(response) if e.get("done"))
     stage3_call = next(c for c in calls if c["stage"] == 3)
     assert stage3_call["messages"] == [{"role": "user", "content": "CLIMATE PRIORITIES ONLY"}]
-    assert stage3_call["max_tokens"] == 9000
+    assert stage3_call["max_tokens"] == 20000
     assert done["result"] == ""
     assert done["lens_diagnostic"]["schema_version"] == "climate-native-v1"
     assert len(done["priorities"]) == 1
@@ -1191,7 +1191,7 @@ def test_express_climate_stage3_branches_before_generic_prompt_and_compacts_hist
     done = next(e for e in _decode_sse(response) if e.get("stage_done") == 3)
     stage3_call = next(c for c in calls if c["stage"] == 3)
     assert stage3_call["messages"] == [{"role": "user", "content": "CLIMATE PRIORITIES ONLY"}]
-    assert stage3_call["max_tokens"] == 9000
+    assert stage3_call["max_tokens"] == 20000
     assert done["result"] == ""
     assert done["lens_diagnostic"]["schema_version"] == "climate-native-v1"
     assert len(done["priorities"]) == 1
