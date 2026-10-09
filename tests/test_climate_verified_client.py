@@ -190,7 +190,7 @@ def test_client_disables_sdk_retries_and_uses_native_output_schema():
 
     assert result["facts"] == []
     assert sdk.options == [{"timeout": 150, "max_retries": 0}]
-    assert sdk.messages.calls[0]["temperature"] == 0
+    assert "temperature" not in sdk.messages.calls[0]
     assert sdk.messages.calls[0]["max_tokens"] == 6000
     assert sdk.messages.calls[0]["output_config"] == {
         "format": {

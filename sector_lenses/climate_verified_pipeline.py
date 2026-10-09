@@ -1361,7 +1361,7 @@ def run_verified_climate_pipeline(
         normalization_version="climate-normalization-v2.1",
         renderer_version="climate-reader-v2.2",
         model_aliases={"assessment": "configured", "reviewer": "configured"},
-        sampling={"temperature": 0, "max_transient_retries": 1},
+        sampling={"max_transient_retries": 1},
         source_fingerprints=tuple(item.sha256 for item in source_documents),
         applicability_fingerprint=applicability,
         bank_release_id=bank_release_id,
