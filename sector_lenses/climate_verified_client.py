@@ -134,6 +134,12 @@ class AnthropicVerifiedJsonClient:
                 response = configured.messages.create(
                     model=self._model,
                     max_tokens=max_output_tokens,
+                    # Deterministic JSON extraction — no reasoning needed. The
+                    # CALL_BUDGETS were sized for the 4.6 models (no thinking);
+                    # the 5.5 models engage adaptive thinking by default, which
+                    # consumes the output budget and truncates the JSON. Disable
+                    # it to restore the original calibration.
+                    thinking={"type": "disabled"},
                     messages=[{"role": "user", "content": prompt}],
                     output_config={
                         "format": {

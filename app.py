@@ -8160,7 +8160,14 @@ def run_climate_web_research(
                     )
                     response = api_client.beta.messages.create(
                         model=MODEL_LIGHT,
-                        max_tokens=2500,
+                        # Mechanical JSON structuring of a bounded evidence
+                        # packet — no reasoning needed. Haiku 5.5's adaptive
+                        # thinking (on by default) consumed most of the 2500-token
+                        # budget and truncated the research JSON before its closing
+                        # delimiter; disable thinking and give modest tokenizer
+                        # headroom (the 5.5 tokenizer emits ~1.3x more tokens).
+                        max_tokens=4000,
+                        thinking={"type": "disabled"},
                         messages=[{
                             "role": "user",
                             "content": structuring_prompt,
