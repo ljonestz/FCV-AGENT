@@ -134,7 +134,6 @@ class AnthropicVerifiedJsonClient:
                 response = configured.messages.create(
                     model=self._model,
                     max_tokens=max_output_tokens,
-                    temperature=0,
                     messages=[{"role": "user", "content": prompt}],
                     output_config={
                         "format": {
