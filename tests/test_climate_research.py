@@ -668,7 +668,7 @@ def test_climate_research_structures_search_notes_without_researching():
     recovery = client.calls[1]
     assert "tools" not in recovery
     assert "betas" not in recovery
-    assert recovery["model"] == "claude-haiku-4-5-20251001"
+    assert recovery["model"] == "claude-haiku-5-5"
     assert recovery["max_tokens"] == 2500
     assert [message["role"] for message in recovery["messages"]] == ["user"]
     request_text = recovery["messages"][0]["content"]

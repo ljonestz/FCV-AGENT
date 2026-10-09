@@ -2336,7 +2336,7 @@ def test_non_climate_recovery_retains_legacy_generic_contract():
 
     assert recovered is True
     assert diagnostic["lenses"][0]["lens_id"] == "agriculture"
-    assert captured["model"] == "claude-sonnet-4-6"
+    assert captured["model"] == "claude-sonnet-5-5"
     assert captured["max_tokens"] == 8000
     assert "Recover only the missing structured sector-lens diagnostic" in (
         captured["messages"][0]["content"]
@@ -2360,8 +2360,8 @@ def test_verified_client_builder_uses_server_smoke_profile(monkeypatch):
 
     clients = app_module._build_verified_pipeline_clients()
 
-    assert clients.assessment._model == "claude-haiku-4-5-20251001"
-    assert clients.reviewer._model == "claude-haiku-4-5-20251001"
+    assert clients.assessment._model == "claude-haiku-5-5"
+    assert clients.reviewer._model == "claude-haiku-5-5"
 
 
 def test_verified_runtime_bridge_emits_keepalives_then_result(monkeypatch):

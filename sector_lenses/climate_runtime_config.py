@@ -7,8 +7,8 @@ from dataclasses import dataclass
 import os
 
 
-QUALITY_MODEL = "claude-sonnet-4-6"
-SMOKE_MODEL = "claude-haiku-4-5-20251001"
+QUALITY_MODEL = "claude-sonnet-5-5"
+SMOKE_MODEL = "claude-haiku-5-5"
 _ALLOWED_MODES = {"quality", "smoke"}
 
 

@@ -42,6 +42,7 @@ The authoritative OPCS policies, directives, and guidance notes this app's promp
 **Only GitHub Copilot (this CLI / Copilot Chat / Copilot coding agent) is permitted to read the source files in the PPF folder, the `OPCS docs.xlsx` index, the `LLM input on relevant project docs.docx` triage doc, and the ESF Manual PDF.** Claude Code, OpenAI Codex, or any other coding agent working in this repository **must not** open, read, or ingest these source documents directly - even if asked to do OPCS-policy-consistency work. Other agents should work from **already-written, GitHub-Copilot-authored summaries** (e.g. design specs and plans under `docs/superpowers/`, or corrections already landed in `background_docs.py`/`app.py`) rather than the raw policy corpus itself. If a non-Copilot agent's task appears to require reading these source files directly, it should stop and ask the maintainer rather than accessing the folder.
 
 **Version history:**
+- **v9.39** — Claude 5.5 model upgrade (branch `feat/model-5-5-upgrade`, 2026-10-09): Moved the whole app off the previous-generation 4.x models onto the Claude 5.5 family. Three tier constants in `app.py`: `MODEL_REASONING = "claude-opus-5-5"` (core Stage 2 FCV assessment + Stage 3 recommendations — the reasoning-heavy stages, selected via `_stage_model(stage_num)` inside the shared `_stream_stage()`), `MODEL_STANDARD = "claude-sonnet-5-5"` (Stage 1 extraction, lens recovery, web research, Go Deeper, follow-on, priority points), `MODEL_LIGHT = "claude-haiku-5-5"` (country/sector extraction, condensation, distillation). The climate/sector-lens module bumps its own `sector_lenses/climate_runtime_config.py` constants to the same generation (`QUALITY_MODEL = claude-sonnet-5-5`, `SMOKE_MODEL = claude-haiku-5-5`) and `fcv_distillation.HAIKU_MODEL = claude-haiku-5-5`. **Opus 5.5 has always-on adaptive thinking** that consumes the response budget, so Stage 2/3 output caps were raised to prevent truncation of the trailing `%%%`/JSON blocks: `STAGE_MAX_TOKENS` = {1: 8000, 2: 32000, 3: 32000} via `_stage_output_budget()`, and native-climate Stage 3 `NATIVE_CLIMATE_STAGE3_MAX_TOKENS = 20000` (was 9000). Doc-input limits are unchanged — the core route's 300k primary budget (`STANDARD_FCV_PRIMARY_DOC_CHARS`) already landed in the Nairobi update. The climate pipeline keeps a like-for-like Sonnet bump (not Opus) on its own module calls to avoid destabilising it, but the shared core Stage 2/3 stream it uses now runs on Opus 5.5 — **so a dedicated live climate run is required in verification** (always-on thinking can change the diagnostic-omission / Haiku-recovery behaviour; easy revert is pinning `_stage_model` Stage 2/3 back to Sonnet). Tests: climate-workflow budget assertions updated (16k→32k, 9k→20k) and model-ID assertions bumped to 5.5; full suite 1324 passed (the 7 remaining failures are pre-existing on `main`, unrelated to this change). Live-verify on Render: Opus 5.5 end-to-end timing on the largest PforR PAD against the wall-clock caps (S1 8m / S2 9m / S3 9m) and that the delimiter blocks still parse.
 - **Nairobi standard-FCV update (2026-09-20)** - Live PAD testing exposed a pre-existing 60,000-character primary-input cutoff; standard FCV now reads up to 300,000 primary characters with a visible warning for remaining truncation, while specialist limits remain unchanged. Evidence instructions preserve conditional scope and planned-versus-completed measures.  Standard-route generation targets an 80-110-word management overview, zero to three evidenced strengths and one to five material priorities. Summary presents every leading action and links to canonical Detailed priorities; formal ratings stay in Detailed. A separate HTML/Word management-brief download revalidates the concise bundle without a model call. Watch prose retains safe Markdown structure; routing disclosures are removed from both views while relevant warnings remain. Existing detailed exports, enums and Climate analytical contracts are preserved. See `20260920_ITS_handover_standard_fcv.md` for the baseline, porting contract and validation status.
 - **v9.38** - Production Climate Summary and DOCX metadata extraction: one shared recursive OOXML walker (`docx_structure.py`) now preserves visible paragraph/table/SDT order, nested tables, checked controls, and structured header/value fields while `extract_docx_text()` retains its public two-value API and internal routes carry a separate structured-field sidecar. Climate-only verified runs use source manifest `source-blocks-v3`, structured financing metadata takes precedence over prose with typed conflict/unresolved warnings, and the judgment call emits the validated `summary_overview.paragraphs` contract (`climate-judgments-v2.4`) without another model call. Climate Summary renders that overview, closed watch/guidance disclosures, and the same gated drafting content as Detailed; normal FCV keeps its established narrative/schema/prompt contract and adds only an applicable closed watch-items disclosure.
 - **v7.0** — Redesigned from 4 stages to 3; full 12 OST recs + 25 key questions; FCV Playbook integration; Under the Hood panels; refresh_shift field
@@ -299,7 +300,7 @@ These folders exist on the development machine but are gitignored — do not com
 ## 1. Project Architecture
 
 ### 1.1 Tech Stack
-- **Backend:** Python Flask 3.0.3 + Anthropic Claude API (`claude-sonnet-4-6`)
+- **Backend:** Python Flask 3.0.3 + Anthropic Claude API (Claude 5.5 generation — `claude-opus-5-5` for core Stage 2/3 reasoning, `claude-sonnet-5-5` for Stage 1 + secondary calls + the climate lens, `claude-haiku-5-5` for helpers/distillation)
 - **Frontend:** HTML + vanilla JavaScript + Markdown rendering
 - **Hosting:** Render.com (gunicorn + gevent)
 - **Concurrency model:** Per-tab assessment IDs in the browser; Express runs emitted from a background assessment executor; multi-worker gunicorn in production
@@ -768,7 +769,7 @@ Citation hallucination guard: Stage 3 prompt explicitly prohibits fabricating do
 
 | Decision | Reason |
 |---|---|
-| Claude Sonnet 4 | Strong FCV reasoning; fast enough for iterative refinement; efficient cost |
+| Opus 5.5 (core Stage 2/3) + Sonnet 5.5 (Stage 1 / secondary / climate lens) | Opus for the reasoning-heavy assessment and recommendations; Sonnet for fast, low-cost long-context extraction, secondary calls, and the fragile climate pipeline; both 1M-token context |
 | Flask (not React) | Lightweight; direct LLM integration; vanilla JS sufficient; easy Render deploy |
 | SSE streaming | Real-time feedback; no polling overhead; better UX |
 | localStorage sessions | Quick to implement; no database needed; works offline |
@@ -855,9 +856,9 @@ docs/superpowers/  # Dev plans and specs
 
 ---
 
-**Last updated:** 2026-08-24
-**Current version:** FCV Project Screener v9.38
-**Claude model:** `claude-sonnet-4-6`
+**Last updated:** 2026-10-09
+**Current version:** FCV Project Screener v9.39
+**Claude models:** `claude-opus-5-5` (core Stage 2/3), `claude-sonnet-5-5` (Stage 1 + secondary + climate lens), `claude-haiku-5-5` (helpers)
 **Stack:** Flask 3.0.3 + vanilla JS + Anthropic SDK + gunicorn/gevent on Render
 
 ### Word presentation and evidence retention follow-up (2026-09-20)
