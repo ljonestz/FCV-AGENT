@@ -473,3 +473,29 @@ def test_judgment_prompt_requires_grounded_standalone_summary_jobs():
         "do not copy", "executive_readout",
     ):
         assert expected in prompt
+
+
+def test_thinking_off_param_is_model_specific():
+    # Sonnet 5.5 rejects {"type": "disabled"} and requires {"type":
+    # "between_tools"}; Haiku 5.5 uses {"type": "disabled"}. The verified client
+    # runs on Sonnet in quality mode and Haiku in smoke mode.
+    sonnet = AnthropicVerifiedJsonClient(object(), model="claude-sonnet-5-5")
+    haiku = AnthropicVerifiedJsonClient(object(), model="claude-haiku-5-5")
+    assert sonnet._thinking_off() == {"type": "between_tools"}
+    assert haiku._thinking_off() == {"type": "disabled"}
+
+
+def test_sonnet_verified_call_turns_thinking_off_with_between_tools():
+    sdk = _Sdk([
+        '{"schema_version":"climate-verified-v2.1","facts":[],"derived_assertions":[]}',
+    ])
+    client = AnthropicVerifiedJsonClient(sdk, model="claude-sonnet-5-5")
+    client.complete_json(
+        stage="fact_extraction",
+        payload={"documents": [], "source_blocks": []},
+        timeout_seconds=150,
+        max_output_tokens=6000,
+        max_transient_retries=1,
+    )
+    assert sdk.messages.calls[0]["thinking"] == {"type": "between_tools"}
+    assert "temperature" not in sdk.messages.calls[0]
