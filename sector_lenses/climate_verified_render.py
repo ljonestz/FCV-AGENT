@@ -693,8 +693,16 @@ def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
     } if raw_operation_context else {}
     drafting_route = _drafting_route_gate(operation_context)
     reader_priorities = []
-    for priority in priorities:
+    for position, priority in enumerate(priorities, start=1):
         reader_priority = dict(priority)
+        # Renumber rank to a clean 1..N sequence in the already rank-sorted order.
+        # The Claude 5.5 models sometimes emit non-sequential rank integers
+        # (e.g. 1, 3, 5) or duplicates, which the reader-integrity validator
+        # (PRIORITY_RANK_ORDER_INVALID, which requires ranks == [1..N]) rejects.
+        # Normalising here preserves the model's intended ordering while
+        # satisfying the invariant; priority_summary is derived from these, so it
+        # stays consistent.
+        reader_priority["rank"] = position
         reader_priority["title"] = _normalize_priority_title(priority.get("title"))
         if not drafting_route["confirmed"]:
             reader_priority.pop("current_document_drafting", None)

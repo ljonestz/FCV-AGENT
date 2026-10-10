@@ -624,6 +624,26 @@ def test_watch_lines_render_in_standalone_section_not_inline():
     assert "What to watch" not in core_block
 
 
+def test_build_reader_model_normalizes_nonsequential_priority_ranks():
+    # The Claude 5.5 models sometimes emit non-sequential / unordered rank
+    # integers (e.g. 1, 3, 5) or duplicates. build_reader_model must renumber
+    # them to a clean 1..N sequence in rank order so the reader-integrity check
+    # (PRIORITY_RANK_ORDER_INVALID, which requires ranks == [1..N]) passes.
+    assessment = _assessment()
+    priorities = assessment["priorities"]
+    n = len(priorities)
+    # Assign non-sequential rank values in reverse order (2N, 2N-2, ... 2).
+    for offset, priority in enumerate(priorities):
+        priority["rank"] = (n - offset) * 2
+
+    reader = build_reader_model(assessment)
+    ranks = [p["rank"] for p in reader["priorities"]]
+    assert ranks == list(range(1, len(ranks) + 1))
+    assert "PRIORITY_RANK_ORDER_INVALID" not in validate_reader_model(reader)
+    # The full reader model still validates clean (nothing else disturbed).
+    assert validate_reader_model(reader) == ()
+
+
 def _assessment() -> dict[str, object]:
     sentence = (
         "The project evidence supports a material Climate-FCV pathway, while "
