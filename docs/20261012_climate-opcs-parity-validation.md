@@ -30,7 +30,7 @@ revisions. OIS-as-Concept-Decision wording and the exact April 17 boundary retai
 the existing Help Desk caveats. TA applicability and guarantee routing remain
 outside resolved coverage; no automatic TA-to-IPF conversion was added.
 
-## Verification
+## Verification history
 
 - Original audit: 264 existing tests passed; additional probes exposed gaps.
 - New regressions initially reproduced 16 failures (2 cases already passed).
@@ -99,7 +99,7 @@ The full suite has not been rerun after this follow-up. Local saved-session repl
 confirmed desktop Summary/Details and the mobile disclosure. The local static
 preview has expected API 404s and is not a backend acceptance run.
 
-## Production-readiness follow-up (in progress)
+## Production-readiness follow-up (superseded by acceptance result below)
 
 The user authorized remaining fixes and one paid acceptance run. The run has not
 yet been used. Offline checks of the actual PDF through the application's own
@@ -118,3 +118,57 @@ passed before the final combined-column regression; 99 reader/export tests pass;
 readable as legacy while new judgment validation requires the five-point scale.
 All three remaining baseline fixture defects were reproduced and corrected.
 Full suite and live quality/export acceptance are in progress.
+
+
+## Final acceptance result: HOLD production promotion
+
+One user-authorized paid quality run was used on candidate `cbd31ddd1084` at
+14:33:09 UTC on 12 October 2026; it ended at 14:36:56 UTC. The browser retained
+assessment ID `6a02d352-3456-4ef6-af4f-4bd379c0ccbf` from the earlier smoke run;
+distinguish the runs by timestamp, build and runtime_mode. No second quality run
+was started. Production and ITS remain unchanged; PR #83 stays draft.
+
+The Great Lakes PDF resolves AF/IPF, multi-country and ESF correctly. The country
+bank is withheld for the multi-country operation; research-only grounding passed
+its gate. OIS/preparation route remains explicitly unresolved. Live ratings are
+Moderate sensitivity and Limited responsiveness contribution, each on five points.
+The desktop sidebar appears in Summary and Detailed; at 390px viewport the page
+has no horizontal overflow. Short glosses and collapsed explanations are retained.
+
+Quality acceptance FAILED: five recommendations were generated, one failed the
+actor check and all four admitted candidates were rejected by semantic review.
+Reasons include unsupported target, authority and scope. The note correctly says
+Recommendations stage incomplete; no rejected recommendation was promoted.
+The generated dedicated overview also failed its contract and used the supported
+fallback. The run does not demonstrate acceptable recommendation quality.
+
+Post-run fixes (offline verified, live analytical effect not established):
+- The semantic verifier now receives the same scoped operational-guidance packet
+  and registry version as the compiler. Previously it lacked the permitted-target
+  evidence it was asked to judge. Review prompt v2.6 distinguishes an advisory
+  destination from an existing commitment without weakening actor/authority checks.
+- Upload handlers resolve current file arrays after removal/reset, and reset clears
+  package files, metadata and native inputs. Two regressions reproduced the defect.
+- Incomplete Word/HTML exports now carry the warning before the assessment body.
+- The streaming test retains its elapsed-time invariant with Windows scheduling
+  headroom; its original 200ms deadline flaked under the full test workload.
+
+The saved result does not retain suppressed drafting or raw semantic-review input.
+Consequently the rejection causes cannot be fully reconstructed, and the guidance
+fix cannot be represented as having recovered the paid result. A further explicitly
+authorized live quality check is required before production promotion.
+
+Artifacts (local, excluded from commits):
+`output/playwright/20261012-quality-session.json`, matching `quality-report.html`,
+`quality-report.docx`, Word-rendered `quality-report.pdf`, and Summary/mobile PNGs.
+HTML and Word downloads were exercised against the test service without model
+calls. Both preserve the scope wording, incomplete status and OIS caveat. Word
+rendered to eight nonempty PDF pages; the first page was visually inspected.
+The newer front-page warning is covered by the offline export regression.
+
+
+Final offline verification: full suite 1,381 passed in 612.66 seconds after upload
+and timing-test fixes (`output/20261012_acceptance-suite.txt`). Subsequent reviewer
+context and export-warning edits passed 51 focused pipeline/sidebar/upload checks
+and three shared frontend-renderer checks. `git diff --check` passed. These are
+code/regression checks, not a successful replacement for live analytical acceptance.

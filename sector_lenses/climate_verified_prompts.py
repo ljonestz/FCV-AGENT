@@ -337,6 +337,13 @@ before residual gaps; project-fact provenance; country-evidence entitlements;
 recommendation proportionality; instrument scope, timing, and authority; rating
 coherence; duplication; and unintended consequences. Identify defects in the recommendation, not the residual gap it is meant to address. Asking the task team to specify an unresolved indicator, protocol, capacity, or adaptation measure is a valid purpose of a recommendation and is not itself a reason to revise or block. Do not broadly rewrite. For revise or block, object_ids must contain only affected REC- identifiers; do not include gap, fact, response, or pathway IDs.
 Use only these defect reason codes: {semantic_reason_codes}.
+For advisory_proposal drafting, check the target against the cited supplied
+operational_guidance permitted_targets. A permitted destination for a proposed
+addition does not need to exist in the uploaded document already. Guidance permits
+that advisory destination only: it does not establish a project commitment,
+responsible actor, deadline, scope of an existing instrument, or binding authority.
+Continue to reject unsupported claims about those matters. An advisory proposal
+must remain visibly proposed rather than presented as an existing commitment.
 Return exactly one object and no other prose: {"verdict":"pass|revise|block","reason_codes":[],"object_ids":[]}. Return at most 12 reason_codes and 12 object_ids. Keep the entire response to 500 words or fewer. Use revise only when one bounded correction could resolve a recommendation defect; otherwise block the affected recommendation.""".replace(
             "{semantic_reason_codes}",
             allowed_reason_codes,

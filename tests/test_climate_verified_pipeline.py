@@ -391,6 +391,12 @@ def test_unresolved_routing_triggers_one_source_first_review():
     assert reviewer.calls[0]["stage"] == "conditional_review"
     assert reviewer.calls[0]["timeout_seconds"] == 120
     assert "source_blocks" in reviewer.calls[0]["payload"]
+    review_payload = reviewer.calls[0]["payload"]
+    compiler_payload = next(call["payload"] for call in assessment.calls
+                            if call["stage"] == "recommendation_compiler")
+    assert review_payload["operational_guidance"] == compiler_payload["operational_guidance"]
+    assert review_payload["guidance_registry_version"] == compiler_payload["guidance_registry_version"]
+    assert review_payload["current_document"] == compiler_payload["operation_context"]["document_type"]
     assert result["validation"]["status"] == "attention"
     assert result["priorities"] == []
     assert result["manifest"]["suppressed_counts"]["recommendations"] == 1
@@ -747,7 +753,7 @@ def test_manifest_is_privacy_safe_and_scoped_to_the_run():
     )
     assert (
         first["manifest"]["prompt_versions"]["conditional_review"]
-        == "climate-review-v2.5"
+        == "climate-review-v2.6"
     )
     assert (
         first["manifest"]["prompt_versions"]["drafting_compiler"]

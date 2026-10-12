@@ -1219,6 +1219,9 @@ def render_reader_html(model: dict[str, object]) -> str:
     """Render escaped HTML from the canonical reader dictionary."""
 
     parts = ['<article class="climate-verified-assessment">']
+    if model.get("recommendation_status") == "incomplete":
+        parts.append("<p><strong>Recommendations stage incomplete</strong>: "
+                     + html.escape(INCOMPLETE_RECOMMENDATION_MESSAGE) + "</p>")
     if _text(model.get("runtime_mode")) == "smoke":
         parts.append(
             '<p class="climate-smoke-warning">'
@@ -1552,6 +1555,10 @@ def write_reader_docx(model: dict[str, object], path: str | Path) -> Path:
 
     output = path if hasattr(path, "write") else Path(path)
     document = Document()
+    if model.get("recommendation_status") == "incomplete":
+        paragraph = document.add_paragraph("Recommendations stage incomplete: "
+                                           + INCOMPLETE_RECOMMENDATION_MESSAGE)
+        paragraph.runs[0].bold = True
     if _text(model.get("runtime_mode")) == "smoke":
         paragraph = document.add_paragraph(SMOKE_RUNTIME_WARNING)
         if paragraph.runs:

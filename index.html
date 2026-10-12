@@ -3560,7 +3560,7 @@
        b:''}
   };
 
-  function setupZone(zoneId, inputId, arr, type) {
+  function setupZone(zoneId, inputId, getFiles, type) {
     const zone = document.getElementById(zoneId);
     const inp  = document.getElementById(inputId);
 
@@ -3570,26 +3570,26 @@
     zone.addEventListener('drop', e => {
       e.preventDefault();
       zone.classList.remove('over');
-      addFiles(Array.from(e.dataTransfer.files), arr, type);
+      addFiles(Array.from(e.dataTransfer.files), getFiles(), type);
     });
 
     // File input change / input events
     inp.addEventListener('change', function() {
       if(this.files && this.files.length > 0){
-        addFiles(Array.from(this.files), arr, type);
+        addFiles(Array.from(this.files), getFiles(), type);
         // Only reset input after files were successfully read, so startAnalysis()
         // fallback can still read ipEl.files if this event fires with empty files
         setTimeout(() => { this.value = ''; }, 100);
       }
     });
     inp.addEventListener('input', function() {
-      if(this.files && this.files.length > 0) addFiles(Array.from(this.files), arr, type);
+      if(this.files && this.files.length > 0) addFiles(Array.from(this.files), getFiles(), type);
     });
   }
 
-  setupZone('dp', 'ip', pF, 'p');
-  setupZone('dpack', 'ipack', pkF, 'pack');
-  setupZone('dc', 'ic', cF, 'c');
+  setupZone('dp', 'ip', () => pF, 'p');
+  setupZone('dpack', 'ipack', () => pkF, 'pack');
+  setupZone('dc', 'ic', () => cF, 'c');
 
   // Polling fallback: detect files even if the browser suppresses change/input events
   // (common in corporate environments with DLP or security software).
@@ -5217,7 +5217,8 @@
       (relevantGuidanceHtml?climateReportSection('Relevant WBG guidance for this project','climate-guidance',`<div class="climate-purpose-band climate-further-guidance"><span class="climate-purpose-icon" aria-hidden="true">i</span><div><strong>Climate further guidance</strong><p>Optional WBG sources for deeper follow-up on the findings.</p></div></div>${relevantGuidanceHtml}`):'')+
       (provenanceHtml?climateReportSection('How this analysis was produced','climate-methodology-section',provenanceHtml):'');
     const advisoryHtml=r.advisory_notice?`<p class="climate-advisory">${esc(r.advisory_notice)}</p>`:'';
-    return `<article class="climate-verified-assessment">${smokeHtml}${previewHtml}${operationContextHtml}${numberedSections}${advisoryHtml}</article>`;
+    const incompleteHtml=recommendationsIncomplete&&!ratingsInSidebar?`<p><strong>Recommendations stage incomplete:</strong> ${esc(r.recommendation_message||'Do not rely on this note as a completed assessment.')}</p>`:'';
+    return `<article class="climate-verified-assessment">${incompleteHtml}${smokeHtml}${previewHtml}${operationContextHtml}${numberedSections}${advisoryHtml}</article>`;
   }
 
   // Blunt, upfront caveat shown above the Stage 3 Summary and Detailed readouts.
@@ -6326,7 +6327,8 @@ ${body}
   }
 
   function reset(){
-    pF=[];cF=[];hist=[];curS=0;busy=false;stageOutputs={};stageHists={};researchBrief='';researchCountry='';priorityQuestions=[];focusQuestionsResult=null;pqPanelEnabled=true;
+    pF=[];pkF=[];cF=[];fileMetadata={};hist=[];curS=0;busy=false;stageOutputs={};stageHists={};researchBrief='';researchCountry='';priorityQuestions=[];focusQuestionsResult=null;pqPanelEnabled=true;
+    ['ip','ipack','ic'].forEach(id=>{document.getElementById(id).value='';});
     activeLenses=[];resolvedLensVersions={};lensSuggestions=[];lensDiagnostic={};lensContextSources=[];climateResearch={};climateGrounding={};climateIntegration=null;climateVerifiedAssessment=null;climateVerifiedReader=null;lensSelectionTouched=false;lensSelectionLocked=false;renderLensSelector();
     midCycleWatch=[];dpfWatch=[];p4rWatch=[];regionalWatch=[];horizonConsiderations='';
     stageThreePriorities=[];stageConciseReadout=null;stageRiskExposure=null;stageSensitivitySummary='';stageResponsivenessSummary='';openSummaryPriority=0;fcvRating='';fcvResponsivenessRating='';stage3View='detailed';stage3DetailedHtml='';

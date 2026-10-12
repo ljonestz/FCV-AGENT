@@ -88,7 +88,7 @@ PROMPT_VERSIONS = {
     "bounded_analysis": "climate-analysis-v2.2",
     "judgment_review": "climate-judgments-v2.5",
     "recommendation_compiler": "climate-recommendations-v2.4",
-    "conditional_review": "climate-review-v2.5",
+    "conditional_review": "climate-review-v2.6",
     "drafting_compiler": "climate-drafting-v1.0",
 }
 
@@ -1295,6 +1295,9 @@ def run_verified_climate_pipeline(
                 "judgments": asdict(judgments),
                 "recommendations": [asdict(item) for item in priorities],
                 "operation_context": resolved_context,
+                "current_document": doc_type,
+                "guidance_registry_version": GUIDANCE_REGISTRY_VERSION,
+                "operational_guidance": [item.as_record() for item in guidance],
             },
             latency_ms,
             cancel_event=cancel_event,

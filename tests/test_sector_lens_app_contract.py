@@ -2186,21 +2186,22 @@ def test_workflow_bridge_does_not_kill_slow_but_streaming_run():
     import time as _time
 
     def workflow_events():
-        for i in range(4):
-            _time.sleep(0.15)
+        for i in range(5):
+            # Leave scheduler headroom on loaded Windows runners.
+            _time.sleep(0.25)
             yield f"data: chunk-{i}\n\n"
 
     with app_module.app.test_request_context("/api/run-express"):
         out = list(
             app_module._stream_workflow_events(
                 workflow_events, "assess-w",
-                poll_interval=0.05, idle_deadline=0.2,
+                poll_interval=0.05, idle_deadline=1.0,
             )
         )
-    # All four workflow chunks delivered; no error/deadline event.
+    # Total duration exceeds the idle deadline; every chunk is still delivered.
     assert [c for c in out if c.startswith("data: chunk-")] == [
         "data: chunk-0\n\n", "data: chunk-1\n\n",
-        "data: chunk-2\n\n", "data: chunk-3\n\n",
+        "data: chunk-2\n\n", "data: chunk-3\n\n", "data: chunk-4\n\n",
     ]
     assert not any('"error"' in chunk for chunk in out)
 

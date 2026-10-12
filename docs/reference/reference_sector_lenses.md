@@ -222,3 +222,7 @@ retained primary blocks. Missing OIS metadata is explicitly disclosed in all
 reader surfaces. HTML and Word exports include the responsiveness contribution
 label, five-point scale and scope message. Reader-only legacy Emerging support
 does not change the stricter generation schema.
+
+### 2026-10-12 quality acceptance hold
+
+PR #83 remains a candidate: the one live quality run suppressed all five recommendations. Conditional review now receives current_document, guidance_registry_version and the same operational_guidance as compilation (prompt v2.6), distinguishing permitted advisory destinations from established project commitments. Suppression behavior is unchanged. The fix is offline verified only; another authorized quality run is required before promotion. Incomplete reader exports place the warning first.

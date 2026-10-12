@@ -408,3 +408,7 @@ brief Word gaps already use Word's List Bullet style.
 ## Report and research usability (2026-09-22)
 
 Report controls distinguish summary copying from full-report copying. Full report content includes all canonical priority actions and drafting, ratings, risk, conclusions and watch items. The HTML analytical annex remains distinct from the Word report scope. The research briefing and country persist in saved sessions. Playbook loading has bounded recovery with retry and stale-response protection. Rating explanations retain the six existing tiers and distinguish responsiveness from overall project quality.
+
+### 2026-10-12 upload reset and incomplete exports
+
+setupZone takes a getter for the current file array so removal/reset cannot leave stale handler references. reset clears primary/package/context files, metadata and native inputs. Standalone verified Climate exports show incomplete status before assessment content.

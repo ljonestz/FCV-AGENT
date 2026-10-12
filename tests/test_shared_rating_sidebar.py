@@ -96,3 +96,14 @@ def test_exports_include_responsiveness_contribution_and_scope(tmp_path):
         assert "Moderate contribution" in text
         assert "often a sign of going above and beyond" in text
         assert "Very limited / Limited / Moderate / Strong / Very strong" in text
+
+
+def test_incomplete_export_warning_precedes_assessment(tmp_path):
+    from docx import Document
+    from sector_lenses.climate_verified_render import render_reader_html, write_reader_docx
+    reader = {"recommendation_status": "incomplete", "executive_readout": "Assessment body."}
+    output = tmp_path / "incomplete.docx"
+    write_reader_docx(reader, output)
+    text = "\n".join(p.text for p in Document(output).paragraphs)
+    for content in [text, render_reader_html(reader)]:
+        assert content.index("Recommendations stage incomplete") < content.index("Assessment body.")

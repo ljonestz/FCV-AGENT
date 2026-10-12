@@ -995,3 +995,7 @@ It never certifies compliance or treats a missing upload as an absent assessment
 Reader timing uses conditional new-model review destinations, and PID is not
 assumed concept-stage. Source currency remains subject to live PPF verification.
 Live acceptance and release status: see `docs/20261012_climate-opcs-parity-validation.md`.
+
+### 2026-10-12 quality acceptance hold (PR #83)
+
+The single Great Lakes quality run on cbd31ddd1084 correctly resolved AF/IPF/multi/ESF and the five-point ratings, but all recommendations were suppressed. Do not promote this candidate as analytically accepted. The semantic verifier now receives the compiler's scoped operational guidance (review prompt v2.6); live effect remains unverified. Upload handlers now resolve current arrays after removal/reset; reset clears package files and metadata. Incomplete exports put their warning before the assessment. See docs/20261012_climate-opcs-parity-validation.md for acceptance evidence.
