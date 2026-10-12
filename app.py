@@ -128,6 +128,15 @@ STANDARD_FCV_PRIMARY_DOC_CHARS = 300_000
 STAGE1_PACKAGE_DOC_CHARS = 25_000   # Pre-distillation fallback cap for Zone 2 docs
 STAGE1_CONTEXT_DOC_CHARS = 30_000   # Pre-distillation fallback cap for Zone 3 docs
 
+# Max accepted request body (whole upload JSON, after browser base64 encoding).
+# Env-configurable so IT can tune it to the Render instance size. The former hard
+# 50 MB value was sized for the free tier; the paid tier has the headroom for a
+# full project package (primary PAD + up to 10 package + 3 context PDFs), which
+# easily exceeds 50 MB after base64. The effective value is published to the
+# frontend via /api/sector-lenses so its pre-submit size warning cannot drift
+# from this backend cap.
+MAX_UPLOAD_MB = max(1, int(os.environ.get("MAX_UPLOAD_MB", "100")))
+
 # Model tiers (Claude 5.5 generation, Oct 2026). The reasoning-heavy core Stage 2
 # (FCV assessment) and Stage 3 (recommendations) run on Opus; Stage 1 extraction
 # and every secondary call run on the fast, low-cost Sonnet; helper calls use
@@ -4007,6 +4016,8 @@ def extract_regime_context(stage1_output: str, instrument: str = "IPF") -> dict:
         is_af=fields["additional_financing_exception_applies"],
         parent_under_safeguard_policies=fields["additional_financing_exception_applies"],
         af_exclusively_cost_overrun_or_gap=fields["additional_financing_exception_applies"],
+        preparation_regime=fields["preparation_regime"],
+        ois_creation_date=ois,
     )
     if (fields["preparation_regime"] == "unresolved_policy_source"
             or fields["es_regime"] == "UNRESOLVED"):
@@ -4031,6 +4042,10 @@ def appraisal_document_label(preparation_regime: str, instrument: str) -> str:
         if inst in {"pforr", "p4r", "program-for-results"}:
             return "Program Paper"
         return "Project Paper"
+    # Legacy / unresolved: DPF has always used a Program Document (not a PAD);
+    # IPF and PforR default to the PAD label.
+    if inst in {"dpo", "dpf"}:
+        return "Program Document"
     return "Project Appraisal Document (PAD)"
 
 
@@ -4045,7 +4060,7 @@ def appraisal_reference_set(preparation_regime: str, es_regime: str, instrument:
         return LEGACY_PAD_MINIMUM_REFERENCE_SET
     esf = (
         str(es_regime or "").strip().upper() == "ESF_ESS1_TO_ESS10"
-        and str(instrument or "").strip().lower() == "ipf"
+        and str(instrument or "").strip().lower() in {"ipf", "ipf-ddo"}
     )
     if esf:
         return NEW_MODEL_MINIMUM_REFERENCE_SET
@@ -8789,7 +8804,7 @@ if os.path.exists(PROMPTS_FILE):
         pass
 
 app = Flask(__name__, static_folder='static')
-app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
+app.config['MAX_CONTENT_LENGTH'] = MAX_UPLOAD_MB * 1024 * 1024
 
 
 def _configure_app_logging() -> None:
@@ -8973,7 +8988,11 @@ def get_sector_lenses():
         for diagnostic in SECTOR_LENS_REGISTRY.diagnostics
         for error in diagnostic.errors
     ]
-    return jsonify({"lenses": lens_catalogue(SECTOR_LENS_REGISTRY), "warnings": warnings})
+    return jsonify({
+        "lenses": lens_catalogue(SECTOR_LENS_REGISTRY),
+        "warnings": warnings,
+        "max_upload_mb": MAX_UPLOAD_MB,
+    })
 
 
 @app.route('/api/detect-document-type', methods=['POST'])

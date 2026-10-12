@@ -75,6 +75,21 @@ def test_ipf_small_tf_and_urgent_are_one_step():
     ) == "one_step"
 
 
+def test_pforr_urgent_and_small_tf_do_not_force_one_step():
+    # Urgent-need and small-TF one-step triggers are IPF-only; a PforR with either
+    # flag is still governed by the risk rule (High -> two-step), not forced one-step.
+    assert rr.classify_processing_model(
+        instrument="PforR", sort_overall="High", es_risk="High", urgent_need_or_capacity=True,
+    ) == "two_step"
+    assert rr.classify_processing_model(
+        instrument="PforR", sort_overall="High", es_risk="High", small_tf_retf_le_5m=True,
+    ) == "two_step"
+    # But AF-to-PforR remains a valid one-step trigger.
+    assert rr.classify_processing_model(
+        instrument="PforR", sort_overall="High", es_risk="High", is_af=True,
+    ) == "one_step"
+
+
 def test_fmrf_not_af_is_two_step():
     assert rr.classify_processing_model(
         instrument="IPF", sort_overall="Low", es_risk="Low", is_fmrf=True,
@@ -112,6 +127,26 @@ def test_missing_risk_data_is_unknown():
 def test_es_non_ipf_is_instrument_specific():
     assert rr.classify_es_regime(instrument="PforR", concept_decision_date=dt.date(2022, 1, 1)) == "INSTRUMENT_SPECIFIC"
     assert rr.classify_es_regime(instrument="DPO", concept_decision_date=dt.date(2010, 1, 1)) == "INSTRUMENT_SPECIFIC"
+
+
+def test_new_model_ipf_without_concept_date_resolves_to_esf_via_ois():
+    # New-model IPF has no Concept Review; the OIS decision confirms the ESRC and is
+    # well after the 1 Oct 2018 ESF trigger, so ESF applies rather than UNRESOLVED.
+    assert rr.classify_es_regime(
+        instrument="IPF", concept_decision_date=None,
+        preparation_regime="new_model", ois_creation_date=dt.date(2026, 4, 18),
+    ) == "ESF_ESS1_TO_ESS10"
+    # IPF-DDO (IPF family) resolves the same way under the new model.
+    assert rr.classify_es_regime(
+        instrument="IPF-DDO", concept_decision_date=None,
+        preparation_regime="new_model", ois_creation_date=dt.date(2026, 4, 18),
+    ) == "ESF_ESS1_TO_ESS10"
+    # Legacy / unresolved with no concept date is unchanged (still UNRESOLVED).
+    assert rr.classify_es_regime(instrument="IPF", concept_decision_date=None) == "UNRESOLVED"
+    assert rr.classify_es_regime(
+        instrument="IPF", concept_decision_date=None,
+        preparation_regime="legacy_transitional", ois_creation_date=dt.date(2026, 1, 1),
+    ) == "UNRESOLVED"
 
 
 def test_es_op_bp_4_03_takes_precedence():

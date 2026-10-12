@@ -588,6 +588,12 @@
     .callout-icon{flex-shrink:0;margin-top:1px}
     .callout-body{font-size:13px;line-height:1.55}
     .callout-body strong{font-weight:700;display:block;margin-bottom:3px}
+    .screener-caveat{display:flex;gap:11px;align-items:flex-start;margin:0 0 18px;padding:14px 16px;background:#FFF8E6;border:1px solid #F3D27A;border-left:4px solid #E0A500;border-radius:8px}
+    .screener-caveat svg{flex-shrink:0;margin-top:2px;color:#B47E00}
+    .screener-caveat .sc-body{font-size:12.5px;line-height:1.55;color:#4a3d1e}
+    .screener-caveat .sc-body p{margin:0 0 8px}
+    .screener-caveat .sc-body p:last-child{margin-bottom:0}
+    .screener-caveat .sc-body strong{color:#7a5a00}
 
     /* ── Stage header ── */
     .stage-hdr{display:flex;align-items:center;gap:13px;margin-bottom:16px}
@@ -2719,12 +2725,18 @@
     } catch(e) { /* silent — tooltips just won't appear */ }
   })();
 
+  // Effective upload cap (MB), published by the backend so the pre-submit size
+  // warning tracks the real MAX_CONTENT_LENGTH even when IT overrides it by env.
+  // Falls back to the historical 50 MB if the catalogue fetch fails.
+  let uploadLimitMb = 50;
+
   let lensCatalogueReady=(async function loadLensCatalogue(){
     try{
       const r=await fetch('/api/sector-lenses');
       if(!r.ok)return;
       const data=await r.json();
       lensCatalogue=Array.isArray(data.lenses)?data.lenses:[];
+      if(typeof data.max_upload_mb==='number'&&data.max_upload_mb>0)uploadLimitMb=data.max_upload_mb;
       renderLensSelector();
     }catch(e){/* Core screening remains available if the catalogue cannot load. */}
   })();
@@ -3840,6 +3852,12 @@
       if(log){ log.style.color='#b91c1c'; log.textContent='⚠ Please select a project document before beginning.'; }
       return;
     }
+    const sizeWarn = uploadPayloadLimitMessage(pF, pkF, cF);
+    if(sizeWarn){
+      const log = document.getElementById('debug-log');
+      if(log){ log.style.color='#b91c1c'; log.textContent='⚠ '+sizeWarn; }
+      return;
+    }
     document.getElementById('upload-panel').style.display = 'none';
     document.getElementById('landing-hero').style.display = 'none';
     if(analysisMode==='express'){
@@ -3856,11 +3874,14 @@
     const all=[...(primaryFiles||[]),...(packageFiles||[]),...(contextFiles||[])];
     const rawBytes=all.reduce((sum,f)=>sum+(f&&f.size?f.size:0),0);
     const estimatedPayloadBytes=Math.ceil(rawBytes*4/3);
-    const limitBytes=45*1024*1024; // below Flask's 50MB cap to allow JSON overhead
+    // Warn ~10% below the backend cap so this friendly pre-submit message fires
+    // before the server returns a raw 413. The cap is published by the backend.
+    const limitMb=(typeof uploadLimitMb==='number'&&uploadLimitMb>0)?uploadLimitMb:50;
+    const limitBytes=Math.floor(limitMb*1024*1024*0.9);
     if(estimatedPayloadBytes<=limitBytes)return '';
     const rawMb=(rawBytes/1024/1024).toFixed(1);
     const encodedMb=(estimatedPayloadBytes/1024/1024).toFixed(1);
-    return 'Uploaded documents are too large for this Render deployment: '+rawMb+' MB of files becomes about '+encodedMb+' MB after browser base64 encoding. Remove optional package/context documents or use smaller PDFs, then retry.';
+    return 'Uploaded documents are too large for this deployment: '+rawMb+' MB of files becomes about '+encodedMb+' MB after browser base64 encoding, over the '+limitMb+' MB request limit. Remove optional package/context documents or use smaller PDFs, then retry.';
   }
 
   function requestErrorMessage(err, networkMessage){
@@ -4611,10 +4632,10 @@
   function wrapSRTerms(html) {
     // Only wrap plain text occurrences — skip those already inside a tag attribute (title=, class=, etc.)
     return html
-      .replace(/(?<!title="[^"]{0,500})FCV Sensitivity(?=[^"<]*(?:<[^>]+>|$))/g,
-        `<span class="sr-term" title="${SR_TERM_S_TIP}">FCV Sensitivity</span>`)
-      .replace(/(?<!title="[^"]{0,500})FCV Responsiveness(?=[^"<]*(?:<[^>]+>|$))/g,
-        `<span class="sr-term" title="${SR_TERM_R_TIP}">FCV Responsiveness</span>`);
+      .replace(/(?<!title="[^"]{0,500})FCV Sensitivity(?=[^"<]*(?:<[^>]+>|$))/gi,
+        m => `<span class="sr-term" title="${SR_TERM_S_TIP}">${m}</span>`)
+      .replace(/(?<!title="[^"]{0,500})FCV Responsiveness(?=[^"<]*(?:<[^>]+>|$))/gi,
+        m => `<span class="sr-term" title="${SR_TERM_R_TIP}">${m}</span>`);
   }
 
   function renderSRTagBadge(tag, compact) {
@@ -5194,6 +5215,18 @@
     return `<article class="climate-verified-assessment">${smokeHtml}${previewHtml}${operationContextHtml}${numberedSections}${advisoryHtml}</article>`;
   }
 
+  // Blunt, upfront caveat shown above the Stage 3 Summary and Detailed readouts.
+  // Sits in the #stage-disp template outside #out-txt, so it persists when the user
+  // toggles between Summary and Detailed (setStage3View only rewrites #out-txt).
+  function screenerCaveatHtml(){
+    return '<div class="screener-caveat" role="note" aria-label="Important caveat about this output">'
+      +'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'
+      +'<div class="sc-body">'
+      +'<p><strong>Be aware: LLMs are not magic, and neither is the FCV Project Screener.</strong> It gives advice based only on the documents and guidance it has been given, and it can be wrong. Treat everything here as advisory. Do not assume any finding, rating, or suggestion is definitive, including references to WBG policies, instruments, or procedures, which should be verified with OPCS. You are strongly advised to seek corroboration from relevant FCV and OPCS human experts.</p>'
+      +'<p>The Screener assesses against an ideal project, one where the team has maximum time and resources to make the design fully FCV-sensitive and responsive. Some recommendations may go further than a task team can or will act on; others may not fit country or operational realities the tool cannot see. Do not feel obliged to use every recommendation or to treat them equally: if two of five are relevant, that is a win. Its purpose is high-level guidance to help you think about where a project design could better reflect FCV sensitivity and responsiveness.</p>'
+      +'</div></div>';
+  }
+
   function renderOut(stage,result,isFollowOn){
     const isLast=stage===3;
     const c=CALLS[stage];
@@ -5215,6 +5248,11 @@
     if(_verifiedV2){
       _outBodyContent=renderClimateVerifiedAssessment(climateVerifiedReader);
     }else if(isLast){
+      // On-screen dedupe: screenerCaveatHtml() is now the single on-screen advisory
+      // banner, so strip the legacy in-body DO_NO_HARM_HEADER block from the displayed
+      // text. stageOutputs[3] is left untouched, so downloads and the HTML/DOCX exports
+      // are unaffected.
+      result = result.replace(/^\s*---\s*\n[\s\S]*?Generated by WBG FCV Sensitivity Project Screener[\s\S]*?---\s*\n+/, '');
       const _sp=result.split(/(?=###\s*Strengths\b)/i);
       const _pre=_sp[0]||result;
       const _rest=_sp[1]||'';
@@ -5302,6 +5340,7 @@
         }</div>
         <div class="callout-body">${_calloutContent}</div>
       </div>
+      ${isLast?screenerCaveatHtml():''}
       ${_showDetailedRail?`<div class="stage3-reading-shell ${stage3View==='summary'?'is-summary':'is-detailed'}" data-stage3-view="${stage3View}">${stage3OverviewHtml()}<div class="stage3-reading-main">`:'<div>'}
           <div class="out-card ani">
             <div class="out-hdr">
@@ -6525,13 +6564,13 @@ ${body}
 
   function stage3OverviewHtml(){
     const normalSensitivityCard = `<article class="stage3-rating-card" data-rating-key="sensitivity">
-      <div class="stage3-rating-card-header"><span class="stage3-rating-dimension">FCV Sensitivity</span><span class="stage3-rating-value" id="fcv-rating-label" data-rating-value data-rating-state="pending">Analysing…</span></div>
+      <div class="stage3-rating-card-header"><span class="stage3-rating-dimension sr-term" title="${SR_TERM_S_TIP}">FCV Sensitivity</span><span class="stage3-rating-value" id="fcv-rating-label" data-rating-value data-rating-state="pending">Analysing…</span></div>
       <div class="stage3-rating-bar" role="progressbar" aria-label="FCV Sensitivity rating" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span class="stage3-rating-fill" data-rating-fill></span></div>
       <p class="stage3-rating-meaning" id="fcv-need-label" data-rating-meaning>Meaning will be shown when the sensitivity rating is available.</p>
       <p class="stage3-rating-description">Is the project aware of and designed for the FCV context?</p>
     </article>`;
     const normalResponsivenessCard = `<article class="stage3-rating-card" data-rating-key="responsiveness">
-      <div class="stage3-rating-card-header"><span class="stage3-rating-dimension">FCV Responsiveness</span><span class="stage3-rating-value" id="fcv-resp-rating-label" data-rating-value data-rating-state="pending">Analysing…</span></div>
+      <div class="stage3-rating-card-header"><span class="stage3-rating-dimension sr-term" title="${SR_TERM_R_TIP}">FCV Responsiveness</span><span class="stage3-rating-value" id="fcv-resp-rating-label" data-rating-value data-rating-state="pending">Analysing…</span></div>
       <div class="stage3-rating-bar" role="progressbar" aria-label="FCV Responsiveness rating" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span class="stage3-rating-fill" data-rating-fill></span></div>
       <p class="stage3-rating-meaning" id="fcv-resp-need-label" data-rating-meaning>Meaning will be shown when the responsiveness rating is available.</p>
       <p class="stage3-rating-description">Does the project actively work to change the FCV situation? This is not a proxy for overall project quality; limited direct FCV action may fit the operation's scope.</p>

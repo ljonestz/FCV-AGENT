@@ -97,7 +97,12 @@ def classify_processing_model(
         return "two_step"
     if is_fmrf and not is_af:
         return "two_step"
-    if is_af or urgent_need_or_capacity or small_tf_retf_le_5m:
+    if is_af:
+        return "one_step"
+    # Urgent-need and small-TF one-step triggers are IPF-family only. The PforR
+    # one-step list (OPS5.04 PforR preparation procedures) is limited to the risk
+    # rule plus AF, so these flags must not force a PforR operation to one-step.
+    if inst != "pforr" and (urgent_need_or_capacity or small_tf_retf_le_5m):
         return "one_step"
 
     sort_n, es_n = _norm(sort_overall), _norm(es_risk)
@@ -123,11 +128,20 @@ def classify_es_regime(
     is_af: bool = False,
     parent_under_safeguard_policies: bool = False,
     af_exclusively_cost_overrun_or_gap: bool = False,
+    preparation_regime: Optional[str] = None,
+    ois_creation_date: Optional[dt.date] = None,
 ) -> str:
     """E&S regime router [OPS5.03-DIR.123 §III.A ¶1; ESF Policy ¶7/fn12/¶63/fn1].
 
     Decision order A-F (spec §5.1). Governed by the Concept Decision date, NOT the
     OIS date. ESS1-10 apply to IPF only.
+
+    New-model operations have no separate Concept Review step: the Initial ESRS sets
+    the ESRC and is cleared before the OIS decision, so the OIS decision is the
+    "Concept Decision, or equivalent". A new-model OIS (on/after the April 2026
+    boundary) is well after the 1 Oct 2018 ESF trigger, so passing preparation_regime
+    == new_model with the OIS date avoids a spurious UNRESOLVED for new-model IPF.
+    [Confirmed via policy review; OIS-as-equivalent wording pending Help Desk.]
     """
     inst = _norm(instrument)
     if inst == "mpa":
@@ -142,10 +156,19 @@ def classify_es_regime(
     #     Safeguard Policies -> legacy (does NOT apply if the AF adds/changes activities).
     if is_af and parent_under_safeguard_policies and af_exclusively_cost_overrun_or_gap:
         return "LEGACY_SAFEGUARDS"
-    # (D)/(E) date rule.
-    if concept_decision_date is None:
+    # (D)/(E) date rule. For a new-model IPF-family operation with no explicit
+    # Concept Decision date, the OIS decision is the equivalent ESRC-confirmation
+    # point, so fall back to the OIS creation date before returning UNRESOLVED.
+    effective_concept = concept_decision_date
+    if (
+        effective_concept is None
+        and _norm(preparation_regime) == "new_model"
+        and ois_creation_date is not None
+    ):
+        effective_concept = ois_creation_date
+    if effective_concept is None:
         return "UNRESOLVED"
-    return "ESF_ESS1_TO_ESS10" if concept_decision_date >= ES_REGIME_BOUNDARY else "LEGACY_SAFEGUARDS"
+    return "ESF_ESS1_TO_ESS10" if effective_concept >= ES_REGIME_BOUNDARY else "LEGACY_SAFEGUARDS"
 
 
 def op_7_50_screen(*, mentions_international_waterway: bool) -> bool:
