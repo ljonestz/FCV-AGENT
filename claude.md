@@ -18,7 +18,7 @@ Normal FCV and verified Climate now keep the rating sidebar in Summary and Detai
 mobile uses the existing collapsed disclosure. Climate shows separate sensitivity
 and responsiveness cards with short glosses and collapsed rationale. Responsiveness
 uses five contribution levels (very_limited through very_strong), with not_expected
-and unclear unscored. The judgment prompt is climate-judgments-v2.7; saved
+and unclear unscored. The judgment prompt is climate-judgments-v2.8; saved
 Emerging results remain visibly legacy and unscored. The approved scope message is:
 "Contributing to responsiveness is often a sign of going above and beyond. The
 expected contribution depends on the project's scope." Normal FCV's existing
@@ -356,7 +356,7 @@ Procfile            # Render deployment config
 
 **Climate-active dual-use contract (implemented on `codex/climate-fcv-output-redesign`):** Stage 1 runs reduced core research and one dedicated bounded trusted-source Climate pass concurrently, with one narrower retry. Stage 2 requires both directional interaction pathways with stable IDs, project/place/group/system anchors, causal steps, confidence, evidence gaps or research claim IDs, and current/project/asset-system horizons. Stage 3 retains both causal directions inside the 900-token lens ceiling and validates `climate_links` on every priority as either `linked` to recognized interaction/dividend/finding IDs or `no-material-pathway` with a concrete reason. Live HTML, shared HTML, and DOCX use the same narrative interactions, causal strips, qualitative dividend synthesis, and priority contribution panels. See `docs/20260723_climate_fcv_output_redesign_handoff.md`.
 
-**Bounded Climate evidence handoff:** Sonnet still performs exactly two targeted web searches. If it returns search results without the validated JSON bundle, a pure adapter retains only bounded note text, trusted cited source metadata, and a bounded project profile. Haiku receives that packet in a fresh single-turn request; the original prompt, tool-use blocks, encrypted result payloads, and full assistant conversation are not replayed. The ClimateResearchBundle schema and mandatory evidence gate are unchanged. Truncated structuring output is reported separately from missing sources.
+**Bounded Climate evidence handoff:** Sonnet performs two targeted web searches. If structuring is needed, Haiku continues the original native search messages, including encrypted result blocks, with further tool use disabled. No extra call is added. Fresh claims require a short source_excerpt matching a provider cited passage at the declared trusted source URL; downstream claim text is that passage, preserving measured quantities and qualifiers. Citation-split JSON text is joined without injected newlines. Missing matching passages fail the evidence gate; source metadata alone is insufficient. See the sector-lens reference for bounds and remaining acceptance limits.
 
 ```
 STAGE 1 — Context & Extraction
@@ -484,6 +484,11 @@ Limitation: browser-specific, not suitable for team collaboration or long-term a
 ## 3. Prompt Architecture
 
 ### 3.1 Where Prompts Live
+
+Verified Climate uses sector_lenses/climate_verified_prompts.py. All six stages
+share sensitivity/dividend calibration, commitment-status preservation and the
+current review date. Historical estimated approval dates do not establish current
+status. Source-proof and prompt versions are recorded in the sector-lens reference.
 
 ```python
 # app.py — top-level DEFAULT_PROMPTS dictionary

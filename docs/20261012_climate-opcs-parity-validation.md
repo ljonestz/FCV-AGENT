@@ -365,3 +365,68 @@ Local test-result record: output/20261012-dividends-regression-result.txt.
 The configured smoke service was rechecked as fix/climate-opcs-parity with commit
 auto-deploy enabled; final deployment SHA/health is recorded in draft PR #83.
 The service deployment is a software check, not live model/analytical acceptance.
+
+### Third authorized quality trial: analytical acceptance still withheld
+
+One paid run used the Great Lakes AF PID in test_documents, on fc34b77af113.
+Assessment ID: fb3f2859-32b1-40a6-8a51-d56ffdcd04ab. Server start/end were
+2026-10-12 18:43:43.904 / 18:47:19.823 UTC, about 217 seconds. The single Express
+request returned HTTP 200. Extraction retained 48,288 characters across 15 pages
+with no extraction warnings. Native encrypted research-context continuation worked
+live; the structuring call returned a valid bundle. The bundle covered Burundi,
+not DRC, and did not establish relevant CCDR coverage.
+
+Ratings were Moderate sensitivity and Limited responsiveness. Structural admission
+accepted three candidates; semantic review withheld two, leaving one priority and
+the partial-result warning. REC-001 promoted a required ESCP update to a completed
+one; REC-002 invented drafting placement and arrangements not verified by its
+cited target. REC-003 retained a conditional hazard-considerations proposal for
+Kasumbalesa/Kipushi feasibility work, but the narrative incorrectly characterized
+routine hazard screening as mainly responsiveness. This is sensitivity under the
+approved dividend rubric. Suppression remains appropriate and is not relaxed.
+
+Primary-source inspection found a research integrity failure: the model converted
+section 5.2 and footnote 118 into land-loss/hotspot statistics, and converted a
+200% sediment-loss projection to land-area degradation. The source is the World
+Bank's 2022 Burundi colline-landscape diagnostic:
+https://documents1.worldbank.org/curated/en/099930006302237433/pdf/P17682007885e00780b1cc093a09277df1a.pdf
+Its executive summary discusses sediment loss, not that claimed land-area metric.
+The false claim fed analytical context. Those three figures do not appear verbatim
+in visible exported HTML or Word, but that does not make the assessment acceptable.
+The original session, HTML and DOCX remain unchanged in local output/playwright
+files with prefix 20261012-quality3. Both visible exports contain no %% markers.
+The Summary screenshot shows the paired concise cards and partial-result notice.
+
+Offline follow-up requires each fresh research claim to provide a short exact
+source_excerpt matching a provider-supplied citation passage at the declared trusted
+URL. Claim prose is replaced by that passage, preserving its measured quantity and
+qualifiers. Mismatching numerical tokens, fabricated passages and wrong source URLs
+fail admission. Prompt excerpts are <=140 characters; the gate allows <=150, matching
+native cited_text's limit. Citation-split JSON text is joined without added newlines.
+This uses the existing native search/structuring calls; no new URL fetch or model
+call. Provider contracts: https://platform.claude.com/docs/en/agents-and-tools/tool-use/web-search-tool
+and https://platform.claude.com/docs/en/build-with-claude/citations.
+Passage provenance does not itself validate inferred project links or all semantics.
+
+All six verified stages now share sensitivity/dividend, planned/completed-status
+and review-date calibration. Drafting no longer invents relative placement.
+Summary's capitalized-stopword false rejection (After) is fixed without weakening
+number/entity/term grounding. The original raw Summary still fails an independent
+term check (rests); it has not been forced into the reader. Direct future verdict
+wording reduces that mismatch. Saved scope now follows authoritative multi-country
+reader metadata. AF timing is the applicable review, without assuming that an
+estimated July approval remains upcoming in October. OIS/current approval status
+remain unverified. Versions: facts 2.3, analysis 2.4, judgments/recommendations 2.8,
+review 2.9, drafting 1.2, reader 2.5.
+
+Focused offline results: 112 schema/frontend/reader checks passed; 51 source-proof,
+research transport and related checks passed. Full follow-up verification is recorded
+below once complete. The paid result is unaccepted; these fixes have not had another
+generation run. Production and ITS remain held, and PR #83 remains draft.
+
+Final follow-up suite: **1,414 passed in 478.55 seconds**, saved locally as
+output/20261012-quality3-followup-regression-result.txt. Staged diff checking passed;
+private run artifacts are excluded. The completed trial's actual Detailed view also
+shows both sidebar cards, no visible %% markers and no horizontal overflow at
+1440px. Its screenshot is 20261012-quality3-detailed.png. These checks do not
+regrade the archived result or validate new generation behavior.

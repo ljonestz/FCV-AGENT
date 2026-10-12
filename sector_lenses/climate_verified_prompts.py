@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from datetime import date
 
 from sector_lenses.climate_verified_schemas import (
     SEMANTIC_REVIEW_REASON_CODES,
@@ -27,6 +28,17 @@ SECURITY AND OUTPUT RULES
   prose outside it.
 
 CALIBRATION RULES
+- Review date: {date.today().isoformat()}. The upload is a document snapshot.
+  Past estimated appraisal or approval dates are not upcoming deadlines or proof
+  of current status. Keep actual current status unverified without current evidence;
+  refer to the applicable review, if still pending, rather than presume a future gate.
+- Routine climate hazard screening is sensitivity. Responsiveness requires an
+  evidenced wider peace or social dividend mechanism through climate-related
+  design or delivery within scope. Do not relabel routine risk management as
+  responsiveness merely because it improves climate resilience or design quality.
+- A required or planned update is not a completed update. Preserve proposed,
+  required, planned, ongoing and completed status. Should, shall, must or will
+  prepare/update an instrument does not prove that it is already updated or in use.
 - When you name an entity the document abbreviates, use the document's own
   expansion of that acronym verbatim, or keep the acronym - never invent or guess
   an expansion.
@@ -261,6 +273,9 @@ institutions, or findings. Do not copy, prefix, or slice executive_readout.
 Keep every paragraph plain text without Markdown or HTML. The summary contract
 is two or three paragraphs and 160 to 230 words. This is part of the existing
 judgment call; do not request a repair or second call.
+Use a direct opening verdict with recognizes or shows, grounded in the supplied
+responses and ratings. Avoid interpretive metaphors such as rests on a solid
+foundation; keep descriptive terms close to the supplied findings.
 Name relevance, sensitivity, responsiveness and operationalization explicitly
 in the synthesis. Aim for about 190 words. Prefer wording from the supplied
 facts and findings rather than introducing new terms, actors or actions.
@@ -337,11 +352,11 @@ set must contain exactly one current_document block of 90 to 160 words, targeted
 to the supplied current document and a specific section. Copy target_document and target_section exactly
 from one permitted_targets tuple
 in the cited operational-guidance entry; do not paraphrase either field.
-Begin the current_document text with a short placement note in plain prose (no
-square brackets) stating exactly where in that section the language should sit -
-for example "Add at the start of this section:" or "Place immediately after the
-paragraph on conflict-risk mapping:" - then give the drafting language. Never
-use square brackets, placeholder markers, TBD/TODO, or page numbers.
+Return the proposed paragraph itself; the target_section field supplies its
+destination. Do not prefix the paragraph with Add, Insert or Place instructions.
+Do not guess an exact position relative to sentences, tables or indicators whose
+placement is not shown in the evidence. Never use square brackets, placeholder
+markers, TBD/TODO, or page numbers.
 Label the block existing_commitment only when linked project evidence supports
 that status; otherwise use advisory_proposal.
 For advisory_proposal, make new roles, decision rules and timing visibly proposed

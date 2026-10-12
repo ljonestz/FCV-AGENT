@@ -488,7 +488,7 @@ def _project_cycle_for_operation(
         primary_label, secondary_label = "At concept stage", "During preparation"
     elif document_type in {"additional financing", "af"}:
         primary_label = "In the Additional Financing package"
-        secondary_label = "Before approval"
+        secondary_label = "At the applicable Additional Financing review"
     elif document_type == "restructuring":
         primary_label = "In the restructuring package"
         secondary_label = "During implementation"

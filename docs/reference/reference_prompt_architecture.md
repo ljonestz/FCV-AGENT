@@ -564,3 +564,22 @@ generic social benefits cannot justify responsiveness. Rates are scope-relative,
 not a theoretical maximum or proven peace impact. Retains five levels and unscored
 not_expected/unclear. Compiler v2.7 asks for one qualified limitation sentence <=35
 words; an optional dividend opportunity is not a required correction. No extra call.
+
+### 2026-10-12 quality3 calibration follow-up
+
+All six verified Climate stages distinguish routine sensitivity from evidenced
+wider peace/social dividends. Required/planned instrument updates cannot become
+completed commitments. Review-date context makes past estimated approval dates
+historical, without asserting the project's present status. Drafting returns the
+paragraph itself and its verified target_section; it does not invent placement
+relative to unseen paragraphs or indicators. Judgment openings use direct grounded
+verdicts instead of interpretive metaphors. Summary's entity guard recognizes
+ordinary capitalized stopwords; unsupported terms, numbers and entities still fail.
+The trial's original summary remains rejected by another grounding check.
+
+Research requires verbatim source_excerpt with native citations outside JSON.
+The existing calls preserve encrypted source context and join citation-split JSON
+without newlines; source passage matching precedes claim admission. Strict native
+output schemas remain on the six verified stages, not this citation-bearing research
+request. Versions: facts 2.3, analysis 2.4, judgments 2.8, recommendations 2.8,
+review 2.9, drafting 1.2. No repair or additional model call.

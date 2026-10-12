@@ -269,3 +269,28 @@ now highlights short limitations from admitted priorities between strengths and
 actions, preserving evidence qualifications and all withholding notices. Five-point
 values, normal-FCV categories, saved grades and model-call counts are unchanged.
 Candidate only; production/ITS and live analytical acceptance remain on hold.
+
+### 2026-10-12 third quality trial and source-proof follow-up
+
+Trial fb3f2859-32b1-40a6-8a51-d56ffdcd04ab completed on fc34b77 in about
+217 seconds, but remains analytically unaccepted. Native research continuation
+worked; research nevertheless misread section/footnote numbers and a sediment-loss
+projection. Fresh research now requires source_excerpt, requested <=140 characters
+and admitted only <=150, matching a provider cited_text/snippet at its declared
+trusted URL. Downstream claim prose is the matched passage itself; changed numeric
+tokens, fabricated passages and wrong URLs are rejected. Missing proof makes the
+bundle partial or failed. Existing normalization keeps old saved bundles readable;
+this gate applies to fresh research, not a retroactive certification of archives.
+
+app.py accumulates provider content from the existing search/continuation/structuring
+calls, joins citation-split text without injected newlines and checks proof before
+the existing evidence gate. No new fetch, search, dependency or model call. Matching
+passages verify provenance, not the project's inferred link or every interpretation.
+Research still requires analytical validation, including coverage of regional scope.
+
+Current versions: facts v2.3, analysis v2.4, judgments v2.8, recommendations v2.8,
+review v2.9, drafting v1.2; reader v2.5. Shared calibration treats routine hazard
+screening as sensitivity, requires a wider dividend mechanism for responsiveness,
+preserves planned versus completed commitments and leaves current status unverified
+when only historical estimated dates exist. AF timing is the applicable review.
+Production/ITS remain held; see the validation record for paid/offline boundaries.

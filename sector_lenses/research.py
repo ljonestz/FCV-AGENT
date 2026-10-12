@@ -7,6 +7,8 @@ import re
 from typing import Any
 from urllib.parse import urlparse
 
+from .climate_verified_schemas import validate_summary_fragment
+
 
 CLIMATE_RESEARCH_START = "%%%CLIMATE_RESEARCH_START%%%"
 CLIMATE_RESEARCH_END = "%%%CLIMATE_RESEARCH_END%%%"
@@ -152,6 +154,53 @@ def build_climate_evidence_packet(
     return packet
 
 
+def verify_climate_research_claims(bundle: dict[str, Any], content: Any) -> dict[str, Any]:
+    """Use matching provider source passages, never uncited model paraphrases."""
+    passages: dict[str, list[str]] = {}
+    for block in (content if isinstance(content, list) else [])[:40]:
+        kind = _block_value(block, "type")
+        items = _block_value(block, "citations", []) if kind == "text" else (
+            _block_value(block, "content", []) if kind == "web_search_tool_result" else []
+        )
+        for item in (items if isinstance(items, list) else [])[:8]:
+            url = _bounded(_block_value(item, "url"), 1000)
+            passage = str(_block_value(item, "cited_text") or _block_value(item, "snippet") or "").strip()
+            if not _trusted_https(url) or not passage or len(passage) > 6000:
+                continue
+            key = url.casefold().rstrip("/")
+            passages.setdefault(key, []).append(re.sub(r"\s+", " ", passage).casefold())
+
+    source_urls = {source["id"]: source["url"].casefold().rstrip("/")
+                   for source in bundle.get("sources", [])}
+    claims = []
+    for claim in bundle.get("claims", []):
+        quote = str(claim.get("source_excerpt") or "").strip()
+        if not quote or len(quote) > 150:
+            continue
+        normalized_quote = re.sub(r"\s+", " ", quote).casefold()
+        source_ids = [source_id for source_id in claim["source_ids"]
+                      if any(normalized_quote in passage for passage in
+                             passages.get(source_urls.get(source_id, ""), []))]
+        claim_numbers = set(re.findall(r"\b\d+(?:[.,]\d+)?", claim["claim"]))
+        quote_numbers = set(re.findall(r"\b\d+(?:[.,]\d+)?", quote))
+        if not source_ids or claim_numbers - quote_numbers or not validate_summary_fragment(
+            quote if quote.endswith((".", "!", "?")) else quote + ".", canonical_text=quote
+        ):
+            continue
+        # Preserve the source's measured quantity and qualifiers in downstream context.
+        claims.append({**claim, "claim": quote, "source_excerpt": quote, "source_ids": source_ids})
+    kept_ids = {claim["id"] for claim in claims}
+    original_ids = {claim["id"] for claim in bundle.get("claims", [])}
+    for claim in claims:
+        claim["conflicts_with"] = [value for value in claim.get("conflicts_with", [])
+                                  if value not in original_ids or value in kept_ids]
+    result = {**bundle, "claims": claims}
+    if len(claims) < len(bundle.get("claims", [])):
+        result["status"] = "partial" if claims else "failed"
+        result["failure_reason"] = "Some research claims lack a matching provider source passage."
+    return result
+
+
 def _attempt_count(value: Any) -> int:
     try:
         return min(max(int(value or 0), 0), 2)
@@ -228,7 +277,7 @@ asset. Do not return generic country statements. {scope}
 
 Return no prose. Return one JSON object between {CLIMATE_RESEARCH_START} and
 {CLIMATE_RESEARCH_END} using this exact shape:
-{{"status":"complete|partial|failed","attempts":1,"sources":[{{"id":"climate-source-1","source_type":"ccdr|world-bank|un|government|scientific|specialist|current-operations","title":"...","url":"https://...","publication_date":"...","location":"..."}}],"claims":[{{"id":"climate-claim-1","claim":"...","source_ids":["climate-source-1"],"geographies":["..."],"project_elements":["..."],"affected_groups":["..."],"systems_or_assets":["..."],"evidence_status":"observed|projected|inferred","confidence":"high|medium|low","time_horizons":["current-near-term|project-lifetime|asset-system-lifetime"],"evidence_gap":"..."}}],"failure_reason":""}}
+{{"status":"complete|partial|failed","attempts":1,"sources":[{{"id":"climate-source-1","source_type":"ccdr|world-bank|un|government|scientific|specialist|current-operations","title":"...","url":"https://...","publication_date":"...","location":"..."}}],"claims":[{{"id":"climate-claim-1","claim":"...","source_excerpt":"...","source_ids":["climate-source-1"],"geographies":["..."],"project_elements":["..."],"affected_groups":["..."],"systems_or_assets":["..."],"evidence_status":"observed|projected|inferred","confidence":"high|medium|low","time_horizons":["current-near-term|project-lifetime|asset-system-lifetime"],"evidence_gap":"..."}}],"failure_reason":""}}
 
 When a material contradiction is present, add optional claim fields
 "conflicts_with":["SSD-E-001|climate-claim-2"] and
@@ -241,6 +290,17 @@ asset. Use only exact HTTPS source URLs present in the search results.
 Keep source titles and publication dates faithful to the supplied search evidence.
 Do not label a country homepage as an uploaded project document or treat page age
 as a publication date. The project excerpt supplies project context, not a web citation.
+Every claim needs a short verbatim source_excerpt (one sentence or a self-contained
+clause, at most 140 characters) and a native web-source citation containing it.
+Native web citations contain at most 150 characters; do not request longer quotes.
+Use the provider's citation mechanism, not a citation invented inside JSON.
+Put the verbatim passage in claim as well; project linkage belongs in the separate
+geography, project-element, group and asset fields, not an unverified paraphrase.
+Keep measured quantities, units, periods, scenarios and qualifications intact.
+Section numbers and reference numbers are not statistics. A projected sediment
+loss must not become a projected loss of land area. Do not use catalogue summaries
+as evidence for an underlying report that was not retrieved. Return fewer claims
+when source passages cannot support more; never invent a quote to reach a count.
 """.strip()
 
 
@@ -476,6 +536,8 @@ def normalize_climate_research_bundle(payload: Any) -> dict[str, Any]:
         claims.append({
             "id": claim_id,
             "claim": claim,
+            "source_excerpt": str(item.get("source_excerpt") or "").strip()
+            if len(str(item.get("source_excerpt") or "")) <= 150 else "",
             "source_ids": source_ids,
             "geographies": _strings(item.get("geographies"), 4, 160),
             "project_elements": project_elements,
@@ -583,7 +645,12 @@ def climate_research_evidence_gate(payload: Any) -> dict[str, Any]:
         else "climate_research_insufficient"
     )
     failure_reason = str(bundle.get("failure_reason", "")).casefold()
-    if (
+    if "matching provider source passage" in failure_reason:
+        message = (
+            "Climate-FCV sources were found, but claims could not be grounded "
+            "in matching cited passages. Review the evidence before relying on them."
+        )
+    elif (
         code == "climate_research_failed"
         and "structuring was truncated" in failure_reason
     ):

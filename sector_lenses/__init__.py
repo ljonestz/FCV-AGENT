@@ -69,6 +69,7 @@ from .research import (
     extract_climate_research_bundle,
     format_climate_research_context,
     normalize_climate_research_bundle,
+    verify_climate_research_claims,
     summarize_climate_structuring_response,
 )
 from .context import (
@@ -157,6 +158,7 @@ __all__ = [
     "has_uploaded_ccdr",
     "normalize_lens_context_sources",
     "normalize_climate_research_bundle",
+    "verify_climate_research_claims",
     "summarize_climate_structuring_response",
     "LENS_DIAGNOSTIC_END",
     "LENS_DIAGNOSTIC_START",

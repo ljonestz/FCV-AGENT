@@ -443,3 +443,12 @@ slicing qualifications. It replaces the general bridge when present; no candidat
 or rejected diagnostics are used. Summary copying inherits the same readout.
 screenerCaveatHtml now respects scope and delivery constraints rather than maximum
 resources; normal-FCV rating values are unchanged.
+
+### 2026-10-12 authoritative saved Climate scope
+
+syncClimateCountryScope reads only single/multi from the verified reader's
+operation_context. renderOut at Stage 3, epSafeStore and saveSession apply it before
+display/checkpoint/export so regional assessments cannot be saved as single-country
+because of an earlier client default. Missing or invalid reader scope preserves the
+current value. The AF reader labels the applicable Additional Financing review
+without presuming an upcoming approval. Historical saved grades are unchanged.

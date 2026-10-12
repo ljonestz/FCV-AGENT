@@ -733,31 +733,31 @@ def test_manifest_is_privacy_safe_and_scoped_to_the_run():
     assert first["manifest"]["run_id"] == "run-test"
     assert second["manifest"]["run_id"] == "run-two"
     assert first["manifest"]["source_count"] == 1
-    assert first["manifest"]["renderer_version"] == "climate-reader-v2.4"
+    assert first["manifest"]["renderer_version"] == "climate-reader-v2.5"
     assert first["manifest"]["extraction_version"] == "source-blocks-v3"
     assert (
         first["manifest"]["prompt_versions"]["fact_extraction"]
-        == "climate-facts-v2.2"
+        == "climate-facts-v2.3"
     )
     assert (
         first["manifest"]["prompt_versions"]["bounded_analysis"]
-        == "climate-analysis-v2.3"
+        == "climate-analysis-v2.4"
     )
     assert (
         first["manifest"]["prompt_versions"]["judgment_review"]
-        == "climate-judgments-v2.7"
+        == "climate-judgments-v2.8"
     )
     assert (
         first["manifest"]["prompt_versions"]["recommendation_compiler"]
-        == "climate-recommendations-v2.7"
+        == "climate-recommendations-v2.8"
     )
     assert (
         first["manifest"]["prompt_versions"]["conditional_review"]
-        == "climate-review-v2.8"
+        == "climate-review-v2.9"
     )
     assert (
         first["manifest"]["prompt_versions"]["drafting_compiler"]
-        == "climate-drafting-v1.1"
+        == "climate-drafting-v1.2"
     )
     assert set(first["manifest"]["prompt_versions"]) == {
         "fact_extraction",

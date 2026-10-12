@@ -232,7 +232,7 @@ def validate_summary_fragment(
                 return reject("SUMMARY_ENTITY_UNSUPPORTED", entity)
         for match in _SUMMARY_CAPITALIZED_RE.finditer(fragment):
             token = match.group(0).casefold()
-            if token in _SUMMARY_ALLOWED_SINGLE_WORDS | _SUMMARY_CONNECTIVE_TOKENS:
+            if token in _SUMMARY_ALLOWED_SINGLE_WORDS | _SUMMARY_CONNECTIVE_TOKENS | _SUMMARY_STOPWORDS:
                 continue
             if token not in canonical_words:
                 return reject("SUMMARY_ENTITY_UNSUPPORTED", token)

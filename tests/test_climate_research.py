@@ -438,6 +438,10 @@ def _valid_climate_response():
     bundle = _valid_bundle()
     bundle["sources"].append(_second_authoritative_source())
     bundle["claims"][0]["source_ids"].append("climate-source-2")
+    quote = bundle["claims"][0]["claim"]
+    bundle["claims"][0]["source_excerpt"] = quote
+    citations = [SimpleNamespace(url=source["url"], cited_text=quote)
+                 for source in bundle["sources"]]
     return SimpleNamespace(content=[
         SimpleNamespace(
             type="text",
@@ -446,19 +450,24 @@ def _valid_climate_response():
                 + json.dumps(bundle)
                 + CLIMATE_RESEARCH_END
             ),
+            citations=citations,
         )
     ])
 
 
 def _insufficient_but_structured_climate_response():
+    bundle = _valid_bundle()
+    quote = bundle["claims"][0]["claim"]
+    bundle["claims"][0]["source_excerpt"] = quote
     return SimpleNamespace(content=[
         SimpleNamespace(
             type="text",
             text=(
                 CLIMATE_RESEARCH_START
-                + json.dumps(_valid_bundle())
+                + json.dumps(bundle)
                 + CLIMATE_RESEARCH_END
             ),
+            citations=[SimpleNamespace(url=bundle["sources"][0]["url"], cited_text=quote)],
         )
     ])
 

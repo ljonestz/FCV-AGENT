@@ -49,6 +49,7 @@ from sector_lenses import (
     CLIMATE_RESEARCH_END,
     CLIMATE_RESEARCH_START,
     extract_climate_research_bundle,
+    verify_climate_research_claims,
     format_climate_research_context,
     summarize_climate_structuring_response,
     merge_climate_grounding,
@@ -8087,11 +8088,13 @@ def run_climate_web_research(
                 }],
                 "betas": ["web-search-2025-03-05"],
             }
+            provider_content = []
             response = api_client.beta.messages.create(
                 **request_options,
                 messages=messages,
                 timeout=min(remaining, CLIMATE_RESEARCH_ATTEMPT_CAP_SECONDS),
             )
+            provider_content.extend(response.content)
             if getattr(response, "stop_reason", "") == "pause_turn":
                 block_types = [
                     getattr(block, "type", "unknown")
@@ -8127,7 +8130,8 @@ def run_climate_web_research(
                     messages=messages,
                     timeout=continuation_timeout,
                 )
-            text = "\n".join(
+                provider_content.extend(response.content)
+            text = "".join(
                 block.text
                 for block in response.content
                 if getattr(block, "type", "") == "text"
@@ -8215,12 +8219,14 @@ def run_climate_web_research(
                         timeout=structure_timeout,
                     )
                     structured_response = True
-                    text = "\n".join(
+                    provider_content.extend(response.content)
+                    text = "".join(
                         block.text
                         for block in response.content
                         if getattr(block, "type", "") == "text"
                     )
             _, bundle = extract_climate_research_bundle(text)
+            bundle = verify_climate_research_claims(bundle, provider_content)
             bundle["attempts"] = attempt
             gate = climate_research_evidence_gate(bundle)
             if structured_response:

@@ -3338,6 +3338,7 @@
 
   // ── Session persistence ─────────────────────────────────────────────────────
   function saveSession(){
+    syncClimateCountryScope();
     const state = {
       version: 3,
       savedAt: new Date().toISOString(),
@@ -5236,8 +5237,14 @@
       +'</div></div>';
   }
 
+  function syncClimateCountryScope(){
+    const scope=climateVerifiedReader?.operation_context?.country_scope;
+    if(scope==='single'||scope==='multi')countryScope=scope;
+  }
+
   function renderOut(stage,result,isFollowOn){
     const isLast=stage===3;
+    if(isLast)syncClimateCountryScope();
     const c=CALLS[stage];
     const _verifiedV2=!!(isLast&&climateVerifiedAssessment&&climateVerifiedAssessment.schema_version==='climate-verified-v2.1'&&climateVerifiedReader);
     const _supportsClimateStage3=isLast&&supportsClimateVerifiedStage3View();
@@ -5796,6 +5803,7 @@
 
   // Silently write express checkpoint to localStorage; fails gracefully if quota exceeded
   function epSafeStore(outputs,hists,curStage){
+    syncClimateCountryScope();
     try{localStorage.setItem('fcv_express_stageOutputs',JSON.stringify(outputs));}catch(e){}
     try{localStorage.setItem('fcv_express_stageHists',JSON.stringify(hists));}catch(e){}
     try{localStorage.setItem('fcv_express_curS',curStage);}catch(e){}

@@ -107,6 +107,7 @@ let midCycleWatch = [], dpfWatch = [], p4rWatch = [], regionalWatch = [];
 let horizonConsiderations = '';
 let docType = 'PAD', instrumentType = 'IPF', countryScope = 'single';
 const lensVersions = () => ({{}});
+const syncClimateCountryScope=()=>{{}};
 {checkpoint}
 epSafeStore({{}}, {{}}, 3);
 const saved = JSON.parse(localStorage.getItem('fcv_express_lensState'));
