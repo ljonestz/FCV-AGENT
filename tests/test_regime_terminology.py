@@ -54,6 +54,12 @@ def test_new_model_ipf_reference_set_corrections():
     assert "applicable esss" in joined              # replaces standalone ESS1
 
 
+def test_new_model_ipf_ddo_gets_ess_checks():
+    # IPF-DDO is IPF under the policy, so ESS apply and the ESF reference set is used.
+    refs = app_module.appraisal_reference_set("new_model", "ESF_ESS1_TO_ESS10", "IPF-DDO")
+    assert "applicable esss" in " ".join(refs).lower()
+
+
 def test_non_esf_instrument_omits_ess_checks():
     refs = app_module.appraisal_reference_set("new_model", "INSTRUMENT_SPECIFIC", "PforR")
     assert not any("ess" in r.lower() for r in refs)

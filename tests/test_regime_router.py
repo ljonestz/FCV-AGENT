@@ -129,6 +129,26 @@ def test_es_non_ipf_is_instrument_specific():
     assert rr.classify_es_regime(instrument="DPO", concept_decision_date=dt.date(2010, 1, 1)) == "INSTRUMENT_SPECIFIC"
 
 
+def test_new_model_ipf_without_concept_date_resolves_to_esf_via_ois():
+    # New-model IPF has no Concept Review; the OIS decision confirms the ESRC and is
+    # well after the 1 Oct 2018 ESF trigger, so ESF applies rather than UNRESOLVED.
+    assert rr.classify_es_regime(
+        instrument="IPF", concept_decision_date=None,
+        preparation_regime="new_model", ois_creation_date=dt.date(2026, 4, 18),
+    ) == "ESF_ESS1_TO_ESS10"
+    # IPF-DDO (IPF family) resolves the same way under the new model.
+    assert rr.classify_es_regime(
+        instrument="IPF-DDO", concept_decision_date=None,
+        preparation_regime="new_model", ois_creation_date=dt.date(2026, 4, 18),
+    ) == "ESF_ESS1_TO_ESS10"
+    # Legacy / unresolved with no concept date is unchanged (still UNRESOLVED).
+    assert rr.classify_es_regime(instrument="IPF", concept_decision_date=None) == "UNRESOLVED"
+    assert rr.classify_es_regime(
+        instrument="IPF", concept_decision_date=None,
+        preparation_regime="legacy_transitional", ois_creation_date=dt.date(2026, 1, 1),
+    ) == "UNRESOLVED"
+
+
 def test_es_op_bp_4_03_takes_precedence():
     assert rr.classify_es_regime(
         instrument="IPF", concept_decision_date=dt.date(2022, 1, 1), op_bp_4_03_applies=True,

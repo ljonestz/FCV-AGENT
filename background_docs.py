@@ -1589,9 +1589,11 @@ approval-authority, eligibility, or waiver determinations. Direct the task team 
 verify procedural questions with OPCS, LEG, and regional management.
 
 ### Change-type taxonomy for FCV screening
-- PDO change: Level 2 / RVP or CD-DD advisory signal in this audit-resolved build.
-  Reassess whether the revised PDO still addresses the FCV drivers identified at
-  approval, and whether conflict-affected groups are quietly diluted or dropped.
+- PDO change: Level 2 / RVP advisory signal (the CD concurs and the RVP decides).
+  A significant PDO change may be referred by management to the Board, but that is a
+  management judgement, not an automatic Board case. Reassess whether the revised PDO
+  still addresses the FCV drivers identified at approval, and whether conflict-affected
+  groups are quietly diluted or dropped.
 - Component add/drop and scope / geographic change: Level 2 advisory signal. Check
   whether the change shifts resources away from high-FCV areas or adds activities
   with new harm pathways in contested locations.
@@ -1607,6 +1609,8 @@ verify procedural questions with OPCS, LEG, and regional management.
   conflict-actor exposure, perceived partiality, and capacity in contested areas.
 - E&S risk re-rating: Level 2 advisory signal. Check whether the re-rating reflects
   conflict-driven SEA/SH, displacement, security, labour influx, or stakeholder risks.
+- Safeguard/E&S category change to Category A (from a lesser category): narrow Level 1
+  / Board case (Level 1 restructurings are Board-approved; Level 2 are management-approved).
 - Alternative Procurement Arrangements: narrow Level 1 / Board case.
 - Bank Guarantee expiration-date extension: narrow Level 1 / Board case.
 
