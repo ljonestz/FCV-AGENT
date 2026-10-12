@@ -1589,9 +1589,11 @@ approval-authority, eligibility, or waiver determinations. Direct the task team 
 verify procedural questions with OPCS, LEG, and regional management.
 
 ### Change-type taxonomy for FCV screening
-- PDO change: Level 2 / RVP or CD-DD advisory signal in this audit-resolved build.
-  Reassess whether the revised PDO still addresses the FCV drivers identified at
-  approval, and whether conflict-affected groups are quietly diluted or dropped.
+- PDO change: Level 2 / RVP advisory signal (the CD concurs and the RVP decides).
+  A significant PDO change may be referred by management to the Board, but that is a
+  management judgement, not an automatic Board case. Reassess whether the revised PDO
+  still addresses the FCV drivers identified at approval, and whether conflict-affected
+  groups are quietly diluted or dropped.
 - Component add/drop and scope / geographic change: Level 2 advisory signal. Check
   whether the change shifts resources away from high-FCV areas or adds activities
   with new harm pathways in contested locations.
@@ -1607,6 +1609,8 @@ verify procedural questions with OPCS, LEG, and regional management.
   conflict-actor exposure, perceived partiality, and capacity in contested areas.
 - E&S risk re-rating: Level 2 advisory signal. Check whether the re-rating reflects
   conflict-driven SEA/SH, displacement, security, labour influx, or stakeholder risks.
+- Safeguard/E&S category change to Category A (from a lesser category): narrow Level 1
+  / Board case (Level 1 restructurings are Board-approved; Level 2 are management-approved).
 - Alternative Procurement Arrangements: narrow Level 1 / Board case.
 - Bank Guarantee expiration-date extension: narrow Level 1 / Board case.
 
@@ -1838,7 +1842,8 @@ Surface as advisory, never a determination: OP 7.30 limits, no rapid-response va
 disbursement-cliff exposure can make P4R demanding or "effectively unusable" in some conflict
 settings given its reliance on government systems and low-capacity FCS constraints - suggest
 discussing instrument choice (a complementary IPF component / TA, or a different instrument)
-with the regional FCV coordinator. Note that OPS5.04-POL.125 para 12 provides a
+with the regional FCV coordinator. Note that the Rapid Response to Crises and Emergencies Policy
+(OPS5.08-POL.125) and the dedicated "Provision of a Rapid Response Option (RRO)" Procedure provide a
 **Rapid Response Option (RRO)** allowing accelerated processing for emergency circumstances - flag
 RRO as a potential partial mitigant to disbursement-cliff exposure where the program faces
 a plausible emergency scenario, without asserting it resolves the underlying feasibility
@@ -1906,7 +1911,9 @@ MPA_MODULE_GUIDE = """
 ## MPA (Multiphase Programmatic Approach) Wrapper - FCV Screening Guide
 
 The MPA is a program-and-phase **wrapper, not a new analytical spine**: each phase is itself an
-IPF or P4R operation under current WBG MPA policy (OPS5.01-POL/DIR) - DPF/DPO is not itself an
+IPF or P4R operation under current WBG MPA guidance (the "Multiphase Programmatic Approach" Bank
+Guidance; MPA provisions also sit within the IPF and PforR Policies, not a standalone OPS5.01
+instrument) - DPF/DPO is not itself an
 MPA phase instrument; a DPO series uses its own distinct programmatic-series mechanism (see
 `FCV_INSTRUMENT_CALIBRATION` "Programmatic series risk"), not the MPA wrapper. Route each phase
 to its base-instrument module and add the MPA program layer on top. Composes with the

@@ -4016,6 +4016,8 @@ def extract_regime_context(stage1_output: str, instrument: str = "IPF") -> dict:
         is_af=fields["additional_financing_exception_applies"],
         parent_under_safeguard_policies=fields["additional_financing_exception_applies"],
         af_exclusively_cost_overrun_or_gap=fields["additional_financing_exception_applies"],
+        preparation_regime=fields["preparation_regime"],
+        ois_creation_date=ois,
     )
     if (fields["preparation_regime"] == "unresolved_policy_source"
             or fields["es_regime"] == "UNRESOLVED"):
@@ -4040,6 +4042,10 @@ def appraisal_document_label(preparation_regime: str, instrument: str) -> str:
         if inst in {"pforr", "p4r", "program-for-results"}:
             return "Program Paper"
         return "Project Paper"
+    # Legacy / unresolved: DPF has always used a Program Document (not a PAD);
+    # IPF and PforR default to the PAD label.
+    if inst in {"dpo", "dpf"}:
+        return "Program Document"
     return "Project Appraisal Document (PAD)"
 
 
@@ -4054,7 +4060,7 @@ def appraisal_reference_set(preparation_regime: str, es_regime: str, instrument:
         return LEGACY_PAD_MINIMUM_REFERENCE_SET
     esf = (
         str(es_regime or "").strip().upper() == "ESF_ESS1_TO_ESS10"
-        and str(instrument or "").strip().lower() == "ipf"
+        and str(instrument or "").strip().lower() in {"ipf", "ipf-ddo"}
     )
     if esf:
         return NEW_MODEL_MINIMUM_REFERENCE_SET

@@ -8,7 +8,10 @@ def test_appraisal_document_label_per_regime():
     assert app_module.appraisal_document_label("new_model", "PforR") == "Program Paper"
     assert app_module.appraisal_document_label("new_model", "DPO") == "Program Document"
     assert app_module.appraisal_document_label("legacy_transitional", "IPF") == "Project Appraisal Document (PAD)"
-    # Unresolved regime falls back to the legacy PAD label (safe default).
+    # Legacy DPF has always used a Program Document, never a PAD.
+    assert app_module.appraisal_document_label("legacy_transitional", "DPO") == "Program Document"
+    assert app_module.appraisal_document_label("unresolved_policy_source", "DPF") == "Program Document"
+    # Unresolved regime falls back to the legacy PAD label (safe default) for IPF.
     assert app_module.appraisal_document_label("unresolved_policy_source", "IPF") == "Project Appraisal Document (PAD)"
 
 
@@ -49,6 +52,12 @@ def test_new_model_ipf_reference_set_corrections():
     assert "operations manual" not in joined        # REMOVED from universal minimum
     assert "ess1" not in joined                     # standalone ESS1 replaced
     assert "applicable esss" in joined              # replaces standalone ESS1
+
+
+def test_new_model_ipf_ddo_gets_ess_checks():
+    # IPF-DDO is IPF under the policy, so ESS apply and the ESF reference set is used.
+    refs = app_module.appraisal_reference_set("new_model", "ESF_ESS1_TO_ESS10", "IPF-DDO")
+    assert "applicable esss" in " ".join(refs).lower()
 
 
 def test_non_esf_instrument_omits_ess_checks():
