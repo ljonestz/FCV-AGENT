@@ -98,3 +98,23 @@ the three other pre-existing full-suite failures remain outside this change.
 The full suite has not been rerun after this follow-up. Local saved-session replay
 confirmed desktop Summary/Details and the mobile disclosure. The local static
 preview has expected API 404s and is not a backend acceptance run.
+
+## Production-readiness follow-up (in progress)
+
+The user authorized remaining fixes and one paid acceptance run. The run has not
+yet been used. Offline checks of the actual PDF through the application's own
+extractor now resolve Burundi and DRC, multi-country scope, AF/IPF and ESF.
+The parser excludes the adjacent DRC-Angola geographic corridor from beneficiaries.
+Preparation remains unresolved because the PID does not establish the OIS date;
+the browser and exports now state that limitation. No date was inferred.
+
+Metadata helpers now disable adaptive thinking and safely collect text blocks;
+the previous first-block assumption could silently return Unknown. E&S markers
+are checked throughout retained primary evidence. No new API call was added.
+
+Offline verification: seven metadata tests pass; 67 related routing/bank tests
+passed before the final combined-column regression; 99 reader/export tests pass;
+16 final metadata/sidebar/export checks pass. Saved Emerging results remain
+readable as legacy while new judgment validation requires the five-point scale.
+All three remaining baseline fixture defects were reproduced and corrected.
+Full suite and live quality/export acceptance are in progress.

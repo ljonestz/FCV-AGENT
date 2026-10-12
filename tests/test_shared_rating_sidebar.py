@@ -74,7 +74,25 @@ def test_summary_keeps_shared_sidebar_and_verified_climate_uses_it():
     assert 'climateVerifiedRatingCards(climateVerifiedReader)' in source
 
 
+def test_mobile_utility_bar_height_override_follows_desktop_rule():
+    source = INDEX.read_text(encoding="utf-8")
+    assert source.index('.session-bar{height:auto;') > source.index('.session-bar{display:flex;')
+
+
 def test_live_detailed_avoids_duplicate_old_sensitivity_panel():
     source = INDEX.read_text(encoding="utf-8")
     assert 'renderClimateVerifiedAssessment(climateVerifiedReader,true)' in source
     assert "ratingsInSidebar?'':" in _extract_js_function(source, "renderClimateVerifiedAssessment")
+
+
+def test_exports_include_responsiveness_contribution_and_scope(tmp_path):
+    from docx import Document
+    from sector_lenses.climate_verified_render import render_reader_html, write_reader_docx
+    reader = {"judgments": [{"dimension": "responsiveness", "value": "moderate"}]}
+    output = tmp_path / "report.docx"
+    write_reader_docx(reader, output)
+    doc_text = "\n".join(p.text for p in Document(output).paragraphs)
+    for text in [render_reader_html(reader), doc_text]:
+        assert "Moderate contribution" in text
+        assert "often a sign of going above and beyond" in text
+        assert "Very limited / Limited / Moderate / Strong / Very strong" in text

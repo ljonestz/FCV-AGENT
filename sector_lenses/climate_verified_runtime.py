@@ -67,6 +67,40 @@ class PreparedClimateSources:
     blocks: tuple[SourceBlock, ...]
     warning_codes: tuple[str, ...]
     structured_fields: tuple[SourceBlock, ...] = ()
+    beneficiary_countries: tuple[str, ...] = ()
+
+
+def extract_beneficiary_countries(text: str) -> tuple[str, ...]:
+    """Read the explicit PID field before source normalization loses table lines.
+
+    Only the first value line is authoritative here; the adjacent geographic
+    identifier may name neighboring countries that are not beneficiaries.
+    Ambiguous layouts fall back to the existing metadata extraction path.
+    """
+    match = re.search(
+        r"(?im)^[ \t]*Beneficiary Country/Countries[ \t]*"
+        r"(?P<inline_geo>Geographical Identifier)?[ \t]*\r?\n"
+        r"\s*(?:Geographical Identifier[ \t]*\r?\n\s*)?(?P<value>[^\r\n]+)",
+        str(text or "")[:8_000],
+    )
+    if not match:
+        return ()
+    value = match.group("value").strip()
+    if match.group("inline_geo"):
+        # PDF plain-text extraction can concatenate both columns. Recognize a
+        # distinct upper-case corridor code; otherwise leave the layout unresolved.
+        corridor = re.search(r"\s+[A-Z]{2,4}\s+[-–]\s+[^\d]+$", value)
+        if not corridor:
+            return ()
+        value = value[:corridor.start()].strip()
+    if not value or len(value) > 250 or re.search(r"\d|[:/]|practice area|borrower", value, re.I):
+        return ()
+    # Preserve commas in inverted official names, e.g. Congo, Democratic Republic of.
+    names = re.split(
+        r";|,(?!\s*(?:Democratic Republic of|Republic of|Dem\.|Rep\.|Fed\.|RB\b))",
+        value, flags=re.I,
+    )
+    return tuple(dict.fromkeys(name.strip() for name in names if name.strip()))
 
 
 @dataclass(frozen=True)
@@ -369,7 +403,7 @@ def resolve_verified_operation_context(
 
     country_scope = (
         "multi"
-        if _context_matches(
+        if len(prepared.beneficiary_countries) > 1 or _context_matches(
             r"\bmulti(?:-| )country\b|\bregional (?:project|program|programme|operation)\b|"
             r"\bparticipating countries\b",
             filenames,
@@ -449,17 +483,17 @@ def resolve_verified_operation_context(
     if normalized_instrument in {"pforr", "p4r", "dpf", "dpo"}:
         es_regime = "INSTRUMENT_SPECIFIC"
     elif normalized_instrument == "ipf":
-        if re.search(r"\b(?:op|bp)\s*4\.03\b", source_head):
+        if re.search(r"\b(?:op|bp)\s*4\.03\b", source_text):
             es_regime = "PERFORMANCE_STANDARDS_OP_BP_4_03"
-        elif re.search(r"\b(?:safeguard policies|op 4\.01|bp 4\.01)\b", source_head):
-            if re.search(r"\b(?:esf|esrs|escp|environmental and social framework)\b", source_head):
+        elif re.search(r"\b(?:safeguard policies|op 4\.01|bp 4\.01)\b", source_text):
+            if re.search(r"\b(?:esf|esrs|escp|environmental and social framework)\b", source_text):
                 es_regime = "UNRESOLVED"
                 warnings.append("ES_REGIME_CONFLICT")
             else:
                 es_regime = "LEGACY_SAFEGUARDS"
         elif re.search(
             r"\b(?:esf|esrs|escp|environmental and social framework)\b",
-            source_head,
+            source_text,
         ):
             es_regime = "ESF_ESS1_TO_ESS10"
         else:
@@ -621,6 +655,7 @@ def prepare_verified_sources(
         and str(item.get("raw_text") or "").strip()
     )
     warnings: list[str] = []
+    beneficiary_countries: tuple[str, ...] = ()
     if primary_count > 1:
         warnings.append("PRIMARY_DOCUMENT_PRECEDENCE_UNRESOLVED")
     elif primary_count == 1:
@@ -666,6 +701,7 @@ def prepare_verified_sources(
             if not is_primary:
                 warnings.append("PACKAGE_FACT_AUTHORITY_WITHHELD")
             continue
+        beneficiary_countries = extract_beneficiary_countries(raw_text)
         for paragraph_index, text in enumerate(_chunks(raw_text, block_size)):
             normalized_hash = _sha256(
                 f"{document_id}|p:{paragraph_index}|{text}"
@@ -715,6 +751,7 @@ def prepare_verified_sources(
         blocks=bounded,
         warning_codes=tuple(dict.fromkeys(warnings)),
         structured_fields=tuple(structured_fields),
+        beneficiary_countries=beneficiary_countries,
     )
 
 

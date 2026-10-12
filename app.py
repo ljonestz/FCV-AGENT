@@ -30,6 +30,7 @@ from sector_lenses.climate_runtime_config import load_verified_climate_runtime
 from sector_lenses.climate_verified_client import AnthropicVerifiedJsonClient
 from sector_lenses.climate_verified_pipeline import PipelineClients
 from sector_lenses.climate_verified_runtime import (
+    extract_beneficiary_countries,
     prepare_verified_sources,
     resolve_verified_operation_context,
     run_verified_from_doc_parts,
@@ -7807,11 +7808,15 @@ def extract_country_name(project_doc_text: str, api_client) -> str:
     """Extract the country name from the first portion of a project document.
     Uses Haiku (trivial classification task). Timeout handled by httpx client.
     """
+    countries = extract_beneficiary_countries(project_doc_text)
+    if countries:
+        return "; ".join(countries)
     snippet = project_doc_text[:4000]
     try:
         resp = api_client.messages.create(
             model=MODEL_LIGHT,
-            max_tokens=50,
+            max_tokens=128,
+            thinking={"type": "disabled"},
             messages=[{
                 "role": "user",
                 "content": (
@@ -7821,7 +7826,7 @@ def extract_country_name(project_doc_text: str, api_client) -> str:
                 )
             }]
         )
-        country = resp.content[0].text.strip().strip('.').strip('"').strip("'")
+        country = " ".join(getattr(block, "text", "") for block in resp.content).strip().strip('.').strip('"').strip("'")
         return country if country else "Unknown"
     except Exception:
         return "Unknown"
@@ -7836,7 +7841,8 @@ def extract_sector_name(project_doc_text: str, api_client) -> str:
     try:
         resp = api_client.messages.create(
             model=MODEL_LIGHT,
-            max_tokens=50,
+            max_tokens=128,
+            thinking={"type": "disabled"},
             messages=[{
                 "role": "user",
                 "content": (
@@ -7848,7 +7854,7 @@ def extract_sector_name(project_doc_text: str, api_client) -> str:
                 )
             }]
         )
-        sector = resp.content[0].text.strip().strip('.').strip('"').strip("'")
+        sector = " ".join(getattr(block, "text", "") for block in resp.content).strip().strip('.').strip('"').strip("'")
         return sector if sector else "Development"
     except Exception:
         return "Development"

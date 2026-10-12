@@ -96,6 +96,7 @@ const localStorage = {{
 }};
 let activeLenses = [], lensDiagnostic = {{}}, lensContextSources = [];
 let climateResearch = {{}}, climateGrounding = {{}};
+let researchBrief = '', researchCountry = '';
 let climateVerifiedAssessment = null, climateVerifiedReader = null;
 let stageConciseReadout = null, stageThreePriorities = [];
 let fcvRating = 'Adequate', fcvResponsivenessRating = 'Emerging';

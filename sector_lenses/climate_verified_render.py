@@ -13,10 +13,15 @@ from docx import Document
 
 from climate_question_bank import CLIMATE_LITERATURE_REFERENCES
 from sector_lenses.climate_judgments import ALLOWED
+
 from sector_lenses.climate_verified_schemas import (
     validate_summary_fragment,
     validate_summary_overview,
 )
+
+# Saved assessments remain readable; generation is still checked against ALLOWED.
+# The UI and exports label Emerging as legacy and never assign it a new score.
+_READER_ALLOWED = {**ALLOWED, "responsiveness": ALLOWED["responsiveness"] | {"emerging"}}
 
 
 DIMENSIONS = (
@@ -988,7 +993,7 @@ def validate_reader_model(model: dict[str, object]) -> tuple[str, ...]:
         issues.append("JUDGMENT_DIMENSIONS_INCOMPLETE")
     for judgment in judgments:
         dimension = _text(judgment.get("dimension"))
-        if _text(judgment.get("value")) not in ALLOWED.get(dimension, set()):
+        if _text(judgment.get("value")) not in _READER_ALLOWED.get(dimension, set()):
             issues.append("JUDGMENT_VALUE_INVALID")
         rationale = _text(judgment.get("rationale"))
         if not rationale or rationale[-1:] not in ".?!":
@@ -1190,6 +1195,26 @@ def _purpose_band_html(class_name: str, label: str, text: str, icon: str) -> str
     )
 
 
+def _responsiveness_readout(model: dict[str, object]) -> tuple[str, ...]:
+    judgment = next((item for item in _records(model.get("judgments"))
+                     if item.get("dimension") == "responsiveness"), None)
+    if not judgment:
+        return ()
+    value = _text(judgment.get("value")) or "unclear"
+    label = {
+        "not_expected": "Not expected for this project",
+        "unclear": "Unclear",
+        "emerging": "Emerging (legacy scale; reassessment needed)",
+    }.get(value, value.replace("_", " ").capitalize() + " contribution")
+    return (
+        "Climate & FCV responsiveness: " + label,
+        "Contributing to responsiveness is often a sign of going above and beyond. "
+        "The expected contribution depends on the project's scope.",
+        "Contribution scale: Very limited / Limited / Moderate / Strong / Very strong. "
+        "Not expected and Unclear are unscored.",
+    )
+
+
 def render_reader_html(model: dict[str, object]) -> str:
     """Render escaped HTML from the canonical reader dictionary."""
 
@@ -1208,6 +1233,8 @@ def render_reader_html(model: dict[str, object]) -> str:
         )
     operation_context = _mapping(model.get("operation_context"))
     drafting_route = _drafting_route_gate(operation_context)
+    if operation_context.get("preparation_regime") == "unresolved_policy_source":
+        parts.append("<p>Preparation route: confirm the OIS date and applicable review; the upload does not establish them.</p>")
     if operation_context and not drafting_route["confirmed"]:
         parts.append(
             "<p>Suggested document wording is not shown because the "
@@ -1219,6 +1246,8 @@ def render_reader_html(model: dict[str, object]) -> str:
     rating = _mapping(model.get("climate_sensitivity_rating"))
     if rating:
         parts.append(_sensitivity_rating_html(rating, model.get("summary_overview")))
+    for paragraph in _responsiveness_readout(model):
+        parts.append("<p>" + html.escape(paragraph) + "</p>")
 
     parts.append(_heading(2, HEADINGS[0]))
     for _exec_para in re.split(r"\n\s*\n+", _text(model.get("executive_readout")).strip()):
@@ -1533,6 +1562,8 @@ def write_reader_docx(model: dict[str, object], path: str | Path) -> Path:
             paragraph.runs[0].bold = True
     operation_context = _mapping(model.get("operation_context"))
     drafting_route = _drafting_route_gate(operation_context)
+    if operation_context.get("preparation_regime") == "unresolved_policy_source":
+        document.add_paragraph("Preparation route: confirm the OIS date and applicable review; the upload does not establish them.")
     if operation_context and not drafting_route["confirmed"]:
         document.add_paragraph(
             "Suggested document wording is not shown because the document "
@@ -1565,6 +1596,8 @@ def write_reader_docx(model: dict[str, object], path: str | Path) -> Path:
         caveat = document.add_paragraph(_text(rating.get("caveat")))
         if caveat.runs:
             caveat.runs[0].italic = True
+    for paragraph in _responsiveness_readout(model):
+        document.add_paragraph(paragraph)
     document.add_heading(HEADINGS[0], level=1)
     for _exec_para in re.split(r"\n\s*\n+", _text(model.get("executive_readout")).strip()):
         _exec_para = _exec_para.strip()
@@ -1822,7 +1855,7 @@ def _legacy_summary_overview(
         )
         if (
             dimension in valid_dimensions
-            and value in ALLOWED.get(dimension, set())
+            and value in _READER_ALLOWED.get(dimension, set())
             and rationale
             and rationale[-1:] in ".?!"
             and validate_summary_fragment(rationale, canonical_text=canonical_text)

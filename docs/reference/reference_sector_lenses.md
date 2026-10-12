@@ -214,3 +214,11 @@ Emerging results are preserved by the reader and displayed as legacy, without a
 numeric bar. Reassessment is required for a five-point value. Both live Summary
 and Detailed use the shared two-card sidebar and mobile disclosure. Normal FCV's
 existing scale is unchanged. Existing standalone exports retain their report layout.
+
+Production-readiness corrections: PID beneficiary fields are preserved before
+normalization and establish regional scope; adjacent geographic identifiers do
+not become beneficiary countries. E&S framework evidence is searched across
+retained primary blocks. Missing OIS metadata is explicitly disclosed in all
+reader surfaces. HTML and Word exports include the responsiveness contribution
+label, five-point scale and scope message. Reader-only legacy Emerging support
+does not change the stricter generation schema.

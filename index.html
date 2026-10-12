@@ -736,8 +736,6 @@
       .step-label{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
       .out-hdr{flex-wrap:wrap;gap:8px}
       .out-hdr-actions{flex-wrap:wrap;min-width:0}
-      .session-bar{height:auto;min-height:40px;padding:6px 16px;align-items:flex-start;flex-wrap:wrap}
-      .session-bar-btns{flex:1 1 100%;min-width:0;margin-left:0;flex-wrap:wrap;justify-content:flex-end}
       .hero h1{font-size:24px}
       .stepper-wrap{padding:0 16px}
       .main{padding:20px 16px 80px}
@@ -796,6 +794,10 @@
     .session-bar{display:flex;align-items:center;gap:8px;padding:0 32px;height:40px;background:#fff;border-bottom:1px solid var(--color-border);font-size:12px;color:var(--color-text-muted);position:sticky;top:56px;z-index:99}
     .session-bar svg{flex-shrink:0}
     .session-bar-btns{margin-left:auto;display:flex;gap:4px}
+    @media(max-width:640px){
+      .session-bar{height:auto;min-height:40px;padding:6px 16px;align-items:flex-start;flex-wrap:wrap}
+      .session-bar-btns{flex:1 1 100%;min-width:0;margin-left:0;flex-wrap:wrap;justify-content:flex-end}
+    }
     /* Utility bar doc-type badge */
     .util-doc-type-badge{display:inline-flex;align-items:center;gap:6px;background:var(--color-blue-soft);color:var(--color-blue);border:1px solid #BFDBFE;border-radius:20px;padding:3px 10px;font-size:12px;font-weight:600}
     .util-doc-type-edit-btn{background:none;border:none;cursor:pointer;color:var(--color-text-muted);padding:2px 4px;border-radius:4px;display:inline-flex;align-items:center}
@@ -5086,7 +5088,8 @@
       const context=r.operation_context&&typeof r.operation_context==='object'?r.operation_context:null;
       if(!context)return '';
       const warning=!climateDraftingRouteGate(r).confirmed?'<p class="climate-route-warning">Suggested document wording is not shown because the document type or financing route could not be confirmed reliably.</p>':'';
-      return warning?'<section class="climate-operation-context">'+warning+'</section>':'';
+      const preparation=context.preparation_regime==='unresolved_policy_source'?'<p>Preparation route: confirm the OIS date and applicable review; the upload does not establish them.</p>':'';
+      return warning||preparation?'<section class="climate-operation-context">'+warning+preparation+'</section>':'';
     })();
     const executive=esc(r.executive_readout||'The verified assessment did not return an executive readout.');
     const boldFirstSentence=p=>{const m=p.match(/^(.*?[.!?])(\s+)([\s\S]*)$/);return m?`<strong>${esc(m[1])}</strong>${esc(m[2]+m[3])}`:`<strong>${esc(p)}</strong>`;};
@@ -5199,7 +5202,11 @@
       }
       provenanceHtml=`<details class="climate-fold"><summary>Method, limitations, and sources</summary>${inner}</details>`;
     }
-    const overviewBodyHtml=`${ratingsInSidebar?'':ratingHtml}<h3 class="climate-subheading">Executive readout</h3><div class="climate-exec">${execHtml}</div>`;
+    const responseJudgment=(Array.isArray(r.judgments)?r.judgments:[]).find(j=>j.dimension==='responsiveness');
+    const responseValue=responseJudgment&&responseJudgment.value||'unclear';
+    const responseLabel=({not_expected:'Not expected for this project',unclear:'Unclear',emerging:'Emerging (legacy scale; reassessment needed)'})[responseValue]||String(responseValue).replace(/_/g,' ').replace(/^./,c=>c.toUpperCase())+' contribution';
+    const responseHtml=responseJudgment?`<p><strong>Climate &amp; FCV responsiveness: ${esc(responseLabel)}</strong></p><p>Contributing to responsiveness is often a sign of going above and beyond. The expected contribution depends on the project's scope.</p><p>Contribution scale: Very limited / Limited / Moderate / Strong / Very strong. Not expected and Unclear are unscored.</p>`:'';
+    const overviewBodyHtml=`${ratingsInSidebar?'':ratingHtml}${ratingsInSidebar?'':responseHtml}<h3 class="climate-subheading">Executive readout</h3><div class="climate-exec">${execHtml}</div>`;
     const prioritiesBodyHtml=`${prioritySummaryHtml}${priorityHtml}`;
     const numberedSections=
       climateReportSection('Overview','climate-overview',overviewBodyHtml)+
@@ -6897,7 +6904,8 @@ ${body}
       const context=r.operation_context&&typeof r.operation_context==='object'?r.operation_context:null;
       if(!context)return '';
       const warning=!climateDraftingRouteGate(r).confirmed?'<p class="climate-summary-route-warning">Suggested document wording is not shown because the document type or financing route could not be confirmed reliably.</p>':'';
-      return warning?'<section class="climate-summary-context">'+warning+'</section>':'';
+      const preparation=context.preparation_regime==='unresolved_policy_source'?'<p>Preparation route: confirm the OIS date and applicable review; the upload does not establish them.</p>':'';
+      return warning||preparation?'<section class="climate-summary-context">'+warning+preparation+'</section>':'';
     })();
     const summaryRecord=r.summary_overview&&typeof r.summary_overview==='object'?r.summary_overview:{};
     const overviewParagraphs=(Array.isArray(r.summary_overview)?r.summary_overview:Array.isArray(summaryRecord.paragraphs)?summaryRecord.paragraphs:[]).map(item=>String(item||'').trim()).filter(Boolean);

@@ -24,6 +24,16 @@ Emerging results remain visibly legacy and unscored. The approved scope message 
 expected contribution depends on the project's scope." Normal FCV's existing
 rating scale is unchanged. This candidate has not been merged to production.
 
+Production-readiness follow-up: explicit PID beneficiary-country fields are read
+before source normalization, including bounded handling of concatenated geography
+columns. Verified Climate uses that metadata for regional scope. Metadata model
+helpers disable adaptive thinking and collect text blocks safely. E&S markers are
+checked across retained primary evidence, not only the opening 8,000 characters.
+Missing OIS/processing evidence is now explicit in Summary, Detailed and exports.
+HTML/Word exports include the contribution interpretation; saved Emerging readers
+remain valid while new generation rejects that legacy value. Mobile utility CSS
+now follows the desktop rule so wrapped controls retain their background/height.
+
 This is a **World Bank FCV (Fragility, Conflict, and Violence) Project Screener** — a Flask-based web app that guides Task Team Leaders (TTLs) through a **3-stage workflow** to assess how well a World Bank project integrates FCV considerations and generate targeted, actionable recommendations.
 
 The tool explicitly distinguishes two concepts:
