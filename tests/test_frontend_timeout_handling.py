@@ -56,6 +56,37 @@ if (networkMessage !== 'Could not reach the server.') {{
     assert result.returncode == 0, result.stderr
 
 
+def test_payload_limit_message_tracks_published_backend_cap():
+    index_html = Path(__file__).resolve().parents[1] / "index.html"
+    helper = _extract_js_function(
+        index_html.read_text(encoding="utf-8"), "uploadPayloadLimitMessage"
+    )
+    # A ~100 MiB upload (~133 MB base64) is blocked under the 50 MB fallback cap
+    # but allowed once the backend publishes a 200 MB cap — proving the pre-submit
+    # warning follows uploadLimitMb rather than a hard-coded threshold.
+    script = f"""
+let uploadLimitMb = 50;
+{helper}
+const oneMiB = 1024 * 1024;
+const blockedAtDefault = uploadPayloadLimitMessage([{{ size: 100 * oneMiB }}], [], []);
+if (!blockedAtDefault.includes('too large')) {{
+  throw new Error('100 MiB should be blocked under the 50 MB fallback cap');
+}}
+uploadLimitMb = 200;
+const allowedAtRaisedCap = uploadPayloadLimitMessage([{{ size: 100 * oneMiB }}], [], []);
+if (allowedAtRaisedCap !== '') {{
+  throw new Error('100 MiB should be allowed under a 200 MB cap: ' + allowedAtRaisedCap);
+}}
+"""
+    result = subprocess.run(
+        ["node", "-e", script],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
+
+
 def test_payload_limit_message_blocks_large_base64_upload():
     index_html = Path(__file__).resolve().parents[1] / "index.html"
     helper = _extract_js_function(
