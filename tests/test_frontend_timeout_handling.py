@@ -115,3 +115,26 @@ if (!large.includes('base64')) {{
         check=False,
     )
     assert result.returncode == 0, result.stderr
+
+
+def test_md_groups_blank_line_separated_bullets_and_strips_stray_tokens():
+    index_html = Path(__file__).resolve().parents[1] / "index.html"
+    helper = _extract_js_function(index_html.read_text(encoding="utf-8"), "md")
+    script = f"""
+{helper}
+const NL = String.fromCharCode(10);
+const loose = md(["- **A:** foo", "- **B:** bar", "- **C:** baz"].join(NL + NL));
+const ulCount = (loose.match(/<ul>/g) || []).length;
+const liCount = (loose.match(/<li>/g) || []).length;
+if (ulCount !== 1) {{ throw new Error("expected 1 <ul>, got " + ulCount); }}
+if (liCount !== 3) {{ throw new Error("expected 3 <li>, got " + liCount); }}
+const tok = md("para " + "%%%" + "RISK_NARRATIVE_START" + "%%%" + " tail");
+if (tok.indexOf("%" + "%%") !== -1) {{ throw new Error("stray token not stripped: " + tok); }}
+"""
+    result = subprocess.run(
+        ["node", "-e", script],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
