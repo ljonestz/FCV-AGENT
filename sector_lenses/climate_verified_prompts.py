@@ -238,6 +238,9 @@ institutions, or findings. Do not copy, prefix, or slice executive_readout.
 Keep every paragraph plain text without Markdown or HTML. The summary contract
 is two or three paragraphs and 160 to 230 words. This is part of the existing
 judgment call; do not request a repair or second call.
+Name relevance, sensitivity, responsiveness and operationalization explicitly
+in the synthesis. Aim for about 190 words. Prefer wording from the supplied
+facts and findings rather than introducing new terms, actors or actions.
 
 Return: {"executive_readout":"...","overview_summary":"...","summary_overview":{"paragraphs":["...","..."]},"relevance":{"value":"high|medium|low|unclear","evidence_ids":[],"rationale":"..."},"sensitivity":{"value":"very_strong|strong|moderate|limited|very_limited|unclear","evidence_ids":[],"rationale":"..."},"responsiveness":{"value":"very_strong|strong|moderate|limited|very_limited|not_expected|unclear","evidence_ids":[],"rationale":"..."},"operationalization":{"value":"embedded|partial|early|not_evidenced|unclear","evidence_ids":[],"rationale":"..."},"core_questions":[{"question_id":"cq2-infra-horizon","theme":"cq2_maladaptation","question":"...","source":"...","summary":"...","evidence_ids":["RG-001"],"watch":"..."}],"minor_climate_points":[{"point":"...","why":"...","how_to_check":"...","residual_gap_ids":["RG-002"]}]}.""",
         payload,
@@ -273,7 +276,10 @@ language whether the item is mainly a do-no-harm (sensitivity) concern or one th
 strengthens responsiveness. Add no digits and no new claims.
 
 Do not invent dates, thresholds, actors, instruments, systems, formal requirements,
-or completion evidence. Use no digits in decision, minimum_action,
+or completion evidence. If no responsible actor is verified for the suggested
+action, address the task team rather than naming or creating a new role. Apply
+that rule to the title, narrative and responsible_function as well as action fields.
+Use no digits in decision, minimum_action,
 enhanced_action, enhanced_activation, or completion_evidence; express supported
 actions without numeric precision. Review-readiness flags are non-scoring,
 source-linked, and limited to four. Keep free-text values to 45 words or fewer.
@@ -344,7 +350,7 @@ that advisory destination only: it does not establish a project commitment,
 responsible actor, deadline, scope of an existing instrument, or binding authority.
 Continue to reject unsupported claims about those matters. An advisory proposal
 must remain visibly proposed rather than presented as an existing commitment.
-Return exactly one object and no other prose: {"verdict":"pass|revise|block","reason_codes":[],"object_ids":[]}. Return at most 12 reason_codes and 12 object_ids. Keep the entire response to 500 words or fewer. Use revise only when one bounded correction could resolve a recommendation defect; otherwise block the affected recommendation.""".replace(
+Return exactly one object and no other prose: {"verdict":"pass|revise|block","reason_codes":[],"object_ids":[],"issues":[{"object_id":"REC-001","reason_codes":[],"explanation":"One short sentence identifying the defective wording."}]}. For each affected recommendation, add one issues entry with its specific reason_codes and a short explanation quoting or identifying the problematic wording. Include only those REC- IDs in object_ids, and the union of their codes in reason_codes. Return empty arrays for pass. Return at most five issues. Return at most 12 reason_codes and 12 object_ids. Keep the entire response to 500 words or fewer. Use revise only when one bounded correction could resolve a recommendation defect; otherwise block the affected recommendation.""".replace(
             "{semantic_reason_codes}",
             allowed_reason_codes,
         ),

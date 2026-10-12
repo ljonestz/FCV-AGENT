@@ -540,6 +540,9 @@ def normalize_unverified_drafting_actor(
 
     updates: dict[str, object] = {}
     for field_name in (
+        "title",
+        "narrative",
+        "responsible_function",
         "decision",
         "minimum_action",
         "enhanced_action",

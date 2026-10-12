@@ -6425,6 +6425,8 @@ def clean_stage3_output(text):
 
     Heading cleanup and blank-line normalisation are also applied.
     """
+    # Canonicalize delimiter drift before stripping blocks, including saved outputs.
+    text = re.sub(r'%{2,3}([A-Z][A-Z0-9_]*(?::[^%\n]*)?)%{2,3}', r'%%%\1%%%', text)
     # Primary: strip the new JSON block — all structured data lives here
     text = re.sub(r'%%%JSON_START%%%.*?%%%JSON_END%%%', '', text, flags=re.DOTALL)
     # Strip FCV Risk Exposure narrative (rendered separately as risk-exposure card)

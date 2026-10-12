@@ -128,48 +128,57 @@ def validate_summary_overview(
     *,
     executive_readout: object = "",
     canonical_text: object = (),
+    diagnostics: dict[str, object] | None = None,
 ) -> list[str]:
     """Admit only a grounded, plain-text two/three-paragraph synthesis."""
+    def reject(reason: str) -> list[str]:
+        if diagnostics is not None:
+            diagnostics["reason"] = reason
+        return []
+
     raw = value.get("paragraphs") if isinstance(value, dict) else None
     if not isinstance(raw, list) or len(raw) not in {2, 3}:
-        return []
+        return reject("SUMMARY_PARAGRAPH_COUNT")
     if any(not isinstance(item, str) or not item.strip() for item in raw):
-        return []
+        return reject("SUMMARY_PARAGRAPH_EMPTY_OR_TYPE")
     if any(_SUMMARY_MARKUP_RE.search(item) for item in raw):
-        return []
+        return reject("SUMMARY_MARKUP")
     paragraphs = [_summary_normalize(item) for item in raw]
     if not 160 <= sum(len(item.split()) for item in paragraphs) <= 230:
-        return []
+        return reject("SUMMARY_WORD_COUNT")
     if any(_SUMMARY_MARKUP_RE.search(item) for item in paragraphs):
-        return []
+        return reject("SUMMARY_MARKUP")
     combined = " ".join(paragraphs).casefold()
     if not all(
         any(signal in combined for signal in signals)
         for signals in _SUMMARY_DIMENSION_SIGNALS.values()
     ):
-        return []
+        return reject("SUMMARY_DIMENSION_MISSING")
     if not any(
         signal in paragraphs[0].casefold()
         for signal in ("verdict", "foundation", "overall", "credible", "takeaway", "recognizes", "recognises", "shows", "demonstrates", "assessment", "finding")
     ):
-        return []
+        return reject("SUMMARY_VERDICT_MISSING")
     if not any(
         signal in combined
         for signal in ("practical implication", "ranked priorities", "confirm", "next", "priority", "priorities", "attention", "follow-up", "follow up", "decision", "remaining")
     ):
-        return []
+        return reject("SUMMARY_IMPLICATION_MISSING")
     executive = " ".join(_summary_strings(executive_readout))
     executive_normalized = _summary_normalize(executive).casefold()
     if executive_normalized:
         for paragraph in paragraphs:
             normalized = paragraph.casefold()
             if normalized in executive_normalized or executive_normalized in normalized:
-                return []
-    for paragraph in paragraphs:
+                return reject("SUMMARY_EXECUTIVE_COPY")
+    for index, paragraph in enumerate(paragraphs):
         if not validate_summary_fragment(
             paragraph,
             canonical_text=canonical_text,
+            diagnostics=diagnostics,
         ):
+            if diagnostics is not None:
+                diagnostics["paragraph_index"] = index
             return []
     return paragraphs
 
@@ -178,15 +187,23 @@ def validate_summary_fragment(
     text: object,
     *,
     canonical_text: object = (),
+    diagnostics: dict[str, object] | None = None,
 ) -> bool:
     """Validate grounding controls for one plain-text summary fragment."""
+    def reject(reason: str, detail: str = "") -> bool:
+        if diagnostics is not None:
+            diagnostics["reason"] = reason
+            if detail:
+                diagnostics["detail"] = detail[:160]
+        return False
+
     if not isinstance(text, str) or not text.strip():
-        return False
+        return reject("SUMMARY_FRAGMENT_EMPTY")
     if _SUMMARY_MARKUP_RE.search(text):
-        return False
+        return reject("SUMMARY_MARKUP")
     fragment = _summary_normalize(text)
     if not _summary_sentences(fragment):
-        return False
+        return reject("SUMMARY_SENTENCE_INCOMPLETE")
     canonical = " ".join(_summary_strings(canonical_text))
     canonical_casefold = canonical.casefold()
     canonical_words = _summary_words(canonical)
@@ -195,7 +212,7 @@ def validate_summary_fragment(
     )
     for number in re.findall(r"\b\d+(?:[.,]\d+)?%?\b", fragment):
         if number not in canonical_numbers:
-            return False
+            return reject("SUMMARY_NUMBER_UNSUPPORTED", number)
     for month in _SUMMARY_MONTHS:
         date_pattern = (
             rf"\b{month}\s+\d{{4}}\b|"
@@ -203,29 +220,29 @@ def validate_summary_fragment(
         )
         for date in re.findall(date_pattern, fragment.casefold()):
             if date not in canonical_casefold:
-                return False
+                return reject("SUMMARY_DATE_UNSUPPORTED", date)
     if canonical_casefold:
         for match in _SUMMARY_ENTITY_RE.finditer(fragment):
             entity = match.group(0).casefold()
             if entity.startswith("the "):
                 entity = entity[4:]
             if entity not in canonical_casefold and entity not in _SUMMARY_GENERIC_ENTITIES:
-                return False
+                return reject("SUMMARY_ENTITY_UNSUPPORTED", entity)
         for match in _SUMMARY_CAPITALIZED_RE.finditer(fragment):
             token = match.group(0).casefold()
             if token in _SUMMARY_ALLOWED_SINGLE_WORDS | _SUMMARY_CONNECTIVE_TOKENS:
                 continue
             if token not in canonical_words:
-                return False
+                return reject("SUMMARY_ENTITY_UNSUPPORTED", token)
         for match in _SUMMARY_ACRONYM_RE.finditer(fragment):
             token = match.group(0).casefold()
             if token in _SUMMARY_ALLOWED_SINGLE_WORDS:
                 continue
             if token not in canonical_words:
-                return False
+                return reject("SUMMARY_ENTITY_UNSUPPORTED", token)
     for match in _SUMMARY_ACTION_STEM_RE.finditer(fragment.casefold()):
         if match.group("stem") not in canonical_casefold:
-            return False
+            return reject("SUMMARY_ACTION_UNSUPPORTED", match.group(0))
     if canonical_words:
         for sentence in _summary_sentences(fragment):
             words = _summary_words(sentence)
@@ -235,11 +252,9 @@ def validate_summary_fragment(
                 - _SUMMARY_ALLOWED_TOKENS
                 - _SUMMARY_CONNECTIVE_TOKENS
             )
-            if any(
-                not _summary_morphology_supported(word, canonical_words)
-                for word in unsupported_words
-            ):
-                return False
+            for word in sorted(unsupported_words):
+                if not _summary_morphology_supported(word, canonical_words):
+                    return reject("SUMMARY_TERM_UNSUPPORTED", word)
     return True
 
 
@@ -677,6 +692,15 @@ STAGE_OUTPUT_SCHEMAS: dict[str, dict[str, object]] = {
                 ),
             },
             "object_ids": _strings("No more than 12 affected object IDs."),
+            "issues": {
+                "type": "array",
+                "items": _object({
+                    "object_id": _string("An affected REC- identifier from object_ids."),
+                    "reason_codes": {"type": "array", "items": _enum(SEMANTIC_REVIEW_REASON_CODES)},
+                    "explanation": _string("One short sentence identifying the unsupported wording or scope."),
+                }),
+                "description": "One diagnostic entry per affected recommendation, at most five; empty for pass.",
+            },
         }
     ),
 }

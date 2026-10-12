@@ -745,15 +745,15 @@ def test_manifest_is_privacy_safe_and_scoped_to_the_run():
     )
     assert (
         first["manifest"]["prompt_versions"]["judgment_review"]
-        == "climate-judgments-v2.5"
+        == "climate-judgments-v2.6"
     )
     assert (
         first["manifest"]["prompt_versions"]["recommendation_compiler"]
-        == "climate-recommendations-v2.4"
+        == "climate-recommendations-v2.5"
     )
     assert (
         first["manifest"]["prompt_versions"]["conditional_review"]
-        == "climate-review-v2.6"
+        == "climate-review-v2.7"
     )
     assert (
         first["manifest"]["prompt_versions"]["drafting_compiler"]
@@ -928,10 +928,43 @@ def test_invalid_summary_overview_is_empty_and_has_no_repair_call():
 
     assert result["summary_overview"] == {"paragraphs": []}
     assert "SUMMARY_OVERVIEW_INVALID" in result["validation"]["reason_codes"]
+    import json
+    trace = result["diagnostic_trace"]
+    assert json.loads(trace["summary_overview"]["json"]) == {"paragraphs": ["Only one paragraph."]}
+    assert trace["summary_validation"]["reason"] == "SUMMARY_PARAGRAPH_COUNT"
     assert [call["stage"] for call in assessment.calls] == [
         "fact_extraction", "bounded_analysis", "judgment_review",
         "recommendation_compiler",
     ]
+
+
+def test_rejected_candidates_and_review_context_survive_in_diagnostics_only():
+    import json
+    from sector_lenses.climate_verified_render import build_reader_model
+    review = {"verdict": "block", "reason_codes": ["AUTHORITY_UNSUPPORTED"],
+              "object_ids": ["REC-001"], "issues": [{
+                  "object_id": "REC-001", "reason_codes": ["AUTHORITY_UNSUPPORTED"],
+                  "explanation": "The recommendation asserts unverified authority."}]}
+    result = run_verified_climate_pipeline(
+        **_arguments(), clients=PipelineClients(FakeClient(_responses(), []), FakeClient([review], [])))
+    trace = result["diagnostic_trace"]
+    assert json.loads(trace["semantic_review"]["json"]) == review
+    reviewed = json.loads(trace["review_input"]["json"])
+    assert reviewed["recommendations"][0]["recommendation_id"] == "REC-001"
+    assert reviewed["operational_guidance"]
+    assert json.loads(trace["reviewed_recommendations"]["json"]) == reviewed["recommendations"]
+    raw = json.loads(trace["recommendation_candidates"]["json"])
+    assert raw[0]["recommendation_id"] == "REC-001"
+    assert result["priorities"] == []
+    assert "diagnostic_trace" not in build_reader_model(result)
+
+
+def test_diagnostic_snapshot_is_bounded_and_marks_truncation():
+    from sector_lenses.climate_verified_pipeline import _diagnostic_snapshot
+    small = _diagnostic_snapshot({"text": "normal"})
+    assert not small["truncated"]
+    large = _diagnostic_snapshot({"text": "x" * 100000})
+    assert large["truncated"] and len(large["json"]) == 60000
 
 def test_summary_validator_rejects_raw_shape_markup_and_length_failures():
     from sector_lenses import climate_verified_pipeline as climate_pipeline

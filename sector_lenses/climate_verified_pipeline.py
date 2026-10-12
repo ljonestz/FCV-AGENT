@@ -86,9 +86,9 @@ _INTEGRITY_CATEGORIES = READINESS_CATEGORIES - {"missing_operational_home"}
 PROMPT_VERSIONS = {
     "fact_extraction": "climate-facts-v2.2",
     "bounded_analysis": "climate-analysis-v2.2",
-    "judgment_review": "climate-judgments-v2.5",
-    "recommendation_compiler": "climate-recommendations-v2.4",
-    "conditional_review": "climate-review-v2.6",
+    "judgment_review": "climate-judgments-v2.6",
+    "recommendation_compiler": "climate-recommendations-v2.5",
+    "conditional_review": "climate-review-v2.7",
     "drafting_compiler": "climate-drafting-v1.0",
 }
 
@@ -113,6 +113,12 @@ class PipelineClients:
 
 def _mapping(value: object) -> dict[str, object]:
     return value if isinstance(value, dict) else {}
+
+
+def _diagnostic_snapshot(value: object) -> dict[str, object]:
+    """Keep bounded replay evidence in the saved assessment, never application logs."""
+    text = json.dumps(value, ensure_ascii=False)
+    return {"json": text[:60000], "truncated": len(text) > 60000}
 
 
 def _records(payload: dict[str, object], *names: str) -> list[dict[str, object]]:
@@ -1011,10 +1017,12 @@ def run_verified_climate_pipeline(
     canonical_summary_text.extend(
         (overview_summary, asdict(judgments), core_questions, context_records)
     )
+    summary_diagnostics: dict[str, object] = {}
     summary_overview_paragraphs = _summary_overview_paragraphs(
         raw_summary_overview,
         executive_readout=executive_readout,
         canonical_text=canonical_summary_text,
+        diagnostics=summary_diagnostics,
     )
     if raw_summary_overview is None:
         summary_overview_status = "fallback"
@@ -1283,22 +1291,25 @@ def run_verified_climate_pipeline(
     reviewer_invoked = False
     reviewer_verdict = "not_invoked"
     semantic_review_object_ids: list[str] = []
+    review: dict[str, object] = {}
+    review_input: dict[str, object] = {}
     if priorities and semantic_review_required(_risk(priorities)):
         reviewer_invoked = True
+        review_input = {
+            "source_blocks": block_records,
+            "facts": [asdict(item) for item in facts],
+            "analysis": analysis_record,
+            "judgments": asdict(judgments),
+            "recommendations": [asdict(item) for item in priorities],
+            "operation_context": resolved_context,
+            "current_document": doc_type,
+            "guidance_registry_version": GUIDANCE_REGISTRY_VERSION,
+            "operational_guidance": [item.as_record() for item in guidance],
+        }
         review = _call(
             clients.reviewer,
             "conditional_review",
-            {
-                "source_blocks": block_records,
-                "facts": [asdict(item) for item in facts],
-                "analysis": analysis_record,
-                "judgments": asdict(judgments),
-                "recommendations": [asdict(item) for item in priorities],
-                "operation_context": resolved_context,
-                "current_document": doc_type,
-                "guidance_registry_version": GUIDANCE_REGISTRY_VERSION,
-                "operational_guidance": [item.as_record() for item in guidance],
-            },
+            review_input,
             latency_ms,
             cancel_event=cancel_event,
             deadline=deadline,
@@ -1405,6 +1416,14 @@ def run_verified_climate_pipeline(
         "judgment_summary": deterministic_summary(judgments),
         "summary_overview": {"paragraphs": summary_overview_paragraphs},
         "summary_overview_status": summary_overview_status,
+        "diagnostic_trace": {
+            "summary_overview": _diagnostic_snapshot(raw_summary_overview),
+            "summary_validation": summary_diagnostics,
+            "recommendation_candidates": _diagnostic_snapshot(raw_candidates[:5]),
+            "review_input": _diagnostic_snapshot(review_input),
+            "reviewed_recommendations": _diagnostic_snapshot(review_input.get("recommendations", [])),
+            "semantic_review": _diagnostic_snapshot(review),
+        },
         "executive_readout": (
             executive_readout or deterministic_summary(judgments)
         ),

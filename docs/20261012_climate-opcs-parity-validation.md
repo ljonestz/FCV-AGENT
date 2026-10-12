@@ -172,3 +172,52 @@ and timing-test fixes (`output/20261012_acceptance-suite.txt`). Subsequent revie
 context and export-warning edits passed 51 focused pipeline/sidebar/upload checks
 and three shared frontend-renderer checks. `git diff --check` passed. These are
 code/regression checks, not a successful replacement for live analytical acceptance.
+
+
+### 2026-10-12 offline hardening before another paid run
+
+The shared Markdown renderer now keeps headings, lists, tables and rules as blocks,
+so blank-line-separated bullets do not accumulate stray breaks or invalid paragraph
+wrappers. Visible complete or two-percent-drifted machine markers are removed;
+backend Stage 3 cleanup canonicalizes that drift before removing duplicated blocks.
+Percentages and prose are preserved. The screenshot-shaped fixture was reproduced
+and checked in local Edge (`output/playwright/20261012-context-spacing-fixed.png`).
+
+Actor normalization now covers title, narrative and responsible_function as well
+as action/drafting fields. Verified actors are preserved; invented instruments,
+destinations and systems remain subject to the existing guards. The compiler says
+to address the task team when no responsible actor is verified. An offline AF
+advisory-target fixture passes while invented targets/instruments fail.
+
+Saved verified assessments now retain `diagnostic_trace`: bounded JSON snapshots
+of the raw overview, raw candidate set (first five), review input, separately
+retained normalized reviewed recommendations, and semantic review response. Each
+snapshot is at most 60,000 characters and explicitly marks truncation. These are
+untrusted diagnostic data in Save session only, excluded from reader/report output
+and app logs; they do not recover the previously discarded paid-run proposals.
+The reviewer schema adds per-recommendation `issues` with codes and a short
+explanation. Admission and suppression still use the existing verdict/ID controls.
+
+Summary validation now records its specific rejection reason and paragraph index
+without relaxing shape, length, grounding or copy checks. Prompt v2.6 explicitly
+names all four required dimensions and targets about 190 words. Compiler prompt
+v2.5 and reviewer prompt v2.7 accompany these changes. Five-point rating semantics
+are unchanged. Shared prompt/schema/diagnostic changes must travel together if
+later mirrored to ITS. No additional provider call or paid run was added.
+
+
+This pass completes the identified offline follow-ups. The old run's raw summary
+and rejected proposals were already discarded, so their exact rejection causes
+remain unrecoverable. New diagnostics prevent the same loss in a subsequent run.
+The prior failed run is still incomplete; no recommendation was reinstated and
+production promotion remains held pending a separately authorized live check.
+
+
+Offline acceptance after this follow-up: full suite 1,391 passed in 813.27 seconds
+(`output/20261012_prepaid-offline-suite.txt`). The final checkbox/UTF-8 refinement
+passed all eight renderer/timeout checks; the final normalized-review snapshot
+passed three focused pipeline checks. `git diff --check` passed. Local Edge visual
+inspection confirmed the corrected context layout. No new paid call was made.
+The candidate is ready for the next explicitly authorized quality trial, with
+production promotion still held. Truncated diagnostic snapshots are partial data
+and must not be treated as complete JSON evidence.

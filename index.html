@@ -4934,7 +4934,7 @@
       protectedParts.push(token);
       return marker;
     });
-    return protectedText.replace(/[ \t]*\u2014[ \t]*/g,' - ').replace(/\u0000(\d+)\u0000/g,(_,index)=>protectedParts[Number(index)]||'');
+    return protectedText.replace(/%{2,3}[A-Z][A-Z0-9_]*(?::[^%\n]*)?%{2,3}/g,'').replace(/[ \t]*\u2014[ \t]*/g,' - ').replace(/\u0000(\d+)\u0000/g,(_,index)=>protectedParts[Number(index)]||'');
   }
 
   function findVisibleSentenceEnd(value){
@@ -6374,7 +6374,7 @@ ${body}
     t=typeof normalizeVisibleText==='function'?normalizeVisibleText(t):t;
     let h=t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     // Defensive: never render a residual delimiter token if one slips past backend cleaning.
-    h=h.replace(/%%%[A-Z0-9_]+%%%/g,'');
+    h=h.replace(/%{2,3}[A-Z][A-Z0-9_]*(?::[^%\n]*)?%{2,3}/g,'');
     // Tables
     h=h.replace(/(\|.+\|\n)(\|[-| :]+\|\n)((?:\|.+\|\n?)*)/g,m=>{
       const rows=m.trim().split('\n').filter(r=>r.trim());
@@ -6389,13 +6389,12 @@ ${body}
     // Collapse blank lines between adjacent list items so blank-line-separated bullets
     // group into one list, instead of many single-item lists with large paragraph gaps.
     h=h.replace(/<\/li>\s+(?=<li)/g,'</li>\n');
-    h=h.replace(/(<li>.*?<\/li>\n?)+/g,m=>`<ul>${m}</ul>`);
-    h=h.replace(/\n{2,}/g,'</p><p>').replace(/\n/g,'<br>');
-    h='<p>'+h+'</p>';
-    ['h1','h2','h3','table','ul','hr'].forEach(tag=>{
-      h=h.replace(new RegExp(`<p>(<${tag}[^>]*>)`,'g'),'$1').replace(new RegExp(`(</${tag}>)<\\/p>`,'g'),'$1');
-    });
-    return h.replace(/<p>\s*<\/p>/g,'');
+    h=h.replace(/(<li\b[^>]*>.*?<\/li>\n?)+/g,m=>`<ul>${m}</ul>`);
+    // Block elements already provide spacing; only prose needs paragraphs and line breaks.
+    return h.split(/(<(?:h[1-3]|table|ul)\b[^>]*>[\s\S]*?<\/(?:h[1-3]|table|ul)>|<hr>)/g).map(part=>{
+      if(/^<(?:h[1-3]|table|ul)\b|^<hr>/.test(part))return part.replace(/\n(?=<\/?li\b)/g,'');
+      return part.trim().split(/\n\s*\n/).filter(Boolean).map(p=>'<p>'+p.replace(/\n/g,'<br>')+'</p>').join('');
+    }).join('');
   }
 
   // ── Prompt viewer/editor ────────────────────────────────────────────────────

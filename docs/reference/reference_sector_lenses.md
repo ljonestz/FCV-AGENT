@@ -226,3 +226,14 @@ does not change the stricter generation schema.
 ### 2026-10-12 quality acceptance hold
 
 PR #83 remains a candidate: the one live quality run suppressed all five recommendations. Conditional review now receives current_document, guidance_registry_version and the same operational_guidance as compilation (prompt v2.6), distinguishing permitted advisory destinations from established project commitments. Suppression behavior is unchanged. The fix is offline verified only; another authorized quality run is required before promotion. Incomplete reader exports place the warning first.
+
+
+### 2026-10-12 offline hardening before another paid run
+
+Shared Markdown spacing/marker-drift cleanup and actor normalization now cover all
+visible fields. Saved assessments retain bounded diagnostic_trace snapshots,
+excluded from readers/logs/exports; reviewer schema adds per-REC issues. Summary
+validation records specific failures without relaxing grounding. Prompt versions:
+judgments v2.6, compiler v2.5, review v2.7. No added provider calls. See
+`docs/20261012_climate-opcs-parity-validation.md` for checks and acceptance limits.
+Production remains held pending a separately authorized live quality check.

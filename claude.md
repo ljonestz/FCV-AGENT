@@ -999,3 +999,14 @@ Live acceptance and release status: see `docs/20261012_climate-opcs-parity-valid
 ### 2026-10-12 quality acceptance hold (PR #83)
 
 The single Great Lakes quality run on cbd31ddd1084 correctly resolved AF/IPF/multi/ESF and the five-point ratings, but all recommendations were suppressed. Do not promote this candidate as analytically accepted. The semantic verifier now receives the compiler's scoped operational guidance (review prompt v2.6); live effect remains unverified. Upload handlers now resolve current arrays after removal/reset; reset clears package files and metadata. Incomplete exports put their warning before the assessment. See docs/20261012_climate-opcs-parity-validation.md for acceptance evidence.
+
+
+### 2026-10-12 offline hardening before another paid run
+
+Shared Markdown spacing/marker-drift cleanup and actor normalization now cover all
+visible fields. Saved assessments retain bounded diagnostic_trace snapshots,
+excluded from readers/logs/exports; reviewer schema adds per-REC issues. Summary
+validation records specific failures without relaxing grounding. Prompt versions:
+judgments v2.6, compiler v2.5, review v2.7. No added provider calls. See
+`docs/20261012_climate-opcs-parity-validation.md` for checks and acceptance limits.
+Production remains held pending a separately authorized live quality check.

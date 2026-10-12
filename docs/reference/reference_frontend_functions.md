@@ -412,3 +412,12 @@ Report controls distinguish summary copying from full-report copying. Full repor
 ### 2026-10-12 upload reset and incomplete exports
 
 setupZone takes a getter for the current file array so removal/reset cannot leave stale handler references. reset clears primary/package/context files, metadata and native inputs. Standalone verified Climate exports show incomplete status before assessment content.
+
+
+### 2026-10-12 shared Markdown block spacing
+
+md keeps headings/lists/tables/rules outside prose paragraphs and removes internal
+list separator newlines. normalizeVisibleText suppresses complete and two-percent
+machine marker drift in visible prose while retaining protected URLs/code. Stage 3
+backend cleaning canonicalizes marker drift before stripping duplicate blocks.
+This applies to normal FCV, saved results and Markdown-based HTML exports.
