@@ -257,3 +257,15 @@ The existing research structuring call now preserves native search/encrypted
 context, with further searches disabled and no added call. All 55 research,
 grounding and context checks pass. The current validation record documents the
 protocol and remaining live-acceptance hold; ITS remains unchanged.
+
+
+### 2026-10-12 approved dividends readout candidate
+
+Climate questions and rubrics are aligned with the Peace and Social Dividends
+report's investment/delivery framing (judgments v2.7, compiler v2.7, reader v2.4).
+Responsiveness needs a specific climate-linked dividend mechanism within project
+scope; it remains separate from sensitivity and overall project quality. Summary
+now highlights short limitations from admitted priorities between strengths and
+actions, preserving evidence qualifications and all withholding notices. Five-point
+values, normal-FCV categories, saved grades and model-call counts are unchanged.
+Candidate only; production/ITS and live analytical acceptance remain on hold.

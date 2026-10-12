@@ -5116,7 +5116,9 @@
       }).join('');
       const overview=csr.overview_summary?`<p class="climate-overview-summary">${esc(csr.overview_summary)}</p>`:'';
       const caveat=csr.caveat?`<p class="climate-rating-caveat">${esc(csr.caveat)}</p>`:'';
-      return `<section class="climate-sens-rating climate-overview-panel" style="--climate-rating-color:${active}"><p class="climate-rating-question">${esc(csr.question||'')}</p><p class="climate-rating-label">${esc(csr.label||'')}</p><div class="climate-rating-scale">${segments}</div><p class="climate-rating-description">${esc(csr.description||'')}</p>${overview}${caveat}</section>`;
+      const currentQuestion='How well does the project recognize and address interacting climate and FCV risks?';
+      const question=!csr.question||csr.question==='How sensitive is this project to climate and FCV considerations?'?currentQuestion:csr.question;
+      return `<section class="climate-sens-rating climate-overview-panel" style="--climate-rating-color:${active}"><p class="climate-rating-question">${esc(question)}</p><p class="climate-rating-label">${esc(csr.label||'')}</p><div class="climate-rating-scale">${segments}</div><p class="climate-rating-description">${esc(csr.description||'')}</p>${overview}${caveat}</section>`;
     })();
     const coreQuestions=Array.isArray(r.core_questions)?r.core_questions:[];
     const coreQuestionsHtml=coreQuestions.map(question=>{
@@ -5205,7 +5207,7 @@
     const responseJudgment=(Array.isArray(r.judgments)?r.judgments:[]).find(j=>j.dimension==='responsiveness');
     const responseValue=responseJudgment&&responseJudgment.value||'unclear';
     const responseLabel=({not_expected:'Not expected for this project',unclear:'Unclear',emerging:'Emerging (legacy scale; reassessment needed)'})[responseValue]||String(responseValue).replace(/_/g,' ').replace(/^./,c=>c.toUpperCase())+' contribution';
-    const responseHtml=responseJudgment?`<p><strong>Climate &amp; FCV responsiveness: ${esc(responseLabel)}</strong></p><p>Contributing to responsiveness is often a sign of going above and beyond. The expected contribution depends on the project's scope.</p><p>Contribution scale: Very limited / Limited / Moderate / Strong / Very strong. Not expected and Unclear are unscored.</p>`:'';
+    const responseHtml=responseJudgment?`<p><strong>Climate &amp; FCV responsiveness: ${esc(responseLabel)}</strong></p><p>How well does the project use relevant opportunities to generate wider peace and social dividends through its climate-related design and delivery?</p><p>Contributing to responsiveness is often a sign of going above and beyond. The expected contribution depends on the project's scope.</p><p>Contribution scale: Very limited / Limited / Moderate / Strong / Very strong. Not expected and Unclear are unscored.</p>`:'';
     const overviewBodyHtml=`${ratingsInSidebar?'':ratingHtml}${ratingsInSidebar?'':responseHtml}<h3 class="climate-subheading">Executive readout</h3><div class="climate-exec">${execHtml}</div>`;
     const prioritiesBodyHtml=`${prioritySummaryHtml}${priorityHtml}`;
     const numberedSections=
@@ -5230,7 +5232,7 @@
       +'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'
       +'<div class="sc-body">'
       +'<p><strong>Be aware: LLMs are not magic, and neither is the FCV Project Screener.</strong> It gives advice based only on the documents and guidance it has been given, and it can be wrong. Treat everything here as advisory. Do not assume any finding, rating, or suggestion is definitive, including references to WBG policies, instruments, or procedures, which should be verified with OPCS. You are strongly advised to seek corroboration from relevant FCV and OPCS human experts.</p>'
-      +'<p>The Screener assesses against an ideal project, one where the team has maximum time and resources to make the design fully FCV-sensitive and responsive. Some recommendations may go further than a task team can or will act on; others may not fit country or operational realities the tool cannot see. Do not feel obliged to use every recommendation or to treat them equally: if two of five are relevant, that is a win. Its purpose is high-level guidance to help you think about where a project design could better reflect FCV sensitivity and responsiveness.</p>'
+      +'<p>Assess findings against project objectives, scope and delivery constraints. Responsiveness is not expected for every project; contributing to it often means going above and beyond. Select recommendations that are relevant and feasible.</p>'
       +'</div></div>';
   }
 
@@ -6581,8 +6583,8 @@ ${body}
   function climateVerifiedRatingCards(reader){
     const judgments=Array.isArray(reader&&reader.judgments)?reader.judgments:[];
     const dimensions=[
-      {key:'sensitivity',title:'Climate & FCV sensitivity',scale:['very_limited','limited','moderate','strong','very_strong'],question:'Is the project designed to recognise and avoid worsening climate and FCV risks?'},
-      {key:'responsiveness',title:'Climate & FCV responsiveness',scale:['very_limited','limited','moderate','strong','very_strong'],question:'Does the project actively build climate resilience and address FCV drivers?'}
+      {key:'sensitivity',title:'Climate & FCV sensitivity',scale:['very_limited','limited','moderate','strong','very_strong'],question:'How well does the project recognize and address interacting climate and FCV risks?'},
+      {key:'responsiveness',title:'Climate & FCV responsiveness',scale:['very_limited','limited','moderate','strong','very_strong'],question:'How well does the project use relevant opportunities to generate wider peace and social dividends through its climate-related design and delivery?'}
     ];
     const label=value=>String(value||'unclear').replace(/_/g,' ').replace(/^./,c=>c.toUpperCase());
     return dimensions.map(d=>{
@@ -6590,14 +6592,14 @@ ${body}
       const value=judgment.value||'unclear';
       const level=d.scale.indexOf(value)+1;
       const responsive=d.key==='responsiveness';
-      const glosses={very_limited:'Very little risk-sensitive design is evidenced.',limited:'Some risks are recognised; design responses remain limited.',moderate:'Risks are recognised, with gaps in the design response.',strong:'The design addresses most relevant risks.',very_strong:'The design addresses relevant risks comprehensively.'};
-      const gloss=responsive?"Contributing to responsiveness is often a sign of going above and beyond.":(glosses[value]||'There is not enough evidence to rate the design.');
+      const glosses={very_limited:'Little recognition of or response to interacting risks is evidenced.',limited:'Interacting risks are partly recognised; the response is weak.',moderate:'Main interactions are addressed, with material gaps.',strong:'Material climate-FCV interactions are addressed convincingly.',very_strong:'Material interactions receive comprehensive, well-supported treatment.'};
+      const gloss=responsive?'Peace and social dividends often reflect going above and beyond.':(glosses[value]||'There is not enough evidence to rate the design.');
       const scope="The expected contribution depends on the project's scope.";
       const ratingLabel=responsive?(level?label(value)+' contribution':value==='emerging'?'Emerging (legacy scale)':value==='not_expected'?'Not expected for this project':label(value)):label(value);
       // Contribution is not a compliance score; unscored and legacy values have no bar.
       const color=responsive?'#0072BB':level>=4?'#147A3D':level===3?'#8A5A00':'#B42318';
       const bar=level?`<div class="stage3-rating-bar" role="progressbar" aria-label="${esc(d.title)} rating" aria-valuemin="1" aria-valuemax="${d.scale.length}" aria-valuenow="${level}" aria-valuetext="${esc(label(value))}"><span class="stage3-rating-fill" style="width:${level/d.scale.length*100}%;background-color:${color}"></span></div>`:'';
-      return `<article class="stage3-rating-card" data-rating-key="climate-${d.key}"><div class="stage3-rating-card-header"><span class="stage3-rating-dimension" title="${esc(d.question)}">${esc(d.title)}</span><span class="stage3-rating-value" data-rating-state="ready">${esc(ratingLabel)}</span></div>${bar}<p class="stage3-rating-meaning">${esc(gloss)}</p>${responsive?`<p class="stage3-rating-description">${esc(scope)}</p>`:''}<details class="stage3-rating-explanation"><summary>Why this rating</summary><p class="stage3-rating-description">${esc(judgment.rationale||'The evidence does not establish a rating.')}</p><p class="stage3-rating-description">${esc(d.question)}</p><p class="stage3-rating-description">Scale: ${d.scale.map(label).map(esc).join(' / ')}${responsive?' contribution':''}. Unclear means evidence is insufficient.${responsive?' Not expected is a scope judgment. Older Emerging results require reassessment on the five-point scale.':''}</p></details></article>`;
+      return `<article class="stage3-rating-card" data-rating-key="climate-${d.key}"><div class="stage3-rating-card-header"><span class="stage3-rating-dimension" title="${esc(d.question)}">${esc(d.title)}</span><span class="stage3-rating-value" data-rating-state="ready">${esc(ratingLabel)}</span></div>${bar}<p class="stage3-rating-meaning">${esc(gloss)}</p>${responsive?`<p class="stage3-rating-description">${esc(scope)}</p>`:''}<details class="stage3-rating-explanation"><summary>Why this rating</summary><p class="stage3-rating-description">${esc(judgment.rationale||'The evidence does not establish a rating.')}</p>${responsive?'<p class="stage3-rating-description">Contributing to responsiveness is often a sign of going above and beyond.</p>':''}<p class="stage3-rating-description">${esc(d.question)}</p><p class="stage3-rating-description">Scale: ${d.scale.map(label).map(esc).join(' / ')}${responsive?' contribution':''}. Unclear means evidence is insufficient.${responsive?' Not expected is a scope judgment. Older Emerging results require reassessment on the five-point scale.':''}</p></details></article>`;
     }).join('');
   }
 
@@ -6904,6 +6906,19 @@ ${body}
     return `<details class="climate-summary-watch-disclosure"><summary>What to keep an eye on</summary><div class="climate-summary-watch-body"><p>These are things to monitor as the project develops. They are not actions to take now - just points to keep in view.</p><ul>${items.map(item=>`<li>${esc(item.watch)}</li>`).join('')}</ul></div></details>`;
   }
 
+  function renderClimateSummaryGaps(priorities){
+    const gaps=[];const seen=new Set();let words=0;
+    for(const priority of Array.isArray(priorities)?priorities:[]){
+      const text=String(priority.limitation||'').replace(/\s+/g,' ').trim();
+      const count=text?text.split(' ').length:0;
+      // Keep whole qualifications; oversized legacy prose stays in Detailed.
+      if(!text||count>45||words+count>80||seen.has(text.toLowerCase()))continue;
+      seen.add(text.toLowerCase());gaps.push(text);words+=count;
+      if(gaps.length===2)break;
+    }
+    return gaps.length?`<section class="normal-summary-gaps"><div class="concise-section-label">Potential gaps</div><p class="concise-transition">${gaps.map(esc).join(' ')}</p></section>`:'';
+  }
+
   function renderClimateVerifiedSummary(reader){
     const r=reader&&typeof reader==='object'?reader:{};
     const operationContextHtml=(()=>{
@@ -6921,6 +6936,7 @@ ${body}
     const strengths=climateSummaryStrengths(r);
     const strengthsHtml=strengths.length?strengths.map(strength=>`<div class="concise-strength climate-strength-card"><strong>${esc(strength.title)}</strong><span class="concise-strength-text">${esc(strength.text)}</span></div>`).join(''):'<p class="concise-priority-intro">No distinct strengths were evidenced in the verified reader for this run.</p>';
     const priorities=climateSummaryPriorityItems(r);
+    const gapsHtml=renderClimateSummaryGaps(priorities);
     const recommendationsIncomplete=r.recommendation_status==='incomplete';
     const emptyPriorityMessage=recommendationsIncomplete
       ?(r.recommendation_message||'The recommendation stage could not be completed. Do not treat this Recommendations Note as complete; rerun the analysis or contact support.')
@@ -6936,7 +6952,7 @@ ${body}
     const closingText=recommendationsIncomplete
       ?'Recommendations are incomplete. Review the Detailed analysis and rerun the assessment or contact support before relying on this note.'
       :(priorities.length?'For supporting evidence, drafting and completion signals behind each priority, continue to Detailed analysis.':'Continue to Detailed analysis for the supporting evidence and points to check from this assessment.');
-    return `<div class="concise-readout climate-verified-summary"><div class="concise-read-time">Five-minute readout</div>${operationContextHtml}<div class="concise-section-label">Overall assessment</div><div class="climate-summary-overview">${overviewHtml}</div>${signal}<div class="concise-section-label">What is already working</div><div class="concise-strengths">${strengthsHtml}</div>${bridge}${renderStage3AdvisoryTransition('climate')}<div class="concise-section-label">Priority actions for the task team</div>${countHtml}${prioritiesHtml}${watchHtml}${guidanceHtml}<p class="concise-closing">${esc(closingText)}</p></div>`;
+    return `<div class="concise-readout climate-verified-summary"><div class="concise-read-time">Five-minute readout</div>${operationContextHtml}<div class="concise-section-label">Overall assessment</div><div class="climate-summary-overview">${overviewHtml}</div>${signal}<div class="concise-section-label">What is already working</div><div class="concise-strengths">${strengthsHtml}</div>${gapsHtml||bridge}${renderStage3AdvisoryTransition('climate')}<div class="concise-section-label">Priority actions for the task team</div>${countHtml}${prioritiesHtml}${watchHtml}${guidanceHtml}<p class="concise-closing">${esc(closingText)}</p></div>`;
   }
 
   function handleStage3ViewKeydown(event){

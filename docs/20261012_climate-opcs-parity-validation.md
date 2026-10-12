@@ -300,3 +300,68 @@ Tests preserve exact native-content identity, two-call count, bounded final prom
 and content-free logs; 55 research/grounding/context checks pass. This matches the
 provider's documented search continuation protocol. The live effect has not been
 checked by another paid run. The quality/production hold remains in place.
+
+
+### Approved peace/social dividends ratings and Summary gaps
+
+Lindsey approved keeping paired sensitivity/responsiveness cards with revised
+questions on 2026-10-12. Sensitivity now assesses recognition AND response to
+interacting climate/FCV risks. Responsiveness assesses relevant, evidenced peace
+and social dividends through climate-related design and delivery within scope.
+Recognition alone cannot earn strong sensitivity; general social benefits or
+co-location do not establish a Climate responsiveness pathway. The report's
+investment/delivery framing shapes the rubric without requiring all categories
+or claiming demonstrated peace impact. Judgment/compiler prompts are v2.7;
+reader manifest is v2.4. Five-point values and unscored/legacy exceptions remain.
+
+Summary now places Potential gaps between strengths and actions. It reuses at
+most two distinct complete limitation fields from admitted priorities (<=45 words
+each, <=80 total). It never recovers withheld recommendations, cuts qualifications
+or infers a missing gap. Oversized legacy prose remains in Detailed; when no short
+limitation exists, the previous bridge remains. The existing compiler asks for one
+qualified limitation sentence <=35 words, distinguishing missing evidence from a
+confirmed omission and optional dividend opportunities from required corrections.
+No new schema field or provider call. Summary copying inherits the same content.
+
+Local Edge replay of the preserved quality2 case: the gap is 19 words; sidebar
+glosses are six and ten words, with full rationale collapsed. Both cards appear
+in Summary and Detailed. The 390px mobile disclosure is closed initially, opens
+to two cards, and has no horizontal overflow. Revised questions appear in the
+actual browser HTML download and the deterministic replay DOCX. Word rendered
+the latter to 12 PDF pages; page one was visually inspected. No visible machine
+markers were found. The partial-result notice, one retained priority and OIS
+qualification remain. Saved grades were not regenerated or regraded. These are
+presentation checks on an archived analytically unaccepted result, not live
+validation of the revised rubric.
+
+A conflicting shared disclaimer about an ideal project with maximum resources
+was corrected to respect scope and delivery constraints. The frontend retains
+the authoritative server sensitivity question, with a bounded migration of the
+known old saved wording only; unrelated server text is preserved.
+
+Additional no-cost provider check: the installed SDK serialized genuine native
+BetaMessage search-result blocks intact (including a dummy encrypted payload),
+retained tool definitions and tool_choice none, using httpx.MockTransport. No
+external request or model fee; provider-side retrieval/generation remains untested.
+
+The connected pass initially returned 332 passing checks and two old-wording
+expectations, corrected and verified by ten focused checks. A full pass then
+returned 1,402 passing checks and one authoritative-question contract failure;
+the fix and saved-wording migration pass nine focused checks. Final full-suite
+evidence is recorded below after completion.
+
+Artifacts are local only under output/playwright: 20261012-dividends-summary-gaps-
+final.png, summary-mobile-final.png, browser-report.html, replayed-report.html/docx/
+pdf and word-page1.png (all use the 20261012-dividends prefix). The input quality2
+session and its prior replay remain unchanged. Static local preview API/glossary
+404s reflect the intentionally serverless layout harness, not a hosted app check.
+Production and ITS remain held; no further paid run was made.
+
+
+Final verification after the authoritative-question correction: **1,404 tests
+passed in 378.81 seconds** with the full offline suite, no cache provider.
+`git diff --check` passed. No further code changes followed that full pass.
+Local test-result record: output/20261012-dividends-regression-result.txt.
+The configured smoke service was rechecked as fix/climate-opcs-parity with commit
+auto-deploy enabled; final deployment SHA/health is recorded in draft PR #83.
+The service deployment is a software check, not live model/analytical acceptance.

@@ -553,3 +553,14 @@ Tests preserve exact native-content identity, two-call count, bounded final prom
 and content-free logs; 55 research/grounding/context checks pass. This matches the
 provider's documented search continuation protocol. The live effect has not been
 checked by another paid run. The quality/production hold remains in place.
+
+
+### 2026-10-12 approved Climate dividends rating questions
+
+Judgments v2.7 require recognition plus response to interacting climate/FCV risks,
+and an evidenced mechanism for wider peace/social dividends through climate-related
+investment and delivery. Recognizing risks alone cannot justify strong sensitivity;
+generic social benefits cannot justify responsiveness. Rates are scope-relative,
+not a theoretical maximum or proven peace impact. Retains five levels and unscored
+not_expected/unclear. Compiler v2.7 asks for one qualified limitation sentence <=35
+words; an optional dividend opportunity is not a required correction. No extra call.

@@ -258,6 +258,7 @@ def test_climate_summary_caps_dynamic_strengths_and_uses_longer_overview():
             "normalizeClimateSourceTitle",
             "isPublicWorldBankHttpsUrl",
             "renderClimateRelevantGuidance",
+            "renderClimateSummaryGaps",
             "renderClimateVerifiedSummary",
         )
     )
@@ -338,6 +339,7 @@ def test_climate_summary_uses_canonical_overview_and_closed_follow_up_disclosure
             "normalizeClimateSourceTitle",
             "isPublicWorldBankHttpsUrl",
             "renderClimateRelevantGuidance",
+            "renderClimateSummaryGaps",
             "renderClimateVerifiedSummary",
         )
     )
@@ -526,6 +528,7 @@ def test_climate_summary_weaves_bridge_count_and_closing_in_order():
             "normalizeClimateSourceTitle",
             "isPublicWorldBankHttpsUrl",
             "renderClimateRelevantGuidance",
+            "renderClimateSummaryGaps",
             "renderClimateVerifiedSummary",
         )
     )
@@ -561,6 +564,17 @@ if (!(html.indexOf(bridge) < html.indexOf(count) && html.indexOf(count) < html.i
 }}
 if (html.includes('Priority 1 - Strengthen adaptive delivery')) throw new Error('duplicate priority prefix remains');
 if (!html.includes('>Strengthen adaptive delivery<')) throw new Error('normalized priority title missing');
+
+const gap='Flood-resilient design is documented, but upkeep arrangements are not shown.';
+const withGaps=renderClimateVerifiedSummary({{
+  summary_overview:['A complete overview.'],
+  existing_responses:[{{description:'Flood-resilient design is documented.'}}],
+  priorities:[{{...priorities[0],limitation:gap}}],
+  priority_summary:{{statement:bridge}}
+}});
+if (!(withGaps.indexOf('What is already working') < withGaps.indexOf('Potential gaps') && withGaps.indexOf('Potential gaps') < withGaps.indexOf('Priority actions for the task team'))) throw new Error('gap section order is incorrect');
+if (!withGaps.includes(gap) || withGaps.includes(bridge)) throw new Error('gaps must replace the general bridge');
+
 """
     result = subprocess.run(
         ["node", "-e", script], capture_output=True, text=True, check=False
@@ -586,6 +600,7 @@ def test_climate_summary_keeps_unresolved_warning_visible_and_incomplete_closing
             "normalizeClimateSourceTitle",
             "isPublicWorldBankHttpsUrl",
             "renderClimateRelevantGuidance",
+            "renderClimateSummaryGaps",
             "renderClimateVerifiedSummary",
         )
     )
@@ -632,6 +647,7 @@ def test_incomplete_recommendations_are_fail_loud_in_both_climate_views():
             "climateAccessibleRouteValue",
             "climateDraftingRouteGate",
             "boldEscapedFirstSentence",
+            "renderClimateSummaryGaps",
             "renderClimateVerifiedSummary",
             "climateAccessibleRouteValue",
             "climateDraftingRouteGate",
@@ -824,6 +840,7 @@ def test_climate_summary_truncates_overview_at_a_complete_sentence():
             "normalizeClimateSourceTitle",
             "isPublicWorldBankHttpsUrl",
             "renderClimateRelevantGuidance",
+            "renderClimateSummaryGaps",
             "renderClimateVerifiedSummary",
         )
     )

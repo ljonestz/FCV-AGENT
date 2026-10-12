@@ -34,14 +34,14 @@ DIMENSIONS = (
     (
         "sensitivity",
         "Climate & FCV sensitivity",
-        "Is the project designed to recognise and avoid worsening climate- "
-        "and FCV-related risks (do no harm)?",
+        "How well does the project recognize and address interacting climate "
+        "and FCV risks?",
     ),
     (
         "responsiveness",
         "Climate & FCV responsiveness",
-        "Does the project actively build climate resilience and address the "
-        "drivers of fragility, conflict, and violence?",
+        "How well does the project use relevant opportunities to generate wider "
+        "peace and social dividends through its climate-related design and delivery?",
     ),
     (
         "operationalization",
@@ -61,14 +61,14 @@ INCOMPLETE_RECOMMENDATION_MESSAGE = (
 )
 PARTIAL_RECOMMENDATION_MESSAGE = "Some proposed actions were withheld. This note needs further review before it is used."
 # Headline rating shown above the core-question cards: how sensitive the project
-# is to climate and FCV considerations, on a Limited -> Moderate -> Strong scale
+# is to interacting climate and FCV risks, on a five-point scale
 # derived from the (retained) internal `sensitivity` judgment. Higher is better
 # (more strongly designed to recognise and avoid worsening climate/FCV risk).
 _SENSITIVITY_SCALE_LABELS = (
     "Very Limited", "Limited", "Moderate", "Strong", "Very Strong",
 )
 SENSITIVITY_RATING_QUESTION = (
-    "How sensitive is this project to climate and FCV considerations?"
+    "How well does the project recognize and address interacting climate and FCV risks?"
 )
 SENSITIVITY_RATING_CAVEAT = (
     "This is a subjective judgement on the part of this AI tool and does not "
@@ -77,28 +77,28 @@ SENSITIVITY_RATING_CAVEAT = (
 _SENSITIVITY_RATING = {
     "very_strong": {
         "label": "Very Strong", "level": 5, "tone": "good",
-        "description": "The project is very strongly designed to recognise climate "
-        "and conflict risks and to avoid making them worse.",
+        "description": "The design provides comprehensive, well-supported "
+        "treatment of material climate-FCV interactions and risks of harm.",
     },
     "strong": {
         "label": "Strong", "level": 4, "tone": "good",
-        "description": "The project is strongly designed to recognise climate and "
-        "conflict risks and to avoid making them worse.",
+        "description": "The design addresses material climate-FCV interactions "
+        "convincingly, including risks of harm.",
     },
     "moderate": {
         "label": "Moderate", "level": 3, "tone": "mid",
-        "description": "The project recognises several climate and conflict risks, "
-        "but gaps remain in how it avoids making them worse.",
+        "description": "The design addresses the main climate-FCV interactions, "
+        "but material gaps remain in its response.",
     },
     "limited": {
         "label": "Limited", "level": 2, "tone": "low",
-        "description": "The project shows limited attention to recognising climate "
-        "and conflict risks and avoiding harm - an area to strengthen.",
+        "description": "The design shows partial recognition of climate-FCV "
+        "interactions, with a weak response to their risks.",
     },
     "very_limited": {
         "label": "Very Limited", "level": 1, "tone": "low",
-        "description": "The project shows very limited attention to recognising "
-        "climate and conflict risks and avoiding harm - a priority to strengthen.",
+        "description": "Little recognition of or response to climate-FCV "
+        "interactions is evidenced in the design.",
     },
     "unclear": {
         "label": "Not yet clear", "level": 0, "tone": "unclear",
@@ -1215,6 +1215,7 @@ def _responsiveness_readout(model: dict[str, object]) -> tuple[str, ...]:
     }.get(value, value.replace("_", " ").capitalize() + " contribution")
     return (
         "Climate & FCV responsiveness: " + label,
+        DIMENSIONS[2][2],
         "Contributing to responsiveness is often a sign of going above and beyond. "
         "The expected contribution depends on the project's scope.",
         "Contribution scale: Very limited / Limited / Moderate / Strong / Very strong. "

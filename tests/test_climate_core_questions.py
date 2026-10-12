@@ -95,7 +95,7 @@ def test_reader_model_carries_core_questions_and_sensitivity_rating():
     assert rating["scale"] == [
         "Very Limited", "Limited", "Moderate", "Strong", "Very Strong",
     ]
-    assert "sensitive" in rating["question"].lower()
+    assert "recognize and address interacting" in rating["question"].lower()
     assert rating["caveat"]
 
 
@@ -118,7 +118,7 @@ def test_core_questions_render_in_html_and_docx():
     model = build_reader_model(_assessment_with_core_questions())
     html = render_reader_html(model)
     assert "Core climate-FCV questions" in html
-    assert "How sensitive is this project to climate and FCV considerations?" in html
+    assert "How well does the project recognize and address interacting climate and FCV risks?" in html
     assert ">Strong<" in html and "Moderate" in html and "Limited" in html  # scale
     assert "Is infrastructure sized for future climate conditions?" in html
     assert "For further insights on why this matters" in html
@@ -131,7 +131,7 @@ def test_core_questions_render_in_html_and_docx():
     stream.seek(0)
     text = "\n".join(p.text for p in Document(stream).paragraphs)
     assert "Core climate-FCV questions" in text
-    assert "How sensitive is this project" in text
+    assert "How well does the project recognize and address" in text
     assert "Rating: Strong" in text
     assert "Is infrastructure sized for future climate conditions?" in text
 
@@ -155,6 +155,6 @@ def test_reader_without_core_questions_still_renders():
     assert model["core_questions"] == []
     html = render_reader_html(model)
     assert "Core climate-FCV questions" in html
-    assert "How sensitive is this project" in html  # rating still shown
+    assert "How well does the project recognize and address" in html  # rating still shown
     stream = BytesIO()
     write_reader_docx(model, stream)  # must not raise

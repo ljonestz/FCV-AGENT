@@ -429,3 +429,17 @@ Verified Climate reader status partial makes renderOut show Recommendations need
 review in Summary and Detailed. copySummary prepends the short status message;
 standalone Detailed HTML and Word include it before assessment content. Complete
 and wholly suppressed incomplete results preserve their previous treatment.
+
+
+### 2026-10-12 dividends framing and Summary gaps
+
+climateVerifiedRatingCards retains paired five-point cards, short glosses and
+collapsed explanations. Its questions distinguish risk recognition/response from
+peace and social dividends through climate-related design/delivery within scope.
+The full approved contribution caveat remains in the explanation and exports.
+renderClimateSummaryGaps selects at most two distinct complete admitted-priority
+limitation fields, each <=45 words and <=80 words total, escaping prose without
+slicing qualifications. It replaces the general bridge when present; no candidates
+or rejected diagnostics are used. Summary copying inherits the same readout.
+screenerCaveatHtml now respects scope and delivery constraints rather than maximum
+resources; normal-FCV rating values are unchanged.

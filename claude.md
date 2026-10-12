@@ -18,7 +18,7 @@ Normal FCV and verified Climate now keep the rating sidebar in Summary and Detai
 mobile uses the existing collapsed disclosure. Climate shows separate sensitivity
 and responsiveness cards with short glosses and collapsed rationale. Responsiveness
 uses five contribution levels (very_limited through very_strong), with not_expected
-and unclear unscored. The judgment prompt/schema is climate-judgments-v2.5; saved
+and unclear unscored. The judgment prompt is climate-judgments-v2.7; saved
 Emerging results remain visibly legacy and unscored. The approved scope message is:
 "Contributing to responsiveness is often a sign of going above and beyond. The
 expected contribution depends on the project's scope." Normal FCV's existing
@@ -1030,3 +1030,22 @@ The existing research structuring call now preserves native search/encrypted
 context, with further searches disabled and no added call. All 55 research,
 grounding and context checks pass. The current validation record documents the
 protocol and remaining live-acceptance hold; ITS remains unchanged.
+
+
+### 2026-10-12 approved dividends framing and Summary gaps
+
+Climate judgment/compiler prompts are v2.7; reader manifest v2.4. Sensitivity now
+asks how well the project recognizes and addresses interacting climate/FCV risks;
+recognition alone cannot earn a strong rating. Responsiveness asks how well relevant
+climate-related design and delivery choices support wider peace and social dividends
+within scope, using an evidenced mechanism rather than theoretical maximum benefit.
+Five-point values and unscored/legacy exceptions are retained. The shared caveat now
+respects project objectives, scope and delivery constraints.
+
+renderClimateSummaryGaps uses at most two distinct complete limitation fields from
+admitted reader priorities (45 words each, 80 total), between strengths and actions.
+Oversized legacy prose stays in Detailed; missing text does not become a finding.
+The old bridge remains when no short limitation is available. The existing compiler
+asks for one qualified limitation sentence of at most 35 words. No schema field,
+provider call, normal-FCV scale change or automatic regrading of saved results.
+Production and ITS remain held pending live analytical acceptance.

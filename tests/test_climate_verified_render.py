@@ -526,7 +526,7 @@ def test_overview_box_renders_without_summary_when_absent():
     # Graceful degradation: the rating card still renders (with its level gloss),
     # just with no embedded overall summary.
     assert "climate-sens-rating" in html
-    assert "strongly designed to recognise" in html
+    assert "addresses material climate-FCV interactions" in html
 
 
 def test_visible_tiers_hide_routing_metadata_and_evidence_codes():

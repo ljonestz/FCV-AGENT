@@ -144,17 +144,33 @@ Return: {"existing_responses":[{"response_id":"ER-001","project_fact_ids":[],"pa
 def _judgment_prompt(payload: dict[str, object]) -> str:
     return _common(
         """Assess four independent dimensions; do not produce an overall rating.
-Relevance asks whether the Climate-FCV intersection is material. Sensitivity asks
-whether design recognizes relevant FCV dynamics and avoids aggravating risks;
-rate it on a five-point scale - very_strong, strong, moderate, limited, or
-very_limited (or unclear when the evidence is insufficient) - reserving the
-extremes for clearly strong or clearly weak evidence.
-Responsiveness asks whether design actively strengthens resilience, inclusion,
-legitimacy, cooperative governance, or plausible social dividends.
-Rate the evidenced additional contribution on five points: very_limited (minimal
-direct contribution), limited (narrow or isolated contribution), moderate
-(substantive but bounded contribution), strong (substantial contribution through
-the design), very_strong (comprehensive, well-supported contribution).
+Relevance asks whether the Climate-FCV intersection is material.
+Sensitivity: How well does the project recognize and address interacting climate and FCV risks?
+Assess both directions: climate pressures affecting FCV and project delivery,
+and FCV dynamics affecting climate outcomes. Include risks of aggravating harm,
+exclusion and maladaptation. Recognition alone cannot justify strong or very_strong sensitivity.
+Use five points: very_limited (little recognition or response), limited (partial
+recognition with weak response), moderate (main interactions addressed with
+material gaps), strong (material interactions addressed convincingly),
+very_strong (comprehensive, well-supported treatment of material interactions).
+Use unclear when the evidence is insufficient; do not infer weak design merely
+from an incomplete upload. Reserve extremes for clearly strong or weak evidence.
+Responsiveness: How well does the project use relevant opportunities to generate wider peace and social dividends through its climate-related design and delivery?
+Require a concrete climate-FCV mechanism linking evidenced project choices to
+social cohesion and inclusion, institutional capacity and legitimacy, or jobs and livelihoods.
+Consider both what the project invests in and how it delivers: context-informed
+design, trust and collaboration, and adaptive management. These delivery methods
+count as responsiveness only where an evidenced pathway supports wider peace
+or social outcomes; routine risk management alone remains sensitivity.
+General social benefits or co-location with climate investments are insufficient.
+Climate-related components and credible co-benefits count even where climate
+is not the project's primary objective. Assess design contribution, not proven
+peace impacts; stated ambitions alone do not establish a contribution.
+Do not score the project's theoretical maximum or require all dividend categories.
+Rate evidenced contribution within scope: very_limited (minimal contribution),
+limited (narrow contribution), moderate (credible, bounded contribution), strong
+(substantial, deliberate contribution), very_strong (extensive, well-supported
+contribution through relevant design and delivery choices).
 Contributing to responsiveness is often a sign of going above and beyond.
 The expected contribution depends on the project's scope. A limited contribution
 is not a failure of sensitivity or overall project quality. Use not_expected
@@ -293,6 +309,9 @@ Use no digits in decision, minimum_action,
 enhanced_action, enhanced_activation, or completion_evidence; express supported
 actions without numeric precision. Review-readiness flags are non-scoring,
 source-linked, and limited to four. Keep free-text values to 45 words or fewer.
+For limitation, write one complete sentence of at most 35 words describing the
+remaining gap or evidence limitation, not the proposed action. Distinguish
+missing evidence from a confirmed omission; an optional dividends opportunity is not a required correction.
 The narrative is the one exception: write it as two or three short paragraphs of
 plain, flowing prose (about 110-220 words) that tell the task team the story -
 the gap and why it matters, what to do and how, who leads it, the optional deeper
