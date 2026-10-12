@@ -97,7 +97,12 @@ def classify_processing_model(
         return "two_step"
     if is_fmrf and not is_af:
         return "two_step"
-    if is_af or urgent_need_or_capacity or small_tf_retf_le_5m:
+    if is_af:
+        return "one_step"
+    # Urgent-need and small-TF one-step triggers are IPF-family only. The PforR
+    # one-step list (OPS5.04 PforR preparation procedures) is limited to the risk
+    # rule plus AF, so these flags must not force a PforR operation to one-step.
+    if inst != "pforr" and (urgent_need_or_capacity or small_tf_retf_le_5m):
         return "one_step"
 
     sort_n, es_n = _norm(sort_overall), _norm(es_risk)

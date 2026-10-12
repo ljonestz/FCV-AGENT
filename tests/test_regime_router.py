@@ -75,6 +75,21 @@ def test_ipf_small_tf_and_urgent_are_one_step():
     ) == "one_step"
 
 
+def test_pforr_urgent_and_small_tf_do_not_force_one_step():
+    # Urgent-need and small-TF one-step triggers are IPF-only; a PforR with either
+    # flag is still governed by the risk rule (High -> two-step), not forced one-step.
+    assert rr.classify_processing_model(
+        instrument="PforR", sort_overall="High", es_risk="High", urgent_need_or_capacity=True,
+    ) == "two_step"
+    assert rr.classify_processing_model(
+        instrument="PforR", sort_overall="High", es_risk="High", small_tf_retf_le_5m=True,
+    ) == "two_step"
+    # But AF-to-PforR remains a valid one-step trigger.
+    assert rr.classify_processing_model(
+        instrument="PforR", sort_overall="High", es_risk="High", is_af=True,
+    ) == "one_step"
+
+
 def test_fmrf_not_af_is_two_step():
     assert rr.classify_processing_model(
         instrument="IPF", sort_overall="Low", es_risk="Low", is_fmrf=True,

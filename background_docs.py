@@ -1838,7 +1838,8 @@ Surface as advisory, never a determination: OP 7.30 limits, no rapid-response va
 disbursement-cliff exposure can make P4R demanding or "effectively unusable" in some conflict
 settings given its reliance on government systems and low-capacity FCS constraints - suggest
 discussing instrument choice (a complementary IPF component / TA, or a different instrument)
-with the regional FCV coordinator. Note that OPS5.04-POL.125 para 12 provides a
+with the regional FCV coordinator. Note that the Rapid Response to Crises and Emergencies Policy
+(OPS5.08-POL.125) and the dedicated "Provision of a Rapid Response Option (RRO)" Procedure provide a
 **Rapid Response Option (RRO)** allowing accelerated processing for emergency circumstances - flag
 RRO as a potential partial mitigant to disbursement-cliff exposure where the program faces
 a plausible emergency scenario, without asserting it resolves the underlying feasibility
@@ -1906,7 +1907,9 @@ MPA_MODULE_GUIDE = """
 ## MPA (Multiphase Programmatic Approach) Wrapper - FCV Screening Guide
 
 The MPA is a program-and-phase **wrapper, not a new analytical spine**: each phase is itself an
-IPF or P4R operation under current WBG MPA policy (OPS5.01-POL/DIR) - DPF/DPO is not itself an
+IPF or P4R operation under current WBG MPA guidance (the "Multiphase Programmatic Approach" Bank
+Guidance; MPA provisions also sit within the IPF and PforR Policies, not a standalone OPS5.01
+instrument) - DPF/DPO is not itself an
 MPA phase instrument; a DPO series uses its own distinct programmatic-series mechanism (see
 `FCV_INSTRUMENT_CALIBRATION` "Programmatic series risk"), not the MPA wrapper. Route each phase
 to its base-instrument module and add the MPA program layer on top. Composes with the

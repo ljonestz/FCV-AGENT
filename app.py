@@ -4031,6 +4031,10 @@ def appraisal_document_label(preparation_regime: str, instrument: str) -> str:
         if inst in {"pforr", "p4r", "program-for-results"}:
             return "Program Paper"
         return "Project Paper"
+    # Legacy / unresolved: DPF has always used a Program Document (not a PAD);
+    # IPF and PforR default to the PAD label.
+    if inst in {"dpo", "dpf"}:
+        return "Program Document"
     return "Project Appraisal Document (PAD)"
 
 
