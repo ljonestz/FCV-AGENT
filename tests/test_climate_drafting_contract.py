@@ -631,3 +631,19 @@ def test_known_instrument_without_a_valid_target_still_blocks_current_drafting()
         issue.code == "DRAFTING_CURRENT_TARGET_INVALID" and issue.blocking
         for issue in issues
     )
+
+
+def test_hybrid_ipf_terms_need_component_scope_and_matching_evidence():
+    candidate = replace(_candidate(), decision="Update the IPF component ESCP.")
+    ctx = replace(
+        _context(), instrument_type="PforR", has_ipf_component=True,
+        project_fact_text={"PF-001": "The IPF component has an ESCP."},
+    )
+    def codes(item, scope):
+        return {issue.code for issue in validate_recommendation(item, KNOWN_IDS, drafting_context=scope)}
+    assert "INSTRUMENT_TERMINOLOGY_MISMATCH" not in codes(candidate, ctx)
+    assert "INSTRUMENT_TERMINOLOGY_MISMATCH" in codes(candidate, replace(ctx, has_ipf_component=False))
+    assert "INSTRUMENT_TERMINOLOGY_MISMATCH" in codes(candidate, replace(ctx, project_fact_text={}))
+    assert "INSTRUMENT_TERMINOLOGY_MISMATCH" in codes(replace(candidate, decision="Apply the ESCP to the whole program."), ctx)
+    assert "INSTRUMENT_TERMINOLOGY_MISMATCH" in codes(replace(candidate, decision="Update the IPF component ESCP. Apply ESS1 to the program."), ctx)
+    assert "INSTRUMENT_TERMINOLOGY_MISMATCH" in codes(candidate, replace(ctx, instrument_type="DPF"))

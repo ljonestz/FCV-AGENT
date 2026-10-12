@@ -113,14 +113,14 @@ HEADINGS = (
     "Executive readout",
     "Core climate-FCV questions",
     "Ranked operational priorities",
-    "Points to check before the decision meeting",
+    "Points to check before the applicable review",
     "What to keep an eye on",
 )
 # Lay-comprehensible intro shared by the points-to-check section across all three
 # render surfaces (server HTML, DOCX, and the frontend renderer).
 POINTS_TO_CHECK_INTRO = (
-    "These are smaller things for the team to confirm or consider before the concept "
-    "or decision meeting. They are not the main recommendations above, and none is a "
+    "These are smaller things for the team to confirm or consider at the applicable "
+    "review. They are not the main recommendations above, and none is a "
     "reason to stop the project - think of them as a checklist."
 )
 # Reader-facing priority rows only. Model-internal routing/authority fields and
@@ -302,6 +302,9 @@ def _drafting_route_gate(
     route_confirmed = (
         _route_value_confirmed(operation_context.get("document_type"))
         and _route_value_confirmed(operation_context.get("instrument_type"))
+    )
+    route_confirmed = route_confirmed and "MPA_INSTRUMENT_INCOMPATIBLE" not in (
+        operation_context.get("warning_codes") or []
     )
     has_canonical_drafting = (
         priority is None
@@ -495,6 +498,23 @@ def _project_cycle_for_operation(
     else:
         primary_label = "At the current review stage"
         secondary_label = "Before the next decision point"
+    if (
+        operation_context.get("preparation_regime") == "new_model"
+        and document_type not in {"af", "additional financing", "restructuring"}
+    ):
+        processing = operation_context.get("processing_model")
+        if processing == "two_step":
+            primary_label = "For Technical Design review, if still pending"
+            secondary_label = "For Implementation Readiness review, if still pending"
+        elif processing in {"one_step", "one_review"}:
+            primary_label = "For One Review, if still pending"
+            secondary_label = "Before the next applicable decision"
+        else:
+            primary_label = "In the current preparation document"
+            secondary_label = "At the applicable review; confirm the processing route"
+    elif document_type == "pid":
+        primary_label = "In the current information document"
+        secondary_label = "At the applicable preparation stage"
     return {
         "primary_label": primary_label,
         "primary_text": _first_reader_text(
@@ -523,7 +543,7 @@ def _priority_summary(priorities: list[dict[str, Any]]) -> dict[str, object]:
             f"identifies {count} main operational {noun} for strengthening climate "
             "resilience, conflict sensitivity and implementation readiness in this "
             "project. These are followed by secondary points to check before the "
-            "decision meeting and issues to keep under review as preparation advances."
+            "applicable review and issues to keep under review as preparation advances."
         )
     return {"count": count, "titles": titles, "statement": statement}
 
@@ -1300,7 +1320,7 @@ def render_reader_html(model: dict[str, object]) -> str:
         parts.append(_purpose_band_html(
             "climate-decision-preparation",
             "Climate decision preparation",
-            "Points to check before the next decision meeting.",
+            "Points to check at the next applicable review.",
             "!",
         ))
         parts.append(f"<p>{html.escape(POINTS_TO_CHECK_INTRO)}</p>")
@@ -1622,7 +1642,7 @@ def write_reader_docx(model: dict[str, object], path: str | Path) -> Path:
     if minor_points or doc_flags:
         document.add_heading(HEADINGS[3], level=1)
         document.add_heading("Climate decision preparation", level=2)
-        document.add_paragraph("Points to check before the next decision meeting.")
+        document.add_paragraph("Points to check at the next applicable review.")
         document.add_paragraph(POINTS_TO_CHECK_INTRO)
         if minor_points:
             document.add_heading(

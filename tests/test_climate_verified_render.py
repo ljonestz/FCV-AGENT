@@ -842,7 +842,7 @@ def test_reader_has_four_dimensions_priority_cap_and_safe_annex():
             "identifies 4 main operational priorities for strengthening climate "
             "resilience, conflict sensitivity and implementation readiness in this "
             "project. These are followed by secondary points to check before the "
-            "decision meeting and issues to keep under review as preparation advances."
+            "applicable review and issues to keep under review as preparation advances."
         ),
     }
     assert "overall_rating" not in model
@@ -1144,7 +1144,7 @@ def test_html_heading_structure_is_ordered_and_priorities_navigable():
 
     assert html.count('<summary><h3 class="climate-priority-title">') == 4
     assert '<summary><h3 class="climate-priority-title">1. Priority 1' in html
-    assert "<h2>Points to check before the decision meeting</h2>" in html
+    assert "<h2>Points to check before the applicable review</h2>" in html
     assert "<h3>Smaller climate &amp; fragility points to consider</h3>" in html
     assert "<h4>Confirm heat safeguards for field teams.</h4>" in html
     assert "<h3>Document points to confirm</h3>" in html

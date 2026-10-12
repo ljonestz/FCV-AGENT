@@ -178,3 +178,29 @@ guidance disclosure. Suggested drafting appears in both Summary and Detailed onl
 after the shared document-plus-instrument gate passes. These are reader-contract
 changes; normal FCV retains its narrative/schema/prompt/rating contracts and only
 adds conditional render-time watch items from already-returned arrays.
+
+
+## Climate OPCS parity candidate (2026-10-12)
+
+Branch `fix/climate-opcs-parity` updates verified Climate routing and the bounded
+registry to `climate-guidance-v4`. DPF PAD hints normalize to Program Document;
+IPF-DDO uses IPF; unsupported TA stays unresolved. PID, Project Paper and Program
+Document alone do not establish a preparation regime. Explicit OIS dates use the
+shared instrument boundaries. AF/restructuring purpose precedes generic paper
+labels. Labelled risk inputs use the shared processing classifier with MPA,
+FMRF and hybrid-component safeguards; conflicting processing markers fail closed.
+New-model IPF can resolve ESF through the shared OIS rule, while AF/restructuring
+needs explicit E&S evidence and mixed framework mentions stay unresolved.
+
+DPF-MPA drafting is withheld. PforR mid-cycle guidance is registered. Hybrid PforR
+recommendations can use IPF E&S terminology only in explicitly component-scoped
+sentences supported by linked component facts; standalone PforR/DPF guards remain.
+`DraftingValidationContext.has_ipf_component` is an internal optional boolean;
+no output schema, delimiter, rating or extra model call changes.
+
+Appraisal guidance adds evidence checks and specialist referrals for Paris
+Alignment, climate/disaster risk screening, climate co-benefits and indicators.
+It never certifies compliance or treats a missing upload as an absent assessment.
+Reader timing uses conditional new-model review destinations, and PID is not
+assumed concept-stage. Source currency remains subject to live PPF verification.
+Live acceptance and release status: see `docs/20261012_climate-opcs-parity-validation.md`.

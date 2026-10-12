@@ -1162,6 +1162,7 @@ def run_verified_climate_pipeline(
                 for item in guidance
             },
             instrument_type=instrument_type,
+            has_ipf_component=bool(resolved_context.get("has_ipf_component")),
         )
         candidate, actor_repairs = normalize_unverified_completion_actor(
             candidate,

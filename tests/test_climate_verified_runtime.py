@@ -436,13 +436,13 @@ def test_explicit_regional_operation_is_multi_country_and_withholds_single_count
     assert "MULTI_COUNTRY_BANK_WITHHELD" in context.warning_codes
 
 
-def test_new_model_document_marker_sets_preparation_model_without_inventing_processing_model():
+def test_project_paper_title_alone_does_not_establish_preparation_model():
     context = _resolved_context(
         "IPF Project Paper.docx",
         "Project Paper\nInvestment Project Financing.",
     )
 
-    assert context.preparation_regime == "new_model"
+    assert context.preparation_regime == "unresolved_policy_source"
     assert context.processing_model == "unknown"
 
 
@@ -477,7 +477,7 @@ def test_explicit_ois_date_overrides_dpf_program_document_regime_marker():
     assert context.instrument_type == "DPF"
     assert context.document_type == "Program Document"
     assert context.preparation_regime == "legacy_transitional"
-    assert "PREPARATION_MARKER_DATE_CONFLICT" in context.warning_codes
+    assert "PREPARATION_MARKER_DATE_CONFLICT" not in context.warning_codes
 
 
 def test_structured_financing_field_outranks_incidental_instrument_mentions():

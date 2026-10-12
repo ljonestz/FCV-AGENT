@@ -5140,7 +5140,7 @@
     const priorities=Array.isArray(r.priorities)?r.priorities.slice().sort((a,b)=>(Number(a.rank)||999)-(Number(b.rank)||999)).slice(0,5):[];
     const priorityNoun=priorities.length===1?'priority':'priorities';
     const prioritySummary=r.priority_summary&&typeof r.priority_summary==='object'?r.priority_summary:{};
-    const prioritySummaryHtml=priorities.length?`<p class="climate-priority-summary">${esc(prioritySummary.statement||`Drawing on the overview and core climate-FCV questions, the analysis identifies ${priorities.length} main operational ${priorityNoun} for strengthening climate resilience, conflict sensitivity and implementation readiness in this project. These are followed by secondary points to check before the decision meeting and issues to keep under review as preparation advances.`)}</p>`:'';
+    const prioritySummaryHtml=priorities.length?`<p class="climate-priority-summary">${esc(prioritySummary.statement||`Drawing on the overview and core climate-FCV questions, the analysis identifies ${priorities.length} main operational ${priorityNoun} for strengthening climate resilience, conflict sensitivity and implementation readiness in this project. These are followed by secondary points to check before the applicable review and issues to keep under review as preparation advances.`)}</p>`:'';
     const priorityHtml=priorities.length?priorities.map((priority,index)=>{
       const field=(label,key)=>{
         const raw=priority[key];
@@ -5160,11 +5160,11 @@
     }).join(''):`<p>${esc(noPriorityMessage)}</p>`;
     const flags=Array.isArray(r.review_readiness_flags)?r.review_readiness_flags.slice(0,4):[];
     const minorPoints=Array.isArray(r.minor_climate_points)?r.minor_climate_points.slice(0,3):[];
-    const flagsIntro='<p class="climate-check-intro">These are smaller things for the team to confirm or consider before the concept or decision meeting. They are not the main recommendations above, and none is a reason to stop the project - think of them as a checklist.</p>';
+    const flagsIntro='<p class="climate-check-intro">These are smaller things for the team to confirm or consider at the applicable review. They are not the main recommendations above, and none is a reason to stop the project - think of them as a checklist.</p>';
     const numberedCheckItem=(title,body,check,index)=>`<section class="climate-check-item climate-numbered-item"><span class="climate-item-number">${String(index+1).padStart(2,'0')}</span><div class="climate-numbered-content"><h4>${esc(title)}</h4><p>${esc(body)}</p><p class="climate-check-action"><strong>How to address:</strong> ${esc(check)}</p></div></section>`;
     const minorPointsHtml=minorPoints.length?`<section class="climate-check-group"><h3>Smaller climate and fragility points to consider</h3><p class="climate-check-intro">These are smaller, climate- and fragility-specific points that were not large enough to become a recommendation above, but are still worth a look.</p>${minorPoints.map((point,index)=>numberedCheckItem(point.point||'',point.why||'',point.how_to_check||'',index)).join('')}</section>`:'';
     const docFlagsHtml=flags.length?`<section class="climate-check-group"><h3>Document points to confirm</h3>${flags.map((flag,index)=>numberedCheckItem(flag.flag||'Point to verify',flag.why_it_matters||'',flag.suggested_verification||'',index)).join('')}</section>`:'';
-    const pointsToCheckBodyHtml=(flags.length||minorPoints.length)?`<div class="climate-purpose-band climate-decision-preparation"><span class="climate-purpose-icon" aria-hidden="true">!</span><div><strong>Climate decision preparation</strong><p>Points to check before the next decision meeting.</p></div></div>${flagsIntro}${minorPointsHtml}${docFlagsHtml}`:'';
+    const pointsToCheckBodyHtml=(flags.length||minorPoints.length)?`<div class="climate-purpose-band climate-decision-preparation"><span class="climate-purpose-icon" aria-hidden="true">!</span><div><strong>Climate decision preparation</strong><p>Points to check at the next applicable review.</p></div></div>${flagsIntro}${minorPointsHtml}${docFlagsHtml}`:'';
     const watchList=climateSummaryWatchItems(r);
     const watchBodyHtml=watchList.length?`<p class="climate-watch-intro">These are things to monitor as the project develops. They are not actions to take now - just points to keep in view.</p>${watchList.map((item,index)=>`<section class="climate-numbered-item climate-watch-item"><span class="climate-item-number">${String(index+1).padStart(2,'0')}</span><div class="climate-numbered-content"><p>${item.question?`<strong>${esc(item.question)}</strong> `:''}${esc(item.watch)}</p></div></section>`).join('')}`:'';
     let provenanceHtml='';
@@ -5207,7 +5207,7 @@
       climateReportSection('Overview','climate-overview',overviewBodyHtml)+
       climateReportSection('Core climate-FCV questions','climate-core-questions',coreQuestionsBodyHtml)+
       climateReportSection('Ranked operational priorities','climate-priorities',prioritiesBodyHtml)+
-      (pointsToCheckBodyHtml?climateReportSection('Points to check before the decision meeting','climate-points-to-check',pointsToCheckBodyHtml):'')+
+      (pointsToCheckBodyHtml?climateReportSection('Points to check before the applicable review','climate-points-to-check',pointsToCheckBodyHtml):'')+
       (watchBodyHtml?climateReportSection('What to keep an eye on','climate-watch',watchBodyHtml):'')+
       (relevantGuidanceHtml?climateReportSection('Relevant WBG guidance for this project','climate-guidance',`<div class="climate-purpose-band climate-further-guidance"><span class="climate-purpose-icon" aria-hidden="true">i</span><div><strong>Climate further guidance</strong><p>Optional WBG sources for deeper follow-up on the findings.</p></div></div>${relevantGuidanceHtml}`):'')+
       (provenanceHtml?climateReportSection('How this analysis was produced','climate-methodology-section',provenanceHtml):'');

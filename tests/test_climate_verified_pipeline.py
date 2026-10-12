@@ -242,7 +242,7 @@ def test_four_calls_run_when_semantic_review_is_not_required():
     assert "SUMMARY_OVERVIEW_FALLBACK_REQUIRED" in result["validation"]["reason_codes"]
     assert len(result["priorities"]) == 1
     compiler_payload = assessment.calls[-1]["payload"]
-    assert compiler_payload["guidance_registry_version"] == "climate-guidance-v3"
+    assert compiler_payload["guidance_registry_version"] == "climate-guidance-v4"
     assert "GUIDE-PCN-DESIGN" in {
         item["guidance_id"] for item in compiler_payload["operational_guidance"]
     }

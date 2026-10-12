@@ -42,7 +42,19 @@ CALIBRATION RULES
   Paper/PAD, borrower systems, ESSA, Program Action Plan, DLIs, and verification.
   DPF routes through Program Document, prior actions and the policy matrix,
   poverty/social impact analysis, and environmental/forest/natural-resource
-  analysis. Never route PforR or DPF actions to IPF ESS, ESCP, or SEP instruments.
+  analysis. Never route standalone PforR or DPF actions to IPF ESS, ESCP, or SEP
+  instruments. For a verified PforR IPF component only, component-specific drafting
+  can reference its evidenced E&S instruments: each sentence using IPF E&S terms
+  explicitly names the IPF component and cites supporting project evidence.
+  Never apply those instruments to the whole PforR program.
+- Distinguish the uploaded document type from the preparation regime. A PID,
+  Project Paper or Program Document title alone does not establish the regime.
+  Preserve AF/restructuring scope. In new-model operations use Technical Design /
+  Implementation Readiness or One Review only when the processing route is known.
+  These are review destinations, not assertions that a historical milestone is pending.
+- Climate appraisal guidance supports evidence checks and specialist referrals,
+  never a determination of Paris Alignment, screening adequacy or climate finance.
+  Do not infer a missing assessment from its absence in the uploaded package.
 - Treat MPA as a program wrapper and use its resolved base instrument for the
   lending route. If the document or base instrument is Unknown, withhold document-targeted drafting rather than guessing a destination or requirement.
 

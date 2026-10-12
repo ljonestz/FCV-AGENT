@@ -1985,7 +1985,7 @@ for (const removed of [
 }}
 const orderedSections = [
   'Overview', 'Core climate-FCV questions', 'Ranked operational priorities',
-  'Points to check before the decision meeting', 'What to keep an eye on'
+  'Points to check before the applicable review', 'What to keep an eye on'
 ];
 let previous = -1;
 for (const section of orderedSections) {{
@@ -2041,7 +2041,7 @@ const expectedHeadings = [
   ['01', 'Overview'],
   ['02', 'Core climate-FCV questions'],
   ['03', 'Ranked operational priorities'],
-  ['04', 'Points to check before the decision meeting'],
+  ['04', 'Points to check before the applicable review'],
   ['05', 'What to keep an eye on'],
   ['06', 'How this analysis was produced']
 ];
@@ -2084,7 +2084,7 @@ for (const expected of [
 for (const unsafe of ['undefined', '[object Object]']) {{
   if (html.includes(unsafe)) throw new Error('unsafe rendered value: ' + unsafe + ' | ' + html);
 }}
-if (html.includes('Points to check before the decision meeting')) {{
+if (html.includes('Points to check before the applicable review')) {{
   throw new Error('empty points section should be suppressed | ' + html);
 }}
 const headingPattern = new RegExp('<header class="climate-section-heading"><span class="climate-section-number">([0-9]{{2}})</span><h2>([^<]+)</h2></header>', 'g');
