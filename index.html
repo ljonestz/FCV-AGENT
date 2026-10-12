@@ -2719,12 +2719,18 @@
     } catch(e) { /* silent — tooltips just won't appear */ }
   })();
 
+  // Effective upload cap (MB), published by the backend so the pre-submit size
+  // warning tracks the real MAX_CONTENT_LENGTH even when IT overrides it by env.
+  // Falls back to the historical 50 MB if the catalogue fetch fails.
+  let uploadLimitMb = 50;
+
   let lensCatalogueReady=(async function loadLensCatalogue(){
     try{
       const r=await fetch('/api/sector-lenses');
       if(!r.ok)return;
       const data=await r.json();
       lensCatalogue=Array.isArray(data.lenses)?data.lenses:[];
+      if(typeof data.max_upload_mb==='number'&&data.max_upload_mb>0)uploadLimitMb=data.max_upload_mb;
       renderLensSelector();
     }catch(e){/* Core screening remains available if the catalogue cannot load. */}
   })();
@@ -3840,6 +3846,12 @@
       if(log){ log.style.color='#b91c1c'; log.textContent='⚠ Please select a project document before beginning.'; }
       return;
     }
+    const sizeWarn = uploadPayloadLimitMessage(pF, pkF, cF);
+    if(sizeWarn){
+      const log = document.getElementById('debug-log');
+      if(log){ log.style.color='#b91c1c'; log.textContent='⚠ '+sizeWarn; }
+      return;
+    }
     document.getElementById('upload-panel').style.display = 'none';
     document.getElementById('landing-hero').style.display = 'none';
     if(analysisMode==='express'){
@@ -3856,11 +3868,14 @@
     const all=[...(primaryFiles||[]),...(packageFiles||[]),...(contextFiles||[])];
     const rawBytes=all.reduce((sum,f)=>sum+(f&&f.size?f.size:0),0);
     const estimatedPayloadBytes=Math.ceil(rawBytes*4/3);
-    const limitBytes=45*1024*1024; // below Flask's 50MB cap to allow JSON overhead
+    // Warn ~10% below the backend cap so this friendly pre-submit message fires
+    // before the server returns a raw 413. The cap is published by the backend.
+    const limitMb=(typeof uploadLimitMb==='number'&&uploadLimitMb>0)?uploadLimitMb:50;
+    const limitBytes=Math.floor(limitMb*1024*1024*0.9);
     if(estimatedPayloadBytes<=limitBytes)return '';
     const rawMb=(rawBytes/1024/1024).toFixed(1);
     const encodedMb=(estimatedPayloadBytes/1024/1024).toFixed(1);
-    return 'Uploaded documents are too large for this Render deployment: '+rawMb+' MB of files becomes about '+encodedMb+' MB after browser base64 encoding. Remove optional package/context documents or use smaller PDFs, then retry.';
+    return 'Uploaded documents are too large for this deployment: '+rawMb+' MB of files becomes about '+encodedMb+' MB after browser base64 encoding, over the '+limitMb+' MB request limit. Remove optional package/context documents or use smaller PDFs, then retry.';
   }
 
   function requestErrorMessage(err, networkMessage){

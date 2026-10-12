@@ -128,6 +128,15 @@ STANDARD_FCV_PRIMARY_DOC_CHARS = 300_000
 STAGE1_PACKAGE_DOC_CHARS = 25_000   # Pre-distillation fallback cap for Zone 2 docs
 STAGE1_CONTEXT_DOC_CHARS = 30_000   # Pre-distillation fallback cap for Zone 3 docs
 
+# Max accepted request body (whole upload JSON, after browser base64 encoding).
+# Env-configurable so IT can tune it to the Render instance size. The former hard
+# 50 MB value was sized for the free tier; the paid tier has the headroom for a
+# full project package (primary PAD + up to 10 package + 3 context PDFs), which
+# easily exceeds 50 MB after base64. The effective value is published to the
+# frontend via /api/sector-lenses so its pre-submit size warning cannot drift
+# from this backend cap.
+MAX_UPLOAD_MB = max(1, int(os.environ.get("MAX_UPLOAD_MB", "100")))
+
 # Model tiers (Claude 5.5 generation, Oct 2026). The reasoning-heavy core Stage 2
 # (FCV assessment) and Stage 3 (recommendations) run on Opus; Stage 1 extraction
 # and every secondary call run on the fast, low-cost Sonnet; helper calls use
@@ -8789,7 +8798,7 @@ if os.path.exists(PROMPTS_FILE):
         pass
 
 app = Flask(__name__, static_folder='static')
-app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
+app.config['MAX_CONTENT_LENGTH'] = MAX_UPLOAD_MB * 1024 * 1024
 
 
 def _configure_app_logging() -> None:
@@ -8973,7 +8982,11 @@ def get_sector_lenses():
         for diagnostic in SECTOR_LENS_REGISTRY.diagnostics
         for error in diagnostic.errors
     ]
-    return jsonify({"lenses": lens_catalogue(SECTOR_LENS_REGISTRY), "warnings": warnings})
+    return jsonify({
+        "lenses": lens_catalogue(SECTOR_LENS_REGISTRY),
+        "warnings": warnings,
+        "max_upload_mb": MAX_UPLOAD_MB,
+    })
 
 
 @app.route('/api/detect-document-type', methods=['POST'])
