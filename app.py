@@ -6428,6 +6428,10 @@ def clean_stage3_output(text):
     text = re.sub(r'%%%JSON_START%%%.*?%%%JSON_END%%%', '', text, flags=re.DOTALL)
     # Strip FCV Risk Exposure narrative (rendered separately as risk-exposure card)
     text = re.sub(r'%%%RISK_NARRATIVE_START%%%.*?%%%RISK_NARRATIVE_END%%%', '', text, flags=re.DOTALL)
+    # Tolerate a missing END marker (model truncation / format drift): strip an orphan
+    # START and the duplicated FCV Risk Exposure prose up to the Strengths heading or end,
+    # so neither a raw delimiter nor a duplicated risk narrative leaks into the reader view.
+    text = re.sub(r'%%%RISK_NARRATIVE_START%%%.*?(?=\n#{2,4}\s+Strengths\b|\Z)', '', text, flags=re.DOTALL | re.IGNORECASE)
     # Strip Horizon Considerations block (rendered separately as collapsible panel)
     text = re.sub(r'%%%HORIZON_START%%%.*?%%%HORIZON_END%%%', '', text, flags=re.DOTALL)
     # Strip priority narrative section (field labels duplicated in JSON cards;
@@ -6446,6 +6450,9 @@ def clean_stage3_output(text):
     # - "STRATEGIC PRIORITIES" heading (priorities rendered via card UI)
     text = re.sub(r'#{1,4}\s*FCV Design Assessment Table[^\n]*\n?', '', text, flags=re.IGNORECASE)
     text = re.sub(r'#{1,4}\s*STRATEGIC PRIORITIES[^\n]*\n?', '', text, flags=re.IGNORECASE)
+    # Final safety net: remove any residual standalone delimiter token (e.g. an orphan
+    # %%%..._START%%% left by truncation) so a raw marker never reaches the reader.
+    text = re.sub(r'%%%[A-Z0-9_]+%%%\n?', '', text)
     # Clean up extra blank lines left by removal
     text = re.sub(r'\n{3,}', '\n\n', text).strip()
     return text

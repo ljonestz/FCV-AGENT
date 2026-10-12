@@ -6366,6 +6366,8 @@ ${body}
     if(!t)return'';
     t=typeof normalizeVisibleText==='function'?normalizeVisibleText(t):t;
     let h=t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    // Defensive: never render a residual delimiter token if one slips past backend cleaning.
+    h=h.replace(/%%%[A-Z0-9_]+%%%/g,'');
     // Tables
     h=h.replace(/(\|.+\|\n)(\|[-| :]+\|\n)((?:\|.+\|\n?)*)/g,m=>{
       const rows=m.trim().split('\n').filter(r=>r.trim());
@@ -6377,6 +6379,9 @@ ${body}
     h=h.replace(/\*\*\*(.+?)\*\*\*/g,'<strong><em>$1</em></strong>').replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/\*(.+?)\*/g,'<em>$1</em>');
     h=h.replace(/^---$/gm,'<hr>');
     h=h.replace(/^□ (.+)$/gm,'<li style="list-style:none">☐ $1</li>').replace(/^- (.+)$/gm,'<li>$1</li>').replace(/^\d+\. (.+)$/gm,'<li>$1</li>');
+    // Collapse blank lines between adjacent list items so blank-line-separated bullets
+    // group into one list, instead of many single-item lists with large paragraph gaps.
+    h=h.replace(/<\/li>\s+(?=<li)/g,'</li>\n');
     h=h.replace(/(<li>.*?<\/li>\n?)+/g,m=>`<ul>${m}</ul>`);
     h=h.replace(/\n{2,}/g,'</p><p>').replace(/\n/g,'<br>');
     h='<p>'+h+'</p>';
