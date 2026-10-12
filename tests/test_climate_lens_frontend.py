@@ -555,11 +555,12 @@ const html=renderClimateVerifiedSummary({{
   operation_context:{{document_type:'PCN',instrument_type:'IPF',preparation_regime:'legacy',es_regime:'ESF',is_mpa:false}}
 }});
 const count='Showing the 3 highest-ranked of 5 priorities. See Detailed analysis for all 5.';
+if(html.includes(count)||!html.includes('>Action 5<'))throw new Error('all five priorities must be visible');
 const closing='For supporting evidence, drafting and completion signals behind each priority, continue to Detailed analysis.';
-for (const expected of [bridge,count,closing]) {{
+for (const expected of [bridge,closing]) {{
   if (!html.includes(expected)) throw new Error('missing '+expected+' | '+html);
 }}
-if (!(html.indexOf(bridge) < html.indexOf(count) && html.indexOf(count) < html.indexOf('id="summary-priority-accordion"') && html.indexOf('id="summary-priority-accordion"') < html.indexOf(closing))) {{
+if (!(html.indexOf(bridge) < html.indexOf('id="summary-priority-accordion"') && html.indexOf('id="summary-priority-accordion"') < html.indexOf(closing))) {{
   throw new Error('summary narrative order is incoherent | '+html);
 }}
 if (html.includes('Priority 1 - Strengthen adaptive delivery')) throw new Error('duplicate priority prefix remains');
@@ -573,7 +574,7 @@ const withGaps=renderClimateVerifiedSummary({{
   priority_summary:{{statement:bridge}}
 }});
 if (!(withGaps.indexOf('What is already working') < withGaps.indexOf('Potential gaps') && withGaps.indexOf('Potential gaps') < withGaps.indexOf('Priority actions for the task team'))) throw new Error('gap section order is incorrect');
-if (!withGaps.includes(gap) || withGaps.includes(bridge)) throw new Error('gaps must replace the general bridge');
+if (!withGaps.replace(/<[^>]+>/g,'').includes(gap) || withGaps.includes(bridge)) throw new Error('gaps must replace the general bridge');
 
 """
     result = subprocess.run(
@@ -728,7 +729,7 @@ def test_climate_summary_initial_render_hydrates_priority_navigation():
     assert "if(supportsClimateVerifiedStage3View()&&stageThreePriorities&&stageThreePriorities.length)initStage3UI();" in source
 
 
-def test_climate_summary_caps_ranked_priorities_at_three():
+def test_climate_summary_displays_up_to_five_ranked_priorities():
     source = INDEX.read_text(encoding="utf-8")
     helper = "\n".join((
         _extract_js_function(source, "climateDraftingRouteGate"),
@@ -744,8 +745,8 @@ const priorities = climateSummaryPriorityItems({{
     {{rank:3, title:'Third'}}
   ]
 }});
-if (priorities.length !== 3) throw new Error('expected three priorities, got '+priorities.length);
-if (priorities.map(item => item.title).join('|') !== 'First|Second|Third') {{
+if (priorities.length !== 4) throw new Error('expected all four priorities, got '+priorities.length);
+if (priorities.map(item => item.title).join('|') !== 'First|Second|Third|Fourth') {{
   throw new Error('priorities are not ranked correctly: '+priorities.map(item => item.title).join('|'));
 }}
 """
@@ -815,7 +816,7 @@ const document={{getElementById:id=>id==='summary-priority-accordion'?host:null}
 {helpers}
 toggleSummaryPriority(2);
 if (stageThreePriorities.length !== 5) throw new Error('canonical detailed priorities were truncated');
-if (renderedLength !== 3) throw new Error('summary accordion did not use the three-item projection: '+renderedLength);
+if (renderedLength !== 5) throw new Error('summary accordion did not preserve all five actions: '+renderedLength);
 """
     result = subprocess.run(
         ["node", "-e", script], capture_output=True, text=True, check=False

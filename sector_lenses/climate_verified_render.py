@@ -13,6 +13,7 @@ from docx import Document
 
 from climate_question_bank import CLIMATE_LITERATURE_REFERENCES
 from sector_lenses.climate_judgments import ALLOWED
+from sector_lenses.climate_analysis import ALLOWED_GAP_TYPES
 
 from sector_lenses.climate_verified_schemas import (
     validate_summary_fragment,
@@ -554,6 +555,57 @@ def _priority_summary(priorities: list[dict[str, Any]]) -> dict[str, object]:
     return {"count": count, "titles": titles, "statement": statement}
 
 
+def _summary_gap_items(assessment: dict[str, object], priorities: list[dict]) -> list[dict]:
+    """Select complete project-linked findings independently of action admission."""
+    analysis = _mapping(assessment.get("analysis"))
+    fact_ids = {_text(item.get("claim_id")) for item in _records(assessment.get("facts"))}
+    context_ids = {_text(item.get("evidence_id")) for item in _records(assessment.get("context_evidence"))}
+    response_ids = {_text(item.get("response_id")) for item in _records(analysis.get("existing_responses"))}
+    pathway_ids = {_text(item.get("pathway_id")) for item in _records(analysis.get("pathways"))}
+    linked = {}
+    for priority in priorities:
+        gap_ids = priority.get("residual_gap_ids", [])
+        for gap_id in gap_ids if isinstance(gap_ids, (list, tuple)) else []:
+            linked.setdefault(_text(gap_id), len(linked))
+    gaps = sorted(_records(analysis.get("residual_gaps")), key=lambda item: (
+        linked.get(_text(item.get("gap_id")), 99), item.get("gap_type") == "evidence_gap",
+    ))
+    confirmed_absences = {_text(item.get("claim_id")) for item in _records(assessment.get("facts"))
+                          if item.get("epistemic_status") == "confirmed_absence"}
+    items, seen, seen_ids = [], set(), set()
+    for gap in gaps:
+        text = " ".join(_text(gap.get("statement")).split())
+        gap_id = _text(gap.get("gap_id"))
+        anchors = gap.get("project_anchor_ids", [])
+        references = ((anchors, fact_ids), (gap.get("pathway_ids", []), pathway_ids),
+                      (gap.get("existing_response_ids", []), response_ids),
+                      (gap.get("evidence_ids", []), fact_ids | context_ids))
+        if not gap_id or not anchors or not text or len(text.split()) > 75:
+            continue
+        if any(not isinstance(values, (list, tuple))
+               or any(not isinstance(value, str) for value in values)
+               or set(values) - known
+               for values, known in references):
+            continue
+        if gap.get("gap_type") not in ALLOWED_GAP_TYPES:
+            continue
+        if gap["gap_type"] == "confirmed_omission" and not (
+            set(gap.get("evidence_ids", [])) & confirmed_absences
+        ):
+            continue
+        if not validate_summary_fragment(text, canonical_text=text):
+            continue
+        key = text.casefold().rstrip(".!?")
+        if key in seen or gap_id in seen_ids:
+            continue
+        seen.add(key)
+        seen_ids.add(gap_id)
+        items.append({"gap_id": gap_id, "gap_type": gap["gap_type"], "text": text})
+        if len(items) == 5:
+            break
+    return items
+
+
 def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
     """Project a verified assessment into the only reader-facing structure."""
 
@@ -754,6 +806,7 @@ def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
         "climate_sensitivity_rating": climate_sensitivity_rating,
         "core_questions": core_questions,
         "existing_responses": existing_responses,
+        "summary_gaps": _summary_gap_items(assessment, reader_priorities),
         "priorities": reader_priorities,
         "recommendation_status": recommendation_status,
         "recommendation_message": recommendation_message,
@@ -811,9 +864,9 @@ _METHODOLOGY_NOTE = (
     "It then looks at how climate pressures and conflict or fragility affect each "
     "other in this setting, and checks every finding against those facts. It only "
     "offers a recommendation when the evidence clearly supports one, and a second "
-    "automated check removes anything that over-reaches. Nothing here is invented: "
-    "each point is tied to specific project evidence retained by the validation "
-    "pipeline, even though internal reference codes are not shown in the reader."
+    "automated check screens for over-reach. Each point is linked to recorded "
+    "evidence so its basis can be reviewed. Interpretations remain advisory: "
+    "confirm material findings against source documents and specialist judgment."
 )
 
 _ID_TYPE_LABELS = {
@@ -889,6 +942,9 @@ def build_evidence_trail(assessment: dict[str, object]) -> dict[str, object]:
             if isinstance(vals, (list, tuple)):
                 cited.extend(_text(v) for v in vals if _text(v))
 
+    cited.extend(item["gap_id"] for item in _summary_gap_items(
+        assessment, _records(assessment.get("priorities"))
+    ))
     seen: set[str] = set()
     evidence_key = []
     for cid in cited:

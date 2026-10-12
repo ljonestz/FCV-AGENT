@@ -8410,6 +8410,12 @@ def build_stage1_research_plan(
         str(part.get("raw_text") or "")[:6000]
         for part in project_parts[:2]
     )[:12000]
+    beneficiaries = list(dict.fromkeys(
+        name for part in project_parts[:2]
+        for name in extract_beneficiary_countries(str(part.get("raw_text") or ""))
+    ))[:8]
+    scope = "multi" if len(beneficiaries) > 1 else str(country_scope or "single").strip().lower()
+    country_count = max(0, int(resolved_country_count), len(beneficiaries))
     return {
         "country": str(country or "").strip(),
         "sector": str(sector or "").strip(),
@@ -8424,9 +8430,11 @@ def build_stage1_research_plan(
                 for part in project_parts[:4]
             ],
             "document_excerpt": excerpt,
+            "country_scope": scope,
+            "beneficiary_countries": beneficiaries,
         },
-        "country_scope": str(country_scope or "single").strip().lower(),
-        "resolved_country_count": max(0, int(resolved_country_count)),
+        "country_scope": scope,
+        "resolved_country_count": country_count,
     }
 
 

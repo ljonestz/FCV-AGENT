@@ -234,13 +234,17 @@ def validate_summary_fragment(
             token = match.group(0).casefold()
             if token in _SUMMARY_ALLOWED_SINGLE_WORDS | _SUMMARY_CONNECTIVE_TOKENS | _SUMMARY_STOPWORDS:
                 continue
-            if token not in canonical_words:
+            if token not in canonical_words and not re.search(
+                rf"\b{re.escape(token)}\b", canonical_casefold
+            ):
                 return reject("SUMMARY_ENTITY_UNSUPPORTED", token)
         for match in _SUMMARY_ACRONYM_RE.finditer(fragment):
             token = match.group(0).casefold()
             if token in _SUMMARY_ALLOWED_SINGLE_WORDS:
                 continue
-            if token not in canonical_words:
+            if token not in canonical_words and not re.search(
+                rf"\b{re.escape(token)}\b", canonical_casefold
+            ):
                 return reject("SUMMARY_ENTITY_UNSUPPORTED", token)
     for match in _SUMMARY_ACTION_STEM_RE.finditer(fragment.casefold()):
         if match.group("stem") not in canonical_casefold:

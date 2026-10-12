@@ -1047,10 +1047,45 @@ within scope, using an evidenced mechanism rather than theoretical maximum benef
 Five-point values and unscored/legacy exceptions are retained. The shared caveat now
 respects project objectives, scope and delivery constraints.
 
-renderClimateSummaryGaps uses at most two distinct complete limitation fields from
-admitted reader priorities (45 words each, 80 total), between strengths and actions.
-Oversized legacy prose stays in Detailed; missing text does not become a finding.
-The old bridge remains when no short limitation is available. The existing compiler
-asks for one qualified limitation sentence of at most 35 words. No schema field,
-provider call, normal-FCV scale change or automatic regrading of saved results.
-Production and ITS remain held pending live analytical acceptance.
+The later Summary-completeness update supersedes the two-item gaps paragraph.
+The reader projects up to five complete project-linked residual-gap statements,
+independently of recommendation count. Summary uses the normal FCV bullet style,
+first-sentence emphasis and every supported priority up to five. Statements over
+75 words are omitted, never sliced. Older readers without summary_gaps reuse their
+existing priority limitations. Sidebar glosses, saved grades and withholding
+notices are preserved. Summary copying inherits these findings and actions.
+
+### 2026-10-12 expanded gaps and candidate coverage
+
+Reader v2.6 adds optional summary_gaps: up to five complete qualified residual-gap
+statements, independent of action count. Kept-priority links come first, then
+design findings before contextual evidence gaps. The projection checks typed
+project/pathway/response/evidence references and explicit-negative support for
+confirmed omissions, deduplicates IDs/text, and keeps whole qualifications.
+Evidence-trail assembly includes those gap IDs, preserving their supporting prose
+in detailed HTML/Word. Legacy readers use existing limitation fields; only fresh
+or rebuilt readers gain summary_gaps. Archives are not regraded or regenerated.
+
+Analysis v2.5 explains each gap in two/three sentences, 35-65 words: what remains,
+its project-specific consequence and evidence/scope qualifier. Compiler v2.9
+considers every admitted gap and may return up to five material distinct actions,
+grouping only gaps resolved by the same action. No quota or lowered review gate.
+The Climate Summary now displays all five supported priorities, matching normal
+FCV's cap. Unknown gap evidence IDs are rejected before compilation. Exact source
+words within hyphenated expressions no longer falsely fail entity grounding;
+unsupported entities still fail. No dependency, extra provider call, repair loop
+or native generation-schema field. Other prompt versions are unchanged.
+
+
+Final pre-paid refinements: Stage 1 now passes its existing explicit PID beneficiary
+countries and country scope into both search and bounded structuring. Neighboring
+countries in geographic identifiers are excluded. Regional searches prioritize an
+uncovered beneficiary within the existing two-search limit; incomplete coverage
+must remain partial. Profile/page text is evidence, never instructions, and document
+excerpts must not become public search queries. No new provider or metadata call.
+The Summary no longer credits high risk relevance as a project strength; genuine
+very_strong responsiveness retains its positive interpretation. Literal source
+words/acronyms in compounds, including Flood-resilient and C-ESMP, pass the shared
+whole-word grounding check; unsupported entities remain rejected. Methodology
+wording describes source-linked checks and expert corroboration without promising
+that generation cannot invent a claim. Other gates and five-point values remain.

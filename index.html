@@ -6827,7 +6827,7 @@ ${body}
     (Array.isArray(r.judgments)?r.judgments:[]).forEach(judgment=>{
       const value=String(judgment&&judgment.value||'').toLowerCase();
       const dimension=String(judgment&&judgment.dimension||'').toLowerCase();
-      const positive=(dimension==='relevance'&&value==='high')||(dimension==='responsiveness'&&value==='strong')||(dimension==='operationalization'&&value==='embedded');
+      const positive=(dimension==='responsiveness'&&['strong','very_strong'].includes(value))||(dimension==='operationalization'&&value==='embedded');
       if(positive)add(judgment.title||judgment.dimension||'Assessment strength',judgment.rationale||judgment.description||'');
     });
     return strengths;
@@ -6836,7 +6836,7 @@ ${body}
   function climateSummaryPriorityItems(reader){
     const r=reader&&typeof reader==='object'?reader:{};
     const draftingRoute=climateDraftingRouteGate(r);
-    return (Array.isArray(r.priorities)?r.priorities:[]).slice().sort((a,b)=>(Number(a.rank)||999)-(Number(b.rank)||999)).slice(0,3).map((priority,index)=>{
+    return (Array.isArray(r.priorities)?r.priorities:[]).slice().sort((a,b)=>(Number(a.rank)||999)-(Number(b.rank)||999)).slice(0,5).map((priority,index)=>{
       const draft=draftingRoute.canRender&&priority.current_document_drafting&&typeof priority.current_document_drafting==='object'?priority.current_document_drafting:{};
       const target=[draft.target_document,draft.target_section].filter(Boolean).join(' - ');
       const rawTitle=String(priority.title||'Untitled action').trim();
@@ -6914,17 +6914,20 @@ ${body}
     return `<details class="climate-summary-watch-disclosure"><summary>What to keep an eye on</summary><div class="climate-summary-watch-body"><p>These are things to monitor as the project develops. They are not actions to take now - just points to keep in view.</p><ul>${items.map(item=>`<li>${esc(item.watch)}</li>`).join('')}</ul></div></details>`;
   }
 
-  function renderClimateSummaryGaps(priorities){
-    const gaps=[];const seen=new Set();let words=0;
-    for(const priority of Array.isArray(priorities)?priorities:[]){
-      const text=String(priority.limitation||'').replace(/\s+/g,' ').trim();
-      const count=text?text.split(' ').length:0;
-      // Keep whole qualifications; oversized legacy prose stays in Detailed.
-      if(!text||count>45||words+count>80||seen.has(text.toLowerCase()))continue;
-      seen.add(text.toLowerCase());gaps.push(text);words+=count;
-      if(gaps.length===2)break;
+  function renderClimateSummaryGaps(reader,priorities){
+    const r=reader&&typeof reader==='object'?reader:{};
+    const source=Array.isArray(r.summary_gaps)?r.summary_gaps:
+      (Array.isArray(priorities)?priorities:[]).map(priority=>({text:priority.limitation}));
+    const gaps=[];const seen=new Set();
+    for(const item of source){
+      const text=String(item&&item.text||'').replace(/\s+/g,' ').trim();
+      // Keep complete qualifications; oversized saved prose stays in Detailed.
+      const key=text.toLowerCase().replace(/[.!?]+$/,'');
+      if(!text||text.split(' ').length>75||seen.has(key))continue;
+      seen.add(key);gaps.push(text);
+      if(gaps.length===5)break;
     }
-    return gaps.length?`<section class="normal-summary-gaps"><div class="concise-section-label">Potential gaps</div><p class="concise-transition">${gaps.map(esc).join(' ')}</p></section>`:'';
+    return gaps.length?`<section class="normal-summary-gaps"><div class="concise-section-label">Potential gaps</div><ul class="normal-summary-gap-list">${gaps.map(text=>`<li class="normal-summary-gap">${boldEscapedFirstSentence(text)}</li>`).join('')}</ul></section>`:'';
   }
 
   function renderClimateVerifiedSummary(reader){
@@ -6944,7 +6947,7 @@ ${body}
     const strengths=climateSummaryStrengths(r);
     const strengthsHtml=strengths.length?strengths.map(strength=>`<div class="concise-strength climate-strength-card"><strong>${esc(strength.title)}</strong><span class="concise-strength-text">${esc(strength.text)}</span></div>`).join(''):'<p class="concise-priority-intro">No distinct strengths were evidenced in the verified reader for this run.</p>';
     const priorities=climateSummaryPriorityItems(r);
-    const gapsHtml=renderClimateSummaryGaps(priorities);
+    const gapsHtml=renderClimateSummaryGaps(r,priorities);
     const recommendationsIncomplete=r.recommendation_status==='incomplete';
     const emptyPriorityMessage=recommendationsIncomplete
       ?(r.recommendation_message||'The recommendation stage could not be completed. Do not treat this Recommendations Note as complete; rerun the analysis or contact support.')

@@ -141,7 +141,12 @@ process; do not invent triggers. A zero initial allocation is not itself a fundi
 Return no more than 12 existing responses, six pathways total, eight residual
 gaps, four opportunity/unintended-consequence items, and four evidence
 limitations. Use exactly three short chain elements per pathway. Keep each
-free-text value to 45 words or fewer.
+free-text value to 45 words or fewer, except each residual_gaps statement.
+Write each gap as two or three plain-language sentences, 35 to 65 words: state
+what remains, explain its project-specific climate-FCV consequence, and preserve
+any scope or evidence qualification. Distinguish missing evidence from a confirmed omission;
+an optional dividend opportunity is not a required correction. Do not turn a gap
+into an action or combine unrelated gaps merely to shorten the list.
 Write every existing_responses description as two or three plain-language
 sentences. Use a short, self-contained first sentence that states the response
 clearly for a non-specialist reader. In the remaining sentence or sentences,
@@ -289,9 +294,11 @@ def _recommendation_prompt(payload: dict[str, object]) -> str:
     return _common(
         """Compile only recommendations that pass connection, residuality,
 materiality, actionability, timing, distinctiveness, and comparative-importance
-tests. Return at most five recommendation candidates, and go beyond three only
-where materiality clearly warrants it. Return fewer when fewer pass; never
-manufacture one for symmetry or to reach a number, and never label all as High. Route to an existing instrument
+tests. Consider every admitted residual gap before selecting
+at most five recommendation candidates with distinct actions. Do not stop after one or three when other material,
+connected and feasible improvements pass these tests. Group gaps only when the
+same action resolves them; preserve distinct site, design and delivery decisions.
+Return fewer when fewer pass; never manufacture one for symmetry or to reach a number, and never label all as High. Route to an existing instrument
 only when existence, scope, timing, and authority are verified separately.
 When no existing vehicle is evidenced, use standard_document_advisory and target
 the current stage document only where the supplied operational-guidance packet

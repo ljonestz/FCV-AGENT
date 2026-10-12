@@ -430,3 +430,70 @@ private run artifacts are excluded. The completed trial's actual Detailed view a
 shows both sidebar cards, no visible %% markers and no horizontal overflow at
 1440px. Its screenshot is 20261012-quality3-detailed.png. These checks do not
 regrade the archived result or validate new generation behavior.
+
+
+### User-requested Summary completeness follow-up
+
+The prior paid result showed one short gap sentence: the gaps section was tied to
+surviving actions and capped at two items/80 words. The user requested four/five
+substantive bullets comparable to normal FCV and reliable multiple recommendations.
+The compiler also discouraged more than three candidates, and Summary capped
+visible actions at three. These restrictions are corrected as described above.
+
+Thirteen focused checks passed in 38.87s, including one/three/five synthetic actions
+through separate drafting, semantic review, reader, JSON persistence and HTML/Word
+export. Selective rejection keeps one action while five independently registered
+qualified gaps remain; rejected recommendation prose is never restored. Boundary
+checks reject unknown gap evidence, malformed references and unproven omissions.
+Two old three-item/markup expectations in the broader connected pass were corrected
+and covered by the thirteen passing checks. Broader final results follow below.
+
+Actual local Edge QA loaded a clearly labelled synthetic fixture: five substantive
+bullets, five actions and a working fifth accordion. Browser Save session retained
+five gaps/five actions; actual HTML download retained every title and supporting
+gap text. Desktop 1440px and phone 390px had no horizontal overflow; visible content
+had no %% markers. Sidebar glosses stayed compact. Local artifacts have prefix
+output/playwright/20261012-summary-completeness-. These are software/layout checks,
+not a paid assessment or semantic endorsement of synthetic findings.
+No further paid run occurred. Production/ITS and PR #83 remain on analytical hold.
+
+
+Final pre-paid refinements: Stage 1 now passes its existing explicit PID beneficiary
+countries and country scope into both search and bounded structuring. Neighboring
+countries in geographic identifiers are excluded. Regional searches prioritize an
+uncovered beneficiary within the existing two-search limit; incomplete coverage
+must remain partial. Profile/page text is evidence, never instructions, and document
+excerpts must not become public search queries. No new provider or metadata call.
+The Summary no longer credits high risk relevance as a project strength; genuine
+very_strong responsiveness retains its positive interpretation. Literal source
+words/acronyms in compounds, including Flood-resilient and C-ESMP, pass the shared
+whole-word grounding check; unsupported entities remain rejected. Methodology
+wording describes source-linked checks and expert corroboration without promising
+that generation cannot invent a claim. Other gates and five-point values remain.
+
+The first full pass returned 1,423 passing checks and two obsolete expectations:
+a Summary projection assertion loaded before its edit, and the compiler's exact
+five-candidate phrasing. The projection passed its focused rerun; the compiler's
+original at-most-five contract is preserved. Seventy-six provider/research/runtime
+and completeness checks passed after regional/strength fixes. A final full pass
+below uses frozen source/tests and a new log, rather than claiming that failed
+historical runs passed. Windows Playwright stall diagnostics were logged; the first
+pass's browser tests ultimately completed. No paid run yet under the new two-run
+authorization; aim to use one after this final no-cost verification.
+
+
+### Final free verification before the additional paid allowance
+
+The frozen full suite passed: **1,428 passed in 1,086.35s (18m06s)**,
+output/20261012-summary-completeness-final-regression.txt. Browser launch/event-loop
+stall diagnostics were recorded, but the browser checks completed successfully.
+Diff checking passed. The actual selected Great Lakes PID research profile has
+exactly Burundi and Congo, Democratic Republic of, multi-country scope and count
+2; Angola in the corridor identifier is excluded. The dedicated Edge release
+session navigated successfully to the live test app and its upload controls.
+
+The user authorized up to two additional paid assessments on October 12, preferring
+one and permitting necessary judgment calls. None has been used under that new
+allowance at this checkpoint. The candidate can proceed to isolated test deployment
+and one quality assessment; software checks alone do not establish analytical
+acceptance. Production/main and ITS remain unchanged.

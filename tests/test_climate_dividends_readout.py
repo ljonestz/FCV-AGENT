@@ -66,28 +66,29 @@ def _render_gaps(priorities):
     source = INDEX.read_text(encoding="utf-8")
     script = (
         _js_escape_helper()
+        + _extract_js_function(source, "boldEscapedFirstSentence")
         + _extract_js_function(source, "renderClimateSummaryGaps")
-        + "\nconsole.log(renderClimateSummaryGaps(" + json.dumps(priorities) + "));"
+        + "\nconsole.log(renderClimateSummaryGaps({}," + json.dumps(priorities) + "));"
     )
     result = subprocess.run(["node", "-"], input=script, capture_output=True, text=True)
     assert result.returncode == 0, result.stderr
     return result.stdout.strip()
 
 
-def test_summary_gaps_reuses_at_most_two_distinct_complete_limitations():
+def test_legacy_summary_gaps_reuses_up_to_five_distinct_complete_limitations():
     first = "Flood performance is addressed, but upkeep arrangements are not documented."
     second = "A wider livelihoods dividend remains an optional opportunity within the project's scope."
     html = _render_gaps([
         {"limitation": first, "narrative": "Do not copy the action narrative."},
         {"limitation": "  " + first.upper() + "  "},
         {"limitation": second},
-        {"limitation": "Do not show a third gap."},
+        {"limitation": "A distinct operational limitation remains unresolved."},
     ])
     assert "Potential gaps" in html
     assert first in html
     assert "optional opportunity" in html
-    assert "Do not copy" not in html and "third gap" not in html
-    assert html.count("<p") == 1 and "<ul" not in html
+    assert "Do not copy" not in html and "distinct operational limitation" in html
+    assert html.count("<li") == 3 and "<ul" in html
 
 
 def test_summary_gaps_preserves_qualifications_and_never_slices_long_fields():
@@ -103,10 +104,10 @@ def test_summary_gaps_preserves_qualifications_and_never_slices_long_fields():
     assert _render_gaps([{"narrative": "An unsupported gap must not be inferred."}]) == ""
 
 
-def test_summary_gap_section_uses_only_admitted_reader_priorities():
+def test_summary_gap_section_uses_reader_findings_without_candidate_diagnostics():
     source = INDEX.read_text(encoding="utf-8")
     summary = _extract_js_function(source, "renderClimateVerifiedSummary")
-    assert "renderClimateSummaryGaps(priorities)" in summary
+    assert "renderClimateSummaryGaps(r,priorities)" in summary
     assert "diagnostic_trace" not in summary and "recommendation_candidates" not in summary
     assert summary.index("${strengthsHtml}") < summary.index("${gapsHtml||bridge}")
     assert summary.index("${gapsHtml||bridge}") < summary.index("Priority actions for the task team")

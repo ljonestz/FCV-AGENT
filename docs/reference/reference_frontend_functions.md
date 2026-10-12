@@ -437,12 +437,13 @@ climateVerifiedRatingCards retains paired five-point cards, short glosses and
 collapsed explanations. Its questions distinguish risk recognition/response from
 peace and social dividends through climate-related design/delivery within scope.
 The full approved contribution caveat remains in the explanation and exports.
-renderClimateSummaryGaps selects at most two distinct complete admitted-priority
-limitation fields, each <=45 words and <=80 words total, escaping prose without
-slicing qualifications. It replaces the general bridge when present; no candidates
-or rejected diagnostics are used. Summary copying inherits the same readout.
-screenerCaveatHtml now respects scope and delivery constraints rather than maximum
-resources; normal-FCV rating values are unchanged.
+The later Summary-completeness update supersedes the two-item gaps paragraph.
+The reader projects up to five complete project-linked residual-gap statements,
+independently of recommendation count. Summary uses the normal FCV bullet style,
+first-sentence emphasis and every supported priority up to five. Statements over
+75 words are omitted, never sliced. Older readers without summary_gaps reuse their
+existing priority limitations. Sidebar glosses, saved grades and withholding
+notices are preserved. Summary copying inherits these findings and actions.
 
 ### 2026-10-12 authoritative saved Climate scope
 
@@ -452,3 +453,25 @@ display/checkpoint/export so regional assessments cannot be saved as single-coun
 because of an earlier client default. Missing or invalid reader scope preserves the
 current value. The AF reader labels the applicable Additional Financing review
 without presuming an upcoming approval. Historical saved grades are unchanged.
+
+
+### 2026-10-12 expanded gaps and candidate coverage
+
+Reader v2.6 adds optional summary_gaps: up to five complete qualified residual-gap
+statements, independent of action count. Kept-priority links come first, then
+design findings before contextual evidence gaps. The projection checks typed
+project/pathway/response/evidence references and explicit-negative support for
+confirmed omissions, deduplicates IDs/text, and keeps whole qualifications.
+Evidence-trail assembly includes those gap IDs, preserving their supporting prose
+in detailed HTML/Word. Legacy readers use existing limitation fields; only fresh
+or rebuilt readers gain summary_gaps. Archives are not regraded or regenerated.
+
+Analysis v2.5 explains each gap in two/three sentences, 35-65 words: what remains,
+its project-specific consequence and evidence/scope qualifier. Compiler v2.9
+considers every admitted gap and may return up to five material distinct actions,
+grouping only gaps resolved by the same action. No quota or lowered review gate.
+The Climate Summary now displays all five supported priorities, matching normal
+FCV's cap. Unknown gap evidence IDs are rejected before compilation. Exact source
+words within hyphenated expressions no longer falsely fail entity grounding;
+unsupported entities still fail. No dependency, extra provider call, repair loop
+or native generation-schema field. Other prompt versions are unchanged.
