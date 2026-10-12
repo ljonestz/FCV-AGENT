@@ -18,9 +18,11 @@ ALLOWED = {
         "unclear",
     },
     "responsiveness": {
+        "very_strong",
         "strong",
-        "emerging",
+        "moderate",
         "limited",
+        "very_limited",
         "not_expected",
         "unclear",
     },

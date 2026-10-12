@@ -12,6 +12,18 @@
 
 ## Overview
 
+### 2026-10-12 candidate: shared rating sidebar
+
+Normal FCV and verified Climate now keep the rating sidebar in Summary and Detailed;
+mobile uses the existing collapsed disclosure. Climate shows separate sensitivity
+and responsiveness cards with short glosses and collapsed rationale. Responsiveness
+uses five contribution levels (very_limited through very_strong), with not_expected
+and unclear unscored. The judgment prompt/schema is climate-judgments-v2.5; saved
+Emerging results remain visibly legacy and unscored. The approved scope message is:
+"Contributing to responsiveness is often a sign of going above and beyond. The
+expected contribution depends on the project's scope." Normal FCV's existing
+rating scale is unchanged. This candidate has not been merged to production.
+
 This is a **World Bank FCV (Fragility, Conflict, and Violence) Project Screener** — a Flask-based web app that guides Task Team Leaders (TTLs) through a **3-stage workflow** to assess how well a World Bank project integrates FCV considerations and generate targeted, actionable recommendations.
 
 The tool explicitly distinguishes two concepts:

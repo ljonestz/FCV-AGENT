@@ -136,7 +136,7 @@ def test_common_prompt_enforces_instrument_specific_operation_routing():
     assert "operation_context is the controlling routing input" in prompt
     assert "pforr" in prompt and "essa" in prompt and "program action plan" in prompt
     assert "dpf" in prompt and "prior actions" in prompt
-    assert "never route pforr or dpf" in prompt
+    assert "never route standalone pforr or dpf" in prompt
     assert "unknown" in prompt and "withhold document-targeted drafting" in prompt
 
 

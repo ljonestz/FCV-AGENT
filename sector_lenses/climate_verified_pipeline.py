@@ -86,7 +86,7 @@ _INTEGRITY_CATEGORIES = READINESS_CATEGORIES - {"missing_operational_home"}
 PROMPT_VERSIONS = {
     "fact_extraction": "climate-facts-v2.2",
     "bounded_analysis": "climate-analysis-v2.2",
-    "judgment_review": "climate-judgments-v2.4",
+    "judgment_review": "climate-judgments-v2.5",
     "recommendation_compiler": "climate-recommendations-v2.4",
     "conditional_review": "climate-review-v2.5",
     "drafting_compiler": "climate-drafting-v1.0",

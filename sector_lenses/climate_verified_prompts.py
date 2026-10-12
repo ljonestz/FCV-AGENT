@@ -144,6 +144,16 @@ very_limited (or unclear when the evidence is insufficient) - reserving the
 extremes for clearly strong or clearly weak evidence.
 Responsiveness asks whether design actively strengthens resilience, inclusion,
 legitimacy, cooperative governance, or plausible social dividends.
+Rate the evidenced additional contribution on five points: very_limited (minimal
+direct contribution), limited (narrow or isolated contribution), moderate
+(substantive but bounded contribution), strong (substantial contribution through
+the design), very_strong (comprehensive, well-supported contribution).
+Contributing to responsiveness is often a sign of going above and beyond.
+The expected contribution depends on the project's scope. A limited contribution
+is not a failure of sensitivity or overall project quality. Use not_expected
+when direct contribution is outside the operation's scope, and unclear when
+evidence is insufficient; neither is a low score. Do not use the old emerging
+category or infer delivery merely from stated ambition.
 Operationalization asks whether sensitivity or responsiveness is translated
 into requirements, responsibilities, resources, indicators, verification,
 triggers, and adaptation. Every dimension, including unclear, not_expected, and
@@ -229,7 +239,7 @@ Keep every paragraph plain text without Markdown or HTML. The summary contract
 is two or three paragraphs and 160 to 230 words. This is part of the existing
 judgment call; do not request a repair or second call.
 
-Return: {"executive_readout":"...","overview_summary":"...","summary_overview":{"paragraphs":["...","..."]},"relevance":{"value":"high|medium|low|unclear","evidence_ids":[],"rationale":"..."},"sensitivity":{"value":"very_strong|strong|moderate|limited|very_limited|unclear","evidence_ids":[],"rationale":"..."},"responsiveness":{"value":"strong|emerging|limited|not_expected|unclear","evidence_ids":[],"rationale":"..."},"operationalization":{"value":"embedded|partial|early|not_evidenced|unclear","evidence_ids":[],"rationale":"..."},"core_questions":[{"question_id":"cq2-infra-horizon","theme":"cq2_maladaptation","question":"...","source":"...","summary":"...","evidence_ids":["RG-001"],"watch":"..."}],"minor_climate_points":[{"point":"...","why":"...","how_to_check":"...","residual_gap_ids":["RG-002"]}]}.""",
+Return: {"executive_readout":"...","overview_summary":"...","summary_overview":{"paragraphs":["...","..."]},"relevance":{"value":"high|medium|low|unclear","evidence_ids":[],"rationale":"..."},"sensitivity":{"value":"very_strong|strong|moderate|limited|very_limited|unclear","evidence_ids":[],"rationale":"..."},"responsiveness":{"value":"very_strong|strong|moderate|limited|very_limited|not_expected|unclear","evidence_ids":[],"rationale":"..."},"operationalization":{"value":"embedded|partial|early|not_evidenced|unclear","evidence_ids":[],"rationale":"..."},"core_questions":[{"question_id":"cq2-infra-horizon","theme":"cq2_maladaptation","question":"...","source":"...","summary":"...","evidence_ids":["RG-001"],"watch":"..."}],"minor_climate_points":[{"point":"...","why":"...","how_to_check":"...","residual_gap_ids":["RG-002"]}]}.""",
         payload,
     )
 

@@ -53,7 +53,7 @@ def test_stage3_detailed_reading_shell_uses_compact_sticky_rating_rail():
         r"\.stage3-rating-rail\{[^}]*position:sticky;[^}]*top:",
         normalized,
     )
-    assert '.stage3-reading-shell[data-stage3-view="summary"]{grid-template-columns:1fr}' in normalized
+    assert '.stage3-reading-shell[data-stage3-view="summary"]{grid-template-columns:1fr}' not in normalized
     assert re.search(
         r"@media\(max-width:860px\)\{.*?\.stage3-reading-shell\{grid-template-columns:1fr;gap:12px\}.*?\.stage3-rating-rail\{display:none\}.*?\.stage3-mobile-ratings\{display:block\}",
         normalized,
@@ -857,7 +857,7 @@ def test_climate_detailed_reader_keeps_rating_above_core_questions_and_plain_met
         _extract_js_function(source, "renderClimateVerifiedAssessment"),
     ))
 
-    assert renderer.index("${ratingHtml}") < renderer.index("climateReportSection('Core climate-FCV questions'")
+    assert renderer.index("${ratingsInSidebar?'':ratingHtml}") < renderer.index("climateReportSection('Core climate-FCV questions'")
     assert "Method, limitations, and sources" in renderer
     assert "technical_annex" not in renderer
 
@@ -870,6 +870,9 @@ def test_climate_stage3_overview_explains_why_strengthening_is_needed():
     )
     script = f"""
 const isClimateLensActive = () => true;
+const SR_TERM_S_TIP = 'Sensitivity', SR_TERM_R_TIP = 'Responsiveness';
+const LEVELS = ['Extremely Low','Very Low','Low','Adequate','Well Embedded','Very Well Embedded'];
+const esc = value => String(value);
 {helpers}
 if (climateIntegrationShortLabel('Adequate') !== 'Opportunities to further strengthen climate and FCV elements') {{
   throw new Error('rating helper does not explain the improvement opportunity');
@@ -1762,6 +1765,9 @@ def test_stage3_overview_has_textual_slim_bar_ratings_for_normal_and_climate_mod
     script = f"""
 let climateMode = false;
 const isClimateLensActive = () => climateMode;
+const SR_TERM_S_TIP = 'Sensitivity', SR_TERM_R_TIP = 'Responsiveness';
+const LEVELS = ['Extremely Low','Very Low','Low','Adequate','Well Embedded','Very Well Embedded'];
+const esc = value => String(value);
 {helper}
 const normal = stage3OverviewHtml();
 const assertUniqueIds = (html,label) => {{
@@ -1776,7 +1782,7 @@ if ((normal.match(/data-rating-key="responsiveness"/g)||[]).length !== 2) throw 
 if ((normal.match(/class="stage3-rating-bar"/g)||[]).length !== 4) throw new Error('missing slim bars');
 if ((normal.match(/aria-valuemax="100"/g)||[]).length !== 4) throw new Error('normal bars must use percentage max');
 if (!normal.includes('Is the project aware of and designed for the FCV context?')) throw new Error('sensitivity meaning is not textual');
-if (!normal.includes('Does the project actively work to change the FCV situation?')) throw new Error('responsiveness meaning is not textual');
+if (!normal.includes('The expected contribution depends on the project')) throw new Error('responsiveness scope is not textual');
 if (normal.includes('<svg')) throw new Error('normal ratings still render a gauge SVG');
 
 climateMode = true;

@@ -2438,7 +2438,7 @@ def test_verified_climate_ui_contract_is_ranked_and_multidimensional():
     assert "The tool's overall reads" not in html
     assert "core_questions" in html
     assert "For further insights on why this matters" in html
-    assert "Points to check before the decision meeting" in html
+    assert "Points to check before the applicable review" in html
     start = html.index("function renderClimateVerifiedAssessment")
     end = html.index("\n  function ", start + 20)
     body = html[start:end]
@@ -2560,7 +2560,7 @@ def test_verified_climate_docx_route_uses_canonical_reader():
         "judgments": {
             "relevance": {"value": "high", "rationale": "Material."},
             "sensitivity": {"value": "moderate", "rationale": "Partial."},
-            "responsiveness": {"value": "emerging", "rationale": "Emerging."},
+            "responsiveness": {"value": "moderate", "rationale": "Emerging."},
             "operationalization": {"value": "partial", "rationale": "Partial."},
         },
         "priorities": [],
@@ -2621,7 +2621,7 @@ def test_climate_only_express_route_returns_verified_v2_without_legacy_stage(mon
         "judgments": {
             "relevance": {"value": "high", "rationale": "Material."},
             "sensitivity": {"value": "moderate", "rationale": "Partial."},
-            "responsiveness": {"value": "emerging", "rationale": "Emerging."},
+            "responsiveness": {"value": "moderate", "rationale": "Emerging."},
             "operationalization": {"value": "partial", "rationale": "Partial."},
         },
         "priorities": [],

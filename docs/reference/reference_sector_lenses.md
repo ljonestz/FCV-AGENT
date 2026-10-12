@@ -204,3 +204,13 @@ It never certifies compliance or treats a missing upload as an absent assessment
 Reader timing uses conditional new-model review destinations, and PID is not
 assumed concept-stage. Source currency remains subject to live PPF verification.
 Live acceptance and release status: see `docs/20261012_climate-opcs-parity-validation.md`.
+# October 12 candidate sidebar and responsiveness scale
+
+Verified Climate responsiveness now uses very_limited, limited, moderate, strong,
+very_strong, plus unscored not_expected and unclear. Judgment schema/prompt version
+is climate-judgments-v2.5. This measures additional contribution in the operation's
+scope, not compliance or overall quality. Sensitivity remains separate. Historical
+Emerging results are preserved by the reader and displayed as legacy, without a
+numeric bar. Reassessment is required for a five-point value. Both live Summary
+and Detailed use the shared two-card sidebar and mobile disclosure. Normal FCV's
+existing scale is unchanged. Existing standalone exports retain their report layout.

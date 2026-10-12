@@ -922,7 +922,6 @@
 
     /* Stage 3 detailed reading shell and compact rating rail */
     .stage3-reading-shell{display:grid;grid-template-columns:minmax(180px,220px) minmax(0,1fr);gap:24px;align-items:start;margin:0 0 16px}
-.stage3-reading-shell[data-stage3-view="summary"]{grid-template-columns:1fr}
     .stage3-reading-main{min-width:0}
     .stage3-rating-rail{display:flex;flex-direction:column;gap:10px;position:sticky;top:112px;align-self:start}
     .stage3-rating-card{background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px 13px;box-shadow:var(--shadow-sm)}
@@ -943,7 +942,6 @@
     .stage3-mobile-ratings summary::after{content:'+';font-size:18px;font-weight:400;line-height:1}
     .stage3-mobile-ratings[open] summary::after{content:'−'}
     .stage3-mobile-ratings .stage3-rating-card{border:0;border-top:1px solid var(--border);border-radius:0;box-shadow:none}
-    .stage3-reading-shell[data-stage3-view="summary"] .stage3-rating-rail,.stage3-reading-shell[data-stage3-view="summary"] .stage3-mobile-ratings{display:none}
     .ps-step:focus-visible{outline:3px solid #f2a900;outline-offset:-3px;position:relative;z-index:1}
     @media(max-width:860px){
       .stage3-reading-shell{grid-template-columns:1fr;gap:12px}
@@ -5077,7 +5075,7 @@
 
   installClimatePrintDisclosureHandler(document);
 
-  function renderClimateVerifiedAssessment(reader){
+  function renderClimateVerifiedAssessment(reader,ratingsInSidebar=false){
     const r=reader&&typeof reader==='object'?reader:{};
     const draftingRoute=climateDraftingRouteGate(r);
     const relevantGuidanceHtml=renderClimateRelevantGuidance(r);
@@ -5201,7 +5199,7 @@
       }
       provenanceHtml=`<details class="climate-fold"><summary>Method, limitations, and sources</summary>${inner}</details>`;
     }
-    const overviewBodyHtml=`${ratingHtml}<h3 class="climate-subheading">Executive readout</h3><div class="climate-exec">${execHtml}</div>`;
+    const overviewBodyHtml=`${ratingsInSidebar?'':ratingHtml}<h3 class="climate-subheading">Executive readout</h3><div class="climate-exec">${execHtml}</div>`;
     const prioritiesBodyHtml=`${prioritySummaryHtml}${priorityHtml}`;
     const numberedSections=
       climateReportSection('Overview','climate-overview',overviewBodyHtml)+
@@ -5246,7 +5244,7 @@
       :`<strong>${c.t}</strong>${c.b}`;
     let _outBodyContent;
     if(_verifiedV2){
-      _outBodyContent=renderClimateVerifiedAssessment(climateVerifiedReader);
+      _outBodyContent=renderClimateVerifiedAssessment(climateVerifiedReader,true);
     }else if(isLast){
       // On-screen dedupe: screenerCaveatHtml() is now the single on-screen advisory
       // banner, so strip the legacy in-body DO_NO_HARM_HEADER block from the displayed
@@ -5319,7 +5317,7 @@
       if(_supportsStage3Tabs&&stage3View==='summary')_outBodyContent=renderStage3Summary();
       else if(!_supportsStage3Tabs)_outBodyContent=conciseUnavailableHtml()+_outBodyContent;
     }
-    const _showDetailedRail=isLast&&!_verifiedV2;
+    const _showDetailedRail=isLast;
     const _outPanelAttrs=isLast&&_supportsStage3Tabs
       ?` role="tabpanel" aria-labelledby="${stage3View==='summary'?'stage3-summary-tab':'stage3-detailed-tab'}" data-stage3-view="${stage3View}"`
       :'';
@@ -6567,7 +6565,35 @@ ${body}
     })[String(rating||'')]||'Evidence limited';
   }
 
+  function climateVerifiedRatingCards(reader){
+    const judgments=Array.isArray(reader&&reader.judgments)?reader.judgments:[];
+    const dimensions=[
+      {key:'sensitivity',title:'Climate & FCV sensitivity',scale:['very_limited','limited','moderate','strong','very_strong'],question:'Is the project designed to recognise and avoid worsening climate and FCV risks?'},
+      {key:'responsiveness',title:'Climate & FCV responsiveness',scale:['very_limited','limited','moderate','strong','very_strong'],question:'Does the project actively build climate resilience and address FCV drivers?'}
+    ];
+    const label=value=>String(value||'unclear').replace(/_/g,' ').replace(/^./,c=>c.toUpperCase());
+    return dimensions.map(d=>{
+      const judgment=judgments.find(j=>j.dimension===d.key)||{};
+      const value=judgment.value||'unclear';
+      const level=d.scale.indexOf(value)+1;
+      const responsive=d.key==='responsiveness';
+      const glosses={very_limited:'Very little risk-sensitive design is evidenced.',limited:'Some risks are recognised; design responses remain limited.',moderate:'Risks are recognised, with gaps in the design response.',strong:'The design addresses most relevant risks.',very_strong:'The design addresses relevant risks comprehensively.'};
+      const gloss=responsive?"Contributing to responsiveness is often a sign of going above and beyond.":(glosses[value]||'There is not enough evidence to rate the design.');
+      const scope="The expected contribution depends on the project's scope.";
+      const ratingLabel=responsive?(level?label(value)+' contribution':value==='emerging'?'Emerging (legacy scale)':value==='not_expected'?'Not expected for this project':label(value)):label(value);
+      // Contribution is not a compliance score; unscored and legacy values have no bar.
+      const color=responsive?'#0072BB':level>=4?'#147A3D':level===3?'#8A5A00':'#B42318';
+      const bar=level?`<div class="stage3-rating-bar" role="progressbar" aria-label="${esc(d.title)} rating" aria-valuemin="1" aria-valuemax="${d.scale.length}" aria-valuenow="${level}" aria-valuetext="${esc(label(value))}"><span class="stage3-rating-fill" style="width:${level/d.scale.length*100}%;background-color:${color}"></span></div>`:'';
+      return `<article class="stage3-rating-card" data-rating-key="climate-${d.key}"><div class="stage3-rating-card-header"><span class="stage3-rating-dimension" title="${esc(d.question)}">${esc(d.title)}</span><span class="stage3-rating-value" data-rating-state="ready">${esc(ratingLabel)}</span></div>${bar}<p class="stage3-rating-meaning">${esc(gloss)}</p>${responsive?`<p class="stage3-rating-description">${esc(scope)}</p>`:''}<details class="stage3-rating-explanation"><summary>Why this rating</summary><p class="stage3-rating-description">${esc(judgment.rationale||'The evidence does not establish a rating.')}</p><p class="stage3-rating-description">${esc(d.question)}</p><p class="stage3-rating-description">Scale: ${d.scale.map(label).map(esc).join(' / ')}${responsive?' contribution':''}. Unclear means evidence is insufficient.${responsive?' Not expected is a scope judgment. Older Emerging results require reassessment on the five-point scale.':''}</p></details></article>`;
+    }).join('');
+  }
+
   function stage3OverviewHtml(){
+    if(isClimateLensActive()&&typeof climateVerifiedReader!=='undefined'&&climateVerifiedReader){
+      const cards=climateVerifiedRatingCards(climateVerifiedReader);
+      const caveat='<p class="stage3-rating-description">Advisory judgments, not official WBG ratings.</p>';
+      return `<aside class="stage3-rating-rail" aria-label="Assessment ratings">${cards}${caveat}</aside><details class="stage3-mobile-ratings"><summary>Assessment ratings</summary><div class="stage3-mobile-rating-list">${cards}${caveat}</div></details>`;
+    }
     const normalSensitivityCard = `<article class="stage3-rating-card" data-rating-key="sensitivity">
       <div class="stage3-rating-card-header"><span class="stage3-rating-dimension sr-term" title="${SR_TERM_S_TIP}">FCV Sensitivity</span><span class="stage3-rating-value" id="fcv-rating-label" data-rating-value data-rating-state="pending">Analysing…</span></div>
       <div class="stage3-rating-bar" role="progressbar" aria-label="FCV Sensitivity rating" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span class="stage3-rating-fill" data-rating-fill></span></div>
@@ -6578,7 +6604,7 @@ ${body}
       <div class="stage3-rating-card-header"><span class="stage3-rating-dimension sr-term" title="${SR_TERM_R_TIP}">FCV Responsiveness</span><span class="stage3-rating-value" id="fcv-resp-rating-label" data-rating-value data-rating-state="pending">Analysing…</span></div>
       <div class="stage3-rating-bar" role="progressbar" aria-label="FCV Responsiveness rating" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span class="stage3-rating-fill" data-rating-fill></span></div>
       <p class="stage3-rating-meaning" id="fcv-resp-need-label" data-rating-meaning>Meaning will be shown when the responsiveness rating is available.</p>
-      <p class="stage3-rating-description">Does the project actively work to change the FCV situation? This is not a proxy for overall project quality; limited direct FCV action may fit the operation's scope.</p>
+      <p class="stage3-rating-description">The expected contribution depends on the project's scope.</p>
     </article>`;
     const climateCard = `<article class="stage3-rating-card" data-rating-key="climate-integration">
       <div class="stage3-rating-card-header"><span class="stage3-rating-dimension">Climate-FCV integration</span><span class="stage3-rating-value" id="fcv-int-label" data-rating-value data-rating-state="pending">Analysing…</span></div>
@@ -6629,7 +6655,7 @@ ${body}
     const sensitivityLevel = LEVELS.findIndex(level => level.toLowerCase() === (fcvRating || '').toLowerCase()) + 1;
     updateRatingCards('sensitivity', fcvRating ? `${fcvRating} Sensitivity` : '', NEED_LABELS[fcvRating] || 'The rating describes contextual awareness and conflict-informed design.', sensitivityLevel / LEVELS.length, LEVEL_COLORS[sensitivityLevel] || '#0050a0');
     const responsivenessLevel = LEVELS.findIndex(level => level.toLowerCase() === (fcvResponsivenessRating || '').toLowerCase()) + 1;
-    updateRatingCards('responsiveness', fcvResponsivenessRating ? `${fcvResponsivenessRating} Responsiveness` : '', fcvResponsivenessRating ? 'Direct contribution to addressing FCV drivers, interpreted within the operation scope.' : 'The rating describes active work to change the FCV situation.', responsivenessLevel / LEVELS.length, RESP_LEVEL_COLORS[responsivenessLevel] || '#e8edf2');
+    updateRatingCards('responsiveness', fcvResponsivenessRating ? `${fcvResponsivenessRating} contribution` : '', 'Contributing to responsiveness is often a sign of going above and beyond.', responsivenessLevel / LEVELS.length, RESP_LEVEL_COLORS[responsivenessLevel] || '#e8edf2');
   }
 
   // Priority stepper & card rendering ────────────────────────────────────

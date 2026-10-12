@@ -234,7 +234,7 @@ def test_runtime_preserves_candidate_preview_and_uses_grounding_adapter(monkeypa
             "judgments": {
                 "relevance": {"value": "high", "rationale": "Material."},
                 "sensitivity": {"value": "moderate", "rationale": "Partial."},
-                "responsiveness": {"value": "emerging", "rationale": "Emerging."},
+                "responsiveness": {"value": "moderate", "rationale": "Emerging."},
                 "operationalization": {"value": "partial", "rationale": "Partial."},
             },
             "priorities": [],
@@ -305,7 +305,7 @@ def test_runtime_blocks_reader_integrity_failure(monkeypatch):
             "judgments": {
                 "relevance": {"value": "high", "rationale": "Material."},
                 "sensitivity": {"value": "moderate", "rationale": "Partial."},
-                "responsiveness": {"value": "emerging", "rationale": "Emerging."},
+                "responsiveness": {"value": "moderate", "rationale": "Emerging."},
                 "operationalization": {"value": "partial", "rationale": "Partial."},
             },
             "priorities": [],

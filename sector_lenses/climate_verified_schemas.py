@@ -619,7 +619,7 @@ STAGE_OUTPUT_SCHEMAS: dict[str, dict[str, object]] = {
                  "very_limited", "unclear")
             ),
             "responsiveness": _judgment(
-                ("strong", "emerging", "limited", "not_expected", "unclear")
+                ("very_strong", "strong", "moderate", "limited", "very_limited", "not_expected", "unclear")
             ),
             "operationalization": _judgment(
                 ("embedded", "partial", "early", "not_evidenced", "unclear")

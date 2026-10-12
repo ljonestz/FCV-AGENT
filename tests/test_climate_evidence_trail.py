@@ -203,5 +203,5 @@ def test_lay_comprehensibility_method_and_sources():
         # Name-only sources (url=None) are explicitly marked, never fabricated.
         assert "no public link is shown until one is confirmed" in text
         # Parity: the TTL-friendly points-to-check label is used on every surface.
-        assert "Points to check before the decision meeting" in text
+        assert "Points to check before the applicable review" in text
         assert "Review readiness flags for task-team verification" not in text

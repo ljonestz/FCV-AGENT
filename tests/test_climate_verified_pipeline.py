@@ -739,7 +739,7 @@ def test_manifest_is_privacy_safe_and_scoped_to_the_run():
     )
     assert (
         first["manifest"]["prompt_versions"]["judgment_review"]
-        == "climate-judgments-v2.4"
+        == "climate-judgments-v2.5"
     )
     assert (
         first["manifest"]["prompt_versions"]["recommendation_compiler"]
@@ -1163,7 +1163,7 @@ def test_legacy_fallback_requires_known_non_judgment_evidence_ids():
         "judgments": {
             "relevance": {"value": "high", "rationale": "Fake rationale.", "evidence_ids": ["FAKE"]},
             "sensitivity": {"value": "strong", "rationale": "Known rationale.", "evidence_ids": ["PF-001"]},
-            "responsiveness": {"value": "emerging", "rationale": "Known response.", "evidence_ids": ["PF-001"]},
+            "responsiveness": {"value": "moderate", "rationale": "Known response.", "evidence_ids": ["PF-001"]},
             "operationalization": {"value": "early", "rationale": "Known operation.", "evidence_ids": ["PF-001"]},
         },
         "priorities": [],

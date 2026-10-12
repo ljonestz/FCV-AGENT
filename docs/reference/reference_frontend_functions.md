@@ -61,8 +61,8 @@
   - CSS: `.sensitivity-responsiveness-grid`, `.sr-card`, `.sr-card.sensitivity` (border `#0050A0`), `.sr-card.responsiveness` (border `#16A34A`), `.sr-card-label`
 
 ### Stage 3 rating rail (`updateSidebar()`)
-- Updates the compact sticky `.stage3-rating-rail` in Detailed analysis and the matching `.stage3-mobile-ratings` disclosure below the mobile breakpoint.
-- Normal FCV output shows textual Sensitivity and Responsiveness cards with slim percentage bars; Climate lens output shows one textual Climate-FCV integration card.
+- Uses the compact sticky `.stage3-rating-rail` in Summary and Detailed analysis, and the matching `.stage3-mobile-ratings` disclosure below the mobile breakpoint.
+- Normal FCV shows Sensitivity and Responsiveness cards. Verified Climate uses `climateVerifiedRatingCards()` for separate five-point sensitivity and responsiveness contribution cards; saved legacy integration output retains its old renderer. Short glosses are visible and full Climate rationale is collapsed. Not expected, unclear and legacy Emerging are unscored. Contribution depends on project scope and is often a sign of going above and beyond.
 - Updates rating text state, meaning, percentage progress, and the restored dimension-specific colors, including the legacy four-level climate integration mapping.
 
 ### Utilities
