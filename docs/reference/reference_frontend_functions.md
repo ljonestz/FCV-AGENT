@@ -421,3 +421,11 @@ list separator newlines. normalizeVisibleText suppresses complete and two-percen
 machine marker drift in visible prose while retaining protected URLs/code. Stage 3
 backend cleaning canonicalizes marker drift before stripping duplicate blocks.
 This applies to normal FCV, saved results and Markdown-based HTML exports.
+
+
+### 2026-10-12 partial recommendations
+
+Verified Climate reader status partial makes renderOut show Recommendations need
+review in Summary and Detailed. copySummary prepends the short status message;
+standalone Detailed HTML and Word include it before assessment content. Complete
+and wholly suppressed incomplete results preserve their previous treatment.

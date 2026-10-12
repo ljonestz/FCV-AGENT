@@ -5217,7 +5217,8 @@
       (relevantGuidanceHtml?climateReportSection('Relevant WBG guidance for this project','climate-guidance',`<div class="climate-purpose-band climate-further-guidance"><span class="climate-purpose-icon" aria-hidden="true">i</span><div><strong>Climate further guidance</strong><p>Optional WBG sources for deeper follow-up on the findings.</p></div></div>${relevantGuidanceHtml}`):'')+
       (provenanceHtml?climateReportSection('How this analysis was produced','climate-methodology-section',provenanceHtml):'');
     const advisoryHtml=r.advisory_notice?`<p class="climate-advisory">${esc(r.advisory_notice)}</p>`:'';
-    const incompleteHtml=recommendationsIncomplete&&!ratingsInSidebar?`<p><strong>Recommendations stage incomplete:</strong> ${esc(r.recommendation_message||'Do not rely on this note as a completed assessment.')}</p>`:'';
+    const needsReview=recommendationsIncomplete||r.recommendation_status==='partial';
+    const incompleteHtml=needsReview&&!ratingsInSidebar?`<p><strong>${recommendationsIncomplete?'Recommendations stage incomplete':'Recommendations need review'}:</strong> ${esc(r.recommendation_message||'Do not rely on this note as a completed assessment.')}</p>`:'';
     return `<article class="climate-verified-assessment">${incompleteHtml}${smokeHtml}${previewHtml}${operationContextHtml}${numberedSections}${advisoryHtml}</article>`;
   }
 
@@ -5243,12 +5244,15 @@
       _verifiedV2&&climateVerifiedReader&&
       climateVerifiedReader.recommendation_status==='incomplete'
     );
+    const _recommendationsPartial=!!(_verifiedV2&&climateVerifiedReader.recommendation_status==='partial');
     const _stageSubtitle=_recommendationsIncomplete
       ?'Recommendations stage incomplete'
+      :_recommendationsPartial?'Recommendations need review'
       :(isFollowOn?'Updated based on your input':isLast?'Recommendations Note generated':SUBS[stage]);
-    const _calloutTone=_recommendationsIncomplete?'warn':(isLast?'ok':'info');
+    const _calloutTone=(_recommendationsIncomplete||_recommendationsPartial)?'warn':(isLast?'ok':'info');
     const _calloutContent=_recommendationsIncomplete
       ?`<strong>Recommendations stage incomplete</strong><p>${esc(climateVerifiedReader.recommendation_message||'The recommendation stage could not be completed. Rerun the analysis or contact support.')}</p>`
+      :_recommendationsPartial?`<strong>Recommendations need review</strong><p>${esc(climateVerifiedReader.recommendation_message)}</p>`
       :`<strong>${c.t}</strong>${c.b}`;
     let _outBodyContent;
     if(_verifiedV2){
@@ -5578,7 +5582,8 @@
   }
   function copyFullReport(){return copyReportText(buildFullReportText());}
   function copySummary(){
-    return copyReportText(reportPlainText(supportsAnyStage3Summary()?renderStage3Summary():md(stageOutputs[3]||'')));
+    const notice=supportsClimateVerifiedStage3View()&&climateVerifiedReader.recommendation_status==='partial'?climateVerifiedReader.recommendation_message+'\n\n':'';
+    return copyReportText(notice+reportPlainText(supportsAnyStage3Summary()?renderStage3Summary():md(stageOutputs[3]||'')));
   }
 
   function copyOut(){

@@ -60,6 +60,24 @@ def _valid_bundle():
     }
 
 
+def test_country_homepage_cannot_impersonate_a_project_pid():
+    raw = _valid_bundle()
+    raw["sources"].append({"id": "fake-pid", "source_type": "current-operations",
+                           "title": "Project Information Document (P174814)",
+                           "url": "https://www.worldbank.org/ext/en/country/burundi",
+                           "publication_date": "313 days ago"})
+    raw["claims"].append({**raw["claims"][0], "id": "unsupported", "source_ids": ["fake-pid"]})
+    result = normalize_climate_research_bundle(raw)
+    assert len(result["sources"]) == 1 and len(result["claims"]) == 1
+
+
+def test_relative_page_age_is_not_a_publication_date():
+    raw = _valid_bundle()
+    raw["sources"][0]["publication_date"] = "313 days ago"
+    result = normalize_climate_research_bundle(raw)
+    assert result["sources"][0]["publication_date"] == ""
+
+
 def _climate_bank_plan():
     return {
         "country": "South Sudan",
@@ -247,7 +265,7 @@ def test_climate_evidence_packet_accepts_dictionary_blocks():
                 "title": "UN drought evidence",
                 "url": "https://www.un.org/drought-evidence",
                 "cited_text": "Drought affects rural water systems.",
-                "page_age": "2025",
+                "publication_date": "2025",
             }],
         }],
         {"documents": ["PCN.docx"], "document_excerpt": "Water systems"},

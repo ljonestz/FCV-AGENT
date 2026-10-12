@@ -1246,6 +1246,24 @@ def test_all_suppressed_priorities_render_as_incomplete_in_html_and_docx():
         assert "DRAFTING_CURRENT_TARGET_INVALID" not in output
 
 
+def test_some_withheld_priorities_have_a_short_review_notice_in_exports():
+    assessment = _assessment()
+    assessment["priorities"] = assessment["priorities"][:1]
+    assessment["recommendation_diagnostics"] = {
+        "admitted_count": 3, "final_priority_count": 1, "reviewer_verdict": "revise"}
+    model = build_reader_model(assessment)
+    assert model["recommendation_status"] == "partial"
+    assert len(model["recommendation_message"].split()) <= 20
+    stream = BytesIO()
+    write_reader_docx(model, stream)
+    stream.seek(0)
+    text = "\n".join(p.text for p in Document(stream).paragraphs)
+    for content in [text, render_reader_html(model)]:
+        assert "Recommendations need review" in content
+        assert model["recommendation_message"] in content
+        assert "AUTHORITY_UNSUPPORTED" not in content
+
+
 def test_no_candidate_result_keeps_neutral_complete_status():
     assessment = _assessment()
     assessment["priorities"] = []

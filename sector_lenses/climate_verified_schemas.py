@@ -50,11 +50,13 @@ _SUMMARY_ALLOWED_TOKENS = {
     "harm", "resilience", "inclusion", "roles", "indicators", "follows",
     "supports", "sets", "four-dimensional", "climate-fcv", "new", "ranked",
     "criteria",
+    "acts", "unit", "dimensions", "lack", "narrow", "thin", "concern", "main", "working",
 }
 _SUMMARY_STOPWORDS = {
     "a", "an", "and", "are", "as", "at", "be", "by", "for", "from",
     "has", "in", "is", "it", "its", "of", "on", "or", "that", "the",
     "their", "them", "this", "to", "was", "what", "will", "with", "where",
+    "after", "between",
 }
 _SUMMARY_MONTHS = (
     "january", "february", "march", "april", "may", "june", "july",
@@ -156,7 +158,7 @@ def validate_summary_overview(
         return reject("SUMMARY_DIMENSION_MISSING")
     if not any(
         signal in paragraphs[0].casefold()
-        for signal in ("verdict", "foundation", "overall", "credible", "takeaway", "recognizes", "recognises", "shows", "demonstrates", "assessment", "finding")
+        for signal in ("verdict", "foundation", "overall", "credible", "takeaway", "recognizes", "recognises", "shows", "demonstrates", "assessment", "finding", "already")
     ):
         return reject("SUMMARY_VERDICT_MISSING")
     if not any(

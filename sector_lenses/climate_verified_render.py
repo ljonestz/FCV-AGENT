@@ -59,6 +59,7 @@ INCOMPLETE_RECOMMENDATION_MESSAGE = (
     "recommendation failed the automated checks. Do not treat this "
     "Recommendations Note as complete; rerun the analysis or contact support."
 )
+PARTIAL_RECOMMENDATION_MESSAGE = "Some proposed actions were withheld. This note needs further review before it is used."
 # Headline rating shown above the core-question cards: how sensitive the project
 # is to climate and FCV considerations, on a Limited -> Moderate -> Strong scale
 # derived from the (retained) internal `sensitivity` judgment. Higher is better
@@ -692,10 +693,16 @@ def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
         and isinstance(diagnostic_reasons, (list, tuple))
         and "RECOMMENDATIONS_ALL_SUPPRESSED" in diagnostic_reasons
     )
-    recommendation_status = "incomplete" if all_suppressed else "complete"
+    admitted_count = diagnostics.get("admitted_count", 0)
+    partially_reviewed = bool(priorities) and (
+        diagnostics.get("reviewer_verdict") in {"revise", "block"}
+        and isinstance(admitted_count, int) and admitted_count > len(priorities)
+    )
+    recommendation_status = "incomplete" if all_suppressed else "partial" if partially_reviewed else "complete"
     recommendation_message = (
         INCOMPLETE_RECOMMENDATION_MESSAGE
         if all_suppressed
+        else PARTIAL_RECOMMENDATION_MESSAGE if partially_reviewed
         else NO_RECOMMENDATION_MESSAGE if not priorities else ""
     )
     executive = _text(assessment.get("executive_readout")) or _text(
@@ -1219,6 +1226,9 @@ def render_reader_html(model: dict[str, object]) -> str:
     """Render escaped HTML from the canonical reader dictionary."""
 
     parts = ['<article class="climate-verified-assessment">']
+    if model.get("recommendation_status") == "partial":
+        parts.append("<p><strong>Recommendations need review</strong>: "
+                     + html.escape(PARTIAL_RECOMMENDATION_MESSAGE) + "</p>")
     if model.get("recommendation_status") == "incomplete":
         parts.append("<p><strong>Recommendations stage incomplete</strong>: "
                      + html.escape(INCOMPLETE_RECOMMENDATION_MESSAGE) + "</p>")
@@ -1555,6 +1565,9 @@ def write_reader_docx(model: dict[str, object], path: str | Path) -> Path:
 
     output = path if hasattr(path, "write") else Path(path)
     document = Document()
+    if model.get("recommendation_status") == "partial":
+        paragraph = document.add_paragraph("Recommendations need review: " + PARTIAL_RECOMMENDATION_MESSAGE)
+        paragraph.runs[0].bold = True
     if model.get("recommendation_status") == "incomplete":
         paragraph = document.add_paragraph("Recommendations stage incomplete: "
                                            + INCOMPLETE_RECOMMENDATION_MESSAGE)

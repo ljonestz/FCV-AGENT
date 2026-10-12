@@ -69,6 +69,11 @@ def _trusted_https(url: str) -> bool:
     )
 
 
+def _publication_date(value: Any) -> str:
+    date = _bounded(value, 40)
+    return "" if re.search(r"\b(?:hours?|days?|weeks?|months?|years?)\s+ago\b", date, re.IGNORECASE) else date
+
+
 def _block_value(item: Any, name: str, default: Any = None) -> Any:
     """Read one field from an SDK object or dictionary-shaped block."""
 
@@ -96,11 +101,7 @@ def build_climate_evidence_packet(
         title = _bounded(_block_value(item, "title"), 220)
         if not title:
             return
-        publication_date = _bounded(
-            _block_value(item, "publication_date")
-            or _block_value(item, "page_age"),
-            40,
-        )
+        publication_date = _publication_date(_block_value(item, "publication_date"))
         excerpt = _bounded(
             _block_value(item, "cited_text")
             or _block_value(item, "snippet")
@@ -237,6 +238,9 @@ Include four to six claims and at least two distinct cited sources, including at
 least one authoritative source. Every claim must cite a listed source, name a
 project element, and name at least one geography, affected group, system, or
 asset. Use only exact HTTPS source URLs present in the search results.
+Keep source titles and publication dates faithful to the supplied search evidence.
+Do not label a country homepage as an uploaded project document or treat page age
+as a publication date. The project excerpt supplies project context, not a web citation.
 """.strip()
 
 
@@ -395,12 +399,16 @@ def normalize_climate_research_bundle(payload: Any) -> dict[str, Any]:
         source_type = _bounded(item.get("source_type"), 40)
         url = _bounded(item.get("url"), 1000)
         title = _bounded(item.get("title"), 300)
+        parsed = urlparse(url)
+        country_homepage = ((parsed.hostname or "").casefold().endswith("worldbank.org")
+                            and re.fullmatch(r"/(?:ext/)?[a-z]{2}/country/[^/]+(?:/overview)?/?", parsed.path))
         if (
             not raw_source_id
             or raw_source_id in source_id_aliases
             or source_type not in CLIMATE_SOURCE_TYPES
             or not title
             or not _trusted_https(url)
+            or (country_homepage and re.search(r"\b(?:project information document|pid|pad|P\d{6})\b", title, re.IGNORECASE))
         ):
             continue
         source_id = f"climate-source-{len(sources) + 1}"
@@ -411,7 +419,7 @@ def normalize_climate_research_bundle(payload: Any) -> dict[str, Any]:
             "source_type": source_type,
             "title": title,
             "url": url,
-            "publication_date": _bounded(item.get("publication_date"), 40),
+            "publication_date": _publication_date(item.get("publication_date")),
             "location": _bounded(item.get("location"), 200),
         })
         if len(sources) == 10:

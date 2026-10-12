@@ -1010,3 +1010,15 @@ validation records specific failures without relaxing grounding. Prompt versions
 judgments v2.6, compiler v2.5, review v2.7. No added provider calls. See
 `docs/20261012_climate-opcs-parity-validation.md` for checks and acceptance limits.
 Production remains held pending a separately authorized live quality check.
+
+
+### 2026-10-12 second quality trial and post-run fixes
+
+The authorized trial on 152656b retained one of three priorities; two correctly
+failed scope/authority review. Production remains held. Post-run fixes accept
+ordinary grounded summary prose, reject project-document titles on country-homepage
+URLs and avoid treating page_age as publication date. Climate scope/CERC and
+conditional proposal guards are strengthened (analysis v2.3, compiler v2.6,
+drafting v1.1, review v2.8; judgments v2.6). Reader status partial adds a short
+needs-review notice across app, copied Summary and exports. See the current
+validation document for trace, evidence and live-acceptance limits.

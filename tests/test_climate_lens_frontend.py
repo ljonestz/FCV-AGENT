@@ -673,7 +673,7 @@ for (const [name,html] of [
 }}
 """
     result = subprocess.run(
-        ["node", "-e", script], capture_output=True, text=True, check=False
+        ["node", "-"], input=script, capture_output=True, text=True, encoding="utf-8", check=False
     )
 
     assert result.returncode == 0, result.stderr

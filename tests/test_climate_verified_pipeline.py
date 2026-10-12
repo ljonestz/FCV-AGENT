@@ -733,7 +733,7 @@ def test_manifest_is_privacy_safe_and_scoped_to_the_run():
     assert first["manifest"]["run_id"] == "run-test"
     assert second["manifest"]["run_id"] == "run-two"
     assert first["manifest"]["source_count"] == 1
-    assert first["manifest"]["renderer_version"] == "climate-reader-v2.2"
+    assert first["manifest"]["renderer_version"] == "climate-reader-v2.3"
     assert first["manifest"]["extraction_version"] == "source-blocks-v3"
     assert (
         first["manifest"]["prompt_versions"]["fact_extraction"]
@@ -741,7 +741,7 @@ def test_manifest_is_privacy_safe_and_scoped_to_the_run():
     )
     assert (
         first["manifest"]["prompt_versions"]["bounded_analysis"]
-        == "climate-analysis-v2.2"
+        == "climate-analysis-v2.3"
     )
     assert (
         first["manifest"]["prompt_versions"]["judgment_review"]
@@ -749,15 +749,15 @@ def test_manifest_is_privacy_safe_and_scoped_to_the_run():
     )
     assert (
         first["manifest"]["prompt_versions"]["recommendation_compiler"]
-        == "climate-recommendations-v2.5"
+        == "climate-recommendations-v2.6"
     )
     assert (
         first["manifest"]["prompt_versions"]["conditional_review"]
-        == "climate-review-v2.7"
+        == "climate-review-v2.8"
     )
     assert (
         first["manifest"]["prompt_versions"]["drafting_compiler"]
-        == "climate-drafting-v1.0"
+        == "climate-drafting-v1.1"
     )
     assert set(first["manifest"]["prompt_versions"]) == {
         "fact_extraction",
@@ -900,6 +900,16 @@ def test_summary_overview_normalization_admits_two_or_three_and_rejects_other_sh
     assert helper({"paragraphs": ["Relevance only."]}) == []
     assert helper({"paragraphs": ["Relevance.", "Sensitivity.", "Responsiveness.", "Operationalization."]}) == []
     assert helper({"paragraphs": ["Relevance.", "   "]}) == []
+
+
+def test_summary_accepts_a_plain_language_verdict_without_magic_heading_words():
+    from sector_lenses.climate_verified_schemas import validate_summary_overview
+    summary = _summary_payload()
+    summary["paragraphs"][0] = (
+        "The project already acts on climate-FCV design. "
+        + "The Project Operations Manual will define site selection. " * 12).strip()
+    canonical = "The Project Operations Manual will define site selection. The residual gap remains material."
+    assert validate_summary_overview(summary, canonical_text=canonical) == summary["paragraphs"]
 
 
 def test_pipeline_admits_summary_overview_without_a_second_model_call():

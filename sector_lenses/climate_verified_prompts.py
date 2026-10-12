@@ -119,6 +119,13 @@ gaps. Each pathway needs a climate/FCV pressure, mediator, consequence, and a
 verified project anchor. Each residual gap must be residual to named existing
 responses. Use confirmed_omission only with an explicit-negative project fact;
 otherwise use not_yet_specified or evidence_gap.
+For FCV-to-climate pathways, identify the specific climate pressure or climate
+adaptation/mitigation outcome affected. Generic protection, inclusion or adaptive
+capacity language and shared location alone do not establish that connection.
+Keep wider FCV issues as context unless that climate mechanism is evidenced.
+An IPF CERC does not establish eligibility or activation for conflict or insecurity
+alone. Preserve the documented eligible-emergency conditions and borrower activation
+process; do not invent triggers. A zero initial allocation is not itself a funding gap.
 Return no more than 12 existing responses, six pathways total, eight residual
 gaps, four opportunity/unintended-consequence items, and four evidence
 limitations. Use exactly three short chain elements per pathway. Keep each
@@ -261,6 +268,9 @@ permits it. If neither destination is safe, fail actionability or timing; do not
 ask the task team to confirm routing. Credit existing mitigation before defining
 the residual improvement. Minimum action must be proportionate. Enhanced action
 requires a specific activation condition.
+Rank an FCV issue here only when its causal link to a specific climate pressure
+or climate adaptation/mitigation outcome is evidenced. A general protection or
+inclusion benefit, or co-location with a climate investment, is not enough.
 
 When the verified fact registry contains location or named-entity facts relevant
 to a recommendation's target, name the specific site(s) or entity from the
@@ -314,8 +324,13 @@ for example "Add at the start of this section:" or "Place immediately after the
 paragraph on conflict-risk mapping:" - then give the drafting language. Never
 use square brackets, placeholder markers, TBD/TODO, or page numbers.
 Label the block existing_commitment only when linked project evidence supports
-that status; otherwise use advisory_proposal. Add at most one operational_instrument block
-only when it is separately useful and targets a
+that status; otherwise use advisory_proposal.
+For advisory_proposal, make new roles, decision rules and timing visibly proposed
+in the prose using conditional language, subject to the team's agreement. Do not
+turn them into assertions that a PIU will decide, approve or complete an action
+by an unverified milestone. An evidenced PIU can be consulted; its existence
+does not prove decision authority. Do not invent handover or approval deadlines.
+Add at most one operational_instrument block only when it is separately useful and targets a
 named instrument supported by the candidate's instrument_claim_ids. The second
 block must not repeat the first. Return only the current_document block when
 instrument_claim_ids is empty.
@@ -350,6 +365,8 @@ that advisory destination only: it does not establish a project commitment,
 responsible actor, deadline, scope of an existing instrument, or binding authority.
 Continue to reject unsupported claims about those matters. An advisory proposal
 must remain visibly proposed rather than presented as an existing commitment.
+Check that ranked priorities have a specific evidenced climate mechanism;
+generic FCV benefits or co-location with a climate investment alone are insufficient.
 Return exactly one object and no other prose: {"verdict":"pass|revise|block","reason_codes":[],"object_ids":[],"issues":[{"object_id":"REC-001","reason_codes":[],"explanation":"One short sentence identifying the defective wording."}]}. For each affected recommendation, add one issues entry with its specific reason_codes and a short explanation quoting or identifying the problematic wording. Include only those REC- IDs in object_ids, and the union of their codes in reason_codes. Return empty arrays for pass. Return at most five issues. Return at most 12 reason_codes and 12 object_ids. Keep the entire response to 500 words or fewer. Use revise only when one bounded correction could resolve a recommendation defect; otherwise block the affected recommendation.""".replace(
             "{semantic_reason_codes}",
             allowed_reason_codes,

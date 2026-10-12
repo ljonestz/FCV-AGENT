@@ -528,3 +528,15 @@ v2.7 adds diagnostic issues (affected REC ID, specific codes, short explanation)
 to its strict native schema. Existing verdict/object-ID suppression is unchanged.
 Saved assessment diagnostic_trace stores bounded, truncation-labelled snapshots;
 the public reader/export never incorporates them. No model repair call is added.
+
+
+### 2026-10-12 second quality trial and post-run fixes
+
+The authorized trial on 152656b retained one of three priorities; two correctly
+failed scope/authority review. Production remains held. Post-run fixes accept
+ordinary grounded summary prose, reject project-document titles on country-homepage
+URLs and avoid treating page_age as publication date. Climate scope/CERC and
+conditional proposal guards are strengthened (analysis v2.3, compiler v2.6,
+drafting v1.1, review v2.8; judgments v2.6). Reader status partial adds a short
+needs-review notice across app, copied Summary and exports. See the current
+validation document for trace, evidence and live-acceptance limits.

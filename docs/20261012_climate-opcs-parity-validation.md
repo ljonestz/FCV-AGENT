@@ -221,3 +221,69 @@ inspection confirmed the corrected context layout. No new paid call was made.
 The candidate is ready for the next explicitly authorized quality trial, with
 production promotion still held. Truncated diagnostic snapshots are partial data
 and must not be treated as complete JSON evidence.
+
+
+## Second authorized quality trial: partial result, promotion still held
+
+The user authorized another paid run. Exactly one quality assessment was started
+on `152656be934c` at 16:46:23 UTC and ended at 16:50:03 UTC on 12 October 2026
+(HTTP 200, roughly 220 seconds). Assessment ID:
+`ff7b664c-2919-4538-a895-c696be3e7f60`. No additional provider repair or rerun
+was made after it. Extraction again returned 48,288 characters without warnings.
+AF/IPF/multi/ESF routing was correct, with OIS/processing still explicitly unknown.
+Live ratings were Strong sensitivity and Moderate responsiveness contribution.
+
+Three candidates passed structural admission. Semantic review withheld two for
+unsupported PIU decision authority and unverified timing; one GBV-service proposal
+survived. These selective rejections are appropriate. The surviving proposal has
+a weakly evidenced climate link, so the result does not establish satisfactory
+Climate-lens analytical acceptance. The analysis register also credited CERC too
+broadly for conflict shocks, despite the legacy Climate prompt's eligibility guard.
+No rejected proposal was manually reinstated.
+
+The new diagnostic trace worked: raw proposals and per-REC review explanations
+were retained. Review input exceeded the snapshot cap and was flagged truncated;
+the separately retained reviewed proposals were complete. The dedicated summary
+failed because its first paragraph lacked a literal verdict keyword. Offline replay
+then exposed ordinary connecting/reporting words rejected by the vocabulary check.
+The post-run validator now accepts this same three-paragraph provider output while
+retaining number/date/entity/action grounding checks. No replacement summary call.
+
+An external-source mismatch was verified against the World Bank Burundi overview
+(https://www.worldbank.org/ext/en/country/burundi): the research packet labelled it
+as the uploaded project PID. Normalization now excludes a PID/PAD/project-ID source
+that points to a generic country homepage and removes dependent claims. Saved
+research replay changes four sources/three claims to three sources/two claims.
+The SDK's page_age is last-update metadata, not publication date (official reference:
+https://platform.claude.com/docs/en/agents-and-tools/tool-use/web-search-tool).
+It is no longer copied into publication_date, and relative ages are left unknown.
+
+Post-run prompts now keep new roles/triggers/timing visibly conditional proposals,
+require a specific evidenced climate mechanism for ranked FCV issues, and preserve
+CERC eligible-emergency/borrower activation conditions without treating a zero
+initial allocation as a funding gap. Versions: analysis v2.3, judgments v2.6,
+recommendations v2.6, drafting v1.1, review v2.8. Their generation effect remains
+unverified by another paid run.
+
+Partial semantic-review results now carry a short Recommendations need review
+notice in the app, copied Summary and HTML/Word exports. Neutral no-priority results
+and wholly suppressed incomplete results retain their distinct existing messages.
+The status is derived from actual withheld-priority diagnostics, not rating values.
+
+Artifacts, local only: output/playwright/20261012-quality2-session.json; matching
+quality2-report.html/docx, Summary/Detailed/mobile PNGs; and clearly labelled
+quality2-replayed-session.json/replayed-report.docx for offline rendering. The raw
+session is unchanged. HTML and Word downloads completed, preserved the OIS caveat
+and contribution wording, and had no visible machine markers. At 390px viewport
+there was no horizontal overflow. The replay restores the validated raw overview
+and shows partial status without adding any rejected recommendation.
+
+Production and ITS are unchanged. PR #83 remains draft. Further analytical
+acceptance is required before promotion; software completion alone is insufficient.
+
+
+Post-run verification: 241 connected backend tests passed in 12.30 seconds;
+10 reader/frontend/export boundary checks passed in 14.40 seconds; the final
+reader-status/version metadata passed three focused checks. Renderer version is
+climate-reader-v2.3. The previous full suite remains 1,391 passed; it has not been
+rerun after these scoped post-trial changes. `git diff --check` passed.
