@@ -555,3 +555,10 @@ Gap admission accepts nonempty grounded text up to 100 words. The drafting targe
 `run_fcv_web_research` keeps the existing single Anthropic web-search request and delegates prompt construction and provider-block normalization to `fcv_core_research.py`. Results carry `brief`, `country`, `sources`, `status`, and the existing `ccdr_context`. Provider citations preserve URLs, excerpts and supplied dates; unavailable dates and uncertain country attribution remain explicit. No server-side article fetching is added. Stage 1 cache keys include the bounded project profile and lens budget; entries expire after six hours, are capped at 128, and source-free/unavailable results are not cached. Existing SSE research brief transport is unchanged. Word export strips only repeated leading Watch List headings.
 
 Watch List heading normalization uses linear line parsing in Python and JavaScript so adversarial whitespace cannot cause regex backtracking.
+
+
+Source-notice wording follow-up: _climate_source_warning_messages preserves
+bundle codes while omitting routine primary-selection bookkeeping from the
+banner. Regional coverage and unresolved document precedence have plain messages.
+Full source/pipeline regression and the subsequent focused wording checks are
+recorded in docs/20261012_climate-opcs-parity-validation.md.

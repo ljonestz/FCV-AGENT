@@ -5080,6 +5080,7 @@
 
   function renderClimateVerifiedAssessment(reader,ratingsInSidebar=false){
     const r=reader&&typeof reader==='object'?reader:{};
+    const analysisHtml=r.analysis_status==='partial'&&r.analysis_message?`<div class="finalized-pad-notice"><div class="fpn-body"><strong>Assessment evidence is incomplete.</strong><p>${esc(r.analysis_message)}</p></div></div>`:'';
     const draftingRoute=climateDraftingRouteGate(r);
     const relevantGuidanceHtml=renderClimateRelevantGuidance(r);
     const runtimeMode=String(r.runtime_mode||'quality').toLowerCase();
@@ -5222,7 +5223,7 @@
     const advisoryHtml=r.advisory_notice?`<p class="climate-advisory">${esc(r.advisory_notice)}</p>`:'';
     const needsReview=recommendationsIncomplete||r.recommendation_status==='partial';
     const incompleteHtml=needsReview&&!ratingsInSidebar?`<p><strong>${recommendationsIncomplete?'Recommendations stage incomplete':'Recommendations need review'}:</strong> ${esc(r.recommendation_message||'Do not rely on this note as a completed assessment.')}</p>`:'';
-    return `<article class="climate-verified-assessment">${incompleteHtml}${smokeHtml}${previewHtml}${operationContextHtml}${numberedSections}${advisoryHtml}</article>`;
+    return `<article class="climate-verified-assessment">${analysisHtml}${incompleteHtml}${smokeHtml}${previewHtml}${operationContextHtml}${numberedSections}${advisoryHtml}</article>`;
   }
 
   // Blunt, upfront caveat shown above the Stage 3 Summary and Detailed readouts.
@@ -6932,6 +6933,7 @@ ${body}
 
   function renderClimateVerifiedSummary(reader){
     const r=reader&&typeof reader==='object'?reader:{};
+    const analysisHtml=r.analysis_status==='partial'&&r.analysis_message?`<div class="finalized-pad-notice"><div class="fpn-body"><strong>Assessment evidence is incomplete.</strong><p>${esc(r.analysis_message)}</p></div></div>`:'';
     const operationContextHtml=(()=>{
       const context=r.operation_context&&typeof r.operation_context==='object'?r.operation_context:null;
       if(!context)return '';
@@ -6963,7 +6965,7 @@ ${body}
     const closingText=recommendationsIncomplete
       ?'Recommendations are incomplete. Review the Detailed analysis and rerun the assessment or contact support before relying on this note.'
       :(priorities.length?'For supporting evidence, drafting and completion signals behind each priority, continue to Detailed analysis.':'Continue to Detailed analysis for the supporting evidence and points to check from this assessment.');
-    return `<div class="concise-readout climate-verified-summary"><div class="concise-read-time">Five-minute readout</div>${operationContextHtml}<div class="concise-section-label">Overall assessment</div><div class="climate-summary-overview">${overviewHtml}</div>${signal}<div class="concise-section-label">What is already working</div><div class="concise-strengths">${strengthsHtml}</div>${gapsHtml||bridge}${renderStage3AdvisoryTransition('climate')}<div class="concise-section-label">Priority actions for the task team</div>${countHtml}${prioritiesHtml}${watchHtml}${guidanceHtml}<p class="concise-closing">${esc(closingText)}</p></div>`;
+    return `<div class="concise-readout climate-verified-summary"><div class="concise-read-time">Five-minute readout</div>${analysisHtml}${operationContextHtml}<div class="concise-section-label">Overall assessment</div><div class="climate-summary-overview">${overviewHtml}</div>${signal}<div class="concise-section-label">What is already working</div><div class="concise-strengths">${strengthsHtml}</div>${gapsHtml||bridge}${renderStage3AdvisoryTransition('climate')}<div class="concise-section-label">Priority actions for the task team</div>${countHtml}${prioritiesHtml}${watchHtml}${guidanceHtml}<p class="concise-closing">${esc(closingText)}</p></div>`;
   }
 
   function handleStage3ViewKeydown(event){

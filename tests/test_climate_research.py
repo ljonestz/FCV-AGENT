@@ -607,7 +607,8 @@ def test_climate_research_uses_one_focused_request():
     call = client.calls[0]
     assert "SEARCH ONLY" in call["messages"][0]["content"]
     assert CLIMATE_RESEARCH_START not in call["messages"][0]["content"]
-    assert call["max_tokens"] == 1800
+    assert call["max_tokens"] == 3000
+    assert call["thinking"] == {"type": "between_tools"}
     assert call["tools"][0]["max_uses"] == 2
     assert call["timeout"] == 135
 

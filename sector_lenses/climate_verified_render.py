@@ -757,6 +757,19 @@ def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
         else PARTIAL_RECOMMENDATION_MESSAGE if partially_reviewed
         else NO_RECOMMENDATION_MESSAGE if not priorities else ""
     )
+    codes = _mapping(assessment.get("validation")).get("reason_codes", [])
+    codes = codes if isinstance(codes, (list, tuple)) else []
+    analysis_partial = any(
+        isinstance(code, str) and (code.startswith(("PATHWAY_", "GAP_", "RESPONSE_"))
+                                  or code in {"FACT_SOURCE_UNRESOLVED", "DERIVATION_INPUT_MISSING"})
+        for code in codes
+    )
+    analysis_message = (
+        "Some analysis findings were withheld because their supporting evidence could not be validated. "
+        "Fewer findings or actions do not establish an absence of risks or gaps. "
+        "Review the source documents and evidence limitations before relying on this assessment."
+        if analysis_partial else ""
+    )
     executive = _text(assessment.get("executive_readout")) or _text(
         assessment.get("judgment_summary")
     )
@@ -807,6 +820,8 @@ def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
         "core_questions": core_questions,
         "existing_responses": existing_responses,
         "summary_gaps": _summary_gap_items(assessment, reader_priorities),
+        "analysis_status": "partial" if analysis_partial else "complete",
+        "analysis_message": analysis_message,
         "priorities": reader_priorities,
         "recommendation_status": recommendation_status,
         "recommendation_message": recommendation_message,
@@ -1283,6 +1298,9 @@ def render_reader_html(model: dict[str, object]) -> str:
     """Render escaped HTML from the canonical reader dictionary."""
 
     parts = ['<article class="climate-verified-assessment">']
+    if model.get("analysis_status") == "partial" and _text(model.get("analysis_message")):
+        parts.append("<p><strong>Assessment evidence is incomplete</strong>: "
+                     + html.escape(_text(model["analysis_message"])) + "</p>")
     if model.get("recommendation_status") == "partial":
         parts.append("<p><strong>Recommendations need review</strong>: "
                      + html.escape(PARTIAL_RECOMMENDATION_MESSAGE) + "</p>")
@@ -1622,6 +1640,10 @@ def write_reader_docx(model: dict[str, object], path: str | Path) -> Path:
 
     output = path if hasattr(path, "write") else Path(path)
     document = Document()
+    if model.get("analysis_status") == "partial" and _text(model.get("analysis_message")):
+        paragraph = document.add_paragraph("Assessment evidence is incomplete: "
+                                           + _text(model["analysis_message"]))
+        paragraph.runs[0].bold = True
     if model.get("recommendation_status") == "partial":
         paragraph = document.add_paragraph("Recommendations need review: " + PARTIAL_RECOMMENDATION_MESSAGE)
         paragraph.runs[0].bold = True

@@ -475,3 +475,23 @@ FCV's cap. Unknown gap evidence IDs are rejected before compilation. Exact sourc
 words within hyphenated expressions no longer falsely fail entity grounding;
 unsupported entities still fail. No dependency, extra provider call, repair loop
 or native generation-schema field. Other prompt versions are unchanged.
+
+
+### 2026-10-13 post-quality4 handoff repair
+
+Analysis v2.6 clarifies exact fact/context IDs and project-only mechanisms when
+context evidence is empty. Reader v2.7 adds a plain analysis_status/message for
+withheld evidence, shown in both views and HTML/Word. Source packets enrich
+metadata with later native citations and prioritize quoted passages within the
+same four-source cap, using cumulative pause-turn content. Sonnet search uses
+between_tools/3000 tokens and bounded cited quotes; the existing Haiku structurer,
+two-search/150s limit and independent evidence/review gates remain. No extra call
+or fetch. See docs/20261012_climate-opcs-parity-validation.md for the unaccepted
+quality4 result, original private artifacts, tests and remaining paid allowance.
+
+
+Source-notice wording follow-up: _climate_source_warning_messages preserves
+bundle codes while omitting routine primary-selection bookkeeping from the
+banner. Regional coverage and unresolved document precedence have plain messages.
+Full source/pipeline regression and the subsequent focused wording checks are
+recorded in docs/20261012_climate-opcs-parity-validation.md.

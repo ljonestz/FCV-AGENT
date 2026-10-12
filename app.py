@@ -8080,7 +8080,9 @@ def run_climate_web_research(
             messages = [{"role": "user", "content": prompt}]
             request_options = {
                 "model": MODEL_STANDARD,
-                "max_tokens": 1800,
+                # Reserve output for cited notes instead of default up-front thinking.
+                "thinking": {"type": "between_tools"},
+                "max_tokens": 3000,
                 "tools": [{
                     "type": "web_search_20250305",
                     "name": "web_search",
@@ -8138,7 +8140,17 @@ def run_climate_web_research(
             )
             search_result_count = sum(
                 getattr(block, "type", "") == "web_search_tool_result"
-                for block in response.content
+                for block in provider_content
+            )
+            app.logger.info(
+                "Climate research search boundary assessment_id=%s attempt=%d "
+                "stop_reason=%s output_tokens=%d text_chars=%d citations=%d",
+                assessment_id or "unknown", attempt,
+                str(getattr(response, "stop_reason", "unknown"))[:40],
+                int(getattr(getattr(response, "usage", None), "output_tokens", 0) or 0),
+                min(len(text), 99_999),
+                sum(len(getattr(block, "citations", None) or [])
+                    for block in provider_content if getattr(block, "type", "") == "text"),
             )
             block_present = (
                 CLIMATE_RESEARCH_START in text
@@ -8159,7 +8171,7 @@ def run_climate_web_research(
                 structure_timeout = min(cap_remaining, parent_remaining)
                 if structure_timeout > 0:
                     evidence_packet = build_climate_evidence_packet(
-                        response.content,
+                        provider_content,
                         project_profile,
                     )
                     packet_text = json.dumps(
@@ -8299,6 +8311,8 @@ def run_climate_web_research(
                 accepted = gate["bundle"]
                 accepted["attempts"] = attempt
                 return finish(accepted)
+            if bundle.get("failure_reason"):
+                failure_reason = str(bundle["failure_reason"])
             retry_insufficient = (
                 attempt == 1
                 and gate.get("code") == "climate_research_insufficient"
@@ -8387,6 +8401,21 @@ def research_cache_key(
     profile = json.dumps(project_profile, sort_keys=True, ensure_ascii=False)
     digest = hashlib.sha256(profile.encode('utf-8')).hexdigest()
     return f"core-v2::{base}::profile={digest}"
+
+
+def _climate_source_warning_messages(codes: list[str]) -> list[dict[str, str]]:
+    """Explain evidence limits without exposing normal provenance bookkeeping."""
+    messages = {
+        "MULTI_COUNTRY_BANK_WITHHELD": (
+            "This is a regional project. Check that the uploaded evidence and research "
+            "cover each beneficiary country; country-specific reference material has not been applied."
+        ),
+        "PRIMARY_DOCUMENT_PRECEDENCE_UNRESOLVED": (
+            "Confirm which document is authoritative before relying on the assessment."
+        ),
+    }
+    return [{"message": messages.get(code, code.replace("_", " ").title())}
+            for code in codes if code != "PRIMARY_APPLICABILITY_USER_DESIGNATED"]
 
 
 def build_stage1_research_plan(
@@ -10931,10 +10960,9 @@ def run_express():
                         'responsiveness', {}
                     ).get('value', '')
                     executive = verified_reader.get('executive_readout', '')
-                    source_warnings = [
-                        {'message': code.replace('_', ' ').title()}
-                        for code in verified_bundle.get('source_warnings', [])
-                    ]
+                    source_warnings = _climate_source_warning_messages(
+                        verified_bundle.get('source_warnings', [])
+                    )
                     stage2_output = executive or "Verified assessment complete."
                     verified_history = [
                         {

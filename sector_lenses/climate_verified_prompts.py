@@ -118,6 +118,14 @@ def _analysis_prompt(payload: dict[str, object]) -> str:
     return _common(
         """Build bounded Climate-FCV analysis registers from verified project facts.
 First represent material existing project responses; then identify what remains.
+Reference rules: project_anchor_ids and project_fact_ids copy supplied facts.claim_id
+values exactly. pathways.evidence_ids may contain only supplied context_evidence.evidence_id
+values. When context_evidence is empty, leave pathways.evidence_ids empty and use
+verified project anchors for explicitly qualified, plausible project-only mechanisms.
+Do not invent context IDs, treat guidance IDs as context, or cite source-block IDs
+as fact IDs. residual_gaps.evidence_ids may use supplied fact IDs or context IDs.
+Response, pathway and gap cross-references must resolve within the returned registers.
+An unavailable context source does not erase documented project risks or responses.
 Credit risk-register controls, E&S measures, sequencing, monitoring, grievance,
 and implementation arrangements before stating a residual gap. Treat
 functionally equivalent documented controls as existing responses even when a

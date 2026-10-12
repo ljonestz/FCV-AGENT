@@ -93,12 +93,12 @@ def build_climate_evidence_packet(
     blocks = content if isinstance(content, list) else []
     note_parts: list[str] = []
     sources: list[dict[str, str]] = []
-    seen_urls: set[str] = set()
+    by_url: dict[str, dict[str, str]] = {}
 
     def add_source(item: Any) -> None:
         url = _bounded(_block_value(item, "url"), 1000)
         url_key = url.casefold().rstrip("/")
-        if not url or not _trusted_https(url) or url_key in seen_urls:
+        if not url or not _trusted_https(url):
             return
         title = _bounded(_block_value(item, "title"), 220)
         if not title:
@@ -110,29 +110,35 @@ def build_climate_evidence_packet(
             or _block_value(item, "text"),
             320,
         )
-        seen_urls.add(url_key)
-        sources.append({
+        if url_key in by_url:
+            # Metadata hits precede native citations; enrich without losing the quote.
+            if excerpt and not by_url[url_key]["excerpt"]:
+                by_url[url_key]["excerpt"] = excerpt
+            return
+        source = {
             "title": title,
             "url": url,
             "publication_date": publication_date,
             "excerpt": excerpt,
-        })
+        }
+        by_url[url_key] = source
+        sources.append(source)
 
-    for block in blocks:
+    for block in blocks[:40]:
         block_type = _bounded(_block_value(block, "type"), 80)
         if block_type == "text":
             note = _bounded(_block_value(block, "text"), 2200)
             if note:
                 note_parts.append(note)
             citations = _block_value(block, "citations", [])
-            for citation in citations if isinstance(citations, list) else []:
+            for citation in (citations if isinstance(citations, list) else [])[:8]:
                 add_source(citation)
         elif block_type == "web_search_tool_result":
             results = _block_value(block, "content", [])
-            for result in results if isinstance(results, list) else []:
+            for result in (results if isinstance(results, list) else [])[:8]:
                 add_source(result)
-        if len(sources) >= 4:
-            break
+    # Keep cited passages before metadata-only hits within the existing four-source cap.
+    sources.sort(key=lambda source: not bool(source["excerpt"]))
 
     profile = project_profile if isinstance(project_profile, dict) else {}
     packet = {
@@ -243,7 +249,13 @@ in the first source.
 PROJECT PROFILE:
 {profile}
 
-Return concise evidence notes, not JSON and not recommendations. For each useful
+Return concise evidence notes, not JSON and not recommendations. Include
+four to six short verbatim passages with native web-source citations, each a
+self-contained sentence or clause of at most 140 characters. Cover both beneficiary
+countries when regional; do not invent a passage or pad the count. Choose directly
+relevant climate findings, retaining quantities, units, dates and qualifications.
+These cited passages supply the next structuring step's source proof.
+For each useful
 source, give its exact title, URL, publication date if available, and only the
 findings that connect observed or projected climate pressures to the profile's
 locations, groups, project elements, systems, or assets. Distinguish current,
@@ -311,6 +323,9 @@ asset. Use only exact HTTPS source URLs present in the search results.
 Keep source titles and publication dates faithful to the supplied search evidence.
 Do not label a country homepage as an uploaded project document or treat page age
 as a publication date. The project excerpt supplies project context, not a web citation.
+Prefer the exact excerpts already retained in the evidence packet. Copy them
+verbatim into claim and source_excerpt with their exact source URL; the original
+native citation remains the proof, so do not paraphrase or invent a fresh quote.
 Every claim needs a short verbatim source_excerpt (one sentence or a self-contained
 clause, at most 140 characters) and a native web-source citation containing it.
 Native web citations contain at most 150 characters; do not request longer quotes.

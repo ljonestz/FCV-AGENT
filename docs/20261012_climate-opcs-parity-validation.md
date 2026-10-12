@@ -497,3 +497,53 @@ one and permitting necessary judgment calls. None has been used under that new
 allowance at this checkpoint. The candidate can proceed to isolated test deployment
 and one quality assessment; software checks alone do not establish analytical
 acceptance. Production/main and ITS remain unchanged.
+
+
+### 2026-10-13 post-quality4 citation handoff
+
+The first additional authorized run (6467ed54-2a50-4df3-8429-d91954cf7ce9), on
+9f5d225, completed in about 179s but is unaccepted: no research claim passed its
+source proof, the analysis registers lost their references, and no candidate
+was generated. Originals remain under output/playwright/20261013-quality4-*.
+Native search transport and actual Save session/HTML/Word exports completed;
+Detailed showed no %% markers. No source/review gate is relaxed.
+
+A reproduced metadata-first bug stopped the bounded packet at four hits before
+later citations/notes. Packet construction now scans bounded blocks, enriches
+matching metadata from later citations, and prioritizes quoted passages within
+the same four-source cap. It uses accumulated pause-turn content. Native encrypted
+blocks remain intact for the existing Haiku structurer; no new model/fetch call.
+Search uses Sonnet between_tools and 3000 output tokens to preserve cited notes;
+the prompt asks for four/six verbatim self-contained passages <=140 characters.
+The original two-search/150s deadline limits and independent source-proof checks
+remain. Content-free boundary telemetry records stop reason, token/text counts
+and native-citation count. Failure messages retain the specific evidence limitation.
+
+Analysis v2.6 spells out facts.claim_id vs context_evidence.evidence_id and empty
+context behavior; project-only plausible mechanisms use verified project anchors
+with an empty context-reference list. Reader v2.7 reports analysis_status/message
+when evidence references or project assertions are withheld. Both views and HTML/
+Word display a plain limitation: fewer findings/actions are not proof that risks
+or gaps are absent. Saved grades and original archival sessions are unchanged.
+
+Seven targeted handoff checks and the connected set are covered by **131 passing
+checks in 32.03s**. A frozen full pass follows before the final allowed paid run.
+One of the two newly authorized paid runs is used; one remains. The second is
+justified by the material failure above, after these free fixes are verified.
+Production and ITS remain unchanged, and PR #83 remains draft pending acceptance.
+
+Provider contracts checked against:
+https://platform.claude.com/docs/en/agents-and-tools/tool-use/web-search-tool
+https://platform.claude.com/docs/en/models/sonnet-5-5/whats-new-sonnet-5-5
+
+
+Final pre-paid regression: **1,435 passed in 764.86s (12m44s)**, saved as
+output/20261013-citation-handoff-full-regression.txt. Frozen source/tests were used.
+The later wording-only source-notice cleanup is covered by **65 passing focused
+runtime/workflow/handoff checks in 11.35s**. It omits the routine user-selected
+primary-source bookkeeping from the banner and explains regional country coverage
+in plain language; source warning codes remain in the underlying bundle. The
+primary-document precedence warning remains visible. Diff checking passed.
+The exact Great Lakes PDF's hash/disclosure markings were checked before the
+approved first additional submission. No additional paid run has followed yet;
+one remains for the deployed repair's live acceptance.
