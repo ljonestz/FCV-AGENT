@@ -540,3 +540,16 @@ conditional proposal guards are strengthened (analysis v2.3, compiler v2.6,
 drafting v1.1, review v2.8; judgments v2.6). Reader status partial adds a short
 needs-review notice across app, copied Summary and exports. See the current
 validation document for trace, evidence and live-acceptance limits.
+
+
+### Native research-context continuation correction
+
+The metadata-only research fallback dropped native web-search result blocks and
+therefore the provider's encrypted source context. The existing structuring call
+now continues the original user/assistant search messages intact, retains the
+search tool definition/beta, and sets tool_choice to none to prevent another
+search. Retrieved content remains untrusted evidence. No model call was added.
+Tests preserve exact native-content identity, two-call count, bounded final prompt
+and content-free logs; 55 research/grounding/context checks pass. This matches the
+provider's documented search continuation protocol. The live effect has not been
+checked by another paid run. The quality/production hold remains in place.

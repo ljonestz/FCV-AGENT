@@ -249,3 +249,11 @@ conditional proposal guards are strengthened (analysis v2.3, compiler v2.6,
 drafting v1.1, review v2.8; judgments v2.6). Reader status partial adds a short
 needs-review notice across app, copied Summary and exports. See the current
 validation document for trace, evidence and live-acceptance limits.
+
+
+### Native research-context continuation correction
+
+The existing research structuring call now preserves native search/encrypted
+context, with further searches disabled and no added call. All 55 research,
+grounding and context checks pass. The current validation record documents the
+protocol and remaining live-acceptance hold; ITS remains unchanged.

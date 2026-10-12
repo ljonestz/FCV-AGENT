@@ -287,3 +287,16 @@ Post-run verification: 241 connected backend tests passed in 12.30 seconds;
 reader-status/version metadata passed three focused checks. Renderer version is
 climate-reader-v2.3. The previous full suite remains 1,391 passed; it has not been
 rerun after these scoped post-trial changes. `git diff --check` passed.
+
+
+### Native research-context continuation correction
+
+The metadata-only research fallback dropped native web-search result blocks and
+therefore the provider's encrypted source context. The existing structuring call
+now continues the original user/assistant search messages intact, retains the
+search tool definition/beta, and sets tool_choice to none to prevent another
+search. Retrieved content remains untrusted evidence. No model call was added.
+Tests preserve exact native-content identity, two-call count, bounded final prompt
+and content-free logs; 55 research/grounding/context checks pass. This matches the
+provider's documented search continuation protocol. The live effect has not been
+checked by another paid run. The quality/production hold remains in place.

@@ -631,7 +631,7 @@ def test_climate_research_continues_one_pause_turn():
     ]
 
 
-def test_climate_research_structures_search_notes_without_researching():
+def test_climate_research_structures_search_notes_without_researching(caplog):
     searched_content = [
         SimpleNamespace(
             type="server_tool_use",
@@ -684,15 +684,18 @@ def test_climate_research_structures_search_notes_without_researching():
     assert result["attempts"] == 1
     assert len(client.calls) == 2
     recovery = client.calls[1]
-    assert "tools" not in recovery
-    assert "betas" not in recovery
+    assert recovery["tools"] == client.calls[0]["tools"]
+    assert recovery["betas"] == client.calls[0]["betas"]
+    assert recovery["tool_choice"] == {"type": "none"}
     assert recovery["model"] == "claude-haiku-5-5"
     assert recovery["max_tokens"] == 4000
     # Thinking disabled so Haiku 5.5's adaptive thinking can't consume the output
     # budget and truncate the research JSON (the 4.6-era budget assumed no thinking).
     assert recovery["thinking"] == {"type": "disabled"}
-    assert [message["role"] for message in recovery["messages"]] == ["user"]
-    request_text = recovery["messages"][0]["content"]
+    assert [message["role"] for message in recovery["messages"]] == ["user", "assistant", "user"]
+    assert recovery["messages"][1]["content"] is searched_content
+    assert recovery["messages"][1]["content"][1].content[0].encrypted_content == "encrypted-secret" * 1000
+    request_text = recovery["messages"][-1]["content"]
     assert "EVIDENCE PACKET" in request_text
     assert "original-search-secret" not in request_text
     assert "encrypted-secret" not in request_text
@@ -701,6 +704,8 @@ def test_climate_research_structures_search_notes_without_researching():
     assert '"source_type"' in request_text
     assert '"time_horizons"' in request_text
     assert len(request_text) < 20_000
+    assert "original-search-secret" not in caplog.text
+    assert "encrypted-secret" not in caplog.text
 
 
 def test_climate_structuring_diagnostic_is_logged_without_content(caplog):
