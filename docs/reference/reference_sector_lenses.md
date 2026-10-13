@@ -343,3 +343,26 @@ between_tools/3000 tokens and bounded cited quotes; the existing Haiku structure
 two-search/150s limit and independent evidence/review gates remain. No extra call
 or fetch. See docs/20261012_climate-opcs-parity-validation.md for the unaccepted
 quality4 result, original private artifacts, tests and remaining paid allowance.
+
+
+2026-10-13 final readout safeguards: reader v2.8 withholds a whole narrative that
+introduces responsiveness absent from the reviewed action fields; complete field
+presentation retains every action/qualification and grades are unchanged.
+Compiler/reviewer v2.10 align titles with minimum actions and distinguish ordinary
+measurement from wider dividends. Source proof retains only cited sources and
+explicit provider publication dates; unknown dates stay unknown. Climate gaps
+carry a concise optional-dividend scope note. No new model/fetch call; original
+paid archives remain unchanged. Final trial/check evidence is recorded in
+`docs/20261012_climate-opcs-parity-validation.md`.
+
+
+Detailed export completeness: HTML/Word render the optional reader summary_gaps
+as Supporting gap findings before priorities, preserving all five full qualified
+statements and the optional-dividend scope note. They still use detailed renderer
+boundaries. Legacy readers without summary_gaps do not gain an empty section.
+
+
+Final export parity: browser Detailed/Share HTML also includes Supporting gap
+findings under the core questions, matching the complete data in Python HTML/Word.
+Final full verification: 1,443 passed; paid and replay limits are recorded in the
+validation handover. Production/main and ITS remain unchanged.

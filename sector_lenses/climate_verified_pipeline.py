@@ -87,8 +87,8 @@ PROMPT_VERSIONS = {
     "fact_extraction": "climate-facts-v2.3",
     "bounded_analysis": "climate-analysis-v2.6",
     "judgment_review": "climate-judgments-v2.8",
-    "recommendation_compiler": "climate-recommendations-v2.9",
-    "conditional_review": "climate-review-v2.9",
+    "recommendation_compiler": "climate-recommendations-v2.10",
+    "conditional_review": "climate-review-v2.10",
     "drafting_compiler": "climate-drafting-v1.2",
 }
 
@@ -1374,7 +1374,7 @@ def run_verified_climate_pipeline(
         reviewer_version="climate-review-v2.1",
         extraction_version="source-blocks-v3",
         normalization_version="climate-normalization-v2.1",
-        renderer_version="climate-reader-v2.7",
+        renderer_version="climate-reader-v2.8",
         model_aliases={"assessment": "configured", "reviewer": "configured"},
         sampling={"max_transient_retries": 1},
         source_fingerprints=tuple(item.sha256 for item in source_documents),

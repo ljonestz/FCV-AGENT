@@ -790,8 +790,19 @@ def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
     } if raw_operation_context else {}
     drafting_route = _drafting_route_gate(operation_context)
     reader_priorities = []
+    withheld_narrative_count = 0
     for position, priority in enumerate(priorities, start=1):
         reader_priority = dict(priority)
+        narrative = _text(priority.get("narrative"))
+        action_text = " ".join(_text(priority.get(key)) for key in
+                               ("decision", "minimum_action", "enhanced_action"))
+        # A narrative may not introduce a contribution classification absent from
+        # the reviewed action. Retain every field/qualification through the fallback.
+        if re.search(r"\bresponsiveness\b", narrative, re.IGNORECASE) and not re.search(
+            r"\bresponsiveness\b", action_text, re.IGNORECASE
+        ):
+            reader_priority["narrative"] = ""
+            withheld_narrative_count += 1
         # Renumber rank to a clean 1..N sequence in the already rank-sorted order.
         # The Claude 5.5 models sometimes emit non-sequential rank integers
         # (e.g. 1, 3, 5) or duplicates, which the reader-integrity validator
@@ -841,6 +852,7 @@ def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
             "recommendation_admitted_count": diagnostics.get(
                 "admitted_count", 0
             ),
+            "withheld_narrative_count": withheld_narrative_count,
             "recommendation_final_count": diagnostics.get(
                 "final_priority_count", 0
             ),
@@ -1368,6 +1380,15 @@ def render_reader_html(model: dict[str, object]) -> str:
                 parts.append("<p>" + html.escape(para) + "</p>")
         parts.append("</section>")
 
+    gaps = [_text(item.get("text")) for item in _records(model.get("summary_gaps"))[:5]
+            if _text(item.get("text"))]
+    if gaps:
+        parts.append(_heading(2, "Supporting gap findings"))
+        parts.append("<ul>" + "".join("<li>" + html.escape(text) + "</li>" for text in gaps) + "</ul>")
+        if re.search(r"\b(?:peace|social|dividends?)\b", " ".join(gaps), re.IGNORECASE):
+            parts.append("<p>Optional wider dividends depend on the project's scope; "
+                         "they are not required in every project.</p>")
+
     parts.append(_heading(2, HEADINGS[2]))
     priorities = _records(model.get("priorities"))
     priority_summary = _mapping(model.get("priority_summary"))
@@ -1725,6 +1746,16 @@ def write_reader_docx(model: dict[str, object], path: str | Path) -> Path:
             para = para.strip()
             if para:
                 document.add_paragraph(para)
+
+    gaps = [_text(item.get("text")) for item in _records(model.get("summary_gaps"))[:5]
+            if _text(item.get("text"))]
+    if gaps:
+        document.add_heading("Supporting gap findings", level=1)
+        for text in gaps:
+            document.add_paragraph(text, style="List Bullet")
+        if re.search(r"\b(?:peace|social|dividends?)\b", " ".join(gaps), re.IGNORECASE):
+            document.add_paragraph("Optional wider dividends depend on the project's scope; "
+                                   "they are not required in every project.")
 
     document.add_heading(HEADINGS[2], level=1)
     priorities = _records(model.get("priorities"))

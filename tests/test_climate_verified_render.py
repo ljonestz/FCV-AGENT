@@ -856,6 +856,7 @@ def test_reader_has_four_dimensions_priority_cap_and_safe_annex():
         "recommendation_candidate_count": 3,
         "recommendation_admitted_count": 3,
         "recommendation_final_count": 3,
+        "withheld_narrative_count": 0,
         "semantic_reviewer_invoked": False,
         "semantic_reviewer_verdict": "not_invoked",
         "recommendation_reason_codes": [],

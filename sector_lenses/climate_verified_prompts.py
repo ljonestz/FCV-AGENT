@@ -306,6 +306,12 @@ tests. Consider every admitted residual gap before selecting
 at most five recommendation candidates with distinct actions. Do not stop after one or three when other material,
 connected and feasible improvements pass these tests. Group gaps only when the
 same action resolves them; preserve distinct site, design and delivery decisions.
+The title must describe the minimum action, not an optional enhanced action.
+Confirming a baseline, defining an existing indicator, climate-finance accounting,
+or measuring asset performance is sensitivity/results clarity; measurement alone
+is not responsiveness without an evidenced wider peace or social dividend mechanism.
+Do not introduce a responsiveness label only in the narrative. Clarifying an
+existing climate-resilient access indicator does not mean adding a new indicator.
 Return fewer when fewer pass; never manufacture one for symmetry or to reach a number, and never label all as High. Route to an existing instrument
 only when existence, scope, timing, and authority are verified separately.
 When no existing vehicle is evidenced, use standard_document_advisory and target
@@ -414,6 +420,9 @@ that advisory destination only: it does not establish a project commitment,
 responsible actor, deadline, scope of an existing instrument, or binding authority.
 Continue to reject unsupported claims about those matters. An advisory proposal
 must remain visibly proposed rather than presented as an existing commitment.
+Check titles against minimum actions and all contribution claims in narratives:
+measurement alone is not responsiveness. A wider peace or social dividend mechanism
+must be evidenced; do not infer it from an optional baseline or resilience metric.
 Check that ranked priorities have a specific evidenced climate mechanism;
 generic FCV benefits or co-location with a climate investment alone are insufficient.
 Return exactly one object and no other prose: {"verdict":"pass|revise|block","reason_codes":[],"object_ids":[],"issues":[{"object_id":"REC-001","reason_codes":[],"explanation":"One short sentence identifying the defective wording."}]}. For each affected recommendation, add one issues entry with its specific reason_codes and a short explanation quoting or identifying the problematic wording. Include only those REC- IDs in object_ids, and the union of their codes in reason_codes. Return empty arrays for pass. Return at most five issues. Return at most 12 reason_codes and 12 object_ids. Keep the entire response to 500 words or fewer. Use revise only when one bounded correction could resolve a recommendation defect; otherwise block the affected recommendation.""".replace(

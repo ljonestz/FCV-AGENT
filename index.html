@@ -5128,7 +5128,10 @@
       const summary=String(question.summary||'').split(/\n\s*\n+/).map(p=>p.trim()).filter(Boolean).map(p=>`<p>${esc(p)}</p>`).join('');
       return `<section class="climate-core-question"><h3>${esc(question.question||'')}</h3>${source}${summary}</section>`;
     }).join('');
-    const coreQuestionsBodyHtml=`<p class="climate-section-intro">${esc(CORE_QUESTIONS_INTRO)}</p>${coreQuestionsHtml}`;
+    const supportingGaps=(Array.isArray(r.summary_gaps)?r.summary_gaps:[]).map(item=>String(item&&item.text||'').trim()).filter(text=>text&&text.split(/\s+/).length<=75).slice(0,5);
+    const gapScopeHtml=/\b(?:peace|social|dividends?)\b/i.test(supportingGaps.join(' '))?`<p>Optional wider dividends depend on the project's scope; they are not required in every project.</p>`:'';
+    const supportingGapsHtml=supportingGaps.length?`<section class="climate-supporting-gaps"><h3 class="climate-subheading">Supporting gap findings</h3><ul>${supportingGaps.map(text=>`<li>${esc(text)}</li>`).join('')}</ul>${gapScopeHtml}</section>`:'';
+    const coreQuestionsBodyHtml=`<p class="climate-section-intro">${esc(CORE_QUESTIONS_INTRO)}</p>${coreQuestionsHtml}${supportingGapsHtml}`;
     const draftingBlock=(label,block)=>{
       if(!block||typeof block!=='object')return '';
       const destination=[block.target_document,block.target_section].filter(Boolean).map(esc).join(' - ');
@@ -6928,7 +6931,8 @@ ${body}
       seen.add(key);gaps.push(text);
       if(gaps.length===5)break;
     }
-    return gaps.length?`<section class="normal-summary-gaps"><div class="concise-section-label">Potential gaps</div><ul class="normal-summary-gap-list">${gaps.map(text=>`<li class="normal-summary-gap">${boldEscapedFirstSentence(text)}</li>`).join('')}</ul></section>`:'';
+    const scopeHtml=/\b(?:peace|social|dividends?)\b/i.test(gaps.join(' '))?`<p class="concise-transition">Optional wider dividends depend on the project's scope; they are not required in every project.</p>`:'';
+    return gaps.length?`<section class="normal-summary-gaps"><div class="concise-section-label">Potential gaps</div><ul class="normal-summary-gap-list">${gaps.map(text=>`<li class="normal-summary-gap">${boldEscapedFirstSentence(text)}</li>`).join('')}</ul>${scopeHtml}</section>`:'';
   }
 
   function renderClimateVerifiedSummary(reader){

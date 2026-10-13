@@ -547,3 +547,98 @@ primary-document precedence warning remains visible. Diff checking passed.
 The exact Great Lakes PDF's hash/disclosure markings were checked before the
 approved first additional submission. No additional paid run has followed yet;
 one remains for the deployed repair's live acceptance.
+
+
+### 2026-10-13 final authorized trial and deterministic follow-up
+
+Quality5 (1c07a274-6310-4629-bb8b-b1e91ac5003d) ran on 202bb3d in quality mode.
+The native search boundary returned end_turn, 2401 output tokens and 14 citations;
+its bounded packet retained notes. Two source-matched claims from Burundi and DRC
+survived, four were withheld and research was marked partial. Ten existing
+responses, six pathways and seven residual gaps were retained. All four candidates
+passed structural admission; semantic review withheld REC-001/003 for unsupported
+ESCP sequencing/implementation and supervision assurances, leaving two actions.
+The visible Summary has five complete gap bullets and two actions, with compact
+paired five-point cards, no %% markers and no desktop overflow. Original session,
+HTML and screenshots are under output/playwright/20261013-quality5-*. Actual Word
+returned HTTP 200 after 63.059s (cold start exceeded the 60s browser wait); its
+completed automatic download was preserved and both titles/no markers checked.
+Both newly authorized paid runs are used. No third run is authorized or planned.
+
+Manual primary-source checks matched the historical Burundi temperature period/rate
+in the 2022 ASA diagnostic and the DRC worst-scenario poverty projection in the
+World Bank press release. These are national context, not measured project-site
+outcomes. The press release is dated November 16, 2023; the model inferred November
+15 from the URL. Future fresh research now keeps only sources supporting admitted
+claims and uses a publication date only from explicit provider metadata, otherwise
+unknown. No fetch/model call was added and archival evidence is not recertified.
+
+The retained results action's narrative introduced a responsiveness classification
+absent from its reviewed action fields. Reader v2.8 withholds that whole narrative
+and uses the existing complete field presentation, preserving the decision,
+minimum/optional actions, limitations, scores, ranks and grades. The original
+archive remains unchanged. Compiler/reviewer v2.10 explicitly keep titles aligned
+with the minimum action and require a wider dividend mechanism for responsiveness;
+measurement/finance accounting alone is sensitivity/results clarity. The reviewer
+package version remains v2.1; its prompt version is recorded separately as v2.10. Climate gap lists include
+a short optional-dividend scope note. One labelled local presentation replay tests
+these changes without claiming a new paid generation or changed grades.
+
+Four reproduced guardrail defects were fixed; **119 connected checks passed in
+23.59s**. Final frozen regression/layout/deployment evidence follows. No paid run of
+the final prompt clarifications has occurred; deterministic safeguards can be
+validated against the preserved actual result. Production/main and ITS remain held
+until the release acceptance record is finalized.
+
+Primary sources checked:
+https://documents1.worldbank.org/curated/en/099930006302237433/pdf/P17682007885e00780b1cc093a09277df1a.pdf
+https://www.worldbank.org/en/news/press-release/2023/11/15/a-climate-solutions-country-afe-1123-democratic-republic-of-congo-institutions
+
+
+Final presentation/export QA: the labelled local replay displays five complete
+gap bullets and two unchanged actions, including a working second accordion.
+Summary and Detailed omit the unsupported narrative classification; phone 390px
+has no overflow or %% markers. Browser Save/HTML retained all actions and gaps.
+The earlier full pass returned 1,439 passed/one obsolete exact-annex expectation;
+that expectation now includes the safe withheld-narrative integer. Affected checks
+passed 129 in 34.87s, then the frozen full suite passed **1,440 in 308.55s**.
+
+Inspection of the actual Word replay found that supporting gap prose was not
+rendered in detailed exports, despite being stored in the evidence trail. Detailed
+HTML/Word now add Supporting gap findings directly from summary_gaps, retaining
+complete text and the optional-dividend scope qualification without invoking the
+Summary renderer. Legacy readers without the field retain their export behavior.
+The explicit export regression passed two checks, and the real final replay now
+retains all five exact gap statements and both titles in detailed HTML/Word.
+Original paid archives remain untouched; the complete local Word replay is
+output/playwright/20261013-quality5-complete-report.docx. Final full/export checks
+are recorded next. No additional paid assessment was used.
+
+
+### Final release-candidate acceptance
+
+**1,443 tests passed in 354.52s (5m54s)** using frozen final source/tests:
+output/20261013-release-complete-export-regression.txt. Diff checking passed.
+The affected connected checks passed 104 in 33.95s. An earlier connected run's
+obsolete literal heading assertion was corrected to use the existing HEADINGS
+constant; its historical one failure/188 passes is not represented as green.
+
+Final local UI/replay checks: five full gaps, two unchanged reviewed actions,
+working second accordion, concise paired cards, optional-dividend scope note,
+no unsupported responsiveness narrative, no visible %% markers or horizontal
+overflow on desktop/phone. Actual Share HTML and Word contain all five exact gap
+texts and both titles. Supporting gap findings are visible in settled Detailed
+view; the initial case-sensitive innerText probe missed its uppercase CSS heading.
+The browser HTML renderer now mirrors the detailed export section without
+invoking Summary. Original paid archives and all saved grades remain unchanged.
+
+The software/readout candidate is ready for rollout review. The final paid test
+remains an advisory partial-evidence result: two unsupported proposed actions
+were withheld, the country bank was deliberately not applied to a regional
+operation, and OIS/current milestone status is not supplied. These notices are
+retained. Final compiler/reviewer clarifications were added after the last paid
+trial and verified offline; no fresh generation claim is made for those revisions.
+The independent reader/source safeguards and full export changes were validated
+against the preserved real result and synthetic boundaries without extra cost.
+Production/main and ITS are unchanged. PR #83 and the private parity record carry
+the exact final deployment SHA/health evidence once the candidate is live.

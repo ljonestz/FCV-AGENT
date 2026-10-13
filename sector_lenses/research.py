@@ -165,6 +165,7 @@ def build_climate_evidence_packet(
 def verify_climate_research_claims(bundle: dict[str, Any], content: Any) -> dict[str, Any]:
     """Use matching provider source passages, never uncited model paraphrases."""
     passages: dict[str, list[str]] = {}
+    publication_dates: dict[str, str] = {}
     for block in (content if isinstance(content, list) else [])[:40]:
         kind = _block_value(block, "type")
         items = _block_value(block, "citations", []) if kind == "text" else (
@@ -172,6 +173,10 @@ def verify_climate_research_claims(bundle: dict[str, Any], content: Any) -> dict
         )
         for item in (items if isinstance(items, list) else [])[:8]:
             url = _bounded(_block_value(item, "url"), 1000)
+            if _trusted_https(url):
+                date = _publication_date(_block_value(item, "publication_date"))
+                if date:
+                    publication_dates.setdefault(url.casefold().rstrip("/"), date)
             passage = str(_block_value(item, "cited_text") or _block_value(item, "snippet") or "").strip()
             if not _trusted_https(url) or not passage or len(passage) > 6000:
                 continue
@@ -202,7 +207,13 @@ def verify_climate_research_claims(bundle: dict[str, Any], content: Any) -> dict
     for claim in claims:
         claim["conflicts_with"] = [value for value in claim.get("conflicts_with", [])
                                   if value not in original_ids or value in kept_ids]
-    result = {**bundle, "claims": claims}
+    cited_ids = {source_id for claim in claims for source_id in claim["source_ids"]}
+    sources = [
+        {**source, "publication_date": publication_dates.get(
+            source["url"].casefold().rstrip("/"), "")}
+        for source in bundle.get("sources", []) if source["id"] in cited_ids
+    ]
+    result = {**bundle, "sources": sources, "claims": claims}
     if len(claims) < len(bundle.get("claims", [])):
         result["status"] = "partial" if claims else "failed"
         result["failure_reason"] = "Some research claims lack a matching provider source passage."

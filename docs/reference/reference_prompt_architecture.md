@@ -632,3 +632,14 @@ between_tools/3000 tokens and bounded cited quotes; the existing Haiku structure
 two-search/150s limit and independent evidence/review gates remain. No extra call
 or fetch. See docs/20261012_climate-opcs-parity-validation.md for the unaccepted
 quality4 result, original private artifacts, tests and remaining paid allowance.
+
+
+2026-10-13 final readout safeguards: reader v2.8 withholds a whole narrative that
+introduces responsiveness absent from the reviewed action fields; complete field
+presentation retains every action/qualification and grades are unchanged.
+Compiler/reviewer v2.10 align titles with minimum actions and distinguish ordinary
+measurement from wider dividends. Source proof retains only cited sources and
+explicit provider publication dates; unknown dates stay unknown. Climate gaps
+carry a concise optional-dividend scope note. No new model/fetch call; original
+paid archives remain unchanged. Final trial/check evidence is recorded in
+`docs/20261012_climate-opcs-parity-validation.md`.
