@@ -1449,7 +1449,7 @@ def run_verified_climate_pipeline(
         reviewer_version="climate-review-v2.1",
         extraction_version="source-blocks-v3",
         normalization_version="climate-normalization-v2.1",
-        renderer_version="climate-reader-v2.12",
+        renderer_version="climate-reader-v2.13",
         model_aliases={"assessment": "configured", "reviewer": "configured"},
         sampling={"max_transient_retries": 1},
         source_fingerprints=tuple(item.sha256 for item in source_documents),

@@ -571,7 +571,7 @@ def test_visible_tiers_hide_routing_metadata_and_evidence_codes():
     assert "PF-001" not in html2
 
 
-def test_quick_fixes_are_visible_not_collapsed():
+def test_review_checks_keep_content_in_closed_disclosure():
     assessment = {
         "executive_readout": "Alpha sentence. " * 60,
         "judgments": {
@@ -596,8 +596,7 @@ def test_quick_fixes_are_visible_not_collapsed():
     assert "Empty screening field" in quick
     assert "How to address" in quick
     assert "Technical annex" not in quick
-    # The quick-fix block is a visible section, not a collapsed <details>.
-    assert "<summary>Points to check" not in quick
+    assert '<details class="climate-fold"><summary>Checks for the project team</summary>' in quick
 
 
 def test_watch_lines_render_in_standalone_section_not_inline():

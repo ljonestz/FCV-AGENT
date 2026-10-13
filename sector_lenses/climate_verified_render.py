@@ -1504,6 +1504,7 @@ def render_reader_html(model: dict[str, object]) -> str:
     doc_flags = _records(model.get("review_readiness_flags"))
     if minor_points or doc_flags:
         parts.append(_reference_panel(4, HEADINGS[3], "Smaller checks to resolve alongside the main operational priorities."))
+        parts.append('<details class="climate-fold"><summary>Checks for the project team</summary>')
         parts.append(_purpose_band_html(
             "climate-decision-preparation",
             "Climate decision preparation",
@@ -1550,7 +1551,7 @@ def render_reader_html(model: dict[str, object]) -> str:
             )
 
     if minor_points or doc_flags:
-        parts.append("</section>")
+        parts.append("</details></section>")
 
     guidance_items = [
         item for item in _records(model.get("guidance_items"))

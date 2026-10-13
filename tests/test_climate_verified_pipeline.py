@@ -733,7 +733,7 @@ def test_manifest_is_privacy_safe_and_scoped_to_the_run():
     assert first["manifest"]["run_id"] == "run-test"
     assert second["manifest"]["run_id"] == "run-two"
     assert first["manifest"]["source_count"] == 1
-    assert first["manifest"]["renderer_version"] == "climate-reader-v2.12"
+    assert first["manifest"]["renderer_version"] == "climate-reader-v2.13"
     assert first["manifest"]["extraction_version"] == "source-blocks-v3"
     assert (
         first["manifest"]["prompt_versions"]["fact_extraction"]
