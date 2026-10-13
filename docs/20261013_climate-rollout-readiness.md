@@ -5,7 +5,9 @@
 **Rollout held; PR #83 is draft.** The user rejected the previous acceptance:
 the live output had only two accepted recommendations and exports retained the old
 asymmetric rating readout. The October 13 action-led reader and bounded correction
-follow-up is being verified offline. A fresh generated assessment has not yet
+follow-up completed offline checks; two browser cleanup failures and their successful
+connected-Edge fixture checks are recorded in `20261013_climate-action-led-validation.md`.
+A fresh generated assessment has not yet
 validated these changes. Previous passing tests below are historical evidence,
 not acceptance of the revised behavior.
 The candidate is deployed only to the branch-test app, https://fcv-agent-1.onrender.com.

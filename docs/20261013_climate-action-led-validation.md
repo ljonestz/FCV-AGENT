@@ -36,14 +36,23 @@ additional assessment runs were already consumed. Production/main and ITS are un
 Focused correction cases prove one attempt, independent re-review, continued rejection,
 unaffected-action preservation on timeout, rejection of expanded evidence, and cancellation.
 Reader checks cover full findings, links, malformed saved references, exports and legacy scores.
-Full regression result is recorded after completion in the handover/PR.
+Final full suite: **1,452 passed, 2 failed in 3,057.79s**. The two failures were
+`test_result_download_header_wraps_inside_phone_card` and
+`test_result_session_bar_wraps_inside_phone_viewport`: both stalled at
+`Browser.close()` after gathering measurements, and their test helpers were stopped.
+They were not counted as passes. The exact fixture HTML and the same geometry
+assertions were subsequently checked in the existing connected Edge session:
+header PASS at 320/390px; session bar PASS at 390px (button right edges 161/268/374,
+inside the 390px viewport). A separate headless Edge retry was also interrupted;
+it did not establish a clean standalone headless run. Final focused checks on the
+last export/sidebar changes: **20 passed**. Git diff whitespace checks passed.
 All five historical saved sessions also render through HTML and Word with their
 original accepted-action counts preserved (0, 1, 1, 0, 2), paired ratings and complete
 selected gap statements. This does not rerun or revalidate their underlying analysis.
 
 Local Edge replay of the latest paid result confirms Summary and Detailed switching,
 Priority 2 navigation/expansion, no duplicate card area, and no horizontal overflow at
-390px. Local static preview has expected missing-API 404s; no hosted generation was invoked.
+320px and 390px. Local static preview has expected missing-API 404s; no hosted generation was invoked.
 The browser's standalone HTML was downloaded. Word was generated via the actual writer
 and checked structurally; Word pagination has not been visually certified.
 
@@ -52,6 +61,14 @@ Artifacts (untracked): output/playwright/20261013-action-led-replay-session.json
 20261013-action-led-summary.png, 20261013-action-led-detailed-v2.png,
 20261013-action-led-mobile.png. Reproduction: 20261013_replay_action_led.py in that folder.
 Final test log: output/20261013-action-led-final-regression.txt.
+
+## Test deployment
+
+Implementation commit e4e272914c4fedae3c1a6da714b6db45aac0e0c1 was deployed
+to the branch test service only. Render deploy dep-db6vagajnfac73eda3n0 became
+live at 2026-10-13T09:10:43Z. The /health response confirmed build e4e272914c4f,
+status ok, quality mode and 150-second research budget. Analyze Python and CodeQL
+passed for this implementation commit. PR #83 remains draft.
 
 ## Remaining acceptance
 

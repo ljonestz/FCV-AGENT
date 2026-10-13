@@ -11,6 +11,6 @@ Tech stack: existing Python, JavaScript, pytest and browser/export tooling; no d
 - [x] Derive short thematic findings from canonical gaps, link to accepted priorities or evidence follow-up, and preserve full questions as supporting analysis.
 - [x] Apply matching compact five-point ratings to browser and Python HTML/Word exports; keep overview text outside ratings.
 - [x] Test canonical content preservation, ordering, links, unscored states and saved results. Inspect local rendered replay without invoking providers.
-- [ ] Update reference docs, readiness status and parity notes; run focused checks then the required full suite, commit and push the existing draft branch.
+- [x] Update reference docs, readiness status and parity notes; run focused checks then the required full suite, commit and push the existing draft branch.
 
 Acceptance: no fabricated third recommendation or relaxed grounding. Saved runs retain their actual action count. Live analytical acceptance remains pending a separately authorized run; both additional paid runs are exhausted. Production and ITS rollout remain held.
