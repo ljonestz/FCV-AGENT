@@ -2,6 +2,13 @@
 
 ## Status
 
+Latest candidate: the question-led narrative follow-up is implemented and deployed to
+the branch test service. See `20261013_climate-narrative-findings-validation.md`:
+1,459 full-suite checks passed; final targeted checks cover subsequent small changes.
+The new prose preview is editorial, using saved evidence. Fresh model-generation
+acceptance and the three-substantive-priority requirement remain outstanding.
+
+
 **Rollout held; PR #83 is draft.** The user rejected the previous acceptance:
 the live output had only two accepted recommendations and exports retained the old
 asymmetric rating readout. The October 13 action-led reader and bounded correction

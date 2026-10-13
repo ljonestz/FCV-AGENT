@@ -7,6 +7,6 @@ Architecture: add three optional evidence-linked narrative answers to the existi
 - [x] Add regression checks for narrative evidence admission, fallback preservation, question headings, dividends prompt calibration and section panels.
 - [x] Update existing judgment schema/prompt/pipeline transport and shared reader projection; align executive schema length with prompt.
 - [x] Render question-led prose and expandable project detail in browser/Python HTML, prose plus detail in Word. Visually separate numbered supporting sections; retain print disclosure behavior.
-- [ ] Run focused and full offline checks; inspect an explicitly editorial saved-case preview in Edge; record limitations, commit/push draft branch and verify test deployment.
+- [x] Run focused and full offline checks; inspect an explicitly editorial saved-case preview in Edge; record limitations, commit/push draft branch and verify test deployment.
 
 Acceptance: no penalty for absent peace/dividends terminology; infer only qualified potential from evidenced project mechanisms and enabling conditions. No fabricated recommendation count. Fresh generation still requires new paid-run authorization.
