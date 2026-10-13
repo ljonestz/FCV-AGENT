@@ -2,12 +2,12 @@
 
 ## Status
 
-Latest candidate: the approved reader simplification removes visible supporting
-analysis and per-theme details, uses flowing context and action-led priority cards,
-and retains internal evidence. See `20261013_climate-reader-simplification-validation.md`
-for current checks. The earlier 1,459-pass result applies to the preceding candidate.
-The refreshed preview is editorial, using saved evidence. Fresh model-generation
-acceptance and the three-substantive-priority requirement remain outstanding.
+Latest candidate: the standalone brief review improves connections between context,
+findings and actions and repairs a capitalization false positive that had restored
+old dividends wording. See `20261013_climate-cohesive-brief-validation.md` for checks.
+The new editorial replay asserts that all three intended findings pass admission.
+Fresh model-generation acceptance and the three-substantive-priority requirement
+remain outstanding.
 
 
 **Rollout held; PR #83 is draft.** The user rejected the previous acceptance:

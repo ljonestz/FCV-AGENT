@@ -64,6 +64,19 @@ def test_plain_paraphrase_retains_number_entity_and_markup_controls():
         assert not validate_summary_fragment(text, canonical_text="The project supports traders.", allow_paraphrase=True)
 
 
+def test_ordinary_narrative_nouns_are_not_mistaken_for_names():
+    from sector_lenses.climate_verified_schemas import validate_summary_fragment
+    canonical = "The project supports traders and participation."
+    text = "Links to wider benefits depend on participation."
+    assert validate_summary_fragment(text, canonical_text=canonical, allow_paraphrase=True)
+    assert not validate_summary_fragment(text, canonical_text=canonical)
+    assert validate_summary_fragment("Fair access depends on participation.", canonical_text=canonical, allow_paraphrase=True)
+    assert validate_summary_fragment("Clarifying access supports participation.", canonical_text=canonical, allow_paraphrase=True)
+    for text in ("Links Cooperative supports traders.",
+                 "LINKS supports traders.", "Links reach 999 traders."):
+        assert not validate_summary_fragment(text, canonical_text=canonical, allow_paraphrase=True)
+
+
 def test_legacy_reader_theme_still_displays_complete_findings():
     html = _themes_html({"assessment_themes":[{"title":"Climate risks, design and delivery", "findings":[{"text":"The original complete finding remains available.", "priority_ranks":[1]}]}]})
     assert "The original complete finding remains available." in html

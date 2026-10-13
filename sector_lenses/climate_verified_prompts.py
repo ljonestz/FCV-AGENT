@@ -225,10 +225,15 @@ not yet specified, explaining their practical significance in connected prose.
 Do not recap the rating categories or refer to four dimensions or judgments.
 Avoid semicolons and label-and-colon verdicts such as 'Sensitivity is moderate:'.
 Explain unfamiliar concepts in ordinary language for a first-time reader.
-Discuss material residual issues without stating or implying how many
-will pass the later recommendation threshold. Every previewed issue must name
-the credited existing response and explain
-what remains. Keep preparation and implementation milestones separate; do not
+Write this as the opening context of a standalone brief, not a checklist of gaps.
+Explain how the setting shapes the project and bring the main delivery challenge
+into focus. Where several concerns share a credited existing response, explain
+that response once rather than restating it for each concern.
+Select only the concerns needed to explain that challenge; the assessment findings
+and points to check carry the detail. Avoid repeatedly saying 'the document does
+not describe' or 'the remaining issue is'. State uncertainty where it matters.
+Do not state or imply how many issues will pass the later recommendation threshold.
+Keep preparation and implementation milestones separate; do not
 imply dependency unless an explicit project fact establishes it. Calibrate
 precision to the evidence and state material limitations. Write the
 executive_readout as two to three short paragraphs separated by a blank line,
@@ -290,6 +295,11 @@ Write connected prose, not a list of disconnected deficiencies. Avoid semicolons
 and telegraphic label-and-colon statements. Start with an
 answer a non-specialist can understand, credit the existing response, explain
 one or two material project examples, then state the practical implication.
+Read these answers as consecutive parts of the same brief. Build on the context
+instead of repeating its investment inventory or retelling the project changes.
+Move from delivery conditions to wider benefits and then to who gains or could be
+harmed. Use natural connections only where the evidence supports them. Each
+sentence should advance the assessment rather than repeat a gap or caveat.
 Explain acronyms using the source's wording or plain language. Keep component
 and ESCP detail where it makes the implication clearer. Introduce no new facts,
 actors, figures, obligations or detailed recommendations. The priorities carry
@@ -405,7 +415,12 @@ what the project already does. The remaining paragraphs explain what the team
 could do, how and who leads it, any optional deeper step and when it is warranted,
 and the concrete result that would show the action has been addressed.
 Do not use 'Done looks like', telegraphic labels, headings or semicolons in the
-narrative. Use complete, natural sentences throughout. Cover the same substance
+narrative. Use complete, natural sentences throughout without repeating the
+finding section's project history. Explain the purpose of
+the proposed change and connect related checks in one clear account. Avoid padded
+transitions such as 'the immediate opportunity is' when a direct sentence works.
+Keep uncertainty with the claim it qualifies rather than repeating general caveats.
+Cover the same substance
 as the structured fields but do not restate them phrase for phrase, and do not
 reproduce the suggested-drafting language: the narrative explains the reasoning
 and what to change, the structured fields give the breakdown, and the drafting

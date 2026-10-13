@@ -25,3 +25,13 @@ fields. No extra model calls or dependencies.
 
 No paid runs remain authorized. Fresh generation and analytical acceptance remain
 outstanding; preview wording is editorial evidence-based content, not a new run.
+
+
+Standalone brief review follow-up:
+
+- [x] Read the full saved preview and trace unexpected dividends fallback.
+- [x] Reproduce and repair the capitalization false rejection in analytical prose,
+  preserving strict Summary and source/name/number/action controls.
+- [x] Reduce repetition in existing prompts and produce a new editorial preview
+  asserting admission of all three intended narratives.
+- [x] Finish focused/full checks, record evidence and push the existing draft branch.

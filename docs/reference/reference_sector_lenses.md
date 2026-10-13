@@ -416,3 +416,17 @@ Judgment and recommendation instructions require natural prose without framework
 recaps, label-and-colon verdicts, semicolons or literal Done looks like cues.
 Versions: judgments2.11, recommendations2.13, reader2.11. No added model calls.
 See docs/20261013_climate-reader-simplification-validation.md for evidence and limits.
+
+
+### 2026-10-13 standalone brief review
+
+Context/findings/priority prose instructions now develop a connected brief instead
+of repeating project history and gap inventories. A reproduced capitalization
+false positive rejected sentence-initial Links and silently restored old dividends
+wording. Analytical paraphrase now permits bounded generic sentence openings and
+inflections of existing permitted prose terms. Multiword names/acronyms, figures,
+dates, markup and action checks remain. Strict Summary mode is unchanged.
+Versions judgments2.12, recommendations2.14, reader2.12. No added provider calls
+or schema fields. New editorial preview asserts admission of all three narratives.
+See docs/20261013_climate-cohesive-brief-validation.md. Fresh paid generation remains
+unvalidated and PR83 remains draft.
