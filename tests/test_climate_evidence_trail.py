@@ -185,7 +185,7 @@ def test_provenance_normalises_em_en_dashes_in_evidence_trail():
 
 
 def test_lay_comprehensibility_method_and_sources():
-    """Method retains plain-language pathways and useful source descriptions."""
+    """Compact method retains source descriptions while pathway detail stays internal."""
     model = _reader_with_trail()
     html = render_reader_html(model)
     stream = BytesIO()
@@ -194,8 +194,8 @@ def test_lay_comprehensibility_method_and_sources():
     docx_text = "\n".join(p.text for p in Document(stream).paragraphs)
 
     for text in (html, docx_text):
-        # The reader retains a plain-language pathway explanation.
-        assert "short chain from a cause to an effect" in text
+        # The compact reader omits the detailed pathway appendix.
+        assert "short chain from a cause to an effect" not in text
         assert "traced to its source" not in text
         # Source descriptions render for a lay reader.
         assert "do no harm" in text                       # FCV-Sensitive description

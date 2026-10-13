@@ -552,3 +552,19 @@ aligned to the existing 180-260 word instruction. No extra generation call or de
 
 Prompt versions: facts2.4, analysis2.7, judgments2.10, recommendations2.12, review2.11,
 drafting1.3; reader2.10. Fresh provider output remains unvalidated; PR83 stays draft.
+
+
+### 2026-10-13 reader simplification (supersedes visible supporting detail above)
+
+User-approved follow-up removes per-theme project-detail disclosures and the
+supporting question/watch appendix from Detailed, HTML and Word. Internal evidence
+and canonical questions remain available for validation and audit. The three
+question-led narrative answers remain. Method shows coverage, limitations and
+sources without repeating pathways. Priority cards now use Why this matters and
+What the team could do, with implementation/drafting in Recommendation details.
+Word mirrors those headings with a detail block. Legacy narrative/field fallback
+preserves complete text. Mobile card padding is reduced. Summary watches unchanged.
+Judgment and recommendation instructions require natural prose without framework
+recaps, label-and-colon verdicts, semicolons or literal Done looks like cues.
+Versions: judgments2.11, recommendations2.13, reader2.11. No added model calls.
+See docs/20261013_climate-reader-simplification-validation.md for evidence and limits.

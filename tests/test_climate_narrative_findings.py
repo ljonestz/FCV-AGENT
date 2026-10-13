@@ -20,7 +20,7 @@ def test_narrative_is_admitted_and_links_preserved():
     html = _themes_html({"assessment_themes":themes})
     assert '<p>'+TEXT+'</p>' in html
     assert 'href="#climate-priority-2"' in html
-    assert 'climate-theme-evidence' in html
+    assert 'climate-theme-evidence' not in html
 
 def test_unknown_evidence_and_new_numbers_fall_back_to_complete_findings():
     for edit in ("evidence", "number", "entity", "duplicate"):

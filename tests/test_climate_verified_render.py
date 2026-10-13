@@ -416,7 +416,7 @@ def test_build_reader_model_exposes_safe_existing_responses_for_summary_tiles():
     assert all("internal_only" not in item for item in model["existing_responses"])
 
 
-def test_rating_scale_renders_in_overview_before_core_questions():
+def test_rating_scale_renders_in_overview_before_priorities():
     assessment = {
         "executive_readout": "Alpha sentence. " * 60,
         "judgments": {
@@ -428,9 +428,9 @@ def test_rating_scale_renders_in_overview_before_core_questions():
     }
     html = render_reader_html(build_reader_model(assessment))
     rating_pos = html.find("climate-paired-ratings")
-    core_pos = html.find("Core climate-FCV questions")
+    core_pos = html.find("Ranked operational priorities")
     assert rating_pos != -1 and core_pos != -1
-    # The rating sits in the overview, above the core-questions section.
+    # The rating sits in the overview, above operational priorities.
     assert rating_pos < core_pos
 
 
@@ -616,13 +616,9 @@ def test_watch_lines_render_in_standalone_section_not_inline():
         ],
     }
     html = render_reader_html(build_reader_model(assessment))
-    # Watch content appears in the standalone section, not inline in the card.
-    assert "What to keep an eye on" in html
-    assert "Keep an eye on the flood season." in html
-    core_block = html.split("Core climate-FCV questions", 1)[1].split(
-        "Ranked operational priorities", 1
-    )[0]
-    assert "What to watch" not in core_block
+    assert "What to keep an eye on" not in html
+    assert "Keep an eye on the flood season." not in html
+    assert build_reader_model(assessment)["core_questions"][0]["watch"] == "Keep an eye on the flood season."
 
 
 def test_build_reader_model_normalizes_nonsequential_priority_ranks():
@@ -839,11 +835,10 @@ def test_reader_has_four_dimensions_priority_cap_and_safe_annex():
         "count": 4,
         "titles": ["Priority 1", "Priority 2", "Priority 3", "Priority 4"],
         "statement": (
-            "Drawing on the overview and core climate-FCV questions, the analysis "
+            "Drawing on the assessment findings, the analysis "
             "identifies 4 main operational priorities for strengthening climate "
             "resilience, conflict sensitivity and implementation readiness in this "
-            "project. These are followed by secondary points to check before the "
-            "applicable review and issues to keep under review as preparation advances."
+            "project. Smaller points to check follow these priorities."
         ),
     }
     assert "overall_rating" not in model
@@ -993,8 +988,8 @@ def test_html_and_docx_share_headings_and_priority_order():
     assert by_html == by_docx
     for index in range(1, 5):
         identifier = f"REC-00{index}"
-        assert identifier in html
-        assert identifier in document_text
+        assert identifier not in html
+        assert identifier not in document_text
         assert f"Priority {index}" in html
         assert f"Priority {index}" in document_text
     # Drafting blocks stay; model-internal routing metadata and raw evidence
@@ -1111,9 +1106,9 @@ def test_html_uses_balanced_hierarchy_without_reader_clutter():
     assert html.count('data-rating-key="climate-responsiveness"') == 1
     assert "climate-overview-panel" not in html
     assert html.index("climate-paired-ratings") < html.index("Executive readout")
-    assert html.count('class="climate-priority-disclosure" open>') == 1
-    assert html.count('class="climate-priority-disclosure">') == 3
-    assert '<summary><h3 class="climate-priority-title">1. Priority 1' in html
+    assert html.count('class="climate-priority-card" open>') == 1
+    assert html.count('class="climate-priority-card">') == 3
+    assert '<span class="pc-rank">1</span><span class="pc-title-text">Priority 1' in html
     assert "Suggested targeted text for the current project document." in html
     assert "Distinct operational instrument text for continuity." in html
     assert "Complete drafting paragraph for priority four." in html
@@ -1124,9 +1119,9 @@ def test_html_uses_balanced_hierarchy_without_reader_clutter():
     assert "<h4>Confirm heat safeguards for field teams.</h4>" in html
     assert "<h3>Document points to confirm</h3>" in html
     assert "<h4>Two sections state different financing totals.</h4>" in html
-    assert html.count('class="climate-item-number"') == 4
-    assert html.count('<span class="climate-item-number">01</span>') == 3
-    assert '<span class="climate-item-number">02</span>' in html
+    assert html.count('class="climate-item-number"') == 2
+    assert html.count('<span class="climate-item-number">01</span>') == 2
+    assert '<span class="climate-item-number">02</span>' not in html
     assert html.index("Relevant WBG guidance for this project") < html.index(
         "Method, limitations, and sources"
     )
@@ -1144,8 +1139,8 @@ def test_html_uses_balanced_hierarchy_without_reader_clutter():
 def test_html_heading_structure_is_ordered_and_priorities_navigable():
     html = render_reader_html(_reader_with_balanced_hierarchy_content())
 
-    assert html.count('<summary><h3 class="climate-priority-title">') == 4
-    assert '<summary><h3 class="climate-priority-title">1. Priority 1' in html
+    assert html.count('<summary><h3 class="pc-title">') == 4
+    assert '<span class="pc-rank">1</span><span class="pc-title-text">Priority 1' in html
     assert "<h2>Points to check before the applicable review</h2>" in html
     assert "<h3>Smaller climate &amp; fragility points to consider</h3>" in html
     assert "<h4>Confirm heat safeguards for field teams.</h4>" in html
@@ -1170,8 +1165,8 @@ def test_docx_matches_balanced_reader_content_and_keeps_all_priorities():
     )
     assert "01 Confirm heat safeguards for field teams." in text
     assert "01 Two sections state different financing totals." in text
-    assert "01 Can shared institutions reduce resource tensions?" in text
-    assert "02 Will delivery remain workable during floods?" in text
+    assert "01 Can shared institutions reduce resource tensions?" not in text
+    assert "02 Will delivery remain workable during floods?" not in text
     assert text.index("Relevant WBG guidance for this project") < text.index(
         "Method, limitations, and sources"
     )
@@ -1200,7 +1195,7 @@ def test_zero_priority_message_is_shared_by_html_and_docx():
         paragraph.text for paragraph in Document(stream).paragraphs
     )
 
-    message = "No operational priorities were identified in this assessment. Review the core questions and points to check below."
+    message = "No operational priorities were identified in this assessment. Review the assessment findings and points to check below."
     assert rendered.count(message) == 1
     assert document_text.count(message) == 1
     assert "No final operational priority was admitted" not in rendered
@@ -1309,7 +1304,7 @@ def test_zero_priority_output_hides_admission_and_review_diagnostics():
         paragraph.text for paragraph in Document(stream).paragraphs
     )
 
-    message = "No operational priorities were identified in this assessment. Review the core questions and points to check below."
+    message = "No operational priorities were identified in this assessment. Review the assessment findings and points to check below."
     for output in (rendered, document_text):
         assert output.count(message) == 1
         assert "37 recommendation" not in output
@@ -1751,11 +1746,12 @@ def test_action_led_reader_links_themes_and_preserves_supporting_questions():
     assert reader["assessment_themes"][0]["title"] == "Climate risks, design and delivery"
     assert reader["assessment_themes"][0]["findings"][0]["priority_ranks"] == [1]
     rendered = render_reader_html(reader)
-    assert rendered.index("Ranked operational priorities") < rendered.index("Full supporting analysis remains available.")
+    assert "Full supporting analysis remains available." not in rendered
+    assert reader["core_questions"][0]["summary"] == "Full supporting analysis remains available."
     assert 'href="#climate-priority-1"' in rendered
     assert 'data-rating-key="climate-responsiveness"' in rendered
     assert 'data-rating-key="climate-sensitivity"' in rendered
-    assert '<details class="climate-supporting-analysis">' in rendered
+    assert '<details class="climate-supporting-analysis">' not in rendered
 
 
 def test_unlinked_gap_is_not_presented_as_an_accepted_recommendation():

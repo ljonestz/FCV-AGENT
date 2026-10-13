@@ -221,8 +221,11 @@ reopen it with the one-sentence project identification and financing figure that
 the overview_summary already states; assume the reader has just read the
 overview and start instead with what the project already does on climate and
 FCV. Then distinguish residual gaps from items merely
-not yet specified, summarize the four judgments without inventing an overall
-rating. Discuss material residual issues without stating or implying how many
+not yet specified, explaining their practical significance in connected prose.
+Do not recap the rating categories or refer to four dimensions or judgments.
+Avoid semicolons and label-and-colon verdicts such as 'Sensitivity is moderate:'.
+Explain unfamiliar concepts in ordinary language for a first-time reader.
+Discuss material residual issues without stating or implying how many
 will pass the later recommendation threshold. Every previewed issue must name
 the credited existing response and explain
 what remains. Keep preparation and implementation milestones separate; do not
@@ -283,7 +286,8 @@ Answer respectively: Does the project address interacting climate and FCV risks
 in design and delivery? Could it generate wider peace and social benefits, and
 how could these be strengthened? Will people benefit fairly, and could delivery
 create exclusion or harm?
-Write connected prose, not a list of disconnected deficiencies. Start with an
+Write connected prose, not a list of disconnected deficiencies. Avoid semicolons
+and telegraphic label-and-colon statements. Start with an
 answer a non-specialist can understand, credit the existing response, explain
 one or two material project examples, then state the practical implication.
 Explain acronyms using the source's wording or plain language. Keep component
@@ -309,10 +313,10 @@ there are no such smaller points.
 DEDICATED SUMMARY OVERVIEW
 Also write a standalone summary_overview object with a paragraphs array. It must
 contain exactly two or three non-empty plain-text paragraphs totalling 160 to
-230 words. Use these approved narrative jobs in order: verdict and foundation;
-a four-dimensional assessment covering relevance, sensitivity, responsiveness,
-and operationalization; and a practical implication bridging to ranked
-priorities. A two-paragraph synthesis may combine the second and third jobs
+230 words. Explain what the project already does, what remains uncertain or could
+be strengthened, and the practical implication bridging to ranked priorities.
+Use connected prose that makes sense without knowledge of the assessment framework.
+A two-paragraph synthesis may combine the second and third jobs
 only when the complete arc remains clear.
 Use only supplied verified facts, actions, ratings, rationales, responses, gaps,
 and evidence. Add no new facts or actions, named entities, numbers, dates,
@@ -323,8 +327,9 @@ judgment call; do not request a repair or second call.
 Use a direct opening verdict with recognizes or shows, grounded in the supplied
 responses and ratings. Avoid interpretive metaphors such as rests on a solid
 foundation; keep descriptive terms close to the supplied findings.
-Name relevance, sensitivity, responsiveness and operationalization explicitly
-in the synthesis. Aim for about 190 words. Prefer wording from the supplied
+Explain the substance of the judgments without listing their labels or repeating
+the sidebar ratings. Avoid semicolons and label-and-colon verdicts.
+Aim for about 190 words. Prefer wording from the supplied
 facts and findings rather than introducing new terms, actors or actions.
 
 Return: {"executive_readout":"...","overview_summary":"...","summary_overview":{"paragraphs":["...","..."]},"relevance":{"value":"high|medium|low|unclear","evidence_ids":[],"rationale":"..."},"sensitivity":{"value":"very_strong|strong|moderate|limited|very_limited|unclear","evidence_ids":[],"rationale":"..."},"responsiveness":{"value":"very_strong|strong|moderate|limited|very_limited|not_expected|unclear","evidence_ids":[],"rationale":"..."},"operationalization":{"value":"embedded|partial|early|not_evidenced|unclear","evidence_ids":[],"rationale":"..."},"assessment_narratives":[{"theme":"design|dividends|inclusion","paragraphs":["..."],"evidence_ids":["PF-001","RG-001"]}],"core_questions":[{"question_id":"cq2-infra-horizon","theme":"cq2_maladaptation","question":"...","source":"...","summary":"...","evidence_ids":["RG-001"],"watch":"..."}],"minor_climate_points":[{"point":"...","why":"...","how_to_check":"...","residual_gap_ids":["RG-002"]}]}.""",
@@ -394,9 +399,13 @@ For limitation, write one complete sentence of at most 35 words describing the
 remaining gap or evidence limitation, not the proposed action. Distinguish
 missing evidence from a confirmed omission; an optional dividends opportunity is not a required correction.
 The narrative is the one exception: write it as two or three short paragraphs of
-plain, flowing prose (about 110-220 words) that tell the task team the story -
-the gap and why it matters, what to do and how, who leads it, the optional deeper
-step and when it is warranted, and what done looks like. Cover the same substance
+plain, flowing prose (about 110-220 words), separated by a blank line.
+The first paragraph explains the gap or opportunity and why it matters, crediting
+what the project already does. The remaining paragraphs explain what the team
+could do, how and who leads it, any optional deeper step and when it is warranted,
+and the concrete result that would show the action has been addressed.
+Do not use 'Done looks like', telegraphic labels, headings or semicolons in the
+narrative. Use complete, natural sentences throughout. Cover the same substance
 as the structured fields but do not restate them phrase for phrase, and do not
 reproduce the suggested-drafting language: the narrative explains the reasoning
 and what to change, the structured fields give the breakdown, and the drafting

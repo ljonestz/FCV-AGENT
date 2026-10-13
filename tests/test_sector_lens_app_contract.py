@@ -2428,17 +2428,15 @@ def test_verified_climate_ui_contract_is_ranked_and_multidimensional():
     )
 
     assert "renderClimateVerifiedAssessment" in html
-    # Core climate-FCV questions: a compact reads strip (calibration values) plus
-    # literature-grounded, evidence-gated question cards replace the old four
-    # judgment boxes.
-    assert "Supporting question analysis" in html
+    # Detailed uses three narrative answers; canonical questions stay internal.
+    assert "Supporting question analysis" not in html
     # Headline sensitivity rating (from server data) replaces the old reads strip.
     assert "climate_sensitivity_rating" in html
     assert "csr.question" in html
     assert "d.scale.length" in html
     assert "The tool's overall reads" not in html
     assert "core_questions" in html
-    assert "For further insights on why this matters" in html
+    assert "Does the project address interacting climate and FCV risks" in html
     assert "Points to check before the applicable review" in html
     start = html.index("function renderClimateVerifiedAssessment")
     end = html.index("\n  function ", start + 20)
@@ -2457,7 +2455,7 @@ def test_verified_climate_ui_contract_is_ranked_and_multidimensional():
     assert "recommendation_admitted_count" not in body
     assert "semantic_reviewer_verdict" not in body
     assert "held back on review" not in body
-    assert "No operational priorities were identified in this assessment. Review the core questions and points to check below." in body
+    assert "No operational priorities were identified in this assessment. Review the assessment findings and points to check below." in body
     assert "current_document_drafting" in body
     assert "operational_instrument_drafting" in body
     assert "Suggested drafting for the current document" in body
@@ -2580,7 +2578,8 @@ def test_verified_climate_docx_route_uses_canonical_reader():
     from docx import Document
     document = Document(io.BytesIO(response.data))
     text = "\n".join(item.text for item in document.paragraphs)
-    assert "Core climate-FCV questions" in text
+    assert "Core climate-FCV questions" not in text
+    assert "Assessment findings" in text
     assert "Candidate country evidence: preview; not approved." in text
     assert "Smoke test: validates workflow completion only" in text
 

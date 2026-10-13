@@ -467,7 +467,7 @@ def test_judgment_prompt_requires_grounded_standalone_summary_jobs():
 
     for expected in (
         "160 to 230 words", "two or three paragraphs",
-        "verdict and foundation", "four-dimensional assessment",
+        "what the project already does", "connected prose",
         "practical implication", "relevance", "sensitivity",
         "responsiveness", "operationalization", "no new facts or actions",
         "do not copy", "executive_readout",

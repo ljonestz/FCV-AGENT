@@ -2,10 +2,11 @@
 
 ## Status
 
-Latest candidate: the question-led narrative follow-up is implemented and deployed to
-the branch test service. See `20261013_climate-narrative-findings-validation.md`:
-1,459 full-suite checks passed; final targeted checks cover subsequent small changes.
-The new prose preview is editorial, using saved evidence. Fresh model-generation
+Latest candidate: the approved reader simplification removes visible supporting
+analysis and per-theme details, uses flowing context and action-led priority cards,
+and retains internal evidence. See `20261013_climate-reader-simplification-validation.md`
+for current checks. The earlier 1,459-pass result applies to the preceding candidate.
+The refreshed preview is editorial, using saved evidence. Fresh model-generation
 acceptance and the three-substantive-priority requirement remain outstanding.
 
 

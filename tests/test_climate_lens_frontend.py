@@ -494,7 +494,8 @@ const reader={{core_questions:[
 ]}};
 const summary=renderClimateWatchDisclosure(reader);
 const detailed=renderClimateVerifiedAssessment(reader);
-for (const [name,html] of [['summary',summary],['detailed',detailed]]) {{
+if(detailed.includes('Track access.')) throw new Error('Removed supporting watches leaked into Detailed');
+for (const [name,html] of [['summary',summary]]) {{
   if ((html.match(/Track access/g)||[]).length !== 1) throw new Error(name+' did not deduplicate watches | '+html);
   if (html.indexOf('Track access') > html.indexOf('Check representation')) throw new Error(name+' changed watch order | '+html);
 }}
@@ -876,7 +877,7 @@ def test_climate_detailed_reader_keeps_rating_above_core_questions_and_plain_met
         _extract_js_function(source, "renderClimateVerifiedAssessment"),
     ))
 
-    assert renderer.index("${ratingsInSidebar?'':ratingHtml}") < renderer.index("climateReportSection('Supporting analysis'")
+    assert renderer.index("${ratingsInSidebar?'':ratingHtml}") < renderer.index("climateReportSection('Ranked operational priorities'")
     assert "Method, limitations, and sources" in renderer
     assert "technical_annex" not in renderer
 
@@ -2010,7 +2011,7 @@ for (const removed of [
 }}
 const orderedSections = [
   'Overview', 'Ranked operational priorities',
-  'Points to check before the applicable review', 'Supporting analysis'
+  'Points to check before the applicable review', 'How this analysis was produced'
 ];
 let previous = -1;
 for (const section of orderedSections) {{
@@ -2054,8 +2055,8 @@ if ((html.match(/class="climate-priority-card"/g)||[]).length !== 4) {{
 if ((html.match(/class="climate-priority-card" open/g)||[]).length !== 1) {{
   throw new Error('only priority one should be open | ' + html);
 }}
-if ((html.match(/class="climate-item-number"/g)||[]).length < 7) {{
-  throw new Error('checks and watch items must be visibly numbered | ' + html);
+if ((html.match(/class="climate-item-number"/g)||[]).length !== 4) {{
+  throw new Error('checks must be visibly numbered | ' + html);
 }}
 for (const removed of ['Evidence status:', 'Evidence key', 'Run diagnostics', 'final operational priorities are presented:']) {{
   if (html.includes(removed)) throw new Error('reader clutter remains: ' + removed + ' | ' + html);
@@ -2066,8 +2067,7 @@ const expectedHeadings = [
   ['01', 'Overview'],
   ['02', 'Ranked operational priorities'],
   ['03', 'Points to check before the applicable review'],
-  ['04', 'Supporting analysis'],
-  ['05', 'How this analysis was produced']
+  ['04', 'How this analysis was produced']
 ];
 if (JSON.stringify(headings) !== JSON.stringify(expectedHeadings)) {{
   throw new Error('numbered section sequence is not gap-free: ' + JSON.stringify(headings) + ' | ' + html);
@@ -2116,8 +2116,7 @@ const headings = Array.from(html.matchAll(headingPattern), match => [match[1], m
 const expectedHeadings = [
   ['01', 'Overview'],
   ['02', 'Ranked operational priorities'],
-  ['03', 'Supporting analysis'],
-  ['04', 'How this analysis was produced']
+  ['03', 'How this analysis was produced']
 ];
 if (JSON.stringify(headings) !== JSON.stringify(expectedHeadings)) {{
   throw new Error('fallback section sequence is not gap-free or methodology is not final: ' + JSON.stringify(headings) + ' | ' + html);
@@ -2338,7 +2337,7 @@ for (const expected of [
     assert ".climate-priority-card:not([open])>.climate-priority-body" in print_block
     assert ".climate-priority-detail:not([open])>:not(summary)" in print_block
     assert ".climate-fold:not([open])>:not(summary)" in print_block
-    assert ".climate-supporting-analysis:not([open])>:not(summary)" in print_block
+    assert ".climate-supporting-analysis:not([open])>:not(summary)" not in print_block
 
 
 def test_priority_summary_contains_one_valid_heading_with_rank_inside():
@@ -2556,7 +2555,7 @@ const html=renderClimateVerifiedAssessment({{
   priorities:[],
   technical_annex:{{recommendation_admitted_count:3,semantic_reviewer_verdict:'block'}}
 }});
-if (!html.includes('No operational priorities were identified in this assessment. Review the core questions and points to check below.')) {{
+if (!html.includes('No operational priorities were identified in this assessment. Review the assessment findings and points to check below.')) {{
   throw new Error('neutral zero-priority message missing | '+html);
 }}
 for (const diagnostic of ['3 recommendation','candidate','held back','block','outcome:']) {{
@@ -2651,7 +2650,7 @@ console.log(renderClimateVerifiedAssessment({{
         page.evaluate("window.dispatchEvent(new Event('beforeprint'))")
         assert details.evaluate_all("elements => elements.every(element => element.open)")
         assert page.get_by_text("Closed priority prose.").is_visible()
-        assert page.get_by_text("Closed decision.").is_visible()
+        assert page.get_by_text("Closed decision.", exact=True).is_visible()
         assert page.get_by_text("Method text for print.").is_visible()
         assert page.get_by_text("Limitations text for print.").is_visible()
         assert page.get_by_text("Source text for print").is_visible()
