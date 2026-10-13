@@ -86,3 +86,27 @@ def test_legacy_reader_theme_still_displays_complete_findings():
 def test_malformed_legacy_paragraphs_do_not_hide_original_findings():
     html = _themes_html({"assessment_themes":[{"title":"Climate risks, design and delivery", "paragraphs":[None], "priority_ranks":None, "findings":[{"text":"The original finding remains available.", "priority_ranks":None}]}]})
     assert "The original finding remains available." in html
+
+
+def test_verified_drc_alias_and_today_opening_preserve_entity_boundaries():
+    from sector_lenses.climate_verified_schemas import validate_summary_fragment
+    canonical = "The project supports traders in DRC."
+    assert validate_summary_fragment(
+        "Today, the project supports traders in the Democratic Republic of Congo.",
+        canonical_text=canonical, allow_paraphrase=True,
+    )
+    for text, support in (
+        ("The project supports traders in the Democratic Republic of Congo.", "The project supports traders in the Republic of Congo."),
+        ("The project supports traders in the Republic of Congo.", canonical),
+        ("Today Cooperative supports traders.", canonical),
+        ("TODAY supports traders.", canonical),
+    ):
+        assert not validate_summary_fragment(text, canonical_text=support, allow_paraphrase=True)
+
+
+def test_summary_does_not_require_rating_labels_in_flowing_prose():
+    from sector_lenses.climate_verified_schemas import validate_summary_overview
+    first = "The project recognizes flooding risks and supports access for traders. " * 8
+    second = "The remaining priorities confirm access for traders during works and support reliable delivery. " * 7
+    paragraphs = [first.strip(), second.strip()]
+    assert validate_summary_overview({"paragraphs": paragraphs}, canonical_text=paragraphs) == paragraphs

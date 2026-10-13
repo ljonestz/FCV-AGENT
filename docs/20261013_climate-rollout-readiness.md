@@ -2,6 +2,16 @@
 
 ## Status
 
+**Current: quality6 failed acceptance.** The newly authorized paid run completed
+on13October and retained two of four candidates after independent review. Research
+provenance failed, analysis is partial, and native Summary still falls back. Reader2.14
+repairs deterministic rejection of all three generated assessment narratives and
+adds correction rejection diagnostics. These fixes are verified on the saved run
+without additional provider calls; they do not establish live quality acceptance.
+See `20261013_climate-quality6-validation.md`. The paid allowance is consumed.
+The paragraphs below describe earlier checkpoints and must not be read as current
+acceptance evidence. PR83 remains draft; production rollout is held.
+
 Latest candidate: the standalone brief review improves connections between context,
 findings and actions and repairs a capitalization false positive that had restored
 old dividends wording. See `20261013_climate-cohesive-brief-validation.md` for checks.

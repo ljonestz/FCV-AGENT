@@ -11,12 +11,6 @@ from copy import deepcopy
 import re
 
 
-_SUMMARY_DIMENSION_SIGNALS = {
-    "relevance": ("relevance",),
-    "sensitivity": ("sensitivity",),
-    "responsiveness": ("responsiveness",),
-    "operationalization": ("operationalization", "operationalisation"),
-}
 _SUMMARY_GENERIC_ENTITIES = {"task team", "project team", "implementation team"}
 _SUMMARY_CONNECTIVE_TOKENS = {
     "however", "therefore", "while", "although", "together", "already",
@@ -34,7 +28,7 @@ _SUMMARY_ALLOWED_SINGLE_WORDS = {
 # Ordinary sentence openings in analytical prose are not new proper names.
 _NARRATIVE_OPENING_WORDS = {
     "links", "benefits", "access", "delivery", "inclusion", "participation",
-    "protection", "cooperation", "opportunities", "choices", "investments", "fair",
+    "protection", "cooperation", "opportunities", "choices", "investments", "fair", "today",
 }
 _SUMMARY_ACTION_STEM_RE = re.compile(
     r"\b(?P<stem>approv|requir|monitor|implement|adopt|ensur|establish|"
@@ -156,11 +150,6 @@ def validate_summary_overview(
     if any(_SUMMARY_MARKUP_RE.search(item) for item in paragraphs):
         return reject("SUMMARY_MARKUP")
     combined = " ".join(paragraphs).casefold()
-    if not all(
-        any(signal in combined for signal in signals)
-        for signals in _SUMMARY_DIMENSION_SIGNALS.values()
-    ):
-        return reject("SUMMARY_DIMENSION_MISSING")
     if not any(
         signal in paragraphs[0].casefold()
         for signal in ("verdict", "foundation", "overall", "credible", "takeaway", "recognizes", "recognises", "shows", "demonstrates", "assessment", "finding", "already")
@@ -214,6 +203,13 @@ def validate_summary_fragment(
         return reject("SUMMARY_SENTENCE_INCOMPLETE")
     canonical = " ".join(_summary_strings(canonical_text))
     canonical_casefold = canonical.casefold()
+    # The verified register may abbreviate DRC while the narrative spells it out.
+    # Normalize only this complete name, only against an admitted DRC reference;
+    # Republic of Congo and arbitrary country names remain separate entities.
+    if allow_paraphrase and re.search(r"\bDRC\b", canonical):
+        fragment = re.sub(
+            r"\bDemocratic Republic of (?:the )?Congo\b", "DRC", fragment,
+        )
     canonical_words = _summary_words(canonical)
     canonical_numbers = set(
         re.findall(r"\b\d+(?:[.,]\d+)?%?\b", canonical)

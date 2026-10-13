@@ -707,3 +707,14 @@ Versions judgments2.12, recommendations2.14, reader2.12. No added provider calls
 or schema fields. New editorial preview asserts admission of all three narratives.
 See docs/20261013_climate-cohesive-brief-validation.md. Fresh paid generation remains
 unvalidated and PR83 remains draft.
+# 2026-10-13 verified Climate Summary admission alignment
+
+Reader2.14 removes the obsolete requirement that native Summary paragraphs name
+all four rating dimensions literally. Judgments2.12 already asks for connected
+plain-language prose without those label recaps. Two/three paragraphs,160–230 words,
+verdict/implication, no copied executive readout, source vocabulary, name, number,
+date, markup and action checks remain. This change adds no provider call and does
+not admit the quality6 native Summary, which still fails a separate vocabulary check.
+See the quality6 validation handover for failed analytical acceptance and the saved
+assessment replay. Recommendation correction diagnostics now retain bounded response
+and pre-review rejection reasons; correction scope and independent review are unchanged.

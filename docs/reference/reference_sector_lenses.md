@@ -430,3 +430,17 @@ Versions judgments2.12, recommendations2.14, reader2.12. No added provider calls
 or schema fields. New editorial preview asserts admission of all three narratives.
 See docs/20261013_climate-cohesive-brief-validation.md. Fresh paid generation remains
 unvalidated and PR83 remains draft.
+
+### 2026-10-13 quality6 and reader2.14
+
+The newly authorized quality run failed acceptance: four admitted candidates became
+two after semantic review; bounded correction recovered none; research failed quote
+provenance checks; native Summary fell back. Rollout remains held. Reader2.14 repairs
+full Democratic Republic of Congo wording only against admitted DRC support in
+analytical paraphrase mode, and sentence-initial Today. No other country alias is
+invented or conflated. The obsolete four-label Summary requirement is removed;
+strict vocabulary and other grounding controls remain. Correction diagnostics now
+record bounded response and reasons for pre-review rejection. No added model calls,
+retries or generation prompt changes. The same saved assessment now displays all
+three generated narrative answers and keeps the two-action warning. See quality6
+validation handover; this replay is not a second paid run or release acceptance.

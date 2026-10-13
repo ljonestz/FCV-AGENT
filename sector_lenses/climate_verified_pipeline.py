@@ -1363,25 +1363,40 @@ def run_verified_climate_pipeline(
                          "bounded_correction": [issues_by_id[key] for key in sorted(repair_ids)]},
                         latency_ms, cancel_event=cancel_event, deadline=deadline,
                     )
+                    correction_trace["response"] = _diagnostic_snapshot(correction_payload)
                     records = _records(correction_payload, "recommendation_candidates")
                     corrected = []
+                    correction_rejections = []
+                    correction_trace["rejections"] = correction_rejections
                     ids = [_text(record.get("recommendation_id")) for record in records]
                     reference_fields = ("pathway_ids", "existing_response_ids", "residual_gap_ids",
                                         "project_anchor_ids", "instrument_claim_ids")
                     for record in records:
                         identifier = _text(record.get("recommendation_id"))
                         if identifier not in originals or ids.count(identifier) != 1:
+                            correction_rejections.append({"recommendation_id": identifier,
+                                                          "reason_codes": ["CORRECTION_ID_INVALID"]})
                             continue
                         original = originals[identifier]
                         try:
                             candidate = _candidate(record)
                             if any(not set(getattr(candidate, field)) <= set(getattr(original, field))
                                    for field in reference_fields):
+                                correction_rejections.append({"recommendation_id": identifier,
+                                                              "reason_codes": ["CORRECTION_EVIDENCE_EXPANDED"]})
                                 continue
                             candidate, candidate_issues = normalize_candidate(candidate)
                         except (TypeError, ValueError):
+                            correction_rejections.append({"recommendation_id": identifier,
+                                                          "reason_codes": ["RECOMMENDATION_MALFORMED"]})
                             continue
-                        if any(issue.blocking for issue in candidate_issues) or admission_failure_codes(candidate):
+                        failure_codes = list(dict.fromkeys(
+                            [issue.code for issue in candidate_issues if issue.blocking]
+                            + list(admission_failure_codes(candidate))
+                        ))
+                        if failure_codes:
+                            correction_rejections.append({"recommendation_id": identifier,
+                                                          "reason_codes": failure_codes})
                             continue
                         # Repair cannot inflate importance or replace the original ranking.
                         candidate = replace(candidate, score=original.score, rank=original.rank,
@@ -1449,7 +1464,7 @@ def run_verified_climate_pipeline(
         reviewer_version="climate-review-v2.1",
         extraction_version="source-blocks-v3",
         normalization_version="climate-normalization-v2.1",
-        renderer_version="climate-reader-v2.13",
+        renderer_version="climate-reader-v2.14",
         model_aliases={"assessment": "configured", "reviewer": "configured"},
         sampling={"max_transient_retries": 1},
         source_fingerprints=tuple(item.sha256 for item in source_documents),

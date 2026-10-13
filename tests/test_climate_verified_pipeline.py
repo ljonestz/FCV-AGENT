@@ -733,7 +733,7 @@ def test_manifest_is_privacy_safe_and_scoped_to_the_run():
     assert first["manifest"]["run_id"] == "run-test"
     assert second["manifest"]["run_id"] == "run-two"
     assert first["manifest"]["source_count"] == 1
-    assert first["manifest"]["renderer_version"] == "climate-reader-v2.13"
+    assert first["manifest"]["renderer_version"] == "climate-reader-v2.14"
     assert first["manifest"]["extraction_version"] == "source-blocks-v3"
     assert (
         first["manifest"]["prompt_versions"]["fact_extraction"]
@@ -1423,6 +1423,10 @@ def test_correction_cannot_expand_evidence_or_replace_passed_actions():
     result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(assessment, reviewer))
     assert result["priorities"] == []
     assert len(reviewer.calls) == 1
+    trace = result["diagnostic_trace"]["recommendation_correction"]
+    assert trace["response"]["json"]
+    assert trace["rejections"] == [{"recommendation_id": "REC-001",
+                                      "reason_codes": ["CORRECTION_EVIDENCE_EXPANDED"]}]
 
 
 def test_cancellation_during_correction_propagates():

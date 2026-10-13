@@ -12,6 +12,18 @@
 
 ## Overview
 
+### 2026-10-13 quality6 follow-up (rollout held)
+
+The new paid quality assessment generated four candidates and retained two after
+independent review; correction recovered none. Research provenance failed and
+native Summary fell back. This is a failed quality gate; PR83 remains draft.
+Reader2.14 repairs rejection of the full DRC country name against an admitted DRC
+fact and ordinary sentence-initial Today in analytical prose. Summary no longer
+requires four literal dimension labels; its other grounding checks remain strict.
+Correction trace retains bounded response and pre-review rejection reasons.
+No new model calls, recommendation restoration or generation-prompt changes.
+See `docs/20261013_climate-quality6-validation.md` for evidence and remaining blockers.
+
 ### 2026-10-12 candidate: shared rating sidebar
 
 Normal FCV and verified Climate now keep the rating sidebar in Summary and Detailed;
