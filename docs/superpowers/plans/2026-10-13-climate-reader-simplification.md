@@ -21,7 +21,7 @@ fields. No extra model calls or dependencies.
 - [x] Update affected assertions; run focused tests then the full suite once.
 - [x] Produce a new explicitly editorial saved-case preview without changing the
   original run or adding recommendations. Inspect browser and HTML download.
-- [ ] Record checks and limitations, commit and push the existing draft branch.
+- [x] Record checks and limitations, commit and push the existing draft branch.
 
 No paid runs remain authorized. Fresh generation and analytical acceptance remain
 outstanding; preview wording is editorial evidence-based content, not a new run.

@@ -63,7 +63,12 @@ changed after the full-suite snapshot. Log:
 `output/20261013-simplification-full-regression.txt`.
 Standalone downloaded HTML was also opened in Edge and visually inspected. It
 contains both rating cards, all six sections and no removed supporting disclosures.
-Branch deployment is recorded at completion below.
+Implementation commit: `389026fe70b74e5e4a6a5386e2992c7ee36d8553`, pushed to
+`fix/climate-opcs-parity`. Before push, Render confirmed that
+`fcv-agent-climate-smoke` (`srv-d6gsivcr85hc73a2833g`) follows this branch and
+uses commit-triggered deployment at https://fcv-agent-1.onrender.com.
+The final deployment SHA and health result are recorded in draft PR #83 and the
+private FCV build-parity record after the deployment completes.
 
 ## Remaining acceptance
 
