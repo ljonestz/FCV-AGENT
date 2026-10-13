@@ -1105,8 +1105,8 @@ def test_html_uses_balanced_hierarchy_without_reader_clutter():
     assert html.count('data-rating-key="climate-responsiveness"') == 1
     assert "climate-overview-panel" not in html
     assert html.index("climate-paired-ratings") < html.index("Executive readout")
-    assert html.count('class="climate-priority-card" open>') == 1
-    assert html.count('class="climate-priority-card">') == 3
+    assert html.count('class="climate-priority-card" open>') == 4
+    assert html.count('class="climate-priority-card">') == 0
     assert '<span class="pc-rank">1</span><span class="pc-title-text">Priority 1' in html
     assert "Suggested targeted text for the current project document." in html
     assert "Distinct operational instrument text for continuity." in html

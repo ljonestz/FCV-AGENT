@@ -12,6 +12,19 @@
 
 ## Overview
 
+### 2026-10-13 pipeline reassessment and priority visibility
+
+Reader2.15 opens every ranked Climate operational priority initially in browser
+Detailed and standalone HTML. Recommendation details and sections04–06 remain
+closed; user toggling and print restoration are retained. Generation is unchanged.
+The six-run/backend assessment identifies a native correction schema defect:
+compiler corrections cannot contain drafting, but confirmed-route validation
+requires it. Existing passing fixtures supplied legacy fields forbidden live.
+The Summary lexical gate also rejects ordinary prose and can accept inverted
+meaning. These are diagnosed/proposed backend changes, not implemented repairs.
+See `docs/20261013_climate-pipeline-readiness-assessment.md` for evidence, options,
+cost/coverage limits and the recommended redesign checkpoints. Rollout remains held.
+
 ### 2026-10-13 quality6 follow-up (rollout held)
 
 The new paid quality assessment generated four candidates and retained two after

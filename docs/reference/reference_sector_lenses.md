@@ -444,3 +444,10 @@ record bounded response and reasons for pre-review rejection. No added model cal
 retries or generation prompt changes. The same saved assessment now displays all
 three generated narrative answers and keeps the two-action warning. See quality6
 validation handover; this replay is not a second paid run or release acceptance.
+
+Reader2.15 presentation follow-up: all ranked operational priority cards start open
+in Detailed/browser HTML and Python HTML. Their Recommendation details remain closed,
+as do review checks, guidance and method disclosures. Users can close individual cards;
+the print handler restores their chosen state. No generation changes or additional
+paid calls. The separate pipeline readiness assessment proposes backend redesign;
+it is not evidence that the failed quality6 result is accepted.

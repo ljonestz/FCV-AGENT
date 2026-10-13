@@ -1450,11 +1450,10 @@ def render_reader_html(model: dict[str, object]) -> str:
         )
     if not priorities:
         parts.append(f"<p>{html.escape(_no_priority_message(model))}</p>")
-    for priority_index, priority in enumerate(priorities):
+    for priority in priorities:
         rank = _rank(priority.get("rank"))
-        open_attribute = " open" if priority_index == 0 else ""
         parts.append(
-            f'<details id="climate-priority-{rank}" class="climate-priority-card"{open_attribute}>'
+            f'<details id="climate-priority-{rank}" class="climate-priority-card" open>'
         )
         parts.append(
             '<summary><h3 class="pc-title"><span class="pc-rank">'

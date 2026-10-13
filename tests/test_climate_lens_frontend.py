@@ -2052,8 +2052,8 @@ if ((html.match(/class="climate-paired-ratings"/g)||[]).length !== 1) {{
 if ((html.match(/class="climate-priority-card"/g)||[]).length !== 4) {{
   throw new Error('all priorities must be native disclosures | ' + html);
 }}
-if ((html.match(/class="climate-priority-card" open/g)||[]).length !== 1) {{
-  throw new Error('only priority one should be open | ' + html);
+if ((html.match(/class="climate-priority-card" open/g)||[]).length !== 4) {{
+  throw new Error('all priorities should be open | ' + html);
 }}
 if ((html.match(/class="climate-item-number"/g)||[]).length !== 4) {{
   throw new Error('checks must be visibly numbered | ' + html);
@@ -2319,7 +2319,7 @@ const html = renderClimateVerifiedAssessment({{
   }}
 }});
 for (const expected of [
-  '<details id="climate-priority-2" class="climate-priority-card"><summary>',
+  '<details id="climate-priority-2" class="climate-priority-card" open><summary>',
   '<details class="climate-priority-detail"><summary>Recommendation details</summary>',
   '<details class="climate-fold"><summary>Method, limitations, and sources</summary>',
   'Closed priority narrative.', 'Closed priority decision.',
@@ -2636,6 +2636,8 @@ console.log(renderClimateVerifiedAssessment({{
         page = browser.new_page()
         page.set_content(exported_html, wait_until="load")
         details = page.locator("details.climate-priority-card, details.climate-priority-detail, details.climate-fold, details.climate-guidance-disclosure")
+        assert page.locator("details.climate-priority-card").evaluate_all("elements => elements.every(element => element.open)")
+        page.locator("details.climate-priority-card > summary").nth(1).click()
         prior_states = details.evaluate_all("elements => elements.map(element => element.open)")
         assert prior_states == [True, False, False, False, False, False, True]
         assert page.get_by_text("Open priority prose.").is_visible()
