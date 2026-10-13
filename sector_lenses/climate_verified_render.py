@@ -606,7 +606,14 @@ def _summary_gap_items(assessment: dict[str, object], priorities: list[dict], li
     return items
 
 
-def _assessment_themes(gaps: list[dict], questions: list[dict], priorities: list[dict], minor_points: list[dict]) -> list[dict]:
+_ASSESSMENT_THEMES = {
+    "design": ("Climate risks, design and delivery", "Does the project address interacting climate and FCV risks in design and delivery?"),
+    "dividends": ("Wider peace and social dividends", "Could the project generate wider peace and social benefits, and how could these be strengthened?"),
+    "inclusion": ("Access, inclusion and potential harm", "Will people benefit fairly, and could delivery create exclusion or harm?"),
+}
+
+
+def _assessment_themes(gaps: list[dict], questions: list[dict], priorities: list[dict], minor_points: list[dict], *, assessment: dict | None = None) -> list[dict]:
     """Group complete canonical findings; links never depend on keyword guessing."""
     titles = {
         "cq1_interaction": "Climate risks, design and delivery",
@@ -636,7 +643,44 @@ def _assessment_themes(gaps: list[dict], questions: list[dict], priorities: list
             "Confirm the evidence and whether a project change is warranted."
         )
         groups.setdefault(title, []).append({**gap, "priority_ranks": ranks, "follow_up": follow_up})
-    return [{"title": title, "findings": findings} for title, findings in groups.items()]
+    definitions = _ASSESSMENT_THEMES
+    assessment = assessment or {}
+    known_ids = _summary_known_evidence_ids(assessment)
+    fact_ids = {_text(item.get("claim_id")) for item in _records(assessment.get("facts"))}
+    canonical = {key: assessment.get(key) for key in ("facts", "analysis", "derived_assertions", "context_evidence")}
+    narratives = _records(assessment.get("assessment_narratives"))
+    accepted = {}
+    accepted_refs = {}
+    for item in narratives:
+        theme = _text(item.get("theme"))
+        paragraphs = item.get("paragraphs")
+        refs = item.get("evidence_ids")
+        if (theme not in definitions or sum(record.get("theme") == theme for record in narratives) != 1
+                or not isinstance(paragraphs, list) or not 1 <= len(paragraphs) <= 2
+                or not all(isinstance(paragraph, str) and paragraph.strip() for paragraph in paragraphs)
+                or not isinstance(refs, list) or not refs or not all(isinstance(ref, str) for ref in refs)
+                or set(refs) - known_ids or not set(refs) & fact_ids):
+            continue
+        if not 40 <= len(" ".join(paragraphs).split()) <= 180:
+            continue
+        if not all(validate_summary_fragment(paragraph, canonical_text=canonical, allow_paraphrase=True) for paragraph in paragraphs):
+            continue
+        accepted[theme] = [paragraph.strip() for paragraph in paragraphs]
+        accepted_refs[theme] = set(refs)
+    result = []
+    for key, (title, question) in definitions.items():
+        findings = groups.get(title, [])
+        if not findings and key not in accepted:
+            continue
+        # Older saves keep complete canonical prose; never synthesize new claims here.
+        paragraphs = accepted.get(key) or [" ".join(item["text"] for item in findings)]
+        result.append({"title": title, "question": question, "paragraphs": paragraphs,
+                       "narrative_status": "generated" if key in accepted else "fallback",
+                       "findings": findings,
+                       "priority_ranks": sorted({rank for item in findings for rank in item["priority_ranks"]}
+                           | {p["rank"] for p in priorities if isinstance(p.get("residual_gap_ids"), (list, tuple))
+                              and set(p["residual_gap_ids"]) & accepted_refs.get(key, set())})})
+    return result
 
 
 def _rating_cards(model: dict[str, object]) -> list[dict]:
@@ -680,19 +724,43 @@ def _paired_ratings_html(model: dict[str, object]) -> str:
     return ''.join(parts)
 
 
+def _theme_readout(theme: dict) -> tuple[str, list[str], list[int]]:
+    """Keep older saved reader objects readable across both export writers."""
+    title = _text(theme.get("title"))
+    question = _text(theme.get("question")) or next(
+        (question for label, question in _ASSESSMENT_THEMES.values() if label == title), title
+    )
+    findings = _records(theme.get("findings"))
+    raw_paragraphs = theme.get("paragraphs")
+    paragraphs = [p.strip() for p in raw_paragraphs if isinstance(p, str) and p.strip()] if isinstance(raw_paragraphs, list) else []
+    if not paragraphs:
+        paragraphs = [" ".join(_text(item.get("text")) for item in findings)]
+    ranks = theme.get("priority_ranks")
+    if not isinstance(ranks, list):
+        ranks = sorted({rank for item in findings if isinstance(item.get("priority_ranks"), list)
+                        for rank in item["priority_ranks"] if isinstance(rank, int)})
+    return question, [p for p in paragraphs if p], [rank for rank in ranks if isinstance(rank, int)]
+
+
 def _themes_html(model: dict[str, object]) -> str:
     parts = []
     for theme in _records(model.get("assessment_themes")):
-        parts.append(_heading(3, _text(theme.get("title"))))
-        if theme.get("title") == "Wider peace and social dividends":
-            parts.append("<p>Optional wider dividends depend on the project's scope; they are not required in every project.</p>")
-        parts.append('<ul>')
-        for finding in _records(theme.get("findings")):
-            links = ' '.join('<a href="#climate-priority-' + str(int(rank)) + '">Priority ' + str(int(rank)) + '</a>'
-                             for rank in finding.get("priority_ranks", []) if isinstance(rank, int))
-            parts.append('<li><p>' + html.escape(_text(finding.get("text"))) + '</p><p>' +
-                         (links or html.escape(_text(finding.get("follow_up")))) + '</p></li>')
-        parts.append('</ul>')
+        parts.append('<section class="climate-assessment-answer">')
+        question, paragraphs, ranks = _theme_readout(theme)
+        parts.append(_heading(3, question))
+        for paragraph in paragraphs:
+            parts.append('<p>' + html.escape(_text(paragraph)) + '</p>')
+        links = ' · '.join('<a href="#climate-priority-' + str(rank) + '">Priority ' + str(rank) + '</a>'
+                           for rank in ranks if isinstance(rank, int))
+        if links:
+            parts.append('<p class="climate-assessment-links">Related operational priorities: ' + links + '</p>')
+        findings = _records(theme.get("findings"))
+        if findings and theme.get("narrative_status") == "generated":
+            parts.append('<details class="climate-theme-evidence"><summary>Project details behind this assessment</summary>')
+            for finding in findings:
+                parts.append('<p>' + html.escape(_text(finding.get("text"))) + '</p>')
+            parts.append('</details>')
+        parts.append('</section>')
     return ''.join(parts)
 
 
@@ -917,7 +985,7 @@ def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
             "Review the uncovered findings before relying on this note; do not add actions just to meet a count."
         )
     return _scrub_placeholders({
-        "assessment_themes": _assessment_themes(_summary_gap_items(assessment, reader_priorities, limit=12), core_questions, reader_priorities, minor_climate_points),
+        "assessment_themes": _assessment_themes(_summary_gap_items(assessment, reader_priorities, limit=12), core_questions, reader_priorities, minor_climate_points, assessment=assessment),
         "executive_readout": executive,
         "operation_context": operation_context,
         "drafting_route_status": drafting_route["status"],
@@ -1323,6 +1391,13 @@ def _purpose_band_html(class_name: str, label: str, text: str, icon: str) -> str
     )
 
 
+def _reference_panel(number: int, title: str, description: str) -> str:
+    return ('<section class="climate-report-section climate-reference-panel">'
+            '<div class="climate-section-heading"><span class="climate-section-number">'
+            + f'{number:02d}' + '</span><h2>' + html.escape(title) + '</h2></div>'
+            '<p class="climate-section-description">' + html.escape(description) + '</p>')
+
+
 def render_reader_html(model: dict[str, object]) -> str:
     """Render escaped HTML from the canonical reader dictionary."""
 
@@ -1451,7 +1526,7 @@ def render_reader_html(model: dict[str, object]) -> str:
     minor_points = _records(model.get("minor_climate_points"))
     doc_flags = _records(model.get("review_readiness_flags"))
     if minor_points or doc_flags:
-        parts.append(_heading(2, HEADINGS[3]))
+        parts.append(_reference_panel(4, HEADINGS[3], "Smaller checks to resolve alongside the main operational priorities."))
         parts.append(_purpose_band_html(
             "climate-decision-preparation",
             "Climate decision preparation",
@@ -1497,18 +1572,15 @@ def render_reader_html(model: dict[str, object]) -> str:
                 + "</p></div></section>"
             )
 
+    if minor_points or doc_flags:
+        parts.append("</section>")
+
     guidance_items = [
         item for item in _records(model.get("guidance_items"))
         if _is_public_world_bank_url(item.get("url"))
     ]
     if guidance_items:
-        parts.append(_heading(2, "Relevant WBG guidance for this project"))
-        parts.append(_purpose_band_html(
-            "climate-further-guidance",
-            "Climate further guidance",
-            "Optional WBG sources for deeper follow-up on the findings.",
-            "i",
-        ))
+        parts.append(_reference_panel(5, "Relevant WBG guidance for this project", "Selected WBG resources to help the team take the findings forward."))
         parts.append(
             '<details class="climate-guidance-disclosure"><summary>'
             "Where the team can go for more detailed follow-up</summary>"
@@ -1532,8 +1604,9 @@ def render_reader_html(model: dict[str, object]) -> str:
                     + "</p>"
                 )
             parts.append("</article>")
-        parts.append("</div></details>")
+        parts.append("</div></details></section>")
 
+    parts.append(_reference_panel(6, "Supporting analysis", "Explore the detailed questions and evidence behind the assessment."))
     parts.append('<details class="climate-supporting-analysis"><summary>Supporting question analysis</summary>')
     parts.append(_heading(2, HEADINGS[1]))
     parts.append(f"<p>{html.escape(CORE_QUESTIONS_INTRO)}</p>")
@@ -1572,11 +1645,12 @@ def render_reader_html(model: dict[str, object]) -> str:
                 "</div></section>"
             )
 
-    parts.append('</details>')
+    parts.append('</details></section>')
 
     trail = _mapping(model.get("evidence_trail"))
     sources = model.get("sources") or []
     if trail or sources:
+        parts.append(_reference_panel(7, "How this analysis was produced", "Understand the method, source coverage and limits of this assessment."))
         parts.append(
             '<details class="climate-fold"><summary>'
             "Method, limitations, and sources</summary>"
@@ -1628,7 +1702,7 @@ def render_reader_html(model: dict[str, object]) -> str:
                     tail = f" - {description}{note}" if description else note
                 parts.append(f"<li>{label}{tail}</li>")
             parts.append("</ul>")
-        parts.append("</details>")
+        parts.append("</details></section>")
 
     parts.append(
         '<p class="climate-advisory">'
@@ -1735,13 +1809,13 @@ def write_reader_docx(model: dict[str, object], path: str | Path) -> Path:
 
     document.add_heading("Assessment findings", level=1)
     for theme in _records(model.get("assessment_themes")):
-        document.add_heading(_text(theme.get("title")), level=2)
-        if theme.get("title") == "Wider peace and social dividends":
-            document.add_paragraph("Optional wider dividends depend on the project's scope; they are not required in every project.")
-        for finding in _records(theme.get("findings")):
-            document.add_paragraph(_text(finding.get("text")), style="List Bullet")
-            links = ', '.join('Priority ' + str(rank) for rank in finding.get("priority_ranks", []))
-            document.add_paragraph(links or _text(finding.get("follow_up")))
+        question, paragraphs, ranks = _theme_readout(theme)
+        document.add_heading(question, level=2)
+        for paragraph in paragraphs:
+            document.add_paragraph(_text(paragraph))
+        links = ', '.join('Priority ' + str(rank) for rank in ranks)
+        if links:
+            document.add_paragraph('Related operational priorities: ' + links)
     gaps = [_text(item.get("text")) for item in _records(model.get("summary_gaps"))[:5]
             if _text(item.get("text"))]
     if gaps and not model.get("assessment_themes"):
@@ -1847,6 +1921,12 @@ def write_reader_docx(model: dict[str, object], path: str | Path) -> Path:
                 document.add_paragraph(practical_value)
             document.add_paragraph(_text(item.get("url")))
     document.add_heading("Supporting question analysis", level=1)
+    for theme in _records(model.get("assessment_themes")):
+        if theme.get("narrative_status") == "generated" and theme.get("findings"):
+            document.add_heading(_text(theme.get("question") or theme.get("title")), level=2)
+            for finding in _records(theme.get("findings")):
+                document.add_paragraph(_text(finding.get("text")))
+
     document.add_heading(HEADINGS[1], level=1)
     document.add_paragraph(CORE_QUESTIONS_INTRO)
     for question in _records(model.get("core_questions")):

@@ -1148,3 +1148,21 @@ independent re-review through the same validation and original deadline. Origina
 review and correction diagnostics remain separate; accepted actions survive repair
 failure. Reader version v2.9. No new paid generation has validated this candidate.
 See `docs/20261013_climate-action-led-validation.md` for acceptance and saved replay.
+
+
+### 2026-10-13 narrative findings follow-up
+
+The existing judgment call now returns assessment_narratives (design/dividends/inclusion),
+one or two connected paragraphs per theme, targeting 70-130 words and citing verified
+register IDs. Shared reader admission requires unique themes, known citations including
+a project fact, complete plain prose and number/entity/action checks. This narrative
+path permits natural paraphrase; the existing strict Summary vocabulary gate is unchanged.
+Original canonical gaps and recommendation links remain available as supporting detail.
+Browser and HTML use question headings, prose and native disclosures; Word preserves
+prose with original detail in its supporting appendix. Sections 04-07 use distinct cards
+in HTML. Common prompt calibration assesses conditional potential and enabling conditions,
+without penalizing missing peace/dividends terminology. Executive provider schema is
+aligned to the existing 180-260 word instruction. No extra generation call or dependency.
+
+Prompt versions: facts2.4, analysis2.7, judgments2.10, recommendations2.12, review2.11,
+drafting1.3; reader2.10. Fresh provider output remains unvalidated; PR83 stays draft.

@@ -190,6 +190,7 @@ def validate_summary_fragment(
     *,
     canonical_text: object = (),
     diagnostics: dict[str, object] | None = None,
+    allow_paraphrase: bool = False,
 ) -> bool:
     """Validate grounding controls for one plain-text summary fragment."""
     def reject(reason: str, detail: str = "") -> bool:
@@ -228,6 +229,8 @@ def validate_summary_fragment(
             entity = match.group(0).casefold()
             if entity.startswith("the "):
                 entity = entity[4:]
+            if allow_paraphrase:
+                entity = re.sub(r"^(?:for|in|at|under|with)\s+", "", entity)
             if entity not in canonical_casefold and entity not in _SUMMARY_GENERIC_ENTITIES:
                 return reject("SUMMARY_ENTITY_UNSUPPORTED", entity)
         for match in _SUMMARY_CAPITALIZED_RE.finditer(fragment):
@@ -249,7 +252,8 @@ def validate_summary_fragment(
     for match in _SUMMARY_ACTION_STEM_RE.finditer(fragment.casefold()):
         if match.group("stem") not in canonical_casefold:
             return reject("SUMMARY_ACTION_UNSUPPORTED", match.group(0))
-    if canonical_words:
+    # Analytical narratives may paraphrase; strict management summaries keep vocabulary checks.
+    if canonical_words and not allow_paraphrase:
         for sentence in _summary_sentences(fragment):
             words = _summary_words(sentence)
             unsupported_words = (
@@ -611,7 +615,7 @@ STAGE_OUTPUT_SCHEMAS: dict[str, dict[str, object]] = {
     ),
     "judgment_review": _object(
         {
-            "executive_readout": _string("Between 500 and 800 words."),
+            "executive_readout": _string("Between 180 and 260 words."),
             "overview_summary": _string(
                 "A three-to-four sentence plain-language overall summary for the "
                 "top-of-report overview, distinct from and shorter than the "
@@ -645,6 +649,15 @@ STAGE_OUTPUT_SCHEMAS: dict[str, dict[str, object]] = {
             "operationalization": _judgment(
                 ("embedded", "partial", "early", "not_evidenced", "unclear")
             ),
+            "assessment_narratives": {
+                "type": "array",
+                "items": _object({
+                    "theme": _enum(("design", "dividends", "inclusion")),
+                    "paragraphs": _strings("One or two connected plain-text paragraphs, 70-130 words total."),
+                    "evidence_ids": _strings("Verified project facts, responses, pathways and gap IDs supporting this answer."),
+                }),
+                "description": "Three short question-led answers for a first-time reader; no unsupported themes.",
+            },
             "core_questions": {
                 "type": "array",
                 "items": CORE_QUESTION_SCHEMA,

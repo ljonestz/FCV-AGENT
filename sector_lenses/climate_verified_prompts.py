@@ -36,6 +36,16 @@ CALIBRATION RULES
   evidenced wider peace or social dividend mechanism through climate-related
   design or delivery within scope. Do not relabel routine risk management as
   responsiveness merely because it improves climate resilience or design quality.
+- Do not penalize a project for not using peace and social dividends terminology,
+  naming these benefits, or having an explicit peace objective. Assess plausible
+  potential from evidenced design and delivery choices, the enabling conditions,
+  and proportionate opportunities to strengthen that potential. Distinguish
+  conditional analytical inference from documented intent and demonstrated impact.
+  The document need not spell out the mechanism: reason from evidenced project
+  features, state the conditions and uncertainty, and do not assume benefits merely
+  because climate and social activities appear in the same operation.
+  A missing label is not a gap. A missing practical arrangement may be a gap only
+  where its relevance follows from the evidence and the project's scope.
 - A required or planned update is not a completed update. Preserve proposed,
   required, planned, ongoing and completed status. Should, shall, must or will
   prepare/update an instrument does not prove that it is already updated or in use.
@@ -194,7 +204,7 @@ peace impacts; stated ambitions alone do not establish a contribution.
 Do not score the project's theoretical maximum or require all dividend categories.
 Rate evidenced contribution within scope: very_limited (minimal contribution),
 limited (narrow contribution), moderate (credible, bounded contribution), strong
-(substantial, deliberate contribution), very_strong (extensive, well-supported
+(substantial, credible contribution), very_strong (extensive, well-supported
 contribution through relevant design and delivery choices).
 Contributing to responsiveness is often a sign of going above and beyond.
 The expected contribution depends on the project's scope. A limited contribution
@@ -265,6 +275,29 @@ a watch note - never more than one. Skip any supplied question you cannot ground
 in the verified evidence rather than padding; return an empty array only if none
 can be grounded.
 
+ASSESSMENT FINDINGS FOR A FIRST-TIME READER
+Also return assessment_narratives: three records with theme design, dividends,
+and inclusion. Each has paragraphs (one or two paragraphs totalling 70-130 words)
+and evidence_ids citing the verified facts, responses, pathways and relevant gaps.
+Answer respectively: Does the project address interacting climate and FCV risks
+in design and delivery? Could it generate wider peace and social benefits, and
+how could these be strengthened? Will people benefit fairly, and could delivery
+create exclusion or harm?
+Write connected prose, not a list of disconnected deficiencies. Start with an
+answer a non-specialist can understand, credit the existing response, explain
+one or two material project examples, then state the practical implication.
+Explain acronyms using the source's wording or plain language. Keep component
+and ESCP detail where it makes the implication clearer. Introduce no new facts,
+actors, figures, obligations or detailed recommendations. The priorities carry
+the proposed actions. Cover the material gaps together rather than repeating each.
+For dividends assess likely pathways and conditions for wider benefits such as
+fairer access, cooperation, institutional trust or resilient livelihoods only
+where supported. Explain what could strengthen the potential; do not criticize
+missing dividends language or require proof of peace impacts at preparation.
+Qualify inferred potential and do not assert guaranteed outcomes. When evidence
+is insufficient, say what cannot be judged. Omit a theme only if no evidence can
+support even that conclusion. This uses the existing judgment call, not another call.
+
 Also return minor_climate_points: up to three smaller climate or FCV points, each
 tied to a residual_gap_id from the analysis that is worth a brief mention but may
 not warrant a full recommendation - a minor issue the team could add, consider,
@@ -294,7 +327,7 @@ Name relevance, sensitivity, responsiveness and operationalization explicitly
 in the synthesis. Aim for about 190 words. Prefer wording from the supplied
 facts and findings rather than introducing new terms, actors or actions.
 
-Return: {"executive_readout":"...","overview_summary":"...","summary_overview":{"paragraphs":["...","..."]},"relevance":{"value":"high|medium|low|unclear","evidence_ids":[],"rationale":"..."},"sensitivity":{"value":"very_strong|strong|moderate|limited|very_limited|unclear","evidence_ids":[],"rationale":"..."},"responsiveness":{"value":"very_strong|strong|moderate|limited|very_limited|not_expected|unclear","evidence_ids":[],"rationale":"..."},"operationalization":{"value":"embedded|partial|early|not_evidenced|unclear","evidence_ids":[],"rationale":"..."},"core_questions":[{"question_id":"cq2-infra-horizon","theme":"cq2_maladaptation","question":"...","source":"...","summary":"...","evidence_ids":["RG-001"],"watch":"..."}],"minor_climate_points":[{"point":"...","why":"...","how_to_check":"...","residual_gap_ids":["RG-002"]}]}.""",
+Return: {"executive_readout":"...","overview_summary":"...","summary_overview":{"paragraphs":["...","..."]},"relevance":{"value":"high|medium|low|unclear","evidence_ids":[],"rationale":"..."},"sensitivity":{"value":"very_strong|strong|moderate|limited|very_limited|unclear","evidence_ids":[],"rationale":"..."},"responsiveness":{"value":"very_strong|strong|moderate|limited|very_limited|not_expected|unclear","evidence_ids":[],"rationale":"..."},"operationalization":{"value":"embedded|partial|early|not_evidenced|unclear","evidence_ids":[],"rationale":"..."},"assessment_narratives":[{"theme":"design|dividends|inclusion","paragraphs":["..."],"evidence_ids":["PF-001","RG-001"]}],"core_questions":[{"question_id":"cq2-infra-horizon","theme":"cq2_maladaptation","question":"...","source":"...","summary":"...","evidence_ids":["RG-001"],"watch":"..."}],"minor_climate_points":[{"point":"...","why":"...","how_to_check":"...","residual_gap_ids":["RG-002"]}]}.""",
         payload,
     )
 

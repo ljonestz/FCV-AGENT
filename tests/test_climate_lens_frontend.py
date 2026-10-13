@@ -502,13 +502,13 @@ for (const [name,html] of [['summary',summary],['detailed',detailed]]) {{
     result = subprocess.run(["node", "-"], input=script, capture_output=True, text=True, check=False)
     assert result.returncode == 0, result.stderr
 
-def test_climate_detailed_follow_up_bands_and_plain_route_warning_are_explicit():
+def test_climate_detailed_follow_up_panels_and_plain_route_warning_are_explicit():
     source = INDEX.read_text(encoding="utf-8")
     detailed = _extract_js_function(source, "renderClimateVerifiedAssessment")
     assert "climate-decision-preparation" in detailed
-    assert "climate-further-guidance" in detailed
+    assert "climate-reference-panel" in detailed
     assert "Climate decision preparation" in detailed
-    assert "Climate further guidance" in detailed
+    assert "Selected WBG resources" in detailed
     assert "Suggested document wording is not shown because the document type or financing route could not be confirmed reliably." in detailed
     assert "UNRESOLVED" not in detailed
 def test_climate_summary_weaves_bridge_count_and_closing_in_order():

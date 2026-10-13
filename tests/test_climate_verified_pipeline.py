@@ -733,31 +733,31 @@ def test_manifest_is_privacy_safe_and_scoped_to_the_run():
     assert first["manifest"]["run_id"] == "run-test"
     assert second["manifest"]["run_id"] == "run-two"
     assert first["manifest"]["source_count"] == 1
-    assert first["manifest"]["renderer_version"] == "climate-reader-v2.9"
+    assert first["manifest"]["renderer_version"] == "climate-reader-v2.10"
     assert first["manifest"]["extraction_version"] == "source-blocks-v3"
     assert (
         first["manifest"]["prompt_versions"]["fact_extraction"]
-        == "climate-facts-v2.3"
+        == "climate-facts-v2.4"
     )
     assert (
         first["manifest"]["prompt_versions"]["bounded_analysis"]
-        == "climate-analysis-v2.6"
+        == "climate-analysis-v2.7"
     )
     assert (
         first["manifest"]["prompt_versions"]["judgment_review"]
-        == "climate-judgments-v2.9"
+        == "climate-judgments-v2.10"
     )
     assert (
         first["manifest"]["prompt_versions"]["recommendation_compiler"]
-        == "climate-recommendations-v2.11"
+        == "climate-recommendations-v2.12"
     )
     assert (
         first["manifest"]["prompt_versions"]["conditional_review"]
-        == "climate-review-v2.10"
+        == "climate-review-v2.11"
     )
     assert (
         first["manifest"]["prompt_versions"]["drafting_compiler"]
-        == "climate-drafting-v1.2"
+        == "climate-drafting-v1.3"
     )
     assert set(first["manifest"]["prompt_versions"]) == {
         "fact_extraction",
@@ -1445,3 +1445,15 @@ def test_unresolved_review_targets_do_not_trigger_correction_even_with_issue_tex
     result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(assessment, reviewer))
     assert result["priorities"] == []
     assert len(assessment.calls) == 4
+
+
+def test_judgment_transports_narrative_findings_without_an_extra_call():
+    responses = _responses()
+    narrative = [{"theme": "design", "paragraphs": ["The project uses site selection."], "evidence_ids": ["PF-001"]}]
+    responses[2]["assessment_narratives"] = narrative
+    client = FakeClient(responses, [])
+    result = run_verified_climate_pipeline(
+        **_arguments(), clients=PipelineClients(client, _pass_review_client()),
+    )
+    assert result["assessment_narratives"] == narrative
+    assert len(client.calls) == 4

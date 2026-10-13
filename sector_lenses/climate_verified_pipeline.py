@@ -84,12 +84,12 @@ from sector_lenses.climate_verified_schemas import (
 _INTEGRITY_CATEGORIES = READINESS_CATEGORIES - {"missing_operational_home"}
 
 PROMPT_VERSIONS = {
-    "fact_extraction": "climate-facts-v2.3",
-    "bounded_analysis": "climate-analysis-v2.6",
-    "judgment_review": "climate-judgments-v2.9",
-    "recommendation_compiler": "climate-recommendations-v2.11",
-    "conditional_review": "climate-review-v2.10",
-    "drafting_compiler": "climate-drafting-v1.2",
+    "fact_extraction": "climate-facts-v2.4",
+    "bounded_analysis": "climate-analysis-v2.7",
+    "judgment_review": "climate-judgments-v2.10",
+    "recommendation_compiler": "climate-recommendations-v2.12",
+    "conditional_review": "climate-review-v2.11",
+    "drafting_compiler": "climate-drafting-v1.3",
 }
 
 
@@ -1449,7 +1449,7 @@ def run_verified_climate_pipeline(
         reviewer_version="climate-review-v2.1",
         extraction_version="source-blocks-v3",
         normalization_version="climate-normalization-v2.1",
-        renderer_version="climate-reader-v2.9",
+        renderer_version="climate-reader-v2.10",
         model_aliases={"assessment": "configured", "reviewer": "configured"},
         sampling={"max_transient_retries": 1},
         source_fingerprints=tuple(item.sha256 for item in source_documents),
@@ -1505,6 +1505,7 @@ def run_verified_climate_pipeline(
         ),
         "overview_summary": overview_summary,
         "core_questions": core_questions,
+        "assessment_narratives": _records(judgment_payload, "assessment_narratives"),
         "priorities": [asdict(item) for item in priorities],
         "review_readiness_flags": [asdict(item) for item in readiness],
         "minor_climate_points": minor_climate_points,
