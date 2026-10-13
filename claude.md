@@ -1130,5 +1130,5 @@ boundaries. Legacy readers without summary_gaps do not gain an empty section.
 
 Final export parity: browser Detailed/Share HTML also includes Supporting gap
 findings under the core questions, matching the complete data in Python HTML/Word.
-Final full verification: 1,443 passed; paid and replay limits are recorded in the
+Final full verification: 1,444 passed after the hostname-boundary follow-up; paid and replay limits are recorded in the
 validation handover. Production/main and ITS remain unchanged.

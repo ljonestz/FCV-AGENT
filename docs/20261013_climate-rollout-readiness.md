@@ -24,7 +24,10 @@ The PR and private FCV_BUILD_PARITY record contain the exact final deployed SHA.
 
 ## Evidence
 
-Final frozen suite: **1,443 passed in 354.52s**. Affected connected checks: 104 passed.
+Final frozen suite after the GitHub hostname-boundary follow-up: **1,444 passed
+in 736.89s**. The affected research/handoff/quality/readout checks passed 64 in
+13.81s; the earlier connected export/readout checks passed 104. The final CodeQL
+and live test-build evidence is recorded in PR #83 and the private parity record.
 Synthetic one/three/five-action cases cover separate drafting, review, ranking,
 JSON and HTML/Word. Real browser checks cover second actions, both views, saving,
 standalone HTML, phone/desktop overflow and marker cleanup. The final real-result

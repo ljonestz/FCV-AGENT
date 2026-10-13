@@ -507,8 +507,13 @@ def normalize_climate_research_bundle(payload: Any) -> dict[str, Any]:
         url = _bounded(item.get("url"), 1000)
         title = _bounded(item.get("title"), 300)
         parsed = urlparse(url)
-        country_homepage = ((parsed.hostname or "").casefold().endswith("worldbank.org")
-                            and re.fullmatch(r"/(?:ext/)?[a-z]{2}/country/[^/]+(?:/overview)?/?", parsed.path))
+        host = (parsed.hostname or "").casefold()
+        country_homepage = (
+            (host == "worldbank.org" or host.endswith(".worldbank.org"))
+            and re.fullmatch(
+                r"/(?:ext/)?[a-z]{2}/country/[^/]+(?:/overview)?/?", parsed.path
+            )
+        )
         if (
             not raw_source_id
             or raw_source_id in source_id_aliases

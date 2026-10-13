@@ -71,6 +71,24 @@ def test_country_homepage_cannot_impersonate_a_project_pid():
     assert len(result["sources"]) == 1 and len(result["claims"]) == 1
 
 
+def test_country_homepage_guard_uses_complete_hostname_boundaries():
+    cases = [
+        ("https://worldbank.org/en/country/burundi", "Project Information Document", False),
+        ("https://www.worldbank.org/ext/en/country/burundi", "Project Information Document", False),
+        ("https://WWW.WORLDBANK.ORG/en/country/burundi/overview", "Country overview", True),
+        ("https://notworldbank.org/en/country/burundi", "Country overview", False),
+        ("https://worldbank.org.attacker.example/en/country/burundi", "Country overview", False),
+        ("https://attacker.example/worldbank.org/en/country/burundi", "Country overview", False),
+        ("https://worldbank.org@attacker.example/en/country/burundi", "Country overview", False),
+    ]
+    for url, title, accepted in cases:
+        raw = _valid_bundle()
+        raw["sources"][0].update(url=url, title=title)
+        result = normalize_climate_research_bundle(raw)
+        assert bool(result["sources"]) is accepted, url
+        assert bool(result["claims"]) is accepted, url
+
+
 def test_relative_page_age_is_not_a_publication_date():
     raw = _valid_bundle()
     raw["sources"][0]["publication_date"] = "313 days ago"

@@ -642,3 +642,29 @@ The independent reader/source safeguards and full export changes were validated
 against the preserved real result and synthetic boundaries without extra cost.
 Production/main and ITS are unchanged. PR #83 and the private parity record carry
 the exact final deployment SHA/health evidence once the candidate is live.
+
+
+## Final GitHub security-gate follow-up
+
+At commit 55a927d, GitHub's Analyze Python job succeeded, but the separate CodeQL
+merge gate flagged one high-severity URL-substring alert at research.py's country
+homepage classifier. The existing HTTPS source trust check already used exact
+hosts/dot-delimited subdomains; the homepage classifier now uses the same boundary
+for worldbank.org. This retains legitimate hosts and avoids accepting lookalike
+hostnames in that classification.
+
+The free affected research/handoff/quality/readout checks passed **64 in 13.81s**.
+A regression covers the apex host, legitimate uppercase subdomain, lookalike
+suffix/prefix, path-only and user-info spoof URLs, plus the PID/homepage distinction.
+No model call, new dependency or change to source/recommendation admission was made.
+The initial PowerShell attempt to record the full run failed to create its log and
+is not treated as successful verification. Python records the final full regression
+in output/20261013-release-hostname-final-regression.txt; its result and the final
+GitHub/deployment checks follow in the release record.
+
+Final frozen suite after this follow-up: **1,444 passed in 736.89s (12m16s)**,
+recorded in output/20261013-release-hostname-final-regression.txt. The slower
+frontend section continued successfully; only one execution process was present.
+The final test deployment and both CodeQL checks are recorded in PR #83 and the
+private parity record after push. Both paid allowances remain exhausted; these
+checks used no model calls. Production/main and ITS remain unchanged.
