@@ -19,9 +19,9 @@ def test_every_summary_gap_has_complete_supporting_prose_in_detailed_exports():
     for text in GAP_TEXTS:
         assert text in rendered
         assert text in word
-    assert "Supporting gap findings" in rendered and "Supporting gap findings" in word
+    assert "Assessment findings" in rendered and "Assessment findings" in word
     assert "Five-minute readout" not in rendered and "Five-minute readout" not in word
-    assert rendered.index("Supporting gap findings")<rendered.index(HEADINGS[2])
+    assert rendered.index("Assessment findings")<rendered.index(HEADINGS[2])
 
 
 def test_legacy_reader_without_gap_projection_keeps_export_behavior():

@@ -31,7 +31,8 @@ def test_rating_questions_match_in_sidebar_and_exports():
     stream = BytesIO()
     write_reader_docx(reader, stream)
     stream.seek(0)
-    doc_text = "\n".join(p.text for p in Document(stream).paragraphs)
+    document = Document(stream)
+    doc_text = "\n".join([p.text for p in document.paragraphs] + [cell.text for table in document.tables for row in table.rows for cell in row.cells])
     for content in [render_cards(), render_reader_html(reader), doc_text]:
         assert SENSITIVITY_QUESTION in content
         assert RESPONSIVENESS_QUESTION in content

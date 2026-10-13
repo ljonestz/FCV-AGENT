@@ -206,7 +206,7 @@ Operationalization asks whether sensitivity or responsiveness is translated
 into requirements, responsibilities, resources, indicators, verification,
 triggers, and adaptation. Every dimension, including unclear, not_expected, and
 not_evidenced, must cite at least one ID from the supplied verified registers.
-Write an executive_readout of 500 to 800 words for a task-team reader. Do not
+Write an executive_readout of 180 to 260 words giving concise operational context for a task-team reader. Do not
 reopen it with the one-sentence project identification and financing figure that
 the overview_summary already states; assume the reader has just read the
 overview and start instead with what the project already does on climate and
@@ -218,7 +218,7 @@ the credited existing response and explain
 what remains. Keep preparation and implementation milestones separate; do not
 imply dependency unless an explicit project fact establishes it. Calibrate
 precision to the evidence and state material limitations. Write the
-executive_readout as three to five short paragraphs separated by a blank line,
+executive_readout as two to three short paragraphs separated by a blank line,
 each covering one clear theme, so a reader can scan the key takeaways.
 Also write an overview_summary of three to four plain-language sentences that
 gives the single high-level takeaway for the top of the report: what the project
@@ -252,9 +252,10 @@ language, name its source, and write a fuller summary of roughly 120 to 220
 words in two short paragraphs separated by a blank line, that a non-specialist
 can follow. Each summary must add NEW detail and MUST NOT repeat the
 executive_readout or a judgment rationale: frame it as a design question to
-resolve or a strength to note, cite at least one evidence ID in evidence_ids,
-never promise or predict an outcome, and add a one-line watch note saying what
-the team should check. Keep each answer diagnostic: describe what the document
+resolve or a strength to note, cite the relevant residual-gap IDs in evidence_ids as well as supporting fact or pathway IDs,
+never promise or predict an outcome. Add a one-line watch note only for a genuine
+monitoring issue without an action now; otherwise leave watch empty. Actionable
+checks belong in minor_climate_points or ranked recommendations. Keep each answer diagnostic: describe what the document
 does and does not do and give the watch note, but do not propose the fix in the
 answer. Where an issue is material enough to act on, it must instead appear once
 as a ranked operational priority (that priority carries the mechanism and
@@ -302,11 +303,22 @@ def _recommendation_prompt(payload: dict[str, object]) -> str:
     return _common(
         """Compile only recommendations that pass connection, residuality,
 materiality, actionability, timing, distinctiveness, and comparative-importance
-tests. Consider every admitted residual gap before selecting
+tests. Aim for three to five substantive project-specific recommendations when
+material gaps support distinct feasible decisions. Consider every admitted residual gap before selecting
 at most five recommendation candidates with distinct actions. Do not stop after one or three when other material,
 connected and feasible improvements pass these tests. Group gaps only when the
 same action resolves them; preserve distinct site, design and delivery decisions.
+Document inconsistencies and administrative clarification belong in readiness_flags
+unless they require a material design or delivery decision. Do not promote them
+just to meet the target count. Cover distinct climate design, delivery continuity,
+and access or benefit-distribution decisions where supported by the evidence.
 The title must describe the minimum action, not an optional enhanced action.
+If bounded_correction is supplied, correct ONLY the supplied recommendations and
+ONLY the identified issues. Preserve recommendation IDs, original decision scope,
+reference IDs, scores and gate results. Remove unsupported precision or claims;
+do not invent replacement commitments. Return full corrected candidates using the
+same schema, with no additional recommendations or readiness flags. The corrected
+candidates will be validated and independently reviewed again.
 Confirming a baseline, defining an existing indicator, climate-finance accounting,
 or measuring asset performance is sensitivity/results clarity; measurement alone
 is not responsiveness without an evidenced wider peace or social dividend mechanism.

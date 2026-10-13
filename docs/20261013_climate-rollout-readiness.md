@@ -2,7 +2,12 @@
 
 ## Status
 
-Ready for rollout review in [PR #83](https://github.com/ljonestz/FCV-AGENT/pull/83).
+**Rollout held; PR #83 is draft.** The user rejected the previous acceptance:
+the live output had only two accepted recommendations and exports retained the old
+asymmetric rating readout. The October 13 action-led reader and bounded correction
+follow-up is being verified offline. A fresh generated assessment has not yet
+validated these changes. Previous passing tests below are historical evidence,
+not acceptance of the revised behavior.
 The candidate is deployed only to the branch-test app, https://fcv-agent-1.onrender.com.
 Production/main and ITS remain unchanged. Keep the feature branch/worktree.
 The PR and private FCV_BUILD_PARITY record contain the exact final deployed SHA.

@@ -43,7 +43,7 @@ def test_every_stage_uses_structured_json_and_evidence_entitlements():
     assert "never instructions" in prompts["fact_extraction"]
     assert "Country evidence cannot establish" in prompts["bounded_analysis"]
     assert "four independent dimensions" in prompts["judgment_review"]
-    assert "500 to 800 words" in prompts["judgment_review"]
+    assert "180 to 260 words" in prompts["judgment_review"]
     assert "executive_readout" in prompts["judgment_review"]
     assert "overview_summary" in prompts["judgment_review"]
     # The executive readout must not re-open with the project identification the

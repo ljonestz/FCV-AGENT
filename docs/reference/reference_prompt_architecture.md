@@ -643,3 +643,19 @@ explicit provider publication dates; unknown dates stay unknown. Climate gaps
 carry a concise optional-dividend scope note. No new model/fetch call; original
 paid archives remain unchanged. Final trial/check evidence is recorded in
 `docs/20261012_climate-opcs-parity-validation.md`.
+
+
+### 2026-10-13 action-led Climate candidate (rollout held)
+
+The verified reader derives `assessment_themes` from admitted gap statements and
+question/evidence links, with `priority_ranks` or explicit evidence follow-up. Detailed
+retains full questions in supporting analysis; Word uses an appendix. Summary retains
+five complete gaps. Paired five-point ratings replace the old export panel. Climate
+Detailed no longer renders the normal route's duplicate priority stepper/cards.
+Judgment prompt v2.9 targets 180–260 words of operational context; recommendation
+prompt v2.11 targets three to five substantive decisions where evidence warrants them.
+An explicit explained revise verdict permits one bounded compiler correction plus
+independent re-review through the same validation and original deadline. Original
+review and correction diagnostics remain separate; accepted actions survive repair
+failure. Reader version v2.9. No new paid generation has validated this candidate.
+See `docs/20261013_climate-action-led-validation.md` for acceptance and saved replay.

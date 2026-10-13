@@ -91,7 +91,8 @@ def test_exports_include_responsiveness_contribution_and_scope(tmp_path):
     reader = {"judgments": [{"dimension": "responsiveness", "value": "moderate"}]}
     output = tmp_path / "report.docx"
     write_reader_docx(reader, output)
-    doc_text = "\n".join(p.text for p in Document(output).paragraphs)
+    document = Document(output)
+    doc_text = "\n".join([p.text for p in document.paragraphs] + [cell.text for table in document.tables for row in table.rows for cell in row.cells])
     for text in [render_reader_html(reader), doc_text]:
         assert "Moderate contribution" in text
         assert "often a sign of going above and beyond" in text

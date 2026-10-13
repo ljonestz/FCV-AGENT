@@ -733,7 +733,7 @@ def test_manifest_is_privacy_safe_and_scoped_to_the_run():
     assert first["manifest"]["run_id"] == "run-test"
     assert second["manifest"]["run_id"] == "run-two"
     assert first["manifest"]["source_count"] == 1
-    assert first["manifest"]["renderer_version"] == "climate-reader-v2.8"
+    assert first["manifest"]["renderer_version"] == "climate-reader-v2.9"
     assert first["manifest"]["extraction_version"] == "source-blocks-v3"
     assert (
         first["manifest"]["prompt_versions"]["fact_extraction"]
@@ -745,11 +745,11 @@ def test_manifest_is_privacy_safe_and_scoped_to_the_run():
     )
     assert (
         first["manifest"]["prompt_versions"]["judgment_review"]
-        == "climate-judgments-v2.8"
+        == "climate-judgments-v2.9"
     )
     assert (
         first["manifest"]["prompt_versions"]["recommendation_compiler"]
-        == "climate-recommendations-v2.10"
+        == "climate-recommendations-v2.11"
     )
     assert (
         first["manifest"]["prompt_versions"]["conditional_review"]
@@ -1360,3 +1360,88 @@ def test_summary_validator_rejects_projectile_but_admits_curated_implementation_
             extras=" project implementation requirements."
         ),
     ) == implemented["paragraphs"]
+
+
+def test_explicit_revise_gets_one_validated_correction_and_independent_review():
+    responses = _responses()
+    corrected = deepcopy(responses[-1])
+    corrected["recommendation_candidates"][0]["minimum_action"] = "Document flood exposure and access considerations."
+    assessment = FakeClient(responses + [corrected], [])
+    reviewer = FakeClient([
+        {"verdict": "revise", "reason_codes": ["DRAFTING_SCOPE_UNSUPPORTED"],
+         "object_ids": ["REC-001"], "issues": [{"object_id": "REC-001",
+         "reason_codes": ["DRAFTING_SCOPE_UNSUPPORTED"],
+         "explanation": "Keep the action within the evidenced site-selection scope."}]},
+        {"verdict": "pass", "reason_codes": [], "object_ids": []},
+    ], [])
+    result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(assessment, reviewer))
+    assert len(assessment.calls) == 5
+    assert len(reviewer.calls) == 2
+    assert result["priorities"][0]["minimum_action"] == "Document flood exposure and access considerations."
+    assert result["diagnostic_trace"]["recommendation_correction"]["recovered_ids"] == ["REC-001"]
+
+
+def test_correction_still_rejected_is_withheld_without_loop():
+    responses = _responses()
+    review = {"verdict": "revise", "reason_codes": ["DRAFTING_SCOPE_UNSUPPORTED"],
+              "object_ids": ["REC-001"], "issues": [{"object_id": "REC-001",
+              "explanation": "Remove unsupported scope."}]}
+    assessment = FakeClient(responses + [deepcopy(responses[-1])], [])
+    reviewer = FakeClient([review, review], [])
+    result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(assessment, reviewer))
+    assert len(assessment.calls) == 5
+    assert len(reviewer.calls) == 2
+    assert result["priorities"] == []
+
+
+def test_correction_timeout_preserves_unaffected_priority():
+    import pytest
+    responses = _responses()
+    other = deepcopy(responses[-1]["recommendation_candidates"][0])
+    other["recommendation_id"] = "REC-002"
+    other["title"] = "Maintain delivery access"
+    responses[-1]["recommendation_candidates"].append(other)
+    class TimeoutCorrection(FakeClient):
+        def complete_json(self, **kwargs):
+            if kwargs["payload"].get("bounded_correction"):
+                raise TimeoutError("Remaining budget exhausted")
+            return super().complete_json(**kwargs)
+    reviewer = FakeClient([{"verdict": "revise", "reason_codes": ["DRAFTING_SCOPE_UNSUPPORTED"],
+        "object_ids": ["REC-001"], "issues": [{"object_id": "REC-001", "explanation": "Remove unsupported scope."}]}], [])
+    result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(TimeoutCorrection(responses, []), reviewer))
+    assert [p["recommendation_id"] for p in result["priorities"]] == ["REC-002"]
+    assert result["diagnostic_trace"]["recommendation_correction"]["failure"] == "TimeoutError"
+
+
+def test_correction_cannot_expand_evidence_or_replace_passed_actions():
+    responses = _responses()
+    correction = deepcopy(responses[-1])
+    correction["recommendation_candidates"][0]["project_anchor_ids"].append("PF-invented")
+    assessment = FakeClient(responses + [correction], [])
+    reviewer = FakeClient([{"verdict": "revise", "reason_codes": ["DRAFTING_SCOPE_UNSUPPORTED"],
+        "object_ids": ["REC-001"], "issues": [{"object_id": "REC-001", "explanation": "Remove unsupported scope."}]}], [])
+    result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(assessment, reviewer))
+    assert result["priorities"] == []
+    assert len(reviewer.calls) == 1
+
+
+def test_cancellation_during_correction_propagates():
+    import pytest
+    class CancelCorrection(FakeClient):
+        def complete_json(self, **kwargs):
+            if kwargs["payload"].get("bounded_correction"):
+                raise RuntimeError("Verified Climate-FCV pipeline cancelled")
+            return super().complete_json(**kwargs)
+    reviewer = FakeClient([{"verdict": "revise", "reason_codes": ["DRAFTING_SCOPE_UNSUPPORTED"],
+        "object_ids": ["REC-001"], "issues": [{"object_id": "REC-001", "explanation": "Remove unsupported scope."}]}], [])
+    with pytest.raises(RuntimeError, match="cancelled"):
+        run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(CancelCorrection(_responses(), []), reviewer))
+
+
+def test_unresolved_review_targets_do_not_trigger_correction_even_with_issue_text():
+    reviewer = FakeClient([{"verdict": "revise", "reason_codes": ["DRAFTING_SCOPE_UNSUPPORTED"],
+        "object_ids": ["unknown"], "issues": [{"object_id": "REC-001", "explanation": "Remove unsupported scope."}]}], [])
+    assessment = FakeClient(_responses(), [])
+    result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(assessment, reviewer))
+    assert result["priorities"] == []
+    assert len(assessment.calls) == 4

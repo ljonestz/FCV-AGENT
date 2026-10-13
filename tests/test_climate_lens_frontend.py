@@ -28,7 +28,8 @@ def _extract_js_function(source: str, name: str) -> str:
         elif source[index] == "}":
             depth -= 1
             if depth == 0:
-                return source[start:index + 1]
+                dependency = _extract_js_function(source, "climateVerifiedRatingCards") + "\n" if name == "renderClimateVerifiedAssessment" else ""
+                return dependency + source[start:index + 1]
     raise AssertionError(f"Unterminated body for {name}()")
 
 
@@ -111,7 +112,7 @@ if (focusedOld) throw new Error('keyboard navigation focused detached tab');
 if (!focusedNew) throw new Error('keyboard navigation did not focus rerendered tab');
 """
     result = subprocess.run(
-        ["node", "-e", script], capture_output=True, text=True, check=False
+        ["node", "-"], input=script, capture_output=True, text=True, check=False
     )
     assert result.returncode == 0, result.stderr
 
@@ -177,7 +178,7 @@ if (focusedOld) throw new Error('direct activation focused detached tab');
 if (!focusedNew) throw new Error('direct activation did not focus rerendered tab');
 """
     result = subprocess.run(
-        ["node", "-e", script], capture_output=True, text=True, check=False
+        ["node", "-"], input=script, capture_output=True, text=True, check=False
     )
     assert result.returncode == 0, result.stderr
 
@@ -235,7 +236,7 @@ for (const [state,copy] of Object.entries(expectedEvidence)) {{
 }}
 """
     result = subprocess.run(
-        ["node", "-e", script], capture_output=True, text=True, check=False
+        ["node", "-"], input=script, capture_output=True, text=True, check=False
     )
     assert result.returncode == 0, result.stderr
 
@@ -304,7 +305,7 @@ for (const removed of [
 }}
 """
     result = subprocess.run(
-        ["node", "-e", script], capture_output=True, text=True, check=False
+        ["node", "-"], input=script, capture_output=True, text=True, check=False
     )
     assert result.returncode == 0, result.stderr
 
@@ -373,7 +374,7 @@ if (html.includes('<details class="climate-summary-watch-disclosure" open') || h
 if ((html.match(/Monitor seasonal access\\./g)||[]).length !== 1) throw new Error('watch list was not stably deduplicated | '+html);
 """
     result = subprocess.run(
-        ["node", "-e", script], capture_output=True, text=True, check=False
+        ["node", "-"], input=script, capture_output=True, text=True, check=False
     )
     assert result.returncode == 0, result.stderr
 
@@ -420,7 +421,7 @@ for (const invalid of [['Unknown','IPF'],['PCN','Unknown']]) {{
   if (!detailed.includes(warning)) throw new Error('Detailed missing exact withholding explanation');
 }}
 """
-    result = subprocess.run(["node", "-e", script], capture_output=True, text=True, check=False)
+    result = subprocess.run(["node", "-"], input=script, capture_output=True, text=True, check=False)
     assert result.returncode == 0, result.stderr
 
 
@@ -461,7 +462,7 @@ for (const route of [{{document_type:'Unknown',instrument_type:'IPF'}},{{documen
   if (route!==null && (detailed.match(new RegExp(warning,'g'))||[]).length !== 1) throw new Error('Detailed warning count mismatch | '+detailed);
 }}
 """
-    result = subprocess.run(["node", "-e", script], capture_output=True, text=True, check=False)
+    result = subprocess.run(["node", "-"], input=script, capture_output=True, text=True, check=False)
     assert result.returncode == 0, result.stderr
 
 
@@ -498,7 +499,7 @@ for (const [name,html] of [['summary',summary],['detailed',detailed]]) {{
   if (html.indexOf('Track access') > html.indexOf('Check representation')) throw new Error(name+' changed watch order | '+html);
 }}
 """
-    result = subprocess.run(["node", "-e", script], capture_output=True, text=True, check=False)
+    result = subprocess.run(["node", "-"], input=script, capture_output=True, text=True, check=False)
     assert result.returncode == 0, result.stderr
 
 def test_climate_detailed_follow_up_bands_and_plain_route_warning_are_explicit():
@@ -578,7 +579,7 @@ if (!withGaps.replace(/<[^>]+>/g,'').includes(gap) || withGaps.includes(bridge))
 
 """
     result = subprocess.run(
-        ["node", "-e", script], capture_output=True, text=True, check=False
+        ["node", "-"], input=script, capture_output=True, text=True, check=False
     )
     assert result.returncode == 0, result.stderr
 
@@ -631,7 +632,7 @@ if (html.includes('<details class="climate-summary-routing">')) {{
 if (!html.includes('could not be completed')) throw new Error('recommendation failure was hidden');
 """
     result = subprocess.run(
-        ["node", "-e", script], capture_output=True, text=True, check=False
+        ["node", "-"], input=script, capture_output=True, text=True, check=False
     )
     assert result.returncode == 0, result.stderr
 
@@ -715,7 +716,7 @@ if (cards[0].text !== explanation) throw new Error('explanation was not separate
 if (cards[1].title !== cards[1].text) throw new Error('one-sentence fallback was not preserved');
 """
     result = subprocess.run(
-        ["node", "-e", script], capture_output=True, text=True, check=False
+        ["node", "-"], input=script, capture_output=True, text=True, check=False
     )
     assert result.returncode == 0, result.stderr
 
@@ -724,7 +725,7 @@ def test_climate_summary_initial_render_hydrates_priority_navigation():
     source = INDEX.read_text(encoding="utf-8")
 
     assert "if(host)host.innerHTML=renderSummaryPriorityAccordion(summaryPriorities);" in source
-    assert "el.style.display=showSummary?'none':''" in source
+    assert "el.style.display=showSummary||supportsClimateVerifiedStage3View()?'none':''" in source
     assert "if(supportsClimateVerifiedStage3View())stageThreePriorities=Array.isArray(climateVerifiedReader&&climateVerifiedReader.priorities)?climateVerifiedReader.priorities:[];" in source
     assert "if(supportsClimateVerifiedStage3View()&&stageThreePriorities&&stageThreePriorities.length)initStage3UI();" in source
 
@@ -751,7 +752,7 @@ if (priorities.map(item => item.title).join('|') !== 'First|Second|Third|Fourth'
 }}
 """
     result = subprocess.run(
-        ["node", "-e", script], capture_output=True, text=True, check=False
+        ["node", "-"], input=script, capture_output=True, text=True, check=False
     )
     assert result.returncode == 0, result.stderr
 
@@ -772,7 +773,7 @@ if (JSON.stringify(item.concise.project_cycle) !== JSON.stringify(cycle)) {{
 }}
 """
     result = subprocess.run(
-        ["node", "-e", script], capture_output=True, text=True, check=False
+        ["node", "-"], input=script, capture_output=True, text=True, check=False
     )
     assert result.returncode == 0, result.stderr
 
@@ -819,7 +820,7 @@ if (stageThreePriorities.length !== 5) throw new Error('canonical detailed prior
 if (renderedLength !== 5) throw new Error('summary accordion did not preserve all five actions: '+renderedLength);
 """
     result = subprocess.run(
-        ["node", "-e", script], capture_output=True, text=True, check=False
+        ["node", "-"], input=script, capture_output=True, text=True, check=False
     )
     assert result.returncode == 0, result.stderr
 
@@ -860,7 +861,7 @@ if (!html.includes('second sentence ends here.')) throw new Error('canonical ove
 if (!html.includes('Unfinished-tail-marker')) throw new Error('canonical overview omitted a full paragraph');
 """
     result = subprocess.run(
-        ["node", "-e", script], capture_output=True, text=True, check=False
+        ["node", "-"], input=script, capture_output=True, text=True, check=False
     )
     assert result.returncode == 0, result.stderr
 
@@ -875,7 +876,7 @@ def test_climate_detailed_reader_keeps_rating_above_core_questions_and_plain_met
         _extract_js_function(source, "renderClimateVerifiedAssessment"),
     ))
 
-    assert renderer.index("${ratingsInSidebar?'':ratingHtml}") < renderer.index("climateReportSection('Core climate-FCV questions'")
+    assert renderer.index("${ratingsInSidebar?'':ratingHtml}") < renderer.index("climateReportSection('Supporting analysis'")
     assert "Method, limitations, and sources" in renderer
     assert "technical_annex" not in renderer
 
@@ -907,7 +908,7 @@ for (const forbidden of ['Indicative Climate-FCV Integration Readout','This AI-a
 }}
 """
     result = subprocess.run(
-        ["node", "-e", script], capture_output=True, text=True, check=False
+        ["node", "-"], input=script, capture_output=True, text=True, check=False
     )
     assert result.returncode == 0, result.stderr
 
@@ -930,7 +931,7 @@ for (const expected of ['Executive readout','Where the design is stronger','Wher
 if (html.includes('Where the design is weak')) throw new Error('old deficit language remains');
 """
     result = subprocess.run(
-        ["node", "-e", script], capture_output=True, text=True, check=False
+        ["node", "-"], input=script, capture_output=True, text=True, check=False
     )
     assert result.returncode == 0, result.stderr
 
@@ -985,7 +986,7 @@ const notApplicable = renderLensReadoutSections({{applicability:'not_applicable'
 if (!notApplicable.includes('Not material.') || notApplicable.includes('What the project may invest in') || notApplicable.includes('Other pathways considered')) throw new Error('not-applicable rendering expanded beyond materiality');
 """
     result = subprocess.run(
-        ["node", "-e", script], capture_output=True, text=True, check=False
+        ["node", "-"], input=script, capture_output=True, text=True, check=False
     )
     assert result.returncode == 0, result.stderr
 
@@ -1068,7 +1069,7 @@ const errorNotice=renderClimateModuleNotice(null,true);
 if(!errorNotice.includes('could not be produced')) throw new Error('safe failure missing');
 """
     result = subprocess.run(
-        ["node", "-e", script], capture_output=True, text=True, check=False
+        ["node", "-"], input=script, capture_output=True, text=True, check=False
     )
     assert result.returncode == 0, result.stderr
 
@@ -1109,7 +1110,7 @@ if(sharedHtml.includes('causal-strip')) throw new Error('causal-strip should be 
 if((sharedHtml.match(/climate-interaction-box/g)||[]).length<2) throw new Error('missing prose interaction boxes');
 """
     result = subprocess.run(
-        ["node", "-e", script], capture_output=True, text=True, check=False
+        ["node", "-"], input=script, capture_output=True, text=True, check=False
     )
     assert result.returncode == 0, result.stderr
 
@@ -1156,7 +1157,7 @@ if(!html.includes('No material dividend pathway identified')) throw new Error(ht
 if(html.includes('Climate, peace and social dividends</div>')) throw new Error(html);
 """
     result = subprocess.run(
-        ["node", "-e", script], capture_output=True, text=True, check=False
+        ["node", "-"], input=script, capture_output=True, text=True, check=False
     )
     assert result.returncode == 0, result.stderr
 
@@ -1177,7 +1178,7 @@ if(isClimateLensActive()) throw new Error('unselected climate active');
 if(climateLensEntry({{error:true}})!==null) throw new Error('invalid entry accepted');
 """
     result = subprocess.run(
-        ["node", "-e", script], capture_output=True, text=True, check=False
+        ["node", "-"], input=script, capture_output=True, text=True, check=False
     )
     assert result.returncode == 0, result.stderr
 
@@ -1320,7 +1321,7 @@ for (const [state, expected] of Object.entries(states)) {{
   if ((notice+evidence).includes('<script>')) throw new Error('metadata was not escaped');
 }}
 """
-    result = subprocess.run(["node", "-e", script], capture_output=True, text=True, check=False)
+    result = subprocess.run(["node", "-"], input=script, capture_output=True, text=True, check=False)
     assert result.returncode == 0, result.stderr
 
 
@@ -1349,7 +1350,7 @@ const researchOnly=renderClimateGroundingSources({{state:'research-only',sources
 if (!researchOnly.includes('Current country research')) throw new Error('research-only evidence basis missing');
 if (researchOnly.includes('Reviewed country sources used')) throw new Error('research-only must not render bank source details');
 """
-    result = subprocess.run(["node", "-e", script], capture_output=True, text=True, check=False)
+    result = subprocess.run(["node", "-"], input=script, capture_output=True, text=True, check=False)
     assert result.returncode == 0, result.stderr
 
 
@@ -1381,7 +1382,7 @@ def test_interactions_render_as_prose_boxes_without_causal_grid():
         ]
     }
     script = f"{esc}\n{dep}\n{fn}\nprocess.stdout.write(renderClimateInteractions({json.dumps(lens)}));"
-    out = subprocess.run(["node", "-e", script], capture_output=True, text=True)
+    out = subprocess.run(["node", "-"], input=script, capture_output=True, text=True)
     assert out.returncode == 0, out.stderr
     assert "How climate and FCV dynamics could affect this project" in out.stdout
     assert "How this project could affect climate and FCV dynamics" in out.stdout
@@ -1415,7 +1416,7 @@ def test_interactions_prefer_narrative_prose_and_fall_back_to_strip():
         ]
     }
     script = f"{esc}\n{dep}\n{fn}\nprocess.stdout.write(renderClimateInteractions({json.dumps(lens)}));"
-    out = subprocess.run(["node", "-e", script], capture_output=True, text=True)
+    out = subprocess.run(["node", "-"], input=script, capture_output=True, text=True)
     assert out.returncode == 0, out.stderr
     # Direction 1 has a narrative → prose paragraphs, split on blank lines.
     assert out.stdout.count("climate-interaction-prose") == 2
@@ -1501,7 +1502,7 @@ def test_core_questions_render_intro_interactions_and_theme_answers_with_referen
         ],
     }
     script = f"{esc}\n{dep1}\n{fn}\nprocess.stdout.write(renderClimateCoreQuestions({json.dumps(lens)}));"
-    out = subprocess.run(["node", "-e", script], capture_output=True, text=True)
+    out = subprocess.run(["node", "-"], input=script, capture_output=True, text=True)
     assert out.returncode == 0, out.stderr
     # Lay-reader intro names the source literature
     assert "Maximizing the Peace and Social Dividends of Climate Action" in out.stdout
@@ -1545,7 +1546,7 @@ def test_reflections_render_without_status_chips():
          "status_cue": "strong", "text": "IDP households explicitly targeted."}],
         "less_central": "HDP coordination is light here."}
     script = f"{esc}\n{fn}\nprocess.stdout.write(renderClimateReflections({json.dumps(lens)}));"
-    out = subprocess.run(["node", "-e", script], capture_output=True, text=True)
+    out = subprocess.run(["node", "-"], input=script, capture_output=True, text=True)
     assert out.returncode == 0, out.stderr
     assert "Reflections on core climate and FCV considerations" in out.stdout
     assert "reflection-chip" not in out.stdout
@@ -1628,7 +1629,7 @@ def test_reflections_render_sensitivity_responsiveness_evidence():
         f"{esc}\n{fn}\n"
         f"process.stdout.write(renderClimateReflections({json.dumps(lens)}));"
     )
-    out = subprocess.run(["node", "-e", script], capture_output=True, text=True)
+    out = subprocess.run(["node", "-"], input=script, capture_output=True, text=True)
     assert out.returncode == 0, out.stderr
     assert "Sensitivity evidence" in out.stdout
     assert "Responsiveness evidence" in out.stdout
@@ -1677,7 +1678,7 @@ def test_climate_readout_is_plain_language_narrative():
     script = (base + "process.stdout.write(renderClimateInteractions("
               + json.dumps(lens) + ")+'@@'+renderClimateDividendSynthesis("
               + json.dumps(lens) + ",[]));")
-    out = subprocess.run(["node", "-e", script], capture_output=True, text=True)
+    out = subprocess.run(["node", "-"], input=script, capture_output=True, text=True)
     assert out.returncode == 0, out.stderr
     interactions, dividends = out.stdout.split("@@")
     assert "<strong>Flood risk disrupts delivery.</strong>" in interactions
@@ -1727,7 +1728,7 @@ const errored = renderClimateModuleNotice(null,true);
 if (errored.includes(NOTICE)) throw new Error('hard error path must use its own message, not the partial notice');
 """
     result = subprocess.run(
-        ["node", "-e", script], capture_output=True, text=True, check=False
+        ["node", "-"], input=script, capture_output=True, text=True, check=False
     )
     assert result.returncode == 0, result.stderr
 
@@ -1812,7 +1813,7 @@ if (climate.includes('data-rating-key="sensitivity"') || climate.includes('data-
 if (climate.includes('<svg')) throw new Error('climate rating still renders a gauge SVG');
 """
     result = subprocess.run(
-        ["node", "-e", script], capture_output=True, text=True, check=False
+        ["node", "-"], input=script, capture_output=True, text=True, check=False
     )
     assert result.returncode == 0, result.stderr
 
@@ -1874,7 +1875,7 @@ if (legacy.fill.style.backgroundColor !== '#009FDA') throw new Error('partly int
 if (legacy.bar.attrs['aria-valuenow'] !== '66') throw new Error('legacy climate progress not updated');
 """
     result = subprocess.run(
-        ["node", "-e", script], capture_output=True, text=True, check=False
+        ["node", "-"], input=script, capture_output=True, text=True, check=False
     )
     assert result.returncode == 0, result.stderr
 
@@ -2008,8 +2009,8 @@ for (const removed of [
   }}
 }}
 const orderedSections = [
-  'Overview', 'Core climate-FCV questions', 'Ranked operational priorities',
-  'Points to check before the applicable review', 'What to keep an eye on'
+  'Overview', 'Ranked operational priorities',
+  'Points to check before the applicable review', 'Supporting analysis'
 ];
 let previous = -1;
 for (const section of orderedSections) {{
@@ -2041,16 +2042,16 @@ for (const expected of [
 ]) {{
   if (!html.includes(expected)) throw new Error('missing preserved reader detail: ' + expected + ' | ' + html);
 }}
-if (!html.includes('class="climate-sens-rating climate-overview-panel"')) {{
+if (!html.includes('data-rating-key="climate-sensitivity"') || !html.includes('data-rating-key="climate-responsiveness"')) {{
   throw new Error('overview panel missing | ' + html);
 }}
-if ((html.match(/climate-overview-panel/g)||[]).length !== 1) {{
+if ((html.match(/class="climate-paired-ratings"/g)||[]).length !== 1) {{
   throw new Error('overview must use one restrained panel | ' + html);
 }}
-if ((html.match(/<details class="climate-priority-card"/g)||[]).length !== 4) {{
+if ((html.match(/class="climate-priority-card"/g)||[]).length !== 4) {{
   throw new Error('all priorities must be native disclosures | ' + html);
 }}
-if ((html.match(/<details class="climate-priority-card" open/g)||[]).length !== 1) {{
+if ((html.match(/class="climate-priority-card" open/g)||[]).length !== 1) {{
   throw new Error('only priority one should be open | ' + html);
 }}
 if ((html.match(/class="climate-item-number"/g)||[]).length < 7) {{
@@ -2063,18 +2064,17 @@ const headingPattern = new RegExp('<header class="climate-section-heading"><span
 const headings = Array.from(html.matchAll(headingPattern), match => [match[1], match[2]]);
 const expectedHeadings = [
   ['01', 'Overview'],
-  ['02', 'Core climate-FCV questions'],
-  ['03', 'Ranked operational priorities'],
-  ['04', 'Points to check before the applicable review'],
-  ['05', 'What to keep an eye on'],
-  ['06', 'How this analysis was produced']
+  ['02', 'Ranked operational priorities'],
+  ['03', 'Points to check before the applicable review'],
+  ['04', 'Supporting analysis'],
+  ['05', 'How this analysis was produced']
 ];
 if (JSON.stringify(headings) !== JSON.stringify(expectedHeadings)) {{
   throw new Error('numbered section sequence is not gap-free: ' + JSON.stringify(headings) + ' | ' + html);
 }}
 """
     result = subprocess.run(
-        ["node", "-e", script], capture_output=True, text=True, check=False
+        ["node", "-"], input=script, capture_output=True, text=True, check=False
     )
     assert result.returncode == 0, result.stderr
 
@@ -2115,8 +2115,8 @@ const headingPattern = new RegExp('<header class="climate-section-heading"><span
 const headings = Array.from(html.matchAll(headingPattern), match => [match[1], match[2]]);
 const expectedHeadings = [
   ['01', 'Overview'],
-  ['02', 'Core climate-FCV questions'],
-  ['03', 'Ranked operational priorities'],
+  ['02', 'Ranked operational priorities'],
+  ['03', 'Supporting analysis'],
   ['04', 'How this analysis was produced']
 ];
 if (JSON.stringify(headings) !== JSON.stringify(expectedHeadings)) {{
@@ -2127,7 +2127,7 @@ if (!html.includes('<details class="climate-fold"><summary>Method, limitations, 
 }}
 """
     result = subprocess.run(
-        ["node", "-e", script], capture_output=True, text=True, check=False
+        ["node", "-"], input=script, capture_output=True, text=True, check=False
     )
     assert result.returncode == 0, result.stderr
 
@@ -2166,7 +2166,7 @@ for (const url of rejected) {{
 }}
 """
     result = subprocess.run(
-        ["node", "-e", script], capture_output=True, text=True, check=False
+        ["node", "-"], input=script, capture_output=True, text=True, check=False
     )
     assert result.returncode == 0, result.stderr
 
@@ -2217,7 +2217,7 @@ for (const omitted of ['Most useful for following up on', 'FCV-Sensitive Climate
 }}
 """
     result = subprocess.run(
-        ["node", "-e", script], capture_output=True, text=True, check=False
+        ["node", "-"], input=script, capture_output=True, text=True, check=False
     )
     assert result.returncode == 0, result.stderr
 
@@ -2274,7 +2274,7 @@ const empty = renderClimateRelevantGuidance(reader);
 if (empty !== '') throw new Error('guidance must use canonical reader items only | '+empty);
 """
     result = subprocess.run(
-        ["node", "-e", script], capture_output=True, text=True, check=False
+        ["node", "-"], input=script, capture_output=True, text=True, check=False
     )
     assert result.returncode == 0, result.stderr
 
@@ -2320,7 +2320,7 @@ const html = renderClimateVerifiedAssessment({{
   }}
 }});
 for (const expected of [
-  '<details class="climate-priority-card"><summary>',
+  '<details id="climate-priority-2" class="climate-priority-card"><summary>',
   '<details class="climate-priority-detail"><summary>Recommendation details</summary>',
   '<details class="climate-fold"><summary>Method, limitations, and sources</summary>',
   'Closed priority narrative.', 'Closed priority decision.',
@@ -2330,7 +2330,7 @@ for (const expected of [
 }}
 """
     result = subprocess.run(
-        ["node", "-e", script], capture_output=True, text=True, check=False
+        ["node", "-"], input=script, capture_output=True, text=True, check=False
     )
     assert result.returncode == 0, result.stderr
 
@@ -2338,6 +2338,7 @@ for (const expected of [
     assert ".climate-priority-card:not([open])>.climate-priority-body" in print_block
     assert ".climate-priority-detail:not([open])>:not(summary)" in print_block
     assert ".climate-fold:not([open])>:not(summary)" in print_block
+    assert ".climate-supporting-analysis:not([open])>:not(summary)" in print_block
 
 
 def test_priority_summary_contains_one_valid_heading_with_rank_inside():
@@ -2364,7 +2365,7 @@ if (html.includes('</span><h3 class="pc-title">')) {{
 }}
 """
     result = subprocess.run(
-        ["node", "-e", script], capture_output=True, text=True, check=False
+        ["node", "-"], input=script, capture_output=True, text=True, check=False
     )
     assert result.returncode == 0, result.stderr
 
@@ -2402,7 +2403,7 @@ if (items[1].project_use !== 'A value.') {{
 }}
 """
     result = subprocess.run(
-        ["node", "-e", script], capture_output=True, text=True, check=False
+        ["node", "-"], input=script, capture_output=True, text=True, check=False
     )
     assert result.returncode == 0, result.stderr
 
@@ -2436,7 +2437,7 @@ if (items.map(item=>item.title).join(',') !== 'Source B,Source A') {{
 }}
 """
     result = subprocess.run(
-        ["node", "-e", script], capture_output=True, text=True, check=False
+        ["node", "-"], input=script, capture_output=True, text=True, check=False
     )
     assert result.returncode == 0, result.stderr
 
@@ -2493,7 +2494,7 @@ for (const testCase of cases) {{
 }}
 """
     result = subprocess.run(
-        ["node", "-e", script], capture_output=True, text=True, check=False
+        ["node", "-"], input=script, capture_output=True, text=True, check=False
     )
     assert result.returncode == 0, result.stderr
 
@@ -2532,7 +2533,7 @@ for (const expected of ['First practical value.','One useful field','Useful prac
 if (html.includes('First project use.')) throw new Error('project-specific guidance sentence leaked | '+html);
 """
     result = subprocess.run(
-        ["node", "-e", script], capture_output=True, text=True, check=False
+        ["node", "-"], input=script, capture_output=True, text=True, check=False
     )
     assert result.returncode == 0, result.stderr
 
@@ -2563,7 +2564,7 @@ for (const diagnostic of ['3 recommendation','candidate','held back','block','ou
 }}
 """
     result = subprocess.run(
-        ["node", "-e", script], capture_output=True, text=True, check=False
+        ["node", "-"], input=script, capture_output=True, text=True, check=False
     )
     assert result.returncode == 0, result.stderr
 
@@ -2712,7 +2713,7 @@ if ((body.match(/<details/g)||[]).length !== 0) {{
 }}
 """
     result = subprocess.run(
-        ["node", "-e", script], capture_output=True, text=True, check=False
+        ["node", "-"], input=script, capture_output=True, text=True, check=False
     )
     assert result.returncode == 0, result.stderr
 
@@ -2752,7 +2753,7 @@ if (JSON.stringify(items).includes('long assessment paragraph')) {{
 }}
 """
     result = subprocess.run(
-        ["node", "-e", script], capture_output=True, text=True, check=False
+        ["node", "-"], input=script, capture_output=True, text=True, check=False
     )
     assert result.returncode == 0, result.stderr
 
@@ -2809,7 +2810,7 @@ if (renderPriorityProjectCycle({{ project_cycle: {{ primary_label:'Only label', 
 }}
 """
     result = subprocess.run(
-        ["node", "-e", script], capture_output=True, text=True, check=False
+        ["node", "-"], input=script, capture_output=True, text=True, check=False
     )
     assert result.returncode == 0, result.stderr
 
@@ -2905,7 +2906,7 @@ showPriority(0);
 checkOutput('live',cardArea.innerHTML);
 """
     result = subprocess.run(
-        ["node", "-e", script], capture_output=True, text=True, check=False
+        ["node", "-"], input=script, capture_output=True, text=True, check=False
     )
     assert result.returncode == 0, result.stderr
 
@@ -2925,7 +2926,7 @@ for (const invalid of ['', '   ', null, 42, {{result:'detailed'}}]) {{
   if (isRestorableExpressStage3Output(invalid)) throw new Error('invalid output accepted');
 }}
 """
-    result = subprocess.run(["node", "-e", script], capture_output=True, text=True, check=False)
+    result = subprocess.run(["node", "-"], input=script, capture_output=True, text=True, check=False)
     assert result.returncode == 0, result.stderr
 
 
@@ -2974,7 +2975,7 @@ if ((html.match(/class="priority-project-cycle"/g)||[]).length !== 1) {{
 }}
 """
     result = subprocess.run(
-        ["node", "-e", script], capture_output=True, text=True, check=False
+        ["node", "-"], input=script, capture_output=True, text=True, check=False
     )
     assert result.returncode == 0, result.stderr
 
@@ -3112,3 +3113,26 @@ def test_result_session_bar_wraps_inside_phone_viewport():
     assert document["scrollWidth"] == document["clientWidth"]
     assert bar["scrollWidth"] <= bar["clientWidth"]
     assert all(right <= document["clientWidth"] for right in button_right_edges)
+
+
+def test_verified_climate_detailed_does_not_render_duplicate_normal_priority_cards():
+    source = INDEX.read_text(encoding="utf-8")
+    setter = _extract_js_function(source, "setStage3View")
+    script = """
+let stage3View='summary',currentPriority=0,openSummaryPriority=0;
+const stageThreePriorities=[{}];
+const supportsAnyStage3Summary=()=>true;
+const supportsClimateVerifiedStage3View=()=>true;
+let renders=0;
+const renderPrioritiesIntro=()=>renders++;
+const renderPriorityStepper=()=>renders++;
+const showPriority=()=>renders++;
+const elements={'priority-stepper':{style:{}},'priority-card-area':{style:{}}};
+const document={getElementById:id=>elements[id]||null,querySelector:()=>null};
+""" + setter + """
+setStage3View('detailed');
+if(renders)throw new Error('duplicated normal priority renderer');
+if(elements['priority-card-area'].style.display!=='none')throw new Error('duplicate card area visible');
+"""
+    result = subprocess.run(["node", "-"], input=script, capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr

@@ -1132,3 +1132,19 @@ Final export parity: browser Detailed/Share HTML also includes Supporting gap
 findings under the core questions, matching the complete data in Python HTML/Word.
 Final full verification: 1,444 passed after the hostname-boundary follow-up; paid and replay limits are recorded in the
 validation handover. Production/main and ITS remain unchanged.
+
+
+### 2026-10-13 action-led Climate candidate (rollout held)
+
+The verified reader derives `assessment_themes` from admitted gap statements and
+question/evidence links, with `priority_ranks` or explicit evidence follow-up. Detailed
+retains full questions in supporting analysis; Word uses an appendix. Summary retains
+five complete gaps. Paired five-point ratings replace the old export panel. Climate
+Detailed no longer renders the normal route's duplicate priority stepper/cards.
+Judgment prompt v2.9 targets 180–260 words of operational context; recommendation
+prompt v2.11 targets three to five substantive decisions where evidence warrants them.
+An explicit explained revise verdict permits one bounded compiler correction plus
+independent re-review through the same validation and original deadline. Original
+review and correction diagnostics remain separate; accepted actions survive repair
+failure. Reader version v2.9. No new paid generation has validated this candidate.
+See `docs/20261013_climate-action-led-validation.md` for acceptance and saved replay.

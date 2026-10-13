@@ -2431,11 +2431,11 @@ def test_verified_climate_ui_contract_is_ranked_and_multidimensional():
     # Core climate-FCV questions: a compact reads strip (calibration values) plus
     # literature-grounded, evidence-gated question cards replace the old four
     # judgment boxes.
-    assert "Core climate-FCV questions" in html
+    assert "Supporting question analysis" in html
     # Headline sensitivity rating (from server data) replaces the old reads strip.
     assert "climate_sensitivity_rating" in html
     assert "csr.question" in html
-    assert "csr.scale" in html
+    assert "d.scale.length" in html
     assert "The tool's overall reads" not in html
     assert "core_questions" in html
     assert "For further insights on why this matters" in html
@@ -2475,8 +2475,8 @@ def test_verified_climate_ui_contract_is_ranked_and_multidimensional():
     assert "drafting_language" not in body
     assert "recommendation_reason_codes" not in body
     assert body.index("minorPointsHtml") < body.index("docFlagsHtml")
-    assert 'class="climate-sens-rating climate-overview-panel"' in body
-    assert '<details class="climate-priority-card"' in body
+    assert "climateVerifiedRatingCards(r)" in body
+    assert 'class="climate-priority-card"' in body
     assert "Method, limitations, and sources" in body
 
 

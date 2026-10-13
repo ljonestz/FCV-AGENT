@@ -427,7 +427,7 @@ def test_rating_scale_renders_in_overview_before_core_questions():
         "priorities": [],
     }
     html = render_reader_html(build_reader_model(assessment))
-    rating_pos = html.find("climate-sens-rating")
+    rating_pos = html.find("climate-paired-ratings")
     core_pos = html.find("Core climate-FCV questions")
     assert rating_pos != -1 and core_pos != -1
     # The rating sits in the overview, above the core-questions section.
@@ -462,7 +462,7 @@ def test_overview_summary_renders_in_overview_box_at_the_very_top():
     }
     html = render_reader_html(build_reader_model(assessment))
     summary_pos = html.find("OVERVIEW_MARKER")
-    rating_pos = html.find("climate-sens-rating")
+    rating_pos = html.find("climate-paired-ratings")
     exec_heading_pos = html.find("Executive readout")
     assert summary_pos != -1 and rating_pos != -1 and exec_heading_pos != -1
     # The 3-4 sentence overall summary is embedded in the rating card, and the
@@ -502,14 +502,15 @@ def test_overview_summary_renders_in_docx_before_executive_readout():
     write_reader_docx(build_reader_model(assessment), stream)
     stream.seek(0)
     texts = [p.text for p in Document(stream).paragraphs]
-    question_idx = next(
-        i for i, t in enumerate(texts) if t.startswith(SENSITIVITY_RATING_QUESTION)
-    )
+    stream.seek(0)
+    document = Document(stream)
+    assert SENSITIVITY_RATING_QUESTION in document.tables[0].cell(0, 0).text
+    assert "Climate & FCV responsiveness" in document.tables[0].cell(0, 1).text
     summary_idx = next(i for i, t in enumerate(texts) if "OVERVIEW_MARKER" in t)
     exec_idx = next(i for i, t in enumerate(texts) if t == HEADINGS[0])
     # Graphic (rating question line) first, then the summary text, then the
     # fuller Executive readout heading below.
-    assert question_idx < summary_idx < exec_idx
+    assert summary_idx < exec_idx
 
 
 def test_overview_box_renders_without_summary_when_absent():
@@ -525,8 +526,8 @@ def test_overview_box_renders_without_summary_when_absent():
     html = render_reader_html(model)
     # Graceful degradation: the rating card still renders (with its level gloss),
     # just with no embedded overall summary.
-    assert "climate-sens-rating" in html
-    assert "addresses material climate-FCV interactions" in html
+    assert "climate-paired-ratings" in html
+    assert ">Strong</strong>" in html
 
 
 def test_visible_tiers_hide_routing_metadata_and_evidence_codes():
@@ -961,7 +962,7 @@ def test_reader_uses_tolerant_integrity_bounds_for_executive_length():
 
     assert "EXECUTIVE_LENGTH_INVALID" not in validate_reader_model(model)
 
-    model["executive_readout"] = ("word " * 249) + "word."
+    model["executive_readout"] = ("word " * 149) + "word."
     assert "EXECUTIVE_LENGTH_INVALID" in validate_reader_model(model)
 
     model["executive_readout"] = ("word " * 949) + "word."
@@ -1106,12 +1107,12 @@ def test_html_uses_balanced_hierarchy_without_reader_clutter():
     model = _reader_with_balanced_hierarchy_content()
     html = render_reader_html(model)
 
-    assert '<section class="climate-overview-panel climate-sens-rating"' in html
-    assert html.count("climate-overview-panel") == 1
-    assert '<section class="climate-overview-panel"><div' not in html
-    assert html.index("climate-overview-panel") < html.index("Executive readout")
-    assert html.count('<details class="climate-priority-disclosure" open>') == 1
-    assert html.count('<details class="climate-priority-disclosure">') == 3
+    assert html.count('data-rating-key="climate-sensitivity"') == 1
+    assert html.count('data-rating-key="climate-responsiveness"') == 1
+    assert "climate-overview-panel" not in html
+    assert html.index("climate-paired-ratings") < html.index("Executive readout")
+    assert html.count('class="climate-priority-disclosure" open>') == 1
+    assert html.count('class="climate-priority-disclosure">') == 3
     assert '<summary><h3 class="climate-priority-title">1. Priority 1' in html
     assert "Suggested targeted text for the current project document." in html
     assert "Distinct operational instrument text for continuity." in html
@@ -1339,7 +1340,7 @@ def test_docx_writer_accepts_an_in_memory_stream():
     # The candidate safeguard leads; the overview block and Executive readout
     # follow below it.
     assert texts[0] == "Candidate country evidence: preview; not approved."
-    assert texts[1].startswith(SENSITIVITY_RATING_QUESTION)
+    assert texts[1].startswith("Scale: Very limited")
     assert HEADINGS[0] in texts
 
 
@@ -1732,3 +1733,44 @@ def test_static_html_and_docx_prefer_canonical_summary_overview():
     docx_text = "\n".join(paragraph.text for paragraph in Document(output).paragraphs)
     assert "CANONICAL_SUMMARY_MARKER" in docx_text
     assert "LEGACY_RATING_SUMMARY_MARKER" not in docx_text
+
+
+def test_action_led_reader_links_themes_and_preserves_supporting_questions():
+    assessment = _assessment()
+    assessment["core_questions"] = [{"question_id": "cq1-hazard-delivery",
+        "theme": "cq1_interaction", "question": "What affects delivery?",
+        "summary": "Full supporting analysis remains available.", "evidence_ids": ["RG-001"]}]
+    assessment["facts"] = [{"claim_id": "PF-001"}]
+    assessment["analysis"] = {"pathways": [{"pathway_id": "PW-001"}]}
+    assessment["analysis"]["residual_gaps"] = [{"gap_id": "RG-001",
+        "gap_type": "not_yet_specified", "statement": "Flood access arrangements are not yet specified.",
+        "pathway_ids": ["PW-001"], "project_anchor_ids": ["PF-001"], "evidence_ids": ["PF-001"]}]
+    assessment["priorities"] = assessment["priorities"][:1]
+    assessment["priorities"][0]["residual_gap_ids"] = ["RG-001"]
+    reader = build_reader_model(assessment)
+    assert reader["assessment_themes"][0]["title"] == "Climate risks, design and delivery"
+    assert reader["assessment_themes"][0]["findings"][0]["priority_ranks"] == [1]
+    rendered = render_reader_html(reader)
+    assert rendered.index("Ranked operational priorities") < rendered.index("Full supporting analysis remains available.")
+    assert 'href="#climate-priority-1"' in rendered
+    assert 'data-rating-key="climate-responsiveness"' in rendered
+    assert 'data-rating-key="climate-sensitivity"' in rendered
+    assert '<details class="climate-supporting-analysis">' in rendered
+
+
+def test_unlinked_gap_is_not_presented_as_an_accepted_recommendation():
+    assessment = _assessment()
+    assessment["facts"] = [{"claim_id": "PF-001"}]
+    assessment["analysis"] = {"pathways": [{"pathway_id": "PW-001"}]}
+    assessment["analysis"]["residual_gaps"] = [{"gap_id": "RG-new",
+        "gap_type": "not_yet_specified", "statement": "Flood access arrangements are not yet specified.",
+        "pathway_ids": ["PW-001"], "project_anchor_ids": ["PF-001"], "evidence_ids": ["PF-001"]}]
+    reader = build_reader_model(assessment)
+    assert reader["assessment_themes"][0]["findings"][0]["priority_ranks"] == []
+    assert "Confirm the evidence" in reader["assessment_themes"][0]["findings"][0]["follow_up"]
+
+
+def test_short_operational_context_is_valid_without_requiring_long_questionnaire():
+    model = build_reader_model(_assessment())
+    model["executive_readout"] = "Climate pressures affect delivery and access. " * 32
+    assert "EXECUTIVE_LENGTH_INVALID" not in validate_reader_model(model)

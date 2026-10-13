@@ -129,10 +129,11 @@ def test_core_questions_render_in_html_and_docx():
     stream = BytesIO()
     write_reader_docx(model, stream)
     stream.seek(0)
-    text = "\n".join(p.text for p in Document(stream).paragraphs)
+    document = Document(stream)
+    text = "\n".join([p.text for p in document.paragraphs] + [cell.text for table in document.tables for row in table.rows for cell in row.cells])
     assert "Core climate-FCV questions" in text
     assert "How well does the project recognize and address" in text
-    assert "Rating: Strong" in text
+    assert "Strong (4 of 5)" in text
     assert "Is infrastructure sized for future climate conditions?" in text
 
 

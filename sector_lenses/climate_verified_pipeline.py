@@ -86,8 +86,8 @@ _INTEGRITY_CATEGORIES = READINESS_CATEGORIES - {"missing_operational_home"}
 PROMPT_VERSIONS = {
     "fact_extraction": "climate-facts-v2.3",
     "bounded_analysis": "climate-analysis-v2.6",
-    "judgment_review": "climate-judgments-v2.8",
-    "recommendation_compiler": "climate-recommendations-v2.10",
+    "judgment_review": "climate-judgments-v2.9",
+    "recommendation_compiler": "climate-recommendations-v2.11",
     "conditional_review": "climate-review-v2.10",
     "drafting_compiler": "climate-drafting-v1.2",
 }
@@ -193,7 +193,7 @@ def _call(
         max_output_tokens=budget.output_tokens,
         max_transient_retries=1,
     )
-    latency_ms[stage] = int((time.monotonic() - started) * 1000)
+    latency_ms[stage] = latency_ms.get(stage, 0) + int((time.monotonic() - started) * 1000)
     if cancelled():
         raise RuntimeError("Verified Climate-FCV pipeline cancelled")
     if not isinstance(result, dict):
@@ -1113,27 +1113,7 @@ def run_verified_climate_pipeline(
     candidate_suppressions: list[dict[str, object]] = []
     parsed_candidate_count = 0
     candidates: list[CandidateRecommendation] = []
-    for record in raw_candidates:
-        try:
-            candidate = _candidate(record)
-        except (TypeError, ValueError):
-            suppressed["recommendations"] += 1
-            reasons.append("RECOMMENDATION_MALFORMED")
-            recommendation_reasons.append("RECOMMENDATION_MALFORMED")
-            if len(candidate_suppressions) < 3:
-                candidate_suppressions.append(
-                    {
-                        "recommendation_id": _text(
-                            record.get("recommendation_id"),
-                            "unresolved_candidate",
-                        ),
-                        "stage": "parsing",
-                        "reason_codes": ["RECOMMENDATION_MALFORMED"],
-                        "unsupported_numeric_fields": [],
-                    }
-                )
-            continue
-        parsed_candidate_count += 1
+    def normalize_candidate(candidate):
         candidate, drafting_repairs = normalize_drafting_blocks(
             candidate,
             current_document=doc_type,
@@ -1192,12 +1172,36 @@ def run_verified_climate_pipeline(
             candidate, known_ids
         )
         repairs.extend(ref_repairs)
-        for token in unsupported_numeric_tokens(candidate):
-            if token not in unsupported_numbers and len(unsupported_numbers) < 12:
-                unsupported_numbers.append(token)
         issues = validate_recommendation(
             candidate, known_ids, drafting_context=drafting_context
         )
+        return candidate, issues
+
+    for record in raw_candidates:
+        try:
+            candidate = _candidate(record)
+        except (TypeError, ValueError):
+            suppressed["recommendations"] += 1
+            reasons.append("RECOMMENDATION_MALFORMED")
+            recommendation_reasons.append("RECOMMENDATION_MALFORMED")
+            if len(candidate_suppressions) < 3:
+                candidate_suppressions.append(
+                    {
+                        "recommendation_id": _text(
+                            record.get("recommendation_id"),
+                            "unresolved_candidate",
+                        ),
+                        "stage": "parsing",
+                        "reason_codes": ["RECOMMENDATION_MALFORMED"],
+                        "unsupported_numeric_fields": [],
+                    }
+                )
+            continue
+        parsed_candidate_count += 1
+        candidate, issues = normalize_candidate(candidate)
+        for token in unsupported_numeric_tokens(candidate):
+            if token not in unsupported_numbers and len(unsupported_numbers) < 12:
+                unsupported_numbers.append(token)
         # Only blocking issues suppress a recommendation. Advisory issues
         # (e.g. references to standard WBG instruments, process milestones, or
         # mandatory phrasing) are recorded for the technical annex but do not
@@ -1291,6 +1295,7 @@ def run_verified_climate_pipeline(
     reviewer_invoked = False
     reviewer_verdict = "not_invoked"
     semantic_review_object_ids: list[str] = []
+    correction_trace: dict[str, object] = {}
     review: dict[str, object] = {}
     review_input: dict[str, object] = {}
     if priorities and semantic_review_required(_risk(priorities)):
@@ -1334,6 +1339,76 @@ def run_verified_climate_pipeline(
         recommendation_reasons.extend(review_reasons)
         if reviewer_verdict != "pass":
             affected_ids = set(semantic_review_object_ids)
+            # Correct only explicitly explained revise targets; block never retries.
+            issues_by_id = {
+                _text(issue.get("object_id")): issue
+                for issue in _records(review, "issues")
+                if _text(issue.get("explanation"))
+            }
+            repair_ids = (
+                affected_ids & issues_by_id.keys()
+                if reviewer_verdict == "revise"
+                and "SEMANTIC_REVIEW_TARGET_UNRESOLVED" not in review_reasons
+                else set()
+            )
+            recovered = {}
+            if repair_ids:
+                originals = {item.recommendation_id: item for item in priorities
+                             if item.recommendation_id in repair_ids}
+                correction_trace = {"attempted_ids": sorted(repair_ids), "recovered_ids": []}
+                try:
+                    correction_payload = _call(
+                        clients.assessment, "recommendation_compiler",
+                        {**review_input, "recommendations": [asdict(item) for item in originals.values()],
+                         "bounded_correction": [issues_by_id[key] for key in sorted(repair_ids)]},
+                        latency_ms, cancel_event=cancel_event, deadline=deadline,
+                    )
+                    records = _records(correction_payload, "recommendation_candidates")
+                    corrected = []
+                    ids = [_text(record.get("recommendation_id")) for record in records]
+                    reference_fields = ("pathway_ids", "existing_response_ids", "residual_gap_ids",
+                                        "project_anchor_ids", "instrument_claim_ids")
+                    for record in records:
+                        identifier = _text(record.get("recommendation_id"))
+                        if identifier not in originals or ids.count(identifier) != 1:
+                            continue
+                        original = originals[identifier]
+                        try:
+                            candidate = _candidate(record)
+                            if any(not set(getattr(candidate, field)) <= set(getattr(original, field))
+                                   for field in reference_fields):
+                                continue
+                            candidate, candidate_issues = normalize_candidate(candidate)
+                        except (TypeError, ValueError):
+                            continue
+                        if any(issue.blocking for issue in candidate_issues) or admission_failure_codes(candidate):
+                            continue
+                        # Repair cannot inflate importance or replace the original ranking.
+                        candidate = replace(candidate, score=original.score, rank=original.rank,
+                                            gate_results=original.gate_results)
+                        corrected.append(candidate)
+                    if corrected:
+                        correction_review = _call(
+                            clients.reviewer, "conditional_review",
+                            {**review_input, "recommendations": [asdict(item) for item in corrected]},
+                            latency_ms, cancel_event=cancel_event, deadline=deadline,
+                        )
+                        correction_trace["review"] = _diagnostic_snapshot(correction_review)
+                        verdict = _text(correction_review.get("verdict")).casefold()
+                        rejected = set(_strings(correction_review.get("object_ids")))
+                        corrected_ids = {item.recommendation_id for item in corrected}
+                        if verdict == "pass":
+                            recovered = {item.recommendation_id: item for item in corrected}
+                        elif verdict in {"revise", "block"} and rejected and rejected <= corrected_ids:
+                            recovered = {item.recommendation_id: item for item in corrected
+                                         if item.recommendation_id not in rejected}
+                    correction_trace["recovered_ids"] = sorted(recovered)
+                except (TimeoutError, ValueError) as error:
+                    # Optional repair must preserve already accepted actions; cancellation propagates.
+                    correction_trace["failure"] = type(error).__name__
+                affected_ids -= recovered.keys()
+                priorities = tuple(recovered.get(item.recommendation_id, item) for item in priorities)
+                correction_trace["withheld_ids"] = sorted(repair_ids - recovered.keys())
             affected = [
                 candidate
                 for candidate in priorities
@@ -1374,7 +1449,7 @@ def run_verified_climate_pipeline(
         reviewer_version="climate-review-v2.1",
         extraction_version="source-blocks-v3",
         normalization_version="climate-normalization-v2.1",
-        renderer_version="climate-reader-v2.8",
+        renderer_version="climate-reader-v2.9",
         model_aliases={"assessment": "configured", "reviewer": "configured"},
         sampling={"max_transient_retries": 1},
         source_fingerprints=tuple(item.sha256 for item in source_documents),
@@ -1423,6 +1498,7 @@ def run_verified_climate_pipeline(
             "review_input": _diagnostic_snapshot(review_input),
             "reviewed_recommendations": _diagnostic_snapshot(review_input.get("recommendations", [])),
             "semantic_review": _diagnostic_snapshot(review),
+            "recommendation_correction": correction_trace,
         },
         "executive_readout": (
             executive_readout or deterministic_summary(judgments)
