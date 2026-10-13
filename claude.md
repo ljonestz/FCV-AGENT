@@ -22,6 +22,9 @@ fact and ordinary sentence-initial Today in analytical prose. Summary no longer
 requires four literal dimension labels; its other grounding checks remain strict.
 Correction trace retains bounded response and pre-review rejection reasons.
 No new model calls, recommendation restoration or generation-prompt changes.
+The Word route also calls the existing provenance helper after canonical reader
+validation, restoring matched guidance and method/source notes from the assessment
+and curated references. It never copies provenance from the incoming saved reader.
 See `docs/20261013_climate-quality6-validation.md` for evidence and remaining blockers.
 
 ### 2026-10-12 candidate: shared rating sidebar

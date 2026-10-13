@@ -2555,6 +2555,13 @@ def test_verified_climate_docx_route_uses_canonical_reader():
         "run_id": "route-run",
         "bank_release_id": "2026.08",
         "evidence_status": "preview; not approved",
+        "core_questions": [{
+            "question_id": "cq2-infra-horizon",
+            "question": "Will delivery support fair access?",
+            "summary": "Access remains a project-specific issue.",
+            "source": "Defueling Conflict",
+            "watch": "Check representation.",
+        }],
         "executive_readout": (sentence * 50).strip(),
         "judgments": {
             "relevance": {"value": "high", "rationale": "Material."},
@@ -2570,7 +2577,12 @@ def test_verified_climate_docx_route_uses_canonical_reader():
     response = app_module.app.test_client().post(
         "/api/download-report", json={
             "climate_assessment": assessment,
-            "climate_reader": {"runtime_mode": "smoke"},
+            "climate_reader": {
+                "runtime_mode": "smoke",
+                "evidence_trail": {"methodology_note": "FORGED METHOD"},
+                "guidance_items": [{"title": "FORGED GUIDANCE", "url": "https://invalid.example"}],
+                "sources": [{"title": "FORGED SOURCE"}],
+            },
         }
     )
 
@@ -2582,6 +2594,9 @@ def test_verified_climate_docx_route_uses_canonical_reader():
     assert "Assessment findings" in text
     assert "Candidate country evidence: preview; not approved." in text
     assert "Smoke test: validates workflow completion only" in text
+    assert "Relevant WBG guidance for this project" in text
+    assert "Method, limitations, and sources" in text
+    assert "FORGED" not in text
 
 
 def test_browser_exports_verified_climate_assessment_object():

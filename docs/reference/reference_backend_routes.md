@@ -562,3 +562,9 @@ bundle codes while omitting routine primary-selection bookkeeping from the
 banner. Regional coverage and unresolved document precedence have plain messages.
 Full source/pipeline regression and the subsequent focused wording checks are
 recorded in docs/20261012_climate-opcs-parity-validation.md.
+
+Verified Climate Word export follow-up13October: after rebuilding and validating
+the canonical reader, /api/download-report attaches the existing provenance helper.
+Matched project guidance and method/source notes now mirror the live reader.
+Provenance comes from the normalized assessment and curated references, never the
+incoming climate_reader. Only its bounded quality/smoke runtime indicator is retained.

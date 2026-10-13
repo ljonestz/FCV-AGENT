@@ -36,6 +36,7 @@ from sector_lenses.climate_verified_runtime import (
     run_verified_from_doc_parts,
 )
 from sector_lenses.climate_verified_render import (
+    attach_provenance,
     build_reader_model,
     validate_reader_model,
     write_reader_docx,
@@ -12602,6 +12603,7 @@ def download_report():
                 'error': 'Verified Climate-FCV report failed integrity checks.',
                 'reason_codes': list(reader_issues),
             }), 422
+        attach_provenance(reader_model, verified)
         verified_buf = io.BytesIO()
         write_reader_docx(reader_model, verified_buf)
         verified_buf.seek(0)

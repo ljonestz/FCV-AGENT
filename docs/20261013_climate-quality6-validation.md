@@ -120,3 +120,28 @@ normal process permissions, exit0. Log:
 `output/20261013-quality6-repair-full-regression.txt`. Diff check passed.
 This verifies the code repairs and regressions; it does not change the failed
 paid assessment's analytical acceptance status.
+
+## Deployed replay and Word export follow-up
+
+Reader repair63fc86e3d2bc was live in dep-db74eu3m8hqs73fb2fog; health returned
+statusok and quality mode. Analyze Python and CodeQL passed. The re-rendered saved
+assessment was loaded through the test app's session control, without a new run.
+Summary and Detailed each show two visible sidebar cards; hidden mobile copies
+are not duplicate visible ratings. Three generated answers appear in Detailed,
+review checks stay closed, and HTML downloads without machine markers.
+
+The actual Word download exposed a separate omission: the export route rebuilt
+the canonical reader but did not attach its existing provenance enrichment, so
+guidance and method/source sections were absent. A two-line change imports/calls
+attach_provenance after reader validation, deriving these fields from the normalized
+assessment and curated references. Incoming saved-reader provenance is still ignored.
+The route regression now supplies a matched question/source and forged incoming
+provenance to check both positive sections and the trust boundary. Empty-question
+readers correctly have no matched project guidance; they retain method/source notes.
+This additive route fix follows the full1,469-test suite; its focused route/renderer
+verification and deployed Word check are recorded at the final checkpoint.
+
+Final additive Word-route regression: **173 route/renderer checks passed in194.31s**.
+The full1,469-test pass predates this final two-line helper connection. The final
+targeted pass covers the complete app-contract and verified-reader-render suites,
+including forged incoming provenance. No extra model call or paid run was made.
