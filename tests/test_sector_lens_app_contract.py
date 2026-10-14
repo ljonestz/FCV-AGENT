@@ -877,6 +877,11 @@ def test_climate_stage2_requires_project_specific_causal_contract():
         }],
     }
 
+    climate_research['sources'].append({
+        'id': 'climate-source-2', 'source_type': 'un', 'title': 'Flood evidence',
+        'url': 'https://www.un.org/flood-evidence',
+    })
+    climate_research['claims'][0]['source_ids'].append('climate-source-2')
     prompt = app_module.build_lens_stage_context(
         state,
         2,

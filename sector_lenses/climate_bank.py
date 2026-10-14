@@ -553,6 +553,12 @@ def materialize_bank_manifest(
         return _packet_unavailable(code)
     if not isinstance(manifest, dict):
         return _packet_unavailable("bank_manifest_invalid")
+    if manifest.get('bank_status') == 'unavailable' and manifest.get('warning_code') in {
+        'bank_country_unavailable', 'bank_scope_unsupported',
+    }:
+        # An explicitly withheld country/scope selection has no IDs to rebuild.
+        # Preserve that reason instead of misreporting a malformed manifest.
+        return _packet_unavailable(manifest['warning_code'])
     if bool(manifest.get("candidate_preview", False)) != bank.candidate_preview:
         return _packet_unavailable("bank_manifest_invalid")
 

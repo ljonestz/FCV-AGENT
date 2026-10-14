@@ -2,13 +2,13 @@
 
 ## Status
 
-Pipeline reassessment13October: reader2.15 opens all priorities; full1,469-test
-suite passed. Six saved-run diagnostics and offline contract probes identify a
-correction schema/drafting mismatch and an unreliable lexical Summary gate.
-The recommended backend redesign is not yet implemented. See
-`20261013_climate-pipeline-readiness-assessment.md` for the evidence and proposed
-checkpoints, and the matching assessment-validation handover for presentation checks.
-Quality6 remains failed; PR83 draft, rollout held, no additional paid allowance used.
+Backend candidate14October: the approved decision/drafting, citation-passage and
+final-reader redesign is implemented on the feature branch. Reader2.16 retains the
+approved all-open priority layout. See20261014_climate-decision-acceptance-benchmark.md
+and the matching backend-redesign-validation handover for current evidence.
+No new paid assessment has been used. Quality6 remains the last generated result
+and still fails acceptance. PR83 stays draft and production/main/ITS remain held.
+The following paragraphs are historical checkpoints, not acceptance of this candidate.
 
 **Current: quality6 failed acceptance.** The newly authorized paid run completed
 on13October and retained two of four candidates after independent review. Research

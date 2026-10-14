@@ -12,6 +12,34 @@
 
 ## Overview
 
+### 2026-10-14 Climate backend candidate (rollout held)
+
+Approved redesign implements separate operational-decision and optional-drafting
+validation. Native reviewers explicitly list passed_core_ids; missing/unresolved
+acceptance fails closed. Draft artifacts have separate IDs. Decision corrections
+use recommendation_compiler, wording corrections use drafting_compiler, with one
+independent re-review and a shared9,000-output-token allowance (no repair retries).
+Optional drafting reserves core review time. Cancellation propagates; optional
+provider/editorial failures retain previously accepted decisions.
+
+Research classification selects received citation passage IDs and source-owned
+project labels; the application owns quotes, URLs and metadata. Search continuation
+keeps encrypted blocks; the pure classification call sends only the bounded packet.
+Incomplete exact proof is retained for inspection but excluded from admitted prompt
+grounding. Beneficiary coverage, whole source-label spans and bank unavailable
+reasons remain explicit. Country evidence never establishes a project/site fact.
+
+The native judgment stage defers prose with final-reader-v1. reader_compiler runs
+after final action review; reader_review checks supported meaning, status and scope.
+Summary and three findings cite admitted evidence/action IDs. Reader2.16 exports
+reviewed narratives, ignores separate unreviewed top-level prose, rechecks support
+and uses a clear limited fallback. Legacy saved assessments remain unchanged.
+All priorities remain open; their details and04-06 disclosures remain closed.
+Per-attempt metrics record configured/resolved model, usage, scope and failures.
+See docs/20261014_climate-decision-acceptance-benchmark.md. Full offline verification
+and branch-test checks are recorded in the matching backend-validation handover.
+No additional paid generation; fresh live quality acceptance remains outstanding.
+
 ### 2026-10-13 pipeline reassessment and priority visibility
 
 Reader2.15 opens every ranked Climate operational priority initially in browser

@@ -618,7 +618,14 @@ def validate_recommendation(
     known_ids: set[str],
     *,
     drafting_context: DraftingValidationContext | None = None,
+    include_drafting: bool = True,
+    require_current_drafting: bool = True,
 ) -> tuple[ValidationIssue, ...]:
+    # Advisory decisions retain every core gate even when no optional wording
+    # can be published. Strip blocks before checks that scan combined text.
+    if not include_drafting:
+        candidate = replace(candidate, current_document_drafting=None,
+                            operational_instrument_drafting=None)
     issues: list[ValidationIssue] = []
     linked_ids = (
         candidate.pathway_ids
@@ -675,7 +682,7 @@ def validate_recommendation(
         )
         if block is not None
     )
-    if candidate.current_document_drafting is None:
+    if include_drafting and require_current_drafting and candidate.current_document_drafting is None:
         issues.append(
             _issue(
                 "DRAFTING_CURRENT_MISSING",

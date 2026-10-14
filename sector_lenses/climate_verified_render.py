@@ -11,6 +11,8 @@ from typing import Any
 
 from docx import Document
 
+from sector_lenses.climate_final_reader import reviewed_final_reader
+
 from climate_question_bank import CLIMATE_LITERATURE_REFERENCES
 from sector_lenses.climate_judgments import ALLOWED
 from sector_lenses.climate_analysis import ALLOWED_GAP_TYPES
@@ -620,10 +622,14 @@ def _assessment_themes(gaps: list[dict], questions: list[dict], priorities: list
         groups.setdefault(title, []).append({**gap, "priority_ranks": ranks, "follow_up": follow_up})
     definitions = _ASSESSMENT_THEMES
     assessment = assessment or {}
+    final_contract = assessment.get('reader_contract') == 'final-reader-v1'
     known_ids = _summary_known_evidence_ids(assessment)
     fact_ids = {_text(item.get("claim_id")) for item in _records(assessment.get("facts"))}
     canonical = {key: assessment.get(key) for key in ("facts", "analysis", "derived_assertions", "context_evidence")}
     narratives = _records(assessment.get("assessment_narratives"))
+    if final_contract:
+        known_ids |= {_text(item.get('recommendation_id')) for item in _records(assessment.get('priorities'))}
+        canonical['priorities'] = assessment.get('priorities', [])
     accepted = {}
     accepted_refs = {}
     for item in narratives:
@@ -634,7 +640,7 @@ def _assessment_themes(gaps: list[dict], questions: list[dict], priorities: list
                 or not isinstance(paragraphs, list) or not 1 <= len(paragraphs) <= 2
                 or not all(isinstance(paragraph, str) and paragraph.strip() for paragraph in paragraphs)
                 or not isinstance(refs, list) or not refs or not all(isinstance(ref, str) for ref in refs)
-                or set(refs) - known_ids or not set(refs) & fact_ids):
+                or set(refs) - known_ids or (not final_contract and not set(refs) & fact_ids)):
             continue
         if not 40 <= len(" ".join(paragraphs).split()) <= 180:
             continue
@@ -736,6 +742,10 @@ def _themes_html(model: dict[str, object]) -> str:
 def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
     """Project a verified assessment into the only reader-facing structure."""
 
+    if assessment.get('reader_contract') == 'final-reader-v1':
+        _, reviewed_narratives = reviewed_final_reader(
+            assessment.get('final_reader'), assessment.get('reader_review'), assessment)
+        assessment = {**assessment, 'assessment_narratives': reviewed_narratives}
     analysis = _mapping(assessment.get("analysis"))
     existing_responses = [
         {
@@ -815,8 +825,16 @@ def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
         executive_readout=assessment.get("executive_readout"),
         canonical_text=canonical_summary_text,
     )
+    if assessment.get('reader_contract') == 'final-reader-v1':
+        summary_overview, _ = reviewed_final_reader(
+            assessment.get('final_reader'), assessment.get('reader_review'), assessment)
     summary_overview_generated = bool(summary_overview)
-    if not summary_overview:
+    if not summary_overview and assessment.get('reader_contract') == 'final-reader-v1':
+        summary_overview = [
+            'The automated Summary could not be independently verified. The operational context and assessment findings provide the available analysis.',
+            'Use the ranked operational priorities and points to check as the basis for review. Confirm the stated evidence limitations before relying on the brief.',
+        ]
+    elif not summary_overview:
         summary_overview = _legacy_summary_overview(
             overview_summary,
             judgments,

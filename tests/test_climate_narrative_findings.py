@@ -40,7 +40,9 @@ def test_dividends_calibration_and_provider_schema_are_aligned():
     assert "assessment_narratives" in _judgment_prompt({})
     schema = stage_output_schema("judgment_review")["properties"]
     assert "180" in schema["executive_readout"]["description"]
-    assert "assessment_narratives" in schema
+    assert 'assessment_narratives' not in schema
+    assert schema['reader_contract']['enum'] == ['final-reader-v1']
+    assert 'assessment_narratives' in stage_output_schema('reader_compiler')['properties']
 
 def test_supporting_sections_have_distinct_panels_and_question_prose():
     source = (Path(__file__).resolve().parents[1]/"index.html").read_text(encoding="utf-8")

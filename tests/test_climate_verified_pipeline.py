@@ -21,18 +21,31 @@ class FakeClient:
     responses: list[dict[str, object]]
     calls: list[dict[str, object]]
 
+    @property
+    def last_output_tokens(self):
+        return 0  # Fake clients incur no provider output-token charge.
+
     def complete_json(self, **kwargs):
         self.calls.append(kwargs)
-        return self.responses.pop(0)
+        response = self.responses.pop(0)
+        return response(**kwargs) if callable(response) else response
 
+
+
+def _native_pass_review(**kwargs):
+    """Fake verifier explicitly accepting each supplied core ID in native JSON.
+
+    FakeClient returns malformed dictionaries unchanged, so missing required
+    fields still fail the real acceptance gate and remain testable.
+    """
+    result = {'verdict': 'pass', 'reason_codes': [], 'object_ids': [], 'issues': []}
+    if kwargs['stage'] == 'conditional_review':
+        result['passed_core_ids'] = [item['recommendation_id'] for item in kwargs['payload']['recommendations']]
+    return result
 
 def _pass_review_client() -> FakeClient:
     return FakeClient(
-        [{
-            "verdict": "pass",
-            "reason_codes": [],
-            "object_ids": [],
-        }],
+        [_native_pass_review],
         [],
     )
 
@@ -153,6 +166,8 @@ def _responses(*, unresolved_routing: bool = False):
                     "confidence": "medium",
                     "limitation": "Site-level conditions remain to be verified.",
                     "caution": "Avoid restricting necessary seasonal mobility.",
+                    "narrative": "The project needs an evidenced site-selection method.",
+                    "supported_numeric_tokens": [],
                     "current_document_drafting": {
                         "target_document": "PCN",
                         "target_section": "Project Description",
@@ -211,11 +226,7 @@ def _arguments():
 def test_four_calls_run_when_semantic_review_is_not_required():
     assessment = FakeClient(_responses(), [])
     reviewer = FakeClient(
-        [{
-            "verdict": "pass",
-            "reason_codes": [],
-            "object_ids": [],
-        }],
+        [_native_pass_review],
         [],
     )
     result = run_verified_climate_pipeline(
@@ -378,7 +389,7 @@ def test_unresolved_routing_triggers_one_source_first_review():
                 "verdict": "revise",
                 "reason_codes": ["ROUTING_SCOPE_UNVERIFIED"],
                 "object_ids": ["REC-001"],
-            }
+             "passed_core_ids": []}
         ],
         [],
     )
@@ -437,7 +448,7 @@ def test_semantic_review_targets_only_affected_recommendations():
                 "verdict": "revise",
                 "reason_codes": ["ROUTING_SCOPE_UNVERIFIED"],
                 "object_ids": ["REC-001"],
-            }
+             "passed_core_ids": ["REC-002"]}
         ],
         [],
     )
@@ -469,7 +480,7 @@ def test_semantic_review_reason_codes_are_bounded():
                 "verdict": "revise",
                 "reason_codes": ["routing scope needs review"],
                 "object_ids": ["REC-001"],
-            }
+             "passed_core_ids": []}
         ],
         [],
     )
@@ -494,7 +505,7 @@ def test_semantic_review_with_unresolved_targets_fails_safe():
                 "verdict": "revise",
                 "reason_codes": ["ROUTING_SCOPE_UNVERIFIED"],
                 "object_ids": ["RG-001"],
-            }
+             "passed_core_ids": []}
         ],
         [],
     )
@@ -509,7 +520,7 @@ def test_semantic_review_with_unresolved_targets_fails_safe():
 
     assert result["priorities"] == []
     diagnostics = result["recommendation_diagnostics"]
-    assert diagnostics["semantic_review_object_ids"] == ["REC-001"]
+    assert diagnostics["semantic_review_object_ids"] == ["REC-001", "REC-001::current_document"]
     assert "SEMANTIC_REVIEW_TARGET_UNRESOLVED" in diagnostics["reason_codes"]
 
 
@@ -554,29 +565,15 @@ def test_admission_suppression_exposes_bounded_reason_codes():
     }
 
 
-def test_all_parsed_candidates_suppressed_is_a_bounded_incomplete_state():
+def test_invalid_optional_target_preserves_independently_reviewed_decision():
     responses = _responses()
-    recommendation = responses[3]["recommendation_candidates"][0]
-    recommendation["current_document_drafting"]["target_section"] = (
-        "Procurement Strategy"
-    )
-
+    responses[3]['recommendation_candidates'][0]['current_document_drafting']['target_section'] = 'Procurement Strategy'
     result = run_verified_climate_pipeline(
-        **_arguments(),
-        clients=PipelineClients(
-            FakeClient(responses, []),
-            FakeClient([], []),
-        ),
+        **_arguments(), clients=PipelineClients(FakeClient(responses, []), _pass_review_client()),
     )
-
-    assert result["priorities"] == []
-    assert result["validation"]["status"] == "attention"
-    assert "RECOMMENDATIONS_ALL_SUPPRESSED" in (
-        result["validation"]["reason_codes"]
-    )
-    assert "RECOMMENDATIONS_ALL_SUPPRESSED" in (
-        result["recommendation_diagnostics"]["reason_codes"]
-    )
+    assert len(result['priorities']) == 1
+    assert result['priorities'][0]['current_document_drafting'] is None
+    assert result['diagnostic_trace']['drafting_suppressions'][0]['reason_codes'] == ['DRAFTING_CURRENT_TARGET_INVALID']
 
 
 def test_no_generated_candidates_does_not_claim_all_were_suppressed():
@@ -681,42 +678,18 @@ def test_bad_fact_suppresses_dependent_analysis_and_recommendation():
     assert "FACT_SOURCE_UNRESOLVED" in result["validation"]["reason_codes"]
 
 
-def test_precision_suppression_exposes_only_field_path_and_reason_code():
+def test_unsupported_drafting_system_is_withheld_without_removing_decision():
     responses = _responses()
-    recommendation = responses[3]["recommendation_candidates"][0]
-    recommendation["current_document_drafting"]["text"] = (
-        "A hydrometeorological system will establish continuity alerts and "
-        "procedures for access disruption. " * 8
+    responses[3]['recommendation_candidates'][0]['current_document_drafting']['text'] = (
+        'A hydrometeorological system will establish continuity alerts and procedures for access disruption. ' * 8
     ).strip()
-
     result = run_verified_climate_pipeline(
-        **_arguments(),
-        clients=PipelineClients(
-            FakeClient(responses, []),
-            FakeClient([], []),
-        ),
+        **_arguments(), clients=PipelineClients(FakeClient(responses, []), _pass_review_client()),
     )
-
-    assert result["priorities"] == []
-    diagnostics = result["recommendation_diagnostics"]
-    assert diagnostics["reason_codes"] == [
-        "DRAFTING_SYSTEM_UNVERIFIED",
-        "RECOMMENDATIONS_ALL_SUPPRESSED",
-    ]
-    assert diagnostics["candidate_suppressions"] == [
-        {
-            "recommendation_id": "REC-001",
-            "stage": "validation",
-            "reason_codes": ["DRAFTING_SYSTEM_UNVERIFIED"],
-            "unsupported_numeric_fields": [],
-            "unsupported_precision_fields": [
-                {
-                    "field": "current_document_drafting.text",
-                    "reason_code": "DRAFTING_SYSTEM_UNVERIFIED",
-                }
-            ],
-        }
-    ]
+    assert len(result['priorities']) == 1
+    assert result['priorities'][0]['current_document_drafting'] is None
+    assert result['recommendation_diagnostics']['candidate_suppressions'] == []
+    assert result['diagnostic_trace']['drafting_suppressions'][0]['reason_codes'] == ['DRAFTING_SYSTEM_UNVERIFIED']
 
 
 def test_manifest_is_privacy_safe_and_scoped_to_the_run():
@@ -733,7 +706,7 @@ def test_manifest_is_privacy_safe_and_scoped_to_the_run():
     assert first["manifest"]["run_id"] == "run-test"
     assert second["manifest"]["run_id"] == "run-two"
     assert first["manifest"]["source_count"] == 1
-    assert first["manifest"]["renderer_version"] == "climate-reader-v2.15"
+    assert first["manifest"]["renderer_version"] == "climate-reader-v2.16"
     assert first["manifest"]["extraction_version"] == "source-blocks-v3"
     assert (
         first["manifest"]["prompt_versions"]["fact_extraction"]
@@ -741,11 +714,11 @@ def test_manifest_is_privacy_safe_and_scoped_to_the_run():
     )
     assert (
         first["manifest"]["prompt_versions"]["bounded_analysis"]
-        == "climate-analysis-v2.7"
+        == "climate-analysis-v2.8"
     )
     assert (
         first["manifest"]["prompt_versions"]["judgment_review"]
-        == "climate-judgments-v2.12"
+        == "climate-judgments-v2.13"
     )
     assert (
         first["manifest"]["prompt_versions"]["recommendation_compiler"]
@@ -753,11 +726,11 @@ def test_manifest_is_privacy_safe_and_scoped_to_the_run():
     )
     assert (
         first["manifest"]["prompt_versions"]["conditional_review"]
-        == "climate-review-v2.11"
+        == "climate-review-v2.12"
     )
     assert (
         first["manifest"]["prompt_versions"]["drafting_compiler"]
-        == "climate-drafting-v1.3"
+        == "climate-drafting-v1.4"
     )
     assert set(first["manifest"]["prompt_versions"]) == {
         "fact_extraction",
@@ -766,6 +739,8 @@ def test_manifest_is_privacy_safe_and_scoped_to_the_run():
         "recommendation_compiler",
         "drafting_compiler",
         "conditional_review",
+        "reader_compiler",
+        "reader_review",
     }
     manifest_text = str(first["manifest"])
     assert "Project Operations Manual will define" not in manifest_text
@@ -954,7 +929,7 @@ def test_rejected_candidates_and_review_context_survive_in_diagnostics_only():
     review = {"verdict": "block", "reason_codes": ["AUTHORITY_UNSUPPORTED"],
               "object_ids": ["REC-001"], "issues": [{
                   "object_id": "REC-001", "reason_codes": ["AUTHORITY_UNSUPPORTED"],
-                  "explanation": "The recommendation asserts unverified authority."}]}
+                  "explanation": "The recommendation asserts unverified authority."}], "passed_core_ids": []}
     result = run_verified_climate_pipeline(
         **_arguments(), clients=PipelineClients(FakeClient(_responses(), []), FakeClient([review], [])))
     trace = result["diagnostic_trace"]
@@ -1371,8 +1346,8 @@ def test_explicit_revise_gets_one_validated_correction_and_independent_review():
         {"verdict": "revise", "reason_codes": ["DRAFTING_SCOPE_UNSUPPORTED"],
          "object_ids": ["REC-001"], "issues": [{"object_id": "REC-001",
          "reason_codes": ["DRAFTING_SCOPE_UNSUPPORTED"],
-         "explanation": "Keep the action within the evidenced site-selection scope."}]},
-        {"verdict": "pass", "reason_codes": [], "object_ids": []},
+         "explanation": "Keep the action within the evidenced site-selection scope."}], "passed_core_ids": []},
+        _native_pass_review,
     ], [])
     result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(assessment, reviewer))
     assert len(assessment.calls) == 5
@@ -1381,11 +1356,197 @@ def test_explicit_revise_gets_one_validated_correction_and_independent_review():
     assert result["diagnostic_trace"]["recommendation_correction"]["recovered_ids"] == ["REC-001"]
 
 
+def test_native_compiler_correction_needs_no_optional_drafting():
+    from sector_lenses.climate_verified_schemas import CANDIDATE_SCHEMA
+    responses = _responses()
+    corrected = deepcopy(responses[-1])
+    corrected["recommendation_candidates"] = [{
+        key: value for key, value in corrected["recommendation_candidates"][0].items()
+        if key in CANDIDATE_SCHEMA["properties"]
+    }]
+    assert set(corrected["recommendation_candidates"][0]) == set(CANDIDATE_SCHEMA["required"])
+    reviewer = FakeClient([
+        {"verdict": "revise", "reason_codes": ["RECOMMENDATION_DISPROPORTIONATE"],
+         "object_ids": ["REC-001"], "issues": [{"object_id": "REC-001",
+         "explanation": "Keep the decision within site-selection scope."}], "passed_core_ids": []},
+        _native_pass_review,
+    ], [])
+    result = run_verified_climate_pipeline(
+        **_arguments(), clients=PipelineClients(FakeClient(responses + [corrected], []), reviewer),
+    )
+    assert [item["recommendation_id"] for item in result["priorities"]] == ["REC-001"]
+    assert result["priorities"][0]["current_document_drafting"] is None
+    assert len(reviewer.calls) == 2
+
+
+def test_bad_optional_drafting_does_not_suppress_reviewed_core():
+    responses = _responses()
+    responses[-1]["recommendation_candidates"][0]["current_document_drafting"]["text"] = "Too short."
+    reviewer = _pass_review_client()
+    result = run_verified_climate_pipeline(
+        **_arguments(), clients=PipelineClients(FakeClient(responses, []), reviewer),
+    )
+    assert len(result["priorities"]) == 1
+    assert result["priorities"][0]["current_document_drafting"] is None
+    assert reviewer.calls[0]["payload"]["recommendations"][0]["current_document_drafting"] is None
+
+
+def test_explicit_draft_block_does_not_restore_or_remove_a_core_action():
+    reviewer = FakeClient([{
+        "verdict": "block", "reason_codes": ["DRAFTING_SCOPE_UNSUPPORTED"],
+        "object_ids": ["REC-001::current_document"],
+        "passed_core_ids": ["REC-001"],
+        "issues": [{"object_id": "REC-001::current_document", "explanation": "Unsupported wording."}],
+    }], [])
+    result = run_verified_climate_pipeline(
+        **_arguments(), clients=PipelineClients(FakeClient(_responses(), []), reviewer),
+    )
+    assert len(result["priorities"]) == 1
+    assert result["priorities"][0]["current_document_drafting"] is None
+    assert reviewer.calls[0]["payload"]["drafting_artifacts"][0]["object_id"] == "REC-001::current_document"
+
+
+def test_draft_failure_without_independent_core_pass_is_conservative():
+    reviewer = FakeClient([{"verdict": "block", "reason_codes": ["DRAFTING_SCOPE_UNSUPPORTED"],
+                           "object_ids": ["REC-001::current_document"], "passed_core_ids": []}], [])
+    result = run_verified_climate_pipeline(
+        **_arguments(), clients=PipelineClients(FakeClient(_responses(), []), reviewer),
+    )
+    assert result["priorities"] == []
+
+
+def test_draft_repair_uses_drafting_schema_and_keeps_reviewed_decision():
+    responses = _responses()
+    original = responses[-1]["recommendation_candidates"][0]
+    block = {**original["current_document_drafting"], "drafting_role": "current_document"}
+    repaired = {"drafting_sets": [{"recommendation_id": "REC-001", "drafting_blocks": [block]}]}
+    reviewer = FakeClient([
+        {"verdict": "revise", "reason_codes": ["DRAFTING_SCOPE_UNSUPPORTED"],
+         "object_ids": ["REC-001::current_document"], "passed_core_ids": ["REC-001"],
+         "issues": [{"object_id": "REC-001::current_document", "explanation": "Keep proposed wording bounded."}]},
+        _native_pass_review,
+    ], [])
+    assessment = FakeClient(responses + [repaired], [])
+    result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(assessment, reviewer))
+    assert assessment.calls[-1]["stage"] == "drafting_compiler"
+    assert len(reviewer.calls) == 2
+    assert result["priorities"][0]["decision"] == original["decision"]
+    assert result["priorities"][0]["current_document_drafting"] is not None
+
+
+def test_optional_draft_timeout_preserves_core_and_malformed_draft_is_isolated():
+    responses = _responses()
+    responses[-1]["recommendation_candidates"][0].pop("current_document_drafting")
+    responses[-1]["recommendation_candidates"][0].pop("operational_instrument_drafting")
+    class MissingDraft(FakeClient):
+        def complete_json(self, **kwargs):
+            if kwargs["stage"] == "drafting_compiler":
+                raise TimeoutError("Draft timed out")
+            return super().complete_json(**kwargs)
+    result = run_verified_climate_pipeline(
+        **_arguments(), clients=PipelineClients(MissingDraft(responses, []), _pass_review_client()),
+    )
+    assert len(result["priorities"]) == 1
+    assert "DRAFTING_GENERATION_UNAVAILABLE" in result["validation"]["reason_codes"]
+    responses = _responses()
+    responses[-1]["recommendation_candidates"][0]["drafting_blocks"] = [None]
+    result = run_verified_climate_pipeline(
+        **_arguments(), clients=PipelineClients(FakeClient(responses, []), _pass_review_client()),
+    )
+    assert len(result["priorities"]) == 1
+    assert result["priorities"][0]["current_document_drafting"] is None
+
+
+def test_native_schema_three_decisions_survive_missing_optional_drafts():
+    """Transport benchmark only: it does not establish live decision quality."""
+    from sector_lenses.climate_verified_schemas import CANDIDATE_SCHEMA
+    responses = _responses()
+    base = responses[-1]["recommendation_candidates"][0]
+    candidates = []
+    for index, decision in enumerate((
+        "Agree climate exposure and fair access considerations for site selection.",
+        "Agree a proportionate continuity decision for climate-related access disruption.",
+        "Agree how exposed groups can use the climate-related support arrangements.",
+    ), 1):
+        record = {key: deepcopy(value) for key, value in base.items()
+                  if key in CANDIDATE_SCHEMA["properties"]}
+        record.update(recommendation_id=f"REC-{index:03d}", title=decision,
+                      decision=decision, minimum_action=decision)
+        assert set(record) == set(CANDIDATE_SCHEMA["required"])
+        candidates.append(record)
+    responses[-1]["recommendation_candidates"] = candidates
+    assessment = FakeClient(responses + [{"drafting_sets": []}], [])
+    reviewer = FakeClient([{"verdict": "pass", "passed_core_ids": [item["recommendation_id"] for item in candidates],
+                            "reason_codes": [], "object_ids": [], "issues": []}], [])
+    result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(assessment, reviewer))
+    assert len(result["priorities"]) == 3
+    assert all(item["current_document_drafting"] is None for item in result["priorities"])
+    assert assessment.calls[-1]["stage"] == "drafting_compiler"
+
+
+def test_missing_native_core_pass_list_never_accepts_a_recommendation():
+    reviewer = FakeClient([{"verdict": "pass", "reason_codes": [], "object_ids": [], "issues": []}], [])
+    result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(FakeClient(_responses(), []), reviewer))
+    assert result["priorities"] == []
+    assert "SEMANTIC_REVIEW_TARGET_UNRESOLVED" in result["validation"]["reason_codes"]
+
+
+def test_optional_drafting_reserves_time_for_core_review():
+    responses = _responses()
+    candidate = responses[-1]["recommendation_candidates"][0]
+    candidate.pop("current_document_drafting")
+    candidate.pop("operational_instrument_drafting")
+    assessment = FakeClient(responses, [])
+    result = run_verified_climate_pipeline(
+        **_arguments(), wall_clock_seconds=120,
+        clients=PipelineClients(assessment, _pass_review_client()),
+    )
+    assert len(result["priorities"]) == 1
+    assert "drafting_compiler" not in [call["stage"] for call in assessment.calls]
+    assert "DRAFTING_GENERATION_UNAVAILABLE" in result["validation"]["reason_codes"]
+
+
+def test_correction_without_usage_consumes_shared_allowance_and_cannot_skip_review():
+    responses = _responses()
+    class OpaqueCorrection(FakeClient):
+        @property
+        def last_output_tokens(self):
+            return None
+    reviewer = FakeClient([{"verdict": "revise", "passed_core_ids": [],
+        "reason_codes": ["RECOMMENDATION_DISPROPORTIONATE"], "object_ids": ["REC-001"],
+        "issues": [{"object_id": "REC-001", "explanation": "Bound the action."}]}], [])
+    client = OpaqueCorrection(responses + [deepcopy(responses[-1])], [])
+    result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(client, reviewer))
+    assert result["priorities"] == []
+    assert result["manifest"]["sampling"]["correction_output_token_remaining"] == 0
+    assert len(reviewer.calls) == 1
+    assert client.calls[-1]["max_transient_retries"] == 0
+
+
+def test_new_reader_export_rechecks_support_and_never_revives_rating_recap():
+    from sector_lenses.climate_verified_render import build_reader_model
+    responses = _responses()
+    responses[2]["reader_contract"] = "final-reader-v1"
+    reviewer = FakeClient([_native_pass_review] * 2, [])
+    result = run_verified_climate_pipeline(
+        **_arguments(), clients=PipelineClients(FakeClient(responses + [_final_reader()], []), reviewer),
+    )
+    assert build_reader_model(result)["summary_overview_status"] == "generated"
+    result["final_reader"]["summary_paragraphs"][0]["evidence_ids"].append("REC-withheld")
+    model = build_reader_model(result)
+    assert model["summary_overview_status"] == "fallback"
+    text = " ".join(model["summary_overview"])
+    assert "could not be independently verified" in text
+    assert "Sensitivity is" not in text and "Operationalization" not in text
+    result.pop("final_reader")
+    assert build_reader_model(result)["summary_overview_status"] == "fallback"
+
+
 def test_correction_still_rejected_is_withheld_without_loop():
     responses = _responses()
     review = {"verdict": "revise", "reason_codes": ["DRAFTING_SCOPE_UNSUPPORTED"],
               "object_ids": ["REC-001"], "issues": [{"object_id": "REC-001",
-              "explanation": "Remove unsupported scope."}]}
+              "explanation": "Remove unsupported scope."}], "passed_core_ids": []}
     assessment = FakeClient(responses + [deepcopy(responses[-1])], [])
     reviewer = FakeClient([review, review], [])
     result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(assessment, reviewer))
@@ -1407,7 +1568,7 @@ def test_correction_timeout_preserves_unaffected_priority():
                 raise TimeoutError("Remaining budget exhausted")
             return super().complete_json(**kwargs)
     reviewer = FakeClient([{"verdict": "revise", "reason_codes": ["DRAFTING_SCOPE_UNSUPPORTED"],
-        "object_ids": ["REC-001"], "issues": [{"object_id": "REC-001", "explanation": "Remove unsupported scope."}]}], [])
+        "object_ids": ["REC-001"], "issues": [{"object_id": "REC-001", "explanation": "Remove unsupported scope."}], "passed_core_ids": ["REC-002"]}], [])
     result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(TimeoutCorrection(responses, []), reviewer))
     assert [p["recommendation_id"] for p in result["priorities"]] == ["REC-002"]
     assert result["diagnostic_trace"]["recommendation_correction"]["failure"] == "TimeoutError"
@@ -1419,7 +1580,7 @@ def test_correction_cannot_expand_evidence_or_replace_passed_actions():
     correction["recommendation_candidates"][0]["project_anchor_ids"].append("PF-invented")
     assessment = FakeClient(responses + [correction], [])
     reviewer = FakeClient([{"verdict": "revise", "reason_codes": ["DRAFTING_SCOPE_UNSUPPORTED"],
-        "object_ids": ["REC-001"], "issues": [{"object_id": "REC-001", "explanation": "Remove unsupported scope."}]}], [])
+        "object_ids": ["REC-001"], "issues": [{"object_id": "REC-001", "explanation": "Remove unsupported scope."}], "passed_core_ids": []}], [])
     result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(assessment, reviewer))
     assert result["priorities"] == []
     assert len(reviewer.calls) == 1
@@ -1437,14 +1598,14 @@ def test_cancellation_during_correction_propagates():
                 raise RuntimeError("Verified Climate-FCV pipeline cancelled")
             return super().complete_json(**kwargs)
     reviewer = FakeClient([{"verdict": "revise", "reason_codes": ["DRAFTING_SCOPE_UNSUPPORTED"],
-        "object_ids": ["REC-001"], "issues": [{"object_id": "REC-001", "explanation": "Remove unsupported scope."}]}], [])
+        "object_ids": ["REC-001"], "issues": [{"object_id": "REC-001", "explanation": "Remove unsupported scope."}], "passed_core_ids": []}], [])
     with pytest.raises(RuntimeError, match="cancelled"):
         run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(CancelCorrection(_responses(), []), reviewer))
 
 
 def test_unresolved_review_targets_do_not_trigger_correction_even_with_issue_text():
     reviewer = FakeClient([{"verdict": "revise", "reason_codes": ["DRAFTING_SCOPE_UNSUPPORTED"],
-        "object_ids": ["unknown"], "issues": [{"object_id": "REC-001", "explanation": "Remove unsupported scope."}]}], [])
+        "object_ids": ["unknown"], "issues": [{"object_id": "REC-001", "explanation": "Remove unsupported scope."}], "passed_core_ids": []}], [])
     assessment = FakeClient(_responses(), [])
     result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(assessment, reviewer))
     assert result["priorities"] == []
@@ -1461,3 +1622,96 @@ def test_judgment_transports_narrative_findings_without_an_extra_call():
     )
     assert result["assessment_narratives"] == narrative
     assert len(client.calls) == 4
+
+
+def _final_reader():
+    return {
+        "summary_paragraphs": [
+            {"object_id": f"SUM-{index + 1:03d}", "text": paragraph,
+             "evidence_ids": ["PF-001", "PW-001", "RG-001", "CE-001", "REC-001"]}
+            for index, paragraph in enumerate(_summary_payload()["paragraphs"])
+        ],
+        "assessment_narratives": [],
+    }
+
+
+def test_final_reader_compiles_from_accepted_decisions_and_receives_semantic_review():
+    responses = _responses()
+    responses[2]["reader_contract"] = "final-reader-v1"
+    final = _final_reader()
+    assessment = FakeClient(responses + [final], [])
+    reviewer = FakeClient([_native_pass_review] * 2, [])
+    result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(assessment, reviewer))
+    assert assessment.calls[-1]["stage"] == "reader_compiler"
+    assert assessment.calls[-1]["payload"]["accepted_recommendation_ids"] == ["REC-001"]
+    assert reviewer.calls[-1]["stage"] == "reader_review"
+    assert result["summary_overview_status"] == "generated"
+    assert result["final_reader"]["summary_paragraphs"] == final["summary_paragraphs"]
+
+
+def test_semantic_reader_rejection_does_not_reduce_valid_actions():
+    responses = _responses()
+    responses[2]["reader_contract"] = "final-reader-v1"
+    reviewer = FakeClient([
+        _native_pass_review,
+        {"verdict": "block", "object_ids": ["SUM-001"],
+         "reason_codes": ["PROJECT_FACT_UNSUPPORTED"], "issues": [
+             {"object_id": "SUM-001", "explanation": "The sentence reverses the supported meaning."}], "passed_core_ids": []},
+    ], [])
+    result = run_verified_climate_pipeline(
+        **_arguments(), clients=PipelineClients(FakeClient(responses + [_final_reader()], []), reviewer),
+    )
+    assert len(result["priorities"]) == 1
+    assert result["summary_overview_status"] == "fallback"
+    assert result["summary_overview"]["paragraphs"] == []
+
+
+def test_final_reader_cannot_reference_withheld_action_even_if_words_overlap():
+    responses = _responses()
+    responses[2]["reader_contract"] = "final-reader-v1"
+    final = deepcopy(_final_reader())
+    final["summary_paragraphs"][0]["evidence_ids"].append("REC-withheld")
+    reviewer = FakeClient([_native_pass_review], [])
+    result = run_verified_climate_pipeline(
+        **_arguments(), clients=PipelineClients(FakeClient(responses + [final], []), reviewer),
+    )
+    assert result["summary_overview_status"] == "fallback"
+    assert len(result["priorities"]) == 1
+    assert len(reviewer.calls) == 1
+
+
+def test_optional_reader_provider_errors_preserve_accepted_actions():
+    for failed_stage in ("reader_compiler", "reader_review"):
+        responses = _responses()
+        responses[2]["reader_contract"] = "final-reader-v1"
+        class FailingProvider(FakeClient):
+            def complete_json(self, **kwargs):
+                if kwargs["stage"] == failed_stage:
+                    raise ConnectionError("Provider unavailable")
+                return super().complete_json(**kwargs)
+        assessment = FailingProvider(responses + [_final_reader()], [])
+        reviewer = FailingProvider([_native_pass_review] * 2, [])
+        result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(assessment, reviewer))
+        assert len(result["priorities"]) == 1
+        assert result["summary_overview_status"] == "fallback"
+
+
+def test_exports_use_reviewed_narratives_instead_of_mutable_top_level_prose():
+    from sector_lenses.climate_verified_render import build_reader_model
+    responses = _responses()
+    responses[2]["reader_contract"] = "final-reader-v1"
+    final = _final_reader()
+    paragraphs = [("The Project Operations Manual will define site selection. "
+                   "Flooding can disrupt access. Site criteria are not yet specified. "
+                   "The residual gap remains material. ") * 4]
+    final["assessment_narratives"] = [{"object_id": "NARR-design", "theme": "design",
+        "paragraphs": paragraphs, "evidence_ids": ["PF-001", "PW-001", "RG-001", "CE-001"]}]
+    result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(
+        FakeClient(responses + [final], []), FakeClient([_native_pass_review] * 2, [])))
+    reviewed_copy = deepcopy(final)
+    result["assessment_narratives"][0]["paragraphs"] = [
+        "The Project Operations Manual will not define site selection. " * 12]
+    # Break the alias deliberately, as a modified saved JSON document would.
+    result["final_reader"] = reviewed_copy
+    model = build_reader_model(result)
+    assert model["assessment_themes"][0]["paragraphs"] == [paragraphs[0].strip()]

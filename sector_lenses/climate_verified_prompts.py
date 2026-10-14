@@ -128,6 +128,17 @@ def _analysis_prompt(payload: dict[str, object]) -> str:
     return _common(
         """Build bounded Climate-FCV analysis registers from verified project facts.
 First represent material existing project responses; then identify what remains.
+Inventory the funded activities before selecting gaps: infrastructure/siting,
+delivery contingencies and climate-related grants, technical assistance or
+livelihood support. For each material activity connect a climate/FCV pressure to
+its credited existing response and a specific remaining operational decision,
+or explicitly recognize that no further decision is supported. Do not let
+administrative checks crowd out material design/delivery opportunities. For
+competitive grants, credit existing competition and targeting before assessing
+whether exposed groups can participate fairly and receive usable support.
+A planned call whose date has passed is not proof it happened. Consider practical,
+within-scope conditions for wider social benefits, not missing dividends labels.
+Do not manufacture a gap or duplicate an existing arrangement to fill a slot.
 Reference rules: project_anchor_ids and project_fact_ids copy supplied facts.claim_id
 values exactly. pathways.evidence_ids may contain only supplied context_evidence.evidence_id
 values. When context_evidence is empty, leave pathways.evidence_ids empty and use
@@ -283,35 +294,6 @@ a watch note - never more than one. Skip any supplied question you cannot ground
 in the verified evidence rather than padding; return an empty array only if none
 can be grounded.
 
-ASSESSMENT FINDINGS FOR A FIRST-TIME READER
-Also return assessment_narratives: three records with theme design, dividends,
-and inclusion. Each has paragraphs (one or two paragraphs totalling 70-130 words)
-and evidence_ids citing the verified facts, responses, pathways and relevant gaps.
-Answer respectively: Does the project address interacting climate and FCV risks
-in design and delivery? Could it generate wider peace and social benefits, and
-how could these be strengthened? Will people benefit fairly, and could delivery
-create exclusion or harm?
-Write connected prose, not a list of disconnected deficiencies. Avoid semicolons
-and telegraphic label-and-colon statements. Start with an
-answer a non-specialist can understand, credit the existing response, explain
-one or two material project examples, then state the practical implication.
-Read these answers as consecutive parts of the same brief. Build on the context
-instead of repeating its investment inventory or retelling the project changes.
-Move from delivery conditions to wider benefits and then to who gains or could be
-harmed. Use natural connections only where the evidence supports them. Each
-sentence should advance the assessment rather than repeat a gap or caveat.
-Explain acronyms using the source's wording or plain language. Keep component
-and ESCP detail where it makes the implication clearer. Introduce no new facts,
-actors, figures, obligations or detailed recommendations. The priorities carry
-the proposed actions. Cover the material gaps together rather than repeating each.
-For dividends assess likely pathways and conditions for wider benefits such as
-fairer access, cooperation, institutional trust or resilient livelihoods only
-where supported. Explain what could strengthen the potential; do not criticize
-missing dividends language or require proof of peace impacts at preparation.
-Qualify inferred potential and do not assert guaranteed outcomes. When evidence
-is insufficient, say what cannot be judged. Omit a theme only if no evidence can
-support even that conclusion. This uses the existing judgment call, not another call.
-
 Also return minor_climate_points: up to three smaller climate or FCV points, each
 tied to a residual_gap_id from the analysis that is worth a brief mention but may
 not warrant a full recommendation - a minor issue the team could add, consider,
@@ -320,29 +302,12 @@ short point, why it is worth a look, and how to check, in plain language grounde
 in that residual gap. Add no new claims and no digits. Return an empty array if
 there are no such smaller points.
 
-DEDICATED SUMMARY OVERVIEW
-Also write a standalone summary_overview object with a paragraphs array. It must
-contain exactly two or three non-empty plain-text paragraphs totalling 160 to
-230 words. Explain what the project already does, what remains uncertain or could
-be strengthened, and the practical implication bridging to ranked priorities.
-Use connected prose that makes sense without knowledge of the assessment framework.
-A two-paragraph synthesis may combine the second and third jobs
-only when the complete arc remains clear.
-Use only supplied verified facts, actions, ratings, rationales, responses, gaps,
-and evidence. Add no new facts or actions, named entities, numbers, dates,
-institutions, or findings. Do not copy, prefix, or slice executive_readout.
-Keep every paragraph plain text without Markdown or HTML. The summary contract
-is two or three paragraphs and 160 to 230 words. This is part of the existing
-judgment call; do not request a repair or second call.
-Use a direct opening verdict with recognizes or shows, grounded in the supplied
-responses and ratings. Avoid interpretive metaphors such as rests on a solid
-foundation; keep descriptive terms close to the supplied findings.
-Explain the substance of the judgments without listing their labels or repeating
-the sidebar ratings. Avoid semicolons and label-and-colon verdicts.
-Aim for about 190 words. Prefer wording from the supplied
-facts and findings rather than introducing new terms, actors or actions.
-
-Return: {"executive_readout":"...","overview_summary":"...","summary_overview":{"paragraphs":["...","..."]},"relevance":{"value":"high|medium|low|unclear","evidence_ids":[],"rationale":"..."},"sensitivity":{"value":"very_strong|strong|moderate|limited|very_limited|unclear","evidence_ids":[],"rationale":"..."},"responsiveness":{"value":"very_strong|strong|moderate|limited|very_limited|not_expected|unclear","evidence_ids":[],"rationale":"..."},"operationalization":{"value":"embedded|partial|early|not_evidenced|unclear","evidence_ids":[],"rationale":"..."},"assessment_narratives":[{"theme":"design|dividends|inclusion","paragraphs":["..."],"evidence_ids":["PF-001","RG-001"]}],"core_questions":[{"question_id":"cq2-infra-horizon","theme":"cq2_maladaptation","question":"...","source":"...","summary":"...","evidence_ids":["RG-001"],"watch":"..."}],"minor_climate_points":[{"point":"...","why":"...","how_to_check":"...","residual_gap_ids":["RG-002"]}]}.""",
+Return reader_contract as final-reader-v1. Summary and the three assessment
+narratives are compiled separately after final decision review. Do not return
+summary_overview or assessment_narratives in this stage.
+Return exactly the fields in the native schema, including executive_readout,
+overview_summary, the four judgments, core_questions, minor_climate_points and
+reader_contract.""",
         payload,
     )
 
@@ -459,6 +424,8 @@ named instrument supported by the candidate's instrument_claim_ids. The second
 block must not repeat the first. Return only the current_document block when
 instrument_claim_ids is empty.
 
+For bounded_correction, repair only the explicitly targeted drafting roles and
+preserve recommendation IDs. Do not change the parent decision or add new support.
 Cite only supplied project, residual-gap, and guidance IDs. Guidance selects a
 safe drafting destination but does not prove a project fact, commitment, actor,
 system, timing, authority, or formal requirement. Do not alter the supplied
@@ -480,7 +447,7 @@ def _review_prompt(payload: dict[str, object]) -> str:
         """Act as a source-first verifier, not an editor. Check existing mitigation
 before residual gaps; project-fact provenance; country-evidence entitlements;
 recommendation proportionality; instrument scope, timing, and authority; rating
-coherence; duplication; and unintended consequences. Identify defects in the recommendation, not the residual gap it is meant to address. Asking the task team to specify an unresolved indicator, protocol, capacity, or adaptation measure is a valid purpose of a recommendation and is not itself a reason to revise or block. Do not broadly rewrite. For revise or block, object_ids must contain only affected REC- identifiers; do not include gap, fact, response, or pathway IDs.
+coherence; duplication; and unintended consequences. Identify defects in the recommendation, not the residual gap it is meant to address. Asking the task team to specify an unresolved indicator, protocol, capacity, or adaptation measure is a valid purpose of a recommendation and is not itself a reason to revise or block. Do not broadly rewrite. Review each core recommendation independently from drafting_artifacts. Core recommendations contain no proposed wording. Review every core decision even when its draft fails. An issue in optional wording targets its exact supplied artifact object_id (REC-...::current_document or ::operational_instrument), never its parent action unless the decision itself also fails. Parent REC- IDs identify core defects. Missing optional wording is not a core defect. Do not include gap, fact, response or pathway IDs. Return passed_core_ids containing every independently accepted core REC ID, including when drafts fail. An unlisted core decision is not accepted. Review every core decision and artifact; identify every failing object.
 Use only these defect reason codes: {semantic_reason_codes}.
 For advisory_proposal drafting, check the target against the cited supplied
 operational_guidance permitted_targets. A permitted destination for a proposed
@@ -494,13 +461,56 @@ measurement alone is not responsiveness. A wider peace or social dividend mechan
 must be evidenced; do not infer it from an optional baseline or resilience metric.
 Check that ranked priorities have a specific evidenced climate mechanism;
 generic FCV benefits or co-location with a climate investment alone are insufficient.
-Return exactly one object and no other prose: {"verdict":"pass|revise|block","reason_codes":[],"object_ids":[],"issues":[{"object_id":"REC-001","reason_codes":[],"explanation":"One short sentence identifying the defective wording."}]}. For each affected recommendation, add one issues entry with its specific reason_codes and a short explanation quoting or identifying the problematic wording. Include only those REC- IDs in object_ids, and the union of their codes in reason_codes. Return empty arrays for pass. Return at most five issues. Return at most 12 reason_codes and 12 object_ids. Keep the entire response to 500 words or fewer. Use revise only when one bounded correction could resolve a recommendation defect; otherwise block the affected recommendation.""".replace(
+Return exactly one object and no other prose: {"verdict":"pass|revise|block","reason_codes":[],"object_ids":[],"passed_core_ids":[],"issues":[{"object_id":"REC-001","reason_codes":[],"explanation":"One short sentence identifying the defective wording."}]}. For each affected recommendation, add one issues entry with its specific reason_codes and a short explanation quoting or identifying the problematic wording. Include only the exact supplied decision or artifact IDs in object_ids, and the union of their codes in reason_codes. For pass, return empty defect arrays and all accepted passed_core_ids. Return at most fifteen issues. Return at most 12 reason_codes and 15 object_ids. Keep the entire response to 500 words or fewer. Use revise only when one bounded correction could resolve a recommendation defect; otherwise block the affected recommendation.""".replace(
             "{semantic_reason_codes}",
             allowed_reason_codes,
         ),
         payload,
     )
 
+
+
+def _reader_prompt(payload: dict[str, object]) -> str:
+    return _common(
+        """Write a standalone brief from the admitted support_records and FINAL accepted
+recommendations. Return summary_paragraphs and assessment_narratives only.
+Summary: two or three connected paragraphs, 160-230 words, sequential object_id
+SUM-001/SUM-002/SUM-003. Begin with a clear overall assessment of what the project
+already recognizes and addresses. Explain the material remaining challenge and
+bridge to accepted priorities. Refer to proposed actions only when supported by
+accepted_recommendation_ids. Never mention a withheld action as a recommendation.
+Assessment narratives: three short question-led answers, theme design, dividends,
+inclusion; object_id NARR-design/NARR-dividends/NARR-inclusion. One or two paragraphs
+each totalling 70-130 words. Explain design and delivery risks, conditional wider
+peace/social benefits and how they could be encouraged, and fair access/possible
+harm. Credit existing responses. Do not criticize absent dividend terminology.
+Connect the answers naturally without repeating the operational context inventory.
+Explain uncertainty and unfamiliar concepts in ordinary language. Use flowing prose,
+no bullets, semicolons, label-and-colon verdicts or references to four dimensions.
+Each record includes evidence_ids for its specific supporting facts/findings and
+accepted actions. Add no facts, actors, numbers, dates, authority or commitments.
+Evidence IDs bind support, not permission to change measured quantities, units,
+negation, planned/completed status or inference into fact. Do not copy the executive
+readout. Aim for about 190 summary words. Omit an unsupported theme rather than pad.""",
+        payload,
+    )
+
+
+def _reader_review_prompt(payload: dict[str, object]) -> str:
+    return _common(
+        """Independently verify every final reader paragraph against its referenced
+support_records and accepted recommendations. Check meaning, not vocabulary overlap.
+Check negation, who/what quantities count, dates, units, planned versus completed
+status, source scope, inference versus documented intent, and existing mitigation.
+Fluent paraphrase is allowed; adding or reversing meaning is not. Proposed actions
+must follow accepted decisions only. Lack of peace/social-dividend terminology is
+not a defect. Check all paragraphs; no broad editorial rewriting. A pass certifies
+all paragraphs. Return verdict pass/revise/block, reason_codes from the native enum,
+object_ids and issues with short explanations. Target exact SUM-... or NARR-... IDs.
+Use empty arrays for pass. Identify all affected paragraph IDs for any failure.
+Do not review or change the accepted recommendations themselves in this stage.""",
+        payload,
+    )
 
 def build_verified_stage_prompt(
     stage: str,
@@ -512,6 +522,8 @@ def build_verified_stage_prompt(
         "judgment_review": _judgment_prompt,
         "recommendation_compiler": _recommendation_prompt,
         "conditional_review": _review_prompt,
+        "reader_compiler": _reader_prompt,
+        "reader_review": _reader_review_prompt,
         "drafting_compiler": _drafting_prompt,
     }
     try:

@@ -130,6 +130,7 @@ def validate_summary_overview(
     executive_readout: object = "",
     canonical_text: object = (),
     diagnostics: dict[str, object] | None = None,
+    allow_paraphrase: bool = False,
 ) -> list[str]:
     """Admit only a grounded, plain-text two/three-paragraph synthesis."""
     def reject(reason: str) -> list[str]:
@@ -172,6 +173,7 @@ def validate_summary_overview(
             paragraph,
             canonical_text=canonical_text,
             diagnostics=diagnostics,
+            allow_paraphrase=allow_paraphrase,
         ):
             if diagnostics is not None:
                 diagnostics["paragraph_index"] = index
@@ -627,23 +629,7 @@ STAGE_OUTPUT_SCHEMAS: dict[str, dict[str, object]] = {
                 "top-of-report overview, distinct from and shorter than the "
                 "executive_readout."
             ),
-            "summary_overview": {
-                "type": "object",
-                "properties": {
-                    "paragraphs": {
-                        "type": "array",
-                        "items": {"type": "string", "minLength": 1},
-                        "minItems": 1,
-                        # The application validator enforces the upper bound.
-                        "description": (
-                            "Exactly two or three non-empty plain-text paragraphs, "
-                            "totalling 160 to 230 words."
-                        ),
-                    }
-                },
-                "required": ["paragraphs"],
-                "additionalProperties": False,
-            },
+            "reader_contract": _enum(("final-reader-v1",)),
             "relevance": _judgment(("high", "medium", "low", "unclear")),
             "sensitivity": _judgment(
                 ("very_strong", "strong", "moderate", "limited",
@@ -655,15 +641,6 @@ STAGE_OUTPUT_SCHEMAS: dict[str, dict[str, object]] = {
             "operationalization": _judgment(
                 ("embedded", "partial", "early", "not_evidenced", "unclear")
             ),
-            "assessment_narratives": {
-                "type": "array",
-                "items": _object({
-                    "theme": _enum(("design", "dividends", "inclusion")),
-                    "paragraphs": _strings("One or two connected plain-text paragraphs, 70-130 words total."),
-                    "evidence_ids": _strings("Verified project facts, responses, pathways and gap IDs supporting this answer."),
-                }),
-                "description": "Three short question-led answers for a first-time reader; no unsupported themes.",
-            },
             "core_questions": {
                 "type": "array",
                 "items": CORE_QUESTION_SCHEMA,
@@ -709,6 +686,7 @@ STAGE_OUTPUT_SCHEMAS: dict[str, dict[str, object]] = {
     "conditional_review": _object(
         {
             "verdict": _enum(("pass", "revise", "block")),
+            "passed_core_ids": _strings("Every independently accepted core REC ID; empty only when none passed."),
             "reason_codes": {
                 "type": "array",
                 "items": _enum(SEMANTIC_REVIEW_REASON_CODES),
@@ -720,16 +698,32 @@ STAGE_OUTPUT_SCHEMAS: dict[str, dict[str, object]] = {
             "issues": {
                 "type": "array",
                 "items": _object({
-                    "object_id": _string("An affected REC- identifier from object_ids."),
+                    "object_id": _string("An exact supplied decision, drafting artifact or reader paragraph ID from object_ids."),
                     "reason_codes": {"type": "array", "items": _enum(SEMANTIC_REVIEW_REASON_CODES)},
                     "explanation": _string("One short sentence identifying the unsupported wording or scope."),
                 }),
-                "description": "One diagnostic entry per affected recommendation, at most five; empty for pass.",
+                "description": "One diagnostic entry per affected object, at most twelve; empty for pass.",
             },
         }
     ),
 }
 
+
+# Final prose is compiled against the decisions that survived semantic review.
+STAGE_OUTPUT_SCHEMAS['reader_compiler'] = _object({
+    'summary_paragraphs': {'type': 'array', 'items': _object({
+        'object_id': _string('Sequential SUM-001, SUM-002, optionally SUM-003.'),
+        'text': _string('Plain prose, two or three paragraphs totalling 160-230 words.'),
+        'evidence_ids': _strings('Exact supplied support IDs, including accepted REC IDs for proposed actions.'),
+    })},
+    'assessment_narratives': {'type': 'array', 'items': _object({
+        'object_id': _string('NARR-design, NARR-dividends or NARR-inclusion.'),
+        'theme': _enum(('design', 'dividends', 'inclusion')),
+        'paragraphs': _strings('One or two connected paragraphs, 70-130 words total.'),
+        'evidence_ids': _strings('Exact supplied support IDs.'),
+    })},
+})
+STAGE_OUTPUT_SCHEMAS['reader_review'] = _object({key: value for key, value in STAGE_OUTPUT_SCHEMAS['conditional_review']['properties'].items() if key != 'passed_core_ids'})
 
 def stage_output_schema(stage: str) -> dict[str, object]:
     """Return an isolated native output schema for one verified stage."""

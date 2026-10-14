@@ -17,6 +17,8 @@ from typing import Protocol
 
 import climate_question_bank
 
+from sector_lenses.climate_final_reader import reader_support_records, validate_final_reader, reviewed_final_reader
+
 from sector_lenses.climate_analysis import (
     ClimatePathway,
     ContextEvidenceRef,
@@ -85,11 +87,13 @@ _INTEGRITY_CATEGORIES = READINESS_CATEGORIES - {"missing_operational_home"}
 
 PROMPT_VERSIONS = {
     "fact_extraction": "climate-facts-v2.4",
-    "bounded_analysis": "climate-analysis-v2.7",
-    "judgment_review": "climate-judgments-v2.12",
+    "bounded_analysis": "climate-analysis-v2.8",
+    "judgment_review": "climate-judgments-v2.13",
     "recommendation_compiler": "climate-recommendations-v2.14",
-    "conditional_review": "climate-review-v2.11",
-    "drafting_compiler": "climate-drafting-v1.3",
+    "conditional_review": "climate-review-v2.12",
+    "drafting_compiler": "climate-drafting-v1.4",
+    "reader_compiler": "climate-final-reader-v1.0",
+    "reader_review": "climate-reader-review-v1.0",
 }
 
 
@@ -165,6 +169,10 @@ def _as_record(value: object) -> dict[str, object]:
     return dict(value) if isinstance(value, dict) else {}
 
 
+
+class PipelineCancelled(RuntimeError):
+    """Cancellation is never converted into an optional-artifact fallback."""
+
 def _call(
     client: JsonClient,
     stage: str,
@@ -173,10 +181,12 @@ def _call(
     *,
     cancel_event: object | None = None,
     deadline: float | None = None,
+    optional: bool = False,
+    repair_allowance: dict[str, int] | None = None,
 ) -> dict[str, object]:
     cancelled = getattr(cancel_event, "is_set", lambda: False)
     if cancelled():
-        raise RuntimeError("Verified Climate-FCV pipeline cancelled")
+        raise PipelineCancelled("Verified Climate-FCV pipeline cancelled")
     budget = CALL_BUDGETS[stage]
     remaining = (
         budget.timeout_seconds
@@ -184,18 +194,42 @@ def _call(
         else min(budget.timeout_seconds, int(deadline - time.monotonic()))
     )
     if remaining < 1:
+        if optional:
+            return {'_optional_failure': 'TimeoutError'}
         raise TimeoutError("Verified Climate-FCV pipeline exceeded its wall-clock limit")
+    output_tokens = budget.output_tokens
+    if repair_allowance is not None:
+        output_tokens = min(output_tokens, repair_allowance['remaining'])
+        if output_tokens < 1:
+            raise TimeoutError('Correction output-token allowance exhausted')
     started = time.monotonic()
-    result = client.complete_json(
-        stage=stage,
-        payload=payload,
-        timeout_seconds=remaining,
-        max_output_tokens=budget.output_tokens,
-        max_transient_retries=1,
-    )
+    try:
+        result = client.complete_json(
+            stage=stage,
+            payload=payload,
+            timeout_seconds=remaining,
+            max_output_tokens=output_tokens,
+            max_transient_retries=0 if repair_allowance is not None else 1,
+        )
+    except Exception as error:
+        if cancelled() or isinstance(error, PipelineCancelled) or (
+            isinstance(error, RuntimeError) and str(error) == 'Verified Climate-FCV pipeline cancelled'
+        ):
+            raise PipelineCancelled('Verified Climate-FCV pipeline cancelled') from error
+        if not optional:
+            raise
+        result = {'_optional_failure': type(error).__name__}
+    finally:
+        if repair_allowance is not None:
+            used_tokens = getattr(client, 'last_output_tokens', None)
+            # A production response supplies usage. An opaque client consumes the
+            # full requested allowance conservatively; never invent a token estimate.
+            charged = used_tokens if isinstance(used_tokens, int) and used_tokens >= 0 else output_tokens
+            repair_allowance['remaining'] = max(0, repair_allowance['remaining'] - charged)
+
     latency_ms[stage] = latency_ms.get(stage, 0) + int((time.monotonic() - started) * 1000)
     if cancelled():
-        raise RuntimeError("Verified Climate-FCV pipeline cancelled")
+        raise PipelineCancelled("Verified Climate-FCV pipeline cancelled")
     if not isinstance(result, dict):
         raise ValueError(f"{stage} must return a JSON object")
     return result
@@ -808,7 +842,10 @@ def run_verified_climate_pipeline(
     if wall_clock_seconds < 1:
         raise ValueError("wall_clock_seconds must be positive")
     deadline = time.monotonic() + wall_clock_seconds
+    metric_starts = {role: len(getattr(client, 'call_metrics', []))
+                     for role, client in (('assessment', clients.assessment), ('reviewer', clients.reviewer))}
     latency_ms: dict[str, int] = {}
+    repair_allowance = {"remaining": CALL_BUDGETS["recommendation_compiler"].output_tokens}
     reasons: list[str] = []
     repairs: list[str] = []
     suppressed = {
@@ -1024,7 +1061,10 @@ def run_verified_climate_pipeline(
         canonical_text=canonical_summary_text,
         diagnostics=summary_diagnostics,
     )
-    if raw_summary_overview is None:
+    final_reader_required = judgment_payload.get("reader_contract") == "final-reader-v1"
+    if final_reader_required:
+        summary_overview_status = "pending"
+    elif raw_summary_overview is None:
         summary_overview_status = "fallback"
         reasons.append("SUMMARY_OVERVIEW_FALLBACK_REQUIRED")
     elif not summary_overview_paragraphs:
@@ -1084,8 +1124,11 @@ def run_verified_climate_pipeline(
             },
             latency_ms,
             cancel_event=cancel_event,
-            deadline=deadline,
+            deadline=deadline - CALL_BUDGETS["conditional_review"].timeout_seconds,
+            optional=True,
         )
+        if drafting_payload.get('_optional_failure'):
+            reasons.append('DRAFTING_GENERATION_UNAVAILABLE')
         blocks_by_recommendation: dict[str, object] = {}
         duplicate_drafting_ids: set[str] = set()
         for drafting_set in _records(drafting_payload, "drafting_sets"):
@@ -1111,6 +1154,7 @@ def run_verified_climate_pipeline(
     recommendation_reasons: list[str] = []
     unsupported_numbers: list[str] = []
     candidate_suppressions: list[dict[str, object]] = []
+    drafting_suppressions: list[dict[str, object]] = []
     parsed_candidate_count = 0
     candidates: list[CandidateRecommendation] = []
     def normalize_candidate(candidate):
@@ -1173,13 +1217,42 @@ def run_verified_climate_pipeline(
         )
         repairs.extend(ref_repairs)
         issues = validate_recommendation(
-            candidate, known_ids, drafting_context=drafting_context
+            candidate, known_ids, drafting_context=drafting_context,
+            include_drafting=False,
         )
+        # Validate each artifact separately, using the same authority and source
+        # checks. A draft defect does not change the core decision's admission.
+        for field in ("current_document_drafting", "operational_instrument_drafting"):
+            block = getattr(candidate, field)
+            if block is None:
+                continue
+            isolated = replace(candidate, **{
+                "current_document_drafting": block if field == "current_document_drafting" else None,
+                "operational_instrument_drafting": block if field == "operational_instrument_drafting" else None,
+            })
+            artifact_issues = validate_recommendation(
+                isolated, known_ids, drafting_context=drafting_context,
+                require_current_drafting=False,
+            )
+            core_codes = {issue.code for issue in issues if issue.blocking}
+            failures = sorted({issue.code for issue in artifact_issues
+                               if issue.blocking and issue.code not in core_codes})
+            if failures:
+                drafting_suppressions.append({"recommendation_id": candidate.recommendation_id,
+                                               "artifact": field, "reason_codes": failures})
+                candidate = replace(candidate, **{field: None})
         return candidate, issues
 
     for record in raw_candidates:
         try:
-            candidate = _candidate(record)
+            core_record = {key: value for key, value in record.items() if key not in
+                           {'drafting_blocks', 'current_document_drafting', 'operational_instrument_drafting'}}
+            candidate = _candidate(core_record)
+            try:
+                candidate = _candidate(record)
+            except (TypeError, ValueError):
+                drafting_suppressions.append({'recommendation_id': candidate.recommendation_id,
+                                               'reason_codes': ['DRAFTING_MALFORMED']})
         except (TypeError, ValueError):
             suppressed["recommendations"] += 1
             reasons.append("RECOMMENDATION_MALFORMED")
@@ -1298,14 +1371,24 @@ def run_verified_climate_pipeline(
     correction_trace: dict[str, object] = {}
     review: dict[str, object] = {}
     review_input: dict[str, object] = {}
-    if priorities and semantic_review_required(_risk(priorities)):
+    if priorities:
         reviewer_invoked = True
         review_input = {
             "source_blocks": block_records,
             "facts": [asdict(item) for item in facts],
             "analysis": analysis_record,
+            "context_evidence": context_records,
             "judgments": asdict(judgments),
-            "recommendations": [asdict(item) for item in priorities],
+            "recommendations": [asdict(replace(item, current_document_drafting=None,
+                                              operational_instrument_drafting=None)) for item in priorities],
+            "drafting_artifacts": [
+                {"object_id": f"{item.recommendation_id}::{role}",
+                 "recommendation_id": item.recommendation_id, "block": asdict(block)}
+                for item in priorities
+                for role, block in (("current_document", item.current_document_drafting),
+                                    ("operational_instrument", item.operational_instrument_drafting))
+                if block is not None
+            ],
             "operation_context": resolved_context,
             "current_document": doc_type,
             "guidance_registry_version": GUIDANCE_REGISTRY_VERSION,
@@ -1322,23 +1405,57 @@ def run_verified_climate_pipeline(
         reviewer_verdict = _text(review.get("verdict"), "block").casefold()
         review_reasons = _bounded_reason_codes(review.get("reason_codes"))
         priority_ids = {item.recommendation_id for item in priorities}
+        artifact_ids = {item["object_id"] for item in review_input["drafting_artifacts"]}
         semantic_review_object_ids = list(
             dict.fromkeys(
                 object_id
                 for object_id in _strings(review.get("object_ids"))
-                if object_id in priority_ids
+                if object_id in priority_ids | artifact_ids
             )
-        )[:12]
+        )[:15]
+        if reviewer_verdict == 'pass' and (review.get('object_ids') or review.get('reason_codes') or review.get('issues')):
+            reviewer_verdict = 'block'
+            review_reasons.append('SEMANTIC_REVIEW_VERDICT_INVALID')
         if reviewer_verdict not in {"pass", "revise", "block"}:
             reviewer_verdict = "block"
             review_reasons.append("SEMANTIC_REVIEW_VERDICT_INVALID")
+        if set(_strings(review.get("object_ids"))) - (priority_ids | artifact_ids):
+            reviewer_verdict = "block"
+            semantic_review_object_ids = sorted(priority_ids | artifact_ids)
+            review_reasons.append("SEMANTIC_REVIEW_TARGET_UNRESOLVED")
+        if not isinstance(review.get('passed_core_ids'), list):
+            reviewer_verdict = 'block'
+            semantic_review_object_ids = sorted(priority_ids | artifact_ids)
+            review_reasons.append('SEMANTIC_REVIEW_TARGET_UNRESOLVED')
+        passed_core_ids = set(_strings(review.get('passed_core_ids')))
+        failed_core_ids = set(semantic_review_object_ids) & priority_ids
+        if passed_core_ids - priority_ids or passed_core_ids & failed_core_ids:
+            missing_core_ids = priority_ids
+        else:
+            missing_core_ids = priority_ids - passed_core_ids - failed_core_ids
+        if missing_core_ids:
+            reviewer_verdict = 'block'
+            semantic_review_object_ids = sorted(set(semantic_review_object_ids) | missing_core_ids)
+            review_reasons.append('SEMANTIC_REVIEW_TARGET_UNRESOLVED')
         if reviewer_verdict != "pass" and not semantic_review_object_ids:
             review_reasons.append("SEMANTIC_REVIEW_TARGET_UNRESOLVED")
             semantic_review_object_ids = sorted(priority_ids)
         reasons.extend(review_reasons)
         recommendation_reasons.extend(review_reasons)
         if reviewer_verdict != "pass":
-            affected_ids = set(semantic_review_object_ids)
+            affected_ids = set(semantic_review_object_ids) & priority_ids
+            affected_artifacts = set(semantic_review_object_ids) & artifact_ids
+            reviewed_priorities = priorities
+            # Only explicitly targeted wording is withheld. Parent IDs remain
+            # core defects, including legacy reviewer responses.
+            priorities = tuple(replace(item, **{
+                field: None if f"{item.recommendation_id}::{role}" in affected_artifacts
+                else getattr(item, field)
+                for role, field in (("current_document", "current_document_drafting"),
+                                    ("operational_instrument", "operational_instrument_drafting"))
+            }) for item in priorities)
+            drafting_suppressions.extend({"object_id": identifier, "stage": "semantic_review",
+                                           "reason_codes": review_reasons} for identifier in sorted(affected_artifacts))
             # Correct only explicitly explained revise targets; block never retries.
             issues_by_id = {
                 _text(issue.get("object_id")): issue
@@ -1360,8 +1477,8 @@ def run_verified_climate_pipeline(
                     correction_payload = _call(
                         clients.assessment, "recommendation_compiler",
                         {**review_input, "recommendations": [asdict(item) for item in originals.values()],
-                         "bounded_correction": [issues_by_id[key] for key in sorted(repair_ids)]},
-                        latency_ms, cancel_event=cancel_event, deadline=deadline,
+                         "bounded_correction": [issues_by_id[key] for key in sorted(repair_ids)], "call_scope": "core_correction"},
+                        latency_ms, cancel_event=cancel_event, deadline=deadline, repair_allowance=repair_allowance,
                     )
                     correction_trace["response"] = _diagnostic_snapshot(correction_payload)
                     records = _records(correction_payload, "recommendation_candidates")
@@ -1379,7 +1496,10 @@ def run_verified_climate_pipeline(
                             continue
                         original = originals[identifier]
                         try:
-                            candidate = _candidate(record)
+                            # Compiler corrections cannot carry old or invented
+                            # drafting fields: its native schema describes decisions.
+                            candidate = replace(_candidate(record), current_document_drafting=None,
+                                                operational_instrument_drafting=None)
                             if any(not set(getattr(candidate, field)) <= set(getattr(original, field))
                                    for field in reference_fields):
                                 correction_rejections.append({"recommendation_id": identifier,
@@ -1405,25 +1525,98 @@ def run_verified_climate_pipeline(
                     if corrected:
                         correction_review = _call(
                             clients.reviewer, "conditional_review",
-                            {**review_input, "recommendations": [asdict(item) for item in corrected]},
-                            latency_ms, cancel_event=cancel_event, deadline=deadline,
+                            {**review_input, "recommendations": [asdict(item) for item in corrected],
+                             "drafting_artifacts": [], "call_scope": "core_correction"},
+                            latency_ms, cancel_event=cancel_event, deadline=deadline, repair_allowance=repair_allowance,
                         )
                         correction_trace["review"] = _diagnostic_snapshot(correction_review)
                         verdict = _text(correction_review.get("verdict")).casefold()
                         rejected = set(_strings(correction_review.get("object_ids")))
                         corrected_ids = {item.recommendation_id for item in corrected}
-                        if verdict == "pass":
+                        passed = set(_strings(correction_review.get('passed_core_ids')))
+                        explicit_passes_valid = ('passed_core_ids' in correction_review and
+                                                 not (passed - corrected_ids or passed & rejected))
+                        if (verdict == 'pass' and not any(correction_review.get(key) for key in ('object_ids', 'reason_codes', 'issues'))
+                                and explicit_passes_valid
+                                and passed == corrected_ids):
                             recovered = {item.recommendation_id: item for item in corrected}
-                        elif verdict in {"revise", "block"} and rejected and rejected <= corrected_ids:
+                        elif (verdict in {'revise', 'block'} and rejected and rejected <= corrected_ids
+                              and explicit_passes_valid):
                             recovered = {item.recommendation_id: item for item in corrected
-                                         if item.recommendation_id not in rejected}
+                                         if item.recommendation_id not in rejected
+                                         and item.recommendation_id in passed}
                     correction_trace["recovered_ids"] = sorted(recovered)
-                except (TimeoutError, ValueError) as error:
+                except PipelineCancelled:
+                    raise
+                except Exception as error:
                     # Optional repair must preserve already accepted actions; cancellation propagates.
                     correction_trace["failure"] = type(error).__name__
                 affected_ids -= recovered.keys()
                 priorities = tuple(recovered.get(item.recommendation_id, item) for item in priorities)
                 correction_trace["withheld_ids"] = sorted(repair_ids - recovered.keys())
+            draft_repair_ids = (affected_artifacts & issues_by_id.keys()
+                                if reviewer_verdict == "revise" else set())
+            draft_repair_ids = {identifier for identifier in draft_repair_ids
+                                if identifier.split("::")[0] not in set(semantic_review_object_ids)}
+            if draft_repair_ids:
+                draft_trace = {"attempted_ids": sorted(draft_repair_ids), "recovered_ids": []}
+                correction_trace["drafting"] = draft_trace
+                parents = {item.recommendation_id: item for item in reviewed_priorities
+                           if any(identifier.startswith(item.recommendation_id + "::")
+                                  for identifier in draft_repair_ids)}
+                try:
+                    payload = _call(
+                        clients.assessment, "drafting_compiler",
+                        {**review_input, "recommendation_candidates": [asdict(item) for item in parents.values()],
+                         "bounded_correction": [issues_by_id[key] for key in sorted(draft_repair_ids)], "call_scope": "draft_correction"},
+                        latency_ms, cancel_event=cancel_event, deadline=deadline, repair_allowance=repair_allowance,
+                    )
+                    draft_trace["response"] = _diagnostic_snapshot(payload)
+                    sets = _records(payload, "drafting_sets")
+                    proposed = {}
+                    artifacts = []
+                    for drafting_set in sets:
+                        parent_id = _text(drafting_set.get("recommendation_id"))
+                        if parent_id not in parents or sum(_text(item.get("recommendation_id")) == parent_id for item in sets) != 1:
+                            continue
+                        original = parents[parent_id]
+                        record = {**asdict(original), "current_document_drafting": None,
+                                  "operational_instrument_drafting": None,
+                                  "drafting_blocks": drafting_set.get("drafting_blocks")}
+                        candidate, core_issues = normalize_candidate(_candidate(record))
+                        if any(issue.blocking for issue in core_issues):
+                            continue
+                        for role, field in (("current_document", "current_document_drafting"),
+                                            ("operational_instrument", "operational_instrument_drafting")):
+                            identifier = f"{parent_id}::{role}"
+                            block = getattr(candidate, field)
+                            if identifier in draft_repair_ids and block is not None:
+                                proposed[identifier] = block
+                                artifacts.append({"object_id": identifier, "recommendation_id": parent_id,
+                                                  "block": asdict(block)})
+                    if artifacts:
+                        second_review = _call(
+                            clients.reviewer, "conditional_review",
+                            {**review_input, "drafting_artifacts": artifacts, "call_scope": "draft_correction",
+                             "recommendations": [asdict(replace(item, current_document_drafting=None,
+                                                                operational_instrument_drafting=None))
+                                                 for item in priorities if item.recommendation_id in parents]}, latency_ms,
+                            cancel_event=cancel_event, deadline=deadline, repair_allowance=repair_allowance,
+                        )
+                        draft_trace["review"] = _diagnostic_snapshot(second_review)
+                        # A draft repair never repairs, replaces or rejects the
+                        # previously reviewed parent. Publish only an explicit pass.
+                        if _text(second_review.get("verdict")).casefold() == "pass" and not any(second_review.get(key) for key in ("object_ids", "reason_codes", "issues")):
+                            priorities = tuple(replace(item, **{
+                                field: proposed.get(f"{item.recommendation_id}::{role}", getattr(item, field))
+                                for role, field in (("current_document", "current_document_drafting"),
+                                                    ("operational_instrument", "operational_instrument_drafting"))
+                            }) for item in priorities)
+                            draft_trace["recovered_ids"] = sorted(proposed)
+                except PipelineCancelled:
+                    raise
+                except Exception as error:
+                    draft_trace["failure"] = type(error).__name__
             affected = [
                 candidate
                 for candidate in priorities
@@ -1448,6 +1641,49 @@ def run_verified_climate_pipeline(
             )
             review_status = "attention"
 
+    final_reader = {}
+    reader_review = {}
+    assessment_narratives = _records(judgment_payload, 'assessment_narratives')
+    if final_reader_required:
+        # Reader generation is downstream of action admission and independent
+        # review. Editorial/reader failures never alter accepted action count.
+        reader_assessment = {
+            'facts': [asdict(item) for item in facts],
+            'derived_assertions': [asdict(item) for item in assertions],
+            'analysis': analysis_record, 'context_evidence': context_records,
+            'judgments': asdict(judgments), 'executive_readout': executive_readout,
+            'priorities': [asdict(replace(item, current_document_drafting=None,
+                                        operational_instrument_drafting=None)) for item in priorities],
+        }
+        support_records = reader_support_records(reader_assessment)
+        reader_input = {
+            'support_records': support_records, 'judgments': asdict(judgments),
+            'executive_readout': executive_readout,
+            'accepted_recommendation_ids': [item.recommendation_id for item in priorities],
+            'operation_context': resolved_context,
+        }
+        summary_overview_paragraphs, assessment_narratives = [], []
+        summary_overview_status = 'fallback'
+        try:
+            final_reader = _call(clients.assessment, 'reader_compiler', reader_input, latency_ms,
+                                 cancel_event=cancel_event, deadline=deadline)
+            proposed_summary, _ = validate_final_reader(final_reader, reader_assessment)
+            if proposed_summary:
+                reader_review = _call(clients.reviewer, 'reader_review',
+                                      {**reader_input, 'final_reader': final_reader}, latency_ms,
+                                      cancel_event=cancel_event, deadline=deadline)
+                summary_overview_paragraphs, assessment_narratives = reviewed_final_reader(
+                    final_reader, reader_review, reader_assessment)
+            if summary_overview_paragraphs:
+                summary_overview_status = 'generated'
+            else:
+                reasons.append('FINAL_READER_WITHHELD')
+        except PipelineCancelled:
+            raise
+        except Exception as error:
+            reasons.append('FINAL_READER_UNAVAILABLE')
+            reader_review = {'failure': type(error).__name__}
+
     if parsed_candidate_count > 0 and not priorities:
         reasons.append("RECOMMENDATIONS_ALL_SUPPRESSED")
         recommendation_reasons.append("RECOMMENDATIONS_ALL_SUPPRESSED")
@@ -1457,16 +1693,29 @@ def run_verified_climate_pipeline(
     if unique_reasons and review_status == "passed":
         review_status = "attention"
     applicability = _applicability_fingerprint(source_documents)
+    call_metrics = tuple({**item, 'role': role}
+                         for role, client in (('assessment', clients.assessment), ('reviewer', clients.reviewer))
+                         for item in getattr(client, 'call_metrics', [])[metric_starts[role]:])
+    token_usage = {}
+    model_aliases = {'assessment': 'configured', 'reviewer': 'configured'}
+    for item in call_metrics:
+        if item.get('model'):
+            model_aliases[item['role']] = item['model']
+        for name, value in item.get('usage', {}).items():
+            token_usage[name] = token_usage.get(name, 0) + value
     manifest = RunManifest(
         run_id=run_id,
         schema_version=CLIMATE_VERIFIED_SCHEMA_VERSION,
         prompt_versions=PROMPT_VERSIONS,
-        reviewer_version="climate-review-v2.1",
+        reviewer_version="climate-review-v2.2",
         extraction_version="source-blocks-v3",
         normalization_version="climate-normalization-v2.1",
-        renderer_version="climate-reader-v2.15",
-        model_aliases={"assessment": "configured", "reviewer": "configured"},
-        sampling={"max_transient_retries": 1},
+        renderer_version="climate-reader-v2.16",
+        model_aliases=model_aliases,
+        sampling={"max_transient_retries": 1,
+                  "correction_transient_retries": 0,
+                  "correction_output_token_allowance": CALL_BUDGETS["recommendation_compiler"].output_tokens,
+                  "correction_output_token_remaining": repair_allowance["remaining"]},
         source_fingerprints=tuple(item.sha256 for item in source_documents),
         applicability_fingerprint=applicability,
         bank_release_id=bank_release_id,
@@ -1485,7 +1734,8 @@ def run_verified_climate_pipeline(
             })
         ),
         latency_ms=latency_ms,
-        token_usage={},
+        token_usage=token_usage,
+        call_metrics=call_metrics,
         cache_state={"scope": "assessment", "status": "not_shared"},
     )
     preview = any(
@@ -1514,13 +1764,17 @@ def run_verified_climate_pipeline(
             "reviewed_recommendations": _diagnostic_snapshot(review_input.get("recommendations", [])),
             "semantic_review": _diagnostic_snapshot(review),
             "recommendation_correction": correction_trace,
+            "drafting_suppressions": drafting_suppressions,
         },
         "executive_readout": (
             executive_readout or deterministic_summary(judgments)
         ),
         "overview_summary": overview_summary,
         "core_questions": core_questions,
-        "assessment_narratives": _records(judgment_payload, "assessment_narratives"),
+        "assessment_narratives": assessment_narratives,
+        "reader_contract": "final-reader-v1" if final_reader_required else "legacy",
+        "final_reader": final_reader,
+        "reader_review": reader_review,
         "priorities": [asdict(item) for item in priorities],
         "review_readiness_flags": [asdict(item) for item in readiness],
         "minor_climate_points": minor_climate_points,

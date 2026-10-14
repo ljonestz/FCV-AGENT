@@ -451,3 +451,42 @@ as do review checks, guidance and method disclosures. Users can close individual
 the print handler restores their chosen state. No generation changes or additional
 paid calls. The separate pipeline readiness assessment proposes backend redesign;
 it is not evidence that the failed quality6 result is accepted.
+
+
+### 2026-10-14 approved backend redesign
+
+Native recommendations and optional drafting have separate validation boundaries.
+conditional_review receives core-only decisions plus separately identified artifacts
+(REC-ID::current_document / ::operational_instrument) and must explicitly return
+passed_core_ids. Missing/ambiguous review acceptance withholds cores. A draft-only
+defect cannot accept or erase its separately reviewed parent. Core and drafting
+repairs use their matching compiler, do not expand supporting evidence or rank,
+and receive independent re-review. Correction work shares9,000 output tokens;
+unknown usage consumes the full requested allowance, and repair calls do not retry.
+Optional drafting reserves the conditional-review deadline. Optional post-review
+provider failure records a limited result; cancellation always propagates.
+
+The native judgment schema now returns final-reader-v1 instead of pre-admission
+Summary/narratives. reader_compiler (4,000 output tokens/180s) and reader_review
+(2,500/120s) run after final accepted decisions, within the existing14-minute cap.
+Paragraphs bind to known facts/findings and accepted action IDs; paraphrase receives
+entity/number/date guards and a separate meaning check. Reader2.16 derives both
+Summary and findings from the reviewed final_reader, rechecks saved support, and
+uses a clear limited fallback if that reader is missing/invalid. Legacy saves keep
+their former contracts; their rejected recommendations are never reclassified.
+
+Research selects bounded received passage IDs. Complementary quotes per URL are
+retained whole; classifier-selected project labels must match uploaded source labels,
+and geography/group/asset labels must be meaningful complete source spans. Quote,
+URL, title and publication metadata remain application owned. Pure classification
+uses no encrypted conversation or tools; actual search continuation preserves the
+provider blocks. Incomplete country coverage/failed quorum stays partial inspection
+proof and cannot enter either admitted prompt path. Explicit unavailable bank scope
+and country reasons are preserved. No policy entitlement is inferred from web prose.
+
+Model/usage diagnostics record each returned/failed attempt and its initial/repair/
+reader scope, with unknown usage marked unknown. Added reader calls and net cost
+have not been measured live. The source-based acceptance benchmark describes three
+material Great Lakes decision areas and preserves existing funded responses.
+Synthetic one/three/five-action fixtures test transport, not fresh model quality.
+Production/main/ITS remain held pending separately authorized live acceptance.

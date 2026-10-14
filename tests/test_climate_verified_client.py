@@ -64,8 +64,8 @@ def test_every_stage_uses_structured_json_and_evidence_entitlements():
     assert "Use only these defect reason codes" in prompts["conditional_review"]
     assert "ROUTING_SCOPE_UNVERIFIED" in prompts["conditional_review"]
     assert "valid purpose of a recommendation" in prompts["conditional_review"]
-    assert "affected REC-" in prompts["conditional_review"]
-    assert "at most 12 reason_codes and 12 object_ids" in prompts["conditional_review"]
+    assert "exact supplied decision or artifact IDs" in prompts["conditional_review"]
+    assert "at most 12 reason_codes and 15 object_ids" in prompts["conditional_review"]
     assert "500 words or fewer" in prompts["conditional_review"]
     assert "material risk-response table row" in prompts["fact_extraction"]
     assert (
@@ -222,6 +222,26 @@ def test_client_retries_once_only_for_declared_transient_error():
 
     assert result["facts"] == []
     assert len(sdk.messages.calls) == 2
+    assert [item['status'] for item in client.call_metrics] == ['failed', 'returned']
+
+
+def test_client_records_actual_model_and_usage_without_prompt_content():
+    from types import SimpleNamespace
+    sdk = _Sdk([])
+    sdk.messages.create = lambda **kwargs: SimpleNamespace(
+        content=[_Text('{"facts":[],"derived_assertions":[]}')], stop_reason="end_turn",
+        model="resolved-assessment-model",
+        usage=SimpleNamespace(input_tokens=123, output_tokens=45,
+                              cache_read_input_tokens=30, cache_creation_input_tokens=0),
+    )
+    client = AnthropicVerifiedJsonClient(sdk, model="assessment-model")
+    client.complete_json(stage="fact_extraction", payload={"secret": "private project"},
+                         timeout_seconds=10, max_output_tokens=500, max_transient_retries=1)
+    assert client.call_metrics[0]["model"] == "resolved-assessment-model"
+    assert client.call_metrics[0]["configured_model"] == "assessment-model"
+    assert client.call_metrics[0]["usage"]["input_tokens"] == 123
+    assert client.call_metrics[0]["attempt"] == 1
+    assert "private project" not in str(client.call_metrics)
 
 
 def test_client_emits_only_content_free_failed_attempt_diagnostics():
@@ -419,7 +439,7 @@ def test_client_rejects_refusal_before_parsing_structured_content():
 
 
 def test_client_retry_uses_one_total_timeout_budget(monkeypatch):
-    clock = iter([0.0, 10.0])
+    clock = iter([0.0, 10.0, 11.0])
     monkeypatch.setattr(
         "sector_lenses.climate_verified_client.time.monotonic",
         lambda: next(clock),
@@ -445,34 +465,25 @@ def test_client_retry_uses_one_total_timeout_budget(monkeypatch):
     assert sdk.options[0]["timeout"] == 150
     assert sdk.options[1]["timeout"] == 140
 
-def test_judgment_contract_uses_provider_supported_summary_array_minimum():
-    schema = stage_output_schema("judgment_review")
-    summary = schema["properties"]["summary_overview"]
-    paragraphs = summary["properties"]["paragraphs"]
-
-    assert summary["type"] == "object"
-    assert summary["required"] == ["paragraphs"]
-    assert paragraphs["type"] == "array"
-    assert paragraphs["minItems"] == 1
-    assert "maxItems" not in paragraphs
-    assert paragraphs["items"]["type"] == "string"
-    assert paragraphs["items"]["minLength"] == 1
+def test_native_judgment_defers_prose_to_final_reader_schema():
+    judgment = stage_output_schema('judgment_review')['properties']
+    assert 'summary_overview' not in judgment
+    assert 'assessment_narratives' not in judgment
+    assert judgment['reader_contract']['enum'] == ['final-reader-v1']
+    reader = stage_output_schema('reader_compiler')['properties']
+    assert reader['summary_paragraphs']['items']['required'] == ['object_id', 'text', 'evidence_ids']
+    assert reader['assessment_narratives']['items']['additionalProperties'] is False
 
 
-def test_judgment_prompt_requires_grounded_standalone_summary_jobs():
-    prompt = build_verified_stage_prompt(
-        "judgment_review",
-        {"source_blocks": [], "facts": [], "analysis": {}, "judgments": {}},
-    ).lower()
-
-    for expected in (
-        "160 to 230 words", "two or three paragraphs",
-        "what the project already does", "connected prose",
-        "practical implication", "relevance", "sensitivity",
-        "responsiveness", "operationalization", "no new facts or actions",
-        "do not copy", "executive_readout",
-    ):
+def test_final_reader_prompt_requires_grounded_standalone_summary():
+    prompt = build_verified_stage_prompt('reader_compiler', {}).lower()
+    for expected in ('160-230 words', 'two or three', 'already recognizes',
+                     'accepted_recommendation_ids', 'connected paragraphs',
+                     'do not copy', 'conditional wider', 'planned/completed'):
         assert expected in prompt
+    review = build_verified_stage_prompt('reader_review', {}).lower()
+    assert 'check meaning, not vocabulary overlap' in review
+    assert 'negation' in review and 'planned versus completed' in review
 
 
 def test_thinking_off_param_is_model_specific():

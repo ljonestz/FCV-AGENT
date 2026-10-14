@@ -60,6 +60,94 @@ def _valid_bundle():
     }
 
 
+def test_passage_registry_preserves_complementary_quotes_and_owns_proof():
+    from sector_lenses.research import resolve_climate_passage_selections
+    content = [{"type": "text", "text": "Search narrative", "citations": [
+        {"url": "https://www.worldbank.org/report", "title": "Burundi climate report", "cited_text": "Flooding affects access in Burundi."},
+        {"url": "https://www.worldbank.org/report", "title": "Burundi climate report", "cited_text": "Drought affects livelihoods in Burundi."},
+    ]}]
+    packet = build_climate_evidence_packet(content, {"beneficiary_countries": ["Burundi"], "project_elements": ["Landing-site rehabilitation"]})
+    assert len(packet["passages"]) == 2
+    labels = {key: value for key, value in _valid_bundle()["claims"][0].items()
+              if key not in {"id", "claim", "source_ids"}}
+    labels["geographies"] = ["Burundi"]
+    result = resolve_climate_passage_selections({"selections": [
+        {**labels, "passage_id": packet["passages"][1]["id"], "claim": "Invented claim", "url": "https://attacker.example"},
+        {**labels, "passage_id": "unknown"},
+    ]}, packet)
+    assert result["status"] == "partial"
+    assert len(result["claims"]) == 1
+    assert result["claims"][0]["claim"] == "Drought affects livelihoods in Burundi."
+    assert result["sources"][0]["url"] == "https://www.worldbank.org/report"
+    assert result["coverage_countries"] == ["Burundi"]
+
+
+def test_passage_registry_does_not_claim_uncovered_country_or_accept_long_proof():
+    from sector_lenses.research import resolve_climate_passage_selections
+    packet = build_climate_evidence_packet([{"type": "text", "citations": [
+        {"url": "https://www.worldbank.org/report", "title": "Burundi climate report", "cited_text": "Flooding affects access in Burundi."},
+        {"url": "https://www.worldbank.org/report", "title": "Burundi climate report", "cited_text": "Long " * 80},
+    ]}], {"beneficiary_countries": ["Burundi", "DRC"], "project_elements": ["Landing-site rehabilitation"]})
+    assert len(packet["passages"]) == 1
+    labels = _valid_bundle()["claims"][0]
+    labels["geographies"] = ["Burundi"]
+    result = resolve_climate_passage_selections({"selections": [
+        {**labels, "passage_id": packet["passages"][0]["id"], "coverage_countries": ["DRC"]},
+    ]}, packet)
+    assert result["status"] == "partial"
+    assert result["coverage_countries"] == ["Burundi"]
+    assert result["uncovered_countries"] == ["DRC"]
+
+
+def test_insufficient_proof_is_retained_for_inspection_but_not_admitted_grounding(monkeypatch):
+    bundle = _valid_bundle()
+    bundle["status"] = "partial"
+    bundle["claims"][0]["source_excerpt"] = bundle["claims"][0]["claim"]
+    monkeypatch.setattr(app_module, "load_climate_bank", lambda: object())
+    monkeypatch.setattr(app_module, "materialize_bank_manifest", lambda *_args: {
+        "bank_status": "unavailable", "warning_code": "bank_country_unavailable",
+    })
+    grounding, retained = app_module.resolve_climate_grounding({}, bundle)
+    assert len(retained["claims"]) == 1
+    assert retained["status"] == "partial"
+    assert retained["warning_code"] == "climate_research_insufficient"
+    assert grounding["research_status"] == "rejected"
+    assert not grounding.get("context_evidence")
+    assert format_climate_research_context(retained) == ""
+    state = app_module.AnalysisState.from_payload({"active_lenses": ["climate"]})
+    prompt = app_module.build_lens_stage_context(state, 2, climate_research=retained)["prompt"]
+    assert retained["claims"][0]["claim"] not in prompt
+
+
+def test_passage_selection_rejects_invented_project_element_and_geography():
+    from sector_lenses.research import resolve_climate_passage_selections
+    packet = build_climate_evidence_packet([{"type": "text", "citations": [
+        {"url": "https://worldbank.org/report", "title": "Burundi report", "cited_text": "Flooding affects access in Burundi."},
+    ]}], {"project_elements": ["Component 3"], "beneficiary_countries": ["Burundi"]})
+    labels = {**_valid_bundle()["claims"][0], "passage_id": "CP-001", "geographies": ["Burundi"]}
+    for changed in ({"project_elements": ["Invented irrigation component"]},
+                    {"project_elements": ["Component 3"], "geographies": ["Upper Nile"]}):
+        result = resolve_climate_passage_selections({"selections": [{**labels, **changed}]}, packet)
+        assert result["status"] == "failed"
+        assert result["claims"] == []
+
+
+def test_project_labels_keep_parent_components_before_subcomponents():
+    from sector_lenses.research import build_climate_project_elements
+    labels = build_climate_project_elements(" ".join(
+        [f"Subcomponent 1.{index}" for index in range(1, 15)] + ["Component 3", "Component 1"]))
+    assert labels[:2] == ["Component 3", "Component 1"]
+
+
+def test_source_labels_match_whole_words_and_keep_congo_countries_distinct():
+    from sector_lenses.research import _source_label_matches
+    assert not _source_label_matches("land", "Floods affect landing sites.")
+    assert not _source_label_matches("a", "Burundi climate report")
+    assert _source_label_matches("Burundi", "Flooding in Burundi.")
+    assert _source_label_matches("DRC", "Democratic Republic of Congo report")
+    assert not _source_label_matches("Republic of Congo", "Democratic Republic of Congo report")
+
+
 def test_country_homepage_cannot_impersonate_a_project_pid():
     raw = _valid_bundle()
     raw["sources"].append({"id": "fake-pid", "source_type": "current-operations",
@@ -353,7 +441,11 @@ def test_climate_research_bundle_keeps_grounded_project_specific_claims():
     assert result["status"] == "complete"
     assert result["claims"][0]["id"] == "climate-claim-1"
     assert result["claims"][0]["time_horizons"] == ["project-lifetime"]
-    assert "Landing-site rehabilitation" in format_climate_research_context(result)
+    assert format_climate_research_context(result) == ''
+    complete = _valid_bundle()
+    complete['sources'].append(_second_authoritative_source())
+    complete['claims'][0]['source_ids'].append('climate-source-2')
+    assert 'Landing-site rehabilitation' in format_climate_research_context(complete)
 
 
 def test_climate_research_bundle_rejects_generic_or_untrusted_claims():
@@ -688,14 +780,22 @@ def test_climate_research_structures_search_notes_without_researching(caplog):
         SimpleNamespace(
             type="text",
             text="Search completed with two relevant sources. " * 1000,
+            citations=[SimpleNamespace(url=url, title=title,
+                cited_text='Changing flood timing affects landing-site access in South Sudan.')
+                for url, title in [('https://www.worldbank.org/south-sudan-ccdr', 'South Sudan CCDR'),
+                                   ('https://www.un.org/south-sudan-floods', 'South Sudan flood evidence')]],
         ),
     ]
     searched = SimpleNamespace(
         content=searched_content,
         stop_reason="end_turn",
     )
-    final = _valid_climate_response()
-    final.stop_reason = "end_turn"
+    labels = _valid_bundle()['claims'][0]
+    labels['geographies'] = ['South Sudan']
+    final = SimpleNamespace(stop_reason='end_turn', content=[SimpleNamespace(type='text',
+        text=CLIMATE_RESEARCH_START + json.dumps({'selections': [
+            {**labels, 'passage_id': 'CP-001'}, {**labels, 'passage_id': 'CP-002'},
+        ]}) + CLIMATE_RESEARCH_END)])
     client = _SequencedResearchClient([searched, final])
 
     result = app_module.run_climate_web_research(
@@ -703,6 +803,8 @@ def test_climate_research_structures_search_notes_without_researching(caplog):
         "Water",
         {
             "documents": ["South Sudan PCN.docx"],
+            "beneficiary_countries": ["South Sudan"],
+            "project_elements": ["Landing-site rehabilitation"],
             "document_excerpt": "Upper Nile landing sites. " * 1000,
         },
         client,
@@ -712,25 +814,20 @@ def test_climate_research_structures_search_notes_without_researching(caplog):
     assert result["attempts"] == 1
     assert len(client.calls) == 2
     recovery = client.calls[1]
-    assert recovery["tools"] == client.calls[0]["tools"]
-    assert recovery["betas"] == client.calls[0]["betas"]
-    assert recovery["tool_choice"] == {"type": "none"}
+    assert "tools" not in recovery and "betas" not in recovery and "tool_choice" not in recovery
     assert recovery["model"] == "claude-haiku-5-5"
     assert recovery["max_tokens"] == 4000
     # Thinking disabled so Haiku 5.5's adaptive thinking can't consume the output
     # budget and truncate the research JSON (the 4.6-era budget assumed no thinking).
     assert recovery["thinking"] == {"type": "disabled"}
-    assert [message["role"] for message in recovery["messages"]] == ["user", "assistant", "user"]
-    assert recovery["messages"][1]["content"] is searched_content
-    assert recovery["messages"][1]["content"][1].content[0].encrypted_content == "encrypted-secret" * 1000
+    assert [message["role"] for message in recovery["messages"]] == ["user"]
     request_text = recovery["messages"][-1]["content"]
     assert "EVIDENCE PACKET" in request_text
     assert "original-search-secret" not in request_text
     assert "encrypted-secret" not in request_text
     assert CLIMATE_RESEARCH_START in request_text
-    assert "four to six" in request_text.lower()
-    assert '"source_type"' in request_text
-    assert '"time_horizons"' in request_text
+    assert "passage_id" in request_text
+    assert "time_horizons" in request_text
     assert len(request_text) < 20_000
     assert "original-search-secret" not in caplog.text
     assert "encrypted-secret" not in caplog.text
@@ -837,7 +934,9 @@ def test_climate_research_does_not_retry_truncated_structured_evidence():
         client,
     )
 
-    assert result["status"] == "failed"
+    assert result["status"] == "partial"
+    assert len(result["claims"]) == 1
+    assert not climate_research_evidence_gate(result)["ok"]
     assert result["attempts"] == 1
     assert len(client.calls) == 1
 

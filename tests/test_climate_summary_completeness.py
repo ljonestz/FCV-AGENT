@@ -1,3 +1,4 @@
+from tests.test_climate_verified_pipeline import _native_pass_review
 """Synthetic no-cost checks for substantive gaps and multiple valid actions."""
 
 from copy import deepcopy
@@ -59,7 +60,8 @@ def _run_multiple(count=5, reject_ids=()):
     client = FakeClient(_multiple_responses(count), [])
     reviewer = FakeClient([{"verdict": "revise" if reject_ids else "pass",
         "reason_codes": ["PROJECT_FACT_UNSUPPORTED"] if reject_ids else [],
-        "object_ids": list(reject_ids), "issues": []}], [])
+        "object_ids": list(reject_ids), "issues": [],
+        "passed_core_ids": [f"REC-{index:03d}" for index in range(1, count + 1) if f"REC-{index:03d}" not in reject_ids]}], [])
     result = run_verified_climate_pipeline(**_arguments(),
         clients=PipelineClients(client, reviewer))
     return result, client, reviewer
@@ -111,7 +113,7 @@ def test_unknown_gap_evidence_is_removed_before_compilation_and_summary():
     responses = _multiple_responses()
     responses[1]["residual_gaps"][0]["evidence_ids"] = ["CE-UNKNOWN"]
     client = FakeClient(responses, [])
-    reviewer = FakeClient([{"verdict": "pass", "reason_codes": [], "object_ids": []}], [])
+    reviewer = FakeClient([_native_pass_review], [])
     result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(client, reviewer))
     assert "GAP_EVIDENCE_REF_INVALID" in result["validation"]["reason_codes"]
     assert len(result["analysis"]["residual_gaps"]) == 4

@@ -13,6 +13,8 @@ STAGES = {
     "recommendation_compiler",
     "drafting_compiler",
     "conditional_review",
+    "reader_compiler",
+    "reader_review",
 }
 
 

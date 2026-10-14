@@ -1,3 +1,4 @@
+from tests.test_climate_verified_pipeline import _native_pass_review
 """No-cost regressions for native citations and empty contextual evidence."""
 
 from copy import deepcopy
@@ -48,7 +49,7 @@ def test_project_only_analysis_retains_supported_gaps_responses_and_actions():
     responses[1]["existing_responses"]=[{"response_id":"ER-001","project_fact_ids":["PF-001"],"pathway_ids":["PW-001"],"description":"The design addresses flood resilience. Seasonal access is linked to documented project activities.","limitation":"Access criteria remain unclear."}]
     args=_arguments();args["context_evidence"]=[]
     result=run_verified_climate_pipeline(**args,clients=PipelineClients(
-        FakeClient(responses,[]),FakeClient([{"verdict":"pass","reason_codes":[],"object_ids":[],"issues":[]}],[])))
+        FakeClient(responses,[]),FakeClient([_native_pass_review],[])))
     reader=build_reader_model(result)
     assert len(reader["summary_gaps"])==5
     assert len(reader["priorities"])==5
@@ -59,7 +60,7 @@ def test_pruned_analysis_has_a_plain_reader_limitation():
     responses=deepcopy(_multiple_responses())
     for item in responses[1]["pathways"]:item["evidence_ids"]=["CE-NOT-SUPPLIED"]
     result=run_verified_climate_pipeline(**_arguments(),clients=PipelineClients(
-        FakeClient(responses,[]),FakeClient([{"verdict":"pass","reason_codes":[],"object_ids":[],"issues":[]}],[])))
+        FakeClient(responses,[]),FakeClient([_native_pass_review],[])))
     reader=build_reader_model(result)
     assert reader["analysis_status"]=="partial"
     assert "withheld" in reader["analysis_message"]
@@ -86,21 +87,39 @@ def test_pruned_analysis_notice_is_retained_in_html_word_and_both_views():
 
 def test_pause_turn_search_hits_are_counted_across_preserved_turns():
     import app
-    from tests.test_climate_research import _SequencedResearchClient, _valid_climate_response
-    hit=SimpleNamespace(type="web_search_tool_result",content=[SimpleNamespace(
-        title="World Bank climate report",url="https://worldbank.org/climate",encrypted_content="opaque")])
-    paused=SimpleNamespace(content=[hit],stop_reason="pause_turn")
-    continued=SimpleNamespace(content=[hit,SimpleNamespace(type="text",text="Bounded source notes.",citations=[])],stop_reason="end_turn")
-    client=_SequencedResearchClient([paused,continued,_valid_climate_response()])
-    result=app.run_climate_web_research("Burundi","Transport",{},client)
-    assert result["status"]=="complete"
-    assert len(client.calls)==3
-    assert client.calls[0]["thinking"]=={"type":"between_tools"}
-    assert client.calls[0]["tools"][0]["max_uses"]==2
-    assert client.calls[-1]["tool_choice"]=={"type":"none"}
-    assert client.calls[-1]["messages"][1]["content"] is paused.content
-    assert client.calls[-1]["messages"][2]["content"] is continued.content
-
+    from tests.test_climate_research import _SequencedResearchClient
+    from sector_lenses.research import CLIMATE_RESEARCH_START, CLIMATE_RESEARCH_END
+    hits = [SimpleNamespace(type='web_search_tool_result', content=[SimpleNamespace(
+        title=title, url=url, encrypted_content='opaque')])
+        for title, url in [('Burundi climate report', 'https://worldbank.org/climate'),
+                           ('Burundi flood report', 'https://un.org/flood')]]
+    citations = [SimpleNamespace(title=title, url=url, cited_text='Flooding disrupts access in Burundi.')
+        for title, url in [('Burundi climate report', 'https://worldbank.org/climate'),
+                           ('Burundi flood report', 'https://un.org/flood')]]
+    paused = SimpleNamespace(content=[hits[0], SimpleNamespace(type='text', text='Source notes.',
+        citations=[citations[0]])], stop_reason='pause_turn')
+    continued = SimpleNamespace(content=[hits[1], SimpleNamespace(type='text', text='Source notes.',
+        citations=[citations[1]])], stop_reason='end_turn')
+    selections = [{'passage_id': identifier, 'geographies': ['Burundi'],
+        'project_elements': ['Border infrastructure'], 'affected_groups': ['Traders'],
+        'systems_or_assets': ['Road access'], 'evidence_status': 'observed',
+        'confidence': 'medium', 'time_horizons': ['project-lifetime']}
+        for identifier in ('CP-001', 'CP-002')]
+    classified = SimpleNamespace(content=[SimpleNamespace(type='text',
+        text=CLIMATE_RESEARCH_START + json.dumps({'selections': selections}) + CLIMATE_RESEARCH_END)],
+        stop_reason='end_turn')
+    client = _SequencedResearchClient([paused, continued, classified])
+    result = app.run_climate_web_research('Burundi', 'Transport', {'beneficiary_countries': ['Burundi'], 'project_elements': ['Border infrastructure']}, client)
+    assert result['status'] == 'complete'
+    assert len(client.calls) == 3
+    assert client.calls[0]['thinking'] == {'type': 'between_tools'}
+    assert client.calls[0]['tools'][0]['max_uses'] == 2
+    # Preserve encrypted provider blocks only for actual search continuation.
+    assert client.calls[1]['messages'][1]['content'] is paused.content
+    assert 'tools' not in client.calls[-1]
+    assert [message['role'] for message in client.calls[-1]['messages']] == ['user']
+    assert 'CP-001' in client.calls[-1]['messages'][0]['content']
+    assert 'CP-002' in client.calls[-1]['messages'][0]['content']
 
 
 def test_source_notice_explains_regional_coverage_and_omits_normal_primary_selection():
