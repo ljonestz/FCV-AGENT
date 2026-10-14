@@ -479,7 +479,8 @@ def test_final_reader_prompt_requires_grounded_standalone_summary():
     prompt = build_verified_stage_prompt('reader_compiler', {}).lower()
     for expected in ('160-230 words', 'two or three', 'already recognizes',
                      'accepted_recommendation_ids', 'connected paragraphs',
-                     'do not copy', 'conditional wider', 'planned/completed'):
+                     'do not copy', 'plausible wider',
+                     'conditional analytical inference', 'planned/completed'):
         assert expected in prompt
     review = build_verified_stage_prompt('reader_review', {}).lower()
     assert 'check meaning, not vocabulary overlap' in review

@@ -80,7 +80,7 @@ def validate_final_reader(payload: object, assessment: dict[str, object]) -> tup
                 or record.get("object_id") != f"NARR-{theme}"
                 or not isinstance(texts, list) or not 1 <= len(texts) <= 2
                 or any(not isinstance(text, str) for text in texts)
-                or not 70 <= sum(len(text.split()) for text in texts) <= 130
+                or not 70 <= sum(len(text.split()) for text in texts) <= 180
                 or not grounded(record, texts)):
             return [], []
         themes.add(theme)

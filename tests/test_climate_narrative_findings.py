@@ -112,3 +112,35 @@ def test_summary_does_not_require_rating_labels_in_flowing_prose():
     second = "The remaining priorities confirm access for traders during works and support reliable delivery. " * 7
     paragraphs = [first.strip(), second.strip()]
     assert validate_summary_overview({"paragraphs": paragraphs}, canonical_text=paragraphs) == paragraphs
+
+
+def test_benefits_prose_prompts_build_mechanisms_before_diagnosing_gaps():
+    from sector_lenses.climate_verified_prompts import (
+        _analysis_prompt, _reader_prompt, _reader_review_prompt,
+    )
+
+    analysis = _analysis_prompt({})
+    assert 'who could benefit' in analysis
+    assert 'existing_responses and pathways' in analysis
+    assert 'not a documented omission' in analysis
+    reader = ' '.join(_reader_prompt({}).split())
+    assert '150-180 words' in reader
+    assert 'Start with what the project could make possible' in reader
+    assert 'who could be left out' in reader
+    assert 'instrument content was not supplied' in reader
+    review = ' '.join(_reader_review_prompt({}).split())
+    assert 'absence of an explicit dividend mechanism' in review
+    assert 'conditional mechanism' in review
+
+
+def test_clear_sentence_opening_keeps_proper_name_and_acronym_guards():
+    from sector_lenses.climate_verified_schemas import validate_summary_fragment
+
+    canonical = 'The project supports traders and fair access.'
+    assert validate_summary_fragment(
+        'Clear access arrangements support fair participation.',
+        canonical_text=canonical, allow_paraphrase=True)
+    for text in ('Clear Cooperative supports traders.', 'CLEAR supports traders.',
+                 'Clear supports traders.'):
+        assert not validate_summary_fragment(
+            text, canonical_text=canonical, allow_paraphrase=True)

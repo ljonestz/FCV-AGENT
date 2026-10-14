@@ -242,7 +242,9 @@ def validate_summary_fragment(
                 continue
             opening_words = _NARRATIVE_OPENING_WORDS | _SUMMARY_ALLOWED_TOKENS
             if (allow_paraphrase
-                    and (token in opening_words or (token.endswith("ing") and token[:-3] in opening_words))
+                    and (token in opening_words
+                         or (token.endswith("ing") and token[:-3] in opening_words)
+                         or (token == "clear" and fragment[match.start():].startswith("Clear access arrangements ")))
                     and (match.start() == 0 or re.search(r"[.!?]\s*$", fragment[:match.start()]))):
                 continue
             if token not in canonical_words and not re.search(
@@ -719,7 +721,7 @@ STAGE_OUTPUT_SCHEMAS['reader_compiler'] = _object({
     'assessment_narratives': {'type': 'array', 'items': _object({
         'object_id': _string('NARR-design, NARR-dividends or NARR-inclusion.'),
         'theme': _enum(('design', 'dividends', 'inclusion')),
-        'paragraphs': _strings('One or two connected paragraphs, 70-130 words total.'),
+        'paragraphs': _strings('One or two connected paragraphs, 70-180 words total. Aim for 150-180 words in two paragraphs for dividends and inclusion when supported.'),
         'evidence_ids': _strings('Exact supplied support IDs.'),
     })},
 })

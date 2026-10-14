@@ -12,6 +12,23 @@
 
 ## Overview
 
+### 2026-10-14 richer benefits prose preflight (rollout held)
+
+The user requested richer dividends/fair-benefit findings and authorized one new
+quality8 paid run after offline fixes. Analysis 2.10 records conditional benefit
+mechanisms and enabling conditions in existing responses/pathways, including who
+could benefit or bear costs. Final reader/reviewer 1.2 use project-feature-led,
+connected prose, distinguish missing instrument visibility from failed protection,
+and never treat absent dividend language or an explicit mechanism as a defect.
+Dividends/inclusion target 150-180 words in two paragraphs when supported; native
+admission now allows 70-180 words, matching the existing theme renderer and keeping
+short saved outputs readable. Reader version 2.18. An exact sentence-initial Clear access arrangements
+exception retains one-word actor, multiword-name and acronym guards. No extra calls or budget changes.
+Focused177passed; full1510passed/one obsolete wording assertion; aligned client
+module18passed. Runtime unchanged after full suite. Fresh quality8 acceptance
+remains outstanding.
+See docs/superpowers/plans/2026-10-14-climate-benefits-prose.md.
+
 ### 2026-10-14 quality7 reader-boundary follow-up (rollout held)
 
 The one paid quality7 run passed research (2 sources/4 passages) but failed at the

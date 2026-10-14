@@ -706,7 +706,7 @@ def test_manifest_is_privacy_safe_and_scoped_to_the_run():
     assert first["manifest"]["run_id"] == "run-test"
     assert second["manifest"]["run_id"] == "run-two"
     assert first["manifest"]["source_count"] == 1
-    assert first["manifest"]["renderer_version"] == "climate-reader-v2.17"
+    assert first["manifest"]["renderer_version"] == "climate-reader-v2.18"
     assert first["manifest"]["extraction_version"] == "source-blocks-v3"
     assert (
         first["manifest"]["prompt_versions"]["fact_extraction"]
@@ -714,7 +714,7 @@ def test_manifest_is_privacy_safe_and_scoped_to_the_run():
     )
     assert (
         first["manifest"]["prompt_versions"]["bounded_analysis"]
-        == "climate-analysis-v2.9"
+        == "climate-analysis-v2.10"
     )
     assert (
         first["manifest"]["prompt_versions"]["judgment_review"]
@@ -1751,4 +1751,60 @@ def test_native_final_reader_requires_all_three_theme_answers():
         clients=PipelineClients(FakeClient(responses, []), _pass_review_client()))
     final = _final_reader()
     final["assessment_narratives"] = []
+    assert validate_final_reader(final, result) == ([], [])
+
+
+def test_native_reader_preserves_richer_reviewed_benefit_findings(tmp_path):
+    """Synthetic prose tests transport/admission, not project analytical quality."""
+    from sector_lenses.climate_final_reader import reviewed_final_reader
+    from sector_lenses.climate_verified_render import (
+        build_reader_model, render_reader_html, write_reader_docx,
+    )
+    from docx import Document
+    from sector_lenses.climate_verified_pipeline import PipelineClients, run_verified_climate_pipeline
+
+    final = _final_reader()
+    for record in final['assessment_narratives']:
+        if record['theme'] in {'dividends', 'inclusion'}:
+            base = record['paragraphs'][0]
+            second = (
+                'The project could support more reliable livelihoods where people can use '
+                'the facilities fairly. This potential depends on access and delivery '
+                'arrangements that work for the intended users during disruption. '
+                'The existing measures provide a foundation, while the remaining uncertainty '
+                'concerns their practical application. Clear access arrangements would '
+                'help connect the planned investments to benefits people can use.'
+            )
+            record['paragraphs'] = [base, second]
+            assert 130 < sum(len(p.split()) for p in record['paragraphs']) <= 180
+    responses = _responses()
+    responses[2]['reader_contract'] = 'final-reader-v1'
+    clean_pass = {'verdict': 'pass', 'object_ids': [], 'reason_codes': [],
+                  'issues': [], 'passed_core_ids': ['REC-001']}
+    result = run_verified_climate_pipeline(
+        **_arguments(), clients=PipelineClients(
+            FakeClient(responses + [final], []), FakeClient([clean_pass, clean_pass], [])))
+    assert result['summary_overview_status'] == 'generated'
+    reader = build_reader_model(result)
+    for theme in reader['assessment_themes']:
+        assert theme['narrative_status'] == 'generated'
+    assert second in render_reader_html(reader)
+    docx_path = write_reader_docx(reader, tmp_path / 'synthetic-benefits.docx')
+    assert second in '\n'.join(p.text for p in Document(docx_path).paragraphs)
+    assert reviewed_final_reader(final, {'verdict': 'block'}, result) == ([], [])
+
+
+def test_native_reader_still_withholds_overlong_findings():
+    from sector_lenses.climate_final_reader import validate_final_reader
+
+    responses = _responses()
+    responses[2]['reader_contract'] = 'final-reader-v1'
+    result = run_verified_climate_pipeline(
+        **_arguments(), clients=PipelineClients(
+            FakeClient(responses + [_final_reader()], []),
+            FakeClient([_native_pass_review] * 2, [])))
+    final = _final_reader()
+    assert validate_final_reader(final, result)[0]
+    final['assessment_narratives'][1]['paragraphs'] = ['The project supports traders. ' * 46]
+    assert len(final['assessment_narratives'][1]['paragraphs'][0].split()) > 180
     assert validate_final_reader(final, result) == ([], [])

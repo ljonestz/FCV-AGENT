@@ -514,3 +514,19 @@ leave current conditions unverified. Relevance horizons are not observation date
 historical/off-site events cannot establish current project-site conditions.
 All eight prompt versions advance to record that common calibration. No budget,
 provider, retry, entitlement, authority or paid-call-count change is introduced.
+
+
+## 2026-10-14 benefits prose preflight
+
+Analysis2.10 preserves plausible positive benefit mechanisms and their enabling
+conditions in the existing evidence-linked response/pathway registers. The final
+compiler and meaning reviewer1.2 assess project-feature-led, conditional potential
+and fairness, rather than missing dividends language or an unstated mechanism.
+Dividends/inclusion target two connected paragraphs,150-180 words when supported.
+Native findings accept70-180 words, aligned with the existing shared renderer180
+cap; short saved native outputs remain valid. Reader version2.18. An exact ordinary
+sentence-initial Clear access arrangements exemption retains one-word actor,
+multiword-name and acronym rejection.
+Practical strengthening actions still follow independently accepted decisions.
+No new fields, evidence entitlements, dependencies, calls, retries or budgets.
+Fresh paid acceptance remains separate from offline transport and export checks.

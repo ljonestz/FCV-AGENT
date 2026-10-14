@@ -144,6 +144,13 @@ competitive grants, credit existing competition and targeting before assessing
 whether exposed groups can participate fairly and receive usable support.
 A planned call whose date has passed is not proof it happened. Consider practical,
 within-scope conditions for wider social benefits, not missing dividends labels.
+Use existing_responses and pathways to explain who could benefit and through what
+mechanism, as well as who could lose access or bear costs. Where evidenced project
+features plausibly reduce a climate-related pressure on livelihoods, cooperation
+or trust, record that conditional mechanism and its enabling conditions. Give
+credit for the design's positive potential before examining what remains uncertain.
+An unstated dividend mechanism is not a documented omission. Do not infer a peace
+impact from routine resilience alone or turn an optional benefit into a requirement.
 Do not manufacture a gap or duplicate an existing arrangement to fill a slot.
 Reference rules: project_anchor_ids and project_fact_ids copy supplied facts.claim_id
 values exactly. pathways.evidence_ids may contain only supplied context_evidence.evidence_id
@@ -486,10 +493,27 @@ already recognizes and addresses. Explain the material remaining challenge and
 bridge to accepted priorities. Refer to proposed actions only when supported by
 accepted_recommendation_ids. Never mention a withheld action as a recommendation.
 Assessment narratives: three short question-led answers, theme design, dividends,
-inclusion; object_id NARR-design/NARR-dividends/NARR-inclusion. One or two paragraphs
-each totalling 70-130 words. Explain design and delivery risks, conditional wider
-peace/social benefits and how they could be encouraged, and fair access/possible
-harm. Credit existing responses. Do not criticize absent dividend terminology.
+inclusion; object_id NARR-design/NARR-dividends/NARR-inclusion. Keep design to
+90-130 words. For dividends and inclusion, aim for 150-180 words each in two short,
+connected paragraphs when the support is rich enough. All findings must stay
+within 70-180 words; do not pad sparse evidence merely to reach the target.
+Start with what the project could make possible for people, grounded in concrete
+activities and delivery choices. Explain the causal connection in ordinary words.
+For dividends, distinguish the immediate climate benefit from a plausible wider
+livelihood, cooperation or trust benefit. Assess the conditions that could make
+that benefit credible, the constraints that could weaken it, and how accepted
+priorities could strengthen it. A document need not describe the dividend or its
+mechanism explicitly. Do not open with or criticize their absence, or simply
+conclude that wider benefits are unspecified. Do not promise a peace outcome.
+For inclusion, explain who can use the investment or support, who could be left
+out, and how access barriers or delivery choices could distribute benefits and
+costs unevenly. Credit documented targeting, consultation, grievance and other
+protections that apply. Explain what remains uncertain and why it matters to
+people. If instrument content was not supplied, distinguish limited visibility
+from ineffective protections. Use accepted priorities for practical improvements.
+Make each answer a connected assessment, not a list of omissions or a robotic
+evidence disclaimer. Convey uncertainty naturally through could, if and depends
+on, rather than ending with a formula such as "This is a conditional inference."
 Connect the answers naturally without repeating the operational context inventory.
 Explain uncertainty and unfamiliar concepts in ordinary language. Use flowing prose,
 no bullets, semicolons, label-and-colon verdicts or references to four dimensions.
@@ -497,7 +521,8 @@ Each record includes evidence_ids for its specific supporting facts/findings and
 accepted actions. Add no facts, actors, numbers, dates, authority or commitments.
 Evidence IDs bind support, not permission to change measured quantities, units,
 negation, planned/completed status or inference into fact. Do not copy the executive
-readout. Aim for about 190 summary words. Omit an unsupported theme rather than pad.""",
+readout. Aim for about 190 summary words. For each required theme with limited
+evidence, explain the grounded potential and limits without inventing detail.""",
         payload,
     )
 
@@ -508,9 +533,17 @@ def _reader_review_prompt(payload: dict[str, object]) -> str:
 support_records and accepted recommendations. Check meaning, not vocabulary overlap.
 Check negation, who/what quantities count, dates, units, planned versus completed
 status, source scope, inference versus documented intent, and existing mitigation.
-Fluent paraphrase is allowed; adding or reversing meaning is not. Proposed actions
-must follow accepted decisions only. Lack of peace/social-dividend terminology is
-not a defect. Check all paragraphs; no broad editorial rewriting. A pass certifies
+Fluent paraphrase and a conditional mechanism drawn from cited project features
+and admitted pathways are allowed. Such an inference must preserve uncertainty,
+remain within scope and never become a documented intention or demonstrated
+impact. Adding project facts or reversing meaning is not allowed. Proposed actions
+must follow accepted decisions only. Neither lack of peace/social-dividend
+terminology nor absence of an explicit dividend mechanism is a defect. A claim
+that either absence establishes a project weakness is RESIDUAL_GAP_UNSUPPORTED.
+Check that benefits and fairness claims have a project-specific causal explanation,
+credit existing measures and distinguish unseen instrument content from failed
+protection. Do not require impacts to be proven for a qualified potential benefit.
+Check all paragraphs; no broad editorial rewriting. A pass certifies
 all paragraphs. Return verdict pass/revise/block, reason_codes from the native enum,
 object_ids and issues with short explanations. Target exact SUM-... or NARR-... IDs.
 Use empty arrays for pass. Identify all affected paragraph IDs for any failure.
