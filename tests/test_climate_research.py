@@ -1275,18 +1275,34 @@ def test_climate_research_attempt_logging_identifies_response_boundary(caplog):
 @pytest.mark.parametrize("host,expected", [
     ("notworldbank.org", None), ("notipcc.ch", None),
     ("documents1.worldbank.org", "world-bank"), ("www.ipcc.ch", "scientific")])
-def test_passage_source_type_requires_a_complete_official_domain(host, expected):
-    from sector_lenses.research import resolve_climate_passage_selections
+def test_passage_source_type_requires_a_complete_official_domain(host, expected, monkeypatch):
+    from sector_lenses import research
     packet = build_climate_evidence_packet([{"type": "text", "citations": [{
         "url": f"https://{host}/report", "title": "Burundi climate report",
         "cited_text": "Flooding affects access in Burundi."}]}],
         {"project_elements": ["Component 2"], "beneficiary_countries": ["Burundi"]})
     if expected is None:
         assert packet["passages"] == []
-        return
-    result = resolve_climate_passage_selections({"selections": [{
+        packet = build_climate_evidence_packet([{"type": "text", "citations": [{
+            "url": "https://www.worldbank.org/report", "title": "Burundi climate report",
+            "cited_text": "Flooding affects access in Burundi."}]}],
+            {"project_elements": ["Component 2"], "beneficiary_countries": ["Burundi"]})
+        packet["passages"][0]["url"] = f"https://{host}/report"
+    captured = {}
+    normalize = research.normalize_climate_research_bundle
+
+    def capture_classification(payload):
+        captured.update(payload)
+        return normalize(payload)
+
+    monkeypatch.setattr(research, "normalize_climate_research_bundle", capture_classification)
+    result = research.resolve_climate_passage_selections({"selections": [{
         "passage_id": packet["passages"][0]["id"], "geographies": ["Burundi"],
         "project_elements": ["Component 2"], "confidence": "medium",
         "evidence_status": "observed", "time_horizons": ["current-near-term"],
         "evidence_gap": "Current status unverified."}]}, packet)
-    assert result["sources"][0]["source_type"] == expected
+    assert captured["sources"][0]["source_type"] == (expected or "specialist")
+    if expected is None:
+        assert result["sources"] == []
+    else:
+        assert result["sources"][0]["source_type"] == expected

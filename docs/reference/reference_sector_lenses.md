@@ -581,3 +581,8 @@ diagnostics retain initial response, prechecks, targets/patch, specific merge re
 and meaning reviews. They cannot become grounding, reader or export content.
 Normalization 2.4; renderer 2.19 unchanged. Frozen quality8/9 replay remains fallback
 without genuine clean review. Production/main/ITS held; ITS mirror outstanding.
+
+CodeQL follow-up aligns World Bank/IPCC source classification with the existing
+exact-domain or dot-delimited subdomain rule. Bare suffix lookalikes receive no
+official-source classification; unchanged trusted HTTPS admission rejects their
+URLs. No research schema, accepted source scope or provider change.

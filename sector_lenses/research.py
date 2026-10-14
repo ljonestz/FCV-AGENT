@@ -284,8 +284,8 @@ def resolve_climate_passage_selections(payload: Any, packet: dict[str, Any]) -> 
         if url_key not in source_ids:
             source_ids[url_key] = f"climate-source-{len(sources) + 1}"
             host = (urlparse(url).hostname or "").casefold()
-            source_type = "world-bank" if host.endswith("worldbank.org") else (
-                "scientific" if host.endswith("ipcc.ch") else "un" if any(
+            source_type = "world-bank" if host == "worldbank.org" or host.endswith(".worldbank.org") else (
+                "scientific" if host == "ipcc.ch" or host.endswith(".ipcc.ch") else "un" if any(
                     host == suffix or host.endswith('.' + suffix)
                     for suffix in ('un.org', 'undp.org', 'unep.org', 'unhcr.org', 'fao.org', 'wfp.org', 'iom.int')
                 ) else "specialist")

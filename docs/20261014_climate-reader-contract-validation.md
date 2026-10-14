@@ -98,10 +98,22 @@ was stopped after seven early failures; its child Python had lost UTF-8 mode. An
 exact failing case reproduced UnicodeEncodeError while sending existing UI text to
 Node through Windows cp1252. The UTF-8 frontend module passed without application
 changes. The corrected runner explicitly carries -X utf8 into its child, preserves
-source hashes and logs, and runs in a normal shell. Final full result:
+source hashes and logs, and runs in a normal shell. Reader-contract checkpoint:
 **1,544 passed in 263.76 seconds**, exit 0, source/tests unchanged during the run.
 Syntax compilation and whitespace diff checks passed. No unresolved regression
 failure remains. No provider call was made during offline repair/verification.
+
+After push of cc261cd, the test deploy was live and /health reported that exact
+build/status ok/quality. The Python CodeQL workflow succeeded, but its separate
+security-result check reported a high-severity Incomplete URL substring sanitization
+alert in the earlier research source classifier, sector_lenses/research.py:287.
+Trusted URL admission already rejects lookalikes; classification used a bare suffix.
+Two targeted tests reproduced World Bank/IPCC lookalike misclassification before
+normalization. Two domain checks now require the exact domain or dot-delimited
+subdomain, matching the existing trust rule. The complete research module passed:
+**52 tests in 3.62 seconds**. Final frozen full regression including this small
+CI-driven correction: **1,544 passed in 243.23 seconds**, exit0, source/tests unchanged.
+No paid call, entitlement or schema change.
 
 ## Local evidence locations and remaining acceptance
 
@@ -111,6 +123,8 @@ session SHA256 is 1674ebedc1a6c60a90c1aaf77957db0718b9df231f6bbc216052d0289b4570
 Quality8 originals remain unchanged. Full logs are in output/:
 20261014-reader-contract-full-regression.txt (stopped encoding failure) and
 20261014-reader-contract-full-regression-utf8.txt (corrected runner).
+Final post-CodeQL snapshot: 20261014-reader-contract-final-regression.txt and
+20261014-reader-contract-final-regression-process.json.
 
 Offline repair does not establish fresh hosted native prose quality or production
 readiness. A future trial needs separate paid authorization after concrete offline

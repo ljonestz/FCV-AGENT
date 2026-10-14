@@ -34,6 +34,11 @@ Reader 2.19 and legacy contracts are unchanged. No further paid call is authoriz
 offline archive replay supplies no retrospective semantic pass. Production/main/ITS
 remain held. See docs/20261014_climate-reader-contract-validation.md.
 
+CodeQL follow-up: research source classification now uses exact World Bank/IPCC
+domains or their dot-delimited subdomains, matching the existing trusted HTTPS
+admission rule. Lookalike hosts cannot receive official-source labels even before
+normalization rejects them. No source entitlement or schema change.
+
 ### 2026-10-14 richer benefits prose preflight (rollout held)
 
 The user requested richer dividends/fair-benefit findings and authorized one new
