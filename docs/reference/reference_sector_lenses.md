@@ -530,3 +530,22 @@ multiword-name and acronym rejection.
 Practical strengthening actions still follow independently accepted decisions.
 No new fields, evidence entitlements, dependencies, calls, retries or budgets.
 Fresh paid acceptance remains separate from offline transport and export checks.
+
+## 2026-10-14 quality8 reader admission follow-up
+
+Paid quality8 retained four accepted action cores and five Summary gaps, but its
+native reader was withheld before meaning review. Original output is preserved;
+no retroactive pass is supplied. The single paid allowance is consumed.
+
+Compiler1.3/normalization2.3 add a unique explicit same-passage missing-entity
+citation repair, bounded grammatical/conditional-causality checks, and at most one
+targeted final-reader correction plus fresh meaning review. The existing shared
+correction allowance/deadline bounds this path. Untargeted records, themes and
+accepted actions are preserved; new evidence IDs, names, quantities and action
+anchors are rejected. Independent clean native reader_review remains mandatory.
+An external source-checked editorial preview is separate from native acceptance.
+Production/main/ITS remain held; PR83 stays draft.
+
+Renderer2.19 also links directly cited accepted recommendations from findings to
+their priority cards, preserving existing gap-based links. Compiler1.3 answers
+the renderer's questions directly instead of repeating their headings in prose.

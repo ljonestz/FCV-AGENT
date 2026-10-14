@@ -659,8 +659,10 @@ def _assessment_themes(gaps: list[dict], questions: list[dict], priorities: list
                        "narrative_status": "generated" if key in accepted else "fallback",
                        "findings": findings,
                        "priority_ranks": sorted({rank for item in findings for rank in item["priority_ranks"]}
-                           | {p["rank"] for p in priorities if isinstance(p.get("residual_gap_ids"), (list, tuple))
-                              and set(p["residual_gap_ids"]) & accepted_refs.get(key, set())})})
+                           | {p["rank"] for p in priorities
+                              if p.get('recommendation_id') in accepted_refs.get(key, set())
+                              or (isinstance(p.get("residual_gap_ids"), (list, tuple))
+                                  and set(p["residual_gap_ids"]) & accepted_refs.get(key, set()))})})
     return result
 
 

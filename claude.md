@@ -1284,3 +1284,25 @@ Versions judgments2.12, recommendations2.14, reader2.12. No added provider calls
 or schema fields. New editorial preview asserts admission of all three narratives.
 See docs/20261013_climate-cohesive-brief-validation.md. Fresh paid generation remains
 unvalidated and PR83 remains draft.
+
+### 2026-10-14 quality8 outcome and reader repair
+
+Quality8 on d6282ef produced four independently accepted priorities and five
+Summary gaps. Both-country research recovered on its existing bounded second
+attempt. Native Summary/findings were withheld before meaning review; the actual
+dividends fallback was 43 words. The single paid allowance is consumed. Preserve
+the original session; do not invent or substitute a native reader_review pass.
+
+Post-paid fixes bind only a unique explicit sibling fact from an already-cited
+passage, recognize exact grammatical prose openings and distinguish qualified
+causal consequences from new project instructions. One targeted final-reader
+correction shares the existing output allowance/deadline and requires fresh
+meaning review. Untargeted records/themes/actions stay unchanged; correction
+cannot add evidence IDs or new names, quantities or action anchors. Compiler1.3,
+normalization2.3; reader2.19 links direct accepted recommendation references to
+priority cards. Semantic reviewer1.2 remains unchanged.
+
+The original compiler response passes the fixed structural gate but remains
+withheld without meaning review. A separate source-checked editorial preview is
+not native acceptance. See docs/20261014_climate-quality8-validation.md. PR83,
+production/main and ITS remain held pending fresh hosted prose acceptance.

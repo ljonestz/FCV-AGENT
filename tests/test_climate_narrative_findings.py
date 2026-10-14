@@ -22,6 +22,17 @@ def test_narrative_is_admitted_and_links_preserved():
     assert 'href="#climate-priority-2"' in html
     assert 'climate-theme-evidence' not in html
 
+
+def test_native_finding_links_directly_cited_accepted_priority():
+    _, assessment = example()
+    assessment['reader_contract'] = 'final-reader-v1'
+    priority = {'recommendation_id':'REC-2', 'rank':2, 'residual_gap_ids':[]}
+    assessment['priorities'] = [priority]
+    assessment['assessment_narratives'][0]['evidence_ids'] = ['PF-1', 'REC-2']
+    themes = _assessment_themes([], [], [priority], [], assessment=assessment)
+    assert themes[0]['priority_ranks'] == [2]
+    assert 'href="#climate-priority-2"' in _themes_html({'assessment_themes':themes})
+
 def test_unknown_evidence_and_new_numbers_fall_back_to_complete_findings():
     for edit in ("evidence", "number", "entity", "duplicate"):
         gaps, assessment = example()
@@ -125,6 +136,7 @@ def test_benefits_prose_prompts_build_mechanisms_before_diagnosing_gaps():
     assert 'not a documented omission' in analysis
     reader = ' '.join(_reader_prompt({}).split())
     assert '150-180 words' in reader
+    assert 'answer directly without repeating questions' in reader
     assert 'Start with what the project could make possible' in reader
     assert 'who could be left out' in reader
     assert 'instrument content was not supplied' in reader
@@ -144,3 +156,71 @@ def test_clear_sentence_opening_keeps_proper_name_and_acronym_guards():
                  'Clear supports traders.'):
         assert not validate_summary_fragment(
             text, canonical_text=canonical, allow_paraphrase=True)
+
+
+def test_grammatical_opening_phrases_do_not_admit_single_word_actors():
+    from sector_lenses.climate_verified_schemas import validate_summary_fragment
+
+    canonical = 'The project supports traders. The plans are updated and operations are described.'
+    for text in (
+        'Accepted priorities support fair access.',
+        'Setting out operations supports fair access.',
+        'Updates to the plans are described.',
+        'Limited visibility leaves access unverified.',
+        'Alongside this sit access arrangements.',
+    ):
+        assert validate_summary_fragment(
+            text, canonical_text=canonical, allow_paraphrase=True)
+    for actor in ('Accepted', 'Setting', 'Updates', 'Limited', 'Alongside'):
+        assert not validate_summary_fragment(
+            actor + ' supports traders.', canonical_text=canonical, allow_paraphrase=True)
+
+
+def test_reader_reference_binding_uses_only_explicit_same_passage_project_facts():
+    from sector_lenses.climate_final_reader import bind_same_passage_project_references
+
+    payload = {'summary_paragraphs': [{'object_id':'SUM-001',
+        'text':'The project supports the Rumonge market.', 'evidence_ids':['PF-1']}],
+        'assessment_narratives':[]}
+    assessment = {'facts':[
+        {'claim_id':'PF-1','epistemic_status':'explicit','statement':'The project supports markets.',
+         'source_block_ids':['BLOCK-1']},
+        {'claim_id':'PF-2','epistemic_status':'explicit','object_value':'Rumonge market',
+         'source_block_ids':['BLOCK-1']},
+        {'claim_id':'PF-3','epistemic_status':'explicit','object_value':'Atlantis market',
+         'source_block_ids':['BLOCK-2']},
+    ]}
+    repaired, count = bind_same_passage_project_references(payload, assessment)
+    assert count == 1
+    assert repaired['summary_paragraphs'][0]['evidence_ids'] == ['PF-1','PF-2']
+    assert payload['summary_paragraphs'][0]['evidence_ids'] == ['PF-1']
+    generic = copy.deepcopy(assessment)
+    generic['facts'].append({'claim_id':'PF-4', 'epistemic_status':'explicit',
+                            'statement':'The Project has another activity.', 'source_block_ids':['BLOCK-1']})
+    assert bind_same_passage_project_references(payload, generic)[1] == 1
+    ambiguous = copy.deepcopy(assessment)
+    ambiguous['facts'].append({'claim_id':'PF-4', 'epistemic_status':'explicit',
+                              'statement':'Rumonge has another activity.', 'source_block_ids':['BLOCK-1']})
+    assert bind_same_passage_project_references(payload, ambiguous) == (payload, 0)
+    for edit in ('other_passage','unknown_place','not_explicit','country_evidence'):
+        candidate = copy.deepcopy(payload)
+        source = copy.deepcopy(assessment)
+        if edit == 'other_passage': candidate['summary_paragraphs'][0]['text']='The project supports the Atlantis market.'
+        elif edit == 'unknown_place': candidate['summary_paragraphs'][0]['text']='The project supports the Neverland market.'
+        elif edit == 'not_explicit': source['facts'][1]['epistemic_status']='not_found'
+        else:
+            source['facts'].pop(1)
+            source['context_evidence']=[{'evidence_id':'CE-1','statement':'Rumonge market','source_block_ids':['BLOCK-1']}]
+        assert bind_same_passage_project_references(candidate, source) == (candidate,0)
+
+
+def test_conditional_consequences_keep_new_action_and_entity_checks():
+    from sector_lenses.climate_verified_schemas import validate_summary_fragment
+    canonical = 'The project changes layouts and access.'
+    for verb in ('reduce', 'cause', 'prevent', 'lead'):
+        text = 'The changes could ' + verb + ' access problems.'
+        assert validate_summary_fragment(text, canonical_text=canonical, allow_paraphrase=True)
+        assert not validate_summary_fragment(text, canonical_text=canonical)
+    for text in ('The project will reduce access.', 'The project could launch a review.',
+                 'The changes could reduce access for Atlantis.', 'The changes could reduce access for 999 traders.'):
+        assert not validate_summary_fragment(text, canonical_text=canonical, allow_paraphrase=True)

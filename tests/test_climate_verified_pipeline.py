@@ -706,7 +706,7 @@ def test_manifest_is_privacy_safe_and_scoped_to_the_run():
     assert first["manifest"]["run_id"] == "run-test"
     assert second["manifest"]["run_id"] == "run-two"
     assert first["manifest"]["source_count"] == 1
-    assert first["manifest"]["renderer_version"] == "climate-reader-v2.18"
+    assert first["manifest"]["renderer_version"] == "climate-reader-v2.19"
     assert first["manifest"]["extraction_version"] == "source-blocks-v3"
     assert (
         first["manifest"]["prompt_versions"]["fact_extraction"]
@@ -1808,3 +1808,80 @@ def test_native_reader_still_withholds_overlong_findings():
     final['assessment_narratives'][1]['paragraphs'] = ['The project supports traders. ' * 46]
     assert len(final['assessment_narratives'][1]['paragraphs'][0].split()) > 180
     assert validate_final_reader(final, result) == ([], [])
+
+
+def test_final_reader_repairs_only_targeted_prose_and_rechecks_meaning():
+    responses = _responses()
+    responses[2]['reader_contract'] = 'final-reader-v1'
+    original = _final_reader()
+    corrected = deepcopy(original)
+    corrected['assessment_narratives'][1]['paragraphs'][0] += ' The project could support access.'
+    assessment = FakeClient(responses + [original, corrected], [])
+    reviewer = FakeClient([_native_pass_review,
+        {'verdict':'revise', 'object_ids':['NARR-dividends'],
+         'reason_codes':['PROJECT_FACT_UNSUPPORTED'], 'issues':[
+             {'object_id':'NARR-dividends', 'explanation':'Keep planned benefits conditional.'}]},
+        _native_pass_review], [])
+    result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(assessment, reviewer))
+    assert result['summary_overview_status'] == 'generated'
+    assert len(result['priorities']) == 1
+    assert [call['stage'] for call in reviewer.calls].count('reader_review') == 2
+    assert assessment.calls[-1]['payload']['bounded_correction'][0]['object_id'] == 'NARR-dividends'
+    assert assessment.calls[-1]['max_transient_retries'] == 0
+
+
+def test_invalid_reader_references_get_one_bounded_correction_then_review():
+    responses = _responses()
+    responses[2]['reader_contract'] = 'final-reader-v1'
+    invalid = deepcopy(_final_reader())
+    invalid['summary_paragraphs'][0]['evidence_ids'].append('PF-unknown')
+    assessment = FakeClient(responses + [invalid, _final_reader()], [])
+    reviewer = FakeClient([_native_pass_review] * 2, [])
+    result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(assessment, reviewer))
+    assert result['summary_overview_status'] == 'generated'
+    assert assessment.calls[-1]['payload']['bounded_correction'][0]['object_id'] == 'SUM-001'
+    assert len(reviewer.calls) == 2
+
+
+def test_reader_correction_cannot_rewrite_untargeted_records():
+    responses = _responses()
+    responses[2]['reader_contract'] = 'final-reader-v1'
+    invalid = deepcopy(_final_reader())
+    invalid['summary_paragraphs'][0]['evidence_ids'].append('PF-unknown')
+    correction = _final_reader()
+    correction['assessment_narratives'][0]['paragraphs'][0] += ' The project could support access.'
+    assessment = FakeClient(responses + [invalid, correction], [])
+    reviewer = FakeClient([_native_pass_review], [])
+    result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(assessment, reviewer))
+    assert result['summary_overview_status'] == 'fallback'
+    assert len(result['priorities']) == 1
+    assert len(reviewer.calls) == 1
+
+
+def test_reader_correction_cannot_add_other_admitted_evidence():
+    responses = _responses()
+    responses[2]['reader_contract'] = 'final-reader-v1'
+    invalid = deepcopy(_final_reader())
+    invalid['summary_paragraphs'][0]['evidence_ids'].remove('CE-001')
+    invalid['summary_paragraphs'][0]['evidence_ids'].append('PF-unknown')
+    assessment = FakeClient(responses + [invalid, _final_reader()], [])
+    reviewer = FakeClient([_native_pass_review], [])
+    result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(assessment, reviewer))
+    assert result['summary_overview_status'] == 'fallback'
+    assert len(result['priorities']) == 1
+    assert 'FINAL_READER_CORRECTION_SCOPE_INVALID' in result['manifest']['validation_reason_codes']
+    assert len(reviewer.calls) == 1
+
+
+def test_reader_repairs_combined_precheck_issues_once():
+    responses = _responses()
+    responses[2]['reader_contract'] = 'final-reader-v1'
+    invalid = deepcopy(_final_reader())
+    invalid['summary_paragraphs'][0]['evidence_ids'].append('PF-unknown')
+    invalid['assessment_narratives'][2]['evidence_ids'].append('PF-unknown')
+    assessment = FakeClient(responses + [invalid, _final_reader()], [])
+    reviewer = FakeClient([_native_pass_review] * 2, [])
+    result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(assessment, reviewer))
+    assert result['summary_overview_status'] == 'generated'
+    assert {issue['object_id'] for issue in assessment.calls[-1]['payload']['bounded_correction']} == {'SUM-001', 'NARR-inclusion'}
+    assert [call['stage'] for call in assessment.calls].count('reader_compiler') == 2

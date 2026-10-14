@@ -493,7 +493,8 @@ already recognizes and addresses. Explain the material remaining challenge and
 bridge to accepted priorities. Refer to proposed actions only when supported by
 accepted_recommendation_ids. Never mention a withheld action as a recommendation.
 Assessment narratives: three short question-led answers, theme design, dividends,
-inclusion; object_id NARR-design/NARR-dividends/NARR-inclusion. Keep design to
+inclusion; object_id NARR-design/NARR-dividends/NARR-inclusion. The renderer supplies
+the question headings, so answer directly without repeating questions in prose. Keep design to
 90-130 words. For dividends and inclusion, aim for 150-180 words each in two short,
 connected paragraphs when the support is rich enough. All findings must stay
 within 70-180 words; do not pad sparse evidence merely to reach the target.
@@ -522,7 +523,16 @@ accepted actions. Add no facts, actors, numbers, dates, authority or commitments
 Evidence IDs bind support, not permission to change measured quantities, units,
 negation, planned/completed status or inference into fact. Do not copy the executive
 readout. Aim for about 190 summary words. For each required theme with limited
-evidence, explain the grounded potential and limits without inventing detail.""",
+evidence, explain the grounded potential and limits without inventing detail.
+Keep planned or intended benefits conditional. Do not claim measured outcomes or
+rank who benefits most without supporting evidence. Cite every concrete activity
+and location to its own supporting record, even when another cited fact shares
+the same source passage. Keep evidence IDs out of the displayed prose.
+If bounded_correction is supplied, repair ONLY its exact object IDs. Return the
+complete reader with all other records unchanged, preserving IDs and themes.
+Do not add evidence IDs, facts, named actors, quantities, locations or action anchors.
+Resolve the supplied citation, wording or meaning issues using admitted support
+and accepted actions only. The corrected prose will undergo fresh meaning review.""",
         payload,
     )
 

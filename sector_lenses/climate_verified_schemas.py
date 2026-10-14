@@ -30,6 +30,12 @@ _NARRATIVE_OPENING_WORDS = {
     "links", "benefits", "access", "delivery", "inclusion", "participation",
     "protection", "cooperation", "opportunities", "choices", "investments", "fair", "today",
 }
+# These grammatical phrases are safe at sentence openings; their first words
+# alone can still be names and must not bypass the evidence check.
+_NARRATIVE_OPENING_PHRASES = (
+    "Clear access arrangements ", "Accepted priorities ", "Setting out ",
+    "Updates to ", "Limited visibility ", "Alongside this ",
+)
 _SUMMARY_ACTION_STEM_RE = re.compile(
     r"\b(?P<stem>approv|requir|monitor|implement|adopt|ensur|establish|"
     r"creat|launch|form|appoint|mandat|commit|fund|build|develop|strengthen|"
@@ -244,7 +250,7 @@ def validate_summary_fragment(
             if (allow_paraphrase
                     and (token in opening_words
                          or (token.endswith("ing") and token[:-3] in opening_words)
-                         or (token == "clear" and fragment[match.start():].startswith("Clear access arrangements ")))
+                         or fragment[match.start():].startswith(_NARRATIVE_OPENING_PHRASES))
                     and (match.start() == 0 or re.search(r"[.!?]\s*$", fragment[:match.start()]))):
                 continue
             if token not in canonical_words and not re.search(
@@ -261,6 +267,11 @@ def validate_summary_fragment(
                 return reject("SUMMARY_ENTITY_UNSUPPORTED", token)
     for match in _SUMMARY_ACTION_STEM_RE.finditer(fragment.casefold()):
         if match.group("stem") not in canonical_casefold:
+            # A qualified consequence is assessed by mandatory native meaning
+            # review. It is not an instruction to take a new project action.
+            if (allow_paraphrase and match.group('stem') in {'caus', 'reduc', 'prevent', 'lead'}
+                    and re.search(r'\b(?:could|might|may)\s+$', fragment[:match.start()], re.IGNORECASE)):
+                continue
             return reject("SUMMARY_ACTION_UNSUPPORTED", match.group(0))
     # Analytical narratives may paraphrase; strict management summaries keep vocabulary checks.
     if canonical_words and not allow_paraphrase:

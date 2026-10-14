@@ -17,7 +17,10 @@ from typing import Protocol
 
 import climate_question_bank
 
-from sector_lenses.climate_final_reader import reader_support_records, validate_final_reader, reviewed_final_reader
+from sector_lenses.climate_final_reader import (
+    bind_same_passage_project_references, reader_support_records,
+    validate_final_reader, reviewed_final_reader,
+)
 
 from sector_lenses.climate_analysis import (
     ClimatePathway,
@@ -77,6 +80,7 @@ from sector_lenses.climate_verified_contracts import (
 )
 from sector_lenses.climate_verified_schemas import (
     SEMANTIC_REVIEW_REASON_CODES,
+    validate_summary_fragment,
     validate_summary_overview,
 )
 
@@ -92,7 +96,7 @@ PROMPT_VERSIONS = {
     "recommendation_compiler": "climate-recommendations-v2.15",
     "conditional_review": "climate-review-v2.13",
     "drafting_compiler": "climate-drafting-v1.5",
-    "reader_compiler": "climate-final-reader-v1.2",
+    "reader_compiler": "climate-final-reader-v1.3",
     "reader_review": "climate-reader-review-v1.2",
 }
 
@@ -1665,15 +1669,61 @@ def run_verified_climate_pipeline(
         summary_overview_paragraphs, assessment_narratives = [], []
         summary_overview_status = 'fallback'
         try:
-            final_reader = _call(clients.assessment, 'reader_compiler', reader_input, latency_ms,
-                                 cancel_event=cancel_event, deadline=deadline)
-            proposed_summary, _ = validate_final_reader(final_reader, reader_assessment)
-            if proposed_summary:
-                reader_review = _call(clients.reviewer, 'reader_review',
-                                      {**reader_input, 'final_reader': final_reader}, latency_ms,
-                                      cancel_event=cancel_event, deadline=deadline)
-                summary_overview_paragraphs, assessment_narratives = reviewed_final_reader(
-                    final_reader, reader_review, reader_assessment)
+            correction_issues = []
+            for attempt in range(2):
+                previous = final_reader
+                final_reader = _call(
+                    clients.assessment, 'reader_compiler',
+                    {**reader_input, **({'final_reader': previous,
+                        'bounded_correction': correction_issues} if attempt else {})}, latency_ms,
+                    cancel_event=cancel_event, deadline=deadline,
+                    repair_allowance=repair_allowance if attempt else None)
+                if attempt:
+                    original_records = {record['object_id']: record for key in
+                        ('summary_paragraphs', 'assessment_narratives') for record in previous[key]}
+                    corrected_records = {record['object_id']: record for key in
+                        ('summary_paragraphs', 'assessment_narratives') for record in final_reader[key]}
+                    targets = {issue['object_id'] for issue in correction_issues}
+                    if (original_records.keys() != corrected_records.keys()
+                            or any(corrected_records[key] != record for key, record in original_records.items()
+                                   if key not in targets)
+                            or any(corrected_records[key].get('theme') != record.get('theme')
+                                   for key, record in original_records.items())
+                            or any(not set(corrected_records[key]['evidence_ids']) <= set(original_records[key]['evidence_ids'])
+                                   for key in targets)
+                            or any(not validate_summary_fragment(
+                                corrected_records[key].get('text', '') or ' '.join(corrected_records[key].get('paragraphs', [])),
+                                canonical_text=original_records[key].get('text', '') or ' '.join(original_records[key].get('paragraphs', [])),
+                                allow_paraphrase=True) for key in targets)):
+                        reasons.append('FINAL_READER_CORRECTION_SCOPE_INVALID')
+                        break
+                final_reader, reference_repairs = bind_same_passage_project_references(final_reader, reader_assessment)
+                if reference_repairs:
+                    repairs.append(f'FINAL_READER_SAME_PASSAGE_REFERENCES:{reference_repairs}')
+                precheck_issues = []
+                proposed_summary, _ = validate_final_reader(final_reader, reader_assessment, issues=precheck_issues)
+                reader_review = {}
+                if proposed_summary:
+                    reader_review = _call(clients.reviewer, 'reader_review',
+                        {**reader_input, 'final_reader': final_reader}, latency_ms,
+                        cancel_event=cancel_event, deadline=deadline,
+                        repair_allowance=repair_allowance if attempt else None)
+                    summary_overview_paragraphs, assessment_narratives = reviewed_final_reader(
+                        final_reader, reader_review, reader_assessment)
+                if summary_overview_paragraphs or attempt:
+                    break
+                # One targeted repair shares the existing correction allowance and
+                # deadline. A block, unknown target or provider failure stays withheld.
+                correction_issues = precheck_issues
+                if proposed_summary and reader_review.get('verdict') == 'revise':
+                    correction_issues = reader_review.get('issues', [])
+                known_ids = {record['object_id'] for key in ('summary_paragraphs', 'assessment_narratives')
+                             for record in final_reader[key]}
+                issue_ids = {issue.get('object_id') for issue in correction_issues}
+                if (not correction_issues or not issue_ids <= known_ids
+                        or (proposed_summary and set(reader_review.get('object_ids', [])) != issue_ids)):
+                    break
+                repairs.append('FINAL_READER_TARGETED_CORRECTION_ATTEMPTED')
             if summary_overview_paragraphs:
                 summary_overview_status = 'generated'
             else:
@@ -1709,8 +1759,8 @@ def run_verified_climate_pipeline(
         prompt_versions=PROMPT_VERSIONS,
         reviewer_version="climate-review-v2.2",
         extraction_version="source-blocks-v3",
-        normalization_version="climate-normalization-v2.2",
-        renderer_version="climate-reader-v2.18",
+        normalization_version="climate-normalization-v2.3",
+        renderer_version="climate-reader-v2.19",
         model_aliases=model_aliases,
         sampling={"max_transient_retries": 1,
                   "correction_transient_retries": 0,
