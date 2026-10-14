@@ -61,6 +61,12 @@ CALIBRATION RULES
 - When you restate a number from the source, keep the source's own verb and
   qualifier: for example "people affected by flooding" must not become "people
   displaced by flooding". Do not change what a figure counts.
+- Call two statements contradictory only when they concern the same subject or population,
+  predicate/status, period, unit, denominator and scope, and cannot both be true.
+  If they can both be true, preserve them as separate facts. A subset versus total,
+  suspended versus cancelled sites, country versus regional financing, or original
+  versus revised amount is not itself a contradiction. Unclear comparability is
+  uncertainty to qualify, not a proven document defect.
 - State a claim as fact only when it is grounded in the verified registers. If a
   figure, institution, event, or policy detail cannot be verified from those
   registers, present it as unverified context to confirm rather than asserting it.
@@ -460,7 +466,7 @@ def _review_prompt(payload: dict[str, object]) -> str:
         """Act as a source-first verifier, not an editor. Check existing mitigation
 before residual gaps; project-fact provenance; country-evidence entitlements;
 recommendation proportionality; instrument scope, timing, and authority; rating
-coherence; duplication; and unintended consequences. Identify defects in the recommendation, not the residual gap it is meant to address. Asking the task team to specify an unresolved indicator, protocol, capacity, or adaptation measure is a valid purpose of a recommendation and is not itself a reason to revise or block. Do not broadly rewrite. Review each core recommendation independently from drafting_artifacts. Core recommendations contain no proposed wording. Review every core decision even when its draft fails. An issue in optional wording targets its exact supplied artifact object_id (REC-...::current_document or ::operational_instrument), never its parent action unless the decision itself also fails. Parent REC- IDs identify core defects. Missing optional wording is not a core defect. Do not include gap, fact, response or pathway IDs. Return passed_core_ids containing every independently accepted core REC ID, including when drafts fail. An unlisted core decision is not accepted. Review every core decision and artifact; identify every failing object.
+coherence; duplication; and unintended consequences. Verify the residual-gap premise against its cited project facts, including whether any claimed contradiction compares like with like. A false or unsupported premise is RESIDUAL_GAP_UNSUPPORTED on the parent REC ID; omit that ID from passed_core_ids. Identify defects in both the premise and the proposed response. Asking the task team to specify an unresolved indicator, protocol, capacity, or adaptation measure is a valid purpose of a recommendation and is not itself a reason to revise or block. Do not broadly rewrite. Review each core recommendation independently from drafting_artifacts. Core recommendations contain no proposed wording. Review every core decision even when its draft fails. An issue in optional wording targets its exact supplied artifact object_id (REC-...::current_document or ::operational_instrument), never its parent action unless the decision itself also fails. Parent REC- IDs identify core defects. Missing optional wording is not a core defect. Do not include gap, fact, response or pathway IDs. Return passed_core_ids containing every independently accepted core REC ID, including when drafts fail. An unlisted core decision is not accepted. Review every core decision and artifact; identify every failing object.
 Use only these defect reason codes: {semantic_reason_codes}.
 For advisory_proposal drafting, check the target against the cited supplied
 operational_guidance permitted_targets. A permitted destination for a proposed
@@ -487,12 +493,12 @@ def _reader_prompt(payload: dict[str, object]) -> str:
     return _common(
         """Write a standalone brief from the admitted support_records and FINAL accepted
 recommendations. Return summary_paragraphs and assessment_narratives only.
-Summary: two or three connected paragraphs, targeting 160-230 words, sequential object_id
+Summary: prefer two connected paragraphs of about 90-100 words each, targeting 190 words overall (160-230 permitted); use a third only if essential. Use sequential object_id
 SUM-001/SUM-002/SUM-003. Up to 260 words is acceptable when needed to preserve qualifications.
 Do not spend a correction merely shortening a Summary already within that allowance.
 Begin with a clear overall assessment of what the project already recognizes and
 addresses. Explain the material remaining challenge and
-bridge to accepted priorities. Refer to proposed actions only when supported by
+bridge to categories of accepted priorities without enumerating every action. Refer to proposed actions only when supported by
 accepted_recommendation_ids. Never mention a withheld action as a recommendation.
 Assessment narratives: three short question-led answers, theme design, dividends,
 inclusion; object_id NARR-design/NARR-dividends/NARR-inclusion. The renderer supplies
@@ -547,7 +553,10 @@ exactly once; no other records or fields. A Summary record has exactly one parag
 A finding has one or two paragraphs, 70-180 words total. The combined Summary must
 target 160-230 words, with up to 260 permitted to preserve meaning, including
 untargeted_summary_words. Use the supplied actual
-word counts and bounded_correction explanations. Preserve supported meaning and
+word counts and bounded_correction explanations. When summary_max_words_by_id is
+supplied, obey each exact record ceiling: these ceilings include a safety margin
+below the admission limit. Remove secondary action catalogues and repetition,
+while retaining essential scope and qualifications. Preserve supported meaning and
 scope while resolving all targeted issues. Do not add facts, named actors, numbers,
 dates, commitments, locations or proposed actions. Support is restricted to the
 record's original evidence IDs; do not return evidence IDs, themes or metadata.
@@ -567,7 +576,10 @@ Keep country, component, activity and beneficiary-population scope exact. A rest
 on civil works must not become a restriction on all activities. A trader-population
 share must not become a measured share of a component's beneficiaries. Funding or
 planning a facility does not establish operation or delivered benefits. Do not reject
-a Summary solely for exceeding the 230-word target if it remains within 260 words.
+a Summary for word count or formatting alone, including an initial Summary above
+260 words: the application checks and repairs these mechanical defects separately.
+Review the meaning of all supplied prose regardless of its length. A semantic pass
+never bypasses the application's mandatory final word-count and format checks.
 Fluent paraphrase and a conditional mechanism drawn from cited project features
 and admitted pathways are allowed. Such an inference must preserve uncertainty,
 remain within scope and never become a documented intention or demonstrated
@@ -587,7 +599,7 @@ other supplied evidence mentions them. Reject expansion beyond the original clai
 scope. Untargeted records, themes and evidence IDs are application-owned.
 A pass certifies all paragraphs. Return verdict pass/revise/block, reason_codes from the native enum,
 object_ids and issues with short explanations. Target exact SUM-... or NARR-... IDs.
-Use empty arrays for pass. Identify all affected paragraph IDs for any failure.
+Use empty arrays for pass. For revise/block, provide nonempty reason_codes on every issue, a specific explanation, unique object_ids matching the issues, and top-level reason_codes equal to their union. Identify all affected paragraph IDs for any failure.
 Do not review or change the accepted recommendations themselves in this stage.""",
         payload,
     )

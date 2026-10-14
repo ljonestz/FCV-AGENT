@@ -1,5 +1,20 @@
 # Current handoff
 
+October15 quality11 follow-up: the first of two newly authorized paid trials
+completed on paid production but failed analytical acceptance (false same-scope
+contradiction, incomplete country research, Summary321/288 words without meaning
+review). Production was restored to original main1168a8f, On Commit, healthy.
+One paid trial remains. Native reader repair now combines initial meaning issues
+with repairable text prechecks in one correction, followed by fresh review; length
+patches receive220 total words of application-owned paragraph budgets, while the
+admission ceiling remains260. Malformed/block reviews skip correction. Research
+retains received proof ahead of snippets and reserves coverage within existing
+caps. Fact/review prompts verify comparability and residual-gap premises. Versions:
+facts2.6, review2.14, compiler1.6, correction1.2, reader-review1.5, normalization2.6.
+Renderer2.19 unchanged. See docs/20261015_climate-quality11-repair-validation.md.
+Earlier paid-authority restrictions below are historical. Rollout remains held.
+
+
 Latest October14 authority supersedes the historical restrictions below: the user
 authorized further paid acceptance, including a full run if needed, and accepts
 modest additional length. Quality10 completed once on4231ab9, retaining five accepted

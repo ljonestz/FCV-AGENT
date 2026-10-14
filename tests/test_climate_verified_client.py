@@ -60,7 +60,8 @@ def test_every_stage_uses_structured_json_and_evidence_entitlements():
     assert "Copy target_document and target_section exactly" in prompts["drafting_compiler"]
     assert "Use no digits in decision, minimum_action" in prompts["recommendation_compiler"]
     assert "source-first verifier" in prompts["conditional_review"]
-    assert "defects in the recommendation" in prompts["conditional_review"]
+    assert "Verify the residual-gap premise" in prompts["conditional_review"]
+    assert "defects in both the premise and the proposed response" in prompts["conditional_review"]
     assert "Use only these defect reason codes" in prompts["conditional_review"]
     assert "ROUTING_SCOPE_UNVERIFIED" in prompts["conditional_review"]
     assert "valid purpose of a recommendation" in prompts["conditional_review"]
@@ -477,7 +478,7 @@ def test_native_judgment_defers_prose_to_final_reader_schema():
 
 def test_final_reader_prompt_requires_grounded_standalone_summary():
     prompt = build_verified_stage_prompt('reader_compiler', {}).lower()
-    for expected in ('160-230 words', 'two or three', 'already recognizes',
+    for expected in ('160-230 permitted', 'prefer two', 'already recognizes',
                      'accepted_recommendation_ids', 'connected paragraphs',
                      'do not copy', 'plausible wider',
                      'conditional analytical inference', 'planned/completed'):

@@ -131,3 +131,47 @@ def test_source_notice_explains_regional_coverage_and_omits_normal_primary_selec
     assert "Primary Applicability" not in messages[0]["message"]
     assert codes==["PRIMARY_APPLICABILITY_USER_DESIGNATED","MULTI_COUNTRY_BANK_WITHHELD"]
     assert app._climate_source_warning_messages(["PRIMARY_DOCUMENT_PRECEDENCE_UNRESOLVED"])[0]["message"].startswith("Confirm which document")
+
+
+def test_metadata_snippets_cannot_displace_received_citations():
+    hits = [{"url": f"https://worldbank.org/hit-{i}", "title": f"Search hit {i}",
+             "snippet": "Metadata context " * 20} for i in range(6)]
+    citations = [
+        {"url": "https://worldbank.org/bdi", "title": "Burundi climate report",
+         "cited_text": "Flooding interrupts road access in Burundi."},
+        {"url": "https://worldbank.org/drc", "title": "DRC climate report",
+         "cited_text": "Flooding interrupts road access in DRC."},
+    ]
+    packet = build_climate_evidence_packet([
+        {"type": "web_search_tool_result", "content": hits},
+        {"type": "text", "citations": citations},
+    ], {"beneficiary_countries": ["Burundi", "Congo, Democratic Republic of"]})
+    assert {p["url"] for p in packet["passages"]} == {c["url"] for c in citations}
+    assert len(packet["sources"]) == 4
+
+
+def test_later_country_citation_survives_source_and_passage_caps():
+    citations = [{"url": f"https://worldbank.org/bdi-{i}", "title": "Burundi climate",
+                  "cited_text": f"Flooding disrupts Burundi road route {i}."} for i in range(8)]
+    drc = {"url": "https://worldbank.org/drc", "title": "Democratic Republic of the Congo",
+           "cited_text": "Flooding interrupts road access in DRC."}
+    citations.append(drc)
+    packet = build_climate_evidence_packet([{"type": "text", "citations": citations}],
+        {"beneficiary_countries": ["Burundi", "Congo, Democratic Republic of"]})
+    assert any(p["excerpt"] == drc["cited_text"] and p["url"] == drc["url"]
+               for p in packet["passages"])
+    assert len(packet["sources"]) == 4
+    assert len(packet["passages"]) <= 12
+    assert len(json.dumps(packet, ensure_ascii=False)) <= 12_000
+
+
+def test_passage_cap_retains_proof_for_each_selected_source():
+    citations = [{"url": "https://worldbank.org/bdi", "title": "Burundi climate",
+                  "cited_text": f"Flooding disrupts Burundi road route {i}."} for i in range(12)]
+    drc = {"url": "https://worldbank.org/drc", "title": "DRC climate",
+           "cited_text": "Flooding interrupts road access in DRC."}
+    citations.append(drc)
+    packet = build_climate_evidence_packet([{"type": "text", "citations": citations}],
+        {"beneficiary_countries": ["Burundi", "Congo, Democratic Republic of"]})
+    assert len(packet["passages"]) == 12
+    assert any(p["url"] == drc["url"] for p in packet["passages"])

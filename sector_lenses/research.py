@@ -176,23 +176,41 @@ def build_climate_evidence_packet(
             if note:
                 note_parts.append(note)
             citations = _block_value(block, "citations", [])
-            for citation in (citations if isinstance(citations, list) else [])[:8]:
+            for citation in (citations if isinstance(citations, list) else [])[:24]:
                 add_source(citation)
         elif block_type == "web_search_tool_result":
             results = _block_value(block, "content", [])
             for result in (results if isinstance(results, list) else [])[:8]:
                 add_source(result)
-    # Keep cited passages before metadata-only hits within the existing four-source cap.
-    sources.sort(key=lambda source: not bool(source["excerpt"]))
-
     profile = project_profile if isinstance(project_profile, dict) else {}
+    proof_by_url: dict[str, str] = {}
+    for passage in passages:
+        key = passage["url"].casefold().rstrip("/")
+        proof_by_url[key] = proof_by_url.get(key, "") + " " + passage["title"] + " " + passage["excerpt"]
+    # Metadata snippets must not crowd out received proof from a later country.
+    sources.sort(key=lambda source: source["url"].casefold().rstrip("/") not in proof_by_url)
+    country_sources = []
+    for country in _strings(profile.get("beneficiary_countries"), 8, 80):
+        match = next((source for source in sources if _source_label_matches(
+            country, proof_by_url.get(source["url"].casefold().rstrip("/"), ""))), None)
+        if match is not None and match not in country_sources:
+            country_sources.append(match)
+    sources = country_sources + [source for source in sources if source not in country_sources]
+    selected_urls = {source["url"].casefold().rstrip("/") for source in sources[:4]}
+    selected_passages = [passage for passage in passages
+                         if passage["url"].casefold().rstrip("/") in selected_urls]
+    # Reserve one whole passage per retained source before filling the shared cap.
+    first_passages = []
+    for source in sources[:4]:
+        first = next((passage for passage in selected_passages
+                      if passage["url"].casefold().rstrip("/") == source["url"].casefold().rstrip("/")), None)
+        if first is not None:
+            first_passages.append(first)
+    selected_passages = first_passages + [p for p in selected_passages if p not in first_passages]
     packet = {
         "notes": _bounded("\n\n".join(note_parts), 2200),
         "sources": sources[:4],
-        "passages": [passage for passage in passages
-                     if passage["url"].casefold().rstrip("/") in {
-                         source["url"].casefold().rstrip("/") for source in sources[:4]
-                     }][:12],
+        "passages": selected_passages[:12],
         "project_profile": {
             "project_elements": _strings(profile.get("project_elements"), 12, 180),
             "documents": _strings(profile.get("documents"), 4, 180),

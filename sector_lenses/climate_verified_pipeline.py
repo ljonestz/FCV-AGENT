@@ -90,15 +90,15 @@ from sector_lenses.climate_verified_schemas import (
 _INTEGRITY_CATEGORIES = READINESS_CATEGORIES - {"missing_operational_home"}
 
 PROMPT_VERSIONS = {
-    "fact_extraction": "climate-facts-v2.5",
+    "fact_extraction": "climate-facts-v2.6",
     "bounded_analysis": "climate-analysis-v2.10",
     "judgment_review": "climate-judgments-v2.14",
     "recommendation_compiler": "climate-recommendations-v2.15",
-    "conditional_review": "climate-review-v2.13",
+    "conditional_review": "climate-review-v2.14",
     "drafting_compiler": "climate-drafting-v1.5",
-    "reader_compiler": "climate-final-reader-v1.5",
-    "reader_correction": "climate-reader-correction-v1.1",
-    "reader_review": "climate-reader-review-v1.4",
+    "reader_compiler": "climate-final-reader-v1.6",
+    "reader_correction": "climate-reader-correction-v1.2",
+    "reader_review": "climate-reader-review-v1.5",
 }
 
 
@@ -161,6 +161,32 @@ def _bounded_reason_codes(value: object) -> list[str]:
         if len(codes) == 12:
             break
     return codes
+
+
+def _valid_reader_revision(review: dict) -> bool:
+    """Reject incomplete diagnostics before spending the single text correction."""
+    if review.get('verdict') != 'revise':
+        return False
+    issues, identifiers, codes = (review.get(key) for key in ('issues', 'object_ids', 'reason_codes'))
+    if not all(isinstance(value, list) and 0 < len(value) <= 12
+               for value in (issues, identifiers, codes)):
+        return False
+    if (not all(isinstance(identifier, str) for identifier in identifiers)
+            or len(set(identifiers)) != len(identifiers)
+            or not all(isinstance(code, str) and code in SEMANTIC_REVIEW_REASON_CODES for code in codes)):
+        return False
+    issue_ids, issue_codes = [], set()
+    for issue in issues:
+        if (not isinstance(issue, dict) or not isinstance(issue.get('object_id'), str)
+                or not isinstance(issue.get('explanation'), str) or not issue['explanation'].strip()
+                or not isinstance(issue.get('reason_codes'), list) or not issue['reason_codes']
+                or not all(isinstance(code, str) and code in SEMANTIC_REVIEW_REASON_CODES
+                           for code in issue['reason_codes'])):
+            return False
+        issue_ids.append(issue['object_id'])
+        issue_codes.update(issue['reason_codes'])
+    return (len(set(issue_ids)) == len(issue_ids)
+            and set(issue_ids) == set(identifiers) and issue_codes == set(codes))
 
 
 def _text(value: object, default: str = "") -> str:
@@ -1683,7 +1709,25 @@ def run_verified_climate_pipeline(
                 proposed_summary, _ = validate_final_reader(final_reader, reader_assessment, issues=precheck_issues)
                 reader_trace['prechecks'].append({'attempt': attempt, 'issues': precheck_issues})
                 reader_review = {}
-                if proposed_summary:
+                # Repairable text defects must not hide meaning defects from the
+                # one available correction. Invalid evidence/structure still blocks.
+                records_list = (final_reader.get('summary_paragraphs', [])
+                                + final_reader.get('assessment_narratives', []))
+                reviewable = all(
+                    isinstance(record, dict)
+                    and isinstance(record.get('evidence_ids'), list)
+                    and record['evidence_ids']
+                    and all(isinstance(ref, str) and ref in support_records
+                            for ref in record['evidence_ids'])
+                    for record in records_list)
+                repairable_codes = {'SUMMARY_WORD_COUNT', 'READER_WORD_COUNT',
+                                    'SUMMARY_DATE_UNSUPPORTED', 'SUMMARY_NUMBER_UNSUPPORTED',
+                                    'SUMMARY_MARKUP', 'SUMMARY_EXECUTIVE_COPY',
+                                    'SUMMARY_SENTENCE_INCOMPLETE'}
+                reviewable = reviewable and all(
+                    set(issue.get('reason_codes', [])) <= repairable_codes
+                    for issue in precheck_issues)
+                if proposed_summary or (not attempt and reviewable):
                     reader_review = _call(clients.reviewer, 'reader_review',
                         {**review_input_reader, 'final_reader': final_reader}, latency_ms,
                         cancel_event=cancel_event, deadline=deadline,
@@ -1695,16 +1739,21 @@ def run_verified_climate_pipeline(
                     break
                 # One targeted repair shares the existing correction allowance and
                 # deadline. A block, unknown target or provider failure stays withheld.
-                correction_issues = precheck_issues
-                if proposed_summary and reader_review.get('verdict') == 'revise':
-                    correction_issues = reader_review.get('issues', [])
-                records = {record['object_id']: record for key in ('summary_paragraphs', 'assessment_narratives')
-                           for record in final_reader[key]}
+                semantic_issues = reader_review.get('issues')
+                verdict = reader_review.get('verdict')
+                clean_pass = (verdict == 'pass' and semantic_issues == []
+                              and reader_review.get('object_ids') == []
+                              and reader_review.get('reason_codes') == [])
+                valid_revision = _valid_reader_revision(reader_review)
+                if not (clean_pass or valid_revision):
+                    reader_trace['unrepairable_issues'] = precheck_issues
+                    break
+                correction_issues = precheck_issues + (semantic_issues if valid_revision else [])
+                records = {record['object_id']: record for record in records_list}
                 issue_ids = {issue.get('object_id') for issue in correction_issues}
                 if (not correction_issues or not issue_ids <= records.keys()
                         or any(set(issue.get('reason_codes', [])) & {'READER_EVIDENCE_INVALID', 'READER_STRUCTURE_INVALID'}
-                               for issue in correction_issues)
-                        or (proposed_summary and set(reader_review.get('object_ids', [])) != issue_ids)):
+                               for issue in correction_issues)):
                     reader_trace['unrepairable_issues'] = correction_issues
                     reasons.extend(code for issue in correction_issues for code in issue.get('reason_codes', []))
                     break
@@ -1717,6 +1766,16 @@ def run_verified_climate_pipeline(
                     'untargeted_summary_words': sum(len(record['text'].split())
                         for record in final_reader['summary_paragraphs'] if record['object_id'] not in issue_ids),
                 }
+                if any('SUMMARY_WORD_COUNT' in issue.get('reason_codes', [])
+                       for issue in correction_issues):
+                    summary_ids = [record['object_id'] for record in final_reader['summary_paragraphs']
+                                   if record['object_id'] in issue_ids]
+                    # Leave room below the admission ceiling; unchanged prose counts.
+                    budget = max(0, 220 - correction_input['untargeted_summary_words'])
+                    ceiling, remainder = divmod(budget, len(summary_ids))
+                    correction_input['summary_max_words_by_id'] = {
+                        identifier: ceiling + (index < remainder)
+                        for index, identifier in enumerate(summary_ids)}
                 correction = {'target_ids': sorted(issue_ids), 'issues': []}
                 reader_trace['correction'] = correction
                 repairs.append('FINAL_READER_TARGETED_CORRECTION_ATTEMPTED')
@@ -1767,7 +1826,7 @@ def run_verified_climate_pipeline(
         prompt_versions=PROMPT_VERSIONS,
         reviewer_version="climate-review-v2.2",
         extraction_version="source-blocks-v3",
-        normalization_version="climate-normalization-v2.5",
+        normalization_version="climate-normalization-v2.6",
         renderer_version="climate-reader-v2.19",
         model_aliases=model_aliases,
         sampling={"max_transient_retries": 1,

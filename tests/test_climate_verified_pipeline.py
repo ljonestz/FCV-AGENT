@@ -712,7 +712,7 @@ def test_manifest_is_privacy_safe_and_scoped_to_the_run():
     assert first["manifest"]["extraction_version"] == "source-blocks-v3"
     assert (
         first["manifest"]["prompt_versions"]["fact_extraction"]
-        == "climate-facts-v2.5"
+        == "climate-facts-v2.6"
     )
     assert (
         first["manifest"]["prompt_versions"]["bounded_analysis"]
@@ -728,7 +728,7 @@ def test_manifest_is_privacy_safe_and_scoped_to_the_run():
     )
     assert (
         first["manifest"]["prompt_versions"]["conditional_review"]
-        == "climate-review-v2.13"
+        == "climate-review-v2.14"
     )
     assert (
         first["manifest"]["prompt_versions"]["drafting_compiler"]
@@ -1825,7 +1825,7 @@ def test_final_reader_repairs_only_targeted_prose_and_rechecks_meaning():
     reviewer = FakeClient([_native_pass_review,
         {'verdict':'revise', 'object_ids':['NARR-dividends'],
          'reason_codes':['PROJECT_FACT_UNSUPPORTED'], 'issues':[
-             {'object_id':'NARR-dividends', 'explanation':'Keep planned benefits conditional.'}]},
+             {'object_id':'NARR-dividends', 'reason_codes': ['PROJECT_FACT_UNSUPPORTED'], 'explanation':'Keep planned benefits conditional.'}]},
         _native_pass_review], [])
     result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(assessment, reviewer))
     assert result['summary_overview_status'] == 'generated'
@@ -1858,7 +1858,7 @@ def test_reader_correction_cannot_rewrite_untargeted_records():
     assessment = FakeClient(responses + [original, correction], [])
     reviewer = FakeClient([_native_pass_review,
         {'verdict': 'revise', 'object_ids': ['NARR-dividends'], 'reason_codes': ['PROJECT_FACT_UNSUPPORTED'],
-         'issues': [{'object_id': 'NARR-dividends', 'explanation': 'Qualify the benefit.'}]}], [])
+         'issues': [{'object_id': 'NARR-dividends', 'reason_codes': ['PROJECT_FACT_UNSUPPORTED'], 'explanation': 'Qualify the benefit.'}]}], [])
     result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(assessment, reviewer))
     assert result['summary_overview_status'] == 'fallback'
     assert len(result['priorities']) == 1
@@ -1876,7 +1876,7 @@ def test_reader_correction_cannot_add_other_admitted_evidence():
     assessment = FakeClient(responses + [original, correction], [])
     reviewer = FakeClient([_native_pass_review,
         {'verdict': 'revise', 'object_ids': ['NARR-dividends'], 'reason_codes': ['PROJECT_FACT_UNSUPPORTED'],
-         'issues': [{'object_id': 'NARR-dividends', 'explanation': 'Qualify the benefit.'}]}], [])
+         'issues': [{'object_id': 'NARR-dividends', 'reason_codes': ['PROJECT_FACT_UNSUPPORTED'], 'explanation': 'Qualify the benefit.'}]}], [])
     result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(assessment, reviewer))
     assert result['summary_overview_status'] == 'fallback'
     assert len(result['priorities']) == 1
@@ -1895,7 +1895,7 @@ def test_reader_repairs_combined_precheck_issues_once():
                              for record in valid['summary_paragraphs']] + [
         {'object_id': 'NARR-inclusion', 'paragraphs': valid['assessment_narratives'][2]['paragraphs']}]}
     assessment = FakeClient(responses + [invalid, patch], [])
-    reviewer = FakeClient([_native_pass_review] * 2, [])
+    reviewer = FakeClient([_native_pass_review] * 3, [])
     result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(assessment, reviewer))
     assert result['summary_overview_status'] == 'generated'
     assert {issue['object_id'] for issue in assessment.calls[-1]['payload']['bounded_correction']} == {
@@ -1926,7 +1926,7 @@ def test_native_reader_uses_text_only_correction_and_retains_original():
     reviewer = FakeClient([_native_pass_review,
         {'verdict': 'revise', 'object_ids': ['NARR-dividends'],
          'reason_codes': ['PROJECT_FACT_UNSUPPORTED'], 'issues': [
-             {'object_id': 'NARR-dividends', 'explanation': 'Keep the benefit conditional.'}]},
+             {'object_id': 'NARR-dividends', 'reason_codes': ['PROJECT_FACT_UNSUPPORTED'], 'explanation': 'Keep the benefit conditional.'}]},
         _native_pass_review], [])
     result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(assessment, reviewer))
     assert result['summary_overview_status'] == 'generated'
@@ -1992,7 +1992,7 @@ def test_native_reader_rejected_patch_preserves_initial_for_diagnosis():
     reviewer = FakeClient([_native_pass_review,
         {'verdict': 'revise', 'object_ids': ['NARR-dividends'],
          'reason_codes': ['PROJECT_FACT_UNSUPPORTED'], 'issues': [
-             {'object_id': 'NARR-dividends', 'explanation': 'Keep the benefit conditional.'}]}], [])
+             {'object_id': 'NARR-dividends', 'reason_codes': ['PROJECT_FACT_UNSUPPORTED'], 'explanation': 'Keep the benefit conditional.'}]}], [])
     result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(
         FakeClient(responses + [original, patch], []), reviewer))
     assert result['final_reader'] == original
@@ -2050,7 +2050,7 @@ def test_native_reader_semantic_block_never_publishes_prose(unsupported):
     final['assessment_narratives'][2]['paragraphs'][0] += ' ' + unsupported
     reviewer = FakeClient([_native_pass_review,
         {'verdict': 'block', 'object_ids': ['NARR-inclusion'], 'reason_codes': ['PROJECT_FACT_UNSUPPORTED'],
-         'issues': [{'object_id': 'NARR-inclusion', 'explanation': 'Unsupported assertion.'}]}], [])
+         'issues': [{'object_id': 'NARR-inclusion', 'reason_codes': ['PROJECT_FACT_UNSUPPORTED'], 'explanation': 'Unsupported assertion.'}]}], [])
     result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(
         FakeClient(responses + [final], []), reviewer))
     assert reviewer.calls[-1]['stage'] == 'reader_review'
@@ -2066,12 +2066,13 @@ def test_reader_correction_review_checks_original_claim_scope():
     patch = {'corrections': [{'object_id': 'NARR-dividends', 'paragraphs': original['assessment_narratives'][1]['paragraphs']}]}
     reviewer = FakeClient([_native_pass_review,
         {'verdict': 'revise', 'object_ids': ['NARR-dividends'], 'reason_codes': ['PROJECT_FACT_UNSUPPORTED'],
-         'issues': [{'object_id': 'NARR-dividends', 'explanation': 'Qualify the benefit.'}]}, _native_pass_review], [])
+         'issues': [{'object_id': 'NARR-dividends', 'reason_codes': ['PROJECT_FACT_UNSUPPORTED'], 'explanation': 'Qualify the benefit.'}]}, _native_pass_review], [])
     assessment = FakeClient(responses + [original, patch], [])
     result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(assessment, reviewer))
     assert result['summary_overview_status'] == 'generated'
     assert reviewer.calls[-1]['payload']['correction_originals'] == [original['assessment_narratives'][1]]
     correction_input = assessment.calls[-1]['payload']
+    assert 'summary_max_words_by_id' not in correction_input
     assert 'final_reader' not in correction_input
     assert set(correction_input['support_records']) == set(original['assessment_narratives'][1]['evidence_ids'])
 
@@ -2092,7 +2093,7 @@ def test_reader_correction_exhausted_allowance_cannot_skip_fresh_review(monkeypa
     patch = {'corrections': [{'object_id': 'NARR-dividends', 'paragraphs': final['assessment_narratives'][1]['paragraphs']}]}
     reviewer = FakeClient([_native_pass_review,
         {'verdict': 'revise', 'object_ids': ['NARR-dividends'], 'reason_codes': ['PROJECT_FACT_UNSUPPORTED'],
-         'issues': [{'object_id': 'NARR-dividends', 'explanation': 'Qualify the benefit.'}]}], [])
+         'issues': [{'object_id': 'NARR-dividends', 'reason_codes': ['PROJECT_FACT_UNSUPPORTED'], 'explanation': 'Qualify the benefit.'}]}], [])
     assessment = OpaqueClient(responses + [final, patch], [])
     result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(assessment, reviewer))
     assert assessment.calls[-1]['max_output_tokens'] == 1
@@ -2116,7 +2117,7 @@ def test_reader_correction_provider_failure_preserves_initial_and_actions():
 
     reviewer = FakeClient([_native_pass_review,
         {'verdict': 'revise', 'object_ids': ['NARR-dividends'], 'reason_codes': ['PROJECT_FACT_UNSUPPORTED'],
-         'issues': [{'object_id': 'NARR-dividends', 'explanation': 'Qualify the benefit.'}]}], [])
+         'issues': [{'object_id': 'NARR-dividends', 'reason_codes': ['PROJECT_FACT_UNSUPPORTED'], 'explanation': 'Qualify the benefit.'}]}], [])
     result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(
         FailedCorrection(responses + [final], []), reviewer))
     assert result['final_reader'] == final
@@ -2139,3 +2140,121 @@ def test_reader_diagnostics_never_enter_reader_or_exports(tmp_path):
     assert 'PRIVATE_DIAGNOSTIC_SENTINEL' not in render_reader_html(reader)
     document = Document(write_reader_docx(reader, tmp_path / 'reader.docx'))
     assert 'PRIVATE_DIAGNOSTIC_SENTINEL' not in '\n'.join(p.text for p in document.paragraphs)
+
+
+def test_reader_combines_mechanical_and_meaning_issues_before_single_repair():
+    responses = _responses()
+    responses[2]['reader_contract'] = 'final-reader-v1'
+    original = _final_reader()
+    original['summary_paragraphs'][0]['text'] += ' Supported project access.' * 60 + ' July 2099.'
+    valid = _final_reader()
+    targets = {r['object_id'] for r in valid['summary_paragraphs']} | {'NARR-dividends'}
+    patch = {'corrections': [
+        {'object_id': r['object_id'], 'paragraphs': [r['text']] if 'text' in r else r['paragraphs']}
+        for r in valid['summary_paragraphs'] + valid['assessment_narratives']
+        if r['object_id'] in targets]}
+    revise = {'verdict': 'revise', 'object_ids': ['NARR-dividends'],
+              'reason_codes': ['PROJECT_FACT_UNSUPPORTED'], 'issues': [
+                  {'object_id': 'NARR-dividends', 'reason_codes': ['PROJECT_FACT_UNSUPPORTED'],
+                   'explanation': 'Keep proposed benefits conditional.'}]}
+    assessment = FakeClient(responses + [original, patch], [])
+    reviewer = FakeClient([_native_pass_review, revise, _native_pass_review], [])
+    result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(assessment, reviewer))
+    assert result['summary_overview_status'] == 'generated'
+    correction = next(c['payload'] for c in assessment.calls if c['stage'] == 'reader_correction')
+    assert {i['object_id'] for i in correction['bounded_correction']} == targets
+    assert sum(correction['summary_max_words_by_id'].values()) == 220
+    assert set(correction['summary_max_words_by_id']) == {r['object_id'] for r in valid['summary_paragraphs']}
+    assert len(result['diagnostic_trace']['final_reader']['meaning_reviews']) == 2
+    assert sum(c['stage'] == 'reader_correction' for c in assessment.calls) == 1
+
+
+@pytest.mark.parametrize('review', [
+    {'verdict': 'block', 'object_ids': ['SUM-001'], 'reason_codes': ['PROJECT_FACT_UNSUPPORTED'],
+     'issues': [{'object_id': 'SUM-001', 'reason_codes': ['PROJECT_FACT_UNSUPPORTED'], 'explanation': 'False scope.'}]},
+    {'verdict': 'pass'},
+])
+def test_reader_length_does_not_hide_block_or_malformed_meaning_review(review):
+    responses = _responses()
+    responses[2]['reader_contract'] = 'final-reader-v1'
+    original = _final_reader()
+    original['summary_paragraphs'][0]['text'] += ' Supported project access.' * 60
+    assessment = FakeClient(responses + [original], [])
+    reviewer = FakeClient([_native_pass_review, review], [])
+    result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(assessment, reviewer))
+    assert reviewer.calls[-1]['stage'] == 'reader_review'
+    assert not any(c['stage'] == 'reader_correction' for c in assessment.calls)
+    assert result['summary_overview_status'] == 'fallback'
+    assert len(result['priorities']) == 1
+
+
+def test_fact_and_review_prompts_require_comparable_contradictions_and_gap_premises():
+    from sector_lenses.climate_verified_prompts import build_verified_stage_prompt
+    facts = build_verified_stage_prompt('fact_extraction', {})
+    review = build_verified_stage_prompt('conditional_review', {})
+    for prompt in (facts, review):
+        assert 'same subject or population' in prompt
+        assert 'status' in prompt and 'period' in prompt and 'denominator' in prompt
+        assert 'can both be true' in prompt
+    assert 'Verify the residual-gap premise' in review
+    assert 'not the residual gap' not in review
+
+
+@pytest.mark.parametrize('defect', ['overlong_patch', 'unknown_evidence'])
+def test_reader_repair_never_admits_overlong_patch_or_unknown_evidence(defect):
+    responses = _responses()
+    responses[2]['reader_contract'] = 'final-reader-v1'
+    original = _final_reader()
+    original['summary_paragraphs'][0]['text'] += ' Supported project access.' * 60
+    if defect == 'unknown_evidence':
+        original['assessment_narratives'][0]['evidence_ids'] = ['PF-not-admitted']
+    patch = {'corrections': [{'object_id': r['object_id'], 'paragraphs': [r['text']]}
+                             for r in original['summary_paragraphs']]}
+    assessment = FakeClient(responses + [original, patch], [])
+    reviewer = FakeClient([_native_pass_review] * 3, [])
+    result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(assessment, reviewer))
+    assert result['summary_overview_status'] == 'fallback'
+    assert len(result['priorities']) == 1
+    assert sum(c['stage'] == 'reader_correction' for c in assessment.calls) == (defect == 'overlong_patch')
+    assert sum(c['stage'] == 'reader_review' for c in reviewer.calls) == (defect == 'overlong_patch')
+
+
+@pytest.mark.parametrize('defect', ['missing_codes', 'empty_codes', 'missing_explanation', 'duplicate_ids', 'mismatched_codes'])
+def test_malformed_reader_revision_does_not_spend_correction(defect):
+    responses = _responses()
+    responses[2]['reader_contract'] = 'final-reader-v1'
+    issue = {'object_id': 'NARR-dividends', 'reason_codes': ['PROJECT_FACT_UNSUPPORTED'],
+             'explanation': 'Keep the proposed benefit conditional.'}
+    review = {'verdict': 'revise', 'object_ids': ['NARR-dividends'],
+              'reason_codes': ['PROJECT_FACT_UNSUPPORTED'], 'issues': [issue]}
+    if defect == 'missing_codes':
+        del review['reason_codes']
+    elif defect == 'empty_codes':
+        issue['reason_codes'] = []
+    elif defect == 'missing_explanation':
+        del issue['explanation']
+    elif defect == 'duplicate_ids':
+        review['object_ids'] *= 2
+    else:
+        review['reason_codes'] = ['RESIDUAL_GAP_UNSUPPORTED']
+    assessment = FakeClient(responses + [_final_reader()], [])
+    result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(
+        assessment, FakeClient([_native_pass_review, review], [])))
+    assert not any(c['stage'] == 'reader_correction' for c in assessment.calls)
+    assert result['summary_overview_status'] == 'fallback'
+
+
+def test_reader_markup_is_repaired_after_meaning_review():
+    responses = _responses()
+    responses[2]['reader_contract'] = 'final-reader-v1'
+    original = _final_reader()
+    original['summary_paragraphs'][0]['text'] = '**' + original['summary_paragraphs'][0]['text'] + '**'
+    valid = _final_reader()
+    patch = {'corrections': [{'object_id': r['object_id'], 'paragraphs': [r['text']]}
+                             for r in valid['summary_paragraphs']]}
+    assessment = FakeClient(responses + [original, patch], [])
+    result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(
+        assessment, FakeClient([_native_pass_review] * 3, [])))
+    assert result['summary_overview_status'] == 'generated'
+    assert len(result['diagnostic_trace']['final_reader']['meaning_reviews']) == 2
+    assert 'summary_max_words_by_id' not in assessment.calls[-1]['payload']
