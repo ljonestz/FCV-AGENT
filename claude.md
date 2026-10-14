@@ -12,6 +12,23 @@
 
 ## Overview
 
+### 2026-10-14 quality10 follow-up: meaning takes priority over modest length
+
+The user authorized further paid acceptance, including a full run if needed, and
+clarified that roughly twenty extra words must not be the main acceptance blocker.
+Quality10 on 4231ab9 retained five independently accepted priorities but withheld
+native prose: Summary 250 words, then 239 after the single correction. Meaning
+review was never reached. Complete initial/precheck/patch diagnostics were retained.
+
+Native Summary targets remain 160-230 words, with an admission allowance up to 260.
+Legacy Summary retains its 230-word limit. Native meaning review remains mandatory;
+unreviewed historical results are never promoted. Compiler1.5/correction1.1/reviewer1.4
+explicitly preserve country/component/activity scope, beneficiary-population scope,
+and planned versus delivered benefits. Normalization2.5; renderer2.19 unchanged.
+No extra correction, retry or provider budget was added. See
+docs/20261014_climate-quality10-validation.md. Production/main/ITS remain held
+pending fresh analytical acceptance; earlier no-paid statements below are historical.
+
 ### 2026-10-14 approved native reader contract repair (rollout held)
 
 Quality9 consumed the single follow-on paid allowance. It retained four independently

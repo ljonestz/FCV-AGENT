@@ -1,5 +1,14 @@
 # Current handoff
 
+Latest October14 authority supersedes the historical restrictions below: the user
+authorized further paid acceptance, including a full run if needed, and accepts
+modest additional length. Quality10 completed once on4231ab9, retaining five accepted
+priorities but withholding native prose solely at the mechanical length gate
+(250 then239 words). Native allowance is now260, target160-230; genuine independent
+meaning review is still mandatory. See
+[quality10 follow-up](docs/20261014_climate-quality10-validation.md).
+Production/main/ITS remain held until analytical acceptance. Saved runs are unchanged.
+
 October 14 Climate candidate remains on `fix/climate-opcs-parity` in the preserved
 `.worktrees/climate-opcs-parity` worktree; draft PR83 and production/ITS rollout
 remain held. Quality9 consumed the single further paid allowance and failed native

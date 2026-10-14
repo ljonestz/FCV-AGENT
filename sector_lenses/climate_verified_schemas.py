@@ -153,7 +153,9 @@ def validate_summary_overview(
     if any(_SUMMARY_MARKUP_RE.search(item) for item in raw):
         return reject("SUMMARY_MARKUP")
     paragraphs = [_summary_normalize(item) for item in raw]
-    if not 160 <= sum(len(item.split()) for item in paragraphs) <= 230:
+    # Native prose may modestly exceed the editorial target; meaning review remains mandatory.
+    maximum_words = 260 if semantic_review_required else 230
+    if not 160 <= sum(len(item.split()) for item in paragraphs) <= maximum_words:
         return reject("SUMMARY_WORD_COUNT")
     if any(_SUMMARY_MARKUP_RE.search(item) for item in paragraphs):
         return reject("SUMMARY_MARKUP")
@@ -733,7 +735,7 @@ STAGE_OUTPUT_SCHEMAS: dict[str, dict[str, object]] = {
 STAGE_OUTPUT_SCHEMAS['reader_compiler'] = _object({
     'summary_paragraphs': {'type': 'array', 'items': _object({
         'object_id': _string('Sequential SUM-001, SUM-002, optionally SUM-003.'),
-        'text': _string('Plain prose, two or three paragraphs totalling 160-230 words.'),
+        'text': _string('Plain prose, two or three paragraphs targeting 160-230 words; up to 260 permitted to preserve meaning.'),
         'evidence_ids': _strings('Exact supplied support IDs, including accepted REC IDs for proposed actions.'),
     })},
     'assessment_narratives': {'type': 'array', 'items': _object({

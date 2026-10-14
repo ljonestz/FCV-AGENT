@@ -1,5 +1,15 @@
 # Sector-Lens Platform Reference
 
+October14 native reader follow-up: Summary targeting160-230 words may reach260
+under the user's explicit length preference. The native semantic-review boundary
+uses this allowance; legacy Summary remains capped at230. A clean independent
+meaning review is still required for display, reload and export. Compiler1.5,
+correction1.1 and reviewer1.4 emphasize exact country/component/activity and
+beneficiary-population scope, and distinguish funded/planned facilities from
+operating facilities or delivered benefits. Normalization2.5; renderer2.19 unchanged.
+No retry, correction count or output budget increase. Quality10 diagnostics and
+subsequent verification are recorded in docs/20261014_climate-quality10-validation.md.
+
 The sector-lens platform overlays optional specialist analysis on the common FCV assessment. It does not add a score, change the rating denominator, or create a second recommendation list. The production catalogue includes the approved manual-only Climate-FCV Lens.
 
 ## Module package

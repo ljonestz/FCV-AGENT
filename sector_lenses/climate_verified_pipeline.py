@@ -96,9 +96,9 @@ PROMPT_VERSIONS = {
     "recommendation_compiler": "climate-recommendations-v2.15",
     "conditional_review": "climate-review-v2.13",
     "drafting_compiler": "climate-drafting-v1.5",
-    "reader_compiler": "climate-final-reader-v1.4",
-    "reader_correction": "climate-reader-correction-v1.0",
-    "reader_review": "climate-reader-review-v1.3",
+    "reader_compiler": "climate-final-reader-v1.5",
+    "reader_correction": "climate-reader-correction-v1.1",
+    "reader_review": "climate-reader-review-v1.4",
 }
 
 
@@ -1767,7 +1767,7 @@ def run_verified_climate_pipeline(
         prompt_versions=PROMPT_VERSIONS,
         reviewer_version="climate-review-v2.2",
         extraction_version="source-blocks-v3",
-        normalization_version="climate-normalization-v2.4",
+        normalization_version="climate-normalization-v2.5",
         renderer_version="climate-reader-v2.19",
         model_aliases=model_aliases,
         sampling={"max_transient_retries": 1,

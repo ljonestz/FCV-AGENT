@@ -144,7 +144,7 @@ def validate_final_reader(payload: object, assessment: dict[str, object],
     if not summary:
         for record in paragraphs:
             count = sum(len(record['text'].split()) for record in paragraphs if isinstance(record.get('text'), str))
-            explanation = (f'Summary has {count} words; required range is 160-230 across all Summary paragraphs.'
+            explanation = (f'Summary has {count} words; permitted range is 160-260 across all Summary paragraphs (target 160-230).'
                            if summary_diagnostics.get('reason') == 'SUMMARY_WORD_COUNT'
                            else str(summary_diagnostics))
             rejected(record['object_id'], explanation, summary_diagnostics.get('reason', 'READER_FORMAT_INVALID'))

@@ -1941,6 +1941,33 @@ def test_native_reader_uses_text_only_correction_and_retains_original():
     assert len(trace['meaning_reviews']) == 2
 
 
+@pytest.mark.parametrize('verdict', ['pass', 'block'])
+@pytest.mark.parametrize('word_count', [239, 250, 260])
+def test_modest_native_summary_overrun_reaches_meaning_review(verdict, word_count):
+    responses = _responses()
+    responses[2]['reader_contract'] = 'final-reader-v1'
+    final = _final_reader()
+    count = sum(len(record['text'].split()) for record in final['summary_paragraphs'])
+    assert count < word_count
+    final['summary_paragraphs'][0]['text'] += ' ' + ' '.join(['supported'] * (word_count - count - 1) + ['support.'])
+    review = {'verdict': verdict, 'object_ids': [], 'reason_codes': [], 'issues': []}
+    if verdict == 'block':
+        review.update(object_ids=['SUM-001'], reason_codes=['PROJECT_FACT_UNSUPPORTED'],
+                      issues=[{'object_id': 'SUM-001', 'explanation': 'Planned support is stated as delivered.'}])
+    assessment = FakeClient(responses + [final], [])
+    reviewer = FakeClient([_native_pass_review, review], [])
+    result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(assessment, reviewer))
+    assert reviewer.calls[-1]['stage'] == 'reader_review'
+    assert result['summary_overview_status'] == ('generated' if verdict == 'pass' else 'fallback')
+    assert not any(call['stage'] == 'reader_correction' for call in assessment.calls)
+    assert len(result['priorities']) == 1
+    from sector_lenses.climate_verified_schemas import validate_summary_overview
+    diagnostics = {}
+    assert validate_summary_overview({'paragraphs': [r['text'] for r in final['summary_paragraphs']]},
+                                     diagnostics=diagnostics) == []
+    assert diagnostics['reason'] == 'SUMMARY_WORD_COUNT'
+
+
 def test_native_reader_reports_actual_summary_word_count():
     from sector_lenses.climate_final_reader import validate_final_reader
 

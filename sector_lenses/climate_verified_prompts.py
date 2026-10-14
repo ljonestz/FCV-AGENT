@@ -487,9 +487,11 @@ def _reader_prompt(payload: dict[str, object]) -> str:
     return _common(
         """Write a standalone brief from the admitted support_records and FINAL accepted
 recommendations. Return summary_paragraphs and assessment_narratives only.
-Summary: two or three connected paragraphs, 160-230 words, sequential object_id
-SUM-001/SUM-002/SUM-003. Begin with a clear overall assessment of what the project
-already recognizes and addresses. Explain the material remaining challenge and
+Summary: two or three connected paragraphs, targeting 160-230 words, sequential object_id
+SUM-001/SUM-002/SUM-003. Up to 260 words is acceptable when needed to preserve qualifications.
+Do not spend a correction merely shortening a Summary already within that allowance.
+Begin with a clear overall assessment of what the project already recognizes and
+addresses. Explain the material remaining challenge and
 bridge to accepted priorities. Refer to proposed actions only when supported by
 accepted_recommendation_ids. Never mention a withheld action as a recommendation.
 Assessment narratives: three short question-led answers, theme design, dividends,
@@ -522,7 +524,10 @@ Each record includes evidence_ids for its specific supporting facts/findings and
 accepted actions. Add no facts, actors, numbers, dates, authority or commitments.
 Evidence IDs bind support, not permission to change measured quantities, units,
 negation, planned/completed status or inference into fact. Do not copy the executive
-readout. Aim for about 190 summary words. For each required theme with limited
+readout or broaden a component-specific limitation to all activities in a country.
+Keep beneficiary shares tied to the population actually measured. Funding a facility
+does not establish that it is operating or that people have received its benefits.
+Aim for about 190 summary words. For each required theme with limited
 evidence, explain the grounded potential and limits without inventing detail.
 Keep planned or intended benefits conditional. Do not claim measured outcomes or
 rank who benefits most without supporting evidence. Cite every concrete activity
@@ -540,7 +545,8 @@ def _reader_correction_prompt(payload: dict[str, object]) -> str:
 its exact object_id and paragraphs of corrected text. Return every requested ID
 exactly once; no other records or fields. A Summary record has exactly one paragraph.
 A finding has one or two paragraphs, 70-180 words total. The combined Summary must
-have 160-230 words, including untargeted_summary_words. Use the supplied actual
+target 160-230 words, with up to 260 permitted to preserve meaning, including
+untargeted_summary_words. Use the supplied actual
 word counts and bounded_correction explanations. Preserve supported meaning and
 scope while resolving all targeted issues. Do not add facts, named actors, numbers,
 dates, commitments, locations or proposed actions. Support is restricted to the
@@ -557,6 +563,11 @@ def _reader_review_prompt(payload: dict[str, object]) -> str:
 support_records and accepted recommendations. Check meaning, not vocabulary overlap.
 Check negation, who/what quantities count, dates, units, planned versus completed
 status, source scope, inference versus documented intent, and existing mitigation.
+Keep country, component, activity and beneficiary-population scope exact. A restriction
+on civil works must not become a restriction on all activities. A trader-population
+share must not become a measured share of a component's beneficiaries. Funding or
+planning a facility does not establish operation or delivered benefits. Do not reject
+a Summary solely for exceeding the 230-word target if it remains within 260 words.
 Fluent paraphrase and a conditional mechanism drawn from cited project features
 and admitted pathways are allowed. Such an inference must preserve uncertainty,
 remain within scope and never become a documented intention or demonstrated
