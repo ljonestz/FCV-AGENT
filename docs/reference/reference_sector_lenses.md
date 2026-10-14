@@ -549,3 +549,35 @@ Production/main/ITS remain held; PR83 stays draft.
 Renderer2.19 also links directly cited accepted recommendations from findings to
 their priority cards, preserving existing gap-based links. Compiler1.3 answers
 the renderer's questions directly instead of repeating their headings in prose.
+
+## 2026-10-14 approved native reader contract repair
+
+Quality9 retained four independently accepted decisions and five Summary gaps, but
+its native reader was withheld before meaning review. That single paid allowance
+is consumed. No additional provider/assessment run is authorized by this repair.
+
+Reader compiler 1.4 returns the original evidence-linked package. Separate
+reader_correction 1.0 returns only corrections[{object_id, paragraphs}] for every
+exact requested SUM/NARR ID. The application merges text into a deep copy and owns
+all other records, themes and evidence references. Unknown/duplicate/missing IDs,
+extra fields and new quantities/dates fail explicitly. Invalid evidence/structure
+cannot be repaired by a text call. Support supplied to correction is restricted to
+targeted records' original references. The fresh reviewer receives those original
+records and must reject new claims, actors, commitments, locations or action anchors.
+
+Native admission checks plain text, known evidence, numbers/dates, Summary 160-230
+words and each finding 70-180 words. Ordinary capitalized vocabulary, verb overlap
+and verdict-keyword guesses are not native meaning checks. Reader reviewer 1.3 owns
+meaning, including units, negation, planned/completed status, documented intent,
+qualified benefits and country/site scope. Publication requires verdict pass with
+explicit empty object_ids, reason_codes and issues arrays. Saved-result render and
+exports use the same gate; strict normal FCV Summary and legacy contracts retain
+their previous checks. Structural acceptance never supplies a semantic pass.
+
+One correction plus fresh review shares the existing deadline and 9,000-output-token
+allowance; no correction transient retry or increased provider budget. Accepted
+operational decisions survive optional reader failure. Bounded private final_reader
+diagnostics retain initial response, prechecks, targets/patch, specific merge reasons
+and meaning reviews. They cannot become grounding, reader or export content.
+Normalization 2.4; renderer 2.19 unchanged. Frozen quality8/9 replay remains fallback
+without genuine clean review. Production/main/ITS held; ITS mirror outstanding.

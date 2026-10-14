@@ -52,6 +52,7 @@ CALL_BUDGETS = {
     "reader_compiler": CallBudget(18_000, 4_000, 180),
     "reader_review": CallBudget(18_000, 2_500, 120),
 }
+CALL_BUDGETS['reader_correction'] = CALL_BUDGETS['reader_compiler']
 
 
 @dataclass(frozen=True)

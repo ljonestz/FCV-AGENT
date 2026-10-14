@@ -137,6 +137,7 @@ def validate_summary_overview(
     canonical_text: object = (),
     diagnostics: dict[str, object] | None = None,
     allow_paraphrase: bool = False,
+    semantic_review_required: bool = False,
 ) -> list[str]:
     """Admit only a grounded, plain-text two/three-paragraph synthesis."""
     def reject(reason: str) -> list[str]:
@@ -157,12 +158,12 @@ def validate_summary_overview(
     if any(_SUMMARY_MARKUP_RE.search(item) for item in paragraphs):
         return reject("SUMMARY_MARKUP")
     combined = " ".join(paragraphs).casefold()
-    if not any(
+    if not semantic_review_required and not any(
         signal in paragraphs[0].casefold()
         for signal in ("verdict", "foundation", "overall", "credible", "takeaway", "recognizes", "recognises", "shows", "demonstrates", "assessment", "finding", "already")
     ):
         return reject("SUMMARY_VERDICT_MISSING")
-    if not any(
+    if not semantic_review_required and not any(
         signal in combined
         for signal in ("practical implication", "ranked priorities", "confirm", "next", "priority", "priorities", "attention", "follow-up", "follow up", "decision", "remaining")
     ):
@@ -180,6 +181,7 @@ def validate_summary_overview(
             canonical_text=canonical_text,
             diagnostics=diagnostics,
             allow_paraphrase=allow_paraphrase,
+            semantic_review_required=semantic_review_required,
         ):
             if diagnostics is not None:
                 diagnostics["paragraph_index"] = index
@@ -193,6 +195,7 @@ def validate_summary_fragment(
     canonical_text: object = (),
     diagnostics: dict[str, object] | None = None,
     allow_paraphrase: bool = False,
+    semantic_review_required: bool = False,
 ) -> bool:
     """Validate grounding controls for one plain-text summary fragment."""
     def reject(reason: str, detail: str = "") -> bool:
@@ -233,6 +236,10 @@ def validate_summary_fragment(
         for date in re.findall(date_pattern, fragment.casefold()):
             if date not in canonical_casefold:
                 return reject("SUMMARY_DATE_UNSUPPORTED", date)
+    # Native reader meaning is admitted only by reviewed_final_reader. Capitalized
+    # vocabulary and verb overlap cannot establish actors, actions or meaning.
+    if semantic_review_required:
+        return True
     if canonical_casefold:
         for match in _SUMMARY_ENTITY_RE.finditer(fragment):
             entity = match.group(0).casefold()
@@ -737,6 +744,12 @@ STAGE_OUTPUT_SCHEMAS['reader_compiler'] = _object({
     })},
 })
 STAGE_OUTPUT_SCHEMAS['reader_review'] = _object({key: value for key, value in STAGE_OUTPUT_SCHEMAS['conditional_review']['properties'].items() if key != 'passed_core_ids'})
+STAGE_OUTPUT_SCHEMAS['reader_correction'] = _object({
+    'corrections': {'type': 'array', 'items': _object({
+        'object_id': _string('Exact requested SUM or NARR ID; no other records.'),
+        'paragraphs': _strings('One paragraph for SUM; one or two for NARR. Text only; application retains all evidence and metadata.'),
+    })},
+})
 
 def stage_output_schema(stage: str) -> dict[str, object]:
     """Return an isolated native output schema for one verified stage."""

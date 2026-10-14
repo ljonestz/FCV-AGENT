@@ -1,5 +1,16 @@
 # Current handoff
 
+October 14 Climate candidate remains on `fix/climate-opcs-parity` in the preserved
+`.worktrees/climate-opcs-parity` worktree; draft PR83 and production/ITS rollout
+remain held. Quality9 consumed the single further paid allowance and failed native
+reader acceptance before meaning review, retaining four accepted priorities and
+five gaps. No further paid run or provider review is authorized. The approved
+offline reader contract repair, verification and limitations are recorded in
+[reader contract validation](docs/20261014_climate-reader-contract-validation.md).
+Local raw evidence is under the worktree's `output/playwright/`; private continuation
+notes are in `output/20261014_reader-contract-handover.md`. Do not stage those files
+or the unrelated untracked `tests/test_climate_final_reader.py`.
+
 September 21 readability follow-up: see [strengths/gaps bullet formatting](20260921_strengths-gaps-bullets.md).
 
 The current release combines [the September 20 standard-FCV handover](20260920_ITS_handover_standard_fcv.md)

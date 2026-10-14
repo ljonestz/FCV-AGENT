@@ -135,7 +135,7 @@ class AnthropicVerifiedJsonClient:
         prompt = build_verified_stage_prompt(stage, payload)
         self.last_output_tokens = None
         scope = payload.get('call_scope', 'reader' if stage.startswith('reader_') else 'initial')
-        if scope not in {'initial', 'core_correction', 'draft_correction', 'reader'}:
+        if scope not in {'initial', 'core_correction', 'draft_correction', 'reader', 'reader_correction'}:
             scope = 'initial'
         configured_model = self._model if re.fullmatch(r'[a-zA-Z0-9_.-]{1,100}', self._model or '') else 'configured'
         response = None

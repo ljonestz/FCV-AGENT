@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from copy import deepcopy
 from dataclasses import dataclass, replace
+import json
+import pytest
 
 from sector_lenses.climate_analysis import ContextEvidenceRef
 from sector_lenses.climate_source_blocks import (
@@ -740,6 +742,7 @@ def test_manifest_is_privacy_safe_and_scoped_to_the_run():
         "drafting_compiler",
         "conditional_review",
         "reader_compiler",
+        "reader_correction",
         "reader_review",
     }
     manifest_text = str(first["manifest"])
@@ -1816,7 +1819,9 @@ def test_final_reader_repairs_only_targeted_prose_and_rechecks_meaning():
     original = _final_reader()
     corrected = deepcopy(original)
     corrected['assessment_narratives'][1]['paragraphs'][0] += ' The project could support access.'
-    assessment = FakeClient(responses + [original, corrected], [])
+    patch = {'corrections': [{'object_id': 'NARR-dividends',
+                            'paragraphs': corrected['assessment_narratives'][1]['paragraphs']}]}
+    assessment = FakeClient(responses + [original, patch], [])
     reviewer = FakeClient([_native_pass_review,
         {'verdict':'revise', 'object_ids':['NARR-dividends'],
          'reason_codes':['PROJECT_FACT_UNSUPPORTED'], 'issues':[
@@ -1830,7 +1835,7 @@ def test_final_reader_repairs_only_targeted_prose_and_rechecks_meaning():
     assert assessment.calls[-1]['max_transient_retries'] == 0
 
 
-def test_invalid_reader_references_get_one_bounded_correction_then_review():
+def test_invalid_reader_references_cannot_be_repaired_by_text_changes():
     responses = _responses()
     responses[2]['reader_contract'] = 'final-reader-v1'
     invalid = deepcopy(_final_reader())
@@ -1838,50 +1843,272 @@ def test_invalid_reader_references_get_one_bounded_correction_then_review():
     assessment = FakeClient(responses + [invalid, _final_reader()], [])
     reviewer = FakeClient([_native_pass_review] * 2, [])
     result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(assessment, reviewer))
-    assert result['summary_overview_status'] == 'generated'
-    assert assessment.calls[-1]['payload']['bounded_correction'][0]['object_id'] == 'SUM-001'
-    assert len(reviewer.calls) == 2
+    assert result['summary_overview_status'] == 'fallback'
+    assert assessment.calls[-1]['stage'] == 'reader_compiler'
+    assert result['diagnostic_trace']['final_reader']['unrepairable_issues'][0]['reason_codes'] == ['READER_EVIDENCE_INVALID']
+    assert len(reviewer.calls) == 1
 
 
 def test_reader_correction_cannot_rewrite_untargeted_records():
     responses = _responses()
     responses[2]['reader_contract'] = 'final-reader-v1'
-    invalid = deepcopy(_final_reader())
-    invalid['summary_paragraphs'][0]['evidence_ids'].append('PF-unknown')
-    correction = _final_reader()
-    correction['assessment_narratives'][0]['paragraphs'][0] += ' The project could support access.'
-    assessment = FakeClient(responses + [invalid, correction], [])
-    reviewer = FakeClient([_native_pass_review], [])
+    original = _final_reader()
+    correction = {'corrections': [{'object_id': 'NARR-design',
+                                  'paragraphs': original['assessment_narratives'][0]['paragraphs']}]}
+    assessment = FakeClient(responses + [original, correction], [])
+    reviewer = FakeClient([_native_pass_review,
+        {'verdict': 'revise', 'object_ids': ['NARR-dividends'], 'reason_codes': ['PROJECT_FACT_UNSUPPORTED'],
+         'issues': [{'object_id': 'NARR-dividends', 'explanation': 'Qualify the benefit.'}]}], [])
     result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(assessment, reviewer))
     assert result['summary_overview_status'] == 'fallback'
     assert len(result['priorities']) == 1
-    assert len(reviewer.calls) == 1
+    assert len(reviewer.calls) == 2
+    assert result['diagnostic_trace']['final_reader']['correction']['issues'][0]['reason_codes'] == ['READER_CORRECTION_TARGET_INVALID']
 
 
 def test_reader_correction_cannot_add_other_admitted_evidence():
     responses = _responses()
     responses[2]['reader_contract'] = 'final-reader-v1'
-    invalid = deepcopy(_final_reader())
-    invalid['summary_paragraphs'][0]['evidence_ids'].remove('CE-001')
-    invalid['summary_paragraphs'][0]['evidence_ids'].append('PF-unknown')
-    assessment = FakeClient(responses + [invalid, _final_reader()], [])
-    reviewer = FakeClient([_native_pass_review], [])
+    original = _final_reader()
+    correction = {'corrections': [{'object_id': 'NARR-dividends',
+                                  'paragraphs': original['assessment_narratives'][1]['paragraphs'],
+                                  'evidence_ids': ['PF-001', 'CE-001']}]}
+    assessment = FakeClient(responses + [original, correction], [])
+    reviewer = FakeClient([_native_pass_review,
+        {'verdict': 'revise', 'object_ids': ['NARR-dividends'], 'reason_codes': ['PROJECT_FACT_UNSUPPORTED'],
+         'issues': [{'object_id': 'NARR-dividends', 'explanation': 'Qualify the benefit.'}]}], [])
     result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(assessment, reviewer))
     assert result['summary_overview_status'] == 'fallback'
     assert len(result['priorities']) == 1
     assert 'FINAL_READER_CORRECTION_SCOPE_INVALID' in result['manifest']['validation_reason_codes']
-    assert len(reviewer.calls) == 1
+    assert len(reviewer.calls) == 2
 
 
 def test_reader_repairs_combined_precheck_issues_once():
     responses = _responses()
     responses[2]['reader_contract'] = 'final-reader-v1'
     invalid = deepcopy(_final_reader())
-    invalid['summary_paragraphs'][0]['evidence_ids'].append('PF-unknown')
-    invalid['assessment_narratives'][2]['evidence_ids'].append('PF-unknown')
-    assessment = FakeClient(responses + [invalid, _final_reader()], [])
+    invalid['summary_paragraphs'][0]['text'] += ' The project supports traders.' * 50
+    invalid['assessment_narratives'][2]['paragraphs'][0] += ' The project supports traders.' * 50
+    valid = _final_reader()
+    patch = {'corrections': [{'object_id': record['object_id'], 'paragraphs': [record['text']]}
+                             for record in valid['summary_paragraphs']] + [
+        {'object_id': 'NARR-inclusion', 'paragraphs': valid['assessment_narratives'][2]['paragraphs']}]}
+    assessment = FakeClient(responses + [invalid, patch], [])
     reviewer = FakeClient([_native_pass_review] * 2, [])
     result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(assessment, reviewer))
     assert result['summary_overview_status'] == 'generated'
-    assert {issue['object_id'] for issue in assessment.calls[-1]['payload']['bounded_correction']} == {'SUM-001', 'NARR-inclusion'}
-    assert [call['stage'] for call in assessment.calls].count('reader_compiler') == 2
+    assert {issue['object_id'] for issue in assessment.calls[-1]['payload']['bounded_correction']} == {
+        record['object_id'] for record in valid['summary_paragraphs']} | {'NARR-inclusion'}
+    assert [call['stage'] for call in assessment.calls].count('reader_compiler') == 1
+    assert [call['stage'] for call in assessment.calls].count('reader_correction') == 1
+
+
+def test_native_reader_common_noun_reaches_meaning_review():
+    responses = _responses()
+    responses[2]['reader_contract'] = 'final-reader-v1'
+    final = _final_reader()
+    final['assessment_narratives'][2]['paragraphs'][0] += ' Protections include support for traders.'
+    assessment = FakeClient(responses + [final], [])
+    reviewer = FakeClient([_native_pass_review] * 2, [])
+    result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(assessment, reviewer))
+    assert result['summary_overview_status'] == 'generated'
+    assert reviewer.calls[-1]['stage'] == 'reader_review'
+
+
+def test_native_reader_uses_text_only_correction_and_retains_original():
+    responses = _responses()
+    responses[2]['reader_contract'] = 'final-reader-v1'
+    original = _final_reader()
+    corrected_text = original['assessment_narratives'][1]['paragraphs'][0] + ' The project could support access.'
+    patch = {'corrections': [{'object_id': 'NARR-dividends', 'paragraphs': [corrected_text]}]}
+    assessment = FakeClient(responses + [original, patch], [])
+    reviewer = FakeClient([_native_pass_review,
+        {'verdict': 'revise', 'object_ids': ['NARR-dividends'],
+         'reason_codes': ['PROJECT_FACT_UNSUPPORTED'], 'issues': [
+             {'object_id': 'NARR-dividends', 'explanation': 'Keep the benefit conditional.'}]},
+        _native_pass_review], [])
+    result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(assessment, reviewer))
+    assert result['summary_overview_status'] == 'generated'
+    assert result['final_reader']['summary_paragraphs'] == original['summary_paragraphs']
+    assert result['final_reader']['assessment_narratives'][0] == original['assessment_narratives'][0]
+    assert result['final_reader']['assessment_narratives'][1]['evidence_ids'] == original['assessment_narratives'][1]['evidence_ids']
+    assert assessment.calls[-1]['stage'] == 'reader_correction'
+    assert assessment.calls[-1]['max_transient_retries'] == 0
+    trace = result['diagnostic_trace']['final_reader']
+    assert json.loads(trace['initial']['json']) == original
+    assert trace['correction']['target_ids'] == ['NARR-dividends']
+    assert len(trace['meaning_reviews']) == 2
+
+
+def test_native_reader_reports_actual_summary_word_count():
+    from sector_lenses.climate_final_reader import validate_final_reader
+
+    responses = _responses()
+    responses[2]['reader_contract'] = 'final-reader-v1'
+    result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(
+        FakeClient(responses + [_final_reader()], []), FakeClient([_native_pass_review] * 2, [])))
+    final = _final_reader()
+    final['summary_paragraphs'][0]['text'] += ' The project supports traders.' * 50
+    count = sum(len(record['text'].split()) for record in final['summary_paragraphs'])
+    issues = []
+    assert validate_final_reader(final, result, issues=issues) == ([], [])
+    assert any(str(count) in issue['explanation'] and '160-230' in issue['explanation'] for issue in issues)
+
+
+def test_native_reader_rejected_patch_preserves_initial_for_diagnosis():
+    responses = _responses()
+    responses[2]['reader_contract'] = 'final-reader-v1'
+    original = _final_reader()
+    patch = {'corrections': [{'object_id': 'NARR-dividends', 'paragraphs': ['The project could support access.'],
+                              'evidence_ids': ['PF-invented']} ]}
+    reviewer = FakeClient([_native_pass_review,
+        {'verdict': 'revise', 'object_ids': ['NARR-dividends'],
+         'reason_codes': ['PROJECT_FACT_UNSUPPORTED'], 'issues': [
+             {'object_id': 'NARR-dividends', 'explanation': 'Keep the benefit conditional.'}]}], [])
+    result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(
+        FakeClient(responses + [original, patch], []), reviewer))
+    assert result['final_reader'] == original
+    assert result['summary_overview_status'] == 'fallback'
+    assert result['diagnostic_trace']['final_reader']['correction']['issues'][0]['reason_codes'] == ['READER_CORRECTION_FIELDS_INVALID']
+    assert len(result['priorities']) == 1
+
+
+@pytest.mark.parametrize('response', [
+    {'corrections': []},
+    {'corrections': [{'object_id': 'NARR-unknown', 'paragraphs': ['The project supports traders.']}]},
+    {'corrections': [{'object_id': 'NARR-dividends', 'paragraphs': ['The project supports traders.']}] * 2},
+    {'corrections': [{'object_id': 'NARR-dividends', 'paragraphs': ['The project supports traders.'], 'theme': 'design'}]},
+    {'corrections': [{'object_id': 'NARR-dividends', 'paragraphs': ['The project supports 987654 traders.']}]},
+    {'corrections': [{'object_id': 'NARR-dividends', 'paragraphs': ['The project supports traders in January 2099.']}]},
+    {'corrections': [{'object_id': 'NARR-dividends', 'paragraphs': ['']}]},
+])
+def test_native_reader_patch_rejects_scope_and_numeric_expansion(response):
+    from sector_lenses.climate_final_reader import apply_reader_corrections
+
+    original = _final_reader()
+    snapshot = deepcopy(original)
+    issues = []
+    assert apply_reader_corrections(original, response, {'NARR-dividends'}, issues=issues) is None
+    assert issues and issues[0]['reason_codes']
+    assert original == snapshot
+
+
+@pytest.mark.parametrize('review', [
+    {}, {'verdict': 'pass'},
+    {'verdict': 'pass', 'reason_codes': [], 'object_ids': [], 'issues': None},
+    {'verdict': 'pass', 'reason_codes': [], 'object_ids': None, 'issues': []},
+])
+def test_native_reader_requires_explicit_complete_clean_review(review):
+    from sector_lenses.climate_final_reader import reviewed_final_reader
+
+    responses = _responses()
+    responses[2]['reader_contract'] = 'final-reader-v1'
+    result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(
+        FakeClient(responses + [_final_reader()], []), FakeClient([_native_pass_review] * 2, [])))
+    assert reviewed_final_reader(_final_reader(), review, result) == ([], [])
+
+
+@pytest.mark.parametrize('unsupported', [
+    'Atlantis manages the markets.',
+    'The project has completed all planned works.',
+    'Country flood evidence proves every project site is currently flooded.',
+    'The project will certainly prevent conflict.',
+    'The project does not need any protections.',
+])
+def test_native_reader_semantic_block_never_publishes_prose(unsupported):
+    responses = _responses()
+    responses[2]['reader_contract'] = 'final-reader-v1'
+    final = _final_reader()
+    final['assessment_narratives'][2]['paragraphs'][0] += ' ' + unsupported
+    reviewer = FakeClient([_native_pass_review,
+        {'verdict': 'block', 'object_ids': ['NARR-inclusion'], 'reason_codes': ['PROJECT_FACT_UNSUPPORTED'],
+         'issues': [{'object_id': 'NARR-inclusion', 'explanation': 'Unsupported assertion.'}]}], [])
+    result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(
+        FakeClient(responses + [final], []), reviewer))
+    assert reviewer.calls[-1]['stage'] == 'reader_review'
+    assert result['summary_overview_status'] == 'fallback'
+    assert result['assessment_narratives'] == []
+    assert len(result['priorities']) == 1
+
+
+def test_reader_correction_review_checks_original_claim_scope():
+    responses = _responses()
+    responses[2]['reader_contract'] = 'final-reader-v1'
+    original = _final_reader()
+    patch = {'corrections': [{'object_id': 'NARR-dividends', 'paragraphs': original['assessment_narratives'][1]['paragraphs']}]}
+    reviewer = FakeClient([_native_pass_review,
+        {'verdict': 'revise', 'object_ids': ['NARR-dividends'], 'reason_codes': ['PROJECT_FACT_UNSUPPORTED'],
+         'issues': [{'object_id': 'NARR-dividends', 'explanation': 'Qualify the benefit.'}]}, _native_pass_review], [])
+    assessment = FakeClient(responses + [original, patch], [])
+    result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(assessment, reviewer))
+    assert result['summary_overview_status'] == 'generated'
+    assert reviewer.calls[-1]['payload']['correction_originals'] == [original['assessment_narratives'][1]]
+    correction_input = assessment.calls[-1]['payload']
+    assert 'final_reader' not in correction_input
+    assert set(correction_input['support_records']) == set(original['assessment_narratives'][1]['evidence_ids'])
+
+
+def test_reader_correction_exhausted_allowance_cannot_skip_fresh_review(monkeypatch):
+    from sector_lenses.climate_verified_contracts import CALL_BUDGETS
+
+    monkeypatch.setitem(CALL_BUDGETS, 'recommendation_compiler',
+                        replace(CALL_BUDGETS['recommendation_compiler'], output_tokens=1))
+    class OpaqueClient(FakeClient):
+        @property
+        def last_output_tokens(self):
+            return None
+
+    responses = _responses()
+    responses[2]['reader_contract'] = 'final-reader-v1'
+    final = _final_reader()
+    patch = {'corrections': [{'object_id': 'NARR-dividends', 'paragraphs': final['assessment_narratives'][1]['paragraphs']}]}
+    reviewer = FakeClient([_native_pass_review,
+        {'verdict': 'revise', 'object_ids': ['NARR-dividends'], 'reason_codes': ['PROJECT_FACT_UNSUPPORTED'],
+         'issues': [{'object_id': 'NARR-dividends', 'explanation': 'Qualify the benefit.'}]}], [])
+    assessment = OpaqueClient(responses + [final, patch], [])
+    result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(assessment, reviewer))
+    assert assessment.calls[-1]['max_output_tokens'] == 1
+    assert assessment.calls[-1]['max_transient_retries'] == 0
+    assert result['manifest']['sampling']['correction_output_token_remaining'] == 0
+    assert result['summary_overview_status'] == 'fallback'
+    assert len(result['priorities']) == 1
+    assert len(reviewer.calls) == 2
+
+
+def test_reader_correction_provider_failure_preserves_initial_and_actions():
+    responses = _responses()
+    responses[2]['reader_contract'] = 'final-reader-v1'
+    final = _final_reader()
+    class FailedCorrection(FakeClient):
+        def complete_json(self, **kwargs):
+            if kwargs['stage'] == 'reader_correction':
+                self.calls.append(kwargs)
+                raise ConnectionError('Provider unavailable')
+            return super().complete_json(**kwargs)
+
+    reviewer = FakeClient([_native_pass_review,
+        {'verdict': 'revise', 'object_ids': ['NARR-dividends'], 'reason_codes': ['PROJECT_FACT_UNSUPPORTED'],
+         'issues': [{'object_id': 'NARR-dividends', 'explanation': 'Qualify the benefit.'}]}], [])
+    result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(
+        FailedCorrection(responses + [final], []), reviewer))
+    assert result['final_reader'] == final
+    assert result['summary_overview_status'] == 'fallback'
+    assert result['diagnostic_trace']['final_reader']['failure'] == 'ConnectionError'
+    assert len(result['priorities']) == 1
+
+
+def test_reader_diagnostics_never_enter_reader_or_exports(tmp_path):
+    from docx import Document
+    from sector_lenses.climate_verified_render import build_reader_model, render_reader_html, write_reader_docx
+
+    responses = _responses()
+    responses[2]['reader_contract'] = 'final-reader-v1'
+    result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(
+        FakeClient(responses + [_final_reader()], []), FakeClient([_native_pass_review] * 2, [])))
+    result['diagnostic_trace']['final_reader']['initial']['json'] = 'PRIVATE_DIAGNOSTIC_SENTINEL'
+    reader = build_reader_model(result)
+    assert 'PRIVATE_DIAGNOSTIC_SENTINEL' not in json.dumps(reader)
+    assert 'PRIVATE_DIAGNOSTIC_SENTINEL' not in render_reader_html(reader)
+    document = Document(write_reader_docx(reader, tmp_path / 'reader.docx'))
+    assert 'PRIVATE_DIAGNOSTIC_SENTINEL' not in '\n'.join(p.text for p in document.paragraphs)

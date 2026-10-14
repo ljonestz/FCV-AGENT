@@ -12,6 +12,28 @@
 
 ## Overview
 
+### 2026-10-14 approved native reader contract repair (rollout held)
+
+Quality9 consumed the single follow-on paid allowance. It retained four independently
+accepted actions and five Summary gaps, but native prose was withheld before meaning
+review: the returned Summary had 274 words and the old capitalization heuristic
+rejected Protections. The original precheck/reader response was overwritten during
+whole-reader correction, preventing an exact diagnosis of its scope failure.
+
+Compiler 1.4/correction 1.0/reviewer 1.3 and normalization 2.4 replace whole-reader copying
+with exact-ID text patches. The application preserves all evidence, themes and
+untargeted records. Native mechanical checks retain reference, number/date, format
+and length boundaries; independent meaning review owns actors, actions, units,
+negation, source scope and planned/completed status. Normal FCV Summary stays strict.
+Corrections receive original claim scope and restricted cited support, followed by
+complete revalidation and fresh review. Missing/malformed/non-clean review fails
+closed. Initial response, prechecks, returned patch and review outcomes remain bounded
+private diagnostics, excluded from display, grounding and exports. One correction
+uses the existing deadline/shared 9,000-token allowance with zero repair retries.
+Reader 2.19 and legacy contracts are unchanged. No further paid call is authorized;
+offline archive replay supplies no retrospective semantic pass. Production/main/ITS
+remain held. See docs/20261014_climate-reader-contract-validation.md.
+
 ### 2026-10-14 richer benefits prose preflight (rollout held)
 
 The user requested richer dividends/fair-benefit findings and authorized one new

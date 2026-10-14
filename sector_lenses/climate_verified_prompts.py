@@ -528,12 +528,26 @@ Keep planned or intended benefits conditional. Do not claim measured outcomes or
 rank who benefits most without supporting evidence. Cite every concrete activity
 and location to its own supporting record, even when another cited fact shares
 the same source passage. Keep evidence IDs out of the displayed prose.
-If bounded_correction is supplied, repair ONLY its exact object IDs. Return the
-complete reader with all other records unchanged, preserving IDs and themes.
-Do not add evidence IDs, facts, named actors, quantities, locations or action anchors.
-Resolve the supplied citation, wording or meaning issues using admitted support
-and accepted actions only. The corrected prose will undergo fresh meaning review.""",
+The application owns IDs, themes and evidence references. Any subsequent correction
+uses a separate text-only contract and undergoes fresh independent meaning review.""",
         payload,
+    )
+
+
+def _reader_correction_prompt(payload: dict[str, object]) -> str:
+    return _common(
+        """Repair only the supplied records_to_correct. Return corrections, each with
+its exact object_id and paragraphs of corrected text. Return every requested ID
+exactly once; no other records or fields. A Summary record has exactly one paragraph.
+A finding has one or two paragraphs, 70-180 words total. The combined Summary must
+have 160-230 words, including untargeted_summary_words. Use the supplied actual
+word counts and bounded_correction explanations. Preserve supported meaning and
+scope while resolving all targeted issues. Do not add facts, named actors, numbers,
+dates, commitments, locations or proposed actions. Support is restricted to the
+record's original evidence IDs; do not return evidence IDs, themes or metadata.
+Keep planned benefits conditional and credit existing protections. The application
+preserves all unchanged records and references. A complete structural check and
+fresh independent meaning review follow this repair.""", payload,
     )
 
 
@@ -553,8 +567,14 @@ that either absence establishes a project weakness is RESIDUAL_GAP_UNSUPPORTED.
 Check that benefits and fairness claims have a project-specific causal explanation,
 credit existing measures and distinguish unseen instrument content from failed
 protection. Do not require impacts to be proven for a qualified potential benefit.
-Check all paragraphs; no broad editorial rewriting. A pass certifies
-all paragraphs. Return verdict pass/revise/block, reason_codes from the native enum,
+Check all paragraphs; no broad editorial rewriting.
+If correction_originals is supplied, compare each corrected record with its
+original text as well as its original cited support. Repair may remove unsupported
+material, qualify claims or shorten text. It must not introduce new factual claims,
+named actors, numbers, dates, locations, commitments or action anchors, even when
+other supplied evidence mentions them. Reject expansion beyond the original claim
+scope. Untargeted records, themes and evidence IDs are application-owned.
+A pass certifies all paragraphs. Return verdict pass/revise/block, reason_codes from the native enum,
 object_ids and issues with short explanations. Target exact SUM-... or NARR-... IDs.
 Use empty arrays for pass. Identify all affected paragraph IDs for any failure.
 Do not review or change the accepted recommendations themselves in this stage.""",
@@ -572,6 +592,7 @@ def build_verified_stage_prompt(
         "recommendation_compiler": _recommendation_prompt,
         "conditional_review": _review_prompt,
         "reader_compiler": _reader_prompt,
+        "reader_correction": _reader_correction_prompt,
         "reader_review": _reader_review_prompt,
         "drafting_compiler": _drafting_prompt,
     }
