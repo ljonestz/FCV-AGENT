@@ -6882,18 +6882,29 @@ ${body}
       const concise=getConcisePriority(priority);
       const wording=concise.suggested_wording||{};
       const cycle=concise.project_cycle||{};
-      const expanded=idx===openSummaryPriority;
+      const expanded=supportsClimateVerifiedStage3View()||idx===openSummaryPriority;
       const how=(Array.isArray(concise.how)?concise.how:[]).map(item=>`<li>${esc(item)}</li>`).join('');
       const specialist=String(priority.the_gap||priority.why_it_matters||'').trim();
       return `<article class="summary-priority-item"><h3><button type="button" id="summary-priority-toggle-${idx}" class="summary-priority-toggle" aria-expanded="${expanded}" aria-controls="summary-priority-panel-${idx}" onclick="toggleSummaryPriority(${idx})"><span class="summary-priority-rank">${idx+1}</span><span>${esc(concise.title||priority.title||'Priority action')}</span><span class="summary-priority-chevron" aria-hidden="true">⌄</span></button></h3><div id="summary-priority-panel-${idx}" class="summary-priority-panel" role="region" aria-labelledby="summary-priority-toggle-${idx}"${expanded?'':' hidden'}><section><h4>Why this is suggested</h4><p>${esc(concise.why||'')}</p></section><section class="concise-how"><h4>How it can be addressed</h4><ul>${how}</ul></section>${wording.text?`<section class="concise-wording"><h4>Suggested wording for the current document</h4><p>${esc(wording.text)}</p>${wording.document_element?`<div class="concise-wording-target">For: ${esc(wording.document_element)}</div>`:''}</section>`:''}<aside class="concise-cycle"><h4>Where this fits in the project cycle</h4><div class="concise-cycle-items"><div><strong>${esc(cycle.primary_label||'When to address')}</strong><p>${esc(cycle.primary_text||'')}</p></div>${cycle.secondary_label||cycle.secondary_text?`<div><strong>${esc(cycle.secondary_label||'Next step')}</strong><p>${esc(cycle.secondary_text||'')}</p></div>`:''}</div></aside>${specialist?`<details class="concise-specialist"><summary>Specialist reasoning, evidence and operational references</summary><p>${esc(specialist)}</p></details>`:''}</div></article>`;
     }).join('');
   }
 
-  function toggleSummaryPriority(idx){
+  function toggleSummaryPriority(idx,forceOpen=false){
     const summaryPriorities=supportsClimateVerifiedStage3View()?climateSummaryPriorityItems(climateVerifiedReader):stageThreePriorities;
     if(!Number.isInteger(idx)||idx<0||idx>=summaryPriorities.length)return;
     openSummaryPriority=idx;
     currentPriority=idx;
+    if(supportsClimateVerifiedStage3View()){
+      // Climate starts with every priority visible; toggles affect only this panel.
+      const panel=document.getElementById(`summary-priority-panel-${idx}`);
+      const button=document.getElementById(`summary-priority-toggle-${idx}`);
+      if(panel&&button){
+        panel.hidden=forceOpen?false:!panel.hidden;
+        button.setAttribute('aria-expanded',String(!panel.hidden));
+        button.focus();
+      }
+      return;
+    }
     const host=document.getElementById('summary-priority-accordion');
     if(host)host.innerHTML=renderSummaryPriorityAccordion(summaryPriorities);
     const button=document.getElementById(`summary-priority-toggle-${idx}`);
@@ -6936,7 +6947,7 @@ ${body}
     const scopeHtml=/\b(?:peace|social|dividends?)\b/i.test(gaps.join(' '))?`<p class="concise-transition">Optional wider dividends depend on the project's scope; they are not required in every project.</p>`:'';
     return gaps.length?`<section class="normal-summary-gaps"><div class="concise-section-label">Potential gaps</div><ul class="normal-summary-gap-list">${gaps.map(text=>{
       const finding=(Array.isArray(r.assessment_themes)?r.assessment_themes:[]).flatMap(theme=>Array.isArray(theme.findings)?theme.findings:[]).find(item=>item.text===text);
-      const links=finding?(finding.priority_ranks||[]).filter(Number.isInteger).map(rank=>`<a href="#summary-priority-toggle-${rank-1}" onclick="toggleSummaryPriority(${rank-1});return false;">Priority ${rank}</a>`).join(' · '):'';
+      const links=finding?(finding.priority_ranks||[]).filter(Number.isInteger).map(rank=>`<a href="#summary-priority-toggle-${rank-1}" onclick="toggleSummaryPriority(${rank-1},true);return false;">Priority ${rank}</a>`).join(' · '):'';
       const followUp=finding&&!links?`<p>${esc(finding.follow_up||'')}</p>`:'';
       return `<li class="normal-summary-gap">${boldEscapedFirstSentence(text)}${links?`<p>${links}</p>`:followUp}</li>`;
     }).join('')}</ul>${scopeHtml}</section>`:'';

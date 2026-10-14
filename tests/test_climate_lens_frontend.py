@@ -268,6 +268,7 @@ const esc = value => String(value ?? '')
   .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
   .replace(/\"/g,'&quot;').replace(/'/g,'&#039;');
 const reviewMode='design';
+const supportsClimateVerifiedStage3View=()=>true;
 let openSummaryPriority=0;
 {helpers}
 const reader = {{
@@ -537,6 +538,7 @@ def test_climate_summary_weaves_bridge_count_and_closing_in_order():
     script = f"""
 {_js_escape_helper()}
 const reviewMode='design';
+const supportsClimateVerifiedStage3View=()=>true;
 let openSummaryPriority=0;
 {helpers}
 const priorities = Array.from({{length:5}}, (_,index) => ({{
@@ -811,14 +813,14 @@ const stageThreePriorities=raw;
 const supportsClimateVerifiedStage3View=()=>true;
 let openSummaryPriority=0;
 let currentPriority=0;
-let renderedLength=0;
-const renderSummaryPriorityAccordion=items=>{{renderedLength=items.length;return 'rendered';}};
-const host={{innerHTML:''}};
-const document={{getElementById:id=>id==='summary-priority-accordion'?host:null}};
+const panel={{hidden:false}};
+const button={{setAttribute:()=>{{}},focus:()=>{{}}}};
+const document={{getElementById:id=>id==='summary-priority-panel-2'?panel:id==='summary-priority-toggle-2'?button:null}};
 {helpers}
+if (climateSummaryPriorityItems(climateVerifiedReader).length !== 5) throw new Error('summary projection truncated actions');
 toggleSummaryPriority(2);
 if (stageThreePriorities.length !== 5) throw new Error('canonical detailed priorities were truncated');
-if (renderedLength !== 5) throw new Error('summary accordion did not preserve all five actions: '+renderedLength);
+if (!panel.hidden || currentPriority !== 2) throw new Error('targeted panel/selection not updated');
 """
     result = subprocess.run(
         ["node", "-"], input=script, capture_output=True, text=True, check=False

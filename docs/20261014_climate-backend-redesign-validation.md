@@ -65,3 +65,24 @@ at least three substantive independent priorities, useful funded-activity covera
 complete beneficiary research and a native meaningful Summary. A rejected action
 is not restored to meet that count. The previous paid allowance is consumed; fresh
 paid generation requires separate authorization. Keep PR 83 draft until that review.
+
+
+## Deployment and final presentation follow-up
+
+Backend commit `94777144fda2a61e6127973662aefcdc3ff107fc` is live in branch-test
+Render deploy `dep-db7l06u7bikc73d53lu0`. Connected Edge health confirms matching
+build, status ok and quality mode. Analyze Python and CodeQL passed. Original
+quality6 saved-result exports downloaded successfully as HTML and Word; both
+preserve the two accepted priorities, guidance, method and shortfall notice,
+with no machine markers. This tests saved-result compatibility, not generation.
+
+Final visual inspection found Climate Summary still opened only the first priority.
+A separate failing offline fixture reproduces this. The presentation follow-up
+opens all Climate Summary priorities by default, permits independent collapse,
+and makes gap links open their target rather than close an already-open card.
+The normal FCV accordion behavior is unchanged. The combined UI/summary suite
+passed 199 checks and exposed three isolated fixtures missing the Climate predicate
+or expecting whole-accordion replacement. After aligning those fixtures, all five
+targeted checks passed in 37.88 seconds, including the unchanged normal FCV contract
+and all-open/independent Climate toggles. No runtime code changed after that UI run.
+The final presentation commit and live checks are recorded in the draft PR.

@@ -1478,3 +1478,34 @@ def test_step_stage3_path_has_one_normalized_watch_assignment_block():
     assert stage3_path.count("p4rWatch=Array.isArray(p.p4r_watch)?p.p4r_watch:[]") == 1
     assert stage3_path.count("regionalWatch=Array.isArray(p.regional_watch)?p.regional_watch:[]") == 1
     assert stage3_path.count("horizonConsiderations=typeof p.horizon_considerations==='string'?p.horizon_considerations:''") == 1
+
+
+def test_climate_summary_priorities_all_open_and_collapse_independently():
+    source = (Path(__file__).resolve().parents[1] / "index.html").read_text(encoding="utf-8")
+    helpers = "\n".join(_extract_js_function(source, name) for name in (
+        "getConcisePriority", "renderSummaryPriorityAccordion", "toggleSummaryPriority"))
+    priorities = [_detailed_priority(index) for index in range(1, 5)]
+    script = f"""
+const esc=value=>String(value??'');
+let stageThreePriorities={json.dumps(priorities)};
+let climateVerifiedReader={{}};
+const climateSummaryPriorityItems=()=>stageThreePriorities;
+const supportsClimateVerifiedStage3View=()=>true;
+let openSummaryPriority=0, currentPriority=0, focused='';
+const panels=stageThreePriorities.map(()=>({{hidden:false}}));
+const buttons=stageThreePriorities.map((_,idx)=>({{expanded:'true',setAttribute:(key,val)=>{{buttons[idx].expanded=val;}},focus:()=>{{focused=String(idx);}}}}));
+const document={{getElementById:id=>id.startsWith('summary-priority-panel-')?panels[Number(id.split('-').pop())]:buttons[Number(id.split('-').pop())]}};
+{helpers}
+const initial=renderSummaryPriorityAccordion();
+if((initial.match(/aria-expanded="true"/g)||[]).length!==4)throw new Error('not all open');
+if(/class="summary-priority-panel"[^>]* hidden/.test(initial))throw new Error('closed default');
+toggleSummaryPriority(1);
+if(!panels[1].hidden||panels[0].hidden||panels[2].hidden)throw new Error('collapse changed sibling');
+if(buttons[1].expanded!=='false'||focused!=='1')throw new Error('aria/focus not updated');
+toggleSummaryPriority(1,true);
+if(panels[1].hidden||buttons[1].expanded!=='true')throw new Error('gap link did not open');
+toggleSummaryPriority(1,true);
+if(panels[1].hidden)throw new Error('gap link closed open priority');
+"""
+    result = subprocess.run(["node", "-e", script], capture_output=True, text=True, check=False)
+    assert result.returncode == 0, result.stderr
