@@ -83,9 +83,27 @@ No additional paid assessment is authorized in this session.
 The Burundi temperature-series timeframe and the report's 2022 publication were
 checked against the [World Bank report](https://documents1.worldbank.org/curated/en/099930006302237433/pdf/P17682007885e00780b1cc093a09277df1a.pdf).
 The [DRC flood-operation citation](https://reliefweb.int/report/democratic-republic-congo/drc-floods-tanganyika-2024-dref-operation-mdrcd044)
-was received with exact source excerpts, but independent opening failed through
-both web verification and Edge. Its title names 2024; the received publication date
-was blank. Do not treat these passages as verified current project-site status.
+was initially unavailable through web verification and timed out in Edge. Later
+Edge inspection succeeded: the IFRC report was originally published on 24 May 2024,
+and all three retained flood excerpts match its text. The original received source
+metadata still had a blank publication date and is preserved unchanged. These are
+historical, off-site observations; they do not verify current project-site status.
 
 The final bounded static review found no remaining diagnostic-publication or
 nullable-draft blocker. It did not run tests, access servers or call a provider.
+
+
+## Final deployed checks
+
+Runtime fix commit a4037d1257edfd5ab6e8752df4af6c0b63e3ea4b is live in test deploy
+dep-db7mk0favr4c73ffe870. Edge health confirms build a4037d1257ed / status ok /
+quality mode. CodeQL passed. A clearly labelled synthetic diagnostic fixture stayed
+unpublished and absent from automatic storage, was preserved through explicit Save
+Session, and cleared on reset along with the stale completed-run label.
+
+The unchanged quality6 session still shows both Summary priorities open and two
+paired rating cards. Detailed priorities are open; details and 04-06 closed. Actual
+HTML/Word downloads preserve its two accepted actions and contain no machine markers
+or synthetic diagnostic text. These checks establish compatibility, not quality7
+analytical acceptance. Artifacts: output/playwright/20261014-quality7-followup-* and
+20261014-diagnostic-lifecycle-*. No additional paid assessment was made.
