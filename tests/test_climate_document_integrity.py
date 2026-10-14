@@ -125,3 +125,117 @@ def test_points_to_check_intro_present_in_html_and_docx():
     stream.seek(0)
     text = "\n".join(p.text for p in Document(stream).paragraphs)
     assert INTRO in text
+
+
+def _pipeline_with_integrity_review(passed_ids, *, no_priorities=False, review_override=None):
+    from tests.test_climate_verified_pipeline import (
+        FakeClient, _arguments, _responses, _native_pass_review,
+    )
+    from sector_lenses.climate_verified_pipeline import PipelineClients, run_verified_climate_pipeline
+
+    responses = _responses()
+    responses[0]["document_integrity_findings"] = [
+        _finding("DIF-1", "document_inconsistency", "Six suspended and four cancelled sites disagree.", "DOC-1-B-1"),
+        _finding("DIF-2", "material_placeholder", "A material figure remains a placeholder.", "DOC-1-B-1"),
+    ]
+    if no_priorities:
+        responses[-1]["recommendation_candidates"] = []
+    def review(**kwargs):
+        result = _native_pass_review(**kwargs)
+        if passed_ids != "missing":
+            result["passed_readiness_ids"] = passed_ids
+        if review_override:
+            result.update(review_override)
+        return result
+    assessment = FakeClient(responses, [])
+    reviewer = FakeClient([review], [])
+    result = run_verified_climate_pipeline(
+        **_arguments(), clients=PipelineClients(assessment, reviewer),
+    )
+    return result, reviewer
+
+
+def test_integrity_flags_need_explicit_semantic_acceptance():
+    result, reviewer = _pipeline_with_integrity_review(["DIF-2"])
+    assert [item["flag_id"] for item in result["review_readiness_flags"]] == ["DIF-2"]
+    assert len(result["priorities"]) == 1
+    assert len(reviewer.calls) == 1
+    payload = reviewer.calls[0]["payload"]
+    assert {item["flag_id"] for item in payload["readiness_flags"]} == {"DIF-1", "DIF-2"}
+    assert payload["source_blocks"]
+
+
+def test_unreviewed_or_malformed_integrity_acceptance_withholds_flags():
+    for ids in ["missing", None, "DIF-1", ["DIF-unknown"], ["DIF-1", "DIF-1"], [42]]:
+        result, _ = _pipeline_with_integrity_review(ids)
+        assert result["review_readiness_flags"] == [], ids
+        assert len(result["priorities"]) == 1
+        assert "READINESS_FLAGS_NOT_ACCEPTED" in result["validation"]["reason_codes"]
+
+
+def test_no_priorities_does_not_add_a_call_to_review_integrity_flags():
+    result, reviewer = _pipeline_with_integrity_review([], no_priorities=True)
+    assert reviewer.calls == []
+    assert result["review_readiness_flags"] == []
+
+
+def test_readiness_acceptance_schema_is_not_inherited_by_reader_review():
+    assert "passed_readiness_ids" in stage_output_schema("conditional_review")["required"]
+    assert "passed_readiness_ids" not in stage_output_schema("reader_review")["properties"]
+
+
+def test_disputed_or_invalid_review_cannot_accept_integrity_flags():
+    from sector_lenses.climate_verified_pipeline import _reviewed_readiness_flags
+    flags = _integrity_readiness_flags({"document_integrity_findings": [
+        _finding("DIF-1", "document_inconsistency", "Six suspended and four cancelled sites disagree.", "B-1"),
+    ]}, {"B-1"})
+    for review in [
+        {"verdict": "unknown", "passed_readiness_ids": ["DIF-1"]},
+        {"verdict": "revise", "passed_readiness_ids": ["DIF-1"], "object_ids": ["DIF-1"]},
+        {"verdict": "revise", "passed_readiness_ids": ["DIF-1"], "issues": [{"object_id": "DIF-1"}]},
+        {"verdict": "pass", "passed_readiness_ids": ["DIF-1"], "reason_codes": ["RESIDUAL_GAP_UNSUPPORTED"]},
+    ]:
+        assert _reviewed_readiness_flags(flags, review) == []
+    assert _reviewed_readiness_flags(flags + flags, {
+        "verdict": "pass", "passed_readiness_ids": ["DIF-1"],
+    }) == []
+
+
+def test_disputed_flag_does_not_remove_explicitly_accepted_core():
+    for verdict in ["revise", "block", "pass"]:
+        result, reviewer = _pipeline_with_integrity_review([], review_override={
+            "verdict": verdict, "object_ids": ["DIF-1"],
+            "reason_codes": ["RESIDUAL_GAP_UNSUPPORTED"],
+            "issues": [{"object_id": "DIF-1", "reason_codes": ["RESIDUAL_GAP_UNSUPPORTED"],
+                        "explanation": "Different statuses can both be true."}],
+        })
+        assert len(result["priorities"]) == 1
+        assert result["review_readiness_flags"] == []
+        assert len(reviewer.calls) == 1
+
+
+def test_rejected_flag_cannot_reappear_as_an_unreviewed_minor_point():
+    from tests.test_climate_verified_pipeline import FakeClient, _arguments, _responses, _native_pass_review
+    from sector_lenses.climate_verified_pipeline import PipelineClients, run_verified_climate_pipeline
+
+    responses = _responses()
+    responses[0]["document_integrity_findings"] = [
+        _finding("DIF-1", "document_inconsistency", "Secondary climate check.", "DOC-1-B-1"),
+    ]
+    responses[1]["residual_gaps"].append({
+        "gap_id": "RG-002", "gap_type": "evidence_gap", "statement": "Secondary gap.",
+        "pathway_ids": ["PW-001"], "project_anchor_ids": ["PF-001"],
+        "existing_response_ids": [], "evidence_ids": ["CE-001"], "confidence": "low",
+    })
+    responses[2]["minor_climate_points"] = [{
+        "point": "Secondary climate check.", "why": "Why.", "how_to_check": "Check.",
+        "residual_gap_ids": ["RG-002"],
+    }]
+    def reject_flags(**kwargs):
+        return {**_native_pass_review(**kwargs), "passed_readiness_ids": []}
+    result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(
+        FakeClient(responses, []), FakeClient([reject_flags], []),
+    ))
+    assert result["review_readiness_flags"] == []
+    assert result["minor_climate_points"] == []
+    assert len(result["priorities"]) == 1

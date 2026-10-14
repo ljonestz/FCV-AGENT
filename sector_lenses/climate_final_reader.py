@@ -5,8 +5,30 @@ from copy import deepcopy
 import re
 
 from sector_lenses.climate_verified_schemas import (
-    validate_summary_fragment, validate_summary_overview,
+    _SUMMARY_MONTHS, validate_summary_fragment, validate_summary_overview,
 )
+
+
+_READER_NUMBER_RE = re.compile(r"\b\d+(?:[.,]\d+)?%?\b")
+
+
+def _reader_record_text(record: dict) -> str:
+    return record.get('text') or ' '.join(record.get('paragraphs', []))
+
+
+def reader_correction_allowed_numeric_date_tokens(record: dict) -> dict[str, list[str]]:
+    """Expose the numeric and date tokens the correction validator permits."""
+    text = _reader_record_text(record)
+    dates: set[str] = set()
+    for month in _SUMMARY_MONTHS:
+        dates.update(re.findall(
+            rf"\b{month}\s+\d{{4}}\b|\b\d{{1,2}}\s+{month}\b",
+            text.casefold(),
+        ))
+    return {
+        'numeric_tokens': sorted(set(_READER_NUMBER_RE.findall(text))),
+        'date_phrases': sorted(dates),
+    }
 
 
 def reader_support_records(assessment: dict[str, object]) -> dict[str, dict]:
@@ -199,7 +221,7 @@ def apply_reader_corrections(payload: dict, response: object, targets: set[str],
             reject('READER_CORRECTION_TEXT_INVALID', identifier)
             return None
         original = records.get(identifier, {})
-        original_text = original.get('text') or ' '.join(original.get('paragraphs', []))
+        original_text = _reader_record_text(original)
         diagnostic = {}
         if not validate_summary_fragment(' '.join(paragraphs), canonical_text=original_text,
                                          allow_paraphrase=True, semantic_review_required=True,

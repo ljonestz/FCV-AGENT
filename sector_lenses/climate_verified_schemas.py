@@ -709,6 +709,7 @@ STAGE_OUTPUT_SCHEMAS: dict[str, dict[str, object]] = {
         {
             "verdict": _enum(("pass", "revise", "block")),
             "passed_core_ids": _strings("Every independently accepted core REC ID; empty only when none passed."),
+            "passed_readiness_ids": _strings("Exact supplied readiness flag IDs independently supported by source passages; omit unverified flags."),
             "reason_codes": {
                 "type": "array",
                 "items": _enum(SEMANTIC_REVIEW_REASON_CODES),
@@ -745,7 +746,7 @@ STAGE_OUTPUT_SCHEMAS['reader_compiler'] = _object({
         'evidence_ids': _strings('Exact supplied support IDs.'),
     })},
 })
-STAGE_OUTPUT_SCHEMAS['reader_review'] = _object({key: value for key, value in STAGE_OUTPUT_SCHEMAS['conditional_review']['properties'].items() if key != 'passed_core_ids'})
+STAGE_OUTPUT_SCHEMAS['reader_review'] = _object({key: value for key, value in STAGE_OUTPUT_SCHEMAS['conditional_review']['properties'].items() if key not in {'passed_core_ids', 'passed_readiness_ids'}})
 STAGE_OUTPUT_SCHEMAS['reader_correction'] = _object({
     'corrections': {'type': 'array', 'items': _object({
         'object_id': _string('Exact requested SUM or NARR ID; no other records.'),

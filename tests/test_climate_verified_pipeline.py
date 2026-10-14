@@ -728,7 +728,7 @@ def test_manifest_is_privacy_safe_and_scoped_to_the_run():
     )
     assert (
         first["manifest"]["prompt_versions"]["conditional_review"]
-        == "climate-review-v2.14"
+        == "climate-review-v2.15"
     )
     assert (
         first["manifest"]["prompt_versions"]["drafting_compiler"]
@@ -1342,6 +1342,13 @@ def test_summary_validator_rejects_projectile_but_admits_curated_implementation_
 
 def test_explicit_revise_gets_one_validated_correction_and_independent_review():
     responses = _responses()
+    responses[0]["document_integrity_findings"] = [{
+        "flag_id": "DIF-1", "category": "document_inconsistency",
+        "flag": "Six suspended and four cancelled sites disagree.",
+        "why_it_matters": "Verify the document's stated scope.",
+        "document_basis_ids": ["DOC-1-B-1"], "residual_gap_ids": [],
+        "suggested_verification": "Check whether the populations and statuses match.",
+    }]
     corrected = deepcopy(responses[-1])
     corrected["recommendation_candidates"][0]["minimum_action"] = "Document flood exposure and access considerations."
     assessment = FakeClient(responses + [corrected], [])
@@ -1357,6 +1364,10 @@ def test_explicit_revise_gets_one_validated_correction_and_independent_review():
     assert len(reviewer.calls) == 2
     assert result["priorities"][0]["minimum_action"] == "Document flood exposure and access considerations."
     assert result["diagnostic_trace"]["recommendation_correction"]["recovered_ids"] == ["REC-001"]
+    assert reviewer.calls[0]["payload"]["readiness_flags"]
+    assert reviewer.calls[1]["payload"]["readiness_flags"] == []
+    assert assessment.calls[-1]["payload"]["readiness_flags"] == []
+    assert result["review_readiness_flags"] == []
 
 
 def test_native_compiler_correction_needs_no_optional_drafting():
@@ -2019,6 +2030,61 @@ def test_native_reader_patch_rejects_scope_and_numeric_expansion(response):
     assert apply_reader_corrections(original, response, {'NARR-dividends'}, issues=issues) is None
     assert issues and issues[0]['reason_codes']
     assert original == snapshot
+
+
+def test_reader_correction_payload_exposes_exact_existing_precision_and_rejects_new_date():
+    from sector_lenses.climate_verified_prompts import build_verified_stage_prompt
+
+    source_text = (
+        "The Project Operations Manual will define site selection for 70 percent "
+        "of sites by June 2028."
+    )
+    arguments = _arguments()
+    arguments['source_blocks'] = [
+        replace(arguments['source_blocks'][0], text=source_text)
+    ]
+    responses = _responses()
+    fact = responses[0]['facts'][0]
+    fact['object'] = 'site selection for 70 percent of sites by June 2028'
+    fact['supporting_excerpt'] = source_text
+    responses[2]['reader_contract'] = 'final-reader-v1'
+    original = _final_reader()
+    original['assessment_narratives'][1]['paragraphs'][0] += (
+        ' The schedule covers 70 percent of sites by June 2028.'
+    )
+    invalid_text = original['assessment_narratives'][1]['paragraphs'][0].replace(
+        'June 2028', 'June 2029'
+    )
+    patch = {'corrections': [{'object_id': 'NARR-dividends',
+                              'paragraphs': [invalid_text]}]}
+    reviewer = FakeClient([_native_pass_review,
+        {'verdict': 'revise', 'object_ids': ['NARR-dividends'],
+         'reason_codes': ['PROJECT_FACT_UNSUPPORTED'], 'issues': [
+             {'object_id': 'NARR-dividends', 'reason_codes': ['PROJECT_FACT_UNSUPPORTED'],
+              'explanation': 'Keep the benefit conditional.'}]}], [])
+    assessment = FakeClient(responses + [original, patch], [])
+
+    result = run_verified_climate_pipeline(
+        **arguments, clients=PipelineClients(assessment, reviewer))
+
+    correction_payload = next(
+        call['payload'] for call in assessment.calls
+        if call['stage'] == 'reader_correction'
+    )
+    assert correction_payload['allowed_numeric_date_tokens_by_id'] == {
+        'NARR-dividends': {
+            'numeric_tokens': ['2028', '70'],
+            'date_phrases': ['june 2028'],
+        }
+    }
+    prompt = build_verified_stage_prompt('reader_correction', correction_payload)
+    assert 'allowed_numeric_date_tokens_by_id' in prompt
+    assert 'full listed date phrase' in ' '.join(prompt.split())
+    assert result['summary_overview_status'] == 'fallback'
+    issues = result['diagnostic_trace']['final_reader']['correction']['issues']
+    assert issues[0]['reason_codes'] == [
+        'READER_CORRECTION_SUMMARY_NUMBER_UNSUPPORTED'
+    ]
 
 
 @pytest.mark.parametrize('review', [

@@ -13,13 +13,14 @@ import json
 import re
 import time
 from dataclasses import asdict, dataclass, replace
-from typing import Protocol
+from typing import Protocol, Sequence
 
 import climate_question_bank
 
 from sector_lenses.climate_final_reader import (
     apply_reader_corrections, bind_same_passage_project_references, reader_support_records,
-    validate_final_reader, reviewed_final_reader,
+    reader_correction_allowed_numeric_date_tokens, validate_final_reader,
+    reviewed_final_reader,
 )
 
 from sector_lenses.climate_analysis import (
@@ -94,10 +95,10 @@ PROMPT_VERSIONS = {
     "bounded_analysis": "climate-analysis-v2.10",
     "judgment_review": "climate-judgments-v2.14",
     "recommendation_compiler": "climate-recommendations-v2.15",
-    "conditional_review": "climate-review-v2.14",
+    "conditional_review": "climate-review-v2.15",
     "drafting_compiler": "climate-drafting-v1.5",
     "reader_compiler": "climate-final-reader-v1.6",
-    "reader_correction": "climate-reader-correction-v1.2",
+    "reader_correction": "climate-reader-correction-v1.3",
     "reader_review": "climate-reader-review-v1.5",
 }
 
@@ -704,6 +705,31 @@ def _readiness_flag(record: dict[str, object]) -> ReviewReadinessFlag:
     )
 
 
+def _reviewed_readiness_flags(
+    flags: Sequence[ReviewReadinessFlag], review: dict[str, object],
+) -> list[ReviewReadinessFlag]:
+    """Admit only explicit, well-formed, uncontested flag acceptances."""
+    accepted = review.get("passed_readiness_ids")
+    known_ids = {item.flag_id for item in flags}
+    if (review.get("verdict") not in {"pass", "revise", "block"}
+            or not isinstance(accepted, list)
+            or any(not isinstance(item, str) or not item.strip() for item in accepted)
+            or len(set(accepted)) != len(accepted)
+            or len(known_ids) != len(flags)
+            or set(accepted) - known_ids):
+        return []
+    if review.get("verdict") == "pass" and any(
+        review.get(key) for key in ("object_ids", "reason_codes", "issues")
+    ):
+        return []
+    disputed = set(_strings(review.get("object_ids"))) | {
+        _text(item.get("object_id")) for item in _records(review, "issues")
+    }
+    if set(accepted) & disputed:
+        return []
+    return [item for item in flags if item.flag_id in accepted]
+
+
 def _integrity_readiness_flags(
     fact_payload: dict[str, object],
     known_block_ids: set[str],
@@ -711,8 +737,8 @@ def _integrity_readiness_flags(
     """Convert fact-stage document-integrity findings to readiness flags.
 
     Kept only when the category is valid and every document_basis_id is a real
-    source block; this is the deterministic, source-linked path that guarantees
-    genuine defects surface even when the recommendation stage emits none.
+    source block. These checks establish provenance only; semantic acceptance
+    is required separately before a finding can reach the reader.
     """
     kept: list[ReviewReadinessFlag] = []
     for record in _records(fact_payload, "document_integrity_findings"):
@@ -1387,6 +1413,7 @@ def run_verified_climate_pipeline(
     suppressed["readiness_flags"] += (
         len(raw_flags) + len(integrity_flags) - len(readiness)
     )
+    # Reserve even rejected flag wording so it cannot reappear unreviewed as a minor point.
     minor_climate_points = _admit_minor_climate_points(
         judgment_payload,
         {item.gap_id for item in gaps},
@@ -1405,6 +1432,7 @@ def run_verified_climate_pipeline(
     if priorities:
         reviewer_invoked = True
         review_input = {
+            "readiness_flags": [asdict(item) for item in readiness],
             "source_blocks": block_records,
             "facts": [asdict(item) for item in facts],
             "analysis": analysis_record,
@@ -1436,6 +1464,11 @@ def run_verified_climate_pipeline(
         reviewer_verdict = _text(review.get("verdict"), "block").casefold()
         review_reasons = _bounded_reason_codes(review.get("reason_codes"))
         priority_ids = {item.recommendation_id for item in priorities}
+        readiness_ids = {item.flag_id for item in readiness}
+        disputed_readiness_ids = readiness_ids & (
+            set(_strings(review.get("object_ids")))
+            | {_text(item.get("object_id")) for item in _records(review, "issues")}
+        )
         artifact_ids = {item["object_id"] for item in review_input["drafting_artifacts"]}
         semantic_review_object_ids = list(
             dict.fromkeys(
@@ -1450,7 +1483,7 @@ def run_verified_climate_pipeline(
         if reviewer_verdict not in {"pass", "revise", "block"}:
             reviewer_verdict = "block"
             review_reasons.append("SEMANTIC_REVIEW_VERDICT_INVALID")
-        if set(_strings(review.get("object_ids"))) - (priority_ids | artifact_ids):
+        if set(_strings(review.get("object_ids"))) - (priority_ids | artifact_ids | readiness_ids):
             reviewer_verdict = "block"
             semantic_review_object_ids = sorted(priority_ids | artifact_ids)
             review_reasons.append("SEMANTIC_REVIEW_TARGET_UNRESOLVED")
@@ -1468,7 +1501,8 @@ def run_verified_climate_pipeline(
             reviewer_verdict = 'block'
             semantic_review_object_ids = sorted(set(semantic_review_object_ids) | missing_core_ids)
             review_reasons.append('SEMANTIC_REVIEW_TARGET_UNRESOLVED')
-        if reviewer_verdict != "pass" and not semantic_review_object_ids:
+        if (reviewer_verdict != "pass" and not semantic_review_object_ids
+                and not disputed_readiness_ids):
             review_reasons.append("SEMANTIC_REVIEW_TARGET_UNRESOLVED")
             semantic_review_object_ids = sorted(priority_ids)
         reasons.extend(review_reasons)
@@ -1507,7 +1541,7 @@ def run_verified_climate_pipeline(
                 try:
                     correction_payload = _call(
                         clients.assessment, "recommendation_compiler",
-                        {**review_input, "recommendations": [asdict(item) for item in originals.values()],
+                        {**review_input, "readiness_flags": [], "recommendations": [asdict(item) for item in originals.values()],
                          "bounded_correction": [issues_by_id[key] for key in sorted(repair_ids)], "call_scope": "core_correction"},
                         latency_ms, cancel_event=cancel_event, deadline=deadline, repair_allowance=repair_allowance,
                     )
@@ -1556,7 +1590,7 @@ def run_verified_climate_pipeline(
                     if corrected:
                         correction_review = _call(
                             clients.reviewer, "conditional_review",
-                            {**review_input, "recommendations": [asdict(item) for item in corrected],
+                            {**review_input, "readiness_flags": [], "recommendations": [asdict(item) for item in corrected],
                              "drafting_artifacts": [], "call_scope": "core_correction"},
                             latency_ms, cancel_event=cancel_event, deadline=deadline, repair_allowance=repair_allowance,
                         )
@@ -1598,7 +1632,7 @@ def run_verified_climate_pipeline(
                 try:
                     payload = _call(
                         clients.assessment, "drafting_compiler",
-                        {**review_input, "recommendation_candidates": [asdict(item) for item in parents.values()],
+                        {**review_input, "readiness_flags": [], "recommendation_candidates": [asdict(item) for item in parents.values()],
                          "bounded_correction": [issues_by_id[key] for key in sorted(draft_repair_ids)], "call_scope": "draft_correction"},
                         latency_ms, cancel_event=cancel_event, deadline=deadline, repair_allowance=repair_allowance,
                     )
@@ -1628,7 +1662,7 @@ def run_verified_climate_pipeline(
                     if artifacts:
                         second_review = _call(
                             clients.reviewer, "conditional_review",
-                            {**review_input, "drafting_artifacts": artifacts, "call_scope": "draft_correction",
+                            {**review_input, "readiness_flags": [], "drafting_artifacts": artifacts, "call_scope": "draft_correction",
                              "recommendations": [asdict(replace(item, current_document_drafting=None,
                                                                 operational_instrument_drafting=None))
                                                  for item in priorities if item.recommendation_id in parents]}, latency_ms,
@@ -1671,6 +1705,12 @@ def run_verified_climate_pipeline(
                 if candidate.recommendation_id not in affected_ids
             )
             review_status = "attention"
+
+    accepted_readiness = _reviewed_readiness_flags(readiness, review)
+    if len(accepted_readiness) < len(readiness):
+        suppressed["readiness_flags"] += len(readiness) - len(accepted_readiness)
+        reasons.append("READINESS_FLAGS_NOT_ACCEPTED")
+    readiness = accepted_readiness
 
     final_reader = {}
     reader_review = {}
@@ -1763,6 +1803,10 @@ def run_verified_climate_pipeline(
                     **reader_input, 'call_scope': 'reader_correction',
                     'support_records': {ref: support_records[ref] for ref in refs},
                     'records_to_correct': target_records, 'bounded_correction': correction_issues,
+                    'allowed_numeric_date_tokens_by_id': {
+                        record['object_id']: reader_correction_allowed_numeric_date_tokens(record)
+                        for record in target_records
+                    },
                     'untargeted_summary_words': sum(len(record['text'].split())
                         for record in final_reader['summary_paragraphs'] if record['object_id'] not in issue_ids),
                 }
@@ -1826,7 +1870,7 @@ def run_verified_climate_pipeline(
         prompt_versions=PROMPT_VERSIONS,
         reviewer_version="climate-review-v2.2",
         extraction_version="source-blocks-v3",
-        normalization_version="climate-normalization-v2.6",
+        normalization_version="climate-normalization-v2.7",
         renderer_version="climate-reader-v2.19",
         model_aliases=model_aliases,
         sampling={"max_transient_retries": 1,

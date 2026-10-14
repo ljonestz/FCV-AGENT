@@ -1,5 +1,36 @@
 # Sector-Lens Platform Reference
 
+### 2026-10-15 quality12 outcome: rollout held
+
+Final combined offline verification: 1,573 tests passed; 163 source/test hashes unchanged.
+See the quality12 diagnosis for live failures, offline changes and remaining limits.
+
+Offline follow-up (not deployed): conditional-review2.15 now receives readiness
+flags in its existing call and returns passed_readiness_ids. Only explicit, valid,
+uncontested acceptances reach output; no-priority runs withhold unreviewed flags
+without another call. Flag disputes cannot remove explicitly accepted core actions.
+Correction calls clear the flag list. Original flag wording remains reserved against
+minor-point duplication, conservatively preventing rejected claims from resurfacing.
+Reader-correction1.3 exposes per-target numeric/date tokens while retaining deterministic
+rejection. Normalization2.7; renderer2.19 unchanged. These changes are offline verified
+only; relational-scope errors and reviewer false positives still require fresh analytical
+acceptance. No further paid call is authorized under the exhausted two-run allowance.
+
+Both authorized paid runs are consumed. Quality12 on 23958ae completed HTTP 200,
+retained three priorities and two-country research, but failed analytical/native-reader
+acceptance. Summary length was valid at 204 words. One initial meaning review ran;
+the correction added a date outside the original record and was rejected before any
+fresh review. Source checks found unsupported displaced-trader/site linkage, overstated
+missing siting criteria, and unverified integrity flags, alongside reviewer false positives.
+See docs/20261015_climate-quality12-acceptance-diagnosis.md. Do not admit saved results,
+run another paid assessment/provider review, merge, or deploy to ITS.
+Production rollback dep-db80ii8u01pc738ev6tg restored original main1168a8f at
+2026-10-14 23:00:04 UTC; On Commit and HTTP200 original-build health verified.
+The branch preview remains23958ae with auto-deploy off. No successful ITS Word
+handover has been authored. Historical statements below about one remaining run
+are superseded. Offline safety improvements do not establish fresh analytical acceptance.
+
+
 October15 quality11 follow-up: the first of two newly authorized paid trials
 completed on paid production but failed analytical acceptance (false same-scope
 contradiction, incomplete country research, Summary321/288 words without meaning

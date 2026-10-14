@@ -480,7 +480,19 @@ measurement alone is not responsiveness. A wider peace or social dividend mechan
 must be evidenced; do not infer it from an optional baseline or resilience metric.
 Check that ranked priorities have a specific evidenced climate mechanism;
 generic FCV benefits or co-location with a climate investment alone are insufficient.
-Return exactly one object and no other prose: {"verdict":"pass|revise|block","reason_codes":[],"object_ids":[],"passed_core_ids":[],"issues":[{"object_id":"REC-001","reason_codes":[],"explanation":"One short sentence identifying the defective wording."}]}. For each affected recommendation, add one issues entry with its specific reason_codes and a short explanation quoting or identifying the problematic wording. Include only the exact supplied decision or artifact IDs in object_ids, and the union of their codes in reason_codes. For pass, return empty defect arrays and all accepted passed_core_ids. Return at most fifteen issues. Return at most 12 reason_codes and 15 object_ids. Keep the entire response to 500 words or fewer. Use revise only when one bounded correction could resolve a recommendation defect; otherwise block the affected recommendation.""".replace(
+Review supplied readiness_flags independently against source_blocks and facts.
+Return only explicitly supported flag IDs in passed_readiness_ids, or [] if none.
+A real source-block ID does not prove the flag's assertion. Inconsistency requires
+comparable populations, predicates/statuses, periods and units that cannot both be
+true. A requirement and a later completion statement can coexist. Credit existing
+siting criteria and protections before asserting an omission; missing one dimension
+is not absence of all criteria. Do not join separate facts into a new beneficiary
+relationship without evidence linking them. Uncertainty is not a proven defect.
+Omit unsupported or unreviewed flags from passed_readiness_ids. Flag rejection does
+not change the core verdict and must not create core/drafting repair targets in
+object_ids or issues. Core/drafting verdicts and passed_core_ids remain independent.
+If readiness_flags is empty (including correction calls), return passed_readiness_ids:[].
+Return exactly one object and no other prose: {"verdict":"pass|revise|block","reason_codes":[],"object_ids":[],"passed_core_ids":[],"passed_readiness_ids":[],"issues":[{"object_id":"REC-001","reason_codes":[],"explanation":"One short sentence identifying the defective wording."}]}. For each affected recommendation, add one issues entry with its specific reason_codes and a short explanation quoting or identifying the problematic wording. Include only the exact supplied decision or artifact IDs in object_ids, and the union of their codes in reason_codes. For pass, return empty defect arrays and all accepted passed_core_ids. Return at most fifteen issues. Return at most 12 reason_codes and 15 object_ids. Keep the entire response to 500 words or fewer. Use revise only when one bounded correction could resolve a recommendation defect; otherwise block the affected recommendation.""".replace(
             "{semantic_reason_codes}",
             allowed_reason_codes,
         ),
@@ -560,6 +572,9 @@ while retaining essential scope and qualifications. Preserve supported meaning a
 scope while resolving all targeted issues. Do not add facts, named actors, numbers,
 dates, commitments, locations or proposed actions. Support is restricted to the
 record's original evidence IDs; do not return evidence IDs, themes or metadata.
+For each record, allowed_numeric_date_tokens_by_id is the exact whitelist enforced
+by the application. Use only its listed numeric_tokens. Use a date only as a full
+listed date phrase; a listed year or day used elsewhere does not permit a new date.
 Keep planned benefits conditional and credit existing protections. The application
 preserves all unchanged records and references. A complete structural check and
 fresh independent meaning review follow this repair.""", payload,
