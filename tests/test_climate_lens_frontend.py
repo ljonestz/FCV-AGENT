@@ -560,7 +560,7 @@ const html=renderClimateVerifiedSummary({{
 }});
 const count='Showing the 3 highest-ranked of 5 priorities. See Detailed analysis for all 5.';
 if(html.includes(count)||!html.includes('>Action 5<'))throw new Error('all five priorities must be visible');
-const closing='For supporting evidence, drafting and completion signals behind each priority, continue to Detailed analysis.';
+const closing='For supporting evidence and completion signals behind each priority, continue to Detailed analysis.';
 for (const expected of [bridge,closing]) {{
   if (!html.includes(expected)) throw new Error('missing '+expected+' | '+html);
 }}
@@ -3139,3 +3139,46 @@ if(elements['priority-card-area'].style.display!=='none')throw new Error('duplic
 """
     result = subprocess.run(["node", "-"], input=script, capture_output=True, text=True)
     assert result.returncode == 0, result.stderr
+
+
+def test_failed_climate_diagnostic_is_separate_saved_only_and_not_a_reader():
+    source = INDEX.read_text(encoding="utf-8")
+    helper = _extract_js_function(source, "captureClimateFailureDiagnostic")
+    script = f"""
+let climateVerifiedFailure=null, climateVerifiedAssessment=null, climateVerifiedReader=null;
+const button={{style:{{display:'none'}}}};
+const document={{getElementById:()=>button}};
+{helper}
+captureClimateFailureDiagnostic({{diagnostic_only:true,assessment:{{schema_version:'climate-verified-v2.1',priorities:[{{title:'Unpublished'}}]}},reason_codes:['FAILED']}});
+if(!climateVerifiedFailure||button.style.display!=='')throw new Error('diagnostic not savable');
+if(climateVerifiedAssessment||climateVerifiedReader)throw new Error('failure became published result');
+"""
+    result = subprocess.run(["node", "-"], input=script, text=True, capture_output=True)
+    assert result.returncode == 0, result.stderr
+    save = _extract_js_function(source, "saveSession")
+    assert "climateVerifiedFailure:" in save
+    for name in ("downloadReport", "downloadHTML", "supportsClimateVerifiedStage3View", "epSafeStore"):
+        body = _extract_js_function(source, name)
+        assert "climateVerifiedFailure" not in body
+
+
+def test_zero_stage_session_bar_clears_old_completed_run_label():
+    source = INDEX.read_text(encoding="utf-8")
+    helper = _extract_js_function(source, "updateSessionBar")
+    script = f"""
+let curS=0, sessionName='Old session';
+const status={{textContent:'Stage 3 complete',style:{{display:'inline'}}}};
+const button={{style:{{display:''}}}};
+const document={{getElementById:id=>id==='session-status'?status:button}};
+{helper}
+updateSessionBar();
+if(status.textContent||status.style.display!=='none'||button.style.display!=='none')throw new Error('stale completed result label');
+"""
+    result = subprocess.run(["node", "-"], input=script, text=True, capture_output=True)
+    assert result.returncode == 0, result.stderr
+    reset = _extract_js_function(source, "reset")
+    assert "sessionName=''" in reset and "updateSessionBar()" in reset
+    load = _extract_js_function(source, "loadSession")
+    assert "captureClimateFailureDiagnostic(state.climateVerifiedFailure)" in load
+    for name in ("reset", "runExpress", "startRerun"):
+        assert "climateVerifiedFailure=null" in _extract_js_function(source, name)

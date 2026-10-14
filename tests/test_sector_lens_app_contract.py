@@ -2723,3 +2723,20 @@ def test_verified_climate_failure_log_includes_bounded_schema_reason(caplog):
 
     assert "provider_failure_code=schema_rejected" in caplog.text
     assert "schema_path=properties.recommendation_candidates.items.type" in caplog.text
+
+
+def test_reader_failure_bridge_emits_diagnostics_before_blocking(monkeypatch):
+    from sector_lenses.climate_verified_runtime import ClimateReaderIntegrityError
+    error = ClimateReaderIntegrityError("READER_INTEGRITY: CURRENT_DRAFTING_INCOMPLETE",
+        assessment={"schema_version": "climate-verified-v2.1", "run_id": "blocked", "priorities": []},
+        reason_codes=("CURRENT_DRAFTING_INCOMPLETE",))
+    def failed(**kwargs):
+        raise error
+    monkeypatch.setattr(app_module, "run_verified_from_doc_parts", failed)
+    stream = app_module._iter_verified_climate_assessment(doc_parts=[], climate_grounding={},
+        clients=object(), run_id="blocked")
+    event = next(stream)
+    assert event == {"climate_verified_failure": error.diagnostic_payload}
+    assert "result" not in event and "climate_assessment" not in event
+    with pytest.raises(ClimateReaderIntegrityError):
+        next(stream)

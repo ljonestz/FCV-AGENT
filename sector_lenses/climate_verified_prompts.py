@@ -32,6 +32,12 @@ CALIBRATION RULES
   Past estimated appraisal or approval dates are not upcoming deadlines or proof
   of current status. Keep actual current status unverified without current evidence;
   refer to the applicable review, if still pending, rather than presume a future gate.
+- Research source_details and evidence_gap qualify contextual claims. Retain those
+  limitations. Source titles/dates can identify historical events; quoted present
+  tense does not establish current conditions. An unavailable publication date
+  leaves current status unverified. time_horizons describe relevance to decisions,
+  not when observations occurred. Historical/off-site evidence supports a qualified
+  mechanism, never a claim that a project site is currently flooded or inaccessible.
 - Routine climate hazard screening is sensitivity. Responsiveness requires an
   evidenced wider peace or social dividend mechanism through climate-related
   design or delivery within scope. Do not relabel routine risk management as

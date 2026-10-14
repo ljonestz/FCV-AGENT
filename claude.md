@@ -12,6 +12,21 @@
 
 ## Overview
 
+### 2026-10-14 quality7 reader-boundary follow-up (rollout held)
+
+The one paid quality7 run passed research (2 sources/4 passages) but failed at the
+runtime reader gate CURRENT_DRAFTING_INCOMPLETE. Its completed assessment was not
+returned or cached, so accepted priority count and native prose are unobservable.
+No paid retry; allowance consumed. See docs/20261014_climate-quality7-validation.md.
+Reader 2.17 explicitly carries final-reader-v1 so missing optional wording passes,
+while supplied malformed wording and legacy readers retain their checks. Native
+prose requires all three theme answers. Typed reader failures return a separate
+caller-only diagnostic event, manually saved/loaded as climateVerifiedFailure,
+never used for display, exports, follow-on inputs or automatic storage. Reset/new
+run clears it and stale session labels. Context evidence retains source metadata,
+dates, limitations and relevance horizons; unknown dates leave current status
+unverified. All prompts include that temporal calibration; no extra calls added.
+
 ### 2026-10-14 Climate backend candidate (rollout held)
 
 Approved redesign implements separate operational-decision and optional-drafting

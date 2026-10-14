@@ -490,3 +490,27 @@ have not been measured live. The source-based acceptance benchmark describes thr
 material Great Lakes decision areas and preserves existing funded responses.
 Synthetic one/three/five-action fixtures test transport, not fresh model quality.
 Production/main/ITS remain held pending separately authorized live acceptance.
+
+
+## 2026-10-14 paid reader-boundary follow-up
+
+Native final-reader-v1 is carried into reader validation. Only an absent optional
+current-document block is allowed; malformed supplied blocks still fail. Legacy
+readers retain strict current-drafting checks. Native final prose needs the complete
+three-theme package. The core-only transport test now crosses the runtime gate and
+both export writers. Reader/normalization versions are 2.17/2.2.
+
+ClimateReaderIntegrityError carries a completed normalized assessment and reason
+codes separately from its message. The same SSE caller receives diagnostic_only
+climate_verified_failure before the ordinary blocking error. Browser manual Save
+Session/load uses climateVerifiedFailure only; it never becomes climate assessment
+or reader, is excluded from automatic storage/report/follow-on payloads, and clears
+on reset/new run/rerun. No server assessment cache/GET endpoint is introduced.
+
+ContextEvidenceRef adds source_details, evidence_gap and time_horizons with empty
+backwards-compatible defaults. The live adapter preserves all cited source titles,
+URLs and publication dates with received limitations. Missing dates explicitly
+leave current conditions unverified. Relevance horizons are not observation dates;
+historical/off-site events cannot establish current project-site conditions.
+All eight prompt versions advance to record that common calibration. No budget,
+provider, retry, entitlement, authority or paid-call-count change is introduced.

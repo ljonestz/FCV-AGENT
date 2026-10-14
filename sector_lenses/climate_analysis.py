@@ -47,6 +47,9 @@ class ContextEvidenceRef:
     source_kind: str = "context"
     context_class: str | None = None
     preview_status: str | None = None
+    source_details: tuple[dict[str, str], ...] = ()
+    evidence_gap: str | None = None
+    time_horizons: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)

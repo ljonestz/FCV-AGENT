@@ -706,31 +706,31 @@ def test_manifest_is_privacy_safe_and_scoped_to_the_run():
     assert first["manifest"]["run_id"] == "run-test"
     assert second["manifest"]["run_id"] == "run-two"
     assert first["manifest"]["source_count"] == 1
-    assert first["manifest"]["renderer_version"] == "climate-reader-v2.16"
+    assert first["manifest"]["renderer_version"] == "climate-reader-v2.17"
     assert first["manifest"]["extraction_version"] == "source-blocks-v3"
     assert (
         first["manifest"]["prompt_versions"]["fact_extraction"]
-        == "climate-facts-v2.4"
+        == "climate-facts-v2.5"
     )
     assert (
         first["manifest"]["prompt_versions"]["bounded_analysis"]
-        == "climate-analysis-v2.8"
+        == "climate-analysis-v2.9"
     )
     assert (
         first["manifest"]["prompt_versions"]["judgment_review"]
-        == "climate-judgments-v2.13"
+        == "climate-judgments-v2.14"
     )
     assert (
         first["manifest"]["prompt_versions"]["recommendation_compiler"]
-        == "climate-recommendations-v2.14"
+        == "climate-recommendations-v2.15"
     )
     assert (
         first["manifest"]["prompt_versions"]["conditional_review"]
-        == "climate-review-v2.12"
+        == "climate-review-v2.13"
     )
     assert (
         first["manifest"]["prompt_versions"]["drafting_compiler"]
-        == "climate-drafting-v1.4"
+        == "climate-drafting-v1.5"
     )
     assert set(first["manifest"]["prompt_versions"]) == {
         "fact_extraction",
@@ -1457,10 +1457,11 @@ def test_optional_draft_timeout_preserves_core_and_malformed_draft_is_isolated()
     assert result["priorities"][0]["current_document_drafting"] is None
 
 
-def test_native_schema_three_decisions_survive_missing_optional_drafts():
+def test_native_schema_three_decisions_survive_missing_optional_drafts(monkeypatch):
     """Transport benchmark only: it does not establish live decision quality."""
     from sector_lenses.climate_verified_schemas import CANDIDATE_SCHEMA
     responses = _responses()
+    responses[2]["reader_contract"] = "final-reader-v1"
     base = responses[-1]["recommendation_candidates"][0]
     candidates = []
     for index, decision in enumerate((
@@ -1481,8 +1482,28 @@ def test_native_schema_three_decisions_survive_missing_optional_drafts():
     result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(assessment, reviewer))
     assert len(result["priorities"]) == 3
     assert all(item["current_document_drafting"] is None for item in result["priorities"])
-    assert assessment.calls[-1]["stage"] == "drafting_compiler"
+    assert any(call["stage"] == "drafting_compiler" for call in assessment.calls)
 
+
+    # Exercise the same runtime -> normalizer -> reader gate -> export boundary
+    # that stopped quality7, after independently reviewed synthetic decisions.
+    from io import BytesIO
+    from docx import Document
+    from sector_lenses.climate_verified_runtime import run_verified_from_doc_parts
+    from sector_lenses.climate_verified_render import render_reader_html, write_reader_docx
+    monkeypatch.setattr("sector_lenses.climate_verified_runtime.run_verified_climate_pipeline",
+                        lambda **kwargs: result)
+    bundle = run_verified_from_doc_parts(doc_parts=[{
+        "label": "PROJECT DOCUMENT", "name": "synthetic-pcn.txt",
+        "raw_text": "The Project Operations Manual will define site selection.",
+    }], climate_grounding={}, clients=object(), run_id="synthetic-runtime",
+        doc_type="PCN", instrument_type="IPF")
+    assert len(bundle["reader"]["priorities"]) == 3
+    html = render_reader_html(bundle["reader"])
+    stream = BytesIO(); write_reader_docx(bundle["reader"], stream); stream.seek(0)
+    word = " ".join(p.text for p in Document(stream).paragraphs)
+    for priority in bundle["reader"]["priorities"]:
+        assert priority["title"] in html and priority["title"] in word
 
 def test_missing_native_core_pass_list_never_accepts_a_recommendation():
     reviewer = FakeClient([{"verdict": "pass", "reason_codes": [], "object_ids": [], "issues": []}], [])
@@ -1631,7 +1652,12 @@ def _final_reader():
              "evidence_ids": ["PF-001", "PW-001", "RG-001", "CE-001", "REC-001"]}
             for index, paragraph in enumerate(_summary_payload()["paragraphs"])
         ],
-        "assessment_narratives": [],
+        "assessment_narratives": [
+            {"object_id": f"NARR-{theme}", "theme": theme,
+             "paragraphs": [_summary_payload()["paragraphs"][0]],
+             "evidence_ids": ["PF-001", "PW-001", "RG-001", "CE-001", "REC-001"]}
+            for theme in ("design", "dividends", "inclusion")
+        ],
     }
 
 
@@ -1704,8 +1730,9 @@ def test_exports_use_reviewed_narratives_instead_of_mutable_top_level_prose():
     paragraphs = [("The Project Operations Manual will define site selection. "
                    "Flooding can disrupt access. Site criteria are not yet specified. "
                    "The residual gap remains material. ") * 4]
-    final["assessment_narratives"] = [{"object_id": "NARR-design", "theme": "design",
-        "paragraphs": paragraphs, "evidence_ids": ["PF-001", "PW-001", "RG-001", "CE-001"]}]
+    final["assessment_narratives"] = [{"object_id": f"NARR-{theme}", "theme": theme,
+        "paragraphs": paragraphs, "evidence_ids": ["PF-001", "PW-001", "RG-001", "CE-001"]}
+        for theme in ("design", "dividends", "inclusion")]
     result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(
         FakeClient(responses + [final], []), FakeClient([_native_pass_review] * 2, [])))
     reviewed_copy = deepcopy(final)
@@ -1715,3 +1742,13 @@ def test_exports_use_reviewed_narratives_instead_of_mutable_top_level_prose():
     result["final_reader"] = reviewed_copy
     model = build_reader_model(result)
     assert model["assessment_themes"][0]["paragraphs"] == [paragraphs[0].strip()]
+
+
+def test_native_final_reader_requires_all_three_theme_answers():
+    from sector_lenses.climate_final_reader import validate_final_reader
+    responses = _responses()
+    result = run_verified_climate_pipeline(**_arguments(),
+        clients=PipelineClients(FakeClient(responses, []), _pass_review_client()))
+    final = _final_reader()
+    final["assessment_narratives"] = []
+    assert validate_final_reader(final, result) == ([], [])

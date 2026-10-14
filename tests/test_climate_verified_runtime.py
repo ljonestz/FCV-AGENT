@@ -706,3 +706,20 @@ def test_production_doc_parts_structured_ipf_outranks_incidental_pforr_label():
         for block in prepared.structured_fields
     )
     assert all(block.field_name is None for block in prepared.blocks)
+
+
+def test_reader_failure_preserves_paid_result_only_as_diagnostics(monkeypatch):
+    from sector_lenses.climate_verified_runtime import ClimateReaderIntegrityError
+    failed = {"schema_version": "climate-verified-v2.1", "run_id": "failed-result",
+              "executive_readout": "UNAPPROVED_RAW_MARKER", "priorities": [],
+              "validation": {"status": "attention"}}
+    monkeypatch.setattr("sector_lenses.climate_verified_runtime.run_verified_climate_pipeline",
+                        lambda **kwargs: failed)
+    with pytest.raises(ClimateReaderIntegrityError) as caught:
+        run_verified_from_doc_parts(doc_parts=_doc_parts(), climate_grounding={},
+                                   clients=object(), run_id="failed-result")
+    assert "UNAPPROVED_RAW_MARKER" not in str(caught.value)
+    payload = caught.value.diagnostic_payload
+    assert payload["diagnostic_only"] is True
+    assert payload["assessment"]["executive_readout"] == "UNAPPROVED_RAW_MARKER"
+    assert "EXECUTIVE_LENGTH_INVALID" in payload["reason_codes"]

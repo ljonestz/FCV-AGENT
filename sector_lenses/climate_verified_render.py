@@ -975,6 +975,7 @@ def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
         "assessment_themes": _assessment_themes(_summary_gap_items(assessment, reader_priorities, limit=12), core_questions, reader_priorities, minor_climate_points, assessment=assessment),
         "executive_readout": executive,
         "operation_context": operation_context,
+        "reader_contract": "final-reader-v1" if assessment.get("reader_contract") == "final-reader-v1" else "legacy",
         "drafting_route_status": drafting_route["status"],
         "overview_summary": overview_summary,
         "judgments": judgments,
@@ -1271,10 +1272,14 @@ def validate_reader_model(model: dict[str, object]) -> tuple[str, ...]:
         "guidance_ids",
     )
     for priority in priorities:
-        current = _mapping(priority.get("current_document_drafting"))
+        current_value = priority.get("current_document_drafting")
+        current = _mapping(current_value)
+        # Native decisions survive absent/rejected optional wording. A supplied
+        # malformed artifact still fails; legacy readers keep their old contract.
+        optional_absent = current_value is None and model.get("reader_contract") == "final-reader-v1"
         if (
             not current or any(key not in current for key in drafting_required)
-        ) and not drafting_withheld:
+        ) and not drafting_withheld and not optional_absent:
             issues.append("CURRENT_DRAFTING_INCOMPLETE")
         optional_value = priority.get("operational_instrument_drafting")
         if optional_value is not None and not isinstance(optional_value, dict):

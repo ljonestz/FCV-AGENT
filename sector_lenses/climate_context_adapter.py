@@ -140,6 +140,7 @@ def adapt_grounding_evidence(
         for item in live_sources
         if _text(item.get("id")) and _text(item.get("url"))
     }
+    live_source_records = {_text(item.get("id")): item for item in live_sources}
     for claim in _dict_list(grounding.get("live_claims")):
         identifier = _text(claim.get("id"))
         statement = _text(claim.get("claim"))
@@ -156,6 +157,13 @@ def adapt_grounding_evidence(
         ):
             continue
         primary_url = live_source_urls[declared_source_ids[0]]
+        source_details = tuple({key: _text(live_source_records[source_id].get(key))
+                                for key in ("id", "title", "url", "publication_date")}
+                               for source_id in declared_source_ids[:6])
+        evidence_gap = _text(claim.get("evidence_gap"))
+        if any(not source["publication_date"] for source in source_details):
+            evidence_gap = ("Source publication date was not supplied. Current conditions are unverified. "
+                            + evidence_gap).strip()
         result.append(
             ContextEvidenceRef(
                 evidence_id=f"CE-LIVE-{identifier}",
@@ -167,6 +175,10 @@ def adapt_grounding_evidence(
                 source_kind="live_research",
                 context_class="live_claim",
                 preview_status=None,
+                source_details=source_details,
+                evidence_gap=evidence_gap or None,
+                time_horizons=tuple(_text(item) for item in claim.get("time_horizons", [])
+                                    if _text(item))[:3],
             )
         )
     return tuple(result)

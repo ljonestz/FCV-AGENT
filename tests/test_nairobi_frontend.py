@@ -385,13 +385,13 @@ def test_manual_session_load_restores_completed_stage3_without_rerun_and_keeps_p
     source = INDEX.read_text(encoding="utf-8")
     helpers = "\n".join(
         _extract_js_function(source, name)
-        for name in ("isRestorableExpressStage3Output", "restoreSavedStage3Sections", "loadSession")
+        for name in ("isRestorableExpressStage3Output", "restoreSavedStage3Sections", "captureClimateFailureDiagnostic", "loadSession")
     )
     script = f"""
 let hist=[],curS=0,instrumentType='',countryScope='',docType='',analysisMode='stepbystep',stage3View='detailed';
 let stageOutputs={{}},stageHists={{}},priorityQuestions=[],focusQuestionsResult=null;
 let activeLenses=[],resolvedLensVersions={{}},lensDiagnostic={{}},lensContextSources=[];
-let climateResearch={{}},climateGrounding={{}},climateVerifiedAssessment=null,climateVerifiedReader=null;
+let climateResearch={{}},climateGrounding={{}},climateVerifiedAssessment=null,climateVerifiedReader=null,climateVerifiedFailure=null;
 let stageConciseReadout=null,stageThreePriorities=[],fcvRating='',fcvResponsivenessRating='';
 let stageRiskExposure=null,stageSensitivitySummary='',stageResponsivenessSummary='';
 let midCycleWatch=[],dpfWatch=[],p4rWatch=[],regionalWatch=[],horizonConsiderations='';
@@ -429,6 +429,14 @@ await Promise.resolve();
 await Promise.resolve();
 if(calls.length!==2)throw new Error('partial session enabled completed navigation');
 if(!elements['act-area'].innerHTML.includes('Continue from Stage 3'))throw new Error('partial session lost resume action');
+const failed={{...partial,currentStage:1,stageOutputs:{{1:'source inventory'}},climateVerifiedFailure:{{diagnostic_only:true,assessment:{{schema_version:'climate-verified-v2.1',executive_readout:'UNPUBLISHED_SYNTHETIC_MARKER'}},reason_codes:['SYNTHETIC_FAILURE']}}}};
+input.files=[{{name:'diagnostic.json',contents:JSON.stringify(failed)}}];
+loadSession(input);
+await Promise.resolve();await Promise.resolve();
+if(!climateVerifiedFailure||climateVerifiedAssessment||climateVerifiedReader)throw new Error('failed diagnostic became a successful reader');
+if(elements['stage-disp'].innerHTML.includes('UNPUBLISHED_SYNTHETIC_MARKER'))throw new Error('raw diagnostic published');
+if(elements['save-session-btn'].style.display!=='')throw new Error('diagnostic cannot be saved');
+if(calls.length!==2)throw new Error('failed diagnostic enabled completed navigation');
 """
     result = subprocess.run(["node", "--input-type=module", "-e", script], capture_output=True, text=True, check=False)
     assert result.returncode == 0, result.stderr

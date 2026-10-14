@@ -8,6 +8,7 @@ from types import SimpleNamespace
 
 import anthropic
 import httpx
+import pytest
 from anthropic._exceptions import OverloadedError
 
 import app as app_module
@@ -1269,3 +1270,23 @@ def test_climate_research_attempt_logging_identifies_response_boundary(caplog):
     assert "sources=0 claims=0" in caplog.text
     assert "gate_code=climate_research_failed" in caplog.text
     assert secret not in caplog.text
+
+
+@pytest.mark.parametrize("host,expected", [
+    ("notworldbank.org", None), ("notipcc.ch", None),
+    ("documents1.worldbank.org", "world-bank"), ("www.ipcc.ch", "scientific")])
+def test_passage_source_type_requires_a_complete_official_domain(host, expected):
+    from sector_lenses.research import resolve_climate_passage_selections
+    packet = build_climate_evidence_packet([{"type": "text", "citations": [{
+        "url": f"https://{host}/report", "title": "Burundi climate report",
+        "cited_text": "Flooding affects access in Burundi."}]}],
+        {"project_elements": ["Component 2"], "beneficiary_countries": ["Burundi"]})
+    if expected is None:
+        assert packet["passages"] == []
+        return
+    result = resolve_climate_passage_selections({"selections": [{
+        "passage_id": packet["passages"][0]["id"], "geographies": ["Burundi"],
+        "project_elements": ["Component 2"], "confidence": "medium",
+        "evidence_status": "observed", "time_horizons": ["current-near-term"],
+        "evidence_gap": "Current status unverified."}]}, packet)
+    assert result["sources"][0]["source_type"] == expected

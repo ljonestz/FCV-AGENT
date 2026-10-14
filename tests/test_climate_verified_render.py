@@ -1769,3 +1769,19 @@ def test_short_operational_context_is_valid_without_requiring_long_questionnaire
     model = build_reader_model(_assessment())
     model["executive_readout"] = "Climate pressures affect delivery and access. " * 32
     assert "EXECUTIVE_LENGTH_INVALID" not in validate_reader_model(model)
+
+
+@pytest.mark.parametrize("missing", [None, {}])
+def test_native_reader_only_allows_absent_optional_draft_not_malformed(missing):
+    assessment = _assessment()
+    assessment["reader_contract"] = "final-reader-v1"
+    assessment["operation_context"] = {"document_type": "AF", "instrument_type": "IPF"}
+    for priority in assessment["priorities"]:
+        priority["current_document_drafting"] = missing
+    reader = build_reader_model(assessment)
+    assert reader.get("reader_contract") == "final-reader-v1"
+    if missing is None:
+        assert "CURRENT_DRAFTING_INCOMPLETE" not in validate_reader_model(reader)
+        assert len(reader["priorities"]) == 4
+    else:
+        assert "CURRENT_DRAFTING_INCOMPLETE" in validate_reader_model(reader)

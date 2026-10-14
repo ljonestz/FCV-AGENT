@@ -806,6 +806,18 @@ def _uploaded_context_evidence(
     return tuple(selected)
 
 
+
+class ClimateReaderIntegrityError(ValueError):
+    """Carry a completed result for caller-only inspection, never publication."""
+
+    def __init__(self, message: str, *, assessment: dict[str, object],
+                 reason_codes: tuple[str, ...]) -> None:
+        # Keep raw project/review text out of exception messages and server logs.
+        super().__init__(message)
+        self.diagnostic_payload = {"diagnostic_only": True, "assessment": assessment,
+                                   "reason_codes": list(reason_codes)}
+
+
 def run_verified_from_doc_parts(
     *,
     doc_parts: object,
@@ -861,8 +873,9 @@ def run_verified_from_doc_parts(
                 str(reader.get("executive_readout") or "").split()
             )
             detail_suffix = f"; executive_words={executive_words}"
-        raise ValueError(
-            "READER_INTEGRITY: " + ", ".join(reader_issues) + detail_suffix
+        raise ClimateReaderIntegrityError(
+            "READER_INTEGRITY: " + ", ".join(reader_issues) + detail_suffix,
+            assessment=normalized, reason_codes=reader_issues,
         )
     return {
         "assessment": normalized,

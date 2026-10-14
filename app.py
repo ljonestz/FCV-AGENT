@@ -30,6 +30,7 @@ from sector_lenses.climate_runtime_config import load_verified_climate_runtime
 from sector_lenses.climate_verified_client import AnthropicVerifiedJsonClient
 from sector_lenses.climate_verified_pipeline import PipelineClients
 from sector_lenses.climate_verified_runtime import (
+    ClimateReaderIntegrityError,
     extract_beneficiary_countries,
     prepare_verified_sources,
     resolve_verified_operation_context,
@@ -1099,6 +1100,10 @@ def _iter_verified_climate_assessment(
                        "verified_stage": "automatic_validation"}
                 continue
             if kind == "error":
+                if isinstance(value, ClimateReaderIntegrityError):
+                    # Same caller receives the paid result for manual diagnostic
+                    # saving. It is never a successful result or public log.
+                    yield {"climate_verified_failure": value.diagnostic_payload}
                 raise value
             yield {"result": value}
             return

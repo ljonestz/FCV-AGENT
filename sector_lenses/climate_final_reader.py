@@ -43,7 +43,8 @@ def validate_final_reader(payload: object, assessment: dict[str, object]) -> tup
     support = reader_support_records(assessment)
     paragraphs = payload.get("summary_paragraphs", [])
     narratives = payload.get("assessment_narratives", [])
-    if not isinstance(paragraphs, list) or not isinstance(narratives, list):
+    if (not isinstance(paragraphs, list) or not isinstance(narratives, list)
+            or len(narratives) != 3):
         return [], []
     ids: set[str] = set()
 
