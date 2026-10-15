@@ -1,0 +1,162 @@
+{
+  "schema_version": "reasoning-review-adjudicated-v1",
+  "objective": "Assess whether reasoning-enabled review catches material scope/status defects while preserving valid qualified analysis.",
+  "input_artifact": {
+    "path": "output/20261015-explicit-premise-review-preflight/cases.json",
+    "sha256": "6c78b568a3a3cb6b5ba08b13ac3662f05323e577629cd611d8a293ce55068b7b"
+  },
+  "historical_manifest": {
+    "path": "tests/fixtures/climate/quality13_full_context_acceptance.json",
+    "sha256": "12dc4448448c8ea2168dab6b72ac57c35d209827789fa1241992fb26b2cbe970"
+  },
+  "adjudication_record": "docs/20261015_climate-explicit-premise-review-results.md",
+  "expectations": {
+    "core": {
+      "REC-001": {
+        "decision": "reject",
+        "reason_family": "site_activity_scope",
+        "reason": "The action routes Kasindi through market feasibility studies that the source limits to Kasumbalesa and Kipushi.",
+        "source_refs": [
+          "file page 10 paragraph 22",
+          "file page 13 paragraph 27"
+        ]
+      },
+      "REC-002": {
+        "decision": "accept",
+        "reason_family": "qualified_continuity_gap",
+        "reason": "The source documents flood-resilient specifications but does not establish operating, maintenance, and flood-continuity arrangements.",
+        "source_refs": [
+          "file page 7 paragraph 13",
+          "file page 10 paragraph 23"
+        ]
+      },
+      "REC-003": {
+        "decision": "accept",
+        "reason_family": "qualified_distributional_access",
+        "reason": "The core asks a conditional access question and explicitly says cancelled-site traders cannot be assumed to be displaced people or Haut-Katanga beneficiaries. This is a proposal, not an asserted existing linkage.",
+        "source_refs": [
+          "file page 7 paragraph 12",
+          "file page 10 paragraph 22"
+        ]
+      },
+      "REC-004": {
+        "decision": "accept",
+        "reason_family": "qualified_outreach_gap",
+        "reason": "Selection, registration, and remapping are documented, while the route from those measures to climate-smart support for women and small-scale traders remains a qualified design question.",
+        "source_refs": [
+          "file page 10 paragraph 22",
+          "file page 13 paragraph 27"
+        ]
+      },
+      "REC-005": {
+        "decision": "reject",
+        "reason_family": "recipient_financing_scope",
+        "reason": "The action creates one funding-priority rule across a Burundi AF grant and DRC restructuring within the existing DRC envelope, although the source separates recipients and financing actions.",
+        "source_refs": [
+          "file page 7 paragraphs 11-13"
+        ]
+      }
+    },
+    "readiness": {
+      "DIF-001": {
+        "decision": "reject",
+        "reason_family": "noncomparable_scope",
+        "reason": "Six suspended sites and four named inaccessible sites are not established as counts of the same scope.",
+        "source_refs": [
+          "file page 5 paragraph 4",
+          "file page 8 paragraph 15",
+          "file page 10 paragraph 22"
+        ]
+      },
+      "DIF-002": {
+        "decision": "accept",
+        "reason_family": "material_allocation_difference",
+        "reason": "Component 1 and Component 3 amounts differ materially across the cited passages and are not rounding variants.",
+        "source_refs": [
+          "file page 8 paragraph 14",
+          "file page 10 paragraph 21"
+        ]
+      },
+      "DIF-003": {
+        "decision": "reject",
+        "reason_family": "rounded_equivalence",
+        "reason": "US$59 million plus US$1 million and US$59.025 million plus US$0.975 million are rounded and precise presentations of the same US$60 million allocation.",
+        "source_refs": [
+          "file page 7 paragraph 11",
+          "file page 10 paragraph 21"
+        ]
+      },
+      "DIF-004": {
+        "decision": "reject",
+        "reason_family": "compatible_status_statements",
+        "reason": "A requirement that ESCPs should be updated can coexist with a later statement that an ESCP has been updated; the passages do not establish a contradiction.",
+        "source_refs": [
+          "file page 11 risk summary",
+          "file page 13 paragraph 28"
+        ]
+      }
+    },
+    "reader": {
+      "SUM-001": {
+        "decision": "accept",
+        "reason_family": "coordinated_list",
+        "reason": "The sentence lists Component 1 registration and Component 3 support separately and does not assign registration to Component 3; cancellation and restructuring around conflict are source-backed.",
+        "source_refs": [
+          "file page 7 paragraph 12",
+          "file page 10 paragraph 22"
+        ]
+      },
+      "SUM-002": {
+        "decision": "accept",
+        "reason_family": "supported_summary",
+        "reason": "Most is a conservative paraphrase of 92 percent. The mid-2025 qualifier is useful precision, not grounds for rejecting the weaker quantifier.",
+        "source_refs": [
+          "file pages 7-13"
+        ]
+      },
+      "NARR-design": {
+        "decision": "accept",
+        "reason_family": "documented_resource_shift",
+        "reason": "The source explicitly cancels activities and redirects remaining Goma border-post funds to Kasindi while adding Haut-Katanga activities.",
+        "source_refs": [
+          "file page 7 paragraph 12",
+          "file page 10 paragraph 22"
+        ],
+        "optional_precision": "Resources and activities shift is more exact than works shift. The underlying reorientation is supported; do not discard that analysis."
+      },
+      "NARR-dividends": {
+        "decision": "reject",
+        "reason_family": "implementation_status",
+        "reason": "Flood-ready overstates revised specifications as completed readiness; the qualified trust inference and conditional contribution of proposed actions are not separate unsupported claims.",
+        "required_reason_codes": [
+          "PROJECT_FACT_UNSUPPORTED"
+        ],
+        "forbidden_reason_codes": [
+          "RESIDUAL_GAP_UNSUPPORTED"
+        ],
+        "source_refs": [
+          "file page 7 paragraph 13",
+          "file page 9 paragraphs 19-20"
+        ]
+      },
+      "NARR-inclusion": {
+        "decision": "reject",
+        "reason_family": "safeguard_specificity",
+        "reason": "Narrow the exclusion-specific safeguard clause: sources identify exclusion risk and general E&S instruments, not a demonstrated mechanism specific to that risk. Preserve the paragraph's qualified access concerns.",
+        "source_refs": [
+          "file pages 9-13"
+        ],
+        "required_reason_codes": [
+          "PROJECT_FACT_UNSUPPORTED"
+        ]
+      }
+    }
+  },
+  "scoring_notes": [
+    "Expected labels and adjudication notes must not be included in provider requests.",
+    "Historical REC003 and inclusion labels are preserved in the original manifest; these prospective expectations reflect the separately documented source adjudication.",
+    "Count exact issue meaning and source support, not just ID agreement. Optional precision must not become a material failure.",
+    "Optional drafting is not scored because historical normalized draft bytes are not fully recoverable.",
+    "One sample per stage cannot establish reliability. Correction-generation and fresh re-review are separate untested gates."
+  ]
+}

@@ -1,5 +1,18 @@
 # Current handoff
 
+### 2026-10-15 reasoning-enabled comparison: improved, still failed
+
+Two authorized isolated reviewer calls are consumed, no retries or full assessment.
+Adaptive/high reasoning caught study scope, separate funding envelopes and planned
+versus delivered facilities; readiness decisions were correct. Decision agreement
+was 12/14 against pre-frozen adjudicated labels. Remaining failures: false rejection
+of qualified cancelled-site access analysis and missed exclusion-specific safeguard
+overstatement. Both actual schemas, fingerprints and exact quote checks passed;
+33 focused tests passed. Usage: 110,643 input / 7,831 output tokens; provider time 56.608 s.
+No app settings, deployment or merge changed. Production/ITS acceptance remains
+held. No further paid authority from this experiment. See
+[results](docs/20261015_climate-reasoning-review-results.md).
+
 ### 2026-10-15 explicit-premise paid check: failed
 
 Two newly authorized reviewer calls on candidate8b1039c are consumed; no retries,

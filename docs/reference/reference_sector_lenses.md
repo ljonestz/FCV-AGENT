@@ -756,3 +756,11 @@ CodeQL follow-up aligns World Bank/IPCC source classification with the existing
 exact-domain or dot-delimited subdomain rule. Bare suffix lookalikes receive no
 official-source classification; unchanged trusted HTTPS admission rejects their
 URLs. No research schema, accepted source scope or provider change.
+
+
+### 2026-10-15 isolated reasoning comparison
+
+Standalone reviewer configuration comparison improved to 12/14 adjudicated decisions,
+but failed access-population and safeguard-specificity acceptance. No runtime
+configuration or shared contract changed. See
+[results](../20261015_climate-reasoning-review-results.md).
