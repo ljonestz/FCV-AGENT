@@ -1,5 +1,27 @@
 # Sector-Lens Platform Reference
 
+### 2026-10-15 quality13: production acceptance failed
+
+The one newly authorized full paid run is used; all six targeted reviewer calls are
+also used. Candidate f463684 passed 1,591 offline tests, exact-commit CodeQL and the
+four targeted calibration cases, but quality13 failed source-based acceptance.
+Assessment 09c194d6-a4f0-40a7-bc9b-3eccfc952f6a completed HTTP200 at 07:10:45UTC.
+Four priorities survived; REC-001 misroutes Kasindi through Haut-Katanga feasibility
+studies and REC-005 combines separate Burundi/DRC financing pools. The reviewer
+admitted false rounding/status contradictions and again rejected valid qualified
+reader wording. One real reader status defect was found; its correction introduced
+new numeric tokens and was correctly rejected. Summary 198 words was not the issue.
+Research returned zero admitted claims; stale structural telemetry cannot establish
+why selections failed. See docs/20261015_climate-quality13-acceptance-diagnosis.md.
+
+Production restored to original main 1168a8f by dep-db87rsm89jmc73ciiij0, live
+2026-10-15 07:17:29UTC; branch main, On Commit and HTTP200 build health verified.
+Preview 23958ae/auto-deploy off; branch/worktree and draft PR83 retained. Actual
+browser/HTML/DOCX artifacts are local and agree, including the review-needed fallback.
+No further paid call, main merge, ITS deployment or successful ITS handover is
+approved by this failed result. Historical allowance statements below are superseded.
+The isolated calibration did not generalize; production readiness is not established.
+
 ### 2026-10-15 reviewer calibration complete; full acceptance pending
 
 The latest user authority permits six targeted reviewer-only calls and one further
