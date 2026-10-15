@@ -538,6 +538,7 @@ def summarize_climate_structuring_response(
 
     limit = 9_999_999
     allowed_fields = (
+        "selections",
         "status",
         "attempts",
         "sources",
@@ -588,6 +589,7 @@ def summarize_climate_structuring_response(
     source_url_trusted = -1
     source_fully_valid = -1
     claims_count = -1
+    selections_count = -1
 
     if start_present and end_present:
         payload_text = response_text.split(CLIMATE_RESEARCH_START, 1)[1]
@@ -605,6 +607,9 @@ def summarize_climate_structuring_response(
                 )
                 sources = payload.get("sources")
                 claims = payload.get("claims")
+                selections = payload.get("selections")
+                if isinstance(selections, list):
+                    selections_count = min(len(selections), limit)
                 if isinstance(sources, list):
                     sources_count = min(len(sources), limit)
                     source_id_valid = 0
@@ -663,6 +668,7 @@ def summarize_climate_structuring_response(
         "source_url_trusted": source_url_trusted,
         "source_fully_valid": source_fully_valid,
         "claims_count": claims_count,
+        "selections_count": selections_count,
         "gate_code": normalized_gate_code,
     }
 
@@ -805,7 +811,7 @@ def normalize_climate_research_bundle(payload: Any) -> dict[str, Any]:
     )
     if not claims:
         status = "failed"
-    return {
+    normalized = {
         "status": status,
         "attempts": _attempt_count(raw.get("attempts")),
         "sources": sources,
@@ -815,6 +821,25 @@ def normalize_climate_research_bundle(payload: Any) -> dict[str, Any]:
             'uncovered_countries': _strings(raw.get('uncovered_countries'), 8, 80)}
            if 'coverage_countries' in raw else {}),
     }
+    diagnostics = raw.get("passage_diagnostics")
+    if isinstance(diagnostics, dict):
+        def diagnostic_count(value: Any, limit: int) -> int:
+            try:
+                return min(max(int(value or 0), 0), limit)
+            except (OverflowError, TypeError, ValueError):
+                return 0
+
+        limits = {
+            "received_count": 24,
+            "selected_count": 6,
+            "invalid_selection_count": 6,
+            "admitted_claim_count": 6,
+        }
+        normalized["passage_diagnostics"] = {
+            key: diagnostic_count(diagnostics.get(key), limit)
+            for key, limit in limits.items()
+        }
+    return normalized
 
 
 CLIMATE_AUTHORITATIVE_SOURCE_TYPES = {

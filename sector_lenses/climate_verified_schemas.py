@@ -750,7 +750,11 @@ STAGE_OUTPUT_SCHEMAS['reader_review'] = _object({key: value for key, value in ST
 STAGE_OUTPUT_SCHEMAS['reader_correction'] = _object({
     'corrections': {'type': 'array', 'items': _object({
         'object_id': _string('Exact requested SUM or NARR ID; no other records.'),
-        'paragraphs': _strings('One paragraph for SUM; one or two for NARR. Text only; application retains all evidence and metadata.'),
+        'edits': {'type': 'array', 'items': _object({
+            'paragraph_index': {'type': 'integer', 'minimum': 0, 'description': 'Zero-based original paragraph index; SUM uses 0.'},
+            'old_text': _string('Exact unique original substring within one sentence; no overlapping anchors.'),
+            'new_text': _string('Replacement clause or sentence; empty string deletes the anchor.'),
+        })},
     })},
 })
 

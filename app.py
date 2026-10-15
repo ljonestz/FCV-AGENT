@@ -7976,9 +7976,12 @@ def log_climate_research_summary(
         if bundle.get("status") in {"complete", "partial", "failed"}
         else "failed"
     )
+    passage_diagnostics = bundle.get("passage_diagnostics")
+    passage_counts_known = isinstance(passage_diagnostics, dict)
     app.logger.info(
         "Climate research summary assessment_id=%s status=%s attempts=%d "
-        "elapsed_ms=%d sources=%d claims=%d source_types=%s horizons=%s",
+        "elapsed_ms=%d sources=%d claims=%d source_types=%s horizons=%s "
+        "passage_checks=received:%d,selected:%d,invalid:%d,admitted:%d",
         assessment_id or "unknown",
         status,
         _telemetry_count(bundle.get("attempts"), 2),
@@ -7987,6 +7990,14 @@ def log_climate_research_summary(
         min(len(claims), 99),
         ",".join(source_types) or "none",
         horizon_text,
+        _telemetry_count(passage_diagnostics.get("received_count"), 24)
+        if passage_counts_known else -1,
+        _telemetry_count(passage_diagnostics.get("selected_count"), 6)
+        if passage_counts_known else -1,
+        _telemetry_count(passage_diagnostics.get("invalid_selection_count"), 6)
+        if passage_counts_known else -1,
+        _telemetry_count(passage_diagnostics.get("admitted_claim_count"), 6)
+        if passage_counts_known else -1,
     )
 
 
@@ -8063,6 +8074,7 @@ def run_climate_web_research(
     attempts = 0
     failure_reason = "Dedicated Climate-FCV research could not be completed."
     best_partial = None
+    last_passage_diagnostics = None
 
     def finish(bundle: dict[str, Any]) -> dict[str, Any]:
         log_climate_research_summary(
@@ -8072,7 +8084,17 @@ def run_climate_web_research(
         )
         return bundle
 
+    def passage_count(
+        diagnostics: Any,
+        key: str,
+        limit: int,
+    ) -> int:
+        if not isinstance(diagnostics, dict):
+            return -1
+        return _telemetry_count(diagnostics.get(key), limit)
+
     for attempt in (1, 2):
+        current_passage_diagnostics = None
         remaining = (
             CLIMATE_RESEARCH_ATTEMPT_CAP_SECONDS
             if deadline is None
@@ -8232,6 +8254,9 @@ def run_climate_web_research(
                     bundle = resolve_climate_passage_selections(json.loads(selection_text), evidence_packet)
                 except (IndexError, ValueError, TypeError):
                     bundle = normalize_climate_research_bundle({'status': 'failed'})
+                if isinstance(bundle.get("passage_diagnostics"), dict):
+                    current_passage_diagnostics = bundle["passage_diagnostics"]
+                    last_passage_diagnostics = current_passage_diagnostics
             else:
                 _, bundle = extract_climate_research_bundle(text)
                 bundle = verify_climate_research_claims(bundle, provider_content)
@@ -8262,7 +8287,8 @@ def run_climate_web_research(
                     "input_tokens=%d output_tokens=%d response_chars=%d "
                     "start_present=%s end_present=%s json_status=%s "
                     "top_level_object=%s fields_present=%s sources_count=%d "
-                    "claims_count=%d gate_code=%s "
+                    "claims_count=%d selections_count=%d gate_code=%s "
+                    "passage_checks=received:%d,selected:%d,invalid:%d,admitted:%d "
                     "source_checks=id:%d,type:%d,title:%d,url:%d,valid:%d",
                     assessment_id or "unknown",
                     attempt,
@@ -8277,7 +8303,22 @@ def run_climate_web_research(
                     ",".join(diagnostic["fields_present"]) or "none",
                     diagnostic["sources_count"],
                     diagnostic["claims_count"],
+                    diagnostic["selections_count"],
                     diagnostic["gate_code"],
+                    passage_count(
+                        current_passage_diagnostics, "received_count", 24
+                    ),
+                    passage_count(
+                        current_passage_diagnostics, "selected_count", 6
+                    ),
+                    passage_count(
+                        current_passage_diagnostics,
+                        "invalid_selection_count",
+                        6,
+                    ),
+                    passage_count(
+                        current_passage_diagnostics, "admitted_claim_count", 6
+                    ),
                     diagnostic["source_id_valid"],
                     diagnostic["source_type_valid"],
                     diagnostic["source_title_present"],
@@ -8374,6 +8415,8 @@ def run_climate_web_research(
         "status": "failed",
         "attempts": attempts,
         "failure_reason": failure_reason,
+        **({"passage_diagnostics": last_passage_diagnostics}
+           if last_passage_diagnostics is not None else {}),
     }))
 
 
@@ -8769,6 +8812,8 @@ def resolve_climate_grounding(
             "warning_code": decision.get(
                 "code", "climate_research_insufficient"
             ),
+            **({"passage_diagnostics": normalized["passage_diagnostics"]}
+               if "passage_diagnostics" in normalized else {}),
         }
 
     try:

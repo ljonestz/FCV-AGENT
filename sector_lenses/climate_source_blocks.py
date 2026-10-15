@@ -61,6 +61,21 @@ def normalize_block_text(text: str) -> str:
     return re.sub(r"\s+", " ", text).strip()
 
 
+def cited_source_passages(facts: list[dict], blocks: list[SourceBlock]) -> list[dict]:
+    """Carry original context behind admitted facts without inferring relationships.
+
+    A short extraction excerpt may omit a site's activity or a recipient's funding
+    boundary. Preserve complete cited blocks once, in source order; never truncate
+    away qualifiers or treat passage co-occurrence as proof of a relationship.
+    """
+    cited = {identifier for fact in facts for identifier in fact.get('source_block_ids', [])}
+    selected = {}
+    for block in blocks:
+        if block.block_id in cited and block.block_id not in selected:
+            selected[block.block_id] = asdict(block)
+    return list(selected.values())
+
+
 def _block_hash(document_id: str, location: str, text: str) -> str:
     value = f"{document_id}|{location}|{normalize_block_text(text)}"
     return hashlib.sha256(value.encode("utf-8")).hexdigest()

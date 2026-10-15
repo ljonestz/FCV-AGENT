@@ -67,7 +67,7 @@ from sector_lenses.climate_semantic_review import (
     ReviewRisk,
     semantic_review_required,
 )
-from sector_lenses.climate_source_blocks import SourceBlock, SourceDocument
+from sector_lenses.climate_source_blocks import SourceBlock, SourceDocument, cited_source_passages
 from sector_lenses.climate_truth import (
     DerivedAssertion,
     ProjectFactClaim,
@@ -91,15 +91,15 @@ from sector_lenses.climate_verified_schemas import (
 _INTEGRITY_CATEGORIES = READINESS_CATEGORIES - {"missing_operational_home"}
 
 PROMPT_VERSIONS = {
-    "fact_extraction": "climate-facts-v2.7",
-    "bounded_analysis": "climate-analysis-v2.11",
-    "judgment_review": "climate-judgments-v2.15",
-    "recommendation_compiler": "climate-recommendations-v2.16",
-    "conditional_review": "climate-review-v2.16",
-    "drafting_compiler": "climate-drafting-v1.6",
-    "reader_compiler": "climate-final-reader-v1.7",
-    "reader_correction": "climate-reader-correction-v1.4",
-    "reader_review": "climate-reader-review-v1.6",
+    "fact_extraction": "climate-facts-v2.8",
+    "bounded_analysis": "climate-analysis-v2.12",
+    "judgment_review": "climate-judgments-v2.16",
+    "recommendation_compiler": "climate-recommendations-v2.17",
+    "conditional_review": "climate-review-v2.17",
+    "drafting_compiler": "climate-drafting-v1.7",
+    "reader_compiler": "climate-final-reader-v1.8",
+    "reader_correction": "climate-reader-correction-v1.5",
+    "reader_review": "climate-reader-review-v1.7",
 }
 
 
@@ -986,11 +986,14 @@ def run_verified_climate_pipeline(
     ]
     suppressed["derived_assertions"] += len(invalid_assertions)
 
+    source_passages = cited_source_passages([asdict(item) for item in facts], source_blocks)
+
     analysis_payload = _call(
         clients.assessment,
         "bounded_analysis",
         {
             "facts": [asdict(item) for item in facts],
+            "source_passages": source_passages,
             "derived_assertions": [asdict(item) for item in assertions],
             "context_evidence": context_records,
             "operation_context": resolved_context,
@@ -1060,6 +1063,7 @@ def run_verified_climate_pipeline(
         "judgment_review",
         {
             "facts": [asdict(item) for item in facts],
+            "source_passages": source_passages,
             "analysis": analysis_record,
             "core_questions_to_answer": posed_core_questions,
             "operation_context": resolved_context,
@@ -1135,6 +1139,7 @@ def run_verified_climate_pipeline(
         "recommendation_compiler",
         {
             "facts": [asdict(item) for item in facts],
+            "source_passages": source_passages,
             "analysis": analysis_record,
             "judgments": asdict(judgments),
             "operation_context": resolved_context,
@@ -1168,6 +1173,7 @@ def run_verified_climate_pipeline(
             "drafting_compiler",
             {
                 "facts": [asdict(item) for item in facts],
+                "source_passages": source_passages,
                 "analysis": analysis_record,
                 "judgments": asdict(judgments),
                 "recommendation_candidates": candidates_missing_drafting,
@@ -1730,6 +1736,7 @@ def run_verified_climate_pipeline(
         support_records = reader_support_records(reader_assessment)
         reader_input = {
             'support_records': support_records, 'judgments': asdict(judgments),
+            'source_passages': source_passages,
             'executive_readout': executive_readout,
             'accepted_recommendation_ids': [item.recommendation_id for item in priorities],
             'operation_context': resolved_context,
@@ -1802,6 +1809,8 @@ def run_verified_climate_pipeline(
                 correction_input = {
                     **reader_input, 'call_scope': 'reader_correction',
                     'support_records': {ref: support_records[ref] for ref in refs},
+                    'source_passages': cited_source_passages(
+                        [support_records[ref] for ref in refs if ref.startswith('PF-')], source_blocks),
                     'records_to_correct': target_records, 'bounded_correction': correction_issues,
                     'allowed_numeric_date_tokens_by_id': {
                         record['object_id']: reader_correction_allowed_numeric_date_tokens(record)
@@ -1870,7 +1879,7 @@ def run_verified_climate_pipeline(
         prompt_versions=PROMPT_VERSIONS,
         reviewer_version="climate-review-v2.2",
         extraction_version="source-blocks-v3",
-        normalization_version="climate-normalization-v2.8",
+        normalization_version="climate-normalization-v2.9",
         renderer_version="climate-reader-v2.19",
         model_aliases=model_aliases,
         sampling={"max_transient_retries": 1,

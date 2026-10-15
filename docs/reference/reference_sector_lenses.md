@@ -1,5 +1,26 @@
 # Sector-Lens Platform Reference
 
+### 2026-10-15 full-context offline repair (not production accepted)
+
+The user approved an offline repair following quality13. Cited original source
+blocks now accompany facts through generation and reader stages so site/activity
+and recipient/funding boundaries remain visible. Corrections use unique anchored
+sentence/clause edits, preserving surrounding text and evidence; numeric/date
+checks and fresh independent meaning review remain mandatory. Research telemetry
+recognizes selections and preserves numeric rejection counts, distinguishing
+unknown diagnostics from known zero counts without logging source text.
+
+The full-context replay reconstructs 104 source blocks, 60 facts, five core
+recommendations, four flags and five reader records; its recorded outcome correctly
+fails seven acceptance checks. It separates reconstructed baseline inputs from the
+current candidate reader input and never injects expected labels into model input.
+The offline validation record is docs/20261015_climate-full-context-repair-validation.md.
+Added source context increases input size (43,322 serialized characters per full
+context call on quality13); no new model calls or retries were added. No provider
+calls, paid assessments or deployments occurred in this repair. Production/ITS
+acceptance remains outstanding; saved failures remain unchanged. Draft PR83 and
+its worktree are preserved. Do not treat software tests as semantic certification.
+
 ### 2026-10-15 quality13: production acceptance failed
 
 The one newly authorized full paid run is used; all six targeted reviewer calls are

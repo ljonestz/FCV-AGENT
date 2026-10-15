@@ -613,6 +613,7 @@ def test_climate_structuring_diagnostic_reports_truncation_without_text():
         "source_url_trusted": -1,
         "source_fully_valid": -1,
         "claims_count": -1,
+        "selections_count": -1,
         "gate_code": "climate_research_failed",
     }
     assert secret not in repr(summary)
@@ -652,7 +653,50 @@ def test_climate_structuring_diagnostic_reports_complete_object_shape():
     assert summary["source_url_trusted"] == 0
     assert summary["source_fully_valid"] == 0
     assert summary["claims_count"] == 4
+    assert summary["selections_count"] == -1
     assert "SECRET" not in repr(summary)
+
+
+def test_climate_structuring_diagnostic_recognizes_current_selections_shape():
+    text = (
+        CLIMATE_RESEARCH_START
+        + json.dumps({
+            "selections": [
+                {"passage_id": "CP-001", "private": "SECRET ONE"},
+                {"passage_id": "CP-002", "private": "SECRET TWO"},
+            ]
+        })
+        + CLIMATE_RESEARCH_END
+    )
+
+    summary = summarize_climate_structuring_response(text)
+
+    assert summary["json_status"] == "valid"
+    assert summary["top_level_object"] is True
+    assert summary["fields_present"] == ("selections",)
+    assert summary["selections_count"] == 2
+    assert "SECRET" not in repr(summary)
+
+
+def test_climate_research_normalizes_bounded_numeric_passage_diagnostics():
+    bundle = normalize_climate_research_bundle({
+        "status": "failed",
+        "passage_diagnostics": {
+            "received_count": 10_000,
+            "selected_count": "4",
+            "invalid_selection_count": -2,
+            "admitted_claim_count": float("inf"),
+            "private": "SECRET SOURCE TEXT",
+        },
+    })
+
+    assert bundle["passage_diagnostics"] == {
+        "received_count": 24,
+        "selected_count": 4,
+        "invalid_selection_count": 0,
+        "admitted_claim_count": 0,
+    }
+    assert "SECRET" not in repr(bundle)
 
 
 def test_climate_research_normalizes_model_generated_ids():
@@ -882,6 +926,202 @@ def test_climate_structuring_diagnostic_is_logged_without_content(caplog):
     assert "gate_code=climate_research_failed" in caplog.text
     assert "source_checks=id:-1,type:-1,title:-1,url:-1,valid:-1" in caplog.text
     assert secret not in caplog.text
+
+
+def test_rejected_passage_counts_survive_failed_research_and_are_logged(caplog):
+    searched = SimpleNamespace(
+        content=[
+            SimpleNamespace(type="web_search_tool_result", content=[]),
+            SimpleNamespace(type="web_search_tool_result", content=[]),
+            SimpleNamespace(
+                type="text",
+                text="Search completed.",
+                citations=[SimpleNamespace(
+                    url="https://www.worldbank.org/burundi-climate",
+                    title="Burundi climate report",
+                    cited_text="Flooding affects access in Burundi.",
+                )],
+            ),
+        ],
+        stop_reason="end_turn",
+    )
+    rejected = SimpleNamespace(
+        content=[SimpleNamespace(
+            type="text",
+            text=(
+                CLIMATE_RESEARCH_START
+                + json.dumps({"selections": [{
+                    "passage_id": "CP-001",
+                    "project_elements": ["Invented activity"],
+                    "geographies": ["Burundi"],
+                    "evidence_status": "observed",
+                    "confidence": "medium",
+                    "time_horizons": ["project-lifetime"],
+                    "private": "SECRET CLASSIFIER TEXT",
+                }]})
+                + CLIMATE_RESEARCH_END
+            ),
+        )],
+        stop_reason="end_turn",
+    )
+    client = _SequencedResearchClient([searched, rejected])
+
+    with caplog.at_level("INFO", logger=app_module.app.logger.name):
+        result = app_module.run_climate_web_research(
+            "Burundi",
+            "Transport",
+            {
+                "beneficiary_countries": ["Burundi"],
+                "project_elements": ["Landing-site rehabilitation"],
+            },
+            client,
+            assessment_id="assessment-rejected-passages",
+        )
+
+    assert result["status"] == "failed"
+    assert result["passage_diagnostics"] == {
+        "received_count": 1,
+        "selected_count": 1,
+        "invalid_selection_count": 1,
+        "admitted_claim_count": 0,
+    }
+    assert len(client.calls) == 2
+    assert "fields_present=selections" in caplog.text
+    assert "selections_count=1" in caplog.text
+    assert (
+        "passage_checks=received:1,selected:1,invalid:1,admitted:0"
+        in caplog.text
+    )
+    assert "Flooding affects access" not in caplog.text
+    assert "SECRET CLASSIFIER TEXT" not in caplog.text
+
+
+def test_failed_grounding_retains_only_bounded_passage_diagnostics(monkeypatch):
+    monkeypatch.setattr(app_module, "load_climate_bank", lambda: object())
+    monkeypatch.setattr(app_module, "materialize_bank_manifest", lambda *_args: {
+        "bank_status": "unavailable", "warning_code": "bank_country_unavailable",
+    })
+    failed = normalize_climate_research_bundle({
+        "status": "failed",
+        "failure_reason": "No passage survived validation.",
+        "passage_diagnostics": {
+            "received_count": 3,
+            "selected_count": 2,
+            "invalid_selection_count": 2,
+            "admitted_claim_count": 0,
+        },
+    })
+
+    _, retained = app_module.resolve_climate_grounding({}, failed)
+
+    assert retained["passage_diagnostics"] == failed["passage_diagnostics"]
+    assert retained["sources"] == []
+    assert retained["claims"] == []
+
+
+def test_retry_logs_current_unknown_counts_without_losing_last_usable_counts(caplog):
+    searched = SimpleNamespace(
+        content=[
+            SimpleNamespace(type="web_search_tool_result", content=[]),
+            SimpleNamespace(type="web_search_tool_result", content=[]),
+            SimpleNamespace(
+                type="text",
+                text="Search completed.",
+                citations=[SimpleNamespace(
+                    url="https://www.worldbank.org/burundi-climate",
+                    title="Burundi climate report",
+                    cited_text="Flooding affects access in Burundi.",
+                )],
+            ),
+        ],
+        stop_reason="end_turn",
+    )
+    labels = {
+        key: value for key, value in _valid_bundle()["claims"][0].items()
+        if key not in {"id", "claim", "source_ids"}
+    }
+    labels["geographies"] = ["Burundi"]
+    partial = SimpleNamespace(
+        content=[SimpleNamespace(
+            type="text",
+            text=(
+                CLIMATE_RESEARCH_START
+                + json.dumps({"selections": [{
+                    **labels,
+                    "passage_id": "CP-001",
+                }]})
+                + CLIMATE_RESEARCH_END
+            ),
+        )],
+        stop_reason="end_turn",
+    )
+    malformed = SimpleNamespace(
+        content=[SimpleNamespace(
+            type="text",
+            text=CLIMATE_RESEARCH_START + '{"selections":' + CLIMATE_RESEARCH_END,
+        )],
+        stop_reason="end_turn",
+    )
+    client = _SequencedResearchClient([searched, partial, searched, malformed])
+
+    with caplog.at_level("INFO", logger=app_module.app.logger.name):
+        result = app_module.run_climate_web_research(
+            "Burundi",
+            "Transport",
+            {
+                "beneficiary_countries": ["Burundi"],
+                "project_elements": ["Landing-site rehabilitation"],
+            },
+            client,
+            assessment_id="assessment-retry-diagnostics",
+        )
+
+    assert result["status"] == "partial"
+    assert result["attempts"] == 2
+    assert result["passage_diagnostics"] == {
+        "received_count": 1,
+        "selected_count": 1,
+        "invalid_selection_count": 0,
+        "admitted_claim_count": 1,
+    }
+    diagnostic_logs = [
+        message for message in caplog.messages
+        if "outcome=structuring_diagnostic" in message
+    ]
+    assert len(diagnostic_logs) == 2
+    assert "passage_checks=received:1,selected:1,invalid:0,admitted:1" in diagnostic_logs[0]
+    assert "passage_checks=received:-1,selected:-1,invalid:-1,admitted:-1" in diagnostic_logs[1]
+
+
+def test_research_summary_distinguishes_unknown_from_known_zero_counts(caplog):
+    with caplog.at_level("INFO", logger=app_module.app.logger.name):
+        app_module.log_climate_research_summary(
+            "assessment-unknown", {"status": "failed"}, elapsed_ms=1
+        )
+        app_module.log_climate_research_summary(
+            "assessment-zero",
+            {
+                "status": "failed",
+                "passage_diagnostics": {
+                    "received_count": 0,
+                    "selected_count": 0,
+                    "invalid_selection_count": 0,
+                    "admitted_claim_count": 0,
+                },
+            },
+            elapsed_ms=1,
+        )
+
+    unknown = next(
+        message for message in caplog.messages
+        if "assessment_id=assessment-unknown" in message
+    )
+    known_zero = next(
+        message for message in caplog.messages
+        if "assessment_id=assessment-zero" in message
+    )
+    assert "passage_checks=received:-1,selected:-1,invalid:-1,admitted:-1" in unknown
+    assert "passage_checks=received:0,selected:0,invalid:0,admitted:0" in known_zero
 
 
 def test_climate_research_does_not_structure_insufficient_search_results():

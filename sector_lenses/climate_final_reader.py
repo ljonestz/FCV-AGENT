@@ -219,20 +219,58 @@ def apply_reader_corrections(payload: dict, response: object, targets: set[str],
                for record in payload[key]}
     patches = {}
     for patch in response['corrections']:
-        if not isinstance(patch, dict) or set(patch) != {'object_id', 'paragraphs'}:
+        if not isinstance(patch, dict) or set(patch) != {'object_id', 'edits'}:
             reject('READER_CORRECTION_FIELDS_INVALID', patch.get('object_id', 'reader') if isinstance(patch, dict) else 'reader')
             return None
         identifier = patch['object_id']
         if not isinstance(identifier, str) or identifier not in targets or identifier in patches:
             reject('READER_CORRECTION_TARGET_INVALID', identifier if isinstance(identifier, str) else 'reader')
             return None
-        paragraphs = patch['paragraphs']
-        limit = 1 if identifier.startswith('SUM-') else 2
-        if (not isinstance(paragraphs, list) or not 1 <= len(paragraphs) <= limit
-                or any(not isinstance(text, str) or not text.strip() for text in paragraphs)):
+        original = records.get(identifier)
+        if original is None:
+            reject('READER_CORRECTION_TARGET_INVALID', identifier)
+            return None
+        paragraphs = [original['text']] if 'text' in original else list(original['paragraphs'])
+        edits = patch['edits']
+        if not isinstance(edits, list):
+            reject('READER_CORRECTION_EDIT_FIELDS_INVALID', identifier)
+            return None
+        spans: dict[int, list[tuple[int, int, str]]] = {}
+        for edit in edits:
+            if not isinstance(edit, dict) or set(edit) != {'paragraph_index', 'old_text', 'new_text'}:
+                reject('READER_CORRECTION_EDIT_FIELDS_INVALID', identifier)
+                return None
+            index, old, new = edit['paragraph_index'], edit['old_text'], edit['new_text']
+            if type(index) is not int or not 0 <= index < len(paragraphs):
+                reject('READER_CORRECTION_PARAGRAPH_INVALID', identifier)
+                return None
+            if not isinstance(old, str) or not old.strip() or not isinstance(new, str):
+                reject('READER_CORRECTION_TEXT_INVALID', identifier)
+                return None
+            # Conservative sentence boundary: decimals do not match. If an
+            # abbreviation matches, request a smaller clause anchor instead.
+            if any(re.search(r"[.!?][\"'’”)]*\s+\S", text) for text in (old, new)):
+                reject('READER_CORRECTION_SENTENCE_SCOPE_INVALID', identifier)
+                return None
+            text = paragraphs[index]
+            start = text.find(old)
+            if start < 0 or text.find(old, start + 1) >= 0:
+                reject('READER_CORRECTION_ANCHOR_INVALID', identifier)
+                return None
+            end = start + len(old)
+            existing = spans.setdefault(index, [])
+            if any(start < prior_end and prior_start < end for prior_start, prior_end, _ in existing):
+                reject('READER_CORRECTION_OVERLAP_INVALID', identifier)
+                return None
+            existing.append((start, end, new))
+        # Resolve every anchor against the unchanged original, then merge from
+        # right to left so one edit cannot change another edit's location.
+        for index, paragraph_spans in spans.items():
+            for start, end, new in sorted(paragraph_spans, reverse=True):
+                paragraphs[index] = paragraphs[index][:start] + new + paragraphs[index][end:]
+        if any(not text.strip() for text in paragraphs):
             reject('READER_CORRECTION_TEXT_INVALID', identifier)
             return None
-        original = records.get(identifier, {})
         original_text = _reader_record_text(original)
         diagnostic = {}
         if not validate_summary_fragment(' '.join(paragraphs), canonical_text=original_text,

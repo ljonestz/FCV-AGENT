@@ -70,6 +70,15 @@ CALIBRATION RULES
 - Separate facts do not establish a relationship between their subjects. Do not
   infer a shared beneficiary identity, origin, location or causal link merely
   because displacement, cancelled activities and traders occur in one document.
+- source_passages preserves the original blocks behind admitted facts. Follow
+  each fact's source_block_ids to check the complete relationship before using it:
+  which recipient, site, activity, financing envelope and implementation status
+  belong together. Co-occurrence on a page does not connect them. Do not apply a
+  study or delivery arrangement to every named site, or propose a shared funding
+  tradeoff across recipients with separate allocations, without an explicit link.
+  If the relationship is unresolved, narrow the proposed action or qualify the
+  uncertainty. These passages clarify scope; they do not authorize new reader
+  facts, evidence IDs, numeric precision or correction content.
 - Credit documented provisions before identifying a gap. Missing one dimension does
   not mean all criteria are absent. Limit the claim to the unspecified dimension.
 - An accepted proposed action is not documentary evidence for its factual premise.
@@ -118,6 +127,10 @@ Extract material selection, siting and sequencing criteria and documented decisi
 rationales as atomic facts, preserving the named site/component and any conditional
 scope. Do not omit existing criteria merely because a climate or distributional
 criterion is not stated; retain the criteria that are stated before analyzing gaps.
+Preserve each explicit site-to-activity and recipient-to-financing relationship as
+an atomic fact with its full scoped subject and object. Do not split a relationship
+into disconnected lists of sites, activities and amounts. Separate recipients'
+envelopes and distinguish retained activities from new studies or proposed works.
 An exact instrument name does not establish its scope, timing, or authority.
 not_found is not confirmed_absence. confirmed_absence requires explicit negative
 language in a cited block. Each explicit fact needs source_block_ids and a short
@@ -496,8 +509,13 @@ Review supplied readiness_flags independently against source_blocks and facts.
 Return only explicitly supported flag IDs in passed_readiness_ids, or [] if none.
 A real source-block ID does not prove the flag's assertion. Inconsistency requires
 comparable populations, predicates/statuses, periods and units that cannot both be
-true. A requirement and a later completion statement can coexist. Credit existing
-siting criteria and protections before asserting an omission; missing one dimension
+true. A requirement and a later completion statement can coexist. Compare amounts
+at the precision actually printed: a whole-million amount and its more precise
+value are compatible when ordinary rounding explains the difference. Do not assume
+all differences are rounding; materially different values for the same scope still
+need verification. A status requirement does not assert noncompletion. Distinguish
+an unresolved clarification from two propositions that cannot both be true.
+Credit existing siting criteria and protections before asserting an omission; missing one dimension
 is not absence of all criteria. Do not join separate facts into a new beneficiary
 relationship without evidence linking them. Uncertainty is not a proven defect.
 Omit unsupported or unreviewed flags from passed_readiness_ids. Flag rejection does
@@ -512,6 +530,12 @@ If the document gives criteria or protections, credit them and test only the nar
 missing dimension. A false blanket omission is RESIDUAL_GAP_UNSUPPORTED on its REC ID.
 An unsupported relationship between otherwise true facts is PROJECT_FACT_UNSUPPORTED.
 Do not pass a core decision merely because the proposed action would be useful.
+For each core action, verify separately its site-to-activity routing and its
+recipient-to-financing scope against the original source_blocks. A proposed
+screening question still fails if routed through a study that does not cover that
+site. A prioritization rule still fails if it assumes a tradeoff between separate
+recipients' financing pools. Do not transfer a supported relationship to another
+site, activity or recipient just because all appear in the same operation.
 Return exactly one object and no other prose: {"verdict":"pass|revise|block","reason_codes":[],"object_ids":[],"passed_core_ids":[],"passed_readiness_ids":[],"issues":[{"object_id":"REC-001","reason_codes":[],"explanation":"One short sentence identifying the defective wording."}]}. For each affected recommendation, add one issues entry with its specific reason_codes and a short explanation quoting or identifying the problematic wording. Include only the exact supplied decision or artifact IDs in object_ids, and the union of their codes in reason_codes. For pass, return empty defect arrays and all accepted passed_core_ids. Return at most fifteen issues. Return at most 12 reason_codes and 15 object_ids. Keep the entire response to 500 words or fewer. Use revise only when one bounded correction could resolve a recommendation defect; otherwise block the affected recommendation.""".replace(
             "{semantic_reason_codes}",
             allowed_reason_codes,
@@ -593,9 +617,18 @@ uses a separate text-only contract and undergoes fresh independent meaning revie
 def _reader_correction_prompt(payload: dict[str, object]) -> str:
     return _common(
         """Repair only the supplied records_to_correct. Return corrections, each with
-its exact object_id and paragraphs of corrected text. Return every requested ID
-exactly once; no other records or fields. A Summary record has exactly one paragraph.
-A finding has one or two paragraphs, 70-180 words total. The combined Summary must
+its exact object_id and edits array. Each edit contains paragraph_index (zero-based;
+Summary uses 0), old_text (exact unique substring in that original paragraph), and
+new_text (replacement text, or empty string to delete it). Return every requested ID
+exactly once; no other records or fields. If a challenged claim is already supported,
+return edits: [] for that record; the independent reviewer must still recheck it.
+Change only the defective clause or sentence, never rewrite a multi-sentence record.
+Each old_text and new_text must stay within one sentence. Choose smaller clause
+anchors around abbreviations; include enough original context to make anchors unique.
+Do not overlap anchors. All anchors refer to the original text, not earlier edits.
+For shortening, delete or shorten individual uniquely anchored sentences. Preserve
+unaffected wording, spacing and paragraph boundaries; the application merges edits.
+A finding retains one or two paragraphs, 70-180 words total. The combined Summary must
 target 160-230 words, with up to 260 permitted to preserve meaning, including
 untargeted_summary_words. Use the supplied actual
 word counts and bounded_correction explanations. When summary_max_words_by_id is
@@ -658,6 +691,16 @@ difference alone is not a defect when the source entails the reader's statement.
 Do not reject a conditional mechanism just because its outcome is not measured.
 A paragraph may mix valid inference and an unsupported assertion: isolate the real
 defect instead of rejecting the valid inference as a whole.
+Read coordinated lists clause by clause. A component label attached to one item
+does not automatically modify the other separately listed activities. Before
+objecting, identify the relationship the sentence actually asserts; do not create
+an unsupported relationship through the reviewer's own interpretation.
+Use source_passages behind the cited facts to resolve an abbreviated extraction.
+Source-supported resource redirection can be paraphrased as activities shifting
+locations without naming every destination. A qualified benefit from an evidenced
+delivery mechanism need not be a measured outcome or an explicit project promise.
+Reject a completed-readiness assertion where only design specifications are
+documented, while retaining the surrounding conditional benefit analysis.
 If correction_originals is supplied, compare each corrected record with its
 original text as well as its original cited support. Repair may remove unsupported
 material, qualify claims or shorten text. It must not introduce new factual claims,
