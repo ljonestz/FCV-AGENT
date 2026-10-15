@@ -764,3 +764,14 @@ Standalone reviewer configuration comparison improved to 12/14 adjudicated decis
 but failed access-population and safeguard-specificity acceptance. No runtime
 configuration or shared contract changed. See
 [results](../20261015_climate-reasoning-review-results.md).
+
+
+### 2026-10-15 source-scope reviewer instructions
+
+Core review2.19 and reader review1.9 share exact source/claim scope comparison.
+Broad regional provision does not establish subgroup access; generic instruments
+do not establish risk-specific protection. Explicit matching measures still count,
+and qualified analysis remains admissible. Other stage prompts, schema/admission,
+correction and model budgets are unchanged. Offline: 171 focused and 1,677 total
+tests passed; semantic acceptance is still unproven. See
+[repair](../20261015_climate-source-scope-review-repair.md).

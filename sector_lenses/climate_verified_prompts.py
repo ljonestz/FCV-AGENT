@@ -10,6 +10,28 @@ from sector_lenses.climate_verified_schemas import (
 )
 
 
+_SOURCE_TO_CLAIM_COMPARISON = """SOURCE-TO-CLAIM COMPARISON
+Before deciding whether a claim is supported, compare its asserted meaning directly
+with the cited facts and original source passages. Match the exact population or
+subgroup, site or geography, activity or component, implementation status and time,
+and the relationship the claim draws between them. Do not transfer support across
+those boundaries merely because the subjects appear in the same operation.
+Regional continuity, relocation, redeployment or retained operations can support a
+qualified continuity mechanism and must be credited. They do not by themselves
+prove that a particular affected subgroup can access or benefit from retained sites.
+Conversely, an explicit mechanism matching that subgroup and access pathway defeats
+a blanket claim that no access arrangement is described; narrow any remaining gap.
+For risk-to-instrument linkage, separate risk recognition, generic safeguards and an
+explicit risk-specific measure. Risk recognition plus generic safeguards does not
+prove a risk-specific measure. When cited instrument content is not supplied, treat
+it as unseen content, not failed protection. An explicit matching provision supports
+bounded factual wording even when its effectiveness is unproven; lack of outcome
+evidence does not erase the provision. Permit qualified analytical inferences,
+verification questions and proposed extensions when their factual premises remain
+exact and uncertainty is visible. If only one clause exceeds the evidence, require a
+narrow correction and retain the supported analysis."""
+
+
 def _package(payload: dict[str, object]) -> str:
     return json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
 
@@ -561,7 +583,7 @@ core. Do not automatically turn every draft defect into a recommendation defect.
 Return exactly one object and no other prose: {"verdict":"pass|revise|block","core_reviews":[{"recommendation_id":"REC-001","premise_verdict":"supported|qualified|unsupported","source_block_ids":[],"reason_codes":[],"explanation":"Concise assessment of the core factual basis and scope."}],"reason_codes":[],"object_ids":[],"passed_core_ids":[],"passed_readiness_ids":[],"issues":[{"object_id":"REC-001","reason_codes":[],"explanation":"One short sentence identifying the defective wording."}]}. For each affected recommendation, add one issues entry with its specific reason_codes and a short explanation quoting or identifying the problematic wording. Include only the exact supplied decision or artifact IDs in object_ids, and the union of their codes in reason_codes. For pass, return empty defect arrays and all accepted passed_core_ids. Return at most fifteen issues. Return at most 12 reason_codes and 15 object_ids. Keep the entire response to 500 words or fewer. Use revise only when one bounded correction could resolve a recommendation defect; otherwise block the affected recommendation.""".replace(
             "{semantic_reason_codes}",
             allowed_reason_codes,
-        ),
+        ) + "\n\n" + _SOURCE_TO_CLAIM_COMPARISON,
         payload,
     )
 
@@ -747,7 +769,8 @@ object_ids and issues with short explanations. Target exact SUM-... or NARR-... 
 Use empty arrays for pass. For revise/block, provide nonempty reason_codes on every issue, a specific explanation, unique object_ids matching the issues, and top-level reason_codes equal to their union. Identify all affected paragraph IDs for any failure.
 Do not change or re-rank accepted recommendations here. Prior action acceptance does not certify
 the truth of a factual premise repeated in reader prose: reject unsupported factual
-wording in the affected SUM/NARR record even when it came from an accepted action.""",
+wording in the affected SUM/NARR record even when it came from an accepted action."""
+        + "\n\n" + _SOURCE_TO_CLAIM_COMPARISON,
         payload,
     )
 

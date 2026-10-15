@@ -1,5 +1,21 @@
 # Current handoff
 
+### 2026-10-15 source-scope reviewer repair: offline verified
+
+The two review prompts now compare exact population/access and risk/instrument
+relationships, credit broad provisions without treating them as narrower proof,
+and retain qualified analysis. Explicit matching provisions defeat blanket omission
+claims; unseen safeguard content does not mean failed protection. Review versions
+are core2.19 and reader1.9. Schemas, correction paths, model settings and budgets
+are unchanged. Four synthetic contrast cases reuse the existing offline harness.
+
+171 focused tests and all 1,677 full-suite tests passed (1,274.80s); all 158 checked
+source/fixture hashes remained unchanged. Seven other rendered stage prompts are
+byte-identical to the preceding commit. Independent review found no blocking issue.
+No paid calls, full assessment, deployment or merge. This candidate's model judgment
+is unvalidated: the prior 12/14 result applies to older prompts. Production/ITS
+acceptance remains held. See [repair](docs/20261015_climate-source-scope-review-repair.md).
+
 ### 2026-10-15 reasoning-enabled comparison: improved, still failed
 
 Two authorized isolated reviewer calls are consumed, no retries or full assessment.
