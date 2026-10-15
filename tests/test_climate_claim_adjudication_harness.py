@@ -309,11 +309,17 @@ def test_scoring_fails_on_a_missed_true_defect():
     module = _module()
     inventory = module.enumerate_claims(_reader())
     adjudication = _good_adjudication(module)
-    # Downgrade the safeguard defect to a supported claim (recall miss).
+    # Downgrade the safeguard defect to a supported claim (recall miss). Under the
+    # tightening this still demands an entailing quote, so the miss is a wrong
+    # "supported" judgement with visible (mis-cited) evidence, not silent omission.
     miss = adjudication["claim_judgments"][2]
     miss["verdict"] = "supported"
     miss["is_defect"] = False
     miss["defect"] = None
+    miss["support_source_checks"] = [{
+        "source_id": "SRC-SAFEGUARD",
+        "quoted_text": "general ESF instruments",
+    }]
     result = module.adjudicate_claims(inventory, _sources(), adjudication)
     score = module.score_against_expected(result, _expected())
     assert score["passed"] is False
@@ -343,3 +349,27 @@ def test_scoring_fails_on_a_false_positive_against_protected_analysis():
     score = module.score_against_expected(result, _expected())
     assert score["passed"] is False
     assert score["false_positives"]
+
+
+# --- Support-quote tightening (closes the "all supported" soft escape hatch) --
+
+def test_supported_factual_assertion_requires_entailing_source_quote():
+    module = _module()
+    inventory = module.enumerate_claims(_reader())
+    adjudication = _good_adjudication(module)
+    supported = adjudication["claim_judgments"][1]
+    assert supported["role"] == "factual_assertion" and supported["verdict"] == "supported"
+    supported["support_source_checks"] = []
+    with pytest.raises(module.ContractError):
+        module.adjudicate_claims(inventory, _sources(), adjudication)
+
+
+def test_non_factual_claim_may_omit_support_quotes():
+    module = _module()
+    inventory = module.enumerate_claims(_reader())
+    adjudication = _good_adjudication(module)
+    access = adjudication["claim_judgments"][3]
+    assert access["role"] == "conditional_inference" and access["is_defect"] is False
+    access["support_source_checks"] = []
+    result = module.adjudicate_claims(inventory, _sources(), adjudication)
+    assert len(result["review"]["record_reviews"]) == 2

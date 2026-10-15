@@ -179,6 +179,12 @@ def adjudicate_claims(inventory: dict, source_registry: dict, adjudication: dict
         # FACTUAL assertion must be flagged (this closes the recall escape hatch).
         _require(not (judgment["verdict"] == "supported" and judgment["is_defect"]),
                  "supported claim cannot be a defect")
+        # A supported FACTUAL assertion must cite an entailing source quote, so
+        # "mark everything supported" cannot pass silently without evidence. A
+        # qualified inference or proposed action may omit support quotes.
+        if judgment["role"] == "factual_assertion" and judgment["verdict"] == "supported":
+            _require(bool(judgment["support_source_checks"]),
+                     "supported factual assertion must cite an entailing source quote")
         if judgment["role"] == "factual_assertion" and judgment["verdict"] in DEFECT_CLASSIFICATIONS:
             _require(judgment["is_defect"],
                      "contradicted factual assertion must be a defect")
