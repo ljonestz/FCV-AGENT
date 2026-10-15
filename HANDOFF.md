@@ -1,5 +1,19 @@
 # Current handoff
 
+### 2026-10-15 claim-level repair: offline prototype verified
+
+A standalone adapter now records exact factual findings, permits multiple narrow
+edits in one paragraph, retains disputed analysis for explicit adjudication and
+requires complete final review. Optional precision alone cannot block acceptance.
+Production prompts, runtime and deployments are unchanged.
+
+170 focused/connected tests passed. Curated replay of the saved five-record reader
+made two factual edits and preserved the disputed access paragraph and all evidence.
+This validates mechanics, not fresh model judgment. No paid calls were made;
+production/ITS acceptance remains held. The next gate is bounded claim-level model
+validation before runtime integration or another full paid assessment.
+See [validation](docs/20261015_climate-claim-repair-validation.md).
+
 ### 2026-10-15 source-scope paid validation: failed
 
 Two targeted calls on 039a112 are consumed, no retries/full assessment/deployment.
