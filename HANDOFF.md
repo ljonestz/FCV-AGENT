@@ -1,5 +1,16 @@
 # Current handoff
 
+### 2026-10-15 source-scope paid validation: failed
+
+Two targeted calls on 039a112 are consumed, no retries/full assessment/deployment.
+The reviewer catches safeguard specificity but still falsely equates regional
+continuity with affected-population access in REC-003 and NARR-inclusion. Reader
+issues duplicate NARR-inclusion, so the actual correction-admission gate returns
+False despite valid native JSON and exact quotes. Raw 13/14 ID agreement is not
+semantic/application acceptance. Usage: 111,619 input / 7,571 output; provider time 68.926 s.
+No more paid authority from this check. Production/ITS acceptance remains held.
+See [results](docs/20261015_climate-source-scope-review-results.md).
+
 ### 2026-10-15 source-scope reviewer repair: offline verified
 
 The two review prompts now compare exact population/access and risk/instrument

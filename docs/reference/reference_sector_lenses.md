@@ -775,3 +775,12 @@ and qualified analysis remains admissible. Other stage prompts, schema/admission
 correction and model budgets are unchanged. Offline: 171 focused and 1,677 total
 tests passed; semantic acceptance is still unproven. See
 [repair](../20261015_climate-source-scope-review-repair.md).
+
+
+### 2026-10-15 source-scope model validation failed
+
+Two experimental reviewer calls caught safeguard specificity but still rejected
+valid affected-population access analysis. Duplicate NARR-inclusion issues failed
+the existing reader correction-admission gate. Native JSON validity and 13/14 ID
+agreement do not establish acceptance. Runtime/deployment unchanged; see
+[results](../20261015_climate-source-scope-review-results.md).
