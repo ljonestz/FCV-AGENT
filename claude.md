@@ -12,6 +12,20 @@
 
 ## Overview
 
+### 2026-10-15 full-context paid reviewer check: failed
+
+Two explicitly approved reviewer-only calls are now used; no retries, full run,
+deployment or merge occurred. Candidate 94a0f2c used claude-sonnet-5-5 and recorded
+108,819 input / 1,068 output tokens. Both native responses validated, but analytical
+acceptance failed: all five core recommendations passed, including known scope
+errors REC-001/003/005; all four readiness decisions matched; reader review again
+rejected valid coordinated wording and missed the flood-ready status overstatement.
+A new inclusion objection is recorded with its source nuance. REC-005's financing
+scope error was recognized only on its optional draft, leaving the faulty core
+approved. More context alone did not solve admission. No further paid authority
+remains from this approval; production/ITS acceptance stays held. See
+[full results](docs/20261015_climate-full-context-review-results.md).
+
 ### 2026-10-15 full-context offline repair (not production accepted)
 
 The user approved an offline repair following quality13. Cited original source
