@@ -1,5 +1,16 @@
 # Current handoff
 
+### 2026-10-15 claim-level paid check: overall failed
+
+Both authorized calls completed normally, without retries. Discovery returned no
+findings and missed both known factual defects. Independent review of the manually
+corrected reader accepted the two narrow edits and correctly rejected the false
+access objection; schemas, source quotes and the finalizer pass. This is successful
+targeted adjudication, not an automated detection/correction chain or release pass.
+Usage: 32,758 input / 5,275 output tokens; 50.491 seconds provider time. No full run,
+deployment or merge. No additional paid authority. Production/ITS acceptance remains
+held because missed factual premises remain unresolved. See [results](docs/20261015_climate-claim-model-results.md).
+
 ### 2026-10-15 claim-level repair: offline prototype verified
 
 A standalone adapter now records exact factual findings, permits multiple narrow
