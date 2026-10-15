@@ -67,6 +67,14 @@ CALIBRATION RULES
   suspended versus cancelled sites, country versus regional financing, or original
   versus revised amount is not itself a contradiction. Unclear comparability is
   uncertainty to qualify, not a proven document defect.
+- Separate facts do not establish a relationship between their subjects. Do not
+  infer a shared beneficiary identity, origin, location or causal link merely
+  because displacement, cancelled activities and traders occur in one document.
+- Credit documented provisions before identifying a gap. Missing one dimension does
+  not mean all criteria are absent. Limit the claim to the unspecified dimension.
+- An accepted proposed action is not documentary evidence for its factual premise.
+  A residual gap or derived assertion is analysis; its repetition is not independent
+  confirmation. Trace factual premises to project facts or source passages.
 - State a claim as fact only when it is grounded in the verified registers. If a
   figure, institution, event, or policy detail cannot be verified from those
   registers, present it as unverified context to confirm rather than asserting it.
@@ -106,6 +114,10 @@ Use project documents only. Keep existence, scope, timing, authority, status,
 location, beneficiary, activity, indicator, and decision gate as separate facts.
 Prioritize every material risk-response table row and each distinct documented
 control over administrative names and generic background.
+Extract material selection, siting and sequencing criteria and documented decision
+rationales as atomic facts, preserving the named site/component and any conditional
+scope. Do not omit existing criteria merely because a climate or distributional
+criterion is not stated; retain the criteria that are stated before analyzing gaps.
 An exact instrument name does not establish its scope, timing, or authority.
 not_found is not confirmed_absence. confirmed_absence requires explicit negative
 language in a cited block. Each explicit fact needs source_block_ids and a short
@@ -492,6 +504,14 @@ Omit unsupported or unreviewed flags from passed_readiness_ids. Flag rejection d
 not change the core verdict and must not create core/drafting repair targets in
 object_ids or issues. Core/drafting verdicts and passed_core_ids remain independent.
 If readiness_flags is empty (including correction calls), return passed_readiness_ids:[].
+For every core recommendation, check factual premises in its title, decision,
+minimum_action, limitation and narrative, including asserted beneficiary/site links.
+For a claimed absence, examine relevant source_blocks as well as cited facts;
+absence from the extracted registry is not absence from the uploaded document.
+If the document gives criteria or protections, credit them and test only the narrower
+missing dimension. A false blanket omission is RESIDUAL_GAP_UNSUPPORTED on its REC ID.
+An unsupported relationship between otherwise true facts is PROJECT_FACT_UNSUPPORTED.
+Do not pass a core decision merely because the proposed action would be useful.
 Return exactly one object and no other prose: {"verdict":"pass|revise|block","reason_codes":[],"object_ids":[],"passed_core_ids":[],"passed_readiness_ids":[],"issues":[{"object_id":"REC-001","reason_codes":[],"explanation":"One short sentence identifying the defective wording."}]}. For each affected recommendation, add one issues entry with its specific reason_codes and a short explanation quoting or identifying the problematic wording. Include only the exact supplied decision or artifact IDs in object_ids, and the union of their codes in reason_codes. For pass, return empty defect arrays and all accepted passed_core_ids. Return at most fifteen issues. Return at most 12 reason_codes and 15 object_ids. Keep the entire response to 500 words or fewer. Use revise only when one bounded correction could resolve a recommendation defect; otherwise block the affected recommendation.""".replace(
             "{semantic_reason_codes}",
             allowed_reason_codes,
@@ -505,6 +525,19 @@ def _reader_prompt(payload: dict[str, object]) -> str:
     return _common(
         """Write a standalone brief from the admitted support_records and FINAL accepted
 recommendations. Return summary_paragraphs and assessment_narratives only.
+Read each project fact as subject, predicate and object_value together;
+supporting_excerpt is a provenance anchor, not the exhaustive assertion. A faithful
+weaker paraphrase is allowed when it preserves entity, event, population, scope and
+status. A qualified consequence of an explicit constraint may be analytical inference;
+it need not be a verbatim documentary assertion. Documented intent or concrete design
+features can support a conditional potential benefit, never an achieved outcome.
+Keep statements about documented intent distinct from the analyst's additional
+conditional inference; do not attribute the latter to the document without support.
+Accepted actions support proposed actions only. Factual premises in reader prose
+need independent project-fact support: cite each supporting project fact directly in evidence_ids,
+alongside the REC ID for an accepted proposed action. An action's linked fact IDs
+help locate support but do not replace direct factual citations in the reader.
+An accepted action, residual gap or derived assertion cannot confirm its own premise.
 Summary: prefer two connected paragraphs of about 90-100 words each, targeting 190 words overall (160-230 permitted); use a third only if essential. Use sequential object_id
 SUM-001/SUM-002/SUM-003. Up to 260 words is acceptable when needed to preserve qualifications.
 Do not spend a correction merely shortening a Summary already within that allowance.
@@ -585,6 +618,19 @@ def _reader_review_prompt(payload: dict[str, object]) -> str:
     return _common(
         """Independently verify every final reader paragraph against its referenced
 support_records and accepted recommendations. Check meaning, not vocabulary overlap.
+Read each project fact as subject, predicate and object_value together;
+supporting_excerpt is a provenance anchor, not the exhaustive assertion. A faithful
+weaker paraphrase is allowed when it preserves entity, event, population, scope and
+status. A qualified consequence of an explicit constraint may be analytical inference;
+it need not be a verbatim documentary assertion. Documented intent or concrete design
+features can support a conditional potential benefit, never an achieved outcome.
+Keep statements about documented intent distinct from the analyst's additional
+conditional inference; do not attribute the latter to the document without support.
+Accepted actions support proposed actions only. Factual premises in reader prose
+need independent project-fact support: cite each supporting project fact directly in evidence_ids,
+alongside the REC ID for an accepted proposed action. An action's linked fact IDs
+help locate support but do not replace direct factual citations in the reader.
+An accepted action, residual gap or derived assertion cannot confirm its own premise.
 Check negation, who/what quantities count, dates, units, planned versus completed
 status, source scope, inference versus documented intent, and existing mitigation.
 Keep country, component, activity and beneficiary-population scope exact. A restriction
@@ -606,6 +652,12 @@ Check that benefits and fairness claims have a project-specific causal explanati
 credit existing measures and distinguish unseen instrument content from failed
 protection. Do not require impacts to be proven for a qualified potential benefit.
 Check all paragraphs; no broad editorial rewriting.
+For each objection identify the exact unsupported proposition, its cited support,
+and the changed entity, relationship, scope, status or attribution. A vocabulary
+difference alone is not a defect when the source entails the reader's statement.
+Do not reject a conditional mechanism just because its outcome is not measured.
+A paragraph may mix valid inference and an unsupported assertion: isolate the real
+defect instead of rejecting the valid inference as a whole.
 If correction_originals is supplied, compare each corrected record with its
 original text as well as its original cited support. Repair may remove unsupported
 material, qualify claims or shorten text. It must not introduce new factual claims,
@@ -615,7 +667,9 @@ scope. Untargeted records, themes and evidence IDs are application-owned.
 A pass certifies all paragraphs. Return verdict pass/revise/block, reason_codes from the native enum,
 object_ids and issues with short explanations. Target exact SUM-... or NARR-... IDs.
 Use empty arrays for pass. For revise/block, provide nonempty reason_codes on every issue, a specific explanation, unique object_ids matching the issues, and top-level reason_codes equal to their union. Identify all affected paragraph IDs for any failure.
-Do not review or change the accepted recommendations themselves in this stage.""",
+Do not change or re-rank accepted recommendations here. Prior action acceptance does not certify
+the truth of a factual premise repeated in reader prose: reject unsupported factual
+wording in the affected SUM/NARR record even when it came from an accepted action.""",
         payload,
     )
 

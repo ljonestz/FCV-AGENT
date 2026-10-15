@@ -53,7 +53,19 @@ def reader_support_records(assessment: dict[str, object]) -> dict[str, dict]:
             identifier = record[key]
             if identifier in records:
                 duplicates.add(identifier)
-            records[identifier] = record
+            if key == "recommendation_id":
+                # An accepted action is not independent evidence for its narrative premises.
+                action_fields = (
+                    "recommendation_id", "title", "decision", "minimum_action",
+                    "enhanced_action", "enhanced_activation", "project_anchor_ids",
+                    "pathway_ids", "residual_gap_ids", "existing_response_ids",
+                )
+                records[identifier] = {
+                    field: deepcopy(record[field]) for field in action_fields if field in record
+                }
+                records[identifier]["support_role"] = "accepted_proposed_action"
+            else:
+                records[identifier] = record
     return {key: record for key, record in records.items() if key not in duplicates}
 
 

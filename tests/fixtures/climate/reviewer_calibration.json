@@ -1,0 +1,316 @@
+{
+  "schema_version": "climate-reviewer-calibration-v1",
+  "provenance": {
+    "public_document": "../../test_documents/P174814-great-lakes-pid-20261007.pdf",
+    "public_document_sha256": "70238ba18f619c36e0d678468779427134c5a3c77572c6e6cdfb3fd7457579c3",
+    "record_source": "output/playwright/20261014-quality12-225519-state.json",
+    "note": "Payload evidence is limited to short passages from the public project document; the saved state supplied record shapes and the observed claims only."
+  },
+  "cases": [
+    {
+      "case_id": "reader-valid-calibrated-meaning",
+      "stage": "reader_review",
+      "provenance": [
+        {"pdf_page": 5, "paragraph": 5, "use": "weaker flood paraphrase"},
+        {"pdf_page": 9, "paragraphs": [19, 20], "use": "conditional intended benefits"},
+        {"pdf_page": 8, "paragraph": 18, "use": "tight schedule"}
+      ],
+      "payload": {
+        "support_records": {
+          "PF-BURUNDI": {
+            "claim_id": "PF-BURUNDI",
+            "epistemic_status": "explicit",
+            "subject": "Burundi",
+            "predicate": "experienced",
+            "object_value": "El Nino-driven flooding from September 2023 to April 2024.",
+            "supporting_excerpt": "In Burundi, climate vulnerability is acute"
+          },
+          "PF-FLOOD": {
+            "claim_id": "PF-FLOOD",
+            "epistemic_status": "explicit",
+            "object_value": "The 2023-2024 flooding inundated low-lying border infrastructure and forced climate-resilient redesign.",
+            "supporting_excerpt": "inundating low-lying border infrastructure, displacing lakeshore communities, and forcing a full climate-resilient redesign"
+          },
+          "PF-BENEFITS": {
+            "claim_id": "PF-BENEFITS",
+            "epistemic_status": "explicit",
+            "object_value": "The project seeks safer commercial spaces, improved livelihoods, economic resilience and community-level social capital.",
+            "supporting_excerpt": "new commercial spaces where traders can operate with improved safety, dignity, and access to services"
+          },
+          "PF-SCHEDULE": {
+            "claim_id": "PF-SCHEDULE",
+            "epistemic_status": "explicit",
+            "object_value": "The current June 2028 closing date leaves no buffer for disbursement cycles or the minimum six-month outcome measurement window.",
+            "supporting_excerpt": "leaves no buffer for disbursement cycles or the minimum six-month post-construction window"
+          }
+        },
+        "accepted_recommendation_ids": [],
+        "final_reader": {
+          "summary_paragraphs": [
+            {
+              "object_id": "SUM-001",
+              "text": "The 2023-2024 flooding affected low-lying border infrastructure in Burundi and led to climate-resilient redesign.",
+              "evidence_ids": ["PF-BURUNDI", "PF-FLOOD"]
+            }
+          ],
+          "assessment_narratives": [
+            {
+              "object_id": "NARR-dividends",
+              "theme": "dividends",
+              "paragraphs": ["If the planned commercial spaces work as intended, they could support safer trade, livelihoods and community ties. These are potential benefits rather than measured results."],
+              "evidence_ids": ["PF-BENEFITS"]
+            },
+            {
+              "object_id": "NARR-design",
+              "theme": "design",
+              "paragraphs": ["The implementation schedule is tight because the June 2028 closing date leaves no buffer for disbursement cycles or the minimum post-construction outcome window."],
+              "evidence_ids": ["PF-SCHEDULE"]
+            }
+          ]
+        }
+      },
+      "expected": {"accepted": true, "object_ids": []}
+    },
+    {
+      "case_id": "reader-invalid-independent-defects",
+      "stage": "reader_review",
+      "provenance": [
+        {"pdf_page": 5, "paragraph": 4, "use": "displacement is separate from suspended sites"},
+        {"pdf_page": 8, "paragraph": 18, "use": "planned call and displacement remapping"},
+        {"pdf_page": 10, "paragraph": 22, "use": "four cancelled sites"},
+        {"pdf_page": 13, "paragraph": 27, "use": "existing site criteria"}
+      ],
+      "payload": {
+        "support_records": {
+          "PF-DISPLACEMENT": {
+            "claim_id": "PF-DISPLACEMENT",
+            "epistemic_status": "explicit",
+            "object_value": "Millions of people have been displaced in eastern DRC.",
+            "supporting_excerpt": "Millions of people have been displaced and the humanitarian crisis in eastern DRC has deepened severely."
+          },
+          "PF-CANCELLED": {
+            "claim_id": "PF-CANCELLED",
+            "epistemic_status": "explicit",
+            "object_value": "The restructuring cancels activities at Goma, Bukavu, Kamanyola and Idjwi.",
+            "supporting_excerpt": "The restructuring cancels activities at these sites and redirects resources to operational locations."
+          },
+          "PF-CALL": {
+            "claim_id": "PF-CALL",
+            "epistemic_status": "explicit",
+            "object_value": "The Burundi call for proposals for trader associations and cooperatives was launching in June 2026.",
+            "supporting_excerpt": "the call for proposals for trader associations and cooperatives is launching in June 2026"
+          },
+          "PF-CRITERIA": {
+            "claim_id": "PF-CRITERIA",
+            "epistemic_status": "explicit",
+            "object_value": "Site selection used trade importance, political commitment and complementarity with donor investments after consultations.",
+            "supporting_excerpt": "Site selection was guided by three criteria: the volume and strategic importance of trade flows at the border, the strength of political commitment from national and provincial authorities, and the potential for complementarity with existing donor investments."
+          },
+          "REC-ACTION": {
+            "recommendation_id": "REC-ACTION",
+            "support_role": "accepted_proposed_action",
+            "title": "Add flood exposure and distributional access to existing site criteria",
+            "decision": "Decide how flood exposure and distributional access should supplement the documented site selection criteria.",
+            "minimum_action": "Add those two dimensions to the existing site selection rationale.",
+            "enhanced_action": "Use the dimensions in later feasibility work.",
+            "enhanced_activation": "If feasibility work proceeds.",
+            "project_anchor_ids": ["PF-CRITERIA"],
+            "pathway_ids": [],
+            "residual_gap_ids": []
+          }
+        },
+        "accepted_recommendation_ids": ["REC-ACTION"],
+        "final_reader": {
+          "summary_paragraphs": [
+            {
+              "object_id": "SUM-001",
+              "text": "Displaced traders from the cancelled DRC sites lost their original market sites.",
+              "evidence_ids": ["PF-DISPLACEMENT", "PF-CANCELLED"]
+            },
+            {
+              "object_id": "SUM-002",
+              "text": "The package states no market siting criteria.",
+              "evidence_ids": ["PF-CRITERIA"]
+            }
+          ],
+          "assessment_narratives": [
+            {
+              "object_id": "NARR-design",
+              "theme": "design",
+              "paragraphs": ["The Burundi call delivered climate-smart support to trader associations."],
+              "evidence_ids": ["PF-CALL"]
+            },
+            {
+              "object_id": "NARR-inclusion",
+              "theme": "inclusion",
+              "paragraphs": ["The accepted action establishes that displaced traders lost their original sites."],
+              "evidence_ids": ["REC-ACTION"]
+            }
+          ]
+        }
+      },
+      "expected": {
+        "accepted": false,
+        "object_ids": ["SUM-001", "SUM-002", "NARR-design", "NARR-inclusion"],
+        "reason_codes_by_object": {
+          "SUM-001": ["PROJECT_FACT_UNSUPPORTED"],
+          "SUM-002": ["EXISTING_MITIGATION_MISREPRESENTED", "RESIDUAL_GAP_UNSUPPORTED"],
+          "NARR-design": ["TIMING_UNSUPPORTED"],
+          "NARR-inclusion": ["PROJECT_FACT_UNSUPPORTED"]
+        }
+      }
+    },
+    {
+      "case_id": "conditional-valid-qualified-addition",
+      "stage": "conditional_review",
+      "provenance": [
+        {"pdf_page": 13, "paragraphs": [26, 27], "use": "funded feasibility scope and existing criteria"},
+        {"pdf_page": 5, "paragraph": 5, "use": "project-wide flood relevance"}
+      ],
+      "payload": {
+        "source_blocks": [
+          {
+            "block_id": "B-CRITERIA",
+            "text": "Site selection was guided by three criteria: the volume and strategic importance of trade flows at the border, the strength of political commitment from national and provincial authorities, and the potential for complementarity with existing donor investments."
+          },
+          {
+            "block_id": "B-CLIMATE-SCOPE",
+            "text": "Climate vulnerability is high across project areas with consequences that directly affect implementation."
+          },
+          {
+            "block_id": "B-FLOOD",
+            "text": "The El Niño-driven flooding of September 2023 to April 2024 caused unprecedented rises in Lake Tanganyika and the Rusizi River, inundating low-lying border infrastructure, displacing lakeshore communities, and forcing a full climate-resilient redesign of several project infrastructure items."
+          },
+          {
+            "block_id": "B-FEASIBILITY",
+            "text": "In Haut-Katanga, Component 1 and Component 3 activities will be launched immediately to deliver near-term regulatory and value chain benefits, while Component 2 will initiate feasibility studies for border markets, with civil works to follow subject to availability of funds and time."
+          }
+        ],
+        "facts": [
+          {"claim_id": "PF-CRITERIA", "claim_type": "design_feature", "subject": "DRC site selection", "predicate": "used", "object_value": "trade importance, political commitment and donor complementarity", "epistemic_status": "explicit", "source_block_ids": ["B-CRITERIA"], "supporting_excerpt": "Site selection was guided by three criteria", "confidence": "high"},
+          {"claim_id": "PF-FLOOD", "claim_type": "climate_hazard", "subject": "project areas", "predicate": "have", "object_value": "climate vulnerability affecting implementation; past flooding affected low-lying border infrastructure", "epistemic_status": "explicit", "source_block_ids": ["B-CLIMATE-SCOPE", "B-FLOOD"], "supporting_excerpt": "Climate vulnerability is high across project areas", "confidence": "high"},
+          {"claim_id": "PF-FEASIBILITY", "claim_type": "planned_activity", "subject": "Component 2", "predicate": "will initiate", "object_value": "border-market feasibility studies before civil works, subject to funds and time", "epistemic_status": "explicit", "source_block_ids": ["B-FEASIBILITY"], "supporting_excerpt": "will initiate feasibility studies for border markets", "confidence": "high"}
+        ],
+        "analysis": {
+          "existing_responses": [
+            {"response_id": "ER-CRITERIA", "project_fact_ids": ["PF-CRITERIA", "PF-FEASIBILITY"], "pathway_ids": ["PW-FEASIBILITY"], "description": "The project documented three site criteria and plans feasibility studies before civil works.", "limitation": "The snapshot does not state whether flood exposure or distributional access was assessed."}
+          ],
+          "pathways": [
+            {"pathway_id": "PW-FEASIBILITY", "direction": "climate_to_fcv", "chain": ["Climate vulnerability can affect border infrastructure", "New border markets first undergo feasibility studies", "Assessing exposure and access could inform durable and inclusive siting"], "project_anchor_ids": ["PF-FLOOD", "PF-FEASIBILITY"], "evidence_ids": [], "confidence": "low"}
+          ],
+          "residual_gaps": [
+            {"gap_id": "RG-DIMENSIONS", "gap_type": "not_yet_specified", "statement": "The snapshot documents three criteria but does not state whether flood exposure or distributional access was assessed for the planned feasibility studies.", "pathway_ids": ["PW-FEASIBILITY"], "project_anchor_ids": ["PF-CRITERIA", "PF-FEASIBILITY", "PF-FLOOD"], "existing_response_ids": ["ER-CRITERIA"], "evidence_ids": [], "confidence": "low"}
+          ]
+        },
+        "context_evidence": [],
+        "judgments": {"relevance": {"value": "high", "evidence_ids": ["PF-FLOOD", "PF-FEASIBILITY"], "rationale": "Climate vulnerability is relevant to planned market feasibility work."}},
+        "recommendations": [
+          {
+            "recommendation_id": "REC-VALID",
+            "title": "State whether flood exposure and distributional access supplement existing site criteria",
+            "pathway_ids": ["PW-FEASIBILITY"],
+            "existing_response_ids": ["ER-CRITERIA"],
+            "residual_gap_ids": ["RG-DIMENSIONS"],
+            "project_anchor_ids": ["PF-CRITERIA", "PF-FEASIBILITY", "PF-FLOOD"],
+            "decision": "Decide whether flood exposure and distributional access should supplement the documented criteria during planned border-market feasibility studies, without presuming that a proposed site is flooded.",
+            "minimum_action": "In the current additional financing document, state whether those dimensions were assessed alongside the existing criteria.",
+            "enhanced_action": "Apply the dimensions in later feasibility terms if the assessment finds them material.",
+            "enhanced_activation": "If Component 2 feasibility studies proceed and the dimensions are material.",
+            "routing_status": "standard_document_advisory",
+            "responsible_function": "Task team with the DRC implementing unit",
+            "authority_basis": "none_verified",
+            "recommendation_basis": "analytical_judgment",
+            "confidence": "low"
+          }
+        ],
+        "drafting_artifacts": [],
+        "readiness_flags": [],
+        "operation_context": {"document_type": "AF", "instrument_type": "IPF", "country_scope": "multi", "is_mpa": false, "has_ipf_component": false, "preparation_regime": "unresolved_policy_source", "processing_model": "unknown", "es_regime": "ESF_ESS1_TO_ESS10", "warning_codes": ["MULTI_COUNTRY_BANK_WITHHELD"], "evidence_notes": ["document_marker:PID", "instrument_marker:IPF"]},
+        "current_document": "AF",
+        "operational_guidance": []
+      },
+      "expected": {"accepted": true, "passed_core_ids": ["REC-VALID"], "object_ids": []}
+    },
+    {
+      "case_id": "conditional-invalid-independent-premises",
+      "stage": "conditional_review",
+      "provenance": [
+        {"pdf_page": 5, "paragraph": 4, "use": "displacement is separate from project sites"},
+        {"pdf_page": 10, "paragraph": 22, "use": "cancelled locations"},
+        {"pdf_page": 13, "paragraph": 27, "use": "existing site criteria"}
+      ],
+      "payload": {
+        "source_blocks": [
+          {"block_id": "B-DISPLACED", "text": "Millions of people have been displaced and the humanitarian crisis in eastern DRC has deepened severely."},
+          {"block_id": "B-CANCELLED", "text": "The escalation of the M23/AFC conflict in early 2025 rendered four original project sites inaccessible: Goma, Bukavu, Kamanyola, and Idjwi. The restructuring cancels activities at these sites and redirects resources to operational locations."},
+          {"block_id": "B-CRITERIA", "text": "Site selection was guided by three criteria: the volume and strategic importance of trade flows at the border, the strength of political commitment from national and provincial authorities, and the potential for complementarity with existing donor investments."}
+        ],
+        "facts": [
+          {"claim_id": "PF-DISPLACED", "source_block_ids": ["B-DISPLACED"], "epistemic_status": "explicit", "object_value": "Millions of people have been displaced in eastern DRC."},
+          {"claim_id": "PF-CANCELLED", "source_block_ids": ["B-CANCELLED"], "epistemic_status": "explicit", "object_value": "Four project locations were cancelled."},
+          {"claim_id": "PF-CRITERIA", "source_block_ids": ["B-CRITERIA"], "epistemic_status": "explicit", "object_value": "Three site criteria are documented: trade importance, political commitment and donor complementarity."}
+        ],
+        "analysis": {"existing_responses": [], "pathways": [], "residual_gaps": [
+          {"gap_id": "RG-NO-CRITERIA", "statement": "The package has no siting criteria.", "project_anchor_ids": ["PF-CRITERIA"]},
+          {"gap_id": "RG-LINKAGE", "statement": "Displaced traders lost the cancelled project sites.", "project_anchor_ids": ["PF-DISPLACED", "PF-CANCELLED"]},
+          {"gap_id": "RG-MOST", "statement": "Those displaced traders are the most climate-exposed.", "project_anchor_ids": ["PF-DISPLACED"]}
+        ]},
+        "context_evidence": [],
+        "judgments": {},
+        "recommendations": [
+          {
+            "recommendation_id": "REC-NO-CRITERIA",
+            "title": "Create missing siting criteria",
+            "decision": "Create siting criteria because the package contains none.",
+            "minimum_action": "Add the missing criteria.",
+            "enhanced_action": "Use them in feasibility work.",
+            "enhanced_activation": "If works proceed.",
+            "project_anchor_ids": ["PF-CRITERIA"],
+            "pathway_ids": [],
+            "existing_response_ids": [],
+            "residual_gap_ids": ["RG-NO-CRITERIA"]
+          },
+          {
+            "recommendation_id": "REC-LINKAGE",
+            "title": "Replace sites lost by displaced traders",
+            "decision": "Decide how new markets replace the original sites lost by displaced traders.",
+            "minimum_action": "Reserve new sites for those traders.",
+            "enhanced_action": "Track their return.",
+            "enhanced_activation": "If works proceed.",
+            "project_anchor_ids": ["PF-DISPLACED", "PF-CANCELLED"],
+            "pathway_ids": [],
+            "existing_response_ids": [],
+            "residual_gap_ids": ["RG-LINKAGE"]
+          },
+          {
+            "recommendation_id": "REC-MOST-EXPOSED",
+            "title": "Prioritize the most climate-exposed displaced traders",
+            "decision": "Prioritize displaced traders because they are the most climate-exposed group.",
+            "minimum_action": "Target support to that highest-exposure group.",
+            "enhanced_action": "Reserve market space for them.",
+            "enhanced_activation": "If works proceed.",
+            "project_anchor_ids": ["PF-DISPLACED"],
+            "pathway_ids": [],
+            "existing_response_ids": [],
+            "residual_gap_ids": ["RG-MOST"]
+          }
+        ],
+        "drafting_artifacts": [],
+        "readiness_flags": [],
+        "operation_context": {"document_type": "AF", "instrument_type": "IPF", "country_scope": "multi", "is_mpa": false, "has_ipf_component": false, "preparation_regime": "unresolved_policy_source", "processing_model": "unknown", "es_regime": "ESF_ESS1_TO_ESS10", "warning_codes": [], "evidence_notes": []},
+        "current_document": "AF",
+        "operational_guidance": []
+      },
+      "expected": {
+        "accepted": false,
+        "passed_core_ids": [],
+        "object_ids": ["REC-NO-CRITERIA", "REC-LINKAGE", "REC-MOST-EXPOSED"],
+        "reason_codes_by_object": {
+          "REC-NO-CRITERIA": ["RESIDUAL_GAP_UNSUPPORTED"],
+          "REC-LINKAGE": ["PROJECT_FACT_UNSUPPORTED"],
+          "REC-MOST-EXPOSED": ["PROJECT_FACT_UNSUPPORTED"]
+        }
+      }
+    }
+  ]
+}

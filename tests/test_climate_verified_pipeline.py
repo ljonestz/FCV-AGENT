@@ -712,27 +712,27 @@ def test_manifest_is_privacy_safe_and_scoped_to_the_run():
     assert first["manifest"]["extraction_version"] == "source-blocks-v3"
     assert (
         first["manifest"]["prompt_versions"]["fact_extraction"]
-        == "climate-facts-v2.6"
+        == "climate-facts-v2.7"
     )
     assert (
         first["manifest"]["prompt_versions"]["bounded_analysis"]
-        == "climate-analysis-v2.10"
+        == "climate-analysis-v2.11"
     )
     assert (
         first["manifest"]["prompt_versions"]["judgment_review"]
-        == "climate-judgments-v2.14"
+        == "climate-judgments-v2.15"
     )
     assert (
         first["manifest"]["prompt_versions"]["recommendation_compiler"]
-        == "climate-recommendations-v2.15"
+        == "climate-recommendations-v2.16"
     )
     assert (
         first["manifest"]["prompt_versions"]["conditional_review"]
-        == "climate-review-v2.15"
+        == "climate-review-v2.16"
     )
     assert (
         first["manifest"]["prompt_versions"]["drafting_compiler"]
-        == "climate-drafting-v1.5"
+        == "climate-drafting-v1.6"
     )
     assert set(first["manifest"]["prompt_versions"]) == {
         "fact_extraction",

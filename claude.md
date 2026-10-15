@@ -12,6 +12,31 @@
 
 ## Overview
 
+### 2026-10-15 reviewer calibration complete; full acceptance pending
+
+The latest user authority permits six targeted reviewer-only calls and one further
+full paid assessment after repairs. All six targeted calls are now used; the new
+full run is not yet used. This supersedes historical exhausted-allowance statements
+below. No additional reviewer-only calls are authorized.
+
+The repair separates accepted proposed actions from factual evidence, retains
+material siting criteria, checks every core premise against source passages, and
+calibrates reader review for faithful weaker paraphrases and conditional inference.
+Four final calibration cases passed the configured reviewer with native schemas,
+exact targets, appropriate per-object reasons and manual source review. Two negative
+cases were purified and repeated within the six-call cap; positive payloads and
+runtime prompts were unchanged. See docs/20261015_climate-reviewer-calibration.md.
+
+Frozen verification: 1,591 tests passed in339.79 seconds; all157 checked Python/fixture
+source hashes unchanged. Independent acceptance review found no remaining blocker.
+
+Versions: facts2.7, analysis2.11, judgments2.15, recommendations2.16,
+conditional-review2.16, drafting1.6, compiler1.7, correction1.4,
+reader-review1.6, normalization2.8. Renderer2.19 and all schemas/call budgets
+are unchanged. No cached-result re-review is implied. Fresh end-to-end analytical,
+browser and export acceptance remains mandatory before a successful ITS handover.
+Production remains original main1168a8f/On Commit; preview23958ae/auto-deploy off.
+
 ### 2026-10-15 quality12 outcome: rollout held
 
 Final combined offline verification: 1,573 tests passed; 163 source/test hashes unchanged.

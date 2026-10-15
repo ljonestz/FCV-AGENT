@@ -91,15 +91,15 @@ from sector_lenses.climate_verified_schemas import (
 _INTEGRITY_CATEGORIES = READINESS_CATEGORIES - {"missing_operational_home"}
 
 PROMPT_VERSIONS = {
-    "fact_extraction": "climate-facts-v2.6",
-    "bounded_analysis": "climate-analysis-v2.10",
-    "judgment_review": "climate-judgments-v2.14",
-    "recommendation_compiler": "climate-recommendations-v2.15",
-    "conditional_review": "climate-review-v2.15",
-    "drafting_compiler": "climate-drafting-v1.5",
-    "reader_compiler": "climate-final-reader-v1.6",
-    "reader_correction": "climate-reader-correction-v1.3",
-    "reader_review": "climate-reader-review-v1.5",
+    "fact_extraction": "climate-facts-v2.7",
+    "bounded_analysis": "climate-analysis-v2.11",
+    "judgment_review": "climate-judgments-v2.15",
+    "recommendation_compiler": "climate-recommendations-v2.16",
+    "conditional_review": "climate-review-v2.16",
+    "drafting_compiler": "climate-drafting-v1.6",
+    "reader_compiler": "climate-final-reader-v1.7",
+    "reader_correction": "climate-reader-correction-v1.4",
+    "reader_review": "climate-reader-review-v1.6",
 }
 
 
@@ -1870,7 +1870,7 @@ def run_verified_climate_pipeline(
         prompt_versions=PROMPT_VERSIONS,
         reviewer_version="climate-review-v2.2",
         extraction_version="source-blocks-v3",
-        normalization_version="climate-normalization-v2.7",
+        normalization_version="climate-normalization-v2.8",
         renderer_version="climate-reader-v2.19",
         model_aliases=model_aliases,
         sampling={"max_transient_retries": 1,
