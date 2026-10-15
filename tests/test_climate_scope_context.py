@@ -47,7 +47,8 @@ def test_reader_correction_keeps_source_context_and_still_requires_fresh_review(
         'verdict': 'revise', 'object_ids': ['NARR-dividends'],
         'reason_codes': ['PROJECT_FACT_UNSUPPORTED'], 'issues': [{
             'object_id': 'NARR-dividends', 'reason_codes': ['PROJECT_FACT_UNSUPPORTED'],
-            'explanation': 'Check planned status.'}]},
+            'explanation': 'Check planned status.',
+            'quoted_text': _final_reader()['assessment_narratives'][1]['paragraphs'][0]}]},
         {'verdict': 'block', 'object_ids': ['NARR-dividends'],
          'reason_codes': ['PROJECT_FACT_UNSUPPORTED'], 'issues': [{
              'object_id': 'NARR-dividends', 'reason_codes': ['PROJECT_FACT_UNSUPPORTED'],

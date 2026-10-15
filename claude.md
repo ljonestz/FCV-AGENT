@@ -12,6 +12,24 @@
 
 ## Overview
 
+### 2026-10-15 explicit premise review and bounded correction
+
+The offline candidate now requires a source-linked premise decision for every core
+recommendation and an exact current-text quote for every reader objection. Supported
+facts, qualified analysis and proposed actions remain admissible. An unsupported
+parent premise cannot pass merely because only its optional draft was flagged.
+Precise findings use the existing bounded correction and fresh review; malformed
+findings cannot authorize speculative edits. Valid unrelated cores and untouched
+reader text are preserved. Reader publication still needs a clean meaning review;
+the verified Detailed fallback remains available if it fails.
+
+Core review2.18, reader review1.8 and normalization2.10 record the contract change;
+renderer2.19 and maximum call/retry budgets are unchanged. No provider calls or
+deployment occurred in this repair. Offline tests establish admission behavior,
+not model judgment: fresh semantic acceptance and production/ITS readiness remain
+unproven. Stored assessments are not automatically re-reviewed. See
+[repair and verification](docs/20261015_climate-explicit-premise-repair-validation.md).
+
 ### 2026-10-15 full-context paid reviewer check: failed
 
 Two explicitly approved reviewer-only calls are now used; no retries, full run,

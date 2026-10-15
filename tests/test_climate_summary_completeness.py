@@ -61,7 +61,11 @@ def _run_multiple(count=5, reject_ids=()):
     reviewer = FakeClient([{"verdict": "revise" if reject_ids else "pass",
         "reason_codes": ["PROJECT_FACT_UNSUPPORTED"] if reject_ids else [],
         "object_ids": list(reject_ids), "issues": [],
-        "passed_core_ids": [f"REC-{index:03d}" for index in range(1, count + 1) if f"REC-{index:03d}" not in reject_ids]}], [])
+        "passed_core_ids": [f"REC-{index:03d}" for index in range(1, count + 1) if f"REC-{index:03d}" not in reject_ids],
+        "core_reviews": [{"recommendation_id": f"REC-{index:03d}",
+                          "premise_verdict": "qualified", "source_block_ids": ["DOC-1-B-1"],
+                          "reason_codes": [], "explanation": "A qualified design question grounded in the named manual."}
+                         for index in range(1, count + 1)]}], [])
     result = run_verified_climate_pipeline(**_arguments(),
         clients=PipelineClients(client, reviewer))
     return result, client, reviewer

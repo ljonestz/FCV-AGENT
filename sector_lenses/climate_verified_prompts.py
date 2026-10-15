@@ -491,7 +491,7 @@ def _review_prompt(payload: dict[str, object]) -> str:
         """Act as a source-first verifier, not an editor. Check existing mitigation
 before residual gaps; project-fact provenance; country-evidence entitlements;
 recommendation proportionality; instrument scope, timing, and authority; rating
-coherence; duplication; and unintended consequences. Verify the residual-gap premise against its cited project facts, including whether any claimed contradiction compares like with like. A false or unsupported premise is RESIDUAL_GAP_UNSUPPORTED on the parent REC ID; omit that ID from passed_core_ids. Identify defects in both the premise and the proposed response. Asking the task team to specify an unresolved indicator, protocol, capacity, or adaptation measure is a valid purpose of a recommendation and is not itself a reason to revise or block. Do not broadly rewrite. Review each core recommendation independently from drafting_artifacts. Core recommendations contain no proposed wording. Review every core decision even when its draft fails. An issue in optional wording targets its exact supplied artifact object_id (REC-...::current_document or ::operational_instrument), never its parent action unless the decision itself also fails. Parent REC- IDs identify core defects. Missing optional wording is not a core defect. Do not include gap, fact, response or pathway IDs. Return passed_core_ids containing every independently accepted core REC ID, including when drafts fail. An unlisted core decision is not accepted. Review every core decision and artifact; identify every failing object.
+coherence; duplication; and unintended consequences. Verify the residual-gap premise against its cited project facts, including whether any claimed contradiction compares like with like. A false or unsupported premise is RESIDUAL_GAP_UNSUPPORTED on the parent REC ID; omit that ID from passed_core_ids. Identify defects in both the premise and the proposed response. Asking the task team to specify an unresolved indicator, protocol, capacity, or adaptation measure is a valid purpose of a recommendation and is not itself a reason to revise or block. Do not broadly rewrite. Review each core recommendation independently from drafting_artifacts. Core recommendations omit optional drafting blocks; their titles, decisions, actions and narratives still contain factual premises that must be checked. Review every core decision even when its draft fails. An issue in optional wording targets its exact supplied artifact object_id (REC-...::current_document or ::operational_instrument), never its parent action unless the decision itself also fails. Parent REC- IDs identify core defects. Missing optional wording is not a core defect. Do not include gap, fact, response or pathway IDs. Return passed_core_ids containing every independently accepted core REC ID, including when drafts fail. An unlisted core decision is not accepted. Review every core decision and artifact; identify every failing object.
 Use only these defect reason codes: {semantic_reason_codes}.
 For advisory_proposal drafting, check the target against the cited supplied
 operational_guidance permitted_targets. A permitted destination for a proposed
@@ -531,12 +531,34 @@ missing dimension. A false blanket omission is RESIDUAL_GAP_UNSUPPORTED on its R
 An unsupported relationship between otherwise true facts is PROJECT_FACT_UNSUPPORTED.
 Do not pass a core decision merely because the proposed action would be useful.
 For each core action, verify separately its site-to-activity routing and its
-recipient-to-financing scope against the original source_blocks. A proposed
-screening question still fails if routed through a study that does not cover that
-site. A prioritization rule still fails if it assumes a tradeoff between separate
-recipients' financing pools. Do not transfer a supported relationship to another
+recipient-to-financing scope against the original source_blocks. An action that
+assumes an existing study covers a site still fails if that coverage is not
+established by the source. An explicit proposal to extend a study's scope is different: assess its
+feasibility and authority without treating the proposed extension as an existing
+arrangement. A prioritization rule still fails if it assumes a tradeoff between
+separate recipients' financing pools. Do not transfer a supported relationship to another
 site, activity or recipient just because all appear in the same operation.
-Return exactly one object and no other prose: {"verdict":"pass|revise|block","reason_codes":[],"object_ids":[],"passed_core_ids":[],"passed_readiness_ids":[],"issues":[{"object_id":"REC-001","reason_codes":[],"explanation":"One short sentence identifying the defective wording."}]}. For each affected recommendation, add one issues entry with its specific reason_codes and a short explanation quoting or identifying the problematic wording. Include only the exact supplied decision or artifact IDs in object_ids, and the union of their codes in reason_codes. For pass, return empty defect arrays and all accepted passed_core_ids. Return at most fifteen issues. Return at most 12 reason_codes and 15 object_ids. Keep the entire response to 500 words or fewer. Use revise only when one bounded correction could resolve a recommendation defect; otherwise block the affected recommendation.""".replace(
+Before choosing passed_core_ids, return one core_reviews record for every supplied
+recommendation, including when only its optional draft fails. Use premise_verdict
+supported when its material factual premises and relationships follow the source;
+qualified when the analysis explicitly acknowledges what is unknown and draws a
+plausible conditional inference from supported project features; unsupported when
+a material factual assertion, absence claim, scope or linkage lacks support or
+contradicts the source. A proposal's usefulness cannot cure a false factual premise.
+Proposed actions need not already exist, and a qualified potential benefit need
+not be an observed impact or a documented project objective. Do not label analysis
+unsupported merely because the source does not state the inference verbatim.
+Conversely, adding 'could' does not cure an invented factual relationship.
+For each record provide the relevant source_block_ids actually checked (not the
+whole source inventory) and a concise explanation of the factual basis and any qualification, not a generic approval. supported and
+qualified require reason_codes:[]; unsupported requires its actual premise-defect
+codes. Unsupported core IDs must appear in object_ids/issues and must not appear
+in passed_core_ids. Sound premises may still fail proportionality or routing checks.
+When a draft reveals a scope problem, compare it with the parent's title, decision,
+minimum_action and narrative. If that same premise occurs there, mark the core
+unsupported too; if the draft alone introduced it, retain the independently sound
+core. Do not automatically turn every draft defect into a recommendation defect.
+Return exactly one object and no other prose: {"verdict":"pass|revise|block","core_reviews":[{"recommendation_id":"REC-001","premise_verdict":"supported|qualified|unsupported","source_block_ids":[],"reason_codes":[],"explanation":"Concise assessment of the core factual basis and scope."}],"reason_codes":[],"object_ids":[],"passed_core_ids":[],"passed_readiness_ids":[],"issues":[{"object_id":"REC-001","reason_codes":[],"explanation":"One short sentence identifying the defective wording."}]}. For each affected recommendation, add one issues entry with its specific reason_codes and a short explanation quoting or identifying the problematic wording. Include only the exact supplied decision or artifact IDs in object_ids, and the union of their codes in reason_codes. For pass, return empty defect arrays and all accepted passed_core_ids. Return at most fifteen issues. Return at most 12 reason_codes and 15 object_ids. Keep the entire response to 500 words or fewer. Use revise only when one bounded correction could resolve a recommendation defect; otherwise block the affected recommendation.""".replace(
             "{semantic_reason_codes}",
             allowed_reason_codes,
         ),
@@ -707,6 +729,19 @@ material, qualify claims or shorten text. It must not introduce new factual clai
 named actors, numbers, dates, locations, commitments or action anchors, even when
 other supplied evidence mentions them. Reject expansion beyond the original claim
 scope. Untargeted records, themes and evidence IDs are application-owned.
+Every issue must include quoted_text: an exact unique substring from that affected
+current final_reader SUM/NARR record, including on re-review. correction_originals
+is comparison context only; never quote a removed defect as if it remains.
+Quote the smallest complete assertion needed to identify
+the defect, with enough surrounding words to resolve its scope. In explanation,
+state what that wording actually asserts and how the cited support differs. Do not
+strengthen a conditional claim, distribute every modifier across a coordinated
+list, or attribute a proposed action to the existing project to manufacture an
+objection. If no factual meaning changes, do not reject for stylistic preference.
+Separate a documented fact, a qualified analytical inference and a proposed action.
+A conditional mechanism can be analytically useful without being in the source;
+its factual premises, scope and uncertainty must remain sound. Evaluate all reader
+records, including status claims, rather than stopping after the first objection.
 A pass certifies all paragraphs. Return verdict pass/revise/block, reason_codes from the native enum,
 object_ids and issues with short explanations. Target exact SUM-... or NARR-... IDs.
 Use empty arrays for pass. For revise/block, provide nonempty reason_codes on every issue, a specific explanation, unique object_ids matching the issues, and top-level reason_codes equal to their union. Identify all affected paragraph IDs for any failure.

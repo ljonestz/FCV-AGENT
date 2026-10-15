@@ -71,6 +71,20 @@ def _passing_responses(cases):
             if case["stage"] == "conditional_review":
                 response["passed_core_ids"] = []
                 response["passed_readiness_ids"] = []
+        if case['stage'] == 'conditional_review':
+            response['core_reviews'] = [{
+                'recommendation_id': item['recommendation_id'],
+                'premise_verdict': 'qualified' if expected['accepted'] else 'unsupported',
+                'source_block_ids': [block['block_id'] for block in case['payload']['source_blocks']],
+                'reason_codes': [] if expected['accepted'] else expected['reason_codes_by_object'][item['recommendation_id']],
+                'explanation': 'Synthetic source-based premise assessment for evaluator testing only.',
+            } for item in case['payload']['recommendations']]
+        else:
+            reader = case['payload']['final_reader']
+            records = {r['object_id']: r for r in reader['summary_paragraphs'] + reader['assessment_narratives']}
+            for issue in response['issues']:
+                record = records[issue['object_id']]
+                issue['quoted_text'] = record.get('text') or record['paragraphs'][0]
         responses.append(response)
     return responses
 
@@ -267,3 +281,37 @@ def test_generic_wrong_reason_code_cannot_pass_all_negative_cases(tmp_path):
     with pytest.raises(module.CalibrationFailure):
         module.run_checks(client=FakeClient(responses), live=True,
                           fixture_path=FIXTURE, output_dir=tmp_path)
+
+
+@pytest.mark.parametrize("damage", ["missing_core", "contradictory_core", "invented_quote"])
+def test_explicit_review_contract_is_checked_against_the_case(damage):
+    module = _module()
+    cases = module.load_fixture(FIXTURE)['cases']
+    responses = _passing_responses(cases)
+    index = 1 if damage == 'invented_quote' else 2
+    if damage == 'missing_core':
+        responses[index]['core_reviews'] = []
+    elif damage == 'contradictory_core':
+        record = responses[index]['core_reviews'][0]
+        record.update(premise_verdict='unsupported', reason_codes=['PROJECT_FACT_UNSUPPORTED'])
+    else:
+        responses[index]['issues'][0]['quoted_text'] = 'This wording never appeared.'
+    matched, _ = module._evaluate(cases[index], responses[index])
+    assert not matched
+
+
+def test_reader_quote_with_overlapping_occurrences_is_not_unique():
+    module = _module()
+    cases = module.load_fixture(FIXTURE)['cases']
+    case = cases[1]
+    response = _passing_responses(cases)[1]
+    issue = response['issues'][0]
+    reader = case['payload']['final_reader']
+    record = next(r for r in reader['summary_paragraphs'] + reader['assessment_narratives']
+                  if r['object_id'] == issue['object_id'])
+    if 'text' in record:
+        record['text'] = 'a a a'
+    else:
+        record['paragraphs'] = ['a a a']
+    issue['quoted_text'] = 'a a'
+    assert module._evaluate(case, response)[0] is False

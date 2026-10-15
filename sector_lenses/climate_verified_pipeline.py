@@ -62,6 +62,7 @@ from sector_lenses.climate_recommendations import (
     unsupported_numeric_tokens,
     validate_recommendation,
 )
+from sector_lenses.climate_review_admission import reconcile_core_reviews
 from sector_lenses.climate_run_manifest import RunManifest, safe_log_summary
 from sector_lenses.climate_semantic_review import (
     ReviewRisk,
@@ -95,11 +96,11 @@ PROMPT_VERSIONS = {
     "bounded_analysis": "climate-analysis-v2.12",
     "judgment_review": "climate-judgments-v2.16",
     "recommendation_compiler": "climate-recommendations-v2.17",
-    "conditional_review": "climate-review-v2.17",
+    "conditional_review": "climate-review-v2.18",
     "drafting_compiler": "climate-drafting-v1.7",
     "reader_compiler": "climate-final-reader-v1.8",
     "reader_correction": "climate-reader-correction-v1.5",
-    "reader_review": "climate-reader-review-v1.7",
+    "reader_review": "climate-reader-review-v1.8",
 }
 
 
@@ -164,7 +165,7 @@ def _bounded_reason_codes(value: object) -> list[str]:
     return codes
 
 
-def _valid_reader_revision(review: dict) -> bool:
+def _valid_reader_revision(review: dict, final_reader: object) -> bool:
     """Reject incomplete diagnostics before spending the single text correction."""
     if review.get('verdict') != 'revise':
         return False
@@ -176,13 +177,34 @@ def _valid_reader_revision(review: dict) -> bool:
             or len(set(identifiers)) != len(identifiers)
             or not all(isinstance(code, str) and code in SEMANTIC_REVIEW_REASON_CODES for code in codes)):
         return False
+    records = {}
+    if isinstance(final_reader, dict):
+        for record in (
+            _records(final_reader, "summary_paragraphs")
+            + _records(final_reader, "assessment_narratives")
+        ):
+            identifier = record.get("object_id")
+            if isinstance(identifier, str):
+                records[identifier] = record
     issue_ids, issue_codes = [], set()
     for issue in issues:
         if (not isinstance(issue, dict) or not isinstance(issue.get('object_id'), str)
                 or not isinstance(issue.get('explanation'), str) or not issue['explanation'].strip()
+                or not isinstance(issue.get('quoted_text'), str) or not issue['quoted_text'].strip()
                 or not isinstance(issue.get('reason_codes'), list) or not issue['reason_codes']
                 or not all(isinstance(code, str) and code in SEMANTIC_REVIEW_REASON_CODES
                            for code in issue['reason_codes'])):
+            return False
+        record = records.get(issue['object_id'])
+        if record is None:
+            return False
+        texts = ([record.get('text')] if isinstance(record.get('text'), str)
+                 else record.get('paragraphs'))
+        if (not isinstance(texts, list)
+                or not all(isinstance(text, str) for text in texts)
+                or sum(issue['quoted_text'] in text for text in texts) != 1
+                or not all(text.find(issue['quoted_text']) == text.rfind(issue['quoted_text'])
+                           for text in texts)):
             return False
         issue_ids.append(issue['object_id'])
         issue_codes.update(issue['reason_codes'])
@@ -1470,6 +1492,12 @@ def run_verified_climate_pipeline(
         reviewer_verdict = _text(review.get("verdict"), "block").casefold()
         review_reasons = _bounded_reason_codes(review.get("reason_codes"))
         priority_ids = {item.recommendation_id for item in priorities}
+        core_admission = reconcile_core_reviews(
+            review,
+            (item.recommendation_id for item in priorities),
+            (item["block_id"] for item in block_records),
+        )
+        review_reasons.extend(core_admission.reason_codes)
         readiness_ids = {item.flag_id for item in readiness}
         disputed_readiness_ids = readiness_ids & (
             set(_strings(review.get("object_ids")))
@@ -1478,34 +1506,28 @@ def run_verified_climate_pipeline(
         artifact_ids = {item["object_id"] for item in review_input["drafting_artifacts"]}
         semantic_review_object_ids = list(
             dict.fromkeys(
-                object_id
-                for object_id in _strings(review.get("object_ids"))
-                if object_id in priority_ids | artifact_ids
+                list(object_id for object_id in _strings(review.get("object_ids"))
+                     if object_id in priority_ids | artifact_ids)
+                + list(core_admission.affected_core_ids)
             )
         )[:15]
-        if reviewer_verdict == 'pass' and (review.get('object_ids') or review.get('reason_codes') or review.get('issues')):
+        if reviewer_verdict == 'pass' and (
+            review.get('object_ids') or review.get('reason_codes')
+            or review.get('issues') or core_admission.affected_core_ids
+        ):
             reviewer_verdict = 'block'
             review_reasons.append('SEMANTIC_REVIEW_VERDICT_INVALID')
+            if not semantic_review_object_ids and not disputed_readiness_ids:
+                semantic_review_object_ids = sorted(priority_ids)
         if reviewer_verdict not in {"pass", "revise", "block"}:
             reviewer_verdict = "block"
             review_reasons.append("SEMANTIC_REVIEW_VERDICT_INVALID")
+            semantic_review_object_ids = sorted(priority_ids)
         if set(_strings(review.get("object_ids"))) - (priority_ids | artifact_ids | readiness_ids):
             reviewer_verdict = "block"
-            semantic_review_object_ids = sorted(priority_ids | artifact_ids)
             review_reasons.append("SEMANTIC_REVIEW_TARGET_UNRESOLVED")
-        if not isinstance(review.get('passed_core_ids'), list):
-            reviewer_verdict = 'block'
-            semantic_review_object_ids = sorted(priority_ids | artifact_ids)
-            review_reasons.append('SEMANTIC_REVIEW_TARGET_UNRESOLVED')
-        passed_core_ids = set(_strings(review.get('passed_core_ids')))
-        failed_core_ids = set(semantic_review_object_ids) & priority_ids
-        if passed_core_ids - priority_ids or passed_core_ids & failed_core_ids:
-            missing_core_ids = priority_ids
-        else:
-            missing_core_ids = priority_ids - passed_core_ids - failed_core_ids
-        if missing_core_ids:
-            reviewer_verdict = 'block'
-            semantic_review_object_ids = sorted(set(semantic_review_object_ids) | missing_core_ids)
+            semantic_review_object_ids = sorted(priority_ids)
+        if core_admission.invalid_core_ids:
             review_reasons.append('SEMANTIC_REVIEW_TARGET_UNRESOLVED')
         if (reviewer_verdict != "pass" and not semantic_review_object_ids
                 and not disputed_readiness_ids):
@@ -1533,10 +1555,15 @@ def run_verified_climate_pipeline(
                 for issue in _records(review, "issues")
                 if _text(issue.get("explanation"))
             }
+            issues_by_id.update({
+                issue["object_id"]: issue
+                for issue in core_admission.synthesized_issues
+                if issue["object_id"] not in issues_by_id
+            })
             repair_ids = (
-                affected_ids & issues_by_id.keys()
+                (affected_ids - set(core_admission.invalid_core_ids))
+                & issues_by_id.keys()
                 if reviewer_verdict == "revise"
-                and "SEMANTIC_REVIEW_TARGET_UNRESOLVED" not in review_reasons
                 else set()
             )
             recovered = {}
@@ -1602,20 +1629,51 @@ def run_verified_climate_pipeline(
                         )
                         correction_trace["review"] = _diagnostic_snapshot(correction_review)
                         verdict = _text(correction_review.get("verdict")).casefold()
-                        rejected = set(_strings(correction_review.get("object_ids")))
                         corrected_ids = {item.recommendation_id for item in corrected}
-                        passed = set(_strings(correction_review.get('passed_core_ids')))
-                        explicit_passes_valid = ('passed_core_ids' in correction_review and
-                                                 not (passed - corrected_ids or passed & rejected))
-                        if (verdict == 'pass' and not any(correction_review.get(key) for key in ('object_ids', 'reason_codes', 'issues'))
-                                and explicit_passes_valid
-                                and passed == corrected_ids):
-                            recovered = {item.recommendation_id: item for item in corrected}
-                        elif (verdict in {'revise', 'block'} and rejected and rejected <= corrected_ids
-                              and explicit_passes_valid):
+                        correction_admission = reconcile_core_reviews(
+                            correction_review,
+                            (item.recommendation_id for item in corrected),
+                            (item["block_id"] for item in block_records),
+                        )
+                        correction_trace["review_reconciliation"] = {
+                            "passed_core_ids": list(correction_admission.passed_core_ids),
+                            "affected_core_ids": list(correction_admission.affected_core_ids),
+                            "invalid_core_ids": list(correction_admission.invalid_core_ids),
+                            "reason_codes": list(correction_admission.reason_codes),
+                        }
+                        raw_targets = correction_review.get("object_ids")
+                        raw_issues = correction_review.get("issues")
+                        raw_codes = correction_review.get("reason_codes")
+                        raw_core_reviews = correction_review.get("core_reviews")
+                        known_targets = (
+                            isinstance(raw_targets, list)
+                            and all(isinstance(item, str) and item in corrected_ids
+                                    for item in raw_targets)
+                            and isinstance(raw_issues, list)
+                            and all(isinstance(item, dict)
+                                    and isinstance(item.get("object_id"), str)
+                                    and item["object_id"] in corrected_ids
+                                    for item in raw_issues)
+                            and isinstance(raw_codes, list)
+                            and isinstance(raw_core_reviews, list)
+                            and all(isinstance(item, dict)
+                                    and isinstance(item.get("recommendation_id"), str)
+                                    and item["recommendation_id"] in corrected_ids
+                                    for item in raw_core_reviews)
+                        )
+                        pass_is_clean = not (
+                            verdict == "pass"
+                            and (raw_targets or raw_issues or raw_codes)
+                        )
+                        verdict_is_coherent = (
+                            (verdict == "pass" and pass_is_clean)
+                            or (verdict in {"revise", "block"}
+                                and bool(correction_admission.affected_core_ids))
+                        )
+                        if known_targets and verdict_is_coherent:
+                            passed = set(correction_admission.passed_core_ids)
                             recovered = {item.recommendation_id: item for item in corrected
-                                         if item.recommendation_id not in rejected
-                                         and item.recommendation_id in passed}
+                                         if item.recommendation_id in passed}
                     correction_trace["recovered_ids"] = sorted(recovered)
                 except PipelineCancelled:
                     raise
@@ -1675,15 +1733,98 @@ def run_verified_climate_pipeline(
                             cancel_event=cancel_event, deadline=deadline, repair_allowance=repair_allowance,
                         )
                         draft_trace["review"] = _diagnostic_snapshot(second_review)
-                        # A draft repair never repairs, replaces or rejects the
-                        # previously reviewed parent. Publish only an explicit pass.
-                        if _text(second_review.get("verdict")).casefold() == "pass" and not any(second_review.get(key) for key in ("object_ids", "reason_codes", "issues")):
+                        reviewed_parent_ids = {
+                            item.recommendation_id for item in priorities
+                            if item.recommendation_id in parents
+                        }
+                        draft_admission = reconcile_core_reviews(
+                            second_review,
+                            reviewed_parent_ids,
+                            (item["block_id"] for item in block_records),
+                        )
+                        draft_trace["review_reconciliation"] = {
+                            "passed_core_ids": list(draft_admission.passed_core_ids),
+                            "affected_core_ids": list(draft_admission.affected_core_ids),
+                            "invalid_core_ids": list(draft_admission.invalid_core_ids),
+                            "unsupported_core_ids": list(draft_admission.unsupported_core_ids),
+                            "reason_codes": list(draft_admission.reason_codes),
+                        }
+                        draft_verdict = _text(second_review.get("verdict")).casefold()
+                        raw_draft_targets = second_review.get("object_ids")
+                        raw_draft_issues = second_review.get("issues")
+                        draft_envelope_valid = (
+                            isinstance(raw_draft_targets, list)
+                            and all(isinstance(identifier, str)
+                                    for identifier in raw_draft_targets)
+                            and isinstance(raw_draft_issues, list)
+                            and all(
+                                isinstance(issue, dict)
+                                and isinstance(issue.get("object_id"), str)
+                                and isinstance(issue.get("explanation"), str)
+                                and bool(issue["explanation"].strip())
+                                and isinstance(issue.get("reason_codes"), list)
+                                and bool(issue["reason_codes"])
+                                and all(isinstance(code, str)
+                                        and code in SEMANTIC_REVIEW_REASON_CODES
+                                        for code in issue["reason_codes"])
+                                for issue in raw_draft_issues
+                            )
+                        )
+                        issue_targets = {
+                            _text(issue.get("object_id"))
+                            for issue in raw_draft_issues
+                        } if draft_envelope_valid else set()
+                        review_targets = (
+                            set(raw_draft_targets) | issue_targets
+                            if draft_envelope_valid else set()
+                        )
+                        known_review_targets = reviewed_parent_ids | set(proposed)
+                        target_envelope_valid = (
+                            draft_envelope_valid
+                            and review_targets <= known_review_targets
+                        )
+                        draft_verdict_coherent = (
+                            (draft_verdict == "pass"
+                             and not review_targets
+                             and not second_review.get("reason_codes"))
+                            or (draft_verdict in {"revise", "block"}
+                                and bool(review_targets))
+                        )
+                        # Only a valid, targeted, explicit unsupported premise can
+                        # overturn the independently accepted parent decision.
+                        newly_affected = (
+                            set(draft_admission.unsupported_core_ids)
+                            if target_envelope_valid and draft_verdict_coherent
+                            else set()
+                        )
+                        affected_ids.update(newly_affected)
+                        draft_premise_codes = _bounded_reason_codes([
+                            code
+                            for item in _records(second_review, "core_reviews")
+                            if item.get("recommendation_id") in newly_affected
+                            for code in _strings(item.get("reason_codes"))
+                        ])
+                        review_reasons.extend(code for code in draft_premise_codes
+                                              if code not in review_reasons)
+                        recommendation_reasons.extend(
+                            code for code in draft_premise_codes
+                            if code not in recommendation_reasons
+                        )
+                        reasons.extend(code for code in draft_premise_codes if code not in reasons)
+                        if target_envelope_valid and draft_verdict_coherent:
+                            passed_parents = set(draft_admission.passed_core_ids)
+                            rejected_artifacts = review_targets
+                            recoverable = {
+                                identifier: block for identifier, block in proposed.items()
+                                if identifier.split("::", 1)[0] in passed_parents
+                                and identifier not in rejected_artifacts
+                            }
                             priorities = tuple(replace(item, **{
-                                field: proposed.get(f"{item.recommendation_id}::{role}", getattr(item, field))
+                                field: recoverable.get(f"{item.recommendation_id}::{role}", getattr(item, field))
                                 for role, field in (("current_document", "current_document_drafting"),
                                                     ("operational_instrument", "operational_instrument_drafting"))
                             }) for item in priorities)
-                            draft_trace["recovered_ids"] = sorted(proposed)
+                            draft_trace["recovered_ids"] = sorted(recoverable)
                 except PipelineCancelled:
                     raise
                 except Exception as error:
@@ -1791,7 +1932,7 @@ def run_verified_climate_pipeline(
                 clean_pass = (verdict == 'pass' and semantic_issues == []
                               and reader_review.get('object_ids') == []
                               and reader_review.get('reason_codes') == [])
-                valid_revision = _valid_reader_revision(reader_review)
+                valid_revision = _valid_reader_revision(reader_review, final_reader)
                 if not (clean_pass or valid_revision):
                     reader_trace['unrepairable_issues'] = precheck_issues
                     break
@@ -1879,7 +2020,7 @@ def run_verified_climate_pipeline(
         prompt_versions=PROMPT_VERSIONS,
         reviewer_version="climate-review-v2.2",
         extraction_version="source-blocks-v3",
-        normalization_version="climate-normalization-v2.9",
+        normalization_version="climate-normalization-v2.10",
         renderer_version="climate-reader-v2.19",
         model_aliases=model_aliases,
         sampling={"max_transient_retries": 1,

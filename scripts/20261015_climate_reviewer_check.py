@@ -16,6 +16,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from sector_lenses.climate_runtime_config import load_verified_climate_runtime
+from sector_lenses.climate_review_admission import reconcile_core_reviews
 from sector_lenses.climate_verified_client import AnthropicVerifiedJsonClient
 from sector_lenses.climate_verified_prompts import build_verified_stage_prompt
 from sector_lenses.climate_verified_schemas import stage_output_schema
@@ -134,9 +135,10 @@ def _review_shape_error(stage: str, response: object) -> str | None:
     if not set(response["reason_codes"]) <= allowed_codes:
         return "unknown reason code"
     for issue in response["issues"]:
-        if not isinstance(issue, dict) or set(issue) != {
-            "object_id", "reason_codes", "explanation",
-        }:
+        issue_fields = {"object_id", "reason_codes", "explanation"}
+        if stage == "reader_review":
+            issue_fields.add("quoted_text")
+        if not isinstance(issue, dict) or set(issue) != issue_fields:
             return "issue fields do not match the native schema"
         if (
             not isinstance(issue["object_id"], str)
@@ -155,6 +157,30 @@ def _evaluate(case: dict[str, object], response: dict[str, object]) -> tuple[boo
     shape_error = _review_shape_error(stage, response)
     if shape_error:
         return False, f"malformed review: {shape_error}"
+
+    if stage == "conditional_review":
+        payload = case["payload"]
+        admission = reconcile_core_reviews(
+            response,
+            [item["recommendation_id"] for item in payload["recommendations"]],
+            [block["block_id"] for block in payload["source_blocks"]],
+        )
+        if admission.reason_codes or admission.invalid_core_ids or admission.synthesized_issues:
+            return False, "incomplete or inconsistent explicit premise review"
+        if set(admission.passed_core_ids) != set(response["passed_core_ids"]):
+            return False, "core premise and acceptance decisions disagree"
+    else:
+        reader = case["payload"]["final_reader"]
+        records = {record["object_id"]: record for record in
+                   reader["summary_paragraphs"] + reader["assessment_narratives"]}
+        for issue in response["issues"]:
+            record = records.get(issue["object_id"], {})
+            texts = [record["text"]] if "text" in record else record.get("paragraphs", [])
+            quote = issue.get("quoted_text")
+            if (not isinstance(quote, str) or not quote.strip()
+                    or sum(quote in text for text in texts) != 1
+                    or any(text.find(quote) != text.rfind(quote) for text in texts)):
+                return False, "reader objection does not identify current wording uniquely"
 
     accepted = bool(expected["accepted"])
     expected_ids = set(expected.get("object_ids", []))
