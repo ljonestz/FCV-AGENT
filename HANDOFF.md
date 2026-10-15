@@ -1,5 +1,18 @@
 # Current handoff
 
+### 2026-10-15 explicit-premise paid check: failed
+
+Two newly authorized reviewer calls on candidate8b1039c are consumed; no retries,
+correction-generation calls, full assessment or deployment. Both native schemas and
+reader quote checks pass, but the model still admits Kasindi study-scope and separate
+funding-envelope errors, misses planned-versus-delivered flood-ready status, and
+accepts rounding as an inconsistency. The historical REC-003 reject label was too
+strict: its explicitly qualified access question is valid analysis. Inclusion needs
+a narrow safeguard wording correction; other reader objections overstate precision
+issues. Keep frozen expectations and the separate source adjudication visible.
+Actual Sonnet5.5 usage:110641 input/2024 output tokens. Production/ITS readiness stays
+held; no further paid authority from this check. See [results](docs/20261015_climate-explicit-premise-review-results.md).
+
 ### 2026-10-15 explicit premise review and bounded correction
 
 The offline candidate now requires a source-linked premise decision for every core
