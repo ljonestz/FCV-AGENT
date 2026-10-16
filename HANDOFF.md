@@ -1,3 +1,30 @@
+### 2026-10-16 Great Lakes real-case review preparation
+
+Prepared local `output/20261016-great-lakes-review-calibration/START_HERE.html`
+and `current-renderer-draft.zip` from the saved quality13 assessment. This is
+DEV-GL workflow calibration, not a fresh holdout or completed analytical audit.
+The frozen narrative exactly matches that assessment's final_reader. All 34 frozen
+source blocks match a unique physical PDF page after whitespace normalization;
+source PDF SHA-256 remains 70238ba18f619c36e0d678468779427134c5a3c77572c6e6cdfb3fd7457579c3.
+
+Historical assessment/session preserved; historical reader export returns 409.
+A separate current-renderer projection passes the actual packet route (200), with
+all packaged file hashes verified. Snapshot:
+5bf4db530ac6144049ab1bd2d52fcc9e6da2fd998f932075efd6bfcfd69d4455.
+Stored model review remains `revise`; no review verdict was upgraded. The current
+renderer may fall back from the historical narrative. The two candidate narrative
+corrections remain separate and unapplied. The review queue includes all 30 frozen
+narrative sentences plus project facts, analysis, priorities and readiness flags;
+this enumeration is not a claim of complete semantic coverage. Minor allocation
+rounding is explicitly separated from potentially consequential funding/status
+issues. Human review of unflagged consequential claims and recommendation premises
+is still pending, as is independent holdout evaluation.
+
+Local verification.json records provenance, route results and pending status.
+No new model call, runtime change, deployment, merge or human approval.
+publication_approved=false. Regenerate a corrected canonical packet before any
+external approval; do not approve the historical narrative against the new render.
+
 # Current handoff
 
 ### 2026-10-16 External human review packet
