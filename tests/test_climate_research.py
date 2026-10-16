@@ -87,7 +87,7 @@ def test_passage_registry_does_not_claim_uncovered_country_or_accept_long_proof(
     from sector_lenses.research import resolve_climate_passage_selections
     packet = build_climate_evidence_packet([{"type": "text", "citations": [
         {"url": "https://www.worldbank.org/report", "title": "Burundi climate report", "cited_text": "Flooding affects access in Burundi."},
-        {"url": "https://www.worldbank.org/report", "title": "Burundi climate report", "cited_text": "Long " * 80},
+        {"url": "https://www.worldbank.org/report", "title": "Burundi climate report", "cited_text": "Long " * 160},
     ]}], {"beneficiary_countries": ["Burundi", "DRC"], "project_elements": ["Landing-site rehabilitation"]})
     assert len(packet["passages"]) == 1
     labels = _valid_bundle()["claims"][0]
@@ -765,6 +765,8 @@ def test_climate_research_uses_one_focused_request():
     assert call["max_tokens"] == 3000
     assert call["thinking"] == {"type": "between_tools"}
     assert call["tools"][0]["max_uses"] == 2
+    from sector_lenses.research import TRUSTED_CLIMATE_HOST_SUFFIXES
+    assert call["tools"][0]["allowed_domains"] == list(TRUSTED_CLIMATE_HOST_SUFFIXES)
     assert call["timeout"] == 135
 
 
@@ -1555,7 +1557,7 @@ def test_research_passage_diagnostics_explain_rejection_without_source_content()
             'cited_text': 'PRIVATE_QUOTE'}
     packet = build_climate_evidence_packet([{'type': 'text', 'citations': [
         base, base, {**base, 'url': 'https://untrusted.invalid/report'},
-        {**base, 'cited_text': ''}, {**base, 'cited_text': 'x' * 151},
+        {**base, 'cited_text': ''}, {**base, 'cited_text': 'x' * 701},
         {**base, 'url': 'https://www.worldbank.org/other', 'title': ''},
     ]}], {})
     counts = packet['passage_diagnostics']
@@ -1564,3 +1566,25 @@ def test_research_passage_diagnostics_explain_rejection_without_source_content()
                       'admitted': 1, 'retained': 1}
     assert 'PRIVATE' not in json.dumps(counts)
     assert packet['passages'][0]['excerpt'] == 'PRIVATE_QUOTE'
+
+
+def test_long_native_quotes_keep_qualifications_through_research_gate():
+    from sector_lenses.research import resolve_climate_passage_selections, verify_climate_research_claims
+    quote = ('Flooding affects access in Burundi. ' * 6) + 'This is a projection, not an observed loss.'
+    citations = [SimpleNamespace(url=url, title='Burundi climate report', cited_text=quote)
+                 for url in ['https://worldbank.org/report', 'https://undp.org/report']]
+    content = [SimpleNamespace(type='text', text='Notes', citations=citations)]
+    packet = build_climate_evidence_packet(content, {
+        'beneficiary_countries': ['Burundi'], 'project_elements': ['Component 1']})
+    assert len(packet['passages']) == 2
+    assert all(p['excerpt'] == quote for p in packet['passages'])
+    selections = [{'passage_id': p['id'], 'geographies': ['Burundi'],
+                   'project_elements': ['Component 1'], 'evidence_status': 'projected',
+                   'confidence': 'medium', 'time_horizons': ['project-lifetime']}
+                  for p in packet['passages']]
+    bundle = resolve_climate_passage_selections({'selections': selections}, packet)
+    assert climate_research_evidence_gate(bundle)['ok']
+    assert all(c['source_excerpt'] == quote == c['claim'] for c in bundle['claims'])
+    assert verify_climate_research_claims(bundle, content)['claims'] == bundle['claims']
+    forged = {**bundle, 'claims': [{**bundle['claims'][0], 'source_excerpt': 'Invented quotation'}]}
+    assert verify_climate_research_claims(forged, content)['claims'] == []

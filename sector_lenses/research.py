@@ -13,6 +13,8 @@ from .climate_verified_schemas import validate_summary_fragment
 CLIMATE_RESEARCH_START = "%%%CLIMATE_RESEARCH_START%%%"
 CLIMATE_RESEARCH_END = "%%%CLIMATE_RESEARCH_END%%%"
 CLIMATE_EVIDENCE_PACKET_MAX_CHARS = 12_000
+# Preserve whole provider passages up to the existing claim-text budget.
+CLIMATE_SOURCE_PASSAGE_MAX_CHARS = 700
 CLIMATE_TIME_HORIZONS = {
     "current-near-term",
     "project-lifetime",
@@ -159,7 +161,7 @@ def build_climate_evidence_packet(
                         and passage["excerpt"] == quote for passage in passages)
         if not quote:
             counts['missing_quote'] += 1
-        elif len(quote) > 150:
+        elif len(quote) > CLIMATE_SOURCE_PASSAGE_MAX_CHARS:
             counts['overlong_quote'] += 1
         elif duplicate:
             counts['duplicate'] += 1
@@ -377,7 +379,7 @@ def verify_climate_research_claims(bundle: dict[str, Any], content: Any) -> dict
     claims = []
     for claim in bundle.get("claims", []):
         quote = str(claim.get("source_excerpt") or "").strip()
-        if not quote or len(quote) > 150:
+        if not quote or len(quote) > CLIMATE_SOURCE_PASSAGE_MAX_CHARS:
             continue
         normalized_quote = re.sub(r"\s+", " ", quote).casefold()
         source_ids = [source_id for source_id in claim["source_ids"]
@@ -528,7 +530,7 @@ verbatim into claim and source_excerpt with their exact source URL; the original
 native citation remains the proof, so do not paraphrase or invent a fresh quote.
 Every claim needs a short verbatim source_excerpt (one sentence or a self-contained
 clause, at most 140 characters) and a native web-source citation containing it.
-Native web citations contain at most 150 characters; do not request longer quotes.
+Prefer short native citations; preserve the entire received passage and its qualifications.
 Use the provider's citation mechanism, not a citation invented inside JSON.
 Put the verbatim passage in claim as well; project linkage belongs in the separate
 geography, project-element, group and asset fields, not an unverified paraphrase.
@@ -784,7 +786,7 @@ def normalize_climate_research_bundle(payload: Any) -> dict[str, Any]:
             "id": claim_id,
             "claim": claim,
             "source_excerpt": str(item.get("source_excerpt") or "").strip()
-            if len(str(item.get("source_excerpt") or "")) <= 150 else "",
+            if len(str(item.get("source_excerpt") or "")) <= CLIMATE_SOURCE_PASSAGE_MAX_CHARS else "",
             "source_ids": source_ids,
             "geographies": _strings(item.get("geographies"), 4, 160),
             "project_elements": project_elements,

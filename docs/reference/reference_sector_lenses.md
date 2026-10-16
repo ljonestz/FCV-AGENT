@@ -1,5 +1,24 @@
 # Sector-Lens Platform Reference
 
+### 2026-10-16 Research and reader tolerance
+
+Climate search uses the existing trusted-domain list as provider allowed_domains,
+so its fixed search budget targets admissible sources. Native quotations are kept
+whole up to 700 characters, consistently through packet construction, normalization
+and source matching; the overall evidence packet remains capped at 12,000 characters.
+Unknown sources, fabricated proof, unsupported geography/project labels and
+over-budget whole quotations are still rejected. Normal FCV's longer whole-passage
+handling informed this change; its broader source policy is not copied into Climate.
+
+Final-reader normalization v2.12 removes only empty/punctuation-only paragraph entries
+and folds excess paragraph breaks without deleting substantive wording. Evidence,
+length and independent meaning checks follow cleanup. Raw output remains available
+in diagnostics. Recommendation prompt v2.19 requests the current document/allowed
+section, concrete change, completion evidence and distinct preparation dependencies;
+the blanket next-gate reviewer sentence is removed. These are not new admission gates.
+The Climate two-source/beneficiary-coverage requirement and bank-only fallback remain;
+limited single-source proof is retained for inspection, not labelled complete.
+
 ### 2026-10-15 claim-level paid check: overall failed
 
 Both authorized calls completed normally, without retries. Discovery returned no

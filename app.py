@@ -44,6 +44,7 @@ from sector_lenses.climate_verified_render import (
     write_reader_docx,
 )
 from sector_lenses.climate_review_packet import build_review_packet
+from sector_lenses.research import TRUSTED_CLIMATE_HOST_SUFFIXES
 from sector_lenses.pipeline import normalize_climate_assessment
 from sector_lenses import (
     CCDR_RESEARCH_INSTRUCTIONS,
@@ -8122,6 +8123,7 @@ def run_climate_web_research(
                     "type": "web_search_20250305",
                     "name": "web_search",
                     "max_uses": 2,
+                    "allowed_domains": list(TRUSTED_CLIMATE_HOST_SUFFIXES),
                 }],
                 "betas": ["web-search-2025-03-05"],
             }

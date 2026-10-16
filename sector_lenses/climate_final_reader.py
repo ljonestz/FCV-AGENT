@@ -69,6 +69,19 @@ def reader_support_records(assessment: dict[str, object]) -> dict[str, dict]:
     return {key: record for key, record in records.items() if key not in duplicates}
 
 
+def normalize_reader_paragraphs(payload: dict) -> dict:
+    """Remove empty punctuation fragments and fold paragraph breaks, never claims."""
+    normalized = deepcopy(payload)
+    records = normalized.get('assessment_narratives', [])
+    for record in records if isinstance(records, list) else []:
+        texts = record.get('paragraphs') if isinstance(record, dict) else None
+        if not isinstance(texts, list) or not all(isinstance(text, str) for text in texts):
+            continue
+        texts = [text for text in texts if not re.fullmatch(r'[\s.,;:!?…]*', text)]
+        record['paragraphs'] = texts if len(texts) <= 2 else [texts[0], ' '.join(texts[1:])]
+    return normalized
+
+
 def bind_same_passage_project_references(payload: dict, assessment: dict) -> tuple[dict, int]:
     """Bind a named explicit fact from an already cited passage, without editing prose.
 

@@ -780,7 +780,7 @@ def test_manifest_is_privacy_safe_and_scoped_to_the_run():
     )
     assert (
         first["manifest"]["prompt_versions"]["recommendation_compiler"]
-        == "climate-recommendations-v2.18"
+        == "climate-recommendations-v2.19"
     )
     assert (
         first["manifest"]["prompt_versions"]["conditional_review"]
@@ -2617,4 +2617,26 @@ def test_minor_reader_length_overrun_still_requires_meaning_review(verdict):
     result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(
         FakeClient(responses + [final], []), reviewer))
     assert reviewer.calls[-1]['stage'] == 'reader_review'
+    assert result['summary_overview_status'] == ('generated' if verdict == 'pass' else 'fallback')
+
+
+@pytest.mark.parametrize('verdict', ['pass', 'block'])
+def test_reader_paragraph_cleanup_preserves_text_and_requires_meaning_review(verdict):
+    responses = _responses()
+    responses[2]['reader_contract'] = 'final-reader-v1'
+    final = _final_reader()
+    original = final['assessment_narratives'][0]['paragraphs'][0]
+    words = original.split()
+    final['assessment_narratives'][0]['paragraphs'] = [
+        ' '.join(words[:20]), '.', ' '.join(words[20:40]), '', ' '.join(words[40:])]
+    review = _native_pass_review if verdict == 'pass' else {
+        'verdict': 'block', 'object_ids': ['NARR-design'],
+        'reason_codes': ['PROJECT_FACT_UNSUPPORTED'], 'issues': []}
+    reviewer = FakeClient([_native_pass_review, review], [])
+    result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(
+        FakeClient(responses + [final], []), reviewer))
+    assert reviewer.calls[-1]['stage'] == 'reader_review'
+    reviewed = reviewer.calls[-1]['payload']['final_reader']['assessment_narratives'][0]
+    assert ' '.join(reviewed['paragraphs']) == original
+    assert len(reviewed['paragraphs']) <= 2
     assert result['summary_overview_status'] == ('generated' if verdict == 'pass' else 'fallback')

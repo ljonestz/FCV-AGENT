@@ -422,9 +422,11 @@ relevant sites"; when no such fact exists, keep the general phrasing. In the
 narrative, and only when a corresponding milestone fact was extracted, refer to
 the relevant preparation milestone by name (for example the concept or decision
 review, appraisal, negotiations, board, or effectiveness, or the applicable
-new-model equivalent) rather than by any date; never introduce a date. Add one
-short clause on the review risk - what a reviewer would raise at the next gate if
-the item is left unaddressed - framed as analytical judgement. Make clear in plain
+new-model equivalent) rather than by any date; never introduce a date.
+Do not add a stock sentence about what a reviewer would raise at the next gate.
+Mention a review consideration only when it identifies a distinct, evidenced
+decision or preparation dependency, rather than restating the risk or action.
+Make clear in plain
 language whether the item is mainly a do-no-harm (sensitivity) concern or one that
 strengthens responsiveness. Add no digits and no new claims.
 
@@ -441,6 +443,21 @@ remaining gap or evidence limitation, not the proposed action. Distinguish
 missing evidence from a confirmed omission; an optional dividends opportunity is not a required correction.
 The narrative is the one exception: write it as two or three short paragraphs of
 plain, flowing prose (about 110-220 words), separated by a blank line.
+Make the action usable in document preparation: name the current document and
+the relevant section from operational_guidance.permitted_targets, then specify
+the decision, criterion, responsibility or evidence to add or revise there.
+Use source-backed project components, assets and locations where relevant. A bare
+instruction to clarify, strengthen or add a sentence is not enough: state what
+the clarification must resolve. Completion_evidence should describe the resulting
+section change or decision record, not repeat minimum_action in the past tense.
+Distinguish the edit possible now from later design or appraisal work. Give later
+work a concrete dependency, such as site selection or design becoming available,
+only where relevant to the proposal; do not invent a review requirement or deadline.
+For a concept document, specify the design question and proposed preparation task
+without demanding completed appraisal detail. Where a review stage is unverified,
+omit generic gate language from individual recommendations; the report already
+states the overall routing limitation. These are drafting instructions, not extra
+admission gates or reasons to suppress a useful recommendation.
 The first paragraph explains the gap or opportunity and why it matters, crediting
 what the project already does. The remaining paragraphs explain what the team
 could do, how and who leads it, any optional deeper step and when it is warranted,

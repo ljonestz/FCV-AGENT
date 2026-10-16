@@ -1,3 +1,51 @@
+### 2026-10-16 Repair after acceptance; no further paid run
+
+User requested the underlying research/reader failures fixed, tolerance for minor
+imperfections, more specific document/preparation actions without repetitive review-
+gate prose, and comparison with normal FCV while retaining Climate core functions.
+
+Confirmed integration mismatch: Climate search had no allowed_domains, while
+passage admission accepted only TRUSTED_CLIMATE_HOST_SUFFIXES. Search now uses that
+same list. Latest live logs had 22/28 then 18/24 invalid-source candidates (including
+metadata hits); those counters combine missing URLs and disallowed sources, so no
+claim is made about exact rejected hosts. Raw citation objects were not retained.
+The separate 150-character hard rejection is relaxed to 700 (existing claim-text
+bound), preserving whole native passages and qualifications through all three
+research boundaries. Total packet remains 12,000 characters; no extra calls/retries,
+source-domain relaxation, fabricated quote, or substring clipping was introduced.
+
+Final-reader format normalization removes empty/punctuation-only entries and folds
+excess paragraph breaks while preserving substantive text and IDs. Both pass and
+block reviewer outcomes are regression-tested. Replaying the actual failed reader
+offline changes READER_STRUCTURE_INVALID to no precheck issues, so it is eligible
+for meaning review. No meaning-review pass or analytical acceptance is implied.
+Recommendation prompt v2.19 targets concrete edits/decisions in the current document
+and permitted section, completion evidence, and relevant later preparation tasks.
+Removed the unconditional reviewer-at-next-gate sentence; no new admission gates.
+Normalization v2.12. Core FCV route is unchanged.
+
+Normal-FCV comparison: core preserves whole longer provider quotations, separates
+source evidence from uncited model interpretation, labels single-source evidence
+limited, and asks directly for document elements and specific actions. Adopted
+whole-passage handling and document specificity; retained Climate's source/meaning
+checks, climate pathways, instruments and time horizons. Its two-source/country-
+coverage threshold still governs live grounding; single-source proof is retained
+for inspection but not relabelled complete. This is a remaining product distinction,
+not proof the quote is false. Broadening partial-grounding use is outside this fix.
+
+Four regression failures reproduced before repair, then all four passed. Connected
+suite initially 314 passed/one stale prompt-version assertion, subsequently updated.
+Final connected suite: 338 passed in 80.29 seconds, including normal-FCV research,
+Climate research/pipeline/client/render/packet and updated recommendation prompt
+contracts. Independent read-only review found no functional blocker; its stale
+negated-phrase prompt-test finding was corrected and all three prompt tests passed.
+Pinned bank submodule verified at 12a804fe. Diff whitespace checks passed.
+Full-suite attempt was interrupted after progress stalled before the 20% marker;
+no full-suite pass or definitive cause is claimed. Test Python PID23836 was confirmed
+gone afterward. This remains a broader verification gap, separate from the 338
+passing connected checks. No live model calls or production change; preview remains blocked from paid calls
+after the prior run. publication_approved=false. No generalization claim.
+
 ### 2026-10-16 Safeguards browser acceptance: incomplete, not a release pass
 
 Exactly one authorized quality run on preview b977196f7ab0d126b68d7b74d162120aafe55097,

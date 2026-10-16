@@ -1,3 +1,30 @@
+### 2026-10-16 Research admission and reader tolerance repair
+
+Climate search now supplies the same allowed_domains that downstream provenance
+validation accepts. Previously unrestricted searches spent their two-search budget
+on results later rejected by the fixed domain list. Provider-owned quotations up
+to 700 characters (the existing claim-text bound) are preserved whole across packet,
+normalization and matching; the 12,000-character packet cap, exact proof checks,
+country/project linkage and existing search/call/time limits remain. Never clip a
+long quote or manufacture a shorter one to force admission. This follows normal
+FCV's whole-passage approach with Climate's smaller context budget.
+
+Final-reader normalization drops only empty or punctuation-only paragraph entries
+and folds excess paragraph breaks without deleting substantive text. Raw output
+stays in diagnostics. All word-count, evidence-ID, factual and meaning checks run
+after normalization; a reviewer block still withholds the reader. Normalization
+version v2.12. Recommendation prompt v2.19 removes the compulsory reviewer-at-next-
+gate clause and requests the current document/allowed section, concrete edit or
+decision, completion evidence, and distinct later preparation work when relevant.
+These specificity instructions are not new admission gates. No policy authority,
+new formal milestone, approval or implementation commitment is inferred.
+
+Normal FCV also retains single-source coverage as limited; Climate still requires
+two distinct cited sources and beneficiary coverage for live-grounding admission.
+Do not equate that coverage threshold with falsity of a retained individual quote.
+Changing partial-evidence use would require preserving its limited status through
+grounding and exports; this repair does not silently relabel it complete.
+
 ### 2026-10-16 General final-reader evidence safeguards
 
 Reader compilation uses a request-scoped JSON-schema enum of the supplied support

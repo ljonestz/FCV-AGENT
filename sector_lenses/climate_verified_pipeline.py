@@ -20,7 +20,7 @@ import climate_question_bank
 from sector_lenses.climate_final_reader import (
     apply_reader_corrections, bind_same_passage_project_references, reader_support_records,
     reader_correction_allowed_numeric_date_tokens, validate_final_reader,
-    reviewed_final_reader,
+    reviewed_final_reader, normalize_reader_paragraphs,
 )
 
 from sector_lenses.climate_analysis import (
@@ -95,7 +95,7 @@ PROMPT_VERSIONS = {
     "fact_extraction": "climate-facts-v2.9",
     "bounded_analysis": "climate-analysis-v2.12",
     "judgment_review": "climate-judgments-v2.16",
-    "recommendation_compiler": "climate-recommendations-v2.18",
+    "recommendation_compiler": "climate-recommendations-v2.19",
     "conditional_review": "climate-review-v2.20",
     "drafting_compiler": "climate-drafting-v1.7",
     "reader_compiler": "climate-final-reader-v1.9",
@@ -1888,6 +1888,7 @@ def run_verified_climate_pipeline(
             final_reader = _call(clients.assessment, 'reader_compiler', reader_input, latency_ms,
                                  cancel_event=cancel_event, deadline=deadline)
             reader_trace['initial'] = _diagnostic_snapshot(final_reader)
+            final_reader = normalize_reader_paragraphs(final_reader)
             final_reader, reference_repairs = bind_same_passage_project_references(final_reader, reader_assessment)
             if reference_repairs:
                 repairs.append(f'FINAL_READER_SAME_PASSAGE_REFERENCES:{reference_repairs}')
@@ -2021,7 +2022,7 @@ def run_verified_climate_pipeline(
         prompt_versions=PROMPT_VERSIONS,
         reviewer_version="climate-review-v2.2",
         extraction_version="source-blocks-v3",
-        normalization_version="climate-normalization-v2.11",
+        normalization_version="climate-normalization-v2.12",
         renderer_version="climate-reader-v2.19",
         model_aliases=model_aliases,
         sampling={"max_transient_retries": 1,
