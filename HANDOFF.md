@@ -1,3 +1,23 @@
+### 2026-10-16 Afghanistan HCJ source-first candidate preparation
+
+Prepared `output/20261016-afghanistan-hcj-source-reference/START_HERE.html`
+and `source_reference.json`: 12 consequential interpretation checks with exact
+DOCX paragraph locators, source hashes, decision boundaries and pending human
+labels. Covers concept/IPF identity, financing, SOP versus SOP1 duration,
+conditional geography/cofinancing, youth/returnee scope, monitoring funding,
+specific proposed protections, access criteria, safeguard timing and stale date
+estimates. PID and ESRS hashes match the earlier inventory. ESRS pages 1–2
+corroborate identity/stage/instrument/cost; no full ESRS audit is claimed.
+
+No candidate model outputs examined. A filename-only check of saved browser-session
+inputs found no HCJ match, which does not prove no prior exposure. Family remains
+exposure-unknown and holdout-ineligible; independent_gold_complete=false.
+Country context and CRM agenda not reviewed. This is a bounded source reference,
+not exhaustive coverage or current external-status verification. Validation:
+12 records, nonempty exact paragraph excerpts, both source hashes, pending status.
+No runtime change, paid call, deployment or approval. Human source review is the
+next dependency before freezing acceptance labels; publication_approved=false.
+
 ### 2026-10-16 Great Lakes real-case review preparation
 
 Prepared local `output/20261016-great-lakes-review-calibration/START_HERE.html`
