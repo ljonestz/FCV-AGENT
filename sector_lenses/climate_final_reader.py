@@ -195,12 +195,14 @@ def validate_final_reader(payload: object, assessment: dict[str, object],
                 or any(not isinstance(text, str) for text in texts)):
             rejected(record.get('object_id'), 'Use the required ID/theme and one or two text paragraphs.', 'READER_STRUCTURE_INVALID')
             valid = False
-        elif not 70 <= sum(len(text.split()) for text in texts) <= 180:
+        else:
+            # Presentation defects must not mask unsupported evidence references.
+            if not grounded(record, texts):
+                valid = False
             count = sum(len(text.split()) for text in texts)
-            rejected(record['object_id'], f'Finding has {count} words; required range is 70-180.', 'READER_WORD_COUNT')
-            valid = False
-        elif not grounded(record, texts):
-            valid = False
+            if not 70 <= count <= 200:
+                rejected(record['object_id'], f'Finding has {count} words; permitted range is 70-200 (target 70-180).', 'READER_WORD_COUNT')
+                valid = False
         if isinstance(theme, str):
             themes.add(theme)
     return (summary, narratives) if valid else ([], [])

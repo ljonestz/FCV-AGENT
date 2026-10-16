@@ -753,7 +753,7 @@ STAGE_OUTPUT_SCHEMAS['reader_compiler'] = _object({
     'assessment_narratives': {'type': 'array', 'items': _object({
         'object_id': _string('NARR-design, NARR-dividends or NARR-inclusion.'),
         'theme': _enum(('design', 'dividends', 'inclusion')),
-        'paragraphs': _strings('One or two connected paragraphs, 70-180 words total. Aim for 150-180 words in two paragraphs for dividends and inclusion when supported.'),
+        'paragraphs': _strings('One or two connected paragraphs targeting 70-180 words; up to 200 permitted to preserve qualifications. Aim for 150-180 words in two paragraphs for dividends and inclusion when supported.'),
         'evidence_ids': _strings('Exact supplied support IDs.'),
     })},
 })
@@ -777,11 +777,21 @@ STAGE_OUTPUT_SCHEMAS['reader_correction'] = _object({
     })},
 })
 
-def stage_output_schema(stage: str) -> dict[str, object]:
+def stage_output_schema(stage: str, payload: dict | None = None) -> dict[str, object]:
     """Return an isolated native output schema for one verified stage."""
 
     try:
         schema = STAGE_OUTPUT_SCHEMAS[stage]
     except KeyError as error:
         raise ValueError(f"Unsupported verified Climate stage: {stage}") from error
-    return deepcopy(schema)
+    schema = deepcopy(schema)
+    if stage == 'reader_compiler' and payload is not None:
+        support = payload.get('support_records')
+        if (not isinstance(support, dict) or not support
+                or any(not isinstance(key, str) or not key for key in support)):
+            raise ValueError('Reader requires a nonempty support registry')
+        # Decode against this assessment only; semantic support still needs review.
+        for key in ('summary_paragraphs', 'assessment_narratives'):
+            refs = schema['properties'][key]['items']['properties']['evidence_ids']
+            refs['items'] = _enum(sorted(support))
+    return schema

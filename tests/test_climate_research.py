@@ -918,6 +918,8 @@ def test_climate_structuring_diagnostic_is_logged_without_content(caplog):
     assert "two relevant sources" not in decision["message"].lower()
     assert len(client.calls) == 2
     assert "outcome=structuring_diagnostic" in caplog.text
+    assert "Climate research passage admission" in caplog.text
+    assert "'retained': 0" in caplog.text
     assert "assessment_id=assessment-diagnostic" in caplog.text
     assert "stop_reason=max_tokens" in caplog.text
     assert "output_tokens=2500" in caplog.text
@@ -1546,3 +1548,19 @@ def test_passage_source_type_requires_a_complete_official_domain(host, expected,
         assert result["sources"] == []
     else:
         assert result["sources"][0]["source_type"] == expected
+
+
+def test_research_passage_diagnostics_explain_rejection_without_source_content():
+    base = {'url': 'https://www.worldbank.org/report', 'title': 'PRIVATE_TITLE',
+            'cited_text': 'PRIVATE_QUOTE'}
+    packet = build_climate_evidence_packet([{'type': 'text', 'citations': [
+        base, base, {**base, 'url': 'https://untrusted.invalid/report'},
+        {**base, 'cited_text': ''}, {**base, 'cited_text': 'x' * 151},
+        {**base, 'url': 'https://www.worldbank.org/other', 'title': ''},
+    ]}], {})
+    counts = packet['passage_diagnostics']
+    assert counts == {'candidates': 6, 'invalid_source': 1, 'missing_title': 1,
+                      'missing_quote': 1, 'overlong_quote': 1, 'duplicate': 1,
+                      'admitted': 1, 'retained': 1}
+    assert 'PRIVATE' not in json.dumps(counts)
+    assert packet['passages'][0]['excerpt'] == 'PRIVATE_QUOTE'

@@ -617,8 +617,9 @@ Assessment narratives: three short question-led answers, theme design, dividends
 inclusion; object_id NARR-design/NARR-dividends/NARR-inclusion. The renderer supplies
 the question headings, so answer directly without repeating questions in prose. Keep design to
 90-130 words. For dividends and inclusion, aim for 150-180 words each in two short,
-connected paragraphs when the support is rich enough. All findings must stay
-within 70-180 words; do not pad sparse evidence merely to reach the target.
+connected paragraphs when the support is rich enough. Target 70-180 words;
+up to 200 is permitted to preserve qualifications. Do not pad sparse evidence
+merely to reach the target.
 Start with what the project could make possible for people, grounded in concrete
 activities and delivery choices. Explain the causal connection in ordinary words.
 For dividends, distinguish the immediate climate benefit from a plausible wider
@@ -672,7 +673,8 @@ anchors around abbreviations; include enough original context to make anchors un
 Do not overlap anchors. All anchors refer to the original text, not earlier edits.
 For shortening, delete or shorten individual uniquely anchored sentences. Preserve
 unaffected wording, spacing and paragraph boundaries; the application merges edits.
-A finding retains one or two paragraphs, 70-180 words total. The combined Summary must
+A finding retains one or two paragraphs, targeting 70-180 words; up to 200
+is permitted to preserve qualifications. The combined Summary must
 target 160-230 words, with up to 260 permitted to preserve meaning, including
 untargeted_summary_words. Use the supplied actual
 word counts and bounded_correction explanations. When summary_max_words_by_id is

@@ -98,8 +98,8 @@ PROMPT_VERSIONS = {
     "recommendation_compiler": "climate-recommendations-v2.18",
     "conditional_review": "climate-review-v2.20",
     "drafting_compiler": "climate-drafting-v1.7",
-    "reader_compiler": "climate-final-reader-v1.8",
-    "reader_correction": "climate-reader-correction-v1.5",
+    "reader_compiler": "climate-final-reader-v1.9",
+    "reader_correction": "climate-reader-correction-v1.6",
     "reader_review": "climate-reader-review-v1.9",
 }
 
@@ -1935,6 +1935,7 @@ def run_verified_climate_pipeline(
                 valid_revision = _valid_reader_revision(reader_review, final_reader)
                 if not (clean_pass or valid_revision):
                     reader_trace['unrepairable_issues'] = precheck_issues
+                    reasons.extend(code for issue in precheck_issues for code in issue['reason_codes'])
                     break
                 correction_issues = precheck_issues + (semantic_issues if valid_revision else [])
                 records = {record['object_id']: record for record in records_list}
@@ -2020,7 +2021,7 @@ def run_verified_climate_pipeline(
         prompt_versions=PROMPT_VERSIONS,
         reviewer_version="climate-review-v2.2",
         extraction_version="source-blocks-v3",
-        normalization_version="climate-normalization-v2.10",
+        normalization_version="climate-normalization-v2.11",
         renderer_version="climate-reader-v2.19",
         model_aliases=model_aliases,
         sampling={"max_transient_retries": 1,

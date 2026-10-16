@@ -8209,6 +8209,11 @@ def run_climate_web_research(
                         provider_content,
                         project_profile,
                     )
+                    app.logger.info(
+                        "Climate research passage admission assessment_id=%s attempt=%d counts=%s",
+                        assessment_id or "unknown", attempt,
+                        evidence_packet.get("passage_diagnostics", {}),
+                    )
                     packet_text = json.dumps(
                         evidence_packet,
                         ensure_ascii=False,

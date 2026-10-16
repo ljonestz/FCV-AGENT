@@ -2062,8 +2062,8 @@ def test_native_reader_still_withholds_overlong_findings():
             FakeClient([_native_pass_review] * 2, [])))
     final = _final_reader()
     assert validate_final_reader(final, result)[0]
-    final['assessment_narratives'][1]['paragraphs'] = ['The project supports traders. ' * 46]
-    assert len(final['assessment_narratives'][1]['paragraphs'][0].split()) > 180
+    final['assessment_narratives'][1]['paragraphs'] = ['The project supports traders. ' * 51]
+    assert len(final['assessment_narratives'][1]['paragraphs'][0].split()) > 200
     assert validate_final_reader(final, result) == ([], [])
 
 
@@ -2581,3 +2581,40 @@ def test_reader_markup_is_repaired_after_meaning_review():
     assert result['summary_overview_status'] == 'generated'
     assert len(result['diagnostic_trace']['final_reader']['meaning_reviews']) == 2
     assert 'summary_max_words_by_id' not in assessment.calls[-1]['payload']
+
+
+@pytest.mark.parametrize('words', [185, 210])
+def test_reader_reports_unknown_evidence_even_with_length_defects(words):
+    responses = _responses()
+    responses[2]['reader_contract'] = 'final-reader-v1'
+    final = _final_reader()
+    final['assessment_narratives'][0]['paragraphs'] = [' '.join(['Supported'] * words) + '.']
+    final['assessment_narratives'][0]['evidence_ids'] = ['PF-invented']
+    reviewer = FakeClient([_native_pass_review], [])
+    result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(
+        FakeClient(responses + [final], []), reviewer))
+    assert result['summary_overview_status'] == 'fallback'
+    assert 'READER_EVIDENCE_INVALID' in result['validation']['reason_codes']
+    codes = {code for issue in result['diagnostic_trace']['final_reader']['prechecks'][0]['issues']
+             for code in issue['reason_codes']}
+    assert 'READER_EVIDENCE_INVALID' in codes
+    assert ('READER_WORD_COUNT' in codes) == (words > 200)
+    assert not any(call['stage'] == 'reader_review' for call in reviewer.calls)
+
+
+@pytest.mark.parametrize('verdict', ['pass', 'block'])
+def test_minor_reader_length_overrun_still_requires_meaning_review(verdict):
+    responses = _responses()
+    responses[2]['reader_contract'] = 'final-reader-v1'
+    final = _final_reader()
+    text = final['assessment_narratives'][0]['paragraphs'][0]
+    text += ' ' + ' '.join(['Supported'] * (185 - len(text.split()))) + '.'
+    final['assessment_narratives'][0]['paragraphs'] = [text]
+    review = _native_pass_review if verdict == 'pass' else {
+        'verdict': 'block', 'object_ids': ['NARR-design'],
+        'reason_codes': ['PROJECT_FACT_UNSUPPORTED'], 'issues': []}
+    reviewer = FakeClient([_native_pass_review, review], [])
+    result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(
+        FakeClient(responses + [final], []), reviewer))
+    assert reviewer.calls[-1]['stage'] == 'reader_review'
+    assert result['summary_overview_status'] == ('generated' if verdict == 'pass' else 'fallback')

@@ -130,14 +130,20 @@ def build_climate_evidence_packet(
     sources: list[dict[str, str]] = []
     by_url: dict[str, dict[str, str]] = {}
     passages: list[dict[str, str]] = []
+    counts = dict.fromkeys(('candidates', 'invalid_source', 'missing_title',
+                            'missing_quote', 'overlong_quote', 'duplicate',
+                            'admitted', 'retained'), 0)
 
     def add_source(item: Any) -> None:
+        counts['candidates'] += 1
         url = _bounded(_block_value(item, "url"), 1000)
         url_key = url.casefold().rstrip("/")
         if not url or not _trusted_https(url):
+            counts['invalid_source'] += 1
             return
         title = _bounded(_block_value(item, "title") or by_url.get(url_key, {}).get("title"), 220)
         if not title:
+            counts['missing_title'] += 1
             return
         publication_date = _publication_date(_block_value(item, "publication_date"))
         excerpt = _bounded(
@@ -149,10 +155,16 @@ def build_climate_evidence_packet(
         # Preserve a received short quote whole. Never truncate a long passage
         # into apparent proof, or ask the classifier to reconstruct its wording.
         quote = str(_block_value(item, "cited_text") or _block_value(item, "snippet") or "").strip()
-        if quote and len(quote) <= 150 and len(passages) < 24 and not any(
-            passage["url"].casefold().rstrip("/") == url_key and passage["excerpt"] == quote
-            for passage in passages
-        ):
+        duplicate = any(passage["url"].casefold().rstrip("/") == url_key
+                        and passage["excerpt"] == quote for passage in passages)
+        if not quote:
+            counts['missing_quote'] += 1
+        elif len(quote) > 150:
+            counts['overlong_quote'] += 1
+        elif duplicate:
+            counts['duplicate'] += 1
+        elif len(passages) < 24:
+            counts['admitted'] += 1
             passages.append({"id": f"CP-{len(passages) + 1:03d}", "url": url,
                              "title": title, "publication_date": publication_date, "excerpt": quote})
         if url_key in by_url:
@@ -208,6 +220,7 @@ def build_climate_evidence_packet(
             first_passages.append(first)
     selected_passages = first_passages + [p for p in selected_passages if p not in first_passages]
     packet = {
+        "passage_diagnostics": counts,
         "notes": _bounded("\n\n".join(note_parts), 2200),
         "sources": sources[:4],
         "passages": selected_passages[:12],
@@ -238,6 +251,7 @@ def build_climate_evidence_packet(
             packet['project_profile']['project_elements'].pop()
         else:
             packet['sources'].pop()
+    counts['retained'] = len(packet['passages'])
     return packet
 
 

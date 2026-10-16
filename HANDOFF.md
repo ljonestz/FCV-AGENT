@@ -1,3 +1,45 @@
+### 2026-10-16 General safeguards; focused verification passed
+
+User authorized general safeguards rather than a Somalia-specific patch. Reader
+compiler provider schema now enumerates only this request's support IDs and rejects
+an empty support registry before any provider call. No ID mapping or quote repair
+is introduced. Provider constraints supplement, not replace, application validation
+and independent meaning review: a valid ID can still be semantically misused.
+
+Narrative validation checks evidence even when length is invalid. Findings target
+70-180 words with admission slack to 200; factual/numeric/date/meaning checks remain.
+Unrepairable reader precheck codes propagate to final validation. Compiler/correction
+versions v1.9/v1.6; normalization v2.11. Historical invalid final reader still fails
+offline with READER_EVIDENCE_INVALID rather than a misleading length-only diagnosis.
+
+Research now logs fixed numeric admission counters (candidates, invalid source,
+missing title/quote, overlong quote, duplicate, admitted and retained). No text,
+title or URL is logged. Existing provenance checks and budgets remain unchanged.
+Counts are bounded by input limits; entries beyond the 24-passage collection cap
+have no separate counter. These diagnostics do not establish the cause of the live
+research failure: raw provider citations were not retained in that run. Do not
+claim research reliability repaired or lower its evidence gate to force a pass.
+
+New regressions initially: 7 failed, 1 passed; after implementation all 8 pass.
+Connected client/pipeline/research/renderer/review-packet suite: 312 passed in 57.55s.
+Independent read-only review: no blocker. Full-suite verification is incomplete.
+The initial full run used Windows cp1252 and failed encoding a Unicode frontend
+symbol; rerunning with python -X utf8 passed that point. That run then stalled in
+Playwright browser checks. The headless browser exited but its test-owned driver
+remained hung; stopping driver50560 (parent test Python14128) released the suite.
+A later test-owned driver52564 stalled similarly. Stopped that driver and the suite;
+no interactive browser sessions were closed. These forced stops are not test passes,
+and no full-suite pass is claimed. No product/browser configuration was changed.
+312 connected tests and offline replay are the current verification evidence.
+No paid model calls, deployment, production change or publication approval.
+PR83 stays draft; repeat the full UTF-8 suite when browser tooling is healthy.
+
+Remaining acceptance: diagnose research from actual admission evidence on a later
+authorized run; confirm provider-constrained generation live; test source-reviewed
+IPF document families beyond development examples. Existing supervised acceptance
+plan remains the governing generalization boundary; unit tests are not model-recall
+or human-workflow acceptance. Human review includes unflagged consequential claims.
+
 ### 2026-10-16 Full browser quality run: not accepted for release
 
 Ran exactly one authorized Express quality assessment on the complete standard

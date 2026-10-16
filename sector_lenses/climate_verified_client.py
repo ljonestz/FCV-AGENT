@@ -132,6 +132,7 @@ class AnthropicVerifiedJsonClient:
         max_output_tokens: int,
         max_transient_retries: int,
     ) -> dict[str, object]:
+        schema = stage_output_schema(stage, payload)
         prompt = build_verified_stage_prompt(stage, payload)
         self.last_output_tokens = None
         scope = payload.get('call_scope', 'reader' if stage.startswith('reader_') else 'initial')
@@ -166,7 +167,7 @@ class AnthropicVerifiedJsonClient:
                     output_config={
                         "format": {
                             "type": "json_schema",
-                            "schema": stage_output_schema(stage),
+                            "schema": schema,
                         }
                     },
                 )

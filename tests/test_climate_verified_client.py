@@ -175,6 +175,30 @@ class _Sdk:
         return self
 
 
+@pytest.mark.parametrize('ids', [('PF-A', 'REC-B'), ('CE-country', 'PF-other')])
+def test_reader_schema_limits_references_to_this_request(ids):
+    sdk = _Sdk(['{}'])
+    client = AnthropicVerifiedJsonClient(sdk, model='assessment-model')
+    client.complete_json(stage='reader_compiler',
+        payload={'support_records': {key: {} for key in ids}},
+        timeout_seconds=180, max_output_tokens=4000, max_transient_retries=0)
+    schema = sdk.messages.calls[0]['output_config']['format']['schema']
+    for key in ('summary_paragraphs', 'assessment_narratives'):
+        refs = schema['properties'][key]['items']['properties']['evidence_ids']
+        assert set(refs['items']['enum']) == set(ids)
+    assert 'enum' not in stage_output_schema('reader_compiler')['properties'][
+        'summary_paragraphs']['items']['properties']['evidence_ids']['items']
+
+
+def test_reader_without_support_never_calls_provider():
+    sdk = _Sdk(['{}'])
+    with pytest.raises(ValueError, match='support'):
+        AnthropicVerifiedJsonClient(sdk, model='assessment-model').complete_json(
+            stage='reader_compiler', payload={'support_records': {}},
+            timeout_seconds=180, max_output_tokens=4000, max_transient_retries=0)
+    assert sdk.messages.calls == []
+
+
 def test_client_disables_sdk_retries_and_uses_native_output_schema():
     sdk = _Sdk([
         '{"schema_version":"climate-verified-v2.1","facts":[],"derived_assertions":[]}'

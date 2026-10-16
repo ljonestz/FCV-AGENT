@@ -1,3 +1,16 @@
+### 2026-10-16 General final-reader evidence safeguards
+
+Reader compilation uses a request-scoped JSON-schema enum of the supplied support
+registry. Empty registries fail before provider calls. This constrains identifiers,
+not truth or semantic relevance; application validation and independent meaning
+review remain mandatory. Invalid references are checked even when text is overlong.
+Findings target 70-180 words; up to 200 are allowed to preserve qualifications, with
+no exception to evidence, numeric/date or semantic checks. Withheld reader diagnostics
+carry the actual precheck codes. Reader/correction versions v1.9/v1.6; normalization
+v2.11. Research logs now report bounded numeric passage rejection counts without
+quotes or source titles; admission rules are unchanged. No case-specific ID mapping,
+quote truncation, new model calls, or publication approval is introduced.
+
 ### 2026-10-16 Late MPA descriptions and internal metadata
 
 Climate routing retains the short header check and also recognizes explicit
