@@ -16,13 +16,14 @@ model compliance. Saved earlier reports are unchanged and remain unapproved.
 Observed three failing routing regressions and a failing prompt-boundary check
 before implementation. All 212 focused runtime/integrity/guidance/pipeline tests
 pass after repair and prompt-version expectation updates. Read-only review found
-no blocker; diff whitespace checks pass. Full regression suite is running.
+no blocker; diff whitespace checks pass. Full regression suite: 1,757 passed
+in 1,084.13 seconds (18:04), exit 0. Repair commit cf28827 is pushed to PR 83.
 
 The short live run was the dedicated Climate-FCV route, not ordinary core FCV.
-Quality provider timings: facts47.5s, analysis29.3s, judgments35.7s,
-recommendations37.1s, drafting/correction14.2s, initial conditional review7.9s.
+Quality provider timings: facts 47.5s, analysis 29.3s, judgments 35.7s,
+recommendations 37.1s, drafting/correction 14.2s, initial conditional review 7.9s.
 Web research was blocked; later correction review and reader compilation were
-blocked by the conservative spend guard. A fallback report returned in178s,
+blocked by the conservative spend guard. A fallback report returned in 178s,
 which is not equivalent to a completed usual ten-minute full FCV run.
 
 No new paid calls or deployment. Do not reset old phase ledgers or treat the
