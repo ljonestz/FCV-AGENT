@@ -605,3 +605,21 @@ Reports display unconditional draft status; packet reports also display the
 snapshot ID. External authenticated approval must reference exact file hashes.
 Edited/re-exported files require checking against that external record, not trusting
 a mutable local manifest. Source document files are not bundled automatically.
+
+### 2026-10-16 Opt-in preview spend reservations
+
+All four Anthropic clients accept the same opt-in HTTP request hook when
+FCV_PILOT_BUDGET_MICROUSD and FCV_PILOT_BUDGET_DB are both set. Default is off.
+The hook reserves before each send, including retries, using text bytes plus4096
+framing headroom and full output cap at pinned known rates with a2x margin.
+SQLite updates are atomic across clients/workers and reservations are never
+refunded. Unknown request fields, server tools/MCP/compaction, nontext blocks,
+caching and unpriced routing are rejected before send. This is a controlled
+single-instance preview-campaign guard, not an account billing system.
+
+The ledger survives worker restarts but NOT Render ephemeral-filesystem replacement.
+Use fixed phase-specific allowances whose sum never exceeds the authorized total;
+after any mid-phase replacement subtract all previous reservations before starting
+another ledger. Blocked optional research must be disclosed; it is not equivalent
+to a full web-grounded acceptance run. Production remains default-off.
+

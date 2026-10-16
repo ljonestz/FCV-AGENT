@@ -14,6 +14,7 @@ from typing import Any
 from flask import Flask, request, jsonify, send_from_directory, Response, stream_with_context
 from werkzeug.exceptions import RequestEntityTooLarge
 import anthropic
+from pilot_spend_guard import pilot_http_client
 from fcv_presentation import bullet_finding_sections, strip_watch_heading
 from fcv_core_research import (
     build_core_research_prompt, core_research_analysis_context,
@@ -8998,6 +8999,7 @@ def get_client():
     if _client is None:
         _client = anthropic.Anthropic(
             api_key=os.environ.get("ANTHROPIC_API_KEY"),
+            **pilot_http_client(),
             timeout=httpx.Timeout(timeout=600.0, connect=30.0)
         )
     return _client
@@ -9014,6 +9016,7 @@ def get_fast_client():
     if _fast_client is None:
         _fast_client = anthropic.Anthropic(
             api_key=os.environ.get("ANTHROPIC_API_KEY"),
+            **pilot_http_client(),
             timeout=httpx.Timeout(timeout=25.0, connect=10.0)
         )
     return _fast_client
@@ -9028,6 +9031,7 @@ def get_lens_recovery_client():
     if _lens_recovery_client is None:
         _lens_recovery_client = anthropic.Anthropic(
             api_key=os.environ.get("ANTHROPIC_API_KEY"),
+            **pilot_http_client(),
             timeout=httpx.Timeout(timeout=120.0, connect=10.0),
             max_retries=0,
         )
@@ -9044,6 +9048,7 @@ def get_research_client():
     if _research_client is None:
         _research_client = anthropic.Anthropic(
             api_key=os.environ.get("ANTHROPIC_API_KEY"),
+            **pilot_http_client(),
             timeout=httpx.Timeout(timeout=120.0, connect=10.0),
             max_retries=0,
         )

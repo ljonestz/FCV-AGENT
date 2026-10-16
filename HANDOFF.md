@@ -1,3 +1,27 @@
+### 2026-10-16 Preview budget guard implementation
+
+User explicitly requested the fresh test through the browser. Implemented opt-in
+pilot_spend_guard.py and wired all four app Anthropic clients. Fifteen focused
+guard tests pass. Review identified MCP/unknown-content bypasses; reproduced
+three failures and closed them with request-field/text-block allowlists. Reviewer
+confirmed no remaining blocker. Full regression suite is running; no full-suite
+pass is claimed yet. No paid calls made. The earlier full attempt was interrupted
+to apply the review fix; the current run uses the corrected code.
+
+Phase allowances chosen before execution: smoke USD1, quality USD4, total USD5.
+Single existing free preview instance only. Use distinct fixed SQLite paths per
+phase, never regrant a spent allowance after redeploy. Reservations include full
+max output, UTF8 request bytes plus framing headroom, a2x price margin and retries;
+no refunds. Server tools, caching, unknown request extensions and nontext inputs
+fail before send. This can suppress optional web research; disclose the limitation.
+
+Actual browser saved-session checks on previous deployed f71375d succeeded:
+restored canonical Great Lakes case, visible draft/review warnings, Detailed tab,
+review ZIP download with hashes matching snapshot. HTML download initiated.
+This remains development-case export acceptance, not fresh generation acceptance.
+Local browser artifacts are in output/playwright/.playwright-cli; source session
+output/20261016-ipf-pilot-live-preflight/canonical-saved-session.json.
+
 ### 2026-10-16 Controlled IPF pilot authorized; isolated preview deployed
 
 User selected controlled supervised IPF pilot, confirmed FCV LLM Services workspace
