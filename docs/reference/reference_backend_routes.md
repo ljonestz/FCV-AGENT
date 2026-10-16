@@ -586,3 +586,22 @@ An omitted reader retains legacy canonical export; any supplied reader must matc
 Runtime mode comes from the assessment. Browser HTML export must pass the snapshot
 check and verify its local pair did not change while waiting. This is a Render
 endpoint contract; the shared reader projection remains provider independent.
+
+
+### 2026-10-16 External human review packet
+
+`POST /api/climate-review-packet` requires the complete verified-v2.1 assessment
+and displayed reader, and reuses the snapshot endpoint's validation (409 drift,
+422 missing/invalid inputs). Returns a ZIP with report.docx, report.html,
+snapshot.json, manifest.json, review_record_template.json and REVIEW_INSTRUCTIONS.txt.
+Manifest schema climate-external-review-v1 always has status draft and
+publication_approved=false. Review template identity, timestamp and external
+workflow reference start null; decision starts pending. File hashes cover actual
+DOCX, HTML and canonical snapshot bytes. Packet creation asserts snapshot hash
+matches the validated snapshot before returning. No database, authentication,
+approval import, model call or server-side packet storage occurs.
+
+Reports display unconditional draft status; packet reports also display the
+snapshot ID. External authenticated approval must reference exact file hashes.
+Edited/re-exported files require checking against that external record, not trusting
+a mutable local manifest. Source document files are not bundled automatically.

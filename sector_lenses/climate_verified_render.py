@@ -27,6 +27,12 @@ from sector_lenses.climate_verified_schemas import (
 _READER_ALLOWED = {**ALLOWED, "responsiveness": ALLOWED["responsiveness"] | {"emerging"}}
 
 
+DRAFT_REVIEW_NOTICE = (
+    "Draft - human review required. Named approval of this version must be "
+    "recorded separately before sharing. This app does not record human approval."
+)
+
+
 DIMENSIONS = (
     (
         "relevance",
@@ -1402,10 +1408,13 @@ def _priority_sections(priority: dict[str, object]) -> list[tuple[str, list[str]
             ("What the team could do", [p for p in action if p])]
 
 
-def render_reader_html(model: dict[str, object]) -> str:
+def render_reader_html(model: dict[str, object], *, snapshot_sha256: str | None = None) -> str:
     """Render escaped HTML from the canonical reader dictionary."""
 
-    parts = ['<article class="climate-verified-assessment">']
+    parts = ['<article class="climate-verified-assessment">',
+             '<p class="climate-review-status" role="note">' + html.escape(DRAFT_REVIEW_NOTICE) + '</p>']
+    if snapshot_sha256:
+        parts.append('<p>Review snapshot: ' + html.escape(snapshot_sha256) + '</p>')
     if model.get("analysis_status") == "partial" and _text(model.get("analysis_message")):
         parts.append("<p><strong>Assessment evidence is incomplete</strong>: "
                      + html.escape(_text(model["analysis_message"])) + "</p>")
@@ -1695,11 +1704,14 @@ def _docx_project_cycle(document: Document, value: object) -> None:
         _docx_field(document, secondary_label, secondary_text)
 
 
-def write_reader_docx(model: dict[str, object], path: str | Path) -> Path:
+def write_reader_docx(model: dict[str, object], path: str | Path, *, snapshot_sha256: str | None = None) -> Path:
     """Write the same reader dictionary to a compact Word document."""
 
     output = path if hasattr(path, "write") else Path(path)
     document = Document()
+    document.add_paragraph(DRAFT_REVIEW_NOTICE)
+    if snapshot_sha256:
+        document.add_paragraph('Review snapshot: ' + snapshot_sha256)
     if model.get("analysis_status") == "partial" and _text(model.get("analysis_message")):
         paragraph = document.add_paragraph("Assessment evidence is incomplete: "
                                            + _text(model["analysis_message"]))

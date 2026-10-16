@@ -8,6 +8,7 @@ from docx import Document
 from climate_question_bank import CLIMATE_LITERATURE_REFERENCES
 from sector_lenses.climate_verified_render import (
     HEADINGS,
+    DRAFT_REVIEW_NOTICE,
     SENSITIVITY_RATING_QUESTION,
     attach_provenance,
     build_climate_guidance_items,
@@ -1331,10 +1332,10 @@ def test_docx_writer_accepts_an_in_memory_stream():
     assert returned is stream
     stream.seek(0)
     texts = [p.text for p in Document(stream).paragraphs]
-    # The candidate safeguard leads; the overview block and Executive readout
-    # follow below it.
-    assert texts[0] == "Candidate country evidence: preview; not approved."
-    assert texts[1].startswith("Scale: Very limited")
+    # Draft status leads; candidate evidence and the overview remain visible.
+    assert texts[0] == DRAFT_REVIEW_NOTICE
+    assert texts[1] == "Candidate country evidence: preview; not approved."
+    assert texts[2].startswith("Scale: Very limited")
     assert HEADINGS[0] in texts
 
 

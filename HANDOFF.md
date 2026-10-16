@@ -1,5 +1,32 @@
 # Current handoff
 
+### 2026-10-16 External human review packet
+
+User selected approval in an existing authenticated organisational workflow.
+Climate Summary, Detailed, HTML and Word now say Draft - human review required;
+client approval flags cannot remove that status. The review-packet download reuses
+the snapshot mismatch gate and creates a ZIP containing Detailed HTML, Word,
+canonical snapshot JSON, a checksum manifest, blank named-review template and
+instructions. The actual report files and snapshot have SHA-256 hashes; both
+reports display the snapshot ID. Reviewer identity, decision and workflow reference
+must be recorded externally. No approval is imported or asserted by the app.
+Changes require a new packet and review against actual file checksums held in the
+authenticated record. Source uploads are not bundled; the reviewer must resolve
+source access/provenance and all consequential claims, including unflagged claims.
+
+Render read-only check: service srv-d6de99jh46gs73d0jjrg remains on main with
+commit-triggered auto-deploy. This PR branch was not deployed. No in-app identity
+or durable approval storage was found in repository review. Workspace database
+inventory was unavailable without selecting a workspace; no inventory absence is
+claimed. No new infrastructure, paid calls, merge or live acceptance.
+Synthetic packet: output/20261016-external-review-packet/synthetic-review-packet.zip.
+Validation: 1,732 full-suite tests passed in 1,605.74 seconds (26:45);
+187 connected packet/renderer/route tests passed. Read-only review found no
+blockers. Synthetic HTML inspected in headless Edge at desktop and phone widths,
+with readable notice/hash and no phone overflow. Word content/checksums were
+verified programmatically; no visual Word-layout acceptance is claimed.
+
+
 ### 2026-10-16 Climate export consistency boundary
 
 Climate HTML and Word exports now share a no-model assessment/reader consistency

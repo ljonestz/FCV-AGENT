@@ -42,6 +42,7 @@ from sector_lenses.climate_verified_render import (
     validate_reader_model,
     write_reader_docx,
 )
+from sector_lenses.climate_review_packet import build_review_packet
 from sector_lenses.pipeline import normalize_climate_assessment
 from sector_lenses import (
     CCDR_RESEARCH_INSTRUCTIONS,
@@ -12670,6 +12671,23 @@ def climate_report_snapshot():
         return jsonify(error='A complete displayed Climate reader is required.'), 422
     snapshot, error = _climate_export_snapshot(data)
     return error if error is not None else jsonify(snapshot)
+
+
+@app.route('/api/climate-review-packet', methods=['POST'])
+def climate_review_packet():
+    """Export a draft for named approval outside the app; never grant approval."""
+    from io import BytesIO
+    from flask import send_file
+
+    data = request.get_json(force=True)
+    if not isinstance(data, dict) or not isinstance(data.get('climate_reader'), dict):
+        return jsonify(error='A complete displayed Climate reader is required.'), 422
+    snapshot, error = _climate_export_snapshot(data)
+    if error is not None:
+        return error
+    content = build_review_packet(normalize_climate_assessment(data['climate_assessment']), snapshot)
+    return send_file(BytesIO(content), mimetype='application/zip', as_attachment=True,
+                     download_name='Climate-FCV-Review-' + snapshot['sha256'][:12] + '.zip')
 
 
 @app.route('/api/download-report', methods=['POST'])

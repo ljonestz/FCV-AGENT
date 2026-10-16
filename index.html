@@ -5244,7 +5244,7 @@
     const advisoryHtml=r.advisory_notice?`<p class="climate-advisory">${esc(r.advisory_notice)}</p>`:'';
     const needsReview=recommendationsIncomplete||r.recommendation_status==='partial';
     const incompleteHtml=needsReview&&!ratingsInSidebar?`<p><strong>${recommendationsIncomplete?'Recommendations stage incomplete':'Recommendations need review'}:</strong> ${esc(r.recommendation_message||'Do not rely on this note as a completed assessment.')}</p>`:'';
-    return `<article class="climate-verified-assessment">${analysisHtml}${incompleteHtml}${smokeHtml}${previewHtml}${operationContextHtml}${numberedSections}${advisoryHtml}</article>`;
+    return `<article class="climate-verified-assessment"><p class="climate-review-status" role="note">Draft - human review required. Named approval of this version must be recorded separately before sharing. This app does not record human approval.</p>${analysisHtml}${incompleteHtml}${smokeHtml}${previewHtml}${operationContextHtml}${numberedSections}${advisoryHtml}</article>`;
   }
 
   // Blunt, upfront caveat shown above the Stage 3 Summary and Detailed readouts.
@@ -5395,6 +5395,7 @@
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
                   Share .html
                 </button>`:''}
+                ${isLast&&climateVerifiedAssessment&&climateVerifiedAssessment.schema_version==='climate-verified-v2.1'?`<button class="btn btn-ghost btn-sm" onclick="downloadClimateReviewPacket(this)">Download review packet</button>`:''}
                 ${isLast?`<button class="copy-btn" onclick="copySummary()">Copy summary</button><button class="copy-btn" onclick="copyFullReport()">Copy full report</button>`:`<button class="copy-btn" id="copy-btn" onclick="copyOut()">Copy all</button>`}
               </div>
             </div>
@@ -6087,6 +6088,22 @@
       if(btn){ btn.disabled = false; btn.innerHTML = origHTML; }
       alert('Could not generate the Word document. Please try again.\n\n' + err.message);
     });
+  }
+
+  async function downloadClimateReviewPacket(btn){
+    const payload=JSON.stringify({climate_assessment:climateVerifiedAssessment,climate_reader:climateVerifiedReader});
+    const label=btn?btn.textContent:'';
+    if(btn){btn.disabled=true;btn.textContent='Preparing review packet...';}
+    try{
+      const response=await fetch('/api/climate-review-packet',{method:'POST',headers:{'Content-Type':'application/json'},body:payload});
+      if(!response.ok){const error=await response.json();throw new Error(error.error||'Review packet validation failed.');}
+      const blob=await response.blob();
+      if(payload!==JSON.stringify({climate_assessment:climateVerifiedAssessment,climate_reader:climateVerifiedReader}))throw new Error('The report changed during export. Please download a new packet.');
+      const url=URL.createObjectURL(blob),link=document.createElement('a');
+      link.href=url;link.download='Climate-FCV-Review-Packet-'+new Date().toISOString().slice(0,10)+'.zip';
+      document.body.appendChild(link);link.click();link.remove();URL.revokeObjectURL(url);
+    }catch(error){alert('Could not download review packet. '+error.message);}
+    finally{if(btn){btn.disabled=false;btn.textContent=label;}}
   }
 
   // ── HTML Export ─────────────────────────────────────────────────────────────
@@ -7014,7 +7031,7 @@ ${body}
     const closingText=recommendationsIncomplete
       ?'Recommendations are incomplete. Review the Detailed analysis and rerun the assessment or contact support before relying on this note.'
       :(priorities.length?'For supporting evidence and completion signals behind each priority, continue to Detailed analysis.':'Continue to Detailed analysis for the supporting evidence and points to check from this assessment.');
-    return `<div class="concise-readout climate-verified-summary"><div class="concise-read-time">Five-minute readout</div>${analysisHtml}${operationContextHtml}<div class="concise-section-label">Overall assessment</div><div class="climate-summary-overview">${overviewHtml}</div>${signal}<div class="concise-section-label">What is already working</div><div class="concise-strengths">${strengthsHtml}</div>${gapsHtml||bridge}${renderStage3AdvisoryTransition('climate')}<div class="concise-section-label">Priority actions for the task team</div>${countHtml}${prioritiesHtml}${watchHtml}${guidanceHtml}<p class="concise-closing">${esc(closingText)}</p></div>`;
+    return `<div class="concise-readout climate-verified-summary"><p class="climate-review-status" role="note">Draft - human review required. Named approval of this version must be recorded separately before sharing. This app does not record human approval.</p><div class="concise-read-time">Five-minute readout</div>${analysisHtml}${operationContextHtml}<div class="concise-section-label">Overall assessment</div><div class="climate-summary-overview">${overviewHtml}</div>${signal}<div class="concise-section-label">What is already working</div><div class="concise-strengths">${strengthsHtml}</div>${gapsHtml||bridge}${renderStage3AdvisoryTransition('climate')}<div class="concise-section-label">Priority actions for the task team</div>${countHtml}${prioritiesHtml}${watchHtml}${guidanceHtml}<p class="concise-closing">${esc(closingText)}</p></div>`;
   }
 
   function handleStage3ViewKeydown(event){

@@ -568,3 +568,13 @@ Judgment and recommendation instructions require natural prose without framework
 recaps, label-and-colon verdicts, semicolons or literal Done looks like cues.
 Versions: judgments2.11, recommendations2.13, reader2.11. No added model calls.
 See docs/20261013_climate-reader-simplification-validation.md for evidence and limits.
+
+
+### 2026-10-16 External review download
+
+`downloadClimateReviewPacket(btn)` posts the current assessment/reader pair to
+/api/climate-review-packet, disables/restores its button, and downloads the ZIP
+only after success and a second unchanged-pair check. The action is shown for
+verified Climate assessments at Stage 3. Summary and Detailed contain the same
+unconditional human-review draft notice; browser-provided approval metadata cannot
+hide it. Approval remains entirely in the chosen external authenticated workflow.

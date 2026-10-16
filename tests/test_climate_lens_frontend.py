@@ -3040,6 +3040,7 @@ def test_result_download_header_wraps_inside_phone_card():
       <div class="out-hdr-actions" style="display:flex;gap:8px;align-items:center">
         <button class="btn btn-ghost btn-sm">Download .docx</button>
         <button class="btn btn-ghost btn-sm">Share .html</button>
+        <button class="btn btn-ghost btn-sm">Download review packet</button>
         <button class="copy-btn">Copy all</button>
       </div>
     </div>

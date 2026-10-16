@@ -16,7 +16,7 @@ No prompts, ratings, provider calls, auth, approval or deployment changes.
 - [x] Implement shared validation and endpoint; route Word and HTML through it.
 - [x] Verify browser behavior with executable JS checks and backend/renderer tests.
 - [x] Run focused tests, initialize submodule, full suite; inspect diff.
-- [ ] Update handoff/reference docs, commit and push existing branch.
+- [x] Update handoff/reference docs, commit and push existing branch.
 
 ## Verification record
 
