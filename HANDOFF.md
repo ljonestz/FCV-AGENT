@@ -1,3 +1,60 @@
+### 2026-10-16 Paid repair acceptance and offline follow-up
+
+User authorized one new paid quality run, not a repeat against the consumed $5
+campaign. Submitted once via fresh Edge session ipf-repair-acceptance on preview
+ea88abe9cabf82629472580b50cf028f40a76e06 (code repair 4f68489), deployment
+dep-db96sabodcbs739htv40. Complete standard public Somalia PID; extraction 21,988
+characters, no warnings. Assessment 2c30863d-cdc1-4a29-939d-25c368aeb2d0 ran
+18:45:33-18:49:24 UTC (231 seconds), HTTP 200, correct PID/IPF/MPA routing.
+
+Research repair improved admission: first attempt, 23.265 seconds, 12 native
+passages admitted/10 retained, six selected claims from three sources; grounding
+bank+research, warning none. No research retry. Research remains labelled partial:
+some provider excerpts are fragments, publication dates missing, and historical
+events are not current site conditions. The January 2026 Somalia CCDR URL opened
+independently; UN and ReliefWeb URLs could not be reopened by the review browser.
+Do not interpret admission as complete source or analytical verification.
+
+Five priorities admitted, with concrete concept-description, implementation and
+results-framework changes. A drafting correction passed re-review. Generic repeated
+next-gate reviewer wording is absent; project-cycle rows still repeat some action
+text. Final-reader prechecks passed and meaning review ran, flagging causal
+overstatement and site/absence scope. Its targeted correction failed immediately
+with provider HTTP400/schema_rejected, so Summary remains visibly fallback. This
+is NOT a release pass. Pipeline usage 360,090 input/29,302 output tokens excludes
+research/preprocessing and is not a complete bill. Ten returned pipeline calls,
+one rejected correction; no OOM, timeout, restart or gateway failure observed.
+
+Saved artifacts in output/20261016-ipf-pilot-live-preflight/ with prefix
+somalia-repair-acceptance-: session.json, review-packet.zip, report.docx, report.html,
+summary.png, browser-detailed.html, render-logs.json. Packet file hashes, run ID,
+draft notices and publication_approved=false verified. Snapshot SHA256:
+ed1855f6c51799317be24746fb031fc8a7964be2bcd94a47f8396ffc710c29c9.
+Summary screenshot inspected, fourth card toggled, Detailed tab opened. Word was
+checked for content, not visual layout. Historical evidence is not rewritten.
+
+Paid guard restored: FCV_PILOT_BUDGET_MICROUSD=1, ledger
+/tmp/fcv-ipf-pilot-20261016-post-repair-acceptance.sqlite. Deployment
+dep-db974omk1f9s738mgdk0 live at 18:53:40 UTC, still ea88abe. No second assessment.
+
+Offline follow-up identified minimum:0 on reader_correction.paragraph_index, which
+Anthropic's native JSON schema does not support. Removed only that transport
+constraint; local integer/range checks, exact-edit boundaries and independent
+meaning review remain. Raw provider message was not retained, so no exact schema
+path was supplied by the live error; this is a demonstrated compatibility defect,
+not a claim of a successful post-fix provider run. Regression first failed on this
+stage only; all nine schemas now checked for unsupported bounds, plus negative,
+out-of-range, boolean and fractional patch-index rejection. 174 connected
+client/pipeline/schema tests passed in normal permissions after sandbox-only Temp
+setup errors. Full-suite gap from prior repair remains; not rerun here.
+
+User spotted lowercase pid. Shared reader now displays PID in recommendation prose
+and drafting destination labels; internal assessment/routes/evidence remain intact.
+Browser/HTML/Word consume the same projection. 100 renderer/review-packet tests pass,
+including original-assessment immutability and both export casing checks. No new
+prompt or acceptance gate. These offline follow-ups are not yet live-tested.
+Production/main/ITS untouched; PR83 remains draft, publication_approved=false.
+
 ### 2026-10-16 Repair after acceptance; no further paid run
 
 User requested the underlying research/reader failures fixed, tolerance for minor

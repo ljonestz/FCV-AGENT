@@ -965,6 +965,22 @@ def build_reader_model(assessment: dict[str, object]) -> dict[str, object]:
         # stays consistent.
         reader_priority["rank"] = position
         reader_priority["title"] = _normalize_priority_title(priority.get("title"))
+        # Display-only acronym casing. Keep assessment routing values, source
+        # excerpts and evidence IDs unchanged; all surfaces consume this reader.
+        for key in ("title", "narrative", "decision", "minimum_action",
+                    "enhanced_action", "enhanced_activation", "responsible_function",
+                    "completion_evidence", "limitation", "caution"):
+            if isinstance(reader_priority.get(key), str):
+                reader_priority[key] = re.sub(r"\bpid\b", "PID", reader_priority[key])
+        for key in ("current_document_drafting", "operational_instrument_drafting"):
+            block = reader_priority.get(key)
+            if isinstance(block, dict):
+                block = dict(block)
+                if block.get("target_document") == "pid":
+                    block["target_document"] = "PID"
+                if isinstance(block.get("text"), str):
+                    block["text"] = re.sub(r"\bpid\b", "PID", block["text"])
+                reader_priority[key] = block
         if not drafting_route["confirmed"]:
             reader_priority.pop("current_document_drafting", None)
             reader_priority.pop("operational_instrument_drafting", None)

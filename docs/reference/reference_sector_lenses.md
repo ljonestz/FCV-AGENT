@@ -1,5 +1,17 @@
 # Sector-Lens Platform Reference
 
+### 2026-10-16 Correction transport compatibility and PID casing
+
+reader_correction no longer sends unsupported minimum:0 on paragraph_index to
+the native provider schema. Application-side integer/range checks, exact text
+anchors, target restrictions and meaning review are unchanged. All nine stage
+schemas have an offline unsupported-bounds regression check. Provider reference:
+https://platform.claude.com/docs/en/build-with-claude/structured-outputs#json-schema-limitations.
+
+Shared reader projection capitalizes PID in priority prose and drafting labels,
+without mutating assessment routing or evidence. Browser and exports use the same
+projection. No model prompt, budget, gate or normal-FCV behavior change.
+
 ### 2026-10-16 Research and reader tolerance
 
 Climate search uses the existing trusted-domain list as provider allowed_domains,

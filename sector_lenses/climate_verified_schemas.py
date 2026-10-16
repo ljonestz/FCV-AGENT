@@ -770,7 +770,9 @@ STAGE_OUTPUT_SCHEMAS['reader_correction'] = _object({
     'corrections': {'type': 'array', 'items': _object({
         'object_id': _string('Exact requested SUM or NARR ID; no other records.'),
         'edits': {'type': 'array', 'items': _object({
-            'paragraph_index': {'type': 'integer', 'minimum': 0, 'description': 'Zero-based original paragraph index; SUM uses 0.'},
+            # Native provider schemas reject numeric bounds; the patch merger
+            # checks integer type and bounds before touching any paragraph.
+            'paragraph_index': {'type': 'integer', 'description': 'Nonnegative zero-based original paragraph index; SUM uses 0.'},
             'old_text': _string('Exact unique original substring within one sentence; no overlapping anchors.'),
             'new_text': _string('Replacement clause or sentence; empty string deletes the anchor.'),
         })},

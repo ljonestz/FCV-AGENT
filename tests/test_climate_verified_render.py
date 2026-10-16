@@ -19,6 +19,30 @@ from sector_lenses.climate_verified_render import (
 )
 
 
+def test_pid_display_casing_preserves_internal_assessment_and_exports():
+    from copy import deepcopy
+
+    assessment = _assessment()
+    assessment['operation_context'] = {'document_type': 'PID', 'instrument_type': 'IPF'}
+    priority = assessment['priorities'][0]
+    priority['minimum_action'] = 'In the pid concept description, clarify the approach.'
+    priority['current_document_drafting']['target_document'] = 'pid'
+    priority['current_document_drafting']['text'] = 'The pid could clarify the approach.'
+    before = deepcopy(assessment)
+    model = build_reader_model(assessment)
+    assert assessment == before
+    rendered = render_reader_html(model)
+    assert 'In the PID concept description' in rendered
+    assert 'The PID could clarify' in rendered
+    assert model['priorities'][0]['current_document_drafting']['target_document'] == 'PID'
+    output = BytesIO()
+    write_reader_docx(model, output)
+    output.seek(0)
+    text = '\n'.join(p.text for p in Document(output).paragraphs)
+    assert 'In the PID concept description' in text
+    assert 'The PID could clarify' in text
+
+
 def test_build_climate_guidance_items_builds_a_matched_item():
     guidance = build_climate_guidance_items(
         [{"source": "Eligible", "question": "What should the team examine?"}],

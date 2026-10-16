@@ -6,7 +6,46 @@ import pytest
 
 from sector_lenses.climate_verified_client import AnthropicVerifiedJsonClient
 from sector_lenses.climate_verified_prompts import build_verified_stage_prompt
-from sector_lenses.climate_verified_schemas import stage_output_schema
+from sector_lenses.climate_verified_schemas import STAGE_OUTPUT_SCHEMAS, stage_output_schema
+
+
+@pytest.mark.parametrize('stage', sorted(STAGE_OUTPUT_SCHEMAS))
+def test_every_provider_schema_avoids_unsupported_bounds(stage):
+    # Native messages.create does not strip constraints like the SDK parse helper.
+    # Include correction stages: they may not be reached by a successful live run.
+    schema = stage_output_schema(stage, {'support_records': {'PF-1': {}}})
+    unsupported = {'minimum', 'maximum', 'exclusiveMinimum', 'exclusiveMaximum',
+                   'multipleOf', 'minLength', 'maxLength', 'maxItems', 'uniqueItems'}
+
+    def check(node):
+        if isinstance(node, dict):
+            assert not unsupported.intersection(node), (stage, node)
+            if 'minItems' in node:
+                assert node['minItems'] in (0, 1), (stage, node)
+            for value in node.values():
+                check(value)
+        elif isinstance(node, list):
+            for value in node:
+                check(value)
+
+    check(schema)
+
+
+@pytest.mark.parametrize('index', [-1, 1, True, 0.5])
+def test_reader_correction_rejects_invalid_index_locally(index):
+    from copy import deepcopy
+    from sector_lenses.climate_final_reader import apply_reader_corrections
+
+    original = {'summary_paragraphs': [{'object_id': 'SUM-001',
+                 'text': 'The project may help.', 'evidence_ids': ['PF-1']}],
+                'assessment_narratives': []}
+    before = deepcopy(original)
+    issues = []
+    response = {'corrections': [{'object_id': 'SUM-001', 'edits': [
+        {'paragraph_index': index, 'old_text': 'may help', 'new_text': 'could help'}]}]}
+    assert apply_reader_corrections(original, response, {'SUM-001'}, issues=issues) is None
+    assert original == before
+    assert issues[0]['reason_codes'] == ['READER_CORRECTION_PARAGRAPH_INVALID']
 
 
 def test_every_stage_uses_structured_json_and_evidence_entitlements():

@@ -1,3 +1,16 @@
+### 2026-10-16 Native correction schema and PID display
+
+Do not put numeric bounds such as minimum in native Anthropic output schemas.
+reader_correction uses integer paragraph_index; apply_reader_corrections enforces
+nonnegative/in-range integer values locally before applying exact edits. Tests
+cover every stage schema, including rarely reached corrections. Independent
+meaning review remains required. The paid acceptance reached meaning review but
+its correction request failed; no post-fix paid validation is claimed.
+
+The shared reader projection displays PID in recommendation prose and drafting
+destination labels. Preserve lowercase internal routing values and the immutable
+assessment; do not rewrite saved evidence or identifiers for presentation casing.
+
 ### 2026-10-16 Research admission and reader tolerance repair
 
 Climate search now supplies the same allowed_domains that downstream provenance
