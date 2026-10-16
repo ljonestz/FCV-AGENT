@@ -11,7 +11,9 @@ Native Summary now allows nonempty prose up to 500 words and each finding up to
 review remain. Strict Summary callers unchanged. Offline replay admits the saved
 corrected prose mechanically and still withholds it without a real meaning review.
 No additional paid call; preview spend guard remains; publication=false.
-This change is not yet deployed, and end-to-end acceptance remains outstanding.
+Preview deployment dep-db98qcifngtc739asn0g went live at 20:48:38 UTC on
+98048797116a22f2bc36a961c10ee2a070d10285; health confirms build 98048797116a
+and status ok. Production unchanged; end-to-end acceptance remains outstanding.
 Verification: 1,789 passed in the suite excluding four Chromium-launch checks;
 one stale research-handoff assertion updated for the earlier 700-character quote
 allowance, then all 11 tests in that file passed. No research runtime change.
