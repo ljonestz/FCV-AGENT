@@ -65,6 +65,23 @@ Automatic editor behaviour, core recommendations, cost/latency, UI and exports a
 all still unaccepted. This document records a failed experiment, not progress toward
 release.
 
+## Update: v2 coverage-forced request prepared (offline, unsent)
+
+The coverage fix is implemented and verified offline. The adjudication request now
+uses a keyed-object schema whose `judgments` object requires every enumerated
+claim_id as a key, so the model must return a judgment for all 30 claims; it cannot
+collapse to one. The committed harness is unchanged (still list-based and already
+coverage-checked); the decode script converts the keyed object to a list before
+validating. Offline verification: a full 30-key oracle response finds both true
+defects and scores `passed`, and an under-covered response is rejected.
+
+The prepared single call: claude-sonnet-5-5, adaptive/high, max_tokens 16384,
+timeout 300, 0 retries; fresh job dir `/tmp/fcv-claim-adjudication-20261015-v2`
+(distinct from the consumed v1 lock); prompt_sha256 9a347a52…, schema_sha256
+c2ea08ef…. It remains UNSENT and needs fresh explicit approval before a run. A
+second bounded run was not made in this session; it is intended to be executed
+separately (e.g., via Codex) and then scored offline with the decode script.
+
 ## Artifacts (local, uncommitted)
 
 - output/20261015-claim-adjudication-preflight/{prompt.txt,schema.json,manifest.json,run_command.sh}
