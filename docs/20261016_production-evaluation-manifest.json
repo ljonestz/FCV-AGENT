@@ -1,0 +1,272 @@
+{
+  "version": "production-supervised-acceptance-design-v1",
+  "status": "selection_plan_not_ready_to_run",
+  "release_target": "supervised",
+  "available_development_cases": [
+    {
+      "case_id": "DEV-GL",
+      "kind": "real_document",
+      "split": "development",
+      "route_note": "IPF additional financing / restructuring",
+      "repository_relative_path": "test_documents/P174814-great-lakes-pid-20261007.pdf",
+      "location": "main_checkout",
+      "file_verified": true,
+      "sha256": "70238ba18f619c36e0d678468779427134c5a3c77572c6e6cdfb3fd7457579c3",
+      "holdout_eligible": false,
+      "exclusion_reason": "Previously used in development, QA, or prompt calibration.",
+      "independent_gold_status": "not_established_by_this_inventory"
+    },
+    {
+      "case_id": "DEV-SOM",
+      "kind": "real_document",
+      "split": "development",
+      "route_note": "IPF concept PID / MPA",
+      "repository_relative_path": "test_documents/live_acceptance/somalia-stairp-p513127-concept-pid-20260207.pdf",
+      "location": "active_worktree",
+      "file_verified": true,
+      "sha256": "61e3ee924d114ddbdf19dd6835d2cb051a852f8a1fcd8810b3e8b77b2de994e1",
+      "holdout_eligible": false,
+      "exclusion_reason": "Previously used in development, QA, or prompt calibration.",
+      "independent_gold_status": "not_established_by_this_inventory"
+    },
+    {
+      "case_id": "DEV-SSD",
+      "kind": "synthetic_fixture",
+      "split": "development",
+      "route_note": "South Sudan pattern; not a real-document holdout",
+      "repository_relative_path": "tests/fixtures/climate/south_sudan_verified_case.json",
+      "location": "active_worktree",
+      "file_verified": true,
+      "sha256": "90944a6e19060aae8bf01b1cf68e824254cdb0f43100041123e319855b8ae182",
+      "holdout_eligible": false,
+      "exclusion_reason": "Previously used in development, QA, or prompt calibration.",
+      "independent_gold_status": "not_established_by_this_inventory"
+    },
+    {
+      "case_id": "DEV-PROP",
+      "kind": "synthetic_fixture",
+      "split": "development",
+      "route_note": "Proposition discrimination",
+      "repository_relative_path": "tests/fixtures/climate/20261016_proposition_review/reviewer_inputs.json",
+      "location": "active_worktree",
+      "file_verified": true,
+      "sha256": "ab33b49b3d5c93daf12d8c4bac45027b327f8bae2f2d5a51a621c098a0a69629",
+      "holdout_eligible": false,
+      "exclusion_reason": "Previously used in development, QA, or prompt calibration.",
+      "independent_gold_status": "not_established_by_this_inventory"
+    },
+    {
+      "case_id": "DEV-MAT",
+      "kind": "synthetic_fixture",
+      "split": "development",
+      "route_note": "Consequential premises and dependent advice",
+      "repository_relative_path": "tests/fixtures/climate/20261016_materiality_review/reviewer_inputs.json",
+      "location": "active_worktree",
+      "file_verified": true,
+      "sha256": "7aca97fa037d996e4e628d787463e77475e48d5a33acd0ad97c950f37a40638c",
+      "holdout_eligible": false,
+      "exclusion_reason": "Previously used in development, QA, or prompt calibration.",
+      "independent_gold_status": "not_established_by_this_inventory"
+    }
+  ],
+  "holdout_slots": [
+    {
+      "slot_id": "H01",
+      "instrument": "IPF",
+      "stage": "concept",
+      "required_characteristics": "infrastructure; sparse early evidence",
+      "document_selected": false,
+      "independent_gold_complete": false,
+      "model_exposure_status": "unassigned",
+      "ready_to_run": false
+    },
+    {
+      "slot_id": "H02",
+      "instrument": "IPF",
+      "stage": "appraisal",
+      "required_characteristics": "social or service delivery; substantive safeguards",
+      "document_selected": false,
+      "independent_gold_complete": false,
+      "model_exposure_status": "unassigned",
+      "ready_to_run": false
+    },
+    {
+      "slot_id": "H03",
+      "instrument": "IPF",
+      "stage": "additional_financing",
+      "required_characteristics": "distinct financing envelopes and delivery stages",
+      "document_selected": false,
+      "independent_gold_complete": false,
+      "model_exposure_status": "unassigned",
+      "ready_to_run": false
+    },
+    {
+      "slot_id": "H04",
+      "instrument": "IPF",
+      "stage": "restructuring",
+      "required_characteristics": "cancelled and retained sites; affected-population access",
+      "document_selected": false,
+      "independent_gold_complete": false,
+      "model_exposure_status": "unassigned",
+      "ready_to_run": false
+    },
+    {
+      "slot_id": "H05",
+      "instrument": "DPF/DPO",
+      "stage": "concept_PID",
+      "required_characteristics": "policy actions; avoid IPF instrument leakage",
+      "document_selected": false,
+      "independent_gold_complete": false,
+      "model_exposure_status": "unassigned",
+      "ready_to_run": false
+    },
+    {
+      "slot_id": "H06",
+      "instrument": "DPF/DPO",
+      "stage": "program_document",
+      "required_characteristics": "prior actions, distributional effects, policy commitments",
+      "document_selected": false,
+      "independent_gold_complete": false,
+      "model_exposure_status": "unassigned",
+      "ready_to_run": false
+    },
+    {
+      "slot_id": "H07",
+      "instrument": "PforR",
+      "stage": "concept_PID",
+      "required_characteristics": "program boundary and early evidence limits",
+      "document_selected": false,
+      "independent_gold_complete": false,
+      "model_exposure_status": "unassigned",
+      "ready_to_run": false
+    },
+    {
+      "slot_id": "H08",
+      "instrument": "PforR",
+      "stage": "appraisal_program_paper",
+      "required_characteristics": "DLI/results, verification, ESSA/PAP distinctions",
+      "document_selected": false,
+      "independent_gold_complete": false,
+      "model_exposure_status": "unassigned",
+      "ready_to_run": false
+    },
+    {
+      "slot_id": "H09",
+      "instrument": "IPF with MPA",
+      "stage": "phase_document",
+      "required_characteristics": "program versus country-phase scope",
+      "document_selected": false,
+      "independent_gold_complete": false,
+      "model_exposure_status": "unassigned",
+      "ready_to_run": false
+    },
+    {
+      "slot_id": "H10",
+      "instrument": "PforR with MPA",
+      "stage": "phase_document",
+      "required_characteristics": "base instrument resolved; program versus phase claims",
+      "document_selected": false,
+      "independent_gold_complete": false,
+      "model_exposure_status": "unassigned",
+      "ready_to_run": false
+    },
+    {
+      "slot_id": "H11",
+      "instrument": "IPF",
+      "stage": "appraisal",
+      "required_characteristics": "lower-conflict comparator; avoid invented FCV gaps",
+      "document_selected": false,
+      "independent_gold_complete": false,
+      "model_exposure_status": "unassigned",
+      "ready_to_run": false
+    },
+    {
+      "slot_id": "H12",
+      "instrument": "unresolved/unsupported",
+      "stage": "ambiguous_input",
+      "required_characteristics": "must visibly defer or restrict unsupported analysis",
+      "document_selected": false,
+      "independent_gold_complete": false,
+      "model_exposure_status": "unassigned",
+      "ready_to_run": false
+    }
+  ],
+  "confirmed_heldout_documents": 0,
+  "independently_reviewed_gold_documents": 0,
+  "qa_corpus_listing_status": "Recovered under OneDrive - WBG/fcv-project-screener/FCV_Screener_test_cases; metadata inventoried.",
+  "publication_approved": false,
+  "qa_corpus_file_count": 27,
+  "review_owner": "Lindsey Jones",
+  "candidate_families": [
+    {
+      "family_id": "AFG-HCJ",
+      "country": "Afghanistan",
+      "documents_seen_in_inventory": [
+        "concept PID",
+        "concept ESRS",
+        "CRM annotated agenda",
+        "country context"
+      ],
+      "instrument_verified": false,
+      "prior_exposure": "unknown; existing QA corpus",
+      "holdout_eligible": false,
+      "assignment": "candidate; exposure and source review required"
+    },
+    {
+      "family_id": "AFG-PRIVATE",
+      "country": "Afghanistan",
+      "documents_seen_in_inventory": [
+        "PCN",
+        "country context"
+      ],
+      "instrument_verified": false,
+      "prior_exposure": "unknown; existing QA corpus",
+      "holdout_eligible": false,
+      "assignment": "candidate; exposure and source review required"
+    },
+    {
+      "family_id": "GIN-GOV",
+      "country": "Guinea",
+      "documents_seen_in_inventory": [
+        "BOSIB PDF; document type unverified",
+        "country context"
+      ],
+      "instrument_verified": false,
+      "prior_exposure": "likely prior testing; related September test output exists",
+      "holdout_eligible": false,
+      "assignment": "development candidate"
+    },
+    {
+      "family_id": "GIN-WATER",
+      "country": "Guinea",
+      "documents_seen_in_inventory": [
+        "BOSIB PDF; document type unverified",
+        "country context"
+      ],
+      "instrument_verified": false,
+      "prior_exposure": "likely prior testing; related September test output exists",
+      "holdout_eligible": false,
+      "assignment": "development candidate"
+    },
+    {
+      "family_id": "HND",
+      "country": "Honduras",
+      "documents_seen_in_inventory": [
+        "PCN",
+        "PAD",
+        "BOSIB PDF; type unverified",
+        "RRA"
+      ],
+      "instrument_verified": false,
+      "prior_exposure": "unknown; existing QA corpus",
+      "holdout_eligible": false,
+      "assignment": "candidate; related documents stay in same split"
+    }
+  ],
+  "excluded_corpus_entries": [
+    "Explicitly synthetic Chad project paper: development only",
+    "Mozambique assessment output: not verified source project document",
+    "Test recommendations and issue log: outputs, not independent gold",
+    "Country strategy/RRA/ESRS documents: context or supplemental evidence, not extra project families"
+  ]
+}
