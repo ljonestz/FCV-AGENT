@@ -1,0 +1,335 @@
+{
+  "fixture_version": "proposition-review-v1",
+  "synthetic": true,
+  "reviewer_must_not_receive_this_file": true,
+  "expected_by_proposition": {
+    "C01-P01": {
+      "role": "factual_assertion",
+      "verdict": "supported",
+      "is_defect": false,
+      "source_checks": [
+        {
+          "source_id": "S1",
+          "quoted_text": "The project plans climate-smart farm support"
+        }
+      ],
+      "reason": "Planned farm support is explicit."
+    },
+    "C01-P02": {
+      "role": "factual_assertion",
+      "verdict": "supported",
+      "is_defect": false,
+      "source_checks": [
+        {
+          "source_id": "S1",
+          "quoted_text": "Construction of the border posts is planned"
+        }
+      ],
+      "reason": "Future construction is explicit."
+    },
+    "C02-P01": {
+      "role": "factual_assertion",
+      "verdict": "supported",
+      "is_defect": false,
+      "source_checks": [
+        {
+          "source_id": "S1",
+          "quoted_text": "The project plans climate-smart farm support"
+        }
+      ],
+      "reason": "Planned farm support is explicit."
+    },
+    "C02-P02": {
+      "role": "factual_assertion",
+      "verdict": "contradicted",
+      "is_defect": true,
+      "source_checks": [
+        {
+          "source_id": "S1",
+          "quoted_text": "the posts are not yet operational"
+        }
+      ],
+      "reason": "Planned work cannot establish completed operation."
+    },
+    "C03-P01": {
+      "role": "factual_assertion",
+      "verdict": "supported",
+      "is_defect": false,
+      "source_checks": [
+        {
+          "source_id": "S2",
+          "quoted_text": "The project plans a care centre"
+        }
+      ],
+      "reason": "The planned centre is explicit."
+    },
+    "C03-P02": {
+      "role": "factual_assertion",
+      "verdict": "supported",
+      "is_defect": false,
+      "source_checks": [
+        {
+          "source_id": "S2",
+          "quoted_text": "sex-disaggregated jobs indicators"
+        }
+      ],
+      "reason": "The planned indicators are explicit."
+    },
+    "C03-P03": {
+      "role": "factual_assertion",
+      "verdict": "supported",
+      "is_defect": false,
+      "source_checks": [
+        {
+          "source_id": "S2",
+          "quoted_text": "It identifies exclusion of vulnerable groups as a social risk"
+        }
+      ],
+      "reason": "Risk recognition is explicit."
+    },
+    "C04-P01": {
+      "role": "factual_assertion",
+      "verdict": "supported",
+      "is_defect": false,
+      "source_checks": [
+        {
+          "source_id": "S2",
+          "quoted_text": "The project plans a care centre"
+        }
+      ],
+      "reason": "The planned centre is explicit."
+    },
+    "C04-P02": {
+      "role": "factual_assertion",
+      "verdict": "supported",
+      "is_defect": false,
+      "source_checks": [
+        {
+          "source_id": "S2",
+          "quoted_text": "sex-disaggregated jobs indicators"
+        }
+      ],
+      "reason": "The planned indicators are explicit."
+    },
+    "C04-P03": {
+      "role": "factual_assertion",
+      "verdict": "not_established",
+      "is_defect": true,
+      "source_checks": [
+        {
+          "source_id": "S2",
+          "quoted_text": "No exclusion-specific measure is described in this source"
+        }
+      ],
+      "reason": "General instruments and a risk label do not establish a specific measure."
+    },
+    "C05-P01": {
+      "role": "factual_assertion",
+      "verdict": "supported",
+      "is_defect": false,
+      "source_checks": [
+        {
+          "source_id": "S3",
+          "quoted_text": "The project provides an accessible grievance channel for excluded applicants"
+        }
+      ],
+      "reason": "Unknown effectiveness does not erase the explicit measure."
+    },
+    "C05-P02": {
+      "role": "factual_assertion",
+      "verdict": "supported",
+      "is_defect": false,
+      "source_checks": [
+        {
+          "source_id": "S3",
+          "quoted_text": "its effectiveness in preventing exclusion is unknown"
+        }
+      ],
+      "reason": "Unknown outcomes do not imply failed implementation."
+    },
+    "C06-P01": {
+      "role": "factual_assertion",
+      "verdict": "supported",
+      "is_defect": false,
+      "source_checks": [
+        {
+          "source_id": "S3",
+          "quoted_text": "The project provides an accessible grievance channel for excluded applicants"
+        }
+      ],
+      "reason": "Unknown effectiveness does not erase the explicit measure."
+    },
+    "C06-P02": {
+      "role": "factual_assertion",
+      "verdict": "not_established",
+      "is_defect": true,
+      "source_checks": [
+        {
+          "source_id": "S3",
+          "quoted_text": "No outcome evaluation has been completed"
+        }
+      ],
+      "reason": "Existence of a measure does not establish its outcomes."
+    },
+    "C07-P01": {
+      "role": "factual_assertion",
+      "verdict": "supported",
+      "is_defect": false,
+      "source_checks": [
+        {
+          "source_id": "S4",
+          "quoted_text": "Regional activities continue at retained sites"
+        }
+      ],
+      "reason": "Regional continuity is explicit."
+    },
+    "C07-P02": {
+      "role": "conditional_inference",
+      "verdict": "not_established",
+      "is_defect": false,
+      "source_checks": [
+        {
+          "source_id": "S4",
+          "quoted_text": "The source does not establish whether traders near cancelled sites can access those activities"
+        }
+      ],
+      "reason": "A qualified access concern is not an asserted loss and is not defeated by regional continuity."
+    },
+    "C08-P01": {
+      "role": "factual_assertion",
+      "verdict": "supported",
+      "is_defect": false,
+      "source_checks": [
+        {
+          "source_id": "S4",
+          "quoted_text": "Regional activities continue at retained sites"
+        }
+      ],
+      "reason": "Regional continuity is explicit."
+    },
+    "C08-P02": {
+      "role": "factual_assertion",
+      "verdict": "not_established",
+      "is_defect": true,
+      "source_checks": [
+        {
+          "source_id": "S4",
+          "quoted_text": "The source does not establish whether traders near cancelled sites can access those activities"
+        }
+      ],
+      "reason": "Missing access evidence cannot establish universal loss."
+    },
+    "C09-P01": {
+      "role": "factual_assertion",
+      "verdict": "supported",
+      "is_defect": false,
+      "source_checks": [
+        {
+          "source_id": "S5",
+          "quoted_text": "Climate-related disasters caused 92 percent of recorded displacement"
+        }
+      ],
+      "reason": "Most is a faithful weaker paraphrase of 92 percent."
+    },
+    "C10-P01": {
+      "role": "factual_assertion",
+      "verdict": "contradicted",
+      "is_defect": true,
+      "source_checks": [
+        {
+          "source_id": "S5",
+          "quoted_text": "other causes accounted for the remaining 8 percent"
+        }
+      ],
+      "reason": "All contradicts the explicit remaining share."
+    },
+    "C11-P01": {
+      "role": "factual_assertion",
+      "verdict": "supported",
+      "is_defect": false,
+      "source_checks": [
+        {
+          "source_id": "S6",
+          "quoted_text": "The design identifies transport costs as a barrier"
+        }
+      ],
+      "reason": "The barrier is explicit."
+    },
+    "C11-P02": {
+      "role": "proposed_action",
+      "verdict": "not_established",
+      "is_defect": false,
+      "source_checks": [
+        {
+          "source_id": "S6",
+          "quoted_text": "Introducing one is a possible design change"
+        }
+      ],
+      "reason": "A proposed adaptation need not already be committed."
+    },
+    "C12-P01": {
+      "role": "factual_assertion",
+      "verdict": "supported",
+      "is_defect": false,
+      "source_checks": [
+        {
+          "source_id": "S6",
+          "quoted_text": "The design identifies transport costs as a barrier"
+        }
+      ],
+      "reason": "The barrier is explicit."
+    },
+    "C12-P02": {
+      "role": "factual_assertion",
+      "verdict": "contradicted",
+      "is_defect": true,
+      "source_checks": [
+        {
+          "source_id": "S6",
+          "quoted_text": "No transport grant has been approved"
+        }
+      ],
+      "reason": "A possible design change is not an existing commitment."
+    }
+  },
+  "contrast_pairs": [
+    [
+      "C01",
+      "C02"
+    ],
+    [
+      "C03",
+      "C04"
+    ],
+    [
+      "C05",
+      "C06"
+    ],
+    [
+      "C07",
+      "C08"
+    ],
+    [
+      "C09",
+      "C10"
+    ],
+    [
+      "C11",
+      "C12"
+    ]
+  ],
+  "acceptance": {
+    "required_propositions": 24,
+    "true_defects": [
+      "C02-P02",
+      "C04-P03",
+      "C06-P02",
+      "C08-P02",
+      "C10-P01",
+      "C12-P02"
+    ],
+    "false_positives_allowed": 0,
+    "missed_defects_allowed": 0,
+    "publication_approved": false
+  }
+}
