@@ -1,3 +1,35 @@
+### 2026-10-16 Fixed preview staged; next paid-run terms pending
+
+Isolated fcv-agent-climate-smoke service srv-d6gsivcr85hc73a2833g is live at
+cc92b19aaa415bcc1ca04dc2918ed61ba995f154, deployment dep-db9487rrjlhs73c7elc0.
+Health confirms build cc92b19aaa41 and quality mode. Paid calls are blocked:
+FCV_PILOT_BUDGET_MICROUSD=1 with a new readiness-only ledger at
+/tmp/fcv-ipf-pilot-20261016-mpa-readiness.sqlite. The old smoke/quality allowances
+were not regranted. No model calls were made. Production remains unchanged.
+
+The current guard rejects web tools independent of its dollar allowance. Raising
+the allowance alone cannot validate a complete research-enabled run. Provider
+web-search documentation says search results also incur input tokens through
+search iterations; max_uses limits searches, not a total dollar charge. Task
+budgets are advisory and cannot replace a hard spending cap. No speculative
+web-search cost bound or new budget-control implementation was introduced.
+
+Concrete proposed next test: one browser Express quality run, Climate-FCV lens,
+same complete public Somalia PID, Sonnet 5.5, fresh assessment session, existing
+application call/token/retry/time limits; no follow-on actions or automatic rerun.
+Verify MPA routing, usable research and completed required review stages, then
+inspect consequential claims and actual Word/HTML/review-packet exports. Report
+provider token usage and costs separately from prior reservations. This is a
+development-case acceptance check, not independent holdout or publication approval.
+
+User decision still needed: explicitly authorize that one run without the
+experimental dollar-reservation guard, or retain a hard dollar ceiling and first
+arrange provider-side spending controls. The previous USD5 authorization must not
+be silently relaxed. Do not clear the two guard env vars until that decision.
+References checked 2026-10-16: Anthropic web-search-tool, pricing and task-budgets
+documentation at platform.claude.com. Research currently allows max_uses3 for core
+and max_uses2 for Climate; existing Climate attempts/continuation remain bounded.
+
 ### 2026-10-16 MPA routing repair; local verification
 
 User authorized fixing the browser-test defect, with another paid review only
