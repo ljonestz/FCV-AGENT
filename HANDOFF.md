@@ -1,3 +1,71 @@
+### 2026-10-16 Safeguards browser acceptance: incomplete, not a release pass
+
+Exactly one authorized quality run on preview b977196f7ab0d126b68d7b74d162120aafe55097,
+deployment dep-db95mg67bikc73dqdtt0, using the complete standard public Somalia PID.
+Assessment cf075325-7b1b-44cd-bc8b-cd4e12ff6ad3 ran 17:24:49-17:29:01 UTC (about
+251 seconds), HTTP 200. Nine pipeline calls returned end_turn, including one
+bounded drafting correction/re-review. No timeout, OOM, restart or gateway failure
+observed. Pipeline usage 318036 input/31306 output tokens excludes research and
+preprocessing; it is not a complete bill. No second assessment was submitted.
+
+Confirmed PID/IPF/is_mpa=true. Reader compiler v1.9 used the updated candidate;
+all generated reader evidence IDs exist in the current support registry. However,
+NARR-inclusion contained three paragraphs, the third only ".". The one-or-two
+paragraph precheck rejected it as READER_STRUCTURE_INVALID, skipped meaning review,
+and withheld the final reader. Summary falls back visibly. This is a format failure,
+not evidence of a consequential analytical error, but the intended reader path
+remains unaccepted. A general normalization/schema correction should preserve
+substantive text and all evidence/meaning gates; do not patch this case's prose.
+
+Research remains rejected: two attempts each retain one usable passage. Admission
+counts (candidates/invalid_source/missing_quote/overlong_quote/admitted/retained):
+28/22/4/1/1/1 then 24/18/4/1/1/1; missing_title and duplicate both zero. Invalid_source
+combines missing or non-allowlisted HTTPS URLs, and metadata-only hits count as
+candidates. These counts locate the admission bottleneck, not its provider-level
+cause; raw citation objects were not retained. Grounding stayed bank-only with
+climate_research_insufficient. Do not lower provenance checks to obtain a pass.
+
+Five priority cores were admitted by conditional review. REC-004 current-document
+drafting was flagged DRAFTING_SCOPE_UNSUPPORTED, corrected once, then withheld after
+re-review. Its priority core remains available. Final validation also records
+GAP_PROJECT_REF_INVALID and READINESS_FLAGS_NOT_ACCEPTED. Browser Summary/Detailed
+display incomplete-evidence and unverified-Summary notices. Existing commitments,
+concept-stage uncertainty and SURP II precedent are distinguished in the visible
+report. This inspection is not independent human analytical sign-off or holdout
+acceptance; valid IDs alone do not prove meaning or major-error recall.
+
+Artifacts in output/20261016-ipf-pilot-live-preflight/, all with prefix
+somalia-safeguards-acceptance-: session.json, review-packet.zip, report.docx,
+report.html, summary.png, browser-detailed.html and render-logs.json. Verification
+script verify_safeguards_acceptance.py is uncommitted experiment scaffolding.
+Packet file hashes, run identity, snapshot hash in both packet reports, draft and
+fallback notices all verified. Snapshot SHA256:
+7a57f35a7c7ae0567033340d64d8e4ec7a2af294c40e51b3d94707807b7a4c0b.
+publication_approved remains false. Word content verified, not visual layout.
+Summary screenshot inspected, fourth accordion exercised, Detailed tab inspected
+and browser HTML preserved. Dedicated Edge session ipf-safeguards-acceptance stays
+open. Previous Edge session controls stalled; no old session was closed.
+
+After all exports, restored FCV_PILOT_BUDGET_MICROUSD=1 and fresh ledger
+/tmp/fcv-ipf-pilot-20261016-post-safeguards-acceptance.sqlite, triggering deployment
+dep-db9608mq1p3s73cv9gs0, confirmed live at 17:35:40 UTC. Production
+unchanged, PR83 remains draft. Next work: general reader format resilience and
+research admission diagnosis, then broader source-reviewed supervised IPF acceptance.
+No new paid run is authorized by this handoff. Prior full-suite verification gap
+remains; this browser run does not replace it.
+
+### 2026-10-16 Updated-candidate acceptance run authorized
+
+User requested "proceed with acceptance on run" after safeguards were pushed.
+Treat as one complete browser quality acceptance run, same existing model/token/
+retry/time limits and previously explained no fixed-dollar guarantee; no automatic
+repeat. Preview branch fix/climate-opcs-parity targets b977196. Cleared the two
+experimental guard variables, triggering deployment. Verify live SHA and quality
+mode before submitting. Standard complete public Somalia PID is a development
+workflow check, not an independent holdout. Preserve new artifacts with prefix
+somalia-safeguards-acceptance-. Restore paid-call blocking after exports. Production
+and publication approval remain unchanged.
+
 ### 2026-10-16 General safeguards; focused verification passed
 
 User authorized general safeguards rather than a Somalia-specific patch. Reader
