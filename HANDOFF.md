@@ -1,3 +1,21 @@
+### 2026-10-16 HCJ cross-document reference addendum
+
+Read the full local ESRS and April13 annotated CRM agenda without model outputs.
+Added six pending checks in the existing local reference folder:
+`output/20261016-afghanistan-hcj-source-reference/CROSS_DOCUMENT_REVIEW.html`
+and `cross_document_addendum.json`. Original reference files are preserved.
+
+Material refinements: credit the agenda's planned climate assessments and green
+jobs/indicator without claiming completion; distinguish agency ESCPs from the
+later proposal to consider a single ESCP; distinguish national programme scope
+from SOP1 service coverage; preserve conditional Pandemic Fund AF; distinguish
+risk categories and proposed rating changes; retain multiple delivery actors
+rather than treating the basic-data table as exhaustive. Agenda is not minutes
+or an approval decision. Six records have exact excerpts/locators, the CRM hash
+matches inventory, and all human decisions remain pending. No runtime changes,
+paid calls, current external-policy verification or release qualification.
+Country context remains unreviewed; exposure unknown; publication_approved=false.
+
 ### 2026-10-16 Afghanistan HCJ source-first candidate preparation
 
 Prepared `output/20261016-afghanistan-hcj-source-reference/START_HERE.html`
