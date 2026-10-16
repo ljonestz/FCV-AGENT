@@ -1,3 +1,51 @@
+### 2026-10-16 Browser smoke and quality campaign completed with acceptance gaps
+
+Tested deployed e8a2d8c on the isolated free preview through visible Edge using
+the complete standard Somalia PID. Health confirmed each run mode and SHA before
+upload. Smoke ran 14:35:58-14:38:06 UTC; quality ran 14:47:20-14:50:18 UTC.
+Both Express requests returned HTTP 200; extraction yielded 21,988 characters with
+zero warnings. No run-stage requests are expected on this Express route.
+The browser reused assessment_id d7aedb1d-25e2-423a-b08c-c043f5b9860e after
+Start new analysis, so distinguish runs by timestamps, deployment and mode.
+
+Conservative nonrefundable reservations: smoke USD 0.989790 of 1; quality
+USD 3.691442 of 4; combined USD 4.681232 of the authorized 5. These are upper
+reservations, not billed usage. Do not restart/redeploy and regrant these budgets.
+Both runs blocked web tools and used candidate SOM bank-only context. Smoke's
+later correction/reader review was blocked; quality's correction review and
+reader compiler were blocked. Both rendered fallback output with the visible
+automated-Summary-not-independently-verified warning. No full analytical pass.
+
+Quality produced four priorities. Source comparison credits planned measures,
+retains the unsettled city/activity lists and tentative Challenge Fund, and
+qualifies uncertain gaps. One unsupported drafting block was suppressed.
+Substantive unresolved defect: operation_context.is_mpa=false despite the PID's
+explicit MPA Phase 1 description (printed p. 4). Generated readiness flags wrongly
+describe this internal mismatch as a document inconsistency. Resolver currently
+checks only source_head[:8000]; the first standalone MPA marker is at character
+11815 in pypdf extraction. Fix routing and prevent internal metadata errors being
+attributed to source documents before release. This is not a holdout evaluation.
+
+Browser Summary/non-first accordion/Detailed navigation exercised; saved browser
+Detailed DOM and screenshots. Actual standalone HTML and Word downloads returned
+success and retain draft/review warnings. Review ZIP hashes validated; packet
+HTML and Word both contain snapshot dc8c39b3ae8ac72fa053cb4b5b190423ea9d8abc48101cef1d72aae6191e1a75.
+The separate standalone exports do not embed that packet snapshot ID; use the
+packet's actual file hashes for external approval. All approval fields pending.
+
+Artifacts (uncommitted): output/20261016-ipf-pilot-live-preflight/
+somalia-smoke-session.json, somalia-quality-session.json,
+somalia-quality-browser-detailed.html, somalia-quality-* exports,
+render-campaign-logs.json (80 entries; hasMore=false).
+Browser captures: output/playwright/.playwright-cli/; quality Summary screenshot
+page-2026-10-16T14-57-54-911Z.png shows draft and incomplete-review notices;
+page-2026-10-16T14-51-26-988Z.png shows the second priority. Detailed capture
+page-2026-10-16T14-56-26-425Z.png. Word layout not visually accepted.
+
+Final full suite: 1,747 passed in 1,953.75s (32:33), exit 0. Code pushed on PR 83.
+Production unchanged; no merge. publication_approved=false. Release remains
+pending routing correction, complete review execution and named human acceptance.
+
 ### 2026-10-16 Preview budget guard implementation
 
 User explicitly requested the fresh test through the browser. Implemented opt-in

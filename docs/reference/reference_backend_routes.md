@@ -622,4 +622,3 @@ Use fixed phase-specific allowances whose sum never exceeds the authorized total
 after any mid-phase replacement subtract all previous reservations before starting
 another ledger. Blocked optional research must be disclosed; it is not equivalent
 to a full web-grounded acceptance run. Production remains default-off.
-
