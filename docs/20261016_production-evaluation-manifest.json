@@ -1,7 +1,7 @@
 {
   "version": "production-supervised-acceptance-design-v1",
   "status": "selection_plan_not_ready_to_run",
-  "release_target": "supervised",
+  "release_target": "controlled supervised IPF pilot; broader instruments remain unqualified",
   "available_development_cases": [
     {
       "case_id": "DEV-GL",
@@ -268,5 +268,14 @@
     "Mozambique assessment output: not verified source project document",
     "Test recommendations and issue log: outputs, not independent gold",
     "Country strategy/RRA/ESRS documents: context or supplemental evidence, not extra project families"
-  ]
+  ],
+  "pilot_authorization": {
+    "workspace": "FCV LLM Services",
+    "workspace_id": "tea-d6de2tsr85hc73bqdi0g",
+    "model_spend_limit_usd": 5,
+    "model_spend_this_campaign_usd": 0,
+    "paid_execution_requires_enforceable_call_token_bound": true,
+    "human_approval_pending": true,
+    "production_accepted": false
+  }
 }

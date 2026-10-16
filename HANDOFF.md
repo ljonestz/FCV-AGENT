@@ -1,3 +1,32 @@
+### 2026-10-16 Controlled IPF pilot authorized; isolated preview deployed
+
+User selected controlled supervised IPF pilot, confirmed FCV LLM Services workspace
+tea-d6de2tsr85hc73bqdi0g, and authorized USD5 total model spend for the first
+smoke-and-quality test. No repeat budget/workspace confirmation is needed.
+Spent so far: USD0, zero model calls. Scope does not approve reports or production.
+
+Existing free test service fcv-agent-climate-smoke (srv-d6gsivcr85hc73a2833g),
+https://fcv-agent-1.onrender.com, already targets fix/climate-opcs-parity with
+auto-deploy off. Manually deployed f71375da8d7d814b862cc5031d6e8581d76e1c4d;
+Render deployment dep-db92k1lg1s2s73943vb0 reports live. Production FCV-AGENT remains
+main / 1168a8f2ab2af0bcc6a3a174c4b2eeacd9403205; no merge or production change.
+Rollback reference for test service: 23958aea7d0f7cf21efec180ce8f2f4932d5015c.
+
+Live no-model checks passed: landing200, review-packet200, edited reader409;
+all ZIP file hashes valid and snapshot matches local canonical rebuild; draft
+status and pending review preserved. Saved Great Lakes development assessment
+only, not fresh pipeline smoke/quality or analytical acceptance. Evidence:
+output/20261016-ipf-pilot-live-preflight/live-preflight.json and
+live-saved-case-packet.zip. Snapshot 5bf4db530ac6144049ab1bd2d52fcc9e6da2fd998f932075efd6bfcfd69d4455.
+
+Paid generation remains unstarted: existing per-stage output/retry caps do not
+establish an aggregate USD5 ceiling, so enforce a pre-call total budget (including
+retries, input and output) before running. No additional budget was assumed.
+Current official pricing was checked at https://platform.claude.com/docs/en/about-claude/pricing:
+Sonnet5.5 USD2/10 per million input/output; Haiku5.5 USD0.10/0.50 up to100k input,
+USD0.50/2.50 above100k. Recheck billing configuration/routing before execution.
+Source review and final human approval remain pending; publication_approved=false.
+
 ### 2026-10-16 HCJ cross-document reference addendum
 
 Read the full local ESRS and April13 annotated CRM agenda without model outputs.
