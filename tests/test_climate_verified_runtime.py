@@ -2,11 +2,12 @@ from __future__ import annotations
 
 import base64
 from io import BytesIO
+from pathlib import Path
 
 import pytest
 from docx import Document
 
-from app import extract_docx_content
+from app import extract_docx_content, extract_pdf_text
 from sector_lenses.climate_verified_runtime import (
     PreparedClimateSources,
     prepare_verified_sources,
@@ -408,6 +409,68 @@ def test_mpa_retains_wrapper_and_routes_through_unique_base_instrument():
     assert context.is_mpa is True
     assert context.instrument_type == "IPF"
     assert context.document_type == "Project Paper"
+
+
+@pytest.mark.parametrize("statement", [
+    "The Project Development Objective of MPA Phase 1 is to improve access.",
+    "The proposed operation is the second phase of a Multiphase Programmatic Approach.",
+    "This project forms part of the MPA.",
+])
+def test_mpa_self_description_after_cover_context_is_detected(statement):
+    context = _resolved_context(
+        "Project Information Document.pdf",
+        "Investment Project Financing (IPF)\n\n"
+        + ("Country context describes transport constraints. " * 220)
+        + "\n\n" + statement,
+    )
+    assert context.is_mpa is True
+    assert context.instrument_type == "IPF"
+
+
+@pytest.mark.parametrize("statement", [
+    "Another project is the first phase of an MPA.",
+    "This project builds on lessons from an earlier MPA.",
+    "This project is not part of an MPA.",
+    "The project may become part of an MPA in future.",
+])
+def test_late_mpa_reference_does_not_reclassify_current_operation(statement):
+    context = _resolved_context(
+        "Project Information Document.pdf",
+        "Investment Project Financing (IPF)\n\n"
+        + ("Country context describes transport constraints. " * 220)
+        + "\n\n" + statement,
+    )
+    assert context.is_mpa is False
+
+
+def test_somalia_live_acceptance_pdf_retains_mpa_and_ipf_guidance():
+    from sector_lenses.climate_operational_guidance import select_operational_guidance
+
+    path = Path(__file__).resolve().parents[1] / "test_documents" / "live_acceptance" / (
+        "somalia-stairp-p513127-concept-pid-20260207.pdf"
+    )
+    text, pages = extract_pdf_text(base64.b64encode(path.read_bytes()).decode(), path.name)
+    assert pages > 0
+    context = _resolved_context(path.name, text)
+    assert context.document_type == "PID"
+    assert context.instrument_type == "IPF"
+    assert context.is_mpa is True
+    guidance = select_operational_guidance(
+        doc_type=context.document_type,
+        instrument_type=context.instrument_type,
+        is_mpa=context.is_mpa,
+    )
+    assert "GUIDE-MPA-PROGRAM-LAYER" in {entry.guidance_id for entry in guidance}
+
+
+def test_supporting_document_mpa_does_not_reclassify_primary_operation():
+    prepared = prepare_verified_sources([
+        {"label": "PROJECT DOCUMENT", "name": "PID.pdf",
+         "raw_text": "Investment Project Financing (IPF). Standalone project."},
+        {"label": "CONTEXT DOCUMENT", "name": "MPA lessons.pdf",
+         "raw_text": "This project is the first phase of an MPA."},
+    ])
+    assert resolve_verified_operation_context(prepared).is_mpa is False
 
 
 def test_pforr_with_ipf_component_keeps_pforr_as_base_instrument():

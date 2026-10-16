@@ -1,3 +1,17 @@
+### 2026-10-16 Late MPA descriptions and internal metadata
+
+Climate routing retains the short header check and also recognizes explicit
+current-operation MPA self-descriptions across prepared primary-document blocks.
+This fixes the standard Somalia PID whose MPA Phase 1 statement follows long
+country context. Other-project, future, negated and supporting-document examples
+must not activate the new body matcher. IPF remains the base instrument.
+
+Fact extraction, recommendation compilation and conditional review now distinguish
+operation_context routing metadata from uploaded evidence. An internal mismatch
+is not a source-document inconsistency. Corresponding prompt versions are facts
+v2.9, recommendations v2.18 and conditional review v2.20. No schema change.
+See current HANDOFF for verification. Historical model output remains unchanged; no new paid acceptance.
+
 ### 2026-10-16 Opt-in preview spend reservations
 
 All four Anthropic clients accept the same opt-in HTTP request hook when

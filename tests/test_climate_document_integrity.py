@@ -53,6 +53,14 @@ def test_fact_prompt_requests_generic_document_integrity_scan():
     assert "document_basis_ids" in prompt
 
 
+def test_integrity_generation_and_review_distinguish_routing_from_source_evidence():
+    for stage in ("fact_extraction", "recommendation_compiler", "conditional_review"):
+        prompt = build_verified_stage_prompt(stage, {"operation_context": {"is_mpa": False}})
+        assert "operation_context is application-derived routing metadata" in prompt
+        assert "not evidence of a document inconsistency" in prompt
+        assert "two conflicting statements in the uploaded source" in prompt
+
+
 def _finding(flag_id, category, flag, block_id):
     return {
         "flag_id": flag_id,

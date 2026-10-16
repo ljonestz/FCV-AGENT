@@ -1,3 +1,36 @@
+### 2026-10-16 MPA routing repair; local verification
+
+User authorized fixing the browser-test defect, with another paid review only
+when ready. Added conservative whole-primary-document matching for explicit
+current-operation MPA self-descriptions after the header window. The real Somalia
+PDF now resolves PID + IPF + MPA through the app's extractor and receives
+GUIDE-MPA-PROGRAM-LAYER. Tests also cover three positive phrasings and exclude
+other-project, historical, negated, future and supporting-document references.
+The body matcher is deliberately narrow, not a general language classifier.
+
+Facts v2.9, recommendations v2.18 and conditional review v2.20 distinguish
+application operation_context from uploaded evidence: metadata mismatches are
+not source-document inconsistencies. This is a prompt safeguard, not proof of
+model compliance. Saved earlier reports are unchanged and remain unapproved.
+
+Observed three failing routing regressions and a failing prompt-boundary check
+before implementation. All 212 focused runtime/integrity/guidance/pipeline tests
+pass after repair and prompt-version expectation updates. Read-only review found
+no blocker; diff whitespace checks pass. Full regression suite is running.
+
+The short live run was the dedicated Climate-FCV route, not ordinary core FCV.
+Quality provider timings: facts47.5s, analysis29.3s, judgments35.7s,
+recommendations37.1s, drafting/correction14.2s, initial conditional review7.9s.
+Web research was blocked; later correction review and reader compilation were
+blocked by the conservative spend guard. A fallback report returned in178s,
+which is not equivalent to a completed usual ten-minute full FCV run.
+
+No new paid calls or deployment. Do not reset old phase ledgers or treat the
+user's willingness to pay later as a new quantified budget. Next live acceptance
+must identify the route, allow research/review to finish within an agreed bound,
+and distinguish fallback output from a complete quality pass. Production unchanged;
+publication_approved=false; named human acceptance remains required.
+
 ### 2026-10-16 Browser smoke and quality campaign completed with acceptance gaps
 
 Tested deployed e8a2d8c on the isolated free preview through visible Edge using

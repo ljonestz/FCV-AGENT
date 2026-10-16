@@ -768,7 +768,7 @@ def test_manifest_is_privacy_safe_and_scoped_to_the_run():
     assert first["manifest"]["extraction_version"] == "source-blocks-v3"
     assert (
         first["manifest"]["prompt_versions"]["fact_extraction"]
-        == "climate-facts-v2.8"
+        == "climate-facts-v2.9"
     )
     assert (
         first["manifest"]["prompt_versions"]["bounded_analysis"]
@@ -780,11 +780,11 @@ def test_manifest_is_privacy_safe_and_scoped_to_the_run():
     )
     assert (
         first["manifest"]["prompt_versions"]["recommendation_compiler"]
-        == "climate-recommendations-v2.17"
+        == "climate-recommendations-v2.18"
     )
     assert (
         first["manifest"]["prompt_versions"]["conditional_review"]
-        == "climate-review-v2.19"
+        == "climate-review-v2.20"
     )
     assert (
         first["manifest"]["prompt_versions"]["drafting_compiler"]

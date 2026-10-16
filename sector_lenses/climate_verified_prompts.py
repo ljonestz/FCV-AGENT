@@ -793,4 +793,15 @@ def build_verified_stage_prompt(
         builder = builders[stage]
     except KeyError as error:
         raise ValueError(f"Unsupported verified Climate stage: {stage}") from error
-    return builder(payload)
+    prompt = builder(payload)
+    if stage in {"fact_extraction", "recommendation_compiler", "conditional_review"}:
+        prompt = """ROUTING METADATA AND SOURCE EVIDENCE
+operation_context is application-derived routing metadata, not uploaded document
+text. A mismatch with that metadata is not evidence of a document inconsistency.
+Require two conflicting statements in the uploaded source before alleging a source
+contradiction. Do not ask the team to repair an internal classification error or
+infer that an instrument is absent because a metadata flag is false or unknown.
+Reject readiness flags whose claimed defect exists only in application metadata.
+
+""" + prompt
+    return prompt

@@ -396,6 +396,22 @@ def resolve_verified_operation_context(
         filenames,
         source_head,
     )
+    # Concept descriptions can follow a long country context. Require a current-
+    # operation statement in the body, not a reference to another project's MPA.
+    if not is_mpa:
+        is_mpa = bool(re.search(
+            r"\b(?:the|this)\s+(?:proposed\s+)?"
+            r"(?:project|operation|program|programme)\s+"
+            r"(?:development\s+objective\s+of\s+|"
+            r"(?:is|constitutes|forms|represents)\s+"
+            r"(?:(?:the|a|an)\s+)?"
+            r"(?:(?:(?:first|second|third|initial|next|\d+)\s+)?phase\s+of\s+|part\s+of\s+)?"
+            r"(?:(?:the|a|an)\s+)?)"
+            r"(?:mpa\b|multiphase\s+programmatic\s+approach\b)",
+            source_text,
+        ))
+        if is_mpa:
+            notes.append("mpa_marker:primary_operation_description")
     if is_mpa and instrument.casefold() == "dpf":
         warnings.append("MPA_INSTRUMENT_INCOMPATIBLE")
     if instrument.casefold() == "dpf" and document.casefold() == "pad":
