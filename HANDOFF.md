@@ -1,3 +1,23 @@
+### 2026-10-16 Targeted reader correction and editorial length
+
+See docs/20261016_reader-correction-live-check.md. One explicitly approved isolated
+Anthropic correction call returned all three exact edits (16,979 input/447 output
+tokens, 5.016 seconds runner time). Native schema accepted; merge checks passed.
+The old 200-word cap rejected a 202-word finding, so no meaning review ran.
+
+User then approved advisory reader word targets with generous hard ceilings.
+Native Summary now allows nonempty prose up to 500 words and each finding up to
+400; existing writing targets, evidence/numeric/date checks and mandatory meaning
+review remain. Strict Summary callers unchanged. Offline replay admits the saved
+corrected prose mechanically and still withholds it without a real meaning review.
+No additional paid call; preview spend guard remains; publication=false.
+This change is not yet deployed, and end-to-end acceptance remains outstanding.
+Verification: 1,789 passed in the suite excluding four Chromium-launch checks;
+one stale research-handoff assertion updated for the earlier 700-character quote
+allowance, then all 11 tests in that file passed. No research runtime change.
+Unrestricted suite stalled on its Playwright driver child and was interrupted.
+Four browser-driver tests remain unverified; do not claim a complete suite pass.
+
 ### 2026-10-16 Paid repair acceptance and offline follow-up
 
 User authorized one new paid quality run, not a repeat against the consumed $5

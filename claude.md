@@ -1,3 +1,13 @@
+### 2026-10-16 Advisory native reader length
+
+Native Climate reader word targets are editorial guidance: Summary 160-230 and
+findings 70-180 words. Hard runaway-output ceilings are 500 total Summary words
+and 400 per finding; nonempty prose, evidence, numeric/date, exact-edit and meaning
+checks remain required. Strict Summary callers retain their prior length contract.
+Never truncate prose or treat mechanical admission as a clean semantic review.
+Reader/correction/review versions v1.10/v1.7/v1.10; normalization v2.13.
+See docs/20261016_reader-correction-live-check.md for the paid check and offline replay.
+
 ### 2026-10-16 Native correction schema and PID display
 
 Do not put numeric bounds such as minimum in native Anthropic output schemas.

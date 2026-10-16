@@ -153,9 +153,10 @@ def validate_summary_overview(
     if any(_SUMMARY_MARKUP_RE.search(item) for item in raw):
         return reject("SUMMARY_MARKUP")
     paragraphs = [_summary_normalize(item) for item in raw]
-    # Native prose may modestly exceed the editorial target; meaning review remains mandatory.
-    maximum_words = 260 if semantic_review_required else 230
-    if not 160 <= sum(len(item.split()) for item in paragraphs) <= maximum_words:
+    # Native prose uses editorial targets, with a separate runaway-output ceiling.
+    # Strict callers retain their existing length contract.
+    minimum_words, maximum_words = (1, 500) if semantic_review_required else (160, 230)
+    if not minimum_words <= sum(len(item.split()) for item in paragraphs) <= maximum_words:
         return reject("SUMMARY_WORD_COUNT")
     if any(_SUMMARY_MARKUP_RE.search(item) for item in paragraphs):
         return reject("SUMMARY_MARKUP")

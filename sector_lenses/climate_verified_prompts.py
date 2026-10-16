@@ -623,9 +623,9 @@ need independent project-fact support: cite each supporting project fact directl
 alongside the REC ID for an accepted proposed action. An action's linked fact IDs
 help locate support but do not replace direct factual citations in the reader.
 An accepted action, residual gap or derived assertion cannot confirm its own premise.
-Summary: prefer two connected paragraphs of about 90-100 words each, targeting 190 words overall (160-230 permitted); use a third only if essential. Use sequential object_id
-SUM-001/SUM-002/SUM-003. Up to 260 words is acceptable when needed to preserve qualifications.
-Do not spend a correction merely shortening a Summary already within that allowance.
+Summary: prefer two connected paragraphs of about 90-100 words each, targeting 190 words overall (editorial target 160-230); use a third only if essential. Use sequential object_id
+SUM-001/SUM-002/SUM-003. Length targets are advisory; preserve necessary qualifications.
+The hard size ceiling is 500 Summary words. Do not pad text to approach this ceiling.
 Begin with a clear overall assessment of what the project already recognizes and
 addresses. Explain the material remaining challenge and
 bridge to categories of accepted priorities without enumerating every action. Refer to proposed actions only when supported by
@@ -635,7 +635,7 @@ inclusion; object_id NARR-design/NARR-dividends/NARR-inclusion. The renderer sup
 the question headings, so answer directly without repeating questions in prose. Keep design to
 90-130 words. For dividends and inclusion, aim for 150-180 words each in two short,
 connected paragraphs when the support is rich enough. Target 70-180 words;
-up to 200 is permitted to preserve qualifications. Do not pad sparse evidence
+length targets are advisory, with a hard ceiling of 400 per finding. Do not pad sparse evidence
 merely to reach the target.
 Start with what the project could make possible for people, grounded in concrete
 activities and delivery choices. Explain the causal connection in ordinary words.
@@ -690,9 +690,10 @@ anchors around abbreviations; include enough original context to make anchors un
 Do not overlap anchors. All anchors refer to the original text, not earlier edits.
 For shortening, delete or shorten individual uniquely anchored sentences. Preserve
 unaffected wording, spacing and paragraph boundaries; the application merges edits.
-A finding retains one or two paragraphs, targeting 70-180 words; up to 200
-is permitted to preserve qualifications. The combined Summary must
-target 160-230 words, with up to 260 permitted to preserve meaning, including
+A finding retains one or two paragraphs, targeting 70-180 words. Length targets
+are advisory: preserve necessary qualifications, without padding sparse evidence.
+Hard size ceilings are 400 words per finding and 500 for the combined Summary.
+The combined Summary should target 160-230 words, including
 untargeted_summary_words. Use the supplied actual
 word counts and bounded_correction explanations. When summary_max_words_by_id is
 supplied, obey each exact record ceiling: these ceilings include a safety margin
@@ -733,10 +734,10 @@ Keep country, component, activity and beneficiary-population scope exact. A rest
 on civil works must not become a restriction on all activities. A trader-population
 share must not become a measured share of a component's beneficiaries. Funding or
 planning a facility does not establish operation or delivered benefits. Do not reject
-a Summary for word count or formatting alone, including an initial Summary above
-260 words: the application checks and repairs these mechanical defects separately.
+a reader for word count or formatting alone: editorial length targets are advisory;
+the application checks hard size ceilings and formatting separately.
 Review the meaning of all supplied prose regardless of its length. A semantic pass
-never bypasses the application's mandatory final word-count and format checks.
+never bypasses the application's hard size ceilings and format checks.
 Fluent paraphrase and a conditional mechanism drawn from cited project features
 and admitted pathways are allowed. Such an inference must preserve uncertainty,
 remain within scope and never become a documented intention or demonstrated

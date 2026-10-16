@@ -2062,8 +2062,8 @@ def test_native_reader_still_withholds_overlong_findings():
             FakeClient([_native_pass_review] * 2, [])))
     final = _final_reader()
     assert validate_final_reader(final, result)[0]
-    final['assessment_narratives'][1]['paragraphs'] = ['The project supports traders. ' * 51]
-    assert len(final['assessment_narratives'][1]['paragraphs'][0].split()) > 200
+    final['assessment_narratives'][1]['paragraphs'] = ['The project supports traders. ' * 101]
+    assert len(final['assessment_narratives'][1]['paragraphs'][0].split()) > 400
     assert validate_final_reader(final, result) == ([], [])
 
 
@@ -2146,7 +2146,7 @@ def test_reader_repairs_combined_precheck_issues_once():
     responses = _responses()
     responses[2]['reader_contract'] = 'final-reader-v1'
     invalid = deepcopy(_final_reader())
-    excess = ' Additional ' + 'supported access ' * 100 + 'remains.'
+    excess = ' Additional ' + 'supported access ' * 200 + 'remains.'
     invalid['summary_paragraphs'][0]['text'] += excess
     invalid['assessment_narratives'][2]['paragraphs'][0] += excess
     valid = _final_reader()
@@ -2201,7 +2201,7 @@ def test_native_reader_uses_text_only_correction_and_retains_original():
 
 
 @pytest.mark.parametrize('verdict', ['pass', 'block'])
-@pytest.mark.parametrize('word_count', [239, 250, 260])
+@pytest.mark.parametrize('word_count', [239, 260, 280, 500])
 def test_modest_native_summary_overrun_reaches_meaning_review(verdict, word_count):
     responses = _responses()
     responses[2]['reader_contract'] = 'final-reader-v1'
@@ -2235,11 +2235,27 @@ def test_native_reader_reports_actual_summary_word_count():
     result = run_verified_climate_pipeline(**_arguments(), clients=PipelineClients(
         FakeClient(responses + [_final_reader()], []), FakeClient([_native_pass_review] * 2, [])))
     final = _final_reader()
-    final['summary_paragraphs'][0]['text'] += ' The project supports traders.' * 50
+    final['summary_paragraphs'][0]['text'] += ' The project supports traders.' * 100
     count = sum(len(record['text'].split()) for record in final['summary_paragraphs'])
     issues = []
     assert validate_final_reader(final, result, issues=issues) == ([], [])
     assert any(str(count) in issue['explanation'] and '160-230' in issue['explanation'] for issue in issues)
+
+
+@pytest.mark.parametrize('words', [20, 500, 501])
+def test_native_summary_advisory_target_and_hard_ceiling(words):
+    from sector_lenses.climate_verified_schemas import validate_summary_overview
+
+    paragraphs = [' '.join(['Supported'] * (words // 2)) + '.',
+                  ' '.join(['Supported'] * (words - words // 2)) + '.']
+    diagnostics = {}
+    result = validate_summary_overview({'paragraphs': paragraphs},
+                                      semantic_review_required=True,
+                                      diagnostics=diagnostics)
+    assert bool(result) == (words <= 500)
+    if words > 500:
+        assert diagnostics['reason'] == 'SUMMARY_WORD_COUNT'
+    assert not validate_summary_overview({'paragraphs': paragraphs})
 
 
 def test_native_reader_rejected_patch_preserves_initial_for_diagnosis():
@@ -2462,7 +2478,7 @@ def test_reader_combines_mechanical_and_meaning_issues_before_single_repair():
     responses = _responses()
     responses[2]['reader_contract'] = 'final-reader-v1'
     original = _final_reader()
-    excess = ' Additional ' + 'supported access ' * 100 + 'planned for July 2099.'
+    excess = ' Additional ' + 'supported access ' * 200 + 'planned for July 2099.'
     original['summary_paragraphs'][0]['text'] += excess
     valid = _final_reader()
     targets = {r['object_id'] for r in valid['summary_paragraphs']} | {'NARR-dividends'}
@@ -2524,7 +2540,7 @@ def test_reader_repair_never_admits_overlong_patch_or_unknown_evidence(defect):
     responses = _responses()
     responses[2]['reader_contract'] = 'final-reader-v1'
     original = _final_reader()
-    original['summary_paragraphs'][0]['text'] += ' Supported project access.' * 60
+    original['summary_paragraphs'][0]['text'] += ' Supported project access.' * 120
     if defect == 'unknown_evidence':
         original['assessment_narratives'][0]['evidence_ids'] = ['PF-not-admitted']
     patch = {'corrections': [{'object_id': r['object_id'], 'edits': []}
@@ -2583,7 +2599,7 @@ def test_reader_markup_is_repaired_after_meaning_review():
     assert 'summary_max_words_by_id' not in assessment.calls[-1]['payload']
 
 
-@pytest.mark.parametrize('words', [185, 210])
+@pytest.mark.parametrize('words', [202, 400, 401])
 def test_reader_reports_unknown_evidence_even_with_length_defects(words):
     responses = _responses()
     responses[2]['reader_contract'] = 'final-reader-v1'
@@ -2598,17 +2614,19 @@ def test_reader_reports_unknown_evidence_even_with_length_defects(words):
     codes = {code for issue in result['diagnostic_trace']['final_reader']['prechecks'][0]['issues']
              for code in issue['reason_codes']}
     assert 'READER_EVIDENCE_INVALID' in codes
-    assert ('READER_WORD_COUNT' in codes) == (words > 200)
+    assert ('READER_WORD_COUNT' in codes) == (words > 400)
     assert not any(call['stage'] == 'reader_review' for call in reviewer.calls)
 
 
 @pytest.mark.parametrize('verdict', ['pass', 'block'])
-def test_minor_reader_length_overrun_still_requires_meaning_review(verdict):
+@pytest.mark.parametrize('words', [20, 185, 202, 400])
+def test_minor_reader_length_overrun_still_requires_meaning_review(verdict, words):
     responses = _responses()
     responses[2]['reader_contract'] = 'final-reader-v1'
     final = _final_reader()
     text = final['assessment_narratives'][0]['paragraphs'][0]
-    text += ' ' + ' '.join(['Supported'] * (185 - len(text.split()))) + '.'
+    text = ' '.join(text.split()[:words])
+    text += ' ' + ' '.join(['Supported'] * (words - len(text.split()))) + '.'
     final['assessment_narratives'][0]['paragraphs'] = [text]
     review = _native_pass_review if verdict == 'pass' else {
         'verdict': 'block', 'object_ids': ['NARR-design'],

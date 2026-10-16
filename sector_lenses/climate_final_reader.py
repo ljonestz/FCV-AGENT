@@ -191,7 +191,7 @@ def validate_final_reader(payload: object, assessment: dict[str, object],
     if not summary:
         for record in paragraphs:
             count = sum(len(record['text'].split()) for record in paragraphs if isinstance(record.get('text'), str))
-            explanation = (f'Summary has {count} words; permitted range is 160-260 across all Summary paragraphs (target 160-230).'
+            explanation = (f'Summary has {count} words; hard ceiling is 500 across all Summary paragraphs (editorial target 160-230).'
                            if summary_diagnostics.get('reason') == 'SUMMARY_WORD_COUNT'
                            else str(summary_diagnostics))
             rejected(record['object_id'], explanation, summary_diagnostics.get('reason', 'READER_FORMAT_INVALID'))
@@ -213,8 +213,8 @@ def validate_final_reader(payload: object, assessment: dict[str, object],
             if not grounded(record, texts):
                 valid = False
             count = sum(len(text.split()) for text in texts)
-            if not 70 <= count <= 200:
-                rejected(record['object_id'], f'Finding has {count} words; permitted range is 70-200 (target 70-180).', 'READER_WORD_COUNT')
+            if not 1 <= count <= 400:
+                rejected(record['object_id'], f'Finding has {count} words; nonempty prose is required and the hard ceiling is 400 (editorial target 70-180).', 'READER_WORD_COUNT')
                 valid = False
         if isinstance(theme, str):
             themes.add(theme)

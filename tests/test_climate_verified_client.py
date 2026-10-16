@@ -541,7 +541,7 @@ def test_native_judgment_defers_prose_to_final_reader_schema():
 
 def test_final_reader_prompt_requires_grounded_standalone_summary():
     prompt = build_verified_stage_prompt('reader_compiler', {}).lower()
-    for expected in ('160-230 permitted', 'prefer two', 'already recognizes',
+    for expected in ('editorial target 160-230', 'length targets are advisory', 'prefer two', 'already recognizes',
                      'accepted_recommendation_ids', 'connected paragraphs',
                      'do not copy', 'plausible wider',
                      'conditional analytical inference', 'planned/completed'):

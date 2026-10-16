@@ -146,7 +146,11 @@ def test_metadata_snippets_cannot_displace_received_citations():
         {"type": "web_search_tool_result", "content": hits},
         {"type": "text", "citations": citations},
     ], {"beneficiary_countries": ["Burundi", "Congo, Democratic Republic of"]})
-    assert {p["url"] for p in packet["passages"]} == {c["url"] for c in citations}
+    # Whole provider snippets now fit the 700-character passage allowance.
+    # They may use spare capacity, but must not displace country citations.
+    assert [p["url"] for p in packet["passages"][:2]] == [c["url"] for c in citations]
+    retained_hits = [p for p in packet["passages"] if p["url"] not in {c["url"] for c in citations}]
+    assert all(p["excerpt"] == hits[0]["snippet"].strip() for p in retained_hits)
     assert len(packet["sources"]) == 4
 
 
