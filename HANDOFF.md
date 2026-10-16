@@ -55,6 +55,12 @@ including original-assessment immutability and both export casing checks. No new
 prompt or acceptance gate. These offline follow-ups are not yet live-tested.
 Production/main/ITS untouched; PR83 remains draft, publication_approved=false.
 
+Follow-up fixes committed/pushed as 4d4f4e0b97a4d6bf34e101a4550e8217e24c4d78.
+After user's proceed, preview deployed with the paid guard still active (no env
+change), deployment dep-db97us61egvs73cqejfg live 19:49:26 UTC. /health verified
+build 4d4f4e0b97a4, quality mode, status=ok. No assessment submitted after this fix;
+provider acceptance of the corrected schema remains untested live.
+
 ### 2026-10-16 Repair after acceptance; no further paid run
 
 User requested the underlying research/reader failures fixed, tolerance for minor
