@@ -46,6 +46,15 @@ gone afterward. This remains a broader verification gap, separate from the 338
 passing connected checks. No live model calls or production change; preview remains blocked from paid calls
 after the prior run. publication_approved=false. No generalization claim.
 
+Repair committed/pushed as 4f684890b96b445f86b51754660fa0debe8281fe. Preview
+srv-d6gsivcr85hc73a2833g remains on fix/climate-opcs-parity, auto-deploy off.
+Reapplied budget=1 microUSD with fresh ledger
+/tmp/fcv-ipf-pilot-20261016-repair-blocked.sqlite, triggering deployment
+dep-db96m5mq1p3s73apmovg. Confirmed live 18:22:24 UTC; /health returned build
+4f684890b96b, status=ok, quality mode, research budget=150 seconds. Deployment
+error-log query returned no entries. No model assessment submitted. Existing
+browser results remain historical until a separately authorized new run.
+
 ### 2026-10-16 Safeguards browser acceptance: incomplete, not a release pass
 
 Exactly one authorized quality run on preview b977196f7ab0d126b68d7b74d162120aafe55097,
