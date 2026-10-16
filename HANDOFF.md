@@ -1,3 +1,71 @@
+### 2026-10-16 Full browser quality run: not accepted for release
+
+Ran exactly one authorized Express quality assessment on the complete standard
+Somalia PID, Climate-FCV lens, fresh Edge session ipf-full-quality. Preview build
+930c8d383fbb44ff1948f64fbf55d0ba2adedbad, deployment dep-db94dtqjnfac73ahd4e0.
+Assessment ID: 573f117c-8bee-4229-b200-6b7f761269be. Started 15:59:32 UTC,
+completed 16:03:15 UTC (about 223 seconds), HTTP 200. No automatic rerun.
+
+MPA repair confirmed live: PID, base IPF, is_mpa=true, evidence note
+mpa_marker:primary_operation_description. Four priorities were admitted and the
+conditional recommendation reviewer passed. The report credits existing selection
+criteria, weather/early-warning investments, consultation commitments and planned
+O&M frameworks; no repeat of the false internal-metadata/document contradiction
+was found in the rendered report. Recommendations distinguish concept-stage
+unknowns and exploratory funding from established omissions or commitments.
+This is a development-case check, not independent analytical acceptance.
+
+Two release gaps remain:
+- Research executed with the experimental dollar guard disabled. Attempt 1
+  retained one passage/claim from one source; attempt 2 had zero received passages
+  and three invalid selections. Gate rejected the partial bundle, leaving
+  bank-only grounding / climate_research_insufficient. This is not a budget or
+  timeout failure. Short-passage admission needs investigation using actual
+  provider evidence; do not relax provenance checks or fabricate missing quotes.
+- Final reader compilation returned, but its NARR-inclusion cited nonexistent
+  PF-046. The precheck also recorded 182 words against a 180-word ceiling. The
+  missing reference makes the record ineligible for meaning review; reader_review
+  is empty, no reader correction ran, and FINAL_READER_WITHHELD triggered the
+  explicit fallback Summary. Do not describe this as a mere length problem.
+  Diagnostic reporting currently exposes only the length issue, concealing the
+  invalid-reference reason. Preserve fail-closed evidence checks when repairing.
+
+Seven pipeline model calls returned normally; no timeout, OOM, worker restart or
+5xx appeared in the saved run-window logs. Pipeline-only token usage: 216445 input,
+26787 output, no cache tokens. This excludes research and preprocessing and is
+not a total invoice. Duration is explained by these actual stage timings plus
+about 42 seconds of research, not by the UI's generic 10-12 minute estimate.
+
+Browser checks: non-first priority accordion toggled, Summary/Detailed switched,
+Summary screenshot viewed, Detailed DOM saved, session saved, and actual HTML,
+Word and review packet downloaded. Packet hashes all verified; both packet report
+formats contain draft/human-review and fallback notices plus snapshot ID
+ dbd5c836076b1aaa96280ba607aa3f624995774ed5dd0e9740d29502aec683a1.
+publication_approved remains false. Word content checked, no visual layout claim.
+
+Artifacts (uncommitted): output/20261016-ipf-pilot-live-preflight/ with prefix
+somalia-full-quality-: session.json, browser-detailed.html, render-logs.json,
+Climate-FCV-Verified-Assessment-2026-10-16.html,
+FCV-Recommendations-Note-2026-10-16.docx,
+Climate-FCV-Review-Packet-2026-10-16.zip.
+Screenshot: output/playwright/.playwright-cli/page-2026-10-16T16-05-23-602Z.png.
+
+After collecting exports, restored FCV_PILOT_BUDGET_MICROUSD=1 with new ledger
+/tmp/fcv-ipf-pilot-20261016-post-full-run.sqlite. Deployment
+dep-db94p60473hc73b18bmg confirmed live at 16:12:33 UTC with that block.
+Production untouched; PR83 remains draft; no publication approval.
+
+### 2026-10-16 One complete paid quality run authorized
+
+User replied proceed to the explicit choice of one complete run without a fixed
+dollar guarantee, retaining application token/retry/time limits. This authorizes
+one browser Express quality run on the complete public Somalia PID with Climate
+lens and Sonnet 5.5; no automatic repeat or follow-on calls. Cleared both guard env
+values on the isolated preview. Deployment dep-db94dtqjnfac73ahd4e0 targets
+930c8d383fbb44ff1948f64fbf55d0ba2adedbad. Verify live SHA before upload. No production
+change or publication approval. Restore paid-call blocking after artifacts finish.
+The pending decision recorded below is superseded by this authorization.
+
 ### 2026-10-16 Fixed preview staged; next paid-run terms pending
 
 Isolated fcv-agent-climate-smoke service srv-d6gsivcr85hc73a2833g is live at
