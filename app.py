@@ -12630,6 +12630,48 @@ def download_management_brief():
     )
 
 
+def _climate_export_snapshot(data):
+    """Validate export consistency; a fingerprint is not human approval."""
+    raw = data.get('climate_assessment') if isinstance(data, dict) else None
+    if not isinstance(raw, dict) or raw.get('schema_version') != 'climate-verified-v2.1':
+        return None, (jsonify(error='A verified Climate assessment is required.'), 422)
+    verified = normalize_climate_assessment(raw)
+    reader = build_reader_model(verified)
+    # Runtime mode belongs to the assessment, not an editable reader override.
+    mode = verified.get('runtime_mode')
+    if mode in {'quality', 'smoke'}:
+        reader['runtime_mode'] = mode
+        reader['technical_annex'] = {**(reader.get('technical_annex') or {}),
+                                     'runtime_mode': mode}
+    issues = validate_reader_model(reader)
+    if issues:
+        return None, (jsonify(error='Climate report failed integrity checks.',
+                              reason_codes=list(issues)), 422)
+    attach_provenance(reader, verified)
+    # Compare JSON values: Python tuples become arrays in the browser.
+    canonical_reader = json.loads(json.dumps(reader, ensure_ascii=False, allow_nan=False))
+    if 'climate_reader' in data and data['climate_reader'] != canonical_reader:
+        return None, (jsonify(
+            error='The displayed report differs from its assessment. Reload the matching '
+                  'assessment and reader before exporting; no content was substituted.',
+            reason_codes=['READER_SNAPSHOT_MISMATCH']), 409)
+    encoded = json.dumps({'assessment': verified, 'reader': reader},
+                         sort_keys=True, separators=(',', ':'), ensure_ascii=False,
+                         allow_nan=False).encode('utf-8')
+    return {'reader': reader, 'sha256': hashlib.sha256(encoded).hexdigest(),
+            'publication_approved': False}, None
+
+
+@app.route('/api/climate-report-snapshot', methods=['POST'])
+def climate_report_snapshot():
+    """No-model consistency check for the browser's standalone HTML export."""
+    data = request.get_json(force=True)
+    if not isinstance(data, dict) or not isinstance(data.get('climate_reader'), dict):
+        return jsonify(error='A complete displayed Climate reader is required.'), 422
+    snapshot, error = _climate_export_snapshot(data)
+    return error if error is not None else jsonify(snapshot)
+
+
 @app.route('/api/download-report', methods=['POST'])
 def download_report():
     """Generate a DOCX mirroring the full Stage 3 web output structure."""
@@ -12643,26 +12685,10 @@ def download_report():
         isinstance(verified_raw, dict)
         and verified_raw.get('schema_version') == 'climate-verified-v2.1'
     ):
-        verified = normalize_climate_assessment(verified_raw)
-        reader_model = build_reader_model(verified)
-        incoming_reader = data.get('climate_reader') or {}
-        runtime_mode = (
-            incoming_reader.get('runtime_mode')
-            if isinstance(incoming_reader, dict)
-            else None
-        )
-        if runtime_mode in {'quality', 'smoke'}:
-            reader_model['runtime_mode'] = runtime_mode
-            reader_annex = dict(reader_model.get('technical_annex') or {})
-            reader_annex['runtime_mode'] = runtime_mode
-            reader_model['technical_annex'] = reader_annex
-        reader_issues = validate_reader_model(reader_model)
-        if reader_issues:
-            return jsonify({
-                'error': 'Verified Climate-FCV report failed integrity checks.',
-                'reason_codes': list(reader_issues),
-            }), 422
-        attach_provenance(reader_model, verified)
+        reader_model, snapshot_error = _climate_export_snapshot(data)
+        if snapshot_error is not None:
+            return snapshot_error
+        reader_model = reader_model['reader']
         verified_buf = io.BytesIO()
         write_reader_docx(reader_model, verified_buf)
         verified_buf.seek(0)

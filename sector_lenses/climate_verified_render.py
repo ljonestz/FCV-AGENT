@@ -1111,8 +1111,9 @@ def build_evidence_trail(assessment: dict[str, object]) -> dict[str, object]:
 
     cited: list[str] = []
     judgments = _mapping(assessment.get("judgments"))
-    for value in judgments.values():
-        jm = _mapping(value)
+    # JSON object key order must not change the exported evidence sequence.
+    for key in sorted(judgments):
+        jm = _mapping(judgments[key])
         eids = jm.get("evidence_ids")
         if isinstance(eids, (list, tuple)):
             for eid in eids:

@@ -2579,15 +2579,16 @@ def test_verified_climate_docx_route_uses_canonical_reader():
         "validation": {"status": "passed"},
     }
 
+    from sector_lenses.climate_verified_render import build_reader_model, attach_provenance
+    from sector_lenses.pipeline import normalize_climate_assessment
+    assessment['runtime_mode'] = 'smoke'
+    normalized = normalize_climate_assessment(assessment)
+    reader = attach_provenance(build_reader_model(normalized), normalized)
+    reader['runtime_mode'] = 'smoke'
+    reader['technical_annex']['runtime_mode'] = 'smoke'
     response = app_module.app.test_client().post(
         "/api/download-report", json={
-            "climate_assessment": assessment,
-            "climate_reader": {
-                "runtime_mode": "smoke",
-                "evidence_trail": {"methodology_note": "FORGED METHOD"},
-                "guidance_items": [{"title": "FORGED GUIDANCE", "url": "https://invalid.example"}],
-                "sources": [{"title": "FORGED SOURCE"}],
-            },
+            "climate_assessment": assessment, "climate_reader": reader,
         }
     )
 

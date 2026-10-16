@@ -7,6 +7,7 @@ Context uploads and the country bank cross the boundary as contextual evidence.
 from __future__ import annotations
 
 import hashlib
+import json
 import re
 from datetime import datetime
 from dataclasses import dataclass
@@ -858,6 +859,8 @@ def run_verified_from_doc_parts(
         operation_context=operation_record,
     )
     assessment.setdefault("operation_context", operation_record)
+    # Build from the same JSON values that exports and saved sessions receive.
+    assessment = json.loads(json.dumps(assessment, ensure_ascii=False, allow_nan=False))
     normalized = normalize_climate_assessment(assessment)
     reader = build_reader_model(normalized)
     reader_issues = validate_reader_model(reader)

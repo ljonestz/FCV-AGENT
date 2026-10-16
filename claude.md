@@ -1,5 +1,24 @@
 # FCV Project Screening App — Claude Development Guide
 
+### 2026-10-16 Climate export consistency boundary
+
+Climate HTML and Word exports now share a no-model assessment/reader consistency
+check. Supplied stale or edited readers receive READER_SNAPSHOT_MISMATCH (409),
+not a silently rebuilt report. Canonical assessment corrections remain exportable.
+The HTML path checks before downloading and rejects an in-flight report change.
+Runtime readers use JSON-compatible evidence values and deterministic evidence
+ordering so saved/restored reports can pass the same boundary. A SHA-256 snapshot
+identity includes the complete supplied assessment and projected reader; it is not
+an authenticated approval or independent source verification. Publication approval
+remains false. Older mismatching saved readers require regeneration from their
+assessment; missing-reader legacy Word requests still export the canonical draft.
+No provider calls, prompt changes, merge or deployment. Validation: 1,721 full-suite tests passed in 1,064.31 seconds using Python
+UTF-8 mode and normal process permissions; final snapshot tests 17 passed.
+Read-only code review found no remaining blockers. The first default-encoding
+run was stopped after reproducing a Windows cp1252 subprocess error; the UTF-8
+full rerun passed. No live-service acceptance is claimed.
+
+
 > **Maintenance instruction:** After every substantial change (new features, prompt changes, new delimiters, UI additions, architectural decisions), update this file AND the relevant reference doc before committing. Keep section 1.3 (Stage pipeline), section 3 (Prompt Architecture), and section 5.3 (Priority Parsing) accurate at all times.
 >
 > **Reference files** (detailed specs moved here to keep this file under 40k):

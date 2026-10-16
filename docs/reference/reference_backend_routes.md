@@ -568,3 +568,21 @@ the canonical reader, /api/download-report attaches the existing provenance help
 Matched project guidance and method/source notes now mirror the live reader.
 Provenance comes from the normalized assessment and curated references, never the
 incoming climate_reader. Only its bounded quality/smoke runtime indicator is retained.
+
+
+### 2026-10-16 Climate report snapshot
+
+`POST /api/climate-report-snapshot` accepts `climate_assessment` (verified-v2.1)
+and a complete `climate_reader`. It projects and validates the canonical reader,
+attaches evidence, then compares JSON values exactly. Returns reader, sha256, and
+publication_approved=false; mismatches return HTTP 409 with
+READER_SNAPSHOT_MISMATCH, missing inputs or reader integrity errors return 422.
+No model call, persistence or approval occurs. The hash binds supplied values,
+including available source/model/prompt metadata, but does not independently
+verify their provenance or require absent metadata.
+
+`POST /api/download-report` uses the same check for verified Climate reports.
+An omitted reader retains legacy canonical export; any supplied reader must match.
+Runtime mode comes from the assessment. Browser HTML export must pass the snapshot
+check and verify its local pair did not change while waiting. This is a Render
+endpoint contract; the shared reader projection remains provider independent.

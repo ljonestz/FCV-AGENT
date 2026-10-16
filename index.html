@@ -6091,13 +6091,21 @@
 
   // ── HTML Export ─────────────────────────────────────────────────────────────
 
-  function downloadHTML(){
+  async function downloadHTML(){
     if(!stageOutputs[3] && !stageThreePriorities.length){
       alert('No Stage 3 output available to export.');
       return;
     }
-    if(climateVerifiedAssessment&&climateVerifiedAssessment.schema_version==='climate-verified-v2.1'&&climateVerifiedReader){
+    if(climateVerifiedAssessment&&climateVerifiedAssessment.schema_version==='climate-verified-v2.1'){
       const css=Array.from(document.querySelectorAll('style')).map(s=>s.textContent).join('\n');
+      // Capture the exact pair before waiting; never export silently replaced content.
+      const snapshotPayload=JSON.stringify({climate_assessment:climateVerifiedAssessment,climate_reader:climateVerifiedReader});
+      try{
+        const response=await fetch('/api/climate-report-snapshot',{method:'POST',headers:{'Content-Type':'application/json'},body:snapshotPayload});
+        const snapshot=await response.json();
+        if(!response.ok) throw new Error(snapshot.error||'Report consistency check failed.');
+        if(snapshotPayload!==JSON.stringify({climate_assessment:climateVerifiedAssessment,climate_reader:climateVerifiedReader})) throw new Error('The report changed during export. Please export again.');
+      }catch(error){alert('Could not export HTML. '+error.message);return;}
       const body=renderClimateVerifiedAssessment(climateVerifiedReader);
       const printBehavior=climatePrintDisclosureScript();
       const documentHtml='<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Verified Climate-FCV Assessment</title><style>'+css+'</style></head><body><main style="max-width:960px;margin:32px auto;padding:0 24px">'+body+'</main>'+printBehavior+'</body></html>';
